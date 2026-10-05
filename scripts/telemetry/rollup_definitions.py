@@ -12,11 +12,12 @@ from types import MappingProxyType
 from typing import Any, Mapping
 
 DEFINITION_VERSION = 1
-SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION, 2, 3, 5, 6, 7})
+SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION, 2, 3, 5, 6, 7, 8})
 BATTLE_DEFINITION_VERSION = 5
 BATTLE_BUILD_DEFINITION_VERSION = 6
 BATTLE_CONTROL_DEFINITION_VERSION = 7
-BATTLE_DEFINITION_VERSIONS = frozenset((BATTLE_DEFINITION_VERSION, BATTLE_BUILD_DEFINITION_VERSION, BATTLE_CONTROL_DEFINITION_VERSION))
+BATTLE_RESULT_DEFINITION_VERSION = 8
+BATTLE_DEFINITION_VERSIONS = frozenset((BATTLE_DEFINITION_VERSION, BATTLE_BUILD_DEFINITION_VERSION, BATTLE_CONTROL_DEFINITION_VERSION, BATTLE_RESULT_DEFINITION_VERSION))
 
 PUBLICATION_BUILDING = 0
 PUBLICATION_PUBLISHED = 1
@@ -610,10 +611,35 @@ CONTROL_REPORT_DEFINITIONS = MappingProxyType({
 })
 
 
+RESULT_REPORT_DEFINITIONS = MappingProxyType({
+    **{name: replace(value, definition_version=BATTLE_RESULT_DEFINITION_VERSION,
+                    denominator=value.denominator.replace("schema-5", "schema-7").replace("schema-6", "schema-7"),
+                    table="telemetry_rollup_battle_row_v8") for name, value in CONTROL_REPORT_DEFINITIONS.items()},
+    "battle_build_comparisons": ReportDefinition(name="battle_build_comparisons", definition_version=BATTLE_RESULT_DEFINITION_VERSION,
+        grain="reviewed_original_actor_build_point", table="telemetry_rollup_battle_row_v8",
+        dimensions=("canonical_battle", "bctx_sequence", "bctx_actor_id", "bctx_config_id", "comparison"),
+        metrics=("point_context_verified", "publication_quality_flags"),
+        denominator="Original point observations and independently available comparison dimensions. Level, class, specialization, intrinsic setup, equipment and listed effects remain distinct. Point qualification requires exact history, retained configuration, clocks and schema-7 loss review; matching requires explicit selected observed dimensions.",
+        distinct_semantics="These are the same published points exposed by battle_build_points, not extra observations. Repeated points are not independent battles or people. Shared support relationships retain separate source facts; listed effects cannot establish caster provenance.",
+        distribution_semantics="Missing, partial, stale and unclassified dimensions remain visible. No universal power score or continuous build validity is implied.",
+        unavailable_metrics=("universal_power_score", "continuous_build_exposure", "buff_caster_identity", "causal_build_win_rate"), rate_unit="not_computed"),
+    "battle_outcomes": ReportDefinition(name="battle_outcomes", definition_version=BATTLE_RESULT_DEFINITION_VERSION,
+        grain="original_typed_participant_or_objective_evidence", table="telemetry_rollup_battle_row_v8",
+        dimensions=("bout_boot_id", "bout_process_id", "bout_sequence", "bout_kind", "bout_authority", "bout_reason",
+            "target_canonical_battle", "bout_target_actor_id", "bout_operation_id", "bout_source_object_uid", "parent_event_key"),
+        metrics=("event_evidence_qualified", "battle_context_qualified", "observed_pre_roster", "chain_status", "objective_status",
+            "clock_status", "configuration_status", "publication_quality_flags"),
+        denominator="Separate observed death, accepted flee movement, withdrawal, confirmed escape, objective request/commit and unresolved/censored counts. Qualified event evidence and qualified pre-event battle context are separate. Recovered or duplicate objective receipts cannot become new objectives. No flee attempt denominator, battle win rate or zone clear rate is computed.",
+        distinct_semantics="Exact native event keys, movement parents, operation bytes and physical source identities are retained. Character-owner roster counts are not accounts or people. A native death is participant evidence; a supported committed zone touch establishes only its specific objective.",
+        distribution_semantics="Missing/stale references, configuration/review/clock/loss gaps, lifecycle cuts, unsupported authority and unknown identities remain visible alongside the atomic observed presence and point coverage.",
+        account_metrics_available=True, unavailable_metrics=("battle_win_rate", "full_zone_clear_rate", "complete_flee_attempts", "complete_population", "economic_reward_rate"), rate_unit="not_computed"),
+})
+
+
 def report_definition(name: str, definition_version: int | None = None) -> ReportDefinition:
     canonical = REPORT_ALIASES.get(name, name)
     try:
-        definition = REPORT_DEFINITIONS.get(canonical) or OBSERVATION_REPORT_DEFINITIONS.get(canonical) or IDENTITY_REPORT_DEFINITIONS.get(canonical) or BATTLE_REPORT_DEFINITIONS.get(canonical) or BUILD_REPORT_DEFINITIONS.get(canonical) or CONTROL_REPORT_DEFINITIONS[canonical]
+        definition = REPORT_DEFINITIONS.get(canonical) or OBSERVATION_REPORT_DEFINITIONS.get(canonical) or IDENTITY_REPORT_DEFINITIONS.get(canonical) or BATTLE_REPORT_DEFINITIONS.get(canonical) or BUILD_REPORT_DEFINITIONS.get(canonical) or CONTROL_REPORT_DEFINITIONS.get(canonical) or RESULT_REPORT_DEFINITIONS[canonical]
     except KeyError as error:
         raise ValueError(
             f"unknown report definition {name!r}; "
@@ -627,16 +653,18 @@ def report_definition(name: str, definition_version: int | None = None) -> Repor
         raise ValueError(f"report requires definition version {definition.definition_version}")
     if canonical in OBSERVATION_REPORT_DEFINITIONS and definition_version != 2:
         raise ValueError("observation report requires definition version 2")
-    if (canonical in CONTROL_REPORT_DEFINITIONS) != (definition_version in BATTLE_DEFINITION_VERSIONS):
+    if (canonical in RESULT_REPORT_DEFINITIONS) != (definition_version in BATTLE_DEFINITION_VERSIONS):
         raise ValueError("battle reports require their independent definition version")
     if definition_version == BATTLE_CONTROL_DEFINITION_VERSION:
         return CONTROL_REPORT_DEFINITIONS[canonical]
+    if definition_version == BATTLE_RESULT_DEFINITION_VERSION:
+        return RESULT_REPORT_DEFINITIONS[canonical]
     return BUILD_REPORT_DEFINITIONS[canonical] if definition_version == BATTLE_BUILD_DEFINITION_VERSION else replace(definition, definition_version=definition_version)
 
 
 def report_definitions(definition_version: int = 1) -> tuple[ReportDefinition, ...]:
     if definition_version in BATTLE_DEFINITION_VERSIONS:
-        definitions = CONTROL_REPORT_DEFINITIONS if definition_version == BATTLE_CONTROL_DEFINITION_VERSION else BUILD_REPORT_DEFINITIONS if definition_version == BATTLE_BUILD_DEFINITION_VERSION else BATTLE_REPORT_DEFINITIONS
+        definitions = RESULT_REPORT_DEFINITIONS if definition_version == BATTLE_RESULT_DEFINITION_VERSION else CONTROL_REPORT_DEFINITIONS if definition_version == BATTLE_CONTROL_DEFINITION_VERSION else BUILD_REPORT_DEFINITIONS if definition_version == BATTLE_BUILD_DEFINITION_VERSION else BATTLE_REPORT_DEFINITIONS
         return tuple(report_definition(name, definition_version) for name in sorted(definitions))
     names = set(REPORT_DEFINITIONS)
     if definition_version == 2:

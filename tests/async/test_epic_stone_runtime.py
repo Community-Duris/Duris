@@ -18,6 +18,7 @@ HARNESS = r'''
 #include "world/epic_transaction.h"
 #include "guild/artifact_guild_transaction.h"
 #include "persistence/persistence_mode.h"
+#include "telemetry/telemetry_runtime.h"
 #include <cassert>
 #include <string>
 #include <vector>
@@ -38,6 +39,20 @@ struct artifact_publication
  int amount, type;
 };
 static std::vector<artifact_publication> artifacts;
+struct objective_capture
+{
+ critical_operation_id operation;
+ zone_touch_payload payload;
+ telemetry_battle_result_authority authority;
+ telemetry_battle_result_reason reason;
+ bool recovered;
+ const char_data *toucher;
+};
+static std::vector<objective_capture> objectives;
+void telemetry_runtime_game_zone_objective(const critical_operation_id &operation,
+ const zone_touch_payload &payload, telemetry_battle_result_authority authority,
+ telemetry_battle_result_reason reason, bool recovered, const char_data *toucher) noexcept
+{ objectives.push_back({operation,payload,authority,reason,recovered,toucher}); }
 
 bool persistence_mode_requires_mysql() { return mysql_available; }
 critical_submit_result critical_command_coordinator_submit(critical_command command)
@@ -137,27 +152,40 @@ int main()
   assert(!zone_touch_transaction_busy(99,77) && magic && effects==0);
  }
  admission=critical_submit_result::accepted;
- assert(zone_touch_transaction_submit(p));
+ assert(objectives.empty());
+ assert(zone_touch_transaction_submit(p,&characters[0]));
+ assert(objectives.size()==1 && objectives.back().operation.bytes==submitted.operation_id.bytes);
+ assert(objectives.back().authority==telemetry_battle_result_authority::zone_touch_submit);
+ assert(objectives.back().reason==telemetry_battle_result_reason::none);
+ assert(objectives.back().toucher==&characters[0] && objectives.back().payload.stone_uid==99);
  assert(zone_touch_transaction_busy(99,77));
  assert(!zone_touch_transaction_submit(p));
  assert(magic && effects==0 && pcs[0].epics==100 && artifacts.empty());
  auto failed=complete(critical_apply_outcome::terminal_failure,false);
  zone_touch_transaction_handle_completions(&failed,1);
+ assert(objectives.size()==2 && objectives.back().reason==telemetry_battle_result_reason::receipt_unknown);
  assert(!zone_touch_transaction_busy(99,77) && magic && effects==0);
  assert(zone_touch_transaction_submit(p));
  auto uncertain=complete(critical_apply_outcome::ambiguous_commit,false);
  zone_touch_transaction_handle_completions(&uncertain,1);
+ assert(objectives.back().reason==telemetry_battle_result_reason::operation_pending);
  assert(zone_touch_transaction_busy(99,77) && !zone_touch_transaction_submit(p));
  auto malformed=complete(critical_apply_outcome::applied,false);
  zone_touch_transaction_handle_completions(&malformed,1);
+ assert(objectives.back().reason==telemetry_battle_result_reason::receipt_unknown);
  assert(zone_touch_transaction_busy(99,77) && magic);
  online[1]=false;
  auto success=complete(critical_apply_outcome::applied);
  zone_touch_transaction_handle_completions(&success,1);
+ assert(objectives.back().authority==telemetry_battle_result_authority::zone_touch_receipt);
+ assert(objectives.back().reason==telemetry_battle_result_reason::none && !objectives.back().recovered);
+ assert(objectives.back().operation.bytes==success.operation_id.bytes && !objectives.back().toucher);
+ const auto telemetry_receipts=objectives.size();
  assert(!magic && effects==1 && pcs[0].epics==110 && pcs[1].epics==100);
  assert(zone_publications==1 && !zone_touch_transaction_busy(99,77));
  assert(artifacts.size()==1); assert_artifact(0,0);
  zone_touch_transaction_handle_completions(&success,1);
+ assert(objectives.size()==telemetry_receipts);
  assert(effects==1 && zone_publications==1 && artifacts.size()==1);
  online[1]=true;
  // Reconnect hydration must not be overwritten by an older award receipt.
@@ -174,10 +202,14 @@ int main()
  zone_touch_result receipt;
  assert(zone_touch_command_decode_result(recovered.result_payload.data(),recovered.result_size,&receipt));
  receipt.recovered_claim=true;
+ receipt.toucher_pid=2;
+ receipt.participant_pids[0]=2; receipt.participant_pids[1]=1;
  std::array<uint8_t,ZONE_TOUCH_RESULT_BYTES> bytes;
  assert(zone_touch_command_encode_result(receipt,&bytes));
  std::copy(bytes.begin(),bytes.end(),recovered.result_payload.begin());
  zone_touch_transaction_handle_completions(&recovered,1);
+ assert(objectives.back().recovered && objectives.back().payload.toucher_pid==2);
+ assert(objectives.back().operation.bytes==recovered.operation_id.bytes);
  assert(!magic && effects==2 && zone_publications==1 && artifacts.size()==2);
  zone_touch_transaction_player_ready(&characters[0]);
  zone_touch_transaction_player_ready(&characters[1]);

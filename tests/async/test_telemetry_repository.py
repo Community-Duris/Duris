@@ -64,7 +64,8 @@ def repository_mapping_contract() -> None:
     for line in repository.splitlines():
         if line.startswith(("#define FIELD", "#define TELEMETRY_BATTLE_FIELD", "#define TELEMETRY_BC_FIELD",
                             "#define TELEMETRY_BUILD_FIELD", "#define TELEMETRY_BUILD_BYTES",
-                            "#define TELEMETRY_CONTROL_FIELD")):
+                            "#define TELEMETRY_CONTROL_FIELD", "#define TELEMETRY_RESULT_FIELD",
+                            "#define TELEMETRY_RESULT_BYTES")):
             macro = True
         if not macro:
             serializer_lines.append(line)
@@ -146,6 +147,17 @@ def repository_mapping_contract() -> None:
     assert 'number(values, telemetry_column_id::name, p.member)' in build
     assert 'hex(p.member, width)' in build
 
+    result_fields = (ROOT / "src/telemetry/telemetry_battle_result_fields.inc").read_text()
+    canonical_result = re.findall(r"TELEMETRY_RESULT_(?:FIELD|BYTES)\(([a-z0-9_]+),", result_fields)
+    assert len(canonical_result) == len(set(canonical_result)) == 74
+    assert canonical_result == migration_columns("0069_telemetry_battle_results.sql")
+    assert set(canonical_result) <= names
+    result = function_body(repository, "case telemetry_record_kind::battle_result:",
+                           "case telemetry_record_kind::coverage_gap:")
+    assert '#include "telemetry/telemetry_battle_result_fields.inc"' in result
+    assert 'number(values, telemetry_column_id::name, p.member)' in result
+    assert 'hex(p.member, width)' in result
+
 
 def sql_environment() -> tuple[dict[str, str], list[str], str]:
     required = {
@@ -222,6 +234,7 @@ def prepare_sql_fixture() -> tuple[dict[str, str], list[str], str]:
                 f"engine={engine} migration=manifest-head expected="
                 f"{expected_count}:{expected_head} actual={actual!r}")
         environment["TELEMETRY_REPOSITORY_MIGRATION_COUNT"] = str(expected_count)
+        environment["TELEMETRY_REPOSITORY_MIGRATION_HEAD"] = expected_head
         print(f"Immutable migration chain: PASS ({engine}, {expected_count} steps through "
               f"{expected_head})", flush=True)
         return environment, command, database
@@ -387,6 +400,21 @@ def main():
                 subprocess.run([str(sql)], check=True, timeout=180, env=environment)
             finally:
                 drop_sql_fixture(environment, command, database)
+            destination = os.environ.get("TELEMETRY_REPOSITORY_RESULT")
+            if destination:
+                manifest = json.loads((ROOT / "migrations/migration_manifest.json").read_text())
+                proof = dict(status="passed", evidence_source="native repository fixtures",
+                    actual_gameplay=False, engine=os.environ["TELEMETRY_REPOSITORY_DB_IMAGE"],
+                    record_kinds_checked=list(range(1, 15)), result_named_fields=74,
+                    result_operation_bytes=16, tagged_record_bytes=488,
+                    migration_count=len(manifest["migrations"]),
+                    migration_head=manifest["migrations"][-1]["id"],
+                    lost_acknowledgement=True, transport_and_domain_replay=True,
+                    configuration_and_header_binding=True, explicit_unknown_configuration=True,
+                    direct_sql_refusals=True, quarantine=True, bounded_startup_metadata=True)
+                with Path(destination).open("x", encoding="utf-8") as output:
+                    json.dump(proof, output, indent=2)
+                    output.write("\n")
         else:
             print("SQL runtime: NOT REQUESTED (the required workflow uses --sql-fixture)")
 

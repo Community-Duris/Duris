@@ -216,7 +216,7 @@ def _add_connection_arguments(parser: argparse.ArgumentParser) -> None:
 
 def _add_target_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--definition-version", type=int, required=True,
-        help="1/2/3 retain their earlier reports; 5 publishes shared battles; 6 includes exact build points with independent loss coverage")
+        help="1/2/3 retain earlier reports; 5 publishes shared battles; 6 adds build points; 7 adds selected controls; 8 adds reviewed comparisons and typed outcomes")
     parser.add_argument("--generation", type=int, required=True)
     parser.add_argument("--environment-id", type=int, required=True)
     parser.add_argument("--season-id", type=int, required=True)

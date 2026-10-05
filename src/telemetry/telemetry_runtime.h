@@ -410,6 +410,30 @@ bool telemetry_runtime_game_battle_group_presence(const struct char_data *,
  * by a context update or a leave. Leave also operates during config gaps. */
 telemetry_capture_result telemetry_runtime_game_battle_context(struct char_data *);
 telemetry_capture_result telemetry_runtime_game_battle_leave(struct char_data *);
+/* Stack-only pre-teardown evidence. finish consumes the token exactly once;
+ * it follows no saved character pointer and never creates participation. */
+struct telemetry_battle_result_token
+{
+	telemetry_battle_result_observation observation{};
+	std::uint64_t target_runtime_id = 0U;
+};
+telemetry_battle_result_token
+telemetry_runtime_game_battle_result_begin(const struct char_data *target,
+					   const struct char_data *source,
+					   telemetry_battle_result_authority authority) noexcept;
+telemetry_capture_result telemetry_runtime_game_battle_result_finish(
+	telemetry_battle_result_token &, const struct char_data *target,
+	telemetry_battle_result_kind,
+	telemetry_battle_result_reason = telemetry_battle_result_reason::none) noexcept;
+/* Accepted zone commands and decoded durable receipts have distinct authority.
+ * Receipt-only capture retains an absent session/association explicitly. */
+struct critical_operation_id;
+struct zone_touch_payload;
+void telemetry_runtime_game_zone_objective(const critical_operation_id &,
+					   const zone_touch_payload &,
+					   telemetry_battle_result_authority,
+					   telemetry_battle_result_reason, bool recovered,
+					   const struct char_data *toucher = nullptr) noexcept;
 telemetry_capture_result telemetry_runtime_game_encounter_group_sync(struct char_data *character);
 telemetry_capture_result telemetry_runtime_game_encounter_observe(struct char_data *character);
 telemetry_capture_result

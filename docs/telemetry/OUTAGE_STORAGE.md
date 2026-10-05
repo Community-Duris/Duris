@@ -56,15 +56,17 @@ a terminal boundary. UTC unknown is exported as `null`.
 
 ## Bounded publication and recovery
 
-Wire version 5 (`DMSTLJ05`) stores at most 256 producer lifetimes in an
-81,984-byte ledger and recognizes record families 1–13, including shared battles,
-disjoint contributions, selected build observations and typed control. Readers retain version 1
+Wire version 6 (`DMSTLJ06`) stores at most 256 producer lifetimes in an
+81,984-byte ledger and recognizes record families 1–14, including shared battles,
+disjoint contributions, selected build observations, typed control and typed
+participant/objective evidence. Readers retain version 1
 (`DMSTLJ01`, families 1–9), version 2 (`DMSTLJ02`, families 1–10) and version 3
-(`DMSTLJ03`, families 1–11) and version 4 (`DMSTLJ04`, families 1–12). Both observed and last-failure masks
+(`DMSTLJ03`, families 1–11), version 4 (`DMSTLJ04`, families 1–12) and version 5
+(`DMSTLJ05`, families 1–13). Both observed and last-failure masks
 enforce each version's original family limit, even with a valid checksum. The frame
 size, word ordering, checksum and publication bounds are unchanged. An offline
 read preserves the original bytes and reports their actual version; a worker's
-next valid publication atomically writes v5 while retaining the prior observations.
+next valid publication atomically writes v6 while retaining the prior observations.
 `outages.owner` is the stable exclusive lock file. Each publication writes an
 owner-only `outages.pending` file, synchronizes it, renames it to `outages.ledger`,
 and synchronizes the directory. A SHA-256 checksum detects damaged frames;

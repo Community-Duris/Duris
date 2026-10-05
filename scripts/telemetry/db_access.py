@@ -19,7 +19,7 @@ import math
 from typing import Any, Callable, Mapping, Sequence
 
 try:
-    from . import incident, identity_history as identity, observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles, battle_contribution_contract as contributions, battle_build_contract as builds, control_contract as controls, battle_source, battle_publication
+    from . import incident, identity_history as identity, observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles, battle_contribution_contract as contributions, battle_build_contract as builds, control_contract as controls, battle_result_contract as results, battle_source, battle_publication
 except ImportError:
     import incident
     import identity_history as identity
@@ -29,6 +29,7 @@ except ImportError:
     import battle_contribution_contract as contributions
     import battle_build_contract as builds
     import control_contract as controls
+    import battle_result_contract as results
     import battle_source
     import battle_publication
 
@@ -423,7 +424,7 @@ RAW_COLUMNS = (
     "pulse_slot_count",
     "backend",
     "enabled",
-) + observations.PROGRESSION_RAW_COLUMNS + observations.ENCOUNTER_RAW_COLUMNS + observations.COMBAT_RAW_COLUMNS + observations.OWNERSHIP_RAW_COLUMNS + battles.FIELDS + contributions.FIELDS + builds.FIELDS + controls.FIELDS
+) + observations.PROGRESSION_RAW_COLUMNS + observations.ENCOUNTER_RAW_COLUMNS + observations.COMBAT_RAW_COLUMNS + observations.OWNERSHIP_RAW_COLUMNS + battles.FIELDS + contributions.FIELDS + builds.FIELDS + controls.FIELDS + results.FIELDS
 
 SESSION_COLUMNS = (
     "definition_version",
@@ -1730,11 +1731,11 @@ class PyMySQLRollupDatabase:
                 retained = []
                 for row in contribution.battle_inputs:
                     self._check_deadline()
-                    if row["record_kind"] not in (12, 13):
+                    if row["record_kind"] not in (12, 13, 14):
                         retained.append(row)
                         continue
                     decoded = battle_source.decode_input(row, target.scope_tuple)
-                    prefix = "ctl_" if row["record_kind"] == 13 else "bctx_"
+                    prefix = {12: "bctx_", 13: "ctl_", 14: "bout_"}[row["record_kind"]]
                     config = [] if not decoded.source[prefix + "config_id"] else self._execute("SELECT " +
                         ",".join(battle_source.configuration_columns(row["record_kind"])) +
                         " FROM telemetry_config WHERE config_id=%s LIMIT 1",
@@ -1842,7 +1843,8 @@ class PyMySQLRollupDatabase:
             output = battle_publication.build_publication(window, registry, reviewed, max_total_bytes=remaining,
                 max_output_rows=min(bounds.max_output_fanout, battle_publication.MAX_OUTPUT_ROWS), check_deadline=self._check_deadline)
         except (battle_publication.PublicationError, battle_source.SourceError, battle_publication.history.HistoryError,
-                identity.IdentityError, observations.ObservationError, incident.IncidentError) as error:
+                controls.ControlContractError, results.ResultContractError, battle_publication.comparison.ComparisonError,
+                builds.BuildContractError, identity.IdentityError, observations.ObservationError, incident.IncidentError) as error:
             raise SemanticError(str(error)) from error
         self._insert_review_rows(battle_source.table("telemetry_rollup_battle_coverage", target.scope_tuple), battle_publication.coverage_columns(target.scope_tuple), (output.header,))
         self._insert_review_rows(battle_source.table("telemetry_rollup_battle_row", target.scope_tuple), battle_publication.ROW_COLUMNS, output.rows,
@@ -2044,9 +2046,9 @@ class PyMySQLRollupDatabase:
                     continue
                 verified, _, _ = self._execute(
                     "SELECT record_kind,occurrence_utc_usec,"
-                    "CASE WHEN record_kind=13 THEN ctl_environment_id WHEN record_kind=12 THEN bctx_environment_id WHEN record_kind=11 THEN bc_environment_id WHEN record_kind=10 THEN battle_environment_id ELSE "
+                    "CASE WHEN record_kind=14 THEN bout_environment_id WHEN record_kind=13 THEN ctl_environment_id WHEN record_kind=12 THEN bctx_environment_id WHEN record_kind=11 THEN bc_environment_id WHEN record_kind=10 THEN battle_environment_id ELSE "
                     "COALESCE(environment_id,encounter_environment_id,combat_environment_id) END AS environment_id,"
-                    "CASE WHEN record_kind=13 THEN ctl_season_id WHEN record_kind=12 THEN bctx_season_id WHEN record_kind=11 THEN bc_season_id WHEN record_kind=10 THEN battle_season_id ELSE "
+                    "CASE WHEN record_kind=14 THEN bout_season_id WHEN record_kind=13 THEN ctl_season_id WHEN record_kind=12 THEN bctx_season_id WHEN record_kind=11 THEN bc_season_id WHEN record_kind=10 THEN battle_season_id ELSE "
                     "COALESCE(season_id,encounter_season_id,combat_season_id) END AS season_id "
                     "FROM telemetry_interval WHERE boot_id=%s AND process_id=%s AND record_seq=%s LIMIT 1",
                     (row["verified_boot_id"], row["verified_process_id"], row["verified_record_seq"]),
@@ -2292,7 +2294,9 @@ class PyMySQLRollupDatabase:
                 raise BoundsExceeded("battle report exceeds its SQL fetch limit")
             try:
                 values = [battle_publication.decode_row(target.scope_tuple, row) for row in rows]
-            except (battle_publication.PublicationError, contributions.ContributionContractError, battles.BattleContractError, builds.BuildContractError) as error:
+            except (battle_publication.PublicationError, contributions.ContributionContractError, battles.BattleContractError,
+                    builds.BuildContractError, controls.ControlContractError, results.ResultContractError,
+                    battle_publication.comparison.ComparisonError) as error:
                 raise SemanticError(str(error)) from error
             return values[:limit], len(rows) > limit
         table_and_columns = REPORT_TABLES.get(definition.name)

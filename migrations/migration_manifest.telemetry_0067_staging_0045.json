@@ -888,6 +888,26 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "f12dc17675d1139e8fcfc54d9cfbd2d8fa2acc488965b891bb8f968980f64c28",
       "verify_checksum": "ca003a4e0e99f838fa479730381a16a3ad34aed151561fa656c0284d379e60bc"
+    },
+    {
+      "id": "0069_telemetry_battle_results",
+      "sequence": 72,
+      "description": "Retain typed participant outcomes and exact supported-objective evidence with independent reviewed loss inventory",
+      "apply": "immutable/0069_telemetry_battle_results.sql",
+      "verify": "immutable/0069_telemetry_battle_results.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "5950ff8f13434fc1315997ebeaa5663b1bbb3d497ef507c3ad98491dacc9c021",
+      "verify_checksum": "04dfe4cfd2ebc48b5c441666ccb7d4fb76afabd22815ec8e1b5132f3352ef716"
+    },
+    {
+      "id": "0070_telemetry_result_publication",
+      "sequence": 73,
+      "description": "Retain and atomically publish reviewed build dimensions and typed outcomes with conserved coverage under definition 8",
+      "apply": "immutable/0070_telemetry_result_publication.sql",
+      "verify": "immutable/0070_telemetry_result_publication.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "cb53c4cbad9a8bad2af7260fcdc1c6d8c080579cea41e964523af86c35849a0c",
+      "verify_checksum": "60010330c9219535e74f1bd899580a749eefb2cba9e05b20a2f085bb538f5f2b"
     }
   ]
 }

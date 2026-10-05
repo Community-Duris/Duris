@@ -8,6 +8,7 @@
 #include "guild/artifact_guild_transaction.h"
 #include "persistence/persistence_mode.h"
 #include "redis/redis_report_cache.h"
+#include "telemetry/telemetry_runtime.h"
 
 #include <algorithm>
 #include <new>
@@ -81,7 +82,7 @@ bool zone_touch_transaction_busy(uint64_t stone_uid, uint32_t zone_number)
 	return false;
 }
 
-bool zone_touch_transaction_submit(const zone_touch_payload &payload)
+bool zone_touch_transaction_submit(const zone_touch_payload &payload, char_data *toucher)
 {
 	// Flatfile has no atomic world/zone repository; never queue partial rewards there.
 	// Completed receipts await reconnect; they no longer occupy transaction slots.
@@ -113,6 +114,9 @@ bool zone_touch_transaction_submit(const zone_touch_payload &payload)
 		pending.erase(key);
 		return false;
 	}
+	telemetry_runtime_game_zone_objective(operation_id, payload,
+					      telemetry_battle_result_authority::zone_touch_submit,
+					      telemetry_battle_result_reason::none, false, toucher);
 	return true;
 }
 
@@ -130,6 +134,10 @@ void zone_touch_transaction_handle_completions(const critical_completion *comple
 		if (completion.outcome == critical_apply_outcome::retryable_failure ||
 		    completion.outcome == critical_apply_outcome::ambiguous_commit)
 		{
+			telemetry_runtime_game_zone_objective(
+				completion.operation_id, entry.payload,
+				telemetry_battle_result_authority::zone_touch_receipt,
+				telemetry_battle_result_reason::operation_pending, false);
 			notify(entry.payload,
 			       "The stone reward is awaiting recovery. It has not been released for another touch.\r\n");
 			continue; // Coordinator retains the original journal operation and fences.
@@ -139,6 +147,10 @@ void zone_touch_transaction_handle_completions(const critical_completion *comple
 					       critical_apply_outcome::already_applied;
 		if (!committed)
 		{
+			telemetry_runtime_game_zone_objective(
+				completion.operation_id, entry.payload,
+				telemetry_battle_result_authority::zone_touch_receipt,
+				telemetry_battle_result_reason::receipt_unknown, false);
 			notify(entry.payload,
 			       "The stone reward failed. The stone remains available; please try again.\r\n");
 			pending.erase(found);
@@ -148,10 +160,18 @@ void zone_touch_transaction_handle_completions(const critical_completion *comple
 						      completion.result_size, &entry.result) ||
 		    entry.result.stone_uid != entry.payload.stone_uid)
 		{
+			telemetry_runtime_game_zone_objective(
+				completion.operation_id, entry.payload,
+				telemetry_battle_result_authority::zone_touch_receipt,
+				telemetry_battle_result_reason::receipt_unknown, false);
 			notify(entry.payload,
 			       "The stone reward receipt is unavailable. Please contact staff.\r\n");
 			continue; // Unknown committed result must not become a new award attempt.
 		}
+		telemetry_runtime_game_zone_objective(
+			completion.operation_id, entry.result,
+			telemetry_battle_result_authority::zone_touch_receipt,
+			telemetry_battle_result_reason::none, entry.result.recovered_claim);
 		entry.committed = true;
 		if (!entry.payload.stone_uid)
 		{

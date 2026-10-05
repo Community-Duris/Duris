@@ -17,6 +17,34 @@ Missing source, clocks/configuration, loss and identity remain visible; proven
 action-restriction time and caster duration remain NULL. See
 [CONTROL_OBSERVATIONS.md](CONTROL_OBSERVATIONS.md) for fields and comparison limits.
 
+Definition 8 adds `battle_build_comparisons` and `battle_outcomes` to the same
+rollup interface, preserving the existing battle/build/control names within its
+independent `_v8` publication. Its dedicated report role needs SELECT on
+`telemetry_rollup_battle_row_v8` and `telemetry_rollup_battle_coverage_v8`, plus
+the existing published rollup/incident coverage stores. It has no access to
+private version-8 source/input tables, raw facts, configuration or review stores.
+The comparison alias returns the same exact build-point rows with independently
+classified dimensions; it adds no observations. Outcomes expose distinct native
+event and battle-context qualification, exact operation/movement-parent identity,
+pre-action roster and explicit unknown/censored/recovered evidence. All reports
+share one atomic coverage snapshot. See [BATTLE_RESULTS.md](BATTLE_RESULTS.md).
+
+For example, with the dedicated rollup report connection configured, list the
+definition and read one fixed published generation:
+
+```sh
+python3 scripts/telemetry/rollup.py definitions --definition-version 8
+python3 scripts/telemetry/rollup.py report --name battle_outcomes --definition-version 8 --generation 2 --environment-id 1 --season-id 1
+```
+
+Choose the environment, season and generation actually published by the operator.
+Event counts are evidence denominators; the reports do not compute battle win,
+zone-clear, complete flee-attempt or causal build-win rates. The complete local
+command qualifies native capture through restricted definition-8 readback on both
+SQL engines; [BATTLE_RESULTS.md](BATTLE_RESULTS.md#qualified-local-delivery-2026-10-05)
+records the exact source, coverage and limits. Each study still requires its own
+published and independently reviewed generation.
+
 ## Boundary and connection policy
 
 Use `scripts/telemetry/report.py`. It creates one dedicated connection from

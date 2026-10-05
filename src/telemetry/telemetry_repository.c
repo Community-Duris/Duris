@@ -535,6 +535,19 @@ fields record_fields(const telemetry_record &record)
 #undef TELEMETRY_CONTROL_FIELD
 		break;
 	}
+	case telemetry_record_kind::battle_result:
+	{
+		const auto &p = record.payload.battle_result;
+#define TELEMETRY_RESULT_FIELD(name, member, width, signed_value) \
+	number(values, telemetry_column_id::name, p.member);
+#define TELEMETRY_RESULT_BYTES(column, member, width)                           \
+	values.emplace_back(telemetry_column(telemetry_column_id::column).name, \
+			    hex(p.member, width));
+#include "telemetry/telemetry_battle_result_fields.inc"
+#undef TELEMETRY_RESULT_FIELD
+#undef TELEMETRY_RESULT_BYTES
+		break;
+	}
 	case telemetry_record_kind::coverage_gap:
 	{
 		const auto &p = record.payload.gap;
@@ -570,7 +583,8 @@ fields record_fields(const telemetry_record &record)
 bool hex_field(const std::string &name)
 {
 	return name == "fingerprint" || name == "payload_sha256" || name == "record_payload" ||
-	       name == "bctx_equipment_digest" || name == "bctx_epic_digest";
+	       name == "bctx_equipment_digest" || name == "bctx_epic_digest" ||
+	       name == "bout_operation_id";
 }
 
 std::string names(const fields &values, bool select = false)
@@ -689,6 +703,14 @@ std::string signature(const telemetry_record &record)
 		for (auto byte : record.payload.control.target.actor.reserved)
 			value += ':' + std::to_string(byte);
 		break;
+	case telemetry_record_kind::battle_result:
+		for (auto byte : record.payload.battle_result.reserved)
+			value += ':' + std::to_string(byte);
+		for (auto byte : record.payload.battle_result.source.actor.reserved)
+			value += ':' + std::to_string(byte);
+		for (auto byte : record.payload.battle_result.target.actor.reserved)
+			value += ':' + std::to_string(byte);
+		break;
 	default:
 		break;
 	}
@@ -805,13 +827,19 @@ void validate_writer_schema()
 		if (!engine_row || !engine_row[0] || std::string(engine_row[0]) != "InnoDB")
 			schema_failure();
 
-		auto metadata =
-			query("SELECT COLUMN_NAME,DATA_TYPE,COLUMN_TYPE,IS_NULLABLE,"
-			      "CHARACTER_MAXIMUM_LENGTH,DATETIME_PRECISION,EXTRA,COLUMN_DEFAULT "
-			      "FROM information_schema.columns WHERE table_schema=DATABASE() "
-			      "AND table_name='" +
-			      std::string(table) + "' LIMIT 513");
-		if (mysql_num_rows(metadata.get()) > 512U)
+		/* The previous 463-column tagged table left 49 optional columns in
+		 * its 512-column startup envelope. Preserve that additive allowance
+		 * as declared result fields are added. This worker-only bound does
+		 * not change the record, admission or gameplay capture budgets. */
+		const auto metadata_limit =
+			std::string(table) == "telemetry_interval" ? expected_count + 49U : 512U;
+		auto metadata = query(
+			"SELECT COLUMN_NAME,DATA_TYPE,COLUMN_TYPE,IS_NULLABLE,"
+			"CHARACTER_MAXIMUM_LENGTH,DATETIME_PRECISION,EXTRA,COLUMN_DEFAULT "
+			"FROM information_schema.columns WHERE table_schema=DATABASE() "
+			"AND table_name='" +
+			std::string(table) + "' LIMIT " + std::to_string(metadata_limit + 1U));
+		if (mysql_num_rows(metadata.get()) > metadata_limit)
 			schema_failure();
 		std::size_t matched = 0U;
 		while (auto row = mysql_fetch_row(metadata.get()))
@@ -1070,6 +1098,37 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 		number(logical_key, telemetry_column_id::ctl_boot_id, p.producer.boot_id);
 		number(logical_key, telemetry_column_id::ctl_process_id, p.producer.process_id);
 		number(logical_key, telemetry_column_id::ctl_sequence, p.sequence);
+		auto existing =
+			query("SELECT 1 FROM telemetry_interval WHERE " + where(logical_key));
+		if (mysql_fetch_row(existing.get()))
+			return telemetry_apply_outcome::duplicate_conflict;
+		if (p.scope.config_id != 0U)
+		{
+			fields expected;
+			number(expected, telemetry_column_id::season_id, p.scope.season_id);
+			number(expected, telemetry_column_id::classifier_version,
+			       p.scope.classifier_version);
+			number(expected, telemetry_column_id::policy_version,
+			       p.scope.policy_version);
+			number(expected, telemetry_column_id::build_version, p.build_version);
+			number(expected, telemetry_column_id::content_version, p.content_version);
+			auto config = query("SELECT " + names(expected, true) +
+					    " FROM telemetry_config WHERE environment_id=" +
+					    std::to_string(p.scope.environment_id) +
+					    " AND config_id=" + std::to_string(p.scope.config_id));
+			auto row = mysql_fetch_row(config.get());
+			if (!row || !equal_row(row, expected))
+				return telemetry_apply_outcome::rejected_invalid;
+		}
+	}
+
+	if (record.header.kind == telemetry_record_kind::battle_result)
+	{
+		const auto &p = record.payload.battle_result;
+		fields logical_key;
+		number(logical_key, telemetry_column_id::bout_boot_id, p.producer.boot_id);
+		number(logical_key, telemetry_column_id::bout_process_id, p.producer.process_id);
+		number(logical_key, telemetry_column_id::bout_sequence, p.sequence);
 		auto existing =
 			query("SELECT 1 FROM telemetry_interval WHERE " + where(logical_key));
 		if (mysql_fetch_row(existing.get()))

@@ -20,7 +20,7 @@ from test_telemetry_repository import prepare_sql_fixture, drop_sql_fixture, sql
 
 ROOT = journey.ROOT
 sys.path.insert(0, str(ROOT))
-from scripts.telemetry import battle_publication, battle_source, control_contract, incident, outage
+from scripts.telemetry import battle_publication, battle_source, battle_result_contract, battle_comparison, control_contract, incident, outage
 from scripts.telemetry.db_access import ConnectionSettings, PyMySQLConnectionFactory, PyMySQLRollupDatabase
 from scripts.telemetry.rollup_definitions import RollupTarget
 from scripts.telemetry.rollup_engine import RollupEngine, RollupBounds, BoundsExceeded
@@ -67,6 +67,10 @@ def run():
         for table in ("telemetry_config", "telemetry_interval", "telemetry_quarantine"):
             query(f"GRANT SELECT,INSERT ON `{database}`.`{table}` TO %s@'%%'", (users[1],))
         query(f"GRANT SELECT,INSERT,UPDATE ON `{database}`.telemetry_session TO %s@'%%'", (users[1],))
+        # Minimal world boot skips SQL zone publication. Provide its native
+        # zone authority before gameplay; objective receipts are never seeded.
+        assert query("SELECT COUNT(*) AS n FROM zones WHERE number=1")[0]["n"] == 0
+        query("INSERT INTO zones(number,name) VALUES(1,'Minimal World')")
         with tempfile.TemporaryDirectory(prefix="control-gameplay-") as temporary:
             runtime = Path(temporary)
             journey.make_fixture(runtime)
@@ -74,6 +78,20 @@ def run():
             # participants, rather than the shared fixture's fast NPC kill.
             objects = runtime / "areas_mini/mini.obj"
             objects.write_text(objects.read_text().replace("6 100 1 7 0 0 0 0", "6 1 6 7 0 0 0 0"))
+            # One ordinary room exit permits native flee movement and a real
+            # disengagement watch. The fixed mini-zone already contains stone
+            # prototype 358 with the maintained epic_stone gameplay function.
+            world_path = runtime / "areas_mini/mini.wld"
+            world = world_path.read_text()
+            start = world.index("#22800\n")
+            end = world.index("\nS\n", start)
+            world = world[:end] + "\nD0\n~\n~\n0 0 22801" + world[end:]
+            world = world.replace("$~", "#22801\nThe Regression Refuge~\nA quiet room beyond the arena.\n~\n1 0 0\nD2\n~\n~\n0 0 22800\nS\n$~")
+            world_path.write_text(world)
+            value = objects.read_text()
+            start, end = value.index("#358\n"), value.index("#359\n")
+            value = value[:start] + value[start:end].replace("1 4 0 0 0 0 0 0", "1 4 1 0 0 0 0 0") + value[end:]
+            objects.write_text(value)
             journey.generate_certificate(runtime)
             reviewed_property_catalog(runtime, runtime / "reviewed-properties.catalog")
             for name in ("logs/log", "journals/players", "journals/critical", "telemetry-ledger", "bin/server"):
@@ -126,10 +144,11 @@ def run():
                 if output:
                     output.close()
 
-            def boot():
+            def boot(*, specials=False):
                 nonlocal process, output
                 output = (runtime / "server.out").open("w")
-                process = subprocess.Popen([str(runtime / "bin/server/dms"), "--minimal", "-s", str(port)],
+                arguments = [str(runtime / "bin/server/dms"), "--minimal"] + ([] if specials else ["-s"]) + [str(port)]
+                process = subprocess.Popen(arguments,
                     cwd=runtime, env=env, stdout=output, stderr=subprocess.STDOUT)
                 until(lambda: process.poll() is not None or "Entering game loop." in
                     (runtime / "server.out").read_text(errors="replace"), "server boot timed out", 90)
@@ -154,7 +173,20 @@ def run():
                 client.send(text)
                 if response:
                     client.expect(response, timeout=30)
-                client.expect(" >", timeout=30)
+                return client.expect(" >", timeout=30)
+
+            def wake_stand(client):
+                deadline = time.monotonic() + 30
+                while time.monotonic() < deadline:
+                    issue(client, "wake")
+                    reply = issue(client, "stand")
+                    if any(text in reply for text in ("You are already standing.", "You clamber to your feet.",
+                        "You rise to your feet.", "You manage to unsteadily get to your feet.", "You tense up and become more alert.")):
+                        return
+                    # Random native melee stun may refuse or knock down a stand.
+                    # Wait for ordinary recovery rather than clearing the flag.
+                    time.sleep(0.25)
+                raise AssertionError("native wake/stand recovery did not accept standing")
 
             try:
                 boot()
@@ -178,6 +210,7 @@ def run():
                 # Its native 24-second effect expires before the existing
                 # 30-second battle inactivity censoring boundary.
                 query("UPDATE player_data SET level=32,highest_level=32 WHERE name='Pvpcast'")
+                query("UPDATE player_data SET level=50,highest_level=50 WHERE name='Pvpmate'")
                 # A persistent, non-selected saving penalty makes the native
                 # random gate reliably exercisable without bypassing it.
                 query("INSERT INTO player_affects(pid,type,duration,flags,modifier,location) "
@@ -185,7 +218,7 @@ def run():
                 # Only persistent gameplay prerequisites are seeded. Every
                 # positive observation below comes from the maintained server's
                 # normal cast/attack/effect/lifecycle paths, never telemetry APIs.
-                for character, spells in (("Pvpcast", (100, 102)), ("Pvpheal", (4, 14))):
+                for character, spells in (("Pvpcast", (100, 102, 32)), ("Pvpheal", (4, 14, 16))):
                     for spell in spells:
                         for _ in range(16 if spell == 4 else 4):
                             query("INSERT INTO player_affects(pid,type,duration,flags,modifier) "
@@ -273,6 +306,8 @@ def run():
                 # as newly observed activity under the next producer.
                 outage_end = time.time_ns() // 1000
                 before_recovery = count("record_kind=13")
+                # Preserve the original control fixture's special suppression.
+                # The separate outcome producer enables native object procedures.
                 boot()
                 staff = reconnect("Ctlstaffacct", "Ctlstaff")
                 target = reconnect("Ctltargacct", "Ctltarget")
@@ -336,8 +371,7 @@ def run():
                 # tranquilize resets combat between these separate cases.
                 issue(staff, "tranquilize", "entire room nods off")
                 for client in pvp.values():
-                    issue(client, "wake")
-                    issue(client, "stand")
+                    wake_stand(client)
                 issue(healer, "follow Pvpcast", "now follow")
                 issue(ally, "follow Pvpcast", "now follow")
                 issue(healer, "consent Pvpcast")
@@ -383,6 +417,139 @@ def run():
                     seeded_prerequisites="level, HP, memorized spells, non-selected saving penalty",
                     native_blindness_prerequisite_ticks=32,
                     supervised_combat_reset="native tranquilize between cases and before quit")
+                print("Ordinary outcome PvP: equipment, effective support, flee and real escape watch", flush=True)
+                # The control and outcome studies each need a complete bounded
+                # publication window. Drain the first producer before starting
+                # fresh authenticated/association history for the second.
+                control_through = int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])
+                stop()
+                outcome_origin = int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])
+                boot(specials=True)
+                staff = reconnect("Ctlstaffacct", "Ctlstaff")
+                pvp = {character: reconnect(account, character) for account, character, _ in characters[2:] if character != "Pvpvictim"}
+                caster, healer, ally, mate = (pvp[name] for name in ("Pvpcast", "Pvpheal", "Pvpally", "Pvpmate"))
+                outcome_producer = query("SELECT boot_id,process_id FROM telemetry_interval ORDER BY ingest_id DESC LIMIT 1")[0]
+                assert outcome_producer != pvp_producer
+                outcome_where = "boot_id={boot_id} AND process_id={process_id}".format(**outcome_producer)
+                outcome_start = int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])
+                for client in (caster, healer, ally, mate):
+                    wake_stand(client)
+                issue(healer, "follow Pvpcast", "now follow")
+                issue(healer, "consent Pvpcast")
+                issue(caster, "group Pvpheal", "now a member of your group")
+                issue(staff, "load obj 678", "You have created")
+                issue(staff, "give cap Pvpally")
+                issue(staff, "setbit char Pvpally hit 40000")
+                issue(ally, "kill Pvpmate")
+
+                def ally_builds():
+                    return query("SELECT * FROM telemetry_interval WHERE record_kind=12 AND " + outcome_where +
+                        " AND bctx_actor_kind=1 AND bctx_actor_id=%s ORDER BY record_seq", (pids["Pvpally"],))
+
+                until(lambda: any(row["bctx_status"] == 1 and row["bctx_available"] & 32 for row in ally_builds()),
+                    "ordinary equipment baseline absent")
+                gear_before = next(row for row in reversed(ally_builds()) if row["bctx_status"] == 1 and row["bctx_available"] & 32)
+                # The ordinary wear command is forbidden during combat. Keep
+                # the prior observed point, change equipment while peaceful,
+                # then observe a fresh admitted combat point.
+                issue(staff, "tranquilize", "entire room nods off")
+                for client in (caster, healer, ally, mate):
+                    wake_stand(client)
+                issue(ally, "wear cap", "You don")
+                issue(ally, "kill Pvpmate")
+                until(lambda: any(row["record_seq"] > gear_before["record_seq"] and row["bctx_status"] == 1 and
+                    row["bctx_available"] & 32 and row["bctx_equipment_digest"] != gear_before["bctx_equipment_digest"] for row in ally_builds()),
+                    "ordinary equipment-change point absent")
+                gear_after = next(row for row in ally_builds() if row["record_seq"] > gear_before["record_seq"] and
+                    row["bctx_status"] == 1 and row["bctx_available"] & 32 and row["bctx_equipment_digest"] != gear_before["bctx_equipment_digest"])
+                issue(staff, "setbit char Pvpally hit 40000")
+                issue(healer, "cast 'cure light' Pvpally")
+                until(lambda: count("record_kind=10 AND " + outcome_where + " AND battle_relation=2 AND "
+                    f"battle_actor_pid={pids['Pvpheal']} AND battle_related_actor_id={pids['Pvpally']}") > 0,
+                    "effective ordinary support relation absent")
+                support = query("SELECT * FROM telemetry_interval WHERE record_kind=10 AND " + outcome_where +
+                    " AND battle_relation=2 AND battle_actor_pid=%s AND battle_related_actor_id=%s ORDER BY record_seq DESC LIMIT 1",
+                    (pids["Pvpheal"], pids["Pvpally"]))[0]
+                assert support["battle_actor_group_size"] == 2
+                issue(healer, "group Pvpheal", "You leave the group.")
+                until(lambda: count("record_kind=10 AND " + outcome_where + f" AND battle_actor_pid={pids['Pvpheal']} "
+                    f"AND battle_actor_group_size=1 AND record_seq>{support['record_seq']}") > 0,
+                    "support participant group departure absent")
+                support_departure = query("SELECT * FROM telemetry_interval WHERE record_kind=10 AND " + outcome_where +
+                    " AND battle_actor_pid=%s AND battle_actor_group_size=1 AND record_seq>%s ORDER BY record_seq LIMIT 1",
+                    (pids["Pvpheal"], support["record_seq"]))[0]
+                for _ in range(16):
+                    while ally._receive():
+                        pass
+                    ally.pending.clear()
+                    ally.send("flee")
+                    accepted, _ = ally.expect_any(("You flee northward!", "You couldn't escape!"), timeout=30)
+                    ally.expect(" >", timeout=30)
+                    if accepted == "You flee northward!":
+                        # SQL detail is asynchronous. Do not send another flee
+                        # while waiting for its first accepted movement receipt.
+                        until(lambda: count(f"record_kind=14 AND bout_kind=2 AND bout_target_actor_pid={pids['Pvpally']} AND " + outcome_where) > 0,
+                            "accepted ordinary flee receipt absent")
+                        break
+                else:
+                    raise AssertionError("ordinary flee did not accept room movement")
+                until(lambda: count(f"record_kind=14 AND bout_kind=4 AND bout_target_actor_pid={pids['Pvpally']} AND " + outcome_where) > 0,
+                    "native scheduler did not confirm the ordinary escape watch", 50)
+                movement = query("SELECT * FROM telemetry_interval WHERE record_kind=14 AND bout_kind=2 AND " + outcome_where +
+                    " AND bout_target_actor_pid=%s ORDER BY record_seq DESC LIMIT 1", (pids["Pvpally"],))[0]
+                escape = query("SELECT * FROM telemetry_interval WHERE record_kind=14 AND bout_kind=4 AND " + outcome_where +
+                    " AND bout_target_actor_pid=%s ORDER BY record_seq DESC LIMIT 1", (pids["Pvpally"],))[0]
+                assert escape["bout_parent_sequence"] == movement["bout_sequence"] and movement["bout_from_room_vnum"] == 22800
+                assert movement["bout_to_room_vnum"] == 22801 and escape["bout_at_usec"]-escape["bout_start_usec"] >= 30_000_000
+                issue(ally, "south")
+                issue(staff, "tranquilize", "entire room nods off")
+                for client in (caster, healer, ally, mate):
+                    wake_stand(client)
+                print("Ordinary fatal PvP and supported committed stone objective", flush=True)
+                victim = reconnect("Pvpvictacct", "Pvpvictim")
+                wake_stand(victim)
+                issue(staff, "setbit char Pvpvictim hit 1")
+                issue(caster, "toggle vicious on", "and will kill mortally wounded victims")
+                issue(caster, "kill Pvpvictim")
+                # The sorcerer's untrained melee can miss every swing. Its
+                # ordinary memorized missile still runs native cast/damage/die.
+                issue(caster, "cast 'magic missile' Pvpvictim")
+                until(lambda: count(f"record_kind=14 AND bout_kind=1 AND bout_target_actor_pid={pids['Pvpvictim']} AND " + outcome_where) > 0,
+                    "ordinary native death evidence absent", 60)
+                death = query("SELECT * FROM telemetry_interval WHERE record_kind=14 AND bout_kind=1 AND " + outcome_where +
+                    " AND bout_target_actor_pid=%s ORDER BY record_seq DESC LIMIT 1", (pids["Pvpvictim"],))[0]
+                assert death["bout_source_actor_pid"] == pids["Pvpcast"] and death["bout_target_battle_seq"] > 0
+                issue(staff, "tranquilize", "entire room nods off")
+                for client in (caster, healer, ally, mate):
+                    wake_stand(client)
+                issue(staff, "load obj 358", "You have created")
+                issue(staff, "give stone Pvpmate")
+                issue(mate, "touch stone", "You touch")
+                until(lambda: count(f"record_kind=14 AND bout_kind=6 AND bout_target_actor_pid={pids['Pvpmate']} AND " + outcome_where) > 0,
+                    "native committed objective receipt absent", 45)
+                objective = query("SELECT * FROM telemetry_interval WHERE record_kind=14 AND bout_kind=6 AND " + outcome_where +
+                    " AND bout_target_actor_pid=%s ORDER BY record_seq DESC LIMIT 1", (pids["Pvpmate"],))[0]
+                operation = objective["bout_operation_id"]
+                committed = query("SELECT operation_id,committed_at FROM critical_operation_inbox WHERE operation_id=%s", (operation,))
+                claim = query("SELECT stone_uid,operation_id FROM epic_stone_claim WHERE stone_uid=%s", (objective["bout_source_object_uid"],))
+                credit = query("SELECT * FROM zone_touch_outcome WHERE operation_id=%s", (operation,))
+                assert len(committed) == len(claim) == len(credit) == 1 and committed[0]["committed_at"] is not None
+                assert claim[0]["operation_id"] == operation and credit[0]["toucher_pid"] == pids["Pvpmate"]
+                assert credit[0]["group_size"] == objective["bout_participant_count"] and credit[0]["zone_number"] == objective["bout_credited_zone_vnum"]
+                receipt["ordinary_outcomes"] = dict(producer=outcome_producer, ingest_range=[outcome_start+1,
+                    int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])],
+                    equipment_actor_pid=pids["Pvpally"], equipment_point_sequences=[gear_before["bctx_sequence"], gear_after["bctx_sequence"]],
+                    support_ingest_id=support["ingest_id"], support_record_seq=support["record_seq"],
+                    support_departure_ingest_id=support_departure["ingest_id"], changing_support_group_participation=True,
+                    movement_sequence=movement["bout_sequence"], escape_sequence=escape["bout_sequence"],
+                    escape_observed_usec=escape["bout_at_usec"]-escape["bout_start_usec"], death_sequence=death["bout_sequence"],
+                    objective_sequence=objective["bout_sequence"], objective_operation_id=operation.hex(),
+                    objective_source_uid=objective["bout_source_object_uid"], objective_receipt_matches_authoritative_claim=True,
+                    ordinary_equipment=True, ordinary_effective_support=True, ordinary_flee=True, real_scheduler_escape=True,
+                    ordinary_fatal_pvp=True, ordinary_supported_objective=True,
+                    native_special_procedures_enabled=True,
+                    seeded_prerequisites="native mini-zone SQL authority, memorized cure light and fatal magic missile, objective recipient level 50; staff sets current HP before support and fatal combat",
+                    supervised_combat_reset="native tranquilize between outcome cases")
                 receipt.update(binary_sha256=binary_hash, disabled_capture_zero=True, accepted_major_paralysis=True,
                     native_overlap=True, native_cure=True, native_expiry=True, equipment_apply_remove=True,
                     save_no_false_transition=True, copyover_failure_and_exec=True, logical_sessions_preserved=True,
@@ -393,17 +560,31 @@ def run():
                     save_latency_ns={"telemetry_off": off_save, "telemetry_on_status_present": on_save})
                 stop()
                 receipt["worker_outage_evidence"] = outage.read_evidence(runtime / "telemetry-ledger")
-                assert receipt["worker_outage_evidence"]["ledger_version"] == 5
+                assert receipt["worker_outage_evidence"]["ledger_version"] == 6
                 witness = next(row for row in receipt["worker_outage_evidence"]["observations"] if
                     (row["boot_id"], row["process_id"]) == (pvp_producer["boot_id"], pvp_producer["process_id"]))
                 assert witness["phase"] == "clean_drained" and not witness["unknown_after_last_sample"]
                 assert all(witness[name] == 0 for name in ("rejected_detail_admissions", "rejected_control_admissions",
                     "quarantined_records", "invalid_records", "conflict_records", "sequence_gap_count", "unclosed_tail_count"))
                 receipt["ordinary_pvp"]["independent_delivery_witness"] = witness
+                outcome_witness = next(row for row in receipt["worker_outage_evidence"]["observations"] if
+                    (row["boot_id"], row["process_id"]) == (outcome_producer["boot_id"], outcome_producer["process_id"]))
+                assert outcome_witness["phase"] == "clean_drained" and not outcome_witness["unknown_after_last_sample"]
+                assert all(outcome_witness[name] == 0 for name in ("rejected_detail_admissions", "rejected_control_admissions",
+                    "quarantined_records", "invalid_records", "conflict_records", "sequence_gap_count", "unclosed_tail_count"))
+                receipt["ordinary_outcomes"]["independent_delivery_witness"] = outcome_witness
             except Exception:
                 result.parent.mkdir(parents=True, exist_ok=True)
                 (result.parent / (result.stem + "-failure-controls.json")).write_text(
-                    json.dumps(query("SELECT * FROM telemetry_interval WHERE record_kind IN (10,13) ORDER BY ingest_id"), default=str, indent=2) + "\n")
+                    json.dumps(query("SELECT * FROM telemetry_interval WHERE record_kind IN (10,12,13,14) ORDER BY ingest_id"), default=str, indent=2) + "\n")
+                for client in clients:
+                    try:
+                        while client._receive():
+                            pass
+                    except (AssertionError, OSError):
+                        # Earlier quit/restart cases retain closed clients in
+                        # the transcript list. They must not hide the failure.
+                        pass
                 (result.parent / (result.stem + "-server-failure.log")).write_text(
                     (runtime / "server.out").read_text(errors="replace") + "\n" + journey.runtime_logs(runtime) +
                     "\n" + "\n".join(bytes(client.transcript[-6000:]).decode(errors="replace").replace(journey.PASSWORD, "[redacted]")
@@ -411,7 +592,7 @@ def run():
                 raise
             finally:
                 stop()
-        controls = query("SELECT * FROM telemetry_interval WHERE record_kind=13 ORDER BY ingest_id")
+        controls = query("SELECT * FROM telemetry_interval WHERE record_kind=13 AND ingest_id<=%s ORDER BY ingest_id", (control_through,))
         assert controls and any(row["ctl_kind"] == 3 for row in controls)
         target_scope = RollupTarget(7, 1, controls[0]["ctl_environment_id"], controls[0]["ctl_season_id"])
         tables = tuple(battle_source.table(table, target_scope.scope_tuple) for table in (
@@ -435,25 +616,34 @@ def run():
             adapters.append(PyMySQLRollupDatabase(PyMySQLConnectionFactory(ConnectionSettings(host="127.0.0.1",
                 port=int(environment["DB_PORT"]), database=database, user=users[index], password=password))))
         rollup, reporter, reviewer = adapters
-        through = query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"]
-        def prepare(scope):
+        result_through = int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])
+        recovery_rows = query("SELECT boot_id,process_id,MIN(record_seq) AS first_seq FROM telemetry_interval WHERE ingest_id>%s "
+            "AND ingest_id<=%s GROUP BY boot_id,process_id", (outcome_origin, result_through))
+        assert len(recovery_rows) == 1 and recovery_rows[0]["first_seq"] == 1
+        assert all(recovery_rows[0][name] == outcome_producer[name] for name in ("boot_id", "process_id"))
+        through = control_through
+        def prepare(scope, *, origin=0, watermark=through):
             # Resume the maintained committed cursor in bounded invocations.
             # Keep default byte/page limits as this longer journey adds rows.
-            previous = 0
+            previous = origin
             for invocation in range(1, 65):
                 try:
-                    completed = RollupEngine(rollup).run(scope, through_ingest_id=through,
+                    completed = RollupEngine(rollup).run(scope, through_ingest_id=watermark, origin_ingest_id=origin,
                         bounds=RollupBounds(page_size=64, max_rows=128, max_runtime_s=60))
                 except BoundsExceeded as error:
                     assert str(error) == "rollup invocation exceeded max_rows before reaching snapshot", str(error)
                     cursor = rollup.read_state(scope)["input_watermark"]
-                    assert previous < cursor <= through
+                    assert previous < cursor <= watermark
                     previous = cursor
                 else:
-                    assert completed.complete and completed.final_cursor == through
+                    assert completed.complete and completed.final_cursor == watermark
                     receipt.setdefault("bounded_preparation", []).append(dict(generation=scope.generation,
-                        invocations=invocation, max_rows_per_invocation=128,
-                        max_bytes_per_invocation=RollupBounds().max_total_bytes, input_watermark=through))
+                        definition=scope.definition_version, invocations=invocation, max_rows_per_invocation=128,
+                        max_bytes_per_invocation=RollupBounds().max_total_bytes, input_origin=origin, input_watermark=watermark))
+                    prepared = rollup.read_battle_source(scope)
+                    print(json.dumps(dict(phase="source_prepared", definition=scope.definition_version,
+                        generation=scope.generation, input_origin=origin, input_watermark=watermark,
+                        retained_inputs=len(prepared.facts), reserved_bytes=prepared.reserved_bytes)), flush=True)
                     return
             raise AssertionError("bounded source preparation did not complete")
 
@@ -543,6 +733,9 @@ def run():
         live_states = [row for row in states.rows if row["ctl_target_actor_pid"] == live["target_pid"] and
             (row["boot_id"], row["process_id"]) == (live["producer"]["boot_id"], live["producer"]["process_id"])]
         prefixes = [row for row in live_states if row["ctl_kind"] == 3 and row["observed_prefix_usec"] > 0]
+        diagnostic_fields = ("record_seq", "ctl_boundary", "ctl_before_mask", "ctl_after_mask", "qualified_duration_mask",
+            "clock_status", "target_link_status", "chain_status", "configuration_status", "publication_quality_flags")
+        live["control_prefix_diagnostics"] = [{name: row[name] for name in diagnostic_fields} for row in prefixes]
         for phase in ("solo", "group"):
             first, last = live[phase+"_ingest_range"]
             phase_rows = [row for row in prefixes if first <= row["ingest_id"] <= last]
@@ -565,8 +758,13 @@ def run():
             for name in ("expiry", "cure"))
         assert any(row["ctl_boundary"] == 5 and row["ctl_before_mask"] and
             row["qualified_duration_mask"] == 255 for row in qualified)
-        live_operations = [row for row in operations.rows if row["ctl_target_actor_pid"] == live["target_pid"]]
-        assert live_operations and all(row["ctl_flags"] & 7 == 0 for row in live_operations)
+        target_operations = [row for row in operations.rows if row["ctl_target_actor_pid"] == live["target_pid"] and
+            (row["boot_id"], row["process_id"]) == (live["producer"]["boot_id"], live["producer"]["process_id"])]
+        live_operations = [row for row in target_operations if row["ctl_source_actor_pid"] in (live["caster_pid"], live["healer_pid"])]
+        live["other_source_operation_count"] = len(target_operations)-len(live_operations)
+        assert live_operations and all(row["ctl_source_actor_kind"] == 1 and row["ctl_flags"] & 7 == 0 for row in live_operations), [
+            {name: row[name] for name in ("record_seq", "ctl_source_actor_pid", "ctl_source_actor_kind", "ctl_family", "ctl_flags")}
+            for row in live_operations]
         assert any(row["ctl_source_group_size"] == 1 and row["ctl_target_group_size"] == 1 for row in live_operations)
         assert any(row["ctl_source_group_size"] == 3 and row["ctl_target_group_size"] == 2 for row in live_operations)
         group_contexts = [row for row in retained.facts if row["record_kind"] == 10 and
@@ -585,6 +783,117 @@ def run():
             selected_status_union_usec=union, disjoint_prefix_union_matches=True,
             ordinary_operation_count=len(live_operations), unknown_prefixes=len(prefixes)-len(qualified),
             independent_review_range=[packet["reviewed_from_utc_usec"], packet["reviewed_through_utc_usec"]])
+        # The complete recovery producer publishes reviewed dimensions, typed
+        # evidence and denominators atomically under independent version 8.
+        # Keep the preceding control window and its default budgets unchanged.
+        result_scope = RollupTarget(8, 1, target_scope.environment_id, target_scope.season_id)
+        result_tables = tuple(battle_source.table(table, result_scope.scope_tuple) for table in (
+            "telemetry_battle_source", "telemetry_battle_input", "telemetry_rollup_battle_coverage", "telemetry_rollup_battle_row"))
+        result_review = incident.schema_contract(7)[2:]
+        extra_grants = {
+            2: {result_tables[0]: "SELECT,INSERT,UPDATE", result_tables[1]: "SELECT,INSERT",
+                result_tables[2]: "SELECT,INSERT", result_tables[3]: "SELECT,INSERT", result_review[0]: "SELECT", result_review[1]: "SELECT"},
+            3: {result_tables[2]: "SELECT", result_tables[3]: "SELECT"},
+            4: {result_review[0]: "SELECT,INSERT", result_review[1]: "SELECT,INSERT"},
+        }
+        for index, permissions in extra_grants.items():
+            for table, permission in permissions.items():
+                query(f"GRANT {permission} ON `{database}`.`{table}` TO %s@'%%'", (users[index],))
+        frozen_control = reporter.read_report(target_scope, "battle_control_states", max_rows=1024)
+        rollup.reserve_identity_generation(result_scope.scope_tuple, None)
+        prepare(result_scope, origin=outcome_origin, watermark=result_through)
+        assert rollup.publish_generation(result_scope, bounds=RollupBounds(max_runtime_s=60))["status"] == "published"
+        unreviewed_results = reporter.read_report(result_scope, "battle_outcomes", max_rows=1024)
+        assert unreviewed_results.rows and not unreviewed_results.truncated
+        assert all(not row["event_evidence_qualified"] for row in unreviewed_results.rows)
+        result_scope = replace(result_scope, generation=2)
+        rollup.reserve_identity_generation(result_scope.scope_tuple, None)
+        prepare(result_scope, origin=outcome_origin, watermark=result_through)
+        result_source = rollup.read_battle_source(result_scope)
+        result_times = [row[name] for row in result_source.facts for name in row if
+            name.endswith("utc_usec") and row[name] is not None and row[name] != control_contract.UTC_UNKNOWN]
+        result_packet = dict(packet, registry_schema_version=7,
+            reviewed_from_utc_usec=min(packet["reviewed_from_utc_usec"], min(result_times)-1),
+            reviewed_through_utc_usec=max(packet["reviewed_through_utc_usec"], max(result_times)+1),
+            incidents=[dict(loss, record_kind_mask=incident.schema_contract(7)[0]) for loss in packet["incidents"]])
+        reviewer.register_incident_packet(result_packet)
+        assert rollup.publish_generation(result_scope, bounds=RollupBounds(max_runtime_s=60))["status"] == "published"
+        outcomes = reporter.read_report(result_scope, "battle_outcomes", max_rows=1024)
+        comparisons = reporter.read_report(result_scope, "battle_build_comparisons", max_rows=1024)
+        assert not outcomes.truncated and not comparisons.truncated
+        assert outcomes.coverage.battle_coverage == comparisons.coverage.battle_coverage
+        assert comparisons.rows == reporter.read_report(result_scope, "battle_build_points", max_rows=1024).rows
+        assert comparisons.rows and all(row["comparison"] == battle_publication._comparison_value(row) for row in comparisons.rows)
+        native = receipt["ordinary_outcomes"]
+        producer = (native["producer"]["boot_id"], native["producer"]["process_id"])
+        associations = reporter.read_report(result_scope, "battle_associations", max_rows=1024)
+        assert not associations.truncated and associations.coverage.battle_coverage == outcomes.coverage.battle_coverage
+        support = next(row for row in associations.rows if row["ingest_id"] == native["support_ingest_id"])
+        raw_support = query("SELECT * FROM telemetry_interval WHERE ingest_id=%s", (native["support_ingest_id"],))[0]
+        assert all(support[name] == raw_support[name] for name in battle_source.SOURCE_COLUMNS[10])
+        assert (support["boot_id"], support["process_id"]) == producer and support["record_seq"] == native["support_record_seq"]
+        assert support["battle_relation"] == 2 and support["battle_actor_pid"] == receipt["ordinary_pvp"]["healer_pid"]
+        assert support["battle_related_actor_id"] == native["equipment_actor_pid"]
+        departure = next(row for row in associations.rows if row["ingest_id"] == native["support_departure_ingest_id"])
+        assert (departure["boot_id"], departure["process_id"]) == producer
+        assert departure["battle_actor_pid"] == support["battle_actor_pid"] and (
+            support["battle_actor_group_size"], departure["battle_actor_group_size"]) == (2, 1)
+        observed = [row for row in outcomes.rows if (row["boot_id"], row["process_id"]) == producer]
+        for field, kind in (("movement_sequence", 2), ("escape_sequence", 4), ("death_sequence", 1), ("objective_sequence", 6)):
+            point = next(row for row in observed if row["bout_sequence"] == native[field])
+            assert point["bout_kind"] == kind and point["event_evidence_qualified"], (
+                field, point["target_link_status"], point["clock_status"], point["chain_status"], point["objective_status"],
+                point["configuration_status"], point["publication_quality_flags"], point["event_quality_flags"])
+            assert not point["whole_battle_victory_implied"] and not point["full_zone_clear_implied"]
+            if kind in (1, 2, 4):
+                assert point["battle_context_qualified"] and point["observed_pre_roster"]["observed_pre_owner_count"] >= 2
+            else:
+                assert point["bout_operation_id"] == native["objective_operation_id"] and point["bout_source_object_uid"] == native["objective_source_uid"]
+        gear = [row for row in comparisons.rows if (row["boot_id"], row["process_id"]) == producer and
+            row["bctx_actor_kind"] == 1 and row["bctx_actor_id"] == native["equipment_actor_pid"] and
+            row["bctx_sequence"] in native["equipment_point_sequences"]]
+        assert len(gear) == 2 and all(row["point_context_verified"] and row["comparison"]["dimensions"]["equipment"]["usable_for_matching"] for row in gear), (
+            [(row["link_status"], row["point_clock_status"], row["configuration_status"], row["publication_quality_flags"]) for row in gear])
+        assert gear[0]["bctx_equipment_digest"] != gear[1]["bctx_equipment_digest"]
+        match = battle_comparison.compare_points(*sorted(gear, key=lambda row: row["bctx_sequence"]), ("level", "classes", "equipment"))
+        assert match["matched_dimensions"] == ["level", "classes"] and match["different_dimensions"] == ["equipment"]
+        assert not match["unknown_dimensions"] and not match["combat_strength_equivalence_implied"]
+        for table in (*result_tables[:2], "telemetry_interval", "telemetry_config", *result_review):
+            try:
+                reporter._execute("SELECT COUNT(*) AS n FROM " + table)
+            except Exception as error:
+                assert getattr(error.__cause__, "args", (None,))[0] == 1142 or getattr(error, "args", (None,))[0] == 1142
+            else:
+                raise AssertionError("result report role can read private input")
+        assert reporter.read_report(target_scope, "battle_control_states", max_rows=1024) == frozen_control
+        frozen_results = reporter.read_report(replace(result_scope, generation=1), "battle_outcomes", max_rows=1024)
+        assert frozen_results.rows == unreviewed_results.rows and all(not row["event_evidence_qualified"] for row in frozen_results.rows)
+        raw_results = query("SELECT * FROM telemetry_interval WHERE record_kind=14 AND ingest_id>%s AND ingest_id<=%s ORDER BY ingest_id",
+            (outcome_origin, result_through))
+        assert {row["ingest_id"]: {name: row[name] for name in battle_source.SOURCE_COLUMNS[14]} for row in raw_results} == {
+            row["ingest_id"]: row for row in result_source.facts if row["record_kind"] == 14}
+        # A separately verified missing-binding value fixture cannot qualify
+        # the actual gameplay. It never alters captured or retained SQL rows.
+        unknown_inputs = [battle_source.retain_input(row, result_scope.scope_tuple, quality) for row, quality in
+            zip(result_source.facts, result_source.projection_qualities, strict=True)]
+        unknown_header = battle_source.advance_header(battle_source.initial_header(result_scope.scope_tuple,
+            result_source.header["input_origin"]), unknown_inputs, result_source.header["input_watermark"])
+        unknown_source = battle_source.verify_source(unknown_header, unknown_inputs, expected_scope=result_scope.scope_tuple,
+            expected_watermark=result_source.header["input_watermark"], expected_origin=result_source.header["input_origin"])
+        unknown_output = battle_publication.build_publication(unknown_source, None, outcomes.coverage.incident_coverage)
+        assert unknown_output.header["qualified_result_evidence_count"] == unknown_output.header["qualified_build_points"] == 0
+        receipt["comparability_outcome_publication"] = dict(definition=8, incident_schema=7,
+            source_origin=result_source.header["input_origin"], source_watermark=result_source.header["input_watermark"],
+            source_digest=result_source.header["source_digest"].hex(),
+            snapshot_digest=outcomes.coverage.battle_coverage["snapshot_digest"], exact_retained_results=len(raw_results),
+            published_result_rows=len(outcomes.rows), published_comparison_points=len(comparisons.rows),
+            qualified_result_evidence=outcomes.coverage.battle_coverage["qualified_result_evidence_count"],
+            qualified_battle_context=outcomes.coverage.battle_coverage["qualified_result_context_count"],
+            qualified_build_points=outcomes.coverage.battle_coverage["qualified_build_points"],
+            qualified_gear_change_comparison=match, unreviewed_generation_immutable=True, definition_seven_unchanged=True,
+            exact_effective_support_relation=True, changing_support_group_participation=True, generic_buff_origin_unknown=True,
+            restricted_role=True, missing_configuration_fixture=True, missing_configuration_fixture_mutates_sql=False,
+            same_atomic_coverage=True, complete_win_or_zone_clear_claimed=False, controller_identity_unknown=True)
         receipt.update(status="passed", raw_controls=len(controls), published_states=len(states.rows),
             published_operations=len(operations.rows), qualified_prefixes=states.coverage.battle_coverage["qualified_control_prefixes"],
             exact_retained_inputs=True, report_definition=7, private_incident_schema=6,
@@ -593,6 +902,18 @@ def run():
         result.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
         print(json.dumps({key: receipt[key] for key in ("status", "actual_running_server", "raw_controls", "published_states", "published_operations", "qualified_prefixes")}))
     finally:
+        if receipt["status"] != "passed":
+            failure = sys.exc_info()[1]
+            receipt.update(status="failed", failure=str(failure))
+            result.parent.mkdir(parents=True, exist_ok=True)
+            result.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+            def diagnostic_value(value):
+                if isinstance(value, bytes):
+                    return {"bytes_hex": value.hex()}
+                raise TypeError(type(value).__name__)
+            (result.parent / (result.stem + "-failure-source.json")).write_text(json.dumps(dict(
+                raw=query("SELECT * FROM telemetry_interval ORDER BY ingest_id"),
+                configuration=query("SELECT * FROM telemetry_config")), default=diagnostic_value) + "\n", encoding="utf-8")
         for adapter in adapters:
             adapter.close()
         for user in users:

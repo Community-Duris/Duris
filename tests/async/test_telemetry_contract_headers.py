@@ -19,6 +19,7 @@ PUBLIC_HEADERS = (
     "telemetry/telemetry_battle.h",
     "telemetry/telemetry_battle_contract.h",
     "telemetry/telemetry_battle_contribution.h",
+    "telemetry/telemetry_battle_result.h",
     "telemetry/telemetry_combat_summary.h",
     "telemetry/telemetry_runtime.h",
     "telemetry/telemetry_transport.h",
@@ -76,6 +77,8 @@ static_assert(telemetry_cumulative_counters_are_valid(totals));
 static_assert(telemetry_record_kind_is_control(telemetry_record_kind::session_checkpoint));
 static_assert(telemetry_record_kind_is_control(telemetry_record_kind::configuration));
 static_assert(!telemetry_record_kind_is_control(telemetry_record_kind::interval));
+static_assert(!telemetry_record_kind_is_control(telemetry_record_kind::battle_result));
+static_assert(static_cast<std::uint8_t>(telemetry_record_kind::battle_result) == 14U);
 static_assert(static_cast<std::uint8_t>(telemetry_record_kind::configuration) == 5U);
 static_assert(static_cast<std::uint8_t>(telemetry_record_kind::progression) == 6U);
 static_assert(static_cast<std::uint8_t>(telemetry_lifecycle_kind::session_entered) == 1U);

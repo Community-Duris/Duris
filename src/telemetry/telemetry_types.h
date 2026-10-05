@@ -75,6 +75,7 @@ enum class telemetry_record_kind : std::uint8_t
 	battle_contribution = 11,
 	battle_build = 12,
 	control = 13,
+	battle_result = 14,
 };
 
 /* Observed authenticated descriptor ownership; preparation alone emits no fact. */
@@ -1296,6 +1297,103 @@ static_assert(std::is_standard_layout_v<telemetry_control_observation>);
 static_assert(sizeof(telemetry_control_observation) + sizeof(telemetry_record_header) <=
 	      TELEMETRY_RECORD_MAX_BYTES);
 
+/* Independently versioned evidence about a participant or an exact committed
+ * objective. Neither a death nor a room departure declares a battle winner. */
+inline constexpr std::uint16_t TELEMETRY_BATTLE_RESULT_DEFINITION_VERSION = 1U;
+inline constexpr std::uint16_t TELEMETRY_BATTLE_RESULT_PRODUCER_VERSION = 1U;
+inline constexpr telemetry_duration_usec TELEMETRY_BATTLE_ESCAPE_MIN_USEC = 30'000'000ULL;
+
+enum class telemetry_battle_result_kind : std::uint8_t
+{
+	death_observed = 1,
+	flee_movement = 2,
+	withdrawal = 3,
+	escape_observed = 4,
+	objective_requested = 5,
+	objective_committed = 6,
+	unresolved = 7,
+	censored = 8,
+};
+
+enum class telemetry_battle_result_authority : std::uint8_t
+{
+	native_death = 1,
+	accepted_flee = 2,
+	accepted_retreat = 3,
+	accepted_disengage = 4,
+	bounded_escape_watch = 5,
+	zone_touch_submit = 6,
+	zone_touch_receipt = 7,
+	zone_touch_outbox = 8,
+	lifecycle = 9,
+};
+
+enum class telemetry_battle_result_reason : std::uint8_t
+{
+	none = 0,
+	reengaged = 1,
+	not_alive = 2,
+	session_lost = 3,
+	copyover = 4,
+	shutdown = 5,
+	clock_unknown = 6,
+	source_unknown = 7,
+	capacity_refused = 8,
+	configuration_unknown = 9,
+	actor_unknown = 10,
+	operation_pending = 11,
+	movement_refused = 12,
+	reincarnated = 13,
+	receipt_unknown = 14,
+};
+
+inline constexpr std::uint16_t TELEMETRY_BATTLE_RESULT_TRUSTED = 1U;
+inline constexpr std::uint16_t TELEMETRY_BATTLE_RESULT_ARENA = 2U;
+inline constexpr std::uint16_t TELEMETRY_BATTLE_RESULT_MOVED = 4U;
+inline constexpr std::uint16_t TELEMETRY_BATTLE_RESULT_NO_OPPONENT = 8U;
+inline constexpr std::uint16_t TELEMETRY_BATTLE_RESULT_SAME_SESSION = 16U;
+inline constexpr std::uint16_t TELEMETRY_BATTLE_RESULT_WATCH_COMPLETE = 32U;
+inline constexpr std::uint16_t TELEMETRY_BATTLE_RESULT_RESET_REQUESTED = 64U;
+inline constexpr std::uint16_t TELEMETRY_BATTLE_RESULT_RECORD_ZONE = 128U;
+inline constexpr std::uint16_t TELEMETRY_BATTLE_RESULT_RECOVERED = 256U;
+inline constexpr std::uint16_t TELEMETRY_BATTLE_RESULT_FLAGS = 511U;
+
+struct telemetry_battle_result_observation
+{
+	telemetry_producer_id producer;
+	telemetry_encounter_source scope;
+	telemetry_sequence sequence;
+	telemetry_sequence parent_sequence;
+	telemetry_control_actor_context source;
+	telemetry_control_actor_context target;
+	telemetry_control_association source_association;
+	telemetry_control_association target_association;
+	/* Context is retained before teardown; at is the accepted observation. An
+	 * escape confirmation starts at its exact preceding movement observation. */
+	telemetry_monotonic_usec start_usec;
+	telemetry_utc_usec start_utc_usec;
+	telemetry_monotonic_usec at_usec;
+	telemetry_utc_usec at_utc_usec;
+	std::uint8_t operation_id[16];
+	std::uint64_t source_object_uid;
+	telemetry_duration_usec proof_window_usec;
+	std::uint32_t build_version;
+	std::uint32_t content_version;
+	telemetry_quality_mask quality_flags;
+	std::int32_t credited_zone_vnum;
+	std::int32_t from_room_vnum;
+	std::int32_t to_room_vnum;
+	std::uint16_t participant_count;
+	std::uint16_t source_payload_version;
+	std::uint16_t definition_version;
+	std::uint16_t producer_version;
+	std::uint16_t flags;
+	telemetry_battle_result_kind kind;
+	telemetry_battle_result_authority authority;
+	telemetry_battle_result_reason reason;
+	std::uint8_t reserved[3];
+};
+
 union telemetry_record_payload
 {
 	telemetry_interval_payload interval;
@@ -1311,6 +1409,7 @@ union telemetry_record_payload
 	telemetry_battle_contribution_payload battle_contribution;
 	telemetry_battle_build_observation battle_build;
 	telemetry_control_observation control;
+	telemetry_battle_result_observation battle_result;
 };
 
 /* Fixed-size tagged value.  The active payload is selected by header.kind. */
@@ -1384,7 +1483,8 @@ constexpr bool telemetry_record_kind_is_valid(telemetry_record_kind kind) noexce
 	       kind == telemetry_record_kind::ownership || kind == telemetry_record_kind::battle ||
 	       kind == telemetry_record_kind::battle_contribution ||
 	       kind == telemetry_record_kind::battle_build ||
-	       kind == telemetry_record_kind::control;
+	       kind == telemetry_record_kind::control ||
+	       kind == telemetry_record_kind::battle_result;
 }
 
 /* Per-attempt/state control detail does not consume the lifecycle reserve. */
@@ -2706,6 +2806,126 @@ telemetry_control_observation_is_valid(const telemetry_control_observation &v) n
 }
 
 /* The switch reads only the union member selected by header.kind. */
+constexpr bool
+telemetry_battle_result_observation_is_valid(const telemetry_battle_result_observation &v) noexcept
+{
+	using kind = telemetry_battle_result_kind;
+	using authority = telemetry_battle_result_authority;
+	using reason = telemetry_battle_result_reason;
+	using telemetry_control_validation_detail::actor_valid;
+	using telemetry_control_validation_detail::actor_zero;
+	using telemetry_control_validation_detail::association_valid;
+	using telemetry_control_validation_detail::association_zero;
+	const bool uncertain = v.kind == kind::unresolved || v.kind == kind::censored;
+	const bool configuration_unknown = uncertain && v.reason == reason::configuration_unknown;
+	if (configuration_unknown ? v.scope.config_id != 0U || v.scope.classifier_version != 0U ||
+					    v.scope.policy_version != 0U || v.build_version != 0U ||
+					    v.content_version != 0U :
+				    !telemetry_encounter_source_is_valid(v.scope) ||
+					    !v.build_version || !v.content_version)
+		return false;
+	if (!telemetry_producer_id_is_valid(v.producer) || !v.sequence ||
+	    v.parent_sequence >= v.sequence || !v.scope.environment_id || !v.scope.season_id ||
+	    v.scope.zone_vnum != -1 || v.scope.group_key ||
+	    v.definition_version != TELEMETRY_BATTLE_RESULT_DEFINITION_VERSION ||
+	    v.producer_version != TELEMETRY_BATTLE_RESULT_PRODUCER_VERSION ||
+	    !actor_valid(v.target) || (!actor_zero(v.source) && !actor_valid(v.source)) ||
+	    !association_valid(v.source_association) || !association_valid(v.target_association) ||
+	    (actor_zero(v.source) && !association_zero(v.source_association)) ||
+	    !telemetry_quality_mask_is_valid(v.quality_flags) ||
+	    ((v.source.quality_flags | v.target.quality_flags) & ~v.quality_flags) ||
+	    (v.flags & ~TELEMETRY_BATTLE_RESULT_FLAGS) || v.start_usec > v.at_usec ||
+	    v.kind < kind::death_observed || v.kind > kind::censored ||
+	    v.authority < authority::native_death || v.authority > authority::lifecycle ||
+	    v.reason > reason::receipt_unknown || v.reserved[0] || v.reserved[1] || v.reserved[2] ||
+	    v.credited_zone_vnum < -1 || v.from_room_vnum < -1 || v.to_room_vnum < -1)
+		return false;
+	if (v.start_utc_usec != TELEMETRY_UTC_UNKNOWN && v.at_utc_usec != TELEMETRY_UTC_UNKNOWN &&
+	    v.at_utc_usec < v.start_utc_usec &&
+	    !(v.quality_flags & TELEMETRY_QUALITY_CLOCK_DISCONTINUITY))
+		return false;
+	bool operation = false;
+	for (auto byte : v.operation_id)
+		operation |= byte != 0U;
+	const bool objective =
+		v.kind == kind::objective_requested || v.kind == kind::objective_committed ||
+		(v.kind == kind::unresolved && v.authority >= authority::zone_touch_submit &&
+		 v.authority <= authority::zone_touch_outbox);
+	const auto objective_flags = TELEMETRY_BATTLE_RESULT_RESET_REQUESTED |
+				     TELEMETRY_BATTLE_RESULT_RECORD_ZONE |
+				     TELEMETRY_BATTLE_RESULT_RECOVERED;
+	if (objective)
+		return operation && v.credited_zone_vnum >= 0 && v.participant_count >= 1U &&
+		       v.participant_count <= 15U && actor_zero(v.source) &&
+		       v.parent_sequence == 0U &&
+		       v.target.actor.kind == telemetry_combat_actor_kind::player &&
+		       v.proof_window_usec == 0U &&
+		       (uncertain ? v.reason != reason::none &&
+					    (v.quality_flags & TELEMETRY_QUALITY_CONTEXT_UNKNOWN) :
+				    v.reason == reason::none) &&
+		       v.from_room_vnum == -1 && v.to_room_vnum == -1 &&
+		       (v.flags & ~(objective_flags | TELEMETRY_BATTLE_RESULT_TRUSTED)) == 0U &&
+		       ((v.source_payload_version == 1U && !v.source_object_uid &&
+			 (v.flags & TELEMETRY_BATTLE_RESULT_RECORD_ZONE)) ||
+			(v.source_payload_version == 2U && v.source_object_uid)) &&
+		       (v.kind == kind::unresolved ||
+			(v.kind == kind::objective_requested ?
+				 v.authority == authority::zone_touch_submit &&
+					 !(v.flags & TELEMETRY_BATTLE_RESULT_RECOVERED) :
+				 v.authority == authority::zone_touch_receipt ||
+					 v.authority == authority::zone_touch_outbox));
+	if (operation || v.source_object_uid || v.participant_count || v.source_payload_version ||
+	    v.credited_zone_vnum != -1 || (v.flags & objective_flags))
+		return false;
+	if (uncertain)
+		return v.reason != reason::none &&
+		       (v.quality_flags & TELEMETRY_QUALITY_CONTEXT_UNKNOWN) &&
+		       v.proof_window_usec == 0U &&
+		       !(v.flags & (TELEMETRY_BATTLE_RESULT_WATCH_COMPLETE |
+				    TELEMETRY_BATTLE_RESULT_SAME_SESSION |
+				    TELEMETRY_BATTLE_RESULT_NO_OPPONENT)) &&
+		       (v.kind != kind::censored || v.parent_sequence != 0U);
+	if (v.reason != reason::none)
+		return false;
+	if (v.kind == kind::death_observed)
+		return v.authority == authority::native_death && v.parent_sequence == 0U &&
+		       v.proof_window_usec == 0U &&
+		       (v.flags &
+			~(TELEMETRY_BATTLE_RESULT_TRUSTED | TELEMETRY_BATTLE_RESULT_ARENA)) == 0U &&
+		       v.from_room_vnum == -1 && v.to_room_vnum == -1;
+	if (!actor_zero(v.source) || !association_zero(v.source_association) ||
+	    (v.flags & TELEMETRY_BATTLE_RESULT_ARENA))
+		return false;
+	const bool moved = (v.flags & TELEMETRY_BATTLE_RESULT_MOVED) && v.from_room_vnum >= 0 &&
+			   v.to_room_vnum >= 0 && v.from_room_vnum != v.to_room_vnum;
+	if (v.kind == kind::escape_observed)
+	{
+		const auto proof = TELEMETRY_BATTLE_RESULT_MOVED |
+				   TELEMETRY_BATTLE_RESULT_NO_OPPONENT |
+				   TELEMETRY_BATTLE_RESULT_SAME_SESSION |
+				   TELEMETRY_BATTLE_RESULT_WATCH_COMPLETE;
+		return v.authority == authority::bounded_escape_watch && v.parent_sequence != 0U &&
+		       moved && v.proof_window_usec == TELEMETRY_BATTLE_ESCAPE_MIN_USEC &&
+		       v.at_usec - v.start_usec >= v.proof_window_usec &&
+		       (v.flags & proof) == proof &&
+		       v.target.actor.kind == telemetry_combat_actor_kind::player &&
+		       !association_zero(v.target_association) &&
+		       telemetry_session_id_is_valid(v.target.session) &&
+		       v.target.session.producer.boot_id == v.producer.boot_id &&
+		       v.target.session.producer.process_id == v.producer.process_id;
+	}
+	if (v.parent_sequence || v.proof_window_usec ||
+	    (v.flags & ~(TELEMETRY_BATTLE_RESULT_TRUSTED | TELEMETRY_BATTLE_RESULT_MOVED)))
+		return false;
+	return (v.kind == kind::flee_movement && v.authority == authority::accepted_flee &&
+		moved) ||
+	       (v.kind == kind::withdrawal &&
+		((v.authority == authority::accepted_retreat && moved) ||
+		 (v.authority == authority::accepted_disengage &&
+		  !(v.flags & TELEMETRY_BATTLE_RESULT_MOVED) && v.from_room_vnum >= 0 &&
+		  v.from_room_vnum == v.to_room_vnum)));
+}
+
 constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcept
 {
 	if (!telemetry_record_header_is_valid(record.header))
@@ -2767,6 +2987,14 @@ constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcep
 			       record.payload.control.producer.process_id &&
 		       record.header.occurrence_utc_usec ==
 			       record.payload.control.decision_utc_usec;
+	case telemetry_record_kind::battle_result:
+		return telemetry_battle_result_observation_is_valid(record.payload.battle_result) &&
+		       record.header.key.producer.boot_id ==
+			       record.payload.battle_result.producer.boot_id &&
+		       record.header.key.producer.process_id ==
+			       record.payload.battle_result.producer.process_id &&
+		       record.header.occurrence_utc_usec ==
+			       record.payload.battle_result.at_utc_usec;
 	case telemetry_record_kind::invalid:
 		break;
 	}

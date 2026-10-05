@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -21,7 +22,9 @@ from scripts.telemetry import battle_history as history
 from scripts.telemetry import battle_contract as battle
 from scripts.telemetry import battle_contribution_contract as contribution
 from scripts.telemetry import battle_build_contract as builds
+from scripts.telemetry import battle_comparison as comparison
 from scripts.telemetry import control_contract as controls
+from scripts.telemetry import battle_result_contract as results
 from scripts.telemetry import battle_source as source
 from scripts.telemetry import battle_publication as publication, identity_history as identity, incident
 from scripts.telemetry.rollup_engine import build_page_contributions, BoundsExceeded, SemanticError
@@ -165,6 +168,15 @@ class BattleHistoryTests(unittest.TestCase):
                 for name in builds.BYTE_FIELDS:
                     row[name] = bytes.fromhex(row[name])
                 builds.validate_raw_observation(row)
+        result_files = [cls.path / name for name in ("results.jsonl", "result-battles.jsonl", "result-builds.jsonl")]
+        subprocess.run([str(executable), "--native-result-capture"], cwd=ROOT,
+            env=dict(os.environ, TELEMETRY_RESULT_CAPTURE_EXPORT=str(result_files[0]),
+                TELEMETRY_BATTLE_CAPTURE_EXPORT=str(result_files[1]), TELEMETRY_BUILD_CAPTURE_EXPORT=str(result_files[2])),
+            capture_output=True, check=True, timeout=30)
+        cls.result_rows = [json.loads(line) for path in result_files for line in path.read_text().splitlines()]
+        for row in cls.result_rows:
+            for name in results.BYTE_FIELDS if row["record_kind"] == 14 else builds.BYTE_FIELDS if row["record_kind"] == 12 else ():
+                row[name] = bytes.fromhex(row[name])
         cls.scope = next((row["battle_environment_id"], row["battle_season_id"])
                          for row in cls.rows if row["record_kind"] == 10)
         cls.baseline = qualify_native_history(cls.rows)
@@ -230,6 +242,207 @@ class BattleHistoryTests(unittest.TestCase):
         inputs = [source.retain_input(row, target, 0) for row in facts]
         header = source.advance_header(source.initial_header(target), inputs, len(facts))
         return source.verify_source(header, inputs, expected_scope=target, expected_watermark=len(facts))
+
+    @staticmethod
+    def _result_window(rows, *, capture_config=True, projection_quality=0):
+        scope = next((row["bout_environment_id"], row["bout_season_id"]) for row in rows if row["record_kind"] == 14)
+        target = (source.RESULT_DEFINITION_VERSION, 1, *scope)
+        ordered = [dict(row, ingest_id=index) for index, row in enumerate(sorted(rows,
+            key=lambda row: (row["boot_id"], row["process_id"], row["record_seq"])), 1)]
+        inputs = []
+        for row in ordered:
+            kind = row["record_kind"]
+            prefix = {12: "bctx_", 13: "ctl_", 14: "bout_"}.get(kind)
+            config = {name: row[prefix + name] for name in source.configuration_columns(kind)} if (
+                capture_config and prefix and row[prefix + "config_id"]) else None
+            inputs.append(source.retain_input(row, target, projection_quality, configuration=config))
+        header = source.advance_header(source.initial_header(target), inputs, len(ordered))
+        return source.verify_source(header, inputs, expected_scope=target, expected_watermark=len(ordered)), inputs
+
+    @staticmethod
+    def _result_coverage(rows):
+        scope = next((row["bout_environment_id"], row["bout_season_id"]) for row in rows if row["record_kind"] == 14)
+        clocks = [row["occurrence_utc_usec"] for row in rows if row["occurrence_utc_usec"] != results.UTC_UNKNOWN]
+        packet = dict(incident.template(7), incidents=[], environment_id=scope[0], season_id=scope[1],
+            reviewer_token="a" * 64, review_evidence_digest="b" * 64,
+            reviewed_from_utc_usec=min(clocks) - 1, reviewed_through_utc_usec=max(clocks) + 1)
+        meta, details = incident.validate_packet(packet)
+        summary = incident.publication_summary((8, 1, *scope), meta, details)
+        return incident.public_coverage(summary, details, registry_schema_version=7)
+
+    def test_result_catalog_requires_current_review_without_rewriting_older_definitions(self):
+        catalogs = {version: {item["name"]: item for item in report_catalog(version)} for version in (6, 7, 8)}
+        self.assertIn("schema-5", catalogs[6]["battle_build_points"]["denominator"])
+        self.assertIn("schema-5", catalogs[7]["battle_build_points"]["denominator"])
+        self.assertIn("schema-6", catalogs[7]["battle_control_states"]["denominator"])
+        for name in ("battle_build_points", "battle_control_operations", "battle_control_states", "battle_build_comparisons"):
+            self.assertIn("schema-7", catalogs[8][name]["denominator"])
+            self.assertNotIn("schema-5", catalogs[8][name]["denominator"])
+            self.assertNotIn("schema-6", catalogs[8][name]["denominator"])
+
+    def test_native_results_retain_exact_pre_teardown_parent_and_objective_identities(self):
+        rows = self.result_rows
+        coverage = self._result_coverage(rows)
+        window, retained = self._result_window(rows)
+        output = publication.build_publication(window, None, coverage)
+        values = [publication.decode_row((8, 1, *self.scope), row) for row in output.rows if row["row_kind"] == 9]
+        self.assertEqual(output.header["result_count"], 18)
+        self.assertEqual(output.header["observed_death_count"], 1)
+        self.assertEqual(output.header["observed_escape_count"], 1)
+        self.assertEqual(output.header["observed_objective_commit_count"], 2)
+        self.assertEqual(output.header["recovered_objective_count"], 1)
+        self.assertEqual(output.header["observed_censored_count"], 4)
+        self.assertEqual(sum(value["event_evidence_qualified"] for value in values), output.header["qualified_result_evidence_count"])
+        death = next(value for value in values if value["bout_kind"] == 1)
+        self.assertEqual(death["target_link_status"], "verified")
+        self.assertTrue(death["battle_context_qualified"])
+        escape = next(value for value in values if value["bout_kind"] == 4)
+        self.assertEqual(escape["chain_status"], "verified")
+        self.assertEqual(escape["reference_origin"], "native_escape_parent")
+        self.assertEqual(escape["parent_event_key"][-1], escape["bout_parent_sequence"])
+        for value in values:
+            self.assertFalse(value["whole_battle_victory_implied"])
+            self.assertFalse(value["full_zone_clear_implied"])
+        commits = [value for value in values if value["bout_kind"] == 6]
+        self.assertEqual({value["bout_operation_id"] for value in commits}, {bytes(range(1, 17)).hex()})
+        self.assertTrue(all(value["target_account_token"] is None for value in commits))
+        self.assertEqual(sum(value["event_evidence_qualified"] for value in commits), 1)
+        self.assertTrue(all(source.decode_input(value, (8, 1, *self.scope)) for value in retained))
+        points = [publication.decode_row((8, 1, *self.scope), row) for row in output.rows if row["row_kind"] == 6]
+        self.assertTrue(points)
+        self.assertTrue(all(tuple(point["comparison"]["dimensions"]) == tuple(sorted(comparison.DIMENSIONS)) for point in points))
+        self.assertTrue(all(point["comparison"]["dimensions"]["support_origin"]["status"] in ("unclassified", "unavailable") for point in points))
+
+    def test_result_missing_parent_config_review_and_source_remain_unknown(self):
+        rows = self.result_rows
+        scope = (8, 1, *self.scope)
+        for capture_config, coverage in ((False, self._result_coverage(rows)), (True, incident.public_coverage(
+                None, (), registry_schema_version=7))):
+            window, _ = self._result_window(rows, capture_config=capture_config)
+            output = publication.build_publication(window, None, coverage)
+            self.assertEqual(output.header["qualified_result_evidence_count"], 0)
+        without = [row for row in rows if row["record_kind"] != 10]
+        window, _ = self._result_window(without)
+        output = publication.build_publication(window, None, self._result_coverage(rows))
+        self.assertEqual(output.header["qualified_result_context_count"], 0)
+        escape = next(row for row in rows if row.get("bout_kind") == 4)
+        missing = [row for row in rows if row.get("bout_sequence") != escape["bout_parent_sequence"]]
+        window, _ = self._result_window(missing)
+        output = publication.build_publication(window, None, self._result_coverage(rows))
+        item = next(publication.decode_row(scope, row) for row in output.rows if row["row_kind"] == 9 and
+            publication.decode_row(scope, row)["bout_kind"] == 4)
+        self.assertEqual(item["chain_status"], "missing_parent")
+        self.assertFalse(item["event_evidence_qualified"])
+
+    def test_result_escape_parent_conflict_refused_and_earlier_definitions_sealed(self):
+        rows = deepcopy(self.result_rows)
+        escape = next(row for row in rows if row.get("bout_kind") == 4)
+        escape["bout_target_level_band"] += 1
+        with self.assertRaisesRegex(history.HistoryError, "escape_parent_conflict"):
+            history.build_history(rows, self.scope, incident_schema_version=7)
+        native = next(row for row in self.result_rows if row["record_kind"] == 14)
+        for definition in (5, 6, 7):
+            with self.assertRaises(source.SourceError):
+                source.retain_input(dict(native, ingest_id=1), (definition, 1, *self.scope), 0)
+        for schema in (4, 5, 6):
+            with self.assertRaises(history.HistoryError):
+                history.build_history(self.result_rows, self.scope, incident_schema_version=schema)
+
+    def test_result_projection_quality_is_retained_and_cannot_be_erased(self):
+        rows = self.result_rows
+        window, _ = self._result_window(rows, projection_quality=ROLLUP_QUALITY_PROCESS_GAP)
+        output = publication.build_publication(window, None, self._result_coverage(rows))
+        self.assertEqual(output.header["qualified_result_evidence_count"], 0)
+        self.assertEqual(output.header["qualified_build_points"], 0)
+        scope = (8, 1, *self.scope)
+        values = [publication.decode_row(scope, row) for row in output.rows if row["row_kind"] == 9]
+        self.assertTrue(all(row["event_quality_flags"] & ROLLUP_QUALITY_PROCESS_GAP for row in values))
+        point = next(row for row in values if row["bout_quality_flags"])
+        with self.assertRaisesRegex(publication.PublicationError, "quality_erasure"):
+            publication.retain_row(scope, 9, dict(point, event_quality_flags=0))
+        with self.assertRaisesRegex(publication.PublicationError, "quality_erasure"):
+            publication.retain_row(scope, 9, dict(point, publication_quality_flags=0))
+
+    def test_result_clocks_loss_stale_reference_and_public_conclusions(self):
+        scope = (8, 1, *self.scope)
+        rows = deepcopy(self.result_rows)
+        death = next(row for row in rows if row.get("bout_kind") == 1)
+        death["bout_at_utc_usec"] += 1
+        death["occurrence_utc_usec"] = death["bout_at_utc_usec"]
+        window, _ = self._result_window(rows)
+        output = publication.build_publication(window, None, self._result_coverage(rows))
+        values = [publication.decode_row(scope, row) for row in output.rows if row["row_kind"] == 9]
+        point = next(row for row in values if row["bout_kind"] == 1)
+        self.assertEqual(point["clock_status"], "mismatch")
+        self.assertFalse(point["event_evidence_qualified"])
+        for change in ({"whole_battle_victory_implied": True}, {"full_zone_clear_implied": True},
+                {"event_evidence_qualified": True}):
+            with self.assertRaises(publication.PublicationError):
+                publication.retain_row(scope, 9, dict(point, **change))
+        with self.assertRaisesRegex(history.HistoryError, "history_output_capacity"):
+            publication.build_publication(window, None, self._result_coverage(rows), max_output_rows=1)
+        rows = deepcopy(self.result_rows)
+        death = next(row for row in rows if row.get("bout_target_association_revision", 0) > 1 and
+            any(basis["record_kind"] == 10 and basis["battle_fact_kind"] == 4 and
+                basis["battle_seq"] == row["bout_target_battle_seq"] and
+                basis["battle_revision"] < row["bout_target_association_revision"] for basis in rows))
+        older = [row for row in rows if row["record_kind"] == 10 and row["battle_fact_kind"] == 4 and
+            row["battle_seq"] == death["bout_target_battle_seq"] and row["battle_revision"] < death["bout_target_association_revision"]]
+        self.assertTrue(older)
+        death["bout_target_association_revision"] = older[-1]["battle_revision"]
+        death["bout_target_association_fact_sequence"] = older[-1]["battle_fact_sequence"]
+        reduced = history.build_history(rows, self.scope, incident_schema_version=7)
+        self.assertEqual(next(row for row in reduced.results if row["bout_sequence"] == death["bout_sequence"])["target_link_status"], "stale_association")
+        rows = self.result_rows
+        coverage = self._result_coverage(rows)
+        escape = next(row for row in rows if row.get("bout_kind") == 4)
+        loss = dict(incident.template(7)["incidents"][0], producer_boot_id=escape["boot_id"],
+            producer_process_id=escape["process_id"], record_kind_mask=1 << 14,
+            start_utc_usec=escape["bout_start_utc_usec"], end_utc_usec=escape["bout_at_utc_usec"],
+            first_record_seq=None, last_record_seq=None)
+        coverage = dict(coverage, incidents=[loss])
+        window, _ = self._result_window(rows)
+        output = publication.build_publication(window, None, coverage)
+        point = next(publication.decode_row(scope, row) for row in output.rows if row["row_kind"] == 9 and
+            publication.decode_row(scope, row)["bout_kind"] == 4)
+        self.assertFalse(point["event_evidence_qualified"])
+        self.assertTrue(point["event_quality_flags"] & ROLLUP_QUALITY_INCIDENT_GAP)
+
+    def test_result_objective_missing_duplicate_unsupported_and_conflicting_receipts(self):
+        scope = (8, 1, *self.scope)
+        original = deepcopy(self.result_rows)
+        commit = next(row for row in original if row.get("bout_kind") == 6 and not row["bout_flags"] & 256)
+        rows = [row for row in original if row.get("bout_kind") != 5]
+        window, _ = self._result_window(rows)
+        output = publication.build_publication(window, None, self._result_coverage(original))
+        item = next(publication.decode_row(scope, row) for row in output.rows if row["row_kind"] == 9 and
+            publication.decode_row(scope, row)["bout_sequence"] == commit["bout_sequence"])
+        self.assertEqual(item["objective_status"], "missing_request")
+        self.assertFalse(item["event_evidence_qualified"])
+        rows = deepcopy(original)
+        duplicate = dict(commit, record_seq=max(row["record_seq"] for row in rows)+1,
+            bout_sequence=max(row.get("bout_sequence", 0) for row in rows)+1)
+        rows.append(duplicate)
+        window, _ = self._result_window(rows)
+        output = publication.build_publication(window, None, self._result_coverage(rows))
+        self.assertEqual(output.header["duplicate_objective_count"], 1)
+        self.assertEqual(output.header["qualified_objective_commit_count"], 1)
+        for updates, expected in (({"bout_authority": 8}, "unsupported_authority"),
+                ({"bout_content_version": commit["bout_content_version"]+1}, "configuration_changed")):
+            rows = [dict(row, **updates) if row is commit else row for row in original]
+            window, _ = self._result_window(rows)
+            output = publication.build_publication(window, None, self._result_coverage(rows))
+            item = next(publication.decode_row(scope, row) for row in output.rows if row["row_kind"] == 9 and
+                publication.decode_row(scope, row)["bout_sequence"] == commit["bout_sequence"])
+            self.assertEqual(item["objective_status"], expected)
+            self.assertFalse(item["event_evidence_qualified"])
+        rows = [dict(row, bout_participant_count=row["bout_participant_count"]+1) if row is commit else row for row in original]
+        with self.assertRaisesRegex(history.HistoryError, "objective_receipt_conflict"):
+            history.build_history(rows, self.scope, incident_schema_version=7)
+        uncertain = next(row for row in original if row.get("bout_kind") == 7 and row["bout_reason"] == 12)
+        rows = [*original, dict(uncertain, bout_reason=6, record_seq=max(row["record_seq"] for row in original)+1)]
+        with self.assertRaisesRegex(history.HistoryError, "history_logical_receipt_conflict"):
+            history.build_history(rows, self.scope, incident_schema_version=7)
 
     @staticmethod
     def _build_window(rows, *, capture_config=True):
@@ -457,6 +670,132 @@ class BattleHistoryTests(unittest.TestCase):
         self.assertEqual(crossing["target_attribution_status"], "identity_changes_inside_prefix")
         self.assertIsNone(crossing["target_account_token"])
         self.assertEqual((late["target_account_token"], late["target_controller_token"]), (102, 702))
+
+    def _comparison_point(self):
+        rows, coverage = self._dated_build_rows()
+        window, _ = self._build_window(rows)
+        scope = tuple(window.header[name] for name in source.SCOPE)
+        output = publication.build_publication(window, None, coverage)
+        points = [publication.decode_row(scope, row) for row in output.rows if row["row_kind"] == 6]
+        qualified = [row for row in points if row["point_context_verified"] and row["bctx_actor_kind"] == 1]
+        self.assertTrue(qualified)
+        return max(qualified, key=lambda row: row["bctx_available"].bit_count())
+
+    def test_comparison_catalog_uses_native_masks_and_active_spec_cells(self):
+        defines = (ROOT / "src/core/defines.h").read_text()
+        bits = [int(value) for value in re.findall(r"^#define CLASS_\w+ BIT_(\d+)\s*$", defines, re.MULTILINE)]
+        self.assertEqual(bits, list(range(1, 31)))
+        self.assertEqual(comparison.CLASS_MASK, sum(1 << (bit - 1) for bit in bits))
+        common = (ROOT / "src/core/common.c").read_text()
+        block = common.split("const char *specdata[][MAX_SPEC] = {", 1)[1].split("};", 1)[0]
+        active = tuple(tuple(index for index, value in enumerate(re.findall(r'"([^"\\]*)"', row), 1)
+            if value and value != "Not Used") for row in re.findall(r"\{([^{}]*)\}", block))
+        self.assertEqual(active, comparison.SPECIALIZATIONS)
+
+    def test_comparison_preserves_source_point_and_separate_dimensions(self):
+        point = self._comparison_point()
+        saved = deepcopy(point)
+        result = comparison.classify_point(point)
+        self.assertEqual(result["point_key"], list(builds.observation_key(point)))
+        self.assertEqual(result["source_battle"], [point[name] for name in builds.BATTLE])
+        self.assertEqual(result["canonical_battle"], list(point["canonical_battle"]))
+        self.assertEqual(result["association"], [point["bctx_association_revision"], point["bctx_association_fact_sequence"]])
+        self.assertEqual(tuple(result["dimensions"]), comparison.DIMENSIONS)
+        for name in ("level", "base_setup", "effective_setup"):
+            self.assertTrue(result["dimensions"][name]["usable_for_matching"])
+        self.assertEqual(result["dimensions"]["level"]["values"], {"bctx_level": point["bctx_level"]})
+        self.assertEqual(result["dimensions"]["base_setup"]["values"]["bctx_base_str"], point["bctx_base_str"])
+        self.assertFalse(result["level_is_combat_strength"])
+        self.assertFalse(result["applied_equipment_effects_implied"])
+        self.assertFalse(result["continuous_build_exposure_implied"])
+        self.assertFalse(result["complete_intrinsic_setup_implied"])
+        self.assertFalse(result["contributions_attributed_to_builds"])
+        self.assertLessEqual(len(json.dumps(result, sort_keys=True, separators=(",", ":")).encode()), publication.MAX_PAYLOAD_BYTES)
+        self.assertEqual(point, saved)
+
+    def test_comparison_requires_selected_dimensions_and_same_configuration(self):
+        point = self._comparison_point()
+        same = comparison.compare_points(point, point, ("level", "base_setup"))
+        self.assertTrue(same["selected_observed_dimensions_match"])
+        self.assertEqual(same["matched_dimensions"], ["level", "base_setup"])
+        self.assertFalse(same["combat_strength_equivalence_implied"])
+        changed = dict(point, bctx_base_str=point["bctx_base_str"] - 1 if point["bctx_base_str"] == 32767 else point["bctx_base_str"] + 1)
+        result = comparison.compare_points(point, changed, ("level", "base_setup"))
+        self.assertEqual((result["matched_dimensions"], result["different_dimensions"]), (["level"], ["base_setup"]))
+        self.assertFalse(result["selected_observed_dimensions_match"])
+        for field in ("bctx_environment_id", "bctx_season_id", "bctx_config_id", "bctx_build_version", "bctx_content_version"):
+            with self.subTest(field=field):
+                result = comparison.compare_points(point, dict(point, **{field: point[field] + 1}), ("level",))
+                self.assertFalse(result["configuration_matches"])
+                self.assertEqual(result["unknown_dimensions"], ["level"])
+        for selected in ((), ("level", "level"), ("power",), "level", (1,)):
+            with self.subTest(selected=selected), self.assertRaisesRegex(comparison.ComparisonError, "dimension_selection"):
+                comparison.compare_points(point, point, selected)
+
+    def test_comparison_stale_missing_clock_config_and_loss_never_match(self):
+        point = self._comparison_point()
+        for field, value in (("link_status", "stale_association"), ("link_status", "missing_packet"),
+                ("link_status", "partial_history"), ("link_status", "outside_observed_prefix"),
+                ("point_clock_status", "unknown"), ("point_clock_status", "mismatch"),
+                ("point_clock_status", "discontinuous"), ("configuration_status", "unknown"),
+                ("configuration_status", "unavailable"), ("publication_quality_flags", ROLLUP_QUALITY_PROCESS_GAP),
+                ("publication_quality_flags", ROLLUP_QUALITY_INCIDENT_GAP),
+                ("publication_quality_flags", ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN)):
+            with self.subTest(field=field, value=value):
+                changed = dict(point, point_context_verified=False, **{field: value})
+                result = comparison.classify_point(changed)
+                self.assertFalse(result["point_context_verified"])
+                self.assertEqual(result["dimensions"]["level"]["values"], {"bctx_level": point["bctx_level"]})
+                self.assertFalse(result["dimensions"]["level"]["usable_for_matching"])
+                match = comparison.compare_points(point, changed, ("level",))
+                self.assertEqual(match["unknown_dimensions"], ["level"])
+                self.assertFalse(match["selected_observed_dimensions_match"])
+
+    def test_comparison_unavailable_equipment_and_partial_effects_are_explicit(self):
+        point = self._comparison_point()
+        absent = dict(point, bctx_available=point["bctx_available"] & ~32,
+            bctx_context_quality=point["bctx_context_quality"] | 2)
+        for field in builds.EQUIPMENT_FIELDS:
+            absent[field] = "0" * 64 if field in builds.BYTE_FIELDS else 0
+        dimensions = comparison.classify_point(absent)["dimensions"]
+        self.assertEqual(dimensions["equipment"], {"status": "unavailable", "values": None, "usable_for_matching": False})
+        self.assertTrue(dimensions["base_setup"]["usable_for_matching"])
+        self.assertEqual(comparison.compare_points(absent, absent, ("equipment",))["unknown_dimensions"], ["equipment"])
+        partial = dict(point, bctx_available=point["bctx_available"] | 128, bctx_affect_nodes=64,
+            bctx_affects_complete=0, bctx_context_quality=(point["bctx_context_quality"] & ~8) | 4)
+        result = comparison.classify_point(partial)
+        self.assertEqual(result["dimensions"]["listed_effects"]["status"], "partial")
+        self.assertEqual(result["dimensions"]["listed_effects"]["values"]["bctx_affect_nodes"], 64)
+        self.assertFalse(result["dimensions"]["listed_effects"]["usable_for_matching"])
+        for name in ("temporary_effect_origin", "support_origin"):
+            self.assertEqual(result["dimensions"][name], {"status": "unclassified", "values": None, "usable_for_matching": False})
+            self.assertEqual(comparison.compare_points(point, point, (name,))["unknown_dimensions"], [name])
+
+    def test_comparison_unknown_class_and_retired_spec_preserve_raw_values(self):
+        point = self._comparison_point()
+        unknown = dict(point, bctx_primary_class_mask=1 << 31, bctx_specialization=0)
+        result = comparison.classify_point(unknown)
+        self.assertEqual(result["dimensions"]["classes"]["status"], "unclassified")
+        self.assertEqual(result["dimensions"]["classes"]["values"]["bctx_primary_class_mask"], 1 << 31)
+        self.assertTrue(result["dimensions"]["level"]["usable_for_matching"])
+        for primary, spec in (((1 << 12), 3), (1 << 4, 4), (3, 1), (1 << 13, 1)):
+            with self.subTest(primary=primary, spec=spec):
+                changed = dict(point, bctx_primary_class_mask=primary, bctx_specialization=spec)
+                family = comparison.classify_point(changed)["dimensions"]["specialization"]
+                self.assertEqual(family["status"], "unclassified")
+                self.assertFalse(family["usable_for_matching"])
+                self.assertEqual(family["values"]["bctx_specialization"], spec)
+        rogue_archer = dict(point, bctx_primary_class_mask=1 << 12, bctx_specialization=4)
+        self.assertTrue(comparison.classify_point(rogue_archer)["dimensions"]["specialization"]["usable_for_matching"])
+
+    def test_comparison_refuses_forged_qualification_digest_and_canonical_identity(self):
+        point = self._comparison_point()
+        for changes in ({"point_context_verified": False}, {"bctx_equipment_digest": "f" * 63},
+                {"bctx_equipment_digest": "F" * 64}, {"publication_quality_flags": 1 << 63},
+                {"canonical_battle": [point["bctx_battle_boot_id"] + 1, point["bctx_battle_process_id"], point["bctx_battle_seq"]]},
+                {"canonical_battle": [*point["canonical_battle"][:2], point["bctx_battle_seq"] + 1]}):
+            with self.subTest(changes=changes), self.assertRaises((comparison.ComparisonError, builds.BuildContractError)):
+                comparison.classify_point(dict(point, **changes))
 
     def test_native_build_points_retain_all_fields_and_publish_separately(self):
         rows, coverage = self._dated_build_rows()
@@ -1510,7 +1849,7 @@ class BattleHistoryTests(unittest.TestCase):
         with self.assertRaisesRegex(source.SourceError, "published_immutable"):
             source.advance_header(header, [], header["input_watermark"] + 1)
         from scripts.telemetry.rollup_definitions import SUPPORTED_DEFINITION_VERSIONS
-        self.assertEqual(SUPPORTED_DEFINITION_VERSIONS, {1, 2, 3, 5, 6, 7})
+        self.assertEqual(SUPPORTED_DEFINITION_VERSIONS, {1, 2, 3, 5, 6, 7, 8})
 
     def test_bounds_and_deadline_refuse_without_mutating_source(self):
         saved = deepcopy(self.rows)

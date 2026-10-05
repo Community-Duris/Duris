@@ -11,7 +11,7 @@ struct char_data;
 bool zone_touch_transaction_busy(uint64_t stone_uid, uint32_t zone_number);
 void zone_touch_transaction_player_ready(char_data *character);
 
-bool zone_touch_transaction_submit(const zone_touch_payload &payload);
+bool zone_touch_transaction_submit(const zone_touch_payload &payload, char_data *toucher = nullptr);
 void zone_touch_transaction_handle_completions(const critical_completion *completions,
 					       size_t count);
 critical_outbox_delivery_result

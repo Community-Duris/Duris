@@ -16,7 +16,8 @@ LEGACY_MAGIC = b"DMSTLJ01"
 BATTLE_MAGIC = b"DMSTLJ02"
 CONTRIBUTION_MAGIC = b"DMSTLJ03"
 BUILD_MAGIC = b"DMSTLJ04"
-MAGIC = b"DMSTLJ05"
+CONTROL_MAGIC = b"DMSTLJ05"
+MAGIC = b"DMSTLJ06"
 MAX_PRODUCERS = 256
 WORDS = 40
 MAX_BYTES = 64 + MAX_PRODUCERS * WORDS * 8
@@ -25,11 +26,12 @@ LEGACY_KINDS = (1 << 10) - 2
 BATTLE_KINDS = (1 << 11) - 2
 CONTRIBUTION_KINDS = (1 << 12) - 2
 BUILD_KINDS = (1 << 13) - 2
-KNOWN_KINDS = (1 << 14) - 2
+CONTROL_KINDS = (1 << 14) - 2
+KNOWN_KINDS = (1 << 15) - 2
 PHASES = {1: "running", 2: "clean_drained", 3: "abandoned", 4: "unknown_tail"}
 FAMILIES = {1: "interval", 2: "session_lifecycle", 3: "session_checkpoint",
             4: "coverage_gap", 5: "configuration", 6: "progression",
-            7: "encounter", 8: "combat_summary", 9: "ownership", 10: "battle", 11: "battle_contribution", 12: "battle_build", 13: "control"}
+            7: "encounter", 8: "combat_summary", 9: "ownership", 10: "battle", 11: "battle_contribution", 12: "battle_build", 13: "control", 14: "battle_result"}
 FIELDS = (
     "boot_id", "process_id", "environment_id", "season_id",
     "registered_monotonic_usec", "registered_utc_usec",
@@ -51,7 +53,7 @@ class EvidenceError(Exception):
 
 
 def decode(data: bytes) -> dict:
-    if not 384 <= len(data) <= MAX_BYTES or data[:8] not in (LEGACY_MAGIC, BATTLE_MAGIC, CONTRIBUTION_MAGIC, BUILD_MAGIC, MAGIC):
+    if not 384 <= len(data) <= MAX_BYTES or data[:8] not in (LEGACY_MAGIC, BATTLE_MAGIC, CONTRIBUTION_MAGIC, BUILD_MAGIC, CONTROL_MAGIC, MAGIC):
         raise EvidenceError("corrupt")
     if hashlib.sha256(data[:-32]).digest() != data[-32:]:
         raise EvidenceError("corrupt")
@@ -59,8 +61,8 @@ def decode(data: bytes) -> dict:
     if not generation or not 1 <= count <= MAX_PRODUCERS or reserved or len(data) != 64 + count * WORDS * 8:
         raise EvidenceError("corrupt")
     observations = []
-    version = {LEGACY_MAGIC: 1, BATTLE_MAGIC: 2, CONTRIBUTION_MAGIC: 3, BUILD_MAGIC: 4, MAGIC: 5}[data[:8]]
-    known_kinds = {1: LEGACY_KINDS, 2: BATTLE_KINDS, 3: CONTRIBUTION_KINDS, 4: BUILD_KINDS, 5: KNOWN_KINDS}[version]
+    version = {LEGACY_MAGIC: 1, BATTLE_MAGIC: 2, CONTRIBUTION_MAGIC: 3, BUILD_MAGIC: 4, CONTROL_MAGIC: 5, MAGIC: 6}[data[:8]]
+    known_kinds = {1: LEGACY_KINDS, 2: BATTLE_KINDS, 3: CONTRIBUTION_KINDS, 4: BUILD_KINDS, 5: CONTROL_KINDS, 6: KNOWN_KINDS}[version]
     producers = set()
     for index in range(count):
         w = struct.unpack_from(f">{WORDS}Q", data, 32 + index * WORDS * 8)

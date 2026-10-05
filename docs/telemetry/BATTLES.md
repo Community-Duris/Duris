@@ -12,9 +12,11 @@ source contract binds selected kind-9/10/11 values to a cursor checkpoint and
 rolling digest. Migration 0063 persists these private inputs with the existing
 generation cursor transaction and required identity reservation. Migration 0064
 adds atomic publication of these observations with dated identity attribution,
-independent loss coverage and bounded reports. Expanded context/control/prevention/
-faction sources, typed outcomes and the complete balance suites remain under
-implementation.
+independent loss coverage and bounded reports. Definition 8 adds reviewed build
+dimensions and typed participant/objective evidence under the existing budgets;
+its full qualification is tracked in [BATTLE_RESULTS.md](BATTLE_RESULTS.md).
+Expanded control/prevention/faction sources and the complete balance suites remain
+under implementation.
 [Implementation status](IMPLEMENTATION_STATUS.md) retains the full accepted scope
 and the actual personal-local gameplay qualification requirement.
 

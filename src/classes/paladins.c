@@ -13,6 +13,7 @@
 #include "item/objmisc.h"
 #include "magic/spells.h"
 #include "world/weather.h"
+#include "telemetry/telemetry_runtime.h"
 
 extern struct time_info_data time_info;
 
@@ -476,6 +477,7 @@ void event_righteous_aura_check(P_char ch, P_char victim, P_obj /*obj*/, void * 
 			{
 				// Set they target the paladin automatically
 				GET_OPPONENT(opponent) = ch;
+				(void)telemetry_runtime_game_combat_engage(opponent, ch);
 			}
 			else
 			{

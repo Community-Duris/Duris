@@ -9,10 +9,19 @@ python tests/async/qualify_telemetry_controls.py --disposable
 
 This command builds the maintained tools image, builds `bin/server/dms_new`,
 checks touched C++ formatting, runs focused contracts and ASan/UBSan, measures
-control capture and the existing transport/report budgets, and starts disposable
+control capture, native result/watch callbacks and the existing transport/report budgets, and starts disposable
 MariaDB 10.11.14 and MySQL 8.0.46 fixtures sequentially. Each engine exercises all
-six migration histories, exact control storage, the native runtime/writer/report
+six migration histories, the native repository for all 14 raw families, exact
+control/result value storage and independent loss review, the native runtime/writer/report
 journey, and a real server journey. It creates no host-facing listener or port.
+
+The comparability/outcome extension is locally qualified by the complete
+38-phase two-engine command. It includes native result adapters, exact
+definition-8 publication and actual-server comparison/outcome evidence. Its
+native fixture uses a synthetic watch clock and remains distinct from positive
+actual-server qualification. Current exact evidence is in
+[BATTLE_RESULTS.md](BATTLE_RESULTS.md#qualified-local-delivery-2026-10-05).
+Earlier control receipts below retain their historical scope.
 
 For an explicitly selected compatible local tools image, the same command accepts
 `--tools-image IMAGE`. The image must contain the maintained build dependencies,
@@ -84,6 +93,9 @@ qualification evidence, not estimates of normal balance rates.
 Native staff `tranquilize` resets combat between the separate cases and before
 logout; group admission is confirmed outside combat, and the noncombat member
 uses the ordinary group command to leave while control remains live.
+After each reset, native wake/stand acknowledgments establish standing before
+equipment or combat admission. A random melee stun may refuse a stand; the
+journey waits for ordinary native recovery rather than removing the effect.
 Blindness has a native random 4-12-second configured duration. Up to 16 ordinary
 attempts select an application of at least 32 configured ticks (`WAIT_SEC=4`)
 so the actual cure can finish before expiry. This is a gameplay prerequisite;
@@ -103,6 +115,43 @@ The longer raw window is prepared through the committed cursor in at most 64
 invocations of 128 rows, retaining the default page and byte limits. Only the
 expected invocation row-budget boundary is resumed, with verified cursor
 progress; publication still requires the complete fixed source watermark.
+The definition-7 window ends after the observed target departure and before the
+producer's bulk shutdown observations. Its independent clean-drained delivery
+witness covers the retained prefixes; later shutdown facts are outside this
+declared study window and do not establish a complete battle.
+Definition 8 uses a separate complete clean-drained producer, from its first
+admitted sequence through shutdown. Its independent origin and watermark retain
+all association prefixes and authenticated entries for those cases. Both windows
+keep the existing publication byte, page and fanout limits; extending gameplay
+does not increase the budgets. Schema-7 review covers the later result clocks as
+well as the retained references.
+
+The outcome producer uses the mini-zone's SQL authority as a fixture
+prerequisite, because minimal world boot skips zone publication. It additionally
+observes an ordinary equipment change between two admitted combat points, an
+effective `cure light` relationship and its source's group departure, a
+room-changing flee followed by at least 30 seconds on the actual native scheduler,
+a native fatal PvP branch using ordinary memorized magic missile and an ordinary
+epic-stone touch. Peaceful equipment admission, memorized spells, current HP and
+the stone recipient's level are gameplay prerequisites;
+the commands, native hooks, writer and publisher still execute normally. The
+objective operation's exact bytes and physical stone UID must match the committed
+inbox, claim and zone-touch outcome. The outcome producer enables normal native
+special procedures, so ordinary `touch stone` dispatches the actual epic-stone
+transaction. The request, inbox commit, physical stone claim and telemetry receipt
+all come from this transaction. Definition 8 must retain and publish those
+facts with its comparison dimensions and shared coverage through the restricted
+role. The published effective-support relationship must equal its exact source
+fields. Generic buff provenance remains unclassified.
+
+The actual movement, escape and death need qualified pre-action battle context
+and an observed roster of at least two character owners. The gear points need
+qualified equipment observations with matched level/class and different equipment,
+without claiming strength equivalence. An earlier unreviewed definition-8
+generation remains unqualified after independent schema-7 review produces a new
+generation. The same run must preserve definition-7 publication and its positive
+selected-control duration. The real-server receipts remain separate from the
+native fixture's synthetic watch clock.
 
 The storage/publication journeys additionally qualify all 76 fields, immutable
 configuration evidence, bounded pages/fanout, independent schema-6 incidents,
@@ -127,6 +176,16 @@ each flatfile/SQL variant, including bracketed wall/steady reads and checked UTC
 projection. Its ASan/UBSan run records p99/p99.9/max and uses the same 1 ms/5 ms
 guards. Context refresh and SQL are excluded from this clock measurement.
 
+A separate optimized native-result probe measures begin/finish callbacks and
+pending-watch pulses with 4,096 world characters at 50/200/256 admitted sessions,
+4,096 samples per profile and five repetitions. The 256-session ceiling is the
+existing native session capacity. It checks zero event-time heap allocation and
+cryptographic calls, the combined 16-selection pulse limit, the 512-slot watch
+capacity and the existing p99 1 ms / p99.9 5 ms guards. ASan/UBSan also verifies
+stale lifetimes, a freed supplied target, world-scan capacity refusal and retained
+resident watches. The probe uses a private writer seam and synthetic maturity
+time; SQL/Telnet latency and positive actual-server escape are excluded.
+
 The real journey records ten telemetry-off save round trips and ten saves while
 telemetry is enabled and a selected equipment status is present. These include
 Telnet scheduling and authoritative persistence; they are evidence of this
@@ -143,12 +202,14 @@ applications and signed configured ticks remain distinct units. Overlapping
 family durations cannot be added to obtain time controlled. Action-restriction
 time and caster-attributed duration remain NULL.
 
-This is a selected-control measurement slice. Issue #258 remains open
+This command qualifies the selected-control and reviewed comparison/outcome slices.
+Issue #258 remains open
 with all seven final acceptance requirements preserved. The maintained command
-now requires positively qualified normal PvP prefixes, native context, paired
-clocks and complete independent review windows. Reviewed build/power comparisons
-and typed death, escape and objective outcomes are the next battle dependencies
-after that gate passes.
+now requires positively qualified normal PvP prefixes and definition-8 build
+comparisons, typed death/movement/escape and an exact supported objective,
+alongside native context, paired clocks and complete independent review windows.
+The full expanded gate passed in run `89625dc38352`; exact source and receipt
+digests are recorded in [BATTLE_RESULTS.md](BATTLE_RESULTS.md#qualified-local-delivery-2026-10-05).
 Prevention/faction coverage, distinct PvE attempts and
 committed reward links, progression/portfolio additions and the four complete
 balance report suites remain in the accepted expansion.
@@ -320,8 +381,9 @@ Save timings include Telnet scheduling and authoritative persistence; they do
 not isolate callback overhead. TSan is unrun by the command and its earlier host
 probe was unsupported. No full burn-in or production load qualification is claimed.
 
-**Next dependency:** reviewed build/power comparisons and typed death, escape and
-objective evidence. Prevention/faction coverage, distinct PvE attempts and committed
+**Next dependency at that delivery:** reviewed build/power comparisons and typed
+death, escape and objective evidence; this slice is qualified in the later
+2026-10-05 delivery. Prevention/faction coverage, distinct PvE attempts and committed
 rewards, progression/milestone/portfolio additions, four complete balance suites,
 statistical exports and #487 economic compatibility remain in the accepted scope.
 Issue #258 stays OPEN with all seven final checkbox lines unchanged, and PR #683

@@ -17,6 +17,7 @@
 #include "world/graph.h"
 #include "core/mm.h"
 #include "magic/spells.h"
+#include "telemetry/telemetry_runtime.h"
 
 extern P_room world;
 extern struct time_info_data time_info;
@@ -570,6 +571,7 @@ int shout_and_hunt(P_char ch, int max_distance, const char *shout_str,
 	    GET_OPPONENT(ch)->in_room == (GET_MASTER(GET_OPPONENT(ch)))->in_room)
 	{
 		GET_OPPONENT(ch) = GET_MASTER(GET_OPPONENT(ch));
+		(void)telemetry_runtime_game_combat_engage(ch, GET_OPPONENT(ch));
 	}
 
 	/*

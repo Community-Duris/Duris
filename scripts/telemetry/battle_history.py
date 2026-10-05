@@ -13,7 +13,7 @@ import hashlib
 from typing import Any, Callable, Mapping, Sequence
 
 try:
-    from . import battle_contract as battle, battle_contribution_contract as contribution, battle_build_contract as builds, control_contract as controls, incident
+    from . import battle_contract as battle, battle_contribution_contract as contribution, battle_build_contract as builds, control_contract as controls, battle_result_contract as results, incident
     from .rollup_definitions import (ROLLUP_QUALITY_PROCESS_GAP, ROLLUP_QUALITY_CONTEXT_UNAVAILABLE,
         ROLLUP_QUALITY_INCIDENT_GAP, ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN,
         ROLLUP_QUALITY_UTC_UNKNOWN, ROLLUP_QUALITY_UTC_BACKWARD, ROLLUP_QUALITY_UTC_MISMATCH)
@@ -22,6 +22,7 @@ except ImportError:
     import battle_contribution_contract as contribution
     import battle_build_contract as builds
     import control_contract as controls
+    import battle_result_contract as results
     import incident
     from rollup_definitions import (ROLLUP_QUALITY_PROCESS_GAP, ROLLUP_QUALITY_CONTEXT_UNAVAILABLE,
         ROLLUP_QUALITY_INCIDENT_GAP, ROLLUP_QUALITY_INCIDENT_INVENTORY_UNKNOWN,
@@ -127,6 +128,7 @@ class BattleHistory:
     exposures: tuple[Mapping[str, Any], ...]
     builds: tuple[Mapping[str, Any], ...] = ()
     controls: tuple[Mapping[str, Any], ...] = ()
+    results: tuple[Mapping[str, Any], ...] = ()
 
 
 def _group(actor: _Actor) -> bool:
@@ -358,29 +360,32 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
     """
     _require(type(scope) is tuple and len(scope) == 2 and all(_integer(part, lower=1) for part in scope), "history_scope")
     _require(isinstance(rows, (tuple, list)) and len(rows) <= MAX_INPUTS, "history_input_capacity")
-    _require(type(incident_schema_version) is int and incident_schema_version in (4, 5, 6), "history_incident_version")
+    _require(type(incident_schema_version) is int and incident_schema_version in (4, 5, 6, 7), "history_incident_version")
     _require(_integer(max_output_rows, lower=1) and _integer(max_total_bytes, lower=1) and callable(check_deadline), "history_bounds")
     budget = _Budget(max_total_bytes, max_output_rows, check_deadline)
     facts: dict[tuple[int, int, int, int], dict[str, int]] = {}
     segments: dict[tuple[int, int, int], dict[str, int]] = {}
     build_points = {}
     control_points = {}
+    result_points = {}
     receipts: dict[tuple[int, int, int], dict[str, int]] = {}
     requested = set()
     wanted_actors: dict[tuple[int, int, int], set[int]] = defaultdict(set)
     retries = 0
     for raw in rows:
         budget.reserve(INPUT_BYTE_BOUND)
-        _require(isinstance(raw, Mapping) and raw.get("record_kind") in ((10, 11, 12, 13) if incident_schema_version == 6 else
+        _require(isinstance(raw, Mapping) and raw.get("record_kind") in ((10, 11, 12, 13, 14) if incident_schema_version == 7 else
+            (10, 11, 12, 13) if incident_schema_version == 6 else
             (10, 11, 12) if incident_schema_version == 5 else (10, 11)),
             "history_source_family")
         try:
             value = (battle.validate_raw_fact(raw) if raw["record_kind"] == 10 else
                 contribution.validate_raw_segment(raw) if raw["record_kind"] == 11 else
-                controls.validate_raw_observation(raw) if raw["record_kind"] == 13 else builds.validate_raw_observation(raw))
-        except (battle.BattleContractError, contribution.ContributionContractError, builds.BuildContractError, controls.ControlContractError) as error:
+                controls.validate_raw_observation(raw) if raw["record_kind"] == 13 else
+                results.validate_raw_observation(raw) if raw["record_kind"] == 14 else builds.validate_raw_observation(raw))
+        except (battle.BattleContractError, contribution.ContributionContractError, builds.BuildContractError, controls.ControlContractError, results.ResultContractError) as error:
             raise HistoryError(str(error)) from error
-        prefix = {10: "battle_", 11: "bc_", 12: "bctx_", 13: "ctl_"}[raw["record_kind"]]
+        prefix = {10: "battle_", 11: "bc_", 12: "bctx_", 13: "ctl_", 14: "bout_"}[raw["record_kind"]]
         _require((value[prefix + "environment_id"], value[prefix + "season_id"]) == scope, "history_source_scope")
         retained = dict(value, **{name: raw[name] for name in HEADER})
         receipt = tuple(raw[name] for name in HEADER[:3])
@@ -391,9 +396,17 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
         receipts[receipt] = retained
         target, key = ((facts, battle.fact_key(value)) if raw["record_kind"] == 10 else
             (segments, contribution.segment_key(value)) if raw["record_kind"] == 11 else
-            (control_points, controls.observation_key(value)) if raw["record_kind"] == 13 else (build_points, builds.observation_key(value)))
+            (control_points, controls.observation_key(value)) if raw["record_kind"] == 13 else
+            (result_points, results.observation_key(value)) if raw["record_kind"] == 14 else (build_points, builds.observation_key(value)))
         _require(key not in target, "history_logical_receipt_conflict")
         target[key] = retained
+        if raw["record_kind"] == 14:
+            for actor_prefix in ("source", "target"):
+                reference = results.association(value, actor_prefix)
+                if any(reference):
+                    identity = (*key[:2], reference[0])
+                    wanted_actors[identity].add(value["bout_" + actor_prefix + "_actor_id"])
+                    requested.add((*identity, *reference[1:]))
         if raw["record_kind"] == 13:
             for actor_prefix in ("source", "target"):
                 reference = controls._association(value, actor_prefix)
@@ -855,6 +868,187 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
             _require(end is None or first >= end, "history_control_target_overlap")
             end = last
 
+    # A result's association describes its retained pre-teardown point. Later
+    # leave/close packets neither invalidate that point nor extend its validity.
+    def result_link(point, actor_prefix):
+        ref = results.association(point, actor_prefix)
+        if not any(ref):
+            return "outside_battle", None, 0, "unverified", None
+        producer = results.observation_key(point)[:2]
+        identity = (*producer, ref[0])
+        basis_key = (*identity, *ref[1:])
+        basis = bases.get(basis_key)
+        root = _canonical(identity, aliases)
+        if basis is None:
+            return "missing_packet", root, ROLLUP_QUALITY_PROCESS_GAP, "unverified", None
+        cut, actors, verified = basis
+        at, utc = point["bout_start_usec"], point["bout_start_utc_usec"]
+        _require(cut["battle_fact_kind"] == 4 and cut["battle_at_monotonic_usec"] <= at and
+            cut["record_seq"] < point["record_seq"], "history_result_reference_clock")
+        _require(not point["bout_config_id"] or all(cut["battle_" + name] == point["bout_" + name]
+            for name in ("config_id", "classifier_version", "policy_version")), "history_result_configuration_conflict")
+        quality = cut["battle_quality_flags"]
+        actor = actors.get(point["bout_" + actor_prefix + "_actor_id"])
+        status = "partial_history" if not verified else "actor_not_in_packet" if actor is None or not actor.active else (
+            "verified" if all(actor.context[name] == item for name, item in results.actor_context(point, actor_prefix).items())
+            else "context_changed")
+        if any(revision > ref[1] and boundary_at <= at and receipt < point["record_seq"]
+                for revision, boundary_at, receipt, _utc in point_boundaries[identity]):
+            status = "stale_association"
+        terminal = states.get(identity)
+        if identity in alias_cuts and at > alias_cuts[identity] or terminal is not None and terminal.close_seen and (
+                at > terminal.last["battle_observed_through_monotonic_usec"]):
+            status = "outside_observed_prefix"
+        cut_utc = cut["battle_at_utc_usec"]
+        clock = "unknown" if results.UTC_UNKNOWN in (utc, cut_utc) else (
+            "mismatch" if utc - cut_utc != at - cut["battle_at_monotonic_usec"] else
+            "discontinuous" if quality & battle.QUALITY_CLOCK_DISCONTINUITY else "verified")
+        if clock == "unknown":
+            quality |= ROLLUP_QUALITY_UTC_UNKNOWN
+        elif clock == "mismatch":
+            quality |= ROLLUP_QUALITY_UTC_MISMATCH
+        if status != "verified":
+            quality |= ROLLUP_QUALITY_PROCESS_GAP
+        prefix_first, prefix_receipt = basis_prefixes[basis_key]
+        comparable = clock == "verified" and prefix_first is not None
+        quality |= _coverage_quality(incident_coverage, producer, 10,
+            prefix_first if comparable else None, utc if comparable else None,
+            prefix_receipt, point["record_seq"], schema_version=incident_schema_version)
+        active = [value for value in actors.values() if value.active]
+        own_side = None if actor is None or not actor.side or cut["battle_side_status"] != 1 else actor.side
+        roster = dict(observed_pre_roster_count=len(active),
+            observed_pre_pc_count=sum(value.context["battle_actor_kind"] == 1 for value in active),
+            observed_pre_owner_count=len({value.context["battle_actor_owner_subject_id"] for value in active
+                if value.context["battle_actor_owner_subject_id"]}),
+            observed_pre_own_side_owners=None if own_side is None else len({value.context["battle_actor_owner_subject_id"]
+                for value in active if value.side == own_side and value.context["battle_actor_owner_subject_id"]}),
+            observed_pre_opposing_owners=None if own_side is None else len({value.context["battle_actor_owner_subject_id"]
+                for value in active if value.side != own_side and value.context["battle_actor_owner_subject_id"]}),
+            observed_pre_mode=cut["battle_mode"], observed_pre_side_status=cut["battle_side_status"])
+        return status, root, quality, clock, roster
+
+    result_rows = []
+    requests, committed_operations, committed_stones = {}, {}, {}
+    for key, point in sorted(result_points.items()):
+        if point["bout_kind"] == 5:
+            operation = (point["bout_environment_id"], point["bout_season_id"], point["bout_operation_id"])
+            _require(operation not in requests, "history_result_objective_request_conflict")
+            requests[operation] = point
+    for key, point in sorted(result_points.items()):
+        budget.output()
+        quality = point["bout_quality_flags"]
+        first, last = point["bout_start_usec"], point["bout_at_usec"]
+        utc_first, utc_last = point["bout_start_utc_usec"], point["bout_at_utc_usec"]
+        quality |= _utc_quality((utc_first, utc_last), quality)
+        clock = "unknown" if results.UTC_UNKNOWN in (utc_first, utc_last) else (
+            "discontinuous" if quality & battle.QUALITY_CLOCK_DISCONTINUITY else
+            "mismatch" if utc_last - utc_first != last - first else "verified")
+        if clock == "mismatch":
+            quality |= ROLLUP_QUALITY_UTC_MISMATCH
+        context = point
+        chain = objective = "not_applicable"
+        parent_key = None
+        origin = "native_pre_teardown"
+        supported = point["bout_authority"] != 8  # Outbox delivery runs on its SQL worker.
+        if point["bout_kind"] in (4, 8):
+            parent_key = (*key[:2], point["bout_parent_sequence"])
+            parent = result_points.get(parent_key)
+            if parent is None:
+                chain = "missing_parent"
+                quality |= ROLLUP_QUALITY_PROCESS_GAP
+            else:
+                _require(parent["bout_kind"] == 2 or parent["bout_kind"] == 3 and parent["bout_authority"] == 3,
+                    "history_result_escape_parent_kind")
+                same_fields = tuple(name for name in results.FIELDS if name.startswith(("bout_target_", "bout_source_")) and
+                    name not in ("bout_source_object_uid", "bout_source_payload_version"))
+                _require(all(point[name] == parent[name] for name in same_fields) and
+                    all(point["bout_" + name] == parent["bout_" + name] for name in ("environment_id", "season_id",
+                        "from_room_vnum", "to_room_vnum")) and first == parent["bout_at_usec"] and
+                    utc_first == parent["bout_at_utc_usec"] and parent["record_seq"] < point["record_seq"],
+                    "history_result_escape_parent_conflict")
+                _require(not point["bout_config_id"] or all(point["bout_" + name] == parent["bout_" + name]
+                    for name in ("config_id", "classifier_version", "policy_version", "build_version", "content_version")),
+                    "history_result_escape_configuration_conflict")
+                context = parent
+                quality |= parent["bout_quality_flags"]
+                chain = "censored" if point["bout_kind"] == 8 else "verified"
+                origin = "native_escape_parent"
+        if point["bout_kind"] == 6:
+            operation = (point["bout_environment_id"], point["bout_season_id"], point["bout_operation_id"])
+            request = requests.get(operation)
+            if point["bout_flags"] & 256:
+                objective = "recovered_claim"
+            elif not supported:
+                objective = "unsupported_authority"
+            elif request is None:
+                objective = "missing_request"
+            else:
+                _require(all(point["bout_" + name] == request["bout_" + name] for name in (
+                    "source_object_uid", "source_payload_version", "credited_zone_vnum", "participant_count",
+                    "target_actor_id", "target_actor_pid", "target_owner_subject_id", "target_actor_kind")) and
+                    point["bout_flags"] & (64 | 128) == request["bout_flags"] & (64 | 128),
+                    "history_result_objective_receipt_conflict")
+                if key[:2] == results.observation_key(request)[:2]:
+                    _require(request["record_seq"] < point["record_seq"] and request["bout_at_usec"] <= last,
+                        "history_result_objective_receipt_clock")
+                context, origin = request, "accepted_objective_request"
+                parent_key = results.observation_key(request)
+                quality |= request["bout_quality_flags"]
+                objective = "duplicate_commit" if operation in committed_operations else "verified_commit"
+                if any(point["bout_" + name] != request["bout_" + name] for name in (
+                        "config_id", "classifier_version", "policy_version", "build_version", "content_version")):
+                    objective = "configuration_changed"
+                elif key[:2] != results.observation_key(request)[:2]:
+                    objective = "cross_producer_request"
+                if objective == "verified_commit":
+                    committed_operations[operation] = key
+                    if point["bout_source_object_uid"]:
+                        stone = (*operation[:2], point["bout_source_object_uid"])
+                        _require(stone not in committed_stones or committed_stones[stone] == operation,
+                            "history_result_objective_physical_source_conflict")
+                        committed_stones[stone] = operation
+        elif point["bout_kind"] == 5:
+            objective = "requested"
+        elif point["bout_authority"] in (6, 7, 8):
+            objective = "unresolved"
+        event_quality = quality
+        links, roots, roster = {}, {}, None
+        for actor_prefix in ("source", "target"):
+            status, root, flags, point_clock, observed = result_link(context, actor_prefix)
+            links[actor_prefix], roots[actor_prefix] = status, root
+            quality |= flags
+            if point_clock not in ("verified", "unverified"):
+                clock = point_clock
+            if actor_prefix == "target":
+                roster = observed
+        comparable = clock == "verified"
+        event_quality |= _coverage_quality(incident_coverage, key[:2], 14,
+            utc_first if comparable else None, utc_last if comparable else None,
+            (result_points[parent_key]["record_seq"] if parent_key in result_points and parent_key[:2] == key[:2]
+                else point["record_seq"]), point["record_seq"], schema_version=incident_schema_version)
+        if context is not point:
+            producer = results.observation_key(context)[:2]
+            event_quality |= _coverage_quality(incident_coverage, producer, 14,
+                context["bout_start_utc_usec"] if comparable else None,
+                context["bout_at_utc_usec"] if comparable else None,
+                context["record_seq"], context["record_seq"], schema_version=incident_schema_version)
+        quality |= event_quality
+        if point["bout_kind"] == 4 and chain == "verified":
+            ref = results.association(context, "target")
+            identity = (*results.observation_key(context)[:2], ref[0])
+            for revision, at, signature, verified in traces[(*identity, point["bout_target_actor_id"])]:
+                if first <= at <= last and revision > ref[1] and signature is not None:
+                    chain = "reengaged" if verified else "partial_history"
+            if chain != "verified":
+                quality |= ROLLUP_QUALITY_PROCESS_GAP
+        result_rows.append(dict(point, source_canonical_battle=roots["source"], target_canonical_battle=roots["target"],
+            source_link_status=links["source"], target_link_status=links["target"], clock_status=clock,
+            chain_status=chain, objective_status=objective, parent_event_key=parent_key,
+            reference_origin=origin, native_source_status="supported" if supported else "unsupported",
+            observed_pre_roster=roster, publication_quality_flags=quality, event_quality_flags=event_quality,
+            whole_battle_victory_implied=False, full_zone_clear_implied=False,
+            complete_population_coverage_implied=False))
+
     battle_rows, actor_rows, exposure_rows = [], [], []
     for identity, state in sorted(states.items()):
         budget.output()
@@ -945,7 +1139,9 @@ def build_history(rows: Sequence[Mapping[str, Any]], scope: tuple[int, int], *,
     if incident_schema_version >= 5:
         summary.update(build_count=len(build_rows), verified_build_links=sum(row["link_status"] == "verified" for row in build_rows),
             partial_build_links=sum(row["link_status"] != "verified" for row in build_rows))
-    if incident_schema_version == 6:
+    if incident_schema_version >= 6:
         summary.update(control_count=len(control_rows))
+    if incident_schema_version == 7:
+        summary.update(result_count=len(result_rows))
     return BattleHistory(summary, tuple(battle_rows), tuple(actor_rows), tuple(contribution_rows), tuple(exposure_rows),
-        tuple(build_rows), tuple(control_rows))
+        tuple(build_rows), tuple(control_rows), tuple(result_rows))

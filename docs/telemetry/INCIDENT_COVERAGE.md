@@ -305,3 +305,21 @@ continue to consume schemas 4 and 5 respectively. Schema-6 review does not
 activate control publication or reconstruct missing effects, attempts or
 duration. See [CONTROL_OBSERVATIONS.md](CONTROL_OBSERVATIONS.md) for its producer
 and coverage limits.
+
+## Typed result-loss review contract
+
+Migration `0069_telemetry_battle_results` adds independent schema-7 tables
+`telemetry_incident_registry_v7` and `telemetry_incident_v7` for families 1–14.
+Schemas 1–6 preserve their original masks and histories. Select schema 7 with
+`--registry-schema-version 7`; the template default, 64-incident and 128-KiB
+packet bounds remain unchanged. Kind-14 post-fix references must resolve the
+exact committed producer, kind, occurrence and `bout_environment_id` /
+`bout_season_id`. A schema-6 review cannot establish result-family coverage.
+
+Definition 8 publishes this independent review with exact build/control/result
+sources, event/context qualification and denominators. Missing result review or
+loss makes positive result evidence unknown; it cannot be repaired from reviewed
+association facts alone. Both versions are retained so historical selected-control
+generations keep their original schema-6 evidence. See
+[BATTLE_RESULTS.md](BATTLE_RESULTS.md). The current lifecycle inventory through
+migration 0070 contains 273 tables; earlier delivery counts above are historical.

@@ -5,9 +5,11 @@ from pathlib import Path
 import argparse
 import hashlib
 import json
+import os
 import shlex
 import struct
 import subprocess
+import sys
 import tempfile
 
 from test_telemetry_combat_hooks import function
@@ -69,8 +71,50 @@ def verify_control_mutation_hooks() -> None:
     assert "telemetry_runtime_game_control_changed(ch);" in function(attribute, "static void sa_intCopy(")
 
 
+def verify_result_hooks() -> None:
+    fight = function((ROOT / "src/combat/fight.c").read_text(encoding="utf-8"), "void die(")
+    assert fight.index("training_dummy_is(ch)") < fight.index("telemetry_runtime_game_battle_result_begin(")
+    assert fight.index("telemetry_runtime_game_battle_result_begin(") < fight.index("telemetry_runtime_game_encounter_leave(")
+    accepted = fight.index("telemetry_battle_result_kind::death_observed")
+    assert fight.index("check_outpost_death(ch, killer)") < accepted
+    assert fight.index("check_reincarnate(ch)") < accepted < fight.index("kill_gain(killer, ch)")
+    assert "telemetry_battle_result_reason::reincarnated" in fight
+    actoff = (ROOT / "src/cmd/actoff.c").read_text(encoding="utf-8")
+    flee = function(actoff, "void do_flee(")
+    assert flee.index("telemetry_runtime_game_battle_result_begin(") < flee.index("do_simple_move(ch, attempted_dir,")
+    assert flee.index("start_room == ch->in_room") < flee.index("telemetry_battle_result_kind::flee_movement")
+    assert flee.index("if (atts)") < flee.index("telemetry_battle_result_kind::flee_movement")
+    retreat = function(actoff, "void do_retreat(")
+    assert retreat.index("if (number(1, 100) <= chance)") < retreat.index("telemetry_runtime_game_battle_result_begin(")
+    assert retreat.index("telemetry_runtime_game_battle_result_begin(") < retreat.index("do_simple_move(ch, dir, 0)")
+    assert retreat.index("do_simple_move(ch, dir, 0)") < retreat.index("telemetry_battle_result_kind::withdrawal")
+    assert "find_character_by_runtime_id(withdrawal_evidence.target_runtime_id)" in retreat
+    disengage = function(actoff, "void do_disengage(")
+    assert disengage.index("if (found && !IS_TRUSTED(ch))") < disengage.index("telemetry_runtime_game_battle_result_begin(")
+    assert disengage.index("stop_fighting(ch)") < disengage.index("telemetry_battle_result_kind::withdrawal")
+    # Reviewed non-null combat-target assignments must report their accepted edge.
+    for path, signature, assignment, capture in (
+        ("src/combat/fight_state.c", "void set_fighting(", "GET_OPPONENT(ch) = victim;",
+         "telemetry_runtime_game_combat_engage(ch, victim)"),
+        ("src/combat/justice.c", "int shout_and_hunt(", "GET_OPPONENT(ch) = GET_MASTER(GET_OPPONENT(ch));",
+         "telemetry_runtime_game_combat_engage(ch, GET_OPPONENT(ch))"),
+        ("src/classes/paladins.c", "void event_righteous_aura_check(", "GET_OPPONENT(opponent) = ch;",
+         "telemetry_runtime_game_combat_engage(opponent, ch)"),
+    ):
+        body = function((ROOT / path).read_text(encoding="utf-8"), signature)
+        assert body.index(assignment) < body.index(capture)
+    zone = (ROOT / "src/world/zone_touch_transaction.c").read_text(encoding="utf-8")
+    submit = function(zone, "bool zone_touch_transaction_submit(")
+    assert submit.index("critical_submit_result_keeps_operation(submitted)") < submit.index("telemetry_runtime_game_zone_objective(")
+    completion = function(zone, "void zone_touch_transaction_handle_completions(")
+    assert "completion.operation_id, entry.result" in completion
+    assert "entry.result.recovered_claim" in completion
+    # Outbox delivery runs on its SQL worker; it cannot mutate game-thread telemetry.
+    assert "telemetry_runtime_game_zone_objective" not in function(zone, "zone_touch_transaction_outbox_delivery(")
+
+
 def compile_gameplay(executable: Path, *, sanitize: bool = False, native_sql: bool = False,
-                     native_affects: bool = False) -> None:
+                     native_affects: bool = False, optimize: bool = False) -> None:
     # Execute the maintained helper bodies with the game-service seams in the
     # existing harness; the actual runtime/worker/writer remain linked below.
     source = (ROOT / "src/magic/affects.c").read_text()
@@ -221,6 +265,8 @@ def compile_gameplay(executable: Path, *, sanitize: bool = False, native_sql: bo
         command.append("-D__NO_MYSQL__")
     if sanitize:
         command.extend(["-g", "-fno-omit-frame-pointer", "-fsanitize=address,undefined"])
+    if optimize:
+        command.append("-O2")
     subprocess.run(command, cwd=ROOT, check=True, timeout=120)
 
 
@@ -269,9 +315,72 @@ def verify_native_build_context(executable: Path) -> None:
     print("native equipment and learned-epic SHA-256 canonical references passed")
 
 
+def verify_native_result_capture(executable: Path) -> None:
+    sys.path.insert(0, str(ROOT / "scripts/telemetry"))
+    import battle_result_contract as results
+    exported = executable.parent / "native-result-adapters.jsonl"
+    subprocess.run([str(executable), "--native-result-capture"], cwd=ROOT,
+        env=dict(os.environ, TELEMETRY_RESULT_CAPTURE_EXPORT=str(exported)), check=True, timeout=30)
+    rows = [json.loads(line) for line in exported.read_text(encoding="utf-8").splitlines()]
+    assert len(rows) == 18
+    values = {}
+    for row in rows:
+        row["bout_operation_id"] = bytes.fromhex(row["bout_operation_id"])
+        results.validate_raw_observation(row)
+        key = results.observation_key(row)
+        assert key not in values
+        values[key] = row
+    for key, row in values.items():
+        if row["bout_kind"] in (4, 8):
+            parent = values[(*key[:2], row["bout_parent_sequence"])]
+            assert parent["bout_kind"] == 2 or (parent["bout_kind"] == 3 and parent["bout_authority"] == 3)
+            assert row["bout_start_usec"] == parent["bout_at_usec"]
+            assert row["bout_target_actor_id"] == parent["bout_target_actor_id"]
+            assert row["bout_target_battle_seq"] == parent["bout_target_battle_seq"]
+    objectives = [row for row in rows if row["bout_authority"] == 7]
+    assert len(objectives) == 3
+    assert all(row["bout_operation_id"] == bytes(range(1, 17)) for row in objectives)
+    assert all(row["bout_source_object_uid"] == 810101 for row in objectives)
+    assert all(row["bout_target_session_seq"] == row["bout_target_battle_seq"] == 0 for row in objectives)
+    print("native result adapters: 18 exact independently validated rows; synthetic pulse-clock fixture")
+    subprocess.run([str(executable), "--native-result-budget-fixture"], cwd=ROOT, check=True, timeout=30)
+
+
+def result_performance(output: Path) -> None:
+    """Measure native callbacks and the actual bounded pulse with live watches."""
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="result-performance-", dir=ROOT / "bin/tests") as directory:
+        executable = Path(directory) / "native-results"
+        compile_gameplay(executable, optimize=True)
+        profiles = []
+        for repetition in range(5):
+            completed = subprocess.check_output([str(executable), "--native-result-performance"], cwd=ROOT,
+                text=True, timeout=90)
+            profiles.extend(dict(json.loads(line), repetition=repetition) for line in completed.splitlines())
+        assert len(profiles) == 30
+        for profile in profiles:
+            assert profile["event_heap_calls"] == profile["event_crypto_heap_calls"] == 0
+            assert profile["samples"] == 4096 and profile["world_nodes"] == 4096
+            assert profile["p99_ns"] <= 1_000_000 and profile["p999_ns"] <= 5_000_000
+            assert profile["watched_players"] in (50, 200, 256)
+        report = dict(status="passed", profiles=profiles, compiler=subprocess.check_output(
+            ["g++", "--version"], text=True).splitlines()[0], compile_optimization="-O2",
+            measurement="native begin/finish or full game-thread pulse; fixture world and private fake writer; SQL and Telnet excluded",
+            watched_player_workloads=[50, 200, 256], session_capacity=256, fixed_watch_capacity=512,
+            fixed_watch_state_upper_bytes=256 * 1024, world_node_limit=4096,
+            combined_selection_limit=16, build_read_limit_per_second=16,
+            capture_p99_budget_ns=1_000_000, capture_p999_budget_ns=5_000_000,
+            event_heap_calls=0, running_server=False, positive_gameplay_qualification=False,
+            synthetic_escape_clock_fixture=True, session_capacity_refusal=True,
+            bounded_pending_selection=True, world_capacity_censoring=True, lifetime_censoring=True)
+        output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps({key: report[key] for key in ("status", "watched_player_workloads", "fixed_watch_capacity", "event_heap_calls")}))
+
+
 def main(*, sanitize: bool = False, native_affects: bool = False) -> None:
     verify_build_mutation_hooks()
     verify_control_mutation_hooks()
+    verify_result_hooks()
     artifacts = ROOT / "bin/tests"
     artifacts.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="telemetry-gameplay-", dir=artifacts) as directory:
@@ -281,6 +390,7 @@ def main(*, sanitize: bool = False, native_affects: bool = False) -> None:
             subprocess.run([str(executable), "--native-affects"], cwd=ROOT, check=True, timeout=30)
             return
         verify_native_build_context(executable)
+        verify_native_result_capture(executable)
         completed = subprocess.run(
             [str(executable)], cwd=ROOT, check=False, text=True, capture_output=True, timeout=30
         )
@@ -295,5 +405,10 @@ if __name__ == "__main__":
     parser.add_argument("--sanitize", action="store_true", help="run AddressSanitizer and UndefinedBehaviorSanitizer")
     parser.add_argument("--native-affects", action="store_true",
                         help="execute maintained affect apply/rebuild/removal/expiry functions")
+    parser.add_argument("--result-performance-output", type=Path,
+                        help="measure optimized native result capture and pending-watch pulse")
     arguments = parser.parse_args()
-    main(sanitize=arguments.sanitize, native_affects=arguments.native_affects)
+    if arguments.result_performance_output:
+        result_performance(arguments.result_performance_output)
+    else:
+        main(sanitize=arguments.sanitize, native_affects=arguments.native_affects)

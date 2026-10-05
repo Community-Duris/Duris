@@ -1952,6 +1952,8 @@ void die(P_char ch, P_char killer)
 
 	if (!killer)
 		return;
+	auto death_evidence = telemetry_runtime_game_battle_result_begin(
+		ch, killer, telemetry_battle_result_authority::native_death);
 	if (IS_PC(ch))
 		(void)telemetry_runtime_game_encounter_leave(ch,
 							     telemetry_encounter_outcome::death);
@@ -1999,6 +2001,9 @@ void die(P_char ch, P_char killer)
 			act("Upon being struck, $n disappears into thin air.", TRUE, ch, 0, 0,
 			    TO_ROOM);
 		}
+		(void)telemetry_runtime_game_battle_result_finish(
+			death_evidence, ch, telemetry_battle_result_kind::unresolved,
+			telemetry_battle_result_reason::source_unknown);
 		extract_char(ch);
 		return;
 	}
@@ -2016,7 +2021,12 @@ void die(P_char ch, P_char killer)
 	}
 
 	if (check_outpost_death(ch, killer))
+	{
+		(void)telemetry_runtime_game_battle_result_finish(
+			death_evidence, nullptr, telemetry_battle_result_kind::unresolved,
+			telemetry_battle_result_reason::source_unknown);
 		return;
+	}
 
 	// PCs and NPCs without a die proc.  Note: Uses lazy eval since PC->specials.act ACT_SPEC_DIE
 	//   is actually PLR_SMARTPROMPT (which isn't implemented as of 5/16/2015).
@@ -2062,7 +2072,12 @@ void die(P_char ch, P_char killer)
 
 	// For innate resurrection which I've never heard of.
 	if (check_reincarnate(ch))
+	{
+		(void)telemetry_runtime_game_battle_result_finish(
+			death_evidence, ch, telemetry_battle_result_kind::unresolved,
+			telemetry_battle_result_reason::reincarnated);
 		return;
+	}
 
 	P_char eth_ch = get_linked_char(ch, LNK_ETHEREAL);
 	if (!eth_ch)
@@ -2075,6 +2090,9 @@ void die(P_char ch, P_char killer)
 
 	if (!killer)
 		return;
+
+	(void)telemetry_runtime_game_battle_result_finish(
+		death_evidence, ch, telemetry_battle_result_kind::death_observed);
 
 	holy_crusade_check(killer, ch);
 	soul_taking_check(killer, ch);

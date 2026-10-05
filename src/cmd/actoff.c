@@ -2767,14 +2767,27 @@ void do_flee(P_char ch, char *argument, int cmd)
 
 	ch->points.delay_move = 0;
 
+	telemetry_battle_result_token flee_evidence{};
 	if (succeded)
+	{
+		flee_evidence = telemetry_runtime_game_battle_result_begin(
+			ch, nullptr, telemetry_battle_result_authority::accepted_flee);
 		do_simple_move(ch, attempted_dir, MVFLG_DRAG_FOLLOWERS | MVFLG_FLEE);
+	}
 
 	if (!IS_ALIVE(ch))
+	{
+		(void)telemetry_runtime_game_battle_result_finish(
+			flee_evidence, nullptr, telemetry_battle_result_kind::unresolved,
+			telemetry_battle_result_reason::not_alive);
 		return;
+	}
 
 	if (start_room == ch->in_room)
 	{
+		(void)telemetry_runtime_game_battle_result_finish(
+			flee_evidence, ch, telemetry_battle_result_kind::unresolved,
+			telemetry_battle_result_reason::movement_refused);
 		act("$n tries to flee, but can't make it out of here!", TRUE, ch, 0, 0, TO_ROOM);
 
 		if (was_fighting)
@@ -2835,6 +2848,8 @@ void do_flee(P_char ch, char *argument, int cmd)
 
 	if (atts)
 		StopAllAttackers(ch);
+	(void)telemetry_runtime_game_battle_result_finish(
+		flee_evidence, ch, telemetry_battle_result_kind::flee_movement);
 	if (start_room != ch->in_room && restore_equipment_sneak_after_flee(ch))
 		send_to_char(
 			"The moment of panic has passed, and you slip back into a quiet step.\r\n",
@@ -7908,7 +7923,11 @@ void do_disengage(P_char ch, char * /*arg*/, int /*cmd*/)
 	{
 		if (GET_STAT(GET_OPPONENT(ch)) > STAT_SLEEPING)
 			CharWait(ch, PULSE_VIOLENCE);
+		auto withdrawal_evidence = telemetry_runtime_game_battle_result_begin(
+			ch, nullptr, telemetry_battle_result_authority::accepted_disengage);
 		stop_fighting(ch);
+		(void)telemetry_runtime_game_battle_result_finish(
+			withdrawal_evidence, ch, telemetry_battle_result_kind::withdrawal);
 		act("You disengage from the fight!", FALSE, ch, 0, 0, TO_CHAR);
 		act("$n stops fighting.", TRUE, ch, 0, 0, TO_ROOM);
 		return;
@@ -8102,6 +8121,8 @@ void do_retreat(P_char ch, char *arg, int /*cmd*/)
 
 	if (number(1, 100) <= chance)
 	{ // Success...
+		auto withdrawal_evidence = telemetry_runtime_game_battle_result_begin(
+			ch, nullptr, telemetry_battle_result_authority::accepted_retreat);
 		if (found)
 		{
 			if (expdr && !IS_RIDING(ch) && expdr > number(1, 110))
@@ -8132,6 +8153,10 @@ void do_retreat(P_char ch, char *arg, int /*cmd*/)
 				{
 					act("&+RYour cantrip fails!  You fail the retreat!&n",
 					    FALSE, ch, 0, 0, TO_CHAR);
+					(void)telemetry_runtime_game_battle_result_finish(
+						withdrawal_evidence, ch,
+						telemetry_battle_result_kind::unresolved,
+						telemetry_battle_result_reason::movement_refused);
 					return;
 				}
 			}
@@ -8164,6 +8189,10 @@ void do_retreat(P_char ch, char *arg, int /*cmd*/)
 			act(Gbuf1, TRUE, ch, 0, 0, TO_ROOM);
 		}
 		do_simple_move(ch, dir, 0);
+		(void)telemetry_runtime_game_battle_result_finish(
+			withdrawal_evidence,
+			find_character_by_runtime_id(withdrawal_evidence.target_runtime_id),
+			telemetry_battle_result_kind::withdrawal);
 		if (IS_PC(ch))
 			(void)telemetry_runtime_game_encounter_leave(
 				ch, telemetry_encounter_outcome::withdrawal);

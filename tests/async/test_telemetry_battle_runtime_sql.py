@@ -27,6 +27,7 @@ import battle_contract
 import battle_contribution_contract
 import battle_build_contract
 import control_contract
+import battle_result_contract
 import battle_source as retained_source
 import battle_history
 import battle_publication
@@ -37,6 +38,24 @@ from db_access import (RAW_COLUMNS, AmbiguousCommit, ConnectionSettings, Generat
 from rollup_definitions import RollupTarget, PUBLICATION_BUILDING, PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED
 from rollup_engine import RollupEngine, RollupBounds, BoundsExceeded, SemanticError
 from test_telemetry_observations import ownership
+
+
+def qualify_native_result_storage(query, executable, run_environment, export, environment, command, name):
+    origin = int(query("SELECT COALESCE(MAX(ingest_id),0) AS n FROM telemetry_interval")[0]["n"])
+    subprocess.run([str(executable), "--native-result-sql"], cwd=ROOT,
+        env=dict(run_environment, TELEMETRY_RESULT_CAPTURE_EXPORT=str(export)), check=True, timeout=30)
+    emitted = [json.loads(line) for line in export.read_text().splitlines()]
+    stored = query("SELECT " + ",".join(RAW_COLUMNS) + " FROM telemetry_interval WHERE record_kind=14 AND ingest_id>%s "
+        "ORDER BY boot_id,process_id,record_seq", (origin,))
+    assert len(stored) == len(emitted) == 18
+    key = lambda row: (row["boot_id"], row["process_id"], row["record_seq"])
+    for expected, raw in zip(sorted(emitted, key=key), stored, strict=True):
+        expected["bout_operation_id"] = bytes.fromhex(expected["bout_operation_id"])
+        battle_result_contract.validate_raw_observation(raw)
+        assert all(raw[name] == value for name, value in expected.items()), "native outcome/SQL field drift"
+    assert query("SELECT COUNT(*) AS n FROM telemetry_quarantine")[0]["n"] == 0
+    return dict(qualify_native_battle_publication(query, environment, command, name, origin, definition=8),
+        native_result_records=18, native_result_fields=74, native_result_sql_exact=True)
 
 
 def qualify_native_build_storage(query, executable, run_environment, export, environment, command, name):
@@ -81,26 +100,27 @@ def qualify_native_build_storage(query, executable, run_environment, export, env
 
 def qualify_native_battle_publication(query, environment, command, name, origin, *, definition=6):
     """Exact native build/control inputs through the same restricted publisher."""
-    assert definition in (6, 7)
-    family, prefix = (12, "bctx_") if definition == 6 else (13, "ctl_")
+    assert definition in (6, 7, 8)
+    family, prefix = {6: (12, "bctx_"), 7: (13, "ctl_"), 8: (14, "bout_")}[definition]
     incident_version = incident.generation_schema(definition)
     token = hashlib.sha256((name + str(definition)).encode()).hexdigest()[:12]
     password = "synthetic-build-publication-" + token
     users, adapters = [], []
     selected = query("SELECT " + ",".join(RAW_COLUMNS) +
         " FROM telemetry_interval WHERE ingest_id>%s AND record_kind IN (9,10,11,12" +
-        (",13" if definition == 7 else "") + ") ORDER BY ingest_id", (origin,))
+        (",13,14" if definition == 8 else ",13" if definition == 7 else "") + ") ORDER BY ingest_id", (origin,))
     first = next(row for row in selected if row["record_kind"] == family)
     target = RollupTarget(definition, 1, first[prefix + "environment_id"], first[prefix + "season_id"])
     through = query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"]
     tables = tuple(retained_source.table(table, target.scope_tuple) for table in (
         "telemetry_battle_source", "telemetry_battle_input", "telemetry_rollup_battle_coverage", "telemetry_rollup_battle_row"))
     review_tables = incident.schema_contract(incident_version)[2:]
-    report_name = "battle_build_points" if definition == 6 else "battle_control_operations"
+    report_name = {6: "battle_build_points", 7: "battle_control_operations", 8: "battle_outcomes"}[definition]
     report_kinds = battle_publication.row_kinds(target.scope_tuple)
     old_public = {table: query("SELECT * FROM " + table + " ORDER BY definition_version,generation,environment_id,season_id" +
         (",row_kind,row_key" if "_row" in table else "")) for table in ("telemetry_rollup_battle_row", "telemetry_rollup_battle_coverage",
-            *(("telemetry_rollup_battle_row_v6", "telemetry_rollup_battle_coverage_v6") if definition == 7 else ()))}
+            *(("telemetry_rollup_battle_row_v6", "telemetry_rollup_battle_coverage_v6") if definition >= 7 else ()),
+            *(("telemetry_rollup_battle_row_v7", "telemetry_rollup_battle_coverage_v7") if definition == 8 else ()))}
     scope_where = "definition_version=%s AND generation=%s AND environment_id=%s AND season_id=%s"
     try:
         grants = {
@@ -113,6 +133,11 @@ def qualify_native_battle_publication(query, environment, command, name, origin,
                 "telemetry_rollup_incident_coverage": "SELECT", "telemetry_rollup_incident": "SELECT"},
             "review": {"telemetry_interval": "SELECT", review_tables[0]: "SELECT,INSERT", review_tables[1]: "SELECT,INSERT"},
         }
+        if definition == 8:
+            # Native session entry/exit also produces the maintained base
+            # projections in the same cursor transaction.
+            grants["rollup"].update({table: "SELECT,INSERT,UPDATE" for table in (
+                "telemetry_rollup_session", "telemetry_player_day", "telemetry_cohort_day", "telemetry_cohort_member")})
         for role, permissions in grants.items():
             user = "tbr_build_" + role + "_" + token
             query("CREATE USER %s@'%%' IDENTIFIED BY %s", (user, password))
@@ -142,12 +167,12 @@ def qualify_native_battle_publication(query, environment, command, name, origin,
             rollup._commit = commit
         assert lost_page_ack[0]
         retained = rollup.read_battle_source(target)
-        assert retained.header["build_count" if definition == 6 else "control_count"] == (20 if definition == 6 else 80)
+        assert retained.header[{6: "build_count", 7: "control_count", 8: "result_count"}[definition]] == {6: 20, 7: 80, 8: 18}[definition]
         assert len(retained.facts) == len(selected)
         for raw, value, config in zip(selected, retained.facts, retained.configurations, strict=True):
             assert all(value[field] == raw[field] for field in retained_source.SOURCE_COLUMNS[raw["record_kind"]])
-            if raw["record_kind"] in (12, 13) and raw[("bctx_" if raw["record_kind"] == 12 else "ctl_") + "config_id"]:
-                config_prefix = "bctx_" if raw["record_kind"] == 12 else "ctl_"
+            config_prefix = {12: "bctx_", 13: "ctl_", 14: "bout_"}.get(raw["record_kind"])
+            if config_prefix and raw[config_prefix + "config_id"]:
                 assert config == {field: raw[config_prefix + field] for field in retained_source.configuration_columns(raw["record_kind"])}
             else:
                 assert config is None
@@ -209,23 +234,33 @@ def qualify_native_battle_publication(query, environment, command, name, origin,
         assert lost_public_ack[0]
         reports = {report: reporter.read_report(target, report) for report in report_kinds}
         points = reports[report_name]
-        assert len(points.rows) == (20 if definition == 6 else 56) and not points.truncated
+        assert len(points.rows) == {6: 20, 7: 56, 8: 18}[definition] and not points.truncated
         assert points.coverage.incident_coverage["registry_schema_version"] == incident_version
-        assert points.coverage.battle_coverage["build_row_count" if definition == 6 else "control_operation_count"] == len(points.rows)
+        assert points.coverage.battle_coverage[{6: "build_row_count", 7: "control_operation_count", 8: "result_row_count"}[definition]] == len(points.rows)
         if definition == 6:
             assert points.coverage.battle_coverage["verified_build_links"] + points.coverage.battle_coverage["partial_build_links"] == 20
             assert all(not row["continuous_build_exposure_implied"] for row in points.rows)
-        else:
+        elif definition == 7:
             assert sum(row["accepted_application_count"] for row in points.rows) == 18
             assert points.coverage.battle_coverage["control_count"] == 80
             states = reports["battle_control_states"]
             assert len(states.rows) == 24 and not states.truncated
             assert all(row["ctl_duration_coverage"] == 255 and row["qualified_status_usec"] == [None] * 8 for row in states.rows)
-        contract = battle_build_contract if definition == 6 else control_contract
+        else:
+            summary = points.coverage.battle_coverage
+            assert summary["observed_death_count"] == summary["observed_escape_count"] == 1
+            assert summary["observed_objective_commit_count"] == 2 and summary["qualified_objective_commit_count"] == 1
+            assert summary["recovered_objective_count"] == 1 and summary["observed_censored_count"] == 4
+            assert summary["qualified_result_evidence_count"] > 0 and summary["qualified_result_context_count"] > 0
+            assert all(not row["whole_battle_victory_implied"] and not row["full_zone_clear_implied"] for row in points.rows)
+            comparisons = reports["battle_build_comparisons"]
+            assert comparisons.rows == reports["battle_build_points"].rows and comparisons.rows
+            assert all(row["comparison"] == battle_publication._comparison_value(row) for row in comparisons.rows)
+        contract = {6: battle_build_contract, 7: control_contract, 8: battle_result_contract}[definition]
         raw_points = {contract.observation_key(row): row for row in selected if row["record_kind"] == family}
         for row in points.rows:
             raw = raw_points[contract.observation_key(row)]
-            assert all(row[field] == (raw[field].hex() if definition == 6 and field in battle_build_contract.BYTE_FIELDS else raw[field])
+            assert all(row[field] == (raw[field].hex() if definition in (6, 8) and field in contract.BYTE_FIELDS else raw[field])
                 for field in contract.FIELDS)
         assert rollup.publish_generation(target)["status"] == "published"
         assert reporter.read_report(target, report_name) == points
@@ -259,6 +294,8 @@ def qualify_native_battle_publication(query, environment, command, name, origin,
         assert lost["publication_quality_flags"] & incident.QUALITY_INCIDENT_GAP
         if definition == 6:
             assert not lost["point_context_verified"]
+        if definition == 8:
+            assert not lost["event_evidence_qualified"]
         frozen = reporter.read_report(target, report_name)
         assert frozen.rows == points.rows and frozen.coverage.battle_coverage == points.coverage.battle_coverage
         assert frozen.coverage.incident_coverage == points.coverage.incident_coverage
@@ -275,7 +312,7 @@ def qualify_native_battle_publication(query, environment, command, name, origin,
         for table, expected in old_public.items():
             assert query("SELECT * FROM " + table + " ORDER BY definition_version,generation,environment_id,season_id" +
                 (",row_kind,row_key" if "_row" in table else "")) == expected
-        schema = ROOT / "migrations/immutable" / ("0066_telemetry_build_publication.sql" if definition == 6 else "0068_telemetry_control_publication.sql")
+        schema = ROOT / "migrations/immutable" / {6: "0066_telemetry_build_publication.sql", 7: "0068_telemetry_control_publication.sql", 8: "0070_telemetry_result_publication.sql"}[definition]
         fingerprint = runtime_fingerprint(environment)
         def apply():
             subprocess.run(command + [name], input=schema.read_bytes(), env=environment, check=True, stdout=subprocess.DEVNULL)
@@ -301,7 +338,7 @@ def qualify_native_battle_publication(query, environment, command, name, origin,
         verify()
         drop = "DROP CONSTRAINT" if "mariadb" in os.environ["TELEMETRY_REPOSITORY_DB_IMAGE"] else "DROP CHECK"
         constraint = "chk_battle" + str(definition) + "_row_kind"
-        upper = 6 if definition == 6 else 8
+        upper = {6: 6, 7: 8, 8: 9}[definition]
         query(f"ALTER TABLE {tables[3]} {drop} {constraint}")
         query(f"ALTER TABLE {tables[3]} ADD CONSTRAINT {constraint} CHECK (row_kind BETWEEN 1 AND {upper + 1})")
         verify(False)
@@ -314,21 +351,29 @@ def qualify_native_battle_publication(query, environment, command, name, origin,
         assert reporter.read_report(target, report_name) == points
         query("UPDATE telemetry_config SET content_version=content_version-1 WHERE config_id=%s", (config_id,))
         evidence = dict(build_publication_definition=definition, build_publication_incident_schema=incident_version,
-            build_publication_exact_points=20 if definition == 6 else 80, build_publication_retained_configuration=True,
+            build_publication_exact_points={6: 20, 7: 80, 8: 18}[definition], build_publication_retained_configuration=True,
             build_publication_private_roles=True, build_publication_rollback=True, build_publication_bounded_reports=True,
             build_publication_page_lost_acknowledgement=True, build_publication_lost_acknowledgement=True,
             build_publication_kind_twelve_loss=True, build_publication_review_correction=True, build_publication_old_generation_immutable=True,
             build_publication_cli=True, build_publication_raw_retention=True, build_publication_catalogue_independent=True,
             build_publication_sealed_definition_five_preserved=True, build_publication_schema_rerun=True,
             build_publication_schema_drift_refused=True, build_publication_restored_metadata=True,
-            build_publication_qualified_points=points.coverage.battle_coverage["qualified_build_points" if definition == 6 else "qualified_control_prefixes"],
-            build_publication_partial_links=points.coverage.battle_coverage["partial_build_links" if definition == 6 else "partial_control_target_links"])
+            build_publication_qualified_points=points.coverage.battle_coverage[{6: "qualified_build_points", 7: "qualified_control_prefixes", 8: "qualified_result_evidence_count"}[definition]],
+            build_publication_partial_links=points.coverage.battle_coverage[{6: "partial_build_links", 7: "partial_control_target_links", 8: "unknown_result_evidence_count"}[definition]])
         if definition == 7:
             evidence = {key.replace("build_publication_", "control_publication_"): value for key, value in evidence.items()}
             evidence.pop("control_publication_kind_twelve_loss")
             evidence.update(control_publication_kind_thirteen_loss=True, control_publication_operations=56,
                 control_publication_accepted_operations=18, control_publication_state_rows=24,
                 control_publication_partial_native_duration=True, control_publication_sealed_definition_six_preserved=True)
+        if definition == 8:
+            evidence = {key.replace("build_publication_", "result_publication_"): value for key, value in evidence.items()}
+            evidence.pop("result_publication_kind_twelve_loss")
+            evidence.update(result_publication_kind_fourteen_loss=True, result_publication_exact_operation_bytes=16,
+                result_publication_build_comparisons=True, result_publication_sealed_definition_seven_preserved=True,
+                result_publication_deaths=1, result_publication_confirmed_escape=1, result_publication_censored_watches=4,
+                result_publication_supported_objectives=1, result_publication_recovered_claims=1,
+                result_publication_running_server=False, result_publication_escape_clock_fixture=True)
         return evidence
     finally:
         for database in adapters:
@@ -1146,6 +1191,8 @@ def qualify() -> None:
                 export.with_name("builds.jsonl"), environment, command, name))
             result.update(qualify_native_battle_publication(query, environment, command, name,
                 result["native_typed_control_source_origin_ingest_id"], definition=7))
+            result.update(qualify_native_result_storage(query, executable, run_environment,
+                export.with_name("results.jsonl"), environment, command, name))
             if artifact := os.environ.get("TELEMETRY_BATTLE_RUNTIME_RESULT"):
                 Path(artifact).write_text(json.dumps(result, indent=2) + "\n")
             print(json.dumps(result, sort_keys=True), flush=True)

@@ -5,6 +5,7 @@
 #include "telemetry/telemetry_battle_contribution.h"
 #include "telemetry/telemetry_battle_build_context.h"
 #include "telemetry/telemetry_battle_build_observation.h"
+#include "world/zone_touch_command.h"
 #include "combat/arena.h"
 #include "telemetry/telemetry_transport_private.h"
 #include "core/structs.h"
@@ -22,6 +23,7 @@
 #include "telemetry/telemetry_session.h"
 #include "telemetry_test_runtime.h"
 #include <memory>
+#include <algorithm>
 #include <limits>
 #include <atomic>
 #include <cassert>
@@ -34,6 +36,8 @@
 #include <thread>
 #include <vector>
 #include <set>
+#include <map>
+#include <new>
 #include <openssl/crypto.h>
 
 P_room world = nullptr;
@@ -47,6 +51,23 @@ struct arena_data arena
 };
 thread_local bool fixture_track_crypto = false;
 thread_local std::uint64_t fixture_crypto_heap_calls = 0U;
+thread_local bool fixture_track_game_heap = false;
+thread_local std::uint64_t fixture_game_heap_calls = 0U;
+void *operator new(std::size_t bytes)
+{
+	fixture_game_heap_calls += fixture_track_game_heap;
+	if (void *value = std::malloc(bytes))
+		return value;
+	throw std::bad_alloc();
+}
+void operator delete(void *value) noexcept
+{
+	std::free(value);
+}
+void operator delete(void *value, std::size_t) noexcept
+{
+	std::free(value);
+}
 static const std::thread::id fixture_game_thread_id = std::this_thread::get_id();
 bool nevent_require_game_thread(const char *)
 {
@@ -427,6 +448,7 @@ struct fake_repository
 	std::vector<telemetry_record> contributions;
 	std::vector<telemetry_record> builds;
 	std::vector<telemetry_record> controls;
+	std::vector<telemetry_record> results;
 };
 
 telemetry_repository_outcome fake_init(void *context, telemetry_repository_config config) noexcept
@@ -503,6 +525,11 @@ telemetry_apply_batch_result fake_apply(void *context, const telemetry_record *r
 		{
 			assert(telemetry_record_is_valid(records[index]));
 			fake->controls.push_back(records[index]);
+		}
+		if (records[index].header.kind == telemetry_record_kind::battle_result)
+		{
+			assert(telemetry_record_is_valid(records[index]));
+			fake->results.push_back(records[index]);
 		}
 		if (records[index].header.kind == telemetry_record_kind::interval &&
 		    records[index].payload.interval.context == telemetry_activity_context::combat)
@@ -3488,6 +3515,494 @@ void export_native_build_capture(const fake_repository &fake)
 	assert(std::fclose(file) == 0);
 }
 
+void export_native_result_capture(const fake_repository &fake)
+{
+	const char *path = std::getenv("TELEMETRY_RESULT_CAPTURE_EXPORT");
+	if (!path)
+		return;
+	auto *output = std::fopen(path, "wb");
+	assert(output);
+	for (const auto &record : fake.results)
+	{
+		std::fprintf(
+			output,
+			"{\"boot_id\":%llu,\"process_id\":%llu,\"record_seq\":%llu,\"record_kind\":14,\"schema_version\":1,\"occurrence_utc_usec\":%lld",
+			static_cast<unsigned long long>(record.header.key.producer.boot_id),
+			static_cast<unsigned long long>(record.header.key.producer.process_id),
+			static_cast<unsigned long long>(record.header.key.record_seq),
+			static_cast<long long>(record.header.occurrence_utc_usec));
+#define TELEMETRY_RESULT_FIELD(name, member, width, is_signed)                             \
+	if constexpr (is_signed)                                                           \
+		std::fprintf(output, ",\"" #name "\":%lld",                                \
+			     static_cast<long long>(record.payload.battle_result.member)); \
+	else                                                                               \
+		std::fprintf(                                                              \
+			output, ",\"" #name "\":%llu",                                     \
+			static_cast<unsigned long long>(record.payload.battle_result.member));
+#define TELEMETRY_RESULT_BYTES(name, member, width)                        \
+	std::fputs(",\"" #name "\":\"", output);                           \
+	for (auto byte : record.payload.battle_result.member)              \
+		std::fprintf(output, "%02x", static_cast<unsigned>(byte)); \
+	std::fputc('"', output);
+#include "telemetry/telemetry_battle_result_fields.inc"
+#undef TELEMETRY_RESULT_FIELD
+#undef TELEMETRY_RESULT_BYTES
+		std::fputs("}\n", output);
+	}
+	assert(std::fclose(output) == 0);
+}
+
+void check_native_result_capture(bool use_native = false, bool export_capture = false)
+{
+	using kind = telemetry_battle_result_kind;
+	using authority = telemetry_battle_result_authority;
+	using reason = telemetry_battle_result_reason;
+	fake_repository fake{};
+	fake.use_native = use_native;
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	auto options = enabled_options();
+	options.config.context_segments_per_minute = 64U;
+	assert(telemetry_config_compute_fingerprint(options.config, options.config.fingerprint,
+						    sizeof(options.config.fingerprint)));
+	options.config.config_id = telemetry_config_id_from_fingerprint(
+		options.config.fingerprint, sizeof(options.config.fingerprint));
+	telemetry_test_start_runtime(options);
+	room_data rooms[2]{};
+	const auto initial_result_config = telemetry_config_snapshot_copy();
+	rooms[0].number = 199701;
+	rooms[1].number = 199702;
+	zone_data zone{};
+	zone.number = 1997;
+	world = rooms;
+	zone_table = &zone;
+	top_of_world = 1;
+	top_of_zone_table = 0;
+	char_data player{}, target{};
+	pc_only_data player_pc{}, target_pc{};
+	player.only.pc = &player_pc;
+	target.only.pc = &target_pc;
+	player_pc.pid = 8991;
+	target_pc.pid = 8992;
+	fixture_native_lifetimes lifetimes{ &player, &target };
+	for (auto *actor : { &player, &target })
+	{
+		actor->in_room = 0;
+		actor->player.level = 25;
+		actor->player.m_class = CLASS_WARRIOR;
+		actor->player.race = RACE_HUMAN;
+		actor->player.racewar = 5U;
+		actor->specials.position = STAT_NORMAL;
+	}
+	descriptor_data player_descriptor{}, target_descriptor{};
+	player_descriptor.connected = target_descriptor.connected = CON_PLAYING;
+	player_descriptor.character = &player;
+	target_descriptor.character = &target;
+	player.desc = &player_descriptor;
+	target.desc = &target_descriptor;
+	assert(telemetry_runtime_game_enter(&player, &player_descriptor).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_game_enter(&target, &target_descriptor).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	character_list = &player;
+	player.next = &target;
+	auto engage = [&]
+	{
+		player.in_room = target.in_room = 0;
+		player.specials.fighting = &target;
+		target.specials.fighting = &player;
+		assert(telemetry_runtime_game_combat_engage(&player, &target).outcome ==
+		       telemetry_runtime_outcome::accepted);
+	};
+	auto depart = [&](authority source = authority::accepted_flee)
+	{
+		engage();
+		auto evidence =
+			telemetry_runtime_game_battle_result_begin(&target, nullptr, source);
+		assert(evidence.observation.target_association.battle_sequence);
+		assert(telemetry_runtime_game_battle_leave(&target).outcome ==
+		       telemetry_runtime_outcome::accepted);
+		target.in_room = 1;
+		player.specials.fighting = target.specials.fighting = nullptr;
+		assert(telemetry_runtime_game_battle_result_finish(
+			       evidence, &target,
+			       source == authority::accepted_flee ? kind::flee_movement :
+								    kind::withdrawal)
+			       .records_emitted == 1U);
+	};
+	engage();
+	const auto living_position = target.specials.position;
+	// die() is entered after raw_damage has already marked the victim dead.
+	// Its lifetime/session/context must remain capturable before teardown.
+	target.specials.position = POS_STANDING + STAT_DEAD;
+	auto death = telemetry_runtime_game_battle_result_begin(&target, &player,
+								authority::native_death);
+	const auto death_basis = death.observation.target_association;
+	assert(death_basis.battle_sequence && death.observation.source_association.battle_sequence);
+	(void)telemetry_runtime_game_encounter_leave(&target, telemetry_encounter_outcome::death);
+	assert(telemetry_runtime_game_battle_result_finish(death, &target, kind::death_observed)
+		       .records_emitted == 1U);
+	assert(telemetry_runtime_game_battle_result_finish(death, &target, kind::death_observed)
+		       .records_emitted == 0U);
+	target.specials.position = living_position;
+	engage();
+	auto revived = telemetry_runtime_game_battle_result_begin(&target, &player,
+								  authority::native_death);
+	assert(telemetry_runtime_game_battle_result_finish(revived, &target, kind::unresolved,
+							   reason::reincarnated)
+		       .records_emitted == 1U);
+	auto disengaged = telemetry_runtime_game_battle_result_begin(&target, nullptr,
+								     authority::accepted_disengage);
+	target.specials.fighting = nullptr;
+	assert(telemetry_runtime_game_battle_result_finish(disengaged, &target, kind::withdrawal)
+		       .records_emitted == 1U);
+	auto refused = telemetry_runtime_game_battle_result_begin(&target, nullptr,
+								  authority::accepted_flee);
+	assert(telemetry_runtime_game_battle_result_finish(refused, &target, kind::flee_movement)
+		       .records_emitted == 1U);
+	depart();
+	engage(); // The accepted hostile boundary cancels the prior watch immediately.
+	depart(authority::accepted_retreat);
+	(void)telemetry_runtime_encounter_close_all(telemetry_encounter_outcome::copyover);
+	depart();
+	assert(telemetry_runtime_game_session_exit(&target, &target_descriptor,
+						   telemetry_session_end_reason::logout)
+		       .outcome == telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_game_enter(&target, &target_descriptor).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	depart();
+	telemetry_config_reload_observer(telemetry_config_global_state());
+	assert(telemetry_runtime_game_battle_context(&target).outcome ==
+	       telemetry_runtime_outcome::invalid);
+	auto renewed = initial_result_config;
+	++renewed.revision;
+	++renewed.policy_version;
+	assert(telemetry_config_compute_fingerprint(renewed, renewed.fingerprint,
+						    sizeof(renewed.fingerprint)));
+	renewed.config_id = telemetry_config_id_from_fingerprint(renewed.fingerprint,
+								 sizeof(renewed.fingerprint));
+	assert(telemetry_config_publish(renewed).outcome == telemetry_runtime_outcome::accepted);
+	telemetry_config_reload_request_clear(telemetry_config_global_state());
+	engage();
+	critical_operation_id operation{};
+	for (std::size_t index = 0U; index < operation.bytes.size(); ++index)
+		operation.bytes[index] = static_cast<std::uint8_t>(index + 1U);
+	zone_touch_payload objective{};
+	objective.zone_number = 1997U;
+	objective.toucher_pid = target_pc.pid;
+	objective.group_size = 1U;
+	objective.participant_pids[0] = target_pc.pid;
+	objective.stone_uid = 810101U;
+	telemetry_runtime_game_zone_objective(operation, objective, authority::zone_touch_submit,
+					      reason::none, false, &target);
+	telemetry_runtime_game_zone_objective(operation, objective, authority::zone_touch_receipt,
+					      reason::operation_pending, false);
+	telemetry_runtime_game_zone_objective(operation, objective, authority::zone_touch_receipt,
+					      reason::none, false);
+	objective.toucher_pid = player_pc.pid; // A recovered claim retains its original toucher.
+	telemetry_runtime_game_zone_objective(operation, objective, authority::zone_touch_receipt,
+					      reason::none, true);
+	depart();
+	telemetry_monotonic_usec now = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&now, &utc));
+	// Synthetic pulse clocks qualify this value adapter, not real-server escape.
+	assert(telemetry_runtime_pulse({ now + 31'000'000U, utc + 31'000'000, 0U, 0U }).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	telemetry_transport_unbind_for_tests();
+	unsigned deaths = 0U, escapes = 0U, withdrawals = 0U, censored = 0U;
+	std::set<reason> censor_reasons;
+	std::set<telemetry_sequence> sequences;
+	for (const auto &record : fake.results)
+	{
+		const auto &value = record.payload.battle_result;
+		assert(telemetry_record_is_valid(record) &&
+		       sequences.insert(value.sequence).second);
+		if (value.kind == kind::death_observed)
+		{
+			++deaths;
+			assert(value.target_association.battle_sequence ==
+			       death_basis.battle_sequence);
+			assert(value.target_association.revision == death_basis.revision);
+			assert(value.target_association.fact_sequence == death_basis.fact_sequence);
+		}
+		withdrawals += value.kind == kind::withdrawal;
+		if (value.kind == kind::censored)
+		{
+			++censored;
+			censor_reasons.insert(value.reason);
+			assert(value.parent_sequence &&
+			       !(value.flags & TELEMETRY_BATTLE_RESULT_WATCH_COMPLETE));
+		}
+		if (value.kind == kind::escape_observed)
+		{
+			++escapes;
+			assert(value.parent_sequence &&
+			       value.at_usec - value.start_usec >= 30'000'000U);
+		}
+		if (value.authority == authority::zone_touch_receipt ||
+		    value.authority == authority::zone_touch_submit)
+		{
+			assert(std::memcmp(value.operation_id, operation.bytes.data(), 16U) == 0);
+			assert(value.source_object_uid == 810101U && value.participant_count == 1U);
+			if (value.flags & TELEMETRY_BATTLE_RESULT_RECOVERED)
+				assert(value.target.actor.actor_pid == player_pc.pid &&
+				       !value.target_association.battle_sequence);
+		}
+	}
+	if (export_capture)
+	{
+		export_native_result_capture(fake);
+		export_native_build_capture(fake);
+		export_native_battle_capture(fake);
+	}
+	if (deaths != 1U || escapes != 1U || withdrawals != 2U || censored != 4U)
+	{
+		std::fprintf(
+			stderr,
+			"native_result_counts deaths=%u escapes=%u withdrawals=%u censored=%u\n",
+			deaths, escapes, withdrawals, censored);
+		for (const auto &record : fake.results)
+			std::fprintf(stderr,
+				     "native_result kind=%u reason=%u quality=%u flags=%u\n",
+				     unsigned(record.payload.battle_result.kind),
+				     unsigned(record.payload.battle_result.reason),
+				     unsigned(record.payload.battle_result.quality_flags),
+				     unsigned(record.payload.battle_result.flags));
+	}
+	assert(deaths == 1U && escapes == 1U && withdrawals == 2U && censored == 4U);
+	assert(censor_reasons ==
+	       std::set<reason>({ reason::reengaged, reason::copyover, reason::session_lost,
+				  reason::configuration_unknown }));
+	character_list = nullptr;
+	world = nullptr;
+	zone_table = nullptr;
+	top_of_world = top_of_zone_table = -1;
+	std::printf(
+		"PASS: native result adapters preserve pre-teardown association, accepted movement, withdrawal, escape watch, lifecycle/configuration cuts and exact objective operation; records=%zu\n",
+		fake.results.size());
+}
+
+[[gnu::noinline]] telemetry_capture_result
+finish_expired_result_address(telemetry_battle_result_token &token, std::uintptr_t address)
+{
+	// Keep the deliberate stale-address probe outside allocator dataflow.
+	// The callback must reject its retired native lifetime before reading it.
+	return telemetry_runtime_game_battle_result_finish(
+		token, reinterpret_cast<const char_data *>(address),
+		telemetry_battle_result_kind::withdrawal);
+}
+
+void check_native_result_budgets(std::size_t population, bool measure)
+{
+	using kind = telemetry_battle_result_kind;
+	using authority = telemetry_battle_result_authority;
+	using reason = telemetry_battle_result_reason;
+	assert(population <= TELEMETRY_SESSION_STATE_MAX_SLOTS);
+	fake_repository fake{};
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	auto options = enabled_options();
+	options.config.context_segments_per_minute = 64U;
+	assert(telemetry_config_compute_fingerprint(options.config, options.config.fingerprint,
+						    sizeof(options.config.fingerprint)));
+	options.config.config_id = telemetry_config_id_from_fingerprint(
+		options.config.fingerprint, sizeof(options.config.fingerprint));
+	telemetry_test_start_runtime(options);
+	room_data rooms[2]{};
+	zone_data zone{};
+	rooms[0].number = 199801;
+	rooms[1].number = 199802;
+	zone.number = 1998;
+	world = rooms;
+	zone_table = &zone;
+	top_of_world = 1;
+	top_of_zone_table = 0;
+	const auto hubs = (population + 31U) / 32U;
+	auto actors = std::make_unique<char_data[]>(4097U);
+	auto players = std::make_unique<pc_only_data[]>(population);
+	auto opponents = std::make_unique<npc_only_data[]>(hubs);
+	auto descriptors = std::make_unique<descriptor_data[]>(population);
+	character_list = actors.get();
+	for (std::size_t index = 0U; index < 4096U; ++index)
+		actors[index].next = index + 1U < 4096U ? &actors[index + 1U] : nullptr;
+	for (std::size_t index = 0U; index < population + hubs; ++index)
+	{
+		auto &actor = actors[index];
+		actor.runtime_id = allocate_character_runtime_id();
+		register_character_runtime_id(&actor);
+		actor.in_room = 0;
+		actor.player.level = 25;
+		actor.player.m_class = CLASS_WARRIOR;
+		actor.player.race = RACE_HUMAN;
+		actor.player.racewar = 5U;
+		actor.specials.position = STAT_NORMAL;
+		if (index < population)
+		{
+			actor.only.pc = &players[index];
+			players[index].pid = 9100 + static_cast<int>(index);
+			actor.desc = &descriptors[index];
+			descriptors[index].connected = CON_PLAYING;
+			descriptors[index].character = &actor;
+			assert(telemetry_runtime_game_enter(&actor, actor.desc).outcome ==
+			       telemetry_runtime_outcome::accepted);
+		}
+		else
+		{
+			actor.only.npc = &opponents[index - population];
+			actor.specials.act = ACT_ISNPC;
+		}
+	}
+	for (std::size_t index = 0U; index < population; ++index)
+	{
+		auto &actor = actors[index];
+		auto &opponent = actors[population + index / 32U];
+		actor.specials.fighting = &opponent;
+		opponent.specials.fighting = &actor;
+		assert(telemetry_runtime_game_combat_engage(&actor, &opponent).outcome ==
+		       telemetry_runtime_outcome::accepted);
+		auto token = telemetry_runtime_game_battle_result_begin(&actor, nullptr,
+									authority::accepted_flee);
+		assert(token.observation.target_association.battle_sequence);
+		(void)telemetry_runtime_game_battle_leave(&actor);
+		actor.in_room = 1;
+		actor.specials.fighting = opponent.specials.fighting = nullptr;
+		assert(telemetry_runtime_game_battle_result_finish(token, &actor,
+								   kind::flee_movement)
+			       .records_emitted == 1U);
+		// Preparation is outside the measured callback, and permits the private
+		// worker to drain packets without enlarging detail admission.
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	}
+	telemetry_monotonic_usec now = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+	assert(telemetry_runtime_now(&now, &utc));
+	const auto samples = measure ? 4096U : 1U;
+	auto profile = [&](const char *stage, auto callback)
+	{
+		std::vector<std::uint64_t> elapsed(samples);
+		fixture_game_heap_calls = fixture_crypto_heap_calls = 0U;
+		fixture_track_game_heap = fixture_track_crypto = true;
+		for (std::size_t index = 0U; index < samples; ++index)
+		{
+			const auto start = std::chrono::steady_clock::now();
+			callback();
+			elapsed[index] = static_cast<std::uint64_t>(
+				std::chrono::duration_cast<std::chrono::nanoseconds>(
+					std::chrono::steady_clock::now() - start)
+					.count());
+		}
+		fixture_track_game_heap = fixture_track_crypto = false;
+		assert(fixture_game_heap_calls == 0U && fixture_crypto_heap_calls == 0U);
+		std::sort(elapsed.begin(), elapsed.end());
+		if (measure)
+			std::printf(
+				"{\"stage\":\"%s\",\"watched_players\":%zu,\"world_nodes\":4096,"
+				"\"samples\":%u,\"p99_ns\":%llu,\"p999_ns\":%llu,\"max_ns\":%llu,"
+				"\"event_heap_calls\":0,\"event_crypto_heap_calls\":0}\n",
+				stage, population, samples,
+				static_cast<unsigned long long>(elapsed[samples * 99U / 100U]),
+				static_cast<unsigned long long>(elapsed[samples * 999U / 1000U]),
+				static_cast<unsigned long long>(elapsed.back()));
+	};
+	profile("native_pending_watch_pulse",
+		[&]
+		{
+			// An unchanged observed instant measures the bounded pending path; no
+			// elapsed escape evidence is inferred from this performance loop.
+			(void)telemetry_runtime_pulse({ now, utc, 0U, 0U });
+		});
+	profile("native_result_begin_finish",
+		[&]
+		{
+			auto token = telemetry_runtime_game_battle_result_begin(
+				&actors[0], nullptr, authority::accepted_disengage);
+			(void)telemetry_runtime_game_battle_result_finish(token, &actors[0],
+									  kind::withdrawal);
+		});
+	char_data extra{};
+	pc_only_data extra_pc{};
+	descriptor_data extra_descriptor{};
+	if (population == TELEMETRY_SESSION_STATE_MAX_SLOTS)
+	{
+		extra.only.pc = &extra_pc;
+		extra_pc.pid = 9990;
+		extra.desc = &extra_descriptor;
+		extra_descriptor.connected = CON_PLAYING;
+		extra_descriptor.character = &extra;
+		assert(telemetry_runtime_game_enter(&extra, &extra_descriptor).outcome !=
+		       telemetry_runtime_outcome::accepted);
+	}
+	// The callback must compare an expired address without dereferencing it.
+	// No session or battle participation is invented for this negative case.
+	auto *expired = new char_data{};
+	expired->only.pc = &extra_pc;
+	extra_pc.pid = 9990;
+	expired->runtime_id = allocate_character_runtime_id();
+	register_character_runtime_id(expired);
+	auto expired_token = telemetry_runtime_game_battle_result_begin(
+		expired, nullptr, authority::accepted_disengage);
+	assert(expired_token.target_runtime_id);
+	const auto expired_address = reinterpret_cast<std::uintptr_t>(expired);
+	unregister_character_runtime_id(expired);
+	delete expired;
+	assert(finish_expired_result_address(expired_token, expired_address).records_emitted == 1U);
+	// Missed teardown and an actor beyond the 4096-node budget censor their
+	// existing watches; neither may become positive completion or evict peers.
+	unregister_character_runtime_id(&actors[1]);
+	actors[1].runtime_id = allocate_character_runtime_id();
+	register_character_runtime_id(&actors[1]);
+	for (std::size_t index = 0U; index < population; ++index)
+		(void)telemetry_runtime_pulse({ now, utc, 0U, 0U });
+	character_list = &actors[1];
+	actors[4095].next = &actors[4096];
+	actors[4096].next = &actors[0];
+	actors[0].next = nullptr;
+	for (std::size_t index = 0U; index < population; ++index)
+		(void)telemetry_runtime_pulse({ now, utc, 0U, 0U });
+	const auto end = now + 31'000'000U;
+	for (std::size_t index = 0U; index < population; ++index)
+		(void)telemetry_runtime_pulse(
+			{ end + index, utc + 31'000'000LL + static_cast<telemetry_utc_usec>(index),
+			  0U, 0U });
+	assert(telemetry_runtime_shutdown({ end + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	std::size_t escaped = 0U, stale = 0U, limited = 0U;
+	std::set<telemetry_sequence> parents;
+	std::map<telemetry_monotonic_usec, unsigned> selections;
+	for (const auto &record : fake.results)
+	{
+		const auto &value = record.payload.battle_result;
+		if (value.kind != kind::escape_observed && value.kind != kind::censored)
+			continue;
+		assert(parents.insert(value.parent_sequence).second);
+		escaped += value.kind == kind::escape_observed;
+		if (value.kind == kind::escape_observed)
+			assert(++selections[value.at_usec] <= 16U);
+		stale += value.kind == kind::censored && value.reason == reason::actor_unknown;
+		limited += value.kind == kind::censored && value.reason == reason::capacity_refused;
+	}
+	assert(escaped == population - 2U && stale == 1U && limited == 1U);
+	for (std::size_t index = 0U; index < population + hubs; ++index)
+		unregister_character_runtime_id(&actors[index]);
+	character_list = nullptr;
+	world = nullptr;
+	zone_table = nullptr;
+	top_of_world = top_of_zone_table = -1;
+}
+
 void check_native_build_capture(bool use_native = false, bool export_capture = false)
 {
 	fake_repository fake{};
@@ -4424,6 +4939,23 @@ void check_native_build_queue_loss()
 
 int main(int argc, char **argv)
 {
+	if (argc == 2 && (std::strcmp(argv[1], "--native-result-performance") == 0 ||
+			  std::strcmp(argv[1], "--native-result-budget-fixture") == 0))
+	{
+		assert(CRYPTO_set_mem_functions(fixture_crypto_malloc, fixture_crypto_realloc,
+						fixture_crypto_free) == 1);
+		const bool measure = std::strcmp(argv[1], "--native-result-performance") == 0;
+		if (measure)
+			for (const auto count : { 50U, 200U, 256U })
+				check_native_result_budgets(count, true);
+		else
+		{
+			check_native_result_budgets(256U, false);
+			std::puts(
+				"native result budgets: real admitted watches, bounded world/lifetime censoring and no event-time allocation; synthetic future pulse fixture");
+		}
+		return 0;
+	}
 #ifdef TELEMETRY_TEST_NATIVE_AFFECTS
 	if (argc == 2 && std::strcmp(argv[1], "--native-affects") == 0)
 	{
@@ -4454,7 +4986,17 @@ int main(int argc, char **argv)
 		check_native_build_capture(false, true);
 		return 0;
 	}
+	if (argc == 2 && std::strcmp(argv[1], "--native-result-capture") == 0)
+	{
+		check_native_result_capture(false, true);
+		return 0;
+	}
 #ifdef TELEMETRY_TEST_NATIVE_BATTLE_SQL
+	if (argc == 2 && std::strcmp(argv[1], "--native-result-sql") == 0)
+	{
+		check_native_result_capture(true, true);
+		return 0;
+	}
 	if (argc == 2 && std::strcmp(argv[1], "--native-expanded-control-sql") == 0)
 	{
 		check_native_expanded_control_capture(true, true);
@@ -4484,6 +5026,7 @@ int main(int argc, char **argv)
 	assert(CRYPTO_set_mem_functions(fixture_crypto_malloc, fixture_crypto_realloc,
 					fixture_crypto_free) == 1);
 	check_native_build_context();
+	check_native_result_capture();
 	check_native_build_capture();
 	check_native_control_state_changes();
 	check_native_build_limits();

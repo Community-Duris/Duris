@@ -1290,7 +1290,7 @@ int epic_stone(P_obj obj, P_char ch, int cmd, char *arg)
 					    static_cast<uint8_t>((award.blessing ? 1 : 0) |
 								 (award.task_penalty ? 2 : 0)) };
 		}
-		if (!ready || !zone_touch_transaction_submit(touch))
+		if (!ready || !zone_touch_transaction_submit(touch, ch))
 		{
 			send_to_char(
 				"The stone reward service is unavailable. Please try again.\r\n",

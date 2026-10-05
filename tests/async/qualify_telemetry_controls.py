@@ -24,7 +24,9 @@ FOCUSED = (
     "test_telemetry_control_stream.py", "test_telemetry_battle_history.py",
     "test_telemetry_contract_headers.py", "test_telemetry_repository.py", "test_telemetry_reports_contract.py",
     "test_telemetry_identity_publication.py", "test_telemetry_rollup_schema.py", "test_telemetry_outage.py",
+    "test_telemetry_incidents.py",
     "test_telemetry_runtime_integration.py", "test_telemetry_runtime_outage.py", "test_telemetry_runtime_exhaustion.py",
+    "test_epic_stone_runtime.py", "test_boon_reward_zone_transactional_cutover.py",
 )
 
 
@@ -101,10 +103,17 @@ def run(args):
             ["docker", "inspect", "--format", "{{.Image}}", name], text=True).strip()
         docker_exec(["python3", "-c", "import pymysql, cryptography"], "python-driver")
         docker_exec(["make", "-C", "src", "-j2"], "server-build")
-        changed = ("src/telemetry/telemetry_runtime.c", "src/core/runtime_compatibility_contract.h", "src/sql/sql.c",
+        changed = ("src/telemetry/telemetry_runtime.c", "src/telemetry/telemetry_runtime.h",
+            "src/cmd/actoff.c", "src/world/epic.c", "src/world/zone_touch_transaction.c",
+            "src/world/zone_touch_transaction.h", "src/classes/paladins.c", "src/combat/justice.c",
+            "src/core/runtime_compatibility_contract.h", "src/sql/sql.c",
             "src/cmd/actset.c", "src/cmd/staff_setattr.c", "src/combat/fight.c", "src/combat/fight_state.c",
             "src/combat/range.c", "src/world/handler.c", "tests/async/telemetry_gameplay_adapters.cc",
-            "tests/async/telemetry_battle_contribution_harness.cc", "tests/async/telemetry_runtime_exhaustion.cc")
+            "tests/async/telemetry_battle_contribution_harness.cc", "tests/async/telemetry_runtime_exhaustion.cc",
+            "src/telemetry/telemetry_battle_result.c", "src/telemetry/telemetry_battle_result.h",
+            "tests/async/telemetry_battle_result_harness.cc", "src/telemetry/telemetry_types.h",
+            "src/telemetry/telemetry_repository.c", "src/telemetry/telemetry_outage.c",
+            "tests/async/telemetry_repository_harness.cc", "tests/async/telemetry_outage_harness.cc")
         format_args = ["bash", "scripts/format.sh", "--check"]
         for path in changed:
             if Path(path).suffix in (".c", ".h", ".cc", ".cpp", ".hpp"):
@@ -113,7 +122,11 @@ def run(args):
         for test in FOCUSED:
             docker_exec(["python3", "tests/async/" + test], test.removesuffix(".py"))
         docker_exec(["python3", "tests/async/test_telemetry_gameplay_adapters.py", "--native-affects", "--sanitize"], "native-affects-asan-ubsan")
+        docker_exec(["python3", "tests/async/test_telemetry_gameplay_adapters.py", "--sanitize"],
+            "native-result-adapters-asan-ubsan")
         docker_exec(["python3", "tests/async/test_telemetry_battle_contributions.py", "--sanitize"], "control-asan-ubsan")
+        docker_exec(["python3", "tests/async/test_telemetry_battle_contribution_contract.py", "ResultContractTests"],
+            "battle-result-asan-ubsan", env={"DURIS_TELEMETRY_RESULT_SANITIZE": "1"})
         docker_exec(["python3", "scripts/validate_runtime_compatibility.py"], "runtime-contract")
         docker_exec(["python3", "scripts/validate_data_lifecycle.py"], "lifecycle-contract")
         output_root = "/workspace/bin/tests/" + name
@@ -121,6 +134,8 @@ def run(args):
             "--clock-performance-output", output_root + "/clock-performance.json"], "paired-clock-asan-ubsan")
         docker_exec(["python3", "tests/async/test_telemetry_control_performance.py", "--output",
             output_root + "/control-performance.json"], "control-performance")
+        docker_exec(["python3", "tests/async/test_telemetry_gameplay_adapters.py", "--result-performance-output",
+            output_root + "/result-performance.json"], "native-result-performance")
         for engine in args.engines:
             container = name + "-" + engine
             password = "synthetic-" + token
@@ -149,19 +164,22 @@ def run(args):
             docker_exec(["python3", "tests/async/test_staging_migration_fork_mysql.py", "--disposable-loopback",
                 "mariadb10_11" if engine == "mariadb" else "mysql8", "--report", output_root + "/" + engine + "-lineages.json"],
                 engine + "-lineages", lineage_env)
-            for mode, test in (("storage", "test_telemetry_control_storage.py"),
+            for mode, test in (("writer", "test_telemetry_repository.py"),
+                    ("storage", "test_telemetry_control_storage.py"),
                     ("native", "test_telemetry_battle_runtime_sql.py"), ("gameplay", "run_telemetry_control_journey.py")):
                 env.update(TELEMETRY_REPOSITORY_DATABASE=fixture_database(token, mode),
+                    TELEMETRY_REPOSITORY_RESULT=output_root + "/" + engine + "-writer.json",
                     TELEMETRY_CONTROL_STORAGE_RESULT=output_root + "/" + engine + "-storage.json",
                     TELEMETRY_BATTLE_RUNTIME_RESULT=output_root + "/" + engine + "-native.json",
                     TELEMETRY_CONTROL_JOURNEY_RESULT=output_root + "/" + engine + "-gameplay.json")
                 docker_exec(["python3", "tests/async/" + test, "--sql-fixture"], engine + "-" + mode, env)
             receipt["engines"][engine] = {mode: json.loads((directory / (engine + "-" + mode + ".json")).read_text(encoding="utf-8"))
-                for mode in ("lineages", "storage", "native", "gameplay")}
+                for mode in ("lineages", "writer", "storage", "native", "gameplay")}
             owned_remove(container)
         receipt["actual_gameplay"] = True
         receipt["performance"] = json.loads((directory / "control-performance.json").read_text(encoding="utf-8"))
         receipt["clock_performance"] = json.loads((directory / "clock-performance.json").read_text(encoding="utf-8"))
+        receipt["result_performance"] = json.loads((directory / "result-performance.json").read_text(encoding="utf-8"))
         receipt["source_unchanged"] = receipt["source_sha256"] == source_digest()
         if not receipt["source_unchanged"]:
             raise RuntimeError("tracked qualification sources changed during the run")

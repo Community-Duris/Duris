@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -15,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 from scripts.telemetry import battle_contribution_contract as contract
 from scripts.telemetry import control_contract as control
+from scripts.telemetry import battle_result_contract as result_contract
 from test_telemetry_battle_contributions import compile_harness
 
 
@@ -405,6 +407,179 @@ class ControlContractTests(unittest.TestCase):
         for row in (None, [], {}, dict(self.value, extra=0)):
             with self.assertRaises(control.ControlContractError):
                 control.validate_observation(row)
+
+
+class ResultContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        artifacts = ROOT / "bin/tests"
+        artifacts.mkdir(parents=True, exist_ok=True)
+        cls.directory = tempfile.TemporaryDirectory(prefix="telemetry-result-contract-", dir=artifacts)
+        cls.path = Path(cls.directory.name)
+        cls.native = cls.path / "results"
+        command = ["g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-pedantic", "-I", str(ROOT / "src"),
+            str(ROOT / "tests/async/telemetry_battle_result_harness.cc"),
+            str(ROOT / "src/telemetry/telemetry_battle_result.c"), "-o", str(cls.native)]
+        if os.environ.get("DURIS_TELEMETRY_RESULT_SANITIZE") == "1":
+            command += ["-g", "-fno-omit-frame-pointer", "-fsanitize=address,undefined"]
+        subprocess.run(command, check=True, timeout=120)
+        exported = subprocess.run([str(cls.native)], check=True, text=True, capture_output=True, timeout=30)
+        cls.sources = [json.loads(line.removeprefix("BATTLE_RESULT_JSON ")) for line in exported.stdout.splitlines()
+            if line.startswith("BATTLE_RESULT_JSON ")]
+        cls.rows = []
+        for item in cls.sources:
+            row = dict(item["fields"], bout_operation_id=bytes.fromhex(item["fields"]["bout_operation_id"]))
+            cls.rows.append(result_contract.validate_observation(row))
+        cls.value = cls.rows[0]
+        cls.escape, cls.objective = cls.rows[4], cls.rows[6]
+        print(exported.stdout.splitlines()[-1])
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.directory.cleanup()
+
+    def native_results(self, wires):
+        path = self.path / "verify.bin"
+        with path.open("wb") as output:
+            for wire in wires:
+                output.write(len(wire).to_bytes(4, "big"))
+                output.write(wire)
+        verified = subprocess.run([str(self.native), "--verify", str(path)], check=True,
+            text=True, capture_output=True, timeout=30)
+        values = [line == "1" for line in verified.stdout.splitlines()]
+        self.assertEqual(len(values), len(wires))
+        return values
+
+    def agrees(self, rows):
+        expected, wires = [], []
+        for row in rows:
+            try:
+                result_contract.validate_observation(row)
+                expected.append(True)
+            except result_contract.ResultContractError:
+                expected.append(False)
+            wires.append(b"".join(row[name] if signed is None else row[name].to_bytes(width, "big", signed=signed)
+                for name, width, signed in result_contract.FIELD_LAYOUT))
+        self.assertEqual(self.native_results(wires), expected)
+        return expected
+
+    def test_result_round_trip_and_independent_descriptor(self):
+        self.assertEqual(len(self.rows), 17)
+        self.assertEqual({row["bout_kind"] for row in self.rows}, set(range(1, 9)))
+        for item, row in zip(self.sources, self.rows, strict=True):
+            wire = bytes.fromhex(item["wire"])
+            self.assertEqual(result_contract.encode_observation(row), wire)
+            self.assertEqual(result_contract.decode_observation(wire), row)
+        descriptor = (ROOT / "src/telemetry/telemetry_battle_result_fields.inc").read_text()
+        actual = tuple((name, int(width), None if macro == "BYTES" else signed == "true")
+            for macro, name, width, signed in re.findall(
+                r"TELEMETRY_RESULT_(FIELD|BYTES)\((\w+),\s*[\w.]+,\s*(\d+)(?:,\s*(true|false))?\)", descriptor))
+        self.assertEqual(actual, result_contract.FIELD_LAYOUT)
+        self.assertLessEqual(result_contract.WIRE_BYTES + 40, 512)
+        self.assertEqual(self.native_results([bytes.fromhex(item["wire"]) for item in self.sources]), [True] * 17)
+
+    def test_result_type_authority_and_exact_objective_identity(self):
+        cases = [dict(self.value, bout_kind=2), dict(self.value, bout_authority=7),
+            dict(self.rows[1], bout_flags=0), dict(self.rows[1], bout_to_room_vnum=self.rows[1]["bout_from_room_vnum"]),
+            dict(self.rows[2], bout_authority=2), dict(self.rows[3], bout_flags=4),
+            dict(self.objective, bout_operation_id=b"\0" * 16), dict(self.objective, bout_authority=6),
+            dict(self.objective, bout_source_object_uid=0), dict(self.objective, bout_source_payload_version=0),
+            dict(self.objective, bout_participant_count=0), dict(self.objective, bout_participant_count=16),
+            dict(self.objective, bout_credited_zone_vnum=-1), dict(self.rows[5], bout_flags=384),
+            dict(self.rows[7], bout_flags=0), dict(self.rows[10], bout_reason=0)]
+        self.assertEqual(self.agrees(cases), [False] * len(cases))
+        # Request, commit, recovered commit and an unknown receipt keep the
+        # same native operation identity; pairing/deduplication is a later proof.
+        self.assertEqual({self.rows[index]["bout_operation_id"] for index in (5, 6, 10, 16)}, {self.objective["bout_operation_id"]})
+        self.assertEqual(self.rows[10]["bout_kind"], 7)
+
+    def test_result_escape_requires_parent_window_session_and_native_watch(self):
+        cases = [dict(self.escape, **{name: value}) for name, value in {
+            "bout_parent_sequence": self.escape["bout_sequence"],
+            "bout_proof_window_usec": 0, "bout_authority": 2, "bout_target_battle_seq": 0,
+            "bout_target_session_seq": 0, "bout_target_session_process_id": 203,
+            "bout_at_usec": self.escape["bout_at_usec"] - 1,
+        }.items()]
+        cases += [dict(self.escape, bout_parent_sequence=0)]
+        cases += [dict(self.escape, bout_flags=self.escape["bout_flags"] & ~flag) for flag in (4, 8, 16, 32)]
+        self.assertEqual(self.agrees(cases), [False] * len(cases))
+        for row in (self.rows[1], self.rows[2], self.rows[8], self.rows[9]):
+            self.assertNotEqual(row["bout_kind"], 4)
+            self.assertEqual(row["bout_proof_window_usec"], 0)
+
+    def test_result_context_uncertainty_and_foreign_or_reused_lifetimes(self):
+        invalid = [dict(self.value, bout_target_actor_id=999), dict(self.value, bout_target_owner_subject_id=0),
+            dict(self.value, bout_target_context_version=0), dict(self.value, bout_source_session_seq=0),
+            dict(self.value, bout_target_association_revision=0), dict(self.rows[11], bout_target_actor_id=55),
+            dict(self.rows[11], bout_target_owner_subject_id=0), dict(self.rows[12], bout_target_actor_pid=55),
+            dict(self.rows[8], bout_quality_flags=0), dict(self.rows[9], bout_parent_sequence=0),
+            dict(self.rows[13], bout_config_id=33), dict(self.rows[13], bout_content_version=7),
+            dict(self.rows[8], bout_flags=60), dict(self.rows[8], bout_proof_window_usec=30_000_000)]
+        self.assertEqual(self.agrees(invalid), [False] * len(invalid))
+        unknown = dict(self.value, bout_start_utc_usec=result_contract.UTC_UNKNOWN, bout_at_utc_usec=result_contract.UTC_UNKNOWN)
+        backward = dict(self.value, bout_start_utc_usec=self.value["bout_at_utc_usec"] + 1)
+        self.assertEqual(self.agrees([unknown, backward, dict(backward, bout_quality_flags=128)]), [True, False, True])
+
+    def test_result_transport_identity_and_inactive_family_fields(self):
+        raw = dict(self.value, record_kind=14, schema_version=1, boot_id=101, process_id=202, record_seq=901,
+            occurrence_utc_usec=self.value["bout_at_utc_usec"], bctx_actor_id=None, ctl_sequence=None)
+        self.assertEqual(result_contract.validate_raw_observation(raw), self.value)
+        for changes in ({"record_kind": 13}, {"schema_version": 2}, {"boot_id": 102}, {"record_seq": 0},
+                {"record_seq": True}, {"occurrence_utc_usec": raw["occurrence_utc_usec"] + 1},
+                {"bctx_actor_id": 42}, {"ctl_sequence": 1}):
+            with self.subTest(changes=changes), self.assertRaises(result_contract.ResultContractError):
+                result_contract.validate_raw_observation(dict(raw, **changes))
+
+    def test_result_detail_advances_sealed_rollups_without_new_metrics(self):
+        from scripts.telemetry.rollup_engine import build_page_contributions, SemanticError
+        from scripts.telemetry.rollup_definitions import RollupTarget
+        rows = [dict(value, ingest_id=index, record_kind=14, schema_version=1,
+            boot_id=101, process_id=202, record_seq=index,
+            occurrence_utc_usec=value["bout_at_utc_usec"])
+            for index, value in enumerate(self.rows, 1)]
+        for definition in (1, 2, 3, 5, 6, 7):
+            page = build_page_contributions(rows, RollupTarget(definition, 1, 11, 22),
+                max_page_bytes=4 * 1024 * 1024)
+            self.assertEqual(page.page_last_ingest_id, len(rows))
+            self.assertFalse(page.battle_inputs)
+            self.assertFalse(page.sessions)
+            self.assertFalse(page.members)
+            self.assertFalse(page.cohorts)
+            self.assertFalse(page.player_days)
+            self.assertEqual(page.observations.output_fanout, 0)
+            self.assertEqual(page.output_fanout, 0)
+            self.assertEqual(page.state_quality_flags, 0)
+            self.assertIsNone(page.coverage_start_utc_usec)
+            self.assertIsNone(page.coverage_end_utc_usec)
+        with self.assertRaises(ValueError):
+            RollupTarget(4, 1, 11, 22)
+        with self.assertRaises(SemanticError):
+            build_page_contributions([dict(rows[0], ctl_sequence=1)], RollupTarget(1, 1, 11, 22))
+
+    def test_result_numeric_boundaries_strict_bytes_and_shapes(self):
+        candidates = []
+        for name, width, signed in result_contract.FIELD_LAYOUT:
+            if signed is None:
+                for invalid in (True, None, [], "0" * 32, b"\0" * 15, b"\0" * 17, bytearray(16)):
+                    with self.assertRaises(result_contract.ResultContractError):
+                        result_contract.validate_observation(dict(self.value, **{name: invalid}))
+                continue
+            limit = 1 << (8 * width - int(signed))
+            for candidate in sorted({0, 1, limit - 1, -limit if signed else 0}):
+                candidates.append(dict(self.value, **{name: candidate}))
+            for invalid in (True, None, "0", 1.0, limit, -limit - 1 if signed else -1):
+                with self.assertRaises(result_contract.ResultContractError):
+                    result_contract.validate_observation(dict(self.value, **{name: invalid}))
+        self.agrees(candidates)
+        wire = result_contract.encode_observation(self.value)
+        malformed = [b"", wire[:-1], wire + b"\0"]
+        self.assertEqual(self.native_results(malformed), [False] * 3)
+        for data in malformed + [None, [], memoryview(wire)]:
+            with self.assertRaises(result_contract.ResultContractError):
+                result_contract.decode_observation(data)
+        for value in (None, [], {}, dict(self.value, extra=0)):
+            with self.assertRaises(result_contract.ResultContractError):
+                result_contract.validate_observation(value)
 
 
 if __name__ == "__main__":

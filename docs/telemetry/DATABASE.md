@@ -6,7 +6,7 @@ stores described below. Migration `0030_telemetry_quarantine` adds a durable,
 operator-controlled quarantine for record-specific SQL failures. Migration
 `0054_telemetry_incident_coverage` adds the four reviewed/published incident stores.
 Existing immutable migrations retain their original content and checksums; the
-current complete runtime inventory is 250 tables through migration 0062.
+current complete runtime inventory is 273 tables through migration 0070.
 Migration `0055_telemetry_observation_projections` adds five bounded definition 2
 stores for already collected progression, encounter and combat facts. See
 [OBSERVATION_PROJECTIONS.md](OBSERVATION_PROJECTIONS.md) for their grains and limits.
@@ -17,10 +17,15 @@ independent logical uniqueness and the two v3 private review stores. Migration
 `0062_telemetry_battle_contributions` adds the independent kind-11 disjoint
 contribution family and the two v4 private review stores. See
 [BATTLES.md](BATTLES.md) and [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md).
+Migrations 0063–0068 add private retained battle inputs, immutable publication,
+build observations and typed selected-control evidence. Migration 0069 adds the
+kind-14 participant/objective values and independent schema-7 incident review.
+Migration 0070 adds four independent definition-8 retained/published stores. See
+[BATTLE_RESULTS.md](BATTLE_RESULTS.md) for exact keys, limits and qualification.
 
 | Table | Grain and ownership |
 | --- | --- |
-| `telemetry_interval` | Immutable tagged facts of all eleven current record kinds; writer inserts and reads replay evidence. `ingest_id` is the keyset cursor. Global unique `(boot_id,process_id,record_seq)` also covers process-wide gaps. Shared battle facts use `(battle_boot_id,battle_process_id,battle_seq,battle_fact_sequence)`. Disjoint contributions use `(bc_battle_boot_id,bc_battle_process_id,bc_segment_seq)`, independent of battle/actor attribution. |
+| `telemetry_interval` | Immutable tagged facts of all fourteen current record kinds; writer inserts and reads replay evidence. `ingest_id` is the keyset cursor. Global unique `(boot_id,process_id,record_seq)` also covers process-wide gaps. Shared battle facts use `(battle_boot_id,battle_process_id,battle_seq,battle_fact_sequence)`. Disjoint contributions use `(bc_battle_boot_id,bc_battle_process_id,bc_segment_seq)`, independent of battle/actor attribution. Typed results use `(bout_boot_id,bout_process_id,bout_sequence)` with exact optional movement parents and 16-byte objective operation IDs. |
 | `telemetry_session` | Latest absolute checkpoint totals plus observed enter/exit flags and quality. Scoped primary key includes environment/season and original session identity; a second global session identity unique key prevents a changed scope from creating a second projection. Writer owns insertion/update. |
 | `telemetry_config` | Immutable `(environment_id,config_id)` and the complete typed effective snapshot, including its SHA-256 fingerprint and publication metadata. Writer owns insertion; publication reuse must match semantic content, excluding process-local revision and effective time. |
 | `telemetry_player_day` | Rollup definition/generation/environment/season/UTC-day/subject/session contribution. The six duration counters, attributable coverage and watermark remain separate from raw session totals. |
@@ -34,6 +39,9 @@ contribution family and the two v4 private review stores. See
 | `telemetry_rollup_incident_coverage` / `telemetry_rollup_incident` | Bounded reviewed coverage copied at report definition/generation/environment/season grain during atomic publication. Reports read these copies without registry/raw access. |
 | `telemetry_rollup_progression_day` / `telemetry_rollup_level_event` | Definition 2 XP source cells and original level-transition observations; mutable status and threshold consumption remain explicit. |
 | `telemetry_rollup_encounter` / `telemetry_rollup_encounter_participant` / `telemetry_rollup_combat_actor` | Original encounter start/close evidence, absolute cumulative participant effort and latest ownership-aware actor contributions; no inferred shared battle or zone clear. |
+| `telemetry_battle_source_v8` / `telemetry_battle_input_v8` | Private bounded original battle/build/control/result inputs and immutable configuration evidence retained with the committed cursor and source digest. Earlier versioned stores retain their independent definition meaning. |
+| `telemetry_rollup_battle_coverage_v8` / `telemetry_rollup_battle_row_v8` | One atomic published generation with exact points, typed outcomes and conserved denominators/qualification coverage. Only published rows/coverage are readable by its restricted report role. |
+| `telemetry_incident_registry_v7` / `telemetry_incident_v7` | Independent family-1–14 reviewed inventory, with the existing registrar's bounded append-only contract. Earlier incident schemas cannot claim loss coverage for newly introduced families. |
 
 The tagged fact stream stores named columns, with SQL NULL for fields absent from
 the selected kind. Allowed all-zero session and connection references remain zero
