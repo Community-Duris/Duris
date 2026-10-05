@@ -1,5 +1,34 @@
 # Accounting implementation and qualification handoff
 
+## Native quest identity and final-giver contracts integrated — 2026-10-05
+
+[The source prerequisite](NATIVE_QUEST_CONTRACT_INTEGRATION_2026-10-05.md) adds explicit native owner/key/v11 item contexts,
+original final-giver reward binding and complete extracted-codec link closure.
+Historical/default formats and shared SHOP proof remain unchanged; ordinary
+execution/admission refuse native mutations. Source review/AST/syntax/pins/census
+only; no native execution. Original atomic parent, birth/source/lifecycle/restore,
+producer/publication and original major-plan qualification remain open. Accounting
+stays inactive; R1–R8, release and activation remain BLOCKED.
+
+## SQL SHOP missing revision cache corrected — 2026-10-05
+
+[The private owner fix](SHOP_SQL_REVISION_CACHE_2026-10-05.md) initializes a missing runtime revision only from
+the authenticated current SQL projection, with staged allocation and final
+session/census/readback proof. Newer cached revisions still refuse; inactive
+behavior and admission stay unchanged. Source review/format/pins/inventory only,
+without native execution. Cold publication/ACK, coherent schemas, original major
+plan qualification and full R1–R8 remain open; release/activation stay BLOCKED.
+
+## Original NPC cash retained in native images — 2026-10-05
+
+[The source milestone](NATIVE_MOBILE_CASH_IMAGE_2026-10-05.md) adds explicit v2 four-denomination cash/revision
+capture and shared checked SQL/flat transition policy. Historical v1 bytes and
+the 148-byte reference stay compatible; unknown cash is never adopted as zero.
+Source review/pins/format/inventory only, with no native execution. Original
+reset/spawn generation, birth/stock/source ownership, durable restore/retirement,
+coherent schemas and major-plan qualification remain open. Inactive safety gates
+are preserved; full R1–R8, release and activation remain BLOCKED.
+
 ## Retained SHOP producers and game-thread driver integrated — 2026-10-05
 
 [The source integration](SHOP_RETAINED_PRODUCER_DRIVER_INTEGRATION_2026-10-05.md) connects the four original buy/sell selections

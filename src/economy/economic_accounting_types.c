@@ -274,9 +274,13 @@ bool item_position_valid(uint64_t uid, const economic_item_position &position)
 		       !position.revision && !position.equipment_slot;
 	if (!item_owner_identity_valid(position.owner))
 		return false;
+	const bool native_mobile = position.owner.type == item_owner_type::native_mobile;
+	if (native_mobile && position.equipment_slot > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT)
+		return false;
 	if (position.equipment_slot &&
-	    (position.owner.type != item_owner_type::player || position.parent_uid ||
-	     position.state != item_custody_state::active))
+	    ((position.owner.type != item_owner_type::player && !native_mobile) ||
+	     position.parent_uid || position.state != item_custody_state::active ||
+	     (native_mobile && position.root_uid != uid)))
 		return false;
 	if (position.state == item_custody_state::destroyed)
 		// Existing authority keeps a destroyed child's former root/parent.

@@ -37,7 +37,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
 	src/player/player_snapshot_repository.c src/player/player_load_repository.c src/player/player_death_recovery_query.c src/player/player_death_conflict_repository.c src/persistence/critical_command.c \
 	src/player/player_load_topology.c src/player/player_snapshot_codec.c \
 	src/player/player_save_journal.c src/persistence/quest_reward_obligation_repository.c \
-	src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c \
+	src/item/item_transfer_command.c src/world/quest_mobile_native_reference.c src/economy/economic_source_event.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c \
 	src/economy/currency_command.c \
 	src/player/pet_restore_state.c src/persistence/persistence_observability.c \
 	src/persistence/player_death_restitution_command.c src/sql/item_extra_descr_codec.c \

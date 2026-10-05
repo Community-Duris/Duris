@@ -58,6 +58,6 @@ with tempfile.TemporaryDirectory(prefix="duris-shop-copyover-") as tmp:
     subprocess.run(["g++","-std=c++20","-Wall","-Wextra","-Werror","-I",str(ROOT/"src"),str(p/"test.cpp"),
                     "src/persistence/copyover_codec.c", "src/world/world_recovery_codec.c",
                     "src/world/generated_npc_state.c", "src/player/pet_restore_state.c",
-                    "src/item/item_transfer_command.c", "-ffunction-sections", "-fdata-sections",
-                    "-Wl,--gc-sections", "-o",str(p/"test")],cwd=ROOT,check=True)
+                    "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/economy/economic_source_event.c", "-ffunction-sections", "-fdata-sections",
+                    "-Wl,--gc-sections", '-lcrypto', "-o",str(p/"test")],cwd=ROOT,check=True)
     subprocess.run([str(p/"test")],cwd=p,check=True)

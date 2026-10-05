@@ -26,7 +26,7 @@ SOURCES = (
     "tests/async/player_literal_checkpoint_mysql_harness.cpp",
     "src/player/player_snapshot_capture.c", "src/player/player_snapshot_codec.c",
     "src/player/pet_restore_state.c", "src/player/pet_restore_runtime.c",
-    "src/item/item_ownership_runtime.c", "src/item/item_transfer_command.c",
+    "src/item/item_ownership_runtime.c", "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c",
     "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",
     "src/persistence/critical_command.c", "src/player/player_snapshot_repository.c",
     "src/player/player_save_journal.c", "src/sql/item_extra_descr_codec.c",

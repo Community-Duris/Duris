@@ -635,11 +635,43 @@ bool insert_outbox_event(MYSQL *connection, const critical_operation_id &operati
 	return ok;
 }
 
+// Recipient identity belongs to the frozen reward terms. A native stock ID
+// is never a player PID; legacy turn-ins retain their exact from-player binding.
+bool quest_reward_terms_for_payload(const item_transfer_payload &payload,
+				    quest_reward_continuation *output)
+{
+	if (!output || payload.continuation.kind != item_transfer_continuation_kind::quest_offering)
+		return false;
+	quest_reward_continuation terms = {};
+	if (!quest_reward_continuation_decode(payload.continuation.data.data(),
+					      payload.continuation.data.size(), &terms))
+		return false;
+	if (payload.native_mobile.present)
+	{
+		if (!item_transfer_native_mobile_shape_valid(payload) ||
+		    payload.native_mobile.action != item_native_mobile_action::consumption ||
+		    terms.player_pid != payload.native_mobile.final_giver_pid)
+			return false;
+	}
+	else if (payload.from_owner.type != item_owner_type::player ||
+		 payload.from_owner.context_id || !payload.from_owner.id ||
+		 payload.from_owner.id > UINT32_MAX || terms.player_pid != payload.from_owner.id)
+		return false;
+	*output = std::move(terms);
+	return true;
+}
+
 bool insert_quest_reward_obligation(MYSQL *connection, const critical_operation_id &operation_id,
 				    const item_transfer_payload &payload)
 {
 	if (payload.continuation.kind != item_transfer_continuation_kind::quest_offering)
 		return true;
+	quest_reward_continuation continuation = {};
+	if (!quest_reward_terms_for_payload(payload, &continuation))
+	{
+		last_statement_error = EINVAL;
+		return false;
+	}
 	static const char SQL[] =
 		"INSERT INTO quest_reward_obligation(offering_operation_id,player_pid,continuation) "
 		"VALUES(?,?,?)";
@@ -648,7 +680,7 @@ bool insert_quest_reward_obligation(MYSQL *connection, const critical_operation_
 		return false;
 	unsigned long operation_length = operation_id.bytes.size();
 	unsigned long continuation_length = payload.continuation.data.size();
-	uint32_t player_pid = static_cast<uint32_t>(payload.from_owner.id);
+	uint32_t player_pid = continuation.player_pid;
 	MYSQL_BIND bindings[3] = {};
 	bindings[0].buffer_type = MYSQL_TYPE_BLOB;
 	bindings[0].buffer = const_cast<uint8_t *>(operation_id.bytes.data());
@@ -668,14 +700,6 @@ bool insert_quest_reward_obligation(MYSQL *connection, const critical_operation_
 	mysql_stmt_close(statement);
 	if (!ok)
 		return false;
-	quest_reward_continuation continuation = {};
-	if (!quest_reward_continuation_decode(payload.continuation.data.data(),
-					      payload.continuation.data.size(), &continuation) ||
-	    continuation.player_pid != payload.from_owner.id)
-	{
-		last_statement_error = EINVAL;
-		return false;
-	}
 	if (continuation.version < 5 || continuation.credited_count <= 1 ||
 	    !continuation.xp_award_count)
 		return true;
@@ -807,6 +831,9 @@ unsigned int verify_quest_reward_obligation(MYSQL *connection,
 {
 	if (payload.continuation.kind != item_transfer_continuation_kind::quest_offering)
 		return 0;
+	quest_reward_continuation terms = {};
+	if (!quest_reward_terms_for_payload(payload, &terms))
+		return EINVAL;
 	static const char SQL[] = "SELECT player_pid,continuation FROM quest_reward_obligation "
 				  "WHERE offering_operation_id=?";
 	MYSQL_STMT *statement = nullptr;
@@ -844,7 +871,7 @@ unsigned int verify_quest_reward_obligation(MYSQL *connection,
 	const bool matches =
 		result_code ?
 			fetched == MYSQL_NO_DATA :
-			fetched == 0 && player_pid == payload.from_owner.id &&
+			fetched == 0 && player_pid == terms.player_pid &&
 				continuation_length == payload.continuation.data.size() &&
 				std::equal(payload.continuation.data.begin(),
 					   payload.continuation.data.end(), continuation.begin());
@@ -853,11 +880,6 @@ unsigned int verify_quest_reward_obligation(MYSQL *connection,
 	mysql_stmt_close(statement);
 	if (!matches)
 		return error ? error : EAGAIN;
-	quest_reward_continuation terms = {};
-	if (fetched == 0 &&
-	    !quest_reward_continuation_decode(payload.continuation.data.data(),
-					      payload.continuation.data.size(), &terms))
-		return EINVAL;
 	return verify_quest_reward_xp_entitlements(connection, operation_id, terms,
 						   fetched == 0 && !result_code);
 }
