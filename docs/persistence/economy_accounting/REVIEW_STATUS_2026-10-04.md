@@ -1,5 +1,14 @@
 # Accounting review status — 2026-10-04
 
+## Full-player shop source proof — 2026-10-04
+
+See [the full-player native proof checkpoint](SHOP_FULL_PLAYER_NATIVE_PROOF_2026-10-04.md): the original whole-player body is retained
+in its bounded slot, normal saved string policies are preserved, and complete
+custody/current-native plus historical receipt proof passes independent source
+review. These private inputs are unqualified; physical publication, original
+lease cleanup/guarded ACK, replay, writer/lifecycle/gameplay integration and
+major-plan qualification remain unfinished. No native release gate is waived.
+
 ## Reviewed private shop checkpoint/admission — 2026-10-04
 
 The [shared handoff](SHOP_NATIVE_ADMISSION_HANDOFF_2026-10-04.md) records frozen
