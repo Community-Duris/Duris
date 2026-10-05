@@ -108,7 +108,7 @@ with tempfile.TemporaryDirectory(prefix="auction-publication-") as temporary:
         "-ffunction-sections", "-fdata-sections", "-fsanitize=address,undefined",
         "-D__NO_MYSQL__", "-Isrc", "-Isrc/no_mysql", str(cpp),
         rel("auction_command.c"), rel("currency_command.c"),
-        rel("critical_command.c"), rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
+        rel("critical_command.c"), rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"), rel("economic_source_event.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
         rel("item_ownership_runtime.c"), rel("player_snapshot_codec.c"),
         "-Wl,--gc-sections", "-lcrypto", "-o", str(binary),
     ], cwd=ROOT, check=True)

@@ -2,6 +2,7 @@
 #define ITEM_TRANSFER_COMMAND_H
 
 #include "persistence/critical_command.h"
+#include "world/quest_mobile_native_reference.h"
 
 #include <array>
 #include <cstdint>
@@ -9,6 +10,9 @@
 #include <vector>
 
 constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 10;
+constexpr uint16_t ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION = 11;
+constexpr uint16_t ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_VERSION = 1;
+constexpr size_t ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES = 168;
 constexpr uint16_t ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION = 9;
 constexpr uint16_t ITEM_TRANSFER_SOURCE_PAYLOAD_VERSION = 8;
 constexpr uint16_t ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION = 7;
@@ -49,6 +53,8 @@ enum class item_owner_type : uint8_t
 	shopkeeper,
 	collector,
 	pet,
+	// Reserved native NPC lifetime, distinct from runtime IDs and pet ownership.
+	native_mobile = 12,
 };
 
 enum class item_transfer_reason : uint16_t
@@ -95,6 +101,8 @@ enum class item_transfer_reason : uint16_t
 	quest_turnin,
 	// Atomic retirement and admission of detached crafted outputs.
 	craft,
+	// Player offering accepted by an addressed native NPC, before quest consumption.
+	quest_offering,
 };
 
 constexpr bool item_transfer_forced_weapon_drop(item_transfer_reason reason)
@@ -200,6 +208,20 @@ struct item_transfer_continuation
 	std::vector<uint8_t> data;
 };
 
+enum class item_native_mobile_action : uint8_t
+{
+	acceptance = 1,
+	consumption = 2,
+};
+
+struct item_native_mobile_context
+{
+	bool present = false;
+	quest_mobile_native_reference reference;
+	item_native_mobile_action action = {};
+	uint32_t final_giver_pid = 0;
+};
+
 struct item_transfer_payload
 {
 	item_owner_identity from_owner;
@@ -222,6 +244,7 @@ struct item_transfer_payload
 	item_corpse_metadata corpse;
 	item_collector_death_enrollment collector;
 	item_transfer_continuation continuation;
+	item_native_mobile_context native_mobile;
 };
 
 struct item_transfer_result
@@ -268,6 +291,16 @@ uint64_t item_collector_owner_id(uint64_t listing_id);
 bool item_owner_key(const item_owner_identity &owner, critical_entity_key *key);
 bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 					  std::vector<uint8_t> *encoded);
+// Native v11 only; the default encoder/builder continue to emit v10.
+// Pure value shape is not source/epoch/admission/backend execution authority.
+// The fixed tail follows continuation: LE version16/action8/flags8=0/length32,
+// final_giver32/zero32, original 148-byte reference, then four zero padding bytes.
+bool item_transfer_native_mobile_shape_valid(const item_transfer_payload &) noexcept;
+bool item_transfer_command_encode_native_mobile(const item_transfer_payload &,
+						std::vector<uint8_t> *encoded) noexcept;
+bool item_transfer_command_build_native_mobile(critical_command *, critical_operation_id,
+					       const item_transfer_payload &, critical_source_site,
+					       critical_deadline_class) noexcept;
 bool item_transfer_command_decode_payload(const critical_command &command,
 					  item_transfer_payload *payload);
 bool item_transfer_command_encode_result(const item_transfer_result &result,

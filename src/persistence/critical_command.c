@@ -1,5 +1,6 @@
 #include "persistence/critical_command.h"
 #include "economy/shop_trade_command.h"
+#include "item/item_transfer_command.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -16,7 +17,7 @@ constexpr unsigned char COMMAND_MAGIC[4] = { 'C', 'C', 'M', '1' };
 
 bool valid_entity_type(critical_entity_type type)
 {
-	return type >= critical_entity_type::player && type <= critical_entity_type::pet;
+	return type >= critical_entity_type::player && type <= critical_entity_type::native_mobile;
 }
 
 template <typename T> void append_le(std::vector<uint8_t> &output, T value)
@@ -162,6 +163,10 @@ bool critical_command_legacy_execution_supported(const critical_command &command
 {
 	return command.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION &&
 	       command.accounting_intent.empty() &&
+	       std::none_of(command.keys.begin(), command.keys.end(), [](const auto &key)
+			    { return key.type == critical_entity_type::native_mobile; }) &&
+	       (command.type != critical_command_type::item_transfer ||
+		command.payload_version <= ITEM_TRANSFER_PAYLOAD_VERSION) &&
 	       (command.type != critical_command_type::shop_trade ||
 		command.payload_version <= SHOP_TRADE_PAYLOAD_VERSION) &&
 	       command.type >= critical_command_type::test &&
@@ -208,6 +213,8 @@ bool critical_command_envelope_valid(const critical_command &command)
 	for (size_t index = 0; index < command.keys.size(); ++index)
 	{
 		if (!valid_entity_type(command.keys[index].type) || !command.keys[index].id ||
+		    (command.keys[index].type == critical_entity_type::native_mobile &&
+		     command.keys[index].id == UINT64_MAX) ||
 		    (index &&
 		     !critical_entity_key_less(command.keys[index - 1], command.keys[index])))
 			return false;
@@ -216,6 +223,7 @@ bool critical_command_envelope_valid(const critical_command &command)
 	{
 		const critical_entity_key &key = command.expected_revisions[index].key;
 		if (!valid_entity_type(key.type) || !key.id ||
+		    (key.type == critical_entity_type::native_mobile && key.id == UINT64_MAX) ||
 		    !std::binary_search(command.keys.begin(), command.keys.end(), key,
 					critical_entity_key_less) ||
 		    (index &&

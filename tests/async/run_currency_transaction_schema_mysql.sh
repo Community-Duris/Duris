@@ -93,7 +93,7 @@ read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
 g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,--wrap=mysql_real_query,--wrap=mysql_errno -Isrc \
     "${MYSQL_CFLAGS[@]}" tests/async/currency_transaction_mysql_harness.cpp \
     src/persistence/critical_command.c src/economy/currency_command.c src/world/epic_command.c \
-    src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/item/item_transfer_repository.c src/economy/auction_command.c \
+    src/item/item_transfer_command.c src/world/quest_mobile_native_reference.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c src/item/item_transfer_repository.c src/economy/auction_command.c \
     src/persistence/sql_room_item_payload.c \
     src/economy/auction_repository.c src/combat/combat_outcome_command.c src/combat/combat_outcome_repository.c \
     src/guild/artifact_guild_command.c src/guild/artifact_guild_repository.c \
@@ -142,7 +142,7 @@ g++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -ffunction-sections -fd
     src/persistence/sql_room_item_payload.c \
     src/player/player_snapshot_codec.c src/persistence/critical_command.c \
     src/player/player_save_journal.c src/persistence/quest_reward_obligation_repository.c \
-    src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c \
+    src/item/item_transfer_command.c src/world/quest_mobile_native_reference.c src/economy/economic_source_event.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c \
     src/economy/currency_command.c \
     src/persistence/player_death_restitution_command.c \
     src/persistence/persistence_observability.c \

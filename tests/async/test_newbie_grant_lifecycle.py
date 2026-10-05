@@ -829,7 +829,7 @@ def main() -> int:
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-g", "-O1",
             "-ffunction-sections", "-fdata-sections", "-fsanitize=address,undefined",
             "-Isrc", str(source), rel("item_movement_transaction.c"),
-            rel("item_ownership_runtime.c"), rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
+            rel("item_ownership_runtime.c"), rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"), rel("economic_source_event.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
             rel("critical_command.c"), rel("player_snapshot_capture.c"),
             rel("player_snapshot_codec.c"), "-Wl,--gc-sections", "-lcrypto", "-o", str(binary),
         ], cwd=ROOT, check=True)

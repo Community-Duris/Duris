@@ -1,5 +1,15 @@
 # Double-entry economy: remaining requirements
 
+## Native quest identity and final-giver contracts integrated — 2026-10-05
+
+[The source prerequisite](NATIVE_QUEST_CONTRACT_INTEGRATION_2026-10-05.md) adds explicit native owner/key/v11 item contexts,
+original final-giver reward binding and complete extracted-codec link closure.
+Historical/default formats and shared SHOP proof remain unchanged; ordinary
+execution/admission refuse native mutations. Source review/AST/syntax/pins/census
+only; no native execution. Original atomic parent, birth/source/lifecycle/restore,
+producer/publication and original major-plan qualification remain open. Accounting
+stays inactive; R1–R8, release and activation remain BLOCKED.
+
 ## SQL SHOP missing revision cache corrected — 2026-10-05
 
 [The private owner fix](SHOP_SQL_REVISION_CACHE_2026-10-05.md) initializes a missing runtime revision only from

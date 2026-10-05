@@ -339,6 +339,8 @@ critical_entity_type entity_type_for_owner(item_owner_type type)
 		return critical_entity_type::collector;
 	case item_owner_type::pet:
 		return critical_entity_type::pet;
+	case item_owner_type::native_mobile:
+		return critical_entity_type::native_mobile;
 	default:
 		return critical_entity_type::system;
 	}
@@ -379,6 +381,7 @@ bool valid_reason(item_transfer_reason reason)
 	case item_transfer_reason::combat_fumble:
 	case item_transfer_reason::critical_disarm:
 	case item_transfer_reason::quest_turnin:
+	case item_transfer_reason::quest_offering:
 		return true;
 	case item_transfer_reason::collector_collect:
 	case item_transfer_reason::collector_buyback:
@@ -521,7 +524,9 @@ bool valid_quest_offering_continuation(const item_transfer_payload &payload)
 	const std::vector<uint8_t> &data = payload.continuation.data;
 	quest_reward_continuation continuation;
 	if (!quest_reward_continuation_decode(data.data(), data.size(), &continuation) ||
-	    continuation.player_pid != payload.from_owner.id ||
+	    continuation.player_pid != (payload.native_mobile.present ?
+						payload.native_mobile.final_giver_pid :
+						payload.from_owner.id) ||
 	    continuation.mobile_vnum != static_cast<uint64_t>(payload.reason_id))
 		return false;
 	if (continuation.root_count > payload.item_count)
@@ -661,8 +666,123 @@ bool valid_account_reward_duplicate_promotion_continuation(const item_transfer_p
 	return payload_direct_children == direct_child_count;
 }
 
+bool valid_native_mobile_context(const item_transfer_payload &payload, uint16_t version)
+{
+	const bool from_native = payload.from_owner.type == item_owner_type::native_mobile;
+	const bool to_native = payload.to_owner.type == item_owner_type::native_mobile;
+	if (version != ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION)
+		return !from_native && !to_native && !payload.native_mobile.present &&
+		       payload.reason != item_transfer_reason::quest_offering;
+	const auto &context = payload.native_mobile;
+	if (!context.present || from_native == to_native || !context.final_giver_pid ||
+	    payload.corpse.present || payload.collector.present || payload.logical_source_id ||
+	    !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
+	    !payload.item_blob_size || payload.item_blob_size > payload.item_blob.size() ||
+	    payload.target_parent_item_uid || payload.expected_target_parent_revision)
+		return false;
+	const auto &owner = from_native ? payload.from_owner : payload.to_owner;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> reference = {};
+	if (!item_owner_identity_valid(owner) || owner.id != context.reference.mobile_instance_id ||
+	    quest_mobile_native_reference_encode(context.reference, &reference) !=
+		    player_snapshot_codec_result::ok ||
+	    payload.reason_id != context.reference.mobile_vnum)
+		return false;
+	const bool acceptance = context.action == item_native_mobile_action::acceptance;
+	const bool consumption = context.action == item_native_mobile_action::consumption;
+	if ((!acceptance && !consumption) ||
+	    (acceptance &&
+	     (from_native || payload.from_owner.type != item_owner_type::player ||
+	      payload.from_owner.context_id || payload.from_owner.id > UINT32_MAX ||
+	      context.final_giver_pid != payload.from_owner.id ||
+	      payload.reason != item_transfer_reason::quest_offering || payload.multi_root ||
+	      payload.continuation.kind != item_transfer_continuation_kind::none)) ||
+	    (consumption &&
+	     (!from_native || payload.to_owner.type != item_owner_type::destruction ||
+	      payload.reason != item_transfer_reason::quest_turnin || !payload.multi_root ||
+	      payload.selected_item_uid || payload.target_root_item_uid ||
+	      (payload.continuation.kind != item_transfer_continuation_kind::none &&
+	       payload.continuation.kind != item_transfer_continuation_kind::quest_offering))))
+		return false;
+	for (size_t index = 0; index < payload.item_count; ++index)
+	{
+		const auto &entry = payload.items[index];
+		if (!entry.item_uid || entry.item_uid == UINT64_MAX || !entry.root_item_uid ||
+		    entry.root_item_uid == UINT64_MAX || entry.parent_item_uid == UINT64_MAX ||
+		    !entry.expected_item_revision || entry.expected_item_revision == UINT64_MAX ||
+		    entry.expected_state != item_custody_state::active ||
+		    (index && payload.items[index - 1].item_uid >= entry.item_uid))
+			return false;
+	}
+	std::vector<player_item_snapshot> items;
+	if (player_item_snapshot_list_decode(payload.item_blob.data(), payload.item_blob_size,
+					     &items) != player_snapshot_codec_result::ok ||
+	    items.size() != payload.item_count)
+		return false;
+	std::vector<uint8_t> canonical;
+	if (player_item_snapshot_list_encode(items, &canonical) !=
+		    player_snapshot_codec_result::ok ||
+	    canonical.size() != payload.item_blob_size ||
+	    !std::equal(canonical.begin(), canonical.end(), payload.item_blob.begin()))
+		return false;
+	std::vector<uint64_t> roots(items.size()), uids;
+	std::array<int32_t, PLAYER_SNAPSHOT_MAX_DEPTH> path = {};
+	size_t depth = 0;
+	uids.reserve(items.size());
+	size_t root_count = 0;
+	uint64_t current_root = 0;
+	for (size_t index = 0; index < items.size(); ++index)
+	{
+		const auto &item = items[index];
+		if (!item.object_uid || item.object_uid == UINT64_MAX ||
+		    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+		    item.parent_index >= static_cast<int32_t>(index) || item.string_mask != 15 ||
+		    item.equipment_slot < 0 ||
+		    item.equipment_slot > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT)
+			return false;
+		const bool root = item.parent_index == PLAYER_SNAPSHOT_NO_PARENT;
+		const uint64_t parent = root ? 0 : items[item.parent_index].object_uid;
+		roots[index] = root ? item.object_uid : roots[item.parent_index];
+		if (root)
+		{
+			++root_count;
+			current_root = item.object_uid;
+			depth = 1;
+			path[0] = static_cast<int32_t>(index);
+		}
+		else
+		{
+			if (roots[index] != current_root || item.equipment_slot)
+				return false;
+			while (depth && path[depth - 1] != item.parent_index)
+				--depth;
+			if (!depth || depth == path.size())
+				return false;
+			path[depth++] = static_cast<int32_t>(index);
+		}
+		const auto *entry = find_payload_item(payload, item.object_uid);
+		if (!entry || entry->vnum != item.vnum || entry->parent_item_uid != parent ||
+		    entry->root_item_uid != roots[index])
+			return false;
+		uids.push_back(item.object_uid);
+	}
+	std::sort(uids.begin(), uids.end());
+	if (std::adjacent_find(uids.begin(), uids.end()) != uids.end())
+		return false;
+	if (acceptance &&
+	    (root_count != 1 ||
+	     (payload.selected_item_uid && payload.selected_item_uid != items[0].object_uid) ||
+	     (payload.target_root_item_uid && payload.target_root_item_uid != items[0].object_uid)))
+		return false;
+	return true;
+}
+
 bool validate_payload(const item_transfer_payload &payload, uint16_t payload_version)
 {
+	if (!valid_native_mobile_context(payload, payload_version))
+		return false;
+	const bool native_consumption =
+		payload_version == ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION &&
+		payload.native_mobile.action == item_native_mobile_action::consumption;
 	if (!item_owner_identity_valid(payload.from_owner) ||
 	    !item_owner_identity_valid(payload.to_owner) || !valid_reason(payload.reason) ||
 	    !payload.item_count || payload.item_count > ITEM_TRANSFER_MAX_ITEMS ||
@@ -681,9 +801,10 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	    (payload.continuation.kind == item_transfer_continuation_kind::quest_offering &&
 	     (payload_version < ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION ||
 	      payload.reason != item_transfer_reason::quest_turnin ||
-	      payload.from_owner.type != item_owner_type::player ||
+	      (!native_consumption && payload.from_owner.type != item_owner_type::player) ||
 	      payload.to_owner.type != item_owner_type::destruction || !payload.multi_root ||
-	      payload.reason_id <= 0 || !valid_quest_offering_continuation(payload))) ||
+	      (!native_consumption && payload.reason_id <= 0) ||
+	      !valid_quest_offering_continuation(payload))) ||
 	    (payload.continuation.kind == item_transfer_continuation_kind::soulbind_transfer &&
 	     (payload_version < ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION ||
 	      !valid_soulbind_continuation(payload))) ||
@@ -869,7 +990,7 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	    (payload.reason == item_transfer_reason::creation) != creation ||
 	    ((payload.reason == item_transfer_reason::destruction || quest_turnin) !=
 	     destruction) ||
-	    (quest_turnin &&
+	    (quest_turnin && !native_consumption &&
 	     (payload.from_owner.type != item_owner_type::player || !payload.multi_root ||
 	      payload.reason_id <= 0 ||
 	      payload.continuation.kind != item_transfer_continuation_kind::quest_offering)) ||
@@ -1053,12 +1174,14 @@ bool item_transfer_target_topology(const item_transfer_payload &payload, uint64_
 
 bool item_owner_identity_valid(const item_owner_identity &owner)
 {
-	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::pet)
+	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::native_mobile)
 		return false;
 	if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
 		return owner.id == 0 && owner.context_id == 0;
 	if (owner.type == item_owner_type::collector)
 		return owner.id != 0 && owner.context_id == 0;
+	if (owner.type == item_owner_type::native_mobile)
+		return owner.id && owner.id != UINT64_MAX && !owner.context_id;
 	if (owner.type == item_owner_type::pet)
 		return owner.id != 0 && owner.context_id != 0 && owner.context_id <= INT32_MAX;
 	return owner.id != 0;
@@ -1176,12 +1299,14 @@ bool populate_command_entities(critical_command *command, const item_transfer_pa
 }
 } // namespace
 
-bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
-					  std::vector<uint8_t> *encoded)
+namespace
+{
+bool encode_payload(const item_transfer_payload &payload, uint16_t version,
+		    std::vector<uint8_t> *encoded)
 {
 	std::vector<uint8_t> corpse_context;
 	std::vector<uint8_t> collector_context;
-	if (!encoded || !validate_payload(payload, ITEM_TRANSFER_PAYLOAD_VERSION) ||
+	if (!encoded || !validate_payload(payload, version) ||
 	    !encode_corpse_context(payload.corpse, &corpse_context) ||
 	    !encode_collector_context(payload.collector, &collector_context))
 		return false;
@@ -1190,7 +1315,10 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 	const size_t payload_size = item_section_size + sizeof(uint32_t) + payload.item_blob_size +
 				    sizeof(uint32_t) + corpse_context.size() + sizeof(uint32_t) +
 				    collector_context.size() + sizeof(payload.logical_source_id) +
-				    sizeof(uint32_t) * 2 + payload.continuation.data.size();
+				    sizeof(uint32_t) * 2 + payload.continuation.data.size() +
+				    (version == ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION ?
+					     ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES :
+					     0);
 	if (payload_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
 		return false;
 	encoded->assign(payload_size, 0);
@@ -1252,14 +1380,69 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 		static_cast<uint32_t>(payload.continuation.data.size()));
 	std::copy(payload.continuation.data.begin(), payload.continuation.data.end(),
 		  encoded->begin() + continuation_offset + sizeof(uint32_t) * 2);
+	if (version == ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION)
+	{
+		const size_t tail = continuation_offset + sizeof(uint32_t) * 2 +
+				    payload.continuation.data.size();
+		uint8_t *output = encoded->data() + tail;
+		put_u16(output, ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_VERSION);
+		output[2] = static_cast<uint8_t>(payload.native_mobile.action);
+		put_u32(output + 4, ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES);
+		put_u32(output + 8, payload.native_mobile.final_giver_pid);
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> reference = {};
+		if (quest_mobile_native_reference_encode(payload.native_mobile.reference,
+							 &reference) !=
+		    player_snapshot_codec_result::ok)
+			return false;
+		std::copy(reference.begin(), reference.end(), output + 16);
+	}
 	return true;
 }
+} // namespace
 
-bool item_transfer_command_decode_payload(const critical_command &command,
-					  item_transfer_payload *payload)
+bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
+					  std::vector<uint8_t> *encoded)
+{
+	return encode_payload(payload, ITEM_TRANSFER_PAYLOAD_VERSION, encoded);
+}
+
+bool item_transfer_native_mobile_shape_valid(const item_transfer_payload &payload) noexcept
+{
+	try
+	{
+		return validate_payload(payload, ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool item_transfer_command_encode_native_mobile(const item_transfer_payload &payload,
+						std::vector<uint8_t> *encoded) noexcept
+{
+	if (!encoded)
+		return false;
+	try
+	{
+		std::vector<uint8_t> candidate;
+		if (!encode_payload(payload, ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION,
+				    &candidate))
+			return false;
+		*encoded = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+static bool decode_payload(const critical_command &command, item_transfer_payload *payload)
 {
 	if (!payload || command.type != critical_command_type::item_transfer ||
-	    (command.payload_version != ITEM_TRANSFER_PAYLOAD_VERSION &&
+	    (command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_PAYLOAD_VERSION &&
 	     command.payload_version != ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION &&
 	     command.payload_version != ITEM_TRANSFER_SOURCE_PAYLOAD_VERSION &&
 	     command.payload_version != ITEM_TRANSFER_COLLECTOR_PAYLOAD_VERSION &&
@@ -1411,14 +1594,45 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 					if (continuation_size >
 						    item_transfer_continuation_limit(
 							    payload->continuation.kind) ||
-					    command.payload.size() != source_end +
-									      sizeof(uint32_t) * 2 +
-									      continuation_size)
+					    command.payload.size() !=
+						    source_end + sizeof(uint32_t) * 2 +
+							    continuation_size +
+							    (command.payload_version ==
+									     ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION ?
+								     ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES :
+								     0))
 						return false;
 					payload->continuation.data.assign(
 						command.payload.begin() + source_end +
 							sizeof(uint32_t) * 2,
-						command.payload.end());
+						command.payload.begin() + source_end +
+							sizeof(uint32_t) * 2 + continuation_size);
+					if (command.payload_version ==
+					    ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION)
+					{
+						const uint8_t *tail =
+							command.payload.data() + source_end +
+							sizeof(uint32_t) * 2 + continuation_size;
+						if (get_u16(tail) !=
+							    ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_VERSION ||
+						    tail[3] ||
+						    get_u32(tail + 4) !=
+							    ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES ||
+						    get_u32(tail + 12) || get_u32(tail + 164) ||
+						    quest_mobile_native_reference_decode(
+							    std::span<const uint8_t>(
+								    tail + 16,
+								    QUEST_MOBILE_NATIVE_REFERENCE_BYTES),
+							    &payload->native_mobile.reference) !=
+							    player_snapshot_codec_result::ok)
+							return false;
+						payload->native_mobile.present = true;
+						payload->native_mobile.action =
+							static_cast<item_native_mobile_action>(
+								tail[2]);
+						payload->native_mobile.final_giver_pid =
+							get_u32(tail + 8);
+					}
 				}
 			}
 		}
@@ -1443,6 +1657,31 @@ bool item_transfer_command_decode_payload(const critical_command &command,
 				  return critical_entity_key_equal(left.key, right.key) &&
 					 left.revision == right.revision;
 			  });
+}
+
+bool item_transfer_command_decode_payload(const critical_command &command,
+					  item_transfer_payload *payload)
+{
+	if (command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION)
+		return decode_payload(command, payload);
+	if (!payload)
+		return false;
+	try
+	{
+		item_transfer_payload candidate = {};
+		if (!decode_payload(command, &candidate))
+			return false;
+		std::vector<uint8_t> canonical;
+		if (!item_transfer_command_encode_native_mobile(candidate, &canonical) ||
+		    canonical != command.payload)
+			return false;
+		*payload = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
 }
 
 bool item_transfer_command_encode_result(const item_transfer_result &result,
@@ -1502,4 +1741,41 @@ bool item_transfer_command_build(critical_command *command, critical_operation_i
 		     .expected_revisions = {},
 		     .payload = std::move(encoded) };
 	return populate_command_entities(command, payload);
+}
+
+// Transient typed value builder only; the parent must freeze schema2 authority
+// and original admission. This schema1-shaped scaffold cannot execute legacy.
+bool item_transfer_command_build_native_mobile(critical_command *command,
+					       critical_operation_id operation_id,
+					       const item_transfer_payload &payload,
+					       critical_source_site source_site,
+					       critical_deadline_class deadline_class) noexcept
+{
+	if (!command || critical_operation_id_is_zero(operation_id))
+		return false;
+	try
+	{
+		std::vector<uint8_t> encoded;
+		if (!item_transfer_command_encode_native_mobile(payload, &encoded))
+			return false;
+		critical_command candidate = { .schema_version = CRITICAL_COMMAND_SCHEMA_VERSION,
+					       .operation_id = operation_id,
+					       .type = critical_command_type::item_transfer,
+					       .payload_version =
+						       ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION,
+					       .source_site = source_site,
+					       .deadline_class = deadline_class,
+					       .accepted_at_usec = 0,
+					       .keys = {},
+					       .expected_revisions = {},
+					       .payload = std::move(encoded) };
+		if (!populate_command_entities(&candidate, payload))
+			return false;
+		*command = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
 }

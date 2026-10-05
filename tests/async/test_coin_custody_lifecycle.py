@@ -277,7 +277,7 @@ with tempfile.TemporaryDirectory(prefix="coin-command-", dir=build) as directory
         "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
         "-fsanitize=address,undefined", "-fno-sanitize-recover=all", "-Isrc",
         str(source), "src/economy/coin_transfer_command.c", "src/economy/currency_command.c",
-        "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c",
+        "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/economy/economic_source_event.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c",
         "src/persistence/critical_command.c", "-lcrypto", "-o", str(binary),
     ], check=True, cwd=ROOT, timeout=60)
     subprocess.run([str(binary)], check=True, cwd=ROOT, timeout=30)

@@ -161,7 +161,7 @@ read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
     src/economy/economic_accounting_types.c \
     src/economy/economic_gameplay_authority.c \
     src/persistence/critical_command.c \
-    src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c \
+    src/item/item_transfer_command.c src/world/quest_mobile_native_reference.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c \
     src/economy/coin_transfer_command.c \
     src/economy/coin_transfer_accounting.c \
     src/economy/item_transfer_accounting.c \

@@ -172,7 +172,7 @@ with tempfile.TemporaryDirectory(prefix="duris-item-transfer-creation-batch-") a
             "-Werror",
             "-Isrc",
             str(source),
-            rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
+            rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"), rel("economic_source_event.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
             rel("player_snapshot_codec.c"),
             rel("critical_command.c"),
             "-lcrypto",

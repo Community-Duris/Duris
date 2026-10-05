@@ -145,8 +145,8 @@ with tempfile.TemporaryDirectory(prefix="duris-get-source-owner-") as directory:
         ["g++", "-std=c++20", "-Wall", "-Wextra", "-Werror",
          "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
          "-ffunction-sections", "-fdata-sections", "-Isrc", str(test_source),
-         rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"), rel("item/item_get_policy.c"),
-         "-Wl,--gc-sections", "-o", str(binary)],
+         rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"), rel("economic_source_event.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"), rel("item/item_get_policy.c"),
+         "-Wl,--gc-sections", '-lcrypto', "-o", str(binary)],
         cwd=ROOT, check=True,
     )
     subprocess.run([str(binary)], check=True, timeout=5)

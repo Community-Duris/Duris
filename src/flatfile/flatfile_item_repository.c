@@ -405,8 +405,11 @@ bool valid_catalog(const ownership_catalog &catalog)
 			return false;
 		if (entry.equipment_slot > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT ||
 		    (entry.equipment_slot &&
-		     (entry.owner.type != item_owner_type::player || entry.parent_item_uid ||
-		      entry.state != item_custody_state::active)))
+		     ((entry.owner.type != item_owner_type::player &&
+		       entry.owner.type != item_owner_type::native_mobile) ||
+		      entry.parent_item_uid || entry.state != item_custody_state::active ||
+		      (entry.owner.type == item_owner_type::native_mobile &&
+		       entry.root_item_uid != entry.item_uid))))
 			return false;
 		if (!entry.coin_payload.empty())
 		{
@@ -727,6 +730,10 @@ bool room_transfer(const item_transfer_payload &payload)
 bool generic_transfer_supported(const item_transfer_payload &payload, uint16_t payload_version,
 				bool accounted)
 {
+	// Read compatibility is not native NPC stock mutation/admission authority.
+	if (payload.from_owner.type == item_owner_type::native_mobile ||
+	    payload.to_owner.type == item_owner_type::native_mobile)
+		return false;
 	const bool mobile_claim = payload.reason == item_transfer_reason::mobile_claim &&
 				  item_owner_identity_equal(payload.from_owner, payload.to_owner) &&
 				  !payload.multi_root && !payload.target_parent_item_uid;
@@ -2286,6 +2293,7 @@ flatfile_item_repository_establish_owner(const std::string &root, const item_own
 					 std::string *error)
 {
 	if (root.empty() || !item_owner_identity_valid(owner) ||
+	    owner.type == item_owner_type::native_mobile ||
 	    items.size() > ownership_maximum_entries ||
 	    !std::is_sorted(items.begin(), items.end(), item_less))
 		return flatfile_item_baseline_result::invalid;

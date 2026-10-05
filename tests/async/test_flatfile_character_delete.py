@@ -70,7 +70,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as 
         rel("player_save_journal.c"),
         rel("player_quarantine_recovery.c"),
         rel("flatfile_store.c"),
-        rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
+        rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
         rel("corpse_lifecycle_command.c"),
         rel("shop_trade_command.c"), rel("shop_trade_recovery_manifest.c"),
         rel("critical_command.c"),

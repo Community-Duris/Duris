@@ -49,7 +49,7 @@ class AccountBankDualBackendBaselineTest(unittest.TestCase):
                 "src/economy/economic_accounting_types.c",
                 "src/economy/currency_command.c",
                 "src/persistence/critical_command.c",
-                "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c",
+                "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c",
                 "src/flatfile/flatfile_accounting_dispatch.c",
                 "-lcrypto",
                 "-o", str(binary),

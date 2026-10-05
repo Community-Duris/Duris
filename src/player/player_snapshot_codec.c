@@ -370,7 +370,9 @@ bool valid_death(const player_snapshot &snapshot)
 		if (!row.item.item_uid || !observed.insert(row.item.item_uid).second ||
 		    row.item.vnum <= 0 ||
 		    row.item.expected_state > item_custody_state::quarantined ||
-		    row.owner.type > item_owner_type::pet)
+		    row.owner.type > item_owner_type::native_mobile ||
+		    (row.owner.type == item_owner_type::native_mobile &&
+		     (!row.owner.id || row.owner.id == UINT64_MAX || row.owner.context_id)))
 			return false;
 		if (row.item.expected_state == item_custody_state::absent)
 		{
