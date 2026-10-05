@@ -1,5 +1,13 @@
 # Double-entry economy: remaining requirements
 
+## SHOP source-contract anchors corrected — 2026-10-05
+
+[The source probe repair](SHOP_SOURCE_CONTRACT_ANCHOR_REPAIR_2026-10-05.md) follows actual checked-placement implementation and
+unique SQL writes in their owning functions. Complete operation sets, exact route
+ownership and all refusal/unqualified assertions remain. AST/inverse/source
+extraction checks only; original 71-method qualification stays deferred.
+No production behavior or activation change; full R1–R8/release remain BLOCKED.
+
 ## SHOP frozen epoch field corrected — 2026-10-05
 
 [The one-expression repair](SHOP_FROZEN_EPOCH_FIELD_REPAIR_2026-10-05.md) reads the decoded original epoch from the existing
