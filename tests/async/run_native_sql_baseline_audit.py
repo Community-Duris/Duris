@@ -18,7 +18,7 @@ import economic_sql_audit_snapshot as exporter
 import migration_runner as migrations
 import qualify_database_restore as restore_qualifier
 from reconcile_economy_accounting import Reconciler, view
-from economic_sql_audit_origins import OriginError
+from economic_sql_audit_origins import OriginError, witness_layout
 
 if (os.environ.get("TEST_DB_DISPOSABLE") != "1" or os.environ.get("ENVIRONMENT") != "test" or
         os.environ.get("DB_HOST") != "127.0.0.1" or os.environ.get("DB_NAME") != "duris_restore" or
@@ -65,14 +65,14 @@ try:
     try:
         executor.adopt("fresh_bootstrap")
         migrations.run_pending(manifest, executor)
-        assert manifest.migrations[-1].migration_id == "0056_spell_ward_durability"
+        assert manifest.migrations[-1].migration_id == "0061_economic_baseline_equipment"
     finally:
         executor.release_lock()
     with owner.cursor() as cursor:
         cursor.execute("SELECT VERSION() AS version")
         engine_version = cursor.fetchone()["version"]
         engine_name = "mariadb" if "MariaDB" in engine_version else "mysql"
-        print("native baseline engine=" + engine_version + " migration_head=0056_spell_ward_durability", flush=True)
+        print("native baseline engine=" + engine_version + " migration_head=0061_economic_baseline_equipment", flush=True)
     initial = captured()
     encoded = subprocess.check_output([str(fixture)], env=dict(os.environ), timeout=120)
     native = json.loads(encoded)
@@ -117,6 +117,9 @@ try:
     assert all(row["baseline_witness"]["source_event"] == row["source_event"]
                for row in snapshot["source_claims"])
     intact = captured()
+    assert {row["uid"]: row["equipment_slot"] for row in snapshot["item_origins"]} == {81: 5, 82: 6}
+    for row in intact["economic_baseline_witness"]:
+        assert row["witness_version"] == 2 and witness_layout(row["canonical_witness"])[0] == 2
 
     def restore_qualification():
         before = captured()
@@ -546,16 +549,20 @@ try:
         retained_witness = next(row for row in intact["economic_baseline_witness"] if row["operation_id"] == operation)
         original_blob = retained_witness["canonical_witness"]
         item_offset = 192 + retained_witness["holding_count"] * 112
+        version, item_stride = witness_layout(original_blob)
+        assert version == retained_witness["witness_version"] == 2
         for label, offset in (("opening-value", 232), ("actor", 64), ("boundary", 120), ("coverage", 152),
                               ("holding-revision", 264), ("holding-source", 272),
                               ("item-owner", item_offset + 16), ("item-revision", item_offset + 48),
-                              ("item-source", item_offset + 56)):
+                              ("item-equipment", item_offset + 56), ("item-equipment-reserved", item_offset + 58),
+                              ("item-source", item_offset + item_stride - 32)):
             blob = bytearray(original_blob)
             blob[offset] ^= 1
             query = "UPDATE economic_baseline_witness SET canonical_witness=%s,witness_digest=%s WHERE operation_id=%s"
             cut(scope_name + "-" + label + "-rehashed",
                 [(query, (bytes(blob), hashlib.sha256(blob).digest(), operation))],
-                [(query, (original_blob, retained_witness["witness_digest"], operation))], **root_fault(operation))
+                [(query, (original_blob, retained_witness["witness_digest"], operation))],
+                **root_fault(operation))
         for column, changed in (("actor_id", 8), ("writer_id", 5), ("compiler_version", 2),
                                 ("account_count", 0), ("before_witness_count", 0),
                                 ("intent_digest", bytes([1]) * 32), ("domain_digest", bytes([2]) * 32),

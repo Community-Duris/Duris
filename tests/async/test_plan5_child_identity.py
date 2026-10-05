@@ -18,8 +18,8 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tests/async'))
 from test_reconcile_economy_accounting import (OP, clean_snapshot, linked_child_snapshot,
-                                               two_child_snapshot, bind_original_plans)
-from reconcile_economy_accounting import Reconciler, view
+                                               two_child_snapshot, bind_original_plans, creation_snapshot)
+from reconcile_economy_accounting import Reconciler, SnapshotError, view
 
 
 def child(parent, index, parent_index=0, domain=474, discriminator=0):
@@ -96,6 +96,103 @@ class ChildIdentityTests(unittest.TestCase):
         snapshot['ownership_events'][0]['parent'] = 2.0
         self.check(snapshot, 'original_plan_custody_mismatch')
         self.assertEqual(Reconciler().audit(snapshot)['checked']['original_plans_verified'], 0)
+
+    def test_native_and_origin_positions_require_exact_integer_representations(self):
+        for snapshot in (self.integer_snapshot(), self.integer_snapshot(nested=True), creation_snapshot()):
+            self.assertEqual(Reconciler().audit(snapshot)['exception_count'], 0)
+            for collection in ('native', 'item_origins'):
+                rows = snapshot['native']['items'] if collection == 'native' else snapshot['item_origins']
+                for field, index in (('uid', None), ('root', None), ('parent', None),
+                                     ('owner', 0), ('owner', 1), ('owner', 2)):
+                    original = rows[0][field] if index is None else rows[0][field][index]
+                    if type(original) is not int:
+                        continue
+                    for value in [float(original)] + ([bool(original)] if original in (0, 1) else []):
+                        damaged = copy.deepcopy(snapshot)
+                        target = damaged['native']['items'] if collection == 'native' else damaged['item_origins']
+                        if index is None:
+                            target[0][field] = value
+                        else:
+                            target[0][field][index] = value
+                        before = copy.deepcopy(damaged)
+                        for limit in (0, 1, 100):
+                            with self.subTest(collection=collection, field=field, index=index,
+                                              value=value, limit=limit):
+                                with self.assertRaisesRegex(SnapshotError, 'invalid item position'):
+                                    Reconciler(limit).audit(damaged)
+                                self.assertEqual(damaged, before)
+
+    def test_native_and_origin_positions_preserve_widths_and_nullable_controls(self):
+        snapshot = self.integer_snapshot(nested=True)
+        for collection in ('native', 'item_origins'):
+            for field, index, values in (
+                    ('uid', None, (0, -1, 2**64, None, '1', [])),
+                    ('root', None, (-1, 2**64, None, '2')),
+                    ('parent', None, (0, -1, 2**64, '2', [])),
+                    ('owner', 0, (-1, 13, None, '1')),
+                    ('owner', 1, (-1, 2**64, None, '1')),
+                    ('owner', 2, (-1, 2**64, None, '0')),
+                    ('owner', None, (None, [], [1, 1], [1, 1, 0, 0], {'alias': 'private-position-alias'}))):
+                for value in values:
+                    damaged = copy.deepcopy(snapshot)
+                    target = damaged['native']['items'] if collection == 'native' else damaged['item_origins']
+                    if index is None:
+                        target[0][field] = value
+                    else:
+                        target[0][field][index] = value
+                    with self.subTest(collection=collection, field=field, index=index, value=value):
+                        with self.assertRaisesRegex(SnapshotError, 'invalid item position'):
+                            Reconciler().audit(damaged)
+            for field in ('uid', 'root', 'parent', 'owner'):
+                damaged = copy.deepcopy(snapshot)
+                target = damaged['native']['items'] if collection == 'native' else damaged['item_origins']
+                del target[0][field]
+                with self.subTest(collection=collection, missing=field):
+                    with self.assertRaisesRegex(SnapshotError, 'invalid item position'):
+                        Reconciler().audit(damaged)
+        maximum = 2**64 - 1
+        for rows in (snapshot['native']['items'], snapshot['item_origins'], snapshot['ownership_events']):
+            for row in rows:
+                row.update(uid=maximum - 1 if row['uid'] == 1 else maximum, root=maximum,
+                           parent=None if row['parent'] is None else maximum)
+        for row in snapshot['item_references']:
+            row['uid'] = maximum - 1 if row['uid'] == 1 else maximum
+        bind_original_plans(snapshot)
+        for control in (snapshot, creation_snapshot()):
+            before = copy.deepcopy(control)
+            for limit in (0, 1, 100):
+                self.assertEqual(Reconciler(limit).audit(control)['exception_count'], 0)
+                self.assertEqual(control, before)
+
+    def test_native_position_cli_refuses_every_view_without_changing_input(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'positions.json'
+            for collection, field, index, value in (
+                    ('native', 'uid', None, True), ('native', 'parent', None, 2.0),
+                    ('native', 'owner', 2, False), ('item_origins', 'uid', None, True),
+                    ('item_origins', 'owner', 2, 0.0)):
+                snapshot = self.integer_snapshot(nested=True)
+                target = snapshot['native']['items'] if collection == 'native' else snapshot['item_origins']
+                if index is None:
+                    target[0][field] = value
+                else:
+                    target[0][field][index] = value
+                target[0]['personal_alias'] = 'private-position-alias'
+                path.write_text(json.dumps(snapshot))
+                original = path.read_bytes()
+                for limit in (0, 1, 100):
+                    for name, filters in (
+                            ('exceptions', []), ('holdings', []), ('supply', []), ('prices', []),
+                            ('routes', []), ('provenance', ['--uid', '1']),
+                            ('operation', ['--operation-id', OP])):
+                        with self.subTest(collection=collection, field=field, index=index,
+                                          view=name, limit=limit):
+                            ran = subprocess.run([sys.executable, str(ROOT/'scripts/reconcile_economy_accounting.py'),
+                                str(path), '--view', name, '--limit', str(limit), *filters],
+                                capture_output=True, text=True, timeout=30)
+                            self.assertEqual((ran.returncode, ran.stdout, ran.stderr),
+                                (2, '', 'reconciliation failed: invalid item position\n'))
+                            self.assertEqual(path.read_bytes(), original)
 
     def check(self, snapshot, code, count=1):
         before = copy.deepcopy(snapshot)
@@ -470,7 +567,7 @@ class NativeChildIdentityTests(unittest.TestCase):
                     executor.adopt('fresh_bootstrap')
                     migrations.run_pending(manifest, executor)
                 self.assertEqual(sql(env, 'SELECT sequence_number,migration_id FROM mud_schema_history ORDER BY sequence_number DESC LIMIT 1'),
-                                 '56\t0056_spell_ward_durability')
+                                 '61\t0061_economic_baseline_equipment')
                 owner = pymysql.connect(unix_socket=env['DB_SOCKET'], user='root', database='duris_restore',
                                         autocommit=True, cursorclass=pymysql.cursors.DictCursor)
                 try:
@@ -677,7 +774,7 @@ class NativeChildIdentityTests(unittest.TestCase):
                             self.assertEqual(saved_rows,inventory())
                             self.assertEqual(Reconciler().audit(capture(exporter,label+'-repaired'))['exception_count'],0)
                         (work/(engine+'-results.json')).write_text(json.dumps({'engine': engine, 'version': version,
-                            'schema_sequence': 56, 'active_epoch': None, 'unique_constraint_enforced': True,
+                            'schema_sequence': 61, 'active_epoch': None, 'unique_constraint_enforced': True,
                             'native_parent_plan': True, 'modeled_native_holdings': True,
                             'source_capture_qualified': False, 'release_qualified': False}, indent=2)+'\n')
                     finally:
@@ -692,7 +789,7 @@ class NativeChildIdentityTests(unittest.TestCase):
         self.assertEqual(len(self.cli_results), 96)
         print('PLAN5_CHILD_IDENTITY '+json.dumps({'native_configurations': 2, 'native_contract_cases': 14,
               'sql_engines': 2, 'read_only_captures': 30, 'red_clean_faults': 20,
-              'schema': 'canonical0056', 'modeled_native_holdings': True, 'release_qualified': False}), flush=True)
+              'schema': 'canonical0061', 'modeled_native_holdings': True, 'release_qualified': False}), flush=True)
 
     def cli_check(self, snapshot, path, code, count):
         before = path.read_bytes()

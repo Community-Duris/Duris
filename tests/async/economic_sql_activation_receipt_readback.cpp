@@ -33,7 +33,7 @@ economic_sql_source_digest hash(const std::vector<uint8_t> &bytes)
 	assert(SHA256(bytes.empty() ? &empty : bytes.data(), bytes.size(), result.data()));
 	return result;
 }
-economic_sql_activation_receipt_readback_row consistent_row()
+economic_sql_activation_receipt_readback_row consistent_row(uint16_t witness_version = 1)
 {
 	economic_sql_activation_receipt_readback_row row;
 	auto &receipt = row.receipt;
@@ -111,10 +111,11 @@ economic_sql_activation_receipt_readback_row consistent_row()
 	row.baseline_witness_lineage = receipt.lineage;
 	row.baseline_witness_epoch = receipt.epoch;
 	row.baseline_witness_revision = receipt.baseline_revision;
-	row.baseline_witness_version = 1;
+	row.baseline_witness_version = witness_version;
 	row.baseline_witness_holding_count = 1;
 	row.baseline_witness_item_count = 0;
 	economic_baseline_batch baseline;
+	baseline.witness_version = witness_version;
 	baseline.lineage = receipt.lineage;
 	baseline.epoch = receipt.epoch;
 	baseline.preparation_id = receipt.operation_id;
@@ -183,6 +184,15 @@ int main()
 	assert(valid.receipt.activation_digest == canonical_vector);
 	assert(economic_sql_activation_receipt_validate_readback_row(valid, lineage) == 0);
 
+	// Both retained versions require matching decoded and SQL metadata versions.
+	const auto valid_v2 = consistent_row(2);
+	assert(economic_sql_activation_receipt_validate_readback_row(valid_v2, lineage) == 0);
+	for (auto original : { valid, valid_v2 })
+	{
+		original.baseline_witness_version = original.baseline_witness_version == 1 ? 2 : 1;
+		assert(economic_sql_activation_receipt_validate_readback_row(original, lineage) !=
+		       0);
+	}
 	auto malformed = valid;
 	malformed.receipt.receipt_version = 2;
 	assert(economic_sql_activation_receipt_validate_readback_row(malformed, lineage) != 0);
@@ -271,8 +281,8 @@ int main()
 	assert(economic_sql_activation_receipt_validate_readback_row(mismatched, lineage) ==
 	       EILSEQ);
 
-	// This exact all-columns-consistent projection is the only positive readback
-	// case; all error cases above must fail without a candidate SQL row subset.
+	// Each version requires its complete all-columns-consistent projection;
+	// all error cases above fail without a candidate SQL row subset.
 	assert(economic_sql_activation_receipt_validate_readback_row(valid, lineage) == 0);
 
 	economic_sql_activation_receipt sentinel;

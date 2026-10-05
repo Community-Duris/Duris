@@ -43,6 +43,11 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0051_player_item_runtime_state.sql",
     ROOT / "migrations" / "immutable" / "0053_craft_progression.sql",
     ROOT / "migrations" / "immutable" / "0055_sql_room_item_payload.sql",
+    ROOT / "migrations" / "immutable" / "0057_shopkeeper_item_runtime_state.sql",
+    ROOT / "migrations" / "immutable" / "0058_economic_baseline_command_admission_time.sql",
+    ROOT / "migrations" / "immutable" / "0059_quest_mobile_native.sql",
+    ROOT / "migrations" / "immutable" / "0060_native_mobile_item_owner.sql",
+    ROOT / "migrations" / "immutable" / "0061_economic_baseline_equipment.sql",
 )
 
 ROOT_FIELDS = {
