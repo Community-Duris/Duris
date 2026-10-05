@@ -64,6 +64,7 @@
  */
 
 extern P_desc descriptor_list;
+extern bool game_booted;
 extern struct shop_data *shop_index;
 extern int number_of_shops;
 extern const char *equipment_types[];
@@ -677,17 +678,6 @@ void boot_db(int mini_mode)
 	logit(LOG_STATUS, "   Spells.");
 	assign_spell_pointers();
 
-	// SQL ordinary-drop recovery must never parse a prototype during publication.
-	// Failure only closes that recovery prerequisite; existing boot/loading stays
-	// available and no partially prepared catalog becomes visible.
-	if (persistence_mode_requires_mysql())
-	{
-		const auto error = prepare_recovery_object_templates();
-		if (error)
-			logit(LOG_STATUS, "SQL recovery object-template catalog unavailable (%u)",
-			      error);
-	}
-
 	npc_alchemist_cache_templates();
 
 	// Parse starter prototypes before any descriptors can request a kit.
@@ -753,6 +743,18 @@ void boot_db(int mini_mode)
 
 		logit(LOG_STATUS, "Setting up Carriages and wagons.");
 		init_wagons();
+	}
+
+	// Parse complete SQL recovery values after existing boot binders, before
+	// populated native keeper sidecars need them during persistent restoration.
+	// Failure only closes that recovery prerequisite; existing boot/loading stays
+	// available and no partially prepared catalog becomes visible.
+	if (persistence_mode_requires_mysql())
+	{
+		const auto error = prepare_recovery_object_templates();
+		if (error)
+			logit(LOG_STATUS, "SQL recovery object-template catalog unavailable (%u)",
+			      error);
 	}
 
 	fprintf(stderr, "-- Mail\n");
@@ -3518,6 +3520,39 @@ bool recovery_object_templates_ready() noexcept
 	       obj_index == recovery_template_index && obj_f == recovery_template_file &&
 	       top_of_objt == recovery_template_top && top_of_objt >= 0 &&
 	       recovery_object_templates.size() == static_cast<size_t>(top_of_objt) + 1;
+}
+
+bool finalize_recovery_object_template_bindings() noexcept
+{
+	// This serialized pre-worker boot step snapshots existing bindings only.
+	// Out-of-phase callers may not mutate a live or foreign-thread catalog.
+	if (!nevent_is_game_thread() || game_booted || !persistence_mode_requires_mysql())
+		return false;
+	if (!recovery_object_templates_ready())
+	{
+		invalidate_recovery_object_templates();
+		return false;
+	}
+	// Prove every parsed entry first. No partial function snapshot is exposed
+	// if any native identity changed; no parser/allocation/callback is used.
+	for (size_t position = 0; position < recovery_object_templates.size(); ++position)
+	{
+		const auto &entry = recovery_object_templates[position];
+		const int number = entry.prototype.R_num;
+		if (number < 0 || number > top_of_objt || entry.position < 0 ||
+		    (position && recovery_object_templates[position - 1].vnum >= entry.vnum) ||
+		    obj_index[number].virtual_number != entry.vnum ||
+		    obj_index[number].pos != entry.position)
+		{
+			invalidate_recovery_object_templates();
+			return false;
+		}
+	}
+	// All existing startup assignments are now complete. Only the catalog's
+	// binding snapshot changes; parsed values/addresses and native index stay.
+	for (auto &entry : recovery_object_templates)
+		entry.special = obj_index[entry.prototype.R_num].func.obj;
+	return true;
 }
 
 const object_template *find_recovery_object_template(int vnum) noexcept

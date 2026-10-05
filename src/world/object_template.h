@@ -51,6 +51,15 @@ const object_template *find_object_template(int vnum);
 // Catalog failure or stale boot provenance returns false/nullptr, not partial
 // coverage or authority to restore/ACK. Pointers last until world teardown/reboot.
 bool recovery_object_templates_ready() noexcept;
+// One serialized SQL boot finalization after optional subsystem bindings and
+// before worker/critical startup. Validates the complete already-parsed catalog,
+// then snapshots existing function pointers without parsing/allocating/callbacks
+// or rewriting native indices. Success preserves prototype values/addresses.
+// Boot provenance failure closes the whole catalog; unavailable input stays
+// unavailable. Runtime/foreign-thread/flatfile calls refuse without mutation.
+// No UID, economic, source, native publication or ACK authority is granted.
+// Later lazy instance binding/staleness remains a separate prerequisite.
+bool finalize_recovery_object_template_bindings() noexcept;
 const object_template *find_recovery_object_template(int vnum) noexcept;
 P_obj instantiate_object_template(const object_template &prototype);
 #endif
