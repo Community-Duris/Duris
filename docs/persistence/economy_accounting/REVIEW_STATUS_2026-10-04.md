@@ -1,5 +1,12 @@
 # Accounting review status — 2026-10-04
 
+## NPC capture compiler-blocker source repair — 2026-10-05
+
+[Existing corruption-guard declaration inclusion](QUEST_MOBILE_CAPTURE_INCLUDE_REPAIR_2026-10-05.md)
+addresses the peer-established both-backend compiler defect without changing the
+guard. Peer copied-source probes compiled; no local major-plan execution ran.
+Current maintained builds, native qualification and coverage-contract repairs remain.
+
 ## Integrated evidence index representation repair — 2026-10-05
 
 [The independent index-validation slice](PLAN5_EVIDENCE_INDEX_TYPES_SLICE_2026-10-05.md)
