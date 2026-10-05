@@ -17,6 +17,13 @@ uint64_t little_u64(std::span<const uint8_t> input, size_t offset)
 }
 }
 
+bool economic_shop_trade_admission_available() noexcept
+{
+	// SHOP has no branch in the maintained schema-2 admission allowlist yet.
+	// Change alongside that complete route, never as a producer-side override.
+	return false;
+}
+
 bool economic_command_admission_supported(const critical_command &command) noexcept
 {
 	using error = economic_accounting_error;

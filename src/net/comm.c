@@ -2257,6 +2257,7 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 		flush_pending_ship_saves();
 		locker_async_pulse();
 		corpse_lifecycle_transaction_pulse();
+		shop_trade_preparation_owner::pulse();
 		critical_completion critical_completions[64] = {};
 		const size_t critical_completion_count =
 			critical_command_coordinator_pulse(critical_completions, 64);
