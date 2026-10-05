@@ -356,9 +356,9 @@ def require_integrity(executor):
         mismatch("baseline_zero_effect")
 
     def baseline_witness(where, meta, original, row, frozen, encoded):
-        # The second consumer reuses pure independent EAB1 interpretation. The
+        # The second consumer reuses pure independent EAB1/EAB2 interpretation. The
         # import is local because the origin reader also consumes this decoder.
-        from economic_sql_audit_origins import decode_witness, verify_baseline_root
+        from economic_sql_audit_origins import MAX_WITNESS_BYTES, decode_witness, verify_baseline_root
         columns = [hexadecimal("w.lineage"), hexadecimal("w.epoch"), "w.book_revision", "w.witness_version",
                    "w.holding_count", "w.item_count", hexadecimal("w.witness_digest"),
                    "OCTET_LENGTH(w.canonical_witness)", hexadecimal("c.opening_account"),
@@ -379,7 +379,7 @@ def require_integrity(executor):
             witness = dict(zip(names, (*meta[:3], original, *meta[4:])))
             witness.update(book_revision=value[2], witness_version=value[3], holding_count=value[4], item_count=value[5],
                 witness_digest=binary(value[6], 32), canonical_witness=capsule(where, "canonical_witness", value[7],
-                    872144, "baseline_witness", table="economic_baseline_witness", minimum=192),
+                    MAX_WITNESS_BYTES, "baseline_witness", table="economic_baseline_witness", minimum=192),
                 inbox_revision=value[9], inbox_type=value[10], inbox_schema=value[11], inbox_payload=value[12],
                 inbox_result_payload=binary(value[13], 0), canonical_intent=frozen, canonical_plan=encoded,
                 inbox_keys_hash=binary(value[14], 32),

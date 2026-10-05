@@ -1,5 +1,15 @@
 # Plan 1: authority, admission, and cutover
 
+## Independent EAB1/EAB2 readers integrated — 2026-10-05
+
+[The exact reader integration](../PLAN5_DUAL_VERSION_READER_INTEGRATION_2026-10-05.md) preserves historicalEAB1 and validates
+versioned equipment/original-plan evidence. Central inventory917owners/103rows
+adds eight pure and two mandatory C++ reference checks; all101 prior policies
+remain. Peer native evidence stays7cd9/schema56/EAB1, with its exact GCC13.3
+erratum. Local pins/AST/inventory only. Actual native selector is documented;
+native/schema61 installation, measured sealing and original Plan1 qualification
+remain. R1–R8 and release stay BLOCKED; inactive behavior and safety gates stay.
+
 ## Baseline equipment/schema61 source closure reviewed — 2026-10-05
 
 [The primary/Plan5 interface](../BASELINE_EQUIPMENT_SCHEMA61_SOURCE_HANDOFF_2026-10-05.md) fixes the versioned equipment contract and

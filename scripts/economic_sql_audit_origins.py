@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read and verify SQL EAB1 opening origins without changing native authority.
+"""Read and verify SQL EAB1/EAB2 opening origins without changing native authority.
 
 This is one input to a future complete audit snapshot, not an audit snapshot or
 an activation attestation. It contains only non-personal account keys and UIDs.
@@ -16,14 +16,16 @@ import struct
 import sys
 
 from reconcile_economy_accounting import MAX_INPUT_BYTES, MAX_ROWS, account_key, copper
-from economic_restore_evidence import decode_intent, decode_plan
+from economic_restore_evidence import decode_intent, decode_plan, forest, position
 
 HEADER_BYTES = 192
 HOLDING_BYTES = 112
 ITEM_BYTES = 88
+ITEM_BYTES_V2 = 96
 MAX_HOLDINGS_PER_WITNESS = 3071
 MAX_ITEMS_PER_WITNESS = 6000
 ITEM_STATES = {1: "live", 2: "tombstone", 3: "quarantined"}
+MAX_WITNESS_BYTES = HEADER_BYTES + MAX_HOLDINGS_PER_WITNESS * HOLDING_BYTES + MAX_ITEMS_PER_WITNESS * ITEM_BYTES_V2
 
 
 class OriginError(ValueError):
@@ -46,15 +48,26 @@ def unsigned(data: bytes) -> int:
     return int.from_bytes(data, "little")
 
 
+def witness_layout(blob: bytes) -> tuple[int, int]:
+    """Select only an exact historical or version-two original wire layout."""
+    if not isinstance(blob, bytes) or len(blob) < HEADER_BYTES or len(blob) > MAX_WITNESS_BYTES:
+        raise OriginError("invalid EAB1 size")
+    version = {b"EAB1": 1, b"EAB2": 2}.get(blob[:4])
+    if version is None or struct.unpack_from("<HHII", blob, 4) != (version, HEADER_BYTES, len(blob), 0):
+        raise OriginError("invalid EAB1/EAB2 header")
+    stride = ITEM_BYTES if version == 1 else ITEM_BYTES_V2
+    holdings, items = struct.unpack_from("<II", blob, 184)
+    if (holdings > MAX_HOLDINGS_PER_WITNESS or items > MAX_ITEMS_PER_WITNESS or
+            len(blob) != HEADER_BYTES + holdings * HOLDING_BYTES + items * stride):
+        raise OriginError(f"EAB{version} count or length mismatch")
+    return version, stride
+
+
 def decode_witness(row: dict, lineage: bytes, epoch: bytes, opening: bytes) -> tuple[list[dict], list[dict]]:
     blob = row.get("canonical_witness")
-    if not isinstance(blob, bytes) or len(blob) < HEADER_BYTES or len(blob) > 872144:
-        raise OriginError("invalid EAB1 size")
+    version, stride = witness_layout(blob)
     if digest(row.get("witness_digest"), "witness digest") != hashlib.sha256(blob).digest():
         raise OriginError("EAB1 digest mismatch")
-    if (blob[:4] != b"EAB1" or struct.unpack_from("<HHII", blob, 4) !=
-            (1, HEADER_BYTES, len(blob), 0)):
-        raise OriginError("invalid EAB1 header")
     if blob[16:32] != lineage or blob[32:48] != epoch:
         raise OriginError("foreign EAB1 lineage or epoch")
     identity(blob[48:64], "preparation ID")
@@ -66,9 +79,8 @@ def decode_witness(row: dict, lineage: bytes, epoch: bytes, opening: bytes) -> t
     digest(blob[120:152], "boundary digest")
     digest(blob[152:184], "coverage digest")
     holding_count, item_count = struct.unpack_from("<II", blob, 184)
-    if (holding_count != row.get("holding_count") or item_count != row.get("item_count") or
-            holding_count > MAX_HOLDINGS_PER_WITNESS or item_count > MAX_ITEMS_PER_WITNESS or
-            len(blob) != HEADER_BYTES + holding_count * HOLDING_BYTES + item_count * ITEM_BYTES):
+    if (type(row.get("holding_count")) is not int or type(row.get("item_count")) is not int or
+            holding_count != row["holding_count"] or item_count != row["item_count"]):
         raise OriginError("EAB1 count or length mismatch")
 
     holdings: list[dict] = []
@@ -96,6 +108,7 @@ def decode_witness(row: dict, lineage: bytes, epoch: bytes, opening: bytes) -> t
         offset += HOLDING_BYTES
 
     items: list[dict] = []
+    positions = {}
     previous_uid = 0
     for _ in range(item_count):
         uid = unsigned(blob[offset:offset + 8])
@@ -113,18 +126,24 @@ def decode_witness(row: dict, lineage: bytes, epoch: bytes, opening: bytes) -> t
                        (owner_type != 12 or (owner_id < 2**64 - 1 and context == 0 and state in (1, 3))))
         if not owner_valid or not root or parent == uid:
             raise OriginError("invalid EAB1 item topology")
-        digest(blob[offset + 56:offset + 88], "item source digest")
+        digest(blob[offset + stride - 32:offset + stride], "item source digest")
         items.append({"uid": uid, "origin": "baseline", "revision": revision,
                       "root": root, "parent": parent or None,
                       "owner": [owner_type, owner_id, context], "state": ITEM_STATES[state]})
-        offset += ITEM_BYTES
+        if version == 2:
+            positions[uid] = position(blob[offset + 8:offset + 64])
+            items[-1]["equipment_slot"] = positions[uid][-1]
+        offset += stride
+    if version == 2:
+        forest(positions)
     return holdings, items
 
 
 def verify_baseline_root(row: dict, lineage: bytes, epoch: bytes) -> dict:
-    """Bind all EAB1 bytes and their opening projections to a committed root."""
+    """Bind every original versioned witness byte to its committed root."""
     try:
         blob = row["canonical_witness"]
+        version, stride = witness_layout(blob)
         operation = hashlib.sha256(blob[48:64] + struct.pack("<I", 0x42415345) + blob[72:80]).digest()[:16]
         source = struct.pack("<HH", 10, 1) + blob[48:64] + epoch + blob[72:80] + bytes(4)
         expected = (lineage, epoch, operation, bytes(16), 1, 4, 1, 1, 2,
@@ -136,7 +155,8 @@ def verify_baseline_root(row: dict, lineage: bytes, epoch: bytes) -> dict:
                 row["source_event"])
         keys_hash = hashlib.sha256(struct.pack("<BQ", 9, 0x45434f4e42415345)).digest()
         if (root != expected or row["original_operation_id"] is not None or
-                row["witness_version"] != 1 or row["inbox_revision"] != row["book_revision"] or
+                type(row["witness_version"]) is not int or row["witness_version"] != version or
+                row["inbox_revision"] != row["book_revision"] or
                 (row["inbox_type"], row["inbox_schema"], row["inbox_payload"], row["inbox_result_payload"]) !=
                 (20, 2, 1, b"") or type(row.get("inbox_keys_hash")) is not bytes or
                 row["inbox_keys_hash"] != keys_hash):
@@ -173,8 +193,9 @@ def verify_baseline_root(row: dict, lineage: bytes, epoch: bytes) -> dict:
             for amounts, value in equity:
                 postings.append(struct.pack("<IHH4qq", len(postings), holdings, 0,
                                             *(-amount for amount in amounts), -value))
-        snapshots = [blob[192 + holdings * 112 + index * 88:192 + holdings * 112 + index * 88 + 56] + bytes(8)
-                     for index in range(items)]
+        snapshots = [blob[192 + holdings * 112 + index * stride:
+                          192 + holdings * 112 + index * stride + (64 if version == 2 else 56)] +
+                     (b"" if version == 2 else bytes(8)) for index in range(items)]
         counts = (len(effects), len(postings), 0, items, items, 0)
         if (plan["counts"] != counts or
                 tuple(row[name] for name in ("account_count", "posting_count", "child_count",
@@ -254,11 +275,12 @@ def verify_baseline_projections(cursor, verified: list[tuple[dict, dict]], linea
         postings.extend((operation, index, event, account, child, *delta, amount)
                         for index, (event, account, child, delta, amount) in enumerate(plan["postings"]))
         blob = row["canonical_witness"]
+        _, stride = witness_layout(blob)
         holdings, items = struct.unpack_from("<II", blob, 184)
         reservations.extend((lineage, epoch, 1, unsigned(blob[212 + index * 112:220 + index * 112]), operation)
                             for index in range(holdings))
         reservations.extend((lineage, epoch, 2,
-                             unsigned(blob[192 + holdings * 112 + index * 88:200 + holdings * 112 + index * 88]),
+                             unsigned(blob[192 + holdings * 112 + index * stride:200 + holdings * 112 + index * stride]),
                              operation) for index in range(items))
     if sum(map(len, expected.values())) > MAX_ROWS:
         raise OriginError("baseline SQL projection source exceeds audit input limit")
