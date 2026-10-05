@@ -215,4 +215,19 @@ class AccountingContractTest(unittest.TestCase):
             sites=contract.scan_sources(root)
             self.assertEqual([(s['line'],s['family']) for s in sites],[(1,'direct_cash_assignment')])
 
+    def test_census_detects_guarded_shop_submit_and_masks_literal_mentions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'src').mkdir()
+            (root/'src/example.c').write_text(
+                'void example() {\n'
+                '  shop_trade_transaction_submit(ch, payload, completion);\n'
+                '  shop_trade_transaction_submit_with_publication(\n'
+                '      ch, payload, publish, completion);\n'
+                '  // shop_trade_transaction_submit_with_publication(ch, payload);\n'
+                '  const char *note = "shop_trade_transaction_submit_with_publication(";\n'
+                '}\n')
+            sites=contract.scan_sources(root)
+            self.assertEqual([(s['line'],s['family']) for s in sites],
+                             [(2,'economic_submit'),(3,'economic_submit')])
+
 if __name__=='__main__': unittest.main()

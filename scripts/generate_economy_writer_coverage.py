@@ -163,6 +163,7 @@ NON_WRITERS = {
     "special.flying_citadel_unreachable_move": "flying_citadel returns FALSE unconditionally before the room-to-room object movement; the two calls cannot execute in this build.",
 }
 PROJECTION_ROUTES = {
+    "recovery.ordinary_drop_retained_live_publication": "After exact retained SQL drop receipt, current custody/literal/session and live graph proof, relinks the existing UID tree from player to original room and hydrates its committed runtime revision. It creates no new economic root, supply event or publication ACK; interrupted native tails remain held.",
     "coin.restored_balance_projection": "Copies verified current native wallet/shared-bank vectors into exact original live bodies under retained receipt/current authority; no new posting.",
     "coin.restored_room_projection": "Projects an original-UID committed room pile, including private inert-stage hydration and global/room enrollment not represented by scanner hits; complete native authority and guarded ACK remain mandatory.",
     "coin.retained_room_projection": "Publishes a committed original-UID ordinary-room pile with retained exact literal/custody/result checks. Uncertain handler/materializer stages remain held; no second accounting root is created.",
