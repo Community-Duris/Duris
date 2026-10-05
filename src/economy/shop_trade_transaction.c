@@ -2210,7 +2210,8 @@ critical_submit_result shop_trade_preparation_owner::submit_accounted(
 			return critical_submit_result::unavailable;
 		if (!shop_trade_command_decode_payload(command, &payload) ||
 		    command.operation_id.bytes != token.operation_id_.bytes ||
-		    command.payload_version != SHOP_TRADE_NATIVE_PAYLOAD_VERSION ||
+		    (command.payload_version != SHOP_TRADE_NATIVE_PAYLOAD_VERSION &&
+		     command.payload_version != SHOP_TRADE_RECOVERY_PAYLOAD_VERSION) ||
 		    payload.player_pid != entry.player_pid || !prepared.native_ready ||
 		    !prepared.native_sealed || !prepared.player_held)
 			return critical_submit_result::invalid;
