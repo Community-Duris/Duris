@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 125 &&
-				tracker.summary_for(7, 42).total == 1544,
+		require(catalog.story_mappings.size() == 126 &&
+				tracker.summary_for(7, 42).total == 1543,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7687,6 +7687,165 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "library"; });
+			const auto &admission = story_for("library", "gafrizzen-admission");
+			const auto &dreams = story_for("library", "gazdiel-eight-fragments");
+			const auto &books = story_for("library", "razeline-ten-books");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 4020, 402000, 100, "arrival") ==
+					result::applied,
+				"Arcaneum discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 4020, 10, 1, 101, false, false);
+			require(journal.find(dreams.title) == std::string::npos &&
+					journal.find(books.title) == std::string::npos,
+				"Arcaneum exposed unseen contacts");
+			for (const auto &contact : mapping.contacts)
+				require(journey.meet_npc(7, 42, contact.mob_vnum, 402000, 102) ==
+						result::applied,
+					"Arcaneum contact encounter failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Arcaneum card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto ready = [&](const auto &entry, size_t i) {
+				return section(entry).find("[Ready now] " + entry.steps[i].text) !=
+				       std::string::npos;
+			};
+			const auto missing = [&](const auto &entry, size_t i) {
+				return section(entry).find("[Missing now] " +
+							   entry.steps[i].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			for (int v : { 402003, 402021, 402036, 402039, 402049, 402089 })
+				supplies.carried[v] = 10;
+			for (const auto &entry : mapping.stories)
+				for (const auto &step : entry.steps)
+					if (!step.item_vnums.empty())
+						supplies.equipped[step.item_vnums.front()] = 1;
+			journal = journey.render_journal(7, 42, 4020, 10, 1, 103, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				for (size_t i = 0; i + 1 < entry.steps.size(); ++i)
+					require(missing(entry, i),
+						"Arcaneum worn/reward/wrong spellbook stock substituted for loose exact input");
+			supplies.equipped.clear();
+			supplies.carried[402041] = 8;
+			journal = journey.render_journal(7, 42, 4020, 10, 1, 104, false, false,
+							 &supplies);
+			require(ready(dreams, 0), "Arcaneum exact first dream kind missing");
+			for (size_t i = 1; i < 8; ++i)
+				require(missing(dreams, i),
+					"Arcaneum eight copies of one kind supplied distinct dreams");
+			for (const auto &entry : mapping.stories)
+				for (const auto &step : entry.steps)
+					if (!step.item_vnums.empty())
+						supplies.carried[step.item_vnums.front()] =
+							step.count;
+			supplies.carried.erase(402048);
+			supplies.carried.erase(402067);
+			journal = journey.render_journal(7, 42, 4020, 10, 1, 105, false, false,
+							 &supplies);
+			require(missing(dreams, 7) && missing(books, 9),
+				"Arcaneum partial eight/ten-item sets became complete");
+			supplies.carried[402048] = supplies.carried[402067] = 1;
+			const auto before_read = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 4020, 10, 1, 106, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+			{
+				for (size_t i = 0; i + 1 < entry.steps.size(); ++i)
+					require(ready(entry, i),
+						"Arcaneum supplied exact input required personal source/kill/training/access history");
+				require(section(entry).find("[Pending]") != std::string::npos &&
+						journey.evidence_for(entry.contracts.front(), 2)
+								.successful_attempts == 0,
+					"Arcaneum custody manufactured acceptance");
+			}
+			require(journey.serialize_state() == before_read &&
+					journey.progress_for_zone(7, 42, 4020).completed == 0 &&
+					journey.progress_for_zone(7, 42, 4020).total == 5,
+				"Arcaneum reading manufactured progress or counted paid service");
+			// Synthetic accepted events qualify projection; native supply, coin payment and recipient arrival remain pending.
+			record(journey, admission.contracts.front(), "library-admission", 4020,
+			       402000);
+			require(admission.category == "service" &&
+					journey.evidence_for(admission.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					journey.progress_for_zone(7, 42, 4020).completed == 0,
+				"Arcaneum paid receipt became achievement");
+			record(journey, dreams.contracts.front(), "library-dreams", 4020, 402099);
+			require(journey.progress_for_zone(7, 42, 4020).completed == 1 &&
+					journey.evidence_for(books.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Arcaneum bundles merged");
+			supplies.carried.erase(402041);
+			journal = journey.render_journal(7, 42, 4020, 10, 1, 108, false, false,
+							 &supplies);
+			require(missing(dreams, 0) && ready(dreams, 1),
+				"Arcaneum accepted history recreated spent fragment");
+			for (const auto &entry : mapping.stories)
+				if (entry.id != admission.id && entry.id != dreams.id)
+					record(journey, entry.contracts.front(), entry.id.c_str(),
+					       4020, 402000);
+			require(journey.progress_for_zone(7, 42, 4020).completed == 5 &&
+					journey.progress_for_zone(7, 42, 4020).total == 5,
+				"Arcaneum lost independent collection units");
+			auto replay = completion(dreams.contracts.front(), "library-dreams", 120);
+			replay.transaction.zone_number = 4020;
+			replay.transaction.room_vnum = 402099;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Arcaneum replay duplicated receipt");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 4020) &&
+					recovered.progress_for_zone(7, 42, 4020).completed == 5,
+				"Arcaneum cold recovery lost receipts/discovery");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 4020, 402000, 100, "arrival") ==
+					result::applied,
+				"Historical Arcaneum discovery failed");
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("library-old-" + entry.id).c_str(), 4020, 402000);
+			require(historical.progress_for_zone(7, 42, 4020).completed == 6,
+				"Historical Arcaneum six receipts lost");
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.has_discovered(7, 42, 4020) &&
+					authored.progress_for_zone(7, 42, 4020).completed == 5 &&
+					authored.progress_for_zone(7, 42, 4020).total == 5,
+				"Arcaneum raw-to-authored service classification lost history");
+			for (const auto &entry : mapping.stories)
+				require(authored.evidence_for(entry.contracts.front(), 2)
+								.successful_attempts == 1 &&
+						recovered.evidence_for(entry.contracts.front(), 2)
+								.successful_attempts == 1,
+					"Arcaneum six exact receipt identities lost");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u) {
+						      return u.zone_number == 4020 &&
+							     u.achievement && u.daily_candidate;
+					      }) == 5 &&
+					std::count_if(units.begin(), units.end(),
+						      [](const auto &u) {
+							      return u.zone_number == 4020 &&
+								     !u.achievement &&
+								     !u.daily_candidate;
+						      }) == 1,
+				"Arcaneum admission leaked into five story/daily units");
 		}
 
 		{

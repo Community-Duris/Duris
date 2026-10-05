@@ -146092,6 +146092,661 @@
     {
       "contacts": [
         {
+          "description": "The admissions dean describes the paid key service; coin payment is currently unavailable with active accounting.",
+          "keyword": "gafrizzen",
+          "mob_vnum": 402000,
+          "name": "Gafrizzen, the Dean of Admissions",
+          "topics": [
+            "student",
+            "scholar"
+          ]
+        },
+        {
+          "description": "The summoner accepts one of each of six exact elemental essences together.",
+          "keyword": "yralrife",
+          "mob_vnum": 402010,
+          "name": "Yralrife, the Master Golem Summoner",
+          "topics": [
+            "summoning",
+            "essences"
+          ]
+        },
+        {
+          "description": "The archlich accepts seven exact undead proofs together; his victory speech does not require personal kills.",
+          "keyword": "rikn",
+          "mob_vnum": 402018,
+          "name": "Rikn the Archlich, Dean of Necromancy",
+          "topics": [
+            "necromantic",
+            "necromancy",
+            "necro",
+            "arts"
+          ]
+        },
+        {
+          "description": "The cleric gives specialization guidance; no additional accepted offering is declared.",
+          "keyword": "murgol",
+          "mob_vnum": 402026,
+          "name": "Murgol, the famous clerical explorer",
+          "topics": [
+            "cleric",
+            "clerical",
+            "teacher"
+          ]
+        },
+        {
+          "description": "The rogue accepts the historical journal and gives class guidance; his lockpick pitch is not proof of usable stock.",
+          "keyword": "gringobbi",
+          "mob_vnum": 402027,
+          "name": "Gringobbi, the notorious rogue",
+          "topics": [
+            "thief",
+            "assassin",
+            "rogue",
+            "mercenary",
+            "brigand",
+            "bounty",
+            "hunter",
+            "job"
+          ]
+        },
+        {
+          "description": "The dream weaver accepts eight distinct, same-name fragments and then leaves; the staged demon can bring one color per ordinary approach.",
+          "keyword": "gazdiel",
+          "mob_vnum": 402037,
+          "name": "Gazdiel, the Weaver of Dreams",
+          "topics": [
+            "fragment",
+            "dream",
+            "dreams",
+            "memories"
+          ]
+        },
+        {
+          "description": "The hermit explains his transformation and curse; no accepted cure or persistent transformation outcome is declared.",
+          "keyword": "hermit",
+          "mob_vnum": 402041,
+          "name": "Ne'kalsai, the hermit",
+          "topics": [
+            "curse"
+          ]
+        },
+        {
+          "description": "The warrior gives specialization guidance without an additional accepted request.",
+          "keyword": "gruk",
+          "mob_vnum": 402058,
+          "name": "Gruk, the legendary warrior",
+          "topics": [
+            "warrior"
+          ]
+        },
+        {
+          "description": "The knight gives Anti-Paladin specialization guidance without an additional accepted request.",
+          "keyword": "grumbiter",
+          "mob_vnum": 402059,
+          "name": "Grumbiter, the darkest of knights",
+          "topics": [
+            "antipaladin",
+            "anti-paladin"
+          ]
+        },
+        {
+          "description": "The monk gives specialization guidance without an additional accepted request.",
+          "keyword": "frilun",
+          "mob_vnum": 402060,
+          "name": "Frilun, the silent monk",
+          "topics": [
+            "monk",
+            "teacher",
+            "specialize"
+          ]
+        },
+        {
+          "description": "The collector accepts ten exact apprentice books and leaves; her approach to the public fountain is unreliable.",
+          "keyword": "razeline",
+          "mob_vnum": 402061,
+          "name": "Razeline, the rare book collector",
+          "topics": [
+            "books"
+          ]
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore the Arcaneum's teaching wings and dream plane through five independent collection requests, a paid admission service and verified lore contacts. Exact offerings determine completion. New discovery and progress require active, ready accounting.",
+      "orientation": [
+        "ASK gafrizzen about student or scholar for admission terms. His ten-platinum key exchange is a paid service, separate from the five collection requests. Coin offerings are currently unavailable while accounting is active. Carrying a key or entering through an already opened route does not prove a personal admission payment.",
+        "The portico's eastern gate starts closed, locked and pickproof. Its small obsidian admission key may break when used; a supplied matching key or a passage opened by someone else remains valid under native access rules. The journal does not add a personal payment prerequisite or promise a bypass. Ordinary travel, combat and PvP restrictions still apply.",
+        "ASK yralrife about summoning or essences. He accepts six different elemental essences together: fire, acid, sulfur, frost, shadows and lightning. The initial gatehouse golems have limited exact essence stock. Other golems in the summoning rooms do not all carry those materials. You need not prove that you personally summoned or killed a golem.",
+        "ASK rikn about necromantic, necromancy, necro or arts. His request needs seven different undead proofs together. The necromancy wing has limited stock on specific creatures; ordinary zombies and skeletons do not all supply it. His speech describes study and victories, while the accepted request checks the exact items rather than seven personal kills or lessons.",
+        "ASK gringobbi about job for the historical journal of Solbeep. It is reset stock inside the sorcerer's obsidian desk, which starts closed and locked. A successful native lock-opening method and then OPEN are needed unless someone has already opened it. Normal PICK requires the skill and a held usable pick; the shop's sales pitch does not guarantee that its own picks can be held.",
+        "ASK gazdiel about fragment, dream, dreams or memories. He requires eight distinct dream fragments, which share a plain-text name and keywords but have different native colors. The color names and numbered preparation labels distinguish eight exact kinds without an offering order. Eight copies of one kind are insufficient.",
+        "The shadow portal at the ethereal-mist lookout leads into the dream plane; the portal near Gazdiel leads back. ENTER portal follows the native command and arrival rules. The treasury passage starts secret, closed, locked and pickproof; its insubstantial skeleton key is limited stock carried by one dream-memory placement. Finding or using a passage is not a recorded personal puzzle completion.",
+        "The dream demon starts beside eight different fragment placements and can bring one color through its one-way approach into the treasury. Its normal approach does not tour all eight colors. Gathering the full set can require multiple available demon and stock episodes; a single encounter does not promise eight fragments. Exact supplied fragments also fit. Availability still needs played qualification, and staging rooms are not player destinations.",
+        "ASK razeline about books when the rare book collector is available. She requests ten specific apprentice books together, spread through the elemental, wild-magic, shadow, spirit, nature, necromancy, study, demonology and lore shelves. Those books differ from the lich's spellbook, a teacher's claw-bound tome and the reward tome. Current stock and its actual container can vary with resets and collection by others.",
+        "Razeline's approach to the fountain is not reliable: her declared starting route can leave her away from the public rooms. Finding every book does not guarantee that she is presently available. Do not enter staging rooms to chase her. Both Razeline and Gazdiel leave after an accepted offering and need a fresh available recipient for another attempt.",
+        "The falling routes near the undead pit, the ethereal lookout and the two inn routes retain native fall, flight and movement behavior. Hidden-looking captions do not always mean a secret exit: the dracolich's northern crypt door starts closed and unlocked, and the inn's downward portico exit is not initially secret. Follow actual passage state rather than treating every caption as a new puzzle.",
+        "Carry each chosen offering loose to see current preparation. Held, worn, nested, consumed or handed-away objects are not current loose preparation. Exact gifts can fit without personal first-recovery, source, combat, training or dialogue history. Each bundle settles as one accepted request; readiness and reward ownership do not create its receipt.",
+        "ASK the listed class contacts about their verified topics for guidance. Ne'kalsai explains his curse, but no accepted cure is declared here. Class specialization, learning from teachers, Shezeera's epic instruction, shopping, the bank and the fountain remain separate native services or lore. Epic skill purchases are currently unavailable while accounting is active.",
+        "Potential daily eligibility describes a repeatable item offering and native reset renewal, not guaranteed materials, recipient availability or daily rewards. Gazdiel's soul-mending and Ne'kalsai's transformation language does not record a repaired soul or a cured creature. Discovery stays separate, and new credit requires active, ready accounting."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "library",
+      "stories": [
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:10000;receive=I:402003;disappear=0",
+              "giver_vnum": 402000
+            }
+          ],
+          "id": "gafrizzen-admission",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:10000;receive=I:402003;disappear=0",
+                  "giver_vnum": 402000
+                }
+              ],
+              "hint": "Coin offerings are currently unavailable while accounting is active. A key, route arrival or stated price does not prove accepted payment. This service creates no zone achievement or daily unit.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Gafrizzen: admission key"
+            }
+          ],
+          "summary": "The ten-platinum key exchange is a paid admission service. Coin offerings are currently unavailable while accounting is active; owning or using a key does not prove payment.",
+          "title": "Gafrizzen: admission key"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:402004,I:402005,I:402006,I:402007,I:402008,I:402009;receive=E:10000;disappear=0",
+              "giver_vnum": 402010
+            }
+          ],
+          "id": "yralrife-six-essences",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Limited exact essence stock is carried by specific initial gatehouse golems. Other summoning-room golems do not all carry it; personal summoning or killing is not required. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402004",
+              "item_vnums": [
+                402004
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the summoning essence of fire"
+            },
+            {
+              "count": 1,
+              "hint": "Limited exact essence stock is carried by specific initial gatehouse golems. Other summoning-room golems do not all carry it; personal summoning or killing is not required. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402005",
+              "item_vnums": [
+                402005
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the summoning essence of acid"
+            },
+            {
+              "count": 1,
+              "hint": "Limited exact essence stock is carried by specific initial gatehouse golems. Other summoning-room golems do not all carry it; personal summoning or killing is not required. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402007",
+              "item_vnums": [
+                402007
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the summoning essence of frostbite"
+            },
+            {
+              "count": 1,
+              "hint": "Limited exact essence stock is carried by specific initial gatehouse golems. Other summoning-room golems do not all carry it; personal summoning or killing is not required. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402006",
+              "item_vnums": [
+                402006
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the summoning essence of sulfur"
+            },
+            {
+              "count": 1,
+              "hint": "Limited exact essence stock is carried by specific initial gatehouse golems. Other summoning-room golems do not all carry it; personal summoning or killing is not required. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402008",
+              "item_vnums": [
+                402008
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the summoning essence of shadows"
+            },
+            {
+              "count": 1,
+              "hint": "Limited exact essence stock is carried by specific initial gatehouse golems. Other summoning-room golems do not all carry it; personal summoning or killing is not required. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402009",
+              "item_vnums": [
+                402009
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the summoning essence of lightning"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:402004,I:402005,I:402006,I:402007,I:402008,I:402009;receive=E:10000;disappear=0",
+                  "giver_vnum": 402010
+                }
+              ],
+              "hint": "GIVE an exact required item with the complete bundle loose to the available recipient. Acceptance consumes the bundle; Gazdiel and Razeline then leave. Custody, rewards, dialogue and source access do not prove an accepted receipt. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Yralrife: six elemental essences"
+            }
+          ],
+          "summary": "Prepare one of each of six exact essences together. These are one accepted bundle, without personal summoning, study or kill requirements.",
+          "title": "Yralrife: six elemental essences"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:402020,I:402022,I:402023,I:402024,I:402026,I:402027,I:402028;receive=E:100000;disappear=0",
+              "giver_vnum": 402018
+            }
+          ],
+          "id": "rikn-seven-proofs",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Limited exact proof stock is carried by a specific creature in the necromancy wing. Similar creatures and other remains do not substitute; personal study or killing is not required. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402020",
+              "item_vnums": [
+                402020
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the tailspike of a dracolich"
+            },
+            {
+              "count": 1,
+              "hint": "Limited exact proof stock is carried by a specific creature in the necromancy wing. Similar creatures and other remains do not substitute; personal study or killing is not required. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402022",
+              "item_vnums": [
+                402022
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the fingerbone of a lich"
+            },
+            {
+              "count": 1,
+              "hint": "Limited exact proof stock is carried by a specific creature in the necromancy wing. Similar creatures and other remains do not substitute; personal study or killing is not required. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402023",
+              "item_vnums": [
+                402023
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the ashes of a vampire"
+            },
+            {
+              "count": 1,
+              "hint": "Limited exact proof stock is carried by a specific creature in the necromancy wing. Similar creatures and other remains do not substitute; personal study or killing is not required. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402024",
+              "item_vnums": [
+                402024
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the jagged teeth of a wraith"
+            },
+            {
+              "count": 1,
+              "hint": "Limited exact proof stock is carried by a specific creature in the necromancy wing. Similar creatures and other remains do not substitute; personal study or killing is not required. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402026",
+              "item_vnums": [
+                402026
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the ectoplasm of a spectre"
+            },
+            {
+              "count": 1,
+              "hint": "Limited exact proof stock is carried by a specific creature in the necromancy wing. Similar creatures and other remains do not substitute; personal study or killing is not required. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402028",
+              "item_vnums": [
+                402028
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the skull of a skeleton"
+            },
+            {
+              "count": 1,
+              "hint": "Limited exact proof stock is carried by a specific creature in the necromancy wing. Similar creatures and other remains do not substitute; personal study or killing is not required. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402027",
+              "item_vnums": [
+                402027
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the rotting flesh of a zombie"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:402020,I:402022,I:402023,I:402024,I:402026,I:402027,I:402028;receive=E:100000;disappear=0",
+                  "giver_vnum": 402018
+                }
+              ],
+              "hint": "GIVE an exact required item with the complete bundle loose to the available recipient. Acceptance consumes the bundle; Gazdiel and Razeline then leave. Custody, rewards, dialogue and source access do not prove an accepted receipt. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Rikn: seven undead proofs"
+            }
+          ],
+          "summary": "Prepare seven distinct undead proofs together. The accepted bundle records the request, without inventing seven personal victories.",
+          "title": "Rikn: seven undead proofs"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:402029;receive=C:50000;disappear=0",
+              "giver_vnum": 402027
+            }
+          ],
+          "id": "gringobbi-historical-journal",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Native reset stock belongs inside the sorcerer's obsidian desk. The desk starts closed and locked; follow successful native lock and OPEN rules or an already opened container. A shop pitch does not guarantee usable picks. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402029",
+              "item_vnums": [
+                402029
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the historical journal of 'Solbeep'"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:402029;receive=C:50000;disappear=0",
+                  "giver_vnum": 402027
+                }
+              ],
+              "hint": "GIVE an exact required item with the complete bundle loose to the available recipient. Acceptance consumes the bundle; Gazdiel and Razeline then leave. Custody, rewards, dialogue and source access do not prove an accepted receipt. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Gringobbi: the historical journal"
+            }
+          ],
+          "summary": "Bring the exact historical journal of Solbeep for the rogue's payment. Current loose custody and opening the desk do not themselves prove acceptance.",
+          "title": "Gringobbi: the historical journal"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:402041,I:402042,I:402043,I:402044,I:402045,I:402046,I:402047,I:402048;receive=I:402049;disappear=1",
+              "giver_vnum": 402037
+            }
+          ],
+          "id": "gazdiel-eight-fragments",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The eight kinds share a plain-text name and command keywords but differ in native color styling. This color name and numbered label identify an exact kind without an offering order. Copies of another kind cannot substitute. The staged demon can carry one color into the treasury per ordinary approach; gathering all eight can require multiple stock and recipient episodes. Native supply and settled pickup need played qualification; staging rooms are not player destinations. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402041",
+              "item_vnums": [
+                402041
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the white dream fragment (1 of 8 distinct kinds)"
+            },
+            {
+              "count": 1,
+              "hint": "The eight kinds share a plain-text name and command keywords but differ in native color styling. This color name and numbered label identify an exact kind without an offering order. Copies of another kind cannot substitute. The staged demon can carry one color into the treasury per ordinary approach; gathering all eight can require multiple stock and recipient episodes. Native supply and settled pickup need played qualification; staging rooms are not player destinations. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402042",
+              "item_vnums": [
+                402042
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the yellow dream fragment (2 of 8 distinct kinds)"
+            },
+            {
+              "count": 1,
+              "hint": "The eight kinds share a plain-text name and command keywords but differ in native color styling. This color name and numbered label identify an exact kind without an offering order. Copies of another kind cannot substitute. The staged demon can carry one color into the treasury per ordinary approach; gathering all eight can require multiple stock and recipient episodes. Native supply and settled pickup need played qualification; staging rooms are not player destinations. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402043",
+              "item_vnums": [
+                402043
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the red dream fragment (3 of 8 distinct kinds)"
+            },
+            {
+              "count": 1,
+              "hint": "The eight kinds share a plain-text name and command keywords but differ in native color styling. This color name and numbered label identify an exact kind without an offering order. Copies of another kind cannot substitute. The staged demon can carry one color into the treasury per ordinary approach; gathering all eight can require multiple stock and recipient episodes. Native supply and settled pickup need played qualification; staging rooms are not player destinations. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402044",
+              "item_vnums": [
+                402044
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the magenta dream fragment (4 of 8 distinct kinds)"
+            },
+            {
+              "count": 1,
+              "hint": "The eight kinds share a plain-text name and command keywords but differ in native color styling. This color name and numbered label identify an exact kind without an offering order. Copies of another kind cannot substitute. The staged demon can carry one color into the treasury per ordinary approach; gathering all eight can require multiple stock and recipient episodes. Native supply and settled pickup need played qualification; staging rooms are not player destinations. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402045",
+              "item_vnums": [
+                402045
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the blue dream fragment (5 of 8 distinct kinds)"
+            },
+            {
+              "count": 1,
+              "hint": "The eight kinds share a plain-text name and command keywords but differ in native color styling. This color name and numbered label identify an exact kind without an offering order. Copies of another kind cannot substitute. The staged demon can carry one color into the treasury per ordinary approach; gathering all eight can require multiple stock and recipient episodes. Native supply and settled pickup need played qualification; staging rooms are not player destinations. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402046",
+              "item_vnums": [
+                402046
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the cyan dream fragment (6 of 8 distinct kinds)"
+            },
+            {
+              "count": 1,
+              "hint": "The eight kinds share a plain-text name and command keywords but differ in native color styling. This color name and numbered label identify an exact kind without an offering order. Copies of another kind cannot substitute. The staged demon can carry one color into the treasury per ordinary approach; gathering all eight can require multiple stock and recipient episodes. Native supply and settled pickup need played qualification; staging rooms are not player destinations. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402047",
+              "item_vnums": [
+                402047
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the green dream fragment (7 of 8 distinct kinds)"
+            },
+            {
+              "count": 1,
+              "hint": "The eight kinds share a plain-text name and command keywords but differ in native color styling. This color name and numbered label identify an exact kind without an offering order. Copies of another kind cannot substitute. The staged demon can carry one color into the treasury per ordinary approach; gathering all eight can require multiple stock and recipient episodes. Native supply and settled pickup need played qualification; staging rooms are not player destinations. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402048",
+              "item_vnums": [
+                402048
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the gray dream fragment (8 of 8 distinct kinds)"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:402041,I:402042,I:402043,I:402044,I:402045,I:402046,I:402047,I:402048;receive=I:402049;disappear=1",
+                  "giver_vnum": 402037
+                }
+              ],
+              "hint": "GIVE an exact required item with the complete bundle loose to the available recipient. Acceptance consumes the bundle; Gazdiel and Razeline then leave. Custody, rewards, dialogue and source access do not prove an accepted receipt. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Gazdiel: eight distinct dreams"
+            }
+          ],
+          "summary": "Bring all eight distinct, same-name dream fragments together for the crown. The staged demon can bring one color per ordinary approach, so stock and fresh recipient episodes matter. Gazdiel leaves after acceptance.",
+          "title": "Gazdiel: eight distinct dreams"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:402011,I:402012,I:402015,I:402016,I:402017,I:402018,I:402019,I:402050,I:402051,I:402067;receive=I:402089;disappear=1",
+              "giver_vnum": 402061
+            }
+          ],
+          "id": "razeline-ten-books",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "This exact apprentice book is placed through bookcase resets. Actual container, stock and the collector's availability depend on native resets and other players; similar spellbooks and the reward tome do not substitute. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402011",
+              "item_vnums": [
+                402011
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a mystical tome with glowing elemental glyphs"
+            },
+            {
+              "count": 1,
+              "hint": "This exact apprentice book is placed through bookcase resets. Actual container, stock and the collector's availability depend on native resets and other players; similar spellbooks and the reward tome do not substitute. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402012",
+              "item_vnums": [
+                402012
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry an illithid-skin spellbook of wyld magick"
+            },
+            {
+              "count": 1,
+              "hint": "This exact apprentice book is placed through bookcase resets. Actual container, stock and the collector's availability depend on native resets and other players; similar spellbooks and the reward tome do not substitute. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402015",
+              "item_vnums": [
+                402015
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a leather-bound book covered in shifting shadows"
+            },
+            {
+              "count": 1,
+              "hint": "This exact apprentice book is placed through bookcase resets. Actual container, stock and the collector's availability depend on native resets and other players; similar spellbooks and the reward tome do not substitute. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402016",
+              "item_vnums": [
+                402016
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a white leather-bound tome of spirit domination"
+            },
+            {
+              "count": 1,
+              "hint": "This exact apprentice book is placed through bookcase resets. Actual container, stock and the collector's availability depend on native resets and other players; similar spellbooks and the reward tome do not substitute. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402017",
+              "item_vnums": [
+                402017
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a spellbook bound with embalmed woodelf flesh"
+            },
+            {
+              "count": 1,
+              "hint": "This exact apprentice book is placed through bookcase resets. Actual container, stock and the collector's availability depend on native resets and other players; similar spellbooks and the reward tome do not substitute. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402018",
+              "item_vnums": [
+                402018
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a black leather tome with an embossed dracolich"
+            },
+            {
+              "count": 1,
+              "hint": "This exact apprentice book is placed through bookcase resets. Actual container, stock and the collector's availability depend on native resets and other players; similar spellbooks and the reward tome do not substitute. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402019",
+              "item_vnums": [
+                402019
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a spell tome of putrified zombie skin"
+            },
+            {
+              "count": 1,
+              "hint": "This exact apprentice book is placed through bookcase resets. Actual container, stock and the collector's availability depend on native resets and other players; similar spellbooks and the reward tome do not substitute. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402050",
+              "item_vnums": [
+                402050
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a cloth-bound tome of magical study"
+            },
+            {
+              "count": 1,
+              "hint": "This exact apprentice book is placed through bookcase resets. Actual container, stock and the collector's availability depend on native resets and other players; similar spellbooks and the reward tome do not substitute. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402051",
+              "item_vnums": [
+                402051
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a mystical tome covered in demon-skin"
+            },
+            {
+              "count": 1,
+              "hint": "This exact apprentice book is placed through bookcase resets. Actual container, stock and the collector's availability depend on native resets and other players; similar spellbooks and the reward tome do not substitute. Current loose custody is preparation; a gift may fit without personal first-recovery history.",
+              "id": "material-402067",
+              "item_vnums": [
+                402067
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a thick tome of legendary lores"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:402011,I:402012,I:402015,I:402016,I:402017,I:402018,I:402019,I:402050,I:402051,I:402067;receive=I:402089;disappear=1",
+                  "giver_vnum": 402061
+                }
+              ],
+              "hint": "GIVE an exact required item with the complete bundle loose to the available recipient. Acceptance consumes the bundle; Gazdiel and Razeline then leave. Custody, rewards, dialogue and source access do not prove an accepted receipt. New credit requires active, ready accounting.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete Razeline: ten apprentice books"
+            }
+          ],
+          "summary": "Bring the exact ten-book set together for the collector's tome. Her availability varies with the staging route, and she leaves after acceptance.",
+          "title": "Razeline: ten apprentice books"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "The campaign actors start in a private dispersal atrium and have 99-percent reset declarations, with cap one each. Their ten onward routes and actual current appearances need qualification; the atrium is not a promised public contact location. Accepts four distinct warden trophies for the book.",
           "keyword": "labyrinthmaster",
           "mob_vnum": 500000,

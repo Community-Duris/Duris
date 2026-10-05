@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1421
-assert report['mapped_area_count'] == 125 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 126 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -432,6 +432,22 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
  assert 'Accounting currently blocks' in s['summary'] and s['steps'][-1]['contracts']==s['contracts']
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
+
+
+library=next(m for m in catalog['story_mappings'] if m['source_area']=='library')
+assert (library['schema_version'],library['revision'],library['coverage'])==(3,1,'complete')
+assert len(library['stories'])==6 and len(library['contacts'])==11 and not library['exclusions']
+assert report['eligible_by_zone']['4020']==5 and sum(len(c['topics']) for c in library['contacts'])==31
+assert sum(len(s['steps'])-1 for s in library['stories'])==32
+assert library['stories'][0]['category']=='service' and len(library['stories'][0]['steps'])==1
+dream=library['stories'][4]
+assert [s['item_vnums'] for s in dream['steps'][:-1]]==[[v] for v in range(402041,402049)]
+assert len({s['text'] for s in dream['steps'][:-1]})==8
+for story in library['stories']:
+ assert story['steps'][-1]['contracts']==story['contracts'] and len(story['contracts'])==1
+ assert all(s['kind']=='carried_item' and s['optional'] for s in story['steps'][:-1])
+units=[u for u in module.story_units(catalog) if u['zone_number']==4020]
+assert len(units)==6 and sum(u['achievement'] for u in units)==5 and sum(u['daily_candidate'] for u in units)==5
 
 
 raxthan=next(m for m in catalog['story_mappings'] if m['source_area']=='raxthan')
