@@ -266,3 +266,48 @@ values and immutable reports. Reviewed loss, private roles, rollback, lost
 acknowledgements, corrected reviews, drift refusal and exact restoration remain
 qualified. Temporary databases/users were removed and SQL fixtures stopped. See
 [runtime compatibility](../persistence/RUNTIME_COMPATIBILITY.md).
+
+## Native clock and context contract for ordinary PvP
+
+The shared-battle adapter requires the current authenticated session, native
+actor identity, dimensions, formal group generation and exact association
+history. The legacy encounter reference is optional: an observed absence stays
+zero without marking these independent observations unknown. A present reference
+from another producer and a missing or closed session retain context uncertainty.
+This does not enroll an actor or substitute for a missing battle association.
+
+Each producer calibrates one immutable UTC/steady-clock mapping before its
+session/activity bindings and worker start. Calibration samples eight bracketed
+steady/wall/steady reads and requires a bracket at most two microseconds wide.
+Both threads use that mapping, so elapsed microseconds and association-reference
+clock deltas agree exactly. Every sample checks the raw wall clock against its
+bracket with the maintained activity clock's one-second continuity bound plus
+calibration/quantization uncertainty. UTC labels are bounded estimates of wall
+time; elapsed duration uses the real steady clock. A failed read, reversed origin,
+unrepresentable projection or failed continuity check leaves UTC unknown until
+a fresh producer. Later coalesced states cannot heal that loss. Deadline waits
+read only the steady clock.
+
+Independent loss review must cover the association prefix before the first
+control, as well as control start/end/decision clocks. Supervised wall-clock
+outage boundaries include 1,000,003 microseconds of conservative padding for
+the source UTC bound. Protected worker delivery counters, clean-drain evidence
+and lifecycle supervision provide independent witnesses; raw row presence alone
+does not establish a reviewed empty loss inventory. Unknown producer tails stay
+open-ended and scoped to their original producer. Definition-7 qualification,
+earlier definitions and sealed migrations retain their existing checks.
+
+## Ordinary live PvP elapsed-duration qualification: 2026-10-04
+
+The maintained disposable command passed 32/32 phases on both SQL engines in
+run `3d0598b90791`. Ordinary solo/group cast and combat paths produce positive elapsed
+minor-paralysis, blindness and slow prefixes, with refresh/expiry/cure, roster
+revision, overlap union and observed departure. The same native inputs published
+without independent review remain NULL in their immutable earlier generation;
+missing configuration and real writer loss remain unknown. The exact counts,
+durations, performance results, source digest and unrun checks are in the final
+section of [CONTROL_QUALIFICATION.md](CONTROL_QUALIFICATION.md).
+
+Reviewed build/power comparisons and typed death, escape and objective evidence
+are the next battle dependencies. Action-restriction and caster-attributed
+duration remain NULL; issue #258 remains open with all seven final requirements.

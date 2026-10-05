@@ -104,7 +104,7 @@ def run(args):
         changed = ("src/telemetry/telemetry_runtime.c", "src/core/runtime_compatibility_contract.h", "src/sql/sql.c",
             "src/cmd/actset.c", "src/cmd/staff_setattr.c", "src/combat/fight.c", "src/combat/fight_state.c",
             "src/combat/range.c", "src/world/handler.c", "tests/async/telemetry_gameplay_adapters.cc",
-            "tests/async/telemetry_battle_contribution_harness.cc")
+            "tests/async/telemetry_battle_contribution_harness.cc", "tests/async/telemetry_runtime_exhaustion.cc")
         format_args = ["bash", "scripts/format.sh", "--check"]
         for path in changed:
             if Path(path).suffix in (".c", ".h", ".cc", ".cpp", ".hpp"):
@@ -117,6 +117,8 @@ def run(args):
         docker_exec(["python3", "scripts/validate_runtime_compatibility.py"], "runtime-contract")
         docker_exec(["python3", "scripts/validate_data_lifecycle.py"], "lifecycle-contract")
         output_root = "/workspace/bin/tests/" + name
+        docker_exec(["python3", "tests/async/test_telemetry_runtime_exhaustion.py", "--sanitize",
+            "--clock-performance-output", output_root + "/clock-performance.json"], "paired-clock-asan-ubsan")
         docker_exec(["python3", "tests/async/test_telemetry_control_performance.py", "--output",
             output_root + "/control-performance.json"], "control-performance")
         for engine in args.engines:
@@ -159,6 +161,7 @@ def run(args):
             owned_remove(container)
         receipt["actual_gameplay"] = True
         receipt["performance"] = json.loads((directory / "control-performance.json").read_text(encoding="utf-8"))
+        receipt["clock_performance"] = json.loads((directory / "clock-performance.json").read_text(encoding="utf-8"))
         receipt["source_unchanged"] = receipt["source_sha256"] == source_digest()
         if not receipt["source_unchanged"]:
             raise RuntimeError("tracked qualification sources changed during the run")
@@ -175,6 +178,7 @@ def run(args):
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(errors="backslashreplace")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--disposable", action="store_true")
     parser.add_argument("--tools-image", help="explicit compatible local tools image; omit for the maintained Docker build")

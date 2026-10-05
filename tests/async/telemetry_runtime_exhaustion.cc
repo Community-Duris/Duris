@@ -1,6 +1,7 @@
 // Include the real runtime in this test translation unit to exhaust its private
 // sequence allocator without adding a production test API or changing its ABI.
 #include <openssl/rand.h>
+#include <array>
 static int entropy_mode = 0;
 static unsigned entropy_calls = 0;
 static int runtime_test_random(unsigned char *bytes, int count)
@@ -481,8 +482,72 @@ void check_exhausted_lifecycle(bool exiting, bool reattaching = false)
 }
 } // namespace
 
+static void check_producer_clock_pairing()
+{
+	R.clock_anchor_monotonic = 100U;
+	R.clock_anchor_utc = 1'000;
+	R.clock_anchor_uncertainty = 2U;
+	R.clock_utc_valid.store(true);
+	const auto first = production_clock_pair({ 200U, 201U, 1'101 });
+	const auto last = production_clock_pair({ 350U, 351U, 1'250 });
+	assert(first == 1'100 && last == 1'250 && last - first == 150);
+	assert(production_clock_pair({ 400U, 405U, 1'304 }) == 1'300);
+	assert(production_clock_pair({ 450U, 451U, 1'400 }) == 1'350);
+	// A wall-clock jump must poison later samples from the same producer,
+	// including samples from its worker; a return to the old offset cannot heal it.
+	assert(production_clock_pair({ 500U, 501U, 2'001'500 }) == TELEMETRY_UTC_UNKNOWN);
+	assert(production_clock_pair({ 600U, 601U, 1'500 }) == TELEMETRY_UTC_UNKNOWN);
+	R.clock_utc_valid.store(true);
+	assert(production_clock_pair({ 99U, 100U, 999 }) == TELEMETRY_UTC_UNKNOWN);
+	R.clock_utc_valid.store(true);
+	assert(production_clock_pair({ 700U, 699U, 1'600 }) == TELEMETRY_UTC_UNKNOWN);
+	R.clock_utc_valid.store(true);
+	assert(production_clock_pair({ 700U, 701U, TELEMETRY_UTC_UNKNOWN }) ==
+	       TELEMETRY_UTC_UNKNOWN);
+	telemetry_utc_usec utc = 0;
+	R.clock_anchor_utc = std::numeric_limits<telemetry_utc_usec>::max();
+	assert(!production_clock_project(101U, utc));
+	R.clock_anchor_utc = std::numeric_limits<telemetry_utc_usec>::min() + 1;
+	assert(!production_clock_project(98U, utc));
+	assert(!production_clock_project(99U, utc));
+	R.clock_anchor_utc = -1;
+	assert(production_clock_project(101U, utc) && utc == 0);
+	assert(!production_clock_project(std::numeric_limits<telemetry_monotonic_usec>::max(),
+					 utc));
+	// A real fresh-producer calibration restores exact elapsed pairing.
+	production_clock_bind();
+	telemetry_monotonic_usec a = 0U, b = 0U;
+	telemetry_utc_usec ua = TELEMETRY_UTC_UNKNOWN, ub = TELEMETRY_UTC_UNKNOWN;
+	assert(production_clock_now(nullptr, &a, &ua));
+	std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	assert(production_clock_now(nullptr, &b, &ub));
+	assert(ua != TELEMETRY_UTC_UNKNOWN && ub != TELEMETRY_UTC_UNKNOWN);
+	assert(ub - ua == static_cast<telemetry_utc_usec>(b - a));
+	std::array<std::uint64_t, 4096> costs{};
+	for (auto &cost : costs)
+	{
+		const auto started = std::chrono::steady_clock::now();
+		assert(production_clock_now(nullptr, &b, &ub));
+		cost = static_cast<std::uint64_t>(
+			std::chrono::duration_cast<std::chrono::nanoseconds>(
+				std::chrono::steady_clock::now() - started)
+				.count());
+		assert(ub != TELEMETRY_UTC_UNKNOWN);
+	}
+	std::sort(costs.begin(), costs.end());
+	assert(costs[4054] <= 1'000'000U && costs[4091] <= 5'000'000U);
+	std::printf("{\"stage\":\"producer_clock_pair\",\"samples\":4096,\"p99_ns\":%llu,"
+		    "\"p999_ns\":%llu,\"max_ns\":%llu}\n",
+		    static_cast<unsigned long long>(costs[4054]),
+		    static_cast<unsigned long long>(costs[4091]),
+		    static_cast<unsigned long long>(costs.back()));
+	R.clock_bound = false;
+	std::puts("producer paired clocks, sticky discontinuity and overflow passed");
+}
+
 int main()
 {
+	check_producer_clock_pairing();
 	check_build_sequence_exhaustion();
 	check_identity_fail_closed();
 	check_null_build_boundary();

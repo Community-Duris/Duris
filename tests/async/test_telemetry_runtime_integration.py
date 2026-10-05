@@ -2,6 +2,7 @@
 """Focused #265 runtime lifecycle journey with a bounded fake repository."""
 
 from pathlib import Path
+import json
 import subprocess
 import tempfile
 
@@ -26,10 +27,12 @@ def verify_shutdown_contract() -> None:
         assert f"return {status};" in run
 
 
-def main(*, exhaustion: bool = False, outage: bool = False) -> None:
+def main(*, exhaustion: bool = False, outage: bool = False, sanitize: bool = False,
+         clock_output: Path | None = None) -> None:
     verify_shutdown_contract()
     artifacts = ROOT / "bin/tests"
     artifacts.mkdir(parents=True, exist_ok=True)
+    clock_profiles = []
     with tempfile.TemporaryDirectory(prefix="telemetry-runtime-", dir=artifacts) as directory:
         variants: list[tuple[str, bool, Path | None]] = [("flatfile", True, None)]
         for include_directory in (Path("/usr/include/mariadb"), Path("/usr/include/mysql")):
@@ -49,6 +52,8 @@ def main(*, exhaustion: bool = False, outage: bool = False) -> None:
                 "-Werror",
                 "-pthread",
             ]
+            if sanitize:
+                command += ["-O1", "-g", "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-no-pie"]
             if no_mysql:
                 command.append("-D__NO_MYSQL__")
             command += [
@@ -106,6 +111,14 @@ def main(*, exhaustion: bool = False, outage: bool = False) -> None:
                       "telemetry sequence-exhausted lifecycle consistency passed" if exhaustion
                       else "telemetry runtime lifecycle and copyover integration passed")
             assert marker in completed.stdout
+            clock_profiles.extend(dict(json.loads(line), variant=label) for line in completed.stdout.splitlines()
+                if line.startswith('{"stage":"producer_clock_pair"'))
+    if clock_output is not None:
+        assert clock_profiles and all(row["samples"] == 4096 for row in clock_profiles)
+        clock_output.parent.mkdir(parents=True, exist_ok=True)
+        clock_output.write_text(json.dumps(dict(status="passed", profiles=clock_profiles,
+            measurement="production bracketed clock sampling and paired UTC mapping; context and SQL excluded",
+            optimization="-O1 with ASan/UBSan" if sanitize else "compiler default", sanitized=sanitize), indent=2) + "\n")
 
 
 if __name__ == "__main__":

@@ -273,6 +273,11 @@ struct runtime_state
 	telemetry_health_monitor_config health_monitor_config{};
 	telemetry_health_monitor_state health_monitor{};
 	telemetry_producer_id producer{};
+	telemetry_monotonic_usec clock_anchor_monotonic = 0U;
+	telemetry_utc_usec clock_anchor_utc = TELEMETRY_UTC_UNKNOWN;
+	telemetry_monotonic_usec clock_anchor_uncertainty = 0U;
+	bool clock_bound = false;
+	std::atomic<bool> clock_utc_valid{ false };
 	telemetry_config_snapshot config{};
 	telemetry_config_property_capture property_capture{};
 	telemetry_config_capture_input capture_input{};
@@ -561,24 +566,37 @@ void wake_worker() noexcept
 	R.wake_condition.notify_one();
 }
 
-bool production_clock_now(void *, telemetry_monotonic_usec *monotonic_usec,
-			  telemetry_utc_usec *utc_usec) noexcept
+struct production_clock_sample
 {
-	if (monotonic_usec == nullptr || utc_usec == nullptr)
-		return false;
+	telemetry_monotonic_usec before = 0U;
+	telemetry_monotonic_usec after = 0U;
+	telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+};
+
+// Match the maintained activity clock's continuity bound. Elapsed time always
+// uses steady_clock; UTC is a producer anchor with this bounded wall-clock drift.
+constexpr telemetry_monotonic_usec PRODUCTION_CLOCK_CONTINUITY_USEC = 1'000'000U;
+
+bool production_clock_sample_now(production_clock_sample &sample) noexcept
+{
 	try
 	{
-		const auto monotonic = std::chrono::duration_cast<std::chrono::microseconds>(
-					       std::chrono::steady_clock::now().time_since_epoch())
-					       .count();
+		const auto before = std::chrono::duration_cast<std::chrono::microseconds>(
+					    std::chrono::steady_clock::now().time_since_epoch())
+					    .count();
 		const auto utc = std::chrono::duration_cast<std::chrono::microseconds>(
 					 std::chrono::system_clock::now().time_since_epoch())
 					 .count();
-		if (monotonic < 0 || utc < std::numeric_limits<telemetry_utc_usec>::min() ||
+		const auto after = std::chrono::duration_cast<std::chrono::microseconds>(
+					   std::chrono::steady_clock::now().time_since_epoch())
+					   .count();
+		if (before < 0 || after < before ||
+		    utc < std::numeric_limits<telemetry_utc_usec>::min() ||
 		    utc > std::numeric_limits<telemetry_utc_usec>::max())
 			return false;
-		*monotonic_usec = static_cast<telemetry_monotonic_usec>(monotonic);
-		*utc_usec = static_cast<telemetry_utc_usec>(utc);
+		sample = { static_cast<telemetry_monotonic_usec>(before),
+			   static_cast<telemetry_monotonic_usec>(after),
+			   static_cast<telemetry_utc_usec>(utc) };
 		return true;
 	}
 	catch (...)
@@ -587,10 +605,98 @@ bool production_clock_now(void *, telemetry_monotonic_usec *monotonic_usec,
 	}
 }
 
+bool production_clock_project(telemetry_monotonic_usec at, telemetry_utc_usec &utc) noexcept
+{
+	const bool forward = at >= R.clock_anchor_monotonic;
+	const auto delta = forward ? at - R.clock_anchor_monotonic : R.clock_anchor_monotonic - at;
+	if (delta >
+	    static_cast<telemetry_monotonic_usec>(std::numeric_limits<telemetry_utc_usec>::max()))
+		return false;
+	const auto signed_delta = static_cast<telemetry_utc_usec>(delta);
+	if ((forward &&
+	     R.clock_anchor_utc > std::numeric_limits<telemetry_utc_usec>::max() - signed_delta) ||
+	    (!forward &&
+	     R.clock_anchor_utc < std::numeric_limits<telemetry_utc_usec>::min() + signed_delta))
+		return false;
+	utc = forward ? R.clock_anchor_utc + signed_delta : R.clock_anchor_utc - signed_delta;
+	return utc != TELEMETRY_UTC_UNKNOWN;
+}
+
+void production_clock_bind() noexcept
+{
+	// One immutable mapping belongs to this producer, including its worker.
+	// Select a bounded, narrow bracket; quantization contributes one microsecond.
+	production_clock_sample best{};
+	bool found = false;
+	for (unsigned attempt = 0U; attempt < 8U; ++attempt)
+	{
+		production_clock_sample sample{};
+		if (production_clock_sample_now(sample) &&
+		    (!found || sample.after - sample.before < best.after - best.before))
+		{
+			best = sample;
+			found = true;
+		}
+	}
+	R.clock_anchor_monotonic = best.before;
+	R.clock_anchor_utc = best.utc;
+	R.clock_anchor_uncertainty = best.after - best.before + 1U;
+	R.clock_bound = true;
+	R.clock_utc_valid.store(found && best.utc != TELEMETRY_UTC_UNKNOWN &&
+					best.after - best.before <= 2U,
+				std::memory_order_release);
+}
+
+telemetry_utc_usec production_clock_pair(const production_clock_sample &sample) noexcept
+{
+	telemetry_utc_usec before = TELEMETRY_UTC_UNKNOWN, after = TELEMETRY_UTC_UNKNOWN;
+	if (!R.clock_utc_valid.load(std::memory_order_acquire))
+		return TELEMETRY_UTC_UNKNOWN;
+	const auto distance = [](telemetry_utc_usec high, telemetry_utc_usec low)
+	{ return static_cast<std::uint64_t>(high) - static_cast<std::uint64_t>(low); };
+	const auto uncertainty = PRODUCTION_CLOCK_CONTINUITY_USEC + R.clock_anchor_uncertainty;
+	if (sample.after < sample.before || sample.before < R.clock_anchor_monotonic ||
+	    sample.utc == TELEMETRY_UTC_UNKNOWN ||
+	    !production_clock_project(sample.before, before) ||
+	    !production_clock_project(sample.after, after) ||
+	    (sample.utc < before && distance(before, sample.utc) > uncertainty) ||
+	    (sample.utc > after && distance(sample.utc, after) > uncertainty))
+	{
+		// A discontinuity cannot be hidden by a later coalesced state. UTC stays
+		// unknown until a new producer calibrates its own mapping.
+		R.clock_utc_valid.store(false, std::memory_order_release);
+		return TELEMETRY_UTC_UNKNOWN;
+	}
+	return before;
+}
+
+bool production_clock_now(void *, telemetry_monotonic_usec *monotonic_usec,
+			  telemetry_utc_usec *utc_usec) noexcept
+{
+	if (monotonic_usec == nullptr || utc_usec == nullptr)
+		return false;
+	production_clock_sample sample{};
+	if (!production_clock_sample_now(sample))
+	{
+		R.clock_utc_valid.store(false, std::memory_order_release);
+		return false;
+	}
+	*monotonic_usec = sample.before;
+	*utc_usec = R.clock_bound ? production_clock_pair(sample) : sample.utc;
+	return true;
+}
+
 bool production_monotonic_now(telemetry_monotonic_usec *monotonic_usec) noexcept
 {
-	telemetry_utc_usec ignored_utc = TELEMETRY_UTC_UNKNOWN;
-	return production_clock_now(nullptr, monotonic_usec, &ignored_utc);
+	if (monotonic_usec == nullptr)
+		return false;
+	const auto at = std::chrono::duration_cast<std::chrono::microseconds>(
+				std::chrono::steady_clock::now().time_since_epoch())
+				.count();
+	if (at < 0)
+		return false;
+	*monotonic_usec = static_cast<telemetry_monotonic_usec>(at);
+	return true;
 }
 
 telemetry_runtime_outcome wait_for_copyover_flush(
@@ -1973,6 +2079,7 @@ telemetry_runtime_outcome telemetry_runtime_init(telemetry_runtime_options optio
 
 	telemetry_monotonic_usec monotonic_anchor = 0U;
 	telemetry_utc_usec utc_anchor = TELEMETRY_UTC_UNKNOWN;
+	production_clock_bind();
 	(void)production_clock_now(nullptr, &monotonic_anchor, &utc_anchor);
 	const telemetry_session_state_config session_config = {
 		MAX_STATE_SLOTS,
@@ -2456,6 +2563,7 @@ telemetry_runtime_outcome telemetry_runtime_shutdown(telemetry_shutdown_request 
 		telemetry_activity_state_reset(&R.activity);
 		telemetry_session_state_reset(&R.session);
 		R.initialized = false;
+		R.clock_bound = false;
 		R.shutdown_pending = false;
 		return telemetry_runtime_outcome::accepted;
 	}
@@ -2505,6 +2613,7 @@ telemetry_runtime_outcome telemetry_runtime_final_reap(void)
 	telemetry_encounter_state_init(&R.encounter);
 	telemetry_combat_summary_state_init(&R.combat_summary);
 	R.initialized = false;
+	R.clock_bound = false;
 	R.battle = {};
 	R.battle_contribution = {};
 	R.control = {};
@@ -3175,13 +3284,18 @@ bool game_battle_actor(const struct char_data *character,
 		else
 			context->quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
 		telemetry_encounter_id encounter{};
+		// Legacy encounters are optional links. An observed absence does not
+		// invalidate the independent shared-battle session/dimensions/group.
+		// A present reference from another producer remains unusable evidence.
 		if (telemetry_encounter_current(&R.encounter, game_encounter_participant(character),
-						&encounter) &&
-		    encounter.producer.boot_id == R.producer.boot_id &&
-		    encounter.producer.process_id == R.producer.process_id)
-			context->encounter = encounter;
-		else
-			context->quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+						&encounter))
+		{
+			if (encounter.producer.boot_id == R.producer.boot_id &&
+			    encounter.producer.process_id == R.producer.process_id)
+				context->encounter = encounter;
+			else
+				context->quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+		}
 	}
 	else
 	{

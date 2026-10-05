@@ -29,7 +29,7 @@ work. A future production deployment is a separate operational decision.
 | Character/account/confirmed controller association | In progress | Dated review/correction, ownership cuts, same-producer attribution, unknown linkage, native lifetime/token allocation, authenticated source capture, identity wire handoff, reviewed SQL registration and immutable generation reservations are qualified. Atomic identity effort/report publication now consumes the reserved review and qualified ownership incident snapshot. Real personal source journeys and linkage coverage in the complete balance suites remain required. See [IDENTITY_HISTORY.md](IDENTITY_HISTORY.md). |
 | Accepted blindness and stun applications | Implemented and locally qualified | Actual `blind`/`Stun` success boundaries feed the existing bounded kind-11 accumulator after effect mutation and before teardown. New segments declare producer mask 31; older unavailable control remains NULL. Normal/ASan/UBSan, 58 history/publication regressions and both full-64-step native-writer SQL journeys preserve eight applications/eight received through eight verified published segments. Source-service seams, partial producer coverage and unobserved duration/resistance remain explicit. See [BATTLES.md](BATTLES.md#accepted-blindness-and-stun-control-capture). |
 | Expanded accepted status-control applications | Implemented and locally qualified | Actual major/minor paralysis, slow, sleep, silence and entangle success boundaries feed the existing kind-11 accumulator after mutation. The separate fresh journey preserves 17 accepted applications/17 received, 28 native source rows and eight published segments; the original blindness/Stun journey remains eight/eight. Normal/ASan/UBSan, 66 history/publication regressions and both full-66-step native-writer SQL journeys qualify the added producers and unchanged earlier publications. Counts include accepted refreshes; segment modifier flags are unions and cannot apportion self/external totals. Typed attempts, resistance, immunity, duration and complete producer coverage remain required. See [BATTLES.md](BATTLES.md#expanded-accepted-status-control-capture). |
-| Selected control state and retained publication | Implemented; personal-local qualification command maintained | Kind 13 preserves 76 exact fields. The reviewed native inventory covers 74 distinct writer statements / 81 occurrences / 38 final boundaries; state coverage 255 is independent of context quality. Definition 7 retains exact source/configuration evidence and atomically publishes operations and qualified disjoint status prefixes under independent schema-6 loss review. Missing source/lifecycle/configuration/clock/identity evidence remains explicit. The command runs both 71-step SQL engines, a real-server apply/expiry/overlap/cure/equipment/save/copyover/outage journey, sanitizers and measured budgets. Complete attempt denominators, proven action restrictions and caster duration remain unavailable. See [CONTROL_OBSERVATIONS.md](CONTROL_OBSERVATIONS.md) and [CONTROL_QUALIFICATION.md](CONTROL_QUALIFICATION.md). |
+| Selected control state and retained publication | Ordinary live PvP elapsed prefixes locally qualified | Kind 13 preserves 76 exact fields. The reviewed native inventory covers 74 distinct writer statements / 81 occurrences / 38 final boundaries; state coverage 255 is independent of context quality. Definition 7 retains exact source/configuration evidence and atomically publishes operations and qualified disjoint status prefixes under independent schema-6 loss review. Missing source/lifecycle/configuration/clock/identity evidence remains explicit. The 32-phase command runs both 71-step SQL engines and qualifies positive ordinary solo/group PvP elapsed prefixes, refresh/expiry/cure/overlap/group/lifecycle cuts, independent review and uncertainty, alongside the earlier equipment/save/copyover/outage journey, sanitizers and measured budgets. Complete attempt denominators, proven action restrictions and caster duration remain unavailable. See [CONTROL_OBSERVATIONS.md](CONTROL_OBSERVATIONS.md) and [CONTROL_QUALIFICATION.md](CONTROL_QUALIFICATION.md). |
 | Shared battles and changing rosters | In progress | Native callbacks capture shared hostile, effective-support and proven formal-presence graphs through kind 10, and disjoint damage/healing/accepted-control/casting/opponent-link contributions through kind 11. Shared clocks, context/owner/group/mode/configuration cuts, immutable aliases, distinct NPC lifetimes, retained pet teardown, exact session exit and observed-prefix inactivity preserve measured amounts. Definition 5 publishes these observations with exact association/alias/source and independent loss coverage. Definition 7 adds typed control operations and qualified selected-state prefixes. Reviewed build/power/arena comparisons, prevention, faction exposure, typed outcomes, complete balance suites and their personal-server journeys remain required. See [BATTLES.md](BATTLES.md). |
 | PvE zone attempts and committed rewards | Pending | Separate attempt identity, supported objective evidence, PvP interruptions, effort and exact operation-ID linkage. Generic zone entry or one kill must not imply a full clear. |
 | Progression and portfolios | In progress | Observed XP/level projections and published exact account/controller effort unions and observed XP portfolio amounts are qualified. Rested/assistance provenance, milestone exposure/censoring, switching, canonical comparable rewards and rates remain required. |
@@ -1800,7 +1800,7 @@ verified owned-resource cleanup. Save round trips include transport/persistence;
 the pure benchmark excludes runtime refresh and SQL. TSan is unrun by the command
 and its earlier host probe was unsupported. No full burn-in is claimed.
 
-**Next executable expectation:** positively qualified elapsed selected-status
+**Historical expectation before ordinary PvP (superseded below):** positively qualified elapsed selected-status
 prefixes from normal live PvP, including native context, paired clocks and complete
 independent review windows. Then reviewed build/power comparisons and typed
 death/escape/objective evidence, followed by prevention/faction and complete battle
@@ -1810,7 +1810,7 @@ suites and statistical exports, #487 economic compatibility and their full
 personal-local journeys remain required. Issue #258 stays open with all seven
 final requirements preserved. Production or staging access is unnecessary.
 
-## Passed selected-control qualification: 2026-10-04
+## Historical selected-control qualification: 2026-10-04 (before ordinary PvP)
 
 The repository-root command below passed **31/31 phases** in one complete run
 (`180756252bd3`), on both MariaDB 10.11.14 and MySQL 8.0.46:
@@ -1878,3 +1878,108 @@ and complete independent review windows, then reviewed build/power comparisons
 and typed death/escape/objective evidence. Action-restriction time and
 caster-attributed duration remain NULL. Issue #258 stays open with its seven
 final acceptance requirements unchanged; the full expansion is unfinished.
+
+## Ordinary live PvP elapsed-duration qualification: 2026-10-04
+
+The maintained repository-root command passed **32/32 phases** in one complete
+run (`3d0598b90791`), on MariaDB 10.11.14 and MySQL 8.0.46:
+
+```text
+python tests/async/qualify_telemetry_controls.py --disposable
+```
+
+The receipt is `bin/tests/duris-controls-3d0598b90791/qualification.json`. Qualification
+source SHA-256 is `7c5dc61685f3f1c424a6a5b119e845375fb405bc955ea4c85e505772990031cf`. Sources stayed unchanged throughout
+the command; the subsequent documentation evidence is audited separately against
+the frozen 6,080-file snapshot. The command verified ownership labels and removed
+all containers it created, plus disposable databases and dedicated users. No
+production or staging access was used.
+
+Ordinary sorcerer/cleric cast and combat paths now prove positive selected-status
+elapsed duration through native capture, exact retained input, definition-7 atomic
+publication and restricted report readback. The journey covers solo minor-paralysis
+refresh and native expiry, formal groups of three and two, slowness/blindness
+overlap, an actual cure, a group revision from three to two and target logout.
+Groups record formal presence separately from combat participation. Persistent
+level/HP, memorized spells and a non-selected saving penalty are controlled
+gameplay prerequisites; native saves and cast/effect callbacks still execute.
+The bounded preparation resumes the committed cursor in 128-row invocations,
+with the default 4 MiB page and 32 MiB invocation budgets. Supervised native
+tranquilize separates cases and permits the final logout; positive status
+applications still use ordinary casts. Random blindness must provide at least
+32 configured ticks for the ordinary cure journey; those ticks remain a
+prerequisite, separate from the measured elapsed prefix. These observations
+qualify the path and are not estimates of balance rates.
+
+| Engine | Native SQL controls / operations / states | Actual server controls / operations / states | All live qualified prefixes | Ordinary target qualified prefixes |
+| --- | --- | --- | --- | --- |
+| mariadb:10.11.14 | 80 / 56 / 24 | 56 / 11 / 45 | 24 | 8 |
+| mysql:8.0.46 | 80 / 56 / 24 | 59 / 10 / 49 | 26 | 6 |
+
+| Engine | Minor paralysis (us) | Blindness (us) | Slow (us) | Selected-status union (us) | Ordinary unknown prefixes |
+| --- | --- | --- | --- | --- | --- |
+| mariadb:10.11.14 | 30591608 | 10774020 | 17540165 | 48131773 | 1 |
+| mysql:8.0.46 | 28806752 | 6515049 | 18539649 | 47346401 | 1 |
+
+The per-status sum exceeds the union because blindness and slow overlap. Merging
+qualified selected intervals independently equals the disjoint selected-prefix
+sum. Unknown prefixes contribute no invented duration. Accepted applications,
+signed configured ticks, elapsed status time and proven action restrictions
+remain separate. Action-restriction and caster-attributed duration remain NULL.
+
+The runtime now preserves known shared-battle context when the optional legacy
+encounter link is absent; missing/closed required sessions and foreign producer
+links remain unknown. One immutable producer UTC/steady mapping gives exact
+elapsed/reference deltas, with bracketed calibration and the maintained one-second
+wall-clock continuity bound. UTC labels are bounded estimates; elapsed time uses
+the steady clock. Discontinuities, invalid origin and overflow leave UTC unknown
+until a fresh producer. Independent review covers all retained association and
+control clocks; supervised outage boundaries include the source clock bound.
+Protected worker/lifecycle evidence witnesses clean delivery. Publisher and
+reducer qualification rules, report definitions and migration files are unchanged
+by this follow-up.
+
+For the same real native input, definition-7 generation 1 was published before
+independent incident review and retains NULL durations after reviewed generation
+2 is published. A separately labelled in-memory configuration fault probe retains
+NULL duration without changing stored source; modifying bindings under the
+original digest is independently refused. Real writer loss, abandoned backlog
+and open producer tails remain uncertainty. Native context/clock/capacity and
+definition-7 negative regressions pass through the same maintained command.
+
+The server build, twelve C++ formatting checks, thirteen focused programs,
+84 history tests, runtime/lifecycle validators and all three ASan/UBSan stages
+passed. Native adapters verify 18 callback transitions, 58 maintained native
+transitions across all eight statuses and 11 scheduled/canceled timers. Both SQL
+engines requalify all six 71-step / 267-table histories, compiled boot/restoration,
+tamper refusal, guarded reruns, 76 control fields / 455 tagged payload columns,
+atomic publication/replay/fault cases, private roles and immutable older
+definitions/generations.
+
+The optimized capture/encoding benchmark passes all 30 profiles at 50/200/512
+targets with 4,096 samples and five repetitions: worst p99 0.549 us,
+p99.9 1.586 us and maximum 49.838 us against
+1 ms / 5 ms p99 / p99.9 guards. Fixed state is 213,048 bytes with zero event-time
+allocation. The separate production clock benchmark samples 4,096 pairs in each
+flatfile/SQL ASan/UBSan variant: worst p99 2.186 us,
+p99.9 3.890 us and maximum 21.910 us.
+Both measurements exclude context refresh and SQL. The original transport,
+rollup and report gate passes at 50/200/1,000 workloads with six injected faults.
+
+| Engine | Save capture mode | Samples | Median round trip (ms) | Maximum (ms) |
+| --- | --- | --- | --- | --- |
+| mariadb:10.11.14 | telemetry_off | 10 | 2004.599 | 2006.372 |
+| mariadb:10.11.14 | telemetry_on_status_present | 10 | 2004.211 | 2142.929 |
+| mysql:8.0.46 | telemetry_off | 10 | 2004.436 | 4510.524 |
+| mysql:8.0.46 | telemetry_on_status_present | 10 | 2004.277 | 2007.920 |
+
+Save timings include Telnet scheduling and authoritative persistence; they do
+not isolate callback overhead. TSan is unrun by the command and its earlier host
+probe was unsupported. No full burn-in or production load qualification is claimed.
+
+**Next dependency:** reviewed build/power comparisons and typed death, escape and
+objective evidence. Prevention/faction coverage, distinct PvE attempts and committed
+rewards, progression/milestone/portfolio additions, four complete balance suites,
+statistical exports and #487 economic compatibility remain in the accepted scope.
+Issue #258 stays OPEN with all seven final checkbox lines unchanged, and PR #683
+stays DRAFT.

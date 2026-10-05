@@ -1003,6 +1003,10 @@ void check_native_battle_context()
 	player.desc = &descriptor;
 	assert(telemetry_runtime_game_enter(&player, &descriptor).outcome ==
 	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_game_battle_actor(&player, &player_context));
+	assert(player_context.session.session_seq != 0U &&
+	       player_context.encounter.sequence == 0U &&
+	       !(player_context.quality_flags & TELEMETRY_QUALITY_CONTEXT_UNKNOWN));
 	assert(telemetry_runtime_game_combat_engage(&player, &npc).outcome ==
 	       telemetry_runtime_outcome::accepted);
 	assert(telemetry_runtime_game_battle_actor(&player, &player_context));
@@ -1031,6 +1035,8 @@ void check_native_battle_context()
 		       .outcome == telemetry_runtime_outcome::accepted);
 	assert(telemetry_runtime_game_battle_actor(&player, &player_context));
 	assert(player_context.encounter.sequence == 0U);
+	assert(player_context.session.session_seq == 0U &&
+	       (player_context.quality_flags & TELEMETRY_QUALITY_CONTEXT_UNKNOWN));
 	auto battle = std::make_unique<telemetry_battle_state>();
 	assert(telemetry_battle_state_init(
 		battle.get(), producer,

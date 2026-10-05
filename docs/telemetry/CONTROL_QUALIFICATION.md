@@ -34,7 +34,7 @@ Per-mode names use 33 ASCII characters, including a digest of the unique run and
 mode. The runtime's 31-character exclusion prefix then fits MySQL's 64-character
 named-lock limit. The real-game fixture rejects longer names before provisioning.
 
-The real game uses two synthetic accounts and a dedicated gameplay SQL role.
+The real game uses seven synthetic accounts and a dedicated gameplay SQL role.
 Telemetry has a separate writer role with the existing table-level grants.
 Retention/publication, reporting and reviewed incidents each use their own role.
 The report role cannot read private inputs or mutate the report stores. The game
@@ -74,6 +74,36 @@ or unknown backlog; this tail is reviewed as loss, never recast as delivered
 activity or measured zero. Exact retained controls
 then pass through definition 7 and the restricted report reader.
 
+The recovery producer additionally exercises ordinary untrusted sorcerer/cleric
+casting and combat: solo minor-paralysis refresh and real expiry, then two formal
+groups with slowness/blindness overlap, a member departure, an observed cure and
+target logout. Synthetic level/HP, memorized spells and a non-selected saving
+penalty are persistent gameplay prerequisites. Native saving throws, cast timers,
+effect callbacks and combat paths still run. These controlled observations are
+qualification evidence, not estimates of normal balance rates.
+Native staff `tranquilize` resets combat between the separate cases and before
+logout; group admission is confirmed outside combat, and the noncombat member
+uses the ordinary group command to leave while control remains live.
+Blindness has a native random 4-12-second configured duration. Up to 16 ordinary
+attempts select an application of at least 32 configured ticks (`WAIT_SEC=4`)
+so the actual cure can finish before expiry. This is a gameplay prerequisite;
+elapsed evidence still comes only from native callbacks and paired clocks.
+
+A success requires positive qualified prefixes from both solo and group play,
+positive selected-status durations, disjoint prefix/overlap-union conservation,
+real group sizes/revisions and an independently clean-drained delivery witness.
+An earlier published generation of the same native inputs without incident
+review must retain NULL durations after the reviewed generation is published.
+A configuration-binding fault probe uses an in-memory copy of the verified
+inputs and must retain NULL duration; it does not edit captured rows. Changing
+bindings against the original sealed digest must be refused first; the separate
+negative copy then carries its own verified header and missing bindings. Native
+context/clock/capacity and definition-7 uncertainty regressions remain mandatory.
+The longer raw window is prepared through the committed cursor in at most 64
+invocations of 128 rows, retaining the default page and byte limits. Only the
+expected invocation row-budget boundary is resumed, with verified cursor
+progress; publication still requires the complete fixed source watermark.
+
 The storage/publication journeys additionally qualify all 76 fields, immutable
 configuration evidence, bounded pages/fanout, independent schema-6 incidents,
 rollback, ambiguous commits, replay, corrected generations, unchanged older
@@ -92,6 +122,11 @@ resident target. This measurement excludes runtime context refresh, SQL and
 network latency. The existing transport/rollup/report gate runs separately with
 its original budgets and injected faults.
 
+The private runtime seam separately measures 4,096 production clock samples in
+each flatfile/SQL variant, including bracketed wall/steady reads and checked UTC
+projection. Its ASan/UBSan run records p99/p99.9/max and uses the same 1 ms/5 ms
+guards. Context refresh and SQL are excluded from this clock measurement.
+
 The real journey records ten telemetry-off save round trips and ten saves while
 telemetry is enabled and a selected equipment status is present. These include
 Telnet scheduling and authoritative persistence; they are evidence of this
@@ -109,17 +144,16 @@ family durations cannot be added to obtain time controlled. Action-restriction
 time and caster-attributed duration remain NULL.
 
 This is a selected-control measurement slice. Issue #258 remains open
-with all seven final acceptance requirements preserved. The first follow-up is a
-normal PvP journey with positively qualified live elapsed prefixes, checking the
-native context, paired clocks and complete independent review windows. The current
-staff-command journey conserves inputs and uncertainty; zero qualified prefixes
-does not establish zero status time. Reviewed build/power comparisons and typed
-death, escape and objective outcomes then complete the next battle dependencies.
+with all seven final acceptance requirements preserved. The maintained command
+now requires positively qualified normal PvP prefixes, native context, paired
+clocks and complete independent review windows. Reviewed build/power comparisons
+and typed death, escape and objective outcomes are the next battle dependencies
+after that gate passes.
 Prevention/faction coverage, distinct PvE attempts and
 committed reward links, progression/portfolio additions and the four complete
 balance report suites remain in the accepted expansion.
 
-## Passed selected-control qualification: 2026-10-04
+## Historical selected-control qualification: 2026-10-04 (before ordinary PvP)
 
 The repository-root command below passed **31/31 phases** in one complete run
 (`180756252bd3`), on both MariaDB 10.11.14 and MySQL 8.0.46:
@@ -187,3 +221,108 @@ and complete independent review windows, then reviewed build/power comparisons
 and typed death/escape/objective evidence. Action-restriction time and
 caster-attributed duration remain NULL. Issue #258 stays open with its seven
 final acceptance requirements unchanged; the full expansion is unfinished.
+
+## Ordinary live PvP elapsed-duration qualification: 2026-10-04
+
+The maintained repository-root command passed **32/32 phases** in one complete
+run (`3d0598b90791`), on MariaDB 10.11.14 and MySQL 8.0.46:
+
+```text
+python tests/async/qualify_telemetry_controls.py --disposable
+```
+
+The receipt is `bin/tests/duris-controls-3d0598b90791/qualification.json`. Qualification
+source SHA-256 is `7c5dc61685f3f1c424a6a5b119e845375fb405bc955ea4c85e505772990031cf`. Sources stayed unchanged throughout
+the command; the subsequent documentation evidence is audited separately against
+the frozen 6,080-file snapshot. The command verified ownership labels and removed
+all containers it created, plus disposable databases and dedicated users. No
+production or staging access was used.
+
+Ordinary sorcerer/cleric cast and combat paths now prove positive selected-status
+elapsed duration through native capture, exact retained input, definition-7 atomic
+publication and restricted report readback. The journey covers solo minor-paralysis
+refresh and native expiry, formal groups of three and two, slowness/blindness
+overlap, an actual cure, a group revision from three to two and target logout.
+Groups record formal presence separately from combat participation. Persistent
+level/HP, memorized spells and a non-selected saving penalty are controlled
+gameplay prerequisites; native saves and cast/effect callbacks still execute.
+The bounded preparation resumes the committed cursor in 128-row invocations,
+with the default 4 MiB page and 32 MiB invocation budgets. Supervised native
+tranquilize separates cases and permits the final logout; positive status
+applications still use ordinary casts. Random blindness must provide at least
+32 configured ticks for the ordinary cure journey; those ticks remain a
+prerequisite, separate from the measured elapsed prefix. These observations
+qualify the path and are not estimates of balance rates.
+
+| Engine | Native SQL controls / operations / states | Actual server controls / operations / states | All live qualified prefixes | Ordinary target qualified prefixes |
+| --- | --- | --- | --- | --- |
+| mariadb:10.11.14 | 80 / 56 / 24 | 56 / 11 / 45 | 24 | 8 |
+| mysql:8.0.46 | 80 / 56 / 24 | 59 / 10 / 49 | 26 | 6 |
+
+| Engine | Minor paralysis (us) | Blindness (us) | Slow (us) | Selected-status union (us) | Ordinary unknown prefixes |
+| --- | --- | --- | --- | --- | --- |
+| mariadb:10.11.14 | 30591608 | 10774020 | 17540165 | 48131773 | 1 |
+| mysql:8.0.46 | 28806752 | 6515049 | 18539649 | 47346401 | 1 |
+
+The per-status sum exceeds the union because blindness and slow overlap. Merging
+qualified selected intervals independently equals the disjoint selected-prefix
+sum. Unknown prefixes contribute no invented duration. Accepted applications,
+signed configured ticks, elapsed status time and proven action restrictions
+remain separate. Action-restriction and caster-attributed duration remain NULL.
+
+The runtime now preserves known shared-battle context when the optional legacy
+encounter link is absent; missing/closed required sessions and foreign producer
+links remain unknown. One immutable producer UTC/steady mapping gives exact
+elapsed/reference deltas, with bracketed calibration and the maintained one-second
+wall-clock continuity bound. UTC labels are bounded estimates; elapsed time uses
+the steady clock. Discontinuities, invalid origin and overflow leave UTC unknown
+until a fresh producer. Independent review covers all retained association and
+control clocks; supervised outage boundaries include the source clock bound.
+Protected worker/lifecycle evidence witnesses clean delivery. Publisher and
+reducer qualification rules, report definitions and migration files are unchanged
+by this follow-up.
+
+For the same real native input, definition-7 generation 1 was published before
+independent incident review and retains NULL durations after reviewed generation
+2 is published. A separately labelled in-memory configuration fault probe retains
+NULL duration without changing stored source; modifying bindings under the
+original digest is independently refused. Real writer loss, abandoned backlog
+and open producer tails remain uncertainty. Native context/clock/capacity and
+definition-7 negative regressions pass through the same maintained command.
+
+The server build, twelve C++ formatting checks, thirteen focused programs,
+84 history tests, runtime/lifecycle validators and all three ASan/UBSan stages
+passed. Native adapters verify 18 callback transitions, 58 maintained native
+transitions across all eight statuses and 11 scheduled/canceled timers. Both SQL
+engines requalify all six 71-step / 267-table histories, compiled boot/restoration,
+tamper refusal, guarded reruns, 76 control fields / 455 tagged payload columns,
+atomic publication/replay/fault cases, private roles and immutable older
+definitions/generations.
+
+The optimized capture/encoding benchmark passes all 30 profiles at 50/200/512
+targets with 4,096 samples and five repetitions: worst p99 0.549 us,
+p99.9 1.586 us and maximum 49.838 us against
+1 ms / 5 ms p99 / p99.9 guards. Fixed state is 213,048 bytes with zero event-time
+allocation. The separate production clock benchmark samples 4,096 pairs in each
+flatfile/SQL ASan/UBSan variant: worst p99 2.186 us,
+p99.9 3.890 us and maximum 21.910 us.
+Both measurements exclude context refresh and SQL. The original transport,
+rollup and report gate passes at 50/200/1,000 workloads with six injected faults.
+
+| Engine | Save capture mode | Samples | Median round trip (ms) | Maximum (ms) |
+| --- | --- | --- | --- | --- |
+| mariadb:10.11.14 | telemetry_off | 10 | 2004.599 | 2006.372 |
+| mariadb:10.11.14 | telemetry_on_status_present | 10 | 2004.211 | 2142.929 |
+| mysql:8.0.46 | telemetry_off | 10 | 2004.436 | 4510.524 |
+| mysql:8.0.46 | telemetry_on_status_present | 10 | 2004.277 | 2007.920 |
+
+Save timings include Telnet scheduling and authoritative persistence; they do
+not isolate callback overhead. TSan is unrun by the command and its earlier host
+probe was unsupported. No full burn-in or production load qualification is claimed.
+
+**Next dependency:** reviewed build/power comparisons and typed death, escape and
+objective evidence. Prevention/faction coverage, distinct PvE attempts and committed
+rewards, progression/milestone/portfolio additions, four complete balance suites,
+statistical exports and #487 economic compatibility remain in the accepted scope.
+Issue #258 stays OPEN with all seven final checkbox lines unchanged, and PR #683
+stays DRAFT.
