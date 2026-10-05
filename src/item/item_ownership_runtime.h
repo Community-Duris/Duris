@@ -41,6 +41,12 @@ bool item_ownership_runtime_snapshot_owner(const item_owner_identity &owner, siz
 // or zero limit is invalid. Failure empties a nonnull output; success is complete.
 bool item_ownership_runtime_snapshot_root(uint64_t root_item_uid, size_t limit,
 					  std::vector<item_ownership_runtime_entry> *snapshot);
+// Same bounded root observation, restricted to active custody before counting
+// or allocating. Retained destroyed/quarantined history consumes no budget and
+// remains untouched. All active owners/topology count, including conflicting
+// claims. Explicit historical rows need separate per-UID comparison.
+bool item_ownership_runtime_snapshot_active_root(
+	uint64_t root_item_uid, size_t limit, std::vector<item_ownership_runtime_entry> *snapshot);
 // Pure serialized game-thread cache observation. Never inserts a missing owner,
 // hydrates, allocates or grants native authority. Missing/invalid/null refuses
 // with output unchanged; a cached revision of zero is a valid observation.
