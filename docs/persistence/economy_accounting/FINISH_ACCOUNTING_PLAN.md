@@ -1,5 +1,15 @@
 # Finish accounting implementation plan
 
+## Private shop weight/retry and parallel NPC checkpoint — 2026-10-05
+
+[Original destination weight and complete prospective inventory](SHOP_DESTINATION_WEIGHT_SOURCE_CHECKPOINT_2026-10-05.md)
+freezes18 private source-reviewed files: explicitv7, atomic target weight,
+complete literal before/after, returned-nesting retry and pre-admission native/
+wire bounds. Parallel Plan3 pure codecs and six compile recipes are prepared.
+These are source-only private implementations. Cold recovery, producer wiring,
+coherent migrations, major-plan qualification and R1–R8 release remain open.
+
+
 ## Cross-platform exact source-pin repair — 2026-10-05
 
 [Canonical checkout policy and exact metadata repair](SOURCE_PIN_CHECKOUT_POLICY_REPAIR_2026-10-05.md)
