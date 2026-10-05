@@ -1,5 +1,13 @@
 # Accounting review status — 2026-10-04
 
+## Active custody observation and private publication checkpoint — 2026-10-05
+
+[Bounded active-root census and shared handoff](ACTIVE_CUSTODY_CENSUS_SOURCE_2026-10-05.md)
+integrates the pure observation while preserving old all-state history behavior.
+Four private shop corrections passed source review; whole native publication
+remains open for nested destination weight, recovery, producer and qualification.
+Private NPC final-giver contracts are pinned but not admitted or executed.
+
 ## Independent evidence-index density repair — 2026-10-05
 
 [Exact imported Plan5 slice](PLAN5_INDEX_DENSITY_INTEGRATION_2026-10-05.md)
