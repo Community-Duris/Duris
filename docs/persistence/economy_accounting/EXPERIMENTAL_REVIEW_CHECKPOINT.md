@@ -1,5 +1,42 @@
 # Experimental accounting review checkpoint
 
+## Immutable original birth recipe handoff — 2026-10-06
+
+[Accepted codec, wrapper and corrected SQL readback](NATIVE_BIRTH_RECIPE_SOURCE_HANDOFF_2026-10-06.md)
+are frozen and composed into5769 exact private source inputs. The birth-v2 wrapper
+retains original stock choices, preserves v1 readability/native image and original
+limits, and canonically binds the recipe. Parsed parameters already survive in
+literal descriptions. This is source acceptance only: actual factory restoration,
+mutable typed continuation, remaining reset mechanics and native qualification
+remain open. No maintained native install or full Plan/release gate is claimed.
+
+## Birth refusal owner and full-reader evidence — 2026-10-06
+
+The [private native handoff](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)
+now records reviewed retention/cancellation of genuine birth admission refusals.
+The two-file correction is frozen and composed into all5767 original inputs;
+source only, with actual producer/cleanup and cold qualification still pending.
+
+The [independent full-reader report](PLAN5_NATIVE_CURRENT61_FULL_AUDIT_QUALIFICATION_2026-10-05.md)
+is imported exactly from peer236d20d9b. Primary verifies native/migration/scripts
+trees match the tested391ef81 source; the sole committed test difference is the
+already published UID minimum9→11 registration. Both engines' complete maintained
+readers accept the original native cuts and preserve all228 application tables
+and expected missing-authority findings. This qualifies reader compatibility at
+that scope; no primary native rerun, private birth proof or full capture/release
+completion is claimed. Original producer/recovery and all full gates remain open.
+
+## Plan5 coin-payload reader fix integrated — 2026-10-06
+
+[Primary integration and original-case registration](PLAN5_COIN_SOURCE_PRIMARY_INTEGRATION_2026-10-06.md)
+records the exact peerda2153 reader fix: source limits precede payload reads,
+including repeated mapping bytes; ignored non-coin bytes are excluded. The
+existing UID-scope row now requires all11 original/new cases, which pass with
+zero skips. Normal/matrix/runtime metadata checks pass. Native/schema and all
+other manifest fields remain unchanged. Peer SQL/component evidence retains its
+scope; full native capture, producer/recovery qualification, Plans and release
+remain open. Accounting stays inactive and unrelated SHOP WIP is preserved.
+
 ## Private native quest major qualification — 2026-10-05
 
 [The frozen private source and actual component evidence](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)
