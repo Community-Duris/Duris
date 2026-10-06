@@ -48,6 +48,21 @@ changed, duplicate or rejected-root claims refuse across the entire database.
 Roots with no source identity and rejected roots require no source claim. Orphan details and
 details attached to rejected roots also refuse. It never repairs a discrepancy.
 
+At canonical 0062, this check also reads retained pending-claim source lots and
+partial-consumption rows, with a 100,000-row bound per collection and 256-row
+primary-key pages. It binds original lot amounts and whole/partial debits to
+the original decoded root effects, requires exact source/mapping/PID identities
+and committed references, and refuses missing, extra, mixed or overdrawn
+allocations. Fully consumed sources retain their original positive amounts.
+Declared version1 opening metadata requires exact canonical holding slots and
+counts; historical NULL opening metadata retains unknown allocation coverage.
+The report's `retained_pending_claim_allocations: verified` covers these
+retained projections. It does not authenticate the origin-policy selector or
+the original PID from a frozen source digest, reconcile current native claim
+balances, or qualify claim producers. The saved snapshot exporter/reconciler
+still needs partial-consumption coverage. Source capture and release remain
+unqualified; a successful check never authorizes correction of a finding.
+
 Status 0 emits a small JSON report with database scope and verified root/byte
 counts. A discrepancy or missing/oversized source emits no report, prints a
 fixed diagnostic refusal on stderr, and exits 2. Capsule and command bodies,

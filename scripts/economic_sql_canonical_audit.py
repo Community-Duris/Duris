@@ -70,7 +70,8 @@ def capture(connection):
                    "economic_accounting_item_reference", "economic_accounting_source_claim", "economic_baseline_control",
                    "economic_baseline_witness", "economic_baseline_reservation",
                    "economic_lineage_state", "economic_epoch", "critical_operation_inbox",
-                   "item_ownership_ledger", "currency_ledger", "critical_outbox", "quest_mobile_native")
+                   "item_ownership_ledger", "currency_ledger", "critical_outbox", "quest_mobile_native",
+                   "economic_pending_claim_source", "economic_pending_claim_consumption", "economic_account_mapping")
         tables = ",".join("'" + table + "'" for table in sources)
         engines = int(executor.sql("SELECT COUNT(*) FROM information_schema.tables "
             "WHERE table_schema=DATABASE() AND ENGINE='InnoDB' AND table_name IN (" + tables + ");"))
@@ -129,6 +130,7 @@ def capture(connection):
                 "retained_roots": count, "retained_native_mobiles": mobiles, "queries": executor.queries,
                 "canonical_bytes": size,
                 "canonical_roots_and_details": "verified", "read_only": True,
+                "retained_pending_claim_allocations": "verified",
                 "complete_command_receipts_authenticated": False,
                 "source_capture_qualified": False, "release_qualified": False}
     finally:
