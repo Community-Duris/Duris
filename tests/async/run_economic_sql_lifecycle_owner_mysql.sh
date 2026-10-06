@@ -97,6 +97,8 @@ expect_schema_rejection() {
 docker exec -i -e MYSQL_PWD "$CONTAINER_ID" "$DB_CLIENT" -uroot "$DB_NAME" \
     < migrations/bootstrap_multithread_safe.sql
 docker exec -i -e MYSQL_PWD "$CONTAINER_ID" "$DB_CLIENT" -uroot "$DB_NAME" \
+    < migrations/immutable/0038_item_equipment_slot.sql
+docker exec -i -e MYSQL_PWD "$CONTAINER_ID" "$DB_CLIENT" -uroot "$DB_NAME" \
     < migrations/immutable/0043_shopkeeper_item_condition.sql
 verify_schema
 docker exec -e MYSQL_PWD "$CONTAINER_ID" "$DB_CLIENT" -uroot "$DB_NAME" \

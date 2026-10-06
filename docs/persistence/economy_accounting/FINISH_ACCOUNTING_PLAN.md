@@ -1,5 +1,85 @@
 # Finish accounting implementation plan
 
+## Equipment capture v2 integrated — 2026-10-06
+
+[Primary source integration](SQL_EQUIPMENT_CAPTURE_V2_PRIMARY_INTEGRATION_2026-10-06.md)
+repairs omitted native equipment with a separate same-transaction projection,
+preserving historical money hashes and explicit v1 unobserved slots. Independent
+review, focused sanitizer controls, both integrated production object pairs and
+normal contracts/matrix pass. Original SQL/native major qualification remains
+pending. [Auction/claim opening handoff](SQL_OPENING_AUCTION_CLAIM_IMPLEMENTATION_HANDOFF_2026-10-06.md)
+records the next coupled money slice. Full R6, Plans2–4 and release remain open.
+
+## Real Kord crash fixture wired — 2026-10-06
+
+[Shared driver wiring](QUEST_CRASH_REAL_KORD_FIXTURE_2026-10-06.md) exposes actual
+QP06 prototype/Q terms, aliases, C3000 and reward29237 with exact three-root checks.
+Original calibration and fault limits remain. Optional later ordinary reward drop
+must retain the UID across the second cold boot. Both actual fixture preparations
+and AST/whitespace checks pass; no gameplay/drop/cold journey is claimed. Active
+native child/publication and move-before-lost-ACK qualification remain pending.
+
+## Quest prep refreshed for installed native owners — 2026-10-06
+
+[Primary refresh](QUEST_PREP_NATIVE_REFRESH_PRIMARY_INTEGRATION_2026-10-06.md)
+imports ten exact peer files from3e9ce549a, retaining the eleventh original test.
+Seven source cases and seven extracted observations pass in the pinned private
+view; primary QP06 source/fixture and QP03 recipient checks pass after installation.
+Three original paid/refund/stale-task diagnostics remain RED. Removed obsolete
+helper stubs do not replace native hold/custody requirements; all seven complete
+journeys, producer integration and full accounting qualification remain pending.
+
+## Independent collector quarantine reader integrated — 2026-10-06
+
+[Primary integration](PLAN5_COLLECTOR_QUARANTINE_PRIMARY_INTEGRATION_2026-10-06.md)
+consumes the exact completed Plan5 issue977a5f317. All four ownership projections
+retain quarantine; history readers and retired-UID checks preserve its semantics.
+Four focused methods, five ASTs and normal accounting validation pass. Peer native
+and both-engine results retain their older source/component scope; combined
+producer, opening capture, restart and release qualification remain unfinished.
+No authority, activation, manifest or unrelated WIP changes are introduced.
+
+## Explicit activation verifier request context — 2026-10-06
+
+[Shared contract and Plan 5 handoff](ACTIVATION_VERIFIER_REQUEST_CONTEXT_2026-10-06.md)
+pass the original request synchronously to the borrowed-session verifier.
+Both production owner-mode objects, the original harness with exact flags,
+three existing source cases and current matrix/writer contracts pass at their
+stated scopes. Guards, decision/retry, capture and transaction order remain.
+Complete opening capture, stopped-maintenance orchestration and the genuine
+independent verifier remain full R6 work; no production authority is activated.
+This closes the missing request-context interface, not full release acceptance.
+
+## Actual inactive alchemist reset/literal fixture retained — 2026-10-06
+
+[Scoped native evidence](ALCHEMIST_ACTUAL_RESET_LITERAL_QUALIFICATION_2026-10-06.md)
+and the retained fixture link all 738 original production providers. Both
+real boot/reset worlds pass, including chance/UID/latch retries and moved-vial
+public literal capture without synthetic birth/source reference facts.
+Independent review accepts the exact provider and assertion scope. Accounting
+was inactive; active NBC3 admission, SQL/custody/publication/ACK and authentic
+cold restoration remain pending. No Plan or release gate is marked complete.
+
+## Native birth writer registry refreshed — 2026-10-06
+
+[Maintained integration evidence](NATIVE_BIRTH_WRITER_REGISTRY_INTEGRATION_2026-10-06.md)
+records the reviewed 920-row registry, all 2,818 current unique sites mapped,
+and actual normal validator, matrix, site, route and 55-case coverage passes.
+Original IDs/backend evidence stay intact; four stale assertions retain their
+operation/owner requirements and both changed source pins match actual files.
+This closes the stale native census/matrix issue. Full active producer,
+SQL/publication/ACK, cold restart, flat parity and release work remain open.
+Coverage stays incomplete and activation closed; no Plan is declared complete.
+
+## Parallel quest acceptance prep consumed — 2026-10-06
+
+[Primary handoff](QUEST_PREP_PRIMARY_INTEGRATION_2026-10-06.md) imports eleven
+owned prep files froma7c7efb26. Five static production-term/fixture checks pass
+on the actual integrated source; six ASTs pass. Seven native journeys and dynamic
+bartender settlement remain pending. Peer diagnostic REDs locate original
+requirements and add no release gates. Use this pack for actual owner/native
+qualification; no source authority or gameplay/ACK is synthesized.
+
 ## Quest prep pack published - 2026-10-06
 
 The third-agent seven-case pack is available now on
