@@ -154846,6 +154846,227 @@
     {
       "contacts": [
         {
+          "description": "Ask sword, swords, torment or empress. Bring all six exact clan swords together for Retribution; the accepted return retires Kunji.",
+          "keyword": "kunji",
+          "mob_vnum": 138261,
+          "name": "the mad spirit Kunji Pishida",
+          "topics": [
+            "sword",
+            "swords",
+            "torment",
+            "empress"
+          ]
+        },
+        {
+          "description": "Lord Kawasawa is the Raven source context for Shadows Breath, equipped when stocked. Meeting or defeating the leader is not the accepted six-sword return.",
+          "keyword": "kawasawa",
+          "mob_vnum": 138238,
+          "name": "Lord Kawasawa",
+          "topics": []
+        },
+        {
+          "description": "Lord Hanyo is the Leopard source context for The North Wind, equipped when stocked. Meeting or defeating the leader is not the accepted six-sword return.",
+          "keyword": "hanyo",
+          "mob_vnum": 138239,
+          "name": "Lord Hanyo",
+          "topics": []
+        },
+        {
+          "description": "Lord Murimasi is the Snow Dragon source context for Divine Fury, equipped when stocked. Meeting or defeating the leader is not the accepted six-sword return.",
+          "keyword": "murimasi",
+          "mob_vnum": 138240,
+          "name": "Lord Murimasi",
+          "topics": []
+        },
+        {
+          "description": "Lord Ajikira is the Crane source context for The Lotus Blossom, hidden carried when stocked. Meeting or defeating the leader is not the accepted six-sword return.",
+          "keyword": "ajikira",
+          "mob_vnum": 138241,
+          "name": "Lord Ajikira",
+          "topics": []
+        },
+        {
+          "description": "Lord Yumi is the Tiger source context for Celestial Dragon, equipped when stocked. Meeting or defeating the leader is not the accepted six-sword return.",
+          "keyword": "yumi",
+          "mob_vnum": 138242,
+          "name": "Lord Yumi",
+          "topics": []
+        },
+        {
+          "description": "Lady Kitsuro is the Rat source context for Torrential Rain, hidden carried when stocked. Meeting or defeating the leader is not the accepted six-sword return.",
+          "keyword": "kitsuro",
+          "mob_vnum": 138243,
+          "name": "Lady Kitsuro",
+          "topics": []
+        },
+        {
+          "description": "The knife merchant offers ordinary blades, separate from the six clan katanas. Shop mutations currently refuse under active accounting.",
+          "keyword": "merchant",
+          "mob_vnum": 138208,
+          "name": "a knife merchant",
+          "topics": []
+        },
+        {
+          "description": "The food merchant is market service context. Current stock or LIST does not prove a purchase; native mutations refuse under active accounting.",
+          "keyword": "merchant",
+          "mob_vnum": 138209,
+          "name": "a food merchant",
+          "topics": []
+        },
+        {
+          "description": "Hengi stocks travel magic and a curse-removal scroll when admitted. Buying currently refuses under active accounting; curse removal is not an innate six-katana requirement.",
+          "keyword": "hengi",
+          "mob_vnum": 138221,
+          "name": "the wu-jen Hengi",
+          "topics": []
+        },
+        {
+          "description": "Xial supplies ordinary tools and weapons. The named picks are weapon prototypes, so their names alone do not prove lock-picking capability.",
+          "keyword": "xial",
+          "mob_vnum": 138222,
+          "name": "Xial",
+          "topics": []
+        },
+        {
+          "description": "Le Ming describes a closed poison service. No selected shop or special handler implements a tracked purchase or poison application.",
+          "keyword": "ming",
+          "mob_vnum": 138224,
+          "name": "Le Ming, the Lady of Poison",
+          "topics": []
+        },
+        {
+          "description": "Can Hy and the stable are travel lore. No selected local horse stock or purchase handler guarantees a mount.",
+          "keyword": "can",
+          "mob_vnum": 138223,
+          "name": "Can Hy, the trader",
+          "topics": []
+        },
+        {
+          "description": "Lilari and her following bodyguard provide noble-family context. Native follower stock does not constitute an owned escort or rescue quest.",
+          "keyword": "lilari",
+          "mob_vnum": 138259,
+          "name": "Lilari, daughter of Lord Kawasawa",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow the six clan swords to Kunji, with hidden-source guidance, competing foreign uses and city services explained by their actual behavior.",
+      "orientation": [
+        "Enter Mitashi through its northern gate, then explore the markets, barracks, Harmony Garden, clan compounds, docks and southern homes. The bay needs eligible water travel. Current visibility, occupancy, combat and stock still matter.",
+        "Find Kunji Pishida in the abandoned warehouse basement. The warehouse is connected to the city, with ordinary DOWN and UP access to the spirit. The dark rooms can affect sight; no magical password, garden item or clan affiliation is a declared entry requirement.",
+        "Ask Kunji sword or swords, torment, and empress. These four words select three native responses. They explain the seven swords and his anger at the Empress; each attempted word is not a separate achievement.",
+        "Collect one each of the six named clan katanas. Ordinary clan swords, knives, similar names or six copies of one katana do not replace the six different required kinds. Each optional row checks current directly carried prototypes and can become missing again after you spend the item. Ready now does not independently check sight or durable ownership; actual offering admission can still refuse.",
+        "The Raven, Leopard, Snow Dragon and Tiger leaders have their katanas equipped when stocked. The Crane and Rat leaders carry hidden katanas. If a hidden sword reaches a corpse or open container, successful SEARCH may reveal it before recovery; that action depends on visibility and chance. A source declaration does not guarantee a present recoverable sword.",
+        "Carry the exact six swords together, loose rather than worn, held or inside containers, then offer a named visible sword to Kunji. Supplied exact swords also fit; the native return does not require your own clan-leader kills, source recovery or earlier conversation. Under active accounting, incomplete sets stay with you.",
+        "Kunji consumes the complete six-sword set, gives Retribution and departs. The accepted receipt remains recorded after the swords are spent. His revenge tale does not implement a later Empress kill or release-the-spirit objective in this recipe.",
+        "Choose how to spend the swords: Lynstar in the Savannah accepts each clan katana for a different legendary instrument, then accepts Retribution plus a matching instrument for its epic upgrade. The Plane of Air also needs The North Wind in a separate nine-item Cloudseeker return. These exchanges consume competing physical items and keep separate recipient histories.",
+        "Retribution can be equipment or a later offering. Its generic combat effect includes two cure-critical entries and spirit anguish, subject to actual trigger, target and item-action settings. Possession, healing prose and an attempted strike do not prove a successful effect or another quest completion.",
+        "Hengi, Xial and the market food and knife merchants offer town context. Their native shop mutations currently refuse while accounting is active. Le Ming describes a closed poison service, and Can Hy has stable lore without a selected horse purchase service. Do not plan a required purchase from those descriptions.",
+        "Seven Gardens has an actual inn handler. RENT depends on character eligibility and successful terminal saving; visiting the room or receiving a handled refusal is separate from successful renting. Gardens, noble followers and dock scenery do not create collection, escort or ship-purchase receipts.",
+        "New discovery, encounter, journal, achievement and daily progress requires active, ready accounting. The one native return remains one achievement and one potential daily. Daily rollover does not restock six cap-one swords or restore a departed Kunji."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "mitashi",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:138267,I:138268,I:138269,I:138270,I:138271,I:138272;receive=I:138279;disappear=1",
+              "giver_vnum": 138261
+            }
+          ],
+          "id": "six-clan-swords",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Counts the exact directly carried Shadows Breath now. Lord Kawasawa is its equipped source in the Raven compound when stocked. Supplied custody can prepare this return without personal source proof; worn, held or nested items do not fill this preparation row. The current snapshot also counts hidden loose items; visibility of the named offering and durable ownership still require actual admission.",
+              "id": "katana-138267",
+              "item_vnums": [
+                138267
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Shadows Breath loose"
+            },
+            {
+              "count": 1,
+              "hint": "Counts the exact directly carried The North Wind now. Lord Hanyo is its equipped source in the Leopard compound when stocked. Supplied custody can prepare this return without personal source proof; worn, held or nested items do not fill this preparation row. The current snapshot also counts hidden loose items; visibility of the named offering and durable ownership still require actual admission.",
+              "id": "katana-138268",
+              "item_vnums": [
+                138268
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry The North Wind loose"
+            },
+            {
+              "count": 1,
+              "hint": "Counts the exact directly carried Divine Fury now. Lord Murimasi is its equipped source in the Snow Dragon compound when stocked. Supplied custody can prepare this return without personal source proof; worn, held or nested items do not fill this preparation row. The current snapshot also counts hidden loose items; visibility of the named offering and durable ownership still require actual admission.",
+              "id": "katana-138269",
+              "item_vnums": [
+                138269
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Divine Fury loose"
+            },
+            {
+              "count": 1,
+              "hint": "Counts the exact directly carried The Lotus Blossom now. Lord Ajikira is its hidden carried source in the Crane compound when stocked. Supplied custody can prepare this return without personal source proof; worn, held or nested items do not fill this preparation row. The current snapshot also counts hidden loose items; visibility of the named offering and durable ownership still require actual admission.",
+              "id": "katana-138270",
+              "item_vnums": [
+                138270
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry The Lotus Blossom loose"
+            },
+            {
+              "count": 1,
+              "hint": "Counts the exact directly carried Celestial Dragon now. Lord Yumi is its equipped source in the Tiger compound when stocked. Supplied custody can prepare this return without personal source proof; worn, held or nested items do not fill this preparation row. The current snapshot also counts hidden loose items; visibility of the named offering and durable ownership still require actual admission.",
+              "id": "katana-138271",
+              "item_vnums": [
+                138271
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Celestial Dragon loose"
+            },
+            {
+              "count": 1,
+              "hint": "Counts the exact directly carried Torrential Rain now. Lady Kitsuro is its hidden carried source in the Rat compound when stocked. Supplied custody can prepare this return without personal source proof; worn, held or nested items do not fill this preparation row. The current snapshot also counts hidden loose items; visibility of the named offering and durable ownership still require actual admission.",
+              "id": "katana-138272",
+              "item_vnums": [
+                138272
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Torrential Rain loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:138267,I:138268,I:138269,I:138270,I:138271,I:138272;receive=I:138279;disappear=1",
+                  "giver_vnum": 138261
+                }
+              ],
+              "hint": "Records consumption of one each of all six exact clan katanas, Retribution issuance and Kunji's departure. Equipment, source recovery, dialogue, reward possession and foreign exchanges are separate evidence.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record Kunji's accepted six-sword return"
+            }
+          ],
+          "summary": "Prepare one each of the six different clan katanas for Kunji. His native return consumes the full set, gives Retribution and he departs. Current preparation stays separate from the accepted exchange; supplied swords fit without personal clan kills, prior dialogue or a revenge finale.",
+          "title": "Return the six clan swords to Kunji"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Lynstar is in the pit beneath the Butsu village, reached through the well or termite tunnels. She makes six distinct legendary instruments and six matching epic upgrades. Each epic upgrade consumes Retribution and she leaves afterward; her sister's full-set request is an unfinished lead.",
           "keyword": "bard",
           "mob_vnum": 138500,

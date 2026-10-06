@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 176 &&
+		require(catalog.story_mappings.size() == 177 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,150 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "mitashi"; });
+			const auto &swords = story_for("mitashi", "six-clan-swords");
+			require(mapping.stories.size() == 1 && mapping.contacts.size() == 14 &&
+					swords.steps.size() == 7 && mapping.revision == 1,
+				"Mitashi journal scope failed");
+			int achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 1382)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 1 && dailies == 1,
+				"Mitashi native classification changed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 1382, 138200, 100, "arrival") ==
+					result::applied,
+				"Mitashi discovery failed");
+			require(journey.meet_npc(7, 42, 138238, 138344, 101) == result::applied,
+				"Mitashi source encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 1382, 10, 1, 102, false, false);
+			require(journal.find("] " + swords.title + "\r\n") == std::string::npos,
+				"Mitashi clan encounter exposed Kunji card");
+			require(journey.meet_npc(7, 42, 138261, 138428, 103) == result::applied,
+				"Mitashi Kunji encounter failed");
+			const auto status = [&](size_t row, const char *state)
+			{
+				return journal.find(std::string("[") + state + "] " +
+						    swords.steps[row].text) != std::string::npos;
+			};
+			const auto before = journey.serialize_state();
+			supplies = {};
+			for (int n = 0; n <= 6; ++n)
+			{
+				if (n)
+					supplies.carried[138266 + n] = 1;
+				journal = journey.render_journal(7, 42, 1382, 10, 1, 104 + n, false,
+								 false, &supplies);
+				for (int i = 0; i < 6; ++i)
+					require(status(i, i < n ? "Ready now" : "Missing now"),
+						"Mitashi partial set lost exact per-sword quantity");
+				require(status(6, "Pending") && journey.serialize_state() == before,
+					"Mitashi preparation created a native receipt or source history");
+			}
+			supplies = {};
+			supplies.carried[138267] = 6;
+			journal = journey.render_journal(7, 42, 1382, 10, 1, 111, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(6, "Pending"),
+				"Mitashi duplicate sword lost its own row or completed recipe");
+			for (int i = 1; i < 6; ++i)
+				require(status(i, "Missing now"),
+					"Mitashi six duplicates replaced distinct kinds");
+			supplies = {};
+			for (int v : { 138200, 138217, 138223, 138242, 138243, 138254, 138279,
+				       138280, 138533, 138541, 131650 })
+				supplies.carried[v] = 2;
+			for (int i = 0; i < 6; ++i)
+				supplies.equipped[16 + i] = 138267 + i;
+			journal = journey.render_journal(7, 42, 1382, 10, 1, 112, false, false,
+							 &supplies);
+			for (int i = 0; i < 6; ++i)
+				require(status(i, "Missing now"),
+					"Mitashi ordinary blade, reward or equipped sword substituted loose preparation");
+			supplies = {};
+			supplies.equipped[18] = 138268;
+			for (int v : { 138267, 138269, 138270, 138271, 138272 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 1382, 10, 1, 113, false, false,
+							 &supplies);
+			require(status(1, "Missing now") && status(6, "Pending"),
+				"Mitashi held North Wind replaced loose offering");
+			supplies = {};
+			for (int v : { 138267, 138268, 138269, 138271 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 1382, 10, 1, 114, false, false,
+							 &supplies);
+			require(status(3, "Missing now") && status(5, "Missing now") &&
+					status(6, "Pending"),
+				"Mitashi absent hidden or nested roots were inferred");
+			for (int v : { 138270, 138272 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 1382, 10, 1, 115, false, false,
+							 &supplies);
+			for (int i = 0; i < 6; ++i)
+				require(status(i, "Ready now"),
+					"Mitashi supplied exact set imposed personal source history");
+			require(journal.find("SEARCH") != std::string::npos &&
+					journal.find("Lynstar") != std::string::npos &&
+					journal.find("ready accounting") != std::string::npos,
+				"Mitashi guidance lost recovery, allocation or accounting requirements");
+			const auto &foreign = *std::find_if(catalog.definitions.begin(),
+							    catalog.definitions.end(),
+							    [](const auto &d)
+							    { return d.giver_vnum == 138500; });
+			record(journey, foreign.definition_id, "mitashi-foreign", 1385, 138665);
+			journal = journey.render_journal(7, 42, 1382, 10, 1, 116, false, false,
+							 &supplies);
+			require(status(6, "Pending") &&
+					journey.progress_for_zone(7, 42, 1382).completed == 0,
+				"Mitashi foreign service receipt completed Kunji");
+			record(journey, swords.contracts.front(), "mitashi-six", 1382, 138428);
+			supplies = {};
+			supplies.carried[138279] = 1;
+			journal = journey.render_journal(7, 42, 1382, 10, 1, 120, false, false,
+							 &supplies);
+			for (int i = 0; i < 6; ++i)
+				require(status(i, "Missing now"),
+					"Mitashi reward possession replaced spent roots");
+			require(status(6, "Recorded") &&
+					journey.progress_for_zone(7, 42, 1382).completed == 1,
+				"Mitashi spending set lost accepted receipt");
+			for (int v = 138267; v <= 138272; ++v)
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 1382, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(6, "Recorded") &&
+					journey.progress_for_zone(7, 42, 1382).completed == 1,
+				"Mitashi reacquired set duplicated completion");
+			auto replay = completion(swords.contracts.front(), "mitashi-six", 120);
+			replay.transaction.zone_number = 1382;
+			replay.transaction.room_vnum = 138428;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Mitashi replay duplicated receipt");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 1382).completed == 1,
+				"Mitashi cold recovery lost receipt");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 1382, 138247, 100, "arrival") ==
+					result::applied,
+				"Mitashi alternate arrival failed");
+			record(raw, swords.contracts.front(), "mitashi-raw", 1382, 138428);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 1382).completed == 1,
+				"Mitashi raw-to-authored recovery lost receipt");
 		}
 
 		{

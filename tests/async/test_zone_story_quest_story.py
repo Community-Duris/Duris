@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 176 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 177 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,14 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+mitashi=next(m for m in catalog['story_mappings'] if m['source_area']=='mitashi')
+assert (mitashi['coverage'],mitashi['schema_version'],mitashi['revision'])==('complete',3,1) and not mitashi['exclusions']
+assert len(mitashi['stories'])==1 and len(mitashi['contacts'])==14 and sum(len(c['topics']) for c in mitashi['contacts'])==4
+s=mitashi['stories'][0];assert s['id']=='six-clan-swords' and len(s['steps'])==7
+assert [(r['item_vnums'],r['count'],r['optional'],r['kind']) for r in s['steps'][:-1]]==[([v],1,True,'carried_item') for v in range(138267,138273)]
+assert s['steps'][-1]['kind']=='completion' and s['contracts']==s['steps'][-1]['contracts']==[{'giver_vnum':138261,'completion_key':'give=I:138267,I:138268,I:138269,I:138270,I:138271,I:138272;receive=I:138279;disappear=1'}]
+assert report['eligible_by_zone']['1382']==1
 
 menden=next(m for m in catalog['story_mappings'] if m['source_area']=='menden')
 assert (menden['coverage'],menden['schema_version'],menden['revision'])==('complete',3,1) and not menden['exclusions']
