@@ -1129,6 +1129,24 @@ def read_guild_treasuries(cursor) -> tuple[list[dict], dict]:
 
 
 def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
+    # Both native-item and mapping projections can return payload bytes. Bound
+    # them before either buffered SELECT, including repeated mapping joins.
+    cursor.execute("SELECT COUNT(*) AS row_count,"
+                   "COALESCE(SUM(OCTET_LENGTH(coin_payload)),0) AS payload_bytes,"
+                   "COALESCE(MAX(OCTET_LENGTH(coin_payload)),0) AS max_payload_bytes "
+                   "FROM item_current_owner WHERE vnum=%s", (COIN_VNUM,))
+    coin_bounds = cursor.fetchone()
+    if (coin_bounds is None or coin_bounds["row_count"] > MAX_ROWS or
+            coin_bounds["payload_bytes"] > MAX_INPUT_BYTES or
+            coin_bounds["max_payload_bytes"] > MAX_ITEM_PAYLOAD_BYTES):
+        raise ExportError("coin-pile source exceeds audit bounds")
+    cursor.execute("SELECT COALESCE(SUM(OCTET_LENGTH(i.coin_payload)),0) AS payload_bytes "
+                   "FROM economic_account_mapping m JOIN item_current_owner i "
+                   "ON m.account_kind=3 AND i.item_uid=m.active_native_id AND i.vnum=%s "
+                   "WHERE m.lineage=%s AND m.backend_kind=1", (COIN_VNUM, lineage))
+    mapping_bounds = cursor.fetchone()
+    if mapping_bounds is None or mapping_bounds["payload_bytes"] > MAX_INPUT_BYTES:
+        raise ExportError("mapped coin-pile source exceeds audit bounds")
     native = {"holdings": [], "items": [], "coin_piles": [],
               "coin_pile_mappings": [], "pending_claim_sources": []}
     native["ship_coffers"], native["ship_coffer_coverage"] = read_ship_coffers(cursor)
@@ -1150,7 +1168,8 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
         "p.platinum AS wallet_platinum,p.wallet_revision,"
         "b.bank_copper,b.bank_silver,b.bank_gold,b.bank_platinum,b.bank_revision,"
         "i.item_uid AS pile_uid,i.vnum AS pile_vnum,i.state AS pile_state,"
-        "i.item_revision AS pile_revision,i.coin_payload AS pile_payload,"
+        "i.item_revision AS pile_revision,"
+        f"CASE WHEN i.vnum={COIN_VNUM} THEN i.coin_payload ELSE NULL END AS pile_payload,"
         "a.id AS escrow_id,a.status AS escrow_status,a.winning_bidder_pid AS escrow_winner_pid,"
         "a.cur_price AS escrow_copper,"
         "a.auction_revision AS escrow_revision,"
@@ -1407,16 +1426,10 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             "consumer_root_valid": consumer_root_valid,
             "consumer_inbox_receipt": consumer_receipt})
     native["pending_claim_source_coverage"] = claim_source_coverage
-    cursor.execute("SELECT COUNT(*) AS row_count,"
-                   "COALESCE(SUM(OCTET_LENGTH(coin_payload)),0) AS payload_bytes "
-                   "FROM item_current_owner WHERE vnum=%s", (COIN_VNUM,))
-    coin_bounds = cursor.fetchone()
-    if (coin_bounds is None or coin_bounds["row_count"] > MAX_ROWS or
-            coin_bounds["payload_bytes"] > MAX_INPUT_BYTES):
-        raise ExportError("coin-pile source exceeds audit bounds")
     items = bounded(cursor,
         "SELECT item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,"
-        "owner_context_id,item_revision,state,vnum,coin_payload "
+        "owner_context_id,item_revision,state,vnum,"
+        f"CASE WHEN vnum={COIN_VNUM} THEN coin_payload ELSE NULL END AS coin_payload "
         "FROM item_current_owner ORDER BY item_uid")
     coin_payload_rows = 0
     missing_coin_payload_rows = 0
