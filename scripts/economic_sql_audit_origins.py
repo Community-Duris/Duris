@@ -187,6 +187,20 @@ def verify_baseline_root(row: dict, lineage: bytes, epoch: bytes) -> dict:
                 not same_projection(row["intent_digest"], intent["intent_digest"]) or
                 not same_projection(row["plan_digest"], plan["plan_digest"])):
             raise OriginError("EAB1 committed root mismatch")
+        command_hash = digest(row["inbox_command_hash"], "baseline command hash")
+        accepted_at_usec = row["command_accepted_at_usec"]
+        # EAI1 deliberately normalizes admission time. When SQL retains the
+        # original time, separately authenticate the full schema-2 CCM1 bytes.
+        # Historical NULL is unknown; never replace it with time 1 or a clock.
+        if accepted_at_usec is not None:
+            if type(accepted_at_usec) is not int or not 0 < accepted_at_usec < 2**64:
+                raise OriginError("EAB1 committed root mismatch")
+            original_command = (b"CCM1" + struct.pack("<I", 2) + operation +
+                struct.pack("<HHHBBQIII", 20, 1, 6, 4, 0, accepted_at_usec, 1, 0, 48) +
+                struct.pack("<B7xQ", 9, 0x45434f4e42415345) + payload +
+                struct.pack("<I", len(row["canonical_intent"])) + row["canonical_intent"])
+            if hashlib.sha256(original_command).digest() != command_hash:
+                raise OriginError("EAB1 committed root mismatch")
         holdings, items = struct.unpack_from("<II", blob, 184)
         effects, postings, equity = [], [], []
         for index in range(holdings):
@@ -330,6 +344,14 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
     engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
     if (len(engines) != 12 or any(engine != "InnoDB" for engine in engines.values())):
         raise OriginError("SQL baseline source is missing or not InnoDB")
+    cursor.execute("SELECT COUNT(*) AS column_count FROM information_schema.columns "
+                   "WHERE table_schema=DATABASE() AND table_name='economic_baseline_witness' "
+                   "AND column_name='command_accepted_at_usec'")
+    admission = cursor.fetchone()
+    if (admission is None or type(admission["column_count"]) is not int or
+            admission["column_count"] not in (0, 1)):
+        raise OriginError("invalid SQL baseline admission column metadata")
+    admission_column = "w.command_accepted_at_usec" if admission["column_count"] else "NULL"
     cursor.execute(
         "SELECT opening_account,revision,last_operation_id FROM economic_baseline_control "
         "WHERE lineage=%s AND epoch=%s", (lineage, epoch))
@@ -364,7 +386,8 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
         "o.account_count,o.posting_count,o.child_count,o.item_event_count,o.before_witness_count,o.after_witness_count,"
         "i.durable_revision AS inbox_revision,i.command_type AS inbox_type,i.schema_version AS inbox_schema,"
         "i.payload_version AS inbox_payload,i.result_payload AS inbox_result_payload,"
-        "i.keys_hash AS inbox_keys_hash,"
+        "i.keys_hash AS inbox_keys_hash,i.command_hash AS inbox_command_hash," +
+        admission_column + " AS command_accepted_at_usec,"
         "i.status AS inbox_status,i.result_code AS inbox_result,"
         "i.failure_stage AS inbox_failure_stage,"
         "(i.committed_at IS NOT NULL) AS inbox_committed_at_present "
