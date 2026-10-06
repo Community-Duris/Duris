@@ -1,5 +1,41 @@
 # Native quest private major source and component qualification
 
+## Shared birth publication and retained budget handoff — 2026-10-05
+
+Primary implemented the actual original SQL birth publication verifier and a
+private birth-only retained-byte setter in four private source files. The verifier
+authenticates the complete original120-byte success result/inbox/evidence before
+locking original mapping, current native/cash, owner revision and complete custody.
+It reuses the existing current-cut verifier and preserves caller-owned reconnect-
+disabled transaction cleanup, world publication and ACK. Outputs stay unchanged
+on failure. Birth bytes, original quest-driver bytes and acceptance preparations
+share the existing32MiB aggregate cap; failed replacement keeps its old charge.
+The birth friend receives no quest publication capabilities or separate allowance.
+
+Packet `tmp/plan3-native-mobile-birth-publication-bridges-20261005` has manifest
+`e15f9579d304461515ca747b4d6633a299a84db1779abc2a820ae5db4fcd39ae`
+and frozen receipt
+`443fea459065d7f8784252a79ffbe51afc8d3fe9df9a4b24825fea6f6ac621d4`.
+Independent source review found no concrete blocker. Four exact a761 preimages,
+byte-forward/inverse proofs and changed-line clang18 fixed points pass. Composition
+`tmp/plan3-native-mobile-birth-publication-major-source-20261005` verifies all5767
+inputs at manifest
+`616d9beb6a74b6b9a7863cacb66208fd4ca405d8c23a25c525082273e30c599c`;
+original driver is unchanged. No maintained native installation, build, tests,
+SQL or service execution is claimed. The worker received the exact frozen handoff.
+
+The original reset-source tuple is source-reviewed: one actual invocation ID
+issued at first successful M, retained as source and generation, sequence0 and
+original cmd_no slot; each birth has a distinct operation and UID. Retry preserves
+the original tuple; replay does not rerun the current zone program. No new reset
+cursor, source kind or journal is introduced.
+
+Actual producer integration continues. Original cold constructor effect choices,
+reducing-container prototype probe, occupied-equipment-slot effects and alchemist
+spawn remain explicit implementation seams, not waived mechanics or permanent
+refusal substitutes. Major native gameplay/persistence/recovery qualification,
+flat parity, writer registration and full Plan/R1–R8/release remain open.
+
 The maintained production-source baseline for this checkpoint is
 `55a7c0492b80f8a920a11f7c567ab43cefe333c2`.
 The native quest proposals below are frozen private candidates, not installed
