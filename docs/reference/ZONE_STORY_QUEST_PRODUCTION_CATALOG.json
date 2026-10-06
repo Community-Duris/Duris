@@ -63414,6 +63414,143 @@
     {
       "contacts": [
         {
+          "description": "Describes the war and asks warriors to help. His response is a story lead without another accepted exchange.",
+          "keyword": "councilman",
+          "mob_vnum": 30814,
+          "name": "a councilman",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Responds to a greeting while keeping his duties. Encountering him does not record a war objective.",
+          "keyword": "guard",
+          "mob_vnum": 30820,
+          "name": "a warrior giant",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Answers greetings with a public shop invitation. Shopping and receipt credit remain separate.",
+          "keyword": "shopkeeper",
+          "mob_vnum": 30821,
+          "name": "a warrior shopkeeper",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Discusses the war and offers the shared generated-quest service. Generated requests are separate from the king\u2019s accepted offering.",
+          "keyword": "bartender",
+          "mob_vnum": 30831,
+          "name": "a bartender",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Describes the threatened alliance. His warning does not record a battle or safety outcome.",
+          "keyword": "patron",
+          "mob_vnum": 30833,
+          "name": "a patron",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Reports continuing fighting and calls for warriors. This is context without a second native return.",
+          "keyword": "courier",
+          "mob_vnum": 30852,
+          "name": "a courier",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "Sometimes sings a room song about Woodseer and Jarus. A periodic song is not an advertised ASK topic or an instrument-use achievement.",
+          "keyword": "minstrel",
+          "mob_vnum": 30868,
+          "name": "a halfling minstrel",
+          "topics": []
+        },
+        {
+          "description": "Accepts the Sultan\u2019s exact bronze sword for his crown and experience. His thanks narrate a defeated threat without separately recording a personal kill or kingdom safety.",
+          "keyword": "king",
+          "mob_vnum": 30871,
+          "name": "King Straag",
+          "topics": [
+            "hi",
+            "hello",
+            "king",
+            "stragathor"
+          ]
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "War rumors fill Strathor Valley, while King Straag seeks the Sultan of Nizari\u2019s bronze sword. His accepted offering has one journal card. Conversations, secret passages and treasure provide a wider journey. Discovery is separate; new progress requires active, ready accounting.",
+      "orientation": [
+        "ASK KING about king or stragathor. He asks for the Sultan of Nizari\u2019s exact bronze sword and offers his crown and experience. Bring the sword loose. Matching proof supplied by another player fits his request without evidence of a personal kill.",
+        "The sword is declared among the Sultan\u2019s equipment in the distant palace of Nizari. Obtaining it there, receiving it from someone else, defeating the Sultan and the king accepting an offering are different events. The king\u2019s thanks narrate safety for his kingdom; the accepted return does not separately record that outcome.",
+        "ASK the councilman, guard, shopkeeper, bartender, patron and courier about hi or hello. Their responses describe a war, local duties and recruitment. They add leads and atmosphere without additional accepted returns or a mandatory conversation order.",
+        "A halfling minstrel sometimes sings about Woodseer and Jarus. Hearing a periodic room song is different from asking a topic, using an instrument or completing the king\u2019s return.",
+        "A red book in the study controls a remote treasury passage. Its registered action is PULL, although the room\u2019s description suggests pushing. A torch has a separate PULL control whose declared passage state needs builder review. Shared access, personal activation and actual arrival remain separate.",
+        "Other routes use doors and keys. Mansion runes suggest an interaction that has no confirmed selected handler. The granite key, blue key, rusty key, treasury vault and sea chest have distinct purposes and shared states; carrying a key does not record an unlock or guarantee that untouched contents remain.",
+        "The king\u2019s weapon, charged hat, instruments, ordinary treasure and generated quest service have their own purposes. Owning or using them does not substitute for his exact requested sword or create another local return. The material row shows loose supplies now, while accepted history remains after they are spent. One accepted return preserves one achievement and one potential daily; a daily clock does not guarantee admitted stock."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "stormht",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:40073;receive=E:60000,I:30846;disappear=0",
+              "giver_vnum": 30871
+            }
+          ],
+          "id": "sultan-proof-for-the-crown",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Declared in the Sultan\u2019s equipment in Nizari. Matching supplied loose proof fits. A worn or nested sword, another bronze item, a key or the king\u2019s reward is different evidence.",
+              "id": "sultan-sword",
+              "item_vnums": [
+                40073
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the Sultan\u2019s bronze sword loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:40073;receive=E:60000,I:30846;disappear=0",
+                  "giver_vnum": 30871
+                }
+              ],
+              "hint": "Records the king accepting the exact sword. His public thanks do not give every listener credit or separately record the Sultan\u2019s death and kingdom safety. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the king\u2019s accepted return"
+            }
+          ],
+          "summary": "Bring the Sultan of Nizari\u2019s exact bronze sword loose for the king\u2019s crown and experience. Acceptance records the offering, without a personal-kill or kingdom-safety prerequisite.",
+          "title": "The Sultan\u2019s sword for the king\u2019s crown"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "In the cave: accepts the rusted key, gives prisoner shackles and leaves after the exchange.",
           "keyword": "dwarf",
           "mob_vnum": 31118,

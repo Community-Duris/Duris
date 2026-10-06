@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1410
-assert report['mapped_area_count'] == 141 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 142 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,14 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+stormht=next(m for m in catalog['story_mappings'] if m['source_area']=='stormht')
+assert (stormht['schema_version'],stormht['revision'],stormht['coverage'])==(3,1,'complete')
+assert len(stormht['stories'])==1 and len(stormht['contacts'])==8 and sum(len(c['topics']) for c in stormht['contacts'])==16 and not stormht['exclusions']
+assert not next(c for c in stormht['contacts'] if c['mob_vnum']==30868)['topics']
+king=stormht['stories'][0];assert king['id']=='sultan-proof-for-the-crown' and king['contracts'][0]['giver_vnum']==30871
+assert [(t['item_vnums'],t['count'],t.get('optional',False)) for t in king['steps'] if t['kind']=='carried_item']==[([40073],1,True)]
+assert len(king['steps'])==2 and king['steps'][-1]['contracts']==king['contracts'] and report['eligible_by_zone']['308']==1
 
 khildarak=next(m for m in catalog['story_mappings'] if m['source_area']=='khildarak')
 assert (khildarak['schema_version'],khildarak['revision'],khildarak['coverage'])==(3,2,'complete')

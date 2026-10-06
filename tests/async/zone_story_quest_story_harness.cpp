@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 141 &&
+		require(catalog.story_mappings.size() == 142 &&
 				tracker.summary_for(7, 42).total == 1528,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7687,6 +7687,94 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "stormht"; });
+			const auto &king = story_for("stormht", "sultan-proof-for-the-crown");
+			require(mapping.stories.size() == 1 && mapping.contacts.size() == 8,
+				"Strathor mapping scope failed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 308, 30800, 100, "arrival") ==
+					result::applied,
+				"Strathor arrival failed");
+			std::string journal =
+				journey.render_journal(7, 42, 308, 10, 1, 101, false, false);
+			require(journal.find("] " + king.title + "\r\n") == std::string::npos,
+				"Strathor exposed unseen king");
+			require(journey.meet_npc(7, 42, 30868, 30822, 102) == result::applied &&
+					journey.meet_npc(7, 42, 30831, 30913, 102) ==
+						result::applied,
+				"Strathor context encounter failed");
+			journal = journey.render_journal(7, 42, 308, 10, 1, 103, false, false);
+			require(journal.find("] " + king.title + "\r\n") == std::string::npos &&
+					journey.progress_for_zone(7, 42, 308).completed == 0,
+				"Strathor song/service context unlocked king or forged completion");
+			require(journey.meet_npc(7, 42, 30871, 30926, 104) == result::applied,
+				"Strathor king encounter failed");
+			const auto status = [&](size_t row, const char *state)
+			{
+				const auto start = journal.find("] " + king.title + "\r\n");
+				require(start != std::string::npos,
+					"Strathor visible king card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     king.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			for (int v : { 30825, 30830, 30841, 30845, 30846, 30850, 30851, 30854 })
+				supplies.carried[v] = 1;
+			supplies.equipped[16] = 40073;
+			journal = journey.render_journal(7, 42, 308, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Pending"),
+				"Strathor worn sword/controls/containers/keys/reward prepared exact proof");
+			supplies = {};
+			supplies.carried[40073] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 308, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Pending") &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 308).completed == 0,
+				"Strathor supplied proof required personal source/kill or projection forged completion");
+			record(journey, king.contracts.front(), "stormht-supplied-sword", 308,
+			       30926);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 308, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 308).completed == 1 &&
+					journey.progress_for_zone(7, 42, 308).total == 1,
+				"Strathor spent material erased receipt or created extra units");
+			require(journey.progress_for_zone(8, 43, 308).completed == 0,
+				"Strathor public thanks credited an unrelated listener");
+			auto replay =
+				completion(king.contracts.front(), "stormht-supplied-sword", 120);
+			replay.transaction.zone_number = 308;
+			replay.transaction.room_vnum = 30926;
+			require(journey.record_completion(replay) == result::already_applied &&
+					journey.progress_for_zone(7, 42, 308).completed == 1,
+				"Strathor replay duplicated proof");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 308) &&
+					recovered.progress_for_zone(7, 42, 308).completed == 1,
+				"Strathor cold recovery lost accepted history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 308, 30800, 100, "arrival") ==
+					result::applied,
+				"Strathor raw discovery failed");
+			record(historical, king.contracts.front(), "stormht-raw-sword", 308, 30926);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 308).completed == 1,
+				"Strathor raw-to-authored history lost receipt");
 		}
 
 		{
