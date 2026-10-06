@@ -5,10 +5,11 @@
 [The owning source handoff](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
 records the reviewed real constructor capsule/classless fix, automatic running-
 executable witness, combined final GIVE/program CAS and exact acknowledged reward
-reader. All5,777 private candidate inputs match manifest767632, including1,560
+reader. All5,779 private candidate inputs match manifestd57b06, including1,560
 published scripts/tests from8df2b58f4; original drivers and unrelated WIP are
 preserved. Source review, corrected XP mask consistency, formatting and inverse
-checks pass. Durable recipe/producer connection, arbitrary NPC binding seal,
+checks pass. Fixed372-byte constructor codec and atomic paired journal source are also composed.
+Explicit command/producer connection, arbitrary NPC binding seal,
 latest-child and paired retirement integration, remaining routes and major native
 qualification are ongoing. No maintained native installation or full gate passes.
 
