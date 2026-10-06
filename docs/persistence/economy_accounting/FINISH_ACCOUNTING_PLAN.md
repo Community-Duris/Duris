@@ -1,5 +1,14 @@
 # Finish accounting implementation plan
 
+## Published source pin representation repaired — 2026-10-06
+
+[Primary provenance repair](PUBLISHED_SOURCE_PIN_PRIMARY_REPAIR_2026-10-06.md)
+changes only five raw Git-LF pins and their matrix copies; all other148pins and
+route/status metadata remain. Three precise LF attributes retain Windows
+checkout reproducibility. Original58 methods pass on both authenticated
+published bytes and maintained source;14-golden validator and matrix pass.
+Coverage remains incomplete and release BLOCKED.
+
 ## Read-only census capability fence qualified — 2026-10-06
 
 [Exact fence integration](PLAN5_CENSUS_CAPABILITY_FENCE_PRIMARY_2026-10-06.md)

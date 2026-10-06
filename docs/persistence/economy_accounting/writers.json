@@ -65683,7 +65683,7 @@
       "src/item/item_transfer_command.h": "c6805ab7681946d3de48fd3dd092edee6c9f92153353874ac324ca060b038a22",
       "src/item/item_transfer_repository.c": "738bc71bb6418badf09a234adb1e08998b37461875c9c0cf25b49f1efa7eb5f6",
       "src/item/item_transfer_repository.h": "7f3e29d005d6268a5183345595c0060ac281e6b48d89bf9f6d70026d464fc8bb",
-      "src/mob/mobconv.c": "19c00d1c4bce0e2cd72cb5d0e9834896213a697ce5958f3b416edc3d2a851947",
+      "src/mob/mobconv.c": "b79cc8825a40b6c6924c835181ab9bfb1ec96ce051da30ffd9f4922878e3312a",
       "src/mob/studioproclib.c": "299f91e89032d32ae01c492550010bf28d7f84077f4f62e6a5cf417f75bf1d4b",
       "src/mob/studioproclib.h": "515a80db161b60b3d22bb3dc89d66aaa3349709ad4247c825a68639a4f4bb184",
       "src/net/comm.c": "2c884cfa5ec1644a33f40252af816cd6eccd10dff8dccbd32715eaedc4814303",
@@ -65719,8 +65719,8 @@
       "src/sql/sql_player.c": "6b54581d8b92acc5430f9413e42cc1d27b8d6137ec9044e273396abe9d2bc756",
       "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
       "src/world/db.h": "dfa14023b207673de9c7583dc9411bfdfef569941f874d7aa3775303c1e650a2",
-      "src/world/handler.c": "cf91bd280c0711069f8eb6117addd66ff5aacda9afdeaf0fda97b21d1d1c73b4",
-      "src/world/handler.h": "aac9a9f14b04ad0b449f00a36cb3e24e75cb1ee61abd4bd392db642e98850504",
+      "src/world/handler.c": "3f046194166dbbfd949f9ec0199e72f6155283edbdac69a7fd186da21333ce07",
+      "src/world/handler.h": "69cf721db5b448bd67b76074a5af2cb338d46ef3425dc8cae7bb18bc7803f124",
       "src/world/native_mobile_birth_artifact.c": "b7c368d336c0bdd75e9bb2a6a1a8e4be0ed19f103e9ae42beba357eeb6a4407f",
       "src/world/native_mobile_birth_artifact.h": "5dd9f4ccc3057dc5228f1b17330e2b696b6a6ec9fe19ad48650c28cf5e64bfd1",
       "src/world/native_mobile_birth_procedure.c": "24935e912a9d1aea36894e03d532e1eeb4f6515b64b946de7207468e3974f659",
@@ -65744,9 +65744,9 @@
       "src/world/world_activity.h": "2b581aaee6228e30b2e66a4ab3bb9e78878b3112bfbc38fa95aca4f1f2ab5942",
       "tests/async/test_economy_writer_coverage_contract.py": "aab17ec89061094dbc05ef2267184f4cbb92e613af413cb0228bb1cc3f7d9fbb",
       "src/persistence/economic_sql_accounting_lifecycle_transaction.c": "36a5d707b4174b25f4757d01eac3ce4303a9b63e0faac2d1ac47c993c5881f2c",
-      "src/persistence/economic_sql_accounting_lifecycle_transaction.h": "9db963588ebb5af1051e5381e443776bc9e96fd49eedcbb15ad0c8a0813b374f",
+      "src/persistence/economic_sql_accounting_lifecycle_transaction.h": "072cab4bb68499082691321def13aed276529a78dba2a5d13312aed0afffa5b2",
       "tests/async/economic_sql_lifecycle_owner_mysql_harness.cpp": "f3e8c47f9306770348969aa446661096b652b34bf21c4cf557d3b28c8ed61194",
-      "tests/async/test_economic_sql_lifecycle_activation_contract.py": "1be30c4c5051ec295cf8b8d9cc0326646ed4b6792e8b9cd3b6405a6895c275fd"
+      "tests/async/test_economic_sql_lifecycle_activation_contract.py": "10da6a9517092507a6ed6255536fe8b6a09c85383efffe75edb0c1d22d0209c4"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
