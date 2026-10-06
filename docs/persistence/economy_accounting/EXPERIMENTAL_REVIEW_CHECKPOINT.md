@@ -1,5 +1,14 @@
 # Experimental accounting review checkpoint
 
+## Real Kord crash fixture wired — 2026-10-06
+
+[Shared driver wiring](QUEST_CRASH_REAL_KORD_FIXTURE_2026-10-06.md) exposes actual
+QP06 prototype/Q terms, aliases, C3000 and reward29237 with exact three-root checks.
+Original calibration and fault limits remain. Optional later ordinary reward drop
+must retain the UID across the second cold boot. Both actual fixture preparations
+and AST/whitespace checks pass; no gameplay/drop/cold journey is claimed. Active
+native child/publication and move-before-lost-ACK qualification remain pending.
+
 ## Quest prep refreshed for installed native owners — 2026-10-06
 
 [Primary refresh](QUEST_PREP_NATIVE_REFRESH_PRIMARY_INTEGRATION_2026-10-06.md)
