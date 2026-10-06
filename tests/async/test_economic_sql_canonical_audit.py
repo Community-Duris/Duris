@@ -71,11 +71,13 @@ class RestoreProjectionFixture:
             self.rows['witness'] = [[meta[0].hex(), meta[1].hex(), value['book_revision'], value['witness_version'],
                 value['holding_count'], value['item_count'], value['witness_digest'].hex(), len(value['canonical_witness']),
                 value['canonical_witness'][80:120].hex(), value['inbox_revision'], value['inbox_type'], value['inbox_schema'],
-                value['inbox_payload'], value['inbox_result_payload'].hex(), value['inbox_keys_hash'].hex()]]
+                value['inbox_payload'], value['inbox_result_payload'].hex(), value['inbox_keys_hash'].hex(),
+                value['command_accepted_at_usec'], value['inbox_command_hash'].hex()]]
         if rejected:
             self.rows['metadata'][0][14] = self.rows['metadata'][0][16] = None
             self.rows['metadata'][0][17:25] = [2, 5, 0, 0, 0, 0, 0, 0]
         self.queries = []
+        self.admission_column_count = '1'
 
     def sql(self, query):
         if not query.startswith('SELECT '):
@@ -102,6 +104,8 @@ class RestoreProjectionFixture:
             return self.baseline['canonical_witness'].hex()
         if 'information_schema.tables' in query:
             return '3'
+        if 'information_schema.columns' in query:
+            return self.admission_column_count
         return '0'
 
 
@@ -127,6 +131,28 @@ class RestoreProjectionTests(unittest.TestCase):
                 evidence.require_integrity(fixture)
                 self.assertEqual(fixture.rows, before)
                 self.assertTrue(all(query.startswith('SELECT ') for query in fixture.queries))
+
+    def test_original_admission_time_and_command_hash_refuse_restore(self):
+        for index, value in [(15, value) for value in (0, -1, 2**64, True, 123456.0, "123456", 123457)] + [
+            (16, value) for value in (None, "00" * 32, "11" * 32, "11" * 31, "11" * 33)]:
+            with self.subTest(index=index, value=value):
+                fixture = RestoreProjectionFixture(baseline=True)
+                fixture.rows['witness'][0][index] = value
+                self.refuse(fixture, 'baseline_witness')
+
+    def test_historical_null_admission_and_column_metadata(self):
+        for column_count in ('0', '1'):
+            fixture = RestoreProjectionFixture(baseline=True)
+            fixture.admission_column_count = column_count
+            fixture.rows['witness'][0][15] = None
+            evidence.require_integrity(fixture)
+            self.assertIsNone(fixture.rows['witness'][0][15])
+            selected = next(query for query in fixture.queries if 'FROM economic_baseline_witness w JOIN' in query)
+            self.assertIn('w.command_accepted_at_usec' if column_count == '1' else ',NULL,', selected)
+        for column_count in ('2', '-1', '1.0', '', None):
+            fixture = RestoreProjectionFixture(baseline=True)
+            fixture.admission_column_count = column_count
+            self.refuse(fixture, 'baseline_witness')
 
     def test_all_normalized_projection_families_require_exact_integers(self):
         for name, code in (('accounts', 'canonical_account'), ('postings', 'canonical_posting'),
