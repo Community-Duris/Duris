@@ -80,4 +80,21 @@ bool item_transfer_repository_execute_native_mobile(
 	unsigned int *result_code, bool *mutation_applied, item_transfer_custody_delta *,
 	quest_mobile_native_image *after);
 
+// Read-only complete globally sorted publication cut. Caller already owns the
+// original native lifetime, final-giver save fence and sorted revision locks.
+// Explicit immutable UIDs ignore current owner/state/coin policy; active foreign
+// root/parent claims and malformed contexts join the same bounded cut. No write,
+// owner adoption, inbox lock, transaction or ACK authority; failure preserves output.
+struct item_native_quest_publication_custody
+{
+	economic_item_snapshot snapshot;
+	int32_t vnum = 0;
+};
+bool item_transfer_repository_lock_native_publication_custody(
+	MYSQL *, const item_transfer_payload &,
+	std::span<const player_item_snapshot> original_native_before,
+	std::span<const player_item_snapshot> original_player_before,
+	std::span<const player_item_snapshot> original_player_after,
+	std::vector<item_native_quest_publication_custody> *) noexcept;
+
 #endif

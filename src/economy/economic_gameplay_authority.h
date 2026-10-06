@@ -7,6 +7,12 @@
 #include <string>
 #include <string_view>
 
+class quest_native_consumption_capture;
+
+struct quest_mobile_native_image;
+struct native_mobile_birth_item_recipe;
+struct quest_mobile_native_constructor_recipe;
+
 struct economic_gameplay_wallet_mapping
 {
 	uint32_t pid = 0;
@@ -50,6 +56,12 @@ class economic_gameplay_authority
 	static economic_accounting_error
 	prepare_item_transfer(critical_command *command, uint32_t actor_pid,
 			      economic_source_kind lifecycle_source = {});
+	// Explicit v12 preparation only; generic/native11 predicates stay closed.
+	// Consumption requires the original quest owner's sealed ordered decision.
+	// Retained replay verifies original intent without selecting today's epoch.
+	static economic_accounting_error
+	prepare_native_item_transfer(critical_command *command, uint32_t final_giver_pid,
+				     const quest_native_consumption_capture *original);
 	static bool active();
 	// Existing native SQL scope only; excludes wallet-root qualification and flat.
 	// This observes admission state and does not grant native mutation authority.
@@ -59,7 +71,23 @@ class economic_gameplay_authority
 					    economic_shop_checkpoint_projection *output) noexcept;
 
     private:
+	// Only the actual original birth owner may freeze fresh native birth facts.
+	// The installed regular SQL projection supplies lineage/epoch, not provenance.
+	// This does not reserve identities, admit a command or authorize publication.
+	friend class quest_mobile_native_birth_owner;
+	static economic_accounting_error
+	prepare_native_mobile_birth(const quest_mobile_native_image &, critical_source_site,
+				    uint64_t accepted_at_usec, critical_command *output) noexcept;
+	static economic_accounting_error prepare_native_mobile_birth(
+		const quest_mobile_native_image &, std::span<const native_mobile_birth_item_recipe>,
+		critical_source_site, uint64_t accepted_at_usec, critical_command *output) noexcept;
+	static economic_accounting_error prepare_native_mobile_birth(
+		const quest_mobile_native_image &, std::span<const native_mobile_birth_item_recipe>,
+		const quest_mobile_native_constructor_recipe &, critical_source_site,
+		uint64_t accepted_at_usec, critical_command *output) noexcept;
+
 	friend class economic_sql_accounting_lifecycle_transaction;
+
 	friend class flatfile_accounting_lifecycle_transaction;
 	friend bool sql_economic_runtime_start() noexcept;
 	friend void sql_economic_runtime_shutdown() noexcept;

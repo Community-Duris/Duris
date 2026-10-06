@@ -1,3 +1,6 @@
+#include "core/random.h"
+#include <algorithm>
+#include <limits>
 #include <unistd.h>
 #include <stdint.h>
 #ifdef _WIN32
@@ -6,6 +9,34 @@
 #endif
 
 static uint64_t rng_state[4];
+
+namespace
+{
+struct native_constructor_random_scope
+{
+	std::array<uint64_t, 4> state{};
+	uint64_t draws = 0, expected_draws = 0;
+	bool replay = false, invalid = false;
+};
+thread_local native_constructor_random_scope *native_constructor_random = nullptr;
+
+class native_constructor_random_lease final
+{
+    public:
+	explicit native_constructor_random_lease(native_constructor_random_scope &scope) noexcept
+	{
+		native_constructor_random = &scope;
+	}
+	~native_constructor_random_lease() { native_constructor_random = nullptr; }
+	native_constructor_random_lease(const native_constructor_random_lease &) = delete;
+	native_constructor_random_lease &
+	operator=(const native_constructor_random_lease &) = delete;
+};
+bool nonzero_random_state(const std::array<uint64_t, 4> &state) noexcept
+{
+	return state[0] || state[1] || state[2] || state[3];
+}
+} // namespace
 
 uint64_t hash64(uint64_t x)
 {
@@ -35,23 +66,42 @@ static inline uint64_t rotl(const uint64_t x, int k)
 
 static uint64_t rnd64(void)
 {
-	const uint64_t result = rotl(rng_state[1] * 5, 7) * 9;
-	const uint64_t t = rng_state[1] << 17;
+	auto *scope = native_constructor_random;
+	uint64_t *state = scope && scope->replay ? scope->state.data() : rng_state;
+	if (scope)
+	{
+		if (scope->draws == std::numeric_limits<uint64_t>::max())
+			scope->invalid = true;
+		else
+			++scope->draws;
+		if (scope->replay && scope->draws > scope->expected_draws)
+			scope->invalid = true;
+	}
+	const uint64_t result = rotl(state[1] * 5, 7) * 9;
+	const uint64_t t = state[1] << 17;
 
-	rng_state[2] ^= rng_state[0];
-	rng_state[3] ^= rng_state[1];
-	rng_state[1] ^= rng_state[2];
-	rng_state[0] ^= rng_state[3];
+	state[2] ^= state[0];
+	state[3] ^= state[1];
+	state[1] ^= state[2];
+	state[0] ^= state[3];
 
-	rng_state[2] ^= t;
+	state[2] ^= t;
 
-	rng_state[3] = rotl(rng_state[3], 45);
+	state[3] = rotl(state[3], 45);
 
 	return result;
 }
 
 void randomize(uint64_t seed)
 {
+	if (native_constructor_random)
+	{
+		// A constructor recipe cannot reproduce reseeding. In replay, prevent
+		// that unsupported path from touching the process generator at all.
+		native_constructor_random->invalid = true;
+		if (native_constructor_random->replay)
+			return;
+	}
 	if (!seed)
 	{
 #if defined(_WIN32) && _WIN32
@@ -85,4 +135,54 @@ int number(int from, int to)
 		return from;
 	else
 		return from - rnd64() % (from - to + 1);
+}
+
+bool native_mobile_birth_random_owner::capture(bool (*construct)(void *), void *context,
+					       native_mobile_birth_random_recipe *output) noexcept
+{
+	if (!construct || !output || native_constructor_random)
+		return false;
+	native_mobile_birth_random_recipe recipe;
+	std::copy_n(rng_state, 4, recipe.initial.begin());
+	if (!nonzero_random_state(recipe.initial))
+		return false;
+	native_constructor_random_scope scope;
+	native_constructor_random_lease lease(scope);
+	try
+	{
+		if (!construct(context) || scope.invalid)
+			return false;
+		std::copy_n(rng_state, 4, recipe.terminal.begin());
+		if (!nonzero_random_state(recipe.terminal))
+			return false;
+		recipe.draws = scope.draws;
+		*output = recipe;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool native_mobile_birth_random_owner::replay(const native_mobile_birth_random_recipe &recipe,
+					      bool (*construct)(void *), void *context) noexcept
+{
+	if (!construct || native_constructor_random || !nonzero_random_state(recipe.initial) ||
+	    !nonzero_random_state(recipe.terminal))
+		return false;
+	native_constructor_random_scope scope;
+	scope.state = recipe.initial;
+	scope.expected_draws = recipe.draws;
+	scope.replay = true;
+	native_constructor_random_lease lease(scope);
+	try
+	{
+		return construct(context) && !scope.invalid && scope.draws == recipe.draws &&
+		       scope.state == recipe.terminal;
+	}
+	catch (...)
+	{
+		return false;
+	}
 }

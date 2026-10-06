@@ -74,4 +74,15 @@ bool critical_command_repository_begin_inbox_in_transaction(MYSQL *connection,
 bool critical_command_repository_finish_item_transfer_in_transaction(
 	MYSQL *connection, const critical_command &command, const item_transfer_result &result);
 
+// Read-only exact original native quest v12 inbox/accounting/source/reward/
+// outbox/result proof. Caller owns an original reconnect-disabled IN_TRANS
+// session and confirms cleanup. Physical publication additionally requires its
+// native-before-save/custody locks and current world proof. Terminal cleanup
+// instead requires the exact actual reward ACK and all original reward receipts.
+// Never begins, commits, rolls back, replaces a connection or invents world evidence.
+// Success/rejection is historical receipt proof only, not publication/ACK.
+critical_apply_result
+critical_command_repository_verify_native_quest_in_transaction(MYSQL *,
+							       const critical_command &) noexcept;
+
 #endif

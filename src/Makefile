@@ -444,6 +444,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/economic_sql_source_normalize.o \
 				 persistence/economic_sql_bank_transaction.o \
 				 persistence/economic_sql_item_transfer_transaction.o \
+				 persistence/economic_sql_native_mobile_birth_transaction.o \
 				 persistence/sql_room_item_payload.o \
 				 persistence/critical_command_repository.o \
 				 persistence/quest_reward_obligation_repository.o \
@@ -475,6 +476,9 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/coin_transfer_command.o \
 				 economy/coin_transfer_accounting.o \
 				 economy/item_transfer_accounting.o \
+				 economy/native_mobile_birth_command.o \
+				 economy/native_mobile_birth_accounting.o \
+				 economy/native_mobile_birth_result.o \
 				 economy/economic_accounting_types.o \
 				 economy/economic_accounting_plan.o \
 				 economy/economic_source_event.o \
@@ -578,6 +582,14 @@ OBJS =  $(SHIP_OBJS) \
 				 player/output_preferences.o player/output_message.o player/player_snapshot_capture.o \
 				 player/player_snapshot_codec.o \
 				 world/quest_mobile_native.o \
+				 world/quest_mobile_native_birth.o \
+				 world/native_mobile_birth_artifact.o \
+				 world/native_mobile_birth_procedure.o \
+				 world/native_mobile_birth_reset_tail.o \
+				 economy/native_mobile_birth_constructor_recipe.o \
+				 economy/native_mobile_birth_recipe.o \
+				 economy/native_mobile_birth_recovery.o \
+	world/native_quest_recovery_context.o \
 				 world/quest_mobile_native_reference.o \
 				 world/quest_mobile_native_binding.o \
 				 persistence/quest_mobile_native_sql.o \

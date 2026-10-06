@@ -445,6 +445,21 @@ bool proclib_recovery_chain_stage::prepare(std::span<const request> requests,
 		return false;
 	}
 }
+size_t proclib_recovery_chain_stage::retained_bytes() const noexcept
+{
+	size_t bytes = sizeof(*this);
+	if (requests_.capacity() > (SIZE_MAX - bytes) / sizeof(request))
+		return 0;
+	bytes += requests_.capacity() * sizeof(request);
+	if (allocation_)
+	{
+		if (next_cap_ < 0 ||
+		    static_cast<size_t>(next_cap_) > (SIZE_MAX - bytes) / sizeof(proclib_chain_ent))
+			return 0;
+		bytes += static_cast<size_t>(next_cap_) * sizeof(proclib_chain_ent);
+	}
+	return bytes;
+}
 bool proclib_recovery_chain_stage::valid() const noexcept
 {
 	if (!prepared_ || !nevent_is_game_thread() || expected_ != proclib_chain ||

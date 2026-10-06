@@ -69,4 +69,11 @@ extern unsigned long enhance_allow_mask3;
 extern unsigned long enhance_allow_mask4;
 extern unsigned long enhance_allow_mask5;
 
+class quest_mobile_native_birth_owner;
+class quest_mobile_native_reset_material_owner final
+{
+	friend class quest_mobile_native_birth_owner;
+	static bool select(P_char, P_obj, int *) noexcept;
+};
+
 #endif /* _ENHANCE_H_ */

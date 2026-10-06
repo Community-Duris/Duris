@@ -20,6 +20,7 @@
 
 #include "core/structs.h"
 #include <cstddef>
+#include <cstdint>
 #include <span>
 #include <vector>
 
@@ -44,6 +45,20 @@ void proclib_chain_install(int rnum, int (*prev)(P_obj, P_char, int, char *));
 // special callback, description/flag mutation, binding or periodic scheduling.
 bool proclib_saved_binding_eligible(P_obj, bool *eligible) noexcept;
 
+class quest_mobile_native_item_stage;
+enum class native_mobile_birth_library : uint8_t;
+// Original parser/descriptor preparation only; native probes, events and
+// bindings remain individually owned publication steps.
+class quest_mobile_native_original_proclib
+{
+    private:
+	friend class quest_mobile_native_item_stage;
+	static int prepare(P_obj, char *name, char *arguments, size_t *library_index);
+	static bool probe(P_obj, size_t library_index, bool *periodic) noexcept;
+	static bool retained_library(size_t, native_mobile_birth_library *) noexcept;
+	static bool retained_index(native_mobile_birth_library, size_t *) noexcept;
+};
+
 class shop_trade_original_procedure_binding_stage;
 // Private allocation/chain bookkeeping capability, never SQL/native authority.
 // Only the original cold binding owner may prepare/validate/commit its batch.
@@ -59,6 +74,7 @@ class proclib_recovery_chain_stage
 
     private:
 	friend class shop_trade_original_procedure_binding_stage;
+	friend class quest_mobile_native_item_stage;
 	struct request
 	{
 		int rnum;
@@ -66,6 +82,7 @@ class proclib_recovery_chain_stage
 	};
 	static bool prepare(std::span<const request>, proclib_recovery_chain_stage &) noexcept;
 	static bool predecessor_matches(int, obj_proc_type) noexcept;
+	size_t retained_bytes() const noexcept;
 	bool valid() const noexcept;
 	void commit_unchecked() noexcept;
 	void reset() noexcept;

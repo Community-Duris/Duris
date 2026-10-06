@@ -608,6 +608,10 @@ int skill_beacon(P_obj, P_char, int, char *);
 int epic_stone(P_obj, P_char, int, char *);
 int period_book(P_obj, P_char, int, char *);
 int spell_pool(P_obj, P_char, int, char *);
+// Shared actual constructor-local mutations; no world/event enrollment.
+int native_birth_spell_pool_initialize(P_obj, int selected_spell, int original_time);
+int native_birth_super_cannon_initialize(P_obj);
+int native_birth_vecna_deathportal_initialize(P_obj);
 int mace_of_sea(P_obj, P_char, int, char *);
 int platemail_of_defense(P_obj, P_char, int, char *);
 int serpent_blade(P_obj, P_char, int, char *);
