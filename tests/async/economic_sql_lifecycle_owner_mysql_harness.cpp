@@ -42,7 +42,8 @@ critical_apply_result no_gameplay_apply(const critical_command &, void *)
 	return { critical_apply_outcome::retryable_failure, 0, EIO };
 }
 
-unsigned int verify_synthetic_routes(MYSQL *, const economic_sql_activation_evidence &evidence,
+unsigned int verify_synthetic_routes(MYSQL *, const economic_sql_lifecycle_request &,
+				     const economic_sql_activation_evidence &evidence,
 				     const economic_sql_source_snapshot &snapshot) noexcept
 {
 	if (evidence.route_count != 3 || evidence.verified_route_count != 3 ||

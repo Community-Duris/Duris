@@ -1,5 +1,16 @@
 # Double-entry economy: remaining requirements
 
+## Explicit activation verifier request context — 2026-10-06
+
+[Shared contract and Plan 5 handoff](ACTIVATION_VERIFIER_REQUEST_CONTEXT_2026-10-06.md)
+pass the original request synchronously to the borrowed-session verifier.
+Both production owner-mode objects, the original harness with exact flags,
+three existing source cases and current matrix/writer contracts pass at their
+stated scopes. Guards, decision/retry, capture and transaction order remain.
+Complete opening capture, stopped-maintenance orchestration and the genuine
+independent verifier remain full R6 work; no production authority is activated.
+This closes the missing request-context interface, not full release acceptance.
+
 ## Actual inactive alchemist reset/literal fixture retained — 2026-10-06
 
 [Scoped native evidence](ALCHEMIST_ACTUAL_RESET_LITERAL_QUALIFICATION_2026-10-06.md)
