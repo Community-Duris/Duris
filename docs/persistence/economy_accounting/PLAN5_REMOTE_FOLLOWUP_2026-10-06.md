@@ -361,3 +361,44 @@ repair; migration tree remains `1d041c8bc27cfc2b2bfdc8095b6c1348ac3a15c5`.
 That observation does not replace these new slices' exact tested source.
 The three new fixes and their reports are published here for the primary's
 next regular integration and combined candidate qualification.
+
+## Nonempty managed claim restore and exact primary import
+
+The same remote `codex/accounting-plan5` now follows up with the normal primary
+import `4900b21effb754d6c50f5f64b0a63964626d4496`, parents
+`e6aadf6ec58aef431f9d2b04bfc6b3c0589215ed` and
+`9817f58b57a4a4179c4db5506fce3ccfe166c12b`. Incoming primary paths match exactly;
+the two newer owned guide/driver conflicts preserve the Plan5 parent. No shared
+contract or coordinator change is independently authored.
+
+The separate solved coverage issue is
+`9683bb0d28744167357b7f179269bdb31d981251`, based on that import. The
+[nonempty claim managed restore report](PLAN5_NONEMPTY_CLAIM_MANAGED_RESTORE_QUALIFICATION_2026-10-06.md)
+records the two original empty-book failures, both fresh738-object maintained
+builds, both full managed SQL methods and the full native coin/restore method.
+Managed restoration retains exact native claim capsules, modeled partial
+allocations, six-copper residual and SELECT-only audit permissions before/after
+actual isolated boot. Each engine genuinely refuses three corrupted imports
+before boot; explicit progress assertions and retaining observer counters exclude
+early subprocess failures from qualification. All fourteen successful claim
+cuts match their respective source books, with unchanged generations.
+
+Final managed archive SHA256 is
+`2412cee47354e478ee67e6940313b35aa304ae679b777c1094843aa34954b1ef`.
+The full native method's earlier archive differs only in the managed test's
+cleanup/progress assertions; its native helper/method and production/schema
+inputs stay exact. Protected seal
+`D:/CodexEvidence/accounting-plan5/bin/claim-managed-final-seal-01-20261006/evidence.json`
+has SHA256
+`cbe094e981501099671f7f8ec7dffcb0d62e624cb9c184b0e286399129392d61`.
+It binds6350 committed inputs and3203 artifact hashes, including every failed
+attempt. The publication receipt records the final remote documentation tip
+separately from the solved-issue source. All earlier branch tips remain ancestors
+here, and all subsequent follow-ups stay here.
+
+There is no new shared interface request. The existing original selector/PID
+handoff, complete R6 capture, genuine producer/recovery, active erasure, full
+managed flatfile/retention and release-host mixed-workload gates remain open.
+No accounting activation or complete release is claimed. Primary's locally
+maintained notebook remains nonblocking; the report/seal/publication receipt is
+the curator packet. This branch publication is not a separate cross-chat message.
