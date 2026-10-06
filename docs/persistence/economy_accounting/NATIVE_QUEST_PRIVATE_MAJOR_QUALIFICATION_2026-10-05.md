@@ -1,5 +1,50 @@
 # Native quest private major source and component qualification
 
+## Retained original birth refusal source — 2026-10-06
+
+Original coordinator refusal delivery retained player-guarded owners but erased
+birth21, which correctly has no player-save token. That erased the genuine proof
+before the original detached constructor owner could safely clean up.
+
+Private two-file candidate03172 conservatively retains the original birth
+refusal in both existing delivery paths. Its friend-only
+`critical_native_mobile_birth_publication_owner::cancel_refusal` requires the
+exact immutable command, complete delivered `never_admitted` receipt and original
+coordinator generation. It pins the operation across native cleanup outside the
+coordinator mutex; uncertain admission and executed receipts cannot cancel.
+No execution ACK, journal checkpoint or completed-cache result is fabricated.
+
+Independent source review first found an actual post-cleanup allocation defect:
+the candidate encoded the command again after cleanup, so allocation failure
+could retain an already delivered entry after freeing its native owner. The
+corrected source compares full canonical bytes before cleanup, then rechecks
+the exact operation pointer/generation/pin and full receipt allocation-free.
+The architect accepts this bounded source slice. The actual producer must retain
+cleanup-returned state if a later owner proof refuses, avoiding duplicate cleanup.
+
+- Parent complete source manifest:
+  `616d9beb6a74b6b9a7863cacb66208fd4ca405d8c23a25c525082273e30c599c`.
+- Two-file manifest:
+  `03172ed7f643af7f831abfec361652e03494d675289b7bef123484be245ad268`.
+- Frozen receipt:
+  `7f6c0c6d101a3afc40aa8a3347def3dd7ababd0a6c67344adcf3d07186de32f7`.
+- Complete composed successor manifest:
+  `1c6c6fc1e4dd334b85c03a7cd6609d01c5d05a375f02adb52a9a2ca821744ab5`.
+
+Private packets are retained under `tmp/plan3-native-mobile-birth-refusal-owner-20261005`
+and `tmp/plan3-native-mobile-birth-refusal-major-source-20261006`. Forward/inverse
+byte edits, original preimages, all5767 composed inputs and changed-line clang18
+fixed points verify. Original driver is unchanged. The actual reset owner has
+the exact dependency; source and native integration/qualification remain separate.
+No maintained native source, native test/build, complete cold recovery or Plan
+completion is claimed by this source handoff.
+
+The next original cold recipe preserves successful library order and references
+the actual parsed descriptor rows already carried verbatim by player-item literals;
+it does not duplicate parameters or reparse prototype arguments. Immutable recipe
+and mutable publication progress remain separate. Its private codec/wrapper and
+actual factory integration are unfinished and not qualified by earlier builds.
+
 ## Shared birth publication and retained budget handoff — 2026-10-05
 
 Primary implemented the actual original SQL birth publication verifier and a
