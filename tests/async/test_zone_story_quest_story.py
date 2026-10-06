@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 166 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 167 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,13 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+malch=next(m for m in catalog['story_mappings'] if m['source_area']=='malch')
+assert malch['coverage']=='complete' and malch['schema_version']==3 and malch['revision']==1 and not malch['exclusions']
+assert len(malch['stories'])==3 and len(malch['contacts'])==12 and sum(len(c['topics']) for c in malch['contacts'])==7
+assert [len(s['steps']) for s in malch['stories']]==[2,2,2] and [s['steps'][0]['count'] for s in malch['stories']]==[3,1,3]
+assert sum(t.get('optional',False) for s in malch['stories'] for t in s['steps'])==3
+assert len({(s['contracts'][0]['giver_vnum'],s['contracts'][0]['completion_key']) for s in malch['stories']})==3 and report['eligible_by_zone']['236']==3
 
 kastle=next(m for m in catalog['story_mappings'] if m['source_area']=='kastle')
 assert kastle['coverage']=='complete' and kastle['schema_version']==3 and kastle['revision']==1 and not kastle['exclusions']

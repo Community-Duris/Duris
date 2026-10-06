@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 166 &&
+		require(catalog.story_mappings.size() == 167 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,170 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "malch"; });
+			require(mapping.stories.size() == 3 && mapping.contacts.size() == 12 &&
+					mapping.revision == 1,
+				"Goblin City journal scope failed");
+			const auto &circles = story_for("malch", "shadowclave-circles");
+			const auto &hat = story_for("malch", "pirate-hat");
+			const auto &charms = story_for("malch", "storm-altar-charms");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 236)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 3 && dailies == 3,
+				"Goblin City departing item returns lost native daily eligibility");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 236, 23600, 100, "arrival") ==
+					result::applied,
+				"Goblin City discovery failed");
+			for (const auto &[v, room] :
+			     { std::pair{ 23622, 23756 }, std::pair{ 23625, 23759 },
+			       std::pair{ 23601, 23687 }, std::pair{ 23608, 23707 },
+			       std::pair{ 23613, 23626 }, std::pair{ 23617, 23630 } })
+				require(journey.meet_npc(7, 42, v, room, 101) == result::applied,
+					"Goblin City contextual encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 236, 10, 1, 102, false, false);
+			for (const auto &s : mapping.stories)
+				require(journal.find("] " + s.title + "\r\n") == std::string::npos,
+					"Goblin City source, ambient or service encounter exposed accepting giver card");
+			require(journey.meet_npc(7, 42, 23623, 23759, 103) == result::applied,
+				"Goblin City Snarg encounter failed");
+			journal = journey.render_journal(7, 42, 236, 10, 1, 104, false, false);
+			for (const auto &s : mapping.stories)
+				require((journal.find("] " + s.title + "\r\n") !=
+					 std::string::npos) == (s.id == circles.id),
+					"Goblin City Snarg exposed another return");
+			require(journey.meet_npc(7, 42, 23624, 23759, 105) == result::applied &&
+					journey.meet_npc(7, 42, 23626, 23615, 105) ==
+						result::applied,
+				"Goblin City distinct accepting encounters failed");
+			const auto section = [&](const auto &s)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos, "Goblin City card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at,
+						      end == std::string::npos ? end : end - at);
+			};
+			const auto status = [&](const auto &s, size_t row, const char *state)
+			{
+				return section(s).find(std::string("[") + state + "] " +
+						       s.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			const auto before = journey.serialize_state();
+			for (const auto &s : mapping.stories)
+			{
+				supplies = {};
+				supplies.carried[s.steps[0].item_vnums.front()] = s.steps[0].count;
+				journal = journey.render_journal(7, 42, 236, 10, 1, 106, false,
+								 false, &supplies);
+				require(status(s, 0, "Ready now") && status(s, 1, "Pending"),
+					"Goblin City exact supplied proof fabricated return history");
+				supplies.carried.clear();
+				supplies.equipped[18] = s.steps[0].item_vnums.front();
+				journal = journey.render_journal(7, 42, 236, 10, 1, 107, false,
+								 false, &supplies);
+				require(status(s, 0, "Missing now"),
+					"Goblin City held proof substituted loose offering");
+			}
+			supplies = {};
+			supplies.carried[93901] = 2;
+			supplies.carried[43131] = 2;
+			journal = journey.render_journal(7, 42, 236, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(circles, 0, "Missing now") &&
+					status(charms, 0, "Missing now"),
+				"Goblin City two proofs prepared three-instance offerings");
+			supplies = {};
+			for (int v :
+			     { 23621, 40474, 23608, 23602, 23604, 23616, 35228, 35239, 53610 })
+				supplies.carried[v] = 2;
+			journal = journey.render_journal(7, 42, 236, 10, 1, 109, false, false,
+							 &supplies);
+			for (const auto &s : mapping.stories)
+				require(status(s, 0, "Missing now") && status(s, 1, "Pending"),
+					"Goblin City wrong eyepatch, treasure or outside rewards forged proof");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 236).completed == 0,
+				"Goblin City preparation fabricated personal search, source, combat or accepted history");
+			supplies = {};
+			supplies.carried[93901] = 3;
+			supplies.carried[23622] = 1;
+			supplies.carried[43131] = 3;
+			journal = journey.render_journal(7, 42, 236, 10, 1, 110, false, false,
+							 &supplies);
+			require(section(circles).find("66666 experience and 66666 copper") !=
+						std::string::npos &&
+					section(hat).find("25000 experience and 25000 copper") !=
+						std::string::npos &&
+					section(hat).find("no-rent flag") != std::string::npos &&
+					section(charms).find("65000 experience and 40000 copper") !=
+						std::string::npos &&
+					section(charms).find("start hidden") != std::string::npos,
+				"Goblin City Ready now hid reward or hidden/lifecycle guidance");
+			require(journal.find("Ambient gambling chatter") != std::string::npos &&
+					journal.find(
+						"teaching descriptions that need builder review") !=
+						std::string::npos,
+				"Goblin City journal invented ambient credit or teaching availability");
+			// Synthetic authoritative receipts verify projection/recovery; no played grants, retirement or rescue are claimed.
+			record(journey, hat.contracts.front(), "malch-hat", 236, 23759);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 236, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(hat, 1, "Recorded") && status(circles, 1, "Pending") &&
+					status(charms, 1, "Pending") &&
+					journey.progress_for_zone(7, 42, 236).completed == 1,
+				"Goblin City hat return completed circle or charm quest");
+			for (const auto &s : mapping.stories)
+				if (s.id != hat.id)
+				{
+					const auto tx = "malch-" + s.id;
+					record(journey, s.contracts.front(), tx.c_str(), 236,
+					       23600);
+				}
+			journal = journey.render_journal(7, 42, 236, 10, 1, 120, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 236).completed == 3,
+				"Goblin City three receipts or combined rewards classification failed");
+			for (const auto &s : mapping.stories)
+				require(status(s, 0, "Missing now") && status(s, 1, "Recorded"),
+					"Goblin City spent proof restored inventory or lost history");
+			auto replay = completion(hat.contracts.front(), "malch-hat", 120);
+			replay.transaction.zone_number = 236;
+			replay.transaction.room_vnum = 23759;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Goblin City replay duplicated return");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 236).completed == 3,
+				"Goblin City cold recovery lost histories");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 236, 23600, 100, "arrival") ==
+					result::applied,
+				"Goblin City raw discovery failed");
+			for (const auto &s : mapping.stories)
+			{
+				const auto tx = "malch-raw-" + s.id;
+				record(raw, s.contracts.front(), tx.c_str(), 236, 23600);
+			}
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 236).completed == 3,
+				"Goblin City raw-to-authored recovery lost independent histories");
 		}
 
 		{
