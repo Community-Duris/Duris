@@ -124,10 +124,39 @@ preimage comparison, preserving both completed fixes. Native tree
 qualification; migrations remain canonical 61.
 
 [The combined candidate report](PLAN5_NATIVE_BIRTH_COMBINED_CANDIDATE_2026-10-06.md)
-records source ownership and the fresh original qualification in progress.
+records source ownership and links the completed scoped original qualification.
 [The narrow shared metadata handoff](PLAN5_NATIVE_BIRTH_WRITER_DRIFT_HANDOFF_2026-10-06.md)
 records actual census/matrix failures, their exact fields and required primary
 checks. Runtime schema metadata passes. These reports claim no full native,
 restore, retention, complete authority or release pass. Source integration and
 the handoff remain on the same remote `codex/accounting-plan5`; prior branch
 tips and all earlier evidence are preserved.
+
+## Native birth audit recipes, restore and retention follow-up
+
+The [native recipe qualification](PLAN5_NATIVE_BIRTH_AUDIT_RECIPE_QUALIFICATION_2026-10-06.md)
+binds three separately committed repairs on this same branch: real forest
+provider dependencies (`cb5134186`), the complete equipment finding set in the
+historical child cut (`98abfa4ec`), and an aborting unavailable quest-publication
+boundary in the read-only census fixture (`0466a1796`). Exact base/result SHAs,
+owned files, original commands, failed and passing evidence, binary/source
+hashes and gates are in that report and its sealed delivery packet.
+
+Fresh maintained development builds pass in both configurations. The selected
+Windows/Linux readers and original both-engine native baseline, canonical,
+child, stake/source/price and coin/decoder methods pass without skips. Managed
+SQL/flatfile backup and restore pass. Original SQL account/character retention
+passes through ten cold restarts; flatfile character/durable/uncertain retention
+passes through seven. The complete flatfile authority method passes 20 positive
+stores and refuses 367 corruptions. Failed aggregate/setup observations remain
+failed; later passing individual methods are separately identified.
+
+This qualifies native tree `244559a07b8d046839c4fb9ff174685351d8f386` and canonical
+61, not full Plan 5/R7/R8, real producer completeness or release. Final refresh
+observes primary `6083deabbfe31fcad13699670fd5d5cdf09e245c` with newer primary-owned
+lifecycle source, native tree `e6d0511f9e2fc1ebb12c99915a1258c17c2d95d2`; that
+newer combined candidate is outside this evidence scope. Shared source metadata
+repair, complete capture, producer/receipt/recovery journeys, typed active
+erasure, parity and mixed release-host budgets remain open. Primary maintains
+the shared notebook; this owned report/receipt packet supplies the curator
+follow-up without blocking independent work. Accounting stays inactive.

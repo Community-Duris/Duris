@@ -2,9 +2,12 @@
 
 This source checkpoint imports the primary's published native birth and quest
 recovery owners onto the same remote `codex/accounting-plan5` that carries the
-independent audit fixes. Fresh independent build, audit, restore and retention
-qualification is pending. Previous native-tree results do not qualify this
-combined candidate or complete R7/R8.
+independent audit fixes. The fresh build, audit, restore and retention
+qualification and three separate owned test repairs are now recorded in
+[the native recipe qualification](PLAN5_NATIVE_BIRTH_AUDIT_RECIPE_QUALIFICATION_2026-10-06.md).
+These component results do not complete R7/R8. The final refresh observes newer
+primary lifecycle source at `6083deabb`; its native tree is outside this frozen
+qualification and needs separate combined-candidate checks.
 
 - Worktree: `C:\Users\alexa\.codex\worktrees\accounting-plan5\NewDuris Max`.
 - Previous Plan 5 head: `62b2796a75136665a4bbc1c9c0b5155713a1fb77`.
