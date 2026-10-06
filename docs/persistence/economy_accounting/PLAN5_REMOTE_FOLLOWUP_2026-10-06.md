@@ -268,3 +268,34 @@ The blocked original SQL methods, new allocation/origin authentication, full
 capture/activation/writer/recovery/erasure/managed-retention journeys and
 release-host qualification remain open. Accounting remains inactive and no
 release gate is promoted.
+
+## Canonical 0062 retained claim allocation follow-up
+
+Primary publishes the requested executable-bit correction at
+`4e006c3a738d00c19ab3d09f573b57c5115e2033`; exact import
+`dbc3dd66d6b6d52567653ae9e84f9a0ff4dfff3e` resolves the earlier raw-source
+migration failure. Separate owned issue
+`bfbc513e8b959a03613da5b3f366575c36398eb1` adds independent retained source /
+whole and partial consumption binding to original root effects, plus declared
+version1 slot/count checks. Two retained regressions fail the original reader;
+all33 pure methods, original full restore/audit/baseline methods and both fresh
+738-object production builds pass with zero skips. Final original restore passes
+105 cuts/89 refusals on both fresh canonical0062 engines, including258-source /
+257-consumption pagination and unchanged authority.
+
+[Exact source, ownership, commands and protected evidence](PLAN5_RETAINED_CLAIM_ALLOCATION_QUALIFICATION_2026-10-06.md)
+provides the curator packet. The same remote branch imports primary
+`ad2ebe4dbe803f429fa5195ad4671f94499f1f29` at
+`229515bd5b260d92341c0c28bb995f5e6b49aa37`, retaining the solved header labels and
+owned reader/tests. All incoming implementation was already present; four
+qualification documents are imported exactly. All seven earlier tips remain
+ancestors and no shared runtime/schema/contract change is independently made.
+
+[The narrow opening-origin handoff](PLAN5_CLAIM_ORIGIN_SELECTOR_HANDOFF_2026-10-06.md)
+asks primary to publish the retained authenticated policy selector and original
+PID digest reference, with exact fields/invariants/consumers/tests. The SQL flag
+alone does not establish that proof. Saved snapshot partial-consumption coverage,
+complete R6 capture/activation, real producers/replay/lost reply/cold recovery,
+typed erasure, full managed retention and release-host budgets remain gates.
+The notebook remains nonblocking; accounting remains inactive and release is
+not qualified.
