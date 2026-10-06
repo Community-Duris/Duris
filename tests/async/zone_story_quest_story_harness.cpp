@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 171 &&
+		require(catalog.story_mappings.size() == 172 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,177 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "underdark"; });
+			require(mapping.stories.size() == 2 && mapping.contacts.size() == 8 &&
+					mapping.revision == 1,
+				"Underdark journal scope failed");
+			const auto &amulet = story_for("underdark", "ancient-amulet");
+			const auto &skin = story_for("underdark", "roper-skin");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 7000)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 2 && dailies == 2,
+				"Underdark native classification changed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 7000, 701670, 100, "arrival") ==
+					result::applied,
+				"Underdark discovery failed");
+			for (int v : { 700034, 700035, 700012, 700004, 700052, 700032, 700033 })
+				require(journey.meet_npc(7, 42, v, 701670, 101) == result::applied,
+					"Underdark source/ecology encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 7000, 10, 1, 102, false, false);
+			for (const auto &s : mapping.stories)
+				require(journal.find("] " + s.title + "\r\n") == std::string::npos,
+					"Underdark source encounter exposed accepting cards");
+			require(journey.meet_npc(7, 42, 700036, 701670, 103) == result::applied,
+				"Underdark hunter encounter failed");
+			const auto section = [&](const auto &s)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos, "Underdark card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at,
+						      end == std::string::npos ? end : end - at);
+			};
+			const auto status = [&](const auto &s, size_t row, const char *state)
+			{
+				return section(s).find(std::string("[") + state + "] " +
+						       s.steps[row].text) != std::string::npos;
+			};
+			const auto before = journey.serialize_state();
+			for (int half : { 700000, 700001 })
+			{
+				supplies = {};
+				supplies.carried[half] = 2;
+				journal = journey.render_journal(7, 42, 7000, 10, 1, 104, false,
+								 false, &supplies);
+				require(status(amulet, half == 700000 ? 0 : 1, "Ready now") &&
+						status(amulet, half == 700000 ? 1 : 0,
+						       "Missing now") &&
+						status(amulet, 2, "Pending") &&
+						status(skin, 0, "Missing now"),
+					"Underdark duplicate same half substituted distinct pair or skin");
+			}
+			for (const auto &s : mapping.stories)
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+					for (int slot : { 0, 3, 4 })
+					{
+						supplies = {};
+						supplies.equipped[slot] =
+							s.steps[row].item_vnums.front();
+						journal = journey.render_journal(7, 42, 7000, 10, 1,
+										 105, false, false,
+										 &supplies);
+						require(status(s, row, "Missing now") &&
+								status(s, s.steps.size() - 1,
+								       "Pending"),
+							"Underdark worn/held proof substituted loose offering");
+					}
+			supplies = {};
+			for (int v : { 700002, 700003, 700004, 700005, 700006, 55054 })
+				supplies.carried[v] = 2;
+			journal = journey.render_journal(7, 42, 7000, 10, 1, 106, false, false,
+							 &supplies);
+			for (const auto &s : mapping.stories)
+			{
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+					require(status(s, row, "Missing now"),
+						"Underdark reward/ecology stock substituted material");
+				require(status(s, s.steps.size() - 1, "Pending"),
+					"Underdark seal or ring forged history");
+			}
+			supplies = {};
+			supplies.carried[700000] = 1;
+			supplies.carried[700001] = 1;
+			journal = journey.render_journal(7, 42, 7000, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(amulet, 0, "Ready now") && status(amulet, 1, "Ready now") &&
+					status(amulet, 2, "Pending") &&
+					status(skin, 0, "Missing now") &&
+					status(skin, 1, "Pending"),
+				"Underdark both supplied halves forged exchange or bounty");
+			supplies = {};
+			supplies.carried[700008] = 1;
+			journal = journey.render_journal(7, 42, 7000, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(skin, 0, "Ready now") && status(skin, 1, "Pending") &&
+					status(amulet, 0, "Missing now") &&
+					status(amulet, 1, "Missing now") &&
+					status(amulet, 2, "Pending"),
+				"Underdark skin item failed independent readiness");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 7000).completed == 0,
+				"Underdark possession or ecology invented source/keyword/acceptance history");
+			require(section(amulet).find("together") != std::string::npos &&
+					section(amulet).find("hunter stays") != std::string::npos &&
+					section(skin).find("builder review") != std::string::npos,
+				"Underdark Ready now hid native pair/source limits");
+			require(journal.find("ambient") != std::string::npos &&
+					journal.find("wandering") != std::string::npos &&
+					journal.find("another player") != std::string::npos,
+				"Underdark dynamic guidance missing");
+			// Synthetic committed receipts qualify projection/recovery; they do not claim played movement, loot or exchanges.
+			record(journey, skin.contracts.front(), "underdark-skin", 7000, 701670);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 7000, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(skin, 0, "Missing now") && status(skin, 1, "Recorded") &&
+					status(amulet, 2, "Pending") &&
+					journey.progress_for_zone(7, 42, 7000).completed == 1,
+				"Underdark bounty imposed earlier amulet or source history");
+			supplies.carried[700008] = 1;
+			journal = journey.render_journal(7, 42, 7000, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(skin, 0, "Ready now") && status(skin, 1, "Recorded") &&
+					status(amulet, 2, "Pending"),
+				"Underdark reacquired skin changed accepted histories");
+			record(journey, amulet.contracts.front(), "underdark-amulet", 7000, 701670);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 7000, 10, 1, 122, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 7000).completed == 2,
+				"Underdark exact receipt classification failed");
+			for (const auto &s : mapping.stories)
+			{
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+					require(status(s, row, "Missing now"),
+						"Underdark completion restored spent proof");
+				require(status(s, s.steps.size() - 1, "Recorded"),
+					"Underdark spent proof lost history");
+			}
+			auto replay = completion(skin.contracts.front(), "underdark-skin", 120);
+			replay.transaction.zone_number = 7000;
+			replay.transaction.room_vnum = 701670;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Underdark replay duplicated bounty");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 7000).completed == 2,
+				"Underdark cold recovery lost histories");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 7000, 855263, 100, "arrival") ==
+					result::applied,
+				"Underdark alternate arrival discovery failed");
+			for (const auto &s : mapping.stories)
+			{
+				const auto tx = "underdark-raw-" + s.id;
+				record(raw, s.contracts.front(), tx.c_str(), 7000, 855263);
+			}
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 7000).completed == 2,
+				"Underdark raw-to-authored recovery lost histories");
 		}
 
 		{

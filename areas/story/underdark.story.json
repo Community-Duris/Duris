@@ -1,0 +1,179 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "underdark",
+  "coverage": "complete",
+  "introduction": "Find the wandering hunter, return both amulet halves together or follow the separate skin bounty. Source recovery, travel, accepted returns and the later seal exchange are distinct.",
+  "orientation": [
+    "The Underdark links many neighboring regions through caves, tunnels, fungal growth, lava, subterranean water and ruined settlements. Sparse map cells and cavern walls limit travel. Bring suitable visibility and movement capabilities; this journal does not promise a safe route or an all-room objective.",
+    "Kryz'Kyssik is a wandering hunter. Ask hi, hello, hey or howdy for his introduction, then first, second, half, halves, ancient, amulet or amulets for the two drow carrying his desired artifacts. The two halves must be offered together; one half alone does not finish the request.",
+    "Haz'on'wyz, the drow fire magus, wears the first half of an ancient amulet. Ozman'dyzus, the drow traveler, wears the second half. Their reset room distributes wandering mobs and is not a promised place to meet them. Availability depends on world state and whether their carried stock is present.",
+    "Return both exact visible loose halves to the hunter for a bronze Zarbonesti seal and experience. Wearing a half, possessing the seal, meeting either source or hearing a keyword does not record the accepted exchange. Supplied halves fit without a personal victory or source recovery.",
+    "Ask the hunter roper, skin or bloody for the separate bounty. The exact bloody roper skin is required. The current source mapping has not established its acquisition route; seeing or defeating a roper is not proof of recovering that skin. The dialogue and native payout disagree, so this bounty needs builder review.",
+    "The hunter snarling at roper tracks is an ambient action, not another conversation topic or a completed request. His bounty and amulet exchange remain independent, and accepted history stays after the offered materials are spent.",
+    "Lancer in his tracking service offers a separate exchange for the bronze seal. The seal may come from another player. Owning it proves neither your amulet return nor the later exchange, and the House Zarbonesti access lore does not itself establish an unlocked magical realm.",
+    "Giant purple worms can swallow victims and retain or release corpses through their combat behavior. Other local factions, rothe herders and ancient ropers are encounter and ecology leads; none supplies an additional native reward contract here.",
+    "New discovery, encounter, journal, achievement and daily credit requires active, ready accounting. Fresh reset stock needs its own supported issuance path; a new day does not restock quest materials. Current readiness, personal source history and accepted returns are separate."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 700036,
+      "name": "Kryz'Kyssik, the prophesied hunter",
+      "keyword": "prophesied",
+      "description": "Ask the grouped greeting, amulet or bounty aliases. This wandering hunter accepts two independent returns and stays. His current position and stock are world state; automatic track snarling is not a keyword achievement.",
+      "topics": [
+        "roper",
+        "skin",
+        "bloody",
+        "hi",
+        "hello",
+        "hey",
+        "howdy",
+        "first",
+        "second",
+        "half",
+        "halves",
+        "ancient",
+        "amulet",
+        "amulets"
+      ]
+    },
+    {
+      "mob_vnum": 700034,
+      "name": "Haz'on'wyz, the drow fire magus",
+      "keyword": "magus",
+      "description": "The drow fire magus wears the first amulet half when its stock is present. Actual recovery and a player-supplied half are different source histories. His wandering reset does not promise a fixed location.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 700035,
+      "name": "Ozman'dyzus, the drow traveler",
+      "keyword": "traveler",
+      "description": "The drow traveler wears the second amulet half when its stock is present. Both halves are needed together at the hunter. Encountering or defeating this source does not prove the accepted exchange.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 700012,
+      "name": "an ancient roper",
+      "keyword": "ancient",
+      "description": "An ancient roper is a dangerous ecological lead for the bounty lore. The selected sources do not establish an automatic exact skin drop; this encounter does not complete the bounty.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 700004,
+      "name": "a GIANT purple worm",
+      "keyword": "giant",
+      "description": "The giant purple worm has active swallow, corpse retention and release behavior. Treat this as a hazard, without inventing a safe rescue quest or a reward contract.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 700052,
+      "name": "a drow rothe herder",
+      "keyword": "herder",
+      "description": "The drow rothe herder connects the cavern livestock lore to a local encounter. Herding, ownership and supplies have no native journal reward definition here.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 700032,
+      "name": "a Kuo-Toa guard",
+      "keyword": "kuo-toa",
+      "description": "Kuo-Toa guards mark the surrounding faction and travel lore. Meeting a guard does not establish admission to every neighboring campaign or complete either hunter request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 700033,
+      "name": "an aboleth guard",
+      "keyword": "aboleth",
+      "description": "Aboleth guards are part of the hostile Underdark ecology. Their encounter is distinct from the hunter, his amulet sources and the seal exchange.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "ancient-amulet",
+      "title": "Return both ancient amulet halves",
+      "category": "request",
+      "summary": "Offer both exact visible loose halves together for the bronze Zarbonesti seal and experience. Supplied halves fit without personal recovery or earlier bounty history. The hunter stays; later attempts depend on available stock.",
+      "contracts": [
+        {
+          "giver_vnum": 700036,
+          "completion_key": "give=I:700000,I:700001;receive=E:250000,I:700005;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "first-half",
+          "text": "Carry the first ancient amulet half loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            700000
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Prepare this exact visible loose material. Worn, held or nested copies do not substitute a loose offering. Supplied material proves no personal source recovery; all required materials must be present together."
+        },
+        {
+          "id": "second-half",
+          "text": "Carry the second ancient amulet half loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            700001
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Prepare this exact visible loose material. Worn, held or nested copies do not substitute a loose offering. Supplied material proves no personal source recovery; all required materials must be present together."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 700036,
+              "completion_key": "give=I:700000,I:700001;receive=E:250000,I:700005;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted return completes the card. History stays after materials are spent. The hunter stays; another attempt depends on actual material availability. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "roper-skin",
+      "title": "Return the exact bloody roper skin",
+      "category": "request",
+      "summary": "Offer the exact visible loose bloody roper skin for the native bounty. Its acquisition route and the dialogue/payout mismatch need builder review. Supplied proof fits without a personal roper victory or earlier amulet history. The hunter stays.",
+      "contracts": [
+        {
+          "giver_vnum": 700036,
+          "completion_key": "give=I:700008;receive=C:100000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "bloody-skin",
+          "text": "Carry the exact bloody roper skin loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            700008
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Prepare this exact visible loose material. Worn, held or nested copies do not substitute a loose offering. Supplied material proves no personal source recovery; all required materials must be present together."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 700036,
+              "completion_key": "give=I:700008;receive=C:100000;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted return completes the card. History stays after materials are spent. The hunter stays; another attempt depends on actual material availability. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

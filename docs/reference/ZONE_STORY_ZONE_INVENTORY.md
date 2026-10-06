@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 171 authored journals.
+2668 distinct Q contracts; 172 authored journals.
 
 Regenerate with:
 
@@ -231,7 +231,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Turolopolis Zoo (`turolzoo`) | 1 | 1 | 0 | Fallback | [1 × a saber tooth; 1 × a gorilla tooth → a thin helmet of bark](../../areas/qst/turolzoo.qst#L11) | — |
 | Twin Towers Forest (`twin_towers_forest`) | 84 | 58 | 24 | Yes | [10 × a fox fur → a fox fur cape](../../areas/qst/twin_towers_forest.qst#L771) | forest_animals, forest_corpse, gardener_block |
 | A Dark and Twisted Wood (`twstwd`) | 1 | 3 | 0 | Fallback | [1 × a full suit of black platemail; 1 × a broken mithral lance → an iridescent faerie collar](../../areas/qst/twstwd.qst#L29) | — |
-| The Twisting Tunnels of the Durian Underdark (`underdark`) | 2 | 3 | 0 | Fallback | [1 × the first half of an ancient amulet; 1 × the second half of an ancient amulet → the bronze Zarbonesti seal of Kryz'Kyssik](../../areas/qst/underdark.qst#L35) | purple_worm |
+| The Twisting Tunnels of the Durian Underdark (`underdark`) | 2 | 3 | 0 | Yes | [1 × the first half of an ancient amulet; 1 × the second half of an ancient amulet → the bronze Zarbonesti seal of Kryz'Kyssik](../../areas/qst/underdark.qst#L35) | purple_worm |
 | The Ruins of Undermountain (`undermountain`) | 2 | 3 | 1 | Yes | [1 × a crude note → a scimitar named 'Convalescence'](../../areas/qst/undermountain.qst#L13) | flame_of_north, flying_dagger, generic_drow_eq, generic_parry_proc, helmed_horror, iron_flindbar |
 | The Underworld (`underworld`) | 1 | 3 | 0 | Fallback | [1 × the unholy relic of life and death → native reward/response](../../areas/qst/underworld.qst#L18) | hammer, magic_pool, piercer, purple_worm, underdark_track |
 | Vargan II (`v2`) | 1 | 2 | 0 | Fallback | [1 × an ancient hilt; 1 × an ancient cross-piece; 1 × a broken blade → the sword of Vurlok](../../areas/qst/v2.qst#L13) | — |

@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 171 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 172 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,14 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+underdark=next(m for m in catalog['story_mappings'] if m['source_area']=='underdark')
+assert (underdark['coverage'],underdark['schema_version'],underdark['revision'])==('complete',3,1) and not underdark['exclusions']
+assert len(underdark['stories'])==2 and len(underdark['contacts'])==8 and sum(len(c['topics']) for c in underdark['contacts'])==14
+assert [len(s['steps']) for s in underdark['stories']]==[3,2]
+assert [[t['item_vnums'][0] for t in s['steps'][:-1]] for s in underdark['stories']]==[[700000,700001],[700008]]
+assert sum(t.get('optional',False) for s in underdark['stories'] for t in s['steps'])==3
+assert len({(s['contracts'][0]['giver_vnum'],s['contracts'][0]['completion_key']) for s in underdark['stories']})==2 and report['eligible_by_zone']['7000']==2
 
 icetower=next(m for m in catalog['story_mappings'] if m['source_area']=='icetower')
 assert (icetower['coverage'],icetower['schema_version'],icetower['revision'])==('complete',3,1) and not icetower['exclusions']
