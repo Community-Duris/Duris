@@ -153,3 +153,40 @@ No current native/gameplay/persistence/restart proof or maintained installation
 is claimed for these additions. Testing remains deferred until the coherent
 major candidate. Cold callback uncertainty and missing acknowledged/retired
 record readback remain explicit work; no full Plan or release gate is closed.
+
+## Accepted domain owner and current full composition — 2026-10-06
+
+Native12 passive owner52de is preserved with reviewed successor1eada8:
+`1eada8beb3fcacb7ceef82d0e4d8a6bd3dc8ee4ff3b87f9fcaead3866ae02a56`.
+The item participant retains the exact original phase1 envelope/forests and
+progress, preallocates before restoring the original save hold, and waits for
+genuine execution delivery. Actual current SQL/native/PID/UID/cash proof and
+confirmed rollback precede runtime binding. Phase2 registers original quest/
+reward/child owners under distinct operation identities without a new phase1
+hold, submission or coordinator re-entry. Real ACK return is latched before
+fallible phase2 handoff, retaining original ownership and avoiding repeated ACK.
+
+Source review closes SQL-only anonymous helper guards for strict flat builds,
+absent-runtime reconnect through fresh authentic proof, and allocation-free,
+retryable child-map cleanup after durable retirement. A still-present original
+runtime body stays pinned. Missing retired-child or acknowledged-reward proof
+and missing original post-GIVE program remain explicit unresolved boundaries;
+absence is never substituted for callback/publication authority.
+
+The accepted startup85dd calls the actual native12 observer and retains original
+birth dispatch, pure validators and legacy lifecycle flags. All accepted domain
+and shared slices now compose into
+`tmp/plan3-native-mobile-domain-recovery-major-source-20261006`, manifest
+`3ee546ec2f886e7760dfb09fc1fef0b0425bb7b0fda0dd9717c8393fd5fc20ec`.
+All5775 inputs match. Sixteen native paths are replaced only after exact parent
+or successor preimage proof. All1560 committed script/test inputs are refreshed
+from publisheda1a92f4dd, including the independent audit/cold-restore coverage;
+unrelated working-copy SHOP changes are excluded. Original copy/build drivers
+remain byte-identical. No native execution or maintained C/C++ install occurred.
+
+The real NPC constructor capsule owner is now implementing original clock,
+template/cache/effective-configuration and supported procedure capture/restore
+against the reviewed RNG seam. A proven build-input compatibility provider and
+immutable transport integration remain primary-owned dependencies. This and
+all original reset mechanics/flat/lifecycle and final combined qualification
+remain required; source composition does not close full Plan/release gates.
