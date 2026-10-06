@@ -537,3 +537,31 @@ the local shared notebook is nonblocking. Latest primary
 The last fetch observes the published UID/partial-allocation reader changes;
 their native/migration trees match, while their reader/test inputs require a
 separate import and combined qualification on this same remote Plan5 branch.
+
+## Primary pair-batch followup and combined qualification — 2026-10-06
+
+Same branch/worktree: `codex/accounting-plan5`,
+`C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`.
+Base `df22d682eca46ece62d2f5a9d38b97e5e8bf7a05`; result `8a9a6f0cf72fbe25f6daeb102924f3e949e77134`;
+published primary input `5759a4783f7785486e8d1ec5592fbf17d6020d3b`.
+The [combined qualification](PLAN5_PRIMARY_PAIR_COMBINED_QUALIFICATION_2026-10-06.md)
+records both original failures and the exact two-file primary import, preserving
+earlier UID/partial-allocation work and the policy/PID reader fix. Five affected
+inputs already match; shared notes are exact primary blobs. No shared interface
+is changed independently. All 213 executed methods pass; three original opt-in
+methods skip. The observer's zero-skip expectation fails and is retained.
+All six original native cases/eight emitted vectors pass freshly on this source,
+with SELECT-only unchanged authority and zero false accepts. Both engines pass
+all 109 restore cuts and the original two-account batch control. Same two missing
+producer source claims and missing executable writer evidence remain release
+refusals. Seal `ac0635bb57d962a7407eb719bca09d361dedc74af665d2161c8eb4f38f335ce3` inventories 3800 protected artifacts; two new Markdown
+mode differences and the failed first seal are explicit. The expected remote
+branch retains the earlier work tips. Primary-local notebook upkeep remains
+nonblocking; this is its curator packet, without acknowledgement/application
+claims. Maintained activation, full R6/R8 and release completion remain false.
+
+Final refresh: `4ad525878f30e3aad2f1bbd86840a8ef31b86511` adds only four primary documentation changes.
+They are imported byte-exactly; no script/test/native/migration input changes.
+Its private genuine birth/schema 0063 publication evidence remains primary
+qualified at its own scope. This delivery retains the exact canonical 0062
+Plan5 component source and does not claim cold success or private producer proof.

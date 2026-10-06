@@ -55,14 +55,22 @@ the original decoded root effects, requires exact source/mapping/PID identities
 and committed references, and refuses missing, extra, mixed or overdrawn
 allocations. Fully consumed sources retain their original positive amounts.
 Declared version1 opening metadata requires exact canonical holding slots and
-counts; historical NULL opening metadata retains unknown allocation coverage.
+counts. The restore and origin readers bind it to the retained V2 lifecycle
+request and committed genesis receipt, independently recompute the original
+PID/amount/revision digests, and check positive source slots. Zero original
+claims are authenticated without inventing a positive source row. A retained
+new-policy parent prevents clearing the marker from downgrading that opening.
+Historical NULL metadata without that parent retains unknown coverage. See
+[the original opening qualification](PLAN5_ORIGINAL_OPENING_QUALIFICATION_2026-10-06.md).
 The report's `retained_pending_claim_allocations: verified` covers these
-retained projections. It does not authenticate the origin-policy selector or
-the original PID from a frozen source digest, reconcile current native claim
-balances, or qualify claim producers. The saved snapshot exporter/reconciler
-also reads whole and partial allocations and compares their remaining amounts
-with native claim balances, as described below. Source capture and release
-remain unqualified; a successful check never authorizes correction of a finding.
+retained facts; it does not qualify claim producers or complete source capture.
+The saved snapshot exporter/reconciler also reads whole and partial allocations
+and compares their remaining amounts with native claim balances. Its 64-pair
+source batches count only the exact operation/account pairs requested by that
+batch; genuine duplicate rows still refuse. See
+[the combined reader qualification](PLAN5_PRIMARY_PAIR_COMBINED_QUALIFICATION_2026-10-06.md).
+Source capture and release remain unqualified; a successful check never
+authorizes correction of a finding.
 
 Status 0 emits a small JSON report with database scope and verified root/byte
 counts. A discrepancy or missing/oversized source emits no report, prints a
