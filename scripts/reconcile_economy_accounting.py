@@ -2438,7 +2438,7 @@ class Reconciler:
                 topology[node] = (kind, terminal, mismatch or edge_mismatches[node])
         for (uid,), item in native.items():
             kind, terminal, mismatch = topology[uid]
-            if item.get("state") == "live" and (mismatch or (
+            if item.get("state") in ("live", "quarantined") and (mismatch or (
                     kind == "root" and terminal != item.get("root"))):
                 self.emit("inconsistent_native_topology", uid=uid)
             elif kind == "cycle":
