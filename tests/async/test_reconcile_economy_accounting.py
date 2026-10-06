@@ -3292,7 +3292,8 @@ class ReconciliationTests(unittest.TestCase):
                                            "after": [0, 0, 0, 0]}]}],
             "pending_claim_sources": [{
                 "source_operation_id": "66" * 16, "source_slot": 1,
-                "beneficiary_pid": 7, "amount": 100, "claim_operation_id": OP}],
+                "beneficiary_pid": 7, "account_key": key(5, 21), "amount": 100, "claim_operation_id": OP}],
+            "pending_claim_consumptions": [], "pending_claim_consumption_coverage": {"rows": 0},
             "pending_claim_consumer_coverage": {
                 "rows": 1, "missing_source_rows": 0, "mismatched_source_amounts": 0},
         }
@@ -3327,7 +3328,7 @@ class ReconciliationTests(unittest.TestCase):
         native["pending_claim_consumers"][0].update(source_rows=1, source_amount=99)
         native["pending_claim_sources"] = [{
             "source_operation_id": "66" * 16, "source_slot": 1,
-            "beneficiary_pid": 7, "amount": 99, "claim_operation_id": OP}]
+            "beneficiary_pid": 7, "account_key": key(5, 21), "amount": 99, "claim_operation_id": OP}]
         native["pending_claim_consumer_coverage"].update(missing_source_rows=0,
                                                          mismatched_source_amounts=1)
         mismatched = Reconciler()
@@ -4079,6 +4080,139 @@ def native_stake_sql():
           'original_link_fault_captures':4,'native_original_link_cases':6,
           'native_source_cases':104,'native_policy_cases':1107,
           'permission_denials':2,'full_mutation_or_gameplay':False},sort_keys=True),flush=True)
+
+
+class PartialClaimSnapshotTests(unittest.TestCase):
+    @staticmethod
+    def native(amount=2):
+        source = "66" * 16
+        receipt = {"status": 1, "result_code": 0, "failure_stage": 0,
+                   "committed_at_present": True}
+        return {
+            "pending_claim_sources": [{"source_operation_id": source, "source_slot": 1,
+                "beneficiary_pid": 7, "amount": 5, "account_key": key(5, 21),
+                "mapping_native_id": 7, "mapping_active_native_id": 7, "mapping_valid": True,
+                "source_root_valid": True, "source_inbox_receipt": receipt,
+                "claim_operation_id": None, "consumer_root_valid": None, "consumer_inbox_receipt": None}],
+            "pending_claim_source_coverage": {"rows": 1, "open_rows": int(amount < 5),
+                "consumed_rows": int(amount == 5), "invalid_account_mappings": 0,
+                "invalid_source_roots": 0, "invalid_consumer_roots": 0},
+            "pending_claim_consumptions": [{"spending_operation_id": OP,
+                "source_operation_id": source, "source_slot": 1, "amount": amount}],
+            "pending_claim_consumption_coverage": {"rows": 1},
+            "pending_claim_consumers": [{"operation_id": OP, "epoch": EPOCH,
+                "outcome": "committed", "result_code": 0, "inbox_receipt": receipt,
+                "source_rows": 1, "source_amount": amount,
+                "pending_claim_debits": [{"account_key": key(5, 21), "amount": amount,
+                    "before": [5, 0, 0, 0], "after": [5-amount, 0, 0, 0]}]}],
+            "pending_claim_consumer_coverage": {"rows": 1, "missing_source_rows": 0,
+                "mismatched_source_amounts": 0},
+        }
+
+    def test_partial_rows_cover_the_original_debit(self):
+        for amount in (2, 5):
+            with self.subTest(amount=amount):
+                native = self.native(amount)
+                original = copy.deepcopy(native)
+                reader = Reconciler()
+                reader.audit_pending_claim_consumers("sql_partial", LINEAGE, native)
+                self.assertEqual(reader.counts, {})
+                self.assertEqual(native, original)
+
+    def test_absent_partial_collection_remains_unknown(self):
+        native = self.native()
+        del native["pending_claim_consumptions"], native["pending_claim_consumption_coverage"]
+        reader = Reconciler()
+        reader.audit_pending_claim_consumers("sql_partial", LINEAGE, native)
+        self.assertEqual(reader.counts["missing_pending_claim_consumption_coverage"], 1)
+
+    def test_live_balance_subtracts_partial_consumption(self):
+        for amount in (2, 5):
+            with self.subTest(amount=amount):
+                snapshot = clean_snapshot()
+                snapshot["native"].update(self.native(amount))
+                snapshot["native"]["holdings"].append({"account_key": key(5, 21),
+                    "balance": [5-amount, 0, 0, 0], "revision": 1})
+                result = Reconciler().audit(snapshot)
+                self.assertNotIn("pending_claim_source_balance_mismatch", result["exception_counts"])
+
+    def test_malformed_partial_rows_and_coverage_refuse(self):
+        for field, values in (("source_slot", (True, 1.0, "1", 0, 65536)),
+                ("amount", (True, 2.0, "2", 0, -1, 2**64)),
+                ("spending_operation_id", (None, "00"*16, "bad")),
+                ("source_operation_id", (None, "00"*16, "bad"))):
+            for value in values:
+                native = self.native()
+                native["pending_claim_consumptions"][0][field] = value
+                original = copy.deepcopy(native)
+                with self.subTest(field=field, value=value), self.assertRaises(SnapshotError):
+                    Reconciler().audit_pending_claim_consumers("sql_partial", LINEAGE, native)
+                self.assertEqual(native, original)
+        for value in (True, 1.0, "1", 0, 2):
+            native = self.native()
+            native["pending_claim_consumption_coverage"]["rows"] = value
+            with self.subTest(coverage=value), self.assertRaises(SnapshotError):
+                Reconciler().audit_pending_claim_consumers("sql_partial", LINEAGE, native)
+
+    def test_partial_source_identity_and_allocation_limits(self):
+        cases = (
+            ("orphan", "pending_claim_consumption_source_mismatch"),
+            ("duplicate", "duplicate_pending_claim_consumption"),
+            ("mixed", "pending_claim_mixed_consumption"),
+            ("overdraw", "pending_claim_overdrawn_source"),
+            ("missing-consumer", "missing_pending_claim_consumer_root"),
+            ("other-account", "pending_claim_consumer_account_mismatch"),
+        )
+        for case, code in cases:
+            native = self.native()
+            if case == "orphan":
+                native["pending_claim_consumptions"][0]["source_slot"] = 2
+            elif case == "duplicate":
+                native["pending_claim_consumptions"] *= 2
+                native["pending_claim_consumption_coverage"]["rows"] = 2
+                native["pending_claim_consumers"][0].update(source_rows=2, source_amount=4)
+                native["pending_claim_consumer_coverage"]["mismatched_source_amounts"] = 1
+            elif case == "mixed":
+                native["pending_claim_sources"][0]["claim_operation_id"] = OP
+                native["pending_claim_consumers"][0].update(source_rows=2, source_amount=7)
+                native["pending_claim_consumer_coverage"]["mismatched_source_amounts"] = 1
+            elif case == "overdraw":
+                native["pending_claim_consumptions"][0]["amount"] = 6
+                native["pending_claim_consumers"][0]["source_amount"] = 6
+                native["pending_claim_consumer_coverage"]["mismatched_source_amounts"] = 1
+            elif case == "missing-consumer":
+                native["pending_claim_consumers"] = []
+                native["pending_claim_consumer_coverage"]["rows"] = 0
+            else:
+                native["pending_claim_sources"][0]["account_key"] = key(5, 22)
+            counts = []
+            original = copy.deepcopy(native)
+            for limit in (0, 1, 100):
+                reader = Reconciler(limit)
+                reader.audit_pending_claim_consumers("sql_partial", LINEAGE, native)
+                self.assertGreater(reader.counts[code], 0, case)
+                counts.append(reader.counts)
+            self.assertEqual(counts[0], counts[1])
+            self.assertEqual(counts[1], counts[2])
+            self.assertEqual(native, original)
+
+    def test_selected_consumer_projection_matches_retained_root_effects(self):
+        native = self.native()
+        operations = {(OP,): {"epoch": EPOCH, "outcome": "committed", "result_code": 0}}
+        effect = {"operation_id": OP, **native["pending_claim_consumers"][0]["pending_claim_debits"][0]}
+        reader = Reconciler()
+        reader.audit_pending_claim_consumers("sql_partial", LINEAGE, native, EPOCH, operations, [effect])
+        self.assertEqual(reader.counts, {})
+        for effects, rows, epoch in (([], native["pending_claim_consumers"], EPOCH),
+                ([effect], [], EPOCH), ([effect], native["pending_claim_consumers"], "77"*16)):
+            changed = copy.deepcopy(native)
+            changed["pending_claim_consumers"] = copy.deepcopy(rows)
+            changed["pending_claim_consumer_coverage"]["rows"] = len(rows)
+            if rows:
+                changed["pending_claim_consumers"][0]["epoch"] = epoch
+            reader = Reconciler()
+            reader.audit_pending_claim_consumers("sql_partial", LINEAGE, changed, EPOCH, operations, effects)
+            self.assertTrue(reader.counts)
 
 
 @unittest.skipUnless(os.environ.get("DURIS_RUN_STAKE_SQL_INTEGRATION") == "1",

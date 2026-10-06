@@ -276,6 +276,35 @@ class ItemRevisionTests(unittest.TestCase):
                                 [self.event(81, 0, 99)], unattributed)
 
 
+class PartialClaimExportTests(unittest.TestCase):
+    def test_bounded_exact_partial_rows_are_read_only_and_keep_identities(self):
+        from economic_sql_audit_snapshot import read_pending_claim_consumptions, ExportError
+        class Cursor:
+            def __init__(self, rows):
+                self.rows, self.calls = rows, []
+            def execute(self, query, params):
+                assert query.startswith("SELECT ")
+                self.calls.append((query, params))
+            def fetchall(self):
+                return self.rows
+        row = {"spending_operation_id": bytes.fromhex("33"*16),
+            "source_operation_id": bytes.fromhex("44"*16), "source_slot": 1, "amount": 2}
+        cursor = Cursor([row])
+        rows, coverage = read_pending_claim_consumptions(cursor, LINEAGE)
+        self.assertEqual(rows, [{"spending_operation_id": "33"*16,
+            "source_operation_id": "44"*16, "source_slot": 1, "amount": 2}])
+        self.assertEqual(coverage, {"rows": 1})
+        self.assertEqual(cursor.calls[0][1], (LINEAGE, LINEAGE, 100001))
+        for field, values in (("spending_operation_id", (None, bytes(16), "33"*16)),
+                ("source_operation_id", (None, bytes(16), b"short")),
+                ("source_slot", (True, 1.0, 0, 65536)), ("amount", (True, 2.0, 0, 2**64))):
+            for value in values:
+                with self.subTest(field=field, value=value), self.assertRaises(ExportError):
+                    read_pending_claim_consumptions(Cursor([{**row, field: value}]), LINEAGE)
+        with self.assertRaisesRegex(ExportError, "collection exceeds row limit"):
+            read_pending_claim_consumptions(Cursor([row]*100001), LINEAGE)
+
+
 class OriginTests(unittest.TestCase):
     def test_original_admission_time_and_full_command_hash_refuse_read_only(self):
         intact = witness()

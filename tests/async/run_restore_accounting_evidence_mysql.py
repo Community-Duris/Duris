@@ -72,7 +72,7 @@ TABLES = ("economic_accounting_operation", "economic_accounting_account_effect",
           "epic_balance_baseline", "mud_schema_migrations", "mud_schema_migration_state",
           "quest_mobile_native", "economic_pending_claim_source", "economic_pending_claim_consumption",
           "economic_account_mapping", "economic_baseline_control", "economic_baseline_witness",
-          "economic_baseline_reservation")
+          "economic_baseline_reservation", "auction_money_pickups")
 
 
 def execute(query, params=None):
@@ -201,6 +201,36 @@ def canonical_cut(label, changes, repairs, code, full=False, broken_fk=False):
                     assert code is None and result["read_only"] and not result["release_qualified"]
             finally:
                 audit_reader.close()
+        if label.startswith("pending-claim-"):
+            import economic_sql_audit_snapshot as exporter
+            from reconcile_economy_accounting import Reconciler
+            snapshot_reader = pymysql.connect(**(settings | {"database": "duris_restore", "user": READER,
+                "password": "plan5-disposable-reader", "cursorclass": pymysql.cursors.DictCursor}))
+            try:
+                with snapshot_reader.cursor() as cursor:
+                    cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+                    cursor.execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
+                    native, gaps, coverage = exporter.read_native(cursor, LINEAGE)
+                    native["pending_claim_consumers"], native["pending_claim_consumer_coverage"] = (
+                        exporter.read_pending_claim_consumers(cursor, LINEAGE))
+                report = Reconciler()
+                report.audit_pending_claim_consumers("sql_partial", LINEAGE.hex(), native)
+                from collections import Counter
+                spent, retained = Counter(), Counter()
+                for row in native.get("pending_claim_consumptions", []):
+                    spent[(row["source_operation_id"], row["source_slot"])] += row["amount"]
+                for row in native["pending_claim_sources"]:
+                    if row["account_key"] is not None and row["claim_operation_id"] is None:
+                        retained[row["account_key"]] += row["amount"]-spent[(row["source_operation_id"], row["source_slot"])]
+                live = {row["account_key"]: row["balance"][0] for row in native["holdings"]
+                        if bytes.fromhex(row["account_key"])[18:20] == b"\x05\x00"}
+                invalid = (sum(native["pending_claim_source_coverage"][field] for field in
+                    ("invalid_account_mappings", "invalid_source_roots", "invalid_consumer_roots")) or
+                    sum(report.counts.values()) or any(retained[key] != live.get(key, 0) for key in set(retained)|set(live)))
+                assert bool(invalid) == bool(code), (label, native, dict(report.counts))
+            finally:
+                snapshot_reader.rollback()
+                snapshot_reader.close()
         assert captured() == cut, label + ": audit changed authority"
     finally:
         try:
@@ -278,6 +308,8 @@ def pending_claim_cuts():
             execute("INSERT INTO economic_account_mapping(mapping_id,lineage,account_kind,context_id,backend_kind,"
                     "locator_kind,native_id,active_native_id,creating_operation_id) VALUES(9,%s,5,0,1,5,42,42,%s)",
                     (LINEAGE, bytes.fromhex("81"*16)))
+            remaining = {"unspent": 8, "partial": 6, "consumed": 0, "whole": 0}[mode]
+            execute("INSERT INTO auction_money_pickups(pid,money,claim_revision) VALUES(42,%s,1)", (remaining,))
             for row in source_rows:
                 execute("INSERT INTO economic_pending_claim_source VALUES("+",".join(["%s"]*7)+")", row)
             for row in consumption_rows:
@@ -330,6 +362,11 @@ def pending_claim_cuts():
                 print("MODELED_CLAIM_METADATA_BATCH "+json.dumps({"source_rows": 67, "pair_batch": 64,
                     "projection_metadata_only": True, "original_capsule_identity_qualified": False,
                     "fixture_restored": True},sort_keys=True),flush=True)
+            if mode in ("consumed", "whole"):
+                retiring = bytes.fromhex(("84" if mode == "consumed" else "85")*16)
+                canonical_cut("pending-claim-"+mode+"-retired-mapping",
+                    [("UPDATE economic_account_mapping SET active_native_id=NULL,retiring_operation_id=%s WHERE mapping_id=9", (retiring,))],
+                    [("UPDATE economic_account_mapping SET active_native_id=42,retiring_operation_id=NULL WHERE mapping_id=9", None)], None, full=True)
 
             def cut(label, changes, repairs, code, broken_fk=False):
                 canonical_cut("pending-claim-"+mode+"-"+label, changes, repairs,
@@ -351,6 +388,11 @@ def pending_claim_cuts():
                       (LINEAGE, source))], "source", broken_fk=True)
             if mode == "partial":
                 spending = bytes.fromhex("83"*16)
+                canonical_cut("pending-claim-partial-split-original-credit",
+                    [("UPDATE economic_pending_claim_source SET amount=2 WHERE source_operation_id=%s", (source,)),
+                     ("INSERT INTO economic_pending_claim_source VALUES(%s,2,%s,9,42,3,NULL)", (source, LINEAGE))],
+                    [("DELETE FROM economic_pending_claim_source WHERE source_operation_id=%s AND source_slot=2", (source,)),
+                     ("UPDATE economic_pending_claim_source SET amount=5 WHERE source_operation_id=%s", (source,))], None, full=True)
                 for amount in (1, 3, 6):
                     query = "UPDATE economic_pending_claim_consumption SET amount=%s WHERE spending_operation_id=%s"
                     cut("amount-"+str(amount), [(query, (amount, spending))], [(query, (2, spending))], "consumption")
@@ -362,6 +404,8 @@ def pending_claim_cuts():
                     [("DELETE FROM economic_pending_claim_consumption WHERE spending_operation_id=%s", (OP,))], "consumption")
                 cut("orphan-consumption", [("UPDATE economic_pending_claim_consumption SET source_operation_id=%s WHERE spending_operation_id=%s", (ORPHAN, spending))],
                     [("UPDATE economic_pending_claim_consumption SET source_operation_id=%s WHERE spending_operation_id=%s", (source, spending))], "consumption", broken_fk=True)
+                cut("unattributed-consumption", [("UPDATE economic_pending_claim_consumption SET source_operation_id=%s,spending_operation_id=%s", (ORPHAN, ORPHAN))],
+                    [("UPDATE economic_pending_claim_consumption SET source_operation_id=%s,spending_operation_id=%s", (source, spending))], "consumption", broken_fk=True)
                 cut("rejected-consumer", [("UPDATE economic_pending_claim_consumption SET spending_operation_id=%s", (REJECTED,))],
                     [("UPDATE economic_pending_claim_consumption SET spending_operation_id=%s", (spending,))], "consumption")
                 # Both retained-allocation cursors must traverse a second PK page
@@ -381,6 +425,7 @@ def pending_claim_cuts():
                 cut("wrong-whole-consumer", [("UPDATE economic_pending_claim_source SET claim_operation_id=%s WHERE source_operation_id=%s", (OP, source))],
                     [("UPDATE economic_pending_claim_source SET claim_operation_id=%s WHERE source_operation_id=%s", (bytes.fromhex("85"*16), source))], "consumption")
         finally:
+            execute("DELETE FROM auction_money_pickups WHERE pid=42")
             execute("DELETE FROM economic_pending_claim_consumption")
             execute("DELETE FROM economic_pending_claim_source")
             execute("DELETE FROM economic_account_mapping WHERE mapping_id=9")
@@ -389,10 +434,11 @@ def pending_claim_cuts():
                               "economic_accounting_operation", "critical_operation_inbox"):
                     execute("DELETE FROM "+table+" WHERE operation_id=%s", (operation,))
         assert captured() == initial, mode
-    print("PENDING_CLAIM_RESTORE_CUTS "+json.dumps({"controls": 4, "cuts": len(canonical_cuts)-first_cut,
+    print("PENDING_CLAIM_RESTORE_CUTS "+json.dumps({"controls": 7, "cuts": len(canonical_cuts)-first_cut,
           "original_readers": 2, "native_roots": 5, "native_fixture_sha256": hashlib.sha256(raw).hexdigest(),
           "allocation_pagination_rows": {"sources": 258, "consumptions": 257},
           "schema_head": "0062_economic_pending_claim_consumption", "authority_unchanged": True,
+          "snapshot_allocation_reader": True,
           "producer_journey_qualified": False}, sort_keys=True), flush=True)
 
 

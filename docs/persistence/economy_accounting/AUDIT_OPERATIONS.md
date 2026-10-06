@@ -60,8 +60,9 @@ The report's `retained_pending_claim_allocations: verified` covers these
 retained projections. It does not authenticate the origin-policy selector or
 the original PID from a frozen source digest, reconcile current native claim
 balances, or qualify claim producers. The saved snapshot exporter/reconciler
-still needs partial-consumption coverage. Source capture and release remain
-unqualified; a successful check never authorizes correction of a finding.
+also reads whole and partial allocations and compares their remaining amounts
+with native claim balances, as described below. Source capture and release
+remain unqualified; a successful check never authorizes correction of a finding.
 
 Status 0 emits a small JSON report with database scope and verified root/byte
 counts. A discrepancy or missing/oversized source emits no report, prints a
@@ -537,9 +538,38 @@ also proves that changing one pile denomination raises `stale_native_balance`.
 The export includes pending claim source allocations and flags missing or
 mismatched claim lifetime mappings. It verifies each source root is committed
 in the same lineage, has a balanced posting set and credits the mapped claim by
-the allocated amount; open source totals must match the native claim balance.
-Consumed-source debit linkage is checked, but completeness across legacy claim
-writers and their logical source-event attribution are still unproven. Linked
+the sum of its original lots for that account. Posting summaries are retained
+across all 64-pair query batches. Original positive lot amounts stay immutable.
+
+At canonical 0062, `native.pending_claim_consumptions` retains exact
+`spending_operation_id`, `source_operation_id`, `source_slot` and positive
+`amount` fields. The paired `pending_claim_consumption_coverage` contains the
+exact integer row count. IDs are nonzero 16-byte lowercase hex, slots are
+integers in1..65535, and amounts are integers in1..2^64-1; boolean, floating
+point and string aliases refuse. Each collection is bounded to100,000 rows.
+Historical SQL snapshots without these fields report
+`missing_pending_claim_consumption_coverage`; absence is not an empty book.
+
+The remaining amount is the immutable source amount minus its partial
+consumptions, or zero for a legacy whole-consumption link. Remaining source
+totals must equal the current native claim balance. A positive remainder
+requires the original active PID; a fully consumed lot may retain a retired
+mapping, whose original mapping/PID identity must still match. Successful
+pending-claim debit roots are checked across reasons and epochs. The reconciler
+refuses duplicate, missing, orphaned, mixed whole/partial, overdrawn and wrong
+account allocations, and requires the allocated amount to match each debit
+account as well as the root total. A consumption with neither retained source
+nor spending root has unknown lineage; it remains a database-wide orphan
+finding with its original IDs.
+
+Selected-epoch consumer effects must also match the snapshot's independently
+decoded original EAP1 plan. Auxiliary roots outside that epoch retain SQL
+metadata/projection coverage; their original capsules require the separate
+canonical SQL check under the release's quiescence procedure. Completeness
+across legacy writers, original opening-policy/PID authentication and logical
+source-event attribution remain unproven. The native allocation fixture is a
+modeled history, and the 67-source batch probe tests SQL metadata only; copied
+capsules do not authenticate its new root IDs. Linked
 post-baseline create events now provide a creation origin; an unreferenced event
 for a tracked UID is reported as an exception, while origins for events outside
 that UID set remain unknown. The export also does not prove complete coin-pile
