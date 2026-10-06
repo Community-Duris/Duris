@@ -15,8 +15,9 @@ Primary already consumed original bundles through
 1. `6d5ec67a24dd052fd8c9e699c1a89abbf7716d9f`: recovery cut oracle/SELECT reader,
    actual shared QP06 interface check, current frontier/batch instructions.
    Metadata: `aacef7b38dd15c42b2fa5d8939f26e1c069e475d`.
-2. The following supply/D/held bundle extends those files; its exact SHA is
-   recorded by the final handoff metadata commit. Import in this order on a
+2. `8b02790c5fc50fda76828d6f9b7ae94018b53b30`: supply/full-world variants,
+   D/held/original-custody controls and completed batch instructions. Its parent
+   is `aacef7b38dd15c42b2fa5d8939f26e1c069e475d`. Import in this order on a
    compatible integrated candidate. Merge920a7 imports upstream history only.
 
 ## Usable now
@@ -104,3 +105,11 @@ small checks executed; remaining genuine shared capabilities are specified.
 The primary can import the new owned bundles and qualify at its agreed major
 batch boundary. This handoff claims completion of independent preparation only,
 with integrated native gameplay/persistence/activation/release still pending.
+
+Second bundle's exact owned files: docs CASES.md, GAPS.md, HANDOFF.md,
+RECOVERY_BATCH.md, RESULTS.md in the owned docs directory; executable
+prepare_fixture.py, capture_quest_cut.py, quest_cut_checks.py,
+test_production_terms.py, test_quest_cut_checks.py in the owned tests directory.
+First bundle additionally updates SOURCE_FACTS.json and case_data.py. The final
+handoff-only commit records these SHAs; published branch tip is independently
+resolvable after fetch. No shared-file patch is included.
