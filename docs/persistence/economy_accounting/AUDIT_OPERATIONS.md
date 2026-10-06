@@ -54,8 +54,14 @@ The report's `retained_pending_claim_allocations: verified` covers these
 retained projections. It does not authenticate the origin-policy selector or
 the original PID from a frozen source digest, reconcile current native claim
 balances, or qualify claim producers. The saved snapshot exporter/reconciler
-still needs partial-consumption coverage. Source capture and release remain
-unqualified; a successful check never authorizes correction of a finding.
+now captures bounded partial-consumption rows and reconciles retained remaining
+value against current claim holdings. Missing coverage and malformed, mixed,
+orphan, overdrawn or wrong-account allocations remain findings. Source/posting
+metadata spans every64-pair batch; only exact requested pairs are counted,
+while actual duplicate rows still refuse. See
+[the primary snapshot qualification](PLAN5_PARTIAL_SNAPSHOT_PRIMARY_QUALIFICATION_2026-10-06.md).
+Complete source capture, producer authentication and release remain unqualified;
+a successful check never authorizes correction of a finding.
 
 Status 0 emits a small JSON report with database scope and verified root/byte
 counts. A discrepancy or missing/oversized source emits no report, prints a
