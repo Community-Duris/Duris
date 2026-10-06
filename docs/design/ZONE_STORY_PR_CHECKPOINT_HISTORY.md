@@ -41891,3 +41891,537 @@ Miaeril Village: focused source/schema assertions, full production catalog/inven
 The maintained Linux server build passed with the separately committed source-area loader fix;src is unchanged here. Repository format uses canonical clang-format14.0.6. The unchanged full production regression passed on an isolated native Linux filesystem with all6154 selected input files verified by SHA-256 against the worktree before recording the result. The all168 compiled journal journeys ran successfully in the worktree on Linux. No played active-accounting heart/salmon exchange, source recovery, SEARCH/door/current/fall travel, feeding, purchase, book use, mount or outside-Qin outcome is claimed. Any selected native repair needs a separate named fix/news commit with trigger,before/after,scope and validation.
 
 ```
+
+## Before priority 157: Lair of the Gibberling King
+
+Head: `74d3e1b515b441a82e90ca1aa1836179b1bb5ed5`. Exact preceding PR description, SHA-256 `d4883ba6646558fa5701b6575c42f2189f0ff2b9850cfa22ad214156ef65483c`; UTF-8 bytes 51215.
+
+```markdown
+Add discovered-zone dailies, discovery achievements and guided zone journals. Active, ready accounting is required for new discovery, encounter, journal, achievement and daily credit; frozen recovery is separate.
+
+## Current comprehensive checkpoint: The Temple of the Sun
+
+**Feature/journal commit:** [74d3e1b51](https://github.com/Community-Duris/Duris/commit/74d3e1b515b441a82e90ca1aa1836179b1bb5ed5). Three cards, twelve contacts, eleven addressed aliases, four optional preparation rows and twenty follow-ups.
+
+Trentloss Q11 accepts distinct pine-heart/bear-mind evidence for vine key82420; oak Q29 takes sunbeam82408 for morning-sun ring82409; Grentkas Q44 takes rock82406 for stone ring82405. All stay, retaining three independent receipts/achievements/potential dailies. Supplied exact proof fits without personal recovery, source victory or earlier return history.
+
+Physical access: vine entrance key, Rantah cellar key, statue dome key. Receiving a key, actual unlocking/opening and arrival are distinct. Keys have no-rent/disposable data; door state changes before owned-key destruction submission, so atomicity/recovery is a separate engineering qualification. Source graph reaches54 rooms with SEARCH but no keys,90 with all3 keys,94 with successful skilled PICK. Graphs are conditional source evidence, not played safety.
+
+Frolikk Epic Charisma and generic forage refuse under active accounting; future objectives need accounted service/source adapters. Imported stone359/fountain72 have effective handlers outside the local-vnum scan. Credit must follow committed actor/group awards or actual target/effect, not pending messages or command text. Seven selected outside ring/ingredient recipes remain separate leads and receipts. Expand bounded typed imported-special/teacher/material traversal with citations, depth/cycle limits and advisory edges.
+
+**Builder repair plans, no native repair shipped:** oak promises mace but82409 is an actual ring; Grentkas acceptance says barding but82405 wears finger/tail. Confirm intent and outside82405 recipe compatibility before separately named text/reward fixes. Qualify disposable-key ordering and fountain argument selection before any generic safety fix. Preserve native IDs, stock, flags and balance here.
+
+Full50 QST/422 raw ZON lines,94 rooms/217 exits,32 mobiles,27 objects,297 commands/82 expanded groups, seven imports, all boundary targets and selected effective dispatch reviewed. Eleven M aliases are three addressed conversations, not eleven achievements. Forest-restoration/research/music prose does not manufacture an outcome.
+
+Catalog:**169 journals/1522 achievements/1408 potential dailies/2184 rows**, preserving classifications. **156/220 source-comprehensive,64 pending.** All168 earlier maps,2668 native definitions/fingerprint/revision2/registry and original220 order preserved. Exact preceding PR archived with SHA-256. Full roadmap goal remains active.
+
+Next: Lair of the Gibberling King (`gibber`).
+
+## Storm Port Stronghold actual repair (news)
+
+Separate [fix 4b25c5f17](https://github.com/Community-Duris/Duris/commit/4b25c5f177ebb11d4a2eabab286b5c2a2e5a55f9):exactly one room22607 direction word changes outpost east→west. Forest remains east, matching all four unchanged reciprocal22607/22606 and22607/22630 exits. Original source-caption regression fails; repaired caption/routes/exact native bytes pass. No topology/item/source/payment/guardian/reward/travel changes. Live LOOK/traversal unqualified.
+
+Player-facing:**Storm Port Stronghold’s outside-path description now correctly points west toward the outpost.**
+
+
+
+
+
+
+
+
+
+
+## Desolate Under Fire actual repair (news)
+
+Separate [fix 27c78dec3](https://github.com/Community-Duris/Duris/commit/27c78dec31370e23452b81e6a4324d11f0633f17) changes exactly two room words: Endurance77412 eastern→southern, Courage77414 eastern→western, matching existing PUSH controls and blocked exits. No controls/exits/resets/guardians/sources/items/phase/rewards change. Extended existing trial-direction regression rejects each original independently and passes repaired invaded plus original normal variants; exact native bytes qualified. Live LOOK/PUSH/traversal unqualified.
+
+Player-facing: **Desolate Under Fire’s Master trial now gives the correct south and west directions in the Endurance and Courage chambers.**
+
+
+
+
+
+
+
+
+
+
+
+## Braddistock actual repair (news)
+
+Separate fix [5b4c4f34a](https://github.com/Community-Duris/Duris/commit/5b4c4f34a151f624d21558fb86cb815f05cf76b1) changes exactly two native lines in `src/specs/specs.braddistock.c`, with the focused executable regression in that same fix commit. When an ordinary player above level14 tries NORTH past the mansion spirit, its existing refusal speech now goes to the blocked player with CRLF. Previously it went to the descriptorless NPC and vanished; the separate passage-block action already reached the player. Gate threshold, staff/null/periodic/self/unrelated-direction bypasses and all three observer/player actions remain intact.
+
+**News-ready:** “Braddistock Mansion's spirit now delivers its entry refusal directly to the blocked player.”
+
+Original production function fails the focused isolated regression; repaired player-recipient/exact-line, level14 admission/level15 block, trusted level59, null/periodic/self/SOUTH and action-audience/actor cases pass. Maintained server build, exact native-byte scope, changed/staged formatting and whitespace pass. This is an isolated production-function/message-boundary test, without a claimed played network entry/staff journey. All area bytes and native recipes remain intact. This repair is separate from the feature commit below.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Moregeeth actual repair (news)
+
+**Separate fix [7b916b887](https://github.com/Community-Duris/Duris/commit/7b916b887): Fix Moregeeth letter quest desk keyhole.** Before: Ungal's letter was inside a closed, locked desk whose negative key field made normal PICK and KNOCK reject it before an attempt. After: exactly one prototype field changes the keyhole setting -1→0, permitting normal attempts. The lock, fixed desk, acid opening trap, letter container placement/text and Tala's exact request/reward remain intact. Journal/docs/projection additions are a separate feature commit.
+
+Proof: original-data focused regression fails on the negative-keyhole blocker; repaired keyhole/locked state/trap/exact letter source/request pass. Exact-byte comparison proves the one-field scope. No guaranteed skill success is added. Played skill/knock/trap/pickup/offer/reward settlement remains unqualified; saved instances are not rewritten. Other copied caption and campaign proposals are not shipped repairs.
+
+**News-ready:** “Moregeeth's trapped letter desk now permits normal lockpicking or knock attempts, restoring access to the letter for Tala's quest.”
+
+
+
+
+
+
+
+
+
+
+## Fields Between portability repair withdrawn
+
+**Correction [d2a64432d](https://github.com/Community-Duris/Duris/commit/d2a64432d81c6f98c497f14a47334a85c6dd39e0): Restore Fields Between rift pickup restrictions.** The earlier commit05eeca928 was an incorrect balance-affecting change: it added ITEM_TAKE and reduced weight from1,000,000 to1 on unlimited ENTER portal71030. The shared teleport handler selects inventory portals, so quest pickup prose did not justify making this rift portable on a PvP MUD.
+
+The original TAKE=0 and weight1,000,000 are restored. The entire Fields Between object file exactly matches its pre-portability-fix bytes. Destination, unlimited charges, fixed floor placement, other portals and native quest recipe are unchanged. The focused regression now rejects the unsafe portable prototype and passes the restored restrictions. No deployment or existing saved-instance rewrite occurred.
+
+**Withdrawn news claim:** do not announce that this rift can be picked up or delivered. The shaman's quest/source inconsistency remains unresolved pending an explicit builder decision. A separate non-teleport quest proof, source-bound interaction or intentionally retired recipe are possible designs; none is implemented or enabled here.
+
+
+
+
+
+
+
+
+
+
+
+## Du'Maathe Castle actual repair (news)
+
+Separate fix [45bb3c948](https://github.com/Community-Duris/Duris/commit/45bb3c94896411cb06ce835b42824da8144d7936), **Fix Du'Maathe northwest parapet direction clue**. Trigger: LOOK at37248 identified the northwest corner in its title and reciprocal northern/western wall roads, but its copied description said south. Exactly one native direction word now says north; all other native bytes, routes, doors, resets, quests, rewards and prototypes remain intact. The distinct southwest corner keeps its correct clue.
+
+Proof: original description fails the focused regression; repaired title/clue, both reciprocal roads and retained southwest clue pass. Exact-byte scope confirms one word. Live LOOK/traversal remains unqualified. This isolated native repair does not restore horn supply, alter secret gates, correct foreign prices, add controllers or implement a dragon campaign.
+
+**News-ready:** “Du'Maathe Castle's northwest parapet now correctly identifies its position in the room description.”
+
+
+
+
+
+
+
+
+
+
+## Ixarkon actual repair (news)
+
+Separate fix [7baa78c3c](https://github.com/Community-Duris/Duris/commit/7baa78c3c8ee67a2059c314e6372f5ae1843e989), **Fix Ixarkon direction clues to match native exits**. Trigger: LOOK descriptions in11 rooms gave directions opposite or away from their actual exits. Twelve direction words now match reciprocal routes: slave pens west, garden path south, tower gate west, camp approaches north/east/south, sandstone passage east, Rockspire tunnel west, dwelling west/cavern east and water cavern southwest. Only description words change; routes, door metadata, quests, rewards, prototypes and resets are preserved.
+
+Proof: the focused regression fails all12 original clue checks, passes all corrected descriptions and reciprocal destination/door metadata, and exact scope checks preserve all other native bytes. Live LOOK/traversal remains unqualified. This is a native repair independently reviewable from journal authoring; it does not restore the veil entrance, add bridge retraction, enable paid routes or implement rescue/peace.
+
+**News-ready:** “Ixarkon's slave pens, fungal gardens, towers, camp approaches, Rockspire tunnels and water cavern now give directions that match their exits.”
+
+
+
+
+
+
+
+
+
+
+## Opal Phoenix actual repair (news)
+
+**Separate native fix: [ac8e2de48](https://github.com/Community-Duris/Duris/commit/ac8e2de48f3aba3915d95abb7ee1d0fefd580f14) — fix: make Opal Phoenix sand selectable for its delivery quest.** Only SECRET is cleared on sand70823 (20480→16384); NORESET, every other prototype byte, exact quest terms/rewards/recipient flags and source placements/caps are preserved. Journal/docs/projection additions are a separate commit.
+
+**News-ready: Opal Phoenix’s student sand reward is now visible and can be selected for Alazia’s delivery quest.**
+
+Trigger/before: the student's quill reward created secret sand directly in carried inventory. Actual mortal visibility rejects SECRET before the own-inventory shortcut, and normal native hand-in named selection has no SECRET exception. The OTHER item has no ordinary inventory SEARCH path. After: newly instantiated sand is visible and can be selected for the same exact Alazia recipe. The focused regression compiles actual visibility/isname/ordinal/list functions under ASan/UBSan: an awake mortal fails the original prototype and accepts the corrected five aliases in both modes; hidden/blind/wrong-name/duplicate-ordinal controls reject. This proves the corrected selection boundary, without a played full offering/item+XP settlement. Existing saved instances are not rewritten and need separately reviewed owner-approved remediation. The hidden chest/talisman/intestines retain legitimate source SEARCH paths; their flags and intentional100% key-break value are preserved.
+
+
+
+
+
+
+
+
+
+
+## Centaur Villages actual repair (news)
+
+**Separate native fix: [e456b3403](https://github.com/Community-Duris/Duris/commit/e456b34031dcea24cd3c916e63901418cd67a712) — fix: align Centaur Villages quest and travel clues with actual exits.** Exactly six text lines change; exits, flags, source placements/caps, quest terms/rewards/retirement and aliases are preserved.
+
+**News-ready:** Centaur Villages' quest and travel clues now point in the correct directions, including Tamilea's route to Banitoor's cave.
+
+Trigger/before: Tamilea's Learned One response directed players southwest despite Banitoor's cave east of plains93326. Grotto93310 west-exit text pointed east, footpaths93313/93319 put their western forest east, forest93381 east-exit text pointed west, and dead-end93393 described its eastern entrance as west. After: all six clues match their existing topology, with Tamilea pointing to the eastern edge. The focused regression checks destinations/reciprocal routes and all six original clues fail; corrected source passes. Source-level proof does not certify played ASK/LOOK/traversal. No further native flag/access/source/quest repair is included in the journal commit.
+
+
+
+
+
+
+
+
+
+
+## Kobold Settlement actual repair (news)
+
+**Separate fix commit:** [02788c573](https://github.com/Community-Duris/Duris/commit/02788c5738a11963647ceb9b4b344463f4f57704) (`fix: restore Kobold temple guardians to their actual rooms`). This is a native gameplay repair, separate from journal/docs/service classification.
+
+- **Before:** Jkyl, the tomb golems and pit demon checked room numbers one ahead of their actual reset placements. Jkyl's normal altar branch and periodic imp summoning were unreachable; tomb/pit guarding and the demon's ledge attacks did not run at normal placements. The demon also followed the global character list from a room-list head.
+- **After:** Jkyl uses altar1481, blocks its north/south/east commands when dispatched, sends westward players into actual pit1484 and reaches the existing combat imp-summoning path. Golems guard tomb1482. The demon uses pit1484, scans ledge1483 through `next_in_room`, pulls the selected eligible player into the pit and starts combat. Existing chance, immunity and imp-cap conditions remain intact. Restored obstacles can affect played difficulty.
+- **Proof and limits:** Seven native lines change. The focused executable regression is in the fix commit and compiles the actual production functions. The original code fails the altar regression; repaired code passes barrier/pit, summon cadence/cap/load-failure, tomb/pit escape and ledge targeting with unrelated global successors. Server build and changed/staged formatting pass. Played combat/difficulty/movement remain unqualified.
+
+**News-ready sentence:** “Kobold Settlement's temple guardians now defend their actual altar, tomb and sacrificial pit, restoring the high priest's imp summoning and the pit demon's ledge attacks.”
+
+
+
+
+
+
+
+
+
+
+## Zone and quest repairs (news)
+
+### Shipped native repair: Plane of Smoke — vault return key and Discontent targeting
+
+**Separate fix commit [0fff62e70](https://github.com/Community-Duris/Duris/commit/0fff62e708aaff7efe63dfacf3375beb90632049).** These are actual native zone repairs, independently reviewable from the journal and implementation-plan commit below.
+
+- **Vault return portcullis, room 139942 south:** the lock previously required portal object 139819, so the rewarded vault key 139818 could not unlock that side. It now uses 139818, matching the reciprocal north door. Actual production find-door/has-key/unlock/lock regression covers both directions, carried/held keys, wrong-key rejection and reciprocal lock transitions. The door stays closed and pickproof until separately opened. Key destruction/durable settlement is a boundary stub; live access/travel remains unqualified.
+- **Discontent, object 139829:** its display name was missing from targeting aliases. Add `discontent` while retaining `wretched broadsword hate`. Actual production isname/get-object-in-list selects Discontent with Hate first in inventory and preserves old aliases. This applies to newly loaded prototypes; live command/ownership and migration of already loaded/strung instances are not qualified.
+
+The focused regression fails on the original data and passes after these exact two native-line changes. Every other native world/object byte is preserved. **News-ready:** “The Plane of Smoke's vault key now works from either side of the portcullis, and Discontent can be selected by its own name.”
+
+**Pending proposals, not included in this fix:** Negative Plane forge terrain; greatsword's permanent Power spell bundle/effect policy; earring wear-slot intent; copied fire-elemental air description, Korlia wording and unused scene intent; shared epic absorb traversal. Their evidence and qualification plans are in the dossier. No replacement terrain/spell values, combat/stat policy change or live exploit qualification is claimed.
+
+### Shipped native repair: The Tempest Court — two direction clues
+
+**Separate fix commit [dc586e34c](https://github.com/Community-Duris/Duris/commit/dc586e34c75fea9dc4016416cc95bd1637499e63).** Inspecting Si'Ciltron's return mist door in room 131628 previously said west although its reciprocal exit goes east to 131627; the clue now says east. Looking at prison 131740 previously described north/west cells although its reciprocal exits are north/south; the clue now says north/south. Exactly two native description words change, with every other world byte, exit, lock, quest and reset preserved. The focused regression fails each original clue and passes the repairs; exact native-byte comparison passes. Live LOOK/traversal remains unqualified.
+
+**News-ready:** “The Tempest Court's war-chamber return door and prison-cell directions now match their actual exits.” This is an actual native repair, separate from the journal addition and from the pending proposals below.
+
+### Shipped native repairs:
+
+**Rift Valley Jungle / Moonhollow — five route descriptions corrected.**
+Separate commit [f5d5b2a5c](https://github.com/Community-Duris/Duris/commit/f5d5b2a5ccfbb9fccc8f5570079dd3394c74ed54), `fix: correct five Moonhollow route descriptions`.
+When players read these rooms, the prose now matches actual reciprocal exits:
+wall cave approach 80325 north → south (the first north walkway clause remains);
+Moonstone office 80327 east → west; armory entrance 80335 south → east;
+forge return 80337 east → south; branch-home approach 80346 west → north.
+The focused regression fails on original 80325 and passes all five repaired routes;
+byte comparison proves exactly five scoped direction-word replacements. Exits,
+locks, recipes, rewards and resets are unchanged. Live LOOK/traversal is unqualified.
+**News:** “Moonhollow's wall, guard office, armory, forge and canopy-home directions now match their actual exits.”
+The [dossier](https://github.com/Community-Duris/Duris/blob/codex/discovered-zone-dailies/docs/design/zone-stories/RFTJNGLE.md) separates this implemented fix from journal guidance and pending plot/boundary proposals.
+
+
+**Desolate — Master trial button directions (implemented, separate fix commit).**
+[`b1ff082bc03ae579aceec97b5d3ebd878bf2eea7`](https://github.com/Community-Duris/Duris/commit/b1ff082bc03ae579aceec97b5d3ebd878bf2eea7),
+`fix: correct Desolate Master trial button directions`.
+Trigger: look in the Tests of Endurance or Courage. Before: both descriptions
+pointed east, while their placed PUSH controls and progression exits are south
+and west respectively. After: those two room descriptions match the actual
+controls. No switch, exit, guardian, trial rule, payment or reward changed.
+Validation: focused source regression fails on original prose and passes after
+repair, checking actual switch values/descriptions, placement and blocked exits/
+resets. Native bytes are verified to contain only these two replacements.
+Live look/control/return remains unqualified.
+**News:** “Desolate's Master trial now gives the correct button directions in
+the Tests of Endurance and Courage.” Missing shop stock and payment support
+below remain pending proposals, not shipped native quest repairs.
+ The Halfcut Hills — kobold crossbow ambusher
+
+These are two **separate actual fix commits**, independently identifiable for
+player news; native quest recipes, zone layouts, reset/gear data and accounting
+guards are unchanged.
+
+- [b28262d8c](https://github.com/Community-Duris/Duris/commit/b28262d8cc8dfe6156df70f162981399d18be717) —
+  **`fix: schedule Halfcut crossbow ambushes and stop interrupted volleys`.**
+  **Trigger:** kobold 27009 loads in alcove 27142 and receives scheduled
+  procedure callbacks, targeting player lanes 27139, 27137 and 27136.
+  **Before:** it handled setup as an attack, returned false to scheduling,
+  and ignored the real periodic command; the intended hazard did not pulse.
+  **After:** setup only registers scheduling; pulses retain three lanes,
+  four bolts, player-only selection and original damage. Runtime identities
+  are snapshotted and re-resolved before each bolt; target death, movement,
+  removal or storage reuse stops that volley, and ambusher death, movement
+  or removal stops further firing. Missing lanes do not hide later lanes.
+  Unbound defender/blowgun procedures remain unbound.
+- [348eccdf3](https://github.com/Community-Duris/Duris/commit/348eccdf3261e62aa8984ac0868b98adfa815a06) —
+  **`fix: deliver Halfcut crossbow warnings to struck players`.**
+  **Trigger:** the ambusher's direct “striking you” warning.
+  **Before:** `TO_VICT` with the same player actor/recipient caused the
+  shared audience filter to suppress that message. **After:** `TO_CHAR`
+  delivers it to the struck player, with the separate room warning and
+  four-bolt damage unchanged.
+- **Validation:** the focused test compiles and executes the actual
+  procedure through setup and all three lanes, four bolts, NPC/dead-target
+  exclusion, a missing lane, target/ambusher interruption, removed next
+  occupants, storage reuse and newly inserted occupants. The original
+  fails setup; the preceding procedure fails the strengthened audience
+  count; both fixes pass, as do maintained builds and changed/staged format.
+  This is controlled callback qualification. Live combat balance, reset
+  availability and complete combat/accounting side effects remain unqualified.
+
+**Player-facing news after merge/deployment:** “The Halfcut Hills kobold
+crossbow ambusher now fires on its scheduled pulses, shows each struck player
+the bolt warning, and stops interrupted volleys safely.”
+
+The [Halfcut dossier](https://github.com/Community-Duris/Duris/blob/f1e3a60a1429c68161dff599433171f8a75a47f4/docs/design/zone-stories/THE_HALFCUT_HILLS.md)
+records both repairs, proof and limitations. The separate Hall Shadow of Sin
+fix/news entry remains below. Journal guidance and proposed repairs must not
+be announced as restored native quest behavior.
+
+### Shipped native repair: The Hall of the Ancients — Shadow of Sin
+
+**Separate fix commit: [7297b964e](https://github.com/Community-Duris/Duris/commit/7297b964ed3996c33a90dae4172cd0875addf174), `fix: check Sin's actual opponent for Freedom of Movement`.**
+
+- **Player trigger:** fight the Shadow of Sin while its gaze procedure runs, including ordinary periodic callbacks with no actor argument.
+- **Before:** Freedom of Movement was checked on the callback actor, which is null during periodic combat and can be an unrelated player for other commands. The helper dereferences it, so the periodic path could crash; other calls could check/consume the wrong player's protection. The room message also contained an invalid target marker.
+- **After:** the gaze checks its actual opponent, preserves unrelated players' protection, and substitutes the correct opponent in its room text. Existing paladin/staff exemptions, probability, spell consumption and unprotected paralysis behavior are retained.
+- **Validation:** compiled and executed the actual procedure with periodic/null and unrelated actors, protected and unprotected opponents, paladin/staff immunity, missing opponent and non-trigger roll. The identical regression rejects the original null-target path. Maintained server build and changed-line formatting passed. Live combat, shadow-campaign and cathedral-access qualification remain open.
+- **Player-facing news:** “The Shadow of Sin now correctly checks its opponent's Freedom of Movement, fixing a combat crash and misleading target text.”
+
+### Shipped native repair: Tribal Forest — three exit clues
+
+Separate **[fix commit f8090481d](https://github.com/Community-Duris/Duris/commit/f8090481df837bb4e1a675c901488f13090657d1)** changes exactly three native description words. Inspecting west in forest room 42204 previously said south and now says west; inspecting west on the dark forest path at 42231 previously said east and now says west; inspecting south at the village's northeast corner 42261 previously said west and now says south. Each description matches its declared exit and reciprocal return. Exit destinations, locks, keys, resets, recipes, mob/object/shop data and all other native bytes are preserved.
+
+The focused direction regression fails **all three original clues** and passes repaired source; exact-byte checks confirm the three-word scope. **Live LOOK/traversal remains unqualified.** This actual player-facing repair is separate from the Tribal journal, refusal classification and pending trap/text/lore/procedure proposals.
+
+**News:** “Tribal Forest's two western forest exits and the southern village exit now describe their actual directions.”
+
+### Shipped native repair: Ironstar — two exit clues
+
+Separate **[fix commit b07b560cc](https://github.com/Community-Duris/Duris/commit/b07b560ccf2d3b7bbcb61227cfa5423dd6fa6924)** changes exactly two native description words. Inspecting west at Wherston Road room 138903 previously said east and now says west; inspecting south at Fairlocke room 138957 previously said west and now says south. Each clue matches its declared direction and reciprocal return. Destinations, locks, reset states, recipes, mobiles, objects and every other native Ironstar byte are preserved.
+
+The focused regression normalizes native color codes and fails **both original clues**; repaired source and exact-byte scope pass. **Live LOOK/traversal remains unqualified.** This actual player-facing repair is separate from the journal, equipment-service classification and pending river/current, copied item text, lore or shared-procedure proposals.
+
+**News:** “Ironstar's western valley exit and southern Fairlocke exit now describe their actual directions.”
+
+### Shipped native repair: Brass — eastern Imix Avenue clue
+
+Separate **[fix commit d18758098](https://github.com/Community-Duris/Duris/commit/d18758098083b28463279c130a3e7ec24bb48b24)** changes exactly one native description word. Inspecting east at Imix Avenue room 139017 previously said west and now says east, matching D1 to 139016 and reciprocal D3. All other native Brass bytes, recipes, destinations, locks and resets are preserved.
+
+The focused regression normalizes native color codes and fails the original clue; repaired source and exact-byte scope pass. **Live LOOK/traversal remains unqualified.** This player-facing repair is separate from new journal guidance, service/exclusion classification and pending djinn, ambient, text or topology proposals.
+
+**News:** “Brass's eastern Imix Avenue exit now describes its actual direction.”
+
+### Shipped native repair: Tower of Darkness — direction clues and magic passwords
+
+Separate **[fix commit 3f1ecf2be](https://github.com/Community-Duris/Duris/commit/3f1ecf2be064a63321c0e0243b4168727cb079c2)** changes only six native lines: two direction words and four trailing color resets in locked magic-door keywords. Inspecting south at 134011/134014 previously said north; the clues now say south, matching shrine/stairs destinations and reciprocal north exits. At 134034 north, 134040 east, 134041 west and 134073 up, intended plain `sargon`/`thothrontithos` failed because exact matching retained the trailing `&n`; those suffixes are now removed.
+
+The focused regression reproduces all six failures against original source. Repaired source passes actual maintained C++ `isname`/`check_magic_doors`, wrong-word rejection, reciprocal lock/secret clearing and preservation of closed state. All other native Tower bytes, recipes, destination/key/reset numbers and actor placement remain unchanged. **Live speech, LOOK and traversal remain unqualified.** This repair is separate from journal guidance, grouped alternatives, ownership/capability proposals and pending native changes.
+
+**News:** “The Tower of Darkness's south-facing shrine and stair clues now describe their actual directions. Its Sargon and elemental magic doors now accept the intended plain passwords.”
+
+### Journal additions and pending native repairs
+
+Hall journal/source mapping is a separate commit,
+[33e861026](https://github.com/Community-Duris/Duris/commit/33e86102694ad0a67450b67d7891f0715c3a9b0f).
+Its blockers and integration proposals are distinct from the shipped Sin combat repair.
+
+Native content repairs must be identifiable separately from new journals and proposed work. Use a clearly named fix commit where practical and record the affected zone/interaction, player trigger, before/after behavior, validation and a short news sentence. The execution register now makes this an explicit handoff convention.
+
+The explicitly shipped native repairs are listed above. **Mini Zones, City of Torrhan, Golden Hall of the Crown and Ashrumite Village ship journal guidance and tests, with no native zone/quest repair.** Mini Zones' nine missing boundary exits, dryad/navigator identity mismatches, pet claim restoration and recipe/shop/sword prose findings are **pending repair proposals**. They must not be announced as completed fixes.
+
+Torrhan's demonstrated inert throne trigger and missing shop stock 6087 are **pending native repair proposals**. The throne currently targets an already-open hallway exit; the throne-room route loads open after state masking and has no hallway return. A builder must settle intended target, initial/reset state and return policy. Missing stock affects one assistant/shop reference, not proof that the entire shop or Torrok's sword delivery is broken. Royal transformation, random-potion wording, the probabilistic “choose once” plaque and minor prose corrections also remain pending. Implemented repairs will receive a clearly named separate fix commit where practical, exact player before/after behavior, validation and a news sentence; no pending proposal should appear in completed-fix news.
+
+Golden Hall's tunnel boulder switch targets an already-open east exit and currently does nothing; the route itself remains usable. Its teaching titles without flags, note-writing prose without a grant, distant peryton clue despite a local captive source, pool/platform directional asymmetry and spelling/property/rarity wording are **pending builder-selected repair proposals**. Existing prisoner retirement is a real terminal; a followed rescue or invasion would need new accepted actor/campaign endpoints. Each implemented native repair must have a clearly named fix commit where practical and prominent affected-zone, trigger, before/after, validation/limits and news wording here. No proposal is being advertised as a completed player fix.
+
+Ashrumite's silverworking and several jewelry/enchantment contracts disagree with their dialogue: raw gems replace silver, two gem cuts produce necklaces, a necklace recipe produces gold ore, and enchantment produces pyrite. Disc 4372, jewelry rewards 66066/66067 and unrelated teacher inventory item 6089 are absent from the active inventory. Four other ordinary boundary edges work, while the east branch targets an inactive world room. Uneven guildguard/merchant wiring, inconsistent smith pricing/signs, historical bank/map text and guarded legacy pet-claim restoration have **pending builder-selected repair plans**, including exact intended/current recipe matrices and accounting/frozen-receipt qualification. The three matching gem cuts are preserved. No native recipe, prototype, route, role or pet repair ships in this checkpoint. Every implemented repair must receive a clearly named separate fix commit where practical and prominent zone/interaction, player trigger, before/after, validation/limits and news wording here.
+
+Hall's elder refusal/ore eligibility, sixteen-root offering or recipe policy, repeated one-cap ingredients, gear rarity/normal-ground-reset mismatch, armor recipe/dialogue, non-atomic collector/guardian/potion issuance, early Death callback arming and cathedral GET-before-settlement mechanism have **explicit pending repair/qualification plans**. Source and dispatched command evidence do not choose balanced materials, establish a saved son or prove first acquisition. Only the separate Sin repair above is shipped. No elder, recipe, source-cap, world-data or cathedral repair should be announced as completed. Every later implemented native repair must receive its own identifiable fix/news evidence.
+
+### Shipped native repair: Northern Lakes — pile-of-bones directions
+
+**Separate fix commit:** [5a2b93d6d](https://github.com/Community-Duris/Duris/commit/5a2b93d6d387e192ea501d6d6e5bbf71796e927b) (`fix: correct Northern Lakes pile-of-bones direction clues`). Inspecting east at room 75263 now points toward the cathedral; inspecting west points toward the pasture. Previously those two clues were reversed. Exactly two native description words change; actual reciprocal exits, quest recipes, actors and balance stay intact.
+
+**News-ready sentence:** “Northern Lakes' pile-of-bones exits now correctly point east to the cathedral and west to the pasture.”
+
+Both original clues fail the focused source regression. Corrected clues, reciprocal D1/D3 routes and exact native-byte scope pass; the regression is in the fix commit. Full catalog and journal checks also include it. Live LOOK/traversal remains unqualified. The journal, capability plans and pending wording/source decisions are separate from this actual repair.
+
+**Cloister — actual native wording repair, separate fix [208a56840](https://github.com/Community-Duris/Duris/commit/208a56840acb100fc20dbec4b0af9a80a6cd0914):** Giving Brother Mahr the intruder's adamantite tablet previously produced an acceptance caption saying “letter”; it now says “tablet.” Exactly one native word changes; requirements, reward and departure stay intact. Original caption fails the focused check; corrected caption/contract and exact-byte scope pass. Played turn-in/settlement remains unqualified. **News-ready: “Brother Mahr now correctly identifies the intruder's tablet when accepting it, making the Cloister's recommendation quest clearer.”**
+
+
+
+
+
+
+
+
+
+
+## Universal authoring and deeper source mapping
+
+Per-area files under `areas/story/` use the validated, versioned schema to bind exact native contracts, contacts and ordered guidance. Schema three adds optional current-material and historical preparation checks. Complete binding coverage is recorded separately from comprehensive source review and played qualification. Builder documentation describes the format, limits, visibility, ownership, evidence rules and unsupported objective types.
+
+The completed dossiers cover full native Q/M text, rooms, prototypes, resets, shops, literal/computed procedures, relevant shared execution and bounded foreign continuations. Examples include Twin Towers' garden belt and ordinary animal proofs; Ailvio's fish alternatives; Black Pearl's distinct fragments and foreign campaign introductions; Alatorin's exact recipes and guarded preparation; Faerie's separate signet/key/blade outcomes; Ultarium's competing souls and same-named study/wind kinds; and Surface Realm's separate warden offerings and five-material finale.
+
+Tharnadia's revision-two journal explains all nineteen exchanges with eight independent outcomes, eight support rows, one typed-food exclusion, 26 contacts and 23 optional checks:
+
+- The inn's meal, three distinct toy instruments, blank-book autograph and Phobos delivery remain independent. Borrowed instruments cannot replace the children's toy proofs.
+- Nightshade and mandrake can become a maroon vial through a support service. The wounded halfling then accepts the vial and pendant together. Supplied vials skip personal preparation; the empty pouch remains the documented swindle, and delivery does not imply healing or escort state.
+- Three wizard commissions preserve exact local/foreign item identity and city receipt ownership. Two same-named two-handed inputs and two brothel branches are grouped as support alternatives.
+- Shared paper 5 exists in active `limbo.obj` and legitimately buys a city map. The audit tool now includes administrative prototype sources while preserving discoverable zone ownership. Missing mobile 132677 remains a separate real reset finding.
+- Global P reset selection can choose a matching moved or carried container; search reveals hidden contents without collecting them. The dossier and shared plan specify actual parent UID/location, source/GET lineage and qualification. Toy/pup/desk clues, paid/typed offerings, dice custody, guarded town services and absent actor/NPC endpoints have balanced repair plans.
+
+Mini Zones adds seven mapped exchanges: three independent outcomes and four armor services, with eighteen contacts and sixteen optional checks. The dishwasher's tip jar leads to the cutpurse clue; the actual Maze of Souls route reaches the knight's release parchment; three distinct metal strips and a hidden golden hilt restore Magik. Supplied pieces skip optional knight history. Each armor recipe retains its matching ghostly base, five huge crystals and full 400-platinum fee, and remains guarded. Magik's combat dispatch is present; personal source, learned access/travel, targeted effects and NPC episodes still need qualification.
+
+City of Torrhan maps all 26 exchanges and eighteen addressed dialogue families into eight independent outcomes, fourteen support exchanges and four refusals, with 23 contacts and 28 optional checks. Its complete dossier reviews 289 rooms, 152 mobiles, 125 objects, six shops, 447 resets/324 source families, both room procedures, table-driven teaching and the automatic throne switch. The lost sailor's ring, green dragon proof, competing feather/shell consumers, full-yellow/owl and half-empty/king deliveries, initial cloak and restored Oblivion have exact material and optional-producer guidance. Eight same-named cloak forms remain distinct support recipes. Narrated royal cure/return does not invent persisted actor transformation or a Zrilxa-defeat prerequisite.
+
+Golden Hall of the Crown maps all sixteen exchanges and seventeen addressed families into nine independent outcomes and seven support services, with 27 contacts and 34 optional checks. Its complete dossier reviews 300 rooms, 91 mobiles, 106 objects, two shops, 534 resets/351 families, four literal assignments and automatic switch/teleport/teacher bindings. The inn/corpse-note investigation, optional royal briefing, three exact final proofs, three prisoner releases, trainer's amulet and full support chain preserve supplied-material routes. Both experience-awarding key-return rescues count for zone progress and keep their existing daily exclusions; seven outcomes remain potential daily candidates. Three mixed-fee services stay guarded. Preplaced heads/totems and narrated departures do not establish personal kills, followed escapes or an invasion. Reliance's fresh-summon versus existing-pegasus relocation behavior has an explicit qualification plan.
+
+Ashrumite Village upgrades its basic journal to revision two: all twelve native exchanges are explicit support services, with sixteen contacts/all thirteen addressed dialogue families and 21 optional material/history checks. The comprehensive dossier covers 153 rooms, 53 mobiles, 65 objects, twelve shops, 275 resets/181 source families and fifteen literal/shared bindings. The intended ore → bars → five-gem jewelry → platinum-disc enchantment story is recorded separately from the actual contracts. Eight previously projected crafting achievements are now services; four previously excluded information/missing-reference contracts become visible with blockers. There are no authored quest achievement or daily units for this zone. All twelve paid exchanges remain guarded. Exact five-copy gems, ordinary versus magical necklaces, and real gold versus pyrite stay distinct; current possession and optional producer history do not invent personal mining or a full crafting campaign.
+
+The Hall of the Ancients adds a source-comprehensive first journal: all eleven exchanges/fourteen addressed dialogue families become five independent outcomes, four preparation/access services and two elder exclusions, with 27 contacts and 23 optional checks. The dossier covers 247 rooms, 55 mobiles, 53 objects, one shop, 395 resets/153 families and all twelve literal procedures/shared dispatch. Five achievement units and two potential daily candidates replace eleven unreviewed fallback achievements and four candidates. The sixteen-piece belt remains visibly blocked by the fourteen-root offering limit; the exact ten-item armor recipe uses one potion despite two-sample dialogue. Three paid tower key stages stay guarded, two same-named working keys remain distinct, and supplied foreign dagger/letter materials do not require or manufacture personal acquisition or predecessor receipts. The consuming elder refusal runs before its identical ore reward; both preserve native identity/history while earning no authored quest/daily credit. Custom potion death sources, access/equipment effects and the cathedral coin mechanism are explained without invented terminals.
+
+Sarmiz'Duul maps all eight native exchanges and thirteen raw addressed families
+into eight independent outcomes, with 24 contacts and nineteen optional checks.
+Its complete dossier reviews 583 rooms, 57 mobiles, 61 objects, four shops,
+535 resets/199 families, all five literal procedures and the custom moonstone
+source/assembly/ship route. Exact courtship, revenge/relic, royal three-item and
+conspiracy four-item routes preserve supplied proof and separate native receipts.
+The valid plain `sarmiz` alias is advertised despite the shared apostrophe-family
+inventory omission. No personal kill, extra assassination, learned topic,
+romance state, coma, succession or invasion is inferred.
+
+Duke Delwyn maps all eleven exchanges and nine addressed/33 ambient families
+into six independent outcomes and five paid services, with nineteen contacts
+and seventeen optional checks. Its complete dossier reviews 207 rooms,
+96 mobiles, 41 objects, 278 resets/170 families, automatic teacher and shared
+trap/falling execution. Exact bell → cog → blade, four-stage textiles → banner
+→ slippers, ivory knight → boots, study assessment → note, and note + braid
+→ signet guidance preserve supplied proof and separate accepted receipts.
+Four textile fees total 60000 copper and remain guarded with accounting active;
+a supplied exact banner fits the independent item-only return. Five paid rows
+leave achievement credit; six potential daily units remain. Source custody
+does not prove first recovery, kills, chess lessons, an invasion, hung flag
+or working clock/mill state.
+
+Home of the Divine maps all 32 exchanges/twenty raw M families into twenty
+independent outcomes and twelve crafting/access services, with 27 contacts
+and 48 optional checks. Its complete dossier reviews 122 rooms, 62 mobiles,
+83 objects, one shop, 240 resets/156 families and shared item teleport,
+shop/forge, epic teacher, trap/fall and wandering execution. Four elemental
+tokens form one siren outcome; seven hearts, nine exact cash-reward treasures,
+the competing prince/Raith token deliveries and foreign Pure-Dark return stay
+independent. Cash rewards are supported item-only outputs, distinct from fees.
+Six mixed crafting payments and generic dragon-scale death issuance remain
+guarded with accounting active. Twelve service rows leave achievement credit,
+and six previously eligible support rows leave potential daily credit.
+
+The Halfcut Hills adds thirteen independent deliveries, nineteen contacts and
+twenty-four optional checks. Its full dossier reviews 28 Q/QA/M blocks,
+470 rooms, 83 mobiles, sixty objects, one shop and 413 resets/177 families.
+Four brown jars support three miners and Bartis; three distinct badge parts
+form one bundle, then the final jar produces a note for the sentry. Supplied
+matching proof fits without earlier personal rescue receipts. Four faction
+scalp requests compete with the larger six-proof belt delivery. No personal
+kill, actual miner arrival, allegiance or mine-takeover endpoint is inferred.
+The native crossbow repairs below are separate from this journal addition.
+
+The Scorched Valley is now source-comprehensive: nine exact deliveries,
+twenty-two contacts/all eleven addressed dialogue families and twenty-two
+optional checks. Five temple keys explain the blood → four distinct rings →
+necklace route. Foreign trophies and recipients retain native contract
+ownership. The final chest-key holder is also the advisor receiving three
+requests, so source/recipient episodes need qualification. This journal
+checkpoint does not repair or activate native boss/quest behavior.
+
+Court of the Muse is now source-comprehensive: nine exact deliveries,
+twenty-five contacts/all six addressed dialogue families and sixteen optional
+checks. Four seasonal favors produce four distinct tokens for independent
+admission; twelve scales, a shared friend, lost soul and exact wand retain
+their own outcomes. Book/dew cave keys work, while the dew also serves the
+Spring offering. This checkpoint adds guidance and evidence without changing
+native zone, quest, trap or access behavior.
+
+Valley of the Snow Ogres is now source-comprehensive: seven independent lich
+outcomes, one non-credit armor service, one excluded hide refusal, sixteen
+contacts/all six addressed families and fifteen optional checks. Three distinct
+shard producers lead to a separate pyramid exchange; supplied proof fits without
+personal history. Surface Leppts' six-hide/two-weapon/2,500-platinum commission
+remains guarded. Missing material sources and custom-procedure repairs remain
+pending. This checkpoint adds guidance/evidence without a native gameplay repair.
+
+
+
+
+
+
+
+
+
+
+## Accounting dependency and remaining qualification
+
+The branch integrates `experimental-accounting` through `100bee62f`. Catalog bootstrap, frozen receipt recovery, persistence and owner-coordinated deletion retain their authoritative obligations when accounting is inactive, while new journal/discovery/encounter/daily publication remains gated. SQL erasure borrows its caller's transaction and preserves unrelated records; flat-file deletion stages a recoverable replacement and later writes refresh authority rather than resurrecting deleted facts.
+
+Published accounting migrations 0054/0055 retain their immutable slots and checksums. The unpublished daily-state migration is 0056, with the original SQL/verifier checksums and regenerated canonical, staging-0045 and master-0031 history contracts. Development histories that recorded an earlier feature slot need a deliberately reviewed upgrade path.
+
+The expanded implementation plan records accepted reset/custom issuance, first source versus player gifts, transform/decay lineage, learned dialogue, confirmed examination/access/travel, exact targeted effects, branch attempts, all-stage campaigns and shared ANSI/GMCP presentation. It also records coordinated fee/material/reward/actor/ship settlement and concrete content repairs. Unsupported objectives remain guidance until their semantic adapters and recovery are qualified; guarded paid services remain guarded.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Capitalized area journal loader repair (news)
+
+**Separate implementation fix:** [d062731ea](https://github.com/Community-Duris/Duris/commit/d062731ea06a1e8c4253fd6f9bd787566107f2d3). Existing registered names such as `Voluntown` were rejected by Python validation and skipped by the native directory loader. Both now accept ASCII capitals only in the exact registered source filename. Area names, native receipt identities and registry ownership are preserved; story/step IDs and NPC keywords/topics remain lowercase. Wrong case, traversal and path separators remain rejected.
+
+**News:** Zone journals now support existing capitalized area filenames while preserving the zone's registered name and quest history. This changes the journal loader only; no native room, exit, key, trap, reset, mobile or quest data repair ships. The mausoleum journal is a subsequent feature commit.
+
+**Validation:** reproduced the valid registered-case rejection before repair. Seven Python/native C++ direct/file-loading cases pass on Linux and Windows, all147 compiled Windows journal journeys pass, and changed/staged canonical formatting passes. The maintained Linux server build passes with `make -C src` using g++-12. No played accounting journey is claimed. Accounting gates are unchanged.
+
+## Earlier comprehensive checkpoints
+
+Original220-zone order remains in `docs/design/ZONE_STORY_ZONE_PRIORITIES.md`. Dossiers and execution register distinguish comprehensive source mapping from played qualification. Exact prior descriptions and SHA-256 are archived in checkpoint history. All168 previous maps and native receipts retained; unit classification unchanged here.
+
+## Validation
+
+The Temple of the Sun: focused source/schema assertions, full production catalog/inventory/audit regression, all169 Python/C++ journal journeys, changed/staged format and exact preservation pass. Cover distinct two-kind evidence, partial/wrong/held/nested/supplied proof, spent materials, key/reward possession without history, independent ring receipts, replay and cold/raw-to-authored recovery. Source fixtures qualify three key stages, PICK wing, actual reward wear, accounting refusals and imported handlers/recipe edges.
+
+The maintained Linux server build passed with the separately committed source-area loader fix;src is unchanged here. Repository format uses canonical clang-format14.0.6. The unchanged full production regression passed on an isolated native Linux filesystem with all6157 selected input files verified by SHA-256 against the worktree before recording the result. The all169 compiled journal journeys ran successfully in the worktree on Linux. No played active-accounting evidence/sunbeam/rock exchange, source recovery, SEARCH/key/door/PICK travel, key destruction, epic training/touch, fountain effect, foraging/music/book use or outside-recipe outcome is claimed. Any selected native repair needs a separate named fix/news commit with trigger,before/after,scope and validation.
+
+```

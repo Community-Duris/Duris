@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 169 authored journals.
+2668 distinct Q contracts; 170 authored journals.
 
 Regenerate with:
 
@@ -95,7 +95,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Altar of the Firesworn (`firesworn_altar`) | 1 | 7 | 0 | Yes | [1 × the divine essence of blood; 1 × the divine essence of fire; 1 × the divine essence of mist; other required items → Tiliwibble's skeleton key of unlocking, a jagged hilt studded with gems](../../areas/qst/firesworn_altar.qst#L93) | — |
 | Fishermans Wharf (`fishermans_wharf`) | 5 | 8 | 2 | Yes | [1 × a full-size eagle egg; 4 × a bundle of sticks; 3 × a soft beaver pelt → a petrified fanged snake](../../areas/qst/fishermans_wharf.qst#L14) | — |
 | The Forgotten Forest (`forgotten_forest`) | 4 | 0 | 0 | Fallback | [1 × a chunk of meat → native reward/response](../../areas/qst/forgotten_forest.qst#L16) | — |
-| Lair of the Gibberling King (`gibber`) | 2 | 3 | 0 | Fallback | [1 × a wand of dismissal; 1 × an essence of Crymson → a robe of the earth](../../areas/qst/gibber.qst#L32) | — |
+| Lair of the Gibberling King (`gibber`) | 2 | 3 | 0 | Yes | [1 × a wand of dismissal; 1 × an essence of Crymson → a robe of the earth](../../areas/qst/gibber.qst#L32) | — |
 | Githzerai Stronghold (`githzer`) | 13 | 20 | 0 | Yes | [5 × a signet ring with a kingly crest → a bright marble key](../../areas/qst/githzer.qst#L283) | lucky_weapon |
 | The Gagga'Jobo Cave System (`goblincave`) | 6 | 7 | 0 | Yes | [4 × a strip of chothe hide → a pair of goblin-made gloves](../../areas/qst/goblincave.qst#L46) | — |
 | The Town of Moregeeth (`goblinht`) | 11 | 9 | 1 | Yes | [5 × a bat skull → a necklace of bat skulls](../../areas/qst/goblinht.qst#L144) | inn, world_quest |

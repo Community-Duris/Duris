@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 169 &&
+		require(catalog.story_mappings.size() == 170 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,183 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "gibber"; });
+			require(mapping.stories.size() == 2 && mapping.contacts.size() == 8 &&
+					mapping.revision == 1,
+				"Gibberling journal scope failed");
+			const auto &cook = story_for("gibber", "cook-offering");
+			const auto &noble = story_for("gibber", "elemental-release");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 87)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 2 && dailies == 2,
+				"Gibberling departing returns lost daily eligibility");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 87, 8700, 100, "arrival") ==
+					result::applied,
+				"Gibberling discovery failed");
+			for (const auto &[v, room] :
+			     { std::pair{ 8713, 8713 }, std::pair{ 8735, 8765 },
+			       std::pair{ 8746, 8788 }, std::pair{ 8719, 8727 },
+			       std::pair{ 8702, 8711 }, std::pair{ 8748, 8785 } })
+				require(journey.meet_npc(7, 42, v, room, 101) == result::applied,
+					"Gibberling source encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 87, 10, 1, 102, false, false);
+			for (const auto &s : mapping.stories)
+				require(journal.find("] " + s.title + "\r\n") == std::string::npos,
+					"Gibberling source encounter exposed accepting card");
+			require(journey.meet_npc(7, 42, 8731, 8789, 103) == result::applied,
+				"Gibberling noble encounter failed");
+			journal = journey.render_journal(7, 42, 87, 10, 1, 104, false, false);
+			for (const auto &s : mapping.stories)
+				require((journal.find("] " + s.title + "\r\n") !=
+					 std::string::npos) == (s.id == noble.id),
+					"Gibberling noble encounter exposed cook card");
+			require(journey.meet_npc(7, 42, 8715, 8717, 105) == result::applied,
+				"Gibberling cook encounter failed");
+			const auto section = [&](const auto &s)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos, "Gibberling card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at,
+						      end == std::string::npos ? end : end - at);
+			};
+			const auto status = [&](const auto &s, size_t row, const char *state)
+			{
+				return section(s).find(std::string("[") + state + "] " +
+						       s.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			const auto before = journey.serialize_state();
+			for (const auto &s : mapping.stories)
+			{
+				supplies = {};
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+					supplies.carried[s.steps[row].item_vnums.front()] =
+						s.steps[row].count;
+				journal = journey.render_journal(7, 42, 87, 10, 1, 106, false,
+								 false, &supplies);
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+					require(status(s, row, "Ready now"),
+						"Gibberling exact supplied proof failed readiness");
+				require(status(s, s.steps.size() - 1, "Pending"),
+					"Gibberling supplied proof forged accepted return");
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+				{
+					const auto v = s.steps[row].item_vnums.front();
+					supplies.carried.erase(v);
+					supplies.equipped[18] = v;
+					journal = journey.render_journal(7, 42, 87, 10, 1, 107,
+									 false, false, &supplies);
+					require(status(s, row, "Missing now") &&
+							status(s, s.steps.size() - 1, "Pending"),
+						"Gibberling held or absent proof substituted loose material");
+					supplies.equipped.clear();
+					supplies.carried[v] = s.steps[row].count;
+				}
+			}
+			supplies = {};
+			supplies.carried[8717] = 2;
+			journal = journey.render_journal(7, 42, 87, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(noble, 0, "Ready now") && status(noble, 1, "Missing now") &&
+					status(noble, 2, "Pending"),
+				"Gibberling duplicate wands replaced distinct essence");
+			supplies = {};
+			for (int v : { 8718, 8709, 55190, 359, 8715, 8739, 8735, 8725, 8736 })
+				supplies.carried[v] = 5;
+			journal = journey.render_journal(7, 42, 87, 10, 1, 109, false, false,
+							 &supplies);
+			for (const auto &s : mapping.stories)
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+					require(status(s, row, "Missing now"),
+						"Gibberling key, reward, token or service possession forged proof");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 87).completed == 0,
+				"Gibberling preparation fabricated source/action/rescue history");
+			supplies = {};
+			for (int v : { 8706, 8717, 8734 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 87, 10, 1, 110, false, false,
+							 &supplies);
+			require(section(cook).find("cook leaves") != std::string::npos &&
+					section(cook).find("actual item") != std::string::npos &&
+					section(noble).find("noble leaves") != std::string::npos &&
+					section(noble).find("spell cast") != std::string::npos &&
+					section(noble).find("permanent world rescue") !=
+						std::string::npos,
+				"Gibberling Ready now hid departure, actual reward or outcome guidance");
+			require(journal.find("blindness") != std::string::npos &&
+					journal.find("another player") != std::string::npos &&
+					journal.find("nine different") != std::string::npos,
+				"Gibberling key/device/outside guidance missing");
+			// Synthetic committed receipts verify projection/recovery; native departure and played travel are separate qualifications.
+			record(journey, noble.contracts.front(), "gibber-noble", 87, 8789);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 87, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(noble, 0, "Missing now") &&
+					status(noble, 1, "Missing now") &&
+					status(noble, 2, "Recorded") &&
+					status(cook, 1, "Pending") &&
+					journey.progress_for_zone(7, 42, 87).completed == 1,
+				"Gibberling noble receipt imposed cook or source history");
+			supplies.carried[8717] = 1;
+			supplies.carried[8734] = 1;
+			journal = journey.render_journal(7, 42, 87, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(noble, 0, "Ready now") && status(noble, 1, "Ready now") &&
+					status(noble, 2, "Recorded") && status(cook, 1, "Pending"),
+				"Gibberling reacquired proof changed accepted histories");
+			record(journey, cook.contracts.front(), "gibber-cook", 87, 8717);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 87, 10, 1, 122, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 87).completed == 2,
+				"Gibberling exact receipt classification failed");
+			for (const auto &s : mapping.stories)
+			{
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+					require(status(s, row, "Missing now"),
+						"Gibberling spent proof restored inventory");
+				require(status(s, s.steps.size() - 1, "Recorded"),
+					"Gibberling spent proof lost history");
+			}
+			auto replay = completion(noble.contracts.front(), "gibber-noble", 120);
+			replay.transaction.zone_number = 87;
+			replay.transaction.room_vnum = 8789;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Gibberling replay duplicated return");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 87).completed == 2,
+				"Gibberling cold recovery lost departing-giver histories");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 87, 8788, 100, "arrival") ==
+					result::applied,
+				"Gibberling raw alternate discovery failed");
+			for (const auto &s : mapping.stories)
+			{
+				const auto tx = "gibber-raw-" + s.id;
+				record(raw, s.contracts.front(), tx.c_str(), 87, 8788);
+			}
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 87).completed == 2,
+				"Gibberling raw-to-authored recovery lost histories");
 		}
 
 		{

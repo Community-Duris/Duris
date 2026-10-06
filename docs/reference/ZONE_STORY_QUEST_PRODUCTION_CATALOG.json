@@ -47245,6 +47245,183 @@
     {
       "contacts": [
         {
+          "description": "The kitchen master accepts the exact roper tentacle for his equipment reward and leaves after success. His rock wording differs from the actual reward; restock is separate from daily history.",
+          "keyword": "cook",
+          "mob_vnum": 8715,
+          "name": "a blubbery master cook",
+          "topics": []
+        },
+        {
+          "description": "Ask the greeting, assist or dismissal aliases. The exact loose wand and essence together earn the earth robe. He leaves after acceptance; dialogue does not prove a permanent rescue or a spell cast.",
+          "keyword": "noble",
+          "mob_vnum": 8731,
+          "name": "an earth elemental noble",
+          "topics": [
+            "hi",
+            "hello",
+            "assist",
+            "dismiss",
+            "soul"
+          ]
+        },
+        {
+          "description": "The refuse-pit young roper is the selected tentacle source. Other reset placements of this prototype do not all carry the material; defeating one is separate from recovering the exact item.",
+          "keyword": "roper",
+          "mob_vnum": 8713,
+          "name": "a young roper",
+          "topics": []
+        },
+        {
+          "description": "Roshen in the grotto is the selected hidden-wand source and has a chance-based reset. Encounter, victory, reveal and actual recovery are different outcomes.",
+          "keyword": "roshen",
+          "mob_vnum": 8735,
+          "name": "Roshen lord of insects",
+          "topics": []
+        },
+        {
+          "description": "Crymson carries the noble's hidden essence and the separate outside memory token. These items do not replace each other or establish personal victory history.",
+          "keyword": "crymson",
+          "mob_vnum": 8746,
+          "name": "Crymson",
+          "topics": []
+        },
+        {
+          "description": "The high priest carries the bent key for the hidden locked shrine route. A supplied key or shared opened passage can admit travel without a personal source or unlocking receipt.",
+          "keyword": "priest",
+          "mob_vnum": 8719,
+          "name": "the unholy high priest G'graz",
+          "topics": []
+        },
+        {
+          "description": "Zsrsr carries another brittle entrance key. His followers and combat are separate from native item exchanges and accepted journal history.",
+          "keyword": "zsrsr",
+          "mob_vnum": 8702,
+          "name": "Zsrsr",
+          "topics": []
+        },
+        {
+          "description": "A selected Blood Horde archer reset carries the living breeze, an outside Air Plane material. Seeded stock can move; every archer is not a guaranteed material source.",
+          "keyword": "archer",
+          "mob_vnum": 8748,
+          "name": "a Blood Horde archer",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Choose the cook's tentacle offering or prepare both materials for the earth noble. Keys, the boulder passage, source recovery and outside wind/memory requests remain distinct progression leads.",
+      "orientation": [
+        "The Underdark fissure leads to a locked oaken entrance. A brittle key lies at the bottom of the fissure; another is carried by Zsrsr inside. Find the actual visible key and use the live door state. A key supplied by another player or a shared opened doorway can admit you without recording your own source recovery or unlocking.",
+        "The fissure has a chance-fall field and many passages are dark, hidden or closed. Bring suitable visibility and travel capabilities. Successfully revealing, unlocking, opening and entering are separate actions; the journal does not promise a safe route or a reward for every room.",
+        "The blubbery master cook in the kitchen accepts one exact roper tentacle for his equipment reward. The young roper in the refuse pit is the selected native tentacle source. Other young ropers exist, but their reset placements do not all carry that item. Supplying the correct tentacle also prepares the request.",
+        "The cook calls the reward a rock, while the actual native reward is equipment. His successful exchange makes him leave. Keep that accepted history; another attempt needs the cook and material stock to become available again. Daily rollover does not replace them.",
+        "The refuse-pit dung pile is configured as an entry switch, but its selected door state does not satisfy that switch handler. The hidden passage has its own reveal and ordinary opening path. Treat the switch wording as a builder review lead; an ENTER attempt alone proves no successful action.",
+        "G'graz carries a bent key for the hidden locked passage down beyond the shrine. The actual key, successful reveal and live door access are separate from either native return. The brittle entrance key may break on use; the bent key has no configured break chance. Both have no-rent data.",
+        "Roshen, lord of insects, in the roper grotto carries a wand of dismissal. His reset has a chance of not placing him, and the wand begins hidden. Revealing and recovering the actual item is separate from merely finding or defeating Roshen. A similarly numbered living breeze belongs to the item namespace, not Roshen.",
+        "A cratered boulder in the moss-covered chamber controls the blocked passage north. Resolving and successfully pushing that actual boulder clears the obstruction; opening the still-closed doorway and travelling through it remain separate actions. Another player can change the shared passage state.",
+        "Crymson beyond that route carries two different things: the essence needed by the noble and a memory token for an outside ambassador. Reveal and recover the actual essence. The memory, a boss victory and the noble's accepted exchange are separate outcomes.",
+        "Ask the earth elemental noble hi, hello, assist, dismiss or soul. One exact loose wand of dismissal and one exact loose essence of Crymson together earn the robe of the earth. Two wands do not replace the essence. Both materials can be supplied without your own source victories or an earlier cook return.",
+        "The noble leaves after a successful exchange. His freedom dialogue records the native return and departure; it does not establish a lasting world rescue, a personal dismissal spell or an escort. Recorded history remains after the materials are spent and the NPC has left.",
+        "The wand's actual spell data is blindness despite its dismissal name. The request requires the exact item, without a casting or charge-use step. Keep it loose and visible for the offering; holding it for use is different from preparing the turn-in. Any name, dialogue or spell correction needs builder intent review.",
+        "Present the requested materials loose and visible. Held items, bag contents, hidden unrevealed proof, similarly named equipment, rewards and the creatures themselves do not replace the exact materials. Current preparation is separate from accepted history, first recovery and gifts from other players.",
+        "The memory of this lair is an optional outside ambassador offering for a scroll, coins and a shopkeepers token. A living breeze carried by a Blood Horde archer is one of nine different materials in the north wind's separate Air Plane Cloudseeker request. These leads have their own givers and receipts; they are not additional local cards.",
+        "Blood Horde seeder and sink rooms are world-data context. The archer with the living breeze can move; do not expect every archer to carry it or a public path into its reset room. Prisoners, warfare, lake and waterfall lore do not automatically define a rescue, restoration or performance achievement.",
+        "The epic stone near Crymson has its own eligibility and committed group reward service. Seeing it, touching it, watching someone else or receiving a pending message does not complete either local quest. New discovery, encounter, journal, achievement and daily credit requires active, ready accounting; each native return has an independent achievement and potential daily."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "gibber",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:8706;receive=I:8709;disappear=1",
+              "giver_vnum": 8715
+            }
+          ],
+          "id": "cook-offering",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Prepare the exact visible loose material. Supplied proof fits without a personal recovery receipt; held, nested or still-hidden copies do not substitute visible loose offerings.",
+              "id": "roper-tentacle",
+              "item_vnums": [
+                8706
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact roper tentacle loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:8706;receive=I:8709;disappear=1",
+                  "giver_vnum": 8715
+                }
+              ],
+              "hint": "Only this exact accepted return completes the card. The accepting NPC leaves; recorded history stays while later attempts depend on available world stock. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this accepted return"
+            }
+          ],
+          "summary": "One exact visible loose roper tentacle earns the cook's equipment reward. Supplied proof fits without personal recovery; the native rock wording differs from the actual item. The cook leaves after acceptance, so another attempt needs available world stock.",
+          "title": "Bring the master cook a roper tentacle"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:8717,I:8734;receive=I:8718;disappear=1",
+              "giver_vnum": 8731
+            }
+          ],
+          "id": "elemental-release",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Prepare the exact visible loose material. Supplied proof fits without a personal recovery receipt; held, nested or still-hidden copies do not substitute visible loose offerings.",
+              "id": "dismissal-wand",
+              "item_vnums": [
+                8717
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact dismissal wand loose"
+            },
+            {
+              "count": 1,
+              "hint": "Prepare the exact visible loose material. Supplied proof fits without a personal recovery receipt; held, nested or still-hidden copies do not substitute visible loose offerings.",
+              "id": "crymson-essence",
+              "item_vnums": [
+                8734
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact Crymson essence loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:8717,I:8734;receive=I:8718;disappear=1",
+                  "giver_vnum": 8731
+                }
+              ],
+              "hint": "Only this exact accepted return completes the card. The accepting NPC leaves; recorded history stays while later attempts depend on available world stock. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this accepted return"
+            }
+          ],
+          "summary": "One exact visible loose wand of dismissal and one exact essence of Crymson together earn the robe of the earth. Supplied proof fits without source victories, a spell cast or an earlier cook return. The noble leaves; acceptance does not confirm a permanent world rescue.",
+          "title": "Bring the noble the wand and essence"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Ask torture, angel, warangel, torturing, enemy, capture, limp or battered. Return the exact battered-warangel object for his mask; no live capture or escort is specified.",
           "keyword": "torturer",
           "mob_vnum": 9107,
