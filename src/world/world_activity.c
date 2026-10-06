@@ -8,6 +8,7 @@
  */
 
 #include "world/world_activity.h"
+#include "player/player_snapshot.h"
 
 #include "core/prototypes.h"
 #include "core/utils.h"
@@ -794,6 +795,111 @@ world_activity_tier world_activity_tier_for_room(int room)
 	if (nearby_activity(zones[zone_number]))
 		return world_activity_tier::nearby;
 	return world_activity_tier::distant;
+}
+
+// Reconstruct already-returned birth membership. The existing birth owner
+// proves original SQL/native/source/custody authority before the room stage
+// reaches this private seam. It must latch the returned room substep before
+// any subsequent fallible work. Ordinary enter/leave and promotion stay intact.
+bool world_activity_native_birth_restore_owner::enter(P_char ch) noexcept
+{
+	if (!nevent_is_game_thread() || !ch || !IS_NPC(ch) || !ch->only.npc || !IS_ALIVE(ch) ||
+	    !ch->runtime_id || !valid_room(ch->in_room) || controlled_presence(ch) ||
+	    controlled_rooms.contains(ch))
+		return false;
+	if (!config.enabled)
+		return true;
+	try
+	{
+		// The complete forest is already authenticated by the birth owner;
+		// independently check its physical links before counting PC corpses.
+		// All traversal/allocation precedes any activity projection mutation.
+		struct entry
+		{
+			P_obj object;
+			P_obj parent;
+			size_t depth;
+			int slot;
+		};
+		std::vector<entry> pending;
+		std::unordered_set<P_obj> seen;
+		std::unordered_set<uint64_t> uids;
+		for (int slot = 0; slot < MAX_WEAR; ++slot)
+			if (ch->equipment[slot])
+			{
+				if (ch->equipment[slot]->next_content)
+					return false;
+				pending.push_back({ ch->equipment[slot], nullptr, 1, slot + 1 });
+			}
+		if (ch->carrying)
+			pending.push_back({ ch->carrying, nullptr, 1, 0 });
+		uint32_t corpses = 0;
+		while (!pending.empty())
+		{
+			const auto current = pending.back();
+			pending.pop_back();
+			const auto object = current.object;
+			if (current.depth > PLAYER_SNAPSHOT_MAX_DEPTH ||
+			    seen.size() >= PLAYER_SNAPSHOT_MAX_OBJECTS ||
+			    !seen.insert(object).second || !object->obj_uid ||
+			    object->obj_uid == UINT64_MAX || !uids.insert(object->obj_uid).second)
+				return false;
+			if (current.parent)
+			{
+				if (object->loc_p != LOC_INSIDE ||
+				    object->loc.inside != current.parent)
+					return false;
+			}
+			else if (current.slot)
+			{
+				if (object->loc_p != LOC_WORN || object->loc.wearing != ch)
+					return false;
+			}
+			else if (object->loc_p != LOC_CARRIED || object->loc.carrying != ch)
+				return false;
+			if (pc_corpse(object))
+				++corpses;
+			if (!current.slot && object->next_content)
+				pending.push_back(
+					{ object->next_content, current.parent, current.depth, 0 });
+			if (object->contains)
+				pending.push_back(
+					{ object->contains, object, current.depth + 1, 0 });
+		}
+		const int own = activity_zone_for_room(ch->in_room);
+		if (own < 0)
+			return true; // Original enter has no region contribution at this cut.
+		if (static_cast<size_t>(own) >= zones.size())
+			return false;
+		std::unordered_set<int> neighbors;
+		for (int neighbor : zones[own].neighbors)
+		{
+			if (neighbor < 0 || static_cast<size_t>(neighbor) >= zones.size() ||
+			    neighbor == own || !neighbors.insert(neighbor).second)
+				return false;
+		}
+		for (const auto &zone : zones)
+			if (zone.npcs.contains(ch))
+				return false; // This room substep cannot count an enrolled body twice.
+		// unordered_set insertion has the strong guarantee. After this succeeds,
+		// only no-throw counter assignments remain: no wake/RNG/scheduler or
+		// rebuild_encounters allocation can split activity reconstruction.
+		if (!zones[own].npcs.insert(ch).second)
+			return false;
+		const auto add = [corpses](uint32_t &counter) noexcept
+		{
+			const auto remaining = std::numeric_limits<uint32_t>::max() - counter;
+			counter += std::min(corpses, remaining);
+		};
+		add(zones[own].corpses);
+		for (int neighbor : zones[own].neighbors)
+			add(zones[neighbor].adjacent_corpses);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
 }
 
 void world_activity_character_enter(P_char ch)

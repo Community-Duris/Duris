@@ -3763,3 +3763,77 @@ void shopping_stat(P_char ch, P_char keeper, char *arg, int /*cmd*/)
 			}
 	mobsay(keeper, "I do not sell that item.");
 }
+
+bool shop_native_mobile_birth_predecessors(
+	int32_t keeper_vnum, std::vector<shop_native_mobile_birth_predecessor> *output) noexcept
+{
+	if (!output || keeper_vnum <= 0 || !nevent_is_game_thread() || !mob_index || !shop_index ||
+	    number_of_shops <= 0)
+		return false;
+	try
+	{
+		const int keeper = real_mobile(keeper_vnum);
+		if (keeper < 0 || mob_index[keeper].virtual_number != keeper_vnum)
+			return false;
+		std::vector<shop_native_mobile_birth_predecessor> candidate;
+		for (int shop = 0; shop < number_of_shops; ++shop)
+		{
+			if (SHOP_KEEPER(shop) != keeper)
+				continue;
+			candidate.push_back({ shop, SHOP_FUNC(shop) });
+		}
+		if (candidate.empty())
+			return false;
+		*output = std::move(candidate);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool shop_native_mobile_birth_reset_tail_selection(
+	int32_t mobile_vnum, int32_t destination_room_vnum, int configured_shop,
+	shop_native_mobile_birth_reset_selection *output) noexcept
+{
+	if (!output || mobile_vnum <= 0 || destination_room_vnum <= 0 || configured_shop < -1 ||
+	    !nevent_is_game_thread() || !mob_index || !world)
+		return false;
+	const int mobile = real_mobile(mobile_vnum);
+	const int room = real_room(destination_room_vnum);
+	if (mobile < 0 || room < 0 || room > top_of_world ||
+	    mob_index[mobile].virtual_number != mobile_vnum ||
+	    world[room].number != destination_room_vnum)
+		return false;
+	int selected = -1;
+	if (shop_index && number_of_shops > 0)
+	{
+		for (int shop = 0; shop < number_of_shops; ++shop)
+		{
+			if (SHOP_KEEPER(shop) != mobile ||
+			    shop_index[shop].in_room != destination_room_vnum)
+				continue;
+			if (selected >= 0)
+			{
+				selected =
+					-1; // Original ambiguity refuses binding, not the reset birth.
+				break;
+			}
+			selected = shop;
+		}
+	}
+	if (selected != configured_shop)
+		return false;
+	shop_native_mobile_birth_reset_selection candidate;
+	if (selected >= 0)
+	{
+		candidate.index = selected;
+		candidate.shop_slot = selected;
+		candidate.keeper_vnum = mob_index[SHOP_KEEPER(selected)].virtual_number;
+		candidate.room_vnum = shop_index[selected].in_room;
+		candidate.replicated = is_replicated_shop(selected);
+	}
+	*output = candidate;
+	return true;
+}

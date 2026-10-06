@@ -1,3 +1,5 @@
+#include "economy/native_mobile_birth_recovery.h"
+#include "world/native_quest_recovery_context.h"
 #include "persistence/death_recovery_visibility.h"
 #include "account/password_async.h"
 #include "account/account_async.h"
@@ -19,6 +21,7 @@
 #include "persistence/persistence_log.h"
 #include "persistence/quest_reward_obligation_pipeline.h"
 #include "world/quest_reward_recovery.h"
+#include "world/native_quest_frozen_continuation.h"
 #include "core/structs.h"
 #include "telemetry/telemetry_runtime.h"
 #include "net/comm.h"
@@ -31,6 +34,7 @@
 #include "player/output_preferences.h"
 #include "net/command_latency.h"
 #include "world/db.h"
+#include "world/quest_mobile_native_birth.h"
 #include "world/object_template.h"
 #include "world/events.h"
 #include "world/world_activity.h"
@@ -287,6 +291,7 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	locker_identify_pulse();
 	corpse_lifecycle_transaction_handle_completions(completions, count);
 	item_movement_transaction_handle_completions(completions, count);
+	quest_mobile_native_birth_completions(completions, count);
 	shop_trade_transaction_handle_completions(completions, count);
 	auction_transaction_handle_completions(completions, count);
 	collector_transaction_handle_completions(completions, count);
@@ -307,13 +312,31 @@ static void critical_gameplay_drain_completions(const critical_completion *compl
 		player_save_pipeline_pulse();
 	}
 	critical_gameplay_handle_completions(completions, count);
+	quest_mobile_native_birth_pulse(false);
 }
+
+// This TU owns the original drained repository ACK results. Only this owner
+// can forward them to the retained native continuation; no public boolean is used.
+class quest_native_reward_ack_owner final
+{
+    public:
+	static void acknowledged(const quest_reward_ack_completion &completion) noexcept
+	{
+		quest_native_frozen_continuation_owner::acknowledged(completion);
+	}
+};
 
 static void quest_reward_ack_pipeline_pulse(void)
 {
 	quest_reward_ack_completion completions[QUEST_REWARD_ACK_PIPELINE_PULSE_MAX] = {};
 	const size_t count = quest_reward_obligation_pipeline_pulse(
 		completions, QUEST_REWARD_ACK_PIPELINE_PULSE_MAX);
+	for (size_t index = 0; index < count; ++index)
+		if (!completions[index].error_code &&
+		    (completions[index].result == quest_reward_obligation_result::ok ||
+		     completions[index].result ==
+			     quest_reward_obligation_result::already_acknowledged))
+			quest_native_reward_ack_owner::acknowledged(completions[index]);
 	for (size_t index = 0; index < count; ++index)
 		if (completions[index].result != quest_reward_obligation_result::ok &&
 		    completions[index].result !=
@@ -332,6 +355,7 @@ static bool critical_gameplay_restore_replayed_command(const critical_command &c
 	       currency_transaction_restore_replayed_command(command) &&
 	       spell_item_lifecycle_restore_replayed_command(command) &&
 	       item_movement_transaction_restore_replayed_command(command) &&
+	       quest_mobile_native_birth_restore(command) &&
 	       (command.type != critical_command_type::shop_trade ||
 		command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
 		!command.publication_required ||
@@ -340,6 +364,24 @@ static bool critical_gameplay_restore_replayed_command(const critical_command &c
 		command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
 		!command.publication_required ||
 		collector_service_restore_replayed_purchase(command));
+}
+
+static bool
+critical_gameplay_restore_native_envelope(const critical_native_recovery_envelope &envelope, void *)
+{
+	if (envelope.command.type == critical_command_type::native_mobile_birth)
+		return quest_mobile_native_birth_restore(envelope);
+	if (envelope.command.type == critical_command_type::item_transfer)
+		return item_movement_transaction_restore_native_recovery(envelope);
+	return false;
+}
+static bool
+critical_gameplay_native_publication_body_valid(const critical_native_recovery_envelope &envelope,
+						const critical_completion &completion) noexcept
+{
+	if (envelope.command.type == critical_command_type::native_mobile_birth)
+		return native_mobile_birth_recovery_publication(envelope, completion);
+	return native_quest_recovery_publication_context_valid(envelope, completion);
 }
 
 #ifndef __NO_MYSQL__
@@ -365,6 +407,12 @@ critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *co
 /** Request an immediate game-thread shutdown transition through the existing persistence gates. */
 void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
 {
+	if (!quest_mobile_native_birth_lifecycle_ready())
+	{
+		logit(LOG_STATUS,
+		      "Shutdown request refused: original native birth preparation is unresolved.");
+		return;
+	}
 	// Launcher signals request an immediate transition from the game thread.
 	// A wall-clock "now" schedules another world event, which can be starved.
 	shutdownData.reboot_time = 0;
@@ -1069,10 +1117,18 @@ int run_the_game(int port, int sslport)
 #ifndef __NO_MYSQL__
 		critical_outbox_ready &&
 #endif
-		critical_command_coordinator_init(critical_journal_directory, critical_apply, NULL,
-						  CRITICAL_COORDINATOR_DEFAULT_WORKERS,
-						  critical_gameplay_restore_replayed_command, NULL,
-						  critical_extension_validator);
+		critical_command_coordinator_init(
+			critical_journal_directory, critical_apply, NULL,
+			CRITICAL_COORDINATOR_DEFAULT_WORKERS,
+			critical_gameplay_restore_replayed_command, NULL,
+			critical_extension_validator, critical_gameplay_restore_native_envelope,
+			critical_gameplay_native_publication_body_valid,
+			{ native_mobile_birth_recovery_valid, native_mobile_birth_recovery_initial,
+			  native_mobile_birth_recovery_successor,
+			  native_mobile_birth_recovery_publication,
+			  native_mobile_birth_recovery_terminal },
+			native_quest_recovery_pair_context_valid);
+	quest_mobile_native_birth_replay_ready(critical_commands_ready);
 	if (!critical_commands_ready)
 	{
 		if (owned_accounting_boot)
@@ -2271,6 +2327,7 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 		corpse_lifecycle_transaction_pulse();
 		shop_trade_preparation_owner::pulse();
 		shop_trade_transaction_restore_pulse();
+		quest_mobile_native_birth_pulse(true);
 		critical_completion critical_completions[64] = {};
 		const size_t critical_completion_count =
 			critical_command_coordinator_pulse(critical_completions, 64);

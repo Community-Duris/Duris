@@ -383,7 +383,8 @@ economic_accounting_error item_native_mobile_accounting_intent(
 	    command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
 	    !command.accounting_intent.empty() || command.accepted_at_usec ||
 	    command.publication_required || command.type != critical_command_type::item_transfer ||
-	    command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION ||
+	    (command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION) ||
 	    critical_operation_id_is_zero(lineage) || critical_operation_id_is_zero(epoch))
 		return error::invalid_identity;
 	try

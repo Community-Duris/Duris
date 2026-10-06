@@ -72,6 +72,9 @@ enum class critical_command_type : uint16_t
 	player_death_restitution,
 	// Accounting-only lifecycle command; never admitted to legacy executors.
 	economic_baseline,
+	// Original native birth, including an actually empty stock/wallet.
+	// No legacy executor or admission route follows from wire support.
+	native_mobile_birth,
 };
 
 enum class critical_source_site : uint16_t

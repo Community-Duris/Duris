@@ -1,4 +1,5 @@
 #include "economy/economic_command_admission.h"
+#include "economy/native_mobile_birth_command.h"
 #include "economy/economic_currency_adapter.h"
 #include "economy/coin_transfer_accounting.h"
 #include "economy/item_transfer_accounting.h"
@@ -32,6 +33,13 @@ bool economic_command_admission_supported(const critical_command &command) noexc
 		return false;
 	try
 	{
+		// Immutable type support only. Original source admission and guarded
+		// native publication/ACK remain the private birth owner's obligations.
+		if (command.type == critical_command_type::native_mobile_birth)
+		{
+			quest_mobile_native_image original;
+			return native_mobile_birth_command_decode(command, &original) == error::ok;
+		}
 		economic_frozen_intent intent;
 		if (economic_intent_decode(command.accounting_intent, &intent) != error::ok)
 			return false;

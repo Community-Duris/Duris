@@ -21,6 +21,7 @@
 #include "cmd/interp.h"
 #include "core/utils.h"
 #include "world/handler.h"
+extern void event_balance_affects(P_char, P_char, P_obj, void *);
 #include "economy/shop_trade_destination_weight.h"
 #include "world/bloodstains.h"
 #include <ctype.h>
@@ -1124,6 +1125,106 @@ void recover_from_room_ch_loop(P_char k)
  * place a character in a room.
  */
 // Returns TRUE iff char made it into the room.
+bool quest_mobile_native_room_restore_owner::restore(P_char ch, int room,
+						     size_t *retained_step) noexcept
+{
+	if (!retained_step || *retained_step > 4 || !nevent_is_game_thread() || !ch ||
+	    !IS_NPC(ch) || !ch->only.npc || !IS_ALIVE(ch) || !ch->runtime_id ||
+	    find_character_by_runtime_id(ch->runtime_id) != ch || !world || room < 0 ||
+	    room > top_of_world || ch->desc || ch->following || ch->followers || ch->group ||
+	    ch->linked || ch->linking || ch->obj_linked || GET_OPPONENT(ch) ||
+	    !training_dummy_can_enter_room(ch))
+		return false;
+	try
+	{
+		if (*retained_step == 0)
+		{
+			if (ch->in_room != NOWHERE || ch->next_in_room)
+				return false;
+			// Validate the actual list before the original fixed -2 linkage.
+			P_char slow = world[room].people, fast = slow;
+			while (fast && fast->next_in_room)
+			{
+				slow = slow->next_in_room;
+				fast = fast->next_in_room->next_in_room;
+				if (slow == fast)
+					return false;
+			}
+			for (P_char current = world[room].people; current;
+			     current = current->next_in_room)
+				if (current == ch)
+					return false;
+			char exit1 = -1, exit2 = -1, exit3 = -1;
+			if (IS_ROOM(room, ROOM_SINGLE_FILE))
+			{
+				for (int j = 0; j < NUM_EXITS; ++j)
+					if (world[room].dir_option[j])
+					{
+						if (exit1 == -1)
+							exit1 = j;
+						else if (exit2 == -1)
+							exit2 = j;
+						else
+							exit3 = j;
+					}
+				if (exit1 == -1 || exit2 == -1 || exit3 != -1)
+				{
+					REMOVE_BIT(world[room].room_flags, ROOM_SINGLE_FILE);
+					exit1 = -1;
+				}
+			}
+			if (exit1 == -1 || exit1 == rev_dir[0])
+			{
+				ch->next_in_room = world[room].people;
+				world[room].people = ch;
+			}
+			else
+			{
+				P_char tail = world[room].people;
+				if (!tail)
+					world[room].people = ch;
+				else
+				{
+					while (tail->next_in_room)
+						tail = tail->next_in_room;
+					tail->next_in_room = ch;
+				}
+				ch->next_in_room = nullptr;
+			}
+			ch->in_room = room;
+			*retained_step = 1; // Actual fixed linkage cannot be repeated.
+		}
+		if (ch->in_room != room)
+			return false;
+		if (*retained_step == 1)
+		{
+			// Root-owned prevalidated allocation/assignment cut; false changes
+			// no activity projection, true precedes the retained completion.
+			if (!world_activity_native_birth_restore_owner::enter(ch))
+				return false;
+			*retained_step = 2;
+		}
+		if (*retained_step == 2)
+		{
+			character_maintenance_enter(ch);
+			if (!ch->character_maintenance_in_world)
+				return false;
+			*retained_step = 3;
+		}
+		if (*retained_step == 3)
+		{
+			char_light(ch);
+			room_light(room, REAL);
+			*retained_step = 4;
+		}
+		return *retained_step == 4;
+	}
+	catch (...)
+	{
+		return false; // Retain linkage and every genuinely completed substep.
+	}
+}
+
 bool char_to_room(P_char ch, int room, int dir)
 {
 	P_char t_ch, k, who;
@@ -7001,5 +7102,400 @@ void add_weight(P_obj obj, int weight)
 			carry_delta = weight - obj->weight;
 			propagate_weight_delta(obj, carry_delta);
 		}
+	}
+}
+
+// These local statements preserve the native same-prototype grouping/weight
+// convention without calling the ordinary world/activity/dirty/cast tails on
+// an unpublished NPC. The original handlers above remain byte-for-byte intact.
+namespace
+{
+bool native_birth_detached(P_char ch) noexcept
+{
+	return nevent_is_game_thread() && ch && IS_NPC(ch) && ch->only.npc &&
+	       ch->in_room == NOWHERE && !ch->next && !ch->next_in_room && !ch->nevents &&
+	       !ch->nevents_tail;
+}
+void native_birth_group(P_obj object, P_obj &head) noexcept
+{
+	if (head && head->R_num == object->R_num)
+	{
+		object->next_content = head;
+		head = object;
+	}
+	else
+	{
+		P_obj o = head;
+		while (o)
+		{
+			if (o->next_content && o->next_content->R_num == object->R_num)
+			{
+				object->next_content = o->next_content;
+				o->next_content = object;
+				break;
+			}
+			o = o->next_content;
+		}
+		if (!o)
+		{
+			object->next_content = head;
+			head = object;
+		}
+	}
+}
+}
+bool quest_mobile_native_local_stock::carry(P_obj object, P_char ch) noexcept
+{
+	if (!native_birth_detached(ch) || !object || !object->obj_uid || !OBJ_NOWHERE(object) ||
+	    object->next || object->prev || object->affects)
+		return false;
+	native_birth_group(object, ch->carrying);
+	object->loc_p = LOC_CARRIED;
+	object->loc.carrying = ch;
+	object->z_cord = 0;
+	GET_CARRYING_W(ch) += encumbrance_weight(GET_OBJ_WEIGHT(object));
+	IS_CARRYING_N(ch)++;
+	return true;
+}
+// Existing read-only original AC contribution helper, defined in magic/affects.c.
+extern int apply_ac(P_char, int);
+bool quest_mobile_native_local_stock::equip(P_obj object, P_char ch, int pos) noexcept
+{
+	// Dynamic enchant and existing character/object links require their actual
+	// once-effect owner. Static worn projection is enrolled on the final graph.
+	if (!native_birth_detached(ch) || !object || !object->obj_uid || !OBJ_NOWHERE(object) ||
+	    object->next || object->prev || object->next_content || object->affects || pos <= 0 ||
+	    pos >= MAX_WEAR)
+		return false;
+	P_obj previous = ch->equipment[pos];
+	if (previous)
+	{
+		if (!previous->obj_uid || previous->loc_p != LOC_WORN ||
+		    previous->loc.wearing != ch || previous->next || previous->prev ||
+		    previous->next_content || previous->affects || ch->obj_linked || ch->affected)
+			return false;
+		// apply_affs invokes two_weapon_check even without object modifiers.
+		// Removing a slot cannot create a multiweapon configuration.
+		if (ch->equipment[PRIMARY_WEAPON] &&
+		    (ch->equipment[SECONDARY_WEAPON] || ch->equipment[THIRD_WEAPON] ||
+		     ch->equipment[FOURTH_WEAPON]))
+			return false;
+		// Original unequip rebuilds effects across EVERY worn item. The
+		// structural cut is valid only without those intermediate contributors.
+		for (int slot = 0; slot < MAX_WEAR; ++slot)
+			if (P_obj worn = ch->equipment[slot])
+			{
+				if (worn->loc_p != LOC_WORN || worn->loc.wearing != ch ||
+				    worn->affects || worn->bitvector || worn->bitvector2 ||
+				    worn->bitvector3 || worn->bitvector4 || worn->bitvector5 ||
+				    apply_ac(ch, slot))
+					return false;
+				for (const auto &affect : worn->affected)
+					if (affect.location || affect.modifier)
+						return false;
+			}
+		size_t count = 0;
+		for (P_obj item = ch->carrying; item; item = item->next_content)
+			if (++count > PLAYER_SNAPSHOT_MAX_OBJECTS || item == previous ||
+			    item == object || !OBJ_CARRIED_BY(item, ch))
+				return false;
+		const int old_weight = encumbrance_weight(previous->weight);
+		const int new_weight = encumbrance_weight(object->weight);
+		const int64_t removed = int64_t(GET_CARRYING_W(ch)) - old_weight / 2;
+		const int64_t carried = removed + old_weight;
+		const int64_t after = carried + new_weight / 2;
+		if (removed < INT_MIN || removed > INT_MAX || carried < INT_MIN ||
+		    carried > INT_MAX || after < INT_MIN || after > INT_MAX ||
+		    IS_CARRYING_N(ch) == USHRT_MAX)
+			return false;
+		// Original E: unequip, then obj_to_char with same-RNUM grouping, then
+		// equip(nodrop=1). Only callback-free detached projection is done here.
+		ch->equipment[pos] = nullptr;
+		previous->loc_p = LOC_NOWHERE;
+		previous->loc.wearing = nullptr;
+		GET_CARRYING_W(ch) -= old_weight / 2;
+		native_birth_group(previous, ch->carrying);
+		previous->loc_p = LOC_CARRIED;
+		previous->loc.carrying = ch;
+		previous->z_cord = 0;
+		GET_CARRYING_W(ch) += old_weight;
+		IS_CARRYING_N(ch)++;
+	}
+	else if (int64_t(GET_CARRYING_W(ch)) + encumbrance_weight(object->weight) / 2 > INT_MAX)
+		return false;
+	ch->equipment[pos] = object;
+	object->loc_p = LOC_WORN;
+	object->loc.wearing = ch;
+	GET_CARRYING_W(ch) += encumbrance_weight(GET_OBJ_WEIGHT(object)) / 2;
+	return true;
+}
+bool quest_mobile_native_local_stock::nest(P_obj object, P_obj target, P_char ch) noexcept
+{
+	if (!native_birth_detached(ch) || !object || !target || object->next || object->prev ||
+	    container_weight_reduction_pct(target) || !obj_can_nest(object, target))
+		return false;
+	P_obj root = target;
+	while (OBJ_INSIDE(root))
+		root = root->loc.inside;
+	if (!OBJ_CARRIED_BY(root, ch) && !(root->loc_p == LOC_WORN && root->loc.wearing == ch))
+		return false;
+	object->loc_p = LOC_INSIDE;
+	object->loc.inside = target;
+	native_birth_group(object, target->contains);
+	add_weight(target, object->weight);
+	return true;
+}
+namespace
+{
+// Simulate the two original add_weight calls before changing the detached
+// graph. Preserve zero crossings and the original per-call worn /2 rounding.
+bool native_birth_weight_fits(P_obj target, P_char ch, int full, int correction) noexcept
+{
+	std::array<P_obj, PLAYER_SNAPSHOT_MAX_DEPTH> path{};
+	std::array<int64_t, PLAYER_SNAPSHOT_MAX_DEPTH> weights{};
+	size_t size = 0;
+	for (P_obj node = target; node;)
+	{
+		if (size == path.size())
+			return false;
+		for (size_t i = 0; i < size; ++i)
+			if (path[i] == node)
+				return false;
+		path[size] = node;
+		weights[size++] = node->weight;
+		if (!OBJ_INSIDE(node))
+		{
+			if (!OBJ_CARRIED_BY(node, ch) &&
+			    !(node->loc_p == LOC_WORN && node->loc.wearing == ch))
+				return false;
+			break;
+		}
+		node = node->loc.inside;
+		if (!node)
+			return false;
+	}
+	int64_t carrying = GET_CARRYING_W(ch);
+	for (int change : { full, correction })
+	{
+		int64_t delta = change;
+		for (size_t i = 0; delta && i < size; ++i)
+		{
+			const int64_t before = weights[i];
+			const int64_t after = before + delta;
+			if (after < INT_MIN || after > INT_MAX)
+				return false;
+			weights[i] = after;
+			if (before < 0)
+				delta = after > 0 ? after : 0;
+			else if (after <= 0)
+				delta -= after;
+			if (i + 1 == size)
+			{
+				carrying += path[i]->loc_p == LOC_WORN ? delta / 2 : delta;
+				if (carrying < INT_MIN || carrying > INT_MAX)
+					return false;
+			}
+		}
+	}
+	return size != 0;
+}
+}
+bool quest_mobile_native_local_stock::nest(P_obj object, P_obj target, P_char ch,
+					   quest_mobile_native_container_shell &shell) noexcept
+{
+	if (!native_birth_detached(ch) || !object || !target || !object->obj_uid ||
+	    !target->obj_uid || !OBJ_NOWHERE(object) || object->next || object->prev ||
+	    object->next_content || !obj_can_nest(object, target) || !shell.valid_ ||
+	    shell.target_ != target || shell.target_rnum_ != target->R_num ||
+	    !container_weight_reduction_pct(target))
+		return false;
+	int64_t direct = 0;
+	size_t count = 0;
+	for (P_obj child = target->contains; child; child = child->next_content)
+	{
+		if (++count > PLAYER_SNAPSHOT_MAX_OBJECTS || child == object ||
+		    !OBJ_INSIDE(child) || child->loc.inside != target)
+			return false;
+		direct += child->weight;
+		if (direct < INT_MIN || direct > INT_MAX)
+			return false;
+	}
+	direct += object->weight;
+	if (direct < INT_MIN || direct > INT_MAX)
+		return false;
+	// Original sum_direct_contents_weight rounds once on the full direct sum.
+	if (direct > 0)
+		direct -= direct * container_weight_reduction_pct(target) / 100;
+	const int64_t intermediate = int64_t(target->weight) + object->weight;
+	const int64_t after = int64_t(shell.shell_weight_) + direct;
+	const int64_t correction = after - intermediate;
+	if (intermediate < INT_MIN || intermediate > INT_MAX || after < INT_MIN ||
+	    after > INT_MAX || correction < INT_MIN || correction > INT_MAX ||
+	    !native_birth_weight_fits(target, ch, object->weight, static_cast<int>(correction)))
+		return false;
+	object->loc_p = LOC_INSIDE;
+	object->loc.inside = target;
+	native_birth_group(object, target->contains);
+	add_weight(target, object->weight);
+	add_weight(target, static_cast<int>(correction));
+	shell.valid_ = false;
+	return true;
+}
+bool quest_mobile_native_local_stock::begin_reducing_nest(P_obj object, P_obj target,
+							  P_char ch) noexcept
+{
+	if (!native_birth_detached(ch) || !object || !target || !object->obj_uid ||
+	    !target->obj_uid || !OBJ_NOWHERE(object) || object->next || object->prev ||
+	    object->next_content || !obj_can_nest(object, target) ||
+	    !container_weight_reduction_pct(target))
+		return false;
+	size_t count = 0;
+	for (P_obj child = target->contains; child; child = child->next_content)
+		if (++count > PLAYER_SNAPSHOT_MAX_OBJECTS || child == object ||
+		    !OBJ_INSIDE(child) || child->loc.inside != target)
+			return false;
+	if (!native_birth_weight_fits(target, ch, object->weight, 0))
+		return false;
+	// Preserve the original P cut before its actual shell constructor runs.
+	object->loc_p = LOC_INSIDE;
+	object->loc.inside = target;
+	native_birth_group(object, target->contains);
+	add_weight(target, object->weight);
+	return true;
+}
+bool quest_mobile_native_local_stock::finish_reducing_nest(
+	P_obj object, P_obj target, P_char ch, quest_mobile_native_container_shell &shell) noexcept
+{
+	if (!native_birth_detached(ch) || !object || !target || !OBJ_INSIDE(object) ||
+	    object->loc.inside != target || !shell.valid_ || shell.target_ != target ||
+	    shell.target_rnum_ != target->R_num || !container_weight_reduction_pct(target))
+		return false;
+	int64_t direct = 0;
+	size_t count = 0, selected = 0;
+	for (P_obj child = target->contains; child; child = child->next_content)
+	{
+		if (++count > PLAYER_SNAPSHOT_MAX_OBJECTS || !OBJ_INSIDE(child) ||
+		    child->loc.inside != target)
+			return false;
+		selected += child == object;
+		direct += child->weight;
+		if (direct < INT_MIN || direct > INT_MAX)
+			return false;
+	}
+	if (selected != 1)
+		return false;
+	// Original recalc samples the complete direct contents AFTER its probe.
+	if (direct > 0)
+		direct -= direct * container_weight_reduction_pct(target) / 100;
+	const int64_t after = int64_t(shell.shell_weight_) + direct;
+	const int64_t correction = after - target->weight;
+	if (after < INT_MIN || after > INT_MAX || correction < INT_MIN || correction > INT_MAX ||
+	    !native_birth_weight_fits(target, ch, 0, static_cast<int>(correction)))
+		return false;
+	if (correction)
+		add_weight(target, static_cast<int>(correction));
+	shell.valid_ = false;
+	return true;
+}
+bool quest_mobile_native_local_stock::detach(P_obj object, P_char ch) noexcept
+{
+	if (!native_birth_detached(ch) || !object || object->contains)
+		return false;
+	P_obj *link = nullptr;
+	if (OBJ_INSIDE(object))
+		link = &object->loc.inside->contains;
+	else if (OBJ_CARRIED_BY(object, ch))
+		link = &ch->carrying;
+	else if (object->loc_p == LOC_WORN && object->loc.wearing == ch)
+	{
+		for (int i = 0; i < MAX_WEAR; ++i)
+			if (ch->equipment[i] == object)
+			{
+				ch->equipment[i] = nullptr;
+				object->loc_p = LOC_NOWHERE;
+				object->loc.room = NOWHERE;
+				return true;
+			}
+		return false;
+	}
+	else
+		return OBJ_NOWHERE(object);
+	while (*link && *link != object)
+		link = &(*link)->next_content;
+	if (!*link)
+		return false;
+	*link = object->next_content;
+	object->next_content = nullptr;
+	object->loc_p = LOC_NOWHERE;
+	object->loc.room = NOWHERE;
+	return true;
+}
+bool quest_mobile_native_local_stock::enroll(P_obj object, P_char ch) noexcept
+{
+	if (!nevent_is_game_thread() || !object || !ch || !IS_NPC(ch) || ch->in_room == NOWHERE)
+		return false;
+	try
+	{
+		world_activity_object_enter(object);
+		if (IS_ARTIFACT(object))
+			artifact_update_location_sql(object);
+		if (object->loc_p == LOC_WORN)
+			balance_affects(ch);
+		char_light(ch);
+		room_light(ch->in_room, REAL);
+		mark_char_or_owner_dirty(ch);
+		SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool quest_mobile_native_local_stock::restore_enrollment(P_obj object, P_char ch) noexcept
+{
+	if (!nevent_is_game_thread() || !object || !ch || !IS_NPC(ch) || !ch->only.npc ||
+	    !IS_ALIVE(ch) || ch->in_room < 0 || ch->in_room > top_of_world ||
+	    find_character_by_runtime_id(ch->runtime_id) != ch || !object->obj_uid)
+		return false;
+	P_obj root = object, slow = object, fast = object;
+	while (OBJ_INSIDE(fast) && fast->loc.inside && OBJ_INSIDE(fast->loc.inside))
+	{
+		slow = slow->loc.inside;
+		fast = fast->loc.inside->loc.inside;
+		if (!fast || slow == fast)
+			return false;
+	}
+	while (OBJ_INSIDE(root))
+	{
+		if (!root->loc.inside)
+			return false;
+		root = root->loc.inside;
+	}
+	if (!OBJ_CARRIED_BY(root, ch) && !(root->loc_p == LOC_WORN && root->loc.wearing == ch))
+		return false;
+	try
+	{
+		// Whole actual forest activity is reconciled by room restoration once.
+		// No artifact SQL, item probe, cast, proc or duplicate corpse adjustment.
+		if (object->loc_p == LOC_WORN)
+		{
+			balance_affects(ch);
+			P_nevent event = get_scheduled(ch, event_balance_affects);
+			if (!event || event->ch != ch ||
+			    event->owner_runtime_id != ch->runtime_id ||
+			    !nevent_handle_is_active(nevent_handle_from_event(event)))
+				return false;
+		}
+		char_light(ch);
+		room_light(ch->in_room, REAL);
+		mark_char_or_owner_dirty(ch);
+		SET_BIT(ch->runtime_flags, CHAR_RFLAG_DIRTY_INVENTORY);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
 	}
 }
