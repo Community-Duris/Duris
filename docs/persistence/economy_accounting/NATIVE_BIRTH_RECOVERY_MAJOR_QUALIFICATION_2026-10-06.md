@@ -1,11 +1,11 @@
-# Native birth and quest recovery candidate qualification â€” 2026-10-06
+# Native birth and quest recovery candidate qualification — 2026-10-06
 
 The original production MariaDB and flatfile builds both pass on private source
 `8c3cea806a83504244d0be47ff76efcbed1057b67f8c0b211fd88af0ce5f58fd`.
 The two original affected native codec recipes pass on successor
 `401ca7762bac1e6d8f00e41be3b3c512f12b86f04c9e542fb01dda61b4158224`,
 including the expanded NQR3 context/pair controls. These are distinct candidates
-and scopes. Neither result establishes a complete Plan, R1â€“R8 or release gate.
+and scopes. Neither result establishes a complete Plan, R1–R8 or release gate.
 
 ## Concrete failures and verified corrections
 
