@@ -565,6 +565,26 @@ atomic new root receipt. It must reject a changed state before mutation and
 append new evidence rather than editing history. A manual SQL UPDATE, a missing
 original operation, or an unlinked credit cannot resolve an audit exception.
 
+## Captured item position validity
+
+Matching opening and current rows can still describe an impossible native
+position. The independent reader checks both against the native custody
+grammar and reports `invalid_item_origin_position` or
+`invalid_native_item_position` with the UID. Unknown states, invalid owner
+identities, destruction ownership on a live item, player ownership on a
+tombstone, impossible root/parent fields and invalid equipment constraints do
+not become an all-clear merely because both projections agree. Counts and
+the whole-snapshot CLI status retain these findings at detail limit0.
+
+Live and quarantined custody are both valid native states. A tombstone retains
+destruction ownership and may preserve its former root or parent; those fields
+are retained evidence. A logical creation opening represents its original
+all-zero absent witness while naming the new UID. Missing historical equipment
+remains unknown and is handled by the separate equipment audit. These checks
+use the independent retained-evidence interpreter, without importing mutation
+code or changing native rows. See
+[the exact position qualification](PLAN5_ITEM_CUSTODY_POSITION_QUALIFICATION_2026-10-06.md).
+
 ## Native mobile custody grammar
 
 Original native-mobile custody uses owner type12 with a durable lifetime ID

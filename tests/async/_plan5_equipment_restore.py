@@ -74,7 +74,7 @@ def run(root, owner, reader, fixture, native, encoded, settings, engine):
     assert initial["item_current_owner"]["rows"] == initial["player_data"]["rows"] == 0
     records = []
 
-    def sample(authority, audit_reader, label, drift):
+    def sample(authority, audit_reader, label, drift, invalid_custody=False):
         target = output / label
         target.mkdir(mode=0o700)
         before = inventory(authority)
@@ -85,11 +85,16 @@ def run(root, owner, reader, fixture, native, encoded, settings, engine):
         expected = {"evidence_loss": 1, "missing_native_holding": 2}
         if drift:
             expected["stale_native_item"] = 1
+        if invalid_custody:
+            expected["invalid_native_item_position"] = 1
         assert report["exception_counts"] == expected, report
         assert snapshot["complete"] is False and snapshot["backend"] == "sql_partial"
         assert {row["uid"]: row["equipment_slot"] for row in snapshot["item_origins"]} == {81: 5, 82: 6}
         assert {row["uid"]: row["equipment_slot"] for row in snapshot["native"]["items"]} == {
-            81: 6 if drift else 5, 82: 6}
+            81: 0 if invalid_custody else 6 if drift else 5, 82: 6}
+        if invalid_custody:
+            damaged = next(row for row in snapshot["native"]["items"] if row["uid"] == 81)
+            assert damaged["state"] == "tombstone" and damaged["owner"] == [1, 7, 0]
         assert connection.rollbacks == connection.observer.closes == 1
         payload = json.dumps(snapshot, sort_keys=True).encode()
         path = target / "snapshot.json"
@@ -197,6 +202,14 @@ def run(root, owner, reader, fixture, native, encoded, settings, engine):
                             cold_reader.close()
                         authority.close()
             assert inventory(owner) == source
+        # Preserve the original native books. Only the private current row is
+        # damaged: a tombstone cannot retain player ownership. Its slot is zero
+        # so this exercises custody grammar independently of equipment refusal.
+        with owner.cursor() as cursor:
+            cursor.execute("UPDATE item_current_owner SET state=2,equipment_slot=0 WHERE item_uid=81")
+        sample(owner, reader, "source-invalid-custody", True, invalid_custody=True)
+        with owner.cursor() as cursor:
+            cursor.execute("UPDATE item_current_owner SET state=1,equipment_slot=6 WHERE item_uid=81")
     finally:
         with owner.cursor() as cursor:
             cursor.execute("DELETE FROM item_current_owner WHERE item_uid IN (81,82)")
