@@ -1,5 +1,13 @@
 # Double-entry economy: remaining requirements
 
+## Projection contract parser repaired — 2026-10-06
+
+[Primary repair](PROJECTION_DEFAULT_ARGUMENT_PARSER_PRIMARY_REPAIR_2026-10-06.md)
+fixes the default-argument brace parser without changing production policy.
+The original failure reproduces; the same frozen-method check and all seven
+maintained methods pass, zero skips. Complete startup-source builds and cold
+world/journal qualification remain open; no Plan or release gate is promoted.
+
 ## Genuine producer qualification advancing — 2026-10-06
 
 [Shared progress](SHARED_PRODUCER_INTEGRATION_PROGRESS_2026-10-06.md) records
