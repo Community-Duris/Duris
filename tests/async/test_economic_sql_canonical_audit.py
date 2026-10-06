@@ -957,6 +957,7 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                         modeled = clean_snapshot()
                         origins, items = modeled['account_origins'], modeled['item_origins']
                         items[0]['owner'] = [native_before[0], native_before[2], native_before[3]]
+                        items[0]['equipment_slot'] = native_before[7]
                         modeled.update(cut)
                         modeled['account_origins'], modeled['item_origins'] = origins, items
                         self.assertEqual(Reconciler().audit(modeled)['exception_count'],0)
@@ -1087,6 +1088,7 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                                     modeled = clean_snapshot()
                                     origins, items = modeled['account_origins'], modeled['item_origins']
                                     items[0]['owner'] = [native_before[0], native_before[2], native_before[3]]
+                                    items[0]['equipment_slot'] = native_before[7]
                                     modeled.update(cut)
                                     modeled['account_origins'] = origins
                                     modeled['item_origins'] = items
