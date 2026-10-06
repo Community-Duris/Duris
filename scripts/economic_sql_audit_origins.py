@@ -232,6 +232,114 @@ def verify_baseline_root(row: dict, lineage: bytes, epoch: bytes) -> dict:
 
 
 COINS = ("copper", "silver", "gold", "platinum")
+CLAIM_POLICY_COLUMNS = (
+    "p.operation_id", "p.lineage", "p.epoch", "p.native_boundary_digest", "p.request_digest",
+    "p.phase", "p.baseline_operation_id", "i.command_hash", "i.keys_hash", "i.command_type",
+    "i.schema_version", "i.payload_version", "i.status", "i.result_code", "i.failure_stage",
+    "i.durable_revision", "i.result_payload", "CAST((i.committed_at IS NOT NULL) AS UNSIGNED)",
+)
+CLAIM_MAPPING_COLUMNS = (
+    "mapping_id", "lineage", "backend_kind", "account_kind", "locator_kind", "native_id", "context_id",
+)
+
+
+def verify_baseline_claim_policy(row: dict, holdings: list[dict], parents: list[tuple]) -> bool:
+    """Authenticate the new money-opening policy; historical NULL stays unknown."""
+    marker = row["claim_origin_version"]
+    if marker is not None and (type(marker) is not int or marker != 1):
+        raise OriginError("EAB1 claim origin mismatch")
+    if not any(account_key(holding["account_key"])[1] in (4, 5) for holding in holdings):
+        return marker is not None
+    if marker is None and not parents:
+        return False
+    accepted = row["command_accepted_at_usec"]
+    if marker != 1 or len(parents) != 1 or type(accepted) is not int or not 0 < accepted < 2**64:
+        raise OriginError("EAB1 claim origin mismatch")
+    blob = row["canonical_witness"]
+    request = b"DURIS-SQL-LIFECYCLE-V2"
+    for value in (blob[48:64], blob[16:32], blob[32:48]):
+        request += struct.pack("<Q", len(value)) + value
+    request += blob[64:72] + struct.pack("<Q", accepted)
+    request_hash = hashlib.sha256(request).digest()
+    parent = parents[0]
+    if (len(parent) != len(CLAIM_POLICY_COLUMNS) or type(parent[5]) is not int or parent[5] not in (1, 2) or
+            (parent[6] is not None and (type(parent[6]) is not bytes or parent[6] != row["operation_id"]))):
+        raise OriginError("EAB1 claim origin mismatch")
+    expected = (blob[48:64], blob[16:32], blob[32:48], blob[120:152], request_hash,
+                parent[5], parent[6], request_hash, hashlib.sha256(b"").digest(), 20, 2, 1, 1, 0, 0, 0, b"", 1)
+    if not same_projection(tuple(parent), expected):
+        raise OriginError("EAB1 claim origin mismatch")
+    return True
+
+
+def verify_baseline_claim_identity(row: dict, holdings: list[dict], mappings: list[tuple]) -> list[tuple]:
+    """Recompute original ESD1/ESR1, including zero and retired claim mappings."""
+    blob = row["canonical_witness"]
+    claims = [(index, holding, account_key(holding["account_key"]))
+              for index, holding in enumerate(holdings) if account_key(holding["account_key"])[1] == 5]
+    by_id = {}
+    for mapping in mappings:
+        if len(mapping) != len(CLAIM_MAPPING_COLUMNS) or type(mapping[0]) is not int or mapping[0] in by_id:
+            raise OriginError("EAB1 claim origin mismatch")
+        by_id[mapping[0]] = tuple(mapping)
+    if set(by_id) != {key[2] for _, _, key in claims}:
+        raise OriginError("EAB1 claim origin mismatch")
+
+    def text(value: str) -> bytes:
+        encoded = value.encode("ascii")
+        return struct.pack("<Q", len(encoded)) + encoded
+
+    definition = text("ESD1") + text("auction_money_pickups") + text("pid") + struct.pack("<Q", 3)
+    definition += b"".join(text(column) for column in ("pid", "money", "claim_revision"))
+    schema = hashlib.sha256(definition).digest()
+    expected_sources = []
+    for index, holding, key in claims:
+        mapping, pid, amount = by_id[key[2]], by_id[key[2]][5], holding["balance"][0]
+        if (type(pid) is not int or not 0 < pid < 2**32 or key[3] != 0 or
+                not 0 <= amount < 2**32 or any(holding["balance"][1:]) or
+                not same_projection(mapping, (key[2], blob[16:32], 1, 5, 5, pid, 0))):
+            raise OriginError("EAB1 claim origin mismatch")
+        original = text("ESR1") + schema
+        original += b"".join(struct.pack("<Q", 1) + text(str(value))
+                             for value in (pid, amount, holding["revision"]))
+        if hashlib.sha256(original).digest() != blob[192 + index * 112 + 80:192 + (index + 1) * 112]:
+            raise OriginError("EAB1 claim origin mismatch")
+        if amount:
+            expected_sources.append((index + 1, blob[16:32], key[2], pid, amount))
+    return expected_sources
+
+
+def verify_baseline_claim_rows(cursor, row: dict, holdings: list[dict]) -> None:
+    parents = []
+    if any(account_key(holding["account_key"])[1] in (4, 5) for holding in holdings):
+        cursor.execute("SELECT " + ",".join(column + " AS policy_" + str(index)
+            for index, column in enumerate(CLAIM_POLICY_COLUMNS)) +
+            " FROM economic_sql_lifecycle_installation p LEFT JOIN critical_operation_inbox i "
+            "ON i.operation_id=p.operation_id WHERE p.operation_id=%s LIMIT 2",
+            (row["canonical_witness"][48:64],))
+        parents = [tuple(value["policy_" + str(index)] for index in range(len(CLAIM_POLICY_COLUMNS)))
+                   for value in cursor.fetchall()]
+    if not verify_baseline_claim_policy(row, holdings, parents):
+        return
+    identities = [account_key(holding["account_key"])[2] for holding in holdings
+                  if account_key(holding["account_key"])[1] == 5]
+    mappings = []
+    for start in range(0, len(identities), 256):
+        page = identities[start:start + 256]
+        cursor.execute("SELECT " + ",".join(CLAIM_MAPPING_COLUMNS) +
+            " FROM economic_account_mapping WHERE lineage=%s AND mapping_id IN (" +
+            ",".join("%s" for _ in page) + ") LIMIT %s", (row["root_lineage"], *page, len(page) + 1))
+        mappings.extend(tuple(value[column] for column in CLAIM_MAPPING_COLUMNS) for value in cursor.fetchall())
+    expected = verify_baseline_claim_identity(row, holdings, mappings)
+    cursor.execute("SELECT source_slot,lineage,claim_mapping_id,beneficiary_pid,amount "
+        "FROM economic_pending_claim_source WHERE source_operation_id=%s ORDER BY source_slot LIMIT %s",
+        (row["operation_id"], len(expected) + 1))
+    actual = [tuple(value[column] for column in ("source_slot", "lineage", "claim_mapping_id", "beneficiary_pid", "amount"))
+              for value in cursor.fetchall()]
+    if not same_projection(actual, expected):
+        raise OriginError("EAB1 claim origin mismatch")
+
+
 BASELINE_PROJECTIONS = {
     "economic_accounting_account_effect": ("operation_id", "account_index", "account_key",
         *(side + "_" + coin for side in ("before", "after") for coin in COINS),
@@ -340,9 +448,12 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
         "'economic_accounting_operation','critical_operation_inbox',"
         "'economic_accounting_account_effect','economic_accounting_coin_posting','economic_baseline_reservation',"
         "'economic_accounting_child','economic_accounting_item_reference',"
-        "'currency_ledger','item_ownership_ledger','critical_outbox')")
+        "'currency_ledger','item_ownership_ledger','critical_outbox',"
+        "'economic_sql_lifecycle_installation','economic_account_mapping','economic_pending_claim_source')")
     engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
-    if (len(engines) != 12 or any(engine != "InnoDB" for engine in engines.values())):
+    baseline_tables = {"economic_baseline_control", "economic_baseline_witness", "economic_accounting_operation",
+        "critical_operation_inbox", *BASELINE_PROJECTIONS, *(table for table, _ in BASELINE_ZERO_EFFECTS)}
+    if any(engines.get(table) != "InnoDB" for table in baseline_tables):
         raise OriginError("SQL baseline source is missing or not InnoDB")
     cursor.execute("SELECT COUNT(*) AS column_count FROM information_schema.columns "
                    "WHERE table_schema=DATABASE() AND table_name='economic_baseline_witness' "
@@ -352,6 +463,13 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
             admission["column_count"] not in (0, 1)):
         raise OriginError("invalid SQL baseline admission column metadata")
     admission_column = "w.command_accepted_at_usec" if admission["column_count"] else "NULL"
+    cursor.execute("SELECT COUNT(*) AS column_count FROM information_schema.columns "
+                   "WHERE table_schema=DATABASE() AND table_name='economic_baseline_witness' "
+                   "AND column_name='claim_origin_version'")
+    policy = cursor.fetchone()
+    if (policy is None or type(policy["column_count"]) is not int or policy["column_count"] not in (0, 1)):
+        raise OriginError("invalid SQL baseline claim policy column metadata")
+    policy_column = "w.claim_origin_version" if policy["column_count"] else "NULL"
     cursor.execute(
         "SELECT opening_account,revision,last_operation_id FROM economic_baseline_control "
         "WHERE lineage=%s AND epoch=%s", (lineage, epoch))
@@ -387,7 +505,7 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
         "i.durable_revision AS inbox_revision,i.command_type AS inbox_type,i.schema_version AS inbox_schema,"
         "i.payload_version AS inbox_payload,i.result_payload AS inbox_result_payload,"
         "i.keys_hash AS inbox_keys_hash,i.command_hash AS inbox_command_hash," +
-        admission_column + " AS command_accepted_at_usec,"
+        admission_column + " AS command_accepted_at_usec," + policy_column + " AS claim_origin_version,"
         "i.status AS inbox_status,i.result_code AS inbox_result,"
         "i.failure_stage AS inbox_failure_stage,"
         "(i.committed_at IS NOT NULL) AS inbox_committed_at_present "
@@ -412,6 +530,11 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
             raise OriginError("uncommitted or noncanonical baseline witness")
         batch_holdings, batch_items = decode_witness(row, lineage, epoch, opening)
         verified.append((row, verify_baseline_root(row, lineage, epoch)))
+        if (any(account_key(holding["account_key"])[1] in (4, 5) for holding in batch_holdings) and
+                any(engines.get(table) != "InnoDB" for table in ("economic_sql_lifecycle_installation",
+                    "economic_account_mapping", "economic_pending_claim_source"))):
+            raise OriginError("SQL claim origin source is missing or not InnoDB")
+        verify_baseline_claim_rows(cursor, row, batch_holdings)
         for holding in batch_holdings:
             key = holding["account_key"]
             lifetime = account_key(key)[2]

@@ -133,7 +133,7 @@ class RestoreProjectionFixture:
                 value['holding_count'], value['item_count'], value['witness_digest'].hex(), len(value['canonical_witness']),
                 value['canonical_witness'][80:120].hex(), value['inbox_revision'], value['inbox_type'], value['inbox_schema'],
                 value['inbox_payload'], value['inbox_result_payload'].hex(), value['inbox_keys_hash'].hex(),
-                value['command_accepted_at_usec'], value['inbox_command_hash'].hex(), None]]
+                value['command_accepted_at_usec'], value['inbox_command_hash'].hex(), value['claim_origin_version']]]
         if rejected:
             self.rows['metadata'][0][14] = self.rows['metadata'][0][16] = None
             self.rows['metadata'][0][17:25] = [2, 5, 0, 0, 0, 0, 0, 0]
@@ -144,11 +144,18 @@ class RestoreProjectionFixture:
         self.pending_sources = []
         self.pending_consumptions = []
         self.claim_origin_column_count = '1'
+        self.claim_parents = self.baseline.get('_claim_parents', []) if baseline else []
+        self.claim_mappings = self.baseline.get('_claim_mappings', []) if baseline else []
 
     def sql(self, query):
         if not query.startswith('SELECT '):
             raise AssertionError(query)
         self.queries.append(query)
+        for table, values in (('economic_sql_lifecycle_installation', self.claim_parents),
+                              ('economic_account_mapping', self.claim_mappings)):
+            if query.startswith('SELECT JSON_ARRAY(') and ' FROM ' + table + ' ' in query:
+                return '\n'.join(json.dumps([value.hex() if isinstance(value, bytes) else value for value in row])
+                                 for row in values)
         for table, values in (('economic_pending_claim_source', self.pending_sources),
                               ('economic_pending_claim_consumption', self.pending_consumptions)):
             if query.startswith('SELECT COUNT(*) FROM ' + table + ';'):
@@ -373,10 +380,11 @@ class RestoreProjectionTests(unittest.TestCase):
                     self.assertFalse(any('SUBSTRING(canonical_' in query for query in fixture.queries))
 
     def test_versioned_baseline_claim_slots_and_historical_unknown_coverage(self):
-        from test_economic_sql_audit_origins import key, witness
-        baseline = witness([key(1, 7), key(5, 9)])
+        from test_economic_sql_audit_origins import key, witness, money_witness
+        historical = witness([key(1, 7), key(5, 9)])
+        baseline = money_witness()
         for version in (None, 1):
-            fixture = RestoreProjectionFixture(baseline=baseline)
+            fixture = RestoreProjectionFixture(baseline=historical if version is None else baseline)
             fixture.rows['witness'][0][17] = version
             if version == 1:
                 fixture.pending_sources = [[fixture.operation, 2, '11'*16, 9, 42, 5, None,
@@ -405,6 +413,46 @@ class RestoreProjectionTests(unittest.TestCase):
             with self.subTest(version=version):
                 self.refuse(fixture, 'baseline_claim_origin')
 
+    def test_baseline_original_policy_pid_and_zero_identity_refuse_restore(self):
+        from test_economic_sql_audit_origins import money_witness
+
+        def opening():
+            fixture = RestoreProjectionFixture(baseline=money_witness())
+            fixture.pending_sources = [[fixture.operation, 2, '11'*16, 9, 42, 5, None,
+                                        9, '11'*16, 1, 5, 5, 42, 0]]
+            return fixture
+
+        evidence.require_integrity(opening())
+        for index in (0, 1):
+            fixture = opening()
+            mapping = list(fixture.claim_mappings[index])
+            mapping[5] += 100
+            fixture.claim_mappings[index] = tuple(mapping)
+            if index == 0:
+                fixture.pending_sources[0][4] = fixture.pending_sources[0][12] = mapping[5]
+            with self.subTest(zero=index == 1):
+                self.refuse(fixture, 'baseline_claim_origin')
+        for damage in ('marker', 'timestamp', 'parent', 'mapping'):
+            fixture = opening()
+            if damage in ('marker', 'timestamp'):
+                fixture.rows['witness'][0][17 if damage == 'marker' else 15] = None
+            elif damage == 'parent':
+                fixture.claim_parents = []
+            else:
+                fixture.claim_mappings = []
+            with self.subTest(damage=damage):
+                self.refuse(fixture, 'baseline_claim_origin')
+        for index, value in enumerate(opening().claim_parents[0]):
+            alternatives = self.aliases(value) if type(value) is int else [None, b'bad']
+            if index == 6:
+                alternatives = [bytes(16), 'bad']
+            for damage in alternatives:
+                fixture = opening()
+                parent = list(fixture.claim_parents[0])
+                parent[index] = damage
+                fixture.claim_parents = [tuple(parent)]
+                with self.subTest(index=index, damage=damage):
+                    self.refuse(fixture, 'baseline_claim_origin')
     def test_sql_native_mobile_valid_versions_lifetimes_and_stock(self):
         for version, state, stock in ((1, 1, bytes(4)), (1, 2, bytes(4)), (2, 1, bytes(4)),
                                       (2, 2, bytes(4)), (1, 1, native_mobile_stock()),

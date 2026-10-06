@@ -101,7 +101,7 @@ def baseline_root(blob, revision=1, accepted_at_usec=123456):
                 inbox_failure_stage=0, inbox_committed_at_present=1, inbox_revision=revision,
                 inbox_type=20, inbox_schema=2, inbox_payload=1, inbox_result_payload=b"",
                 inbox_keys_hash=hashlib.sha256(struct.pack("<BQ", 9, 0x45434f4e42415345)).digest(),
-                command_accepted_at_usec=accepted_at_usec,
+                command_accepted_at_usec=accepted_at_usec, claim_origin_version=None,
                 inbox_command_hash=hashlib.sha256(original_command).digest(),
                 root_lineage=lineage, root_epoch=epoch, original_operation_id=None,
                 accounting_version=1, writer_id=4, policy_version=1, compiler_version=1,
@@ -151,6 +151,39 @@ def baseline_projections(row):
     return effects, postings, reservations
 
 
+def money_witness():
+    """Independent modeled framing; original native vectors are separate proof."""
+    blob = bytearray(witness([key(1, 7), key(5, 9), key(5, 10)])["canonical_witness"])
+
+    def framed(value):
+        value = value.encode("ascii")
+        return struct.pack("<Q", len(value)) + value
+
+    definition = (framed("ESD1") + framed("auction_money_pickups") + framed("pid") +
+                  struct.pack("<Q", 3) + b"".join(framed(value) for value in ("pid", "money", "claim_revision")))
+    mappings, sources = [], []
+    for index, mapping, pid, amount in ((1, 9, 42, 5), (2, 10, 43, 0)):
+        struct.pack_into("<4q", blob, 192 + index * 112 + 40, amount, 0, 0, 0)
+        original = framed("ESR1") + hashlib.sha256(definition).digest()
+        original += b"".join(struct.pack("<Q", 1) + framed(str(value)) for value in (pid, amount, 4))
+        blob[192 + index * 112 + 80:192 + (index + 1) * 112] = hashlib.sha256(original).digest()
+        mappings.append((mapping, LINEAGE, 1, 5, 5, pid, 0))
+        if amount:
+            sources.append((index + 1, LINEAGE, mapping, pid, amount))
+    row = baseline_root(bytes(blob))
+    request = b"DURIS-SQL-LIFECYCLE-V2"
+    for value in (blob[48:64], LINEAGE, EPOCH):
+        request += struct.pack("<Q", len(value)) + value
+    request += blob[64:72] + struct.pack("<Q", row["command_accepted_at_usec"])
+    request_hash = hashlib.sha256(request).digest()
+    row.update(claim_origin_version=1,
+        _claim_parents=[(bytes(blob[48:64]), LINEAGE, EPOCH, bytes(blob[120:152]), request_hash,
+                        1, row["operation_id"], request_hash, hashlib.sha256(b"").digest(),
+                        20, 2, 1, 1, 0, 0, 0, b"", 1)],
+        _claim_mappings=mappings, _claim_sources=sources)
+    return row
+
+
 class Cursor:
     def __init__(self, rows):
         self.rows = rows
@@ -159,19 +192,34 @@ class Cursor:
         self.closed = False
         self.admission_column_count = 1
         self.metadata_query = False
+        self.claim_query = None
+        self.claim_policy_column_count = 1
+        self.claim_parents = []
+        self.claim_mappings = []
+        self.claim_sources = []
 
     def execute(self, statement, params=None):
         self.metadata_query = 'information_schema.columns' in statement
-        if not self.metadata_query:
+        self.claim_query = next((name for name in ("economic_sql_lifecycle_installation",
+            "economic_account_mapping", "economic_pending_claim_source") if " FROM " + name in statement), None)
+        if not self.metadata_query and not self.claim_query:
             self.index += 1
         self.statements.append((statement, params))
 
     def fetchone(self):
         if self.metadata_query:
-            return {"column_count": self.admission_column_count}
+            count = self.claim_policy_column_count if "claim_origin_version" in self.statements[-1][0] else self.admission_column_count
+            return {"column_count": count}
         return self.rows[self.index]
 
     def fetchall(self):
+        if self.claim_query:
+            if self.claim_query == "economic_sql_lifecycle_installation":
+                return [dict(zip(("policy_" + str(index) for index in range(18)), row)) for row in self.claim_parents]
+            if self.claim_query == "economic_account_mapping":
+                return [dict(zip(origin_exporter.CLAIM_MAPPING_COLUMNS, row)) for row in self.claim_mappings]
+            return [dict(zip(("source_slot", "lineage", "claim_mapping_id", "beneficiary_pid", "amount"), row))
+                    for row in self.claim_sources]
         return self.rows[self.index]
 
     def close(self):
@@ -197,7 +245,8 @@ class Connection:
               "economic_accounting_operation", "critical_operation_inbox",
               "economic_accounting_account_effect", "economic_accounting_coin_posting", "economic_baseline_reservation",
               "economic_accounting_child", "economic_accounting_item_reference", "currency_ledger",
-              "item_ownership_ledger", "critical_outbox")],
+              "item_ownership_ledger", "critical_outbox", "economic_sql_lifecycle_installation",
+              "economic_account_mapping", "economic_pending_claim_source")],
             {"opening_account": OPENING, "revision": 1, "last_operation_id": OP}
             if control is None else control,
             {"row_count": len(rows),
@@ -208,6 +257,9 @@ class Connection:
             *projections,
             {"effect_" + str(index): 0 for index in range(6)},
         ])
+        self.scan.claim_parents = rows[0].get("_claim_parents", []) if rows else []
+        self.scan.claim_mappings = rows[0].get("_claim_mappings", []) if rows else []
+        self.scan.claim_sources = rows[0].get("_claim_sources", []) if rows else []
         self.rollbacks = 0
 
     def cursor(self):
@@ -306,6 +358,66 @@ class PartialClaimExportTests(unittest.TestCase):
 
 
 class OriginTests(unittest.TestCase):
+    def test_money_opening_policy_original_pid_and_zero_claim_read_only(self):
+        original = money_witness()
+        connection = Connection(rows=[original])
+        result = capture(connection, LINEAGE, EPOCH)
+        self.assertEqual([holding["balance"][0] for holding in result["account_origins"]], [5, 5, 0])
+        self.assertEqual(connection.rollbacks, 1)
+        for index in (0, 1):
+            row = copy.deepcopy(original)
+            mapping = list(row["_claim_mappings"][index])
+            mapping[5] += 100
+            row["_claim_mappings"][index] = tuple(mapping)
+            if index == 0:
+                source = list(row["_claim_sources"][0])
+                source[3] += 100
+                row["_claim_sources"][0] = tuple(source)
+            before = copy.deepcopy(row)
+            connection = Connection(rows=[row])
+            with self.subTest(zero=index == 1), self.assertRaisesRegex(OriginError, "claim origin mismatch"):
+                capture(connection, LINEAGE, EPOCH)
+            self.assertEqual(row, before)
+            self.assertEqual(connection.rollbacks, 1)
+            self.assertTrue(all(statement.startswith(("SELECT ", "SET TRANSACTION ", "START TRANSACTION "))
+                                for statement, _ in connection.scan.statements))
+
+    def test_money_opening_policy_requires_original_lifecycle_receipt(self):
+        original = money_witness()
+        cases = [("claim_origin_version", None), ("command_accepted_at_usec", None),
+                 ("_claim_parents", []), ("_claim_mappings", []), ("_claim_sources", [])]
+        for field, value in cases:
+            row = copy.deepcopy(original)
+            row[field] = value
+            with self.subTest(field=field), self.assertRaisesRegex(OriginError, "claim origin mismatch"):
+                capture(Connection(rows=[row]), LINEAGE, EPOCH)
+        for index, value in enumerate(original["_claim_parents"][0]):
+            alternatives = integer_aliases(value) if type(value) is int else [None, b"bad"]
+            if index == 6:
+                alternatives = [bytes(16), "bad"]  # NULL baseline ID is an original supported phase.
+            for damage in alternatives:
+                row = copy.deepcopy(original)
+                parent = list(row["_claim_parents"][0])
+                parent[index] = damage
+                row["_claim_parents"] = [tuple(parent)]
+                with self.subTest(index=index, damage=damage), self.assertRaisesRegex(OriginError, "claim origin mismatch"):
+                    capture(Connection(rows=[row]), LINEAGE, EPOCH)
+        for phase, operation in ((1, None), (2, original["operation_id"])):
+            row = copy.deepcopy(original)
+            parent = list(row["_claim_parents"][0])
+            parent[5:7] = [phase, operation]
+            row["_claim_parents"] = [tuple(parent)]
+            capture(Connection(rows=[row]), LINEAGE, EPOCH)
+        for value in (0, 2, True, 1.0, "1", None):
+            connection = Connection(rows=[original])
+            connection.scan.claim_policy_column_count = value
+            with self.subTest(column_count=value), self.assertRaisesRegex(OriginError, "claim (policy column metadata|origin mismatch)"):
+                # A missing column behaves like SQL NULL rather than a new-policy waiver.
+                if value == 0:
+                    connection = Connection(rows=[{**original, "claim_origin_version": None}])
+                    connection.scan.claim_policy_column_count = 0
+                capture(connection, LINEAGE, EPOCH)
+
     def test_original_admission_time_and_full_command_hash_refuse_read_only(self):
         intact = witness()
         cuts = [("command_accepted_at_usec", value) for value in
@@ -522,7 +634,7 @@ class OriginTests(unittest.TestCase):
         connection.scan.rows[6]["projection_rows"] = origin_exporter.MAX_ROWS + 1
         with self.assertRaisesRegex(OriginError, "baseline SQL projection source"):
             capture(connection, LINEAGE, EPOCH)
-        self.assertEqual(len(connection.scan.statements), 8)
+        self.assertEqual(len(connection.scan.statements), 9)
         for index in (4, 5, 6):
             with self.subTest(table=index):
                 connection = Connection()
@@ -775,15 +887,15 @@ class OriginTests(unittest.TestCase):
         self.assertIn("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY", statements)
         self.assertTrue(all(sql.startswith(("SET TRANSACTION", "START TRANSACTION", "SELECT"))
                             for sql in statements))
-        self.assertEqual(connection.scan.statements[4][1], (LINEAGE, EPOCH))
-        witness_query = connection.scan.statements[6][0]
+        self.assertEqual(connection.scan.statements[5][1], (LINEAGE, EPOCH))
+        witness_query = connection.scan.statements[7][0]
         self.assertIn("i.failure_stage AS inbox_failure_stage", witness_query)
         self.assertIn("i.committed_at IS NOT NULL", witness_query)
-        reservation_query, reservation_parameters = connection.scan.statements[10]
+        reservation_query, reservation_parameters = connection.scan.statements[11]
         self.assertIn("LEFT JOIN economic_baseline_witness", reservation_query)
         self.assertIn("((p.lineage=%s AND p.epoch=%s) OR (w.lineage=%s AND w.epoch=%s))", reservation_query)
         self.assertEqual(reservation_parameters, (LINEAGE, EPOCH, LINEAGE, EPOCH, origin_exporter.MAX_ROWS - 4 + 1))
-        zero_query, zero_parameters = connection.scan.statements[11]
+        zero_query, zero_parameters = connection.scan.statements[12]
         self.assertEqual(zero_query.count("EXISTS(SELECT 1"), 6)
         self.assertEqual(zero_parameters, (LINEAGE, EPOCH) * 6)
         self.assertNotIn("payload", zero_query)
