@@ -3,6 +3,7 @@
 #include "flatfile/flatfile_accounting_authority.h"
 #include "economy/economic_currency_adapter.h"
 #include "flatfile/flatfile_accounting_baseline.h"
+#include "world/quest_mobile_native.h"
 #include "../../scripts/qualify_flatfile_economic_records.h"
 #include <cassert>
 #include <cstring>
@@ -164,6 +165,76 @@ int main(int argc, char **argv)
 {
 	assert(argc == 3);
 	const std::string root = argv[1], mode = argv[2];
+	if (mode.starts_with("mobile-"))
+	{
+		assert(mode == "mobile-v1-live" || mode == "mobile-v1-retired" ||
+		       mode == "mobile-v2-live" || mode == "mobile-v2-retired");
+		const bool cash = mode.starts_with("mobile-v2"),
+			   retired = mode.ends_with("retired");
+		quest_mobile_native_reference reference;
+		reference.mobile_instance_id = 42;
+		reference.birth_operation = id(70);
+		reference.birth_source = { economic_source_kind::npc_generation, id(71), id(72), 3,
+					   5 };
+		reference.mobile_vnum = 9001;
+		reference.birthplace_vnum = 3000;
+		reference.reset_zone_vnum = 30;
+		reference.provenance = quest_mobile_birth_provenance::reset;
+		reference.mobile_revision = 2;
+		reference.stock_revision = 3;
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> encoded_reference;
+		assert(quest_mobile_native_reference_encode(reference, &encoded_reference) ==
+		       player_snapshot_codec_result::ok);
+		std::vector<player_item_snapshot> stock;
+		if (!retired)
+		{
+			player_item_snapshot item{};
+			item.object_uid = 81;
+			item.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+			item.equipment_slot = 7;
+			item.vnum = 9002;
+			item.string_mask = 15;
+			item.name = "private synthetic mobile item";
+			item.short_description = "a private synthetic mobile item";
+			item.description = "A private synthetic mobile item is here.";
+			item.action_description = "private literal action";
+			stock.push_back(item);
+		}
+		std::vector<uint8_t> encoded_stock;
+		assert(player_item_snapshot_list_encode(stock, &encoded_stock) ==
+		       player_snapshot_codec_result::ok);
+		// Original native reference and stock bytes in explicit synthetic QMN
+		// framing. No birth, source authentication, transition or storage owner.
+		using namespace restore_economic_authority;
+		bytes encoded{ 'Q', 'M', 'N', 'I', 'M', 'G', 0, 0 };
+		put(encoded, cash ? 2 : 1, 2);
+		put(encoded, retired ? 2 : 1, 1);
+		put(encoded, 0, 1);
+		put(encoded,
+		    (cash ? QUEST_MOBILE_NATIVE_CASH_IMAGE_OVERHEAD :
+			    QUEST_MOBILE_NATIVE_IMAGE_OVERHEAD) +
+			    encoded_stock.size(),
+		    4);
+		encoded.insert(encoded.end(), encoded_reference.begin(), encoded_reference.end());
+		const auto transition = id(73);
+		encoded.insert(encoded.end(), transition.bytes.begin(), transition.bytes.end());
+		if (cash)
+		{
+			put(encoded, 4, 8);
+			for (uint64_t amount : { 5, 6, 7, 8 })
+				put(encoded, retired ? 0 : amount, 8);
+		}
+		put(encoded, encoded_stock.size(), 4);
+		encoded.insert(encoded.end(), encoded_stock.begin(), encoded_stock.end());
+		const auto checksum = hash(encoded);
+		encoded.insert(encoded.end(), checksum.begin(), checksum.end());
+		std::ofstream output(std::filesystem::path(root) /
+					     "domains/quest-mobile-native-42.qmn",
+				     std::ios::binary);
+		assert(output.write(reinterpret_cast<const char *>(encoded.data()),
+				    encoded.size()));
+		return 0;
+	}
 	if (mode == "compare-metadata")
 	{
 		size_t comparisons = 0;
