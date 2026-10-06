@@ -69,6 +69,11 @@ against those retained plans; the canonical SQL check additionally authenticates
 the retained intent and its SQL binding. Capture the two checks under the release's
 quiescence procedure; independent runs do not constitute one combined cut.
 
+Provenance UID filters require the stored UID to be an exact integer. Float,
+Boolean and string aliases do not identify that UID. Retained/unattributed
+histories, global refusal and output limits retain their original behavior.
+See [the primary UID qualification](PLAN5_UID_PROVENANCE_PRIMARY_QUALIFICATION_2026-10-06.md).
+
 Every non-exception view includes the whole audited input's `coverage` object:
 `lineage`, `selected_epoch`, `complete`, `quiescent`, and `exception_count`.
 This includes unfiltered holdings, supply, prices, routes and provenance. The

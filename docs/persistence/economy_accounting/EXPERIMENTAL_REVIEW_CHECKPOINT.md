@@ -1,5 +1,12 @@
 # Experimental accounting review checkpoint
 
+## Exact UID provenance integrated — 2026-10-06
+
+[Primary qualification](PLAN5_UID_PROVENANCE_PRIMARY_QUALIFICATION_2026-10-06.md)
+requires an exact integer UID before including retained provenance. Original
+failure and all three maintained provenance/CLI methods pass, zero skips.
+Allocation snapshots, real producer/recovery journeys and full release remain open.
+
 ## Auction/opening shared milestone qualified — 2026-10-06
 
 [Exact maintained qualification](AUCTION_OPENING_RETAINED_PRIMARY_QUALIFICATION_2026-10-06.md) records seven original native
