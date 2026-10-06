@@ -1,10 +1,15 @@
+#include "economy/auction_accounting.h"
 #include "economy/auction_item_claim_accounting.h"
 #include "economy/auction_settlement_accounting.h"
 #include "persistence/economic_sql_auction_item_claim_transaction.h"
 #include "persistence/economic_sql_auction_settlement_transaction.h"
 
 #include <mysql.h>
+#include <openssl/sha.h>
+#include "persistence/economic_sql_pending_claim_source.h"
+#include <cerrno>
 
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
@@ -82,6 +87,26 @@ void inbox(const critical_operation_id &operation, uint16_t type, uint16_t schem
 		literal(operation) + ",REPEAT(CHAR(1),32),REPEAT(CHAR(2),32)," +
 		std::to_string(type) + "," + std::to_string(schema) + ",1," +
 		std::to_string(status) + ",X'')");
+}
+
+void inbox(const critical_command &command)
+{
+	inbox(command.operation_id, static_cast<uint16_t>(command.type), command.schema_version, 0);
+	std::vector<uint8_t> bytes, keys;
+	std::array<uint8_t, 32> digest{}, keys_digest{};
+	assert(critical_command_encode(command, &bytes) == critical_command_codec_result::ok);
+	for (const auto &key : command.keys)
+	{
+		keys.push_back(static_cast<uint8_t>(key.type));
+		for (unsigned shift = 0; shift < 8; ++shift)
+			keys.push_back(static_cast<uint8_t>(key.id >> (shift * 8)));
+	}
+	SHA256(bytes.data(), bytes.size(), digest.data());
+	SHA256(keys.data(), keys.size(), keys_digest.data());
+	execute("UPDATE critical_operation_inbox SET command_hash=X'" +
+		hex(digest.data(), digest.size()) + "',keys_hash=X'" +
+		hex(keys_digest.data(), keys_digest.size()) +
+		"' WHERE operation_id=" + literal(command.operation_id));
 }
 
 economic_account_key mapping(const critical_operation_id &lineage, economic_account_kind kind,
@@ -167,12 +192,13 @@ auction_settlement_listing listing(uint32_t auction_id, uint64_t uid, uint64_t e
 critical_command closure(uint8_t operation, auction_action action,
 			 const auction_settlement_listing &state,
 			 const auction_settlement_accounts &accounts,
-			 const critical_operation_id &epoch, bool trusted = false)
+			 const critical_operation_id &epoch, bool trusted = false,
+			 uint32_t fee = 300)
 {
 	auction_command_payload payload = {};
 	payload.action = action;
 	payload.auction_id = state.auction_id;
-	payload.closing_fee_basis_points = 300;
+	payload.closing_fee_basis_points = fee;
 	if (trusted)
 	{
 		payload.actor_pid = TRUSTED;
@@ -220,18 +246,129 @@ critical_command seller_claim(uint8_t operation, const auction_item_claim_state 
 	return command;
 }
 
+// Original committed creator evidence must reject corruption without changing output.
+void retained_sale_corruption_controls(const critical_command &command,
+				       const auction_command_result &original, uint32_t beneficiary,
+				       const economic_account_key &claim, bool zero)
+{
+	const auto scope = "operation_id=" + literal(command.operation_id);
+	const auto refused = [&]()
+	{
+		economic_account_key sentinel = claim;
+		sentinel.authority_id = 999;
+		const auto unchanged = sentinel;
+		assert(economic_sql_pending_claim_endpoint_readback(
+			       connection, command, beneficiary, &sentinel) == EILSEQ);
+		assert(economic_account_key_equal(sentinel, unchanged));
+		if (zero)
+			assert(economic_sql_pending_claim_endpoint_verify_zero_creator(
+				       connection, command.operation_id, claim, beneficiary) ==
+			       EILSEQ);
+	};
+	const auto corrupt = [&](const std::string &sql)
+	{
+		execute("START TRANSACTION");
+		execute(sql);
+		assert(mysql_affected_rows(connection) == 1);
+		refused();
+		execute("ROLLBACK");
+	};
+	corrupt("UPDATE critical_operation_inbox SET result_payload=X'' WHERE " + scope);
+	corrupt("UPDATE critical_operation_inbox SET durable_revision=durable_revision+1 WHERE " +
+		scope);
+	corrupt("UPDATE critical_outbox SET payload_version=2 WHERE " + scope);
+	corrupt("UPDATE critical_outbox SET destination=11 WHERE " + scope);
+	// Canonical but changed original results remain inconsistent with native witnesses.
+	std::vector<auction_command_result> changed;
+	auto candidate = original;
+	++candidate.final_price;
+	changed.push_back(candidate);
+	candidate = original;
+	++candidate.wallet_revision;
+	changed.push_back(candidate);
+	candidate = original;
+	++candidate.bank.amount[0];
+	changed.push_back(candidate);
+	candidate = original;
+	++candidate.claim_credit_used;
+	changed.push_back(candidate);
+	candidate = original;
+	++candidate.previous_bidder_pid;
+	changed.push_back(candidate);
+	candidate = original;
+	++candidate.status;
+	changed.push_back(candidate);
+	for (const auto &result : changed)
+	{
+		std::array<uint8_t, AUCTION_RESULT_PAYLOAD_BYTES> encoded{};
+		assert(auction_command_encode_result(result, &encoded));
+		const auto bytes = "X'" + hex(encoded.data(), encoded.size()) + "'";
+		// First alter only the inbox: independent native outbox must disagree.
+		corrupt("UPDATE critical_operation_inbox SET result_payload=" + bytes + " WHERE " +
+			scope);
+		// Matching altered receipt copies cannot replace native ledger/plan witnesses.
+		execute("START TRANSACTION");
+		execute("UPDATE critical_operation_inbox SET result_payload=" + bytes + " WHERE " +
+			scope);
+		assert(mysql_affected_rows(connection) == 1);
+		execute("UPDATE critical_outbox SET payload=" + bytes + " WHERE " + scope);
+		assert(mysql_affected_rows(connection) == 1);
+		refused();
+		execute("ROLLBACK");
+	}
+	economic_account_key sink{ claim.lineage, economic_account_kind::sink,
+				   ECONOMIC_AUCTION_CLOSING_FEE_SINK_ID, 0 };
+	std::array<uint8_t, ECONOMIC_ACCOUNT_KEY_BYTES> encoded{};
+	assert(economic_account_key_encode(sink, &encoded) == economic_accounting_error::ok);
+	const auto fee_index =
+		scalar("SELECT account_index FROM economic_accounting_account_effect WHERE " +
+		       scope + " AND account_key=X'" + hex(encoded.data(), encoded.size()) + "'");
+	const auto fee = scope + " AND account_index=" + std::to_string(fee_index);
+	assert(scalar("SELECT COUNT(*) FROM economic_accounting_coin_posting WHERE " + fee) == 1);
+	corrupt("UPDATE economic_accounting_coin_posting SET copper_value=copper_value+1 WHERE " +
+		fee);
+	corrupt("UPDATE economic_accounting_coin_posting SET delta_copper=delta_copper+1 WHERE " +
+		fee);
+	corrupt("UPDATE economic_accounting_coin_posting SET child_index=1 WHERE " + fee);
+	corrupt("DELETE FROM economic_accounting_coin_posting WHERE " + fee);
+	// The selected claim is unchanged while a different original account is corrupt.
+	corrupt("UPDATE economic_accounting_account_effect SET after_revision=after_revision+1 WHERE " +
+		scope + " AND account_index=" + std::to_string(fee_index));
+	// Respect the existing posting->effect FK while testing a missing effect.
+	execute("START TRANSACTION");
+	execute("DELETE FROM economic_accounting_coin_posting WHERE " + fee);
+	assert(mysql_affected_rows(connection) == 1);
+	execute("DELETE FROM economic_accounting_account_effect WHERE " + fee);
+	assert(mysql_affected_rows(connection) == 1);
+	refused();
+	execute("ROLLBACK");
+	corrupt("UPDATE auction_ledger SET value_delta=value_delta+1 WHERE " + scope);
+	execute("START TRANSACTION");
+	economic_account_key retained;
+	assert(economic_sql_pending_claim_endpoint_readback(connection, command, beneficiary,
+							    &retained) == 0);
+	assert(economic_account_key_equal(retained, claim));
+	if (zero)
+		assert(economic_sql_pending_claim_endpoint_verify_zero_creator(
+			       connection, command.operation_id, claim, beneficiary) == 0);
+	execute("ROLLBACK");
+}
+
 void receipt(const critical_command &command, const auction_command_result &result)
 {
 	std::array<uint8_t, AUCTION_RESULT_PAYLOAD_BYTES> encoded = {};
 	assert(auction_command_encode_result(result, &encoded));
 	execute("INSERT INTO critical_outbox(operation_id,event_index,destination,event_type,"
 		"payload_version,payload) VALUES(" +
-		literal(command.operation_id) + ",0,11,1,1,X'" +
+		literal(command.operation_id) + ",0,5,1,1,X'" +
 		hex(encoded.data(), encoded.size()) + "')");
 	execute("UPDATE critical_operation_inbox SET status=1,result_code=0,durable_revision=" +
-		std::to_string(result.auction_revision) + ",result_payload=X'" +
-		hex(encoded.data(), encoded.size()) +
-		"' WHERE operation_id=" + literal(command.operation_id) + " AND status=0");
+		std::to_string(std::max({ result.auction_revision, result.wallet_revision,
+					  result.bank_revision, result.player_owner_revision,
+					  result.auction_owner_revision })) +
+		",result_payload=X'" + hex(encoded.data(), encoded.size()) +
+		"',committed_at=CURRENT_TIMESTAMP(6) WHERE operation_id=" +
+		literal(command.operation_id) + " AND status=0");
 	assert(mysql_affected_rows(connection) == 1);
 }
 
@@ -247,8 +384,11 @@ void reconnect()
 }
 } // namespace
 
-int main()
+int main(int argc, char **argv)
 {
+	const bool zero = argc == 2 && !std::strcmp(argv[1], "--first-seller-zero");
+	const bool first_seller = zero || (argc == 2 && !std::strcmp(argv[1], "--first-seller"));
+	assert(argc == 1 || first_seller);
 	assert(getenv("DB_HOST") && getenv("DB_USER") && getenv("DB_PASSWD") && getenv("DB_NAME") &&
 	       getenv("DB_PORT"));
 	connection = mysql_init(nullptr);
@@ -271,8 +411,9 @@ int main()
 		literal(bootstrap) + ")");
 	execute("INSERT INTO economic_lineage_state(lineage,active_epoch) VALUES(" +
 		literal(lineage) + "," + literal(epoch) + ")");
-	execute("INSERT INTO auction_money_pickups(pid,money,claim_revision) VALUES(" +
-		std::to_string(SELLER) + ",100,1)");
+	if (!first_seller)
+		execute("INSERT INTO auction_money_pickups(pid,money,claim_revision) VALUES(" +
+			std::to_string(SELLER) + ",100,1)");
 	const auto seller_wallet =
 		mapping(lineage, economic_account_kind::wallet, 0, 1, SELLER, bootstrap);
 	const auto seller_bank_key =
@@ -281,8 +422,10 @@ int main()
 		mapping(lineage, economic_account_kind::wallet, 0, 1, TRUSTED, bootstrap);
 	const auto trusted_bank_key =
 		mapping(lineage, economic_account_kind::bank, 1, 2, trusted_bank, bootstrap);
-	const auto seller_claim_key =
-		mapping(lineage, economic_account_kind::pending_claim, 0, 5, SELLER, bootstrap);
+	auto seller_claim_key = first_seller ?
+					economic_account_key{} :
+					mapping(lineage, economic_account_kind::pending_claim, 0, 5,
+						SELLER, bootstrap);
 	const uint32_t sale_auction = auction(id(4), id(5), ITEM, 1700000000);
 	const auto sale_escrow = mapping(lineage, economic_account_kind::auction_escrow, 0, 4,
 					 sale_auction, bootstrap);
@@ -290,12 +433,113 @@ int main()
 	auction_settlement_accounts sale_accounts;
 	sale_accounts.escrow = sale_escrow;
 	sale_accounts.seller_claim = seller_claim_key;
-	const auto sale = closure(6, auction_action::finalize, sale_listing, sale_accounts, epoch);
+	if (first_seller)
+		sale_accounts.absent_seller_pid = SELLER;
+	const auto sale = closure(6, auction_action::finalize, sale_listing, sale_accounts, epoch,
+				  false, zero ? 10000 : 300);
+	if (first_seller)
+	{
+		economic_sql_auction_settlement_context context;
+		auction_command_result native{};
+		unsigned int code = 0;
+		bool applied = false;
+		execute("START TRANSACTION");
+		inbox(sale);
+		execute("INSERT INTO auction_money_pickups(pid,money,claim_revision) VALUES(" +
+			std::to_string(SELLER) + ",0,1)");
+		assert(economic_sql_auction_settlement_lock(connection, sale, &context) == EILSEQ);
+		execute("ROLLBACK");
+		execute("START TRANSACTION");
+		inbox(sale);
+		mapping(lineage, economic_account_kind::pending_claim, 0, 5, SELLER, bootstrap);
+		assert(economic_sql_auction_settlement_lock(connection, sale, &context) == EILSEQ);
+		execute("ROLLBACK");
+		execute("CREATE TRIGGER fail_first_endpoint_effect BEFORE INSERT ON economic_accounting_account_effect FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='first endpoint evidence failure'");
+		execute("START TRANSACTION");
+		inbox(sale);
+		assert(economic_sql_auction_settlement_lock(connection, sale, &context) == 0);
+		assert(economic_sql_auction_settlement_execute_and_record(
+			       connection, sale, context, &native, &code, &applied) != 0);
+		execute("ROLLBACK");
+		execute("DROP TRIGGER fail_first_endpoint_effect");
+		assert(scalar("SELECT COUNT(*) FROM auction_money_pickups WHERE pid=" +
+			      std::to_string(SELLER)) == 0);
+		assert(scalar("SELECT COUNT(*) FROM economic_account_mapping WHERE account_kind=5 AND lineage=" +
+			      literal(lineage)) == 0);
+		assert(scalar("SELECT COUNT(*) FROM economic_accounting_operation WHERE operation_id=" +
+			      literal(sale.operation_id)) == 0);
+		assert(scalar("SELECT status+0 FROM auctions WHERE id=" +
+			      std::to_string(sale_auction)) == 1);
+		execute("START TRANSACTION");
+		inbox(sale);
+		assert(economic_sql_auction_settlement_lock(connection, sale, &context) == 0);
+		assert(economic_sql_auction_settlement_execute_and_record(
+			       connection, sale, context, &native, &code, &applied) == 0);
+		assert(!code && applied);
+		receipt(sale, native);
+		execute("COMMIT");
+		assert(scalar("SELECT money FROM auction_money_pickups WHERE pid=" +
+			      std::to_string(SELLER)) == (zero ? 0U : 2910U));
+		assert(scalar("SELECT claim_revision FROM auction_money_pickups WHERE pid=" +
+			      std::to_string(SELLER)) == 1);
+		execute("START TRANSACTION");
+		assert(economic_sql_pending_claim_endpoint_readback(connection, sale, SELLER,
+								    &seller_claim_key) == 0);
+		if (zero)
+			assert(economic_sql_pending_claim_endpoint_verify_zero_creator(
+				       connection, sale.operation_id, seller_claim_key, SELLER) ==
+			       0);
+		execute("COMMIT");
+		retained_sale_corruption_controls(sale, native, SELLER, seller_claim_key, zero);
+		assert(scalar("SELECT COUNT(*) FROM economic_pending_claim_source WHERE source_operation_id=" +
+			      literal(sale.operation_id)) == (zero ? 0U : 1U));
+		if (!zero)
+		{
+			execute("UPDATE economic_pending_claim_source SET source_slot=3 WHERE source_operation_id=" +
+				literal(sale.operation_id));
+			execute("START TRANSACTION");
+			economic_account_key sentinel;
+			sentinel.authority_id = 999;
+			assert(economic_sql_pending_claim_endpoint_readback(
+				       connection, sale, SELLER, &sentinel) == EILSEQ);
+			assert(sentinel.authority_id == 999);
+			execute("ROLLBACK");
+			execute("UPDATE economic_pending_claim_source SET source_slot=2 WHERE source_operation_id=" +
+				literal(sale.operation_id));
+		}
+		execute("UPDATE economic_account_mapping SET creating_operation_id=" +
+			literal(bootstrap) +
+			" WHERE mapping_id=" + std::to_string(seller_claim_key.authority_id));
+		execute("START TRANSACTION");
+		economic_account_key sentinel;
+		assert(economic_sql_pending_claim_endpoint_readback(connection, sale, SELLER,
+								    &sentinel) == EILSEQ);
+		if (zero)
+			assert(economic_sql_pending_claim_endpoint_verify_zero_creator(
+				       connection, sale.operation_id, seller_claim_key, SELLER) ==
+			       EILSEQ);
+		execute("ROLLBACK");
+		execute("UPDATE economic_account_mapping SET creating_operation_id=" +
+			literal(sale.operation_id) +
+			" WHERE mapping_id=" + std::to_string(seller_claim_key.authority_id));
+		reconnect();
+		execute("START TRANSACTION");
+		economic_account_key retained;
+		assert(economic_sql_pending_claim_endpoint_readback(connection, sale, SELLER,
+								    &retained) == 0);
+		assert(retained.authority_id == seller_claim_key.authority_id);
+		if (zero)
+			assert(economic_sql_pending_claim_endpoint_verify_zero_creator(
+				       connection, sale.operation_id, retained, SELLER) == 0);
+		execute("COMMIT");
+		mysql_close(connection);
+		return 0;
+	}
 	execute("CREATE TRIGGER fail_auction_settlement_source BEFORE INSERT ON "
 		"economic_pending_claim_source FOR EACH ROW SIGNAL SQLSTATE '45000' "
 		"SET MESSAGE_TEXT='forced settlement source failure'");
 	execute("START TRANSACTION");
-	inbox(sale.operation_id, static_cast<uint16_t>(sale.type), 2, 0);
+	inbox(sale);
 	economic_sql_auction_settlement_context sale_context;
 	assert(economic_sql_auction_settlement_lock(connection, sale, &sale_context) == 0);
 	auction_command_result result = {};
@@ -323,7 +567,7 @@ int main()
 		      std::to_string(sale_escrow.authority_id) + " AND active_native_id=" +
 		      std::to_string(sale_auction) + " AND retiring_operation_id IS NULL") == 1);
 	execute("START TRANSACTION");
-	inbox(sale.operation_id, static_cast<uint16_t>(sale.type), 2, 0);
+	inbox(sale);
 	assert(economic_sql_auction_settlement_lock(connection, sale, &sale_context) == 0);
 	assert(economic_sql_auction_settlement_execute_and_record(connection, sale, sale_context,
 								  &result, &result_code,
@@ -375,7 +619,7 @@ int main()
 		"economic_accounting_account_effect FOR EACH ROW SIGNAL SQLSTATE '45000' "
 		"SET MESSAGE_TEXT='forced removal accounting failure'");
 	execute("START TRANSACTION");
-	inbox(removal.operation_id, static_cast<uint16_t>(removal.type), 2, 0);
+	inbox(removal);
 	economic_sql_auction_settlement_context removal_context;
 	assert(economic_sql_auction_settlement_lock(connection, removal, &removal_context) == 0);
 	assert(economic_sql_auction_settlement_execute_and_record(
@@ -388,7 +632,7 @@ int main()
 	assert(scalar("SELECT COUNT(*) FROM auction_item_custody WHERE auction_id=" +
 		      std::to_string(removed_auction) + " AND claim_pid IS NULL") == 1);
 	execute("START TRANSACTION");
-	inbox(removal.operation_id, static_cast<uint16_t>(removal.type), 2, 0);
+	inbox(removal);
 	assert(economic_sql_auction_settlement_lock(connection, removal, &removal_context) == 0);
 	assert(economic_sql_auction_settlement_execute_and_record(
 		       connection, removal, removal_context, &result, &result_code,
@@ -433,7 +677,7 @@ int main()
 	const auto claim =
 		seller_claim(10, staged, seller_wallet, seller_bank_key, epoch, ITEM + 100);
 	execute("START TRANSACTION");
-	inbox(claim.operation_id, static_cast<uint16_t>(claim.type), 2, 0);
+	inbox(claim);
 	economic_sql_auction_item_claim_context claim_context;
 	assert(economic_sql_auction_item_claim_lock(connection, claim, &claim_context) == 0);
 	assert(economic_sql_auction_item_claim_execute_and_record(connection, claim, claim_context,
@@ -470,7 +714,7 @@ int main()
 	const auto remove_no_bid = closure(15, auction_action::remove, removed_no_bid_listing,
 					   removed_no_bid_accounts, epoch, true);
 	execute("START TRANSACTION");
-	inbox(remove_no_bid.operation_id, static_cast<uint16_t>(remove_no_bid.type), 2, 0);
+	inbox(remove_no_bid);
 	economic_sql_auction_settlement_context remove_no_bid_context;
 	assert(economic_sql_auction_settlement_lock(connection, remove_no_bid,
 						    &remove_no_bid_context) == 0);
@@ -500,7 +744,7 @@ int main()
 	const auto expired =
 		closure(12, auction_action::finalize, expired_listing, expired_accounts, epoch);
 	execute("START TRANSACTION");
-	inbox(expired.operation_id, static_cast<uint16_t>(expired.type), 2, 0);
+	inbox(expired);
 	economic_sql_auction_settlement_context expired_context;
 	assert(economic_sql_auction_settlement_lock(connection, expired, &expired_context) == 0);
 	assert(economic_sql_auction_settlement_execute_and_record(

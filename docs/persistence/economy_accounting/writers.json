@@ -2452,7 +2452,7 @@
         ],
         [
           "src/economy/auction_repository.c",
-          552,
+          558,
           "sql_economy"
         ]
       ],
@@ -3157,47 +3157,47 @@
       "sites": [
         [
           "src/economy/auction_repository.c",
-          243,
-          "sql_economy"
-        ],
-        [
-          "src/economy/auction_repository.c",
           249,
           "sql_economy"
         ],
         [
           "src/economy/auction_repository.c",
-          401,
+          255,
           "sql_economy"
         ],
         [
           "src/economy/auction_repository.c",
-          409,
+          407,
           "sql_economy"
         ],
         [
           "src/economy/auction_repository.c",
-          490,
+          415,
           "sql_economy"
         ],
         [
           "src/economy/auction_repository.c",
-          506,
+          496,
           "sql_economy"
         ],
         [
           "src/economy/auction_repository.c",
-          562,
+          512,
           "sql_economy"
         ],
         [
           "src/economy/auction_repository.c",
-          840,
+          568,
           "sql_economy"
         ],
         [
           "src/economy/auction_repository.c",
-          893,
+          846,
+          "sql_economy"
+        ],
+        [
+          "src/economy/auction_repository.c",
+          899,
           "sql_economy"
         ]
       ],
@@ -9010,17 +9010,17 @@
       "sites": [
         [
           "src/persistence/critical_command_repository.c",
-          1294,
+          1315,
           "sql_economy"
         ],
         [
           "src/persistence/critical_command_repository.c",
-          1297,
+          1318,
           "sql_economy"
         ],
         [
           "src/persistence/critical_command_repository.c",
-          1478,
+          1499,
           "sql_economy"
         ]
       ],
@@ -53508,61 +53508,61 @@
     },
     {
       "path": "src/economy/auction_repository.c",
-      "line": 243,
+      "line": 249,
       "family": "sql_economy",
       "excerpt": "sql = \"UPDATE account_banks SET bank_revision=\" + std::to_string(state->bank_revision) +"
     },
     {
       "path": "src/economy/auction_repository.c",
-      "line": 249,
+      "line": 255,
       "family": "sql_economy",
       "excerpt": "sql = \"INSERT INTO currency_ledger(operation_id,pid,bank_id,wallet_delta_copper,\""
     },
     {
       "path": "src/economy/auction_repository.c",
-      "line": 401,
+      "line": 407,
       "family": "sql_economy",
       "excerpt": "\"UPDATE item_current_owner SET owner_type=\" +"
     },
     {
       "path": "src/economy/auction_repository.c",
-      "line": 409,
+      "line": 415,
       "family": "sql_economy",
       "excerpt": "sql = \"INSERT INTO item_ownership_ledger(operation_id,event_index,item_uid,\""
     },
     {
       "path": "src/economy/auction_repository.c",
-      "line": 490,
+      "line": 496,
       "family": "sql_economy",
       "excerpt": "sql = \"INSERT INTO auction_item_custody(auction_id,slot,item_uid,item_revision,vnum,\""
     },
     {
       "path": "src/economy/auction_repository.c",
-      "line": 506,
+      "line": 512,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO auction_money_pickups(pid,money,claim_revision) VALUES(\" +"
     },
     {
       "path": "src/economy/auction_repository.c",
-      "line": 552,
+      "line": 558,
       "family": "sql_economy",
       "excerpt": "\"UPDATE auction_money_pickups SET money=money-\" + std::to_string(amount) +"
     },
     {
       "path": "src/economy/auction_repository.c",
-      "line": 562,
+      "line": 568,
       "family": "sql_economy",
       "excerpt": "\"UPDATE auction_item_custody SET claim_pid=\" + std::to_string(pid) +"
     },
     {
       "path": "src/economy/auction_repository.c",
-      "line": 840,
+      "line": 846,
       "family": "sql_economy",
       "excerpt": "\"UPDATE auction_money_pickups SET money=0,claim_revision=claim_revision+1 \""
     },
     {
       "path": "src/economy/auction_repository.c",
-      "line": 893,
+      "line": 899,
       "family": "sql_economy",
       "excerpt": "\"UPDATE auction_item_custody SET item_revision=\" +"
     },
@@ -59052,19 +59052,19 @@
     },
     {
       "path": "src/persistence/critical_command_repository.c",
-      "line": 1294,
+      "line": 1315,
       "family": "sql_economy",
       "excerpt": "\"UPDATE account_banks SET bank_copper=?,bank_silver=?,bank_gold=?,bank_platinum=?,\""
     },
     {
       "path": "src/persistence/critical_command_repository.c",
-      "line": 1297,
+      "line": 1318,
       "family": "sql_economy",
       "excerpt": "\"INSERT INTO currency_ledger(operation_id,pid,bank_id,wallet_delta_copper,\""
     },
     {
       "path": "src/persistence/critical_command_repository.c",
-      "line": 1478,
+      "line": 1499,
       "family": "sql_economy",
       "excerpt": "\"INSERT IGNORE INTO account_banks(account_name,racewar) VALUES(?,?)\";"
     },
@@ -65598,7 +65598,7 @@
       "scripts/generate_economy_writer_coverage.py": "98e9cff667cc3dac39c2eafa578f6c6f6e2031a56fd200a2547df57c7d1dc99e",
       "scripts/validate_data_lifecycle.py": "53102ca41109d40f217e777a6b230c732d566a2484fc69e2b56a48d71aa81226",
       "scripts/validate_economy_accounting.py": "90b8811f1d3785cdc26a9590e90a048c078e078e6db45e07be336faccbf43f3b",
-      "src/Makefile": "5251188e6181fc237d79f29959a458453f830122665494a40726ff383fe440c0",
+      "src/Makefile": "6077ffd42ef7cbe2a41da421723d027282f7a360ad5cfe67a6ff9f6875e0ee49",
       "src/classes/npc_alchemist.c": "86e8d7defaf974e7994252b63d4cb5486dad6e1749a3b06f0e953ca13eee715e",
       "src/classes/npc_alchemist.h": "a9d9b16956c802f1b4f5e5d8d651ffeeb56b5436a4352e1bfbcbe95305a11675",
       "src/core/random.c": "8bdeb01e550eea77b95e4f6c289ce2d890c2514baa8b6133d5df3803881c0a6c",
@@ -65620,8 +65620,8 @@
       "src/economy/economic_accounting_types.c": "5c2117874526ba9a1f93b3313eb9c13782e50c9d0f1d55763449089db68b36f1",
       "src/economy/economic_command_admission.c": "431baf195b7e8249da5f0a28b0b68d794deea385361ccf0b1cbb46c74eecc675",
       "src/economy/economic_command_admission.h": "dc19a944f07fde080afd742b58f0cafeab6eca74fa850c980019391ca912c2ba",
-      "src/economy/economic_gameplay_authority.c": "2e89e38f2df237209f80d3b5c4171d4f50ffb884067adb7b5de57ca000d00d59",
-      "src/economy/economic_gameplay_authority.h": "0696358bfce39551ee5ef8636da2871af1d1b04ccf8d4f7543b231c8106bd1c6",
+      "src/economy/economic_gameplay_authority.c": "1442599fa03bc3d47c9219e8d53f7f0b719cec1ea240c230cc81d873230b6aed",
+      "src/economy/economic_gameplay_authority.h": "4dce3d494c9636b1f335a2b24c39f0e15f4ec1ad84423fdfa057fe3b0eff0352",
       "src/economy/economic_source_event.c": "acefc0d801998c5bcc28c0841d774e423bb930bfc0992d3b443fec592ff0fd08",
       "src/economy/economic_source_event.h": "66bc66de2b214f0356ff7a585db320bb5300aacb6d88ac17ba53cd47f76cd2f4",
       "src/economy/item_transfer_accounting.c": "cb58d2254133d397e56c5030c7d368d5cce9b963069b1636d65123478a3effbb",
@@ -65693,7 +65693,7 @@
       "src/persistence/critical_command_coordinator.h": "5a47d9ae897bebf3a0749cd62b6f11a1138e3995ae26c8de476ee01a6471420e",
       "src/persistence/critical_command_journal.c": "01060cef8853e983994bc1cdb0a8396c9c590a8fd7f6bb02097b5856f789f878",
       "src/persistence/critical_command_journal.h": "a65af3749c16f17507daa6c407d115b9979c96fd528518839eda4362bd5897ba",
-      "src/persistence/critical_command_repository.c": "a6d928f987701159f8b3a447a6c45dfb4125510cc584d1ae0060a949eede1f71",
+      "src/persistence/critical_command_repository.c": "eed81b3a31b3a0586cd6e449e11ce7e91e3778e4635c1b61fd2609fed3113188",
       "src/persistence/critical_command_repository.h": "aff79ae5fe9ed2bbcb11b80a2064da5c2f140da2276f6f9a311048ab7a990176",
       "src/persistence/economic_sql_shop_trade_transaction.c": "8b0511748ea8588cd1066364183dcb0531c54fd12436cb1b2c9b97566d4de639",
       "src/persistence/economic_sql_shop_trade_transaction.h": "b85d982ef6559cde4dd34a031ced0e1dfb67013f4585f260caba0da31ea8e361",
@@ -65743,9 +65743,9 @@
       "src/world/world_activity.c": "6c7443dc54ffb37f33a3d4b9a0d3a24405efd2822a4b4695c299bf21501c6c04",
       "src/world/world_activity.h": "2b581aaee6228e30b2e66a4ab3bb9e78878b3112bfbc38fa95aca4f1f2ab5942",
       "tests/async/test_economy_writer_coverage_contract.py": "aab17ec89061094dbc05ef2267184f4cbb92e613af413cb0228bb1cc3f7d9fbb",
-      "src/persistence/economic_sql_accounting_lifecycle_transaction.c": "36a5d707b4174b25f4757d01eac3ce4303a9b63e0faac2d1ac47c993c5881f2c",
+      "src/persistence/economic_sql_accounting_lifecycle_transaction.c": "d1a3564b38008b7afef557666fb236677c701bf49183a4d07c27a0d8c3a7b011",
       "src/persistence/economic_sql_accounting_lifecycle_transaction.h": "072cab4bb68499082691321def13aed276529a78dba2a5d13312aed0afffa5b2",
-      "tests/async/economic_sql_lifecycle_owner_mysql_harness.cpp": "f3e8c47f9306770348969aa446661096b652b34bf21c4cf557d3b28c8ed61194",
+      "tests/async/economic_sql_lifecycle_owner_mysql_harness.cpp": "3561a0fca268598bec620da0c98b70e7ff6e8d16992238be9688f2bb8b1a3f2e",
       "tests/async/test_economic_sql_lifecycle_activation_contract.py": "10da6a9517092507a6ed6255536fe8b6a09c85383efffe75edb0c1d22d0209c4"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
@@ -65775,6 +65775,42 @@
       ],
       "full_release_qualification": false,
       "historical_origin_marker_remains_null": true
+    },
+    "auction_opening_retained_primary": {
+      "date": "2026-10-06",
+      "scope": "Original full component auction/baseline/lifecycle/money-opening/recovery suites on both fresh canonical0062 engines; exact maintained provider integration",
+      "status": "original component native suites and integrated production builds passed on both backends",
+      "native_source_archive_sha256": "9ae305a09abc80d9390a6cf2abea3d73d984273fe5298051507cc7ae56e15ea5",
+      "qualified_lifecycle_preformat_sha256": "94e23093d983d30d5c25803484c973d9f490915419b77343cf1f06f964150cff",
+      "lifecycle_format_successor_sha256": "d1a3564b38008b7afef557666fb236677c701bf49183a4d07c27a0d8c3a7b011",
+      "updated_source_pins": [
+        "src/Makefile",
+        "src/economy/economic_gameplay_authority.c",
+        "src/economy/economic_gameplay_authority.h",
+        "src/persistence/critical_command_repository.c",
+        "src/persistence/economic_sql_accounting_lifecycle_transaction.c",
+        "tests/async/economic_sql_lifecycle_owner_mysql_harness.cpp"
+      ],
+      "full_plan_1_qualification": false,
+      "full_release_qualification": false,
+      "accounting_activation_changed": false,
+      "source_location_refresh": {
+        "scope": "Original writer roster/classifications preserved; exact equal-source-line location refresh and matching complete current candidate census",
+        "changed_locations": 13,
+        "unmapped_current_unique_sites": 0,
+        "original_census_source_commit": "54fce5545e94c8ec9fced6f96a6bce51fe6f9068",
+        "original_census_sha256": "f7dd61014bd5dbe5b38d7b7e3b130bfdea4200f9115d0b0f77e710d54342e9ef",
+        "original_census_retained_as_preimage": true,
+        "current_census_rows": 2876,
+        "family_occurrence_counts_preserved": true
+      },
+      "qualification_report": "docs/persistence/economy_accounting/AUCTION_OPENING_RETAINED_PRIMARY_QUALIFICATION_2026-10-06.md",
+      "qualification_receipt": "docs/persistence/economy_accounting/AUCTION_OPENING_RETAINED_PRIMARY_QUALIFICATION_2026-10-06.json",
+      "qualification_receipt_sha256": "5a920c55840432c0d1c0b951811c0208dfdfa90630f516e3cef52d29c84cdfe9",
+      "final_production_binaries": {
+        "mariadb": "bd3644faccb93b93dd65a0115394a54d89424c00296c955a02a247bef22fa4c0",
+        "flatfile": "0d95033aecfad333c9be4b877aa2c4576bb48f358bab8d7c122a35d240d384be"
+      }
     }
   },
   "pending_source_integration": {

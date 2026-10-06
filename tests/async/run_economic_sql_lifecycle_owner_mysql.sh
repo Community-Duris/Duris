@@ -155,16 +155,16 @@ import json
 from pathlib import Path
 
 history = json.loads(Path("migrations/migration_manifest.json").read_text())["migrations"]
-if len(history) != 61 or history[-1]["sequence"] != 61 or \
-        history[-1]["id"] != "0061_economic_baseline_equipment":
-    raise RuntimeError("current lifecycle qualification requires sealed canonical schema61")
+if len(history) != 62 or history[-1]["sequence"] != 62 or \
+        history[-1]["id"] != "0062_economic_pending_claim_consumption":
+    raise RuntimeError("current lifecycle qualification requires sealed canonical schema62")
 DURIS_LIFECYCLE_HEAD_PY
     python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
     python3 scripts/migration_runner.py run
     head=$(mysql --no-defaults --protocol=tcp -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" \
-        -N -B --raw "$DB_NAME" -e "SELECT COUNT(*),MAX(sequence_number),SUM(sequence_number=61 AND migration_id='0061_economic_baseline_equipment') FROM mud_schema_history")
-    [[ "$head" == $'61\t61\t1' ]] || {
-        echo 'Current lifecycle qualification did not reach the original schema61 head' >&2
+        -N -B --raw "$DB_NAME" -e "SELECT COUNT(*),MAX(sequence_number),SUM(sequence_number=62 AND migration_id='0062_economic_pending_claim_consumption') FROM mud_schema_history")
+    [[ "$head" == $'62\t62\t1' ]] || {
+        echo 'Current lifecycle qualification did not reach the registered schema62 head' >&2
         exit 1
     }
     bash migrations/verify_runtime_compatibility.sh
@@ -185,6 +185,22 @@ read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
     src/persistence/economic_sql_source_snapshot.c \
     src/economy/economic_sql_source_normalize.c \
     src/persistence/economic_sql_baseline_transaction.c \
+    src/economy/shop_trade_recovery_manifest.c \
+    src/persistence/economic_sql_auction_retained.c \
+    src/persistence/economic_sql_auction_bid_transaction.c \
+    src/persistence/economic_sql_pending_claim_source.c \
+    src/persistence/economic_sql_auction_claim_endpoint.c \
+    src/economy/auction_command.c \
+    src/economy/auction_repository.c \
+    src/economy/currency_command.c \
+    src/economy/auction_accounting.c \
+    src/economy/auction_money_claim_accounting.c \
+    src/economy/auction_item_claim_accounting.c \
+    src/economy/auction_settlement_accounting.c \
+    src/persistence/economic_accounting_repository.c \
+    src/persistence/economic_sql_auction_settlement_transaction.c \
+    src/persistence/economic_sql_auction_item_claim_transaction.c \
+    src/persistence/economic_sql_auction_money_claim_transaction.c \
     src/economy/economic_baseline_command.c \
     src/economy/economic_baseline_adapter.c \
     src/economy/economic_baseline_codec.c \

@@ -1,5 +1,14 @@
 # Experimental accounting review checkpoint
 
+## Auction/opening shared milestone qualified — 2026-10-06
+
+[Exact maintained qualification](AUCTION_OPENING_RETAINED_PRIMARY_QUALIFICATION_2026-10-06.md) records seven original native
+suites on each fresh canonical0062 engine, both full740-object production
+builds and final formatted relinks. Complete retained item-claim and original
+money/source corruption controls pass. Registry/matrix stay incomplete and
+release BLOCKED. HRT, quest/birth, actual gameplay/ACK/cold and full Plan/Plan5
+qualification remain open.
+
 ## Retained claim allocation readers qualified — 2026-10-06
 
 [Current primary integration and full component qualification](PLAN5_RETAINED_CLAIM_PRIMARY_QUALIFICATION_2026-10-06.md)
