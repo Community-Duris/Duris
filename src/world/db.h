@@ -6,6 +6,11 @@
 #ifndef _SOJ_DB_H_
 #define _SOJ_DB_H_
 
+#include <span>
+#include "economy/native_mobile_birth_constructor_recipe.h"
+
+#include <cstdint>
+#include <cstddef>
 #include <stdio.h>
 #include <string>
 using namespace std;
@@ -188,6 +193,10 @@ extern const char *BACKGR_STORY;
 // It never issues a durable ID, validates admission or grants publication ACK.
 struct char_data;
 class quest_mobile_native_birth_owner;
+struct native_mobile_birth_recovery_effect;
+struct native_mobile_birth_recovery_choice;
+struct native_mobile_birth_recovery_context;
+struct quest_mobile_native_image;
 class quest_mobile_native_stage
 {
     public:
@@ -199,7 +208,49 @@ class quest_mobile_native_stage
 
     private:
 	struct char_data *character_ = nullptr;
+	size_t publication_next_step_ = 0;
+	bool publication_step_started_ = false, publication_consumed_ = false;
+	uint64_t publication_runtime_id_ = 0;
+	// Process-local restoration observations; never replace historical journal facts.
+	bool restoration_active_ = false;
+	int restoration_room_ = -1;
+	size_t restoration_prefix_ = 0, restoration_room_step_ = 0;
+	std::array<uint8_t, 8> restoration_effects_{};
+	std::array<uint8_t, 4> restoration_choices_{};
+	std::array<int32_t, 4> restoration_delays_{};
+	std::array<bool, 4> restoration_events_{};
+	bool choose_publication_step(size_t, struct char_data *,
+				     const native_mobile_birth_recovery_effect &,
+				     native_mobile_birth_recovery_choice *) noexcept;
+	bool publication_step(size_t, int, struct char_data *,
+			      const native_mobile_birth_recovery_choice &,
+			      native_mobile_birth_recovery_effect &, struct char_data **) noexcept;
+	// Existing published body only, after the owner's genuine fresh SQL/world
+	// cut and confirmed rollback. No callbacks, events or identity issuance.
+	bool adopt_published(struct char_data *actual, uint64_t actual_runtime_id, int room_rnum,
+			     const quest_mobile_native_image &original,
+			     const native_mobile_birth_recovery_context &) noexcept;
+	// Absent original body only, after genuine fresh SQL/native/custody/absence proof.
+	// False may retain consumed runtime ownership; the same stage must be retried.
+	bool restore_published(int room_rnum, std::span<const native_mobile_birth_recovery_effect>,
+			       std::span<const native_mobile_birth_recovery_choice>,
+			       struct char_data **live_after) noexcept;
 	bool prepare(int nr, int type, bool apply_mob_gold);
+	bool prepare_captured(int nr, int type, bool apply_mob_gold,
+			      const quest_mobile_native_constructor_digest &current_build,
+			      quest_mobile_native_constructor_recipe *) noexcept;
+	// NBC2 verifies actual callback/selected reset-tail witnesses. The owner
+	// applies the original zone modifier/shop binding after this constructor.
+	bool prepare_captured(int nr, int type, bool apply_mob_gold,
+			      const quest_mobile_native_constructor_digest &current_build,
+			      int32_t reset_room_vnum, int configured_shop,
+			      quest_mobile_native_constructor_recipe *) noexcept;
+	bool restore_constructor_v2(
+		const quest_mobile_native_constructor_recipe &,
+		const quest_mobile_native_constructor_digest &current_build) noexcept;
+	bool
+	restore_constructor(const quest_mobile_native_constructor_recipe &,
+			    const quest_mobile_native_constructor_digest &current_build) noexcept;
 	struct char_data *character() const noexcept { return character_; }
 	// Only an empty, unlinked, unscheduled preparation can be discarded.
 	// The owner must first resolve/remove its own unadmitted staged stock.
@@ -209,6 +260,119 @@ class quest_mobile_native_stage
 	// An exception after consumption must not be treated as a fresh refusal.
 	bool publish(int room_rnum, struct char_data **live_after_hooks);
 	friend class quest_mobile_native_birth_owner;
+};
+
+// Actual constructor stage: explicit ownership, no automatic native disposal.
+// Only original birth owner may consume it after its genuine admitted SQL proof.
+struct obj_data;
+class shop_trade_original_procedure_binding_stage;
+class quest_mobile_native_item_stage;
+class quest_mobile_native_container_shell;
+struct native_mobile_birth_item_recipe;
+struct player_item_snapshot;
+struct object_template;
+// Read-only original constructor facts for the existing checked binding batch.
+// No public construction, source/SQL/publication/ACK permission.
+class quest_mobile_native_item_binding
+{
+    public:
+	quest_mobile_native_item_binding(const quest_mobile_native_item_binding &) = default;
+
+    private:
+	friend class quest_mobile_native_item_stage;
+	friend class shop_trade_original_procedure_binding_stage;
+	using procedure = int (*)(struct obj_data *, struct char_data *, int, char *);
+	struct obj_data *object_;
+	uint64_t uid_;
+	int rnum_, vnum_;
+	long position_;
+	procedure before_;
+	bool parsed_proclib_;
+	// Only the actual cold factory can prove a retained bridge over a bare
+	// original predecessor. This is not a parser result or transport field.
+	bool restored_bridge_request_ = false;
+	quest_mobile_native_item_binding(struct obj_data *object, uint64_t uid, int rnum, int vnum,
+					 long position, procedure before,
+					 bool parsed_proclib) noexcept
+		: object_(object)
+		, uid_(uid)
+		, rnum_(rnum)
+		, vnum_(vnum)
+		, position_(position)
+		, before_(before)
+		, parsed_proclib_(parsed_proclib)
+	{
+	}
+};
+// Original carrier values only; they do not authorize effects or publication.
+struct quest_mobile_native_item_progress
+{
+	uint32_t next_step = 0;
+	bool current_step_started = false, admitted = false, published = false;
+};
+struct quest_mobile_native_item_effect
+{
+	bool started = false, returned = false, succeeded = false, periodic = false;
+};
+class quest_mobile_native_item_stage
+{
+    public:
+	quest_mobile_native_item_stage() noexcept = default;
+	quest_mobile_native_item_stage(const quest_mobile_native_item_stage &) = delete;
+	quest_mobile_native_item_stage &operator=(const quest_mobile_native_item_stage &) = delete;
+
+    private:
+	friend class quest_mobile_native_birth_owner;
+	struct implementation;
+	implementation *state_ = nullptr;
+	static bool prepare(int nr, int type, uint64_t supplied_reserved_uid,
+			    quest_mobile_native_item_stage *) noexcept;
+	struct obj_data *object() const noexcept;
+	bool capture_container_shell(quest_mobile_native_container_shell *) noexcept;
+	quest_mobile_native_item_binding binding_input() const noexcept;
+	size_t retained_bytes() const noexcept;
+	bool capture_recipe(const player_item_snapshot &,
+			    native_mobile_birth_item_recipe *) const noexcept;
+	static bool restore(const player_item_snapshot &, const native_mobile_birth_item_recipe &,
+			    quest_mobile_native_item_stage *) noexcept;
+	// Original committed binding must match the real bridge/predecessor or
+	// switch installation. This shape/body helper grants no root authority.
+	// Member scope retains the original private proclib predecessor capability.
+	static const object_template *
+	find_bound_recovery_template(const player_item_snapshot &,
+				     const native_mobile_birth_item_recipe &) noexcept;
+	static bool restore_bound(const player_item_snapshot &,
+				  const native_mobile_birth_item_recipe &,
+				  quest_mobile_native_item_stage *) noexcept;
+	// Cold captured bridge with exact sealed/current bare predecessor only.
+	// Retains its explicit original bridge request for the checked whole batch.
+	static bool restore_rebind(const player_item_snapshot &,
+				   const native_mobile_birth_item_recipe &,
+				   quest_mobile_native_item_stage *) noexcept;
+	// Releases only metadata from successful actual borrowed-world adoption.
+	// Factory-owned stages cannot use this path; live objects/events stay intact.
+	bool abandon_adoption() noexcept;
+	void retain_admitted() noexcept;
+	// Retained admission refuses disposal; original owner must resolve it first.
+	bool discard_unadmitted() noexcept;
+	// Root consumes every staged object before NPC/room hooks can extract stock.
+	// Actual callbacks are separate once-only steps; returned is not success/ACK.
+	struct obj_data *publish() noexcept;
+	size_t publication_step_count() const noexcept;
+	bool publication_step(size_t, struct obj_data *expected,
+			      quest_mobile_native_item_effect &) noexcept;
+	// Rebuild only historically returned-success runtime services on the exact
+	// actually published restored body. Pending original effects stay pending.
+	bool rebuild_enrollment(struct obj_data *expected, const native_mobile_birth_item_recipe &,
+				const quest_mobile_native_item_progress &,
+				std::span<const quest_mobile_native_item_effect>) noexcept;
+	bool release_published() noexcept;
+	bool read_progress(quest_mobile_native_item_progress *) const noexcept;
+	static bool adopt_published(const player_item_snapshot &,
+				    const native_mobile_birth_item_recipe &, struct obj_data *,
+				    const quest_mobile_native_item_progress &,
+				    std::span<const quest_mobile_native_item_effect>,
+				    quest_mobile_native_item_stage *) noexcept;
 };
 
 void free_world();

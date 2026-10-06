@@ -64,15 +64,20 @@ whole audit. Coverage describes the supplied snapshot; it does not qualify the
 writer matrix or assert that an empty price/provenance view exhausts history.
 
 The `--view supply` totals use captured postings attached to exactly one
-committed root identity. Rejected or unknown outcomes and duplicate root
-identities contribute no supply rows; their audit findings remain in the global
-exception count and CLI exit status. Export order cannot choose an outcome for
-an ambiguous root. This rule applies to issuance, sinks, opening equity and
+committed root identity, with exactly one posting at its line identity and one
+account effect at the referenced account index. Rejected or unknown outcomes
+and duplicate root/effect/line identities contribute no supply rows, including
+exact repeats; their audit findings remain in the global exception count and
+CLI exit status. Export order cannot choose an outcome, account kind or amount
+for ambiguous evidence. Distinct posting lines may still aggregate against the
+same account. This rule applies to issuance, sinks, opening equity and
 restitution. Totals remain selected-epoch evidence, grouped by account kind and
 reason, with the full count retained at `--limit 0`. Other discrepancies in a
 committed root remain audit exceptions: a displayed total does not certify that
 root, its policy or its native effect. See
 [the exact outcome qualification](PLAN5_SUPPLY_OUTCOME_VIEW_QUALIFICATION_2026-10-06.md).
+Duplicate projection qualification is recorded in
+[the unique evidence report](PLAN5_SUPPLY_EVIDENCE_QUALIFICATION_2026-10-06.md).
 
 The bounded `--view prices` query combines selected-epoch roots with captured
 `native.lineage_realized_prices`. Each row contains only `epoch`,
@@ -584,6 +589,45 @@ remains unknown and is handled by the separate equipment audit. These checks
 use the independent retained-evidence interpreter, without importing mutation
 code or changing native rows. See
 [the exact position qualification](PLAN5_ITEM_CUSTODY_POSITION_QUALIFICATION_2026-10-06.md).
+
+The containment audit applies to both live and quarantined children. Parent and
+child owner identity and root must agree throughout the captured ancestor path;
+a quarantined child cannot use a destroyed parent as a current containment edge.
+`inconsistent_native_topology` remains a finding even when opening and current
+projections match. Valid forests may mix live and quarantined nodes. Detail
+limit0 preserves the full finding counts and CLI status. See
+[the exact quarantined containment qualification](PLAN5_QUARANTINED_TOPOLOGY_QUALIFICATION_2026-10-06.md).
+
+## Quarantined coin diagnostics
+
+The SQL exporter retains quarantined coin rows and their available denomination
+payloads. The reconciler reads those rows and reports `quarantined_coin_pile`
+with the UID; quarantine cannot make the entire diagnostic cut unreadable.
+Quarantined coins remain outside active holdings and live-pile census totals.
+Existing missing-holding, dangling-mapping, stale-custody and partial-capture
+findings remain. Missing payloads are retained as unknown, and malformed states
+or negative denominations still refuse. See
+[the exact quarantined coin qualification](PLAN5_QUARANTINED_COIN_QUALIFICATION_2026-10-06.md).
+
+## Retained flatfile intent and plan semantics
+
+The independent flatfile restore reader validates retained generic EAI1/EAP1
+semantics as well as physical checksums and command/intent bindings. A correctly
+checksummed record still refuses when its policy, source kind, account effects,
+postings, native item positions, containment forest or event replay is invalid.
+The same refusal applies to the economic operator audit, restore preflight and
+post-replay qualification. Readability remains subject to the separate opening
+and lifecycle provenance gates.
+
+Money checks preserve individual denomination legs, zero-sum copper, allowed
+account kinds and system signs, increasing changed-state revisions, and exact
+reconstruction. Item checks preserve equipment, valid quarantined custody,
+destruction's retained former edges and all-zero absent creation witnesses.
+The original flatfile child-reservation refusal remains. These checks use an
+independent interpretation of the versioned wire contract; production mutation
+code supplies qualification oracles only in tests. Every observation leaves
+retained economic bytes unchanged. See
+[the exact semantic qualification](PLAN5_FLATFILE_PLAN_SEMANTICS_QUALIFICATION_2026-10-06.md).
 
 ## Native mobile custody grammar
 

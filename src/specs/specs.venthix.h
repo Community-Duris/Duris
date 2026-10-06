@@ -33,6 +33,25 @@ struct ZombieGame
 	}
 };
 
+class quest_mobile_native_item_stage;
+// Original ZombieGame allocation/ID retained privately, not globally enrolled.
+// No automatic cleanup: admitted uncertainty belongs to the birth owner.
+class quest_mobile_native_zombie_stage
+{
+    private:
+	friend class quest_mobile_native_item_stage;
+	ZombieGame *game_ = nullptr;
+	int mob_rnum_ = -1;
+	P_index original_mob_index_ = nullptr;
+	mob_proc_type original_mob_proc_ = nullptr;
+	uint64_t item_uid_ = 0;
+	static bool prepare(P_obj, quest_mobile_native_zombie_stage &) noexcept;
+	static bool restore(P_obj, quest_mobile_native_zombie_stage &) noexcept;
+	bool publish(P_obj) noexcept;
+	static bool observe_published(P_obj) noexcept;
+	bool discard() noexcept;
+};
+
 int zgame_load_zombie(P_obj obj);
 void zgame_clear_zombies(P_obj obj);
 int zg_count_zombies(P_obj obj);

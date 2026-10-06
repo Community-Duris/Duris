@@ -3,9 +3,12 @@
 #include "flatfile/flatfile_accounting_authority.h"
 #include "economy/economic_currency_adapter.h"
 #include "flatfile/flatfile_accounting_baseline.h"
+#include "../../scripts/qualify_flatfile_economic_records.h"
 #include <cassert>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
+#include <iostream>
 
 class flatfile_accounting_test_access
 {
@@ -41,7 +44,7 @@ static critical_operation_id id(uint64_t value)
 	return result;
 }
 static flatfile_accounting_record record(uint32_t sequence, bool large, bool source = false,
-					 int32_t pid = 11)
+					 int32_t pid = 11, bool items = false)
 {
 	flatfile_accounting_record value;
 	critical_operation_id operation = {};
@@ -78,6 +81,53 @@ static flatfile_accounting_record record(uint32_t sequence, bool large, bool sou
 	economic_frozen_intent intent;
 	assert(economic_intent_decode(value.command.accounting_intent, &intent) ==
 	       economic_accounting_error::ok);
+	if (items)
+	{
+		// Native-encoded structural witnesses only; no domain mutation or epoch
+		// selection. Include equipment, retained destruction edges and creation.
+		intent.admission.metadata.reason = economic_reason::item_move;
+		value.command.schema_version = 1;
+		value.command.accounting_intent.clear();
+		assert(economic_intent_freeze(value.command, intent.admission,
+					      &value.command.accounting_intent) ==
+		       economic_accounting_error::ok);
+		value.command.schema_version = 2;
+		assert(economic_intent_decode(value.command.accounting_intent, &intent) ==
+		       economic_accounting_error::ok);
+		economic_accounting_plan plan;
+		assert(economic_intent_plan_metadata(value.command, intent, &plan.metadata) ==
+		       economic_accounting_error::ok);
+		plan.items_before = { { 81,
+					{ { item_owner_type::player, 7, 0 },
+					  81,
+					  0,
+					  3,
+					  item_custody_state::active,
+					  5 } },
+				      { 82,
+					{ { item_owner_type::player, 7, 0 },
+					  81,
+					  81,
+					  4,
+					  item_custody_state::active,
+					  0 } },
+				      { 83, {} } };
+		plan.items_after = plan.items_before;
+		plan.items_after[0].position.revision = 4;
+		plan.items_after[0].position.equipment_slot = 6;
+		plan.items_after[1].position.owner = { item_owner_type::destruction, 0, 0 };
+		plan.items_after[1].position.revision = 5;
+		plan.items_after[1].position.state = item_custody_state::destroyed;
+		plan.items_after[2].position = { { item_owner_type::player, 7, 0 }, 83, 0, 1,
+						 item_custody_state::active,	    0 };
+		for (size_t i = 0; i < plan.items_before.size(); ++i)
+			plan.item_events.push_back(
+				{ static_cast<uint32_t>(i), 0, plan.items_before[i].uid,
+				  plan.items_before[i].position, plan.items_after[i].position });
+		assert(economic_plan_encode(plan, &value.plan) == economic_accounting_error::ok);
+		value.durable_revision = 1;
+		return value;
+	}
 	if (large)
 	{
 		// Native storage's existing segment-crossing fixture technique: a
@@ -114,6 +164,69 @@ int main(int argc, char **argv)
 {
 	assert(argc == 3);
 	const std::string root = argv[1], mode = argv[2];
+	if (mode == "compare-metadata")
+	{
+		size_t comparisons = 0;
+		for (uint8_t reason = 1; reason <= 46; ++reason)
+			for (uint8_t kind = 1; kind <= 23; ++kind)
+			{
+				std::vector<uint8_t> encoded(256);
+				std::copy_n("EAI1", 4, encoded.begin());
+				encoded[4] = encoded[7] = encoded[9] = 1;
+				encoded[12] = encoded[16] = encoded[20] = encoded[28] = 1;
+				encoded[24] = reason;
+				encoded[26] = reason >= 38 && reason <= 42 ? 2 : 1;
+				encoded[27] = 1;
+				encoded[32] = 1;
+				encoded[48] = 2;
+				encoded[64] = 3;
+				encoded[80] = 4;
+				encoded[96] = 7;
+				encoded[112] = kind;
+				encoded[114] = 1;
+				encoded[116] = 5;
+				encoded[132] = 6;
+				encoded[148] = 7;
+				encoded[156] = 1;
+				encoded[160] = encoded[192] = 1;
+				economic_frozen_intent intent;
+				const bool native = economic_intent_decode(encoded, &intent) ==
+						    economic_accounting_error::ok;
+				bool independent = true;
+				try
+				{
+					restore_economic_records::intent_semantics(encoded);
+				}
+				catch (const std::runtime_error &)
+				{
+					independent = false;
+				}
+				assert(native == independent);
+				++comparisons;
+			}
+		std::cout << "NATIVE_INDEPENDENT_METADATA_COMPARISONS " << comparisons << '\n';
+		return 0;
+	}
+	if (mode == "decode-plan" || mode == "decode-intent")
+	{
+		std::ifstream input(root, std::ios::binary | std::ios::ate);
+		assert(input);
+		const auto size = input.tellg();
+		assert(size >= 0 &&
+		       static_cast<uint64_t>(size) <=
+			       (mode == "decode-plan" ? ECONOMIC_ACCOUNTING_MAX_PLAN_BYTES :
+							ECONOMIC_ACCOUNTING_MAX_INTENT_BYTES));
+		std::vector<uint8_t> encoded(static_cast<size_t>(size));
+		input.seekg(0);
+		assert(input.read(reinterpret_cast<char *>(encoded.data()), size));
+		economic_accounting_plan plan;
+		economic_frozen_intent intent;
+		const auto status = mode == "decode-plan" ?
+					    economic_plan_decode(encoded, &plan) :
+					    economic_intent_decode(encoded, &intent);
+		std::cout << static_cast<unsigned>(status) << '\n';
+		return status == economic_accounting_error::ok ? 0 : 1;
+	}
 	for (auto name : { "domains", "economic-evidence" })
 	{
 		auto path = std::filesystem::path(root) / name;
@@ -150,9 +263,9 @@ int main(int argc, char **argv)
 		       critical_operation_id_is_zero(control().active_epoch));
 		return 0;
 	}
-	assert(mode == "lifetimes" || mode == "records" || mode == "source-claims" ||
-	       mode == "retention" || mode == "baseline" || mode == "baseline-empty" ||
-	       mode == "baseline-rich" || mode == "baseline-maximum" ||
+	assert(mode == "lifetimes" || mode == "records" || mode == "item-records" ||
+	       mode == "source-claims" || mode == "retention" || mode == "baseline" ||
+	       mode == "baseline-empty" || mode == "baseline-rich" || mode == "baseline-maximum" ||
 	       mode == "baseline-full-index");
 	for (size_t bucket = 0; bucket < 256; ++bucket)
 	{
@@ -347,9 +460,10 @@ int main(int argc, char **argv)
 		assert(critical_operation_id_is_zero(control().active_epoch));
 		return 0;
 	}
-	if (mode == "records" || mode == "source-claims" || mode == "retention")
+	if (mode == "records" || mode == "item-records" || mode == "source-claims" ||
+	    mode == "retention")
 	{
-		const bool source = mode != "records";
+		const bool source = mode != "records" && mode != "item-records";
 		for (size_t bucket : { 1, 2 })
 		{
 			assert(access::initialize_evidence_bucket(root, lock, control().revision,
@@ -359,10 +473,13 @@ int main(int argc, char **argv)
 		}
 		// Records mode seals the first segment. Source mode retains two successful
 		// claims and two claimless rejections. No native domain effect is applied.
-		for (uint32_t sequence = 1; sequence <= (mode == "records" ? 23u : 4u); ++sequence)
+		for (uint32_t sequence = 1; sequence <= (mode == "item-records" ? 1u :
+							 mode == "records"	? 23u :
+										  4u);
+		     ++sequence)
 		{
-			auto value =
-				record(sequence, mode == "records" && sequence != 1, source, pid);
+			auto value = record(sequence, mode == "records" && sequence != 1, source,
+					    pid, mode == "item-records");
 			if (source && sequence >= 3)
 			{
 				value.plan.clear();

@@ -191,3 +191,55 @@ void npc_alchemist_world_spawn(P_char ch)
 	if (P_obj vial = read_object(VOBJ_POISON_VIALS, VIRTUAL))
 		obj_to_char(vial, ch);
 }
+
+// Only the original typed birth owner may make this decision on its private actor.
+// The supplied original room is checked without publishing or inventing in_room.
+bool npc_alchemist_original_birth::capture(P_char ch, int original_room_rnum,
+					   native_alchemist_vial_choice *output) noexcept
+{
+	if (!output || !ch || !IS_NPC(ch) || !ch->only.npc || ch->in_room != NOWHERE ||
+	    original_room_rnum <= NOWHERE || original_room_rnum > top_of_world ||
+	    ch->only.npc->alchemist_vial_roll_done)
+		return false;
+	if (!GET_CLASS(ch, CLASS_ALCHEMIST) || ch->only.npc->summoned_instance || GET_MASTER(ch))
+	{
+		*output = native_alchemist_vial_choice::not_attempted;
+		return true;
+	}
+	// Same original once-only boundary: an unreturned chance remains uncertain.
+	ch->only.npc->alchemist_vial_roll_done = true;
+	try
+	{
+		const auto choice = number(1, 100) > 10 ? native_alchemist_vial_choice::missed :
+							  native_alchemist_vial_choice::selected;
+		*output = choice;
+		return true;
+	}
+	catch (...)
+	{
+		// Leave the actual latch set and the output untouched; never roll again.
+		return false;
+	}
+}
+
+bool npc_alchemist_original_birth::restore_latch(P_char ch,
+						 native_alchemist_vial_choice choice) noexcept
+{
+	if (!ch || !IS_NPC(ch) || !ch->only.npc || ch->in_room != NOWHERE)
+		return false;
+	switch (choice)
+	{
+	case native_alchemist_vial_choice::not_attempted:
+		// A value-only skip must not erase an actual prior or uncertain attempt.
+		return !ch->only.npc->alchemist_vial_roll_done;
+	case native_alchemist_vial_choice::missed:
+	case native_alchemist_vial_choice::selected:
+		if (!GET_CLASS(ch, CLASS_ALCHEMIST) || ch->only.npc->summoned_instance ||
+		    GET_MASTER(ch))
+			return false;
+		ch->only.npc->alchemist_vial_roll_done = true;
+		return true;
+	default:
+		return false;
+	}
+}

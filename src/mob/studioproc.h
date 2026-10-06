@@ -27,6 +27,14 @@
 
 #include "core/structs.h"
 
+#include "world/native_mobile_birth_procedure.h"
+
+// Read-only actual selected parsed definition, excluding runtime latches and
+// counters. The predecessor is process-local only, for immediate entry hashing.
+bool studioproc_native_mobile_birth_definition(int32_t vnum,
+					       native_mobile_birth_procedure_digest *definition,
+					       mob_proc_type *predecessor) noexcept;
+
 #define STUDIOPROC_FILE "areas/world.trg"
 
 /* ---- target prototype types ------------------------------------- */

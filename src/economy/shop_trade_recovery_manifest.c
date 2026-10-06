@@ -200,6 +200,83 @@ bool shop_trade_recovery_forest_verify(std::span<const uint8_t> canonical_bytes,
 	       expected == binding;
 }
 
+bool shop_trade_recovery_forest_shape_valid(const shop_trade_recovery_forest_binding &binding,
+					    shop_trade_recovery_forest_role role) noexcept
+{
+	return valid_role(role) && binding_valid(binding, role);
+}
+
+bool shop_trade_recovery_forest_encode(const shop_trade_recovery_forest_binding &binding,
+				       shop_trade_recovery_forest_role role,
+				       std::vector<uint8_t> *out)
+{
+	if (!out || !shop_trade_recovery_forest_shape_valid(binding, role))
+		return false;
+	try
+	{
+		std::vector<uint8_t> candidate;
+		candidate.reserve(SHOP_TRADE_RECOVERY_FOREST_HEADER_BYTES +
+				  binding.ordered_item_uids.size() * sizeof(uint64_t));
+		append_le<uint8_t>(&candidate, static_cast<uint8_t>(role));
+		append_le<uint8_t>(&candidate, binding.present ? 1 : 0);
+		append_le<uint16_t>(&candidate,
+				    static_cast<uint16_t>(binding.ordered_item_uids.size()));
+		append_le<uint32_t>(&candidate, binding.canonical_bytes);
+		candidate.insert(candidate.end(), binding.canonical_digest.begin(),
+				 binding.canonical_digest.end());
+		for (const auto uid : binding.ordered_item_uids)
+			append_le<uint64_t>(&candidate, uid);
+		*out = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool shop_trade_recovery_forest_decode(std::span<const uint8_t> bytes,
+				       shop_trade_recovery_forest_role expected_role,
+				       shop_trade_recovery_forest_binding *out)
+{
+	if (!out || !valid_role(expected_role) ||
+	    bytes.size() < SHOP_TRADE_RECOVERY_FOREST_HEADER_BYTES ||
+	    bytes.size() > SHOP_TRADE_RECOVERY_FOREST_HEADER_BYTES +
+				   SHOP_TRADE_RECOVERY_MAX_UIDS * sizeof(uint64_t))
+		return false;
+	try
+	{
+		const uint8_t *cursor = bytes.data(), *end = cursor + bytes.size();
+		uint8_t role = 0, present = 0;
+		uint16_t count = 0;
+		shop_trade_recovery_forest_binding candidate;
+		if (!read_le(&cursor, end, &role) || role != static_cast<uint8_t>(expected_role) ||
+		    !read_le(&cursor, end, &present) || present > 1 ||
+		    !read_le(&cursor, end, &count) || count > SHOP_TRADE_RECOVERY_MAX_UIDS ||
+		    !read_le(&cursor, end, &candidate.canonical_bytes) ||
+		    static_cast<size_t>(end - cursor) !=
+			    candidate.canonical_digest.size() + count * sizeof(uint64_t))
+			return false;
+		candidate.present = present != 0;
+		std::copy(cursor, cursor + candidate.canonical_digest.size(),
+			  candidate.canonical_digest.begin());
+		cursor += candidate.canonical_digest.size();
+		candidate.ordered_item_uids.resize(count);
+		for (auto &uid : candidate.ordered_item_uids)
+			if (!read_le(&cursor, end, &uid))
+				return false;
+		if (cursor != end ||
+		    !shop_trade_recovery_forest_shape_valid(candidate, expected_role))
+			return false;
+		*out = std::move(candidate);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
 bool shop_trade_recovery_manifest_is_empty(const shop_trade_recovery_manifest &manifest) noexcept
 {
 	const auto values = bindings(manifest);

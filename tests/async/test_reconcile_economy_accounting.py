@@ -219,6 +219,50 @@ def rejected_snapshot():
     return snapshot
 
 
+def quarantined_topology_snapshot(damage="clean", states=("quarantined",) * 3):
+    """Matching static projections; no synthetic retained mutation plan."""
+    from test_item_equipment_reconciliation import baseline
+    snapshot = baseline()
+    items = [dict(uid=uid, revision=3, root=83, parent=parent, owner=[1, 7, 0],
+                  state=state, equipment_slot=0)
+             for (uid, parent), state in zip(((81, 82), (82, 83), (83, None)), states)]
+    changes = {
+        "clean": {}, "owner-id": {81: {"owner": [1, 8, 0]}},
+        "owner-type": {81: {"owner": [2, 7, 0]}},
+        "owner-context": {81: {"owner": [1, 7, 1]}},
+        "root": {81: {"root": 99}},
+        "ancestor-owner": {82: {"owner": [1, 8, 0]}},
+        "ancestor-root": {82: {"root": 99}},
+        "retired-parent": {83: {"state": "tombstone", "owner": [8, 0, 0]}},
+        "cycle": {83: {"parent": 81}}, "orphan": {},
+    }[damage]
+    for row in items:
+        row.update(changes.get(row["uid"], {}))
+    if damage == "orphan":
+        items.pop()
+    snapshot["native"]["items"] = items
+    snapshot["item_origins"] = [dict(row, origin="baseline") for row in copy.deepcopy(items)]
+    return snapshot
+
+
+def quarantined_coin_snapshot(amounts, mapped=False):
+    from test_item_equipment_reconciliation import baseline
+    snapshot = baseline()
+    for row in (snapshot["native"]["items"][0], snapshot["item_origins"][0]):
+        row.update(state="quarantined", equipment_slot=0)
+    snapshot["native"].update(
+        coin_piles=[dict(uid=81, owner=[1, 7, 0], revision=3,
+                        state="quarantined", amounts=amounts)],
+        coin_pile_mappings=[dict(account_key=key(3, 101), uid=81,
+                                item_exists=False, holding_valid=False)] if mapped else [],
+        coin_pile_coverage=dict(rows=1, payload_rows=int(amounts is not None),
+                               missing_payload_rows=int(amounts is None),
+                               mapped_live_rows=0, unmapped_live_rows=0,
+                               multiply_mapped_live_rows=0, dangling_mappings=int(mapped),
+                               invalid_mappings=0))
+    return snapshot
+
+
 def shop_supply_snapshot():
     """Clean synthetic expense before damaging its retained root outcome."""
     snapshot = clean_snapshot()
@@ -1305,6 +1349,50 @@ class ReconciliationTests(unittest.TestCase):
         self.assertEqual(Reconciler().audit(snapshot)["exception_count"], 0)
         self.assertEqual(Reconciler().audit(creation_snapshot())["exception_count"], 0)
 
+    def test_quarantined_containment_mismatches_cannot_share_a_clean_opening(self):
+        expected = {
+            "clean": {}, "owner-id": {"inconsistent_native_topology": 1},
+            "owner-type": {"inconsistent_native_topology": 1},
+            "owner-context": {"inconsistent_native_topology": 1},
+            "root": {"inconsistent_native_topology": 1},
+            "ancestor-owner": {"inconsistent_native_topology": 2},
+            "ancestor-root": {"inconsistent_native_topology": 2},
+            "retired-parent": {"inconsistent_native_topology": 2},
+            "cycle": {"cyclic_native_topology": 3}, "orphan": {"orphan_item_parent": 1},
+        }
+        with tempfile.TemporaryDirectory(prefix="duris-quarantined-topology-") as directory:
+            path = Path(directory) / "snapshot.json"
+            for damage, counts in expected.items():
+                snapshot = quarantined_topology_snapshot(damage)
+                snapshot["item_origins"][0]["personal_alias"] = "private-quarantined-alias"
+                original = copy.deepcopy(snapshot)
+                payload = json.dumps(snapshot, sort_keys=True).encode()
+                path.write_bytes(payload)
+                for limit in (0, 1, 100):
+                    with self.subTest(damage=damage, limit=limit):
+                        report = Reconciler(limit).audit(snapshot)
+                        self.assertEqual(report["exception_counts"], counts)
+                        self.assertEqual(report["exception_count"], sum(counts.values()))
+                        self.assertLessEqual(len(report["exceptions"]), limit)
+                        for name in ("holdings", "provenance", "operation", "supply", "prices", "routes"):
+                            result = view(snapshot, report, name, limit, uid=81,
+                                          operation_id=OP if name == "operation" else None)
+                            self.assertEqual(result["coverage"]["exception_count"], sum(counts.values()))
+                        command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                   str(path), "--limit", str(limit)]
+                        result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                        self.assertEqual(result.returncode, 1 if counts else 0, result.stderr)
+                        self.assertFalse(result.stderr)
+                        self.assertEqual(json.loads(result.stdout), report)
+                        self.assertNotIn("alias", result.stdout)
+                        self.assertNotIn("private-quarantined", result.stdout)
+                        self.assertEqual(path.read_bytes(), payload)
+                        self.assertEqual(snapshot, original)
+        # Active and quarantined nodes can share a valid containment forest.
+        for states in (("live",) * 3, ("quarantined",) * 3,
+                       ("live", "quarantined", "live"), ("quarantined", "live", "quarantined")):
+            self.assertEqual(Reconciler().audit(quarantined_topology_snapshot(states=states))["exception_count"], 0)
+
     def test_supply_requires_one_committed_root_and_preserves_findings(self):
         with tempfile.TemporaryDirectory(prefix="duris-supply-outcome-") as directory:
             path = Path(directory) / "snapshot.json"
@@ -1371,6 +1459,64 @@ class ReconciliationTests(unittest.TestCase):
                     self.assertEqual(output["rows"], [{"account_kind": kind, "reason": 21, "net_copper": 3}]
                                      if outcome == "committed" else [])
                     self.assertEqual(output["coverage"]["exception_count"], report["exception_count"])
+
+    def test_supply_requires_unique_effect_and_posting_identities(self):
+        with tempfile.TemporaryDirectory(prefix="duris-supply-identities-") as directory:
+            path = Path(directory) / "snapshot.json"
+            for kind in (7, 8, 9, 10):
+                for damage in ("same-effect", "conflicting-effect", "same-posting", "conflicting-posting"):
+                    for reverse in (False, True):
+                        snapshot = shop_supply_snapshot()
+                        snapshot["effects"][1]["account_key"] = key(kind, 9)
+                        table = "effects" if "effect" in damage else "postings"
+                        duplicate = copy.deepcopy(snapshot[table][1])
+                        duplicate["personal_alias"] = "private-supply-identity"
+                        if damage == "conflicting-effect":
+                            duplicate["account_key"] = key(8 if kind == 7 else 7, 9)
+                        elif damage == "conflicting-posting":
+                            duplicate.update(delta=[6, 0, 0, 0], copper_value=6)
+                        snapshot[table].append(duplicate)
+                        if reverse:
+                            snapshot[table].reverse()
+                        payload = json.dumps(snapshot, sort_keys=True).encode()
+                        path.write_bytes(payload)
+                        for limit in (0, 1, 100):
+                            with self.subTest(kind=kind, damage=damage, reverse=reverse, limit=limit):
+                                report = Reconciler(limit).audit(snapshot)
+                                self.assertIn("duplicate_effect" if table == "effects" else "duplicate_posting",
+                                              report["exception_counts"])
+                                output = view(snapshot, report, "supply", limit)
+                                self.assertEqual(output["rows"], [])
+                                self.assertEqual(output["count"], 0)
+                                self.assertFalse(output["truncated"])
+                                self.assertEqual(output["coverage"]["exception_count"], report["exception_count"])
+                                command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                           str(path), "--view", "supply", "--limit", str(limit)]
+                                result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                                self.assertEqual(result.returncode, 1, result.stderr)
+                                self.assertFalse(result.stderr)
+                                self.assertEqual(json.loads(result.stdout), output)
+                                self.assertNotIn("alias", result.stdout)
+                                self.assertNotIn("private-supply", result.stdout)
+                                self.assertEqual(path.read_bytes(), payload)
+                                self.assertEqual(json.dumps(snapshot, sort_keys=True).encode(), payload)
+        # Distinct posting lines may legitimately refer to the same account.
+        snapshot = shop_supply_snapshot()
+        snapshot["operations"][0]["posting_count"] = 3
+        snapshot["postings"][1].update(delta=[1, 0, 0, 0], copper_value=1)
+        snapshot["postings"].append(dict(snapshot["postings"][1], line_index=2,
+                                        delta=[2, 0, 0, 0], copper_value=2))
+        bind_original_plans(snapshot)
+        snapshot["effects"].reverse()
+        snapshot["postings"].reverse()
+        original = copy.deepcopy(snapshot)
+        for limit in (0, 1, 100):
+            report = Reconciler(limit).audit(snapshot)
+            self.assertEqual(report["exception_count"], 0)
+            output = view(snapshot, report, "supply", limit)
+            self.assertEqual(output["count"], 1)
+            self.assertEqual(output["rows"], [{"account_kind": 8, "reason": 21, "net_copper": 3}][:limit])
+            self.assertEqual(snapshot, original)
 
     def test_provenance_includes_retained_and_unattributed_uid_history(self):
         snapshot = clean_snapshot()
@@ -2755,6 +2901,51 @@ class ReconciliationTests(unittest.TestCase):
             {(81,): {"owner": [1, 7, 0], "revision": 2, "state": "live"}},
             LINEAGE)
         self.assertEqual(mismatched.counts["coin_pile_holding_mismatch"], 1)
+
+    def test_quarantined_coin_piles_report_without_becoming_active_holdings(self):
+        with tempfile.TemporaryDirectory(prefix="duris-quarantined-coins-") as directory:
+            path = Path(directory) / "snapshot.json"
+            for amounts in ([1, 2, 3, 4], [0, 0, 0, 0], None):
+                for mapped in (False, True):
+                    snapshot = quarantined_coin_snapshot(amounts, mapped)
+                    snapshot["native"]["coin_piles"][0]["personal_alias"] = "private-coin-alias"
+                    original = copy.deepcopy(snapshot)
+                    payload = json.dumps(snapshot, sort_keys=True).encode()
+                    path.write_bytes(payload)
+                    expected = {"quarantined_coin_pile": 1}
+                    if mapped:
+                        expected["dangling_coin_pile_mapping"] = 1
+                    for limit in (0, 1, 100):
+                        with self.subTest(amounts=amounts, mapped=mapped, limit=limit):
+                            report = Reconciler(limit).audit(snapshot)
+                            self.assertEqual(report["exception_counts"], expected)
+                            self.assertEqual(report["exception_count"], sum(expected.values()))
+                            self.assertLessEqual(len(report["exceptions"]), limit)
+                            for name in ("holdings", "provenance", "operation", "supply", "prices", "routes"):
+                                result = view(snapshot, report, name, limit, uid=81,
+                                              operation_id=OP if name == "operation" else None)
+                                self.assertEqual(result["coverage"]["exception_count"], sum(expected.values()))
+                                if name == "holdings":
+                                    self.assertEqual(result["count"], 0)
+                            result = subprocess.run([
+                                sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                str(path), "--limit", str(limit)], capture_output=True, text=True, timeout=30)
+                            self.assertEqual(result.returncode, 1, result.stderr)
+                            self.assertFalse(result.stderr)
+                            self.assertEqual(json.loads(result.stdout), report)
+                            self.assertNotIn("alias", result.stdout)
+                            self.assertNotIn("private-coin", result.stdout)
+                            self.assertEqual(path.read_bytes(), payload)
+                            self.assertEqual(snapshot, original)
+                            self.assertEqual(snapshot["native"]["coin_pile_coverage"]["mapped_live_rows"], 0)
+                            self.assertEqual(snapshot["native"]["coin_pile_coverage"]["unmapped_live_rows"], 0)
+        snapshot = quarantined_coin_snapshot([1, 2, 3, 4])
+        snapshot["native"]["coin_piles"][0]["state"] = "unknown"
+        with self.assertRaisesRegex(SnapshotError, "invalid coin-pile row"):
+            Reconciler().audit(snapshot)
+        snapshot = quarantined_coin_snapshot([-1, 0, 0, 0])
+        with self.assertRaisesRegex(SnapshotError, "negative coin-pile denomination"):
+            Reconciler().audit(snapshot)
 
     def test_coin_pile_lifecycle_source_matches_create_and_retire_events(self):
         raw = bytearray(48)

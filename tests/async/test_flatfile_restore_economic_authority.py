@@ -44,6 +44,13 @@ def build_fixture(destination, native_source=ROOT):
     flags = ["-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-O1", "-g",
              "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
              "-DDURIS_FLATFILE_ACCOUNTING_TEST", "-I" + str(native_source / "src"), "-pthread"]
+    # The native fixture also observes independent operator headers. The shared
+    # native cache fingerprints src/ and tests/async/, so declare these owned
+    # script inputs in its existing flag key instead of accepting a stale hit.
+    headers = hashlib.sha256()
+    for header in sorted((ROOT / "scripts").glob("qualify_flatfile_*.h")):
+        headers.update(header.name.encode() + b"\0" + header.read_bytes() + b"\0")
+    flags.append('-DDURIS_RESTORE_OPERATOR_HEADERS_SHA256="' + headers.hexdigest() + '"')
     fixture = "tests/async/flatfile_restore_authority_fixture.cpp"
     if native_source.resolve() != ROOT.resolve():
         # Isolated native prerequisites are explicit inputs, never mixed with
@@ -64,6 +71,11 @@ def main():
         fixture = build_fixture(Path(build) / "fixture")
         environment = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
                            UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
+        metadata = subprocess.run([str(fixture), str(build), "compare-metadata"],
+            env=environment, capture_output=True, text=True, timeout=30)
+        assert metadata.returncode == 0 and not metadata.stderr, metadata
+        assert metadata.stdout == "NATIVE_INDEPENDENT_METADATA_COMPARISONS 1058\n", metadata.stdout
+        print(metadata.stdout, end="", flush=True)
         # Exercise the independent reader under sanitizers without invoking
         # candidate recovery or any native mutation/storage interface.
         audit_source = Path(build) / "audit.cpp"
@@ -80,7 +92,7 @@ int main(int argc, char **argv) {
                         "-O1", "-g", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
                         "-fno-pie", "-no-pie", "-I" + str(ROOT / "scripts"), str(audit_source),
                         "-lcrypto", "-o", str(audit)], check=True)
-        successes, refusals = 0, 0
+        successes, refusals, native_semantic_decodes = 0, 0, 0
         with tempfile.TemporaryDirectory(prefix="duris-restore-authority-state-") as temporary:
             candidate = Path(temporary)
             (candidate / "ISOLATED_RESTORE").write_text(json.dumps({"generation": "synthetic"}))
@@ -352,6 +364,87 @@ int main(int argc, char **argv) {
                 ("plan reserved", plan_start + 240, b"\x01")):
                 record_case("record " + label,
                             lambda f, o=offset, d=data: alter_record(f, o, d))
+            # Keep every physical checksum valid. Generic successful EAP1
+            # bodies must receive the same semantic refusal as native decode.
+            account_start = plan_start + 256
+            posting_start = account_start + struct.unpack_from("<I", first, plan_start + 216)[0] * 120
+            semantic_cases = []
+            for label, offset, data in (
+                ("account lineage", account_start, b"\x63"),
+                ("account version", account_start + 16, b"\x02"),
+                ("account reserved", account_start + 36, b"\x01"),
+                ("account zero lifetime", account_start + 20, b"\x00" * 8),
+                ("duplicate account key", account_start + 120, first[account_start:account_start + 40]),
+                ("forbidden bank-transfer stake", account_start + 120 + 18, struct.pack("<H", 11)),
+                ("negative opening", account_start + 40, struct.pack("<q", -1)),
+                ("negative result", account_start + 72, struct.pack("<q", -1)),
+                ("holding copper overflow", account_start + 64, struct.pack("<q", 2**63 - 1)),
+                ("changed value unchanged revision", account_start + 112, struct.pack("<Q", 0)),
+                ("after vector disagreement", account_start + 72, struct.pack("<q", 91)),
+                ("posting event order", posting_start, struct.pack("<I", 1)),
+                ("posting missing account", posting_start + 4, struct.pack("<H", 2)),
+                ("posting unsupported child", posting_start + 6, struct.pack("<H", 1)),
+                ("posting zero vector", posting_start + 8, b"\x00" * 32),
+                ("posting copper disagreement", posting_start + 40, struct.pack("<q", -9)),
+                ("posting copper overflow", posting_start + 32, struct.pack("<q", 2**63 - 1)),
+                ("unreferenced changed holding", posting_start + 4, struct.pack("<H", 1))):
+                semantic_cases.append(("generic plan " + label,
+                    lambda f, o=offset, d=data: alter_record(f, o, d)))
+            for label, mutate in semantic_cases:
+                record_case(label, mutate)
+
+            def rebind_intent(files, offset, data):
+                value = bytearray(first)
+                value[intent_start + offset:intent_start + offset + len(data)] = data
+                value[plan_start + 8:plan_start + 72] = value[intent_start + 32:intent_start + 96]
+                value[plan_start + 72] = value[intent_start + 26]
+                value[plan_start + 84:plan_start + 98] = value[intent_start + 12:intent_start + 26]
+                intent_length = struct.unpack_from("<I", value, intent_start - 4)[0]
+                value[plan_start + 152:plan_start + 184] = hashlib.sha256(
+                    b"DURIS-ECONOMIC-INTENT-V1\x00" + value[intent_start:intent_start + intent_length]).digest()
+                value = rehash(value)
+                segment = bytearray(files[sealed])
+                segment[80:80 + first_size] = value
+                files[sealed] = rehash(segment)
+                change(files, index, 96, hashlib.sha256(value).digest())
+
+            intent_cases = []
+            for label, offset, data in (
+                ("policy version", 16, struct.pack("<I", 2)),
+                ("compiler version", 20, struct.pack("<I", 2)),
+                ("actor policy", 26, b"\x02"),
+                ("self original", 80, first[intent_start + 64:intent_start + 80]),
+                ("required source", 24, struct.pack("<H", 5)),
+                ("required original", 24, struct.pack("<H", 19))):
+                intent_cases.append(("generic intent " + label,
+                    lambda f, o=offset, d=data: rebind_intent(f, o, d)))
+            for label, mutate in intent_cases:
+                record_case(label, mutate)
+
+            def native_decode(files, label, valid, intent=False):
+                nonlocal native_semantic_decodes
+                size = struct.unpack_from("<I", files[index], 136)[0]
+                record = files[sealed][80:80 + size]
+                command_size = struct.unpack_from("<I", record, 48)[0]
+                keys, revisions, payload_size = struct.unpack_from("<III", record, 74 + 40)
+                start = 74 + 52 + keys * 16 + revisions * 24 + payload_size + 4 if intent else 74 + command_size
+                length = struct.unpack_from("<I", record, start - 4 if intent else 52)[0]
+                raw = Path(build) / ("semantic-native.eai" if intent else "semantic-native.eap")
+                raw.write_bytes(record[start:start + length])
+                before = raw.read_bytes()
+                result = subprocess.run([str(fixture), str(raw), "decode-intent" if intent else "decode-plan"],
+                    env=environment, capture_output=True, text=True, timeout=30)
+                assert result.returncode == int(not valid) and not result.stderr, (label, result)
+                assert (result.stdout.strip() == "0") == valid, (label, result.stdout)
+                assert raw.read_bytes() == before
+                native_semantic_decodes += 1
+
+            native_decode(records, "clean generic plan", True)
+            native_decode(records, "clean generic intent", True, intent=True)
+            for label, mutate in semantic_cases + intent_cases:
+                files = dict(records)
+                mutate(files)
+                native_decode(files, label, False, intent=label.startswith("generic intent"))
             for label, mutate in record_cases:
                 files = dict(records)
                 mutate(files)
@@ -378,6 +471,70 @@ int main(int argc, char **argv) {
             check("FIFO active operation segment refuses without blocking", False)
             restore(records)
             check("clean native retained records remain qualified", True)
+
+            # Native structural item plans keep valid equipment, destruction's
+            # former edges and an all-zero absent creation witness. Domain
+            # gameplay is not applied and accounting remains inactive.
+            restore({})
+            subprocess.run([str(fixture), str(state), "item-records"], env=environment, check=True)
+            check("native equipment destruction and creation record", True)
+            item_records = inventory(evidence)
+            item_size = struct.unpack_from("<I", item_records[index], 136)[0]
+            item_first = item_records[sealed][80:80 + item_size]
+            item_plan = 74 + struct.unpack_from("<I", item_first, 48)[0]
+            assert struct.unpack_from("<6I", item_first, item_plan + 216) == (0, 0, 0, 3, 3, 3)
+            item_before = item_plan + 256
+            item_after = item_before + 3 * 64
+            item_events = item_after + 3 * 64
+            native_decode(item_records, "clean item plan", True)
+            native_decode(item_records, "clean item intent", True, intent=True)
+
+            def alter_item_record(files, offset, data):
+                value = bytearray(item_first)
+                value[offset:offset + len(data)] = data
+                value = rehash(value)
+                segment = bytearray(files[sealed])
+                segment[80:80 + item_size] = value
+                files[sealed] = rehash(segment)
+                change(files, index, 96, hashlib.sha256(value).digest())
+
+            item_cases = (
+                ("zero UID", item_before, b"\x00" * 8),
+                ("UID order", item_before, struct.pack("<Q", 82)),
+                ("reserved position", item_before + 10, b"\x01"),
+                ("unknown state", item_before + 9, b"\x04"),
+                ("live destruction", item_before + 8, b"\x08"),
+                ("zero live owner", item_before + 16, b"\x00" * 8),
+                ("mobile context", item_before + 64 + 8, struct.pack("<BB6xQQ", 12, 1, 7, 1)),
+                ("zero root", item_before + 32, b"\x00" * 8),
+                ("root identity", item_before + 32, struct.pack("<Q", 99)),
+                ("self parent", item_before + 64 + 40, struct.pack("<Q", 82)),
+                ("missing parent", item_before + 64 + 40, struct.pack("<Q", 999)),
+                ("cross owner parent", item_before + 64 + 16, struct.pack("<Q", 8)),
+                ("contained equipment", item_before + 64 + 56, struct.pack("<H", 1)),
+                ("absent nonzero root", item_before + 2 * 64 + 32, struct.pack("<Q", 83)),
+                ("UID set disagreement", item_after + 2 * 64, struct.pack("<Q", 84)),
+                ("player tombstone", item_after + 64 + 8, b"\x01"),
+                ("destroyed zero revision", item_after + 64 + 48, b"\x00" * 8),
+                ("after equipment disagreement", item_after + 56, struct.pack("<H", 7)),
+                ("event index", item_events, struct.pack("<I", 1)),
+                ("event child", item_events + 4, struct.pack("<H", 1)),
+                ("event reserved", item_events + 6, b"\x01"),
+                ("event missing UID", item_events + 8, struct.pack("<Q", 99)),
+                ("event before equipment", item_events + 16 + 48, struct.pack("<H", 4)),
+                ("event after revision", item_events + 72 + 40, struct.pack("<Q", 3)),
+                ("event after absent", item_events + 72, b"\x00" * 56),
+                ("creation destroyed", item_events + 2 * 128 + 72,
+                 struct.pack("<BB6x5QH6x", 8, 2, 0, 0, 83, 0, 1, 0)),
+            )
+            for label, offset, data in item_cases:
+                files = dict(item_records)
+                alter_item_record(files, offset, data)
+                native_decode(files, label, False)
+                restore(files)
+                check("generic item " + label, False)
+            restore(item_records)
+            check("clean native item record remains qualified", True)
 
             restore({})
             subprocess.run([str(fixture), str(state), "baseline"], env=environment, check=True)
@@ -719,6 +876,8 @@ int main(int argc, char **argv) {
             check("native cross-epoch source claims remain qualified", True)
         print(json.dumps({"positive_stores": successes, "refused_corruptions": refusals,
                           "native_invocations_per_case": 3, "economic_bytes_unchanged": True,
+                          "generic_semantic_corruptions": 50, "native_semantic_decodes": native_semantic_decodes,
+                          "native_metadata_comparisons": 1058,
                           "qualifier_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
                           "fixture_sha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
                           "sanitized_reader_sha256": hashlib.sha256(audit.read_bytes()).hexdigest()}))

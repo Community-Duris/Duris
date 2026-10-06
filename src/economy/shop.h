@@ -58,3 +58,29 @@ struct shop_trade_cold_native_effect;
 bool shop_trade_cold_native_step_execute(char_data *, char_data *, obj_data *, obj_data *,
 					 const shop_trade_payload &,
 					 shop_trade_cold_native_effect &) noexcept;
+
+#ifndef DURIS_SHOP_NATIVE_MOBILE_BIRTH_WITNESS_DECLARATIONS
+#define DURIS_SHOP_NATIVE_MOBILE_BIRTH_WITNESS_DECLARATIONS
+#include "world/native_mobile_birth_procedure.h"
+#include <vector>
+struct shop_native_mobile_birth_predecessor
+{
+	int32_t shop_slot = -1;
+	native_mobile_birth_procedure_function function = nullptr;
+};
+// Current original shop-record order. Process-local pointers are consumed only
+// by immediate ELF entry observation, never retained or invoked from this data.
+bool shop_native_mobile_birth_predecessors(
+	int32_t keeper_vnum, std::vector<shop_native_mobile_birth_predecessor> *output) noexcept;
+#endif
+
+#ifndef DURIS_SHOP_NATIVE_MOBILE_BIRTH_RESET_TAIL_DECLARATIONS
+#define DURIS_SHOP_NATIVE_MOBILE_BIRTH_RESET_TAIL_DECLARATIONS
+#include "world/native_mobile_birth_reset_tail.h"
+// Recompute the original keeper-RNUM/destination-VNUM unique selector. Absent
+// or ambiguous means -1, exactly as original configured_shopkeeper_for_room.
+// Compare the supplied original selection; never bind from this value helper.
+bool shop_native_mobile_birth_reset_tail_selection(
+	int32_t mobile_vnum, int32_t destination_room_vnum, int configured_shop,
+	shop_native_mobile_birth_reset_selection *output) noexcept;
+#endif

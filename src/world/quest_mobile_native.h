@@ -77,7 +77,21 @@ quest_mobile_native_capture(P_char, const quest_mobile_native_reference &,
 			    const critical_operation_id &last_transition, uint64_t cash_revision,
 			    quest_mobile_native_image *output) noexcept;
 
+// Read-only full native item forest on the game thread. No previous-transition
+// operation or cash revision is fabricated merely to observe the original stock.
+// Reference remains an already-authenticated caller fact; output is unchanged
+// on refusal. The existing image capture/codec policies remain unchanged.
+player_snapshot_capture_result
+quest_mobile_native_items_observe(P_char, const quest_mobile_native_reference &,
+				  std::vector<player_item_snapshot> *output) noexcept;
+
 struct item_transfer_payload;
+// Pure ordered item values only. Original reference/forest are caller evidence;
+// no historical last-transition or cash image is constructed to transform them.
+// The cash-aware image participant retains its separate exact cash policy.
+player_snapshot_codec_result quest_mobile_native_items_transition(
+	std::span<const player_item_snapshot>, const quest_mobile_native_reference &,
+	const item_transfer_payload &, std::vector<player_item_snapshot> *after) noexcept;
 // Pure ordered stock transition for an already LIVE original native image.
 // The enclosing participant validates the complete native-v11 payload contract;
 // this helper validates only the original image/reference and literal stock transform.
