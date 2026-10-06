@@ -61,6 +61,7 @@
 #include "world/map.h"
 #include "core/mm.h"
 #include "classes/necromancy.h"
+#include "classes/summoner_pet.h"
 #include "item/objmisc.h"
 #include "world/outposts.h"
 #include "persistence/persistence_checkpoint.h"
@@ -4513,6 +4514,9 @@ int raw_damage(P_char ch, P_char victim, double dam, uint flags, struct damage_m
 		dam = (damProf.baseDamage + BOUNDEDF(-100.0, damProf.addedMod, 100.0)) *
 		      BOUNDEDF(0.10, damProf.increasedMod, 4.0) *
 		      BOUNDEDF(0.1, damProf.moreMod, 2.0);
+		// melee_damage marks physical hits; spells and raw damage do not gain this defense.
+		if (messages && (messages->type & (1 << 24)) && !(flags & PHSDAM_NOREDUCE))
+			dam = summoner_pet_physical_damage(victim, dam);
 		dam = MAX(1, dam);
 
 		// debug("raw_damage: %s doing %f damage to %s (base=%f, added=%f, increased=%f, more=%f)!",
@@ -5761,6 +5765,7 @@ bool hit(P_char ch, P_char victim, P_obj weapon, int *damAccumulator)
 		messages.type = DAMMSG_HIT_EFFECT | DAMMSG_TERSE;
 	}
 
+	dam = summoner_pet_melee_damage(ch, dam);
 	dam *= ch->specials.damage_mod;
 	if (difficulty_world_npc(ch))
 		dam *= difficulty_multiplier(DIFFICULTY_MOB_MELEE);

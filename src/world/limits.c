@@ -10,6 +10,7 @@
  */
 
 #include "core/prototypes.h"
+#include "classes/summoner_pet.h"
 #include "combat/damage.h"
 #include "world/rested.h"
 #include "telemetry/telemetry_runtime.h"
@@ -370,7 +371,7 @@ int hit_regen(P_char ch, bool display_only)
 		gain = 0;
 	}
 
-	return difficulty_scale_player_regen(ch, gain);
+	return difficulty_scale_player_regen(ch, summoner_pet_hit_regen(ch, gain));
 }
 
 /*
