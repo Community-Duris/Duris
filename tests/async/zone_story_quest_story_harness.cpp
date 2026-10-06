@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 147 &&
+		require(catalog.story_mappings.size() == 148 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,114 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "Voluntown"; });
+			const auto &key = story_for("Voluntown", "drakenstone-key");
+			const auto &strand = story_for("Voluntown", "strand-of-time");
+			require(mapping.stories.size() == 2 && mapping.contacts.size() == 10 &&
+					key.steps.size() == 7 && strand.steps.size() == 2,
+				"Voluntown mapping scope failed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 1424, 142400, 100, "arrival") ==
+					result::applied,
+				"Voluntown discovery failed");
+			require(journey.meet_npc(7, 42, 142401, 142451, 102) == result::applied &&
+					journey.meet_npc(7, 42, 142425, 142446, 102) ==
+						result::applied,
+				"Voluntown context encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 1424, 10, 1, 103, false, false);
+			require(journal.find("] " + key.title + "\r\n") == std::string::npos &&
+					journal.find("] " + strand.title + "\r\n") ==
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 1424).completed == 0,
+				"Voluntown Mary or ruler encounter forged caretaker completion");
+			require(journey.meet_npc(7, 42, 142400, 142403, 104) == result::applied,
+				"Voluntown caretaker encounter failed");
+			const auto status = [&](const auto &story, size_t row, const char *state)
+			{
+				const auto start = journal.find("] " + story.title + "\r\n");
+				require(start != std::string::npos,
+					"Voluntown visible story missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     story.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			for (int v : { 97018, 142400, 142402, 142418, 142421, 142428, 142433,
+				       142439, 142443, 142451 })
+				supplies.carried[v] = 1;
+			supplies.equipped[18] = 142404;
+			journal = journey.render_journal(7, 42, 1424, 10, 1, 106, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 6; ++i)
+				require(status(key, i, "Missing now"),
+					"Voluntown held fragment, seal, keys or reward replaced six proofs");
+			require(status(strand, 0, "Missing now"),
+				"Voluntown seal or cloak replaced strand");
+			supplies = {};
+			supplies.carried[142404] = 6;
+			for (int v : { 142405, 142406, 142407, 142408 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 1424, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(key, 0, "Ready now") && status(key, 4, "Ready now") &&
+					status(key, 5, "Missing now"),
+				"Voluntown duplicate names replaced sixth family");
+			supplies.carried[142409] = 1;
+			supplies.carried[142450] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 1424, 10, 1, 108, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 6; ++i)
+				require(status(key, i, "Ready now"),
+					"Voluntown supplied family fragment not ready");
+			require(status(strand, 0, "Ready now") && status(strand, 1, "Pending") &&
+					status(key, 6, "Pending") &&
+					journey.serialize_state() == before,
+				"Voluntown supplies forged kills/access/rescue or accepted history");
+			// The strand receipt is independent of the earlier key return and does not prove rescue.
+			record(journey, strand.contracts.front(), "voluntown-strand", 1424, 142403);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 1424, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(strand, 1, "Recorded") && status(strand, 0, "Missing now") &&
+					status(key, 6, "Pending") &&
+					journey.progress_for_zone(7, 42, 1424).completed == 1 &&
+					journey.progress_for_zone(7, 42, 1424).total == 2,
+				"Voluntown strand forced a key/rescue gate or spent proof erased receipt");
+			record(journey, key.contracts.front(), "voluntown-key", 1424, 142403);
+			journal = journey.render_journal(7, 42, 1424, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(key, 6, "Recorded") && status(key, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 1424).completed == 2,
+				"Voluntown accepted key return lost independent history");
+			auto replay = completion(strand.contracts.front(), "voluntown-strand", 120);
+			replay.transaction.zone_number = 1424;
+			replay.transaction.room_vnum = 142403;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Voluntown exact replay duplicated return");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 1424).completed == 2,
+				"Voluntown cold recovery lost accepted history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 1424, 142400, 100, "arrival") ==
+					result::applied,
+				"Voluntown raw discovery failed");
+			record(historical, strand.contracts.front(), "voluntown-raw", 1424, 142403);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 1424).completed == 1 &&
+					authored.evidence_for(strand.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Voluntown raw-to-authored recovery lost native receipt");
 		}
 
 		{
