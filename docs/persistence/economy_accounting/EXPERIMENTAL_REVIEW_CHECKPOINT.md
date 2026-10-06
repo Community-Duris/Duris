@@ -1,5 +1,18 @@
 # Experimental accounting review checkpoint
 
+## Private money candidate and parallel producer work — 2026-10-06
+
+[Current opening handoff](SQL_OPENING_AUCTION_CLAIM_IMPLEMENTATION_HANDOFF_2026-10-06.md)
+records independent acceptance of the three money recovery corrections and the
+measured additive0062 private candidate. Original runtime units pass; both-engine
+fresh/populated-fork qualification is rerunning after an obsolete55-receipt
+fixture expectation was repaired; native money journeys are
+pending. Separate workers continue first-auction claim endpoints, typed lockpick
+retirement with the original post-wear held forest, and quest fees/coin GIVE with
+authentic born-wallet identity. Their private source/component evidence does not
+qualify complete gameplay, cold recovery, activation or release. Published source
+remains `f528a46b4`; all three unrelated WIP paths are preserved.
+
 ## Matching equipment capture and production-build evidence consumed — 2026-10-06
 
 [Primary source comparison](PLAN5_EQUIPMENT_V2_PRIMARY_QUALIFICATION_2026-10-06.md)
