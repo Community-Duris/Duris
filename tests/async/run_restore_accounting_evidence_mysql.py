@@ -257,6 +257,140 @@ def canonical_field(table, field, changed, code, condition="", full=False, opera
                   [(query, (original, operation))], code, full)
 
 
+def modeled_claim_two_account_batch(source_operation):
+    """Real SQL query coverage with modeled metadata, never capsule/producer proof."""
+    original = captured()
+    batch_ids = [value.to_bytes(16, "big") for value in range(128, 193)]
+    overlap, follower = batch_ids[-2:]
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT COUNT(*) FROM economic_accounting_operation WHERE operation_id IN ("+
+                       ",".join(["%s"]*len(batch_ids))+")", tuple(batch_ids))
+        assert cursor.fetchone()[0] == 0
+        cursor.execute("SELECT COUNT(*) FROM economic_account_mapping WHERE mapping_id=10")
+        assert cursor.fetchone()[0] == 0
+        cursor.execute("SELECT COUNT(*) FROM auction_money_pickups WHERE pid=43")
+        assert cursor.fetchone()[0] == 0
+        cursor.execute("SELECT money,claim_revision FROM auction_money_pickups WHERE pid=42")
+        original_cash = cursor.fetchone()
+        assert original_cash is not None and original_cash[0] == 8
+        cursor.execute("SELECT * FROM economic_accounting_operation WHERE operation_id=%s", (source_operation,))
+        root_values = list(cursor.fetchone())
+        root_columns = [column[0] for column in cursor.description]
+        templates = {}
+        for table in ("economic_accounting_account_effect", "economic_accounting_coin_posting"):
+            cursor.execute("SELECT * FROM "+table+" WHERE operation_id=%s ORDER BY 2", (source_operation,))
+            templates[table] = ([column[0] for column in cursor.description], cursor.fetchall())
+    effect_columns, effect_rows = templates["economic_accounting_account_effect"]
+    posting_columns, posting_rows = templates["economic_accounting_coin_posting"]
+    assert len(effect_rows) == len(posting_rows) == 2
+    claim_rows = [row for row in effect_rows if row[effect_columns.index("account_key")][18:20] == b"\x05\x00"]
+    wallet_rows = [row for row in effect_rows if row[effect_columns.index("account_key")][18:20] == b"\x01\x00"]
+    assert len(claim_rows) == len(wallet_rows) == 1
+    claim, wallet = claim_rows[0], wallet_rows[0]
+    claim_index = claim[effect_columns.index("account_index")]
+    wallet_index = wallet[effect_columns.index("account_index")]
+    assert claim[effect_columns.index("after_copper")]-claim[effect_columns.index("before_copper")] == 5
+    assert wallet[effect_columns.index("before_copper")]-wallet[effect_columns.index("after_copper")] == 5
+    second_index = max(row[effect_columns.index("account_index")] for row in effect_rows)+1
+    second_key = LINEAGE+struct.pack("<HHQQ4x", 1, 5, 10, 0)
+    assert claim[effect_columns.index("account_key")] < second_key
+    def insert(table, columns, values):
+        execute("INSERT INTO "+table+"("+",".join(columns)+") VALUES("+
+                ",".join(["%s"]*len(values))+")", values)
+    try:
+        for operation in batch_ids:
+            root = root_values.copy()
+            root[root_columns.index("operation_id")] = operation
+            if operation == overlap:
+                assert root[root_columns.index("account_count")] == 2
+                assert root[root_columns.index("posting_count")] == 2
+                root[root_columns.index("account_count")] = 3
+                root[root_columns.index("posting_count")] = 3
+            execute("INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,"
+                    "command_type,schema_version,payload_version,status,result_payload,committed_at) "
+                    "VALUES(%s,%s,%s,1,2,1,1,'',CURRENT_TIMESTAMP(6))", (operation, bytes(32), bytes(32)))
+            insert("economic_accounting_operation", root_columns, root)
+            for row in effect_rows:
+                effect = list(row)
+                effect[effect_columns.index("operation_id")] = operation
+                if operation == overlap and effect[effect_columns.index("account_index")] == wallet_index:
+                    effect[effect_columns.index("after_copper")] -= 5
+                insert("economic_accounting_account_effect", effect_columns, effect)
+            if operation == overlap:
+                effect = list(claim)
+                effect[effect_columns.index("operation_id")] = operation
+                effect[effect_columns.index("account_index")] = second_index
+                effect[effect_columns.index("account_key")] = second_key
+                insert("economic_accounting_account_effect", effect_columns, effect)
+            for row in posting_rows:
+                posting = list(row)
+                posting[posting_columns.index("operation_id")] = operation
+                if operation == overlap and posting[posting_columns.index("account_index")] == wallet_index:
+                    posting[posting_columns.index("delta_copper")] -= 5
+                    posting[posting_columns.index("copper_value")] -= 5
+                insert("economic_accounting_coin_posting", posting_columns, posting)
+            if operation == overlap:
+                matching = [row for row in posting_rows if row[posting_columns.index("account_index")] == claim_index]
+                assert len(matching) == 1
+                posting = list(matching[0])
+                posting[posting_columns.index("operation_id")] = operation
+                next_line = max(row[posting_columns.index("line_index")] for row in posting_rows)+1
+                posting[posting_columns.index("line_index")] = next_line
+                posting[posting_columns.index("event_index")] = next_line
+                posting[posting_columns.index("account_index")] = second_index
+                insert("economic_accounting_coin_posting", posting_columns, posting)
+            execute("INSERT INTO economic_pending_claim_source VALUES(%s,1,%s,9,42,5,NULL)", (operation,LINEAGE))
+        execute("INSERT INTO economic_account_mapping(mapping_id,lineage,account_kind,context_id,backend_kind,"
+                "locator_kind,native_id,active_native_id,creating_operation_id) VALUES(10,%s,5,0,1,5,43,43,%s)",
+                (LINEAGE, overlap))
+        execute("INSERT INTO economic_pending_claim_source VALUES(%s,2,%s,10,43,5,NULL)", (overlap,LINEAGE))
+        execute("UPDATE auction_money_pickups SET money=%s WHERE pid=42", (8+5*len(batch_ids),))
+        execute("INSERT INTO auction_money_pickups(pid,money,claim_revision) VALUES(43,5,1)")
+        cut = captured()
+        probe = pymysql.connect(**(settings | {"database": "duris_restore", "user": READER,
+            "password": "plan5-disposable-reader", "cursorclass": pymysql.cursors.DictCursor}))
+        try:
+            with probe.cursor() as cursor:
+                cursor.execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
+                from economic_sql_audit_snapshot import read_native
+                native, _, _ = read_native(cursor, LINEAGE)
+            assert native["pending_claim_source_coverage"]["rows"] == 68
+            assert native["pending_claim_source_coverage"]["invalid_source_roots"] == 0
+            assert native["pending_claim_source_coverage"]["invalid_account_mappings"] == 0
+            from collections import Counter
+            retained = Counter()
+            for row in native["pending_claim_sources"]:
+                assert row["claim_operation_id"] is None
+                retained[row["account_key"]] += row["amount"]
+            live = {row["account_key"]: row["balance"][0] for row in native["holdings"]
+                    if bytes.fromhex(row["account_key"])[18:20] == b"\x05\x00"}
+            assert retained == Counter(live)
+            assert retained[second_key.hex()] == 5
+            overlap_sources = [row for row in native["pending_claim_sources"]
+                               if row["source_operation_id"] == overlap.hex()]
+            assert len(overlap_sources) == 2 and all(row["source_root_valid"] for row in overlap_sources)
+        finally:
+            probe.rollback()
+            probe.close()
+        assert captured() == cut, "two-account SQL metadata probe changed authority"
+    finally:
+        for operation in batch_ids:
+            execute("DELETE FROM economic_pending_claim_source WHERE source_operation_id=%s", (operation,))
+        execute("DELETE FROM auction_money_pickups WHERE pid=43")
+        execute("UPDATE auction_money_pickups SET money=%s WHERE pid=42", (original_cash[0],))
+        execute("DELETE FROM economic_account_mapping WHERE mapping_id=10")
+        for operation in batch_ids:
+            for table in ("economic_accounting_coin_posting", "economic_accounting_account_effect",
+                          "economic_accounting_operation", "critical_operation_inbox"):
+                execute("DELETE FROM "+table+" WHERE operation_id=%s", (operation,))
+    assert captured() == original, "two-account SQL metadata fixture was not restored"
+    print("MODELED_CLAIM_METADATA_TWO_ACCOUNT_BATCH "+json.dumps({"source_rows": 68,
+        "extra_distinct_pairs": 66, "pair_batch": 64, "accounts_in_overlap_root": 2,
+        "projection_metadata_only": True, "original_capsule_identity_qualified": False,
+        "claim_source_balance_projection_matches": True, "reader_authority_unchanged": True,
+        "fixture_restored": True},sort_keys=True),flush=True)
+
+
 def pending_claim_cuts():
     """Native codec roots with modeled retained allocations, never producer proof."""
     from test_economic_sql_canonical_audit import ClaimProjectionFixture
@@ -362,6 +496,7 @@ def pending_claim_cuts():
                 print("MODELED_CLAIM_METADATA_BATCH "+json.dumps({"source_rows": 67, "pair_batch": 64,
                     "projection_metadata_only": True, "original_capsule_identity_qualified": False,
                     "fixture_restored": True},sort_keys=True),flush=True)
+                modeled_claim_two_account_batch(source_rows[0][0])
             if mode in ("consumed", "whole"):
                 retiring = bytes.fromhex(("84" if mode == "consumed" else "85")*16)
                 canonical_cut("pending-claim-"+mode+"-retired-mapping",

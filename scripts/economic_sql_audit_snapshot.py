@@ -1363,6 +1363,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     source_pairs = sorted(source_pairs)
     for offset in range(0, len(source_pairs), 64):
         batch = source_pairs[offset:offset + 64]
+        batch_pairs = set(batch)
         operation_ids = tuple(dict.fromkeys(pair[0] for pair in batch))
         account_keys = tuple(dict.fromkeys(pair[1] for pair in batch))
         operation_placeholders = ",".join("%s" for _ in operation_ids)
@@ -1398,6 +1399,8 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             f"AND account_key IN ({key_placeholders})", operation_ids + account_keys)
         for effect in effects:
             effect_key = (effect["operation_id"], effect["account_key"])
+            if effect_key not in batch_pairs:
+                continue
             source_root_effects[effect_key] += 1
             source_pair_values[effect_key] = effect
     for row in claim_sources:
