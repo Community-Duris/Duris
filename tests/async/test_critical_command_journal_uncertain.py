@@ -10,15 +10,46 @@ from _paths import ROOT, rel
 
 HARNESS = r'''
 #include "persistence/critical_command_coordinator.h"
+#include "player/player_save_pipeline.h"
+#include "player/player_snapshot_capture.h"
+#include "core/structs.h"
+#include "core/prototypes.h"
 
 #include <cassert>
 #include <cerrno>
 #include <chrono>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <string>
 #include <thread>
 #include <unistd.h>
+
+// This original type::test fixture has no native world or restored save hold.
+// Unavailable domain capabilities are linkage-only and abort every attempted call.
+P_index mob_index = nullptr;
+int top_of_mobt = -1;
+
+player_snapshot_capture_result player_item_snapshot_tree_capture_literal(
+    P_obj, std::vector<player_item_snapshot> *, size_t *)
+{
+    std::abort();
+}
+
+[[noreturn]] int panic_corruption_int(const char *, const char *, ...)
+{
+    std::abort();
+}
+
+bool nevent_is_game_thread()
+{
+    std::abort();
+}
+
+bool player_save_restored_publication_owner::consume_acknowledged_hold() noexcept
+{
+    std::abort();
+}
 
 static int close_fault = 0;
 static int apply_calls = 0;
@@ -108,7 +139,27 @@ with tempfile.TemporaryDirectory(prefix="duris-coordinator-uncertain-") as tempo
         [
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", "-pthread", "-Isrc",
             str(source), rel("critical_command.c"), rel("critical_command_journal.c"),
-            rel("critical_command_coordinator.c"), "-lz", "-lcrypto",
+            rel("critical_command_coordinator.c"),
+            "src/economy/shop_trade_accounting.c",
+            "src/economy/shop_trade_command.c",
+            "src/economy/shop_trade_recovery_manifest.c",
+            "src/economy/currency_command.c",
+            "src/economy/economic_accounting_types.c",
+            "src/economy/economic_accounting_plan.c",
+            "src/economy/economic_source_event.c",
+            "src/economy/economic_accounting_intent.c",
+            "src/item/item_transfer_command.c",
+            "src/world/quest_mobile_native_reference.c",
+            "src/item/craft_pouch_mutation.c",
+            "src/combat/chaos_pouch_ledger.c",
+            "src/player/player_snapshot_codec.c",
+            "src/economy/native_mobile_birth_command.c",
+            "src/economy/native_mobile_birth_result.c",
+            "src/economy/native_mobile_birth_accounting.c",
+            "src/economy/native_mobile_birth_recipe.c",
+            "src/economy/native_mobile_birth_constructor_recipe.c",
+            "src/world/quest_mobile_native.c",
+            "-lz", "-lcrypto",
             "-Wl,--wrap=close", "-o", str(binary),
         ],
         cwd=ROOT,
