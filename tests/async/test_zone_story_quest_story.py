@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 164 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 165 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,13 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+mist_chasm=next(m for m in catalog['story_mappings'] if m['source_area']=='mist_chasm')
+assert (mist_chasm['schema_version'],mist_chasm['revision'],mist_chasm['coverage'])==(3,1,'complete') and not mist_chasm['exclusions']
+assert len(mist_chasm['stories'])==4 and len(mist_chasm['contacts'])==10 and sum(len(c['topics']) for c in mist_chasm['contacts'])==11
+assert sum(len(s['steps']) for s in mist_chasm['stories'])==10 and sum(t.get('optional',False) for s in mist_chasm['stories'] for t in s['steps'])==6
+assert len({(s['contracts'][0]['giver_vnum'],s['contracts'][0]['completion_key']) for s in mist_chasm['stories']})==4 and report['eligible_by_zone']['150']==4
+assert [len(s['steps']) for s in mist_chasm['stories']]==[3,2,2,3]
 
 obcita=next(m for m in catalog['story_mappings'] if m['source_area']=='obcita')
 assert (obcita['schema_version'],obcita['revision'],obcita['coverage'])==(3,1,'complete') and not obcita['exclusions']

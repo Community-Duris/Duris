@@ -1,0 +1,281 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "mist_chasm",
+  "coverage": "complete",
+  "introduction": "Choose the shaman potion, either scale sale or the weaver shield. Follow exact scale counts, forest passages and chasm guidance; source recovery and local lore remain distinct leads.",
+  "orientation": [
+    "The Khomani shaman offers a potion for one small and one large jade salamander scale. A warrior pays 2000 copper for a small scale or 4000 copper for a large scale. The weaver offers a shield and 81000 experience for two small and two large scales. Choose the exchange you want; these are four independent histories.",
+    "Ask the shaman scales, salamander or jade; ask a warrior scale, scales, jade or salamander; ask the weaver scales, scale, salamander or jade. Their replies explain the offerings. A topic reply does not finish an exchange or create another keyword achievement.",
+    "Large forest jade salamanders in the western forest can carry large scales. Small forest jade salamanders east of the chasm can carry small scales, and a small scale can also load on the ground in the eastern forest. Similar creature names do not substitute one size for the other.",
+    "Carry the exact scales loose. The weaver needs two separate small scales and two separate large scales; four of one size will not fit. Supplied scales can prepare an exchange without proving your own kill, first recovery or travel route. The coin rewards are paid to you, rather than fees you must supply.",
+    "Each accepting giver departs after a successful exchange. Four warrior instances can load at different forest locations, while the shaman and weaver each have one reset stock row. A completed return does not promise another available giver or replenished scale stock. Daily rollover does not create that stock.",
+    "The shaman advises drinking the potion before using the old bridge. Its levitation effect can prevent falling; it is separate from flight and does not promise unrestricted travel through the open chasm. Successful drinking, receiving the effect and crossing safely each need their own outcome evidence.",
+    "Look at the sleeping granite head in the shaman hut, then WAKE head to open the blocked downward passage. TOUCH flowers can open the hidden passage between the western and eastern forests. Shared open passages can provide access without your own activation or potion exchange.",
+    "The flowers are fixed scenery, not offerings to collect. The granite head near the bottom of the shaft is a different object and does not use the working switch handler. Its trap data needs builder intent review before any behavior is changed.",
+    "The skeletal guardian in the mausoleum carries the skeletal key. That key fits the casket, which starts closed but unlocked; it is not a required first opening step. It does not fit the separate secret trapdoors above the mausoleum. The casket holds a decorative corpse, a live-snake necklace and a sabre.",
+    "The mother searching for her child and the nearby young pygmie suggest a reunion story. The banshee, mausoleum and zombie cleric supply local lore and encounters. No native rescue, escort, reunion, guardian victory or whole-chasm conquest receipt is defined.",
+    "A humble hermit outside this zone asks for the shaman potion and offers a different potion. Spending that instance on his exchange and drinking it locally are different choices. His own accepted exchange does not prove that you personally earned it from the shaman.",
+    "Lancer in Winterhaven offers a trade for the live-snake necklace, but its reward prototype is missing from the active world. The Winterhaven audit already records this excluded exchange; builder repair and owned reward qualification must precede enabling it.",
+    "Preparation rows show present loose materials; recorded exchanges survive spent offerings. Each card records one accepted exchange, including the shield and experience together. All new credit requires active, ready accounting. Current stock, shared access and source recovery remain separate from recorded history."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 15006,
+      "name": "a pygmie shaman",
+      "keyword": "shaman",
+      "description": "Ask scales, salamander or jade. One small and one large scale buys the levitation potion. The shaman departs after acceptance; using the potion is a separate choice.",
+      "topics": [
+        "scales",
+        "salamander",
+        "jade"
+      ]
+    },
+    {
+      "mob_vnum": 15007,
+      "name": "a pygmie warrior",
+      "keyword": "warrior",
+      "description": "Ask scale, scales, jade or salamander. Separate small and large scale sales pay 2000 and 4000 copper. Any accepted sale departs this warrior instance.",
+      "topics": [
+        "scale",
+        "scales",
+        "jade",
+        "salamander"
+      ]
+    },
+    {
+      "mob_vnum": 15018,
+      "name": "a weaver pygmie",
+      "keyword": "weaver",
+      "description": "Ask scales, scale, salamander or jade. Two small plus two large scales earn a shield and 81000 experience in one accepted exchange; the weaver departs.",
+      "topics": [
+        "scales",
+        "scale",
+        "salamander",
+        "jade"
+      ]
+    },
+    {
+      "mob_vnum": 15005,
+      "name": "a forest salamander",
+      "keyword": "large",
+      "description": "Large forest jade salamanders carry the exact large scales in western forest reset stock. The short creature name also occurs on small salamanders.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 15014,
+      "name": "a forest salamander",
+      "keyword": "small",
+      "description": "Small forest jade salamanders carry exact small scales east of the chasm. A loose ground copy is another source, without personal kill evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 15015,
+      "name": "a pygmie mother",
+      "keyword": "mother",
+      "description": "The pygmie mother searches for her child. The native data has no reunion, rescue or escort exchange; treat this as a contextual lead.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 15016,
+      "name": "a young pygmie",
+      "keyword": "young",
+      "description": "The young pygmie supplies the other side of the family lead. Meeting either character does not record a reunion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 15008,
+      "name": "the Banshee of Xtlpal",
+      "keyword": "banshee",
+      "description": "The banshee carries a necklace and an imported wailing face. Neither item proves personal banshee victory or defines an extra local exchange.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 15013,
+      "name": "a guardian wraith",
+      "keyword": "guardian",
+      "description": "The mausoleum guardian carries the skeletal key for the initially unlocked casket. Shared container access and personal key recovery need separate evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 15012,
+      "name": "a zombie cleric",
+      "keyword": "cleric",
+      "description": "The zombie cleric adds mausoleum lore and an encounter. No native cleansing or cleric defeat receipt is defined.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "shaman-potion",
+      "title": "Earn the shaman potion",
+      "category": "request",
+      "summary": "One small and one large jade salamander scale earns the potion. The shaman departs. Drinking it, gaining levitation and safe travel are separate outcomes; flower passages offer another route.",
+      "contracts": [
+        {
+          "giver_vnum": 15006,
+          "completion_key": "give=I:15017,I:15018;receive=I:15008;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "small-scales",
+          "text": "Carry 1 exact small jade salamander scale loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            15017
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Present material only. Supplied scales fit without personal kill or first-source credit; held or nested scales do not substitute loose offerings."
+        },
+        {
+          "id": "large-scales",
+          "text": "Carry 1 exact large jade salamander scale loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            15018
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Present material only. Supplied scales fit without personal kill or first-source credit; held or nested scales do not substitute loose offerings."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 15006,
+              "completion_key": "give=I:15017,I:15018;receive=I:15008;disappear=1"
+            }
+          ],
+          "hint": "Only this exact accepted exchange completes the card. The selected giver departs; stock and other exchanges remain separate. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "small-scale-sale",
+      "title": "Sell a small scale",
+      "category": "request",
+      "summary": "One exact small scale earns 2000 copper. The warrior departs after this accepted sale. Selling a large scale has its own history.",
+      "contracts": [
+        {
+          "giver_vnum": 15007,
+          "completion_key": "give=I:15017;receive=C:2000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "small-scales",
+          "text": "Carry 1 exact small jade salamander scale loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            15017
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Present material only. Supplied scales fit without personal kill or first-source credit; held or nested scales do not substitute loose offerings."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 15007,
+              "completion_key": "give=I:15017;receive=C:2000;disappear=1"
+            }
+          ],
+          "hint": "Only this exact accepted exchange completes the card. The selected giver departs; stock and other exchanges remain separate. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "large-scale-sale",
+      "title": "Sell a large scale",
+      "category": "request",
+      "summary": "One exact large scale earns 4000 copper. The warrior departs after this accepted sale. Selling a small scale has its own history.",
+      "contracts": [
+        {
+          "giver_vnum": 15007,
+          "completion_key": "give=I:15018;receive=C:4000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "large-scales",
+          "text": "Carry 1 exact large jade salamander scale loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            15018
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Present material only. Supplied scales fit without personal kill or first-source credit; held or nested scales do not substitute loose offerings."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 15007,
+              "completion_key": "give=I:15018;receive=C:4000;disappear=1"
+            }
+          ],
+          "hint": "Only this exact accepted exchange completes the card. The selected giver departs; stock and other exchanges remain separate. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "scale-shield",
+      "title": "Commission the weaver shield",
+      "category": "request",
+      "summary": "Two small and two large scales earn the shield and 81000 experience in one accepted exchange. The weaver departs. The shaman potion is not an offering or a required earlier receipt.",
+      "contracts": [
+        {
+          "giver_vnum": 15018,
+          "completion_key": "give=I:15017,I:15017,I:15018,I:15018;receive=E:81000,I:15019;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "small-scales",
+          "text": "Carry 2 exact small jade salamander scales loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            15017
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Present material only. Supplied scales fit without personal kill or first-source credit; held or nested scales do not substitute loose offerings."
+        },
+        {
+          "id": "large-scales",
+          "text": "Carry 2 exact large jade salamander scales loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            15018
+          ],
+          "count": 2,
+          "optional": true,
+          "hint": "Present material only. Supplied scales fit without personal kill or first-source credit; held or nested scales do not substitute loose offerings."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 15018,
+              "completion_key": "give=I:15017,I:15017,I:15018,I:15018;receive=E:81000,I:15019;disappear=1"
+            }
+          ],
+          "hint": "Only this exact accepted exchange completes the card. The selected giver departs; stock and other exchanges remain separate. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
