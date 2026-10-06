@@ -53,6 +53,11 @@ recipe. Any required shared repair is handed off with exact files, symbols,
 invariants, consumers and commands; changing cases or flags cannot substitute
 for a passing original qualification.
 
+The [shared writer metadata handoff](PLAN5_NATIVE_BIRTH_WRITER_DRIFT_HANDOFF_2026-10-06.md)
+records the actual normal/matrix failures, ten added and five removed lexical
+signatures, and 38 changed existing source pins. Runtime schema metadata passes.
+This is an established primary-owned source-review request, not a waived gate.
+
 ## Scope and gates
 
 The primary's separately reported production builds and component checks retain

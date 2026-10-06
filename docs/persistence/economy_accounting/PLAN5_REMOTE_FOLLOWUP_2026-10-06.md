@@ -112,3 +112,22 @@ evidence. Accounting remains inactive, wallet-root exclusions and the declined
 inactive spell path remain. No production mutation, audit correction, activation,
 deployment or PR merge occurred. Primary's locally maintained notebook remains
 nonblocking; these owned reports and sealed receipts are its curator packet.
+
+## Published native birth composition and metadata handoff
+
+Source checkpoint `450b60fe08b89523095106ca0880cc1558e5eacd` preserves the later
+quarantine readers while importing primary
+`2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a` exactly. The primary has now imported
+the compound-action fix. Four overlapping owned blobs are resolved by exact
+preimage comparison, preserving both completed fixes. Native tree
+`244559a07b8d046839c4fb9ff174685351d8f386` supersedes previous native-tree
+qualification; migrations remain canonical 61.
+
+[The combined candidate report](PLAN5_NATIVE_BIRTH_COMBINED_CANDIDATE_2026-10-06.md)
+records source ownership and the fresh original qualification in progress.
+[The narrow shared metadata handoff](PLAN5_NATIVE_BIRTH_WRITER_DRIFT_HANDOFF_2026-10-06.md)
+records actual census/matrix failures, their exact fields and required primary
+checks. Runtime schema metadata passes. These reports claim no full native,
+restore, retention, complete authority or release pass. Source integration and
+the handoff remain on the same remote `codex/accounting-plan5`; prior branch
+tips and all earlier evidence are preserved.
