@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 156 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 157 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -432,6 +432,13 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
  assert 'Accounting currently blocks' in s['summary'] and s['steps'][-1]['contracts']==s['contracts']
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
+
+
+vargan=next(m for m in catalog['story_mappings'] if m['source_area']=='vargan')
+assert (vargan['schema_version'],vargan['revision'],vargan['coverage'])==(3,1,'complete') and not vargan['exclusions']
+assert len(vargan['stories'])==1 and len(vargan['contacts'])==11 and sum(len(c['topics']) for c in vargan['contacts'])==6
+assert len(vargan['stories'][0]['steps'])==3 and sum(t.get('optional',False) for t in vargan['stories'][0]['steps'])==2
+assert report['eligible_by_zone']['21']==1
 
 
 pworm=next(m for m in catalog['story_mappings'] if m['source_area']=='pworm')

@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 156 &&
+		require(catalog.story_mappings.size() == 157 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,138 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "vargan"; });
+			require(mapping.stories.size() == 1 && mapping.contacts.size() == 11 &&
+					mapping.revision == 1,
+				"Vargan scope failed");
+			const auto &s = story_for("vargan", "norkons-stolen-armor");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 21)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 1 && dailies == 0,
+				"Vargan split armor parts or admitted unsupported-fee daily");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 21, 2100, 100, "arrival") ==
+					result::applied,
+				"Vargan discovery failed");
+			for (const auto &c : mapping.contacts)
+				if (c.mob_vnum != 2104)
+					require(journey.meet_npc(7, 42, c.mob_vnum, 2100, 102) ==
+							result::applied,
+						"Vargan context encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 21, 10, 1, 103, false, false);
+			require(journal.find("] " + s.title + "\r\n") == std::string::npos,
+				"Vargan nearby orogs/Drake forged giver exposure");
+			require(journey.meet_npc(7, 42, 2104, 2163, 104) == result::applied,
+				"Vargan Norkon encounter failed");
+			const auto status = [&](size_t row, const char *state)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos, "Vargan card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at, end == std::string::npos ? end : end - at)
+					       .find(std::string("[") + state + "] " +
+						     s.steps[row].text) != std::string::npos;
+			};
+			journey.render_daily(7, 42, 10, 1, 105, false);
+			require(journey.daily_for(7, 42, service::period_for(105))
+					.quest_definition_id.empty(),
+				"Vargan unavailable paid quest became a daily assignment");
+			supplies = {};
+			for (int v : { 2128, 2123, 2101, 2103, 2113 })
+				supplies.carried[v] = 2;
+			journal = journey.render_journal(7, 42, 21, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now") &&
+					status(2, "Pending"),
+				"Vargan armor/forge/loot forged exact preparation");
+			const auto before = journey.serialize_state();
+			for (int count = 0; count < 2; ++count)
+			{
+				supplies = {};
+				supplies.carried[2126] = count;
+				supplies.carried[2127] = 3;
+				journal = journey.render_journal(7, 42, 21, 10, 1, 107, false,
+								 false, &supplies);
+				require(status(0, "Missing now") && status(1, "Ready now") &&
+						status(2, "Pending"),
+					"Vargan fewer than two shoulders or duplicate breast collapsed multiset");
+			}
+			supplies = {};
+			supplies.carried[2126] = 2;
+			journal = journey.render_journal(7, 42, 21, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Missing now") &&
+					status(2, "Pending"),
+				"Vargan shoulders replaced missing breast");
+			supplies.carried[2126] = 1;
+			supplies.equipped[3] = 2126;
+			supplies.carried[2100] = 1;
+			journal = journey.render_journal(7, 42, 21, 10, 1, 109, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now") &&
+					status(2, "Pending"),
+				"Vargan worn/nested proof forged loose quantity");
+			for (int count : { 2, 3 })
+			{
+				supplies = {};
+				supplies.carried[2126] = count;
+				supplies.carried[2127] = 1;
+				journal = journey.render_journal(7, 42, 21, 10, 1, 110, false,
+								 false, &supplies);
+				require(status(0, "Ready now") && status(1, "Ready now") &&
+						status(2, "Pending"),
+					"Vargan supplied exact parts readiness failed");
+				require(journal.find("paid exchange is currently unavailable") !=
+						std::string::npos,
+					"Vargan readiness hid unsupported-fee availability");
+			}
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 21).completed == 0,
+				"Vargan preparation manufactured search/payment/forge/return");
+			// A synthetic authoritative historical receipt exercises projection/recovery,
+			// not the currently unsupported live mixed-payment command.
+			record(journey, s.contracts.front(), "vargan-history", 21, 2163);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 21, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now") &&
+					status(2, "Recorded") &&
+					journey.progress_for_zone(7, 42, 21).completed == 1,
+				"Vargan lost spent-parts history or split mixed return");
+			require(journey.daily_for(7, 42, service::period_for(120))
+					.quest_definition_id.empty(),
+				"Vargan historical return created unsupported daily");
+			auto replay = completion(s.contracts.front(), "vargan-history", 120);
+			replay.transaction.zone_number = 21;
+			replay.transaction.room_vnum = 2163;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Vargan exact replay duplicated history");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 21).completed == 1,
+				"Vargan cold recovery lost mixed history");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 21, 2100, 100, "arrival") ==
+					result::applied,
+				"Vargan raw discovery failed");
+			record(raw, s.contracts.front(), "vargan-raw", 21, 2163);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 21).completed == 1,
+				"Vargan raw-to-authored recovery lost mixed history");
 		}
 
 		{
