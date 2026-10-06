@@ -28,12 +28,17 @@ struct economic_sql_source_table
 };
 struct economic_sql_source_snapshot
 {
-	uint32_t version = 1;
+	uint32_t version = 2;
 	std::vector<economic_sql_source_table> tables;
 	// Separate raw SQL item-source projections retain the established table/row
 	// indices used by native accounting normalization above.
 	std::vector<economic_sql_source_table> item_sources;
 	economic_sql_source_digest item_sources_digest = {};
+	// Version 2 captures a separate UID/equipment projection in the same SQL
+	// transaction. Preserve the legacy main-table and EIM1 row framing exactly.
+	// Version 1 has no observed equipment; these fields must all be empty/zero.
+	std::vector<economic_sql_source_table> item_equipment_sources;
+	economic_sql_source_digest item_equipment_sources_digest = {}, custody_digest = {};
 	economic_sql_source_digest digest = {};
 	uint64_t rows = 0, cell_bytes = 0, cells = 0;
 	bool operator==(const economic_sql_source_snapshot &) const = default;
@@ -57,7 +62,9 @@ struct economic_sql_source_limits
 // complete physical projection, historical ledger, live-world source inventory,
 // or source-complete coverage. Digests do NOT establish native lifetimes, global
 // drain, a resumable cutover boundary or authority to activate. EIM1 binds only
-// the raw selected item rows; pet/shop owner mappings are not captured, so EIM1
+// the raw selected item rows. EIE2 separately binds the version 2 equipment
+// projection; ESC2 binds ESM1/EIM1/EIE2. Neither adds source authority or proves
+// complete custody. Pet/shop owner mappings are not captured, so EIM1
 // equality is not resolved-baseline identity or stale-retry/activation authority.
 // This owning evidence is private; names, amounts, UIDs and payloads must not be
 // printed in public diagnostics.

@@ -1,5 +1,15 @@
 # Double-entry economy: remaining requirements
 
+## Equipment capture v2 integrated — 2026-10-06
+
+[Primary source integration](SQL_EQUIPMENT_CAPTURE_V2_PRIMARY_INTEGRATION_2026-10-06.md)
+repairs omitted native equipment with a separate same-transaction projection,
+preserving historical money hashes and explicit v1 unobserved slots. Independent
+review, focused sanitizer controls, both integrated production object pairs and
+normal contracts/matrix pass. Original SQL/native major qualification remains
+pending. [Auction/claim opening handoff](SQL_OPENING_AUCTION_CLAIM_IMPLEMENTATION_HANDOFF_2026-10-06.md)
+records the next coupled money slice. Full R6, Plans2–4 and release remain open.
+
 ## Real Kord crash fixture wired — 2026-10-06
 
 [Shared driver wiring](QUEST_CRASH_REAL_KORD_FIXTURE_2026-10-06.md) exposes actual
