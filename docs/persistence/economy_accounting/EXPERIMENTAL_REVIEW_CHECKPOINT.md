@@ -1,5 +1,16 @@
 # Experimental accounting review checkpoint
 
+## Plan5 coin-payload reader fix integrated — 2026-10-06
+
+[Primary integration and original-case registration](PLAN5_COIN_SOURCE_PRIMARY_INTEGRATION_2026-10-06.md)
+records the exact peerda2153 reader fix: source limits precede payload reads,
+including repeated mapping bytes; ignored non-coin bytes are excluded. The
+existing UID-scope row now requires all11 original/new cases, which pass with
+zero skips. Normal/matrix/runtime metadata checks pass. Native/schema and all
+other manifest fields remain unchanged. Peer SQL/component evidence retains its
+scope; full native capture, producer/recovery qualification, Plans and release
+remain open. Accounting stays inactive and unrelated SHOP WIP is preserved.
+
 ## Private native quest major qualification — 2026-10-05
 
 [The frozen private source and actual component evidence](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)

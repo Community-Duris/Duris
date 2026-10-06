@@ -165,6 +165,122 @@ def coin_payload(uid, amounts):
     return bytes(blob)
 
 
+def bounded_coin_payload(uid, size):
+    # Valid snapshot-codec strings make byte-ceiling checks independent of an
+    # earlier malformed-payload refusal. Every string stays within4096 bytes.
+    prefix = coin_payload(uid, [1, 2, 3, 4])[:-4] + struct.pack("<I", 512)
+    record = struct.pack("<I", 4096) + b"x" * 4096 + struct.pack("<I", 4096) + b"y" * 4096 + bytes(5)
+    prefix += record * 511
+    tail = size - len(prefix) - 13
+    assert 0 <= tail <= 4096
+    result = prefix + struct.pack("<I", tail) + b"z" * tail + struct.pack("<I", 0) + bytes(5)
+    assert len(result) == size
+    assert exporter.decode_coin_payload(result, uid) == [1, 2, 3, 4]
+    return result
+
+
+def verify_coin_payload_source_bounds(setup, audit, snapshot):
+    original_bytes = len(coin_payload(82, [1, 2, 3, 4]))
+
+    def authority():
+        with setup.cursor() as cursor:
+            cursor.execute("SELECT item_uid,vnum,OCTET_LENGTH(coin_payload) AS bytes,"
+                           "SHA2(coin_payload,256) AS digest FROM item_current_owner ORDER BY item_uid")
+            items = cursor.fetchall()
+            cursor.execute("SELECT * FROM economic_account_mapping ORDER BY mapping_id")
+            return items, cursor.fetchall()
+
+    def observed(case, expected_error=None):
+        before = authority()
+        connection = mock.Mock(wraps=audit)
+        cursor = mock.Mock(wraps=audit.cursor())
+        connection.cursor.return_value = cursor
+        actual_fetch = cursor._mock_wraps.fetchall
+        selected = []
+
+        def fetched():
+            rows = actual_fetch()
+            for row in rows:
+                for field in ("coin_payload", "pile_payload"):
+                    blob = row.get(field)
+                    if blob is not None:
+                        selected.append(len(blob))
+            return rows
+
+        cursor.fetchall.side_effect = fetched
+        result, error = None, None
+        try:
+            result = capture(connection, LINEAGE, EPOCH)
+        except exporter.ExportError as caught:
+            error = str(caught)
+        finally:
+            connection.rollback.assert_called_once_with()
+            cursor.close.assert_called_once_with()
+        assert all(call.args[0].upper().startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
+                   for call in cursor.execute.call_args_list)
+        assert authority() == before
+        observation = dict(case=case, selected_payload_bytes=sum(selected), payload_values=len(selected),
+                           error=error, rollback=1, cursor_closed=True, native_sources_unchanged=True)
+        print("COIN_PAYLOAD_SOURCE " + json.dumps(observation, sort_keys=True), flush=True)
+        assert error == expected_error, observation
+        if expected_error is not None:
+            assert not selected, observation
+        return result, sum(selected)
+
+    def seed(uid, size, mapping_ids):
+        with setup.cursor() as cursor:
+            cursor.execute("INSERT INTO item_current_owner VALUES (%s,%s,NULL,1,7,0,1,1,3,%s)",
+                           (uid, uid, bounded_coin_payload(uid, size)))
+            for mapping_id in mapping_ids:
+                cursor.execute("INSERT INTO economic_account_mapping VALUES "
+                               "(%s,3,3,0,%s,%s,1,NULL,%s,%s)",
+                               (mapping_id, uid, LINEAGE, uid, INSTALL))
+
+    def clean():
+        with setup.cursor() as cursor:
+            cursor.execute("DELETE FROM economic_account_mapping WHERE mapping_id>=100")
+            cursor.execute("DELETE FROM item_current_owner WHERE item_uid>=100")
+            cursor.execute("UPDATE item_current_owner SET coin_payload=NULL WHERE item_uid=81")
+        assert capture(audit, LINEAGE, EPOCH) == snapshot
+
+    try:
+        seed(100, exporter.MAX_ITEM_PAYLOAD_BYTES, [100])
+        with setup.cursor() as cursor:
+            cursor.execute("UPDATE item_current_owner SET coin_payload=CONCAT(coin_payload,X'00') WHERE item_uid=100")
+        observed("individual_above_4MiB", "coin-pile source exceeds audit bounds")
+        clean()
+
+        for uid in range(100, 108):
+            seed(uid, exporter.MAX_ITEM_PAYLOAD_BYTES - original_bytes if uid == 100 else
+                 exporter.MAX_ITEM_PAYLOAD_BYTES, [uid])
+        _, selected = observed("aggregate_exact_32MiB")
+        assert selected == 2 * exporter.MAX_INPUT_BYTES
+        with setup.cursor() as cursor:
+            # Enlarge a valid string in the first payload by one byte.
+            payload = bounded_coin_payload(100, exporter.MAX_ITEM_PAYLOAD_BYTES - original_bytes + 1)
+            cursor.execute("UPDATE item_current_owner SET coin_payload=%s WHERE item_uid=100", (payload,))
+        observed("aggregate_above_32MiB", "coin-pile source exceeds audit bounds")
+        clean()
+
+        seed(100, exporter.MAX_ITEM_PAYLOAD_BYTES, list(range(100, 109)))
+        observed("repeated_mapping_join_above_32MiB", "mapped coin-pile source exceeds audit bounds")
+        clean()
+
+        with setup.cursor() as cursor:
+            cursor.execute("UPDATE item_current_owner SET coin_payload=REPEAT(X'78',%s) WHERE item_uid=81",
+                           (exporter.MAX_ITEM_PAYLOAD_BYTES,))
+        unchanged, selected = observed("noncoin_payload_excluded")
+        assert unchanged == snapshot and selected == 2 * original_bytes
+        with setup.cursor() as cursor:
+            cursor.execute("INSERT INTO economic_account_mapping VALUES (100,3,3,0,81,%s,1,NULL,81,%s)",
+                           (LINEAGE, INSTALL))
+        dangling, selected = observed("noncoin_pile_mapping_payload_excluded")
+        assert selected == 2 * original_bytes
+        assert dangling['native_mapping_coverage']['dangling_pile_mappings'] == 1
+    finally:
+        clean()
+
+
 def item_origin(uid, owner_type, state, owner_id, revision):
     return struct.pack("<QBB6x5Q32s", uid, owner_type, state, owner_id, 0,
                        uid, 0, revision, bytes.fromhex("a5" * 32))
@@ -349,6 +465,7 @@ try:
         try:
             snapshot = capture(audit, LINEAGE, EPOCH)
             assert snapshot["complete"] is False and snapshot["quiescent"] is True
+            verify_coin_payload_source_bounds(setup, audit, snapshot)
             with setup.cursor() as cursor:
                 cursor.execute("INSERT INTO guilds VALUES "
                                "(31,1,2,3,4,9),(32,0,0,0,0,10),"

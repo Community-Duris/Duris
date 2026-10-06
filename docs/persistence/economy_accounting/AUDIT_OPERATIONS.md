@@ -412,7 +412,13 @@ in **one** read-only consistent transaction. It writes a bounded
 version-1 diagnostic snapshot with `backend: sql_partial`, `complete: false`
 and a `capture_gaps` list. Pass that file to the reconciler to investigate
 observed exceptions; its nonzero `evidence_loss` result is mandatory even when
-all captured rows agree. The exporter omits baseline root effects because the
+all captured rows agree. Before either coin-payload projection is fetched, the
+exporter checks the stored coin collection's row count,32 MiB aggregate byte
+limit and4 MiB individual payload limit. It also checks the mapping join's
+aggregate bytes, counting repeated projections. Both projections select `NULL`
+for non-coin payloads. These source limits supplement the encoded snapshot
+limit; an oversized source refuses before fetching its payloads.
+The exporter omits baseline root effects because the
 verified EAB1 witnesses provide their terminal opening origins. It exports
 retained item references and exact ownership-event links across the selected
 lineage, then exports ledger events after each opening revision for UIDs anchored
