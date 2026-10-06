@@ -6,6 +6,7 @@
 #include "core/utils.h"
 #include "world/events.h"
 #include "classes/necromancy.h"
+#include "classes/summoner_pet.h"
 
 #include <algorithm>
 #include <climits>
@@ -34,6 +35,14 @@ bool summoned_pet_capture(P_char pet, std::string *encoded)
 		return true;
 	const auto &npc = *pet->only.npc;
 	pet_restore_state s;
+	if (npc.summon_kind == static_cast<uint32_t>(summoned_pet_kind::summoner_capture) ||
+	    npc.summon_kind == static_cast<uint32_t>(summoned_pet_kind::conjurer_elemental))
+	{
+		s.version = 2;
+		s.specialization = pet->player.spec;
+		s.resource_slot = npc.summoner_resource_slot;
+		s.hp_ceiling = npc.summoner_hp_ceiling;
+	}
 	s.kind = static_cast<summoned_pet_kind>(npc.summon_kind);
 	s.charm_expires_at = npc.pet_charm_expires_at;
 	s.death_expires_at = npc.pet_death_expires_at;
@@ -69,6 +78,14 @@ bool summoned_pet_apply(P_char pet, const pet_restore_state &s)
 	if (!pet || !IS_NPC(pet) || s.race > LAST_RACE || !(s.act & ACT_ISNPC))
 		return false;
 	auto &npc = *pet->only.npc;
+	const std::array<uint64_t, 5> prototype_traits = {
+		pet->specials.affected_by, pet->specials.affected_by2, pet->specials.affected_by3,
+		pet->specials.affected_by4, pet->specials.affected_by5
+	};
+	const auto prototype_breath = pet->specials.act &
+				      (ACT_BREATHES_FIRE | ACT_BREATHES_LIGHTNING |
+				       ACT_BREATHES_FROST | ACT_BREATHES_ACID | ACT_BREATHES_GAS |
+				       ACT_BREATHES_SHADOW | ACT_BREATHES_BLIND_GAS);
 	const auto replace = [&](char **target, const std::string &text, unsigned flag)
 	{
 		if ((npc.str_mask & flag) && *target)
@@ -97,16 +114,35 @@ bool summoned_pet_apply(P_char pet, const pet_restore_state &s)
 	pet->specials.affected_by3 = s.intrinsic_affects[2];
 	pet->specials.affected_by4 = s.intrinsic_affects[3];
 	pet->specials.affected_by5 = s.intrinsic_affects[4];
+	if (s.kind == summoned_pet_kind::summoner_capture)
+	{
+		// Re-read intrinsic traits. Timed spawn buffs never refresh on restoration;
+		// terrain bonuses are recomputed by training.
+		pet->specials.affected_by = 0;
+		pet->specials.affected_by2 = 0;
+		pet->specials.affected_by3 = 0;
+		pet->specials.affected_by4 = 0;
+		pet->specials.affected_by5 = 0;
+		summoner_pet_apply_traits(pet, prototype_traits);
+	}
 	npc.aggro_flags = s.aggression[0];
 	npc.aggro2_flags = s.aggression[1];
 	npc.aggro3_flags = s.aggression[2];
 	pet->specials.act = s.act;
+	if (s.kind == summoned_pet_kind::summoner_capture)
+		pet->specials.act |= prototype_breath;
 	pet->player.m_class = s.primary_class;
 	pet->player.secondary_class = s.secondary_class;
 	pet->player.level = s.level;
+	if (s.version == 2)
+		pet->player.spec = s.specialization;
+	npc.summoner_resource_slot = s.resource_slot;
+	npc.summoner_hp_ceiling = s.hp_ceiling;
 	GET_RACE(pet) = s.race;
 	GET_SEX(pet) = s.sex;
-	GET_SIZE(pet) = s.size;
+	// Captures keep the size loaded from their original mobile prototype.
+	if (s.kind != summoned_pet_kind::summoner_capture)
+		GET_SIZE(pet) = s.size;
 	GET_ALIGNMENT(pet) = s.alignment;
 	summoned_pet_mark(pet, s.kind);
 	npc.pet_charm_expires_at = s.charm_expires_at;

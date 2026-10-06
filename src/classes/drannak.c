@@ -1,3 +1,4 @@
+#include "classes/summoner_pet.h"
 /****************************************************************************
  *
  *  File: drannak.c                                           Part of Duris
@@ -953,7 +954,7 @@ void do_conjure(P_char ch, char *argument, int /*cmd*/)
 	char arg1[MAX_INPUT_LENGTH], arg2[MAX_INPUT_LENGTH], rest[MAX_INPUT_LENGTH];
 	char short_buf[256];
 	P_char t_ch;
-	int duration, choice2, chance;
+	int duration, choice2;
 	long selected = 0;
 	struct affected_type af;
 
@@ -988,6 +989,8 @@ void do_conjure(P_char ch, char *argument, int /*cmd*/)
 		send_to_char("A mysterious force blocks your conjuring!\n", ch);
 		return;
 	}
+
+	summoner_chaos_recipes(ch);
 
 	// load spellbook from database
 	int pid = GET_PID(ch);
@@ -1063,6 +1066,9 @@ void do_conjure(P_char ch, char *argument, int /*cmd*/)
 			return;
 		}
 		t_ch = read_mobile(selected, VIRTUAL);
+		if (!t_ch)
+			return;
+		summoner_pet_configure(t_ch, ch, true);
 		send_to_char(
 			"&+rYou open your &+RSummoners &+Lt&+mo&+Mm&+We &+rwhich &+Rreveals&+r the following information...&n.\n",
 			ch);
@@ -1070,8 +1076,9 @@ void do_conjure(P_char ch, char *argument, int /*cmd*/)
 		short_buf[0] = '\0';
 		snprintf(
 			Gbuf1, MAX_STRING_LENGTH,
-			"You glean they are: \r\n&+YLevel &+W%d \r\n&+YClass:&n %s \r\n&+YBase Hitpoints:&n %d\r\n",
-			GET_LEVEL(t_ch), get_class_string(t_ch, short_buf), GET_MAX_HIT(t_ch));
+			"You glean they are: \r\n&+YLevel &+W%d \r\n&+YClass:&n %s \r\n&+YBase Hitpoints:&n %d\r\n&+YMana:&n %d\r\n",
+			GET_LEVEL(t_ch), get_class_string(t_ch, short_buf), GET_MAX_HIT(t_ch),
+			GET_MAX_MANA(t_ch));
 		send_to_char(Gbuf1, ch);
 		extract_char(t_ch);
 		return;
@@ -1162,45 +1169,6 @@ void do_conjure(P_char ch, char *argument, int /*cmd*/)
 			return;
 		}
 
-		// Set up stats - chance reflects how good the minion is. 100 cha -> avg 50 chance.
-		chance = dice(2, GET_C_CHA(ch) / 2);
-		//    debug("Conjure chance %d", chance);
-
-		if (chance > 70)
-		{
-			act("$n's &+mcha&+Mris&+Mma&n &+Cradiates&n as they call forth their minion!",
-			    TRUE, ch, 0, t_ch, TO_ROOM);
-			act("Your &+mcha&+Mris&+Mma&n &+Cradiates&n as you call forth your minion!",
-			    TRUE, ch, 0, t_ch, TO_CHAR);
-			GET_MAX_HIT(t_ch) = GET_HIT(t_ch) = t_ch->points.base_hit =
-				(t_ch->points.base_hit * (1 + (number(1, 4) * .1)));
-		}
-		else if (chance < 30)
-		{
-			act("An &+Lug&+yli&+Ler &nside of $n seems to eminate as they call forth their minion.",
-			    TRUE, ch, 0, t_ch, TO_ROOM);
-			act("Your &+Lug&+yli&+Ler &nside seems to eminate as you call forth your minion.",
-			    TRUE, ch, 0, t_ch, TO_CHAR);
-			GET_MAX_HIT(t_ch) = GET_HIT(t_ch) = t_ch->points.base_hit =
-				(t_ch->points.base_hit * (number(6, 9) * .1));
-		}
-
-		// 20% bonus hps for max skill, 2% for each skill notch.
-		if (GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE))
-		{
-			act("You channel extra &+Wlifeforce&n as you call forth your minion.", TRUE,
-			    ch, 0, t_ch, TO_CHAR);
-			GET_MAX_HIT(t_ch) = GET_HIT(t_ch) = t_ch->points.base_hit =
-				GET_HIT(t_ch) *
-				((500.0 + GET_CHAR_SKILL(ch, SKILL_INFUSE_LIFE)) / 500.0);
-		}
-
-		// Max hps for any minion is 8k.
-		if (t_ch->points.base_hit > 8000)
-		{
-			GET_MAX_HIT(t_ch) = GET_HIT(t_ch) = t_ch->points.base_hit = 8000;
-		}
-
 		// Set up NPCACT etc.
 		// REMOVE_BIT(t_ch->specials.act, ACT_SENTINEL); Needed for mob to follow.
 
@@ -1211,14 +1179,11 @@ void do_conjure(P_char ch, char *argument, int /*cmd*/)
 		GET_EXP(t_ch) = 0;
 		apply_achievement(t_ch, TAG_CONJURED_PET);
 		SET_BIT(t_ch->specials.affected_by, AFF_INFRAVISION);
-		REMOVE_BIT(t_ch->specials.affected_by4, AFF4_DEFLECT);
+		if (!IS_ELEMENTAL(t_ch))
+			REMOVE_BIT(t_ch->specials.affected_by4, AFF4_DEFLECT);
 		REMOVE_BIT(t_ch->specials.act, ACT_SCAVENGER);
 		REMOVE_BIT(t_ch->specials.act, ACT_PATROL);
 		REMOVE_BIT(t_ch->specials.act, ACT_SPEC);
-		if (number(1, 100) > 50)
-		{
-			t_ch->player.spec = 0;
-		}
 		REMOVE_BIT(t_ch->specials.act, ACT_BREAK_CHARM);
 		// Stop mobs from randomly sitting all the time.
 		t_ch->only.npc->default_pos = POS_STANDING + STAT_NORMAL;
@@ -1232,6 +1197,12 @@ void do_conjure(P_char ch, char *argument, int /*cmd*/)
 			    TRUE, ch, 0, t_ch, TO_CHAR);
 		}
 
+		const std::array<uint64_t, 5> prototype_traits = { t_ch->specials.affected_by,
+								   t_ch->specials.affected_by2,
+								   t_ch->specials.affected_by3,
+								   t_ch->specials.affected_by4,
+								   t_ch->specials.affected_by5 };
+		summoner_pet_configure(t_ch, ch);
 		t_ch->only.npc->aggro_flags = 0;
 		duration = setup_pet(t_ch, ch, 400 / STAT_INDEX(GET_C_INT(t_ch)), PET_NOCASH);
 		SET_POS(t_ch, POS_STANDING + STAT_NORMAL);
@@ -1243,6 +1214,9 @@ void do_conjure(P_char ch, char *argument, int /*cmd*/)
 		    TRUE, ch, 0, t_ch, TO_CHAR);
 
 		add_follower(t_ch, ch);
+		summoner_pet_cast_buffs(t_ch, prototype_traits);
+		summoner_pet_sync_resources(t_ch);
+		summoner_pet_resume_slots(t_ch);
 		if (duration >= 0)
 		{
 			duration += number(1, 10);
@@ -1391,9 +1365,9 @@ bool new_summon_check(P_char ch, P_char selected)
 	P_char victim;
 	int i, count = 0, desired = 0, greater = 0;
 
-	desired = GET_LEVEL(selected);
+	desired = summoner_pet_level(selected, ch);
 
-	if (desired - GET_LEVEL(ch) > 5)
+	if (GET_LEVEL(selected) - GET_LEVEL(ch) > 5)
 	{
 		send_to_char("That monster is too powerful for you to summon yet.\r\n", ch);
 		return FALSE;
