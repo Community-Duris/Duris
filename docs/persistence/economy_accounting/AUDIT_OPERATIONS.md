@@ -196,6 +196,24 @@ requires a committed revision0-to1 creation; rejected and unknown outcomes canno
 supply an origin. These actions do not authenticate an original plan, infer an
 unrecorded custody state or promote a partial SQL export to complete evidence.
 
+The collector's retained reason21 transition from collector owner10 to system
+owner7 with ID0/context0 represents quarantine. The collector command requires
+state3 for that endpoint, and generic item transfers reject that reason. All
+four SQL ownership projections therefore retain `quarantined` for this exact
+contract, with action `move`. Destruction endpoints remain tombstones. Other
+system custody, wrong source types and invalid system identities do not acquire
+a quarantine inference. The ledger has no general custody-state column; this
+specific producer rule does not supply missing state proof for other historical
+transitions or certify a complete export.
+
+Retained UID references, lineage history, unreferenced events and unattributed
+history all accept this quarantined state. Unknown states still refuse or retain
+the existing orphan-reference finding. Quarantined custody occupies a UID just
+as live custody does: a previously retired UID returning in either state retains
+the `resurrected_item_uid` finding.
+See [the retained collector quarantine qualification](PLAN5_COLLECTOR_QUARANTINE_QUALIFICATION_2026-10-06.md)
+for the native factory, both-engine history and preserved failure evidence.
+
 All five detail projections require the exact decoded native representation,
 including nested coin and owner vectors. An integer-valued JSON float or a
 Boolean does not authenticate an integer field even when Python equality would

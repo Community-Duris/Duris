@@ -345,7 +345,7 @@ class Reconciler:
                          (type(parent_uid) is not int or not 0 < parent_uid < 2**64)) or
                         not isinstance(owner, list) or len(owner) != 3 or
                         any(type(value) is not int or value < 0 for value in owner) or
-                        event.get("state") not in ("live", "tombstone") or
+                        event.get("state") not in ("live", "tombstone", "quarantined") or
                         event.get("action") not in ("create", "destroy", "move")):
                     raise SnapshotError("invalid unreferenced UID event")
                 key = (operation_id, event_index)
@@ -1812,7 +1812,7 @@ class Reconciler:
                      (type(ledger_parent) is not int or not 0 < ledger_parent < 2**64)) or
                     not isinstance(owner, list) or len(owner) != 3 or
                     any(type(value) is not int or value < 0 for value in owner) or
-                    ref.get("ledger_state") not in ("live", "tombstone") or
+                    ref.get("ledger_state") not in ("live", "tombstone", "quarantined") or
                     ref.get("ledger_action") not in ("create", "destroy", "move")):
                 self.emit("lineage_orphan_uid_reference", operation_id=operation_id, uid=uid)
             if operation_epoch == epoch:
@@ -1904,7 +1904,7 @@ class Reconciler:
                      (type(row["parent"]) is not int or row["parent"] <= 0)) or
                     not isinstance(owner, list) or len(owner) != 3 or
                     any(type(value) is not int or value < 0 for value in owner) or
-                    row.get("state") not in ("live", "tombstone") or
+                    row.get("state") not in ("live", "tombstone", "quarantined") or
                     row.get("action") not in ("create", "destroy", "move") or
                     row.get("operation_outcome") not in ("committed", "rejected", "unknown")):
                 raise SnapshotError("invalid lineage UID history event")
@@ -2021,7 +2021,7 @@ class Reconciler:
                     (parent is not None and (type(parent) is not int or not 0 < parent < 2**64)) or
                     not isinstance(owner, list) or len(owner) != 3 or
                     any(type(value) is not int or value < 0 for value in owner) or
-                    row.get("state") not in ("live", "tombstone") or
+                    row.get("state") not in ("live", "tombstone", "quarantined") or
                     row.get("action") not in ("create", "destroy", "move")):
                 raise SnapshotError("invalid unattributed UID history event")
             key = (operation_id, event_index, uid)
@@ -2305,7 +2305,7 @@ class Reconciler:
             if retired and action == "destroy":
                 self.emit("duplicate_item_retirement", uid=uid,
                           operation_id=event.get("operation_id"))
-            if retired and event.get("state") == "live":
+            if retired and event.get("state") in ("live", "quarantined"):
                 self.emit("resurrected_item_uid", uid=uid, operation_id=event.get("operation_id"))
             retired = retired or action == "destroy" or event.get("state") == "tombstone"
         if not created:

@@ -393,6 +393,98 @@ def verify_compound_item_actions(owner, reader, snapshot):
     print("COMPOUND_ITEM_ACTION_SQL_QUALIFIED " + json.dumps(result, sort_keys=True), flush=True)
 
 
+def verify_collector_quarantine_views(owner, reader, snapshot):
+    """Retain collector quarantine without guessing other system custody."""
+    from _plan5_equipment_restore import Connection, inventory
+
+    output = ROOT / "bin/tests/plan5-collector-quarantine" / uuid.uuid4().hex
+    output.mkdir(parents=True)
+    initial = inventory(owner)
+    expected_counts = dict(Reconciler().audit(snapshot)["exception_counts"])
+    expected_counts["missing_original_plan"] += 1
+    quarantine_root = bytes.fromhex("c8" * 16)
+    with owner.cursor() as cursor:
+        cursor.execute("SELECT * FROM item_ownership_ledger WHERE operation_id=%s AND event_index=0", (creation_root,))
+        original_ledger = cursor.fetchone()
+        cursor.execute("SELECT * FROM item_current_owner WHERE item_uid=84")
+        original_native = cursor.fetchone()
+        for table in ("economic_accounting_operation", "critical_operation_inbox", "item_ownership_ledger"):
+            cursor.execute("SELECT COUNT(*) AS n FROM " + table + " WHERE operation_id=%s", (quarantine_root,))
+            assert cursor.fetchone()["n"] == 0
+    records = []
+    try:
+        with owner.cursor() as cursor:
+            cursor.execute("UPDATE item_ownership_ledger SET to_owner_type=10,to_owner_id=7,to_owner_context_id=0 "
+                           "WHERE operation_id=%s AND event_index=0", (creation_root,))
+            cursor.execute(ROOT_INSERT + "(%s,%s,%s,NULL,32,1,0,NULL,0,0,0,1,NULL)",
+                           (quarantine_root, LINEAGE, EPOCH))
+            cursor.execute("INSERT INTO critical_operation_inbox (operation_id,status,result_code) VALUES (%s,1,0)",
+                           (quarantine_root,))
+            cursor.execute(REFERENCE_INSERT + "(%s,0,0,84,1,2,%s,0)", (quarantine_root, quarantine_root))
+            cursor.execute(LEDGER_INSERT + "(%s,0,84,84,NULL,7,0,0,2,1,21)", (quarantine_root,))
+            cursor.execute("UPDATE item_ownership_ledger SET from_owner_type=10,from_owner_id=7,from_owner_context_id=0 "
+                           "WHERE operation_id=%s AND event_index=0", (quarantine_root,))
+        for phase, reason, state, expected_state in (("collector-quarantine", 21, 3, "quarantined"),
+                                                     ("other-system-custody", 8, 1, "live")):
+            with owner.cursor() as cursor:
+                cursor.execute("UPDATE item_ownership_ledger SET reason_type=%s WHERE operation_id=%s", (reason, quarantine_root))
+                cursor.execute("UPDATE item_current_owner SET owner_type=7,owner_id=0,owner_context_id=0,"
+                               "item_revision=2,state=%s WHERE item_uid=84", (state,))
+            before = inventory(owner)
+            connection = Connection(reader)
+            captured = capture(connection, LINEAGE, EPOCH)
+            after = inventory(owner)
+            assert after == before and connection.rollbacks == connection.observer.closes == 1
+            report = Reconciler().audit(captured)
+            assert report["exception_counts"] == expected_counts, report
+            assert captured["complete"] is False and captured["backend"] == "sql_partial"
+            selected = [row for row in captured["ownership_events"] if row["operation_id"] == quarantine_root.hex()]
+            references = [row for row in captured["native"]["lineage_uid_references"]
+                          if row["operation_id"] == quarantine_root.hex()]
+            assert len(selected) == len(references) == 1
+            assert selected[0]["state"] == references[0]["ledger_state"] == expected_state
+            assert selected[0]["action"] == references[0]["ledger_action"] == "move"
+            target = output / phase
+            target.mkdir()
+            encoded = json.dumps(captured, sort_keys=True).encode()
+            path = target / "snapshot.json"
+            path.write_bytes(encoded)
+            commands = []
+            for limit in (0, 1, 100):
+                command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"), str(path),
+                           "--view", "provenance", "--uid", "84", "--limit", str(limit)]
+                result = subprocess.run(command, capture_output=True, timeout=30)
+                assert result.returncode == 1 and not result.stderr, result.stderr
+                value = json.loads(result.stdout)
+                assert value == view(captured, Reconciler(limit).audit(captured), "provenance", limit, uid=84)
+                assert value["count"] == 2 and [row["state"] for row in value["rows"]] == ["live", expected_state][:limit]
+                assert value["coverage"]["exception_count"] == sum(expected_counts.values()) and path.read_bytes() == encoded
+                (target / ("limit-" + str(limit) + ".json")).write_bytes(result.stdout)
+                commands.append(dict(command=command, exit=result.returncode))
+            for name, values in (("before", before), ("after", after)):
+                (target / ("authority-" + name + ".json")).write_text(json.dumps(values, sort_keys=True) + "\n")
+            (target / "queries.json").write_text(json.dumps(connection.observer.queries) + "\n")
+            records.append(dict(phase=phase, reason=reason, state=expected_state, actions=["create", "move"],
+                exception_counts=expected_counts, commands=commands, query_count=len(connection.observer.queries),
+                application_tables_unchanged=len(before), rollback_calls=1, cursor_close_calls=1))
+    finally:
+        with owner.cursor() as cursor:
+            for table in ("economic_accounting_item_reference", "item_ownership_ledger",
+                          "economic_accounting_operation", "critical_operation_inbox"):
+                cursor.execute("DELETE FROM " + table + " WHERE operation_id=%s", (quarantine_root,))
+            cursor.execute("UPDATE item_current_owner SET owner_type=%s,owner_id=%s,owner_context_id=%s,item_revision=%s,"
+                           "state=%s WHERE item_uid=84", tuple(original_native[field] for field in
+                           ("owner_type", "owner_id", "owner_context_id", "item_revision", "state")))
+            cursor.execute("UPDATE item_ownership_ledger SET to_owner_type=%s,to_owner_id=%s,to_owner_context_id=%s "
+                           "WHERE operation_id=%s AND event_index=0", (*[original_ledger[field] for field in
+                           ("to_owner_type", "to_owner_id", "to_owner_context_id")], creation_root))
+    assert inventory(owner) == initial and capture(reader, LINEAGE, EPOCH) == snapshot
+    result = dict(probes=records, output=str(output), modeled_partial_sql=True, source_fixture_restored=True,
+                  accounting_activated=False, release_complete=False, native_collector_gameplay=False)
+    (output / "results.json").write_text(json.dumps(result, indent=2) + "\n")
+    print("COLLECTOR_QUARANTINE_SQL_QUALIFIED " + json.dumps(result, sort_keys=True), flush=True)
+
+
 def verify_quarantined_coin_views(owner, reader, snapshot, expected_exceptions):
     """Keep quarantined money visible without admitting an active holding."""
     from _plan5_equipment_restore import Connection, inventory
@@ -765,6 +857,7 @@ try:
             snapshot = capture(audit, LINEAGE, EPOCH)
             assert snapshot["complete"] is False and snapshot["quiescent"] is True
             verify_compound_item_actions(setup, audit, snapshot)
+            verify_collector_quarantine_views(setup, audit, snapshot)
             verify_coin_payload_source_bounds(setup, audit, snapshot)
             verify_supply_outcome_views(setup, audit)
             assert capture(audit, LINEAGE, EPOCH) == snapshot
