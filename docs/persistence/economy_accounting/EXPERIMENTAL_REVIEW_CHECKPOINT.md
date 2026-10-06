@@ -9,10 +9,13 @@ The real-provider context codec and actual production capacity helper pass
 strict sanitizers and their original deadline. Shared candidate907's SQL
 production build passes; flatfile stops on one SQL-only unused quest helper.
 Its narrow correction is included in the next private physical-stage candidate.
-Legacy journal faults pass; uncertain/admission remain link-blocked and the
-coordinator fixture's missing original document is being corrected. Failures
-remain evidence. Physical-stage source review passes, but actual boot, physical
-fault/restart checks, continuation and full native writer integration remain open.
+Legacy journal faults pass; uncertain/admission remain link-blocked. The
+original coordinator recipe now passes on private5bb with its actual document
+and complete driver inputs, preserving assertions, flags and30-second runtime
+limit. Physical-stage candidate5bb also passes its SQL production build; its
+flatfile build remains live. Reward continuation and completed-command handoff
+pass source review only. Actual boot, physical fault/restart, durable GIVE/branch
+integration and complete native writer qualification remain open.
 These private candidates are not installed on the maintained branch. No Plan,
 R1–R8, full capture, release or activation completion is claimed; inactive
 behavior and all original safety gates remain.
@@ -21,6 +24,11 @@ The separate [lifecycle source provenance repair](CURRENT61_LIFECYCLE_SOURCE_PIN
 is committed and pushed as `34fa307cb`. Only two stale registry/matrix hashes
 change; all55 original coverage/activation methods, matrix check and normal
 validation pass. This solves metadata drift, without changing coverage or release.
+Plan5 independently verifies all71 original coverage/audit methods with zero
+skips and normal metadata checks in the exact published
+[pin-repair qualification](PLAN5_CURRENT61_PIN_REPAIR_QUALIFICATION_2026-10-05.md).
+Its earlier286-method batch is not relabelled as passing; release still refuses
+missing executable writer evidence.
 
 ## Current combined source qualification — 2026-10-05
 
