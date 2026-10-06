@@ -7717,6 +7717,132 @@ int main(int argc, char **argv)
 		}
 
 		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "shady"; });
+			require(mapping.stories.size() == 3 && mapping.contacts.size() == 14 &&
+					mapping.revision == 2,
+				"Shady Grove upgrade scope failed");
+			const auto &collar = story_for("shady", "request-97510-4963db257809");
+			const auto &key = story_for("shady", "request-97545-85d3fa59aeaf");
+			const auto &amulet = story_for("shady", "request-97548-13949b297677");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 975, 97648, 100, "arrival") ==
+					result::applied,
+				"Shady Grove discovery failed");
+			for (int v : { 97511, 97557, 97572, 97540, 97583, 97552 })
+				require(journey.meet_npc(7, 42, v, 97648, 102) == result::applied,
+					"Shady Grove context encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 975, 10, 1, 103, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Shady Grove source or service forged local request");
+			for (int v : { 97510, 97545, 97548 })
+				require(journey.meet_npc(7, 42, v, 97648, 104) == result::applied,
+					"Shady Grove giver encounter failed");
+			const auto status = [&](const auto &story, size_t row, const char *state)
+			{
+				const auto start = journal.find("] " + story.title + "\r\n");
+				require(start != std::string::npos,
+					"Shady Grove visible card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     story.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[97503] = 1;
+			supplies.carried[97564] = 1;
+			supplies.carried[97538] = 1;
+			supplies.carried[97535] = 1;
+			supplies.carried[97524] = 1;
+			supplies.carried[97570] = 1;
+			journal = journey.render_journal(7, 42, 975, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(status(story, 0, "Missing now") &&
+						status(story, 1, "Pending"),
+					"Shady Grove alternate key,collar,pendant or reward forged proof");
+			supplies = {};
+			supplies.equipped[3] = 97514;
+			supplies.carried[97582] = 1;
+			journal = journey.render_journal(7, 42, 975, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(collar, 0, "Missing now") && status(key, 0, "Ready now") &&
+					status(amulet, 0, "Missing now"),
+				"Shady Grove worn proof or one return replaced another");
+			supplies = {};
+			for (int v : { 97514, 97582, 97572 })
+				supplies.carried[v] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 975, 10, 1, 107, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(status(story, 0, "Ready now") &&
+						status(story, 1, "Pending"),
+					"Shady Grove exact supplied proof forged exchange");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 975).completed == 0,
+				"Shady Grove readiness mutated recovery or hunt history");
+			record(journey, key.contracts.front(), "shady-key", 975, 97580);
+			record(journey, collar.contracts.front(), "shady-collar", 975, 97539);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 975, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(key, 1, "Recorded") && status(collar, 1, "Recorded") &&
+					status(collar, 0, "Missing now") &&
+					status(amulet, 1, "Pending"),
+				"Shady Grove spent proof lost receipt or merged returns");
+			require(journey.progress_for_zone(7, 42, 975).completed == 2 &&
+					journey.progress_for_zone(7, 42, 975).total == 3,
+				"Shady Grove changed native completion units");
+			auto replay = completion(key.contracts.front(), "shady-key", 120);
+			replay.transaction.zone_number = 975;
+			replay.transaction.room_vnum = 97580;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Shady Grove exact replay duplicated progress");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 975).completed == 2,
+				"Shady Grove cold recovery lost receipts");
+			auto legacy_catalog = catalog;
+			auto &legacy = *std::find_if(legacy_catalog.story_mappings.begin(),
+						     legacy_catalog.story_mappings.end(),
+						     [](const auto &m)
+						     { return m.source_area == "shady"; });
+			legacy.revision = 1;
+			legacy.contacts.resize(4);
+			legacy.orientation.clear();
+			for (auto &story : legacy.stories)
+				for (auto &step : story.steps)
+					step.optional = false;
+			service historical(legacy_catalog);
+			require(historical.discover_zone(7, 42, 975, 97648, 100, "arrival") ==
+					result::applied,
+				"Shady Grove legacy discovery failed");
+			record(historical, amulet.contracts.front(), "shady-legacy", 975, 97721);
+			service upgraded(catalog);
+			require(upgraded.deserialize_state(historical.serialize_state(), &error) &&
+					upgraded.progress_for_zone(7, 42, 975).completed == 1 &&
+					upgraded.evidence_for(amulet.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Shady Grove metadata upgrade lost accepted history");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 975, 97648, 100, "arrival") ==
+					result::applied,
+				"Shady Grove raw discovery failed");
+			record(raw, collar.contracts.front(), "shady-raw", 975, 97539);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 975).completed == 1,
+				"Shady Grove raw-to-authored recovery lost exchange");
+		}
+
+		{
 			const auto &mapping = *std::find_if(
 				catalog.story_mappings.begin(), catalog.story_mappings.end(),
 				[](const auto &m) { return m.source_area == "kimordril"; });

@@ -1,58 +1,140 @@
 {
-  "schema_version": 2,
-  "revision": 1,
+  "schema_version": 3,
+  "revision": 2,
   "source_area": "shady",
   "coverage": "complete",
-  "introduction": "Explore Shady Grove and meet its people to uncover local requests.",
+  "introduction": "Recover T'Zoul's collar, help Morgar and return Lyren's amulet through three independent exchanges. The journal explains exact proof, shared availability and town context without turning every conversation or service into a quest.",
   "orientation": [
-    "Start with look and exits to learn your surroundings.",
-    "Use help home to learn about hometowns and help quest for quest commands."
+    "T'Zoul at the Black Altar accepts the diamond collar worn by Mezef in the Cavern of the Brave. His accepted return pays 10,000 copper and grants a blood sword. Another blood sword, including a guard's copy, does not prove this exchange.",
+    "The Jaws of Death use a red key that can be carried by a selected maggot below the temple. The inner white gate is an ordinary closed door. The brittle key carried by Mezef opens the separate treasury; access and opening shared doors are not journal receipts or native requirements to return a supplied collar.",
+    "Morgar accepts the golden skeleton key for 2,100 experience. A selected nursery toddler instance can carry it, but availability follows native stock limits. Existing or supplied proof can fit the request without a personal hunt or attack on a child.",
+    "The jailkeeper's cell key is a different item. Opening the actual cell or meeting its prisoner does not complete Morgar's exchange. The troll who accepts the golden skeleton key departs; a new daily entry does not immediately repop him or restock the key.",
+    "Lyren in his private bedroom accepts the old bloodied amulet for 5,200 experience. A selected assassin instance in the Hall of Judgment wears it; other assassin instances need not carry it. Lyren's ruby pendant is a separate item.",
+    "Carry each exact proof item loose. Readiness describes your current inventory; worn or nested proof and similar names do not replace it. After an accepted return spends its proof, the recorded exchange remains complete.",
+    "Ask the givers about their topics to hear their stories. The mourning woman's cry and spouse topics provide context. Each keyword response is conversation, rather than a separate achievement or proof of learning a required clue.",
+    "Ixie's world quests, postal service, the bank, inn, auctions, pet shop, guilds and town shops have separate rules. Paid shop purchases, mail sending and pet services are currently unavailable while accounting is active. These services, portals, cell access and ambient townsfolk do not replace the three accepted local returns."
   ],
   "contacts": [
     {
       "mob_vnum": 97510,
       "name": "T'Zoul Mhembryl",
       "keyword": "high",
-      "description": "Start with these conversation topics, then follow the requests below.",
+      "description": "T'Zoul at the Black Altar wants the diamond collar. His accepted exchange grants 10,000 copper and a blood sword; another blood sword or temple visit does not record the exchange.",
       "topics": [
         "god"
-      ]
-    },
-    {
-      "mob_vnum": 97537,
-      "name": "an old orcish woman",
-      "keyword": "old",
-      "description": "This person offers local conversation. Try these topics to learn more.",
-      "topics": [
-        "cry"
       ]
     },
     {
       "mob_vnum": 97545,
       "name": "a troll slave",
       "keyword": "troll",
-      "description": "Start with these conversation topics, then follow the requests below.",
+      "description": "Morgar asks for the golden skeleton key. The troll who accepts the key departs; another live instance and native resets determine availability.",
       "topics": [
-        "free"
+        "free",
+        "help",
+        "bound"
       ]
     },
     {
       "mob_vnum": 97548,
       "name": "Lyren",
       "keyword": "lyren",
-      "description": "Start with these conversation topics, then follow the requests below.",
+      "description": "Lyren wants the old bloodied amulet. Ask about his thoughts or the sacred amulet; his ruby pendant and other amulets do not replace the exact proof.",
       "topics": [
         "think",
-        "amulet"
+        "thought",
+        "thoughts",
+        "amulet",
+        "sacred"
       ]
+    },
+    {
+      "mob_vnum": 97537,
+      "name": "an old orcish woman",
+      "keyword": "old",
+      "description": "The mourning woman speaks about her spouse. Cry and spouse are conversation topics; they are not separate quest completions.",
+      "topics": [
+        "cry",
+        "spouse"
+      ]
+    },
+    {
+      "mob_vnum": 97511,
+      "name": "Mezef",
+      "keyword": "mezef",
+      "description": "Mezef in the Cavern of the Brave wears the diamond collar T'Zoul accepts. The collar, his brittle treasury key and his other equipment have separate roles; possession does not establish your own recovery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 97557,
+      "name": "a young toddler",
+      "keyword": "young",
+      "description": "A selected nursery toddler instance can carry the golden skeleton key. Existing or supplied proof can fit Morgar's request; the journal does not require a personal hunt or attack on a child.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 97572,
+      "name": "an orcish assassin",
+      "keyword": "orcish",
+      "description": "A selected assassin instance in the Hall of Judgment wears the old bloodied amulet. Other assassin instances need not carry it. Its recovery and Lyren's accepted return are separate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 97500,
+      "name": "a slimy maggot",
+      "keyword": "slimy",
+      "description": "A selected maggot below the temple can carry the red key for the Jaws of Death. That red key is distinct from the collar, the brittle treasury key and Morgar's golden skeleton key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 97540,
+      "name": "Ixie",
+      "keyword": "ixie",
+      "description": "Ixie offers separate world quests. Those assignments, fees and rewards do not replace any of the three fixed local exchanges.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 97583,
+      "name": "the mailman",
+      "keyword": "mailman",
+      "description": "The registered postmaster serves the postal center. Paid mail sending is currently unavailable while accounting is active; postal context does not record a local delivery quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 97552,
+      "name": "the orcish jailkeeper",
+      "keyword": "orcish",
+      "description": "The actual jailkeeper wears the cell key. Opening the cell is separate from giving Morgar the golden skeleton key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 97577,
+      "name": "King Mmenzar",
+      "keyword": "king",
+      "description": "A prisoner occupies the cell. The native local recipes do not define a rescue reward for opening this cell or meeting its prisoner.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 97534,
+      "name": "Meinar, the old baker",
+      "keyword": "old",
+      "description": "Meinar runs the bakery. Shop purchases are currently unavailable while accounting is active; visiting the baker or receiving food does not complete the three local returns.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 97539,
+      "name": "an old orcish mage",
+      "keyword": "shopkeeper",
+      "description": "The old mage runs a town shop. Town equipment and ambient conversation remain separate from accepted collar, key and amulet returns.",
+      "topics": []
     }
   ],
   "stories": [
     {
       "id": "request-97510-4963db257809",
-      "title": "Deliver 1 x a diamond-studded collar",
+      "title": "Return T'Zoul's diamond collar",
       "category": "request",
-      "summary": "Bring 1 x a diamond-studded collar. Reward: 10,000 copper, 1 x the blood sword of the ancients.",
+      "summary": "Bring the exact diamond collar to T'Zoul at the Black Altar. The accepted exchange grants 10,000 copper and a blood sword. Obtaining another blood sword does not record this return.",
       "contracts": [
         {
           "giver_vnum": 97510,
@@ -62,33 +144,34 @@
       "steps": [
         {
           "id": "item-1",
-          "text": "Carry 1 x a diamond-studded collar",
+          "text": "Carry 1 × a diamond-studded collar loose",
           "kind": "carried_item",
-          "hint": "Look for clues in the request giver's description and conversation.",
           "item_vnums": [
             97514
           ],
-          "count": 1
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact item carried loose now. Worn or nested items and similar names are separate. Supplied proof can fit the exchange without recording your own first recovery, purchase or personal hunt."
         },
         {
           "id": "turn-in",
-          "text": "Complete the requested exchange",
+          "text": "Complete this accepted exchange",
           "kind": "completion",
-          "hint": "Give the requested items to this request giver.",
           "contracts": [
             {
               "giver_vnum": 97510,
               "completion_key": "give=I:97514;receive=C:10000,I:97570;disappear=0"
             }
-          ]
+          ],
+          "hint": "Records the accepted native exchange after the proof item is spent. Dialogue, access, source recovery, another reward copy and other trades remain separate. New credit requires active, ready accounting."
         }
       ]
     },
     {
       "id": "request-97545-85d3fa59aeaf",
-      "title": "Deliver 1 x a golden skeleton key",
+      "title": "Free Morgar with the golden skeleton key",
       "category": "request",
-      "summary": "Bring 1 x a golden skeleton key. Reward: 2,100 experience.",
+      "summary": "Bring the exact golden skeleton key to Morgar for 2,100 experience. The accepting troll departs. The jailkeeper's cell key is a different item and does not fit this request.",
       "contracts": [
         {
           "giver_vnum": 97545,
@@ -98,33 +181,34 @@
       "steps": [
         {
           "id": "item-1",
-          "text": "Carry 1 x a golden skeleton key",
+          "text": "Carry 1 × a golden skeleton key loose",
           "kind": "carried_item",
-          "hint": "Look for clues in the request giver's description and conversation.",
           "item_vnums": [
             97582
           ],
-          "count": 1
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact item carried loose now. Worn or nested items and similar names are separate. Supplied proof can fit the exchange without recording your own first recovery, purchase or personal hunt."
         },
         {
           "id": "turn-in",
-          "text": "Complete the requested exchange",
+          "text": "Complete this accepted exchange",
           "kind": "completion",
-          "hint": "Give the requested items to this request giver.",
           "contracts": [
             {
               "giver_vnum": 97545,
               "completion_key": "give=I:97582;receive=E:2100;disappear=1"
             }
-          ]
+          ],
+          "hint": "Records the accepted native exchange after the proof item is spent. Dialogue, access, source recovery, another reward copy and other trades remain separate. New credit requires active, ready accounting."
         }
       ]
     },
     {
       "id": "request-97548-13949b297677",
-      "title": "Deliver 1 x an old bloodied amulet",
+      "title": "Return Lyren's old bloodied amulet",
       "category": "request",
-      "summary": "Bring 1 x an old bloodied amulet. Reward: 5,200 experience.",
+      "summary": "Bring the exact old bloodied amulet to Lyren for 5,200 experience. Finding or receiving it prepares the return; only the accepted exchange records completion.",
       "contracts": [
         {
           "giver_vnum": 97548,
@@ -134,25 +218,26 @@
       "steps": [
         {
           "id": "item-1",
-          "text": "Carry 1 x an old bloodied amulet",
+          "text": "Carry 1 × an old bloodied amulet loose",
           "kind": "carried_item",
-          "hint": "Look for clues in the request giver's description and conversation.",
           "item_vnums": [
             97572
           ],
-          "count": 1
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact item carried loose now. Worn or nested items and similar names are separate. Supplied proof can fit the exchange without recording your own first recovery, purchase or personal hunt."
         },
         {
           "id": "turn-in",
-          "text": "Complete the requested exchange",
+          "text": "Complete this accepted exchange",
           "kind": "completion",
-          "hint": "Give the requested items to this request giver.",
           "contracts": [
             {
               "giver_vnum": 97548,
               "completion_key": "give=I:97572;receive=E:5200;disappear=0"
             }
-          ]
+          ],
+          "hint": "Records the accepted native exchange after the proof item is spent. Dialogue, access, source recovery, another reward copy and other trades remain separate. New credit requires active, ready accounting."
         }
       ]
     }

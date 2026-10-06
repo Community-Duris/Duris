@@ -434,6 +434,12 @@ u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
 
+shady=next(m for m in catalog['story_mappings'] if m['source_area']=='shady')
+assert (shady['schema_version'],shady['revision'],shady['coverage'])==(3,2,'complete') and not shady['exclusions']
+assert len(shady['stories'])==3 and len(shady['contacts'])==14 and sum(len(c['topics']) for c in shady['contacts'])==11
+assert [len(s['steps']) for s in shady['stories']]==[2,2,2] and sum(t.get('optional',False) for s in shady['stories'] for t in s['steps'])==3
+assert report['eligible_by_zone']['975']==3
+
 kimordril=next(m for m in catalog['story_mappings'] if m['source_area']=='kimordril')
 assert (kimordril['schema_version'],kimordril['revision'],kimordril['coverage'])==(3,2,'complete') and not kimordril['exclusions']
 assert len(kimordril['stories'])==4 and len(kimordril['contacts'])==14 and sum(len(c['topics']) for c in kimordril['contacts'])==14
