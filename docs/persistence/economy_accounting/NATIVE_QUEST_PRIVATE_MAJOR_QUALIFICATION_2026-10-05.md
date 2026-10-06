@@ -253,10 +253,17 @@ slice; quest source SHA256 is
 `3930d05c19a77f0dff0fcf9dfb6eede053cf9d9f0b3c6e9583ee3d9b6c595f5b`.
 Its SQL production build passes in1629.871532 seconds with ELF SHA256
 `14b58f9fd42ac5af2f9da6441634f836f400589a198b6ccd2918011dd17437c0`
-and an empty error stream. The original flatfile production build is running
-sequentially in the same fresh owned runner at
+and an empty error stream. The original flatfile production build passes in
+1037.812362 seconds, also with empty stderr, with ELF SHA256
+`00bb9bb1fd631e51bbce03ca8d5c26da03f249822f85ce99b71045502a294c08`.
+Both original production-profile make-j2 commands retain separate backend
+objects and outputs in the fresh owned runner at
 `bin/tests/native-quest-phase1-major-builds-native-copy-successor-20261005-567e53c6d264`.
-The wrapper remains live; no terminal flat result or older pass is transferred.
+The wrapper exits zero, all5757 source inputs remain exact, and2918 regular
+artifacts export byte-exactly before owned runner and both volumes are removed.
+This qualifies production compilation of5bb only; it supplies no boot, SQL
+mutation, physical fault, GIVE effect or cold-world recovery proof, and no pass
+is transferred to the later7a2 quest composition.
 
 The first corrected coordinator transport at
 `bin/tests/native-quest-coordinator-doc-20261005-f5b2d95f4aaa`
@@ -407,3 +414,199 @@ handoff/revision ordering. That quest-only integration remains underway.
 Historical ID-only contexts cannot be filled from later player/native stock.
 Original NQR1/NQR2 native, allocation/corruption, child and restart checks remain
 at coherent major readiness. No full plan or recovery completion is claimed.
+
+## Exact child frame and producing-cursor integration
+
+The quest-only chain retains actual guarded acceptance before completion take,
+preallocates original GIVE started/returned markers before effects, freezes the
+original branch program once, and retains the actual final canonical child
+command before submission. The exact-child successor initially advanced the
+parent cursor while retaining its completed child frame. Independent source
+review found that the final branch would then violate the existing NQR2 cursor
+grammar before retirement/take. That unaccepted predecessor is preserved at
+manifest `cdac8843aeac4e3ab5f049f3c5c1885360cd5db0b9dc9250e5ec07b085a39879`.
+
+The reviewed correction keeps the producing cursor through the actual child
+retirement and completion consumption, then performs the sole exact stage2
+frame-clear/cursor-advance checkpoint. Its manifest is
+`721d89f877cf00ff4eb0f0e859004c0dd3409854b7e1b8902f9d2b72e9fffbdf`;
+quest source is
+`b6cfa84a067a4dc5845112c2bd8f080ca78ad1de97bdd19c411a5f94afcc8bc5`.
+The original grammar, fifty retained function bodies, nine original hook bodies,
+budget and other owners remain. Changed-line formatting, byte inverses and
+independent source review pass; actual native branch/uncertainty/cold-world
+journeys are still required.
+
+Full composition `7a2da2615874f9e66618a958a4ebccf526d2ed90ada8d369c71c121846c536d7`
+has5759 exact selected inputs, including real prepared/completed command seams,
+NQR2 and the corrected quest. Each immediate raw and canonical preimage is
+checked through the complete source chain. Its original context fixture keeps
+all fourteen behavior-bearing original helpers/bodies and prepares six positive
+forms/thirty refusal variants, with an independent historical NQR1 wire oracle
+and real GNU allocation observation. These are prepared forms, not executed
+case totals. Its original fifteen providers, compiler/sanitizer flags and
+20-second runtime deadline are unchanged.
+
+The first actual full-source context attempt
+`bin/tests/native-quest-exact-child-context-major-20261005-b2aeeb1e7b17`
+passes exact source transport but stops before any recipe/compiler because its
+driver reads a committed help-file symlink as regular target contents. No
+component pass is claimed. The successor uses the original production source
+verifier's literal link-target and containment checks, retaining the exact
+component invocation. It passes at
+`bin/tests/native-quest-exact-child-context-archive-successor-20261005-26a8d2bd93d4`.
+One actual126.406401-second strict sanitizer compile and0.418127-second runtime
+pass with the original20-second runtime limit. ELF SHA256:
+`fb5f0226098dcda342362e8e988fb3c5ccb2e89063ec52df31bcefe3c42831f9`.
+Compile output is empty; all5759 full source inputs remain exact. Four regular
+artifacts export with verified hashes, and owned runner/source/artifact volumes
+are removed. This is a pure synthetic-value context component, not native
+source/lifetime authentication, SQL, guarded ACK, world effects or crash recovery.
+
+Source transport now uses one frozen archive instead of thousands of individual
+Windows-mount reads. Native Windows preparation checks every original hash and
+byte count in31.25 seconds; Linux recreates and verifies the same inventory,
+bytes, link targets and modes in a fresh owned volume. Archive SHA256:
+`5eeea8a97ad1a76dd187ae421ea41308c21db0d0c02047501a4002ceaa2d6406`.
+The prepared both-backend build driver is byte-identical to the original;
+targets, flags, CPU/memory limits and qualification scope do not change.
+The archive itself supplies no native behavior qualification.
+Both original production builds finish sequentially on this exact7a2 source at
+`bin/tests/native-quest-exact-child-archive-major-builds-20261005-c5e99bff7ab5`.
+SQL stops after621.325069 seconds on two mutable/const-pointer initializer-list
+deduction errors in the recovery-size helpers. Flatfile passes in459.804439
+seconds with empty stderr; ELF
+`0c63fadd145c1dbf85fbc7d46f4210916a49533073a87cb67a22007a72f250ae`.
+The combined attempt fails, preserving its SQL diagnostic. All2497 regular
+artifacts export byte-exactly, and its owned runner and both volumes are removed.
+The earlier5bb production passes are not transferred.
+
+Independent source review accepts the narrow correction: both lists use the
+already-included `std::array` with explicit const envelope pointers. Record order,
+conditional selections, null handling, capacities and original limits stay exact.
+Fix manifest `ca1656cdc2c5e5ec18fb08cb9e73ab94e9af28226a2def3ac8d5ed1d6769d559`
+produces full5759-input successor
+`0ef68080c65dea9bc4c28a2c053cfdf9b2ab07a67f0e04fd8a70f3311826ded4`.
+Only quest source changes against7a2; exact parent inversion is verified.
+Both original production builds now run at
+`bin/tests/native-quest-const-envelope-archive-major-builds-20261005-34d9341e0e9a`.
+The SQL production build passes in1218.764799 seconds with empty stderr; ELF
+`238270492142e855af0e9e58c8b1027c899f2fe623ca53a4070ca5568c7ded81`.
+The flatfile build is still live; final export/cleanup remain pending.
+Original production driver/flags/targets/CPU/memory stay;
+its byte-exact archive preparation takes8.203 seconds. No earlier context or
+production result is relabelled as qualification of this successor.
+
+## Original birth command and accounting compiler source readiness
+
+The private original-birth command has source manifest
+`1bc371424ea1b6db1e8109664c736ad7c1e65ff2cecd5fbefd247bc3d7f3bba7`.
+It appends command type21 without changing original legacy type1–19 execution
+or baseline type20, and retains the complete literal v2 native image, known
+cash and all initial equipment/carry rows. Original metadata/source, canonical
+intent and exact whole-command decoding bind those original facts. Writer15 is
+reserved but unregistered. Values alone confer no source, birth or ACK authority.
+
+The independently reviewed pure compiler has manifest
+`4b801c5ddbd0436443dc01b010dadb9bcf782db5e0c03948627806d6dded547a`.
+It uses the existing npc_reward/npc_generation policy, native-context12 ordinary
+wallet and exact conserved issuance for nonzero cash. Actual known zero advances
+wallet revision0→1 without zero postings or an unused issuance account. Every
+literal initial forest row has absent BEFORE and active native-owner12 AFTER,
+revision1, exact root/parent/equipment position and original DFS event identity.
+Common normalization validates the complete plan before success-only output.
+Original limits, allocation refusal and strong output preservation remain.
+No policy, schema, store or acceptance gate is added by this compiler.
+
+Formatting, raw/canonical inverses and independent source review pass for both
+private slices. They are not installed, built or executed. The original source
+issuer, reserved identities, exact native wallet mapping, atomic same-session
+native/cash/custody/ledger persistence, publication/recovery, registration and
+actual SQL/flat journeys remain primary work. This pure slice is not qualification
+of native birth, Plan3, any full plan or release.
+
+The original mapping review identifies a necessary SQL integration correction:
+native UIDs and economic mapping lifetimes have distinct allocators. Context12
+does not partition the global mapping primary key. The reviewed compiler successor
+now accepts the exact original mapped-wallet key created by the birth
+transaction, as the existing auction adapter already does, preserving native
+UID/source/actor/custody values. No allocator coordination or new account kind
+is required. Source acceptance of the first pure compiler does not prove its
+native-UID key choice suitable for the actual SQL mapping namespace.
+
+The corrected compiler manifest is
+`93d88b062a900c9c783875e89a2399f6dbf4f5bab4a6d741bbb4be7d1b9e65e5`.
+It validates the supplied original lineage/wallet/context12 key and leaves all
+native UID, source, actor and custody identities unchanged. Pure values cannot
+prove the mapping lifetime; the original SQL owner must do that.
+
+The reviewed result contract manifest is
+`2966040ac7835b3979f0264999deab511219ea4527e13e9f03b388f1c5117930`.
+MBR1 uses120 bytes: exact header8, six original uint64 fields48 and two digests64.
+It refuses the original invalid native-UID sentinel, checks canonical command and
+regenerated mapped-plan identity, and preserves outputs on refusal. Original
+inbox/outbox limits accommodate it. Destination13/event1/version1 is an audit
+receipt only; it grants no source, publication or ACK authority.
+
+The SQL adapter is implemented and frozen at manifest
+`888aa46e114df777b7bfb3ce6010b9c17b12b70734fda21f20004bf4faf353a2`;
+independent SQL-source review withheld acceptance pending four narrow corrections:
+explicit NULL realized-price evidence, bounded SQL absence/current-custody reads,
+and preserved allocation/prepared-statement diagnostics. The unaccepted packet
+remains frozen. The independently accepted successor is
+`048b35e1695ff21419d700d1deb9873283b162c4f8b7c6bf791847211ef173e4`,
+with C source `84c008b249f9064cd90676d810fd4ad2b32bd86f333971b22f7bf0623aaeb1ac`.
+Its six parent diff hunks require SQL NULL for unpriced roots, bound absence
+reads to1 and custody readback to expected count+1, preserve result-build
+allocation failures, and capture failed item-reference errno immediately.
+The interface header remains byte-identical. This is source acceptance only.
+It borrows the original session
+and inbox for mapped-wallet/native-image/custody/accounting work, with no own
+transaction lifecycle, UID issuance, world mutation or ACK.
+
+The reviewed primary root integration is frozen at manifest
+`62c37e3b1fe0eb593c096dab418363a810c4356d3f22633198b52e2ef4f464e7`.
+Original-ID proof precedes current authority; shared native cleanup includes
+birth while quest-only bodies remain. Root owns the mutation marker before DML,
+sole commit, exact typed outbox/completed inbox, original-session proof and pooled
+reconciliation. Failed/uncertain commits carry revision0/empty result; conflicts
+retain journal/stage/fences rather than fabricate durable rejection. Independent
+review found and corrected that new failure-revision defect before freezing.
+All birth packets remain private: no passing compile, SQL, producer/admission,
+native publication/ACK, backend or crash-recovery qualification is yet claimed.
+
+The primary composes those exact reviewed packets with const-quest0ef and
+the published bc0d6071f reader/central registrations on one5767-input candidate:
+`16ba3d7a7b704e082b72c5cfeeb1eebe810ff6e76f7bc980a5d17881ce057efc`.
+All selected native preimages and all original inputs verify byte-exactly;
+the corrected SQL header is proven identical to the older dependency named
+by the immutable root freeze. No historical receipt is rewritten.
+Its archive is `990429cc11e64cdc54107f726be02a1f7da6bc35081f74ad7959fba522111469`;
+preparation takes4.953 seconds and the original production driver is unchanged.
+Both original builds start at
+`bin/tests/native-mobile-birth-root-archive-major-builds-20261005-c62d4d3c49cb`;
+results are pending. This shared root candidate does not yet connect the actual
+birth producer. Neither old component results nor Plan5 qualifications transfer.
+
+Original stock preparation must factor the actual constructor rather than use
+an inert recovery image. Source tracing identifies that `proclibObj_add` combines
+literal description parsing with global binding/events, and that four original
+periodic procedures initialize literals or global game state before conversion.
+The bounded private factory owner is separating those original preparation and
+consumed-publication steps, including actual string ownership and extraction
+handling. Original callbacks, RNG order, inactive paths and source scope stay;
+this is unfinished producer work, not new release policy or a new reset journal.
+
+Plan3 [Work item2](plans/03_ITEM_PROVENANCE.md) requires original typed source
+identity, logical issuance deduplication and retained UID/source lineage. It does
+not require a separately admitted reset-generation type22 or full reset-program
+cursor. That earlier private handoff suggestion was an implementation hypothesis.
+The original game-thread birth owner can retain the source tuple and reserved
+IDs, finish the detached literal stock/cash, then freeze and journal/admit birth21
+before visible mutation. Retry/restore must preserve that exact original tuple
+and image. The existing source claim proves uniqueness; the trusted original
+producer/admission path must prove provenance. The complete command is retained
+in the journal, while the inbox holds hashes and the bounded typed result.
+Native exclusion remains held through guarded publication/ACK; a later current
+native image must never reconstruct historical birth bytes. This follows the
+existing plan and stores, without adding a second generation command.

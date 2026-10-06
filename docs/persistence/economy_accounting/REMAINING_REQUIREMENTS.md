@@ -12,9 +12,18 @@ Its narrow correction is included in the next private physical-stage candidate.
 Legacy journal faults pass; uncertain/admission remain link-blocked. The
 original coordinator recipe now passes on private5bb with its actual document
 and complete driver inputs, preserving assertions, flags and30-second runtime
-limit. Physical-stage candidate5bb also passes its SQL production build; its
-flatfile build remains live. Reward continuation and completed-command handoff
-pass source review only. Actual boot, physical fault/restart, durable GIVE/branch
+limit. Physical-stage candidate5bb passes both original production builds;
+its 2918 artifacts are exported with exact hashes and its owned runner and
+volumes are removed. Exact-child candidate7a2 passes its original sanitizer
+context component and flatfile production build; SQL stops at two pointer-list
+type errors. The independently reviewed const-pointer correction is composed
+as0ef: its SQL production build passes and flatfile remains live. Original NPC
+birth command, mapped compiler, result, corrected SQL adapter and root integration
+have source review only. The primary composes their exact interfaces with the
+published Plan5 reader fix into shared candidate16ba; original production builds
+are underway. Actual detached stock construction and birth admission/publication
+remain in progress.
+Actual boot, physical fault/restart, durable GIVE/branch
 integration and complete native writer qualification remain open.
 These private candidates are not installed on the maintained branch. No Plan,
 R1–R8, full capture, release or activation completion is claimed; inactive
@@ -29,6 +38,20 @@ skips and normal metadata checks in the exact published
 [pin-repair qualification](PLAN5_CURRENT61_PIN_REPAIR_QUALIFICATION_2026-10-05.md).
 Its earlier286-method batch is not relabelled as passing; release still refuses
 missing executable writer evidence.
+Plan5's [full-source retention qualification](PLAN5_CURRENT61_RETENTION_QUALIFICATION_2026-10-05.md)
+is imported byte-exactly from3015f010e. Both SQL engines' account/character
+journeys and the three flatfile retention journeys pass at the recorded current61
+native/schema scope, which matches the maintained source trees. Seeded history,
+typed-active-erasure and full R8/release limitations remain explicit; no result
+is transferred to the private quest or birth candidates.
+
+Plan5's [original-command reader fix and primary integration](PLAN5_COMMAND_PREIMAGE_PRIMARY_INTEGRATION_2026-10-05.md)
+is committed and pushed as bc0d6071f, importing the exact f78df1c8a slice
+and registering its five requested methods in
+the existing105 manifest rows. All61 focused reader and55 coverage-contract
+methods pass with zero skips; normal/matrix/runtime validation passes. Release
+still refuses missing writer evidence. No native-source change or full plan
+completion follows from this reader milestone.
 
 ## Current combined source qualification — 2026-10-05
 
