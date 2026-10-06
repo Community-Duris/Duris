@@ -9,10 +9,14 @@ The seven-case pack is refreshed for published accounting candidate
 Upstream merge `a28763fcb66a88a286136df1503bd8cc0ed2f72e` preserves original
 prep commits `f1a15f1d982bf330d57428b20797beb96aa34c71`,
 `cd6e62e331aae0b81b23ed858ec900420e70bbf5` and
-`a7c7efb269bdeb3e7d0ef803ac3d2c441fecaf26`. The refresh bundle's exact SHA is
-recorded by the following handoff metadata commit after publication. Import the
-owned refresh bundle on a compatible candidate; the merge imports upstream
-history and is not a prep-authored production change.
+`a7c7efb269bdeb3e7d0ef803ac3d2c441fecaf26`.
+Refresh fixture/test/documentation bundle:
+`2ec64e8b0f04331291d1be0ff049e57a35470ad7` (ten owned files changed).
+Its following handoff-only metadata commit records this exact SHA; resolve that
+published tip with `git rev-parse origin/codex/accounting-quest-prep` after fetch.
+Import the owned refresh bundle on a compatible candidate; the merge imports
+upstream history and is not a prep-authored production change. For a primary that
+has not yet consumed the original pack, retain original bundle order first.
 
 ## Current evidence and priorities
 
