@@ -1,0 +1,1305 @@
+[
+  {
+    "case_id": "QP01",
+    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
+    "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
+    "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "runtime_owners": {
+      "dispatch": "assign_the_questers/qst_func -> quester CMD_GIVE -> active_regular_sql submit_native_quest_give",
+      "selection": "quest_native_completion_owner::prepare_original",
+      "observation": "item_native_quest_gameplay_publication_owner::observe_give",
+      "birth_reset": "db.c reset -> quest_mobile_native_birth_owner begin_reset/seal_mobile/finish_reset",
+      "binding": "quest_mobile_native_reference_copy; original generation and canonical encoded reference"
+    },
+    "config": {
+      "area": "tikitt",
+      "giver": 44101,
+      "room": 44313,
+      "rewards": [
+        44192
+      ],
+      "give": [
+        [
+          "I",
+          43703
+        ],
+        [
+          "I",
+          43752
+        ],
+        [
+          "I",
+          43753
+        ],
+        [
+          "I",
+          44164
+        ]
+      ],
+      "receive": [
+        [
+          "I",
+          44192
+        ]
+      ],
+      "disappear": false,
+      "dossier": "docs/design/zone-stories/LOST_TEMPLE_OF_TIKITZOPL.md"
+    },
+    "blocks": [
+      {
+        "text": "Q\n~\nR I 44192\nG I 43703\nG I 43752\nG I 43753\nG I 44164\n",
+        "give": [
+          [
+            "I",
+            43703
+          ],
+          [
+            "I",
+            43752
+          ],
+          [
+            "I",
+            43753
+          ],
+          [
+            "I",
+            44164
+          ]
+        ],
+        "receive": [
+          [
+            "I",
+            44192
+          ]
+        ],
+        "disappear": false,
+        "line": 271
+      }
+    ],
+    "reset_families": [
+      [
+        [
+          448,
+          "M 0 44101 1 44313 100 0 0 0        * a crafty magician"
+        ],
+        [
+          449,
+          "E 1 44187 1 18 100 0 0 0           *   a magical tome"
+        ]
+      ]
+    ],
+    "prototype_records": [
+      {
+        "kind": "mob",
+        "vnum": 44101,
+        "line": 16,
+        "path": "areas/mob/tikitt.mob"
+      },
+      {
+        "kind": "obj",
+        "vnum": 43703,
+        "line": 51,
+        "path": "areas/obj/tikit.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 43752,
+        "line": 799,
+        "path": "areas/obj/tikit.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 43753,
+        "line": 817,
+        "path": "areas/obj/tikit.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 44164,
+        "line": 1024,
+        "path": "areas/obj/tikitt.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 44192,
+        "line": 1493,
+        "path": "areas/obj/tikitt.obj"
+      }
+    ],
+    "ingredient_reward_reset_declarations": [
+      {
+        "path": "areas/zon/tikitt.zon",
+        "line": 199,
+        "raw": "P 1 44164 1 44165 100 0 0 0        *   the magical Orb of Insanity",
+        "preceding_mobile": null
+      },
+      {
+        "path": "areas/zon/tikit.zon",
+        "line": 161,
+        "raw": "E 1 43703 1 3 100 0 0 0            *   a sapphire necklace",
+        "preceding_mobile": {
+          "line": 160,
+          "raw": "M 0 43710 8 43712 100 0 0 0        * an apeman worshiper"
+        }
+      },
+      {
+        "path": "areas/zon/tikit.zon",
+        "line": 242,
+        "raw": "E 1 43753 1 3 100 0 0 0            *   a sapphire necklace",
+        "preceding_mobile": {
+          "line": 241,
+          "raw": "M 0 43710 8 43798 100 0 0 0        * an apeman worshiper"
+        }
+      },
+      {
+        "path": "areas/zon/tikit.zon",
+        "line": 290,
+        "raw": "E 1 43752 1 3 100 0 0 0            *   a sapphire necklace",
+        "preceding_mobile": {
+          "line": 289,
+          "raw": "M 0 43710 8 43836 100 0 0 0        * an apeman worshiper"
+        }
+      }
+    ],
+    "source_hashes": {
+      "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
+      "areas/zon/tikitt.zon": "3a8967d02bd2b3f49791619ea68d8b82faec2252dc8c27071d0611aa19e49106",
+      "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
+      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
+      "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
+      "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
+      "areas/qst/tikitt.qst": "7101f86829c6d32bc259b6c4bb085188a5dd5c010321684ee1b3a92924374d74",
+      "src/world/quest_mobile_native_binding.c": "1b04901860ca7395000a8cb9a66d02de3177d4c7daa46338775133c6b1c6df37",
+      "src/world/quest_mobile_native_birth.c": "234a60250d51ba423467c214359a7af590f0fcf3923b5e5fb99ffd6ec9d2db27",
+      "src/world/native_quest_recovery_context.c": "299ef8882e3cc76f1afe9df43984678c609b21d68d4770520114d1caa7ef5a94",
+      "src/item/item_movement_transaction.c": "18dfd4dbd07f44674e2feb8ff633b82547bf1f3e796f56da0ab7f98aaf7d5ef1",
+      "areas/zon/tikit.zon": "1a6ee9f5c8736dc7ee921a5cddc01f30864c44070bffb0751af1f0c9a518dfff",
+      "areas/mob/tikitt.mob": "acd8198aebd1c4283226f09138fb665d02756a07159c42ae3e96a1339cbcf3c1",
+      "areas/obj/tikit.obj": "a38f679fa6a652d001067338ab24862589f65cfcf871277d2aa5ecfa5891b2e4",
+      "areas/obj/tikitt.obj": "c408c7b37d0d3bba0701548a49624ba5b11df41e501846967adf4ce2021aeea5"
+    },
+    "evidence": "source verification only; fixture/component is not a native journey"
+  },
+  {
+    "case_id": "QP02",
+    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
+    "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
+    "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "runtime_owners": {
+      "dispatch": "assign_the_questers/qst_func -> quester CMD_GIVE -> active_regular_sql submit_native_quest_give",
+      "selection": "quest_native_completion_owner::prepare_original",
+      "observation": "item_native_quest_gameplay_publication_owner::observe_give",
+      "birth_reset": "db.c reset -> quest_mobile_native_birth_owner begin_reset/seal_mobile/finish_reset",
+      "binding": "quest_mobile_native_reference_copy; original generation and canonical encoded reference"
+    },
+    "config": {
+      "area": "goblincave",
+      "giver": 19005,
+      "room": 19008,
+      "rewards": [
+        19007,
+        19008,
+        19009,
+        19010
+      ],
+      "contracts": [
+        [
+          [
+            [
+              "I",
+              19006
+            ],
+            [
+              "C",
+              1000
+            ]
+          ],
+          [
+            [
+              "I",
+              19007
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              "I",
+              19006
+            ],
+            [
+              "I",
+              19006
+            ],
+            [
+              "C",
+              2000
+            ]
+          ],
+          [
+            [
+              "I",
+              19008
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              "I",
+              19006
+            ],
+            [
+              "I",
+              19006
+            ],
+            [
+              "I",
+              19006
+            ]
+          ],
+          [
+            [
+              "I",
+              19009
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              "I",
+              19006
+            ],
+            [
+              "I",
+              19006
+            ],
+            [
+              "I",
+              19006
+            ],
+            [
+              "I",
+              19006
+            ],
+            [
+              "C",
+              10000
+            ]
+          ],
+          [
+            [
+              "I",
+              19010
+            ]
+          ]
+        ]
+      ],
+      "disappear": false,
+      "dossier": "docs/design/zone-stories/GAGGA_JOBO_CAVE_SYSTEM.md"
+    },
+    "blocks": [
+      {
+        "text": "Q\n&N   \"Here you go!\"&N\n~\nR I 19007\nG I 19006\nG C 1000\n",
+        "give": [
+          [
+            "I",
+            19006
+          ],
+          [
+            "C",
+            1000
+          ]
+        ],
+        "receive": [
+          [
+            "I",
+            19007
+          ]
+        ],
+        "disappear": false,
+        "line": 26
+      },
+      {
+        "text": "Q\n&N   \"Here you go!\"\n~\nR I 19008\nG I 19006\nG I 19006\nG C 2000\n",
+        "give": [
+          [
+            "I",
+            19006
+          ],
+          [
+            "I",
+            19006
+          ],
+          [
+            "C",
+            2000
+          ]
+        ],
+        "receive": [
+          [
+            "I",
+            19008
+          ]
+        ],
+        "disappear": false,
+        "line": 32
+      },
+      {
+        "text": "Q\n&N   \"Thank you!  Here you are!\"&N\n~\nR I 19009\nG I 19006\nG I 19006\nG I 19006\n",
+        "give": [
+          [
+            "I",
+            19006
+          ],
+          [
+            "I",
+            19006
+          ],
+          [
+            "I",
+            19006
+          ]
+        ],
+        "receive": [
+          [
+            "I",
+            19009
+          ]
+        ],
+        "disappear": false,
+        "line": 39
+      },
+      {
+        "text": "Q\n&N   \"Here you go!\"&N\n~\nR I 19010\nG I 19006\nG I 19006\nG I 19006\nG I 19006\nG C 10000\n",
+        "give": [
+          [
+            "I",
+            19006
+          ],
+          [
+            "I",
+            19006
+          ],
+          [
+            "I",
+            19006
+          ],
+          [
+            "I",
+            19006
+          ],
+          [
+            "C",
+            10000
+          ]
+        ],
+        "receive": [
+          [
+            "I",
+            19010
+          ]
+        ],
+        "disappear": false,
+        "line": 46
+      }
+    ],
+    "reset_families": [
+      [
+        [
+          49,
+          "M 0 19005 1 19008 100 0 0 0        * a goblin leatherworker"
+        ],
+        [
+          50,
+          "G 1 19007 1 0 100 0 0 0            *    a pair of leather shoes"
+        ],
+        [
+          51,
+          "G 1 19008 1 0 100 0 0 0            *    a goblin-made leather shirt"
+        ],
+        [
+          52,
+          "G 1 19009 1 0 100 0 0 0            *    a chothe hide backpack"
+        ],
+        [
+          53,
+          "G 1 19010 1 0 100 0 0 0            *    a pair of goblin-made gloves"
+        ]
+      ]
+    ],
+    "prototype_records": [
+      {
+        "kind": "mob",
+        "vnum": 19005,
+        "line": 92,
+        "path": "areas/mob/goblincave.mob"
+      },
+      {
+        "kind": "obj",
+        "vnum": 19006,
+        "line": 84,
+        "path": "areas/obj/goblincave.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 19007,
+        "line": 96,
+        "path": "areas/obj/goblincave.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 19008,
+        "line": 110,
+        "path": "areas/obj/goblincave.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 19009,
+        "line": 124,
+        "path": "areas/obj/goblincave.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 19010,
+        "line": 140,
+        "path": "areas/obj/goblincave.obj"
+      }
+    ],
+    "ingredient_reward_reset_declarations": [
+      {
+        "path": "areas/zon/goblincave.zon",
+        "line": 50,
+        "raw": "G 1 19007 1 0 100 0 0 0            *    a pair of leather shoes",
+        "preceding_mobile": {
+          "line": 49,
+          "raw": "M 0 19005 1 19008 100 0 0 0        * a goblin leatherworker"
+        }
+      },
+      {
+        "path": "areas/zon/goblincave.zon",
+        "line": 51,
+        "raw": "G 1 19008 1 0 100 0 0 0            *    a goblin-made leather shirt",
+        "preceding_mobile": {
+          "line": 49,
+          "raw": "M 0 19005 1 19008 100 0 0 0        * a goblin leatherworker"
+        }
+      },
+      {
+        "path": "areas/zon/goblincave.zon",
+        "line": 52,
+        "raw": "G 1 19009 1 0 100 0 0 0            *    a chothe hide backpack",
+        "preceding_mobile": {
+          "line": 49,
+          "raw": "M 0 19005 1 19008 100 0 0 0        * a goblin leatherworker"
+        }
+      },
+      {
+        "path": "areas/zon/goblincave.zon",
+        "line": 53,
+        "raw": "G 1 19010 1 0 100 0 0 0            *    a pair of goblin-made gloves",
+        "preceding_mobile": {
+          "line": 49,
+          "raw": "M 0 19005 1 19008 100 0 0 0        * a goblin leatherworker"
+        }
+      },
+      {
+        "path": "areas/zon/goblincave.zon",
+        "line": 70,
+        "raw": "G 1 19006 6 0 100 0 0 0            *    a strip of chothe hide",
+        "preceding_mobile": {
+          "line": 68,
+          "raw": "M 0 19000 6 19018 100 0 0 0        * a large chothe"
+        }
+      },
+      {
+        "path": "areas/zon/goblincave.zon",
+        "line": 72,
+        "raw": "G 1 19006 6 0 100 0 0 0            *    a strip of chothe hide",
+        "preceding_mobile": {
+          "line": 71,
+          "raw": "M 0 19000 6 19019 100 0 0 0        * a large chothe"
+        }
+      },
+      {
+        "path": "areas/zon/goblincave.zon",
+        "line": 75,
+        "raw": "G 1 19006 6 0 100 0 0 0            *    a strip of chothe hide",
+        "preceding_mobile": {
+          "line": 74,
+          "raw": "M 0 19000 6 19019 100 0 0 0        * a large chothe"
+        }
+      },
+      {
+        "path": "areas/zon/goblincave.zon",
+        "line": 79,
+        "raw": "G 1 19006 6 0 100 0 0 0            *    a strip of chothe hide",
+        "preceding_mobile": {
+          "line": 78,
+          "raw": "M 0 19000 6 19020 100 0 0 0        * a large chothe"
+        }
+      },
+      {
+        "path": "areas/zon/goblincave.zon",
+        "line": 82,
+        "raw": "G 1 19006 6 0 100 0 0 0            *    a strip of chothe hide",
+        "preceding_mobile": {
+          "line": 81,
+          "raw": "M 0 19000 6 19021 100 0 0 0        * a large chothe"
+        }
+      },
+      {
+        "path": "areas/zon/goblincave.zon",
+        "line": 85,
+        "raw": "G 1 19006 6 0 100 0 0 0            *    a strip of chothe hide",
+        "preceding_mobile": {
+          "line": 84,
+          "raw": "M 0 19000 6 19022 100 0 0 0        * a large chothe"
+        }
+      }
+    ],
+    "source_hashes": {
+      "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
+      "areas/zon/goblincave.zon": "ae9ecc8247febfee94f6f40d7b8616f4fb66db54c7e8f8d951ab1e94c7f9267d",
+      "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
+      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
+      "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
+      "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
+      "areas/qst/goblincave.qst": "ff8c735e1258bd05f9065c041f24b68ef621b5c952c14e04a4d97b8c492e30f9",
+      "src/world/quest_mobile_native_binding.c": "1b04901860ca7395000a8cb9a66d02de3177d4c7daa46338775133c6b1c6df37",
+      "src/world/quest_mobile_native_birth.c": "234a60250d51ba423467c214359a7af590f0fcf3923b5e5fb99ffd6ec9d2db27",
+      "src/world/native_quest_recovery_context.c": "299ef8882e3cc76f1afe9df43984678c609b21d68d4770520114d1caa7ef5a94",
+      "src/item/item_movement_transaction.c": "18dfd4dbd07f44674e2feb8ff633b82547bf1f3e796f56da0ab7f98aaf7d5ef1",
+      "areas/mob/goblincave.mob": "1e1eb3ae41578d2e63595a8cd1c2c782d5ca234e9fae72ee0e5177392776495a",
+      "areas/obj/goblincave.obj": "bcdf9cca82ce8d7c28461d68d9769bb6c49c8f0b24eb80fbde64b8937b0f9d34"
+    },
+    "evidence": "source verification only; fixture/component is not a native journey"
+  },
+  {
+    "case_id": "QP03",
+    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
+    "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
+    "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "runtime_owners": {
+      "dispatch": "assign_the_questers/qst_func -> quester CMD_GIVE -> active_regular_sql submit_native_quest_give",
+      "selection": "quest_native_completion_owner::prepare_original",
+      "observation": "item_native_quest_gameplay_publication_owner::observe_give",
+      "birth_reset": "db.c reset -> quest_mobile_native_birth_owner begin_reset/seal_mobile/finish_reset",
+      "binding": "quest_mobile_native_reference_copy; original generation and canonical encoded reference"
+    },
+    "config": {
+      "area": "pineholl",
+      "giver": 16006,
+      "room": 16077,
+      "rewards": [
+        16015,
+        16075
+      ],
+      "give": [
+        [
+          "I",
+          16013
+        ],
+        [
+          "I",
+          16014
+        ],
+        [
+          "I",
+          16080
+        ]
+      ],
+      "receive": [
+        [
+          "I",
+          16015
+        ],
+        [
+          "I",
+          16075
+        ]
+      ],
+      "disappear": true,
+      "dossier": "docs/design/zone-stories/PINE_HOLLOW.md"
+    },
+    "blocks": [
+      {
+        "text": "Q\nAuriam turns her massive head towards you and smiles.  \"You have done a good\ndeed today my friend.  Now I will be able to rest and prepare for the other\ndark warriors that are being sent to fight me.  Please accept this as a\nreward.\"  She gently removes one of her horns and hands it to you saying,\n\"Please use this in the battle against evil, and here take one of my scales\ntoo.\"  She gently removes one of her own armored scales and hands it to you as\nwell.\n~\nR I 16015\nR I 16075\nG I 16013\nG I 16014\nG I 16080\nD\nStretching her powerful golden wings she speaks again.  \"I must go now, I need\nto pray to my god and prepare for my next battle.  I bid good travels to you\nand all your kin.  Remember always that Auriam is your friend.\"  With a mighty\nleap she hurls herself into the air and flies off into the heavens.\n~\n",
+        "give": [
+          [
+            "I",
+            16013
+          ],
+          [
+            "I",
+            16014
+          ],
+          [
+            "I",
+            16080
+          ]
+        ],
+        "receive": [
+          [
+            "I",
+            16015
+          ],
+          [
+            "I",
+            16075
+          ]
+        ],
+        "disappear": true,
+        "line": 69
+      }
+    ],
+    "reset_families": [
+      [
+        [
+          258,
+          "M 0 16006 1 16077 100 0 0 0        * Auriam"
+        ],
+        [
+          259,
+          "G 1 16016 1 0 100 0 0 0            *    a broken mithral lance"
+        ],
+        [
+          260,
+          "G 1 16015 1 0 100 0 0 0            *    a gold dragon scale"
+        ]
+      ]
+    ],
+    "prototype_records": [
+      {
+        "kind": "mob",
+        "vnum": 16006,
+        "line": 108,
+        "path": "areas/mob/pineholl.mob"
+      },
+      {
+        "kind": "obj",
+        "vnum": 16013,
+        "line": 219,
+        "path": "areas/obj/pineholl.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 16014,
+        "line": 241,
+        "path": "areas/obj/pineholl.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 16015,
+        "line": 262,
+        "path": "areas/obj/pineholl.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 16075,
+        "line": 1289,
+        "path": "areas/obj/pineholl.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 16080,
+        "line": 1384,
+        "path": "areas/obj/pineholl.obj"
+      }
+    ],
+    "ingredient_reward_reset_declarations": [
+      {
+        "path": "areas/zon/pineholl.zon",
+        "line": 260,
+        "raw": "G 1 16015 1 0 100 0 0 0            *    a gold dragon scale",
+        "preceding_mobile": {
+          "line": 258,
+          "raw": "M 0 16006 1 16077 100 0 0 0        * Auriam"
+        }
+      },
+      {
+        "path": "areas/zon/pineholl.zon",
+        "line": 266,
+        "raw": "E 1 16014 1 5 100 0 0 0            *   a full suit of black platemail",
+        "preceding_mobile": {
+          "line": 265,
+          "raw": "M 0 16005 1 16081 100 0 0 0        * a cruel warrior"
+        }
+      },
+      {
+        "path": "areas/zon/pineholl.zon",
+        "line": 267,
+        "raw": "E 1 16013 1 16 100 0 0 0           *   a black sword",
+        "preceding_mobile": {
+          "line": 265,
+          "raw": "M 0 16005 1 16081 100 0 0 0        * a cruel warrior"
+        }
+      },
+      {
+        "path": "areas/zon/pineholl.zon",
+        "line": 445,
+        "raw": "G 1 16080 1 0 100 0 0 0            *    the totem of dark spirits",
+        "preceding_mobile": {
+          "line": 444,
+          "raw": "M 0 16087 1 16161 100 0 0 0        * the dark shaman"
+        }
+      }
+    ],
+    "source_hashes": {
+      "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
+      "areas/zon/pineholl.zon": "a46a388b07e50aa1767be5f1263d84275748e85d86b5b99531703ec151138aaa",
+      "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
+      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
+      "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
+      "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
+      "areas/qst/pineholl.qst": "257713a2c62b0f40b6fcacb75b6efbaa037dcf83e31c7e9b9849fceb1b75d2a5",
+      "src/world/quest_mobile_native_binding.c": "1b04901860ca7395000a8cb9a66d02de3177d4c7daa46338775133c6b1c6df37",
+      "src/world/quest_mobile_native_birth.c": "234a60250d51ba423467c214359a7af590f0fcf3923b5e5fb99ffd6ec9d2db27",
+      "src/world/native_quest_recovery_context.c": "299ef8882e3cc76f1afe9df43984678c609b21d68d4770520114d1caa7ef5a94",
+      "src/item/item_movement_transaction.c": "18dfd4dbd07f44674e2feb8ff633b82547bf1f3e796f56da0ab7f98aaf7d5ef1",
+      "areas/mob/pineholl.mob": "af568e9f8f3fcd800cac256bc14788e1be47a946e02b39a55320221b9c7f9e33",
+      "areas/obj/pineholl.obj": "315e62d04c2a786699d16b07e0738142d6228d54b717566684bb1ceacb62f0ad"
+    },
+    "evidence": "source verification only; fixture/component is not a native journey"
+  },
+  {
+    "case_id": "QP04",
+    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
+    "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
+    "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "runtime_owners": {
+      "dispatch": "shop_keeper -> SHOP_FUNC(world_quest) -> CMD_ASK",
+      "settlement": "world_quest_payment_committed",
+      "producer": "createQuestForGiverVnum -> runtime world-quest policy"
+    },
+    "config": {
+      "area": "quietus",
+      "giver": 1709,
+      "room": 1734,
+      "dynamic": true,
+      "level": 11,
+      "fee_copper": 220,
+      "rewards": [],
+      "dossier": "docs/design/zone-stories/QUIETUS_QUAY.md"
+    },
+    "blocks": [],
+    "reset_families": [
+      [
+        [
+          234,
+          "M 0 1709 1 1734 100 0 0 0          * a rakshasa bartender"
+        ],
+        [
+          235,
+          "G 1 1705 999 0 100 0 0 0           *    a stone ale tankard"
+        ]
+      ]
+    ],
+    "prototype_records": [
+      {
+        "kind": "mob",
+        "vnum": 1709,
+        "line": 140,
+        "path": "areas/mob/quietus.mob"
+      }
+    ],
+    "ingredient_reward_reset_declarations": [],
+    "source_hashes": {
+      "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
+      "areas/zon/quietus.zon": "db805a1e425995a5fa2e9639f6f771ec06be3c15622686556481b279275ff0f1",
+      "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
+      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
+      "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
+      "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
+      "src/specs/specs.world_quest.c": "a808577b3573d224df4ed52b9ec0dc9e89aaa05fa056f8b1f44cb8e853aa2ebf",
+      "src/world/world_quest.c": "cef7f6e43527a34cefd750056ba7308702a526aec82ceb956ac7191b0dfe3517",
+      "src/world/world_quest_policy.c": "f5d00185f49dce98948348149a5242ebe379eee714a834bbb76ac5abeb712fd8",
+      "src/economy/shop.c": "de8bdbe95cfa626c6ca869495ccc34afc0097af4c964d021ad2d66cb99d34393",
+      "src/core/utility.c": "1930fb6bbcea509818c5a9986d47086ef1033adf124e8d396cd73df7a7b60668",
+      "areas/shp/quietus.shp": "95cdf1e5830e72a8a9aac1e8526ca2b4cf9eb7ab52b50d8c52153dcc5ec1710b",
+      "areas/mob/quietus.mob": "557f12686cd1be056391c1d1642a825501827a755d8b936b80702d233da28895"
+    },
+    "evidence": "source verification only; fixture/component is not a native journey"
+  },
+  {
+    "case_id": "QP05",
+    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
+    "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
+    "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "runtime_owners": {
+      "dispatch": "assign_the_questers/qst_func -> quester CMD_GIVE -> active_regular_sql submit_native_quest_give",
+      "selection": "quest_native_completion_owner::prepare_original",
+      "observation": "item_native_quest_gameplay_publication_owner::observe_give",
+      "birth_reset": "db.c reset -> quest_mobile_native_birth_owner begin_reset/seal_mobile/finish_reset",
+      "binding": "quest_mobile_native_reference_copy; original generation and canonical encoded reference"
+    },
+    "config": {
+      "area": "pineholl",
+      "giver": 16080,
+      "room": 16110,
+      "rewards": [
+        16048,
+        16050
+      ],
+      "contracts": [
+        [
+          [
+            [
+              "I",
+              16019
+            ],
+            [
+              "I",
+              16019
+            ],
+            [
+              "I",
+              16019
+            ]
+          ],
+          [
+            [
+              "I",
+              16048
+            ]
+          ]
+        ],
+        [
+          [
+            [
+              "I",
+              16021
+            ],
+            [
+              "I",
+              16021
+            ]
+          ],
+          [
+            [
+              "I",
+              16050
+            ]
+          ]
+        ]
+      ],
+      "disappear": false,
+      "dossier": "docs/design/zone-stories/PINE_HOLLOW.md"
+    },
+    "blocks": [
+      {
+        "text": "Q\nShe smiles and says, \"Thank you!  These skins will help keep me in business\nfor a while longer.  Let me finish stitching this jacket and it will be yours.\"\nShe puts a few more stitches in a bearskin jacket she is working on and hands\nit over.\n~\nR I 16048\nG I 16019\nG I 16019\nG I 16019\n",
+        "give": [
+          [
+            "I",
+            16019
+          ],
+          [
+            "I",
+            16019
+          ],
+          [
+            "I",
+            16019
+          ]
+        ],
+        "receive": [
+          [
+            "I",
+            16048
+          ]
+        ],
+        "disappear": false,
+        "line": 124
+      },
+      {
+        "text": "Q\nShe immediately puts aside one of the skins and begins working on the other\nskin she was given.  After a short period of cutting and stitching the skin\nbegins to take form as a fine coat.  As a finishing touch she applies a\nstrange fluid to the fur to make it bright and healthy looking.  When done\nshe hands the coat to you saying, \"Thank you so much.  Please continue to give\nme any of the skins you come by, I will do my best to make it worth your\nwhile.\"\n~\nR I 16050\nG I 16021\nG I 16021\n",
+        "give": [
+          [
+            "I",
+            16021
+          ],
+          [
+            "I",
+            16021
+          ]
+        ],
+        "receive": [
+          [
+            "I",
+            16050
+          ]
+        ],
+        "disappear": false,
+        "line": 146
+      }
+    ],
+    "reset_families": [
+      [
+        [
+          304,
+          "M 0 16080 1 16110 100 0 0 0        * Darlene"
+        ]
+      ]
+    ],
+    "prototype_records": [
+      {
+        "kind": "mob",
+        "vnum": 16080,
+        "line": 1301,
+        "path": "areas/mob/pineholl.mob"
+      },
+      {
+        "kind": "obj",
+        "vnum": 16019,
+        "line": 338,
+        "path": "areas/obj/pineholl.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 16021,
+        "line": 374,
+        "path": "areas/obj/pineholl.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 16048,
+        "line": 844,
+        "path": "areas/obj/pineholl.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 16050,
+        "line": 878,
+        "path": "areas/obj/pineholl.obj"
+      }
+    ],
+    "ingredient_reward_reset_declarations": [
+      {
+        "path": "areas/zon/pineholl.zon",
+        "line": 137,
+        "raw": "E 1 16019 6 12 100 0 0 0           *   a brown bear skin",
+        "preceding_mobile": {
+          "line": 136,
+          "raw": "M 0 16019 7 16000 100 0 0 0        * the brown bear"
+        }
+      },
+      {
+        "path": "areas/zon/pineholl.zon",
+        "line": 139,
+        "raw": "E 1 16019 6 12 100 0 0 0           *   a brown bear skin",
+        "preceding_mobile": {
+          "line": 138,
+          "raw": "M 0 16019 7 16001 100 0 0 0        * the brown bear"
+        }
+      },
+      {
+        "path": "areas/zon/pineholl.zon",
+        "line": 183,
+        "raw": "E 1 16019 6 12 100 0 0 0           *   a brown bear skin",
+        "preceding_mobile": {
+          "line": 182,
+          "raw": "M 0 16019 7 16025 100 0 0 0        * the brown bear"
+        }
+      },
+      {
+        "path": "areas/zon/pineholl.zon",
+        "line": 187,
+        "raw": "E 1 16019 6 12 100 0 0 0           *   a brown bear skin",
+        "preceding_mobile": {
+          "line": 186,
+          "raw": "M 0 16019 7 16027 100 0 0 0        * the brown bear"
+        }
+      },
+      {
+        "path": "areas/zon/pineholl.zon",
+        "line": 209,
+        "raw": "E 1 16019 6 12 100 0 0 0           *   a brown bear skin",
+        "preceding_mobile": {
+          "line": 208,
+          "raw": "M 0 16019 7 16039 100 0 0 0        * the brown bear"
+        }
+      },
+      {
+        "path": "areas/zon/pineholl.zon",
+        "line": 219,
+        "raw": "G 1 16021 1 0 100 0 0 0            *    a huge bear skin",
+        "preceding_mobile": {
+          "line": 218,
+          "raw": "M 0 16021 1 16040 100 0 0 0        * a large black bear"
+        }
+      },
+      {
+        "path": "areas/zon/pineholl.zon",
+        "line": 239,
+        "raw": "E 1 16019 6 12 100 0 0 0           *   a brown bear skin",
+        "preceding_mobile": {
+          "line": 238,
+          "raw": "M 0 16019 7 16051 100 0 0 0        * the brown bear"
+        }
+      }
+    ],
+    "source_hashes": {
+      "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
+      "areas/zon/pineholl.zon": "a46a388b07e50aa1767be5f1263d84275748e85d86b5b99531703ec151138aaa",
+      "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
+      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
+      "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
+      "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
+      "areas/qst/pineholl.qst": "257713a2c62b0f40b6fcacb75b6efbaa037dcf83e31c7e9b9849fceb1b75d2a5",
+      "src/world/quest_mobile_native_binding.c": "1b04901860ca7395000a8cb9a66d02de3177d4c7daa46338775133c6b1c6df37",
+      "src/world/quest_mobile_native_birth.c": "234a60250d51ba423467c214359a7af590f0fcf3923b5e5fb99ffd6ec9d2db27",
+      "src/world/native_quest_recovery_context.c": "299ef8882e3cc76f1afe9df43984678c609b21d68d4770520114d1caa7ef5a94",
+      "src/item/item_movement_transaction.c": "18dfd4dbd07f44674e2feb8ff633b82547bf1f3e796f56da0ab7f98aaf7d5ef1",
+      "areas/mob/pineholl.mob": "af568e9f8f3fcd800cac256bc14788e1be47a946e02b39a55320221b9c7f9e33",
+      "areas/obj/pineholl.obj": "315e62d04c2a786699d16b07e0738142d6228d54b717566684bb1ceacb62f0ad"
+    },
+    "evidence": "source verification only; fixture/component is not a native journey"
+  },
+  {
+    "case_id": "QP06",
+    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
+    "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
+    "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "runtime_owners": {
+      "dispatch": "assign_the_questers/qst_func -> quester CMD_GIVE -> active_regular_sql submit_native_quest_give",
+      "selection": "quest_native_completion_owner::prepare_original",
+      "observation": "item_native_quest_gameplay_publication_owner::observe_give",
+      "birth_reset": "db.c reset -> quest_mobile_native_birth_owner begin_reset/seal_mobile/finish_reset",
+      "binding": "quest_mobile_native_reference_copy; original generation and canonical encoded reference"
+    },
+    "config": {
+      "area": "newbie",
+      "giver": 29257,
+      "room": 29217,
+      "rewards": [
+        29237
+      ],
+      "give": [
+        [
+          "I",
+          29262
+        ],
+        [
+          "I",
+          29263
+        ],
+        [
+          "I",
+          29264
+        ]
+      ],
+      "receive": [
+        [
+          "E",
+          2500
+        ],
+        [
+          "C",
+          3000
+        ],
+        [
+          "I",
+          29237
+        ]
+      ],
+      "disappear": false,
+      "dossier": "docs/reference/zone-story-audits/newbie.md"
+    },
+    "blocks": [
+      {
+        "text": "Q\n$n &+wtakes the body parts from you and says, \"Well\nI guess that is proof enough.  Hope they didn't put up too much of a fight.\nWell you'll be wanting that prize now I'm guessin'.  Good job, keep up the\ngood work.\"\n~\nR E 2500\nR C 3000\nR I 29237\nG I 29262\nG I 29263\nG I 29264\n",
+        "give": [
+          [
+            "I",
+            29262
+          ],
+          [
+            "I",
+            29263
+          ],
+          [
+            "I",
+            29264
+          ]
+        ],
+        "receive": [
+          [
+            "E",
+            2500
+          ],
+          [
+            "C",
+            3000
+          ],
+          [
+            "I",
+            29237
+          ]
+        ],
+        "disappear": false,
+        "line": 1836
+      }
+    ],
+    "reset_families": [
+      [
+        [
+          237,
+          "M 0 29257 1 29217 100 0 0 0        * Kord, the barbarian mercenary"
+        ],
+        [
+          238,
+          "E 1 29278 1 12 100 0 0 0           *   cloak of stealth"
+        ],
+        [
+          239,
+          "G 1 53 1 0 100 0 0 0               *    (object type not in this .obj file)"
+        ]
+      ]
+    ],
+    "prototype_records": [
+      {
+        "kind": "mob",
+        "vnum": 29257,
+        "line": 931,
+        "path": "areas/mob/newbie.mob"
+      },
+      {
+        "kind": "obj",
+        "vnum": 29237,
+        "line": 628,
+        "path": "areas/obj/newbie.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 29262,
+        "line": 953,
+        "path": "areas/obj/newbie.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 29263,
+        "line": 961,
+        "path": "areas/obj/newbie.obj"
+      },
+      {
+        "kind": "obj",
+        "vnum": 29264,
+        "line": 969,
+        "path": "areas/obj/newbie.obj"
+      }
+    ],
+    "ingredient_reward_reset_declarations": [
+      {
+        "path": "areas/zon/newbie.zon",
+        "line": 394,
+        "raw": "G 1 29264 1 0 100 0 0 0            *    a grubby toe",
+        "preceding_mobile": {
+          "line": 393,
+          "raw": "M 0 29277 1 29290 100 0 0 0        * a grubby bandit"
+        }
+      },
+      {
+        "path": "areas/zon/newbie.zon",
+        "line": 396,
+        "raw": "G 1 29263 1 0 100 0 0 0            *    a recently severed scalp",
+        "preceding_mobile": {
+          "line": 395,
+          "raw": "M 0 29278 1 29290 100 0 0 0        * a rugged barbarian"
+        }
+      },
+      {
+        "path": "areas/zon/newbie.zon",
+        "line": 398,
+        "raw": "G 1 29262 1 0 100 0 0 0            *    a bleeding ear",
+        "preceding_mobile": {
+          "line": 397,
+          "raw": "M 0 29279 1 29290 100 0 0 0        * a mountain dwarf"
+        }
+      }
+    ],
+    "source_hashes": {
+      "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
+      "areas/zon/newbie.zon": "72687b0101859783f6472e7ff4eb29645551ecc8e69cbac77ff9804b6fd6e16c",
+      "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
+      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
+      "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
+      "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
+      "areas/qst/newbie.qst": "889ea5560152e48d3766e7a10296e889387d75311b889a3d4b1c8faaa06ec874",
+      "src/world/quest_mobile_native_binding.c": "1b04901860ca7395000a8cb9a66d02de3177d4c7daa46338775133c6b1c6df37",
+      "src/world/quest_mobile_native_birth.c": "234a60250d51ba423467c214359a7af590f0fcf3923b5e5fb99ffd6ec9d2db27",
+      "src/world/native_quest_recovery_context.c": "299ef8882e3cc76f1afe9df43984678c609b21d68d4770520114d1caa7ef5a94",
+      "src/item/item_movement_transaction.c": "18dfd4dbd07f44674e2feb8ff633b82547bf1f3e796f56da0ab7f98aaf7d5ef1",
+      "areas/mob/newbie.mob": "f7075a745335f973235983af430094be28ca23a7d5212ef48a9e50abda7791a5",
+      "areas/obj/newbie.obj": "4025c500b3aca83b9a8b59bdd69d4c7f2f84267309871f12dab028ca4aa4660a"
+    },
+    "evidence": "source verification only; fixture/component is not a native journey"
+  },
+  {
+    "case_id": "QP07",
+    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
+    "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
+    "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "runtime_owners": {
+      "dispatch": "shop_keeper -> SHOP_FUNC(world_quest) -> CMD_ASK",
+      "settlement": "world_quest_payment_committed",
+      "producer": "createQuestForGiverVnum -> runtime world-quest policy"
+    },
+    "config": {
+      "area": "quietus",
+      "giver": 1709,
+      "room": 1734,
+      "dynamic": true,
+      "level": 11,
+      "map_fee_copper": 110,
+      "rewards": [],
+      "dossier": "docs/design/zone-stories/QUIETUS_QUAY.md"
+    },
+    "blocks": [],
+    "reset_families": [
+      [
+        [
+          234,
+          "M 0 1709 1 1734 100 0 0 0          * a rakshasa bartender"
+        ],
+        [
+          235,
+          "G 1 1705 999 0 100 0 0 0           *    a stone ale tankard"
+        ]
+      ]
+    ],
+    "prototype_records": [
+      {
+        "kind": "mob",
+        "vnum": 1709,
+        "line": 140,
+        "path": "areas/mob/quietus.mob"
+      }
+    ],
+    "ingredient_reward_reset_declarations": [],
+    "source_hashes": {
+      "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
+      "areas/zon/quietus.zon": "db805a1e425995a5fa2e9639f6f771ec06be3c15622686556481b279275ff0f1",
+      "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
+      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
+      "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
+      "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
+      "src/specs/specs.world_quest.c": "a808577b3573d224df4ed52b9ec0dc9e89aaa05fa056f8b1f44cb8e853aa2ebf",
+      "src/world/world_quest.c": "cef7f6e43527a34cefd750056ba7308702a526aec82ceb956ac7191b0dfe3517",
+      "src/world/world_quest_policy.c": "f5d00185f49dce98948348149a5242ebe379eee714a834bbb76ac5abeb712fd8",
+      "src/economy/shop.c": "de8bdbe95cfa626c6ca869495ccc34afc0097af4c964d021ad2d66cb99d34393",
+      "src/core/utility.c": "1930fb6bbcea509818c5a9986d47086ef1033adf124e8d396cd73df7a7b60668",
+      "areas/shp/quietus.shp": "95cdf1e5830e72a8a9aac1e8526ca2b4cf9eb7ab52b50d8c52153dcc5ec1710b",
+      "areas/mob/quietus.mob": "557f12686cd1be056391c1d1642a825501827a755d8b936b80702d233da28895"
+    },
+    "evidence": "source verification only; fixture/component is not a native journey"
+  }
+]

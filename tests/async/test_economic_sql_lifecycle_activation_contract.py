@@ -37,7 +37,7 @@ class TestEconomicSqlLifecycleActivationContract(unittest.TestCase):
         self.assertIn("mysql_thread_id(connection) == owner.session_", impl)
         self.assertIn("stored.phase == 2", impl)
         self.assertIn("decision.exists && decision.state == 1", impl)
-        self.assertIn("verify(connection, evidence, snapshot)", impl)
+        self.assertIn("verify(connection, request, evidence, snapshot)", impl)
         self.assertIn("economic_sql_global_activation", impl)
         # Check transition statement
         self.assertIn("UPDATE economic_lineage_state SET active_epoch=", impl)

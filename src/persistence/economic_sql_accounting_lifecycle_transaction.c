@@ -1076,7 +1076,7 @@ unsigned int economic_sql_accounting_lifecycle_transaction::activate_verified(
 		}
 		auto [snapshot, holdings] = capture_current_holdings(connection, true);
 		execute(connection, "SAVEPOINT economic_sql_activation_verifier");
-		const auto verified = verify(connection, evidence, snapshot);
+		const auto verified = verify(connection, request, evidence, snapshot);
 		require(!verified, verified);
 		execute(connection, "ROLLBACK TO SAVEPOINT economic_sql_activation_verifier");
 		execute(connection, "RELEASE SAVEPOINT economic_sql_activation_verifier");
