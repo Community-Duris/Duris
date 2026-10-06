@@ -2178,6 +2178,35 @@ struct affected_type *get_spell_from_char(P_char ch, int spell, void *context, i
 	return NULL;
 }
 
+bool spell_affect_requires_detect_magic(int spell)
+{
+	switch (spell)
+	{
+	case SONG_CHARMING:
+	case SPELL_CHARM_PERSON:
+	case SPELL_PROTECT_FROM_ACID:
+	case SPELL_PROTECT_FROM_COLD:
+	case SPELL_PROTECT_FROM_EVIL:
+	case SPELL_PROTECT_FROM_FIRE:
+	case SPELL_PROTECT_FROM_GAS:
+	case SPELL_PROTECT_FROM_GOOD:
+	case SPELL_PROTECT_FROM_LIGHTNING:
+	case SPELL_PROT_FROM_UNDEAD:
+	case SPELL_PROT_UNDEAD:
+	case SPELL_SLOW_POISON:
+	case SPELL_VAMPIRIC_TOUCH:
+	case SPELL_ETHEREAL_FORM:
+	case SPELL_HOLY_DHARMA:
+	case SPELL_SANCTUARY:
+	case SPELL_SANCTUM_DRACONIS:
+	case SPELL_BLUR:
+	case SPELL_FAERIE_SIGHT:
+		return true;
+	default:
+		return false;
+	}
+}
+
 bool affected_by_spell(P_char ch, int skill)
 {
 	struct affected_type *hjp;

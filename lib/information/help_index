@@ -3621,8 +3621,18 @@ Cumulative:     No
 Duration:       Dependent on proficiency of caster
 Type of spell:  Divination
 
-"Detect Magic" allows the caster to detect the glowing auras surrounding
-magical items.
+"Detect Magic" allows the affected person to see magical item auras and
+cursed item tags in inventory, equipment, and item inspections. Looking
+around reveals healing, harmful, and magic-suppressed room auras, even in
+brief mode. Score reveals otherwise hidden magical protections and effects.
+
+Examine an item to sense whether it holds special magical power, without
+identifying that power. Examining a wand or staff also estimates its charge;
+a drained device appears inert of the magic it once held.
+
+Examining a magical weapon also reveals its ability to overcome the defenses
+of creatures immune to ordinary weapons. Epic stones show a magical aura and
+special power only while they still hold an unclaimed reward.
 ===========================================================================
 
 #

@@ -983,6 +983,9 @@ char *json_build_char_affects(struct char_data *ch)
 		for (aff = ch->affected; aff; aff = aff->next)
 		{
 			const bool managed_ward = spell_ward_is_managed(aff);
+			if (spell_affect_requires_detect_magic(aff->type) &&
+			    !IS_AFFECTED2(ch, AFF2_DETECT_MAGIC))
+				continue;
 			/* Match score command logic for showing active spells */
 			int is_herb = (aff->type >= HERB_OCULARIUS && aff->type <= HERB_GOOTWIET);
 			if (aff->type <= 0 || !skills[aff->type].name ||

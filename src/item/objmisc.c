@@ -14,6 +14,8 @@
 #include "world/db.h"
 #include "core/utils.h"
 #include "item/objmisc.h"
+#include "world/epic.h"
+#include "world/vnum.obj.h"
 #include <string.h>
 #include <stdio.h>
 #include "combat/damage.h"
@@ -23,6 +25,20 @@ extern P_room world; /* dyn alloc'ed array of rooms     */
 extern struct zone_data *zone_table;
 extern flagDef weapon_types[];
 extern const char *modenhance_names[];
+
+bool object_has_magical_proc(P_obj obj)
+{
+	if (!obj)
+		return false;
+	// Spent epic stones no longer hold detectable special power.
+	if (obj->R_num >= 0 && obj_index && obj_index[obj->R_num].func.obj == epic_stone &&
+	    !IS_OBJ_STAT2(obj, ITEM2_MAGIC))
+		return false;
+	// Match Identify's special-magic convention; random armor uses a generic handler.
+	return (obj->R_num >= 0 && obj_index && obj_index[obj->R_num].func.obj &&
+		obj_index[obj->R_num].virtual_number != VOBJ_RANDOM_ARMOR) ||
+	       (obj->type == ITEM_WEAPON && obj->value[5] > 0);
+}
 
 /* Format food effects for item catalogue and identify output. */
 char *food_modifiers(P_obj food)

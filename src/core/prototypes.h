@@ -1305,6 +1305,7 @@ struct affected_type *get_spell_from_char(P_char ch, int spell, void *context = 
 struct affected_type *get_first_affect_with_flag(P_char ch, uint flags);
 struct room_affect *get_spell_from_room(P_room, int);
 bool affected_by_spell(P_char, int);
+bool spell_affect_requires_detect_magic(int spell);
 int affected_by_spell_count(P_char, int);
 bool affected_by_spell_flagged(P_char, int, uint);
 bool affected_by_skill(P_char ch, int skill);

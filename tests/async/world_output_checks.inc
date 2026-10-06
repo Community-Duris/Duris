@@ -118,6 +118,163 @@ static void world_output_matrix()
 	visible = true;
 	list_obj_to_char(&ring, &ch, LISTOBJ_SHORTDESC | LISTOBJ_STATS, true);
 	assert(drain(&connection).starts_with("a &+Gsilver&n ring"));
+
+	// Spell-bearing items only get a magic tag when their actual magic flag is set.
+	ring.extra2_flags = 0;
+	for (int type : { ITEM_SCROLL, ITEM_POTION, ITEM_WAND, ITEM_STAFF })
+	{
+		ring.type = type;
+		ring.value[1] = SPELL_DETECT_MAGIC;
+		ring.value[2] = 5;
+		ring.value[3] = SPELL_MAGIC_MISSILE;
+		list_obj_to_char(&ring, &ch, LISTOBJ_SHORTDESC | LISTOBJ_STATS, true, inventory);
+		assert(drain(&connection).find("magic") == std::string::npos);
+		ring.extra2_flags = ITEM2_MAGIC;
+		list_obj_to_char(&ring, &ch, LISTOBJ_SHORTDESC | LISTOBJ_STATS, true, inventory);
+		assert(drain(&connection).find("magic") != std::string::npos);
+		ring.extra2_flags = 0;
+	}
+	ring.type = ITEM_WAND;
+	ring.value[2] = 0;
+	for (int type : { ITEM_WAND, ITEM_STAFF })
+	{
+		ring.type = type;
+		show_detected_item_magic(&ch, &ring);
+		assert(drain(&connection) == "This object appears inert of the magic it once held.\n");
+	}
+	ring.value[1] = 5;
+	ring.value[2] = 5;
+	show_detected_item_magic(&ch, &ring);
+	assert(drain(&connection).find("unused") != std::string::npos);
+	ring.value[1] = 1000;
+	ring.value[2] = 1;
+	show_detected_item_magic(&ch, &ring);
+	assert(drain(&connection).find("almost dried up") != std::string::npos);
+	ch.specials.affected_by2 = 0;
+	ring.value[2] = 0;
+	show_detected_item_magic(&ch, &ring);
+	assert(drain(&connection).empty());
+	ch.specials.affected_by2 = AFF2_DETECT_MAGIC;
+
+	// Curses use the same flag as Identify and remain hidden without detection.
+	ring.type = ITEM_ARMOR;
+	ring.extra_flags = ITEM_NODROP;
+	show_obj_to_char(&ring, &ch, LISTOBJ_ACTIONDESC | LISTOBJ_STATS, true);
+	auto inspected = drain(&connection);
+	assert(inspected.starts_with(ring_name) && inspected.find("cursed") != std::string::npos);
+	where[WEAR_BODY] = "<worn on body> ";
+	ch.equipment[WEAR_BODY] = &ring;
+	ring.bitvector = AFF_INVISIBLE;
+	char equipment[MAX_STRING_LENGTH];
+	assert(get_equipment_list(&ch, equipment, 0));
+	assert(std::string(equipment).find("cursed") != std::string::npos);
+	assert(std::string(equipment).find("magic") == std::string::npos);
+	ring.extra2_flags = ITEM2_MAGIC;
+	assert(get_equipment_list(&ch, equipment, 0));
+	assert(std::string(equipment).find("magic") != std::string::npos);
+	ring.extra2_flags = 0;
+	ring.bitvector = 0;
+	ch.specials.affected_by2 = 0;
+	assert(get_equipment_list(&ch, equipment, 0));
+	assert(std::string(equipment).find("cursed") == std::string::npos);
+	show_obj_to_char(&ring, &ch, LISTOBJ_ACTIONDESC | LISTOBJ_STATS, true);
+	assert(drain(&connection).find("cursed") == std::string::npos);
+	ch.equipment[WEAR_BODY] = nullptr;
+	ring.extra_flags = 0;
+
+	// Custom and built-in weapon procs reveal only the generic power message.
+	ch.specials.affected_by2 = AFF2_DETECT_MAGIC;
+	indexes[0].virtual_number = 123;
+	indexes[0].func.obj = [](P_obj, P_char, int, char *) { return 0; };
+	assert(object_has_magical_proc(&ring));
+	show_obj_to_char(&ring, &ch, LISTOBJ_SHORTDESC | LISTOBJ_STATS, true);
+	assert(drain(&connection).find("magic") == std::string::npos);
+	show_detected_item_magic(&ch, &ring);
+	assert(drain(&connection) == "&+bYou sense this item holds great power.&n\n");
+	indexes[0].virtual_number = VOBJ_RANDOM_ARMOR;
+	assert(!object_has_magical_proc(&ring));
+
+	// Epic stone auras and power follow their activation flag, even with other affects.
+	indexes[0].virtual_number = EPIC_SMALL_STONE;
+	indexes[0].func.obj = epic_stone;
+	ring.bitvector = AFF_INVISIBLE;
+	ring.extra2_flags = ITEM2_MAGIC;
+	assert(object_has_magical_proc(&ring));
+	show_obj_to_char(&ring, &ch, LISTOBJ_SHORTDESC | LISTOBJ_STATS, true);
+	assert(drain(&connection).find("magic") != std::string::npos);
+	show_detected_item_magic(&ch, &ring);
+	assert(drain(&connection) == "&+bYou sense this item holds great power.&n\n");
+	ring.extra2_flags = 0;
+	assert(!object_has_magical_proc(&ring));
+	show_obj_to_char(&ring, &ch, LISTOBJ_SHORTDESC | LISTOBJ_STATS, true);
+	assert(drain(&connection).find("magic") == std::string::npos);
+	show_detected_item_magic(&ch, &ring);
+	assert(drain(&connection).empty());
+	ring.bitvector = 0;
+	indexes[0].virtual_number = 123;
+	indexes[0].func.obj = nullptr;
+
+	// Only flagged weapons receive a magic tag and the positive immunity hint.
+	ring.type = ITEM_WEAPON;
+	ring.value[5] = SPELL_MAGIC_MISSILE;
+	const std::string power_hint = "&+bYou sense this item holds great power.&n\n";
+	const std::string weapon_can = "&+bYou sense this weapon can overcome the defenses of creatures immune to ordinary weapons.&n\n";
+	for (bool enchanted : { false, true })
+	{
+		ring.extra2_flags = enchanted ? ITEM2_MAGIC : 0;
+		show_obj_to_char(&ring, &ch, LISTOBJ_SHORTDESC | LISTOBJ_STATS, true);
+		assert((drain(&connection).find("magic") != std::string::npos) == enchanted);
+		show_detected_item_magic(&ch, &ring);
+		assert(drain(&connection) == power_hint + (enchanted ? weapon_can : ""));
+		ch.specials.affected_by2 = 0;
+		show_detected_item_magic(&ch, &ring);
+		assert(drain(&connection).empty());
+		ch.specials.affected_by2 = AFF2_DETECT_MAGIC;
+	}
+	ring.value[5] = 0;
+	ring.extra2_flags = 0;
+	show_detected_item_magic(&ch, &ring);
+	assert(drain(&connection).empty());
+	ring.extra2_flags = ITEM2_MAGIC;
+	show_detected_item_magic(&ch, &ring);
+	assert(drain(&connection) == weapon_can);
+	ring.extra2_flags = 0;
+	ring.type = ITEM_ARMOR;
+
+	// Room auras are available to Detect Magic as well as the older detectors.
+	for (auto flags : { ROOM_HEAL, ROOM_NO_HEAL, ROOM_NO_MAGIC })
+	{
+		rooms[0].room_flags = flags;
+		ch.specials.affected_by2 = 0;
+		display_room_auras(&ch, 0);
+		assert(drain(&connection).empty());
+		ch.specials.affected_by2 = AFF2_DETECT_MAGIC;
+		display_room_auras(&ch, 0);
+		auto detected_aura = drain(&connection);
+		assert(!detected_aura.empty());
+		if (flags == ROOM_HEAL)
+			assert(detected_aura.find("soothing") != std::string::npos);
+		else if (flags == ROOM_NO_HEAL)
+			assert(detected_aura.find("evil") != std::string::npos);
+		else
+			assert(detected_aura.find("devoid") != std::string::npos);
+	}
+
+	// The recipient gets clear cast and refresh feedback, including casting on others.
+	char_data caster{};
+	caster.player.level = 20;
+	ch.specials.affected_by2 = 0;
+	spell_detect_magic(20, &caster, nullptr, 0, &ch, nullptr);
+	assert(IS_AFFECTED2(&ch, AFF2_DETECT_MAGIC));
+	assert(!IS_AFFECTED2(&caster, AFF2_DETECT_MAGIC));
+	assert(drain(&connection).find("magical auras become visible") != std::string::npos);
+	ch.affected->duration = 1;
+	spell_detect_magic(20, &caster, nullptr, 0, &ch, nullptr);
+	assert(ch.affected->duration == 20 && ch.affected->next == nullptr);
+	assert(drain(&connection).find("renewed") != std::string::npos);
+	delete ch.affected;
+	ch.affected = nullptr;
+
 	// Aura eligibility and authored semantic accent are independent of base color.
 	ch.specials.affected_by2 = 0;
 	rooms[0].room_flags = ROOM_HEAL;
