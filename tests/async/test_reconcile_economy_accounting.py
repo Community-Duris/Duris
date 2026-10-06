@@ -1219,6 +1219,92 @@ class ReconciliationTests(unittest.TestCase):
             self.assertNotIn("alias", json.dumps(data))
             self.assertLessEqual(len(data["rows"]), 3)
 
+    def test_static_custody_positions_cannot_share_an_impossible_opening(self):
+        from test_item_equipment_reconciliation import baseline
+        changes = (
+            {"state": "unknown"}, {"state": None},
+            {"state": "live", "owner": [8, 0, 0]},
+            {"state": "quarantined", "owner": [8, 0, 0]},
+            {"state": "tombstone", "owner": [1, 7, 0]},
+            {"owner": [0, 0, 0]}, {"owner": [1, 0, 0]},
+            {"owner": [7, 1, 0]}, {"owner": [7, 0, 1]},
+            {"owner": [10, 7, 1]}, {"owner": [11, 7, 0]},
+            {"owner": [11, 7, 2**31]}, {"owner": [12, 2**64 - 1, 0]},
+            {"owner": [12, 7, 1]}, {"root": 0}, {"root": 99},
+            {"state": "quarantined", "root": 99},
+            {"state": "tombstone", "owner": [8, 0, 0], "revision": 0},
+        )
+        for change in changes:
+            snapshot = baseline()
+            for row in (snapshot["item_origins"][0], snapshot["native"]["items"][0]):
+                row.update(equipment_slot=0, **change)
+            original = copy.deepcopy(snapshot)
+            counts = None
+            for limit in (0, 1, 100):
+                with self.subTest(change=change, limit=limit):
+                    report = Reconciler(limit).audit(snapshot)
+                    self.assertEqual(report["exception_counts"]["invalid_item_origin_position"], 1)
+                    self.assertEqual(report["exception_counts"]["invalid_native_item_position"], 1)
+                    if counts is None:
+                        counts = report["exception_counts"]
+                    self.assertEqual(report["exception_counts"], counts)
+                    self.assertLessEqual(len(report["exceptions"]), limit)
+                    for name in ("holdings", "provenance", "operation", "supply", "prices", "routes"):
+                        result = view(snapshot, report, name, limit, uid=81,
+                                      operation_id=OP if name == "operation" else None)
+                        self.assertEqual(result["coverage"]["exception_count"], report["exception_count"])
+                    self.assertEqual(snapshot, original)
+
+        # The authoritative CLI must retain these findings at a zero detail
+        # limit, including an input whose two impossible projections agree.
+        with tempfile.TemporaryDirectory(prefix="duris-custody-position-") as directory:
+            path = Path(directory) / "snapshot.json"
+            for change in changes:
+                snapshot = baseline()
+                for row in (snapshot["item_origins"][0], snapshot["native"]["items"][0]):
+                    row.update(equipment_slot=0, **change)
+                snapshot["item_origins"][0]["personal_alias"] = "private-custody-alias"
+                original = json.dumps(snapshot, sort_keys=True).encode()
+                path.write_bytes(original)
+                counts = None
+                for limit in (0, 1, 100):
+                    report = Reconciler(limit).audit(snapshot)
+                    command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                               str(path), "--limit", str(limit)]
+                    result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                    with self.subTest(change=change, limit=limit, cli=True):
+                        self.assertEqual(result.returncode, 1, result.stderr)
+                        self.assertFalse(result.stderr)
+                        self.assertEqual(json.loads(result.stdout), report)
+                        if counts is None:
+                            counts = report["exception_counts"]
+                        self.assertEqual(report["exception_counts"], counts)
+                        self.assertNotIn("alias", result.stdout)
+                        self.assertNotIn("private-custody", result.stdout)
+                        self.assertEqual(path.read_bytes(), original)
+
+    def test_static_custody_preserves_native_states_and_creation_openings(self):
+        from test_item_equipment_reconciliation import baseline
+        owners = [[kind, 7, 0] for kind in (1, 2, 3, 4, 5, 6, 9, 10)] + [
+            [7, 0, 0], [11, 7, 1], [11, 7, 2**31 - 1], [12, 2**64 - 2, 0]]
+        for state in ("live", "quarantined"):
+            for owner in owners:
+                snapshot = baseline()
+                for row in (snapshot["item_origins"][0], snapshot["native"]["items"][0]):
+                    row.update(equipment_slot=0, state=state, owner=owner)
+                with self.subTest(state=state, owner=owner):
+                    self.assertEqual(Reconciler().audit(snapshot)["exception_count"], 0)
+        for root in (81, 999):
+            snapshot = baseline()
+            for row in (snapshot["item_origins"][0], snapshot["native"]["items"][0]):
+                row.update(equipment_slot=0, state="tombstone", owner=[8, 0, 0], root=root)
+            self.assertEqual(Reconciler().audit(snapshot)["exception_count"], 0)
+        snapshot = baseline()
+        for row in (snapshot["item_origins"][0], snapshot["native"]["items"][0]):
+            del row["equipment_slot"]
+        self.assertEqual(Reconciler().audit(snapshot)["exception_count"], 0)
+        self.assertEqual(Reconciler().audit(creation_snapshot())["exception_count"], 0)
+
     def test_supply_requires_one_committed_root_and_preserves_findings(self):
         with tempfile.TemporaryDirectory(prefix="duris-supply-outcome-") as directory:
             path = Path(directory) / "snapshot.json"
@@ -2421,9 +2507,11 @@ class ReconciliationTests(unittest.TestCase):
         for name, changes, expected in (
                 ("valid", {}, {}),
                 ("cycle", {2: {"parent": 1}}, {"cyclic_native_topology": 3}),
-                ("self_cycle", {2: {"parent": 2}}, {"cyclic_native_topology": 3}),
+                ("self_cycle", {2: {"parent": 2}}, {"cyclic_native_topology": 3,
+                 "invalid_item_origin_position": 1, "invalid_native_item_position": 1}),
                 ("root_identity", {uid: {"root": 99} for uid in (1, 2, 3)},
-                 {"inconsistent_native_topology": 3}),
+                 {"inconsistent_native_topology": 3, "invalid_item_origin_position": 1,
+                  "invalid_native_item_position": 1}),
                 ("edge", {3: {"root": 99}}, {"inconsistent_native_topology": 1}),
                 ("orphan", {2: {"parent": 99}}, {"orphan_item_parent": 1}),
                 ("mixed_cycle", {2: {"parent": 1, "state": "tombstone", "owner": [8, 0, 0]}},
