@@ -10,6 +10,10 @@ literal descriptions. This is source acceptance only: actual factory restoration
 mutable typed continuation, remaining reset mechanics and native qualification
 remain open. No maintained native install or full Plan/release gate is claimed.
 
+The reviewed live subset and its two narrow corrections are now composed with
+that contract on5771-input private4057 source. Original preimages match; cold
+factory/carrier/provider/mechanics and native qualification remain unfinished.
+
 ## Retained original birth refusal source — 2026-10-06
 
 Original coordinator refusal delivery retained player-guarded owners but erased
