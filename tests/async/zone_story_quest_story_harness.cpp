@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 154 &&
+		require(catalog.story_mappings.size() == 155 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,128 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "prisonb"; });
+			require(mapping.stories.size() == 1 && mapping.contacts.size() == 16 &&
+					mapping.revision == 1,
+				"Fort Boyard scope failed");
+			const auto &s = story_for("prisonb", "five-scales-for-cloak");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 430)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 1 && dailies == 1,
+				"Fort Boyard split five scales or lost mode0 retained-giver daily");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 430, 43000, 100, "arrival") ==
+					result::applied,
+				"Fort Boyard discovery failed");
+			for (const auto &c : mapping.contacts)
+				if (c.mob_vnum != 43010)
+					require(journey.meet_npc(7, 42, c.mob_vnum, 43000, 102) ==
+							result::applied,
+						"Fort Boyard context encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 430, 10, 1, 103, false, false);
+			require(journal.find("] " + s.title + "\r\n") == std::string::npos,
+				"Fort Boyard dragon/rescue context forged request");
+			require(journey.meet_npc(7, 42, 43010, 43024, 104) == result::applied,
+				"Fort Boyard giver encounter failed");
+			const auto status = [&](size_t row, const char *state)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos, "Fort Boyard card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at, end == std::string::npos ? end : end - at)
+					       .find(std::string("[") + state + "] " +
+						     s.steps[row].text) != std::string::npos;
+			};
+			const int scales[] = { 43003, 43006, 43008, 43011, 43012 };
+			supplies = {};
+			for (int v : { 43015, 43000, 43020, 43031, 43009, 43010 })
+				supplies.carried[v] = 1;
+			supplies.carried[43003] = 5;
+			journal = journey.render_journal(7, 42, 430, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Missing now") &&
+					status(2, "Missing now") && status(3, "Missing now") &&
+					status(4, "Missing now") && status(5, "Pending"),
+				"Fort Boyard duplicate colors or cloak/key/note forged preparation/return");
+			const auto before = journey.serialize_state();
+			for (size_t missing = 0; missing < 5; ++missing)
+			{
+				supplies = {};
+				for (size_t row = 0; row < 5; ++row)
+					if (row != missing)
+						supplies.carried[scales[row]] = 1;
+				journal = journey.render_journal(7, 42, 430, 10, 1, 106, false,
+								 false, &supplies);
+				for (size_t row = 0; row < 5; ++row)
+					require(status(row, row == missing ? "Missing now" :
+									     "Ready now"),
+						"Fort Boyard omitted color collapsed ALL preparation");
+				require(status(5, "Pending"),
+					"Fort Boyard partial scales manufactured receipt");
+			}
+			supplies = {};
+			for (int v : scales)
+				if (v != 43011 && v != 43006)
+					supplies.carried[v] = 1;
+			supplies.equipped[3] = 43011;
+			supplies.carried[43024] = 1;
+			journal = journey.render_journal(7, 42, 430, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(1, "Missing now") && status(3, "Missing now") &&
+					status(5, "Pending"),
+				"Fort Boyard worn/nested scale forged current preparation");
+			supplies = {};
+			for (int v : scales)
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 430, 10, 1, 108, false, false,
+							 &supplies);
+			for (size_t row = 0; row < 5; ++row)
+				require(status(row, "Ready now"),
+					"Fort Boyard supplied exact scale readiness failed");
+			require(status(5, "Pending") && journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 430).completed == 0,
+				"Fort Boyard readiness manufactured personal hunt/access/touch/rescue");
+			record(journey, s.contracts.front(), "prisonb-combined", 430, 43024);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 430, 10, 1, 120, false, false,
+							 &supplies);
+			for (size_t row = 0; row < 5; ++row)
+				require(status(row, "Missing now"),
+					"Fort Boyard spent scale stayed ready");
+			require(status(5, "Recorded") &&
+					journey.progress_for_zone(7, 42, 430).completed == 1,
+				"Fort Boyard lost spent-scale history or split combined receipt");
+			auto replay = completion(s.contracts.front(), "prisonb-combined", 120);
+			replay.transaction.zone_number = 430;
+			replay.transaction.room_vnum = 43024;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Fort Boyard exact replay duplicated progress");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 430).completed == 1,
+				"Fort Boyard cold recovery lost combined receipt");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 430, 43000, 100, "arrival") ==
+					result::applied,
+				"Fort Boyard raw discovery failed");
+			record(raw, s.contracts.front(), "prisonb-raw", 430, 43024);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 430).completed == 1,
+				"Fort Boyard raw-to-authored recovery lost combined return");
 		}
 
 		{

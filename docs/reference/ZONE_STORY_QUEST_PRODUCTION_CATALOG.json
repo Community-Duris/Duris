@@ -75151,6 +75151,233 @@
     {
       "contacts": [
         {
+          "description": "Ask Gixmo about dragons and the special item. Give all five distinct scales together for one cloak of dragons; no separate paper or spell is an input.",
+          "keyword": "gixmo",
+          "mob_vnum": 43010,
+          "name": "Gixmo",
+          "topics": [
+            "hi",
+            "hello",
+            "journey",
+            "dragon",
+            "dragons",
+            "item",
+            "special",
+            "fort",
+            "boyard"
+          ]
+        },
+        {
+          "description": "The white dragon in43008 G-stocks white scale43003. Current possession, first source recovery and personal victory are separate evidence.",
+          "keyword": "white",
+          "mob_vnum": 43001,
+          "name": "a white dragon",
+          "topics": []
+        },
+        {
+          "description": "The blue dragon in43012 G-stocks blue scale43006. Its exact blue scale is one of five ingredients for the single cloak exchange.",
+          "keyword": "blue",
+          "mob_vnum": 43003,
+          "name": "a blue dragon",
+          "topics": []
+        },
+        {
+          "description": "The green dragon in43018 G-stocks green scale43008. Its other loot and the nearby epic stone are separate outcomes.",
+          "keyword": "green",
+          "mob_vnum": 43005,
+          "name": "a green dragon",
+          "topics": []
+        },
+        {
+          "description": "The red dragon in43017 G-stocks red scale43011. The local stone lever controls the black dragon's route toward the green dragon.",
+          "keyword": "red",
+          "mob_vnum": 43006,
+          "name": "a red dragon",
+          "topics": []
+        },
+        {
+          "description": "The black dragon in43016 G-stocks black scale43012. Its drow-bone necklace is different from the required scale.",
+          "keyword": "black",
+          "mob_vnum": 43007,
+          "name": "a black dragon",
+          "topics": []
+        },
+        {
+          "description": "An entrance prison guard can carry prison key43000. Shared gate access is preparation rather than a scale, rescue or accepted cloak exchange.",
+          "keyword": "guard",
+          "mob_vnum": 43000,
+          "name": "A prison guard",
+          "topics": []
+        },
+        {
+          "description": "The elite ship guard can carry holding-cell key43020. It fits the ship's cells, separately from prison key43000 and the cloak ingredients.",
+          "keyword": "elite",
+          "mob_vnum": 43020,
+          "name": "an elite guard",
+          "topics": []
+        },
+        {
+          "description": "Mebme's imprisoned-sage lore does not establish an active local teaching exchange or a recorded rescue.",
+          "keyword": "mebme",
+          "mob_vnum": 43002,
+          "name": "Mebme",
+          "topics": []
+        },
+        {
+          "description": "Ximoto is confined in a fort cell. Meeting or releasing access to a cell does not record a native rescue receipt.",
+          "keyword": "ximoto",
+          "mob_vnum": 43004,
+          "name": "Ximoto",
+          "topics": []
+        },
+        {
+          "description": "Ximota's captivity and equipment provide context. Her crown and torn belt are not Gixmo's required scales.",
+          "keyword": "ximota",
+          "mob_vnum": 43009,
+          "name": "Ximota",
+          "topics": []
+        },
+        {
+          "description": "Gatt is held aboard the ship and wishes to escape. No local native Q records an escape or rescue for him.",
+          "keyword": "gatt",
+          "mob_vnum": 43019,
+          "name": "Gatt",
+          "topics": []
+        },
+        {
+          "description": "Jebira prays for escape from the ship's holding cells. Prayer and cell access are distinct from a successful owned rescue outcome.",
+          "keyword": "jebira",
+          "mob_vnum": 43021,
+          "name": "Jebira",
+          "topics": []
+        },
+        {
+          "description": "Magiba's church prayer provides local lore. It is not another accepted native quest or a prerequisite for the cloak.",
+          "keyword": "magiba",
+          "mob_vnum": 43022,
+          "name": "Magiba",
+          "topics": []
+        },
+        {
+          "description": "Rynn cooks for the crew. The recipe-book room prose does not add a cooking or food-delivery requirement to Gixmo's exchange.",
+          "keyword": "rynn",
+          "mob_vnum": 43012,
+          "name": "Rynn",
+          "topics": []
+        },
+        {
+          "description": "Iktib maintains the ship's study. Maps, scriptures, the unholy avenger and the captain's shipping note are separate from cloak acceptance.",
+          "keyword": "iktib",
+          "mob_vnum": 43017,
+          "name": "Iktib",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Prepare five distinct dragon scales for one cloak exchange while keeping shared prison access, ship travel and epic rewards distinct.",
+      "orientation": [
+        "Ask Captain Gixmo aboard the prison ship about dragons, the special item or Fort Boyard. He accepts one exact white, blue, green, red and black scale together for the cloak of dragons. Five preparations lead to one accepted exchange; the native recipe does not require a separate spell, paper or five conversation achievements.",
+        "The white dragon in cell43008 can carry the white scale; the blue dragon in43012 carries blue; the green dragon in43018 carries green; the red dragon in43017 carries red; and the black dragon in43016 carries black. Each is a separate exact ingredient. Supplied scales can fit the return without proving your own dragon victories or first recovery.",
+        "A prison guard at the entrance can carry the prison key for the iron gates and first cells. Current held or loose key access and doors opened by another player follow actual shared state. The key is not one of Gixmo's five ingredients and does not create an accepted quest receipt.",
+        "PULL the stone lever before the dragon prison to clear the north barrier. A second lever in the red dragon's cell clears the black dragon's north route toward the green dragon. These switches clear a blocked passage when present; repeating an already successful pull does nothing. They are shared access mechanisms rather than mandatory personal-history steps.",
+        "The prison ship is stocked at the Fort's pier. ENTER the ship to reach its deck and find Gixmo in the captain's room. JUMP the wooden plank on the deck to return to the pier. Both use their exact object and command, with unlimited charges in the reviewed prototypes. They do not require a passenger ticket or prove that you assembled the scales.",
+        "The elite guard aboard the ship can carry a different holding-cell key. Gatt and Jebira in the ship's cells, and Mebme, Ximoto and Ximota in the fort's cells, provide captivity stories. Opening a cell, meeting an inmate or defeating a guard does not record a native rescue or replace Gixmo's exchange.",
+        "The rune-covered stone near the green dragon has a separate epic TOUCH service. Its actual availability, qualifying group, committed reward and zone reset are distinct from the cloak quest. Ambient humming or touching while the reward is pending does not create a cloak receipt.",
+        "This prison uses reset mode0. Gixmo remains after acceptance, so the native exchange is repeatable and a potential daily. Shared scale caps and the stone/reset policy still control availability. Daily rollover does not promise fresh scales, reset the levers or force a world reset.",
+        "The shipping crates contain supplies; their contents and the captain's blank shipping note are not required by the cloak recipe. The church's prayer lore likewise creates no extra native return. A door described at the end of the dark northern hallway has no north exit in the reviewed graph; its intended role needs builder confirmation.",
+        "Carry all five exact scales loose for current readiness. Worn, nested, repeated copies of another color or an already owned cloak do not replace a missing scale or record acceptance. Recorded acceptance survives spent ingredients and stored rewards. New discovery, journal, achievement and daily credit requires active, ready accounting."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "prisonb",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:43003,I:43006,I:43008,I:43011,I:43012;receive=I:43015;disappear=0",
+              "giver_vnum": 43010
+            }
+          ],
+          "id": "five-scales-for-cloak",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Current loose preparation for this exact color. Worn or nested proof and extra copies of another scale do not substitute. Supplied proof does not establish your own first recovery or dragon victory.",
+              "id": "item-43003",
+              "item_vnums": [
+                43003
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a white scale loose"
+            },
+            {
+              "count": 1,
+              "hint": "Current loose preparation for this exact color. Worn or nested proof and extra copies of another scale do not substitute. Supplied proof does not establish your own first recovery or dragon victory.",
+              "id": "item-43006",
+              "item_vnums": [
+                43006
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a blue scale loose"
+            },
+            {
+              "count": 1,
+              "hint": "Current loose preparation for this exact color. Worn or nested proof and extra copies of another scale do not substitute. Supplied proof does not establish your own first recovery or dragon victory.",
+              "id": "item-43008",
+              "item_vnums": [
+                43008
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a green scale loose"
+            },
+            {
+              "count": 1,
+              "hint": "Current loose preparation for this exact color. Worn or nested proof and extra copies of another scale do not substitute. Supplied proof does not establish your own first recovery or dragon victory.",
+              "id": "item-43011",
+              "item_vnums": [
+                43011
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a red scale loose"
+            },
+            {
+              "count": 1,
+              "hint": "Current loose preparation for this exact color. Worn or nested proof and extra copies of another scale do not substitute. Supplied proof does not establish your own first recovery or dragon victory.",
+              "id": "item-43012",
+              "item_vnums": [
+                43012
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a black scale loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:43003,I:43006,I:43008,I:43011,I:43012;receive=I:43015;disappear=0",
+                  "giver_vnum": 43010
+                }
+              ],
+              "hint": "Records the one accepted native exchange after all five ingredients are spent. Dialogue, access, personal victories, epic TOUCH and another cloak copy are separate. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete this accepted five-scale exchange"
+            }
+          ],
+          "summary": "Bring one white, blue, green, red and black scale together for the cloak of dragons. The five preparations lead to one accepted exchange; no separate spell, paper, rescue or personal-victory prerequisite is enforced by the recipe.",
+          "title": "Bring five dragon scales to Gixmo"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Canderthal pole shop: ordinary fishing poles are shop stock. The refundable note service is separate from the ten-material lure request.",
           "keyword": "pol",
           "mob_vnum": 43103,
