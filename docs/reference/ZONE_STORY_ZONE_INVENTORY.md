@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 133 authored journals.
+2668 distinct Q contracts; 134 authored journals.
 
 Regenerate with:
 
@@ -226,7 +226,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Transparent Tower (`trnsptow`) | 4 | 26 | 2 | Yes | [3 × a pale purple token; 1 × the scepter of illusion → a key made of mist](../../areas/qst/trnsptow.qst#L195) | artifact_stone, trans_tower_shadow_globe, transp_tow_acerlade, zion_light_dark |
 | Troll Caves (`troll_caves`) | 5 | 5 | 2 | Yes | [1 × small obsidian stones → an obsidian dagger](../../areas/qst/troll_caves.qst#L61) | — |
 | The Troll Hills (`troll_hills`) | 1 | 3 | 0 | Fallback | [1 × a small stone ogre idol → a vial of boiling goo](../../areas/qst/troll_hills.qst#L23) | bridge_troll |
-| The Twin Towers (`ttowers`) | 7 | 9 | 0 | Fallback | [1 × the bloody heart of Mixt; 1 × the bloody heart of Blaevyna; 1 × the bloody heart of Lyena → Lord Talfyn's Armor of Darkness](../../areas/qst/ttowers.qst#L112) | — |
+| The Twin Towers (`ttowers`) | 7 | 9 | 0 | Yes | [1 × the bloody heart of Mixt; 1 × the bloody heart of Blaevyna; 1 × the bloody heart of Lyena → Lord Talfyn's Armor of Darkness](../../areas/qst/ttowers.qst#L112) | — |
 | Tundra (`tundra`) | 7 | 12 | 1 | Yes | [1 × an old book; 1 × a dark green book; 1 × a dark magenta book; other required items → a pair of snowy adventurer boots](../../areas/qst/tundra.qst#L40) | inn |
 | Turolopolis Zoo (`turolzoo`) | 1 | 1 | 0 | Fallback | [1 × a saber tooth; 1 × a gorilla tooth → a thin helmet of bark](../../areas/qst/turolzoo.qst#L11) | — |
 | Twin Towers Forest (`twin_towers_forest`) | 84 | 58 | 24 | Yes | [10 × a fox fur → a fox fur cape](../../areas/qst/twin_towers_forest.qst#L771) | forest_animals, forest_corpse, gardener_block |

@@ -46666,6 +46666,355 @@
     {
       "contacts": [
         {
+          "description": "The master gardener recalls Mixt and Lyena; this is a different gardener from the forest belt quest.",
+          "keyword": "gardener",
+          "mob_vnum": 13202,
+          "name": "the master gardener",
+          "topics": [
+            "mixt",
+            "lyena"
+          ]
+        },
+        {
+          "description": "Blaevyna discusses Mixt and accepts Lyena's heart for 30,000 copper.",
+          "keyword": "blaevyna",
+          "mob_vnum": 13206,
+          "name": "Blaevyna",
+          "topics": [
+            "mixt"
+          ]
+        },
+        {
+          "description": "Mixt recalls Lyena and the southern tower, and accepts her heart for 30,000 copper.",
+          "keyword": "mixt",
+          "mob_vnum": 13207,
+          "name": "Mixt",
+          "topics": [
+            "lyena",
+            "southern",
+            "tower"
+          ]
+        },
+        {
+          "description": "The frightened servant's account of Lyena is a clue, without a separate return.",
+          "keyword": "servant",
+          "mob_vnum": 13209,
+          "name": "a pale faced servant",
+          "topics": [
+            "lyena"
+          ]
+        },
+        {
+          "description": "Lyena asks for both Mixt's and Blaevyna's hearts for 100,000 copper.",
+          "keyword": "lyena",
+          "mob_vnum": 13213,
+          "name": "Lyena",
+          "topics": [
+            "mixt",
+            "blaevyna"
+          ]
+        },
+        {
+          "description": "This warrior recounts Lyena's servants and the lever; conversation does not record an access repair.",
+          "keyword": "warrior",
+          "mob_vnum": 13214,
+          "name": "a strong elven warrior",
+          "topics": [
+            "lyena"
+          ]
+        },
+        {
+          "description": "The priest accepts any one exact heart for a holy symbol of light. His resurrection account is not a recorded revival.",
+          "keyword": "priest",
+          "mob_vnum": 13216,
+          "name": "the head priest",
+          "topics": [
+            "owners",
+            "mixt",
+            "lyena",
+            "blaevyna"
+          ]
+        },
+        {
+          "description": "The old monk offers eligible monks a Jin Touch lesson, currently unavailable while accounting is active; this separate service has no local quest receipt.",
+          "keyword": "monk",
+          "mob_vnum": 13219,
+          "name": "a very old monk",
+          "topics": []
+        },
+        {
+          "description": "If present, Lord Talfyn explains his harvest and accepts all three different hearts for armor and experience before vanishing.",
+          "keyword": "talfyn",
+          "mob_vnum": 13229,
+          "name": "Lord Talfyn",
+          "topics": [
+            "deal",
+            "hello",
+            "harvest"
+          ]
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Hear the conflicting accounts of Mixt, Blaevyna and Lyena, explore the towers and temple, then choose where to offer their exact hearts. The priest accepts any one heart; Lord Talfyn wants all three together. Discovery is separate. New progress requires active, ready accounting.",
+      "orientation": [
+        "The two towers, temple and underground passages have several forest approaches and an Underdark connection. This is a separate zone from the forest gardener's belt and flowers. Discovery records arrival; it does not unlock the towers or provide fresh residents and items.",
+        "ASK the master gardener about Mixt or Lyena, Mixt about Lyena or southern, and Blaevyna about Mixt. The pale servant and strong elven warrior have their own accounts of Lyena. These are clues from different viewpoints, without one achievement per keyword or a required conversation order.",
+        "Blaevyna and Mixt each accept Lyena's exact heart for 30,000 copper. They are separate recipients, so one accepted return does not finish the other's request. Lyena instead wants both Mixt's and Blaevyna's hearts together for 100,000 copper. Native exchanges do not enforce an exclusive allegiance or a peaceful ending.",
+        "Mixt carries his heart in the northern tower's pale magenta room, Blaevyna carries hers in the northern lush green study and bedroom, and Lyena carries hers in her hidden southern chamber. The three share the word heart but are different items. Matching hearts supplied by another player also fit; keep them loose rather than held or nested. Their possession does not record personally defeating anyone.",
+        "ASK the head priest about owners, Mixt, Lyena or Blaevyna. He accepts any one of the three hearts for a holy symbol of light. These are alternatives to one request, not a requirement to deliver all three. His account mentions sending a body part to his mentor in Tharnadia for resurrection, but the accepted exchange does not record a dispatch or someone returning to life.",
+        "ASK Lord Talfyn about deal or hello, then harvest, if he is present. He needs all three different hearts at once for his armor and 100,000 experience, then vanishes. He appears only on some resets, so a daily request does not guarantee that he is waiting today. Partial hearts or three copies of one heart do not prepare his bundle.",
+        "Look for the mirror and bush along the northern routes, rubble at the southern entrance, and buttons, a wall and a lever within the southern tower. PUSH the mirror, bush, rubble, black button, wall or small button; PULL the lever. These controls unblock their respective passages, while ordinary closed doors may still need opening. They change shared access and do not complete a heart request.",
+        "Mixt also carries the black key used by the locked southern entrance. The guard's account calls a lever broken even though a working lever is declared elsewhere on its route; actual access and the intended narrative still need qualification. The temple altar is scenery above a hidden descent, not a declared push or pull switch. Falls, hidden doors and the trapped chest keep their normal rules.",
+        "The same hearts have foreign uses: Mixt's heart with a frayed collar and fee in Newhaven, Lyena's heart with an ear stud and stone ring for Enfil in Werthorm, and Mixt's plus Lyena's hearts for Romgar in Alatorin. Those accepted receipts belong to their recipients' zones. Choose which exact roots to spend; the local journal does not create extra copies or record those foreign outcomes as tower completions.",
+        "The old monk offers a separate Jin Touch lesson to eligible monks. Epic skill purchases are currently unavailable while accounting is active. Carrying hearts or completing a return does not buy the lesson, award a skill milestone, free the captured duergar or permanently resolve the towers' conflict.",
+        "Five accepted requests can each contribute one achievement and one potential daily; the priest's three alternatives share one entry. Current material rows show loose custody, while accepted history remains after the offering is spent. New progress requires active, ready accounting. Ordinary resets, stock caps, competing recipients and giver availability still apply."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "ttowers",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:13223;receive=C:30000;disappear=0",
+              "giver_vnum": 13206
+            }
+          ],
+          "id": "blaevyna-lyena-heart",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Lyena carries this exact heart in her hidden southern chamber, reached through the small-button passage. It is different from Mixt's and Blaevyna's hearts despite sharing the word heart. Matching supplied hearts also fit. Keep this exact heart loose rather than held or nested. Possession does not prove a personal kill or an accepted return.",
+              "id": "item-13223",
+              "item_vnums": [
+                13223
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody heart of Lyena loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:13223;receive=C:30000;disappear=0",
+                  "giver_vnum": 13206
+                }
+              ],
+              "hint": "Completion is recorded when this recipient accepts the exact offering. New credit requires active, ready accounting. It does not complete another recipient's request, require prior personal hunts or establish an exclusive faction choice.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete Blaevyna: the affair"
+            }
+          ],
+          "summary": "Return Lyena's exact heart to Blaevyna for 30,000 copper. This is independent of Mixt's request.",
+          "title": "Blaevyna: the affair"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:13223;receive=C:30000;disappear=0",
+              "giver_vnum": 13207
+            }
+          ],
+          "id": "mixt-lyena-heart",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Lyena carries this exact heart in her hidden southern chamber, reached through the small-button passage. It is different from Mixt's and Blaevyna's hearts despite sharing the word heart. Matching supplied hearts also fit. Keep this exact heart loose rather than held or nested. Possession does not prove a personal kill or an accepted return.",
+              "id": "item-13223",
+              "item_vnums": [
+                13223
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody heart of Lyena loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:13223;receive=C:30000;disappear=0",
+                  "giver_vnum": 13207
+                }
+              ],
+              "hint": "Completion is recorded when this recipient accepts the exact offering. New credit requires active, ready accounting. It does not complete another recipient's request, require prior personal hunts or establish an exclusive faction choice.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete Mixt: former love"
+            }
+          ],
+          "summary": "Return Lyena's exact heart to Mixt for 30,000 copper. This is independent of Blaevyna's request.",
+          "title": "Mixt: former love"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:13221,I:13222;receive=C:100000;disappear=0",
+              "giver_vnum": 13213
+            }
+          ],
+          "id": "lyena-two-hearts",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Mixt carries this exact heart in the northern tower's pale magenta room. It is different from Blaevyna's and Lyena's hearts despite sharing the word heart. Matching supplied hearts also fit. Keep this exact heart loose rather than held or nested. Possession does not prove a personal kill or an accepted return.",
+              "id": "item-13221",
+              "item_vnums": [
+                13221
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody heart of Mixt loose"
+            },
+            {
+              "count": 1,
+              "hint": "Blaevyna carries this exact heart in the northern tower's lush green study and bedroom. It is different from Mixt's and Lyena's hearts despite sharing the word heart. Matching supplied hearts also fit. Keep this exact heart loose rather than held or nested. Possession does not prove a personal kill or an accepted return.",
+              "id": "item-13222",
+              "item_vnums": [
+                13222
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody heart of Blaevyna loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:13221,I:13222;receive=C:100000;disappear=0",
+                  "giver_vnum": 13213
+                }
+              ],
+              "hint": "Completion is recorded when this recipient accepts the exact offering. New credit requires active, ready accounting. It does not complete another recipient's request, require prior personal hunts or establish an exclusive faction choice.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete Lyena: two hearts"
+            }
+          ],
+          "summary": "Bring Mixt's and Blaevyna's different hearts together to Lyena for 100,000 copper.",
+          "title": "Lyena: two hearts"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:13221;receive=I:13224;disappear=0",
+              "giver_vnum": 13216
+            },
+            {
+              "completion_key": "give=I:13223;receive=I:13224;disappear=0",
+              "giver_vnum": 13216
+            },
+            {
+              "completion_key": "give=I:13222;receive=I:13224;disappear=0",
+              "giver_vnum": 13216
+            }
+          ],
+          "id": "priest-one-heart",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Mixt, Lyena and Blaevyna carry their own distinct hearts. Any one exact heart fits this request; all three are not required. Matching supplied hearts also fit. Keep the chosen heart loose rather than held or nested. The holy symbol is the reward, not an offering or proof of resurrection.",
+              "id": "one-heart",
+              "item_vnums": [
+                13221,
+                13223,
+                13222
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one accepted heart loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:13221;receive=I:13224;disappear=0",
+                  "giver_vnum": 13216
+                },
+                {
+                  "completion_key": "give=I:13223;receive=I:13224;disappear=0",
+                  "giver_vnum": 13216
+                },
+                {
+                  "completion_key": "give=I:13222;receive=I:13224;disappear=0",
+                  "giver_vnum": 13216
+                }
+              ],
+              "hint": "Completion is recorded when this recipient accepts the exact offering. New credit requires active, ready accounting. It does not complete another recipient's request, require prior personal hunts or establish an exclusive faction choice. Any one alternative completes this single entry. Acceptance does not record dispatch to Tharnadia or resurrection.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete Priest: one heart for the temple"
+            }
+          ],
+          "summary": "Give the priest any one exact heart of Mixt, Lyena or Blaevyna for a holy symbol of light. One alternative completes this request; no revival is recorded.",
+          "title": "Priest: one heart for the temple"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:13221,I:13222,I:13223;receive=E:100000,I:13236;disappear=1",
+              "giver_vnum": 13229
+            }
+          ],
+          "id": "talfyn-three-hearts",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Mixt carries this exact heart in the northern tower's pale magenta room. It is different from Blaevyna's and Lyena's hearts despite sharing the word heart. Matching supplied hearts also fit. Keep this exact heart loose rather than held or nested. Possession does not prove a personal kill or an accepted return.",
+              "id": "item-13221",
+              "item_vnums": [
+                13221
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody heart of Mixt loose"
+            },
+            {
+              "count": 1,
+              "hint": "Blaevyna carries this exact heart in the northern tower's lush green study and bedroom. It is different from Mixt's and Lyena's hearts despite sharing the word heart. Matching supplied hearts also fit. Keep this exact heart loose rather than held or nested. Possession does not prove a personal kill or an accepted return.",
+              "id": "item-13222",
+              "item_vnums": [
+                13222
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody heart of Blaevyna loose"
+            },
+            {
+              "count": 1,
+              "hint": "Lyena carries this exact heart in her hidden southern chamber, reached through the small-button passage. It is different from Mixt's and Blaevyna's hearts despite sharing the word heart. Matching supplied hearts also fit. Keep this exact heart loose rather than held or nested. Possession does not prove a personal kill or an accepted return.",
+              "id": "item-13223",
+              "item_vnums": [
+                13223
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody heart of Lyena loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:13221,I:13222,I:13223;receive=E:100000,I:13236;disappear=1",
+                  "giver_vnum": 13229
+                }
+              ],
+              "hint": "Completion is recorded when this recipient accepts the exact offering. New credit requires active, ready accounting. It does not complete another recipient's request, require prior personal hunts or establish an exclusive faction choice. All three different hearts belong to one simultaneous exchange; he leaves afterward. His chance-limited appearance and fresh item stock are not guaranteed by the daily clock.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete Talfyn: harvest of three hearts"
+            }
+          ],
+          "summary": "Bring all three different hearts together to Lord Talfyn for his armor and 100,000 experience. He vanishes after acceptance and appears only on some resets.",
+          "title": "Talfyn: harvest of three hearts"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Wicks accepts the severed head of Grue for the spiked blackened earring. Ask orc or orcs for the bounty lore. Declared starting places are clues; encounter the actual recipient.",
           "keyword": "wicks",
           "mob_vnum": 13300,

@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 133 &&
-				tracker.summary_for(7, 42).total == 1531,
+		require(catalog.story_mappings.size() == 134 &&
+				tracker.summary_for(7, 42).total == 1529,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7687,6 +7687,206 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "ttowers"; });
+			const auto &blaevyna = story_for("ttowers", "blaevyna-lyena-heart");
+			const auto &mixt = story_for("ttowers", "mixt-lyena-heart");
+			const auto &lyena = story_for("ttowers", "lyena-two-hearts");
+			const auto &priest = story_for("ttowers", "priest-one-heart");
+			const auto &talfyn = story_for("ttowers", "talfyn-three-hearts");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 132, 13200, 100, "arrival") ==
+					result::applied,
+				"Twin Towers discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 132, 10, 1, 101, false, false);
+			for (const auto &entry : mapping.stories)
+				require(journal.find(entry.title) == std::string::npos,
+					"Twin Towers exposed unseen requests");
+			require(journey.meet_npc(7, 42, 13202, 13213, 102) == result::applied &&
+					journey.meet_npc(7, 42, 13219, 13277, 102) ==
+						result::applied,
+				"Twin Towers clue/monk encounters failed");
+			journal = journey.render_journal(7, 42, 132, 10, 1, 103, false, false);
+			for (const auto &entry : mapping.stories)
+				require(journal.find(entry.title) == std::string::npos,
+					"Twin Towers lore or lesson encounter unlocked a heart request");
+			require(journey.progress_for_zone(7, 42, 132).completed == 0,
+				"Twin Towers invented learned clue or skill history");
+			for (const auto &[mob, room] :
+			     std::vector<std::pair<int, int>>{ { 13206, 13229 },
+							       { 13207, 13228 },
+							       { 13213, 13258 },
+							       { 13216, 13272 } })
+				require(journey.meet_npc(7, 42, mob, room, 104) == result::applied,
+					"Twin Towers request encounter failed");
+			journal = journey.render_journal(7, 42, 132, 10, 1, 105, false, false);
+			require(journal.find(talfyn.title) == std::string::npos,
+				"Twin Towers revealed unseen rare Talfyn request");
+			require(journey.meet_npc(7, 42, 13229, 13231, 106) == result::applied,
+				"Twin Towers Talfyn encounter failed");
+			const auto status =
+				[&](const auto &entry, const auto &step, const char *state)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Twin Towers journal card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " + step.text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[13224] = supplies.carried[13236] =
+				supplies.carried[13203] = supplies.carried[13213] =
+					supplies.carried[13226] = 1;
+			supplies.equipped[0] = 13221;
+			supplies.equipped[1] = 13222;
+			supplies.equipped[2] = 13223;
+			journal = journey.render_journal(7, 42, 132, 10, 1, 107, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				for (const auto &step : entry.steps)
+					if (step.kind == "carried_item")
+						require(status(entry, step, "Missing now"),
+							"Twin Towers held/reward/key/scenery custody prepared hearts");
+			supplies = {};
+			supplies.carried[13221] = 3;
+			journal = journey.render_journal(7, 42, 132, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(priest, priest.steps[0], "Ready now") &&
+					status(lyena, lyena.steps[0], "Ready now") &&
+					status(lyena, lyena.steps[1], "Missing now") &&
+					status(talfyn, talfyn.steps[1], "Missing now") &&
+					status(talfyn, talfyn.steps[2], "Missing now"),
+				"Twin Towers priest ANY or distinct AND materials failed");
+			supplies = {};
+			supplies.carried[13223] = 1;
+			journal = journey.render_journal(7, 42, 132, 10, 1, 109, false, false,
+							 &supplies);
+			require(status(blaevyna, blaevyna.steps[0], "Ready now") &&
+					status(mixt, mixt.steps[0], "Ready now") &&
+					status(priest, priest.steps[0], "Ready now") &&
+					status(lyena, lyena.steps[0], "Missing now") &&
+					status(talfyn, talfyn.steps[0], "Missing now"),
+				"Twin Towers interchangeable-name heart confused exact recipient bundles");
+			supplies = {};
+			supplies.carried[13222] = 1;
+			journal = journey.render_journal(7, 42, 132, 10, 1, 110, false, false,
+							 &supplies);
+			require(status(priest, priest.steps[0], "Ready now"),
+				"Twin Towers third priest alternative required every heart");
+			supplies.carried[13221] = supplies.carried[13223] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 132, 10, 1, 111, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				for (const auto &step : entry.steps)
+					if (step.kind == "carried_item")
+						require(status(entry, step, "Ready now"),
+							"Twin Towers supplied exact hearts required prior personal hunts");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 132).completed == 0,
+				"Twin Towers rendering fabricated acceptance,revival or branch selection");
+			record(journey, blaevyna.contracts.front(), "ttowers-blaevyna", 132, 13229);
+			require(journey.progress_for_zone(7, 42, 132).completed == 1 &&
+					journey.evidence_for(mixt.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Twin Towers same-heart return completed another recipient");
+			record(journey, priest.contracts.front(), "ttowers-priest-one", 132, 13272);
+			require(journey.progress_for_zone(7, 42, 132).completed == 2,
+				"Twin Towers one priest alternative required all three");
+			record(journey, priest.contracts[1], "ttowers-priest-two", 132, 13272);
+			record(journey, priest.contracts[2], "ttowers-priest-three", 132, 13272);
+			require(journey.progress_for_zone(7, 42, 132).completed == 2,
+				"Twin Towers priest alternatives awarded duplicate achievements");
+			for (const auto *entry : { &mixt, &lyena, &talfyn })
+				record(journey, entry->contracts.front(), entry->id.c_str(), 132,
+				       13231);
+			require(journey.progress_for_zone(7, 42, 132).completed == 5 &&
+					journey.progress_for_zone(7, 42, 132).total == 5,
+				"Twin Towers branch narratives made independent accepted returns exclusive");
+			supplies = {};
+			journal = journey.render_journal(7, 42, 132, 10, 1, 121, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				for (const auto &step : entry.steps)
+					if (step.kind == "carried_item")
+						require(status(entry, step, "Missing now"),
+							"Twin Towers spent/nested hearts remained loose or history was used as current custody");
+			auto replay =
+				completion(priest.contracts.front(), "ttowers-priest-one", 120);
+			replay.transaction.zone_number = 132;
+			replay.transaction.room_vnum = 13272;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Twin Towers replay duplicated priest acceptance");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u) {
+						      return u.zone_number == 132 &&
+							     u.achievement && u.daily_candidate;
+					      }) == 5,
+				"Twin Towers priest alternatives inflated daily candidates");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 132) &&
+					recovered.progress_for_zone(7, 42, 132).completed == 5,
+				"Twin Towers cold recovery lost grouped history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 132, 13297, 100, "arrival") ==
+					result::applied,
+				"Twin Towers alternate historical arrival failed");
+			for (const auto &entry : mapping.stories)
+				for (const auto &id : entry.contracts)
+					record(historical, id, ("ttowers-old-" + id).c_str(), 132,
+					       13231);
+			require(historical.progress_for_zone(7, 42, 132).completed == 7,
+				"Twin Towers raw historical recipes missing");
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 132).completed == 5 &&
+					authored.has_discovered(7, 42, 132),
+				"Twin Towers raw-to-authored priest grouping lost or inflated history");
+			for (const auto &entry : mapping.stories)
+				for (const auto &id : entry.contracts)
+					require(authored.evidence_for(id, 2).successful_attempts ==
+							1,
+						"Twin Towers grouping changed native receipt identities");
+			service foreign(catalog);
+			require(foreign.discover_zone(7, 42, 132, 13230, 100, "arrival") ==
+					result::applied,
+				"Twin Towers foreign-owner arrival failed");
+			for (const auto &[entry, room] : std::vector<std::pair<
+				     const zone_story_quest_catalog::story_definition *, int>>{
+				     { &story_for("newhaven", "vulgaris-veldian-collar"), 35201 },
+				     { &story_for("wh", "request-55101-3da6da272e08"), 55206 },
+				     { &story_for("alatorin", "exchange-83337-d38090829c9f"),
+				       83552 } })
+			{
+				const auto owner = std::find_if(
+					catalog.definitions.begin(), catalog.definitions.end(),
+					[&](const auto &d)
+					{ return d.definition_id == entry->contracts.front(); });
+				require(owner != catalog.definitions.end(),
+					"Twin Towers foreign receipt definition missing");
+				require(foreign.discover_zone(7, 42, owner->zone_number, room, 121,
+							      "arrival") == result::applied,
+					"Twin Towers foreign owner discovery failed");
+				record(foreign, owner->definition_id,
+				       ("ttowers-foreign-" + entry->id).c_str(), owner->zone_number,
+				       room);
+				require(foreign.evidence_for(owner->definition_id, 2)
+							.successful_attempts == 1,
+					"Twin Towers foreign acceptance lost its owner history");
+			}
+			require(foreign.progress_for_zone(7, 42, 132).completed == 0,
+				"Twin Towers duplicated foreign competing-heart acceptance locally");
 		}
 
 		{
