@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 135 &&
+		require(catalog.story_mappings.size() == 136 &&
 				tracker.summary_for(7, 42).total == 1528,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7687,6 +7687,166 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "pyramid"; });
+			const auto &rods = story_for("pyramid", "drinstan-three-kings");
+			const auto &letter = story_for("pyramid", "goar-apology-letter");
+			const auto &eggs = story_for("pyramid", "maern-four-eggs");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 204, 20484, 100, "arrival") ==
+					result::applied,
+				"Neverwind alternate actual arrival failed");
+			std::string journal =
+				journey.render_journal(7, 42, 204, 10, 1, 101, false, false);
+			for (const auto &entry : mapping.stories)
+				require(journal.find(entry.title) == std::string::npos,
+					"Neverwind exposed unseen requests");
+			require(journey.meet_npc(7, 42, 20410, 20489, 102) == result::applied,
+				"Neverwind father context encounter failed");
+			journal = journey.render_journal(7, 42, 204, 10, 1, 103, false, false);
+			for (const auto &entry : mapping.stories)
+				require(journal.find(entry.title) == std::string::npos,
+					"Neverwind father context exposed accepted endpoints");
+			require(journey.progress_for_zone(7, 42, 204).completed == 0,
+				"Neverwind conversation invented delivery or reunion");
+			for (const auto &[mob, room] : std::vector<std::pair<int, int>>{
+				     { 20400, 20437 }, { 20409, 20469 }, { 20413, 20484 } })
+				require(journey.meet_npc(7, 42, mob, room, 104) == result::applied,
+					"Neverwind request encounters failed");
+			const auto status =
+				[&](const auto &entry, const auto &step, const char *state)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Neverwind journal card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " + step.text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[20418] = supplies.carried[20412] =
+				supplies.carried[20417] = 1;
+			supplies.equipped[0] = 20400;
+			supplies.equipped[1] = 20419;
+			supplies.equipped[2] = 20403;
+			supplies.equipped[3] = 20404;
+			supplies.equipped[4] = 20405;
+			supplies.equipped[5] = 20406;
+			journal = journey.render_journal(7, 42, 204, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				for (const auto &step : entry.steps)
+					if (step.kind == "carried_item")
+						require(status(entry, step, "Missing now"),
+							"Neverwind held/reward custody prepared offerings");
+			supplies = {};
+			supplies.carried[20400] = 2;
+			supplies.carried[20403] = 4;
+			journal = journey.render_journal(7, 42, 204, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(rods, rods.steps[0], "Missing now"),
+				"Neverwind two rod pieces satisfied count3");
+			require(status(eggs, eggs.steps[0], "Ready now"),
+				"Neverwind duplicate speckled eggs lost exact-kind readiness");
+			for (size_t i = 1; i < 4; ++i)
+				require(status(eggs, eggs.steps[i], "Missing now"),
+					"Neverwind four copies of one egg satisfied distinct kinds");
+			for (int missing = 20403; missing <= 20406; ++missing)
+			{
+				supplies = {};
+				supplies.carried[20400] = 3;
+				supplies.carried[20419] = 1;
+				for (int v = 20403; v <= 20406; ++v)
+					if (v != missing)
+						supplies.carried[v] = 1;
+				journal = journey.render_journal(7, 42, 204, 10, 1, 107, false,
+								 false, &supplies);
+				require(status(rods, rods.steps[0], "Ready now") &&
+						status(letter, letter.steps[0], "Ready now"),
+					"Neverwind supplied rods or letter required original source history");
+				for (size_t i = 0; i < 4; ++i)
+					require(status(eggs, eggs.steps[i],
+						       i == static_cast<size_t>(missing - 20403) ?
+							       "Missing now" :
+							       "Ready now"),
+						"Neverwind partial egg kinds were projected incorrectly");
+			}
+			supplies.carried[20406] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 204, 10, 1, 108, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				for (const auto &step : entry.steps)
+					if (step.kind == "carried_item")
+						require(status(entry, step, "Ready now"),
+							"Neverwind exact supplied roots required campaign or personal-source prerequisites");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 204).completed == 0,
+				"Neverwind rendering invented acceptance,password,navigation or healing");
+			record(journey, rods.contracts.front(), "pyramid-rods", 204, 20437);
+			require(journey.progress_for_zone(7, 42, 204).completed == 1 &&
+					journey.evidence_for(eggs.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(letter.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Neverwind rod return completed independent preparation or delivery");
+			record(journey, letter.contracts.front(), "pyramid-letter", 204, 20469);
+			require(journey.progress_for_zone(7, 42, 204).completed == 2 &&
+					journey.evidence_for(eggs.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Neverwind letter return completed eggs or duplicated reunion");
+			record(journey, eggs.contracts.front(), "pyramid-eggs", 204, 20484);
+			require(journey.progress_for_zone(7, 42, 204).completed == 3 &&
+					journey.progress_for_zone(7, 42, 204).total == 3,
+				"Neverwind accepted endpoints were counted incorrectly");
+			supplies = {};
+			journal = journey.render_journal(7, 42, 204, 10, 1, 121, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				for (const auto &step : entry.steps)
+					if (step.kind == "carried_item")
+						require(status(entry, step, "Missing now"),
+							"Neverwind accepted history replaced spent/nested current custody");
+			auto replay = completion(rods.contracts.front(), "pyramid-rods", 120);
+			replay.transaction.zone_number = 204;
+			replay.transaction.room_vnum = 20437;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Neverwind replay duplicated rod acceptance");
+			int local_units = 0, achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 204)
+				{
+					++local_units;
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(local_units == 3 && achievements == 3 && dailies == 3,
+				"Neverwind material rows generated extra quest units");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 204) &&
+					recovered.progress_for_zone(7, 42, 204).completed == 3,
+				"Neverwind cold recovery lost discovery or accepted history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 204, 20466, 100, "arrival") ==
+					result::applied,
+				"Neverwind historical arrival failed");
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("pyramid-old-" + entry.id).c_str(), 204, 20484);
+			require(historical.progress_for_zone(7, 42, 204).completed == 3,
+				"Neverwind raw historical recipes missing");
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 204).completed == 3,
+				"Neverwind authored grouping lost historical receipts");
 		}
 
 		{

@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 135 authored journals.
+2668 distinct Q contracts; 136 authored journals.
 
 Regenerate with:
 
@@ -181,7 +181,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Prisons of Carthapia (`prison`) | 2 | 6 | 0 | Fallback | [1 × some scales of the Great Dragon Smaug; 1 × some scales of the Great Dragon Smaug; 1 × some scales of the Great Dragon Smaug → the shield of flames](../../areas/qst/prison.qst#L47) | flaming_axe_of_azer, nexus, warden_shout |
 | Prison of Fort Boyard (`prisonb`) | 1 | 5 | 0 | Fallback | [1 × a white scale; 1 × a blue scale; 1 × a green scale; other required items → a cloak of dragons](../../areas/qst/prisonb.qst#L43) | — |
 | Lair of the Purple Worm (`pworm`) | 1 | 5 | 0 | Fallback | [1 × the family amulet of Drakhov; 7 × some gargantuan worm hide → a pair of drider skin leggings](../../areas/qst/pworm.qst#L31) | — |
-| Neverwind Valley (`pyramid`) | 3 | 9 | 0 | Fallback | [1 × a speckled egg; 1 × a blue egg; 1 × a white egg; other required items → a ring of protection from evil](../../areas/qst/pyramid.qst#L84) | — |
+| Neverwind Valley (`pyramid`) | 3 | 9 | 0 | Yes | [1 × a speckled egg; 1 × a blue egg; 1 × a white egg; other required items → a ring of protection from evil](../../areas/qst/pyramid.qst#L84) | — |
 | The Docks of Quietus Quay (`quietus`) | 16 | 14 | 4 | Yes | [1 × a short note; 1 × the bloody head of Aresliean → a sleek mithril dagger](../../areas/qst/quietus.qst#L107) | crew_shop_proc, inn, ship_shop_proc, world_quest |
 | Castle Ravenloft (`ravenloft`) | 5 | 17 | 0 | Yes | [1 × an abyssal essence; 1 × a Zionyn essence → a key to the Ravenloft royal courtyard](../../areas/qst/ravenloft.qst#L18) | artifact_shadow_shield, ravenloft_bell, ravenloft_vistani_shout, shimmer_shortsword |
 | The Ravenloft Catacombs (`ravenloft2`) | 37 | 135 | 1 | Yes | [5 × a spectral coin called 'A Fortune of Ravenloft'; 1 × a mystical scroll, 'Favor of the Chaplain' → the priestly stole of the /> Dark Alliance <\, the crozier of the hollow sun](../../areas/qst/ravenloft2.qst#L1507) | — |

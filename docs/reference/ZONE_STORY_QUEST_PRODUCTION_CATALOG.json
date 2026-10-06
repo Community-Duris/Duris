@@ -53624,6 +53624,218 @@
     {
       "contacts": [
         {
+          "description": "The scholar explains the three kings, three wooden pieces and pyramid password; he disappears after the accepted return.",
+          "keyword": "drinstan",
+          "mob_vnum": 20400,
+          "name": "Drinstan",
+          "topics": [
+            "hello",
+            "yes",
+            "pyramid",
+            "language",
+            "favor",
+            "task"
+          ]
+        },
+        {
+          "description": "Krodn's son accepts the apology letter for a steel spike and leaves to seek his father; his availability depends on NPC dispersal.",
+          "keyword": "goar",
+          "mob_vnum": 20409,
+          "name": "Goar",
+          "topics": [
+            "father"
+          ]
+        },
+        {
+          "description": "The father explains the missing son and letter in his chest. He is a conversation contact, without his own accepted request.",
+          "keyword": "krodn",
+          "mob_vnum": 20410,
+          "name": "Krodn",
+          "topics": [
+            "crying",
+            "yes"
+          ]
+        },
+        {
+          "description": "The bird enthusiast asks for four different egg kinds together and gives a protective ring before leaving.",
+          "keyword": "maern",
+          "mob_vnum": 20413,
+          "name": "Maern",
+          "topics": [
+            "birds",
+            "yes"
+          ]
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore Neverwind Valley, collect Maern's four different eggs, deliver Krodn's apology to Goar and recover three wooden rod pieces for Drinstan. The pyramid password and maze are access guidance. Discovery is separate. New progress requires active, ready accounting.",
+      "orientation": [
+        "The valley's forest joins the surface foothills and has a tunnel connection into its northern end. The pyramid, treetop nests, gypsy camp and hidden hideout support three separate requests. Discovery records actual arrival; it does not open doors or recreate supplies and residents.",
+        "ASK MAERN about birds, then yes. Search the treetop nests for a speckled, blue, white and brown egg. He needs one of each different kind together for a ring of protection from evil. Four copies of one kind cannot replace the others. All eggs share the word egg; inspect their displayed colors and keep the four offerings loose rather than held or nested.",
+        "The four treetop nests are reached by the forest's upward exits. Ordinary climbing, falling, current stock and reset limits still apply. Egg placement is declared by the nest resets; the journal shows current loose supplies, without requiring you to kill a particular bird or prove personally taking each egg from its original nest. Matching supplied eggs also fit.",
+        "ASK KRODN about crying, then yes, to hear about his missing son. OPEN the small steel chest in his tent, take the apology letter and READ LETTER for its explanatory text. Deliver the exact letter to Goar for a jagged steel spike. A matching supplied letter also fits; hearing Krodn is a clue, without a separate accepted request.",
+        "Goar's hideout lies behind a secret rubble passage in the northern ravine. ASK GOAR about father if he is present. His reset starts him in staging rooms; wandering and the current world state determine whether he reaches the hideout. The accepted delivery makes him leave to find his father, without recording an escort or a confirmed reunion.",
+        "ASK DRINSTAN about hello, pyramid, language and favor or task. He describes the burial places of three kings and gives the pyramid password. SAY DUNAN at the locked double doors, then OPEN DOUBLE and enter. Speaking the word unlocks the door; it does not automatically open it, move you or complete his request.",
+        "Search the pyramid's burial chambers and OPEN the sarcophagi for three small sections of wood. The native request counts three copies of this same item kind together. It does not verify one piece from each king. All three exact matching supplied pieces also fit; keep them loose rather than held or nested.",
+        "Drinstan's papers include a sequence of directions for the maze. The actual exits include loops and one-way links. Read the clues and inspect your route; a written direction sequence does not establish a verified starting point or a tracked navigation achievement. Secret doors, closed doors and staircase falls retain their normal rules.",
+        "Returning three wooden pieces grants Drinstan's twisted staff, after which he disappears. Maern also leaves after his egg return. The ring's protection and the staff's healing spell are reward properties; receiving, wearing or using them does not independently record protection, actual healing or completion of another story.",
+        "The secluded glade has a healing room flag. Normal recovery depends on the character and room conditions. Its wandering elven adventurer is optional context and equipment stock, without a fourth request. Arrival, resting, reading, asking a keyword and defeating creatures do not add quest receipts here.",
+        "Three accepted returns can each contribute one achievement and one potential daily. The optional material rows show current loose custody; accepted history remains after offerings are spent. Reset caps, departing givers, NPC wandering and active, ready accounting determine availability. The daily clock does not recreate the world or require these stories in a fixed order."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "pyramid",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:20400,I:20400,I:20400;receive=I:20418;disappear=1",
+              "giver_vnum": 20400
+            }
+          ],
+          "id": "drinstan-three-kings",
+          "steps": [
+            {
+              "count": 3,
+              "hint": "Drinstan describes one piece with each of three kings. Three same-kind wood pieces are declared in sarcophagi in the pyramid's burial chambers. OPEN their closed containers and keep three matching pieces loose. The native count also accepts supplied pieces and does not verify three different original tombs.",
+              "id": "item-20400",
+              "item_vnums": [
+                20400
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry three matching wooden rod pieces loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:20400,I:20400,I:20400;receive=I:20418;disappear=1",
+                  "giver_vnum": 20400
+                }
+              ],
+              "hint": "Completion is recorded when this recipient accepts the exact offering. New credit requires active, ready accounting. Matching supplied items are valid; access, personal recovery and actual reunion or healing are separate outcomes. Three same-kind pieces satisfy one counted exchange; they do not establish three distinct tomb sources.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete Drinstan: the three kings"
+            }
+          ],
+          "summary": "Bring three matching wooden rod pieces together for the twisted staff. The three-tomb story is guidance; the native exchange counts three copies of one kind.",
+          "title": "Drinstan: the three kings"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:20419;receive=I:20412;disappear=1",
+              "giver_vnum": 20409
+            }
+          ],
+          "id": "goar-apology-letter",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Krodn's tent declares this exact apology letter inside the small steel chest. OPEN CHEST and READ LETTER for the note's explanation. A matching supplied letter also fits; keep it loose. Reading, carrying the spike or hearing Krodn does not prove Goar accepted the delivery.",
+              "id": "item-20419",
+              "item_vnums": [
+                20419
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry an apology letter loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:20419;receive=I:20412;disappear=1",
+                  "giver_vnum": 20409
+                }
+              ],
+              "hint": "Completion is recorded when this recipient accepts the exact offering. New credit requires active, ready accounting. Matching supplied items are valid; access, personal recovery and actual reunion or healing are separate outcomes.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete Goar: a father's apology"
+            }
+          ],
+          "summary": "Deliver Krodn's exact apology letter to Goar for the steel spike. He leaves after acceptance; the receipt does not confirm a reunion.",
+          "title": "Goar: a father's apology"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:20403,I:20404,I:20405,I:20406;receive=I:20417;disappear=1",
+              "giver_vnum": 20413
+            }
+          ],
+          "id": "maern-four-eggs",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Search the treetop nests for the speckled egg. It is different from the blue, white and brown kinds, despite sharing the word egg. Matching supplied eggs fit; keep one loose rather than held or nested. Possession does not prove personal recovery from a specific nest.",
+              "id": "item-20403",
+              "item_vnums": [
+                20403
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a speckled egg loose"
+            },
+            {
+              "count": 1,
+              "hint": "Search the treetop nests for the blue egg. It is different from the speckled, white and brown kinds, despite sharing the word egg. Matching supplied eggs fit; keep one loose rather than held or nested. Possession does not prove personal recovery from a specific nest.",
+              "id": "item-20404",
+              "item_vnums": [
+                20404
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a blue egg loose"
+            },
+            {
+              "count": 1,
+              "hint": "Search the treetop nests for the white egg. It is different from the speckled, blue and brown kinds, despite sharing the word egg. Matching supplied eggs fit; keep one loose rather than held or nested. Possession does not prove personal recovery from a specific nest.",
+              "id": "item-20405",
+              "item_vnums": [
+                20405
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a white egg loose"
+            },
+            {
+              "count": 1,
+              "hint": "Search the treetop nests for the brown egg. It is different from the speckled, blue and white kinds, despite sharing the word egg. Matching supplied eggs fit; keep one loose rather than held or nested. Possession does not prove personal recovery from a specific nest.",
+              "id": "item-20406",
+              "item_vnums": [
+                20406
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a brown egg loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:20403,I:20404,I:20405,I:20406;receive=I:20417;disappear=1",
+                  "giver_vnum": 20413
+                }
+              ],
+              "hint": "Completion is recorded when this recipient accepts the exact offering. New credit requires active, ready accounting. Matching supplied items are valid; access, personal recovery and actual reunion or healing are separate outcomes. All four different egg kinds must be present together. Duplicates of one kind cannot replace a missing kind.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete Maern: four forest eggs"
+            }
+          ],
+          "summary": "Bring one speckled, blue, white and brown egg together for the protective ring. All four different kinds belong to one exchange.",
+          "title": "Maern: four forest eggs"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Starts in21024; seeks faith and accepts the miniature piece, not the large statue.",
           "keyword": "monk",
           "mob_vnum": 20928,

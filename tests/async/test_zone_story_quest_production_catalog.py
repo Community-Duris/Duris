@@ -3939,7 +3939,7 @@ for v in (120016,120054):assert 'pink' in objects[v].lower()  # Pending copy rep
 guidance=' '.join(mapping['orientation']+[c['description'] for c in mapping['contacts']]+[t.get('hint','') for s in mapping['stories'] for t in s['steps']])
 for phrase in ('lockpicking','GET','CARVE','rotting','two','nine','supplied','loose'):
     assert phrase.lower() in guidance.lower(),phrase
-assert catalog_module.report_for(catalog)['mapped_area_count']==135
+assert catalog_module.report_for(catalog)['mapped_area_count']==136
 assert catalog_module.report_for(catalog)['daily_unit_count']==1410
 assert sum(catalog_module.report_for(catalog)['eligible_by_zone'].values())==1528
 assert catalog_module.report_for(catalog)['story_unit_count']==2186
@@ -4048,7 +4048,7 @@ for phrase in ('key == -2','EX_LOCKED','isname(word, arg1)','back->to_room == ch
 guidance=' '.join(mapping['orientation']+[c['description'] for c in mapping['contacts']]+[t.get('hint','') for s in mapping['stories'] for t in s['steps']])
 for phrase in ('incomplete','world cap of one','RUB','supplied','three','loose','vapor','currently unavailable'):assert phrase.lower() in guidance.lower()
 report=catalog_module.report_for(catalog)
-assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(135,1528,1410,2186)
+assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(136,1528,1410,2186)
 
 
 # Cloister: complete native classification, refusal semantics and optional source routes.
@@ -4125,7 +4125,7 @@ assert '!IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED)' in search and 'REMOVE_BI
 guidance=' '.join(mapping['orientation']+[c['description'] for c in mapping['contacts']]+[t.get('hint','') for s in mapping['stories'] for t in s['steps']])
 for phrase in ('PUSH','SEARCH','SAY Khildarak','supplied','rejection','world cap of one','trap','ten-minute','active, ready accounting'):assert phrase.lower() in guidance.lower(),phrase
 report=catalog_module.report_for(catalog)
-assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(135,1528,1410,2186)
+assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(136,1528,1410,2186)
 
 
 # Turolopolis: exact ALL colours, retiring source, foreign giver and real portal/access roles.
@@ -4212,7 +4212,7 @@ for phrase in ('RUB','ENTER','SEARCH','five exact colours','white badge','suppli
     assert phrase.lower() in guidance.lower(),phrase
 assert not any(phrase in guidance for phrase in ('tower’s','crumbling stairway','priest’s quarters','Ask about free','Ask about power'))
 report=catalog_module.report_for(catalog)
-assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(135,1528,1410,2186)
+assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(136,1528,1410,2186)
 
 
 # Ixarkon: exact sources, optional guarded preparation and distinct campaign intent.
@@ -4408,7 +4408,7 @@ assert len(re.findall(r'^#\d+~\s*$',(ROOT/'areas/shp/mntcastl.shp').read_text(en
 guidance=' '.join(mapping['orientation']+[s['summary'] for s in mapping['stories']]+[t['hint'] for s in mapping['stories'] for t in s['steps']])
 for phrase in ('three','consumed','supplied','unresolved','no SEARCH','gardener belt','currently unavailable','active, ready accounting'):
     assert phrase.lower() in guidance.lower(),phrase
-assert catalog_module.report_for(catalog)['mapped_area_count']==135
+assert catalog_module.report_for(catalog)['mapped_area_count']==136
 assert catalog_module.report_for(catalog)['daily_unit_count']==1410
 assert sum(catalog_module.report_for(catalog)['eligible_by_zone'].values())==1528
 
@@ -6759,6 +6759,85 @@ assert all(r['definition']['daily_exclusion']=='Unsupported durable offering' fo
 assert sum(len(s['steps'])-1 for s in mapping['stories'])==8
 
 
+# Neverwind Valley: three same-kind rods, four distinct eggs and contextual letter delivery.
+pyramid=inventory_module.area_evidence(ROOT,'pyramid')
+mapping=next(m for m in catalog['story_mappings'] if m['source_area']=='pyramid')
+assert (mapping['schema_version'],mapping['revision'],mapping['coverage'])==(3,1,'complete')
+assert len(mapping['stories'])==3 and len(mapping['contacts'])==4 and not mapping['exclusions']
+blocks=inventory_module.native_blocks(ROOT)
+raw=sorted((b for b in blocks if b['source']=='areas/qst/pyramid.qst' and b['kind'] in ('Q','QA')),key=lambda b:b['line'])
+assert [(b['line'],b['giver_vnum'],b['give'],b['receive'],b['disappear']) for b in raw]==[
+ (30,20400,[('I',20400),('I',20400),('I',20400)],[('I',20418)],True),
+ (47,20409,[('I',20419)],[('I',20412)],True),
+ (84,20413,[('I',20403),('I',20404),('I',20405),('I',20406)],[('I',20417)],True)]
+assert {tuple(sorted(b.items())) for s in mapping['stories'] for b in s['contracts']}=={tuple(sorted(b['binding'].items())) for b in raw}
+assert [s['id'] for s in mapping['stories']]==['drinstan-three-kings','goar-apology-letter','maern-four-eggs']
+assert all(s['category']=='story' and len(s['contracts'])==1 and s['steps'][-1]['contracts']==s['contracts'] for s in mapping['stories'])
+assert [[(t['item_vnums'],t['count']) for t in s['steps'][:-1]] for s in mapping['stories']]==[[([20400],3)],[([20419],1)],[([20403],1),([20404],1),([20405],1),([20406],1)]]
+assert all(t['kind']=='carried_item' and t['optional'] for s in mapping['stories'] for t in s['steps'][:-1])
+contacts={c['mob_vnum']:c for c in mapping['contacts']}
+assert {v:c['topics'] for v,c in contacts.items()}=={20400:['hello','yes','pyramid','language','favor','task'],20409:['father'],20410:['crying','yes'],20413:['birds','yes']}
+assert sum(len(c['topics']) for c in contacts.values())==11
+for v,c in contacts.items():
+ assert c['name']==inventory_mobs[v]['name'] and c['keyword'] in inventory_mobs[v]['keywords']
+ assert c['topics']==[w for m in pyramid['dialogue'] if m['giver_vnum']==v for w in m['body'][0].rstrip('~').split()]
+assert not any(b['giver_vnum']==20410 for b in raw)
+rs=pyramid['reset_commands'];assert pyramid['zone']['reset_mode']==2 and len(rs)==155
+assert collections.Counter(r['command'] for r in rs)=={'D':14,'O':8,'P':8,'M':90,'E':27,'G':8}
+assert len(pyramid['mobs'])==20 and len(pyramid['items'])==23 and not pyramid['special_assignments']
+rooms=dawndale_bodies('pyramid','wld');objects=dawndale_bodies('pyramid','obj')
+assert set(rooms)==set(range(20400,20599)) and set(objects)==set(range(20400,20423))
+assert not (ROOT/'areas/shp/pyramid.shp').exists()
+edges=[(v,int(m[1]),int(m[4]),int(m[5]),int(m[6])) for v,b in rooms.items() for m in re.finditer(r'\bD(\d+)\s+([^~]*)~([^~]*)~\s*(-?\d+)\s+(-?\d+)\s+(-?\d+)',b,re.S)]
+assert len(edges)==555
+assert {(v,d,t) for v,d,f,k,t in edges if t not in rooms}=={(20400,2,528459),(20466,0,525659),(20466,1,526060)}
+assert (20491,0,3,-2,20478) in edges and (20478,2,1,0,20491) in edges
+assert 'double dunan~' in rooms[20491]
+for args in ([0,20491,0,2,100,0,0,0],[0,20478,2,1,100,0,0,0]):assert any(r['command']=='D' and r['arguments']==args for r in rs)
+for giver,room in ((20400,20437),(20409,20596),(20410,20489),(20413,20484),(20411,20592)):
+ assert any(r['command']=='M' and r['arguments'][1:5]==[giver,1,room,100] for r in rs)
+mobile_bodies=dawndale_bodies('pyramid','mob')
+for v in (20409,20411):assert not (int(mobile_bodies[v].split('~',4)[4].split()[0]) & 2)
+for parent,cap,room in ((20401,3,20477),(20401,3,20587),(20401,3,20590),(20420,1,20489),(20402,4,20498),(20402,4,20499),(20402,4,20500),(20402,4,20501)):
+ assert any(r['command']=='O' and r['arguments'][1:5]==[parent,cap,room,100] for r in rs)
+assert collections.Counter(tuple(r['arguments'][1:5]) for r in rs if r['command']=='P')=={(20400,3,20401,100):3,(20419,1,20420,100):1,(20403,1,20402,100):1,(20404,1,20402,100):1,(20405,1,20402,100):1,(20406,1,20402,100):1}
+for v in (20401,20420):assert objvalues(objects[v])[0]==15 and objvalues(objects[v])[12:14]==[5,0]
+assert objvalues(objects[20402])[0]==15 and objvalues(objects[20402])[12]==0
+assert objvalues(objects[20418])[0]==4 and objvalues(objects[20418])[11:15]==[40,1,1,28]
+assert objvalues(objects[20419])[0]==16 and '\nE\nletter~' in objects[20419]
+assert all(objvalues(b)[0] not in (18,25,29) for b in objects.values())
+for v in range(20403,20407):assert objects[v].split('~',1)[0]=='egg'
+for source,target in ((20439,20498),(20411,20499),(20425,20500),(20453,20501)):
+ assert (source,4,0,0,target) in edges and re.search(r'\bF\s+10\b',rooms[target])
+for source,direction,target in ((20596,1,20598),(20598,1,20469),(20596,2,20597),(20598,2,20597),(20592,1,20593),(20593,1,20595),(20595,1,20591)):
+ assert (source,direction,0,0,target) in edges
+assert not any(v in (20594,20597) for v,d,f,k,t in edges)
+assert int(rooms[20591].split('~',2)[2].split()[1])&131072
+assert int(rooms[20509].split('~',2)[2].split()[1])&262144
+assert 'North, North, East, South, East, North.' in rooms[20437]
+comm=(ROOT/'src/cmd/actcomm.c').read_text(encoding='utf8')
+password=comm.split('void check_magic_doors(',1)[1].split('void do_petition(',1)[0]
+assert 'EXIT(ch, door)->key == -2' in password and 'isname(word, arg1)' in password
+assert 'REMOVE_BIT(EXIT(ch, door)->exit_info, EX_LOCKED);' in password and 'EX_CLOSED' not in password
+assert 'back->to_room == ch->in_room' in password and 'REMOVE_BIT(back->exit_info, EX_LOCKED);' in password
+assert 'check_magic_doors(ch, argument + i);' in comm
+info=(ROOT/'src/cmd/actinf.c').read_text(encoding='utf8')
+read_note=info.split('void do_read(',1)[1].split('void do_examine(',1)[0]
+assert 'at %s' in read_note and 'do_look(ch, buf, -4);' in read_note
+assert 'arg2, tmp_object->ex_description' in info
+reset=(ROOT/'src/world/db.c').read_text(encoding='utf8').split("case 'P': /* object to object */",1)[1].split("case 'G':",1)[0]
+assert 'obj_to = get_obj_num(ZCMD.arg3);' in reset and 'obj_to_obj(obj, obj_to);' in reset
+handler=(ROOT/'src/world/handler.c').read_text(encoding='utf8').split('P_obj get_obj_num(',1)[1].split('P_char get_char_room(',1)[0]
+assert 'for (i = object_list; i; i = i->next)' in handler and 'i->R_num == nr' in handler
+innate=(ROOT/'src/classes/innates.c').read_text(encoding='utf8')
+assert 'ADD_RACIAL_INNATE(INNATE_SHIFT_PRIME, RACE_GITHZERAI, 1);' in innate
+shift=innate.split('void do_shift_prime(P_char ch,',1)[1].split('void do_blast(',1)[0]
+assert '20484' in shift and 'GET_RACE(ch) == RACE_GITHZERAI' in shift and 'check_innate_time(ch, INNATE_SHIFT_PRIME)' in shift and 'char_to_room(ch, r_room, -1)' in shift
+foreign=[b for b in blocks if b['source']!='areas/qst/pyramid.qst' and b['kind'] in ('Q','QA') and any(k=='I' and v in objects for k,v in b['give']+b['receive'])]
+assert not foreign
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==204]
+assert len(units)==3 and sum(u['achievement'] for u in units)==sum(u['daily_candidate'] for u in units)==3
+
 # Deep Ravine: staged access, paired foreign relics and accounting-refused paid key.
 minopass=inventory_module.area_evidence(ROOT,'minopass')
 mapping=next(m for m in catalog['story_mappings'] if m['source_area']=='minopass')
@@ -7601,7 +7680,7 @@ units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==429]
 assert len(units)==10 and all(u['achievement'] and u['daily_candidate'] for u in units)
 assert 'retires' in mapping['stories'][1]['summary'] and 'together' in mapping['stories'][7]['summary']
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold", "troll_caves", "centaur_zone", "opalphoenix", "mira", "surfacekeeps", "icecrag", "cloister", "willem", "ixarkon", "mntcastl", "tundra", "fields_between", "goblinht", "ceothia", "brad", "desert", "ceopast", "basin_wa", "crypt", "val", "harrow", "mountaintracks", "shortc", "lavcav", "nomads", "undermountain", "desolateinv", "spshold", "harpyht", "herders", "jotun", "temple", "pods", "citadel", "element", "earth", "githzer", "worms", "ravenloft", "barovia2", "werrun", "newhope", "raxthan", "library", "mistywood", "pharrvly", "oasis", "connectorzones", "battlefi", "mansion", "woodseer", "ruins", "ttowers", "minopass"):
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold", "troll_caves", "centaur_zone", "opalphoenix", "mira", "surfacekeeps", "icecrag", "cloister", "willem", "ixarkon", "mntcastl", "tundra", "fields_between", "goblinht", "ceothia", "brad", "desert", "ceopast", "basin_wa", "crypt", "val", "harrow", "mountaintracks", "shortc", "lavcav", "nomads", "undermountain", "desolateinv", "spshold", "harpyht", "herders", "jotun", "temple", "pods", "citadel", "element", "earth", "githzer", "worms", "ravenloft", "barovia2", "werrun", "newhope", "raxthan", "library", "mistywood", "pharrvly", "oasis", "connectorzones", "battlefi", "mansion", "woodseer", "ruins", "ttowers", "minopass", "pyramid"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:
