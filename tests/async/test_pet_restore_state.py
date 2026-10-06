@@ -55,6 +55,31 @@ int main()
     assert(!summoned_pet_matches_prototype(summoned_pet_kind::titan, 3));
     assert(legacy_summon_prototype(1201) && !legacy_summon_prototype(200));
 
+    // Version 2 preserves captured class specializations, body caps and prepared slots.
+    s.base_points[1] = 448;
+    s.version = 2; s.kind = summoned_pet_kind::summoner_capture;
+    s.specialization = 6; s.resource_slot = 3; s.hp_ceiling = 1234;
+    s.primary_class = 49; s.spell_slots[4] = 0;
+    assert(pet_restore_state_encode(s, &again));
+    assert(pet_restore_state_decode(again, &decoded));
+    assert(decoded.version == 2 && decoded.kind == summoned_pet_kind::summoner_capture);
+    assert(decoded.specialization == 6 && decoded.resource_slot == 3 && decoded.hp_ceiling == 1234);
+    assert(decoded.primary_class == 49 && decoded.spell_slots[4] == 0);
+    assert(summoned_pet_matches_prototype(s.kind, 142408));
+    assert(summoned_pet_cost(s.kind) == 0);
+    s.level = 61; // a greater-orb capture persists its level above the mortal cap
+    assert(pet_restore_state_encode(s, &again) && pet_restore_state_decode(again, &decoded));
+    assert(decoded.level == 61 && decoded.kind == summoned_pet_kind::summoner_capture);
+    s.resource_slot = 0;
+    assert(!pet_restore_state_encode(s, &again));
+    s.resource_slot = 3; s.version = 1;
+    assert(!pet_restore_state_encode(s, &again));
+    s.version = 2; s.kind = summoned_pet_kind::conjurer_elemental; s.resource_slot = 0;
+    assert(pet_restore_state_encode(s, &again) && pet_restore_state_decode(again, &decoded));
+    assert(summoned_pet_matches_prototype(s.kind, 1100));
+    assert(summoned_pet_matches_prototype(s.kind, 1111));
+    assert(!summoned_pet_matches_prototype(s.kind, 142408));
+
     player_snapshot snapshot = {};
     snapshot.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
     snapshot.pid = 42; snapshot.revision = 1; snapshot.components = PLAYER_COMPONENT_PETS;

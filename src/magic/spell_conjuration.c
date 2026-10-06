@@ -26,7 +26,7 @@ extern int get_multicast_chars(P_char leader, int m_class, int min_level);
 #include <strings.h>
 #include <time.h>
 
-static int conjure_terrain_check(P_char, P_char);
+int conjure_terrain_check(P_char, P_char);
 
 static P_obj spell_item_by_uid(uint64_t uid)
 {
@@ -835,20 +835,41 @@ bool can_conjure_greater_elem(P_char ch, int /*level*/)
 	return TRUE;
 }
 
-static int conjure_terrain_check(P_char ch, P_char mob)
+int conjure_terrain_check(P_char ch, P_char mob)
 {
-	int room = ch->in_room;
-
 	if (!ch || !mob || !IS_ALIVE(ch))
 		return 0;
 
-	if (!GET_CLASS(ch, CLASS_CONJURER))
+	const int room = ch->in_room;
+	if (room == NOWHERE)
+		return 0;
+	int specialization = ch->player.spec;
+	if (GET_SPEC(ch, CLASS_SUMMONER, SPEC_MENTALIST))
+	{
+		switch (GET_RACE(mob))
+		{
+		case RACE_A_ELEMENTAL:
+		case RACE_V_ELEMENTAL:
+			specialization = 1;
+			break;
+		case RACE_W_ELEMENTAL:
+		case RACE_I_ELEMENTAL:
+			specialization = 2;
+			break;
+		case RACE_F_ELEMENTAL:
+			specialization = 3;
+			break;
+		case RACE_E_ELEMENTAL:
+			specialization = 4;
+			break;
+		default:
+			return 0;
+		}
+	}
+	else if (!GET_CLASS(ch, CLASS_CONJURER) || !specialization)
 		return 0;
 
-	if (!ch->player.spec)
-		return 0;
-
-	switch (ch->player.spec)
+	switch (specialization)
 	{
 	case 1: /* AIR conjurer*/
 

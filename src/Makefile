@@ -287,6 +287,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/racial_pulse.o \
 				 classes/disguise.o \
 				 classes/drannak.o \
+				 classes/summoner_pet.o \
 				 item/enhance.o \
 				 economy/crafting.o \
 				 economy/craft_progression.o \
