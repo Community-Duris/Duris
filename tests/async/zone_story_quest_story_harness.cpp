@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 145 &&
+		require(catalog.story_mappings.size() == 146 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7687,6 +7687,140 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "shabo"; });
+			const auto &notes = story_for("shabo", "lost-notes");
+			const auto &essences = story_for("shabo", "tower-essences");
+			require(mapping.stories.size() == 2 && mapping.contacts.size() == 10 &&
+					notes.steps.size() == 2 && essences.steps.size() == 5,
+				"Shaboath mapping scope failed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 328, 32800, 100, "arrival") ==
+					result::applied,
+				"Shaboath discovery failed");
+			require(journey.meet_npc(7, 42, 32842, 32881, 102) == result::applied &&
+					journey.meet_npc(7, 42, 32864, 32909, 102) ==
+						result::applied,
+				"Shaboath context encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 328, 10, 1, 103, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Shaboath context exposed unmet giver cards");
+			require(journey.progress_for_zone(7, 42, 328).total == 2 &&
+					journey.progress_for_zone(7, 42, 328).completed == 0,
+				"Shaboath context forged accepted proof");
+			require(journey.meet_npc(7, 42, 32878, 32914, 104) == result::applied,
+				"Shaboath spirit encounter failed");
+			journal = journey.render_journal(7, 42, 328, 10, 1, 105, false, false);
+			require(journal.find("] " + essences.title + "\r\n") != std::string::npos &&
+					journal.find("] " + notes.title + "\r\n") ==
+						std::string::npos,
+				"Shaboath sphere story required earlier slave encounter");
+			const auto status = [&](const auto &story, size_t row, const char *state)
+			{
+				const auto start = journal.find("] " + story.title + "\r\n");
+				require(start != std::string::npos,
+					"Shaboath visible story missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     story.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			for (int v : { 32809, 32811, 32812, 32818, 32825, 32847 })
+				supplies.carried[v] = 1;
+			supplies.equipped[18] = 32842;
+			journal = journey.render_journal(7, 42, 328, 10, 1, 106, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 4; ++i)
+				require(status(essences, i, "Missing now"),
+					"Shaboath held sphere or key/notebook substituted for exact proof");
+			supplies = {};
+			supplies.carried[32842] = 4;
+			supplies.carried[32843] = 1;
+			supplies.carried[32844] = 1;
+			journal = journey.render_journal(7, 42, 328, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(essences, 0, "Ready now") &&
+					status(essences, 2, "Ready now") &&
+					status(essences, 3, "Missing now"),
+				"Shaboath duplicate sphere replaced fourth identity");
+			supplies.carried[32845] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 328, 10, 1, 108, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 4; ++i)
+				require(status(essences, i, "Ready now"),
+					"Shaboath supplied exact sphere not ready");
+			require(status(essences, 4, "Pending") &&
+					journey.serialize_state() == before,
+				"Shaboath supplies forged source kills or ward history");
+			// Projection is separate from actual source combat, access and authority settlement.
+			record(journey, essences.contracts.front(), "shabo-essences-first", 328,
+			       32914);
+			require(journey.progress_for_zone(7, 42, 328).completed == 1 &&
+					journey.evidence_for(notes.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Shaboath sphere receipt required or fabricated notebook history");
+			require(journey.meet_npc(7, 42, 32827, 32861, 112) == result::applied,
+				"Shaboath filthy slave encounter failed");
+			supplies = {};
+			supplies.equipped[18] = 32812;
+			journal = journey.render_journal(7, 42, 328, 10, 1, 113, false, false,
+							 &supplies);
+			require(status(notes, 0, "Missing now") && status(notes, 1, "Pending"),
+				"Shaboath held notebook counted as loose accepted information");
+			supplies = {};
+			supplies.carried[32812] = 1;
+			journal = journey.render_journal(7, 42, 328, 10, 1, 114, false, false,
+							 &supplies);
+			require(status(notes, 0, "Ready now") && status(notes, 1, "Pending") &&
+					journey.progress_for_zone(7, 42, 328).completed == 1,
+				"Shaboath supplied notebook fabricated speech/access receipt");
+			record(journey, notes.contracts.front(), "shabo-notes-later", 328, 32861);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 328, 10, 1, 120, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(status(story, story.steps.size() - 1, "Recorded") &&
+						status(story, 0, "Missing now"),
+					"Shaboath spent material erased accepted history");
+			require(journey.progress_for_zone(7, 42, 328).completed == 2 &&
+					journey.progress_for_zone(7, 42, 328).total == 2,
+				"Shaboath material/ward/contact rows inflated units");
+			auto replay = completion(notes.contracts.front(), "shabo-notes-later", 120);
+			replay.transaction.zone_number = 328;
+			replay.transaction.room_vnum = 32861;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Shaboath exact replay duplicated information receipt");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 328).completed == 2,
+				"Shaboath cold recovery lost accepted history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 328, 32800, 100, "arrival") ==
+					result::applied,
+				"Shaboath raw discovery failed");
+			for (const auto &story : mapping.stories)
+				record(historical, story.contracts.front(),
+				       ("shabo-raw-" + story.id).c_str(), 328,
+				       story.id == notes.id ? 32861 : 32914);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 328).completed == 2,
+				"Shaboath raw-to-authored recovery lost history");
+			for (const auto &story : mapping.stories)
+				require(authored.evidence_for(story.contracts.front(), 2)
+							.successful_attempts == 1,
+					"Shaboath mapping discarded exact native receipt");
 		}
 
 		{

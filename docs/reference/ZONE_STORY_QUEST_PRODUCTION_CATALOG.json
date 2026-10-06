@@ -64600,6 +64600,226 @@
     {
       "contacts": [
         {
+          "description": "The filthy slave explains the four towers and accepts his notebook to reveal an entry phrase. Information acceptance is distinct from speaking the phrase, unlocking or entering the shared door.",
+          "keyword": "filthy",
+          "mob_vnum": 32827,
+          "name": "a dirty slave",
+          "topics": [
+            "default",
+            "hi",
+            "hello",
+            "quest",
+            "aboleth",
+            "slave",
+            "illithid",
+            "tower",
+            "domination",
+            "heart",
+            "notes",
+            "phrase",
+            "secret"
+          ]
+        },
+        {
+          "description": "The lost spirit accepts four distinct tower spheres, awards an insubstantial key and departs. This is a story-only return; dialogue about released priests does not establish a separate rescue or kill receipt.",
+          "keyword": "spirit",
+          "mob_vnum": 32878,
+          "name": "a lost spirit",
+          "topics": [
+            "hi",
+            "hello",
+            "quest"
+          ]
+        },
+        {
+          "description": "The representative explains Darkaland. His custom dialogue state and transformation need isolated qualification; this contact has no native accepted quest return.",
+          "keyword": "pallistren",
+          "mob_vnum": 32842,
+          "name": "Pallistren",
+          "topics": [
+            "darkaland",
+            "default"
+          ]
+        },
+        {
+          "description": "The alteration-tower savant at its summit carries the alteration sphere. Other tower masters use the same targeting names; confirm the tower and exact item.",
+          "keyword": "savant",
+          "mob_vnum": 32864,
+          "name": "a savant aboleth",
+          "topics": []
+        },
+        {
+          "description": "The necromancy-tower savant carries its distinct sphere. Corpses relocated into this room are a separate ward effect and do not count as accepted proof.",
+          "keyword": "savant",
+          "mob_vnum": 32867,
+          "name": "a savant aboleth",
+          "topics": []
+        },
+        {
+          "description": "The summoning-tower savant carries its distinct sphere. Entrance summons are separate actors and do not count as this master or its exact proof.",
+          "keyword": "savant",
+          "mob_vnum": 32870,
+          "name": "a savant aboleth",
+          "topics": []
+        },
+        {
+          "description": "The enchantment-tower savant carries its distinct sphere. Shared names and dangerous room effects do not merge the four item identities.",
+          "keyword": "savant",
+          "mob_vnum": 32873,
+          "name": "a savant aboleth",
+          "topics": []
+        },
+        {
+          "description": "The gate-room derro savants block several ordinary movement directions. Meeting one does not record defeating the gate, entering the city or retrieving a quest item.",
+          "keyword": "derro",
+          "mob_vnum": 32803,
+          "name": "a derro savant",
+          "topics": []
+        },
+        {
+          "description": "The butler\u2019s combat behavior can transform him and servants into armed hunters. Actor and gear transfers need separate authority qualification and grant no local accepted return.",
+          "keyword": "butler",
+          "mob_vnum": 32840,
+          "name": "the butler",
+          "topics": []
+        },
+        {
+          "description": "Petrechella has a legacy transformation and relocation script whose standard periodic dispatch is disabled. Builder intent and isolated dispatch qualification are needed before promising that behavior.",
+          "keyword": "petrechella",
+          "mob_vnum": 32843,
+          "name": "Petrechella",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Recover the slave\u2019s lost notes to learn the tower entry phrase, then gather four different tower essences for the spirit\u2019s key. The city\u2019s wards, dangerous representatives and treasure routes add exploration leads. Discovery is separate; new progress requires active, ready accounting.",
+      "orientation": [
+        "ASK FILTHY about aboleth, tower, notes, phrase or quest. The notebook is declared on the floor of a city residence. Return that exact notebook loose to the filthy slave to learn Darlakanand. This accepted information quest gives no item or experience reward; remembering the phrase and retrieving the notebook personally are different facts.",
+        "The derro savants block ordinary entry from their gate room until that obstacle is resolved. Other routes use a gate key and a compound key. At the tower-complex entrance, SAY DARLAKANAND unlocks the magical door when you can speak, then open it and enter. The inside door uses DARKALAND. Shared unlocked doors do not prove that you learned or spoke either phrase; the code does not require the notebook receipt first.",
+        "Four savant aboleth carry four different essence spheres: alteration, necromancy, summoning and enchantment. Their target names and item keywords are similar, so identify each tower and exact sphere. Carry one of each loose to the lost spirit in the Tower of Domination. Duplicate spheres cannot replace a missing kind; matching supplied proof does not establish a personal boss defeat or first source recovery.",
+        "The spirit\u2019s accepted return awards an insubstantial key and makes the spirit depart. Use the key on the secret passage upward toward the Grand Savant. The key declares a break chance; the reviewed return does not implement a timed expiry or require the notebook receipt. The spirit\u2019s story about slain priests is context: it already has a reset source. This return is story-only and is excluded from daily quests.",
+        "The alteration tower can temporarily change your race, the necromancy tower drags corpses to its savant\u2019s room, and the enchantment tower applies dangerous effects. The summoning entrance can dispel magic and create attackers. These effects and surviving them need separate event support; carrying a sphere or completing a return does not record them, release a captive or stop the wards.",
+        "ASK PALLISTREN about darkaland for political context. His custom transformation, the butler\u2019s transformations and Petrechella\u2019s legacy combat behavior require separate source and accounting qualification. Questions supply leads without creating an achievement for every keyword. The four masters share target names; use their tower locations to distinguish encounters.",
+        "A gold key leads through treasure doors and chests. PUSH the dark obelisk to unblock its upward route; revealing a secret, opening it, unlocking a chest and first recovery are separate actions. Pallistren\u2019s iron key and artifact powers are other exploration leads. Shared switches, wandering helpers, random chest stock and transferred gear do not create additional accepted returns.",
+        "Optional material rows show loose supplies now; recorded returns remain after those supplies are spent. The notebook can be a potential daily, but zone reset mode0 and active accounting do not guarantee renewed stock or settlement. A supplied notebook, supplied spheres, successful access, personal combat and permanent defeat of domination must be explained separately."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "shabo",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:32812;receive=;disappear=0",
+              "giver_vnum": 32827
+            }
+          ],
+          "id": "lost-notes",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it.",
+              "id": "proof-32812",
+              "item_vnums": [
+                32812
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the slave\u2019s notebook loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:32812;receive=;disappear=0",
+                  "giver_vnum": 32827
+                }
+              ],
+              "hint": "Records this native accepted return and retains it after materials are spent. Shared access, personal combat, ward effects and permanent world changes are separate. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the exact accepted return"
+            }
+          ],
+          "summary": "Return the exact notebook to the filthy slave to learn Darlakanand. This information-only return records accepted proof; learning from another player, speaking the phrase and successfully entering the complex are separate.",
+          "title": "The lost notes and tower entry phrase"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:32842,I:32843,I:32844,I:32845;receive=I:32847;disappear=1",
+              "giver_vnum": 32878
+            }
+          ],
+          "id": "tower-essences",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it.",
+              "id": "proof-32842",
+              "item_vnums": [
+                32842
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the alteration sphere loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it.",
+              "id": "proof-32843",
+              "item_vnums": [
+                32843
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the necromancy sphere loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it.",
+              "id": "proof-32844",
+              "item_vnums": [
+                32844
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the summoning sphere loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it.",
+              "id": "proof-32845",
+              "item_vnums": [
+                32845
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the enchantment sphere loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:32842,I:32843,I:32844,I:32845;receive=I:32847;disappear=1",
+                  "giver_vnum": 32878
+                }
+              ],
+              "hint": "Records this native accepted return and retains it after materials are spent. Shared access, personal combat, ward effects and permanent world changes are separate. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the exact accepted return"
+            }
+          ],
+          "summary": "Bring the different alteration, necromancy, summoning and enchantment spheres to the lost spirit for an insubstantial key. The spirit departs after acceptance. This story-only return does not require the earlier notebook receipt and does not record destroying the Grand Savant.",
+          "title": "Four tower essences for the spirit\u2019s key"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Starts at the basin entrance with a wooden staff. Ask the listed topics; greetings and welcome get a helpful response. Crafts four distinct potions, performs the signet ritual, buys any one beetle part, and refuses the heartstone. She also has the shared teacher flag; teaching is a separate service.",
           "keyword": "witch",
           "mob_vnum": 34013,

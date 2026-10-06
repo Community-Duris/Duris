@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 145 authored journals.
+2668 distinct Q contracts; 146 authored journals.
 
 Regenerate with:
 
@@ -194,7 +194,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Savannah of Broken Trusts (`savannah`) | 17 | 17 | 6 | Yes | [3 × an elephant's tusk → an ivory curio](../../areas/qst/savannah.qst#L406) | — |
 | The Scorched Valley (`scorchvalley`) | 9 | 11 | 4 | Yes | [1 × the red ring of perfection; 1 × the blue ring of perfection; 1 × the green ring of perfection; other required items → a necklace of perfection](../../areas/qst/scorchvalley.qst#L256) | artifact_invisible, block_up, yeenoghu |
 | Sea Kingdom (`seakngdm`) | 1 | 1 | 0 | Fallback | [1 × a half of a silver amulet → a sapphire eye](../../areas/qst/seakngdm.qst#L9) | SeaKingdom_Tsunami, glowing_necklace |
-| The Great Shaboath (`shabo`) | 2 | 7 | 0 | Fallback | [1 × a sphere of crystallized magic; 1 × a sphere of crystallized magic; 1 × a sphere of crystallized magic; other required items → an insubstantial key](../../areas/qst/shabo.qst#L87) | aboleth_pendant, artifact_invisible, artifact_stone, cyvrand_shout, finslayer_air, flayed_mind_mask |
+| The Great Shaboath (`shabo`) | 2 | 7 | 0 | Yes | [1 × a sphere of crystallized magic; 1 × a sphere of crystallized magic; 1 × a sphere of crystallized magic; other required items → an insubstantial key](../../areas/qst/shabo.qst#L87) | aboleth_pendant, artifact_invisible, artifact_stone, cyvrand_shout, finslayer_air, flayed_mind_mask |
 | Shady Grove (`shady`) | 3 | 5 | 0 | Yes | [1 × a diamond-studded collar → the blood sword of the ancients](../../areas/qst/shady.qst#L11) | hardworking_fisherman, inn, orcish_jailkeeper, orcish_woman, pet_shops, stray_dog |
 | The Shaughin Settlement (`shaughin`) | 4 | 2 | 0 | Fallback | [2 × the heart of a constrictor → a potion of constrictor blood](../../areas/qst/shaughin.qst#L40) | inn |
 | The Ship Yards (`shipy`) | 26 | 20 | 2 | Yes | [5 × a snapjaw turtle shell; 5 × a fire gland → native reward/response](../../areas/qst/shipy.qst#L38) | crew_shop_proc, money_changer, ship_shop_proc |
