@@ -681,6 +681,22 @@ and private SQL cuts remain component evidence, not quest producer completion.
 
 ## Qualification budgets
 
+The isolated native flatfile restore qualifier validates every retained
+`domains/quest-mobile-native-<id>.qmn` image after authority-bundle recovery, in
+both state preflight and final qualification. It requires a canonical nonzero
+decimal lifetime ID below UINT64_MAX, a private regular file with one link,
+the existing 4 MiB native image bound, canonical native reference/stock/cash
+bytes, and exact filename/reference identity. Corrupt values or malformed names
+in the protected namespace refuse with the existing fixed diagnostic. The image
+check does not write those files or materialize a mobile.
+
+Historical v1 images retain unknown cash; v2 images validate exact denominations
+and cash revision. Retired images retain their original lifetime and have no
+stock or cash. These are native value-format checks, separate from the
+independent economic evidence reader. They do not authenticate birth/source
+authority, resolve runtime custody or qualify complete opening, activation or a
+release. The surrounding original restore and lineage checks remain required.
+
 The maintained `test_native_sql_baseline_audit.py` recipe also exercises the
 full independent SQL snapshot reader before and after actual dump/import into
 new private MariaDB and MySQL daemons. Its EAB2 books and commands come from the
