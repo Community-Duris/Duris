@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 149 authored journals.
+2668 distinct Q contracts; 150 authored journals.
 
 Regenerate with:
 
@@ -178,7 +178,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Pharr Valley (`pharrvly`) | 2 | 14 | 0 | Yes | [1 × an apple; 1 × an orange; 1 × a crow's nest → native reward/response](../../areas/qst/pharrvly.qst#L87) | — |
 | Pine Hollow (`pineholl`) | 7 | 10 | 1 | Yes | [1 × a green-hued gold dragon scale; 1 × a gold dragon scale; 1 × the brown-hued scale of an elder gold dragon; other required items → a dragonscale earring, a golden dagger](../../areas/qst/pineholl.qst#L35) | — |
 | Pharr Valley Swamp (`pods`) | 4 | 24 | 0 | Yes | [6 × a dark feather; 1 × a strip of neberihide → a birdfeather headdress](../../areas/qst/pods.qst#L187) | — |
-| The Prisons of Carthapia (`prison`) | 2 | 6 | 0 | Fallback | [1 × some scales of the Great Dragon Smaug; 1 × some scales of the Great Dragon Smaug; 1 × some scales of the Great Dragon Smaug → the shield of flames](../../areas/qst/prison.qst#L47) | flaming_axe_of_azer, nexus, warden_shout |
+| The Prisons of Carthapia (`prison`) | 2 | 6 | 0 | Yes | [1 × some scales of the Great Dragon Smaug; 1 × some scales of the Great Dragon Smaug; 1 × some scales of the Great Dragon Smaug → the shield of flames](../../areas/qst/prison.qst#L47) | flaming_axe_of_azer, nexus, warden_shout |
 | Prison of Fort Boyard (`prisonb`) | 1 | 5 | 0 | Fallback | [1 × a white scale; 1 × a blue scale; 1 × a green scale; other required items → a cloak of dragons](../../areas/qst/prisonb.qst#L43) | — |
 | Lair of the Purple Worm (`pworm`) | 1 | 5 | 0 | Fallback | [1 × the family amulet of Drakhov; 7 × some gargantuan worm hide → a pair of drider skin leggings](../../areas/qst/pworm.qst#L31) | — |
 | Neverwind Valley (`pyramid`) | 3 | 9 | 0 | Yes | [1 × a speckled egg; 1 × a blue egg; 1 × a white egg; other required items → a ring of protection from evil](../../areas/qst/pyramid.qst#L84) | — |

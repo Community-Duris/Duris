@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 149 &&
+		require(catalog.story_mappings.size() == 150 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,114 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "prison"; });
+			const auto &coin = story_for("prison", "lost-tarnished-coin");
+			const auto &scales = story_for("prison", "smaug-scales");
+			require(mapping.stories.size() == 2 && mapping.contacts.size() == 9 &&
+					coin.steps.size() == 2 && scales.steps.size() == 4,
+				"Carthapia mapping scope failed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 73, 7300, 100, "arrival") ==
+					result::applied,
+				"Carthapia discovery failed");
+			require(journey.meet_npc(7, 42, 7353, 7443, 102) == result::applied &&
+					journey.meet_npc(7, 42, 7357, 7483, 102) ==
+						result::applied &&
+					journey.meet_npc(7, 42, 7354, 7460, 102) == result::applied,
+				"Carthapia context encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 73, 10, 1, 103, false, false);
+			require(journal.find("] " + coin.title + "\r\n") == std::string::npos &&
+					journal.find("] " + scales.title + "\r\n") ==
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 73).completed == 0,
+				"Carthapia context forged return, victory or training");
+			require(journey.meet_npc(7, 42, 7304, 7301, 104) == result::applied &&
+					journey.meet_npc(7, 42, 7306, 7302, 104) == result::applied,
+				"Carthapia visitor encounters failed");
+			const auto status = [&](const auto &story, size_t row, const char *state)
+			{
+				const auto start = journal.find("] " + story.title + "\r\n");
+				require(start != std::string::npos,
+					"Carthapia visible story missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     story.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			for (int v : { 7334, 7335, 7338, 7340, 7345, 7373, 7377 })
+				supplies.carried[v] = 1;
+			supplies.equipped[18] = 7372;
+			journal = journey.render_journal(7, 42, 73, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(coin, 0, "Missing now"),
+				"Carthapia held coin or keys replaced loose proof");
+			for (size_t i = 0; i < 3; ++i)
+				require(status(scales, i, "Missing now"),
+					"Carthapia reward shield replaced scales");
+			supplies = {};
+			supplies.carried[7342] = 3;
+			supplies.carried[7343] = 1;
+			journal = journey.render_journal(7, 42, 73, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(scales, 0, "Ready now") && status(scales, 1, "Ready now") &&
+					status(scales, 2, "Missing now"),
+				"Carthapia identical-looking duplicate scales replaced a distinct third set");
+			supplies.carried[7344] = 1;
+			supplies.carried[7372] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 73, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(coin, 0, "Ready now") && status(coin, 1, "Pending") &&
+					status(scales, 3, "Pending") &&
+					journey.serialize_state() == before,
+				"Carthapia supplied proof forged accepted history, source, rescue or access");
+			for (size_t i = 0; i < 3; ++i)
+				require(status(scales, i, "Ready now"),
+					"Carthapia exact supplied scale set not ready");
+			record(journey, scales.contracts.front(), "prison-scales", 73, 7302);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 73, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(scales, 3, "Recorded") && status(scales, 0, "Missing now") &&
+					status(coin, 1, "Pending") &&
+					journey.progress_for_zone(7, 42, 73).completed == 1 &&
+					journey.progress_for_zone(7, 42, 73).total == 2,
+				"Carthapia gnome return forced coin history or spent proof erased receipt");
+			record(journey, coin.contracts.front(), "prison-coin", 73, 7301);
+			journal = journey.render_journal(7, 42, 73, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(coin, 1, "Recorded") && status(coin, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 73).completed == 2,
+				"Carthapia independent visitor return lost history");
+			auto replay = completion(scales.contracts.front(), "prison-scales", 120);
+			replay.transaction.zone_number = 73;
+			replay.transaction.room_vnum = 7302;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Carthapia exact replay duplicated return");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 73).completed == 2,
+				"Carthapia cold recovery lost accepted history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 73, 7300, 100, "arrival") ==
+					result::applied,
+				"Carthapia raw discovery failed");
+			record(historical, scales.contracts.front(), "prison-raw", 73, 7302);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 73).completed == 1 &&
+					authored.evidence_for(scales.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Carthapia raw-to-authored recovery lost receipt");
 		}
 
 		{
