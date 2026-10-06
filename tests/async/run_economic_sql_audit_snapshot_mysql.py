@@ -127,6 +127,8 @@ TABLES = (
     "CREATE TABLE economic_pending_claim_source (source_operation_id BINARY(16),source_slot INT,"
     "lineage BINARY(16),claim_mapping_id BIGINT,beneficiary_pid BIGINT,amount BIGINT,"
     "claim_operation_id BINARY(16)) ENGINE=InnoDB",
+    "CREATE TABLE economic_pending_claim_consumption (spending_operation_id BINARY(16),"
+    "source_operation_id BINARY(16),source_slot INT,amount BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE player_data (pid BIGINT,copper BIGINT,silver BIGINT,gold BIGINT,platinum BIGINT,"
     "wallet_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE account_banks (id BIGINT,bank_copper BIGINT,bank_silver BIGINT,bank_gold BIGINT,"

@@ -997,12 +997,6 @@ def infer_created_mapping_origins(lineage: str, mappings: list[dict],
 
 
 def read_pending_claim_consumers(cursor, lineage: bytes) -> tuple[list[dict], dict]:
-    registry = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
-    claim_reasons = [row["number"] for row in registry["reasons"]
-                     if row["id"] == "auction_claim"]
-    if len(claim_reasons) != 1:
-        raise ExportError("auction claim reason is missing or ambiguous")
-    claim_reason = claim_reasons[0]
     rows = bounded(cursor,
         "SELECT o.operation_id,o.epoch,o.outcome,o.result_code,"
         "i.status AS inbox_status,i.result_code AS inbox_result_code,"
@@ -1015,11 +1009,17 @@ def read_pending_claim_consumers(cursor, lineage: bytes) -> tuple[list[dict], di
         "FROM economic_accounting_operation o "
         "LEFT JOIN critical_operation_inbox i ON i.operation_id=o.operation_id "
         "JOIN economic_accounting_account_effect e ON e.operation_id=o.operation_id "
-        "LEFT JOIN (SELECT claim_operation_id,COUNT(*) AS source_rows,SUM(amount) AS source_amount "
+        "LEFT JOIN (SELECT allocation_operation_id,COUNT(*) AS source_rows,SUM(amount) AS source_amount "
+        "FROM (SELECT claim_operation_id AS allocation_operation_id,amount "
         "FROM economic_pending_claim_source WHERE lineage=%s AND claim_operation_id IS NOT NULL "
-        "GROUP BY claim_operation_id) s ON s.claim_operation_id=o.operation_id "
-        "WHERE o.lineage=%s AND o.reason=%s AND o.outcome=1 "
-        "ORDER BY o.operation_id,e.account_index", (lineage, lineage, claim_reason))
+        "UNION ALL SELECT c.spending_operation_id,c.amount FROM economic_pending_claim_consumption c "
+        "LEFT JOIN economic_pending_claim_source p ON p.source_operation_id=c.source_operation_id "
+        "AND p.source_slot=c.source_slot LEFT JOIN economic_accounting_operation spender "
+        "ON spender.operation_id=c.spending_operation_id WHERE p.lineage=%s OR spender.lineage=%s) allocations "
+        "GROUP BY allocation_operation_id) s ON s.allocation_operation_id=o.operation_id "
+        "WHERE o.lineage=%s AND o.outcome=1 AND e.before_copper>e.after_copper "
+        "AND SUBSTRING(e.account_key,17,4)=UNHEX('01000500') "
+        "ORDER BY o.operation_id,e.account_index", (lineage, lineage, lineage, lineage))
     consumers = {}
     for row in rows:
         key = row["account_key"]
@@ -1064,6 +1064,29 @@ def read_pending_claim_consumers(cursor, lineage: bytes) -> tuple[list[dict], di
                      for row in result)
     return result, {"rows": len(result), "missing_source_rows": missing,
                     "mismatched_source_amounts": mismatched}
+
+
+def read_pending_claim_consumptions(cursor, lineage: bytes) -> tuple[list[dict], dict]:
+    rows = bounded(cursor,
+        "SELECT c.spending_operation_id,c.source_operation_id,c.source_slot,c.amount "
+        "FROM economic_pending_claim_consumption c LEFT JOIN economic_pending_claim_source s "
+        "ON s.source_operation_id=c.source_operation_id AND s.source_slot=c.source_slot "
+        "LEFT JOIN economic_accounting_operation o ON o.operation_id=c.spending_operation_id "
+        # A row with neither retained root nor source has unknown lineage. Keep
+        # its IDs as a database-wide orphan instead of attributing or hiding it.
+        "WHERE s.lineage=%s OR o.lineage=%s OR (s.source_operation_id IS NULL AND o.operation_id IS NULL) "
+        "ORDER BY c.spending_operation_id,c.source_operation_id,c.source_slot", (lineage, lineage))
+    result = []
+    for row in rows:
+        if (any(type(row[field]) is not bytes or len(row[field]) != 16 or not any(row[field])
+                for field in ("spending_operation_id", "source_operation_id")) or
+                type(row["source_slot"]) is not int or not 0 < row["source_slot"] < 2**16 or
+                type(row["amount"]) is not int or not 0 < row["amount"] < 2**64):
+            raise ExportError("invalid pending claim consumption row")
+        result.append({"spending_operation_id": hex_id(row["spending_operation_id"]),
+                       "source_operation_id": hex_id(row["source_operation_id"]),
+                       "source_slot": row["source_slot"], "amount": row["amount"]})
+    return result, {"rows": len(result)}
 
 
 def native_source_count(cursor, lineage: bytes, table: str, identity_column: str,
@@ -1308,6 +1331,11 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
         "AND m.lineage=s.lineage AND m.backend_kind=1 AND m.account_kind=5 "
         "AND m.locator_kind=5 "
         "WHERE s.lineage=%s ORDER BY s.source_operation_id,s.source_slot", (lineage,))
+    native["pending_claim_consumptions"], native["pending_claim_consumption_coverage"] = (
+        read_pending_claim_consumptions(cursor, lineage))
+    partial_amounts = Counter()
+    for row in native["pending_claim_consumptions"]:
+        partial_amounts[(bytes.fromhex(row["source_operation_id"]), row["source_slot"])] += row["amount"]
     claim_source_coverage = {"rows": len(claim_sources), "open_rows": 0,
                              "consumed_rows": 0, "invalid_account_mappings": 0,
                              "invalid_source_roots": 0, "invalid_consumer_roots": 0}
@@ -1315,11 +1343,13 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     source_keys = {}
     consumer_keys = {}
     consumer_amounts = Counter()
+    source_amounts = Counter()
     for row in claim_sources:
         if row["mapped_id"] is not None:
             key = account_key(lineage, 5, row["claim_mapping_id"], row["context_id"])
             pair = (row["source_operation_id"], bytes.fromhex(key))
             source_pairs.add(pair)
+            source_amounts[pair] += row["amount"]
             source_keys[(row["source_operation_id"], row["source_slot"])] = bytes.fromhex(key)
             if row["claim_operation_id"] is not None:
                 consumer_pair = (row["claim_operation_id"], bytes.fromhex(key))
@@ -1329,9 +1359,11 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     source_root_metadata = {}
     source_root_effects = Counter()
     source_pair_values = {}
+    source_root_postings = {}
     source_pairs = sorted(source_pairs)
     for offset in range(0, len(source_pairs), 64):
         batch = source_pairs[offset:offset + 64]
+        batch_pairs = set(batch)
         operation_ids = tuple(dict.fromkeys(pair[0] for pair in batch))
         account_keys = tuple(dict.fromkeys(pair[1] for pair in batch))
         operation_placeholders = ",".join("%s" for _ in operation_ids)
@@ -1358,7 +1390,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             "SELECT operation_id,COUNT(*) AS posting_rows,COALESCE(SUM(copper_value),0) AS net_copper "
             "FROM economic_accounting_coin_posting "
             f"WHERE operation_id IN ({operation_placeholders}) GROUP BY operation_id", operation_ids)
-        source_root_postings = {row["operation_id"]: row for row in posting_audits}
+        source_root_postings.update({row["operation_id"]: row for row in posting_audits})
         effects = bounded(cursor,
             "SELECT operation_id,account_key,before_copper,before_silver,before_gold,"
             "before_platinum,after_copper,after_silver,after_gold,after_platinum "
@@ -1367,6 +1399,8 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             f"AND account_key IN ({key_placeholders})", operation_ids + account_keys)
         for effect in effects:
             effect_key = (effect["operation_id"], effect["account_key"])
+            if effect_key not in batch_pairs:
+                continue
             source_root_effects[effect_key] += 1
             source_pair_values[effect_key] = effect
     for row in claim_sources:
@@ -1374,11 +1408,13 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
                 row["beneficiary_pid"] is None or row["amount"] is None or
                 row["amount"] <= 0):
             raise ExportError("invalid pending-claim source row")
-        consumed = row["claim_operation_id"] is not None
+        remaining = (0 if row["claim_operation_id"] is not None else
+                     row["amount"] - partial_amounts[(row["source_operation_id"], row["source_slot"])])
+        consumed = remaining <= 0
         claim_source_coverage["consumed_rows" if consumed else "open_rows"] += 1
         mapping_valid = (row["mapped_id"] is not None and
                          row["mapped_native_id"] == row["beneficiary_pid"] and
-                         (row["claim_operation_id"] is not None or
+                         (remaining <= 0 or
                           row["mapped_active_native_id"] == row["beneficiary_pid"]))
         if not mapping_valid:
             claim_source_coverage["invalid_account_mappings"] += 1
@@ -1400,7 +1436,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             root["posting_count"] and
             source_root_postings[row["source_operation_id"]]["net_copper"] == 0 and
             effect["before_copper"] is not None and effect["after_copper"] is not None and
-            effect["after_copper"] - effect["before_copper"] == row["amount"] and
+            effect["after_copper"] - effect["before_copper"] == source_amounts[effect_key] and
             all(effect[field] is not None and effect[after] == effect[field]
                 for field, after in (("before_silver", "after_silver"),
                                      ("before_gold", "after_gold"),
@@ -1409,7 +1445,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             claim_source_coverage["invalid_source_roots"] += 1
         consumer_root_valid = None
         consumer_receipt = None
-        if consumed:
+        if row["claim_operation_id"] is not None:
             consumer_key = consumer_keys.get((row["source_operation_id"], row["source_slot"]))
             consumer_effect_key = ((row["claim_operation_id"], consumer_key)
                                    if consumer_key is not None else None)
@@ -1515,12 +1551,12 @@ def capture(connection, lineage: bytes, epoch: bytes) -> dict:
             "('economic_accounting_account_effect','economic_accounting_coin_posting',"
             "'economic_accounting_child','economic_accounting_item_reference',"
             "'economic_accounting_source_claim','economic_account_mapping',"
-            "'economic_pending_claim_source','economic_sql_lifecycle_installation',"
+            "'economic_pending_claim_source','economic_pending_claim_consumption','economic_sql_lifecycle_installation',"
             "'critical_operation_inbox','player_data',"
             "'account_banks','item_current_owner','item_ownership_ledger','auctions',"
             "'auction_money_pickups','shopkeepers','ships','guilds')")
         engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
-        if len(engines) != 18 or any(engine != "InnoDB" for engine in engines.values()):
+        if len(engines) != 19 or any(engine != "InnoDB" for engine in engines.values()):
             raise ExportError("SQL audit source is missing or not InnoDB")
         has_realized_price = realized_price_column_available(cursor)
         evidence = read_evidence(cursor, lineage, epoch, has_realized_price)

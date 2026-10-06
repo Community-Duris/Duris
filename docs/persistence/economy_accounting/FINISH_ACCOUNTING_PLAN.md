@@ -1,5 +1,14 @@
 # Finish accounting implementation plan
 
+## Partial claim snapshot readers integrated — 2026-10-06
+
+[Primary qualification](PLAN5_PARTIAL_SNAPSHOT_PRIMARY_QUALIFICATION_2026-10-06.md)
+closes saved partial-allocation coverage and source-batch double counting.
+All 173 selected pure methods pass; both original native capture methods and
+the full native restore entry point pass on both fresh canonical 0062 engines,
+each with 109 cuts/90 refusals. Producer/cold/full release gates remain open.
+
+
 ## Exact UID provenance integrated — 2026-10-06
 
 [Primary qualification](PLAN5_UID_PROVENANCE_PRIMARY_QUALIFICATION_2026-10-06.md)
