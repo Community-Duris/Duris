@@ -6,6 +6,7 @@ from decimal import Decimal
 import json
 import sys
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -14,6 +15,7 @@ from economic_sql_audit_snapshot import (ExportError, infer_created_mapping_orig
                                          auction_escrow_mapping_is_live,
                                          native_source_count,
                                          native_mapping_identity_valid,
+                                         read_native,
                                          append_committed_item_creation_origin,
                                          read_pending_claim_consumers,
                                          read_mapping_creations,
@@ -54,6 +56,62 @@ class Cursor:
 
 
 class UidScopeTests(unittest.TestCase):
+    def test_coin_payload_bounds_refuse_before_mapping_payload_reads(self):
+        from economic_sql_audit_snapshot import MAX_INPUT_BYTES, MAX_ITEM_PAYLOAD_BYTES, MAX_ROWS
+
+        class BoundsCursor:
+            def __init__(self, bounds):
+                self.bounds = bounds
+                self.payload_reads = []
+                self.sql = ""
+
+            def execute(self, sql, params=()):
+                self.sql = sql
+                if "coin_payload" in sql and "OCTET_LENGTH" not in sql:
+                    self.payload_reads.append(sql)
+                    raise ExportError("payload selected before its source bounds")
+
+            def fetchone(self):
+                return self.bounds
+
+        for bounds in (None,
+                       dict(row_count=MAX_ROWS + 1, payload_bytes=0, max_payload_bytes=0),
+                       dict(row_count=1, payload_bytes=MAX_INPUT_BYTES + 1, max_payload_bytes=1),
+                       dict(row_count=1, payload_bytes=MAX_ITEM_PAYLOAD_BYTES + 1,
+                            max_payload_bytes=MAX_ITEM_PAYLOAD_BYTES + 1)):
+            with self.subTest(bounds=bounds):
+                cursor = BoundsCursor(bounds)
+                with mock.patch('economic_sql_audit_snapshot.read_ship_coffers', return_value=([], {})), \
+                     mock.patch('economic_sql_audit_snapshot.read_guild_treasuries', return_value=([], {})):
+                    with self.assertRaisesRegex(ExportError, "coin-pile source exceeds audit bounds"):
+                        read_native(cursor, b"l" * 16)
+                self.assertEqual(cursor.payload_reads, [])
+
+    def test_mapped_coin_payload_budget_counts_repeated_joined_bytes(self):
+        from economic_sql_audit_snapshot import MAX_INPUT_BYTES
+
+        class JoinedBoundsCursor:
+            sql = ""
+            payload_reads = 0
+
+            def execute(self, sql, params=()):
+                self.sql = sql
+                if "coin_payload" in sql and "OCTET_LENGTH" not in sql:
+                    self.payload_reads += 1
+                    raise ExportError("payload selected before its joined bounds")
+
+            def fetchone(self):
+                if "economic_account_mapping" in self.sql:
+                    return dict(payload_bytes=MAX_INPUT_BYTES + 1)
+                return dict(row_count=1, payload_bytes=1, max_payload_bytes=1)
+
+        cursor = JoinedBoundsCursor()
+        with mock.patch('economic_sql_audit_snapshot.read_ship_coffers', return_value=([], {})), \
+             mock.patch('economic_sql_audit_snapshot.read_guild_treasuries', return_value=([], {})):
+            with self.assertRaisesRegex(ExportError, "mapped coin-pile source exceeds audit bounds"):
+                read_native(cursor, b"l" * 16)
+        self.assertEqual(cursor.payload_reads, 0)
+
     def test_native_mapping_coverage_requires_the_account_locator(self):
         class NativeCursor:
             sql = ""
