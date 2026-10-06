@@ -1,5 +1,33 @@
 # Finish accounting implementation plan
 
+## Independent equipment-custody fix integrated — 2026-10-06
+
+[Exact source import and primary registration](PLAN5_EQUIPMENT_PRIMARY_REGISTRATION_2026-10-06.md)
+integrate peera781ab425's completed equipment-slot drift/history/scalar/provenance
+fix. Ten owned blobs match; the only manifest addition is its original seven-case
+test. All existing fields, UID minimum11 and105 integration rows are preserved.
+Actual central adapters pass7 equipment and11 affected UID methods, zero skips;
+normal/matrix/current61 metadata checks pass. Complete918-entry discovery is
+inventory only. Both-engine/native component results retain the peer's exact
+qualified scope; no primary native rerun or full Plan/release completion is claimed.
+
+
+## Shared birth journal carrier handoff — 2026-10-06
+
+[The reviewed three-file private carrier](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
+reuses the original native envelope for birth-v2 admission, exact progress CAS,
+passive replay, genuine refusal cleanup, retained physical ACK and terminal
+retirement. Quest-native12 capabilities remain explicitly restricted; raw
+birth-v1 and original quotas are preserved. Actual command/context/current
+receipt proof precedes journal mutation, with no post-I/O allocation.
+
+Accepted packet177159 is frozen and composed into all5771 private source inputs
+on8ee284. Source review, original preimages, byte inverses and changed-line
+formatting pass. Actual domain codec/factory/startup wiring remains in progress;
+native testing stays deferred until the combined candidate is ready. No native
+installation, full Plan completion, coverage or release readiness is claimed.
+
+
 ## Immutable original birth recipe handoff — 2026-10-06
 
 [Accepted codec, wrapper and corrected SQL readback](NATIVE_BIRTH_RECIPE_SOURCE_HANDOFF_2026-10-06.md)
