@@ -1,5 +1,15 @@
 # Finish accounting implementation plan
 
+## Independent compound-action audit fix integrated — 2026-10-06
+
+[Primary integration evidence](PLAN5_COMPOUND_ACTION_PRIMARY_INTEGRATION_2026-10-06.md)
+imports five exact owned blobs fromf2a928094. Actual UID-scope, canonical audit
+and audit-origin checks pass; optional native skips retain their stated scope.
+The independent endpoint/revision rule fixes compound creation/retirement
+projection without changing native authority or source. Peer both-engine/native
+evidence remains tied to its older native tree; primary51de producer/recovery,
+writer refresh and combined release acceptance remain open.
+
 ## Reviewed native birth/quest source installed — 2026-10-06
 
 [Exact qualification evidence](NATIVE_BIRTH_RECOVERY_MAJOR_QUALIFICATION_2026-10-06.md)
