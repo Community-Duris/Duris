@@ -519,3 +519,18 @@ is needed for this documentation-only refresh. A separate protected receipt
 binds the final same-branch remote tip, exact merge, unchanged qualified inputs,
 all seven older tips and the preceding import/build publication receipt. Shared
 documentation is taken as published; only this owned follow-up is appended.
+
+## Original policy/PID slice
+
+The original-native opening reader slice is complete at `6d4f708c98a7019780f8d4262a6a53e49a5f55ab` on the
+same `codex/accounting-plan5` branch. Separate pin/equipment repairs are
+`85cc433e8a18da517435f4a7999f3d6c46e59be0` and `ab3add441dcd0aeb72e0256e14e83bd663dd2a18`. Six original native cases/eight authentic
+reference vectors pass on both canonical0062 engines;82 focused methods pass
+with zero skips. Ten former false accepts now refuse without changing rows.
+The full recovery canonical gate still refuses two missing source claims; see
+`PLAN5_NATIVE_RECOVERY_SOURCE_CLAIM_HANDOFF_2026-10-06.md`.
+`PLAN5_ORIGINAL_OPENING_QUALIFICATION_2026-10-06.md` records exact sources,
+commands, failed attempts, native fixture activation scope and remaining gates.
+Seal SHA256 is `21fed942f620a7144dc1470a77e34ffc95ef537701c2457fea86c326b5417f38`. This is the primary's notebook curator packet;
+the local shared notebook is nonblocking. Latest primary
+`f324c877ec56f2e17b5e6cc2f62aae9004720db2`/private0063 combined proof remains separate.
