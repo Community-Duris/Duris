@@ -1,5 +1,30 @@
 # Experimental accounting review checkpoint
 
+## Read-only census capability fence qualified — 2026-10-06
+
+[Exact fence integration](PLAN5_CENSUS_CAPABILITY_FENCE_PRIMARY_2026-10-06.md)
+provides the missing quest game-thread boundary by aborting any unexpected
+publication. Original native sanitizer methods pass in both configurations:
+29 cases each,262,144 cache rows and zero skips. Formatting passes; SQL-mode
+opens no database. Full R6–R8 and release qualification remain open.
+
+## Historical child equipment finding retained — 2026-10-06
+
+[Exact expectation repair](PLAN5_CHILD_EQUIPMENT_EXPECTATION_PRIMARY_2026-10-06.md)
+keeps the missing equipment finding beside both child findings and the missing
+original plan. All21 existing independent child methods pass with zero skips;
+the edited native/private-SQL branch retains its older peer qualification.
+The historical cut remains incomplete and current major qualification is pending.
+
+## Native audit recipe providers repaired — 2026-10-06
+
+[Primary integration](PLAN5_NATIVE_PROVIDER_PRIMARY_INTEGRATION_2026-10-06.md)
+adds the actual missing shop-trade recovery manifest provider to nine original
+native recipes. Shared restore SOURCES supplies it exactly once; flags and
+assertions remain. Original native flatfile ASan/UBSan passes, including85 fault
+cases; normal contracts and matrix pass. Separate child/census fixes and the
+current major SQL/gameplay/release qualification remain pending.
+
 ## Equipment capture v2 integrated — 2026-10-06
 
 [Primary source integration](SQL_EQUIPMENT_CAPTURE_V2_PRIMARY_INTEGRATION_2026-10-06.md)
