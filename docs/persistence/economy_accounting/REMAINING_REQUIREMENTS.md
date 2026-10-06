@@ -1,5 +1,17 @@
 # Double-entry economy: remaining requirements
 
+## Independent supply outcome fix integrated — 2026-10-06
+
+[Exact peer import and primary checks](PLAN5_SUPPLY_OUTCOME_PRIMARY_INTEGRATION_2026-10-06.md)
+integrate the completed supply-view correction: rejected, unknown and duplicate
+roots cannot contribute system supply totals. Five owned blobs match peer
+ceb9dbbb7; all code/test inputs match its qualified composition and the complete
+central manifest is preserved. Primary's two new methods pass, zero skips, plus
+normal/matrix/current61 metadata. Peer both-engine recipe evidence retains its
+recorded modeled/native scope. No new primary native run, private birth proof,
+complete capture, full Plan or release qualification is claimed.
+
+
 ## Original birth/native12 replay source composed — 2026-10-06
 
 [The source handoff](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
