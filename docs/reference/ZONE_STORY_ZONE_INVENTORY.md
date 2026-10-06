@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 168 authored journals.
+2668 distinct Q contracts; 169 authored journals.
 
 Regenerate with:
 
@@ -206,7 +206,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Storm Port Stronghold (`spshold`) | 4 | 0 | 1 | Yes | [1 × a pile of coal; 1 × a broken furnance valve → a travel ticket](../../areas/qst/spshold.qst#L31) | crew_shop_proc, master_set |
 | Strathor Valley of the Storm Giants (`stormht`) | 1 | 8 | 0 | Yes | [1 × a bronze sword → a mighty crown of thunder](../../areas/qst/stormht.qst#L63) | world_quest |
 | Storm Port (`stormport`) | 2 | 1 | 0 | Fallback | [1 × a set of shackles from the prison; 1 × a captain's badge; 1 × a verbeeg tooth; other required items → the magnificent mantle of Storm Port](../../areas/qst/stormport.qst#L12) | clear_epic_task_spec, crew_shop_proc, inn, ship_shop_proc |
-| The Temple of the Sun (`suntmpl`) | 3 | 3 | 0 | Fallback | [1 × the twisted heart of a pine; 1 × the demented mind of a bear → a vine covered key](../../areas/qst/suntmpl.qst#L11) | — |
+| The Temple of the Sun (`suntmpl`) | 3 | 3 | 0 | Yes | [1 × the twisted heart of a pine; 1 × the demented mind of a bear → a vine covered key](../../areas/qst/suntmpl.qst#L11) | — |
 | The Surface Realm of Duris (`surface`) | 31 | 36 | 6 | Yes | [1 × the crumbling locket of fire; 1 × the crumbling locket of water; 1 × the crumbling locket of earth; other required items → the mystical sash of the Netherworld, a mystical key](../../areas/qst/surface.qst#L71) | Baltazo, goodie_guardian, ship_shop_proc, tharnrifts_portal, wh_corpse_to_object |
 | The Depths of Duris (`surfacekeeps`) | 15 | 43 | 1 | Yes | [10 × bodypart to be created → a commendation token of stealth, a smoke bomb potion](../../areas/qst/surfacekeeps.qst#L562) | wh_corpse_decay, wh_corpse_to_object |
 | The Minizones of the Surface (`surfacemini`) | 25 | 32 | 3 | Yes | [8 × a fire gland → an elixir of the pyro-mage](../../areas/qst/surfacemini.qst#L261) | collar_flames, collar_frost, elemental_wand |

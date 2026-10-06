@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 168 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 169 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,14 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+suntmpl=next(m for m in catalog['story_mappings'] if m['source_area']=='suntmpl')
+assert suntmpl['coverage']=='complete' and suntmpl['schema_version']==3 and suntmpl['revision']==1 and not suntmpl['exclusions']
+assert len(suntmpl['stories'])==3 and len(suntmpl['contacts'])==12 and sum(len(c['topics']) for c in suntmpl['contacts'])==11
+assert [len(s['steps']) for s in suntmpl['stories']]==[3,2,2]
+assert [[t['item_vnums'][0] for t in s['steps'][:-1]] for s in suntmpl['stories']]==[[82402,82403],[82408],[82406]]
+assert sum(t.get('optional',False) for s in suntmpl['stories'] for t in s['steps'])==4
+assert len({(s['contracts'][0]['giver_vnum'],s['contracts'][0]['completion_key']) for s in suntmpl['stories']})==3 and report['eligible_by_zone']['824']==3
 
 mril=next(m for m in catalog['story_mappings'] if m['source_area']=='mril')
 assert mril['coverage']=='complete' and mril['schema_version']==3 and mril['revision']==1 and not mril['exclusions']

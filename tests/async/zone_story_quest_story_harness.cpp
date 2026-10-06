@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 168 &&
+		require(catalog.story_mappings.size() == 169 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,195 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "suntmpl"; });
+			require(mapping.stories.size() == 3 && mapping.contacts.size() == 12 &&
+					mapping.revision == 1,
+				"Sun temple journal scope failed");
+			const auto &entry = story_for("suntmpl", "temple-entry");
+			const auto &oak = story_for("suntmpl", "restore-woods");
+			const auto &ring = story_for("suntmpl", "stone-ring");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 824)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 3 && dailies == 3,
+				"Sun temple staying returns lost distinct daily eligibility");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 824, 82493, 100, "arrival") ==
+					result::applied,
+				"Sun temple discovery failed");
+			for (const auto &[v, room] :
+			     { std::pair{ 82402, 82409 }, std::pair{ 82403, 82412 },
+			       std::pair{ 82406, 82433 }, std::pair{ 82423, 82452 },
+			       std::pair{ 82424, 82432 }, std::pair{ 82408, 82435 },
+			       std::pair{ 82404, 82425 }, std::pair{ 82429, 82473 } })
+				require(journey.meet_npc(7, 42, v, room, 101) == result::applied,
+					"Sun temple contextual encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 824, 10, 1, 102, false, false);
+			for (const auto &s : mapping.stories)
+				require(journal.find("] " + s.title + "\r\n") == std::string::npos,
+					"Sun temple source/service encounter exposed accepting card");
+			require(journey.meet_npc(7, 42, 82400, 82406, 103) == result::applied,
+				"Sun temple Trentloss encounter failed");
+			journal = journey.render_journal(7, 42, 824, 10, 1, 104, false, false);
+			for (const auto &s : mapping.stories)
+				require((journal.find("] " + s.title + "\r\n") !=
+					 std::string::npos) == (s.id == entry.id),
+					"Sun temple Trentloss encounter exposed other return");
+			require(journey.meet_npc(7, 42, 82401, 82408, 105) == result::applied &&
+					journey.meet_npc(7, 42, 82407, 82434, 105) ==
+						result::applied,
+				"Sun temple accepting encounters failed");
+			const auto section = [&](const auto &s)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos, "Sun temple card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at,
+						      end == std::string::npos ? end : end - at);
+			};
+			const auto status = [&](const auto &s, size_t row, const char *state)
+			{
+				return section(s).find(std::string("[") + state + "] " +
+						       s.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			const auto before = journey.serialize_state();
+			for (const auto &s : mapping.stories)
+			{
+				supplies = {};
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+					supplies.carried[s.steps[row].item_vnums.front()] =
+						s.steps[row].count;
+				journal = journey.render_journal(7, 42, 824, 10, 1, 106, false,
+								 false, &supplies);
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+					require(status(s, row, "Ready now"),
+						"Sun temple exact supplied material failed readiness");
+				require(status(s, s.steps.size() - 1, "Pending"),
+					"Sun temple supplied materials fabricated accepted history");
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+				{
+					const auto v = s.steps[row].item_vnums.front();
+					supplies.carried.erase(v);
+					supplies.equipped[18] = v;
+					journal = journey.render_journal(7, 42, 824, 10, 1, 107,
+									 false, false, &supplies);
+					require(status(s, row, "Missing now") &&
+							status(s, s.steps.size() - 1, "Pending"),
+						"Sun temple held or absent proof substituted loose material");
+					supplies.equipped.clear();
+					supplies.carried[v] = s.steps[row].count;
+				}
+			}
+			supplies = {};
+			supplies.carried[82402] = 2;
+			journal = journey.render_journal(7, 42, 824, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(entry, 0, "Ready now") && status(entry, 1, "Missing now") &&
+					status(entry, 2, "Pending"),
+				"Sun temple duplicate hearts replaced distinct bear mind");
+			supplies = {};
+			for (int v : { 82420, 82423, 82424, 82405, 82409, 82404, 82407, 82426, 72,
+				       359, 821, 822, 823, 826, 67253 })
+				supplies.carried[v] = 5;
+			journal = journey.render_journal(7, 42, 824, 10, 1, 109, false, false,
+							 &supplies);
+			for (const auto &s : mapping.stories)
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+					require(status(s, row, "Missing now"),
+						"Sun temple key, reward, herb or service possession forged proof");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 824).completed == 0,
+				"Sun temple preparation fabricated source, door, service or history");
+			supplies = {};
+			for (int v : { 82402, 82403, 82408, 82406 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 824, 10, 1, 110, false, false,
+							 &supplies);
+			require(section(entry).find("break on use") != std::string::npos &&
+					section(oak).find("ring of the morning sun") !=
+						std::string::npos &&
+					section(oak).find("permanent forest restoration") !=
+						std::string::npos &&
+					section(ring).find("finger and tail") !=
+						std::string::npos &&
+					section(ring).find("Enfil") != std::string::npos,
+				"Sun temple Ready now hid key, reward, world outcome or outside guidance");
+			require(journal.find("currently unavailable") != std::string::npos &&
+					journal.find("another player") != std::string::npos,
+				"Sun temple accounted service or supplied-key guidance missing");
+			// Synthetic authoritative receipts test projection/recovery, not played key/source/service outcomes.
+			record(journey, oak.contracts.front(), "suntmpl-oak", 824, 82408);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 824, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(oak, 1, "Recorded") && status(entry, 2, "Pending") &&
+					status(ring, 1, "Pending") &&
+					journey.progress_for_zone(7, 42, 824).completed == 1,
+				"Sun temple sunbeam receipt imposed entry history or completed rock return");
+			record(journey, entry.contracts.front(), "suntmpl-entry", 824, 82406);
+			supplies.carried[82420] = 1;
+			journal = journey.render_journal(7, 42, 824, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(entry, 0, "Missing now") &&
+					status(entry, 1, "Missing now") &&
+					status(entry, 2, "Recorded") && status(ring, 1, "Pending"),
+				"Sun temple key possession restored evidence or another history");
+			supplies = {};
+			supplies.carried[82406] = 1;
+			journal = journey.render_journal(7, 42, 824, 10, 1, 122, false, false,
+							 &supplies);
+			require(status(ring, 0, "Ready now") && status(ring, 1, "Pending") &&
+					status(entry, 2, "Recorded"),
+				"Sun temple reacquired rock changed independent histories");
+			record(journey, ring.contracts.front(), "suntmpl-ring", 824, 82434);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 824, 10, 1, 123, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 824).completed == 3,
+				"Sun temple exact receipt classification failed");
+			for (const auto &s : mapping.stories)
+			{
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+					require(status(s, row, "Missing now"),
+						"Sun temple spent proof restored inventory");
+				require(status(s, s.steps.size() - 1, "Recorded"),
+					"Sun temple spent proof lost history");
+			}
+			auto replay = completion(entry.contracts.front(), "suntmpl-entry", 120);
+			replay.transaction.zone_number = 824;
+			replay.transaction.room_vnum = 82406;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Sun temple replay duplicated return");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 824).completed == 3,
+				"Sun temple cold recovery lost histories");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 824, 82493, 100, "arrival") ==
+					result::applied,
+				"Sun temple raw discovery failed");
+			for (const auto &s : mapping.stories)
+			{
+				const auto tx = "suntmpl-raw-" + s.id;
+				record(raw, s.contracts.front(), tx.c_str(), 824, 82493);
+			}
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 824).completed == 3,
+				"Sun temple raw-to-authored recovery lost histories");
 		}
 
 		{
