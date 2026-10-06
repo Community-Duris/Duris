@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1410
-assert report['mapped_area_count'] == 139 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 140 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,14 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+highway=next(m for m in catalog['story_mappings'] if m['source_area']=='highway')
+assert (highway['schema_version'],highway['revision'],highway['coverage'])==(3,1,'complete')
+assert len(highway['stories'])==3 and len(highway['contacts'])==10 and sum(len(c['topics']) for c in highway['contacts'])==25 and not highway['exclusions']
+assert [s['contracts'][0]['giver_vnum'] for s in highway['stories']]==[41315,41360,41360]
+assert [[t['item_vnums'][0] for t in s['steps'] if t['kind']=='carried_item'] for s in highway['stories']]==[[41398],[41348],[41415,41416]]
+assert highway['stories'][0]['steps'][0]['contracts'][0]['giver_vnum']==7603 and highway['stories'][0]['steps'][0]['optional']
+assert sum(len(s['steps']) for s in highway['stories'])==8 and report['eligible_by_zone']['413']==3
 
 caves_skelenak=next(m for m in catalog['story_mappings'] if m['source_area']=='caves_skelenak')
 assert (caves_skelenak['schema_version'],caves_skelenak['revision'],caves_skelenak['coverage'])==(3,1,'complete')

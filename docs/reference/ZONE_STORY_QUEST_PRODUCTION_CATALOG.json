@@ -70385,6 +70385,260 @@
     {
       "contacts": [
         {
+          "description": "The original spotted hide leads to a Bastine royal commission. This encounter does not create a Highway return or prove a personal kill.",
+          "keyword": "beast",
+          "mob_vnum": 41302,
+          "name": "the Kearonor Beast",
+          "topics": []
+        },
+        {
+          "description": "Sir Ector declares the rusty key for the mound entrance. Recovery, shared door access and arrival are distinct.",
+          "keyword": "ector",
+          "mob_vnum": 41306,
+          "name": "Sir Ector",
+          "topics": []
+        },
+        {
+          "description": "Esterra declares the plain iron key for the hidden waterfall approach. Her defeat is not a journal prerequisite.",
+          "keyword": "esterra",
+          "mob_vnum": 41313,
+          "name": "Esterra",
+          "topics": []
+        },
+        {
+          "description": "Nynevena declares the transparent key for the curtain near Morlanthra\u2019s tree. The key and changed access are different evidence.",
+          "keyword": "nynevena",
+          "mob_vnum": 41314,
+          "name": "Nynevena",
+          "topics": []
+        },
+        {
+          "description": "The imprisoned mage accepts Victor\u2019s apprentice ring for an amulet and then departs. His ASK leads do not record accepted trust or a persistent rescue.",
+          "keyword": "morlanthra",
+          "mob_vnum": 41315,
+          "name": "Morlanthra",
+          "topics": [
+            "hi",
+            "hello",
+            "greetings",
+            "welcome",
+            "prison",
+            "free",
+            "proof",
+            "volheru",
+            "king",
+            "mrotha",
+            "victor",
+            "knights"
+          ]
+        },
+        {
+          "description": "The red dragon is hazard context for the declared chalice and tree-shaped key. Encountering it does not reveal unseen recipients\u2019 cards or complete their returns.",
+          "keyword": "dragon",
+          "mob_vnum": 41338,
+          "name": "a red dragon",
+          "topics": []
+        },
+        {
+          "description": "Sir Lamerok declares the signet ring that Victor accepts in Bastine. His defeat, recovery and Victor\u2019s trust exchange remain separate.",
+          "keyword": "lamerok",
+          "mob_vnum": 41355,
+          "name": "Sir Lamerok",
+          "topics": []
+        },
+        {
+          "description": "The stout harpy infrequently declares the requested hair. The loose tooth has its own infrequent source in the nest.",
+          "keyword": "stout",
+          "mob_vnum": 41358,
+          "name": "a stout harpy",
+          "topics": []
+        },
+        {
+          "description": "Magnamus accepts the chalice and the distinct harpy pair as independent returns. His follow-on conversation does not enforce the chalice first.",
+          "keyword": "collector",
+          "mob_vnum": 41360,
+          "name": "a tired artifact collector",
+          "topics": [
+            "hi",
+            "artifacts",
+            "quest",
+            "items",
+            "help",
+            "yes",
+            "interested",
+            "harpy",
+            "out",
+            "in",
+            "hunt",
+            "hunting",
+            "more"
+          ]
+        },
+        {
+          "description": "The horse merchant\u2019s prose and nearby mount stock are world context. No reviewed horse-sale contract creates another journal request.",
+          "keyword": "xalinor",
+          "mob_vnum": 41361,
+          "name": "Xalinor the horse merchant",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow the imprisoned mage\u2019s trust lead and Magnamus\u2019s two collecting requests. Each accepted return has its own journal card. Morlanthra\u2019s story crosses into Bastine; the collector\u2019s harpy request is accepted independently of his chalice request. Discovery is separate. New progress requires active, ready accounting.",
+      "orientation": [
+        "ASK MORLANTHRA about free, proof or victor for his trust lead. Victor the Apprentice in Bastine accepts Sir Lamerok\u2019s signet ring and supplies a small steel key and his apprentice\u2019s ring. Victor\u2019s accepted exchange appears as optional history; the exact apprentice\u2019s ring can also come from another player.",
+        "The mound entrance, Esterra\u2019s chamber, the hidden waterfall approach, the magical curtain and Morlanthra\u2019s tree have separate access barriers. Sir Ector, Esterra and Nynevena carry three keys along the route. Victor supplies another; the tree-shaped key is declared with the red dragon\u2019s treasure. Existing shared access can change which keys you need. Carrying a key does not record unlocking or reaching the mage.",
+        "Morlanthra accepts the apprentice\u2019s ring for experience and an amulet of petrified dragon eyes, then departs. His farewell is the native accepted outcome. The journal does not claim a separately persisted rescue, changed tree, personal friendship or defeated captors.",
+        "ASK COLLECTOR about items, help or interested for the emerald-chalice lead. The chalice is declared among the red dragon\u2019s loose treasure. Return it for experience, coins and the staff of the windwalkers. The dragon is danger context; personal defeat is not an acceptance prerequisite.",
+        "ASK COLLECTOR about harpy, in or hunt for the harpy-parts lead. The nest declares a loose tooth infrequently, while the stout harpy declares the hair infrequently. Bring one exact tooth and one exact hair loose together for the dragon-claw ear clasp. Two copies of one part cannot replace the pair. The earlier chalice return is suggested by dialogue, without an enforced history gate.",
+        "Bastine\u2019s King requests several trophies from this region, including the Kearonor Beast\u2019s original spotted hide. Those accepted returns belong to the Bastine journal. The replacement hide carries a custom curse; ordinary acquisition, wearing, transformation and the King\u2019s accepted reward are different events.",
+        "Mountain climbs, falls, currents, hidden passages and containers remain part of the world. The statue and dusty organ control different passages; their descriptions provide clues. The separate scrying-organ prototype uses another mechanic. Equipment use, far sight, mount encounters and opening treasure routes do not invent additional quest completions.",
+        "Material rows show current loose inventory; accepted history remains after offerings are spent. Matching supplied goods fit without personal kills or first recovery. Three local returns preserve three achievements and three potential dailies. Reset timing and daily eligibility do not guarantee fresh stock: active accounting gates new item issuance. New discovery, encounters and progress require active, ready accounting."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "highway",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:41398;receive=E:2500,I:41405;disappear=1",
+              "giver_vnum": 41315
+            }
+          ],
+          "id": "morlanthra-apprentice-ring",
+          "steps": [
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41397;receive=I:41394,I:41398;disappear=0",
+                  "giver_vnum": 7603
+                }
+              ],
+              "hint": "Optional accepted history for the cross-zone story. Morlanthra still accepts matching supplied apprentice rings without this history; key use and rescue need separate evidence.",
+              "id": "victor-trust-history",
+              "kind": "completion",
+              "optional": true,
+              "text": "Victor accepted Sir Lamerok\u2019s signet in Bastine"
+            },
+            {
+              "count": 1,
+              "hint": "Victor supplies this ring after accepting Sir Lamerok\u2019s signet in Bastine. Matching supplied stock also fits. The signet, small steel key or amulet reward cannot substitute.",
+              "id": "item-41398",
+              "item_vnums": [
+                41398
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Victor\u2019s apprentice ring loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41398;receive=E:2500,I:41405;disappear=1",
+                  "giver_vnum": 41315
+                }
+              ],
+              "hint": "Completion records the recipient accepting every exact requested item together. Matching supplied loose goods fit. New credit requires active, ready accounting. Dialogue order, personal kills, keys, knowledge and rescued subjects are separate evidence. Morlanthra departs after this return.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete this accepted return"
+            }
+          ],
+          "summary": "Follow Victor\u2019s cross-zone lead, then return the apprentice\u2019s ring to Morlanthra. The mage rewards you and departs; his native acceptance does not require recorded earlier stages.",
+          "title": "Morlanthra\u2019s proof of trust"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:41348;receive=C:10000,E:10000,I:41417;disappear=0",
+              "giver_vnum": 41360
+            }
+          ],
+          "id": "magnamus-emerald-chalice",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Declared loose among the red dragon\u2019s treasure. Existing matching supplied stock fits; dragon defeat and first recovery are separate evidence.",
+              "id": "item-41348",
+              "item_vnums": [
+                41348
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the emerald chalice loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41348;receive=C:10000,E:10000,I:41417;disappear=0",
+                  "giver_vnum": 41360
+                }
+              ],
+              "hint": "Completion records the recipient accepting every exact requested item together. Matching supplied loose goods fit. New credit requires active, ready accounting. Dialogue order, personal kills, keys, knowledge and rescued subjects are separate evidence.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete this accepted return"
+            }
+          ],
+          "summary": "Return the exact emerald chalice for experience, coins and the staff of the windwalkers. Personal defeat of the dragon is separate from accepted history.",
+          "title": "Magnamus\u2019s emerald chalice"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:41415,I:41416;receive=I:41419;disappear=0",
+              "giver_vnum": 41360
+            }
+          ],
+          "id": "magnamus-harpy-parts",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Declared infrequently in the harpy nest. Keep one exact tooth loose with the hair. Another part or two hairs do not prepare this row.",
+              "id": "item-41415",
+              "item_vnums": [
+                41415
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a harpy tooth loose"
+            },
+            {
+              "count": 1,
+              "hint": "The stout harpy declares this exact hair infrequently. Keep it loose together with the tooth; personal defeat is not required for acceptance.",
+              "id": "item-41416",
+              "item_vnums": [
+                41416
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry harpy hair loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:41415,I:41416;receive=I:41419;disappear=0",
+                  "giver_vnum": 41360
+                }
+              ],
+              "hint": "Completion records the recipient accepting every exact requested item together. Matching supplied loose goods fit. New credit requires active, ready accounting. Dialogue order, personal kills, keys, knowledge and rescued subjects are separate evidence.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete this accepted return"
+            }
+          ],
+          "summary": "Return the exact harpy hair and tooth together for the dragon-claw ear clasp. This paired return is accepted independently of the chalice commission.",
+          "title": "Hair and a tooth for Magnamus"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "The huge shimmering bluebird starts in a loading room and may wander into the forest or tree crowns. Grain yields a staff; the smaller white-worm meat yields a nest. It refuses the larger meat. Other bluebirds are different prototypes; meet the actual recipient.",
           "keyword": "bird",
           "mob_vnum": 42200,

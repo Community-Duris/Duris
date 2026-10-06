@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 123 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 124 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -328,7 +328,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 | 121 | [Grumbar's Domain](zone-stories/GRUMBARS_DOMAIN.md) (`earthp`) | Ten exact planar granite shards→Sunnis key;Vashur golden lash→Thulum Gem-Seeker/experience. Prison, pech/slave mining, trapped wall, crevice and hazardous worm are explained context; future actual access/liberation/production. | Comprehensive schema3/revision1:2 stories/2QA,6 contacts/28 aliases/2 materials;199 rooms/37 mobiles/33 objects/543 resets/full shared and foreign closure. Twelve follow-ups;no native repair. |
 | 122 | [The Temple to Skrentherlog](zone-stories/THE_TEMPLE_TO_SKRENTHERLOG.md) (`yuan_ti`) | Blood→ranger scimitar; keys/pickable hammer chest→stone/collapse lead; captive, rubble, combat gear, epic touch and foreign memory remain distinct. | Comprehensive schema3/revision1:1 story/1Q,8 contacts/14 aliases/1 material;56 rooms/41 mobiles/82 objects/172 resets/full shared and foreign closure. Thirteen follow-ups;no native repair. |
 | 123 | [Caves of Mt. Skelenak](zone-stories/CAVES_OF_MT_SKELENAK.md) (`caves_skelenak`) | Goortok discs/vial→name lead; monk paired tribal proofs, foreign shield, independent eyes, hydra pair and sphere→departure. | Comprehensive schema3/revision1:9 stories/9Q,8 contacts/17 supported aliases/11 materials;raw9M/18 aliases;152 rooms/38 mobiles/31 objects/160 resets/full shared and foreign closure. Fifteen follow-ups;no native repair. |
-| 124 | Southern Coastal Highway (`highway`) | [Meet the giver → 1 × a harpy tooth; 1 × the hair from a harpy → an ear clasp of petrified dragon claws](../../areas/qst/highway.qst#L90) | 3 Q; 8 dialogue; 0 candidate link items |
+| 124 | [Southern Coastal Highway](zone-stories/SOUTHERN_COASTAL_HIGHWAY.md) (`highway`) | Victor trust/ring and four-key continuation→Morlanthra farewell; Magnamus chalice and independent harpy pair; Bastine trophies and custom world context. | Comprehensive schema3/revision1:3 local stories/3Q,10 contacts/8M/25 aliases,4 materials and optional Victor history;539 rooms/64 mobiles/120 objects/296 resets/full shared and foreign closure. Fourteen follow-ups;no native repair. |
 | 125 | Labyrinth of No Return (`labyrinth`) | [Meet the giver → 1 × a bat wing; 1 × a tuft of sasquatch hair; 1 × a beetle shell and the remaining ingredients → a sigil of the Golden Flame](../../areas/qst/labyrinth.qst#L85) | 3 Q; 8 dialogue; 0 candidate link items |
 | 126 | Khildarak Stronghold (`khildarak`) | [Meet the giver → 1 × a steeders egg sack → native reward/response](../../areas/qst/khildarak.qst#L36) | 2 Q; 8 dialogue; 0 candidate link items |
 | 127 | Strathor Valley of the Storm Giants (`stormht`) | [Meet the giver → 1 × a bronze sword → a mighty crown of thunder](../../areas/qst/stormht.qst#L63) | 1 Q; 8 dialogue; 0 candidate link items |

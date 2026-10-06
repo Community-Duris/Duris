@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 139 &&
+		require(catalog.story_mappings.size() == 140 &&
 				tracker.summary_for(7, 42).total == 1528,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7687,6 +7687,163 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "highway"; });
+			const auto &rescue = story_for("highway", "morlanthra-apprentice-ring");
+			const auto &chalice = story_for("highway", "magnamus-emerald-chalice");
+			const auto &parts = story_for("highway", "magnamus-harpy-parts");
+			require(mapping.stories.size() == 3 && mapping.contacts.size() == 10,
+				"Highway authored scope failed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 413, 41300, 100, "arrival") ==
+					result::applied,
+				"Highway arrival failed");
+			std::string journal =
+				journey.render_journal(7, 42, 413, 10, 1, 101, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Highway exposed unseen recipients");
+			for (const auto &[mob, room] :
+			     std::vector<std::pair<int, int>>{ { 41302, 41724 },
+							       { 41306, 41690 },
+							       { 41313, 41702 },
+							       { 41314, 41704 },
+							       { 41338, 41540 },
+							       { 41355, 41701 },
+							       { 41358, 41838 },
+							       { 41361, 41601 } })
+				require(journey.meet_npc(7, 42, mob, room, 102) == result::applied,
+					"Highway context encounter failed");
+			journal = journey.render_journal(7, 42, 413, 10, 1, 103, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Highway context invented recipient knowledge");
+			require(journey.meet_npc(7, 42, 41315, 41706, 104) == result::applied,
+				"Highway mage encounter failed");
+			journal = journey.render_journal(7, 42, 413, 10, 1, 105, false, false);
+			require(journal.find("] " + rescue.title + "\r\n") != std::string::npos &&
+					journal.find("] " + parts.title + "\r\n") ==
+						std::string::npos,
+				"Highway recipient visibility failed");
+			require(journey.meet_npc(7, 42, 41360, 41433, 106) == result::applied,
+				"Highway collector encounter failed");
+			const auto status = [&](const auto &story, size_t row, const char *state)
+			{
+				const auto start = journal.find("] " + story.title + "\r\n");
+				require(start != std::string::npos,
+					"Highway visible journal card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     story.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[41394] = supplies.carried[41397] =
+				supplies.carried[41405] = supplies.carried[41417] =
+					supplies.carried[41419] = 1;
+			supplies.equipped[0] = 41398;
+			journal = journey.render_journal(7, 42, 413, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(rescue, 1, "Missing now") &&
+					status(chalice, 0, "Missing now") &&
+					status(parts, 0, "Missing now") &&
+					status(parts, 1, "Missing now"),
+				"Highway keys/signets/rewards/held ring prepared offerings");
+			supplies = {};
+			supplies.carried[41416] = 2;
+			journal = journey.render_journal(7, 42, 413, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(parts, 0, "Missing now") && status(parts, 1, "Ready now"),
+				"Highway two hairs replaced distinct tooth");
+			supplies.carried[41415] = supplies.carried[41398] =
+				supplies.carried[41348] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 413, 10, 1, 109, false, false,
+							 &supplies);
+			require(status(rescue, 0, "Pending") && status(rescue, 1, "Ready now") &&
+					status(chalice, 0, "Ready now") &&
+					status(parts, 0, "Ready now") &&
+					status(parts, 1, "Ready now"),
+				"Highway supplied stock required personal or foreign history");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 413).completed == 0,
+				"Highway rendering invented access/rescue/receipt evidence");
+			record(journey, parts.contracts.front(), "highway-parts-first", 413, 41433);
+			require(journey.progress_for_zone(7, 42, 413).completed == 1 &&
+					journey.evidence_for(chalice.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Highway harpy commission required chalice first");
+			record(journey, rescue.contracts.front(), "highway-supplied-ring", 413,
+			       41706);
+			require(journey.progress_for_zone(7, 42, 413).completed == 2 &&
+					journey.evidence_for(rescue.steps[0].contracts.front(), 2)
+							.successful_attempts == 0,
+				"Highway native ring acceptance required Victor history");
+			auto wrong_owner = completion(rescue.steps[0].contracts.front(),
+						      "highway-wrong-victor-owner", 112);
+			wrong_owner.transaction.zone_number = 413;
+			wrong_owner.transaction.room_vnum = 41706;
+			require(journey.record_completion(wrong_owner) == result::rejected,
+				"Highway stole Bastine receipt ownership");
+			record(journey, rescue.steps[0].contracts.front(), "highway-victor-history",
+			       76, 7620);
+			journal = journey.render_journal(7, 42, 413, 10, 1, 114, false, false,
+							 &supplies);
+			require(status(rescue, 0, "Recorded") &&
+					journey.progress_for_zone(7, 42, 413).completed == 2,
+				"Highway optional foreign history added local unit");
+			record(journey, chalice.contracts.front(), "highway-chalice", 413, 41433);
+			require(journey.progress_for_zone(7, 42, 413).completed == 3 &&
+					journey.progress_for_zone(7, 42, 413).total == 3,
+				"Highway independent returns lost units");
+			supplies = {};
+			journal = journey.render_journal(7, 42, 413, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(rescue, 1, "Missing now") &&
+					status(parts, 0, "Missing now") &&
+					status(parts, 1, "Missing now") &&
+					status(rescue, 0, "Recorded"),
+				"Highway spent inventory replaced accepted history");
+			auto replay =
+				completion(parts.contracts.front(), "highway-parts-first", 120);
+			replay.transaction.zone_number = 413;
+			replay.transaction.room_vnum = 41433;
+			require(journey.record_completion(replay) == result::already_applied &&
+					journey.progress_for_zone(7, 42, 413).completed == 3,
+				"Highway replay duplicated paired return");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 413) &&
+					recovered.progress_for_zone(7, 42, 413).completed == 3 &&
+					recovered.evidence_for(rescue.steps[0].contracts.front(), 2)
+							.successful_attempts == 1,
+				"Highway cold recovery lost local/foreign history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 413, 41300, 100, "arrival") ==
+					result::applied,
+				"Highway historical discovery failed");
+			for (const auto &story : mapping.stories)
+			{
+				const auto txid = "highway-old-" + story.id;
+				record(historical, story.contracts.front(), txid.c_str(), 413,
+				       story.id == rescue.id ? 41706 : 41433);
+			}
+			record(historical, rescue.steps[0].contracts.front(), "highway-old-victor",
+			       76, 7620);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 413).completed == 3 &&
+					authored.evidence_for(rescue.steps[0].contracts.front(), 2)
+							.successful_attempts == 1,
+				"Highway authored cards lost native historical receipts");
 		}
 
 		{
