@@ -1,5 +1,19 @@
 # Double-entry economy: remaining requirements
 
+## Original birth/native12 replay source composed — 2026-10-06
+
+[The source handoff](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
+now records the accepted native12 passive item/quest owner and actual startup
+dispatch composed with typed birth, its retry fix and shared private interfaces.
+All5775 inputs match private3ee546, including1560 committed current script/test
+inputs froma1a92f4dd; original drivers remain exact and unrelated SHOP WIP is
+excluded. Source review closes flat helper guards, authentic reconnect and
+post-retirement cleanup defects. Native execution and maintained installation
+remain deferred; NPC constructor capsule/build witness and the documented
+acknowledged/retired/callback boundaries are ongoing required work. Full Plans,
+coverage, activation and release remain open.
+
+
 ## Shared native recovery interfaces source-accepted — 2026-10-06
 
 [The owning source handoff](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
