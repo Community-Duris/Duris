@@ -1,5 +1,19 @@
 # Experimental accounting review checkpoint
 
+## Independent equipment cold-restore coverage integrated — 2026-10-06
+
+[Peer qualification and exact source integration](PLAN5_EQUIPMENT_COLD_RESTORE_INTEGRATION_2026-10-06.md)
+are imported from7c0d6cf6c: the original native baseline recipe now checks the
+full equipment reader before and after actual private dump/import on both SQL
+engines. Its original native books remain authentic; live equipment placements
+are explicitly modeled. Peer reports the complete recipe passing, zero skips,
+with drift retained after restore and all228 application-table inventories exact.
+Primary verifies all code/test inputs equal the qualified peer composition,
+imports six owned blobs exactly, and preserves every manifest field/deadline.
+Python AST and normal/matrix/current61 metadata pass. No primary native rerun,
+complete capture, full Plan or release qualification is claimed.
+
+
 ## Independent equipment-custody fix integrated — 2026-10-06
 
 [Exact source import and primary registration](PLAN5_EQUIPMENT_PRIMARY_REGISTRATION_2026-10-06.md)

@@ -33,6 +33,7 @@ class NativeBaselineAuditTests(unittest.TestCase):
                     "scripts/persistence_backup.py", "scripts/migration_runner.py",
                     "tests/async/plan5_sql_baseline_audit_fixture.cpp",
                     "tests/async/test_native_sql_baseline_audit.py", "tests/async/run_native_sql_baseline_audit.py",
+                    "tests/async/_plan5_equipment_restore.py",
                     "tests/async/run_economic_sql_audit_snapshot_mysql.py",
                     "tests/async/test_economic_sql_audit_origins.py", "tests/async/native_build_artifacts.py",
                     "tests/async/server_build_artifacts.py", "scripts/build_restore_qualifier.py",
@@ -110,6 +111,8 @@ class NativeBaselineAuditTests(unittest.TestCase):
                         self.assertIn("NATIVE_BASELINE_KEYS_HASH_RED_ADMITTED" if keys_red else
                                       "NATIVE_BASELINE_COMMAND_BINDING_RED_ADMITTED" if binding_red else
                                       "NATIVE_BASELINE_AUDIT_QUALIFIED", output)
+                        if not binding_red and not keys_red:
+                            self.assertIn("NATIVE_BASELINE_EQUIPMENT_RESTORE", output)
                         engine_results.append({"engine": engine, "exit": result.returncode,
                                                "original_binding_gap_admitted": binding_red,
                                                "original_keys_hash_gap_admitted": keys_red})
