@@ -1,17 +1,24 @@
 # Prioritized quest accounting acceptance
 
-Every case uses accounting `17c033d69316b21da8598791fc95cae79baa8dc2` and
+Every case uses accounting `2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a` and
 PR #678 research `55905eac1906cf59405764407f9d22497cccfff3`. Reverify producer
 bytes on the integrated primary candidate before qualification. Research tests
-are evidence for their own branch only.
+are evidence for their own branch only. Original prep base:
+`17c033d69316b21da8598791fc95cae79baa8dc2`. All seven source scenarios remain;
+the native owner changes and diagnostic outcomes are recorded in RESULTS.md.
 
 Common static dispatch: `areas/AREA` → `make_qst.c` → `boot_the_quests` (Q/G/R
 lists prepend) → `assign_mobiles`/`assign_the_questers` sets `qst_func=quester` →
-`CMD_GIVE` → `submit_durable_quest_offering`. Reset M constructs the actor through
-`read_mobile`, sets birthplace, applies zone modifier/shop binding, publishes to
-room and calls the alchemist hook; G/E create inventory/equipment. The published
-active reset path refuses fresh item issuance. A reduced mini fixture can test
-selection but cannot certify this full birth/dispatch chain.
+`CMD_GIVE` → `active_regular_sql` → `submit_native_quest_give` →
+`quest_native_gameplay_owner::begin/pulse` → original GIVE acceptance/hooks →
+frozen branch program → `quest_native_completion_owner::prepare_original`.
+Selection now reads original NPC stock after item acceptance. The retained
+`submit_durable_quest_offering` remains the fallback for other durable routing.
+Reset uses `quest_mobile_native_birth_owner::begin_reset/seal_mobile/finish_reset`
+and authentic constructor/source/stock capture; binding is copied by
+`quest_mobile_native_reference_copy` from canonical encoded birth references.
+A reduced mini fixture and bounded selection component cannot certify this
+full birth/dispatch chain or its SQL activation prerequisites.
 
 Common durable assertions: original input UIDs/payloads retire once; each output
 has a fresh never-reused UID and one native owner; operation/source receipts,
@@ -39,10 +46,10 @@ but no double-entry money posting. Requirements are the original R1–R8 in
 - Smallest prep command:
   `python3 tests/async/quest_accounting_prep/test_native_selectors.py --case QP01`.
   Mini fixture command: `prepare_fixture.py --case QP01 --output <empty-dir>`.
-- Current result: source/fixture verified and extracted selector component passes;
+- Current result: source/fixture verified and current native selection slice passes;
   no native journey qualified.
-  Integration hook: primary's authentic native12/birth source and integrated
-  SQL journey observations; no new source capability proposed.
+  Integration hook: authentic native12/birth execution and integrated SQL journey
+  observations on the installed candidate; no new source capability proposed.
 
 ## QP02 — P0 overlapping hide recipes and mixed costs
 
@@ -54,8 +61,10 @@ but no double-entry money posting. Requirements are the original R1–R8 in
   backpack3×19006/no fee→19009; gloves4×19006+C10000→19010. D0 throughout.
   Runtime Q order is gloves/backpack/shirt/shoes; runtime gloves G begins C10000.
 - Give a hide with exactly three distinct eligible hide roots, then with one,
-  two, four, nested/held roots and insufficient/exact fee. Current selector finds
-  a matching hide in gloves, marks coins unsupported and stops before backpack.
+  two, four, nested/held roots and insufficient/exact fee. Current native owner
+  returns refused on the gloves coin goal before stock availability checks;
+  pulse blocks on refused and cannot advance to backpack. Direct backpack
+  selection with three NPC-owned hides succeeds in the bounded component.
   Record that RED without accepting a legacy handover or fabricating payment.
 - Acceptance: primary's reviewed selection policy must make the ordinary supported
   backpack reachable with exact three roots, preserve unsafe paid refusal, and
@@ -65,7 +74,7 @@ but no double-entry money posting. Requirements are the original R1–R8 in
 - Smallest prep command: `test_native_selectors.py --case QP02`; add `--acceptance`
   to reproduce RED (exit1, native component code30) on this pin.
   `prepare_fixture.py --case QP02 --output <empty-dir>` preserves all four Q blocks.
-- Current result: source/fixture and pinned-behavior component pass; acceptance
+- Current result: source/fixture and current observation component pass; acceptance
   is RED. No runtime
   fix or native journey. Primary owns recipe policy and mixed-fee hook. Alias
   `leatherworker&n` is also problematic; use actual `leather` numbered target after
@@ -93,13 +102,14 @@ but no double-entry money posting. Requirements are the original R1–R8 in
   receipt authenticates terminal pair cleanup without reward repetition.
   R1/R3/R4/R6/R8.
 - Smallest prep: `prepare_fixture.py --case QP03 --output <empty-dir>` and
-  `test_recipient_retirement.py`. The latter executes actual lookup/D cleanup,
-  with reward/tracking/extraction authority stubbed. `--acceptance` is RED
-  (exit1, component32): original prototype/room lookup accepts the replacement.
-  Full qualification needs primary's real birth/native12
-  integrated candidate and fault journey; reduced fixture alone is insufficient.
-- Current result: source/fixture and pinned-behavior component pass;
-  incarnation acceptance RED; publication/disappearance/birth journey pending.
+  `test_recipient_retirement.py --acceptance`. The latter executes the current
+  `item_native_quest_gameplay_publication_owner::observe_give` body with runtime
+  lookup/census seams isolated. Missing original generation, replacement same
+  prototype/room and wrong NPC root UID refuse with unchanged output pointers.
+  Old `quest_mobile_for`/`finish_quest_reward` assertions are obsolete for this
+  SQL route. Full D/birth/retirement needs the integrated native fault journey.
+- Current result: source/fixture and replacement-generation acceptance component
+  PASS; publication/disappearance/birth/retirement journey pending.
   Hooks: authentic NBC2/NMB3 source binding, frozen residual forest/cash,
   acknowledged historical receipt reader and exact paired journal retirement.
 
@@ -154,8 +164,10 @@ but no double-entry money posting. Requirements are the original R1–R8 in
   separate durable lifetimes and cap refusal does not mint evidence. R1/R3/R4/R6/R8.
 - Smallest commands: `test_native_selectors.py --case QP05` and
   `prepare_fixture.py --case QP05 --output <empty-dir>`.
-- Results: source/fixture, count/held/capture/submission-refusal selection checks
-  pass. Source check verifies the one cap-one huge-skin row and actual parent.
+- Results: source/fixture, exact count/order/unique-root/spare and shortage native
+  selection slice checks pass. Held/capture/submission refusals are outside the
+  current slice and remain native integration requirements. Source check verifies
+  the one cap-one huge-skin row and actual parent.
   No native birth/reset/cold garment journey. Primary hook: authentic reset
   supply and existing owner/native12 journey; builder policy stays external.
 
@@ -223,12 +235,13 @@ but no double-entry money posting. Requirements are the original R1–R8 in
 ## Scope of executable acceptance modes
 
 Commands above use `python3 tests/async/quest_accounting_prep/<script>` from the
-repo root, on Linux. `--acceptance` asserts a missing local predicate against the
-old extracted entry point; it is a RED reproducer, not the final integration API
-or full accounting gate. The primary may move ownership to its reviewed native
-owner. Adapt the extraction/submission seam to that actual owner while retaining
-the scenario and native evidence requirements; do not require implementation
-inside an obsolete helper solely to turn a component green.
+repo root, on Linux. `--acceptance` asserts a selected local predicate against
+the current owner: QP03 passes; QP02/QP04/QP07 reproduce RED. Static selection
+executes the exact availability/selection slice of prepare_original, outside
+SQL/custody/publication. QP03 executes the full observe_give body with lookup and
+census stubs. Bartender settlement still executes its unchanged callback with
+injected hypothetical committed debit. These are bounded components, not final
+integration APIs or full accounting gates.
 
 Source agreement, prepared reduced fixtures, passing observation components and
 completed native journeys are distinct. All seven native journeys remain pending

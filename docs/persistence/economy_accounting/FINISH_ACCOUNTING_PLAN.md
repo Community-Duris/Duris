@@ -1,5 +1,15 @@
 # Finish accounting implementation plan
 
+## Quest prep refreshed for installed native owners — 2026-10-06
+
+[Primary refresh](QUEST_PREP_NATIVE_REFRESH_PRIMARY_INTEGRATION_2026-10-06.md)
+imports ten exact peer files from3e9ce549a, retaining the eleventh original test.
+Seven source cases and seven extracted observations pass in the pinned private
+view; primary QP06 source/fixture and QP03 recipient checks pass after installation.
+Three original paid/refund/stale-task diagnostics remain RED. Removed obsolete
+helper stubs do not replace native hold/custody requirements; all seven complete
+journeys, producer integration and full accounting qualification remain pending.
+
 ## Independent collector quarantine reader integrated — 2026-10-06
 
 [Primary integration](PLAN5_COLLECTOR_QUARANTINE_PRIMARY_INTEGRATION_2026-10-06.md)

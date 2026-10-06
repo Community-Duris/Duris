@@ -11,7 +11,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 
-from case_data import ROOT, digest
+from case_data import ACCOUNTING_PIN, ROOT, digest
 from _paths import extract_function
 
 PRELUDE = r'''
@@ -155,7 +155,9 @@ int main() {
         if result.returncode:
             raise AssertionError(f"{case_id}: component failed code {result.returncode}; "
                                  "30=active refund not submitted; 31=replacement task received stale map")
-    return dict(case=case_id, mode="acceptance" if acceptance else "pinned behavior",
+    return dict(case=case_id, accounting_pin=ACCOUNTING_PIN,
+                mode="acceptance" if acceptance else "current observation",
+                owner="world_quest_payment_committed -> world_quest_refund_payment/ADD_MONEY",
                 result="component passed; debit/SQL/quest persistence boundaries stubbed",
                 source_hashes={str(p.relative_to(ROOT)): digest(p) for p in
                                (ROOT / "src/specs/specs.world_quest.c", ROOT / "src/core/utility.c")})
