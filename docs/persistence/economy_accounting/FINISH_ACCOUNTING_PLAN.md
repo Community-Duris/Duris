@@ -1,5 +1,33 @@
 # Finish accounting implementation plan
 
+## Quest prep pack published - 2026-10-06
+
+The third-agent seven-case pack is available now on
+`origin/codex/accounting-quest-prep`. Read its pinned
+[handoff](https://github.com/Community-Duris/Duris/blob/a7c7efb269bdeb3e7d0ef803ac3d2c441fecaf26/docs/persistence/economy_accounting/quest-prep/HANDOFF.md)
+and [results](https://github.com/Community-Duris/Duris/blob/a7c7efb269bdeb3e7d0ef803ac3d2c441fecaf26/docs/persistence/economy_accounting/quest-prep/RESULTS.md).
+Bundle order: first specifications `f1a15f1d982bf330d57428b20797beb96aa34c71`,
+executable/source/fixture pack `cd6e62e331aae0b81b23ed858ec900420e70bbf5`,
+then handoff metadata `a7c7efb269bdeb3e7d0ef803ac3d2c441fecaf26`.
+Owned paths and exact small commands are listed in that handoff; the ownership
+boundaries in the prep assignment below remain unchanged.
+
+Peer reports seven source cases, seven fixture preparation checks and seven
+extracted-function observation components passing on accounting pin `17c033d69`.
+Four diagnostic acceptance assertions remain red: overlapping recipe reachability,
+replacement NPC incarnation, active bartender refund and stale-task map callback.
+All seven native journeys remain pending. These results are not qualification
+of the subsequently installed native source or additional release gates.
+
+Candidate source is now published with the native birth/quest installation below;
+`99250e8ac` is the observed accounting tip. Prep owner can independently fetch the
+latest accounting revision, compare producer/interface pins and update its owned
+fixtures and commands for that actual candidate. Report obsolete diagnostic seams
+and shared-file blockers in the prep handoff. Primary can review/import compatible
+owned bundles directly and use them at the existing coherent qualification boundary;
+there is no dependency on the prep pack reaching twelve cases or PR #678 completing
+its wider daily/story research. Original accounting coverage and release gates stay.
+
 ## Independent compound-action audit fix integrated — 2026-10-06
 
 [Primary integration evidence](PLAN5_COMPOUND_ACTION_PRIMARY_INTEGRATION_2026-10-06.md)
