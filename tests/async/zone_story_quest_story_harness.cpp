@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 159 &&
+		require(catalog.story_mappings.size() == 160 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,168 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "myrloch_vale"; });
+			require(mapping.stories.size() == 4 && mapping.contacts.size() == 11 &&
+					mapping.revision == 1,
+				"Myrloch journal scope failed");
+			const auto &key = story_for("myrloch_vale", "return-old-key");
+			const auto &bracelet = story_for("myrloch_vale", "return-old-bracelet");
+			const auto &dagger = story_for("myrloch_vale", "return-old-dagger");
+			const auto &head = story_for("myrloch_vale", "return-warlord-head");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 264)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 4 && dailies == 4,
+				"Myrloch lost independent or departing-giver daily candidates");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 264, 26401, 100, "arrival") ==
+					result::applied,
+				"Myrloch discovery failed");
+			require(journey.meet_npc(7, 42, 26411, 26578, 101) == result::applied,
+				"Myrloch master encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 264, 10, 1, 102, false, false);
+			for (const auto *s : { &key, &bracelet, &dagger })
+				require(journal.find("] " + s->title + "\r\n") != std::string::npos,
+					"Myrloch master lost an independent return");
+			require(journal.find("] " + head.title + "\r\n") == std::string::npos,
+				"Myrloch master explanation forged elder exposure");
+			for (const auto &[v, room] :
+			     { std::pair{ 26402, 26555 }, std::pair{ 26413, 26480 },
+			       std::pair{ 26400, 26514 }, std::pair{ 26401, 26530 } })
+				require(journey.meet_npc(7, 42, v, room, 103) == result::applied,
+					"Myrloch source encounter failed");
+			journal = journey.render_journal(7, 42, 264, 10, 1, 103, false, false);
+			require(journal.find("] " + head.title + "\r\n") == std::string::npos,
+				"Myrloch warlord or key holder forged elder exposure");
+			require(journey.meet_npc(7, 42, 26417, 26434, 104) == result::applied,
+				"Myrloch elder encounter failed");
+			const auto status = [&](const auto &s, size_t row, const char *state)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos, "Myrloch card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at, end == std::string::npos ? end : end - at)
+					       .find(std::string("[") + state + "] " +
+						     s.steps[row].text) != std::string::npos;
+			};
+			const auto before = journey.serialize_state();
+			for (const auto &s : mapping.stories)
+			{
+				supplies = {};
+				for (const auto &t : s.steps)
+					if (t.kind == "carried_item")
+						for (int v : t.item_vnums)
+							supplies.carried[v] = t.count;
+				journal = journey.render_journal(7, 42, 264, 10, 1, 105, false,
+								 false, &supplies);
+				for (size_t row = 0; row < s.steps.size(); ++row)
+					require(status(s, row,
+						       row == s.steps.size() - 1 ? "Pending" :
+										   "Ready now"),
+						"Myrloch exact supplied preparation failed");
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+				{
+					const int v = s.steps[row].item_vnums.front();
+					supplies.carried[v] = 0;
+					supplies.equipped[18] = v;
+					journal = journey.render_journal(7, 42, 264, 10, 1, 106,
+									 false, false, &supplies);
+					require(status(s, row, "Missing now") &&
+							status(s, s.steps.size() - 1, "Pending"),
+						"Myrloch equipped proof replaced loose proof");
+					supplies.equipped.clear();
+					supplies.carried[v] = 1;
+				}
+			}
+			supplies = {};
+			for (int v : { 26405, 26442, 26421, 26434, 26406, 26419, 26550, 26441,
+				       26438, 358, 55455 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 264, 10, 1, 107, false, false,
+							 &supplies);
+			for (const auto &s : mapping.stories)
+				require(status(s, 0, "Missing now") &&
+						status(s, s.steps.size() - 1, "Pending"),
+					"Myrloch chest, contained proof, reward or outside lead forged a native return");
+			supplies = {};
+			supplies.carried[26409] = 1;
+			journal = journey.render_journal(7, 42, 264, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(head, 1, "Ready now") && status(key, 0, "Missing now") &&
+					status(key, 1, "Pending") && status(head, 4, "Pending"),
+				"Myrloch alternate flaming key fabricated old-key or head acceptance");
+			supplies.carried[26418] = 1;
+			journal = journey.render_journal(7, 42, 264, 10, 1, 109, false, false,
+							 &supplies);
+			require(status(head, 0, "Ready now") && status(head, 4, "Pending"),
+				"Myrloch supplied head implied own victory or elder acceptance");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 264).completed == 0,
+				"Myrloch readiness fabricated SEARCH, arrival, switch, death, epic touch or accepted return");
+			// Synthetic authoritative receipts qualify projection/recovery; they do not demonstrate played stock or mechanisms.
+			record(journey, dagger.contracts.front(), "myrloch-dagger", 264, 26578);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 264, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(dagger, 1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 264).completed == 1 &&
+					status(key, 1, "Pending") &&
+					status(bracelet, 1, "Pending") &&
+					status(head, 4, "Pending"),
+				"Myrloch departing dagger exchange completed another return");
+			for (const auto &s : mapping.stories)
+				if (s.id != dagger.id)
+				{
+					const auto tx = "myrloch-" + s.id;
+					record(journey, s.contracts.front(), tx.c_str(), 264,
+					       s.id == head.id ? 26434 : 26578);
+				}
+			journal = journey.render_journal(7, 42, 264, 10, 1, 120, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 264).completed == 4,
+				"Myrloch independent histories failed");
+			for (const auto &s : mapping.stories)
+			{
+				require(status(s, s.steps.size() - 1, "Recorded"),
+					"Myrloch spent proof lost accepted history");
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+					require(status(s, row, "Missing now"),
+						"Myrloch receipt restored proof or a spent key");
+			}
+			auto replay = completion(dagger.contracts.front(), "myrloch-dagger", 120);
+			replay.transaction.zone_number = 264;
+			replay.transaction.room_vnum = 26578;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Myrloch replay duplicated dagger acceptance");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 264).completed == 4,
+				"Myrloch cold recovery lost four receipts");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 264, 26401, 100, "arrival") ==
+					result::applied,
+				"Myrloch raw discovery failed");
+			for (const auto &s : mapping.stories)
+			{
+				const auto tx = "myrloch-raw-" + s.id;
+				record(raw, s.contracts.front(), tx.c_str(), 264,
+				       s.id == head.id ? 26434 : 26578);
+			}
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 264).completed == 4,
+				"Myrloch raw-to-authored recovery lost independent returns");
 		}
 
 		{

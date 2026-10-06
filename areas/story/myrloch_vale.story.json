@@ -1,0 +1,294 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "myrloch_vale",
+  "coverage": "complete",
+  "introduction": "Explore Chrysalis and the Under-Realms through the master's three old-item returns and the elder's head return, with the shrine and keyed routes explained.",
+  "orientation": [
+    "Meet the master of the grove and ask quest or quests, then head, warlord or fire. Ask the elder of Chrysalis about chest. The master accepts three old belongings; the elder accepts the warlord head. Each accepted return keeps its own history.",
+    "At the end of the entrance trail, touching the ivory horse statue can lead into Chrysalis. In the shrine, touch a named elven statue to reach the passages beneath it. These are travel actions with their own availability; a conversation is not proof that you used them.",
+    "The old bracelet, old dagger and old key are hidden loose sources in the caverns before the brass door. Search where they are stocked and account for hostile flames. Another player may already have revealed or supplied an item; current possession does not record your own search or first recovery.",
+    "Bring the exact old key to the master for a flaming key, and the exact old bracelet for his Llewyrr bracelet. A selected red flame can also carry the flaming key, so that access item does not prove the old-key exchange.",
+    "The old dagger return rewards the twisted sphere and makes the master leave. Return the other belongings first if you want his other exchanges during that visit. This advice does not make the three accepted histories a mandatory chain.",
+    "The flaming key fits the brass door into the deeper passages. A purple dragon can carry the jade key for the door of flames; another purple dragon can carry the tiny stone key for its wooden chest. The quartz dragon can carry the brimstone key for the northern bridge door. Similar creatures can have different stock.",
+    "Search the tower side rooms for loose stalagmites and pull the available one. Each switch opens a specific blocked passage, sometimes at a distance. The actual corridors also provide alternative approaches, so finding all four switches is not an invented prerequisite for the head return.",
+    "The warlord death callback opens the north passage to the treasure chamber. His intended head, shield, rune stone and memory are stocked separately. Ordinary loot can fall onto the room floor on this death path; do not assume it must be inside a corpse. A shared open passage or supplied head does not prove your own victory.",
+    "Give the exact bloodied head to the elder for the key of the under-realms. He then departs. His farewell describes a sacrifice, but the accepted endpoint is the head return. Do not spend the proof on a separate imagined altar ritual.",
+    "The elder chest uses the key of the under-realms and can contain the artifact and harp pin. Opening it and retrieving a stocked child are separate from accepting the head return. Keys are designed to break on successful unlocking; spending a key does not erase a recorded exchange.",
+    "The magical treasure room describes a glowing return stairway, but that stairway has no current reset source. Use the available return passages, including the jade stairwell back to the shrine. Its description does not establish a working shortcut.",
+    "The warlord shield has a separate return to a blind monk outside this zone. The rune stone has its own epic-touch system, and the memory has its own item classification. Carrying any of them does not complete one of these four returns.",
+    "Fresh reset items are currently unavailable while accounting is active, including proof, keys, statues and switches. Existing owned or supplied proof can prepare a return. Daily entries do not create stock, restore a departed giver or guarantee an open route.",
+    "Keep the exact requested item loose. Worn bracelets, wielded daggers, held keys, chest contents and reward copies do not replace loose proof. Historical accepted returns remain after proof is spent. All new story credit requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 26411,
+      "name": "the master of the grove",
+      "keyword": "master",
+      "description": "Ask quest or quests, then head, warlord or fire. He accepts the old key, bracelet and dagger independently. The dagger return makes him leave.",
+      "topics": [
+        "quest",
+        "quests",
+        "head",
+        "warlord",
+        "fire"
+      ]
+    },
+    {
+      "mob_vnum": 26417,
+      "name": "the elder of Chrysalis",
+      "keyword": "elder",
+      "description": "Ask chest. Give the bloodied warlord head for the key of the under-realms. He departs; the accepted return is separate from the chest opening and the sacrifice described in his farewell.",
+      "topics": [
+        "chest"
+      ]
+    },
+    {
+      "mob_vnum": 26402,
+      "name": "the warlord of fire",
+      "keyword": "warlord",
+      "description": "His death opens the north treasure passage. His intended head and other loot have separate stock and recovery. This death path can leave ordinary loot on the room floor.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26413,
+      "name": "a red flame",
+      "keyword": "red",
+      "description": "One selected red flame can carry a flaming key before the brass door. Other flames with the same name have different stock; this key does not prove the master accepted an old key.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26400,
+      "name": "a purple dragon",
+      "keyword": "purple",
+      "description": "One purple dragon can carry the jade key; the other can carry the tiny stone chest key. Distinguish their actual instances and stock.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26401,
+      "name": "a quartz dragon",
+      "keyword": "quartz",
+      "description": "The quartz dragon can carry the brimstone key for the northern bridge door. Recovering or spending it does not record the elder head return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26406,
+      "name": "Suilaiin",
+      "keyword": "suilaiin",
+      "description": "This registered supply shop stocks bags, rings and a glowing stone, rather than the four exact quest proofs.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26407,
+      "name": "Lerion the shop keeper",
+      "keyword": "lerion",
+      "description": "This registered magic shop stocks a potion, wand and scroll. Buying them is separate from shrine travel or an accepted old-item return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26408,
+      "name": "Elinial the shop keeper",
+      "keyword": "elinial",
+      "description": "The clothier is a registered shop. Its boots do not replace an old bracelet or other requested proof.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26410,
+      "name": "Raftifi the owner",
+      "keyword": "raftifi",
+      "description": "The pub owner has a registered food and drink shop. These services are context, not new story achievements.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 26409,
+      "name": "Talina the receptionist",
+      "keyword": "talina",
+      "description": "The Chrysalis inn has a real room service for renting and persistence. Renting does not complete a quest or prove that keys expired.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "return-old-key",
+      "title": "Return the master's old key",
+      "category": "request",
+      "summary": "Bring the exact old key for a flaming key. The red-flame source can provide the same reward key without proving this exchange.",
+      "contracts": [
+        {
+          "giver_vnum": 26411,
+          "completion_key": "give=I:26417;receive=I:26409;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-26417",
+          "text": "Carry 1 × an old key loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            26417
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Current exact loose proof only. Shared prior search, supplied proof or ordinary floor loot can prepare a return without recording your own first recovery or victory. Fresh reset stock is currently unavailable while accounting is active."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 26411,
+              "completion_key": "give=I:26417;receive=I:26409;disappear=0"
+            }
+          ],
+          "hint": "Keeps the accepted native receipt after proof is spent. Search, statue travel, switches, a shared open passage, a reward copy or farewell prose does not substitute for this return."
+        }
+      ]
+    },
+    {
+      "id": "return-old-bracelet",
+      "title": "Return the master's old bracelet",
+      "category": "request",
+      "summary": "Bring the exact old bracelet for the Llewyrr bracelet. Worn or supplied proof and the reward bracelet remain distinct.",
+      "contracts": [
+        {
+          "giver_vnum": 26411,
+          "completion_key": "give=I:26420;receive=I:26421;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-26420",
+          "text": "Carry 1 × an old bracelet loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            26420
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Current exact loose proof only. Shared prior search, supplied proof or ordinary floor loot can prepare a return without recording your own first recovery or victory. Fresh reset stock is currently unavailable while accounting is active."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 26411,
+              "completion_key": "give=I:26420;receive=I:26421;disappear=0"
+            }
+          ],
+          "hint": "Keeps the accepted native receipt after proof is spent. Search, statue travel, switches, a shared open passage, a reward copy or farewell prose does not substitute for this return."
+        }
+      ]
+    },
+    {
+      "id": "return-old-dagger",
+      "title": "Return the master's old dagger",
+      "category": "request",
+      "summary": "Bring the exact old dagger for the twisted sphere. The master departs after acceptance; finish any other desired exchanges first.",
+      "contracts": [
+        {
+          "giver_vnum": 26411,
+          "completion_key": "give=I:26433;receive=I:26434;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-26433",
+          "text": "Carry 1 × an old dagger loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            26433
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Current exact loose proof only. Shared prior search, supplied proof or ordinary floor loot can prepare a return without recording your own first recovery or victory. Fresh reset stock is currently unavailable while accounting is active."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 26411,
+              "completion_key": "give=I:26433;receive=I:26434;disappear=1"
+            }
+          ],
+          "hint": "Keeps the accepted native receipt after proof is spent. Search, statue travel, switches, a shared open passage, a reward copy or farewell prose does not substitute for this return."
+        }
+      ]
+    },
+    {
+      "id": "return-warlord-head",
+      "title": "Bring the warlord head to the elder",
+      "category": "request",
+      "summary": "Give one exact bloodied head for the key of the under-realms. The elder departs; personal victory, treasure-passage opening and chest retrieval have distinct outcomes.",
+      "contracts": [
+        {
+          "giver_vnum": 26417,
+          "completion_key": "give=I:26418;receive=I:26406;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-26418",
+          "text": "Carry 1 × a bloodied head of the warlord of fire loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            26418
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Current exact loose proof only. Shared prior search, supplied proof or ordinary floor loot can prepare a return without recording your own first recovery or victory. Fresh reset stock is currently unavailable while accounting is active."
+        },
+        {
+          "id": "item-26409",
+          "text": "Carry 1 × a flaming key loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            26409
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Optional route preparation. An existing or supplied key or a shared prior open can provide access; possession does not record source recovery, successful use or the head return."
+        },
+        {
+          "id": "item-26412",
+          "text": "Carry 1 × a jade key loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            26412
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Optional route preparation. An existing or supplied key or a shared prior open can provide access; possession does not record source recovery, successful use or the head return."
+        },
+        {
+          "id": "item-26411",
+          "text": "Carry 1 × a brimstone key loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            26411
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Optional route preparation. An existing or supplied key or a shared prior open can provide access; possession does not record source recovery, successful use or the head return."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 26417,
+              "completion_key": "give=I:26418;receive=I:26406;disappear=1"
+            }
+          ],
+          "hint": "Keeps the accepted native receipt after proof is spent. Search, statue travel, switches, a shared open passage, a reward copy or farewell prose does not substitute for this return."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
