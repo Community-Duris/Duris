@@ -46,51 +46,54 @@ bool account(const economic_account_key &key, economic_account_kind kind,
 	       key.lineage.bytes == lineage.bytes;
 }
 
+bool empty_account(const economic_account_key &key)
+{
+	return critical_operation_id_is_zero(key.lineage) && key.kind == economic_account_kind{} &&
+	       !key.authority_id && !key.context_id;
+}
+
 bool valid_accounts(const auction_bid_accounting_accounts &accounts,
 		    const auction_bid_accounting_listing &listing,
-		    const auction_command_payload &payload, bool sold)
+		    const auction_command_payload &payload, bool sold, bool resolved = false)
 {
 	const auto &lineage = accounts.wallet.lineage;
 	const bool outbid = listing.winning_bidder_pid &&
 			    listing.winning_bidder_pid != payload.actor_pid;
+	const auto endpoint = [&](const economic_account_key &key, uint32_t absent, uint32_t pid,
+				  bool required, bool unused)
+	{
+		if (!required)
+			return !absent && empty_account(key);
+		if (!absent)
+			return account(key, economic_account_kind::pending_claim, lineage);
+		return absent == pid &&
+		       (resolved && !unused ?
+				account(key, economic_account_kind::pending_claim, lineage) :
+				empty_account(key));
+	};
 	if (!account(accounts.wallet, economic_account_kind::wallet, lineage) ||
 	    !economic_account_key_valid(accounts.bank) ||
 	    accounts.bank.kind != economic_account_kind::bank ||
 	    accounts.bank.context_id != payload.racewar ||
 	    accounts.bank.lineage.bytes != lineage.bytes ||
 	    !account(accounts.escrow, economic_account_kind::auction_escrow, lineage) ||
-	    !account(accounts.bidder_claim, economic_account_kind::pending_claim, lineage) ||
-	    (outbid &&
-	     !account(accounts.previous_claim, economic_account_kind::pending_claim, lineage)) ||
-	    (sold &&
-	     !account(accounts.seller_claim, economic_account_kind::pending_claim, lineage)))
+	    !endpoint(accounts.bidder_claim, accounts.absent_bidder_pid, payload.actor_pid, true,
+		      true) ||
+	    !endpoint(accounts.previous_claim, accounts.absent_previous_pid,
+		      listing.winning_bidder_pid, outbid, false) ||
+	    !endpoint(accounts.seller_claim, accounts.absent_seller_pid, listing.seller_pid, sold,
+		      false))
 		return false;
-	const auto empty = [](const economic_account_key &key)
-	{
-		return critical_operation_id_is_zero(key.lineage) &&
-		       key.kind == economic_account_kind{} && !key.authority_id && !key.context_id;
+	const uint64_t ids[] = {
+		accounts.wallet.authority_id,	      accounts.bank.authority_id,
+		accounts.escrow.authority_id,	      accounts.bidder_claim.authority_id,
+		accounts.previous_claim.authority_id, accounts.seller_claim.authority_id
 	};
-	if ((!outbid && !empty(accounts.previous_claim)) ||
-	    (!sold && !empty(accounts.seller_claim)))
-		return false;
-	return accounts.wallet.authority_id != accounts.bank.authority_id &&
-	       accounts.wallet.authority_id != accounts.escrow.authority_id &&
-	       accounts.wallet.authority_id != accounts.bidder_claim.authority_id &&
-	       accounts.bank.authority_id != accounts.escrow.authority_id &&
-	       accounts.bank.authority_id != accounts.bidder_claim.authority_id &&
-	       accounts.escrow.authority_id != accounts.bidder_claim.authority_id &&
-	       (!outbid ||
-		(accounts.previous_claim.authority_id != accounts.wallet.authority_id &&
-		 accounts.previous_claim.authority_id != accounts.bank.authority_id &&
-		 accounts.previous_claim.authority_id != accounts.escrow.authority_id &&
-		 accounts.previous_claim.authority_id != accounts.bidder_claim.authority_id)) &&
-	       (!sold ||
-		(accounts.seller_claim.authority_id != accounts.wallet.authority_id &&
-		 accounts.seller_claim.authority_id != accounts.bank.authority_id &&
-		 accounts.seller_claim.authority_id != accounts.escrow.authority_id &&
-		 accounts.seller_claim.authority_id != accounts.bidder_claim.authority_id &&
-		 (!outbid ||
-		  accounts.seller_claim.authority_id != accounts.previous_claim.authority_id)));
+	for (size_t index = 0; index < 6; ++index)
+		for (size_t prior = 0; prior < index; ++prior)
+			if (ids[index] && ids[index] == ids[prior])
+				return false;
+	return true;
 }
 
 bool bid_value(const auction_command_payload &payload,
@@ -111,11 +114,14 @@ std::vector<uint8_t> frozen_facts(const auction_bid_accounting_listing &listing,
 				  const auction_bid_accounting_accounts &accounts)
 {
 	std::vector<uint8_t> facts;
-	facts.reserve(124);
-	for (const auto &account :
-	     { accounts.wallet, accounts.bank, accounts.escrow, accounts.bidder_claim,
-	       accounts.previous_claim, accounts.seller_claim })
-		append_u64(&facts, account.authority_id);
+	facts.reserve(140);
+	for (uint64_t mapping :
+	     { accounts.wallet.authority_id, accounts.bank.authority_id,
+	       accounts.escrow.authority_id,
+	       accounts.absent_bidder_pid ? uint64_t{ 0 } : accounts.bidder_claim.authority_id,
+	       accounts.absent_previous_pid ? uint64_t{ 0 } : accounts.previous_claim.authority_id,
+	       accounts.absent_seller_pid ? uint64_t{ 0 } : accounts.seller_claim.authority_id })
+		append_u64(&facts, mapping);
 	append_u32(&facts, listing.auction_id);
 	append_u32(&facts, listing.seller_pid);
 	append_u32(&facts, listing.winning_bidder_pid);
@@ -128,6 +134,14 @@ std::vector<uint8_t> frozen_facts(const auction_bid_accounting_listing &listing,
 		     listing.listing_operation.bytes.end());
 	facts.insert(facts.end(), listing.previous_bid_operation.bytes.begin(),
 		     listing.previous_bid_operation.bytes.end());
+	if (accounts.absent_bidder_pid || accounts.absent_previous_pid ||
+	    accounts.absent_seller_pid)
+	{
+		facts.insert(facts.end(), { 'A', 'E', 'C', '1' });
+		append_u32(&facts, accounts.absent_bidder_pid);
+		append_u32(&facts, accounts.absent_previous_pid);
+		append_u32(&facts, accounts.absent_seller_pid);
+	}
 	return facts;
 }
 
@@ -225,7 +239,7 @@ economic_accounting_error auction_bid_accounting_decode(const critical_command &
 		    economic_intent_verify_binding(command, parsed_intent) != error::ok)
 			return error::corrupt_evidence;
 		const auto facts = std::span<const uint8_t>(parsed_intent.admission.facts);
-		if (facts.size() != 124)
+		if (facts.size() != 124 && facts.size() != 140)
 			return error::invalid_identity;
 		const auto number = [&](size_t offset, size_t width)
 		{
@@ -236,14 +250,29 @@ economic_accounting_error auction_bid_accounting_decode(const critical_command &
 		};
 		const auto &lineage = parsed_intent.admission.metadata.lineage;
 		auction_bid_accounting_accounts parsed_accounts;
+		if (facts.size() == 140)
+		{
+			if (!std::equal(facts.begin() + 124, facts.begin() + 128,
+					std::array<uint8_t, 4>{ 'A', 'E', 'C', '1' }.begin()))
+				return error::invalid_version;
+			parsed_accounts.absent_bidder_pid = static_cast<uint32_t>(number(128, 4));
+			parsed_accounts.absent_previous_pid = static_cast<uint32_t>(number(132, 4));
+			parsed_accounts.absent_seller_pid = static_cast<uint32_t>(number(136, 4));
+			if (!parsed_accounts.absent_bidder_pid &&
+			    !parsed_accounts.absent_previous_pid &&
+			    !parsed_accounts.absent_seller_pid)
+				return error::invalid_identity;
+		}
 		parsed_accounts.wallet = { lineage, economic_account_kind::wallet, number(0, 8),
 					   0 };
 		parsed_accounts.bank = { lineage, economic_account_kind::bank, number(8, 8),
 					 parsed_payload.racewar };
 		parsed_accounts.escrow = { lineage, economic_account_kind::auction_escrow,
 					   number(16, 8), 0 };
-		parsed_accounts.bidder_claim = { lineage, economic_account_kind::pending_claim,
-						 number(24, 8), 0 };
+		if (number(24, 8) || !parsed_accounts.absent_bidder_pid)
+			parsed_accounts.bidder_claim = { lineage,
+							 economic_account_kind::pending_claim,
+							 number(24, 8), 0 };
 		if (const auto id = number(32, 8))
 			parsed_accounts.previous_claim = { lineage,
 							   economic_account_kind::pending_claim, id,
@@ -306,8 +335,15 @@ auction_bid_accounting_plan(const critical_command &command, const economic_froz
 		int64_t bid = 0;
 		bool sold = false;
 		if (!valid_listing(listing, payload) || !bid_value(payload, listing, &bid, &sold) ||
-		    !valid_accounts(accounts, listing, payload, sold))
+		    !valid_accounts(accounts, listing, payload, sold, true))
 			return error::invalid_identity;
+		if ((accounts.absent_bidder_pid && (authority.bidder_claim_before.money ||
+						    authority.bidder_claim_before.revision)) ||
+		    (accounts.absent_previous_pid && (authority.previous_claim_before.money ||
+						      authority.previous_claim_before.revision)) ||
+		    (accounts.absent_seller_pid && (authority.seller_claim_before.money ||
+						    authority.seller_claim_before.revision)))
+			return error::corrupt_evidence;
 		const auto &meta = intent.admission.metadata;
 		const auto source = source_for(listing);
 		if (meta.writer_id != ECONOMIC_WRITER_AUCTION_BID ||

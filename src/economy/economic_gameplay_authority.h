@@ -41,11 +41,14 @@ struct economic_shop_checkpoint_projection
 class economic_gameplay_authority
 {
     public:
-	// No I/O or game pointers. Legacy mode leaves exact command bytes unchanged.
+	// Pure builders use no I/O or game pointers. Legacy mode leaves exact bytes unchanged.
 	// Active mode freezes supported typed commands; unsupported writers refuse,
 	// never fall back to schema 1. Already frozen commands are verified, not
 	// rebound to the current epoch (retained exact-ID replay may be historical).
 	static economic_accounting_error prepare_currency(critical_command *command);
+	// Fresh auction capture borrows the existing native SQL session owner.
+	// Retained commands are validated without current authority or recapture.
+	static economic_accounting_error prepare_auction(critical_command *command);
 	static economic_accounting_error prepare_coin_transfer(critical_command *command);
 	static economic_accounting_error
 	prepare_collector_purchase(critical_command *command,

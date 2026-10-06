@@ -1,5 +1,54 @@
 # Shared producer integration progress — 2026-10-06
 
+## Current integration boundary
+
+Auction/opening retained proof is now integrated in the maintained candidate.
+Seven original native suites pass on each fresh canonical0062 MySQL8.0.46 and
+MariaDB10.11 engine, including genuine item-claim and consumed-money corruption
+refusals. The full original MariaDB740-object production build passes. Its
+formatting-only lifecycle successor also passes the actual strict object and
+original Make-selected server relink, with unchanged objects authenticated.
+The original flatfile740-object full build and final formatting successor also
+pass. This completed component is being committed separately; the durable
+[qualification](AUCTION_OPENING_RETAINED_PRIMARY_QUALIFICATION_2026-10-06.md)
+records exact final source and build evidence.
+
+The writer registry pins and13 moved source locations now match the maintained
+source. The complete actual census remains2876 occurrences/2818 unique sites,
+with zero unmapped sites. Normal14-fixture accounting contracts and920 routes
+validate. Coverage remains incomplete and release BLOCKED.
+
+The complete native fee financial/shared graph passes eight strict production
+objects across both backends, including all six required financial definitions.
+Independent review then established two real recovery omissions: ACK uncertainty
+blocked a genuine publication retry, and historical committed fee replay required
+a parent removed by normal quest progression. A source-pinned six-file successor
+now keeps original first-write/live parent authorization, proves the durable
+child root for historical replay, and permits only exact physically-proven fee
+ACK retry while preserving generic uncertainty and integrity-poison fences.
+Independent source review passes; updated original native/object qualification
+is underway. Full coordinator/SQL/gameplay/cold fault journeys remain open.
+
+The new birth-origin schema0063 has passed original metadata measurements on
+both engines, source/lifecycle/runtime contracts and the complete10-method boot
+component. The unchanged original full both-engine canonical/staging/master
+migration and compiled/shell boot qualifier is running against private unmeasured
+sentinels; its final measured contract is not integrated yet. No full birth
+publication, activation, complete Plan or release claim follows from these checks.
+
+A separate private transport successor repairs the confirmed journal refusal of
+acknowledged fee14 and coordinator omission of coin-GIVE16. Its shared pure
+classifier recognizes only accounting-schema item12/14/16; unacknowledged and
+legacy routes, source/domain/held-owner gates and the declined inactive spell
+path remain unchanged. Both strict journal/coordinator object pairs and the original journal fault
+suite pass. Genuine typed fee journal qualification is running; complete
+coordinator/SQL/gameplay/cold authority remains unqualified.
+
+All prior failure/preimage evidence and the three unrelated worktree paths are
+preserved. Production accounting is inactive. No production data, merge,
+deployment or force push occurred.
+
+
 This integration began from published experimental-accounting head ad2ebe4dbe803f429fa5195ad4671f94499f1f29. The separately qualified baseline repair is recorded below. Remote refresh confirmed that starting head; Plan5 independently advanced to1b4ab18728e10b302d72ecff38650451a4fac53c. The newer production changes described here are private composed source, awaiting qualification and integration. No full Plan, R1–R8, coverage or release completion is claimed. Inactive accounting and the declined inactive spell-path change remain untouched.
 
 ## Auction and original money openings

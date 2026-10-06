@@ -494,6 +494,8 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/auction_accounting.o \
 				 economy/auction_money_claim_accounting.o \
 				 persistence/economic_sql_pending_claim_source.o \
+				 persistence/economic_sql_auction_claim_endpoint.o \
+				 persistence/economic_sql_auction_retained.o \
 				 economy/auction_listing_accounting.o \
 				 persistence/economic_sql_auction_listing_transaction.o \
 				 persistence/economic_sql_shop_trade_transaction.o \

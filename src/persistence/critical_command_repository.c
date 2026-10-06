@@ -21,6 +21,9 @@
 #include "world/epic_command.h"
 #include "economy/auction_command.h"
 #include "economy/auction_repository.h"
+#include "persistence/economic_sql_auction_bid_transaction.h"
+#include "persistence/economic_sql_auction_settlement_transaction.h"
+#include "persistence/economic_sql_auction_retained.h"
 #include "economy/collector_command.h"
 #include "economy/collector_accounting.h"
 #include "economy/collector_repository.h"
@@ -111,6 +114,19 @@ bool accounted_bank_envelope(const critical_command &command)
 	return command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
 	       command.type == critical_command_type::account_bank &&
 	       critical_command_envelope_valid(command);
+#endif
+}
+
+bool accounted_auction_envelope(const critical_command &command)
+{
+#ifdef __NO_MYSQL__
+	(void)command;
+	return false;
+#else
+	return command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+	       command.type == critical_command_type::auction &&
+	       critical_command_envelope_valid(command) &&
+	       auction_repository_frozen_accounting_valid(command);
 #endif
 }
 
@@ -1050,6 +1066,11 @@ unsigned int verify_accounted_root_outbox(MYSQL *connection, const critical_comm
 			destination = OUTBOX_DESTINATION_ITEM_OWNERSHIP;
 			event_type = OUTBOX_EVENT_ITEM_TRANSFERRED;
 		}
+		else if (command.type == critical_command_type::auction)
+		{
+			destination = OUTBOX_DESTINATION_AUCTION;
+			event_type = OUTBOX_EVENT_AUCTION_MUTATED;
+		}
 		else if (command.type == critical_command_type::collector)
 		{
 			destination = COLLECTOR_OUTBOX_DESTINATION;
@@ -1825,6 +1846,7 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 	const bool accounted_native_root = accounted_native_quest || accounted_native_birth;
 	const bool accounted_collector = accounted_collector_envelope(command);
 	const bool accounted_shop = accounted_shop_trade_envelope(command);
+	const bool accounted_auction = accounted_auction_envelope(command);
 	unsigned long root_session = 0;
 	player_sql_cleanup native_cleanup;
 	std::optional<player_sql_transaction_cleanup> native_transaction;
@@ -1842,9 +1864,9 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 			sql_pool_discard_connection(connection);
 	};
 	auto root_failure = [accounted_bank, accounted_coin, accounted_item, accounted_collector,
-			     accounted_shop, accounted_native_root, accounted_native_birth,
-			     &native_transaction, &native_cleanup, &native_mutation_applied,
-			     &rollback_root](unsigned int error)
+			     accounted_shop, accounted_auction, accounted_native_root,
+			     accounted_native_birth, &native_transaction, &native_cleanup,
+			     &native_mutation_applied, &rollback_root](unsigned int error)
 	{
 		if (accounted_native_root && native_transaction)
 		{
@@ -1867,12 +1889,12 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 			return critical_apply_result{ critical_apply_outcome::retryable_failure, 0,
 						      EEXIST };
 		if ((accounted_bank || accounted_coin || accounted_item || accounted_shop ||
-		     accounted_native_root) &&
+		     accounted_auction || accounted_native_root) &&
 		    error == EEXIST)
 			return critical_apply_result{ critical_apply_outcome::terminal_failure, 0,
 						      EEXIST };
 		return (accounted_bank || accounted_coin || accounted_item || accounted_collector ||
-			accounted_shop || accounted_native_root) ?
+			accounted_shop || accounted_auction || accounted_native_root) ?
 			       critical_apply_result{ critical_apply_outcome::retryable_failure, 0,
 						      error ? error : EIO } :
 			       failure(error);
@@ -1930,7 +1952,8 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 	     !combat_command && !artifact_guild_command && !boon_command && !zone_command &&
 	     !audit_command) ||
 	    (!accounted_bank && !accounted_coin && !accounted_item && !accounted_collector &&
-	     !accounted_shop && !accounted_native_root && !critical_command_valid(command)))
+	     !accounted_shop && !accounted_auction && !accounted_native_root &&
+	     !critical_command_valid(command)))
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
 	if (shop_command && !accounted_shop)
 		return { critical_apply_outcome::terminal_failure, 0, EACCES };
@@ -1941,7 +1964,7 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 	if (!command_hashes(command, &command_hash, &keys_hash))
 		return { critical_apply_outcome::retryable_failure, 0, ENOMEM };
 	if (accounted_bank || accounted_coin || accounted_item || accounted_collector ||
-	    accounted_shop || accounted_native_root)
+	    accounted_shop || accounted_auction || accounted_native_root)
 	{
 		if (root_transaction_active(connection))
 			return root_failure(EBUSY);
@@ -1957,7 +1980,7 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 	if ((item_command || coin_command || auction_command || collector_command ||
 	     corpse_command || restitution_command) &&
 	    !accounted_coin && !accounted_item && !accounted_collector && !accounted_shop &&
-	    !accounted_native_root)
+	    !accounted_auction && !accounted_native_root)
 	{
 		const auto error =
 			economic_sql_currency_writer_guard::acquire(connection, &legacy_writer);
@@ -1989,7 +2012,8 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 				return root_failure(read_error);
 			}
 			if (accounted_bank || accounted_coin || accounted_item ||
-			    accounted_collector || accounted_shop || accounted_native_root)
+			    accounted_collector || accounted_shop || accounted_auction ||
+			    accounted_native_root)
 			{
 				const auto error =
 					accounted_session_check(connection, &root_session, true);
@@ -2022,6 +2046,12 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 					connection, command, stored.result_code,
 					stored.result_payload.data(), stored.result_payload.size(),
 					static_cast<critical_failure_stage>(stored.failure_stage));
+			else if (accounted_auction)
+				retained_error = economic_sql_auction_verify_retained(
+					connection, command, stored.result_code,
+					static_cast<critical_failure_stage>(stored.failure_stage),
+					stored.durable_revision, stored.result_payload);
+
 			else if (accounted_native_quest)
 			{
 				retained_error = verify_native_quest_stored_receipt(stored);
@@ -2058,13 +2088,15 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 					stored.result_code);
 			if (!retained_error &&
 			    (accounted_bank || accounted_coin || accounted_item ||
-			     accounted_collector || accounted_shop || accounted_native_root))
+			     accounted_collector || accounted_shop || accounted_auction ||
+			     accounted_native_root))
 				retained_error = verify_accounted_root_outbox(
 					connection, command, stored.result_code,
 					stored.result_payload.data(), stored.result_payload.size());
 			if (!retained_error &&
 			    (accounted_bank || accounted_coin || accounted_item ||
-			     accounted_collector || accounted_shop || accounted_native_root))
+			     accounted_collector || accounted_shop || accounted_auction ||
+			     accounted_native_root))
 				retained_error =
 					accounted_session_check(connection, &root_session, true);
 			rollback_root();
@@ -2874,13 +2906,44 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 		auction_command_result auction_result = {};
 		unsigned int result_code = 0;
 		bool mutation_applied = false;
-		if (!auction_repository_execute(connection, command, &auction_result, &result_code,
-						&mutation_applied))
+		if (accounted_auction)
+		{
+			auto error = accounted_session_check(connection, &root_session, true);
+			if (auction_payload.action == auction_action::bid)
+			{
+				economic_sql_auction_bid_context context;
+				if (!error)
+					error = economic_sql_auction_bid_lock(connection, command,
+									      &context);
+				if (!error)
+					error = economic_sql_auction_bid_execute_and_record(
+						connection, command, context, &auction_result,
+						&result_code, &mutation_applied);
+			}
+			else
+			{
+				economic_sql_auction_settlement_context context;
+				if (!error)
+					error = economic_sql_auction_settlement_lock(
+						connection, command, &context);
+				if (!error)
+					error = economic_sql_auction_settlement_execute_and_record(
+						connection, command, context, &auction_result,
+						&result_code, &mutation_applied);
+			}
+			if (error)
+			{
+				rollback_root();
+				return root_failure(error);
+			}
+		}
+		else if (!auction_repository_execute(connection, command, &auction_result,
+						     &result_code, &mutation_applied))
 		{
 			const unsigned int database_failure = database_error(connection);
 			const unsigned int error = database_failure ? database_failure : errno;
 			rollback_root();
-			return failure(error);
+			return root_failure(error);
 		}
 		std::array<uint8_t, AUCTION_RESULT_PAYLOAD_BYTES> result_payload = {};
 		const uint64_t durable_revision = std::max(
@@ -2896,7 +2959,25 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 			const unsigned int database_failure = database_error(connection);
 			const unsigned int error = database_failure ? database_failure : errno;
 			rollback_root();
-			return failure(error);
+			return root_failure(error);
+		}
+		if (accounted_auction)
+		{
+			auto error = economic_sql_auction_verify_retained(
+				connection, command, result_code, critical_failure_stage::none,
+				durable_revision, result_payload);
+			if (!error)
+				error = verify_accounted_root_outbox(connection, command,
+								     result_code,
+								     result_payload.data(),
+								     result_payload.size());
+			if (!error)
+				error = accounted_session_check(connection, &root_session, true);
+			if (error)
+			{
+				rollback_root();
+				return root_failure(error);
+			}
 		}
 		if (!execute(connection, "COMMIT"))
 		{
@@ -2905,7 +2986,7 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 				rollback_root();
 			return { connection_error(error) ?
 					 critical_apply_outcome::ambiguous_commit :
-					 failure(error).outcome,
+					 root_failure(error).outcome,
 				 durable_revision, error };
 		}
 		critical_apply_result applied = { result_code ?
@@ -3549,10 +3630,11 @@ critical_apply_result critical_command_repository_apply_from_pool(const critical
 	const bool accounted_native_birth = accounted_native_birth_envelope(command);
 	const bool accounted_collector = accounted_collector_envelope(command);
 	const bool accounted_shop = accounted_shop_trade_envelope(command);
+	const bool accounted_auction = accounted_auction_envelope(command);
 	if (!critical_command_legacy_execution_supported(command) &&
 	    !accounted_bank_envelope(command) && !accounted_coin && !accounted_item &&
-	    !accounted_collector && !accounted_shop && !accounted_native_quest &&
-	    !accounted_native_birth)
+	    !accounted_collector && !accounted_shop && !accounted_auction &&
+	    !accounted_native_quest && !accounted_native_birth)
 		return { critical_apply_outcome::retryable_failure, 0, EPROTONOSUPPORT };
 
 	(void)context;
@@ -3657,8 +3739,10 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 	const bool accounted_native_root = accounted_native_quest || accounted_native_birth;
 	const bool accounted_collector = accounted_collector_envelope(command);
 	const bool accounted_shop = accounted_shop_trade_envelope(command);
+	const bool accounted_auction = accounted_auction_envelope(command);
 	const bool accounted_root = accounted_bank || accounted_coin || accounted_item ||
-				    accounted_collector || accounted_shop || accounted_native_root;
+				    accounted_collector || accounted_shop || accounted_auction ||
+				    accounted_native_root;
 	unsigned long root_session = 0;
 	player_sql_cleanup native_cleanup;
 	std::optional<player_sql_transaction_cleanup> native_transaction;
@@ -3776,6 +3860,12 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 				connection, command, stored.result_code,
 				stored.result_payload.data(), stored.result_payload.size(),
 				static_cast<critical_failure_stage>(stored.failure_stage));
+		else if (accounted_auction)
+			error = economic_sql_auction_verify_retained(
+				connection, command, stored.result_code,
+				static_cast<critical_failure_stage>(stored.failure_stage),
+				stored.durable_revision, stored.result_payload);
+
 		else if (accounted_native_quest)
 		{
 			error = verify_native_quest_stored_receipt(stored);

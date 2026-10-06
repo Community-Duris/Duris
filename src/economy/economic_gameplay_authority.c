@@ -1,4 +1,9 @@
 #include "economy/economic_gameplay_authority.h"
+#include "economy/auction_repository.h"
+#ifndef __NO_MYSQL__
+#include "player/player_sql_transaction_cleanup.h"
+#endif
+#include <cerrno>
 #include "economy/native_quest_consumption_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "economy/economic_command_admission.h"
@@ -356,6 +361,98 @@ bool economic_gameplay_authority::observe_shop_checkpoint(
 	catch (...)
 	{
 		return false;
+	}
+}
+
+economic_accounting_error economic_gameplay_authority::prepare_auction(critical_command *command)
+{
+	using error = economic_accounting_error;
+	if (!command || command->type != critical_command_type::auction)
+		return error::invalid_identity;
+	try
+	{
+		auto candidate = *command;
+		// Structural validation uses the existing binding projection sentinel;
+		// admission still assigns the real timestamp to the original command.
+		if (!candidate.accepted_at_usec)
+			candidate.accepted_at_usec = 1;
+		if (command->schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+			return auction_repository_frozen_accounting_valid(candidate) ?
+				       error::ok :
+				       error::corrupt_evidence;
+		if (!critical_command_legacy_execution_supported(candidate) ||
+		    !critical_command_envelope_valid(candidate))
+			return error::corrupt_evidence;
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!selected)
+			return error::ok;
+		if (sql_wallet_root_scope(*selected) || !persistence_mode_requires_mysql() ||
+		    command->accepted_at_usec || command->publication_required)
+			return error::unauthorized;
+#ifdef __NO_MYSQL__
+		return error::incomplete_coverage;
+#else
+		MYSQL *connection = sql_pool_acquire();
+		player_sql_pool_lease lease(connection);
+		if (!connection || player_sql_idle_error(connection))
+			return error::unresolved;
+		player_sql_cleanup cleanup;
+		player_sql_transaction_cleanup transaction(connection, cleanup);
+		transaction.starting();
+		unsigned int capture_error = EIO;
+		try
+		{
+			if (!mysql_real_query(connection, "START TRANSACTION", 17))
+				capture_error = auction_repository_prepare_accounting(
+					connection, selected->lineage, selected->epoch, &candidate);
+			if (!transaction.same_session())
+				capture_error = ENOTCONN;
+		}
+		catch (const std::bad_alloc &)
+		{
+			capture_error = ENOMEM;
+		}
+		catch (...)
+		{
+			capture_error = EIO;
+		}
+		transaction.finish();
+		lease.reuse(cleanup);
+		if (!cleanup.rollback_confirmed || cleanup.cleanup_error ||
+		    cleanup.disposition != player_sql_cleanup_disposition::idle_verified)
+			return error::unresolved;
+		if (capture_error)
+		{
+			switch (capture_error)
+			{
+			case ENOMEM:
+				return error::capacity;
+			case ENOENT:
+				return error::incomplete_coverage;
+			case EPROTONOSUPPORT:
+				return error::incomplete_coverage;
+			case ESTALE:
+				return error::stale_revision;
+			case EPERM:
+				return error::unauthorized;
+			case EILSEQ:
+				return error::corrupt_evidence;
+			default:
+				return error::unresolved;
+			}
+		}
+		// Session cleanup precedes publishing any frozen native/absence facts.
+		// The current activation owner may have paused while capture ran.
+		if (current.load(std::memory_order_acquire) != selected)
+			return error::unauthorized;
+		candidate.accepted_at_usec = command->accepted_at_usec;
+		*command = std::move(candidate);
+		return error::ok;
+#endif
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
 	}
 }
 
