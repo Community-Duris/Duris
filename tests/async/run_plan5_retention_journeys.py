@@ -562,7 +562,8 @@ int main(int argc, char **argv) {
     real_popen, real_reconnect, real_print = subprocess.Popen, journey.reconnect_character, builtins.print
     summaries = []
     for name in ("character", "durable", "uncertain"):
-        state = {"seeded": False, "captures": 0, "cold_restarts": 0, "verified": False}
+        state = {"seeded": False, "captures": 0, "cold_restarts": 0,
+                 "source_claim_faults": 0, "verified": False}
 
         def capture(label):
             root = state["root"]
@@ -601,6 +602,58 @@ int main(int argc, char **argv) {
                 assert sum(key.startswith("source-claim-") for key in before) == 2
                 if state["seeded"]:
                     assert before == state["retained"], label + ": retained evidence changed"
+                if label == "after-deletion-and-restart":
+                    assert not (root / "domains/.critical-authority-transaction").exists()
+                    def native_inventory():
+                        rows = {}
+                        for path in sorted(root.rglob("*")):
+                            if path.is_relative_to(directory):
+                                continue
+                            info = path.lstat()
+                            if stat.S_ISDIR(info.st_mode):
+                                continue
+                            assert stat.S_ISREG(info.st_mode) and info.st_nlink == 1
+                            rows[str(path.relative_to(root))] = (info.st_mode, info.st_nlink,
+                                                                  hashlib.sha256(path.read_bytes()).hexdigest())
+                        return rows
+                    native_before = native_inventory()
+                    lost = next(key for key in sorted(before) if key.startswith("source-claim-"))
+                    target = directory / lost
+                    # Only the quiesced disposable fixture owner injects/restores
+                    # loss, under EX. The independent reader runs under SH and
+                    # must leave both damaged evidence and native files unchanged.
+                    fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    target.unlink()
+                    try:
+                        fcntl.flock(descriptor, fcntl.LOCK_SH | fcntl.LOCK_NB)
+                        damaged = inventory()
+                        assert set(damaged) == set(before) - {lost}
+                        refused = subprocess.run([str(audit), str(root)], env=environment, text=True,
+                                                 capture_output=True, timeout=30)
+                        assert refused.returncode == 1 and not refused.stdout
+                        assert refused.stderr == "native_restore_qualification_failed\n", refused.stderr
+                        assert inventory() == damaged, "independent reader changed damaged retained evidence"
+                        assert native_inventory() == native_before, "independent reader changed native authority"
+                    finally:
+                        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        restored = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL |
+                                           os.O_NOFOLLOW | os.O_CLOEXEC, stat.S_IMODE(before[lost][0]))
+                        with os.fdopen(restored, "wb") as stream:
+                            stream.write(before[lost][2])
+                        fcntl.flock(descriptor, fcntl.LOCK_SH | fcntl.LOCK_NB)
+                    assert inventory() == before and native_inventory() == native_before
+                    restored_read = subprocess.run([str(audit), str(root)], env=environment, text=True,
+                                                   capture_output=True, timeout=30)
+                    assert restored_read.returncode == 0 and not restored_read.stdout and not restored_read.stderr
+                    assert inventory() == before and native_inventory() == native_before
+                    state["source_claim_faults"] += 1
+                    real_print("FLAT_RETENTION_SOURCE_CLAIM_FAULT " + json.dumps({"journey": name,
+                               "boundary": "after-native-erasure-and-cold-restart", "lost_source_claim": lost,
+                               "operation_id": before[lost][2][112:128].hex(),
+                               "diagnostic": "native_restore_qualification_failed", "reader_unchanged": True,
+                               "native_authority_unchanged": True, "native_files": len(native_before),
+                               "native_authority_sha256": hashlib.sha256(json.dumps(native_before, sort_keys=True).encode()).hexdigest(),
+                               "fixture_restored": True, "restored_read_qualified": True, "shared_read_lock": True}), flush=True)
                 state["retained"] = before
                 state["captures"] += 1
                 pending = (root / "domains/.critical-authority-transaction").exists()
@@ -626,7 +679,10 @@ int main(int argc, char **argv) {
                 if state["seeded"]:
                     capture("before-cold-restart")
                     state["cold_restarts"] += 1
-            return real_popen(args, *positional, **kwargs)
+            process = real_popen(args, *positional, **kwargs)
+            if args and str(args[0]) == str(server):
+                state["server_process"] = process
+            return process
 
         def observe_reconnect(*args, **kwargs):
             client = real_reconnect(*args, **kwargs)
@@ -642,8 +698,10 @@ int main(int argc, char **argv) {
         def observe_print(*args, **kwargs):
             if args and isinstance(args[0], str) and args[0].startswith("[PASS]"):
                 assert state["seeded"] and not state["verified"]
-                capture("after-deletion-and-restart")
                 assert not (state["root"] / "players/1.snapshot").exists()
+                assert state["server_process"].poll() == 0
+                assert state["cold_restarts"] == (1 if name == "character" else 3)
+                capture("after-deletion-and-restart")
                 state["verified"] = True
             real_print(*args, **kwargs)
 
@@ -653,9 +711,12 @@ int main(int argc, char **argv) {
             deletion.run(server, inspector, None if name == "character" else name)
         assert state["seeded"] and state["verified"]
         assert state["cold_restarts"] == (1 if name == "character" else 3)
+        assert state["source_claim_faults"] == 1
         row = {"journey": name, "captures": state["captures"], "cold_restarts": state["cold_restarts"],
                "retained_roots": 4, "claims": 2, "epochs": 2, "inactive": True,
-               "actual_native_menu": True, "seeded_history": True, "full_R8_qualified": False}
+               "actual_native_menu": True, "seeded_history": True,
+               "source_claim_refusals": state["source_claim_faults"], "financial_producer_qualified": False,
+               "typed_active_erasure_qualified": False, "full_R8_qualified": False}
         summaries.append(row)
         real_print("FLAT_RETENTION_JOURNEY " + json.dumps(row, sort_keys=True), flush=True)
     real_print("PLAN5_FLAT_RETENTION_QUALIFIED " + json.dumps({"journeys": summaries,
