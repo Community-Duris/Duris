@@ -1,5 +1,12 @@
 # Double-entry economy: remaining requirements
 
+## Independent SQL NPC value reader integrated — 2026-10-06
+
+[Current primary both-engine qualification](PLAN5_SQL_NATIVE_MOBILE_PRIMARY_QUALIFICATION_2026-10-06.md) adds complete bounded
+saved-image decoding to SELECT-only restore/audit. All26 reader methods and
+the original native/SQL restore batch pass on both canonical0062 engines,
+zero skips and unchanged authority. Producer/cold recovery and full release remain open.
+
 ## Canonical0062 verifier executable mode repaired — 2026-10-06
 
 [Mode-only repair](CLAIM_CONSUMPTION_VERIFIER_MODE_PRIMARY_2026-10-06.md) fixes the raw-Git Linux PermissionError without

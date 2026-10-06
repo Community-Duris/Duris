@@ -70,7 +70,7 @@ def capture(connection):
                    "economic_accounting_item_reference", "economic_accounting_source_claim", "economic_baseline_control",
                    "economic_baseline_witness", "economic_baseline_reservation",
                    "economic_lineage_state", "economic_epoch", "critical_operation_inbox",
-                   "item_ownership_ledger", "currency_ledger", "critical_outbox")
+                   "item_ownership_ledger", "currency_ledger", "critical_outbox", "quest_mobile_native")
         tables = ",".join("'" + table + "'" for table in sources)
         engines = int(executor.sql("SELECT COUNT(*) FROM information_schema.tables "
             "WHERE table_schema=DATABASE() AND ENGINE='InnoDB' AND table_name IN (" + tables + ");"))
@@ -79,9 +79,13 @@ def capture(connection):
         count = int(executor.sql("SELECT COUNT(*) FROM economic_accounting_operation;"))
         if not 0 <= count <= MAX_ROWS:
             raise AuditError("canonical audit root count exceeds input limit")
+        mobiles = int(executor.sql("SELECT COUNT(*) FROM quest_mobile_native;"))
+        if not 0 <= mobiles <= MAX_ROWS:
+            raise AuditError("canonical audit native mobile count exceeds input limit")
         size = int(executor.sql("SELECT CAST((SELECT COALESCE(SUM(COALESCE(OCTET_LENGTH(canonical_intent),0)+"
             "COALESCE(OCTET_LENGTH(canonical_plan),0)),0) FROM economic_accounting_operation)+"
-            "(SELECT COALESCE(SUM(OCTET_LENGTH(canonical_witness)),0) FROM economic_baseline_witness) "
+            "(SELECT COALESCE(SUM(OCTET_LENGTH(canonical_witness)),0) FROM economic_baseline_witness)+"
+            "(SELECT COALESCE(SUM(OCTET_LENGTH(canonical_image)),0) FROM quest_mobile_native) "
             "AS UNSIGNED);"))
         if not 0 <= size <= MAX_INPUT_BYTES:
             raise AuditError("canonical audit capsules exceed input limit")
@@ -122,7 +126,7 @@ def capture(connection):
             # Verifier errors are fixed diagnostic codes, never capsules or IDs.
             raise AuditError(str(error)) from error
         return {"format": "economic_sql_canonical_audit_v1", "scope": "database",
-                "retained_roots": count, "queries": executor.queries,
+                "retained_roots": count, "retained_native_mobiles": mobiles, "queries": executor.queries,
                 "canonical_bytes": size,
                 "canonical_roots_and_details": "verified", "read_only": True,
                 "complete_command_receipts_authenticated": False,

@@ -169,6 +169,7 @@ int main(int argc, char **argv) {
             mobile_checks = {"positive_images": 0, "refused_images": 0, "invocations": 0}
             domains = state / "domains"
             mobile = domains / "quest-mobile-native-42.qmn"
+            independent_values = True
 
             def mobile_check(label, valid):
                 def retained_images():
@@ -182,6 +183,14 @@ int main(int argc, char **argv) {
                         result[path.name] = (info.st_mode, info.st_nlink, payload)
                     return result
                 before = retained_images()
+                if independent_values:
+                    from economic_restore_evidence import decode_native_mobile
+                    try:
+                        decoded = decode_native_mobile(mobile.read_bytes())
+                        accepted = decoded[:3] == (42, 2, 3)
+                    except ValueError:
+                        accepted = False
+                    assert accepted == valid, (label, "independent native-mobile value disagreement")
                 for command in ([str(binary), "--state-preflight", str(state)], [str(binary), str(state)]):
                     result = subprocess.run(command, env=environment, capture_output=True, text=True, timeout=30)
                     assert (result.returncode == 0) == valid, (label, result.returncode,
@@ -258,6 +267,21 @@ int main(int argc, char **argv) {
             changed[188:220] = b"\x00" * 32
             mobile.write_bytes(seal_image(changed))
             mobile_check("retired image retains stock", False)
+            from test_economic_sql_canonical_audit import (NATIVE_MOBILE_STOCK_DAMAGE,
+                native_mobile_forests, native_mobile_image, native_mobile_stock)
+            stock = native_mobile_stock()
+            mobile.write_bytes(native_mobile_image(items=stock))
+            mobile_check("modeled literal stock with dynamic affects and spellbook", True)
+            for label, offset, data in NATIVE_MOBILE_STOCK_DAMAGE:
+                changed = bytearray(stock)
+                changed[offset:offset+len(data)] = data
+                mobile.write_bytes(native_mobile_image(items=bytes(changed)))
+                mobile_check("modeled stock " + label, False)
+            for label, valid, stock in native_mobile_forests():
+                mobile.write_bytes(native_mobile_image(items=stock))
+                mobile_check("modeled forest " + label, valid)
+            mobile.write_bytes(live)
+            independent_values = False  # File/name safety is the native reader's responsibility.
             for name in ("quest-mobile-native-042.qmn", "quest-mobile-native-0.qmn",
                          "quest-mobile-native-18446744073709551615.qmn",
                          "quest-mobile-native-18446744073709551616.qmn",
