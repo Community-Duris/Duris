@@ -419,6 +419,11 @@ int main(int argc, char **argv) {
             head, reservation = base + "head.ebc", base + "f.ebi"
             holding_count = struct.unpack_from("<I", baselines[witness], 184)[0]
             items_start = 192 + holding_count * 112
+            witness_version = struct.unpack_from("<H", baselines[witness], 4)[0]
+            assert witness_version in (1, 2)
+            assert baselines[witness][:4] == {1: b"EAB1", 2: b"EAB2"}[witness_version]
+            item_stride = {1: 88, 2: 96}[witness_version]
+            item_source_offset = item_stride - 32
             baseline_cases = []
             def baseline_case(label, mutate):
                 baseline_cases.append((label, mutate))
@@ -517,7 +522,7 @@ int main(int argc, char **argv) {
             # The witness digest, command binding, domain binding and plan metadata
             # are rebound for each malformed origin. Raw witness semantics decide.
             for label, offset, data in (
-                ("magic", 0, b"X"), ("version", 4, struct.pack("<H", 2)),
+                ("magic", 0, b"X"), ("version", 4, struct.pack("<H", 3)),
                 ("header size", 6, struct.pack("<H", 191)), ("total size", 8, b"\x00" * 4),
                 ("reserved", 12, b"\x01"), ("lineage", 16, b"\x63"),
                 ("epoch", 32, b"\x63"), ("preparation id", 48, b"\x63"),
@@ -534,7 +539,7 @@ int main(int argc, char **argv) {
                 ("holding order", 192, baselines[witness][304:416]),
                 ("duplicate holding lifetime across kinds", 192 + 3 * 112 + 20, struct.pack("<Q", 255)),
                 ("item UID", items_start, b"\x00" * 8),
-                ("item order", items_start, baselines[witness][items_start + 88:items_start + 176]),
+                ("item order", items_start, baselines[witness][items_start + item_stride:items_start + 2 * item_stride]),
                 ("item owner", items_start + 8, b"\x00"),
                 ("absent item", items_start + 9, b"\x00"),
                 ("item reserved", items_start + 10, b"\x01"),
@@ -542,15 +547,15 @@ int main(int argc, char **argv) {
                 ("zero item root", items_start + 32, b"\x00" * 8),
                 ("live root mismatch", items_start + 32, struct.pack("<Q", 256)),
                 ("self parent", items_start + 40, struct.pack("<Q", 255)),
-                ("missing live parent", items_start + 88 + 40, struct.pack("<Q", 999)),
-                ("cross owner parent", items_start + 88 + 16, struct.pack("<Q", 8)),
+                ("missing live parent", items_start + item_stride + 40, struct.pack("<Q", 999)),
+                ("cross owner parent", items_start + item_stride + 16, struct.pack("<Q", 8)),
                 ("cycle", items_start + 40, struct.pack("<Q", 256)),
-                ("destroyed zero revision", items_start + 2 * 88 + 48, b"\x00" * 8),
-                ("destroyed active owner", items_start + 2 * 88 + 8, b"\x01"),
-                ("pet context too large", items_start + 3 * 88 + 24, struct.pack("<Q", 2**31)),
-                ("collector context", items_start + 4 * 88 + 24, b"\x01"),
-                ("system owner", items_start + 5 * 88 + 16, b"\x01"),
-                ("item source digest", items_start + 56, b"\x00" * 32)):
+                ("destroyed zero revision", items_start + 2 * item_stride + 48, b"\x00" * 8),
+                ("destroyed active owner", items_start + 2 * item_stride + 8, b"\x01"),
+                ("pet context too large", items_start + 3 * item_stride + 24, struct.pack("<Q", 2**31)),
+                ("collector context", items_start + 4 * item_stride + 24, b"\x01"),
+                ("system owner", items_start + 5 * item_stride + 16, b"\x01"),
+                ("item source digest", items_start + item_source_offset, b"\x00" * 32)):
                 baseline_case("baseline witness " + label,
                               lambda f, o=offset, d=data: witness_change(f, o, d))
             for label, offset, data in (

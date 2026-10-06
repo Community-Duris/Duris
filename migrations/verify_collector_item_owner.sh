@@ -23,13 +23,16 @@ read_scalar() { "${MYSQL[@]}" -e "$1"; }
 # three distinct constraints, then verify their behavior with sentinel writes.
 collector_constraints=$(read_scalar "SELECT COUNT(DISTINCT constraint_name) FROM information_schema.check_constraints WHERE constraint_schema=DATABASE() AND constraint_name IN ('chk_item_owner_revision_type','chk_item_current_owner_type','chk_item_baseline_owner_type') AND LOWER(REPLACE(check_clause,CHAR(96),'')) REGEXP 'owner_type[[:space:]]+between[[:space:]]+1[[:space:]]+and[[:space:]]+10([^0-9]|$)';")
 pet_constraints=$(read_scalar "SELECT COUNT(DISTINCT constraint_name) FROM information_schema.check_constraints WHERE constraint_schema=DATABASE() AND constraint_name IN ('chk_item_owner_revision_type','chk_item_current_owner_type','chk_item_baseline_owner_type') AND LOWER(REPLACE(check_clause,CHAR(96),'')) REGEXP 'owner_type[[:space:]]+between[[:space:]]+1[[:space:]]+and[[:space:]]+11([^0-9]|$)';")
+native_constraints=$(read_scalar "SELECT COUNT(DISTINCT constraint_name) FROM information_schema.check_constraints WHERE constraint_schema=DATABASE() AND constraint_name IN ('chk_item_owner_revision_type','chk_item_current_owner_type','chk_item_baseline_owner_type') AND LOWER(REPLACE(check_clause,CHAR(96),'')) REGEXP 'owner_type[[:space:]]+between[[:space:]]+1[[:space:]]+and[[:space:]]+12([^0-9]|$)';")
 pet_column=$(read_scalar "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='player_pets' AND column_name='pet_uid';")
-if [[ "$collector_constraints" == 3 && "$pet_constraints" == 0 ]]; then
+if [[ "$collector_constraints" == 3 && "$pet_constraints" == 0 && "$native_constraints" == 0 ]]; then
     max_owner_type=10
-elif [[ "$pet_constraints" == 3 && "$collector_constraints" == 0 && "$pet_column" == 1 ]]; then
+elif [[ "$pet_constraints" == 3 && "$collector_constraints" == 0 && "$native_constraints" == 0 && "$pet_column" == 1 ]]; then
     max_owner_type=11
+elif [[ "$native_constraints" == 3 && "$collector_constraints" == 0 && "$pet_constraints" == 0 && "$pet_column" == 1 ]]; then
+    max_owner_type=12
 else
-    echo "FAILED: expected three uniform collector (10) or pet-enabled (11) ownership constraints" >&2
+    echo "FAILED: expected three uniform collector (10), pet-enabled (11) or native-mobile (12) ownership constraints" >&2
     exit 1
 fi
 

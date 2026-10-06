@@ -407,7 +407,7 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                     executor = migrations.MysqlExecutor(manifest)
                     executor.adopt('fresh_bootstrap')
                     migrations.run_pending(manifest, executor)
-                self.assertEqual(sql(env, 'SELECT sequence_number FROM mud_schema_history ORDER BY sequence_number DESC LIMIT 1'), '56')
+                self.assertEqual(sql(env, 'SELECT sequence_number FROM mud_schema_history ORDER BY sequence_number DESC LIMIT 1'), '61')
                 owner = pymysql.connect(unix_socket=env['DB_SOCKET'], user='root', database='duris_restore',
                                         autocommit=True, cursorclass=pymysql.cursors.DictCursor)
                 try:

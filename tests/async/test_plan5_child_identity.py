@@ -567,7 +567,7 @@ class NativeChildIdentityTests(unittest.TestCase):
                     executor.adopt('fresh_bootstrap')
                     migrations.run_pending(manifest, executor)
                 self.assertEqual(sql(env, 'SELECT sequence_number,migration_id FROM mud_schema_history ORDER BY sequence_number DESC LIMIT 1'),
-                                 '56\t0056_spell_ward_durability')
+                                 '61\t0061_economic_baseline_equipment')
                 owner = pymysql.connect(unix_socket=env['DB_SOCKET'], user='root', database='duris_restore',
                                         autocommit=True, cursorclass=pymysql.cursors.DictCursor)
                 try:
@@ -774,7 +774,7 @@ class NativeChildIdentityTests(unittest.TestCase):
                             self.assertEqual(saved_rows,inventory())
                             self.assertEqual(Reconciler().audit(capture(exporter,label+'-repaired'))['exception_count'],0)
                         (work/(engine+'-results.json')).write_text(json.dumps({'engine': engine, 'version': version,
-                            'schema_sequence': 56, 'active_epoch': None, 'unique_constraint_enforced': True,
+                            'schema_sequence': 61, 'active_epoch': None, 'unique_constraint_enforced': True,
                             'native_parent_plan': True, 'modeled_native_holdings': True,
                             'source_capture_qualified': False, 'release_qualified': False}, indent=2)+'\n')
                     finally:
@@ -789,7 +789,7 @@ class NativeChildIdentityTests(unittest.TestCase):
         self.assertEqual(len(self.cli_results), 96)
         print('PLAN5_CHILD_IDENTITY '+json.dumps({'native_configurations': 2, 'native_contract_cases': 14,
               'sql_engines': 2, 'read_only_captures': 30, 'red_clean_faults': 20,
-              'schema': 'canonical0056', 'modeled_native_holdings': True, 'release_qualified': False}), flush=True)
+              'schema': 'canonical0061', 'modeled_native_holdings': True, 'release_qualified': False}), flush=True)
 
     def cli_check(self, snapshot, path, code, count):
         before = path.read_bytes()

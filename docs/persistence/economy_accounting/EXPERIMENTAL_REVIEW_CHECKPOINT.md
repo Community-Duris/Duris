@@ -1,5 +1,32 @@
 # Experimental accounting review checkpoint
 
+## Private native quest major qualification — 2026-10-05
+
+[The frozen private source and actual component evidence](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)
+record a passing production SQL build, both-engine current SQL cut component,
+and ASan/UBSan native journal carrier component under their original limits.
+The independent flatfile production build fails on a remaining SQL-only unused
+helper; its declaration correction is being prepared. Failed compiler/link
+and stale-runner-pin attempts remain evidence. Context/admission/coordinator
+source reviews pass after a post-durable allocation correction; actual boot,
+physical stages, continuation and full native writer integration remain open.
+These private candidates are not installed on the maintained branch. No Plan,
+R1–R8, full capture, release or activation completion is claimed; inactive
+behavior and all original safety gates remain.
+
+## Current combined source qualification — 2026-10-05
+
+[Current source and evidence](PLAN1_CURRENT_COMBINED_QUALIFICATION_2026-10-05.md) supersede earlier installation/build status.
+Reviewed native/schema61 is installed; both production builds and the reviewed54
+both-engine audit pass. Latest original-diagnostic qualification passes both engines; SHOP74
+run stopped at original300-second compile limit. The original deletion inspector
+passes with ASan/UBSan. All three original flatfile recovery journeys now pass
+on the exact current61 source, including seven cold restarts; the earlier missing
+fixture failure remains recorded. See [scoped inspector qualification](FLAT_DELETION_INSPECTOR_CURRENT61_QUALIFICATION_2026-10-05.md).
+Equipment/schema milestonef899ef486 is pushed. Private quest ownership/root work
+continues; no full plan, R1–R8, release or activation
+completion is claimed. Original requirements and inactive gates stay.
+
 Date: 2026-09-30. Review branch: `Community-Duris/Duris:experimental-accounting`.
 
 **This branch is an implementation checkpoint for public code review.

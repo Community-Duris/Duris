@@ -370,13 +370,23 @@ void evidence(MYSQL *connection, const critical_command &command,
 			 { "lineage", id(m.lineage) },
 			 { "epoch", id(m.epoch) },
 			 { "book_revision", std::to_string(revision) },
-			 { "witness_version", "1" },
+			 { "witness_version", std::to_string(b.witness_version) },
 			 { "holding_count", std::to_string(b.holdings.size()) },
 			 { "item_count", std::to_string(b.items.size()) },
 			 { "witness_digest", hex(hash(witness)) },
 			 { "canonical_witness", hex(witness) } };
 	if (append)
+	{
+		// The normalized EAI1 binding intentionally omits original admission time.
+		// Retain that native preimage fact with this same immutable witness/root
+		// transaction; SQL creation time is never a substitute.
+		require(command.accepted_at_usec, EINVAL);
+		batch.emplace_back("command_accepted_at_usec",
+				   std::to_string(command.accepted_at_usec));
 		insert(connection, "economic_baseline_witness", batch);
+	}
+	// Historical NULL witnesses remain original-ID replay compatible. The
+	// explicit retained timestamp check below never backfills committed rows.
 	count(connection, "economic_baseline_witness", predicate(batch), 1);
 	auto reservation = [&](unsigned kind, uint64_t identity)
 	{
@@ -414,9 +424,9 @@ uint64_t verify(MYSQL *connection, const critical_command &command)
 		row[4]->empty() && row[5]);
 	auto stored = read(
 		connection,
-		"SELECT canonical_witness,book_revision FROM economic_baseline_witness WHERE operation_id=" +
+		"SELECT canonical_witness,book_revision,command_accepted_at_usec FROM economic_baseline_witness WHERE operation_id=" +
 			id(command.operation_id),
-		2);
+		3);
 	require(stored[0] && stored[0]->size() <= ECONOMIC_BASELINE_MAX_BYTES &&
 		integer<uint64_t>(stored[1]) == revision);
 	std::optional<economic_prepared_baseline> prepared;
@@ -425,6 +435,23 @@ uint64_t verify(MYSQL *connection, const critical_command &command)
 		&prepared));
 	const auto current = book(connection, prepared->witness(), false);
 	require(revision <= current.revision);
+	// The initial bounded witness read supplies routing/decoding only. Retain
+	// native inbox -> lineage/epoch -> book -> witness lock order, and bind
+	// every decoded byte plus optional historical state to the locked row.
+	const auto locked = read(
+		connection,
+		"SELECT canonical_witness,book_revision,command_accepted_at_usec FROM economic_baseline_witness WHERE operation_id=" +
+			id(command.operation_id) + " LOCK IN SHARE MODE",
+		3);
+	require(locked == stored);
+	// Old NULL rows still require the original full command_hash above and all
+	// canonical evidence below. A present invalid/mismatched value may never
+	// take that compatibility path or be replaced with the caller's timestamp.
+	if (locked[2])
+	{
+		const auto accepted_at_usec = integer<uint64_t>(locked[2]);
+		require(accepted_at_usec && accepted_at_usec == command.accepted_at_usec);
+	}
 	evidence(connection, command, *prepared, revision, false);
 	return revision;
 }

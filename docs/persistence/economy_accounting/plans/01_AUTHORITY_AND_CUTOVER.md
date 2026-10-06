@@ -1,5 +1,18 @@
 # Plan 1: authority, admission, and cutover
 
+## Current combined source qualification — 2026-10-05
+
+[Current source and evidence](../PLAN1_CURRENT_COMBINED_QUALIFICATION_2026-10-05.md) supersede earlier installation/build status.
+Reviewed native/schema61 is installed; both production builds and the reviewed54
+both-engine audit pass. Latest original-diagnostic qualification passes both engines; SHOP74
+run stopped at original300-second compile limit. The original deletion inspector
+passes with ASan/UBSan. All three original flatfile recovery journeys now pass
+on the exact current61 source, including seven cold restarts; the earlier missing
+fixture failure remains recorded. See [scoped inspector qualification](../FLAT_DELETION_INSPECTOR_CURRENT61_QUALIFICATION_2026-10-05.md).
+Equipment/schema milestonef899ef486 is pushed. Private quest ownership/root work
+continues; no full plan, R1–R8, release or activation
+completion is claimed. Original requirements and inactive gates stay.
+
 ## Original baseline qualification and narrow reader handoff — 2026-10-05
 
 [The retained original-owner evidence](../PLAN1_BASELINE_NATIVE_QUALIFICATION_HANDOFF_2026-10-05.md) records both-engine genuineC05

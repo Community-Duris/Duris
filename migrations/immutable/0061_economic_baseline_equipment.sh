@@ -1,19 +1,44 @@
-#!/usr/bin/env python3
-"""Read-only exact baseline retention metadata verification; no checkout .env."""
-import argparse
-import re
-import sys
-from verify_economy_accounting_schema import Client, VerificationError
-
-TABLES = ('economic_baseline_control', 'economic_baseline_witness', 'economic_baseline_reservation')
-HISTORICAL_0032_EXPECTED = {'mysql8': 'f0551ebf630d1e18f4bdec863f239da3d974f783f3acafbc243483b8e67bf3bc', 'mariadb10_11': '778e7d3815bc4c66d2bb13072c9bc6689df9008a332bee02b5fd3c84548e0e3e'}
-
-# Current0061 metadata measured on both owned engines; original hashes stay historical.
-EXPECTED = {'mysql8': '858f37fb10734428601d4a10bacb1892154d6fb77cd656fe8a90a004ef00016d', 'mariadb10_11': '31f31065ee4e95d08049748eb49372a71ab7569f2f775aaaa9b1dbebf0978272'}
-
-# The accepted0061 canonical reader preserves phase ordering (ordinary T/C/I/F/K,
-# then MySQL enforcement E), counts NULL rows, and refuses truncated GROUP_CONCAT.
-METADATA_QUERY = """SET @baseline_v2_engine = CASE WHEN VERSION() LIKE '10.11.%MariaDB%' THEN 'mariadb'
+#!/usr/bin/env bash
+set -euo pipefail
+# Self-contained0061 verifier: full exact baseline metadata, including0058 and both EAB formats.
+# Engine POST fingerprints are measured; never source checkout .env.
+: "${DB_HOST:?}" "${DB_USER:?}" "${DB_PASSWD:?}" "${DB_NAME:?}"
+export MYSQL_PWD="$DB_PASSWD"
+if [[ -n "${DB_SOCKET:-}" ]]; then
+    [[ "$DB_SOCKET" == /* ]] || { echo 'database socket must be absolute' >&2; exit 1; }
+    CONNECTION=(--protocol=socket --socket="$DB_SOCKET")
+else
+    CONNECTION=(--protocol=tcp -h "$DB_HOST" -P "${DB_PORT:-3306}")
+    help=$(mysql --no-defaults --help)
+    if [[ "$DB_HOST" == 127.0.0.1 || "$DB_HOST" == localhost || "$DB_HOST" == ::1 ]]; then
+        if [[ "$help" == *--ssl-mode* ]]; then CONNECTION+=(--ssl-mode=PREFERRED); else CONNECTION+=(--skip-ssl); fi
+    else
+        [[ "${DB_TLS:-}" == TRUE && -f "${DB_SSL_CA:-}" ]] || { echo 'remote verification requires TLS and a CA file' >&2; exit 1; }
+        if [[ "$help" == *--ssl-mode* ]]; then
+            CONNECTION+=(--ssl-mode=VERIFY_IDENTITY --ssl-ca="$DB_SSL_CA")
+        elif [[ "$help" == *--ssl-verify-server-cert* ]]; then
+            CONNECTION+=(--ssl-verify-server-cert --ssl-ca="$DB_SSL_CA")
+        else
+            echo 'database client cannot verify remote identity' >&2; exit 1
+        fi
+    fi
+fi
+MYSQL=(timeout 30 mysql --no-defaults --connect-timeout=10 "${CONNECTION[@]}" -u "$DB_USER" -N -B --raw "$DB_NAME")
+version=$("${MYSQL[@]}" -e 'SELECT VERSION();')
+if [[ "$version" == 10.11.*MariaDB* ]]; then
+    expected=31f31065ee4e95d08049748eb49372a71ab7569f2f775aaaa9b1dbebf0978272
+    checks=$("${MYSQL[@]}" -e 'SELECT @@SESSION.check_constraint_checks;')
+    [[ "$checks" == 1 ]] || { echo 'baseline equipment schema metadata fingerprint mismatch: disabled checks' >&2; exit 1; }
+elif [[ "$version" == 8.0.* && "$version" != *MariaDB* ]]; then
+    expected=858f37fb10734428601d4a10bacb1892154d6fb77cd656fe8a90a004ef00016d
+else
+    echo 'unsupported database engine for baseline equipment schema' >&2; exit 1
+fi
+[[ "$expected" =~ ^[0-9a-f]{64}$ ]] || {
+    echo '0061 baseline metadata awaits actual engine measurement' >&2; exit 1
+}
+query=$(cat <<'DURIS_BASELINE_V2_METADATA_SQL'
+SET @baseline_v2_engine = CASE WHEN VERSION() LIKE '10.11.%MariaDB%' THEN 'mariadb'
     WHEN VERSION() LIKE '8.0.%' AND LOCATE('MariaDB',VERSION())=0 THEN 'mysql' ELSE NULL END;
 SET @baseline_v2_previous_concat = @@SESSION.group_concat_max_len;
 SET SESSION group_concat_max_len=65536;
@@ -77,46 +102,21 @@ DEALLOCATE PREPARE baseline_v2_stmt;
 SET SESSION group_concat_max_len=@baseline_v2_previous_concat;
 SELECT @baseline_v2_row_count,@baseline_v2_nonnull_rows,@baseline_v2_expected_bytes,
        @baseline_v2_actual_bytes,@baseline_v2_actual;
-"""
-
-def fingerprint(client):
-    version = client.sql('SELECT VERSION();').strip()
-    if version.startswith('10.11.') and 'MariaDB' in version:
-        engine = 'mariadb10_11'
-        if client.sql('SELECT @@SESSION.check_constraint_checks;').strip() != '1':
-            raise VerificationError('baseline equipment schema metadata fingerprint mismatch: disabled checks')
-    elif version.startswith('8.0.') and 'MariaDB' not in version:
-        engine = 'mysql8'
-    else:
-        raise VerificationError('unsupported database engine for baseline equipment schema')
-    metadata = client.sql(METADATA_QUERY).strip()
-    if not re.fullmatch(r'[0-9]+\t[0-9]+\t[0-9]+\t[0-9]+\t[0-9a-f]{64}', metadata):
-        raise VerificationError('baseline equipment schema metadata fingerprint mismatch: invalid aggregate')
-    rows, nonnull, expected_bytes, actual_bytes, actual = metadata.split('\t')
-    if len(rows) > 4 or len(nonnull) > 4 or len(expected_bytes) > 5 or len(actual_bytes) > 5:
-        raise VerificationError('baseline equipment schema metadata fingerprint mismatch: unbounded aggregate')
-    if not (1 <= int(rows) <= 4096 and int(nonnull) == int(rows) and
-            1 <= int(expected_bytes) <= 65536 and int(actual_bytes) == int(expected_bytes)):
-        raise VerificationError('baseline equipment schema metadata fingerprint mismatch: NULL or truncated aggregate')
-    return engine, actual
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--print-fingerprint', action='store_true')
-    args = parser.parse_args()
-    engine, actual = fingerprint(Client())
-    if args.print_fingerprint:
-        print(engine + ' ' + actual)
-    elif EXPECTED[engine] is None:
-        raise VerificationError('0061 baseline metadata awaits actual engine measurement')
-    elif actual != EXPECTED[engine]:
-        raise VerificationError('baseline retention metadata fingerprint mismatch')
-    else:
-        print('baseline retention schema verified: 3 InnoDB tables, exact metadata')
-
-if __name__ == '__main__':
-    try:
-        main()
-    except (VerificationError, OSError) as error:
-        print('baseline schema verification failed: ' + str(error), file=sys.stderr)
-        raise SystemExit(1)
+DURIS_BASELINE_V2_METADATA_SQL
+)
+metadata=$("${MYSQL[@]}" -e "$query")
+pattern=$'^[0-9]+\t[0-9]+\t[0-9]+\t[0-9]+\t[0-9a-f]{64}$'
+[[ "$metadata" =~ $pattern ]] || { echo 'baseline equipment schema metadata fingerprint mismatch: invalid aggregate' >&2; exit 1; }
+IFS=$'\t' read -r rows nonnull expected_bytes actual_bytes actual <<< "$metadata"
+# Counts come from bounded metadata, not canonical witness fixtures. Compare
+# decimal strings via regex first, then bounded base10 arithmetic (no octal).
+[[ ${#rows} -le 4 && ${#nonnull} -le 4 && ${#expected_bytes} -le 5 && ${#actual_bytes} -le 5 ]] || {
+    echo 'baseline equipment schema metadata fingerprint mismatch: unbounded aggregate' >&2; exit 1
+}
+(( 10#$rows >= 1 && 10#$rows <= 4096 && 10#$nonnull == 10#$rows &&
+   10#$expected_bytes >= 1 && 10#$expected_bytes <= 65536 &&
+   10#$expected_bytes == 10#$actual_bytes )) || {
+    echo 'baseline equipment schema metadata fingerprint mismatch: NULL or truncated aggregate' >&2; exit 1
+}
+[[ "$actual" == "$expected" ]] || { echo 'baseline equipment schema metadata fingerprint mismatch' >&2; exit 1; }
+printf 'baseline equipment schema verified: exact EAB1/EAB2 CHECK and original baseline metadata\n'

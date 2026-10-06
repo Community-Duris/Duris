@@ -1054,12 +1054,13 @@ class NativeSQLOriginTests(unittest.TestCase):
                 fields.update(zip(("delta_copper", "delta_silver", "delta_gold", "delta_platinum", "copper_value"),
                                   struct.unpack_from("<5q", plan, offset + 8)))
                 insert("economic_accounting_coin_posting", fields)
+            witness_version, item_stride = origin_exporter.witness_layout(blob)
             holdings, items = struct.unpack_from("<II", blob, 184)
             insert("economic_baseline_witness", dict(operation_id=op, lineage=lineage, epoch=epoch,
-                   book_revision=revision, witness_version=1, holding_count=holdings, item_count=items,
+                   book_revision=revision, witness_version=witness_version, holding_count=holdings, item_count=items,
                    witness_digest=hashlib.sha256(blob).digest(), canonical_witness=blob))
             identities = [(1, struct.unpack_from("<Q", blob, 192 + n * 112 + 20)[0]) for n in range(holdings)]
-            identities += [(2, struct.unpack_from("<Q", blob, 192 + holdings * 112 + n * 88)[0]) for n in range(items)]
+            identities += [(2, struct.unpack_from("<Q", blob, 192 + holdings * 112 + n * item_stride)[0]) for n in range(items)]
             for kind, identity in identities:
                 insert("economic_baseline_reservation", dict(lineage=lineage, epoch=epoch,
                        identity_kind=kind, identity_id=identity, operation_id=op))
@@ -1087,7 +1088,7 @@ class NativeSQLOriginTests(unittest.TestCase):
             # run_pending closes its owned SQL session; inspect history in a new private one.
             terminal = sql(env, "SELECT sequence_number,migration_id FROM mud_schema_history "
                                 "ORDER BY sequence_number DESC LIMIT 1")
-            self.assertEqual(terminal, "56\t0056_spell_ward_durability")
+            self.assertEqual(terminal, "61\t0061_economic_baseline_equipment")
             print("ORIGIN_SQL_SCHEMA " + engine + " " + version + " through=" + terminal.replace("\t", " "), flush=True)
             owner = pymysql.connect(unix_socket=env["DB_SOCKET"], user="root", database="duris_restore",
                                     autocommit=True, cursorclass=pymysql.cursors.DictCursor)
@@ -1193,18 +1194,23 @@ class NativeSQLOriginTests(unittest.TestCase):
                     self.assertEqual(reads, {"captures": 7, "refusals": 7, "rollbacks": 14})
                     print("PASS native-origin " + engine + " " + json.dumps(reads, sort_keys=True) +
                           " SELECT-only bytes-unchanged inactive", flush=True)
-                    # Negative SELECT projections of native EAB1 rows exercise
-                    # the v2 reader boundary without changing canonical 0056
-                    # storage or claiming a native EAB2/schema61 generation.
+                    # Negative SELECT projections preserve the actual input
+                    # version's layout before corrupting v2 positions. These
+                    # projections do not establish complete native capture.
                     item_count, = struct.unpack_from("<I", blob, 188)
                     item_offset = 192 + holdings * 112
-                    projected = bytearray(blob[:item_offset])
-                    for index in range(item_count):
-                        start = item_offset + index * 88
-                        projected += blob[start:start + 56] + bytes(8) + blob[start + 56:start + 88]
-                    projected[:4] = b"EAB2"
-                    struct.pack_into("<H", projected, 4, 2)
-                    struct.pack_into("<I", projected, 8, len(projected))
+                    version, stride = origin_exporter.witness_layout(blob)
+                    if version == 1:
+                        projected = bytearray(blob[:item_offset])
+                        for index in range(item_count):
+                            start = item_offset + index * stride
+                            projected += blob[start:start + 56] + bytes(8) + blob[start + 56:start + stride]
+                        projected[:4] = b"EAB2"
+                        struct.pack_into("<H", projected, 4, 2)
+                        struct.pack_into("<I", projected, 8, len(projected))
+                    else:
+                        self.assertEqual(version, 2)
+                        projected = bytearray(blob)
                     uid, = struct.unpack_from("<Q", projected, item_offset)
                     self.assertEqual(struct.unpack_from("<Q", projected, item_offset + 32)[0], uid)
                     self.assertEqual(struct.unpack_from("<Q", projected, item_offset + 40)[0], 0)
@@ -1251,7 +1257,7 @@ class NativeSQLOriginTests(unittest.TestCase):
                     self.assertEqual(len(observations), 16)
                     (candidate/"position-refusals.json").write_text(json.dumps(observations,indent=2)+'\n')
                     print("PASS projected-origin-position " + engine + " " + str(len(observations)) +
-                          " controlled-refusals SELECT-only bytes-unchanged native-EAB2-unqualified", flush=True)
+                          " controlled-refusals SELECT-only bytes-unchanged full-native-capture-unqualified", flush=True)
                 finally:
                     reader.close()
             finally:

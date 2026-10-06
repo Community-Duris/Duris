@@ -83,6 +83,8 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-character-delete-test-") as 
         rel("boon_shop_command.c"),
         rel("persistence_observability.c"),
         rel("persistence_mode.c"),
+        rel("economic_baseline_adapter.c"),
+        rel("economic_baseline_codec.c"),
     ]
     sanitizers = os.environ.get("DURIS_TEST_SANITIZERS") == "1"
     sanitizer_flags = ["-g", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
