@@ -1,5 +1,13 @@
 # Accounting review status — 2026-10-04
 
+## Original birth shared dependencies source-reviewed — 2026-10-05
+
+[Private616d composition](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)
+contains accepted actual SQL publication proof and shared retained-budget bridges.
+Four exact preimages/inverses and changed-line formatting verify; no build/test/
+SQL or maintained native source change. Reset integration continues with original
+cold/probe/equipment/alchemist seams explicit. Full Plan/R1–R8/release stay open.
+
 ## Plan5 original managed restore follow-up delivered — 2026-10-05
 
 [The exact independent report](PLAN5_INTEGRATED_CURRENT61_MANAGED_RESTORE_QUALIFICATION_2026-10-05.md)

@@ -1,5 +1,14 @@
 # Finish accounting implementation plan
 
+## Original birth shared publication interfaces — 2026-10-05
+
+[The exact source handoff](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)
+records independently reviewed receipt/current-cut publication verification and
+one shared retained budget for the real reset owner. The5767-input private616d
+composition is source-only; native installation and major testing remain deferred.
+The actual producer and original cold/probe/equipment/alchemist effects continue;
+no Plan, coverage, activation or release gate is closed by this source handoff.
+
 ## Plan5 current-reader managed restore follow-up — 2026-10-05
 
 [The managed restore report](PLAN5_INTEGRATED_CURRENT61_MANAGED_RESTORE_QUALIFICATION_2026-10-05.md)
