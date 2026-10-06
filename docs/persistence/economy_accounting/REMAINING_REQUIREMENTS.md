@@ -1,5 +1,16 @@
 # Double-entry economy: remaining requirements
 
+## Native birth writer registry refreshed — 2026-10-06
+
+[Maintained integration evidence](NATIVE_BIRTH_WRITER_REGISTRY_INTEGRATION_2026-10-06.md)
+records the reviewed 920-row registry, all 2,818 current unique sites mapped,
+and actual normal validator, matrix, site, route and 55-case coverage passes.
+Original IDs/backend evidence stay intact; four stale assertions retain their
+operation/owner requirements and both changed source pins match actual files.
+This closes the stale native census/matrix issue. Full active producer,
+SQL/publication/ACK, cold restart, flat parity and release work remain open.
+Coverage stays incomplete and activation closed; no Plan is declared complete.
+
 ## Parallel quest acceptance prep consumed — 2026-10-06
 
 [Primary handoff](QUEST_PREP_PRIMARY_INTEGRATION_2026-10-06.md) imports eleven
