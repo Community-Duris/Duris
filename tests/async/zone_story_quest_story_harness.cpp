@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 174 &&
+		require(catalog.story_mappings.size() == 175 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,124 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "firep"; });
+			const auto &forging = story_for("firep", "dragonscale-forging");
+			require(mapping.stories.size() == 1 && mapping.contacts.size() == 9 &&
+					forging.steps.size() == 3 && mapping.revision == 1,
+				"Charcoal Palace journal scope failed");
+			int achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 883)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 1 && dailies == 1,
+				"Charcoal Palace forging unit classification changed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 883, 88321, 100, "arrival") ==
+					result::applied,
+				"Charcoal Palace discovery failed");
+			for (int v : { 88313, 88319, 88321, 88307, 88315, 88316, 88329, 88312 })
+				require(journey.meet_npc(7, 42, v, 88321, 101) == result::applied,
+					"Charcoal Palace route/source encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 883, 10, 1, 102, false, false);
+			require(journal.find("] " + forging.title + "\r\n") == std::string::npos,
+				"Charcoal Palace unrelated encounter exposed forging card");
+			require(journey.meet_npc(7, 42, 88318, 88392, 103) == result::applied,
+				"Charcoal Palace smith encounter failed");
+			const auto status = [&](size_t row, const char *state)
+			{
+				return journal.find(std::string("[") + state + "] " +
+						    forging.steps[row].text) != std::string::npos;
+			};
+			const auto before = journey.serialize_state();
+			supplies = {};
+			journal = journey.render_journal(7, 42, 883, 10, 1, 104, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now") &&
+					status(2, "Pending"),
+				"Charcoal Palace discovery created material proof or receipt");
+			for (int v : { 88322, 88323 })
+			{
+				supplies = {};
+				supplies.equipped[18] = v;
+				supplies.equipped[9] = v;
+				journal = journey.render_journal(7, 42, 883, 10, 1, 105, false,
+								 false, &supplies);
+				require(status(0, "Missing now") && status(1, "Missing now"),
+					"Charcoal Palace held/worn material substituted loose proof");
+			}
+			supplies = {};
+			for (int v : { 88302, 88304, 88308, 88309, 88310, 88318, 88320, 88324,
+				       88325, 88327, 55270, 55210, 131650, 359, 61, 92121 })
+				supplies.carried[v] = 2;
+			journal = journey.render_journal(7, 42, 883, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now") &&
+					status(2, "Pending"),
+				"Charcoal Palace access/equipment/outside reward substituted forging material or receipt");
+			for (int mask : { 1, 2, 3 })
+			{
+				supplies = {};
+				if (mask & 1)
+					supplies.carried[88322] = 1;
+				if (mask & 2)
+					supplies.carried[88323] = 1;
+				journal = journey.render_journal(7, 42, 883, 10, 1, 107, false,
+								 false, &supplies);
+				require(status(0, mask & 1 ? "Ready now" : "Missing now") &&
+						status(1, mask & 2 ? "Ready now" : "Missing now") &&
+						status(2, "Pending"),
+					"Charcoal Palace supplied exact proof imposed source/access history or fabricated receipt");
+			}
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 883).completed == 0,
+				"Charcoal Palace preparation/encounters created source/access/keyword history");
+			require(journal.find("SEARCH") != std::string::npos &&
+					journal.find("Navift") != std::string::npos,
+				"Charcoal Palace guidance lost qualified access/outside availability");
+			record(journey, forging.contracts.front(), "firep-forging", 883, 88392);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 883, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now") &&
+					status(2, "Recorded") &&
+					journey.progress_for_zone(7, 42, 883).completed == 1,
+				"Charcoal Palace spent materials lost accepted forging history");
+			supplies.carried[88322] = 1;
+			supplies.carried[88323] = 1;
+			journal = journey.render_journal(7, 42, 883, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Ready now") &&
+					status(2, "Recorded") &&
+					journey.progress_for_zone(7, 42, 883).completed == 1,
+				"Charcoal Palace reacquired materials created another receipt");
+			auto replay = completion(forging.contracts.front(), "firep-forging", 120);
+			replay.transaction.zone_number = 883;
+			replay.transaction.room_vnum = 88392;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Charcoal Palace replay duplicated receipt");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 883).completed == 1,
+				"Charcoal Palace cold recovery lost receipt");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 883, 88301, 100, "arrival") ==
+					result::applied,
+				"Charcoal Palace alternate arrival failed");
+			record(raw, forging.contracts.front(), "firep-raw", 883, 88392);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 883).completed == 1,
+				"Charcoal Palace raw-to-authored recovery lost receipt");
 		}
 
 		{

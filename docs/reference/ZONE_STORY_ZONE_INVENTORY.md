@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 174 authored journals.
+2668 distinct Q contracts; 175 authored journals.
 
 Regenerate with:
 
@@ -91,7 +91,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Spires of the Elder Eternal Evil (`eternal`) | 6 | 2 | 0 | Fallback | [1 × the scale of the Death Serpent; 1 × the scale of the Night Serpent; 1 × the scale of the Shadow Serpent; other required items → the key of the Elder Eternal Evil](../../areas/qst/eternal.qst#L2) | — |
 | The Keep of Evil (`evkeep`) | 1 | 0 | 0 | Fallback | [1 × a golden desk key → native reward/response](../../areas/qst/evkeep.qst#L2) | — |
 | The Fields Between (`fields_between`) | 7 | 10 | 1 | Yes | [1 × the head of a wildmage; 1 × the head of a wildmage; 1 × the head of a wildmage; other required items → the bloody crown of wildmage heads](../../areas/qst/fields_between.qst#L95) | — |
-| The Charcoal Palace (`firep`) | 1 | 3 | 0 | Fallback | [1 × a magnificent pile of black and red dragonscales; 1 × a pair of battered and worn gauntlets → a pair of vampiric dragonscale gauntlets, the broken rays of morning Sunrise](../../areas/qst/firep.qst#L33) | block_dir, charcoal_guard, fruaack_shout, kossuth, zion_fnf |
+| The Charcoal Palace (`firep`) | 1 | 3 | 0 | Yes | [1 × a magnificent pile of black and red dragonscales; 1 × a pair of battered and worn gauntlets → a pair of vampiric dragonscale gauntlets, the broken rays of morning Sunrise](../../areas/qst/firep.qst#L33) | block_dir, charcoal_guard, fruaack_shout, kossuth, zion_fnf |
 | The Altar of the Firesworn (`firesworn_altar`) | 1 | 7 | 0 | Yes | [1 × the divine essence of blood; 1 × the divine essence of fire; 1 × the divine essence of mist; other required items → Tiliwibble's skeleton key of unlocking, a jagged hilt studded with gems](../../areas/qst/firesworn_altar.qst#L93) | — |
 | Fishermans Wharf (`fishermans_wharf`) | 5 | 8 | 2 | Yes | [1 × a full-size eagle egg; 4 × a bundle of sticks; 3 × a soft beaver pelt → a petrified fanged snake](../../areas/qst/fishermans_wharf.qst#L14) | — |
 | The Forgotten Forest (`forgotten_forest`) | 4 | 0 | 0 | Fallback | [1 × a chunk of meat → native reward/response](../../areas/qst/forgotten_forest.qst#L16) | — |

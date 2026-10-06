@@ -141552,6 +141552,153 @@
     {
       "contacts": [
         {
+          "description": "Ask hi, hello or craft for the introduction, create, forge or items for the request, and dragon, dragonscales or dragonscale for the scales.",
+          "keyword": "hephaestus",
+          "mob_vnum": 88318,
+          "name": "the man-god, Hephaestus",
+          "topics": [
+            "hi",
+            "hello",
+            "craft",
+            "create",
+            "forge",
+            "dragonscales",
+            "dragon",
+            "dragonscale",
+            "items"
+          ]
+        },
+        {
+          "description": "Borren carries the hidden scales in the ballroom when stocked. His encounter alone does not recover them.",
+          "keyword": "borren",
+          "mob_vnum": 88313,
+          "name": "Borren, emissary of Tiamat",
+          "topics": []
+        },
+        {
+          "description": "Fruaack carries the chain for the blocked upward passage and calls combat helpers. Those effects are separate from forging.",
+          "keyword": "fruaack",
+          "mob_vnum": 88319,
+          "name": "Fruaack, the fire minion captain",
+          "topics": []
+        },
+        {
+          "description": "The flame maelstrom carries a secret spire with the wardstone inside. Recovering it and successfully opening and searching the passage are separate actions.",
+          "keyword": "maelstrom",
+          "mob_vnum": 88321,
+          "name": "a flaming maelstrom",
+          "topics": []
+        },
+        {
+          "description": "Gate golems hold different keys at the palace gate and portcullis. Check the exact passage and key, current stock and shared state.",
+          "keyword": "golem",
+          "mob_vnum": 88307,
+          "name": "a flaming golem",
+          "topics": []
+        },
+        {
+          "description": "The captain and guards defend palace routes. Their combat and hunting do not establish a forging prerequisite.",
+          "keyword": "captain",
+          "mob_vnum": 88315,
+          "name": "the captain of the elemental guard",
+          "topics": []
+        },
+        {
+          "description": "Kossuth carries the flaming vault key, equipment and rune-covered stone when stocked. Helpers and stone touch are separate outcomes.",
+          "keyword": "kossuth",
+          "mob_vnum": 88316,
+          "name": "Kossuth, Lord of the Elemental Plane of Fire",
+          "topics": []
+        },
+        {
+          "description": "Palace guards defend these corridors. Follow the current passage state and treat combat separately from Hephaestus's forging request.",
+          "keyword": "guard",
+          "mob_vnum": 88329,
+          "name": "a huge fire minion guard",
+          "topics": []
+        },
+        {
+          "description": "Aeolyn wears a cloak with a separate nine-material north wind return. It is not one of the two forging materials.",
+          "keyword": "aeolyn",
+          "mob_vnum": 88312,
+          "name": "Aeolyn, emissary of Yan-c-bin",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow Hephaestus's forging request through the fire palace, with shared access, hidden materials and later crafting kept distinct.",
+      "orientation": [
+        "Enter the Charcoal Palace from the Plane of Fire. Lava and heat affect most rooms; prepare for the conditions and hostile residents. Protection, sight, current stock and passages opened by other travelers can change the route.",
+        "Meet Hephaestus at the forge. Ask hi, hello or craft for his public introduction; create, forge or items gives his private request. Dragon, dragonscales and dragonscale explain the scales. These are three responses with nine distinct words, without separate keyword achievements.",
+        "The forging request needs one exact dragon scales item and one pair of battered blank gauntlets. Hephaestus exchanges the pair of materials for vampiric dragonscale gauntlets and the broken rays of morning Sunrise, which his story calls the essence of morning. He stays after the exchange.",
+        "Borren in the ballroom carries the scales when stocked; his appearance is not guaranteed at each reset. The battered gauntlets are floor stock in the vault and may also be absent. Both materials are hidden: SEARCH may reveal them, and supplied exact items can prepare the offering without proving your own recovery.",
+        "To follow the stocked route through the spires, look for the wardstone inside the flame maelstrom's secret spire. USE the wardstone at the blocked passage, then SEARCH for the still-secret exit before traveling. A handled command or someone else's opened passage does not record your own successful action.",
+        "Fruaack carries a chain at the blocked upward route. PULL it at that passage if it remains blocked. Guards and summoned helpers have their own combat behavior; meeting them or carrying the chain does not prove passage or forging progress.",
+        "The palace gate, portcullis, upper gates and vault use four different keys. Gate golems carry the first two; an upper minion has two copies of the upper gate key when stocked. Unlock and open the right passage when needed. Shared access may already work, and some keys can be spent when used.",
+        "The forge and Borren can be reached before the upper gates. The stocked vault route continues past the upper gates to Kossuth, who carries its flaming key. Defeating Kossuth or personally recovering every access item is not a condition of Hephaestus's exchange; exact materials supplied by another player also fit.",
+        "Keep both materials visible and loose for the offering. Remove worn or held gauntlets and take materials out of containers. The journal checks what you carry now; owning the crafted reward, wielding other palace equipment or hearing a response does not record the exchange.",
+        "The broken morning rays are one material in a separate five-item Ra recipe. Sootfoot in Winterhaven and Navift in Bloodstone have alternative recipes, but Navift has no ordinary placement in the reviewed world sources. Check actual availability before planning that visit; neither outside return is required for this forging.",
+        "Aeolyn's cloak has its own outside trade with the north wind and eight other materials. That nine-item return, the dexterity pool, rune-covered stone, timed equipment powers and Kossuth's equipment are separate from the forging receipt. One physical item cannot pay two exchanges.",
+        "New discovery, encounter, journal, achievement and daily progress requires active, ready accounting. This repeatable native return provides one achievement and one potential daily. Daily rollover does not create fresh scales, gauntlets or keys; shared stock and normal reset rules still apply. Recorded exchange history remains after materials are spent or rewards stored."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "firep",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:88322,I:88323;receive=I:55270,I:88320;disappear=0",
+              "giver_vnum": 88318
+            }
+          ],
+          "id": "dragonscale-forging",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks one exact visible loose scales item now. Borren has hidden stock when present; supplied scales can prepare the offering without personal recovery history.",
+              "id": "scales",
+              "item_vnums": [
+                88322
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the dragon scales loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks one exact visible loose blank pair now. Search vault stock when available; remove worn or held gauntlets and take them out of containers. Preparation is not an accepted exchange.",
+              "id": "blank-gauntlets",
+              "item_vnums": [
+                88323
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the battered blank gauntlets loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:88322,I:88323;receive=I:55270,I:88320;disappear=0",
+                  "giver_vnum": 88318
+                }
+              ],
+              "hint": "Records the exact two-material exchange for gauntlets and morning rays. Source recovery, switches, keys, dialogue, outside crafting, epic touch and reward possession do not substitute its receipt.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record Hephaestus's successful forging exchange"
+            }
+          ],
+          "summary": "Prepare one dragon scales item and one battered blank pair for Hephaestus. The exchange gives vampiric dragonscale gauntlets and broken morning rays. Loose preparation and recorded history are separate; supplied exact materials fit without personal key, combat or conversation requirements.",
+          "title": "Forge the vampiric dragonscale gauntlets"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Baltik waits in the pine wood shelter 88923. Ask about supplies and chores for his exact egg, four-stick and three-pelt request. Acceptance earns the cavern totem; asking every alias does not complete another quest.",
           "keyword": "baltik",
           "mob_vnum": 88902,
