@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 173 &&
+		require(catalog.story_mappings.size() == 174 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,130 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "drst"; });
+			const auto &collection = story_for("drst", "tinkerers-collection");
+			require(mapping.stories.size() == 1 && mapping.contacts.size() == 9 &&
+					collection.steps.size() == 9 && mapping.revision == 1,
+				"Stoutdorf journal scope failed");
+			int achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 342)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 1 && dailies == 0,
+				"Stoutdorf unsupported sixteen-item return became a daily");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 342, 34200, 100, "arrival") ==
+					result::applied,
+				"Stoutdorf discovery failed");
+			for (int v : { 34200, 34206, 34215, 34222, 34204, 34233, 34236, 34239 })
+				require(journey.meet_npc(7, 42, v, 34200, 101) == result::applied,
+					"Stoutdorf source/court encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 342, 10, 1, 102, false, false);
+			require(journal.find("] " + collection.title + "\r\n") == std::string::npos,
+				"Stoutdorf unrelated encounter exposed tinkerer card");
+			require(journey.meet_npc(7, 42, 34221, 34355, 103) == result::applied,
+				"Stoutdorf tinkerer encounter failed");
+			const auto status = [&](size_t row, const char *state)
+			{
+				return journal.find(std::string("[") + state + "] " +
+						    collection.steps[row].text) !=
+				       std::string::npos;
+			};
+			const auto before = journey.serialize_state();
+			supplies = {};
+			journal = journey.render_journal(7, 42, 342, 10, 1, 104, false, false,
+							 &supplies);
+			for (size_t row = 0; row < 8; ++row)
+				require(status(row, "Missing now"),
+					"Stoutdorf absent/unobserved proof was ready");
+			require(status(8, "Pending"), "Stoutdorf discovery created a receipt");
+			for (int v : { 34203, 34204, 34205, 34206, 34207, 34209, 34212, 34216 })
+			{
+				supplies = {};
+				supplies.equipped[18] = v;
+				supplies.equipped[13] = v;
+				journal = journey.render_journal(7, 42, 342, 10, 1, 105, false,
+								 false, &supplies);
+				for (size_t row = 0; row < 8; ++row)
+					require(status(row, "Missing now"),
+						"Stoutdorf held/worn proof substituted loose items");
+			}
+			supplies = {};
+			for (int v :
+			     { 34202, 34210, 34217, 34218, 34226, 34230, 358, 55451, 55362, 83485 })
+				supplies.carried[v] = 9;
+			journal = journey.render_journal(7, 42, 342, 10, 1, 106, false, false,
+							 &supplies);
+			for (size_t row = 0; row < 8; ++row)
+				require(status(row, "Missing now"),
+					"Stoutdorf equipment/key/memory/outside reward substituted materials");
+			for (int pieces : { 8, 9, 10 })
+			{
+				supplies = {};
+				for (int v : { 34203, 34204, 34205, 34206, 34207, 34209, 34212 })
+					supplies.carried[v] = 1;
+				supplies.carried[34216] = pieces;
+				journal = journey.render_journal(7, 42, 342, 10, 1, 107, false,
+								 false, &supplies);
+				for (size_t row = 0; row < 7; ++row)
+					require(status(row, "Ready now"),
+						"Stoutdorf supplied exact individual material imposed source history");
+				require(status(7, pieces < 9 ? "Missing now" : "Ready now") &&
+						status(8, "Pending"),
+					"Stoutdorf meteorite count reused one piece or fabricated accepted exchange");
+			}
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 342).completed == 0,
+				"Stoutdorf preparation/encounters created source/keyword/history credit");
+			require(journal.find("currently unavailable") != std::string::npos &&
+					journal.find("excluded from dailies") !=
+						std::string::npos &&
+					journal.find("sixteen") != std::string::npos,
+				"Stoutdorf guidance lost capacity/non-daily distinction");
+			// Synthetic committed history tests projection/recovery, without claiming a currently supported native sixteen-item exchange.
+			record(journey, collection.contracts.front(), "drst-collection", 342,
+			       34355);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 342, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(7, "Missing now") && status(8, "Recorded") &&
+					journey.progress_for_zone(7, 42, 342).completed == 1,
+				"Stoutdorf spent materials lost accepted history");
+			supplies.carried[34216] = 9;
+			journal = journey.render_journal(7, 42, 342, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(7, "Ready now") && status(8, "Recorded") &&
+					journey.progress_for_zone(7, 42, 342).completed == 1,
+				"Stoutdorf reacquired meteorites created another receipt");
+			auto replay =
+				completion(collection.contracts.front(), "drst-collection", 120);
+			replay.transaction.zone_number = 342;
+			replay.transaction.room_vnum = 34355;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Stoutdorf replay duplicated receipt");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 342).completed == 1,
+				"Stoutdorf cold recovery lost receipt");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 342, 34398, 100, "arrival") ==
+					result::applied,
+				"Stoutdorf alternate arrival failed");
+			record(raw, collection.contracts.front(), "drst-raw", 342, 34355);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 342).completed == 1,
+				"Stoutdorf raw-to-authored recovery lost receipt");
 		}
 
 		{

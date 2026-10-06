@@ -69596,6 +69596,214 @@
     {
       "contacts": [
         {
+          "description": "Ask hi, task and list for the sixteen-item collection. The exchange is currently unavailable while accounting is active; keep your materials.",
+          "keyword": "tinkerer",
+          "mob_vnum": 34221,
+          "name": "a duergar tinkerer",
+          "topics": [
+            "hi",
+            "task",
+            "list"
+          ]
+        },
+        {
+          "description": "One drider in the lower web-filled cavern has the requested scalp when stocked. Other driders may carry none.",
+          "keyword": "drider",
+          "mob_vnum": 34200,
+          "name": "a drider",
+          "topics": []
+        },
+        {
+          "description": "The foreman in the mines carries the shiny ruby when stocked. His ring and mine guard are separate from that material.",
+          "keyword": "foreman",
+          "mob_vnum": 34206,
+          "name": "the duergar foreman",
+          "topics": []
+        },
+        {
+          "description": "The rogue master has the blood vial and a separate black key. Preserve the potion for the collection; the Cloister passage currently does not require the black key.",
+          "keyword": "master",
+          "mob_vnum": 34215,
+          "name": "the duergar rogue master",
+          "topics": []
+        },
+        {
+          "description": "Trap spiders defend storage rooms containing hidden materials or meteorites. Meeting a spider does not recover the floor stock.",
+          "keyword": "spider",
+          "mob_vnum": 34222,
+          "name": "a trap spider",
+          "topics": []
+        },
+        {
+          "description": "A guardian before the castle holds the silvery gate key. This route is separate from the tinkerer collection.",
+          "keyword": "guardian",
+          "mob_vnum": 34204,
+          "name": "a duergar guardian",
+          "topics": []
+        },
+        {
+          "description": "The lion head leads the three-part chimera before the throne room. Its encounter does not create a collection receipt.",
+          "keyword": "lion",
+          "mob_vnum": 34233,
+          "name": "the lion head of a chimera",
+          "topics": []
+        },
+        {
+          "description": "King StoutDorf carries the axe, stone and memory alongside his court equipment. These have separate uses from the collection.",
+          "keyword": "king",
+          "mob_vnum": 34236,
+          "name": "King StoutDorf",
+          "topics": []
+        },
+        {
+          "description": "The arch-devil is the king's guest in the throne room. Alliance lore does not create another native quest or an invitation requirement.",
+          "keyword": "devil",
+          "mob_vnum": 34239,
+          "name": "an arch-devil",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow the tinkerer's collection, find the hidden materials and explore the separate castle route.",
+      "orientation": [
+        "Enter the settlement from the Underdark through the adamantite gates. The town is underground and dark; bring suitable sight and allow for hostile residents. Closed doors, current stock and other travelers can change what you find.",
+        "Meet the duergar tinkerer in his home. Ask hi, task and list to hear the request. These are three topics; hearing them does not complete the collection or earn separate keyword achievements.",
+        "His collection needs one shiny ruby, one drider scalp, one small figurine, one green limestone statue, one yellow sash, one memorial token, one vial of dwarven blood and nine separate meteorite pieces. That is sixteen items, with a configured reward of the gauntlets of dwarven kind and experience.",
+        "The collection exchange is currently unavailable while accounting is active because its sixteen items exceed the supported hand-in size. Keep your materials. The journal can show preparation and retain a recorded successful exchange; a complete set does not mean the reward was accepted. This return is excluded from dailies.",
+        "The foreman in the mines carries the ruby when stocked. One drider in the lower web-filled cavern carries the requested scalp; other driders need not have one. Recover the exact items and check your loose inventory.",
+        "Search the storage rooms behind the homes for the figurine, limestone statue and yellow sash. The memorial token is at the rubble. These materials are hidden; SEARCH can fail, and another player may already have revealed or taken them. Trap spiders defend several storage rooms.",
+        "Search the storage rooms for meteorites. The collection needs nine separate pieces; one piece does not count nine times. Pieces supplied by another player can prepare the set without recording your own recovery. Stock held elsewhere can limit what is available.",
+        "The rogue master in the training center carries the dwarven blood vial when stocked. Preserve it for the collection: it is also a potion, so quaffing or spilling it spends the vial. Remove held or worn materials and take them out of containers to show loose preparation.",
+        "The castle is a separate route. A guardian before the gates holds the silvery key; recover it, unlock the gates if needed, open them and proceed when able. The collection materials and tinkerer are reachable before that gate. The rogue master's black key is different; the passage to the Cloister currently works without it.",
+        "The royal road leads past guards and emissaries to the chimera, King StoutDorf, his bodyguard, basilisk and arch-devil guest. The king's equipment, rune-covered stone and memory item are separate rewards or services. None substitutes for a collection material or records the tinkerer exchange.",
+        "The native dialogue calls the gauntlets suitable only for dwarves, but their current equipment rules use class restrictions rather than that race limit. Check whether your character can use the reward. Ownership of gauntlets found elsewhere does not prove this exchange.",
+        "The king's axe is also requested by Ragmor and Wikzor in Alatorin, with four other weapons. The memory has a separate ambassador exchange. Those outside returns, epic stone touch and collection history remain distinct; one physical item cannot pay two exchanges.",
+        "New discovery, encounter, journal, achievement and daily progress requires active, ready accounting. Normal zone restocking and shared item caps govern availability; a new day does not create another set or enable the collection exchange. Recorded history remains after materials are spent or a reward is stored."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "drst",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:34203,I:34204,I:34205,I:34206,I:34207,I:34209,I:34212,I:34216,I:34216,I:34216,I:34216,I:34216,I:34216,I:34216,I:34216,I:34216;receive=E:100000,I:34217;disappear=0",
+              "giver_vnum": 34221
+            }
+          ],
+          "id": "tinkerers-collection",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks the exact visible loose quantity now. SEARCH may reveal hidden stock; supplied items do not prove your own recovery. The sixteen-item exchange is currently unavailable while accounting is active.",
+              "id": "item-34203",
+              "item_vnums": [
+                34203
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the shiny ruby loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks the exact visible loose quantity now. SEARCH may reveal hidden stock; supplied items do not prove your own recovery. The sixteen-item exchange is currently unavailable while accounting is active.",
+              "id": "item-34204",
+              "item_vnums": [
+                34204
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the drider scalp loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks the exact visible loose quantity now. SEARCH may reveal hidden stock; supplied items do not prove your own recovery. The sixteen-item exchange is currently unavailable while accounting is active.",
+              "id": "item-34205",
+              "item_vnums": [
+                34205
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small figurine loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks the exact visible loose quantity now. SEARCH may reveal hidden stock; supplied items do not prove your own recovery. The sixteen-item exchange is currently unavailable while accounting is active.",
+              "id": "item-34206",
+              "item_vnums": [
+                34206
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the green limestone statue loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks the exact visible loose quantity now. SEARCH may reveal hidden stock; supplied items do not prove your own recovery. The sixteen-item exchange is currently unavailable while accounting is active.",
+              "id": "item-34207",
+              "item_vnums": [
+                34207
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the yellow sash loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks the exact visible loose quantity now. SEARCH may reveal hidden stock; supplied items do not prove your own recovery. The sixteen-item exchange is currently unavailable while accounting is active.",
+              "id": "item-34209",
+              "item_vnums": [
+                34209
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the memorial token loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks the exact visible loose quantity now. SEARCH may reveal hidden stock; supplied items do not prove your own recovery. The sixteen-item exchange is currently unavailable while accounting is active.",
+              "id": "item-34212",
+              "item_vnums": [
+                34212
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the dwarven blood vial loose"
+            },
+            {
+              "count": 9,
+              "hint": "Checks the exact visible loose quantity now. SEARCH may reveal hidden stock; supplied items do not prove your own recovery. The sixteen-item exchange is currently unavailable while accounting is active.",
+              "id": "item-34216",
+              "item_vnums": [
+                34216
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 9 separate meteorite pieces loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:34203,I:34204,I:34205,I:34206,I:34207,I:34209,I:34212,I:34216,I:34216,I:34216,I:34216,I:34216,I:34216,I:34216,I:34216,I:34216;receive=E:100000,I:34217;disappear=0",
+                  "giver_vnum": 34221
+                }
+              ],
+              "hint": "Retains a recorded successful exchange after materials are spent. New hand-ins are currently unavailable while accounting is active. Ready materials, dialogue, a castle visit, gauntlets or the separate memory reward do not complete this return.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record a successful collection exchange"
+            }
+          ],
+          "summary": "Prepare seven individual materials and nine separate meteorite pieces for the gauntlets of dwarven kind. The sixteen-item exchange is currently unavailable while accounting is active; keep the set. The journal shows preparation and any recorded successful exchange. This return is excluded from dailies.",
+          "title": "Gather the tinkerer's collection"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "A sleeping Fomorian reacts to a greeting. The response is scene lore, not proof against the chieftain.",
           "keyword": "giant",
           "mob_vnum": 34400,

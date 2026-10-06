@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 173 authored journals.
+2668 distinct Q contracts; 174 authored journals.
 
 Regenerate with:
 
@@ -81,7 +81,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Home of the Divine (`divhome`) | 32 | 20 | 4 | Yes | [1 × a token of earth; 1 × a token of water; 1 × a token of air; other required items → a silky black dress of the sirens, a harp of the sirens](../../areas/qst/divhome.qst#L8) | — |
 | Domain of Lost Souls (`dlsc`) | 2 | 2 | 0 | Fallback | [3 × the skull of a seasoned warrior → a sheath of stitched together skulls](../../areas/qst/dlsc.qst#L47) | critical_attack_proc, kvasir_dagger |
 | Drifting Realm (`dream`) | 2 | 2 | 0 | Fallback | [1 × a strange crystal skull; 1 × a strange crystal skull; 1 × a strange crystal skull; other required items → a swirling force of light and darkness](../../areas/qst/dream.qst#L46) | — |
-| Clan Stoutdorf Settlement (`drst`) | 1 | 3 | 0 | Fallback | [1 × a shiny ruby; 1 × a scalp of a drider; 1 × a small figurine; other required items → the gauntlets of dwarven kind](../../areas/qst/drst.qst#L34) | dwarfslayer |
+| Clan Stoutdorf Settlement (`drst`) | 1 | 3 | 0 | Yes | [1 × a shiny ruby; 1 × a scalp of a drider; 1 × a small figurine; other required items → the gauntlets of dwarven kind](../../areas/qst/drst.qst#L34) | dwarfslayer |
 | Treasure Caves (`dungeon`) | 1 | 1 | 0 | Fallback | [1 × a small brass figurine → native reward/response](../../areas/qst/dungeon.qst#L13) | blue_sword_armor |
 | Temple of the Earth (`earth`) | 2 | 22 | 0 | Yes | [1 × a badge of gloomhaven → a vial of blood](../../areas/qst/earth.qst#L27) | eligoth_rift_spawn, patrol_shops, toe_chamber_switch |
 | Grumbar's Domain (`earthp`) | 2 | 9 | 0 | Yes | [10 × a shard of planar granite → a huge key of blazing white flame](../../areas/qst/earthp.qst#L65) | purple_worm |
