@@ -57,6 +57,14 @@ bool shop_trade_recovery_forest_freeze(std::span<const uint8_t> canonical_bytes,
 bool shop_trade_recovery_forest_verify(std::span<const uint8_t> canonical_bytes,
 				       shop_trade_recovery_forest_role role,
 				       const shop_trade_recovery_forest_binding &binding);
+// Standalone value frames use the exact existing SRM8 role/presence/count/
+// length/digest/ordered-UID bytes. They confer no SHOP or quest authority.
+bool shop_trade_recovery_forest_shape_valid(const shop_trade_recovery_forest_binding &,
+					    shop_trade_recovery_forest_role) noexcept;
+bool shop_trade_recovery_forest_encode(const shop_trade_recovery_forest_binding &,
+				       shop_trade_recovery_forest_role, std::vector<uint8_t> *out);
+bool shop_trade_recovery_forest_decode(std::span<const uint8_t>, shop_trade_recovery_forest_role,
+				       shop_trade_recovery_forest_binding *out);
 bool shop_trade_recovery_manifest_is_empty(const shop_trade_recovery_manifest &) noexcept;
 bool shop_trade_recovery_manifest_shape_valid(const shop_trade_recovery_manifest &) noexcept;
 bool shop_trade_recovery_manifest_encode(const shop_trade_recovery_manifest &,

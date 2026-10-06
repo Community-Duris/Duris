@@ -8,6 +8,8 @@
 struct char_data;
 struct quest_mobile_native_reference;
 class quest_mobile_native_birth_owner;
+class item_native_quest_publication_owner;
+class quest_mobile_native_publication_binding;
 
 constexpr std::size_t QUEST_MOBILE_NATIVE_BINDING_BYTES = 148;
 
@@ -20,6 +22,7 @@ struct quest_mobile_native_binding
 	std::uint8_t encoded_reference_[QUEST_MOBILE_NATIVE_BINDING_BYTES];
 
 	friend class quest_mobile_native_birth_owner;
+	friend class quest_mobile_native_publication_binding;
 	friend bool quest_mobile_native_reference_copy(const char_data *, std::uint64_t,
 						       quest_mobile_native_reference *) noexcept;
 };
@@ -36,5 +39,16 @@ static_assert(std::is_standard_layout_v<quest_mobile_native_binding>);
 // pet/keeper state, a probe, runtime_id, or the ordinary idnum allocator.
 bool quest_mobile_native_reference_copy(const char_data *, std::uint64_t expected_runtime_id,
 					quest_mobile_native_reference *output) noexcept;
+
+// One original item-transition publication capability. Only the real owner may
+// invoke it after original SQL/held-body/world proof; it grants no birth or ACK.
+class quest_mobile_native_publication_binding final
+{
+    private:
+	friend class item_native_quest_publication_owner;
+	static bool advance(char_data *, std::uint64_t expected_runtime_id,
+			    const quest_mobile_native_reference &before,
+			    const quest_mobile_native_reference &after) noexcept;
+};
 
 #endif

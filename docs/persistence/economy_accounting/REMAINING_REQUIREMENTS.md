@@ -1,5 +1,29 @@
 # Double-entry economy: remaining requirements
 
+## Independent compound-action audit fix integrated — 2026-10-06
+
+[Primary integration evidence](PLAN5_COMPOUND_ACTION_PRIMARY_INTEGRATION_2026-10-06.md)
+imports five exact owned blobs fromf2a928094. Actual UID-scope, canonical audit
+and audit-origin checks pass; optional native skips retain their stated scope.
+The independent endpoint/revision rule fixes compound creation/retirement
+projection without changing native authority or source. Peer both-engine/native
+evidence remains tied to its older native tree; primary51de producer/recovery,
+writer refresh and combined release acceptance remain open.
+
+## Reviewed native birth/quest source installed — 2026-10-06
+
+[Exact qualification evidence](NATIVE_BIRTH_RECOVERY_MAJOR_QUALIFICATION_2026-10-06.md)
+records both original production backends passing on actual51de. The reviewed
+native birth/quest source and six test companions are installed as an inactive
+review candidate; two missing original drivers are registered, with all existing
+manifest rows retained. Original codec/context and independently reviewed NBC
+compatibility components pass at their stated scopes. Shared journal/coordinator
+controls pass, including the separately repaired uncertain-journal linkage.
+Writer source/matrix refresh and actual producer/SQL/publication/restart journeys
+remain open. No complete Plan, R1–R8, coverage, activation or release pass is
+claimed. Owned artifacts are retained, cleanup completed, and unrelated WIP,
+inactive behavior and the declined spell-path boundary are preserved.
+
 ## Independent unique supply evidence fix integrated — 2026-10-06
 
 [Exact primary integration](PLAN5_SUPPLY_EVIDENCE_PRIMARY_INTEGRATION_2026-10-06.md) imports five owned blobs from `62ad380b6`. The new actual CLI regression, AST and normal/matrix/current61 metadata pass. All committed code/test/schema inputs match the qualified peer composition; native source, complete central manifest and unrelated WIP remain. Peer native/both-engine results retain their recorded component scope. No primary native rerun, complete capture or full release qualification is claimed. Original Plans and major native work remain open.

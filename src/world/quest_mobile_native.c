@@ -327,15 +327,16 @@ bool quest_mobile_native_cash_transition_valid(const quest_mobile_native_image *
 	       after.reference.mobile_revision == before->reference.mobile_revision + 1;
 }
 
-player_snapshot_capture_result
-quest_mobile_native_capture(P_char mob, const quest_mobile_native_reference &reference,
-			    quest_mobile_lifetime_state state,
-			    const critical_operation_id &last_transition,
-			    quest_mobile_native_image *output) noexcept
+namespace
 {
-	if (state != quest_mobile_lifetime_state::live || !mob || !output || !IS_NPC(mob) ||
-	    !mob->only.npc || !quest_mobile_native_reference_valid(reference) ||
-	    !nonzero(last_transition) || !mob_index || GET_RNUM(mob) < 0 ||
+// The compatibility image reader and items-only observer share the exact native
+// full-forest audit. This helper supplies no transition, cash or source facts.
+player_snapshot_capture_result
+native_items_capture(P_char mob, const quest_mobile_native_reference &reference,
+		     std::vector<player_item_snapshot> *output) noexcept
+{
+	if (!mob || !output || !IS_NPC(mob) || !mob->only.npc ||
+	    !quest_mobile_native_reference_valid(reference) || !mob_index || GET_RNUM(mob) < 0 ||
 	    GET_RNUM(mob) > top_of_mobt ||
 	    mob_index[GET_RNUM(mob)].virtual_number != reference.mobile_vnum ||
 	    GET_BIRTHPLACE(mob) != reference.birthplace_vnum)
@@ -365,27 +366,78 @@ quest_mobile_native_capture(P_char mob, const quest_mobile_native_reference &ref
 			if (result != player_snapshot_capture_result::ok)
 				return result;
 		}
-		quest_mobile_native_image candidate;
-		candidate.reference = reference;
-		candidate.state = quest_mobile_lifetime_state::live;
-		candidate.last_transition_operation = last_transition;
+		std::vector<player_item_snapshot> candidate;
 		size_t bytes = sizeof(player_snapshot);
 		for (int slot = 0; slot < MAX_WEAR; ++slot)
 		{
 			if (!mob->equipment[slot])
 				continue;
 			const auto result = append_tree(mob->equipment[slot],
-							static_cast<int16_t>(slot + 1),
-							candidate.items, bytes);
+							static_cast<int16_t>(slot + 1), candidate,
+							bytes);
 			if (result != player_snapshot_capture_result::ok)
 				return result;
 		}
 		for (const obj_data *root = mob->carrying; root; root = root->next_content)
 		{
-			const auto result = append_tree(root, 0, candidate.items, bytes);
+			const auto result = append_tree(root, 0, candidate, bytes);
 			if (result != player_snapshot_capture_result::ok)
 				return result;
 		}
+
+		std::vector<uint8_t> canonical;
+		const auto code = forest_valid(candidate);
+		const auto result =
+			code == player_snapshot_codec_result::ok ?
+				player_item_snapshot_list_encode(candidate, &canonical) :
+				code;
+		if (result == player_snapshot_codec_result::allocation_failure)
+			return player_snapshot_capture_result::retryable_allocation_failure;
+		if (result == player_snapshot_codec_result::limit_exceeded)
+			return player_snapshot_capture_result::limit_exceeded;
+		if (result != player_snapshot_codec_result::ok)
+			return player_snapshot_capture_result::malformed_source;
+		*output = std::move(candidate);
+		return player_snapshot_capture_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_capture_result::retryable_allocation_failure;
+	}
+}
+}
+
+player_snapshot_capture_result
+quest_mobile_native_items_observe(P_char mob, const quest_mobile_native_reference &reference,
+				  std::vector<player_item_snapshot> *output) noexcept
+{
+	if (!nevent_is_game_thread())
+		return player_snapshot_capture_result::invalid_identity;
+	return native_items_capture(mob, reference, output);
+}
+
+player_snapshot_capture_result
+quest_mobile_native_capture(P_char mob, const quest_mobile_native_reference &reference,
+			    quest_mobile_lifetime_state state,
+			    const critical_operation_id &last_transition,
+			    quest_mobile_native_image *output) noexcept
+{
+	if (state != quest_mobile_lifetime_state::live || !mob || !output || !IS_NPC(mob) ||
+	    !mob->only.npc || !quest_mobile_native_reference_valid(reference) ||
+	    !nonzero(last_transition) || !mob_index || GET_RNUM(mob) < 0 ||
+	    GET_RNUM(mob) > top_of_mobt ||
+	    mob_index[GET_RNUM(mob)].virtual_number != reference.mobile_vnum ||
+	    GET_BIRTHPLACE(mob) != reference.birthplace_vnum)
+		return player_snapshot_capture_result::invalid_identity;
+	try
+	{
+		quest_mobile_native_image candidate;
+		candidate.reference = reference;
+		candidate.state = quest_mobile_lifetime_state::live;
+		candidate.last_transition_operation = last_transition;
+		const auto captured = native_items_capture(mob, reference, &candidate.items);
+		if (captured != player_snapshot_capture_result::ok)
+			return captured;
 		std::vector<uint8_t> canonical;
 		const auto result = quest_mobile_native_image_encode(candidate, &canonical);
 		if (result == player_snapshot_codec_result::allocation_failure)
@@ -439,6 +491,141 @@ quest_mobile_native_capture(P_char mob, const quest_mobile_native_reference &ref
 	}
 }
 
+player_snapshot_codec_result
+quest_mobile_native_items_transition(std::span<const player_item_snapshot> original_items,
+				     const quest_mobile_native_reference &original_reference,
+				     const item_transfer_payload &payload,
+				     std::vector<player_item_snapshot> *after) noexcept
+{
+	if (!after || original_items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS ||
+	    !payload.native_mobile.present ||
+	    (payload.native_mobile.action != item_native_mobile_action::acceptance &&
+	     payload.native_mobile.action != item_native_mobile_action::consumption) ||
+	    !payload.item_blob_size || payload.item_blob_size > payload.item_blob.size() ||
+	    original_reference.mobile_revision == UINT64_MAX ||
+	    original_reference.stock_revision == UINT64_MAX)
+		return player_snapshot_codec_result::invalid_value;
+	try
+	{
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> expected{}, actual{};
+		if (quest_mobile_native_reference_encode(original_reference, &actual) !=
+			    player_snapshot_codec_result::ok ||
+		    quest_mobile_native_reference_encode(payload.native_mobile.reference,
+							 &expected) !=
+			    player_snapshot_codec_result::ok ||
+		    actual != expected)
+			return player_snapshot_codec_result::invalid_value;
+		std::vector<player_item_snapshot> before(original_items.begin(),
+							 original_items.end());
+		auto code = forest_valid(before);
+		if (code != player_snapshot_codec_result::ok)
+			return code;
+		std::vector<uint8_t> encoded;
+		code = player_item_snapshot_list_encode(before, &encoded);
+		if (code != player_snapshot_codec_result::ok)
+			return code;
+		std::vector<player_item_snapshot> selected;
+		code = player_item_snapshot_list_decode(payload.item_blob.data(),
+							payload.item_blob_size, &selected);
+		if (code != player_snapshot_codec_result::ok)
+			return code;
+		if (selected.empty() || selected.size() != payload.item_count ||
+		    forest_valid(selected) != player_snapshot_codec_result::ok)
+			return player_snapshot_codec_result::invalid_value;
+		if (payload.native_mobile.action == item_native_mobile_action::acceptance &&
+		    std::count_if(selected.begin(), selected.end(), [](const auto &item)
+				  { return item.parent_index == PLAYER_SNAPSHOT_NO_PARENT; }) != 1)
+			return player_snapshot_codec_result::invalid_value;
+		std::vector<player_item_snapshot> candidate = before;
+		const bool acceptance = payload.native_mobile.action ==
+					item_native_mobile_action::acceptance;
+		if (acceptance)
+		{
+			if (selected.size() > PLAYER_SNAPSHOT_MAX_OBJECTS - before.size())
+				return player_snapshot_codec_result::limit_exceeded;
+			for (const auto &item : selected)
+				if (std::any_of(before.begin(), before.end(), [&](const auto &old)
+						{ return old.object_uid == item.object_uid; }))
+					return player_snapshot_codec_result::invalid_value;
+			// obj_to_char_checked inserts before the first carried root of the same
+			// prototype, or at the carried head if none. Never group equipment roots.
+			size_t inventory = before.size();
+			size_t insertion = before.size();
+			for (size_t i = 0; i < before.size(); ++i)
+				if (before[i].parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+				    !before[i].equipment_slot)
+				{
+					if (inventory == before.size())
+						inventory = i;
+					if (before[i].vnum == selected[0].vnum)
+					{
+						insertion = i;
+						break;
+					}
+				}
+			if (insertion == before.size())
+				insertion = inventory;
+			for (auto &item : candidate)
+				if (item.parent_index >= static_cast<int32_t>(insertion))
+					item.parent_index += static_cast<int32_t>(selected.size());
+			selected[0].equipment_slot = 0;
+			for (auto &item : selected)
+				if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+					item.parent_index += static_cast<int32_t>(insertion);
+			candidate.insert(candidate.begin() + insertion, selected.begin(),
+					 selected.end());
+		}
+		else
+		{
+			std::unordered_set<uint64_t> removed;
+			for (const auto &item : selected)
+				removed.insert(item.object_uid);
+			std::vector<player_item_snapshot> observed, retained;
+			std::vector<int32_t> selected_index(before.size(),
+							    PLAYER_SNAPSHOT_NO_PARENT);
+			std::vector<int32_t> retained_index(before.size(),
+							    PLAYER_SNAPSHOT_NO_PARENT);
+			for (size_t i = 0; i < before.size(); ++i)
+			{
+				auto item = before[i];
+				const bool erase = removed.count(item.object_uid) != 0;
+				const auto parent = item.parent_index;
+				if (parent != PLAYER_SNAPSHOT_NO_PARENT &&
+				    (removed.count(before[parent].object_uid) != 0) != erase)
+					return player_snapshot_codec_result::
+						invalid_value; // No partial subtree retirement.
+				auto &indexes = erase ? selected_index : retained_index;
+				auto &items = erase ? observed : retained;
+				if (parent != PLAYER_SNAPSHOT_NO_PARENT)
+					item.parent_index = indexes[parent];
+				indexes[i] = static_cast<int32_t>(items.size());
+				items.push_back(std::move(item));
+			}
+			std::vector<uint8_t> observed_bytes, selected_bytes;
+			code = player_item_snapshot_list_encode(observed, &observed_bytes);
+			if (code == player_snapshot_codec_result::ok)
+				code = player_item_snapshot_list_encode(selected, &selected_bytes);
+			if (code != player_snapshot_codec_result::ok)
+				return code;
+			if (observed_bytes != selected_bytes)
+				return player_snapshot_codec_result::invalid_value;
+			candidate = std::move(retained);
+		}
+
+		code = forest_valid(candidate);
+		if (code == player_snapshot_codec_result::ok)
+			code = player_item_snapshot_list_encode(candidate, &encoded);
+		if (code != player_snapshot_codec_result::ok)
+			return code;
+		*after = std::move(candidate);
+		return player_snapshot_codec_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_snapshot_codec_result::allocation_failure;
+	}
+}
+
 player_snapshot_codec_result quest_mobile_native_item_transition(
 	const quest_mobile_native_image &before, const item_transfer_payload &payload,
 	const critical_operation_id &operation, quest_mobile_native_image *after) noexcept
@@ -465,94 +652,11 @@ player_snapshot_codec_result quest_mobile_native_item_transition(
 			    player_snapshot_codec_result::ok ||
 		    actual != expected)
 			return player_snapshot_codec_result::invalid_value;
-		std::vector<player_item_snapshot> selected;
-		code = player_item_snapshot_list_decode(payload.item_blob.data(),
-							payload.item_blob_size, &selected);
+		quest_mobile_native_image candidate = before;
+		code = quest_mobile_native_items_transition(before.items, before.reference, payload,
+							    &candidate.items);
 		if (code != player_snapshot_codec_result::ok)
 			return code;
-		if (selected.empty() || selected.size() != payload.item_count ||
-		    forest_valid(selected) != player_snapshot_codec_result::ok)
-			return player_snapshot_codec_result::invalid_value;
-		if (payload.native_mobile.action == item_native_mobile_action::acceptance &&
-		    std::count_if(selected.begin(), selected.end(), [](const auto &item)
-				  { return item.parent_index == PLAYER_SNAPSHOT_NO_PARENT; }) != 1)
-			return player_snapshot_codec_result::invalid_value;
-		quest_mobile_native_image candidate = before;
-		const bool acceptance = payload.native_mobile.action ==
-					item_native_mobile_action::acceptance;
-		if (acceptance)
-		{
-			if (selected.size() > PLAYER_SNAPSHOT_MAX_OBJECTS - before.items.size())
-				return player_snapshot_codec_result::limit_exceeded;
-			for (const auto &item : selected)
-				if (std::any_of(before.items.begin(), before.items.end(),
-						[&](const auto &old)
-						{ return old.object_uid == item.object_uid; }))
-					return player_snapshot_codec_result::invalid_value;
-			// obj_to_char_checked inserts before the first carried root of the same
-			// prototype, or at the carried head if none. Never group equipment roots.
-			size_t inventory = before.items.size();
-			size_t insertion = before.items.size();
-			for (size_t i = 0; i < before.items.size(); ++i)
-				if (before.items[i].parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
-				    !before.items[i].equipment_slot)
-				{
-					if (inventory == before.items.size())
-						inventory = i;
-					if (before.items[i].vnum == selected[0].vnum)
-					{
-						insertion = i;
-						break;
-					}
-				}
-			if (insertion == before.items.size())
-				insertion = inventory;
-			for (auto &item : candidate.items)
-				if (item.parent_index >= static_cast<int32_t>(insertion))
-					item.parent_index += static_cast<int32_t>(selected.size());
-			selected[0].equipment_slot = 0;
-			for (auto &item : selected)
-				if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
-					item.parent_index += static_cast<int32_t>(insertion);
-			candidate.items.insert(candidate.items.begin() + insertion,
-					       selected.begin(), selected.end());
-		}
-		else
-		{
-			std::unordered_set<uint64_t> removed;
-			for (const auto &item : selected)
-				removed.insert(item.object_uid);
-			std::vector<player_item_snapshot> observed, retained;
-			std::vector<int32_t> selected_index(before.items.size(),
-							    PLAYER_SNAPSHOT_NO_PARENT);
-			std::vector<int32_t> retained_index(before.items.size(),
-							    PLAYER_SNAPSHOT_NO_PARENT);
-			for (size_t i = 0; i < before.items.size(); ++i)
-			{
-				auto item = before.items[i];
-				const bool erase = removed.count(item.object_uid) != 0;
-				const auto parent = item.parent_index;
-				if (parent != PLAYER_SNAPSHOT_NO_PARENT &&
-				    (removed.count(before.items[parent].object_uid) != 0) != erase)
-					return player_snapshot_codec_result::
-						invalid_value; // No partial subtree retirement.
-				auto &indexes = erase ? selected_index : retained_index;
-				auto &items = erase ? observed : retained;
-				if (parent != PLAYER_SNAPSHOT_NO_PARENT)
-					item.parent_index = indexes[parent];
-				indexes[i] = static_cast<int32_t>(items.size());
-				items.push_back(std::move(item));
-			}
-			std::vector<uint8_t> observed_bytes, selected_bytes;
-			code = player_item_snapshot_list_encode(observed, &observed_bytes);
-			if (code == player_snapshot_codec_result::ok)
-				code = player_item_snapshot_list_encode(selected, &selected_bytes);
-			if (code != player_snapshot_codec_result::ok)
-				return code;
-			if (observed_bytes != selected_bytes)
-				return player_snapshot_codec_result::invalid_value;
-			candidate.items = std::move(retained);
-		}
 		++candidate.reference.mobile_revision;
 		++candidate.reference.stock_revision;
 		candidate.last_transition_operation = operation;

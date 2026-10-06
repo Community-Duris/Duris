@@ -45,6 +45,14 @@ bool world_activity_is_enabled();
 world_activity_tier world_activity_tier_for_room(int room);
 
 /* Character-room hooks.  These are game-thread-only lifecycle notifications. */
+// Private projection reconstruction; original birth/room owners supply authority.
+class quest_mobile_native_room_restore_owner;
+class world_activity_native_birth_restore_owner
+{
+	static bool enter(P_char) noexcept;
+	friend class quest_mobile_native_room_restore_owner;
+};
+
 void world_activity_character_enter(P_char ch);
 void world_activity_character_leave(P_char ch);
 void world_activity_player_enter(P_char ch);
