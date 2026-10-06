@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 151 authored journals.
+2668 distinct Q contracts; 152 authored journals.
 
 Regenerate with:
 
@@ -27,7 +27,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 
 | Area / source | Q | M | Links | Authored | Sample native offering → outcome | Assigned special leads |
 | --- | ---: | ---: | ---: | --- | --- | --- |
-| Apocalypse Castle (`4horse`) | 2 | 5 | 0 | Fallback | [1 × the skull of war; 1 × the skull of death; 1 × the skull of famine; other required items → a golden vault key](../../areas/qst/4horse.qst#L27) | brainripper, mankiller |
+| Apocalypse Castle (`4horse`) | 2 | 5 | 0 | Yes | [1 × the skull of war; 1 × the skull of death; 1 × the skull of famine; other required items → a golden vault key](../../areas/qst/4horse.qst#L27) | brainripper, mankiller |
 | The Royal Mausoleum of Castle IceCrag (`Voluntown`) | 2 | 6 | 0 | Yes | [1 × a key fragment; 1 × a key fragment; 1 × a key fragment; other required items → The Drakenstone key](../../areas/qst/Voluntown.qst#L64) | — |
 | The Tempest Court (`airp`) | 8 | 16 | 2 | Yes | [1 × a wisp of wind; 1 × a living breeze; 1 × the boots of the four winds; other required items → Cloudseeker, the Unseen Breeze of the Four Winds](../../areas/qst/airp.qst#L98) | dagger_of_wind |
 | The Mountain Valley of Dawndale (`airshipgrave`) | 13 | 4 | 4 | Yes | [2 × a vial of liquid sunlight; 1 × a handful of combustable rock dust; 1 × a bucket of rank pool water; other required items → the lost blade of the Astral Dancer, 'Ender'](../../areas/qst/airshipgrave.qst#L101) | — |

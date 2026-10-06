@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 151 &&
+		require(catalog.story_mappings.size() == 152 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,128 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "4horse"; });
+			require(mapping.stories.size() == 2 && mapping.contacts.size() == 12 &&
+					mapping.revision == 1,
+				"Apocalypse Castle scope failed");
+			const auto &skulls = story_for("4horse", "four-horsemen-proof");
+			const auto &bracelet = story_for("4horse", "lost-diamond-bracelet");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 345)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 2 && dailies == 1,
+				"Apocalypse Castle changed story-only/daily classification");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 345, 34500, 100, "arrival") ==
+					result::applied,
+				"Apocalypse Castle discovery failed");
+			for (int v : { 34547, 34544, 34545, 34546, 34569, 34501 })
+				require(journey.meet_npc(7, 42, v, 34500, 102) == result::applied,
+					"Apocalypse Castle context encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 345, 10, 1, 103, false, false);
+			for (const auto &s : mapping.stories)
+				require(journal.find("] " + s.title + "\r\n") == std::string::npos,
+					"Apocalypse Castle context forged request");
+			for (int v : { 34502, 34503 })
+				require(journey.meet_npc(7, 42, v, 34503, 104) == result::applied,
+					"Apocalypse Castle giver encounter failed");
+			const auto status = [&](const auto &s, size_t row, const char *state)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos,
+					"Apocalypse Castle visible card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at, end == std::string::npos ? end : end - at)
+					       .find(std::string("[") + state + "] " +
+						     s.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[34548] = 4;
+			supplies.carried[34557] = 1;
+			supplies.carried[34552] = 1;
+			supplies.carried[34527] = 1;
+			journal = journey.render_journal(7, 42, 345, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(skulls, 0, "Ready now") &&
+					status(skulls, 1, "Missing now") &&
+					status(skulls, 4, "Pending") &&
+					status(skulls, 5, "Ready now") &&
+					status(bracelet, 0, "Missing now") &&
+					status(bracelet, 1, "Pending"),
+				"Apocalypse Castle duplicate skull or similar bracelet/reward forged return");
+			supplies = {};
+			supplies.carried[34548] = 1;
+			supplies.carried[34549] = 1;
+			supplies.carried[34550] = 1;
+			supplies.equipped[3] = 34551;
+			supplies.carried[34504] = 1;
+			journal = journey.render_journal(7, 42, 345, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(skulls, 3, "Missing now") &&
+					status(bracelet, 0, "Missing now"),
+				"Apocalypse Castle worn skull or container counted loose proof");
+			supplies = {};
+			for (int v : { 34548, 34549, 34550, 34551, 34505 })
+				supplies.carried[v] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 345, 10, 1, 107, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 4; i++)
+				require(status(skulls, i, "Ready now"),
+					"Apocalypse Castle supplied distinct skull readiness failed");
+			require(status(skulls, 4, "Pending") && status(skulls, 5, "Missing now") &&
+					status(bracelet, 0, "Ready now") &&
+					status(bracelet, 1, "Pending"),
+				"Apocalypse Castle supplied proof forged accepted history");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 345).completed == 0,
+				"Apocalypse Castle readiness mutated recovery or victory history");
+			record(journey, bracelet.contracts.front(), "4horse-bracelet", 345, 34592);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 345, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(bracelet, 1, "Recorded") &&
+					status(bracelet, 0, "Missing now") &&
+					status(skulls, 4, "Pending") &&
+					journey.progress_for_zone(7, 42, 345).completed == 1,
+				"Apocalypse Castle departing return merged campaign or lost spent receipt");
+			record(journey, skulls.contracts.front(), "4horse-skulls", 345, 34503);
+			journal = journey.render_journal(7, 42, 345, 10, 1, 122, false, false,
+							 &supplies);
+			require(status(skulls, 4, "Recorded") && status(skulls, 5, "Missing now") &&
+					journey.progress_for_zone(7, 42, 345).completed == 2 &&
+					journey.progress_for_zone(7, 42, 345).total == 2,
+				"Apocalypse Castle missing reward key erased acceptance or changed units");
+			auto replay = completion(skulls.contracts.front(), "4horse-skulls", 120);
+			replay.transaction.zone_number = 345;
+			replay.transaction.room_vnum = 34503;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Apocalypse Castle exact replay duplicated progress");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 345).completed == 2,
+				"Apocalypse Castle cold recovery lost receipts");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 345, 34500, 100, "arrival") ==
+					result::applied,
+				"Apocalypse Castle raw discovery failed");
+			record(raw, skulls.contracts.front(), "4horse-raw", 345, 34503);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 345).completed == 1,
+				"Apocalypse Castle raw-to-authored recovery lost exchange");
 		}
 
 		{
