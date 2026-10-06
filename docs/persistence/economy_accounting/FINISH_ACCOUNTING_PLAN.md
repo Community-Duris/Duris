@@ -1,5 +1,67 @@
 # Finish accounting implementation plan
 
+## Third-agent quest acceptance prep — 2026-10-06
+
+Run this bounded prep stream in a separate worktree from the latest
+`origin/experimental-accounting`, on the planned branch
+`codex/accounting-quest-prep`. This entry reserves a handoff location; it does
+not claim the worker branch or any prep artifacts already exist. The primary
+continues quest/birth/recovery implementation while the existing independent
+owner continues Plan 5. Neither stream waits for this prep to finish.
+
+The third agent owns source-verified missing acceptance cases and isolated
+fixture preparation, not production accounting changes. Start with the current
+native quest/birth handoffs below and the PR #678 dossiers. Compare current
+producers and existing quest tests before choosing gaps; proposed daily/journal
+features and a repeat survey of all zones are outside this assignment.
+
+Publish the first useful gap list and 4 prioritized case specifications within
+2 hours; target a usable pack within 12–18 active agent hours. These are planning
+budgets, not measured throughput or release promises. Select up to 12 valuable
+uncovered cases, including at least 2 dynamic bartender/world-quest cases.
+Do not inflate the pack with duplicates of already executable coverage.
+Prioritize exact identity/count and overlapping recipe order, mixed item/coin
+rewards or costs, disappearing/reset recipients, real birth/source custody,
+and replay/lost-reply/cold ACK or retirement at the existing durable boundaries.
+
+For each case record the pinned accounting and dossier revisions, actual
+producer/dispatch and full-boot/reset binding, ingredient/reward VNUMs and
+quantities, fees/denominations where applicable, expected ownership and durable
+evidence, the existing requirement it verifies, and the smallest applicable
+fixture/journey command. Record missing integration hooks as blockers. Source
+agreement, static contracts, executable component tests and completed native
+journeys are separate evidence; do not label a prepared fixture as a gate pass.
+
+Use `scripts/zone_story_quest_catalog.py` and its production `areas/AREA` input
+order for static native sources; `areas/qst/AREA` is not the production catalog.
+Dynamic bartender quests need their actual runtime producers and world-quest
+fixtures because they are absent from that static catalog. Reuse the existing
+`tests/async/test_static_quest_reward_journey.py`,
+`tests/async/run_quest_reward_ack_crash.py`, `tests/async/test_durable_quest_offering.py`
+and applicable `test_world_quest_*.py`/`run_world_quest_dual_backend.py` patterns.
+Prepare uncovered fixture additions in worker-owned files; use small isolated
+checks for those additions and retain the agreed major-batch gameplay cadence.
+Qualification must ultimately use the primary's actual integrated candidate.
+
+Worker-owned paths are `docs/persistence/economy_accounting/quest-prep/` and,
+only where needed for uncovered executable cases,
+`tests/async/quest_accounting_prep/`. No new test framework is needed. The primary
+owns production source, migrations, shared contracts/codecs, existing shared
+tests, central manifests, registries and this finish plan. The independent owner
+retains Plan 5 audit/restore work. Surface any required shared-file change in the
+handoff instead of editing it on the prep branch.
+
+The prep agent commits coherent bundles and pushes only its own branch.
+Its stable entry point must be
+`docs/persistence/economy_accounting/quest-prep/HANDOFF.md`, listing exact commit
+SHAs, owned files, cases and commands, results, blockers, and candidate pins.
+Primary: fetch `origin/codex/accounting-quest-prep`, read that handoff, review and
+import only the compatible owned bundle commits, then run the selected cases
+against the integrated candidate at the agreed batch boundary. Record the
+consumed commits and actual qualification in the existing native quest handoff.
+Keep unfinished or incompatible cases explicitly pending; all original R1–R8
+requirements, activation guards and fresh-world SQL-first release gates remain.
+
 ## Reuse PR #678 zone-source research — 2026-10-06
 
 Before investigating native quest, NPC birth/reset, custom item grant/cost, or

@@ -1,4 +1,4 @@
-# Plan5 remote branch follow-up and primary refresh — 2026-10-06
+# Plan5 remote branch follow-up and primary refresh â€” 2026-10-06
 
 Plan5 work and all earlier branch follow-ups continue on remote
 `codex/accounting-plan5`, at worktree
@@ -75,3 +75,40 @@ Primary maintains the shared notebook locally and the user declared that
 nonblocking. The owned qualification/follow-up reports and sealed receipts are
 the curator packet for it. No direct cross-chat message or notebook write is
 claimed by this branch publication.
+
+## Collector quarantine follow-up and primary quest-preparation checkpoint
+
+The same remote `codex/accounting-plan5` now publishes the independent collector
+quarantine fix `977a5f317354d9ebdd2ce736c74839ed85451bd1`, based on `3db39b410ad4f0df799f88b224e9b2a32bdfc6a5`. Its
+[qualification report](PLAN5_COLLECTOR_QUARANTINE_QUALIFICATION_2026-10-06.md)
+records the exporter defect, all four history-consumer repairs, retired-UID
+diagnostics, exact frozen inputs, both-engine checks and retained failed attempt.
+The first publication is verified by `tmp/plan5/collector-quarantine-delivery.json`,
+SHA256 `decba8d4c19ef7aa63df3251f9a7578129cf2cbda3f9053a3e183c03e9f89b5f`.
+
+This separate follow-up consumes primary `17c033d69316b21da8598791fc95cae79baa8dc2`. Its only incoming change
+is the published shared finish-plan quest-preparation checkpoint, taken exactly
+from primary. No independent coordinator rewrite or shared interface change
+is made. Direct comparison proves its code/schema unchanged since the previous
+primary checkpoint `d35dbaba2100f0c916e8c3680df5437c34683d44`. The independently owned compound and
+quarantine audit fixes remain on this branch for primary's later integration;
+the older primary reader tree does not replace them. All
+3081 qualified code/migration/test inputs remain byte
+identical after this merge. Native tree `bf7a92a728ad9b5b813626462e56533f8ba39c97` and migration
+tree `2eb9da7bf64bcd86e05f85d2f4bdf60ef113962d` remain canonical 61. This documentation-only
+refresh requires no repeated native execution and adds no gameplay or release
+claim. The final remote commit, exact merge parents, qualified hashes, preserved
+seven earlier branch tips and clean worktree are bound by
+`tmp/plan5/collector-quarantine-primary-refresh.json`.
+
+Linux 208 and Windows 136 selected tests pass with zero skips; original native
+SQL/client-free collector fixtures and the complete both-engine baseline/restore
+method pass. The exporter-only first attempt failed both SQL consumers and is
+retained without waiver. Actual partial captures preserve existing global
+exceptions and cannot qualify complete authority or the real collector writer.
+R7/R8 still require full capture, actual writers/receipts and gameplay, remaining
+backend/lifecycle/erasure coverage, and combined release-host latency/storage
+evidence. Accounting remains inactive, wallet-root exclusions and the declined
+inactive spell path remain. No production mutation, audit correction, activation,
+deployment or PR merge occurred. Primary's locally maintained notebook remains
+nonblocking; these owned reports and sealed receipts are its curator packet.
