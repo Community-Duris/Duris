@@ -64,6 +64,7 @@ bool has_innate(P_char, int) { return false; }
 int get_innate_regeneration(P_char) { return innate_gain; }
 float get_epic_bonus(P_char, int) { return 0; }
 int difficulty_scale_player_regen(P_char, int gain) { return gain; }
+int summoner_pet_hit_regen(P_char, int gain) { return gain; }
 room_affect *get_spell_from_room(P_room, int) { return nullptr; }
 bool IS_TWILIGHT_ROOM(int) { return false; }
 bool IS_OUTDOORS(int) { return false; }
