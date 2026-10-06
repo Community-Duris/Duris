@@ -133,6 +133,33 @@ int main(int argc, char **argv)
 		require(accepted || !error.empty(), "oversized sidecar lacked a diagnostic");
 		return 0;
 	}
+	if (argc > 3 && (std::string(argv[3]) == "source-area" ||
+			 std::string(argv[3]) == "invalid-source-area"))
+	{
+		const bool accepted = std::string(argv[3]) == "source-area";
+		auto loaded = catalog;
+		require(zone_story_quest_story::apply(read(argv[2]), "Voluntown", &catalog,
+						      &error) == accepted,
+			"historical mixed-case source area apply disagreed");
+		require(zone_story_quest_story::load(
+				&loaded, &error,
+				std::filesystem::path(argv[2]).parent_path().string()) == accepted,
+			"historical mixed-case source area file loading disagreed");
+		for (const auto *candidate : { &catalog, &loaded })
+		{
+			require(candidate->story_mappings.size() == (accepted ? 1 : 0),
+				"mixed-case mapping was skipped or rejection partially applied it");
+			if (accepted)
+				require(candidate->story_mappings.front().source_area ==
+							"Voluntown" &&
+						candidate->story_mappings.front().stories.size() ==
+							2 &&
+						candidate->story_mappings.front().stories.front().id ==
+							"zone-story:story:Voluntown:return-0",
+					"source area case or native bindings changed");
+		}
+		return 0;
+	}
 	if (argc > 3 && std::string(argv[3]) == "all")
 	{
 		std::unique_ptr<cJSON, decltype(&cJSON_Delete)> snapshot(

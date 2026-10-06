@@ -292,7 +292,7 @@ def story_units(catalog, item_vnums=None, mob_keywords=None):
         fields(mapping, keys)
         number(mapping["revision"], 1, 2**31 - 1)
         area = text(mapping, "source_area")
-        if not re.fullmatch(r"[a-z0-9_-]{1,64}", area) or area not in areas or area in mapped_areas:
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", area) or area not in areas or area in mapped_areas:
             raise ValueError("story mapping: invalid or duplicate source_area")
         mapped_areas.add(area)
         zone = areas[area]["zone_number"]

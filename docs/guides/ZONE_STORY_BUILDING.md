@@ -302,8 +302,12 @@ fields below. Story bindings and step kinds retain the same meanings.
 Every shown field is required. Unknown/duplicate fields are rejected. Files
 are bounded to 512 KiB in both the authoring validator and native loader.
 Plain-text strings are at most 1,024 UTF-8 bytes, without controls or `$`
-substitution tokens. IDs use lowercase letters,
-numbers, hyphens, and underscores, at most 64 characters.
+substitution tokens. Story and step IDs use lowercase letters,
+numbers, hyphens, and underscores, at most 64 characters. `source_area` preserves
+the exact registered filename, including existing ASCII capitals such as
+`Voluntown`; use `Voluntown.story.json` for that area. NPC keywords and topics
+remain lowercase. Differently cased unregistered names and path separators are
+rejected. See the [separate loader repair](../design/ZONE_STORY_SOURCE_AREA_CASE_FIX.md).
 
 ```json
 {

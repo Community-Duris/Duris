@@ -74,12 +74,13 @@ const cJSON *array(const cJSON *object, const char *key, int low, int high, cons
 	return value;
 }
 
-bool identifier(std::string_view value)
+bool identifier(std::string_view value, bool allow_uppercase = false)
 {
 	if (value.empty() || value.size() > 64)
 		return false;
 	for (const char c : value)
-		if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_'))
+		if (!((c >= 'a' && c <= 'z') || (allow_uppercase && c >= 'A' && c <= 'Z') ||
+		      (c >= '0' && c <= '9') || c == '-' || c == '_'))
 			return false;
 	return true;
 }
@@ -151,7 +152,7 @@ bool apply(const std::string &json, std::string_view source_area,
 			       "story mapping");
 		zone_story_quest_catalog::story_mapping mapping;
 		mapping.source_area = text(root.get(), "source_area", "story mapping");
-		if (mapping.source_area != source_area || !identifier(source_area))
+		if (mapping.source_area != source_area || !identifier(source_area, true))
 			throw std::runtime_error(
 				"story mapping: source_area must match its filename");
 		mapping.revision = integer(cJSON_GetObjectItemCaseSensitive(root.get(), "revision"),
@@ -332,7 +333,7 @@ bool load(zone_story_quest_catalog::catalog *catalog, std::string *error,
 	std::set<std::string> areas;
 	for (const auto &zone : catalog->zones)
 	{
-		if (!identifier(zone.source_area) || !areas.insert(zone.source_area).second)
+		if (!identifier(zone.source_area, true) || !areas.insert(zone.source_area).second)
 			continue;
 		const auto path =
 			std::filesystem::path(directory) / (zone.source_area + ".story.json");
