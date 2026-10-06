@@ -52,7 +52,15 @@ def check(case_id):
         assert len(huge) == 1 and huge[0]["raw"].startswith("G 1 16021 1 ")
         assert huge[0]["preceding_mobile"]["raw"].startswith("M 0 16021 1 16040 ")
     with tempfile.TemporaryDirectory(prefix=f"quest-prep-{case_id}-") as directory:
-        generated = prepare(case_id, Path(directory))
+        if case_id == "QP06":
+            import run_quest_reward_ack_crash as crash
+            terms = crash.prepare_quest_fixture(Path(directory), case_id)
+            assert terms == dict(offering_vnums=(29262, 29263, 29264),
+                                 offering_names=("ear", "scalp", "toe"), giver="kord",
+                                 reward_vnum=29237, reward_name="dagger", coin_reward=3000)
+            generated = json.loads((Path(directory) / "quest-prep-provenance.json").read_text())
+        else:
+            generated = prepare(case_id, Path(directory))
         mini = Path(directory) / "areas_mini"
         assert (mini / "mini.qst").read_text().count("\nQ\n") == len(selected)
         for row in generated["prototype_records"]:

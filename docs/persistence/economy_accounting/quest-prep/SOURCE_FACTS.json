@@ -1,7 +1,7 @@
 [
   {
     "case_id": "QP01",
-    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "accounting_pin": "a5a1f4b196496d50a6f46afecfec03aba3e66190",
     "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
     "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
@@ -183,7 +183,7 @@
   },
   {
     "case_id": "QP02",
-    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "accounting_pin": "a5a1f4b196496d50a6f46afecfec03aba3e66190",
     "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
     "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
@@ -580,7 +580,7 @@
   },
   {
     "case_id": "QP03",
-    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "accounting_pin": "a5a1f4b196496d50a6f46afecfec03aba3e66190",
     "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
     "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
@@ -768,7 +768,7 @@
   },
   {
     "case_id": "QP04",
-    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "accounting_pin": "a5a1f4b196496d50a6f46afecfec03aba3e66190",
     "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
     "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
@@ -828,7 +828,7 @@
   },
   {
     "case_id": "QP05",
-    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "accounting_pin": "a5a1f4b196496d50a6f46afecfec03aba3e66190",
     "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
     "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
@@ -1064,7 +1064,7 @@
   },
   {
     "case_id": "QP06",
-    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "accounting_pin": "a5a1f4b196496d50a6f46afecfec03aba3e66190",
     "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
     "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
@@ -1244,7 +1244,7 @@
   },
   {
     "case_id": "QP07",
-    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "accounting_pin": "a5a1f4b196496d50a6f46afecfec03aba3e66190",
     "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
     "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",

@@ -1,3 +1,38 @@
+# Continued recovery preparation — first checkpoint
+
+Source `a5a1f4b196496d50a6f46afecfec03aba3e66190`, previous tested source
+`2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a`, merge
+`920a7bb8d7aae5400725fad0c70b505e4d263052` preserves prep history. Current primary
+handoffs confirm both packs consumed and shared QP06/move options installed.
+The selected native/static/dynamic owner and area diff between pins is empty.
+
+New `quest_cut_checks.py` protects concrete native-row expectations: exact kinds,
+counts, UID retirement/issuance, untouched spares; each native effect's original
+reference, receipt and source claim; checked copper/balance; frozen admitted XP;
+refusal/replay; original-debit-bound restitution; historical ACK; ordinary reward
+movement and stable second recovery. It does not decode full native commands or
+supply world/constructor/publication/pair authority. Missing rows fail. New
+`capture_quest_cut.py` produces its actual SQL rows in a bounded read-only cut,
+reusing the maintained mobile value grammar. No operational setup or mutation.
+
+| Command | Result/scope |
+| --- | --- |
+| `python3 tests/async/quest_accounting_prep/test_quest_cut_checks.py` | PASS ten unittest methods and their parameterized wrong-kind/quantity/spare/root/refund/XP/ACK/cold controls; constructed cuts, not native execution |
+| `python3 tests/async/quest_accounting_prep/test_production_terms.py --case QP06` | PASS actual shared prepare_quest_fixture API, returned real aliases/VNUMs/C3000, exact production fixture bytes |
+| Collector CLI with `TEST_DB_DISPOSABLE=0` | Expected refusal, exit1, before binary access, connection or output creation |
+| Owned AST/diff checks | PASS; source metadata regenerated with current pin |
+
+RECOVERY_BATCH.md supplies invocation prerequisites and exact commands. The shared
+QP06 option's native gameplay/fault/two-boot execution remains pending at batch
+readiness. Shared callback/capture hooks must expose actual cuts BEFORE cleanup;
+shared run_sql currently drops its generated schema and run removes temporary
+journals on return. A successful stdout line alone cannot provide retained native
+receipt/obligation/source/pair evidence.
+
+The next independent bundle supplies usable static negative/sufficient variants
+and original D/cash/replacement/held recovery checks. Retained historical refresh
+results follow with their original candidate pins.
+
 # Prep verification and integration commands â€” refreshed 2026-10-06
 
 Current accounting source: `2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a`.

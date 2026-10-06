@@ -1,6 +1,7 @@
 # Quest acceptance gaps — 2026-10-06
 
-Current accounting pin: `2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a`.
+Current accounting pin: `a5a1f4b196496d50a6f46afecfec03aba3e66190`.
+Previous tested pin: `2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a`.
 Original accounting base: `17c033d69316b21da8598791fc95cae79baa8dc2`.
 The published native candidate was merged while preserving all prep commits.
 Production AREA/catalog, selected area data, static/dynamic assignments and
@@ -40,3 +41,16 @@ scope; it supplies no birth binding, activation baseline or receipt. Primary own
 all producer/contract/schema/registry changes. Plan 5 owns
 independent audit/restore. Integrated SQL-first qualification remains at the agreed
 major-batch boundary; no full server or database batch ran during this survey.
+
+## Continued stream frontier
+
+The native static/dynamic owners and all selected producer facts are unchanged
+between previous and current pins. Prior component evidence remains pinned to
+its execution; source equality is not a new gameplay qualification. Primary has
+consumed both older packs and supplied shared QP06 fixture/move options. That
+hook is resolved. Current driver still exercises legacy offering/XP-ACK boundaries;
+active-native handovers, original parent/child faults and pre-ACK reward move remain.
+New owned captured-state checks cover exact effects, refusal/replay/refund/ACK and
+ordinary later-move invariants for all selected cases. Canonical SQL/native/world
+proof and native batch execution remain separate. Fixture variants and original
+recipient retirement/held checks are being completed independently.

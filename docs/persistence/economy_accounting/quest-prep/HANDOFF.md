@@ -1,3 +1,61 @@
+# Quest accounting prep — continued recovery stream, 2026-10-06
+
+Current source: `a5a1f4b196496d50a6f46afecfec03aba3e66190`; preserved-history
+merge: `920a7bb8d7aae5400725fad0c70b505e4d263052`.
+Earlier bundles through `3e9ce549a0a14c6414242aae231b69da64b10cce` are already
+consumed by primary. The new work below is additional; do not re-import the old pack.
+The stream is active: negative/sufficient fixture variants, QP03 D/held recovery
+checks and complete native batch instructions remain the next independent work.
+
+## First substantive recovery checkpoint
+
+New owned files: `tests/async/quest_accounting_prep/quest_cut_checks.py`,
+`capture_quest_cut.py`, `test_quest_cut_checks.py`.
+Changed existing files: `case_data.py`, `test_production_terms.py`; owned source
+snapshot and this handoff/results/gaps/cases are refreshed to the new pin.
+The exact bundle SHA is recorded by its following metadata commit.
+
+The new oracle asserts exact production kinds/counts, input retirement and new
+reward UIDs, spares, mixed fees/C3000, native event/accounting reference links,
+committed inbox/source claims, balanced postings, original frozen XP entitlement,
+refusal/replay, exact original-debit restitution, historical ACK and a later
+room move followed by stable cold recovery. These are captured-state predicates;
+canonical native command/context/world/ACK/pair proof remains separate. Missing
+evidence fails rather than selecting a successful stub.
+
+The SELECT-only reader captures real native rows in one repeatable-read read-only
+transaction, checks InnoDB sources and rolls back before writing a new private
+artifact. It creates no database, epoch, task, UID, receipt or binding. Its actual
+SQL execution is pending the integrated disposable batch. Counterfactual unit
+cuts exercise error detection and supply no authority or native qualification.
+
+Small commands from repository root under Linux/WSL:
+
+```bash
+python3 tests/async/quest_accounting_prep/test_quest_cut_checks.py
+python3 tests/async/quest_accounting_prep/test_production_terms.py --case QP06
+```
+
+The first command passes ten unittest methods with parameterized corruption
+controls. The second passes through the actual shared driver's QP06 fixture API,
+verifying its ear/scalp/toe/Kord/dagger/C3000 return terms and production bytes.
+AST/whitespace checks pass. Collector CLI refuses non-disposable configuration
+before touching a server or output. No DB/server/fault/cold execution is claimed.
+
+The frontier is reconciled for all seven cases: native selector/observe_give,
+bartender callbacks and selected producer data are unchanged from the last tested
+pin. Retained QP02/QP04/QP07 failures still apply to those exact owners; QP03's
+resolved generation predicate remains. The shared crash driver now supports
+`--quest-case QP06` and `--move-reward`; that previous hook is closed. Its move is
+AFTER recovery and its breakpoints still select legacy complete_quest_offering
+and quest_reward_recovery_save_acknowledged. Active SQL GIVE needs three genuine
+item handovers, its original native child boundary and authentic setup/receipt
+cuts; the existing single-ear legacy invocation cannot qualify that route.
+
+See current additions in RESULTS.md and RECOVERY_BATCH.md for complete capture,
+check and shared-hook requests. The historical refresh below retains its exact
+pins/results and import order.
+
 # Quest accounting prep handoff â€” refreshed 2026-10-06
 
 The seven-case pack is refreshed for published accounting candidate

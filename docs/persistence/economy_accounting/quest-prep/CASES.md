@@ -1,6 +1,6 @@
 # Prioritized quest accounting acceptance
 
-Every case uses accounting `2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a` and
+Every case uses accounting `a5a1f4b196496d50a6f46afecfec03aba3e66190` and
 PR #678 research `55905eac1906cf59405764407f9d22497cccfff3`. Reverify producer
 bytes on the integrated primary candidate before qualification. Research tests
 are evidence for their own branch only. Original prep base:
