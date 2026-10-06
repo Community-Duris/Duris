@@ -256,6 +256,89 @@ def decode_plan(value):
             "before": before, "after": after}
 
 
+def decode_native_mobile(value):
+    """Independent QMNIMG v1/v2 value grammar; no lifetime/custody authority.
+
+    Historical v1 has no cash observation. This returns only the four persisted
+    row bindings and never synthesizes holdings, transitions or birth evidence.
+    """
+    need(type(value) is bytes and 220 <= len(value) <= MAX_PLAN)
+    need(value[:8] == b"QMNIMG\0\0" and value[10] in (1, 2) and value[11] == 0 and
+         number(value, 12, 4) == len(value) and hashlib.sha256(value[:-32]).digest() == value[-32:])
+    version = number(value, 8, 2)
+    need(version in (1, 2) and any(value[164:180]))
+    reference = value[16:164]
+    need(reference[:8] == b"QMNREF\0\0" and number(reference, 8, 2) == 1 and
+         reference[10] in (1, 2) and reference[11] == 0 and number(reference, 12, 4) == 148 and
+         hashlib.sha256(reference[:-32]).digest() == reference[-32:])
+    identity = number(reference, 16, 8)
+    need(0 < identity < 2**64-1 and any(reference[24:40]))
+    decode_source_event(reference[40:88].hex())
+    vnum, birthplace, zone, mobile_revision, stock_revision = struct.unpack_from('<iiiQQ', reference, 88)
+    need(vnum >= 0 and mobile_revision > 0 and stock_revision > 0 and
+         (zone >= 0 if reference[10] == 1 else zone == -1))
+    length_offset = 180
+    if version == 2:
+        need(len(value) >= 260)
+        cash_revision, *cash = struct.unpack_from('<Q4q', value, 180)
+        need(cash_revision > 0 and all(0 <= coin <= 2147483647 for coin in cash) and
+             (value[10] != 2 or not any(cash)))
+        length_offset = 220
+    offset, end, rows = length_offset + 4, len(value) - 32, 0
+    need(number(value, length_offset, 4) == end - offset)
+
+    def take(width):
+        nonlocal offset
+        need(offset + width <= end)
+        result = value[offset:offset+width]
+        offset += width
+        return result
+
+    def count():
+        nonlocal rows
+        size, = struct.unpack('<I', take(4))
+        need(size <= 8192 and rows + size <= 8192)
+        rows += size
+        return size
+
+    def string():
+        size, = struct.unpack('<I', take(4))
+        need(size <= 4096)
+        take(size)  # Literal byte strings, including NUL/non-UTF8, are preserved.
+
+    objects = count()
+    need(objects <= 4096 and (value[10] != 2 or objects == 0))
+    uids, path, last_slot, inventory_started = set(), [], 0, False
+    for index in range(objects):
+        parent, slot, uid, generated_key, item_vnum, item_type, mask = struct.unpack('<ihQqibB', take(28))
+        need(0 < uid < 2**64-1 and uid not in uids and item_vnum >= 0 and mask == 15)
+        uids.add(uid)
+        if parent == -1:
+            need(0 <= slot <= 43 and (not slot or (not inventory_started and slot > last_slot)))
+            if slot:
+                last_slot = slot
+            else:
+                inventory_started = True
+            path = [index]
+        else:
+            need(0 <= parent < index and slot == 0)
+            while path and path[-1] != parent:
+                path.pop()
+            need(path and len(path) < 32)
+            path.append(index)
+        for _ in range(4):
+            string()
+        take(169)  # Original scalar values/timers/flags/material/affects.
+        take(12 * count())  # Dynamic affects.
+        for _ in range(count()):
+            string()
+            string()
+            need(take(1)[0] in (0, 1))
+            take(4 * count())  # Spellbook IDs share the decoder's row budget.
+    need(offset == end)
+    return identity, mobile_revision, stock_revision, value[10]
+
+
 def require_integrity(executor):
     """Bind every retained root to bounded canonical bytes and SQL projections.
 
@@ -299,6 +382,33 @@ def require_integrity(executor):
                 mismatch(code)
             result.extend(part)
         return bytes(result)
+
+    if executor.sql("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
+                    "AND ENGINE='InnoDB' AND table_name='quest_mobile_native';") != "1":
+        mismatch("native_mobile")
+    mobile_count = executor.sql("SELECT COUNT(*) FROM quest_mobile_native;")
+    if not mobile_count.isdecimal():
+        mismatch("native_mobile")
+    processed, cursor = 0, -1
+    while processed < int(mobile_count):
+        values = arrays("quest_mobile_native", ["mobile_instance_id", "mobile_revision", "stock_revision",
+                        "lifetime_state", "OCTET_LENGTH(canonical_image)"],
+                        "1=1" if cursor < 0 else "mobile_instance_id>" + str(cursor),
+                        "mobile_instance_id LIMIT 256")
+        if not values or len(values) > min(256, int(mobile_count) - processed):
+            mismatch("native_mobile")
+        for row in values:
+            try:
+                need(type(row) is list and len(row) == 5 and all(type(field) is int for field in row) and
+                     cursor < row[0] < 2**64-1 and row[0] > 0 and
+                     0 < row[1] < 2**64 and 0 < row[2] < 2**64 and row[3] in (1, 2))
+                image = capsule("mobile_instance_id=" + str(row[0]), "canonical_image", row[4], MAX_PLAN,
+                                "native_mobile", table="quest_mobile_native", minimum=220)
+                need(tuple(row[:4]) == decode_native_mobile(image))
+            except (ValueError, struct.error):
+                mismatch("native_mobile")
+            cursor = row[0]
+            processed += 1
 
     # Restore must retain the opening witness namespace as well as the generic
     # canonical roots. These checks span all books, including inactive epochs

@@ -673,6 +673,18 @@ independent economic evidence reader. They do not authenticate birth/source
 authority, resolve runtime custody or qualify complete opening, activation or a
 release. The surrounding original restore and lineage checks remain required.
 
+SQL restore and the standalone canonical audit independently interpret every
+`quest_mobile_native.canonical_image`, with 256-row ID pagination and 64 KiB
+capsule chunks. Each row's mobile identity, mobile/stock revisions and lifetime
+state must exactly match its canonical QMNIMG v1/v2 reference and image. The
+reader checks image/reference checksums, literal stock grammar, contiguous DFS,
+equipment, shared nested-row/string/depth bounds, cash revision and denominations,
+and retired stock/v2 cash. Historical v1 cash remains unobserved. The standalone
+audit includes these rows in its 100,000-row collection limit and the images in
+its 32 MiB aggregate capsule budget. Both consumers use SELECT only and refuse
+corruption; neither authenticates birth/source admission, compares complete
+live-world custody, creates money holdings or provides activation authority.
+
 The maintained `test_native_sql_baseline_audit.py` recipe also exercises the
 full independent SQL snapshot reader before and after actual dump/import into
 new private MariaDB and MySQL daemons. Its EAB2 books and commands come from the

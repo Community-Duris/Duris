@@ -69,7 +69,8 @@ TABLES = ("economic_accounting_operation", "economic_accounting_account_effect",
           "economic_accounting_item_reference", "economic_accounting_source_claim",
           "critical_operation_inbox", "item_ownership_ledger", "economic_epoch",
           "economic_lineage_state", "player_data", "currency_wallet_baseline",
-          "epic_balance_baseline", "mud_schema_migrations", "mud_schema_migration_state")
+          "epic_balance_baseline", "mud_schema_migrations", "mud_schema_migration_state",
+          "quest_mobile_native")
 
 
 def execute(query, params=None):
@@ -179,6 +180,19 @@ def canonical_cut(label, changes, repairs, code, full=False):
             assert code is None, (label, "corrupt canonical evidence was admitted", code)
         finally:
             reader.rollback()
+        if label.startswith("native-mobile-"):
+            import economic_sql_canonical_audit as canonical_audit
+            audit_reader = pymysql.connect(**(settings | {"database": "duris_restore", "user": READER,
+                "password": "plan5-disposable-reader", "cursorclass": pymysql.cursors.DictCursor}))
+            try:
+                try:
+                    result = canonical_audit.capture(audit_reader)
+                except canonical_audit.AuditError as error:
+                    assert str(error) == code, (label, str(error), code)
+                else:
+                    assert code is None and result["read_only"] and not result["release_qualified"]
+            finally:
+                audit_reader.close()
         assert captured() == cut, label + ": audit changed authority"
     finally:
         for query, params in repairs:
@@ -212,7 +226,7 @@ try:
     subprocess.run(command, input=(ROOT / "migrations/bootstrap_multithread_safe.sql").read_bytes(),
                    env=dict(os.environ, MYSQL_PWD=settings["password"]), check=True, timeout=180)
     manifest = migrations.load_manifest()
-    assert manifest.migrations[-1].migration_id == "0061_economic_baseline_equipment"
+    assert manifest.migrations[-1].migration_id == "0062_economic_pending_claim_consumption"
     executor = migrations.MysqlExecutor(manifest)
     try:
         executor.adopt("fresh_bootstrap")
@@ -236,6 +250,56 @@ try:
     os.environ["DB_USER"] = READER
     os.environ["DB_PASSWD"] = "plan5-disposable-reader"
     admitted()  # Inactive legacy/empty evidence remains eligible for restore.
+    from test_economic_sql_canonical_audit import (NATIVE_MOBILE_STOCK_DAMAGE,
+        native_mobile_forests, native_mobile_image, native_mobile_stock)
+    insert_mobile = "INSERT INTO quest_mobile_native VALUES(%s,%s,%s,%s,%s)"
+    remove_mobile = "DELETE FROM quest_mobile_native WHERE mobile_instance_id=%s"
+    mobile_code = "restore_economic_native_mobile_mismatch"
+    for version in (1, 2):
+        for lifetime in (1, 2):
+            stock = native_mobile_stock() if lifetime == 1 else bytes(4)
+            image = native_mobile_image(version, lifetime, stock)
+            canonical_cut(f"native-mobile-v{version}-state{lifetime}",
+                [(insert_mobile, (42, 2, 3, lifetime, image))], [(remove_mobile, (42,))], None, full=True)
+    image = native_mobile_image()
+    for label, fields in (
+            ("ID binding", (43, 2, 3, 1, image)), ("zero ID", (0, 2, 3, 1, image)),
+            ("reserved ID", (2**64-1, 2, 3, 1, image)),
+            ("mobile revision", (42, 3, 3, 1, image)), ("stock revision", (42, 2, 4, 1, image)),
+            ("lifetime state", (42, 2, 3, 2, image)),
+            ("zero mobile revision", (42, 0, 3, 1, image)), ("zero stock revision", (42, 2, 0, 1, image)),
+            ("unknown lifetime", (42, 2, 3, 3, image)),
+            ("corrupt body", (42, 2, 3, 1, b"corrupt-native-mobile-image")),
+            ("checksum", (42, 2, 3, 1, image[:-1] + bytes([image[-1] ^ 1]))),
+            ("truncated", (42, 2, 3, 1, image[:-1])),
+            ("trailing", (42, 2, 3, 1, image + b"\0")),
+            ("size bound", (42, 2, 3, 1, bytes(4*1024*1024+1)))):
+        canonical_cut("native-mobile-" + label, [(insert_mobile, fields)],
+                      [(remove_mobile, (fields[0],))], mobile_code, full=True)
+    for label, offset, changed in NATIVE_MOBILE_STOCK_DAMAGE:
+        stock = bytearray(native_mobile_stock())
+        stock[offset:offset+len(changed)] = changed
+        canonical_cut("native-mobile-stock-" + label,
+            [(insert_mobile, (42, 2, 3, 1, native_mobile_image(items=bytes(stock))))],
+            [(remove_mobile, (42,))], mobile_code, full=True)
+    for label, valid, stock in native_mobile_forests():
+        canonical_cut("native-mobile-forest-" + label,
+            [(insert_mobile, (42, 2, 3, 1, native_mobile_image(items=stock)))],
+            [(remove_mobile, (42,))], None if valid else mobile_code, full=True)
+    highest = 2**64-2
+    canonical_cut("native-mobile-highest-lifetime",
+        [(insert_mobile, (highest, 2, 3, 1, native_mobile_image(identity=highest)))],
+        [(remove_mobile, (highest,))], None, full=True)
+    page = [(identity, 2, 3, 1, native_mobile_image(identity=identity)) for identity in range(1000, 1259)]
+    canonical_cut("native-mobile-259-row-two-page-cut", [(insert_mobile, row) for row in page],
+                  [(remove_mobile, (row[0],)) for row in page], None, full=True)
+    page[-1] = (*page[-1][:4], page[-1][4][:-1] + bytes([page[-1][4][-1] ^ 1]))
+    canonical_cut("native-mobile-second-page-corruption", [(insert_mobile, row) for row in page],
+                  [(remove_mobile, (row[0],)) for row in page], mobile_code, full=True)
+    print("NATIVE_MOBILE_RESTORE_CUTS " + json.dumps({
+        "cuts": len(canonical_cuts), "original_readers": 2, "versions": 2,
+        "page_rows": 259, "image_bound": 4*1024*1024,
+        "authority_unchanged": True, "modeled_images_are_not_birth_authority": True}, sort_keys=True), flush=True)
     execute("INSERT INTO player_data(pid,name,copper,silver,gold,platinum,wallet_revision,epics,epic_revision) "
             "VALUES(42,'SyntheticRestore',7,0,0,0,1,0,0)")
     execute("INSERT INTO currency_wallet_baseline(pid,opening_copper,opening_silver,opening_gold,"

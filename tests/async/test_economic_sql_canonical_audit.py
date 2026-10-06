@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import struct
 import subprocess
 import sys
 import time
@@ -21,6 +22,63 @@ import economic_restore_evidence as evidence
 from test_plan5_child_identity import NATIVE_PROBE, child
 from test_reconcile_economy_accounting import clean_snapshot, Reconciler
 from reconcile_economy_accounting import SnapshotError, view
+
+
+def native_mobile_stock():
+    def string(value):
+        return struct.pack('<I', len(value)) + value
+    return (struct.pack('<IihQqibB', 1, -1, 7, 81, 0, 100, 1, 15) +
+            string(b'\0\xff') + string(b'') * 3 + bytes(169) +
+            struct.pack('<IhhQ', 1, 2, -3, 4) + struct.pack('<I', 1) +
+            string(b'key') + string(b'description') + struct.pack('<BIii', 1, 2, 0, -1))
+
+
+NATIVE_MOBILE_STOCK_DAMAGE = (
+    ('object count', 0, struct.pack('<I', 4097)), ('parent', 4, struct.pack('<i', 0)),
+    ('slot', 8, struct.pack('<h', 44)), ('zero UID', 10, bytes(8)),
+    ('reserved UID', 10, struct.pack('<Q', 2**64-1)),
+    ('vnum', 26, struct.pack('<i', -1)), ('literal mask', 31, b'\0'),
+    ('string bound', 32, struct.pack('<I', 4097)),
+    ('dynamic row budget', 219, struct.pack('<I', 8192)),
+    ('extra row budget', 235, struct.pack('<I', 8192)),
+    ('spellbook boolean', 261, b'\x02'), ('spell row budget', 262, struct.pack('<I', 8192)))
+
+
+def native_mobile_forests():
+    def forest(rows):
+        result = bytearray(struct.pack('<I', len(rows)))
+        for parent, slot, uid in rows:
+            item = bytearray(native_mobile_stock()[4:])
+            struct.pack_into('<ihQ', item, 0, parent, slot, uid)
+            result.extend(item)
+        return bytes(result)
+    return [(label, valid, forest(rows)) for label, valid, rows in (
+        ('equipped-carried-DFS', True, [(-1, 1, 81), (-1, 43, 82), (-1, 0, 83), (2, 0, 84), (3, 0, 85), (2, 0, 86)]),
+        ('maximum UID', True, [(-1, 0, 2**64-2)]),
+        ('maximum depth', True, [(index-1, 0, index+81) for index in range(32)]),
+        ('depth overflow', False, [(index-1, 0, index+81) for index in range(33)]),
+        ('duplicate UID', False, [(-1, 0, 81), (-1, 0, 81)]),
+        ('reopened subtree', False, [(-1, 0, 81), (0, 0, 82), (-1, 0, 83), (0, 0, 84)]),
+        ('negative parent', False, [(-2, 0, 81)]),
+        ('forward parent', False, [(1, 0, 81), (-1, 0, 82)]),
+        ('child equipment', False, [(-1, 0, 81), (0, 1, 82)]),
+        ('equipment order', False, [(-1, 2, 81), (-1, 1, 82)]),
+        ('equipment after carried', False, [(-1, 0, 81), (-1, 1, 82)]),
+        ('negative equipment', False, [(-1, -1, 81)]))]
+
+
+def native_mobile_image(version=2, state=1, items=b'\0' * 4, identity=42):
+    """Modeled wire bytes; the original flatfile fixture supplies native proof."""
+    source = struct.pack('<HH16s16sQI', 10, 1, b'\x47' + bytes(15), b'\x48' + bytes(15), 3, 5)
+    reference = (b'QMNREF\0\0' + struct.pack('<HBBIQ', 1, 1, 0, 148, identity) +
+                 b'\x46' + bytes(15) + source + struct.pack('<iiiQQ', 9001, 3000, 30, 2, 3))
+    reference += hashlib.sha256(reference).digest()
+    image = (b'QMNIMG\0\0' + struct.pack('<HBBI', version, state, 0,
+             (216 if version == 1 else 256) + len(items)) + reference + b'\x49' + bytes(15))
+    if version == 2:
+        image += struct.pack('<Q4q', 4, *(0 if state == 2 else coin for coin in (5, 6, 7, 8)))
+    image += struct.pack('<I', len(items)) + items
+    return image + hashlib.sha256(image).digest()
 
 
 class RestoreProjectionFixture:
@@ -78,11 +136,22 @@ class RestoreProjectionFixture:
             self.rows['metadata'][0][17:25] = [2, 5, 0, 0, 0, 0, 0, 0]
         self.queries = []
         self.admission_column_count = '1'
+        self.mobile_image = None
+        self.mobile_row = None
 
     def sql(self, query):
         if not query.startswith('SELECT '):
             raise AssertionError(query)
         self.queries.append(query)
+        if 'FROM quest_mobile_native' in query:
+            if query.startswith('SELECT COUNT(*)'):
+                return '0' if self.mobile_image is None else '1'
+            if query.startswith('SELECT JSON_ARRAY('):
+                return '' if self.mobile_row is None else json.dumps(self.mobile_row)
+            if query.startswith('SELECT HEX(SUBSTRING('):
+                offset, count = map(int, query.split('canonical_image,')[1].split(')')[0].split(','))
+                return self.mobile_image[offset-1:offset-1+count].hex()
+            raise AssertionError(query)
         if 'SELECT JSON_ARRAY(' in query:
             table = query.split(' FROM ', 1)[1].split(' ', 1)[0]
             name = {'economic_accounting_operation': 'metadata', 'economic_accounting_account_effect': 'accounts',
@@ -103,6 +172,8 @@ class RestoreProjectionFixture:
                 return self.encoded.hex()
             return self.baseline['canonical_witness'].hex()
         if 'information_schema.tables' in query:
+            if "table_name='quest_mobile_native'" in query:
+                return '1'
             return '3'
         if 'information_schema.columns' in query:
             return self.admission_column_count
@@ -131,6 +202,68 @@ class RestoreProjectionTests(unittest.TestCase):
                 evidence.require_integrity(fixture)
                 self.assertEqual(fixture.rows, before)
                 self.assertTrue(all(query.startswith('SELECT ') for query in fixture.queries))
+
+    def test_sql_native_mobile_corruption_is_not_qualified(self):
+        fixture = RestoreProjectionFixture()
+        fixture.mobile_image = b'corrupt-native-mobile-image'
+        fixture.mobile_row = [42, 2, 3, 1, len(fixture.mobile_image)]
+        self.refuse(fixture, 'native_mobile')
+
+    def test_sql_native_mobile_valid_versions_lifetimes_and_stock(self):
+        for version, state, stock in ((1, 1, bytes(4)), (1, 2, bytes(4)), (2, 1, bytes(4)),
+                                      (2, 2, bytes(4)), (1, 1, native_mobile_stock()),
+                                      (2, 1, native_mobile_stock())):
+            fixture = RestoreProjectionFixture()
+            fixture.mobile_image = native_mobile_image(version, state, stock)
+            fixture.mobile_row = [42, 2, 3, state, len(fixture.mobile_image)]
+            before = fixture.mobile_image, copy.deepcopy(fixture.mobile_row)
+            with self.subTest(version=version, state=state, stock=len(stock)):
+                evidence.require_integrity(fixture)
+                self.assertEqual((fixture.mobile_image, fixture.mobile_row), before)
+                self.assertEqual(evidence.decode_native_mobile(fixture.mobile_image), (42, 2, 3, state))
+                self.assertTrue(all(query.startswith('SELECT ') for query in fixture.queries))
+
+    def test_sql_native_mobile_projection_types_values_and_binding(self):
+        for index, changed in ((0, 0), (0, 43), (0, 2**64-1), (1, 0), (1, 3), (1, 2**64),
+                               (2, 0), (2, 4), (3, 0), (3, 2), (3, 3), (4, 219),
+                               (4, 4*1024*1024+1), (4, 261)):
+            fixture = RestoreProjectionFixture()
+            fixture.mobile_image = native_mobile_image()
+            fixture.mobile_row = [42, 2, 3, 1, len(fixture.mobile_image)]
+            fixture.mobile_row[index] = changed
+            with self.subTest(index=index, changed=changed):
+                self.refuse(fixture, 'native_mobile')
+        for index in range(5):
+            for changed in (True, 42.0, '42', None):
+                fixture = RestoreProjectionFixture()
+                fixture.mobile_image = native_mobile_image()
+                fixture.mobile_row = [42, 2, 3, 1, len(fixture.mobile_image)]
+                fixture.mobile_row[index] = changed
+                with self.subTest(index=index, changed=changed):
+                    self.refuse(fixture, 'native_mobile')
+
+    def test_sql_native_mobile_stock_value_corruption_refuses(self):
+        stock = native_mobile_stock()
+        # The native oracle also consumes this deliberately modeled stock.
+        for label, offset, changed in NATIVE_MOBILE_STOCK_DAMAGE:
+            damaged = bytearray(stock)
+            damaged[offset:offset+len(changed)] = changed
+            fixture = RestoreProjectionFixture()
+            fixture.mobile_image = native_mobile_image(items=bytes(damaged))
+            fixture.mobile_row = [42, 2, 3, 1, len(fixture.mobile_image)]
+            with self.subTest(label=label):
+                self.refuse(fixture, 'native_mobile')
+
+    def test_sql_native_mobile_forest_topology_and_depth(self):
+        for label, valid, stock in native_mobile_forests():
+            fixture = RestoreProjectionFixture()
+            fixture.mobile_image = native_mobile_image(items=stock)
+            fixture.mobile_row = [42, 2, 3, 1, len(fixture.mobile_image)]
+            with self.subTest(label=label):
+                if valid:
+                    evidence.require_integrity(fixture)
+                else:
+                    self.refuse(fixture, 'native_mobile')
 
     def test_original_admission_time_and_command_hash_refuse_restore(self):
         for index, value in [(15, value) for value in (0, -1, 2**64, True, 123456.0, "123456", 123457)] + [
@@ -213,7 +346,7 @@ class CanonicalAuditTests(unittest.TestCase):
     def connection(self):
         connection = mock.Mock()
         cursor = connection.cursor.return_value
-        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': 0}], [], [{'size': 0}], [],
+        cursor.fetchmany.side_effect = [[{'count': 16}], [], [{'count': 0}], [], [{'mobiles': 0}], [], [{'size': 0}], [],
                                        [{'unwanted': 0}], [], [{'claims': 0}], [], [{'unwanted_claim': 0}], []]
         return connection, cursor
 
@@ -229,7 +362,7 @@ class CanonicalAuditTests(unittest.TestCase):
 
     def test_root_limit_refuses_before_capsule_reads(self):
         connection, cursor = self.connection()
-        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': audit.MAX_ROWS+1}], []]
+        cursor.fetchmany.side_effect = [[{'count': 16}], [], [{'count': audit.MAX_ROWS+1}], []]
         with mock.patch.object(audit, 'require_integrity') as verifier:
             with self.assertRaisesRegex(audit.AuditError, 'root count'):
                 audit.capture(connection)
@@ -239,7 +372,7 @@ class CanonicalAuditTests(unittest.TestCase):
 
     def test_missing_or_nontransactional_source_refuses(self):
         connection, cursor = self.connection()
-        cursor.fetchmany.side_effect = [[{'count': 14}], []]
+        cursor.fetchmany.side_effect = [[{'count': 15}], []]
         with mock.patch.object(audit, 'require_integrity') as verifier:
             with self.assertRaisesRegex(audit.AuditError, 'not InnoDB'):
                 audit.capture(connection)
@@ -249,8 +382,8 @@ class CanonicalAuditTests(unittest.TestCase):
 
     def test_capsule_budget_refuses_before_decoding(self):
         connection, cursor = self.connection()
-        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': 1}], [],
-                                       [{'size': audit.MAX_INPUT_BYTES+1}], []]
+        cursor.fetchmany.side_effect = [[{'count': 16}], [], [{'count': 1}], [],
+                                       [{'mobiles': 0}], [], [{'size': audit.MAX_INPUT_BYTES+1}], []]
         with mock.patch.object(audit, 'require_integrity') as verifier:
             with self.assertRaisesRegex(audit.AuditError, 'capsules exceed'):
                 audit.capture(connection)
@@ -258,9 +391,21 @@ class CanonicalAuditTests(unittest.TestCase):
         connection.rollback.assert_called_once_with()
         cursor.close.assert_called_once_with()
 
+    def test_native_mobile_budget_refuses_before_capsule_reads(self):
+        for mobiles in (-1, audit.MAX_ROWS+1):
+            connection, cursor = self.connection()
+            cursor.fetchmany.side_effect = [[{'count': 16}], [], [{'count': 0}], [],
+                                           [{'mobiles': mobiles}], []]
+            with self.subTest(mobiles=mobiles), mock.patch.object(audit, 'require_integrity') as verifier:
+                with self.assertRaisesRegex(audit.AuditError, 'native mobile count'):
+                    audit.capture(connection)
+                verifier.assert_not_called()
+            connection.rollback.assert_called_once_with()
+            cursor.close.assert_called_once_with()
+
     def test_orphan_and_rejected_details_refuse_before_decoding(self):
         connection, cursor = self.connection()
-        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': 0}], [], [{'size': 0}], [], [{'unwanted': 1}], []]
+        cursor.fetchmany.side_effect = [[{'count': 16}], [], [{'count': 0}], [], [{'mobiles': 0}], [], [{'size': 0}], [], [{'unwanted': 1}], []]
         with mock.patch.object(audit, 'require_integrity') as verifier:
             with self.assertRaisesRegex(audit.AuditError, 'orphan_or_rejected_detail'):
                 audit.capture(connection)
@@ -318,7 +463,7 @@ class CanonicalAuditTests(unittest.TestCase):
 
     def test_source_claim_limit_refuses_before_original_capsule_decoding(self):
         connection, cursor = self.connection()
-        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': 1}], [], [{'size': 512}], [],
+        cursor.fetchmany.side_effect = [[{'count': 16}], [], [{'count': 1}], [], [{'mobiles': 0}], [], [{'size': 512}], [],
                                        [{'unwanted': 0}], [], [{'claims': audit.MAX_ROWS+1}], []]
         with mock.patch.object(audit, 'require_integrity') as verifier:
             with self.assertRaisesRegex(audit.AuditError, 'source_claim'):
@@ -329,7 +474,7 @@ class CanonicalAuditTests(unittest.TestCase):
 
     def test_database_wide_source_claim_disagreement_refuses_before_decoding(self):
         connection, cursor = self.connection()
-        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': 1}], [], [{'size': 512}], [],
+        cursor.fetchmany.side_effect = [[{'count': 16}], [], [{'count': 1}], [], [{'mobiles': 0}], [], [{'size': 512}], [],
                                        [{'unwanted': 0}], [], [{'claims': 1}], [], [{'unwanted_claim': 1}], []]
         with mock.patch.object(audit, 'require_integrity') as verifier:
             with self.assertRaisesRegex(audit.AuditError, 'source_claim'):
