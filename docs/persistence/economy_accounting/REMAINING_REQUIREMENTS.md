@@ -1,5 +1,14 @@
 # Double-entry economy: remaining requirements
 
+## Claim consumption schema0062 qualified — 2026-10-06
+
+[Exact additive0062 qualification](CLAIM_CONSUMPTION_SCHEMA_0062_PRIMARY_QUALIFICATION_2026-10-06.md)
+registers immutable partial claims and nullable new-origin witnesses without
+backfilling history. Both original engine/fork/compiled-boot and native session
+fault suites pass; both fresh738-object production builds and current contracts
+pass. Original receipt comparisons now cover complete manifests. Producer money
+opening/spending/recovery, independent readers, full R6/R8 and release remain open.
+
 ## Matching equipment capture and production-build evidence consumed — 2026-10-06
 
 [Primary source comparison](PLAN5_EQUIPMENT_V2_PRIMARY_QUALIFICATION_2026-10-06.md)

@@ -8491,6 +8491,38 @@
       "exception": "protected_reconciliation_or_replay_horizon",
       "protected_record": true,
       "dependencies": []
+    },
+    {
+      "id": "database:economic_pending_claim_consumption",
+      "kind": "database_table",
+      "locator": "economic_pending_claim_consumption",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Retain immutable partial pending-claim debits against their original source allocation for replay and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:economic_accounting_operation",
+        "database:economic_pending_claim_source"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      }
     }
   ]
 }
