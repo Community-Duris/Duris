@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 175 &&
+		require(catalog.story_mappings.size() == 176 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,115 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "menden"; });
+			const auto &relic = story_for("menden", "holy-elven-relic");
+			require(mapping.stories.size() == 1 && mapping.contacts.size() == 8 &&
+					relic.steps.size() == 2 && mapping.revision == 1,
+				"Menden journal scope failed");
+			int achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 888)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 1 && dailies == 1,
+				"Menden native classification changed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 888, 88863, 100, "arrival") ==
+					result::applied,
+				"Menden discovery failed");
+			for (int v : { 88806, 88805, 88808, 88807, 88810, 88804, 88817 })
+				require(journey.meet_npc(7, 42, v, 88823, 101) == result::applied,
+					"Menden side contact failed");
+			std::string journal =
+				journey.render_journal(7, 42, 888, 10, 1, 102, false, false);
+			require(journal.find("] " + relic.title + "\r\n") == std::string::npos,
+				"Menden unrelated encounter exposed relic card");
+			require(journey.meet_npc(7, 42, 88816, 88860, 103) == result::applied,
+				"Menden Kitan encounter failed");
+			const auto status = [&](size_t row, const char *state)
+			{
+				return journal.find(std::string("[") + state + "] " +
+						    relic.steps[row].text) != std::string::npos;
+			};
+			const auto before = journey.serialize_state();
+			supplies = {};
+			journal = journey.render_journal(7, 42, 888, 10, 1, 104, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Pending"),
+				"Menden discovery created relic custody or receipt");
+			supplies.equipped[18] = 4402;
+			supplies.equipped[2] = 4402;
+			journal = journey.render_journal(7, 42, 888, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Pending"),
+				"Menden held/worn relic substituted loose proof");
+			supplies = {};
+			for (int v : { 88807, 88810, 88821, 88824, 88825, 88826, 88827, 88828,
+				       88830, 94726, 4403, 4404 })
+				supplies.carried[v] = 2;
+			journal = journey.render_journal(7, 42, 888, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Pending"),
+				"Menden unholy/access/service/foreign reward substituted relic or receipt");
+			supplies = {};
+			supplies.carried[4402] = 1;
+			journal = journey.render_journal(7, 42, 888, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Pending") &&
+					journey.serialize_state() == before,
+				"Menden supplied relic imposed source history or created receipt");
+			require(journal.find("serpent") != std::string::npos &&
+					journal.find("cause light") != std::string::npos,
+				"Menden guidance lost actual door/reward behavior");
+			const auto &other = *std::find_if(catalog.definitions.begin(),
+							  catalog.definitions.end(),
+							  [](const auto &d)
+							  { return d.giver_vnum == 4401; });
+			record(journey, other.definition_id, "menden-zorta", 44, 4610);
+			journal = journey.render_journal(7, 42, 888, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(1, "Pending") &&
+					journey.progress_for_zone(7, 42, 888).completed == 0,
+				"Menden linked foreign receipt completed Kitan");
+			record(journey, relic.contracts.front(), "menden-relic", 888, 88860);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 888, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 888).completed == 1,
+				"Menden spent relic lost accepted return");
+			supplies.carried[4402] = 1;
+			journal = journey.render_journal(7, 42, 888, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 888).completed == 1,
+				"Menden reacquired relic duplicated return");
+			auto replay = completion(relic.contracts.front(), "menden-relic", 120);
+			replay.transaction.zone_number = 888;
+			replay.transaction.room_vnum = 88860;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Menden replay duplicated receipt");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 888).completed == 1,
+				"Menden cold recovery lost receipt");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 888, 88846, 100, "arrival") ==
+					result::applied,
+				"Menden alternate arrival failed");
+			record(raw, relic.contracts.front(), "menden-raw", 888, 88860);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 888).completed == 1,
+				"Menden raw-to-authored recovery lost receipt");
 		}
 
 		{

@@ -1,0 +1,124 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "menden",
+  "coverage": "complete",
+  "introduction": "Follow Kitan's relic return, with village clues, independent house exploration, magical pools and separate services explained by their actual behavior.",
+  "orientation": [
+    "Explore Menden from the surface roads or ocean-side dock. The village, temple, coast and magus's house offer separate routes. Visibility, occupancy, shared passage state and current stock affect what you can reach.",
+    "Find the stocked pool inside the temple's Chamber of Faith and ENTER pool to reach Kitan's Chamber of Life. A second stocked pool leads back. Each selected pool deals seven damage to ordinary travelers, clamped at one hit point by its handler; successful arrival is separate from a handled command.",
+    "Ask Kitan resurection, price, relic or elves. The native command spells resurection this way. These four words select three responses; hearing them does not award four keyword achievements.",
+    "Kitan asks for the exact holy elven relic of life. Zorta in the Underworld carries it when stocked. Zorta's chamber has its own paired magenta pools with greater damage; this guidance does not qualify the entire Underworld route or guarantee supply.",
+    "Carry one exact holy relic visible and loose, then offer it to Kitan. Supplied relics also fit; personal combat, first-source recovery, earlier conversation and the house puzzle are not native exchange requirements. Worn, held or nested relics must be made loose.",
+    "Kitan's accepted native return gives 100000 copper and he departs. His dialogue describes restoring life, but this recipe does not grant a resurrection skill. The journal records the exchange rather than promising that ability.",
+    "Kitan carries the different unholy relic when stocked. Zorta accepts that relic in a separate departing return whose current reward is cause light, subject to skill eligibility. A dwarven spirit in the Deep Ravine of Passage accepts both relics for its own reward. These returns compete for physical items and retain independent histories.",
+    "Listen to the fisherman and magus at the Oak and Ragged Staff for village tales and the house clue. At the magical house door, SAY serpent unlocks it; OPEN and travel are later actions. The magus's ivory key fits the house chest, not this spoken door. Shared access may already be open.",
+    "The house chest contains a bugbear figurine and staff when stocked. Unlock it with the exact ivory key or use an eligible successful lock-picking route, then open it and recover the contents. HOLD and FLEX the figurine to invoke its pet behavior. Chest access, recovery and actual pet creation are separate from Kitan's quest.",
+    "Llym's basement altar has a legacy offering service for held valuable treasure, but it refuses offerings while accounting is active. It does not purify either armor relic. Trackable sacrifice, random benefits and pet or item grants need further durable integration before a journal can count them.",
+    "Memson, Jennis and the serving wench offer village shop information. Their native shop trades and services refuse mutations while accounting is active. The dock has separate ship services with their own ownership, combat, location and maintenance conditions; browsing or a handled command is not a completed service receipt.",
+    "New discovery, encounter, journal, achievement and daily progress requires active, ready accounting. One repeatable native return provides one achievement and one potential daily. A new day does not replace a departed giver, restore shared relic stock or create a personal acquisition record. Accepted exchange history remains after the relic is spent."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 88816,
+      "name": "Kitan the all knowing",
+      "keyword": "kitan",
+      "description": "Ask resurection, price, relic or elves for the three native responses. The actual accepted return grants coins and Kitan departs.",
+      "topics": [
+        "resurection",
+        "price",
+        "relic",
+        "elves"
+      ]
+    },
+    {
+      "mob_vnum": 88806,
+      "name": "the drunken magus",
+      "keyword": "magus",
+      "description": "The magus tells house and sea tales at the pub and carries the chest key when stocked. SAY serpent unlocks the magical door, followed by OPEN and travel.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 88805,
+      "name": "the fisherman",
+      "keyword": "fisherman",
+      "description": "The fisherman tells village and sea tales. Listening and shared clues are guidance, without personal quest receipts.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 88808,
+      "name": "the village aovalk",
+      "keyword": "aovalk",
+      "description": "The temple aovalk and its murals are village context. The stocked pool beyond the temple leads to Kitan; this contact is not a separate native hand-in.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 88807,
+      "name": "Memson",
+      "keyword": "memson",
+      "description": "Memson supplies ordinary village shop information. Native trade mutations currently refuse while accounting is active.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 88810,
+      "name": "Jennis",
+      "keyword": "jennis",
+      "description": "Jennis offers travel goods and a treasure map when stocked. Buying is a separate service and currently refuses under active accounting.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 88804,
+      "name": "the serving wench",
+      "keyword": "wench",
+      "description": "The Oak and Ragged Staff serves village food and drink. Its shop mutations currently refuse under active accounting.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 88817,
+      "name": "a man selling ships",
+      "keyword": "ship",
+      "description": "The seller is dock context. Ship service dispatch belongs to the dock room and successful owned service outcomes need separate qualification.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "holy-elven-relic",
+      "title": "Return the holy elven relic to Kitan",
+      "category": "request",
+      "summary": "Prepare one exact holy elven relic of life for Kitan. His native return gives 100000 copper and he departs. Current loose custody and the recorded exchange remain distinct; supplied relics fit without personal source recovery, prior conversation or house access.",
+      "contracts": [
+        {
+          "giver_vnum": 88816,
+          "completion_key": "give=I:4402;receive=C:100000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "holy-relic",
+          "text": "Carry the holy elven relic of life loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            4402
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks the exact visible loose holy relic now. Zorta has source stock when present; a supplied relic also prepares the return without proving your own recovery. Remove worn or held relics and take them out of containers."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record Kitan's accepted relic return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 88816,
+              "completion_key": "give=I:4402;receive=C:100000;disappear=1"
+            }
+          ],
+          "hint": "Records the exact relic exchange for 100000 copper and Kitan's departure. Dialogue, house access, unholy relic custody, reward possession and independent foreign returns do not substitute this receipt."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
