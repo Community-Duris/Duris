@@ -434,3 +434,45 @@ Selected checks have 0 skips; neither full Plan5 nor release is complete. Primar
 locally maintained notebook stays nonblocking; this owned report/seal/publication
 receipt is its curator packet. Accounting stays inactive, wallet-root exclusions
 and the declined inactive spell path remain. No cross-chat message is claimed.
+
+## Flatfile retained-source-loss follow-up
+
+The same remote `codex/accounting-plan5` publishes separate coverage issue
+`c00bf4dd1c215025799556575b243c2ce0fcd0a8`, based on
+`445b4caa9f755ae7283cc6a0de1aec5ac67ed22a`. The
+[exact qualification](PLAN5_FLATFILE_RETAINED_SOURCE_LOSS_QUALIFICATION_2026-10-06.md)
+records the complete original omission run and complete extended native run,
+three character/durable/uncertain journeys, thirteen independent captures,
+seven cold restarts, three post-erasure source-claim refusals and three restored
+valid controls. The reader leaves damaged economic evidence and native
+authority unchanged; only the disposable owner restores its injected fault.
+Original native fixture/auditor/inspector binaries match across both runs.
+These are common source-event claims and modeled plans, not SQL pending-claim
+allocations or genuine financial-producer evidence.
+
+Only the flatfile body of `tests/async/run_plan5_retention_journeys.py` changes.
+The SQL runner/native codec prefix remains exact. Protected seal
+`D:/CodexEvidence/accounting-plan5/bin/flat-source-loss-retention-final-seal-01-20261006/evidence.json`
+has SHA256 `df3b089aa52ad7a2a76d3f66ad672891f9d918274fe899ba4d80bf064630cd33`.
+All earlier tips and later follow-ups remain on this same branch. Publication
+receipt separately binds remote tip, clean state and unchanged tested code.
+
+[The shared player-inspector provider request](PLAN5_SHARED_PLAYER_INSPECTOR_PROVIDER_HANDOFF_2026-10-06.md)
+records an actual original missing baseline-provider link, found in failed
+red01 before any retention journey. Its repair/consumer qualification remains
+primary-owned. Correct deletion preparation passes all eighteen native journal
+boundaries; no shared helper is independently changed. Selected completed scope
+has zero skips and no independent blocker. Owned reports/seals/receipts form
+the primary's nonblocking local notebook curator packet; no direct cross-chat
+message is claimed.
+
+The newest refresh observes primary `de3296fd028261f650e86165f632690e14f98b4a`,
+native tree `4abb609524a1f1682ea4c190f82d75003c4d679b`, with canonical0062
+migration tree unchanged. This slice tested the earlier native tree
+`cf8dc0761057de7087a347b8e8c21285968ef4f9`; it does not qualify the newer
+auction/opening implementation. Its exact import and independent acceptance
+follow-up stay on this branch. Complete capture/verifier, real producers and
+recovery, typed active erasure, full backend/managed retention and release-host
+mixed workload budgets remain open. Accounting remains inactive and full Plan5/
+release are incomplete; wallet-root exclusions and declined inactive spell
+behavior remain.
