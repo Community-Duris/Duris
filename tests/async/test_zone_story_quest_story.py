@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 162 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 163 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -432,6 +432,13 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
  assert 'Accounting currently blocks' in s['summary'] and s['steps'][-1]['contracts']==s['contracts']
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
+
+
+tiamat=next(m for m in catalog['story_mappings'] if m['source_area']=='tiamat')
+assert (tiamat['schema_version'],tiamat['revision'],tiamat['coverage'])==(3,1,'complete') and not tiamat['exclusions']
+assert len(tiamat['stories'])==8 and len(tiamat['contacts'])==17 and sum(len(c['topics']) for c in tiamat['contacts'])==10
+assert sum(len(s['steps']) for s in tiamat['stories'])==27 and sum(t.get('optional',False) for s in tiamat['stories'] for t in s['steps'])==19
+assert len({s['contracts'][0]['completion_key'] for s in tiamat['stories']})==8 and report['eligible_by_zone']['196']==8
 
 
 mount=next(m for m in catalog['story_mappings'] if m['source_area']=='mount')

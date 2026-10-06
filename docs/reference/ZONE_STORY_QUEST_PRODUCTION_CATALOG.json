@@ -55595,6 +55595,581 @@
     {
       "contacts": [
         {
+          "description": "Ask key, fragment, item, something, for, me or tiamat. This one craftsman accepts all seven exact key sets and the cadaver offering. MA replies echo addressed questions to the room.",
+          "keyword": "oddly",
+          "mob_vnum": 19616,
+          "name": "an oddly-clothed man",
+          "topics": [
+            "key",
+            "fragment",
+            "item",
+            "something",
+            "for",
+            "me",
+            "tiamat"
+          ]
+        },
+        {
+          "description": "The two outer golems block ordinary eastward passage. Clearing their actual presence is an access condition; it is not another native craftsman receipt.",
+          "keyword": "golem",
+          "mob_vnum": 19600,
+          "name": "a huge golem",
+          "topics": []
+        },
+        {
+          "description": "Selected worshiper stock at the Pool of Worlds can include the dark key. Four worshipers share the prototype; only the selected stock row gives the key.",
+          "keyword": "worshiper",
+          "mob_vnum": 19601,
+          "name": "a dragonian worshiper",
+          "topics": []
+        },
+        {
+          "description": "Tiamat can carry the crystal key, rare cadaver proof, separate spirit and stinger. Her death stock release and timed heart are separate from an accepted crafting return.",
+          "keyword": "tiamat",
+          "mob_vnum": 19700,
+          "name": "Tiamat",
+          "topics": []
+        },
+        {
+          "description": "Ask torment, beg or end. His native death procedure selects one of four rare items; no rescue or liberation exchange is defined.",
+          "keyword": "slave",
+          "mob_vnum": 19617,
+          "name": "a pitiful slave",
+          "topics": [
+            "torment",
+            "beg",
+            "end"
+          ]
+        },
+        {
+          "description": "Selected source for exact fragments 19617 in room 19613, 19631 in room 19618, 19633 in room 19619. Same-name or same-color beings, follower copies and supplied fragments need distinct source evidence; current proof is not personal victory history.",
+          "keyword": "black",
+          "mob_vnum": 19603,
+          "name": "an ancient black wyrm",
+          "topics": []
+        },
+        {
+          "description": "Selected source for exact fragments 19616 in room 19613. Same-name or same-color beings, follower copies and supplied fragments need distinct source evidence; current proof is not personal victory history.",
+          "keyword": "blue",
+          "mob_vnum": 19604,
+          "name": "an ancient blue wyrm",
+          "topics": []
+        },
+        {
+          "description": "Selected source for exact fragments 19632 in room 19618, 19635 in room 19619. Same-name or same-color beings, follower copies and supplied fragments need distinct source evidence; current proof is not personal victory history.",
+          "keyword": "green",
+          "mob_vnum": 19605,
+          "name": "an ancient green wyrm",
+          "topics": []
+        },
+        {
+          "description": "Selected source for exact fragments 19608 in room 19615. Same-name or same-color beings, follower copies and supplied fragments need distinct source evidence; current proof is not personal victory history.",
+          "keyword": "green",
+          "mob_vnum": 19606,
+          "name": "an ancient green wyrm",
+          "topics": []
+        },
+        {
+          "description": "Selected source for exact fragments 19621 in room 19616. Same-name or same-color beings, follower copies and supplied fragments need distinct source evidence; current proof is not personal victory history.",
+          "keyword": "red",
+          "mob_vnum": 19607,
+          "name": "an ancient red wyrm",
+          "topics": []
+        },
+        {
+          "description": "Selected source for exact fragments 19618 in room 19614. Same-name or same-color beings, follower copies and supplied fragments need distinct source evidence; current proof is not personal victory history.",
+          "keyword": "blue",
+          "mob_vnum": 19608,
+          "name": "an ancient blue wyrm",
+          "topics": []
+        },
+        {
+          "description": "Selected source for exact fragments 19622 in room 19616, 19623 in room 19616. Same-name or same-color beings, follower copies and supplied fragments need distinct source evidence; current proof is not personal victory history.",
+          "keyword": "white",
+          "mob_vnum": 19609,
+          "name": "an ancient white wyrm",
+          "topics": []
+        },
+        {
+          "description": "Selected source for exact fragments 19629 in room 19618, 19636 in room 19619. Same-name or same-color beings, follower copies and supplied fragments need distinct source evidence; current proof is not personal victory history.",
+          "keyword": "white",
+          "mob_vnum": 19610,
+          "name": "an ancient white wyrm",
+          "topics": []
+        },
+        {
+          "description": "Selected source for exact fragments 19626 in room 19610. Same-name or same-color beings, follower copies and supplied fragments need distinct source evidence; current proof is not personal victory history.",
+          "keyword": "shadow",
+          "mob_vnum": 19611,
+          "name": "a shadow dragon",
+          "topics": []
+        },
+        {
+          "description": "Selected source for exact fragments 19627 in room 19610. Same-name or same-color beings, follower copies and supplied fragments need distinct source evidence; current proof is not personal victory history.",
+          "keyword": "white",
+          "mob_vnum": 19612,
+          "name": "a brilliant white wyrm",
+          "topics": []
+        },
+        {
+          "description": "Selected source for exact fragments 19609 in room 19615, 19610 in room 19615. Same-name or same-color beings, follower copies and supplied fragments need distinct source evidence; current proof is not personal victory history.",
+          "keyword": "green",
+          "mob_vnum": 19618,
+          "name": "an ancient green wyrm",
+          "topics": []
+        },
+        {
+          "description": "Selected source for exact fragments 19619 in room 19614. Same-name or same-color beings, follower copies and supplied fragments need distinct source evidence; current proof is not personal victory history.",
+          "keyword": "red",
+          "mob_vnum": 19619,
+          "name": "an ancient red wyrm",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow seven exact key assemblies through the wyrm chambers, then return Tiamat cadaver proof for a two-item tribute. Shared access, death drops and vault services have distinct outcomes.",
+      "orientation": [
+        "Meet the oddly-clothed man in the Meditation Room. Ask key, fragment, item, something, for, me or tiamat. He can assemble seven different keys from exact fragment sets, and fashion two tribute items from the exact bits and pieces of Tiamat. His replies are addressed questions echoed to the room, not automatic quest completions for listeners.",
+        "The huge golems at the outer gate block ordinary eastward passage while present. Worshipers at the Pool of Worlds can carry the dark key. The ordinary key route then leads through the bright, ruby-encrusted, golden and jeweled keys, followed by bronze, red and green. This explains access; supplied keys or shared open doors can bypass earlier exchanges without fabricating your own crafting history.",
+        "Collect the bright-key pair from the black and blue wyrms in the northeast chamber. The ruby-key triple belongs to the three green wyrms in the northern chamber. Keep all three ruby fragments distinct even though they have the same visible name.",
+        "The blue and red wyrms in the southeast chamber carry the golden-key pair. The southern red wyrm and two following white wyrms carry the jeweled-key triple. These are exact material types, not a requirement to kill any three creatures with a matching color.",
+        "At the lair entrance, the shadow dragon and brilliant white wyrm carry the bronze pair. The northern side chamber carries the white, black and green wyrm fragments for the red key. The southern side chamber carries three other exact fragments for the green key. Repeated mobile prototypes in different rooms do not make their fragments interchangeable.",
+        "Most assembled keys and the translucent crystal key can break after successful unlocking. Dark-key stock has a different break value. Unlocking, opening, finding a secret door and actual arrival are separate outcomes. A crafted receipt remains after its key is used or spent.",
+        "Tiamat is a distinct imported boss prototype. Her native stock can include the exact cadaver bits at a thirty-three-percent roll, and the immaterial spirit at a separate ten-percent roll. Her death releases carried and equipped stock onto the floor and has a separate timed-heart creation path. The heart, spirit, poison stinger and ordinary corpse do not replace the craftsman cadaver offering.",
+        "The cadaver exchange grants both the polished scale and strip of flesh through one accepted history. It does not require you personally to have killed Tiamat, looted her first, drunk from the pool or touched the monolith. Supplied exact proof can prepare the native exchange.",
+        "Ask the pitiful slave torment, beg or end for his plea. His death procedure selects one of four rare item types. This is a separate native death outcome without a craftsman recipe or an authored rescue achievement. Hearing his plea, finding a rare item or receiving a kit copy does not prove your own rescue or recovery.",
+        "The Wisdom pool and epic monolith before the vault have separate services. The pool has a level requirement, a shared pool cooldown tag and a possible stat change. Epic touching uses its own committed authority. Neither service is an invented prerequisite for the eight exchanges.",
+        "Some load, wandering and potion rooms are outside the ordinary player entrance graph. The missing throne-procedure destination and an inactive-file potion reference require builder review. These are not hidden exploration requirements or promised new rewards.",
+        "Reset mode zero does not automatically replenish these fragments, the boss or rare services. The current catalog keeps eight achievements and eight potential dailies; potential does not guarantee fresh supply. Active accounting refuses fresh reset item issuance, and legacy death creation needs its own owned integration before additional story credit.",
+        "Carry each exact offering loose. Nested or equipped proof, same-name substitutes, keys from another branch and reward copies do not complete an accepted exchange. Current preparation remains separate from historical acceptance. All new story credit requires active, ready accounting."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "tiamat",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:19616,I:19617;receive=I:19602;disappear=0",
+              "giver_vnum": 19616
+            }
+          ],
+          "id": "bright-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the blue wyrm source in room 19613. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19616",
+              "item_vnums": [
+                19616
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry bright key fragment A loose"
+            },
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the black wyrm source in room 19613. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19617",
+              "item_vnums": [
+                19617
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry bright key fragment B loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:19616,I:19617;receive=I:19602;disappear=0",
+                  "giver_vnum": 19616
+                }
+              ],
+              "hint": "Records the exact native fragment set for this key. Current fragments, a supplied key, spoken questions, unlocking or shared access do not create a crafting receipt. History survives key break or consumption. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this accepted key assembly"
+            }
+          ],
+          "summary": "Bring all 2 exact fragments together to the oddly-clothed man for a bright key. One assembly is one accepted history. Earlier access or another branch receipt does not complete this set.",
+          "title": "Assemble the bright key"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:19608,I:19609,I:19610;receive=I:19603;disappear=0",
+              "giver_vnum": 19616
+            }
+          ],
+          "id": "ruby-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the lead green wyrm source in room 19615. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19608",
+              "item_vnums": [
+                19608
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry ruby key fragment A loose"
+            },
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the first following green wyrm source in room 19615. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19609",
+              "item_vnums": [
+                19609
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry ruby key fragment B loose"
+            },
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the second following green wyrm source in room 19615. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19610",
+              "item_vnums": [
+                19610
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry ruby key fragment C loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:19608,I:19609,I:19610;receive=I:19603;disappear=0",
+                  "giver_vnum": 19616
+                }
+              ],
+              "hint": "Records the exact native fragment set for this key. Current fragments, a supplied key, spoken questions, unlocking or shared access do not create a crafting receipt. History survives key break or consumption. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this accepted key assembly"
+            }
+          ],
+          "summary": "Bring all 3 exact fragments together to the oddly-clothed man for a ruby-encrusted key. One assembly is one accepted history. Earlier access or another branch receipt does not complete this set.",
+          "title": "Assemble the ruby-encrusted key"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:19618,I:19619;receive=I:19604;disappear=0",
+              "giver_vnum": 19616
+            }
+          ],
+          "id": "golden-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the blue wyrm source in room 19614. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19618",
+              "item_vnums": [
+                19618
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry golden key fragment A loose"
+            },
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the red wyrm source in room 19614. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19619",
+              "item_vnums": [
+                19619
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry golden key fragment B loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:19618,I:19619;receive=I:19604;disappear=0",
+                  "giver_vnum": 19616
+                }
+              ],
+              "hint": "Records the exact native fragment set for this key. Current fragments, a supplied key, spoken questions, unlocking or shared access do not create a crafting receipt. History survives key break or consumption. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this accepted key assembly"
+            }
+          ],
+          "summary": "Bring all 2 exact fragments together to the oddly-clothed man for a golden key. One assembly is one accepted history. Earlier access or another branch receipt does not complete this set.",
+          "title": "Assemble the golden key"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:19621,I:19622,I:19623;receive=I:19605;disappear=0",
+              "giver_vnum": 19616
+            }
+          ],
+          "id": "jeweled-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the red wyrm source in room 19616. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19621",
+              "item_vnums": [
+                19621
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry jeweled key fragment A loose"
+            },
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the first following white wyrm source in room 19616. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19622",
+              "item_vnums": [
+                19622
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry jeweled key fragment B loose"
+            },
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the second following white wyrm source in room 19616. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19623",
+              "item_vnums": [
+                19623
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry jeweled key fragment C loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:19621,I:19622,I:19623;receive=I:19605;disappear=0",
+                  "giver_vnum": 19616
+                }
+              ],
+              "hint": "Records the exact native fragment set for this key. Current fragments, a supplied key, spoken questions, unlocking or shared access do not create a crafting receipt. History survives key break or consumption. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this accepted key assembly"
+            }
+          ],
+          "summary": "Bring all 3 exact fragments together to the oddly-clothed man for a jeweled key. One assembly is one accepted history. Earlier access or another branch receipt does not complete this set.",
+          "title": "Assemble the jeweled key"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:19626,I:19627;receive=I:19611;disappear=0",
+              "giver_vnum": 19616
+            }
+          ],
+          "id": "bronze-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the shadow dragon source in room 19610. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19626",
+              "item_vnums": [
+                19626
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry bronze key fragment A loose"
+            },
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the brilliant white wyrm source in room 19610. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19627",
+              "item_vnums": [
+                19627
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry bronze key fragment B loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:19626,I:19627;receive=I:19611;disappear=0",
+                  "giver_vnum": 19616
+                }
+              ],
+              "hint": "Records the exact native fragment set for this key. Current fragments, a supplied key, spoken questions, unlocking or shared access do not create a crafting receipt. History survives key break or consumption. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this accepted key assembly"
+            }
+          ],
+          "summary": "Bring all 2 exact fragments together to the oddly-clothed man for a bronze key. One assembly is one accepted history. Earlier access or another branch receipt does not complete this set.",
+          "title": "Assemble the bronze key"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:19629,I:19631,I:19632;receive=I:19612;disappear=0",
+              "giver_vnum": 19616
+            }
+          ],
+          "id": "red-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the white wyrm source in room 19618. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19629",
+              "item_vnums": [
+                19629
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry red key fragment A loose"
+            },
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the black wyrm source in room 19618. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19631",
+              "item_vnums": [
+                19631
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry red key fragment B loose"
+            },
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the green wyrm source in room 19618. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19632",
+              "item_vnums": [
+                19632
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry red key fragment C loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:19629,I:19631,I:19632;receive=I:19612;disappear=0",
+                  "giver_vnum": 19616
+                }
+              ],
+              "hint": "Records the exact native fragment set for this key. Current fragments, a supplied key, spoken questions, unlocking or shared access do not create a crafting receipt. History survives key break or consumption. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this accepted key assembly"
+            }
+          ],
+          "summary": "Bring all 3 exact fragments together to the oddly-clothed man for a red key. One assembly is one accepted history. Earlier access or another branch receipt does not complete this set.",
+          "title": "Assemble the red key"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:19633,I:19635,I:19636;receive=I:19613;disappear=0",
+              "giver_vnum": 19616
+            }
+          ],
+          "id": "green-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the black wyrm source in room 19619. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19633",
+              "item_vnums": [
+                19633
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry green key fragment A loose"
+            },
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the green wyrm source in room 19619. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19635",
+              "item_vnums": [
+                19635
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry green key fragment B loose"
+            },
+            {
+              "count": 1,
+              "hint": "Exact fragment type from the white wyrm source in room 19619. Same-name fragments from another source do not substitute. Supplied proof may fit this offering without your own kill or first recovery. Current loose preparation is separate from accepted history.",
+              "id": "item-19636",
+              "item_vnums": [
+                19636
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry green key fragment C loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:19633,I:19635,I:19636;receive=I:19613;disappear=0",
+                  "giver_vnum": 19616
+                }
+              ],
+              "hint": "Records the exact native fragment set for this key. Current fragments, a supplied key, spoken questions, unlocking or shared access do not create a crafting receipt. History survives key break or consumption. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this accepted key assembly"
+            }
+          ],
+          "summary": "Bring all 3 exact fragments together to the oddly-clothed man for a green key. One assembly is one accepted history. Earlier access or another branch receipt does not complete this set.",
+          "title": "Assemble the green key"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:19641;receive=I:19639,I:19640;disappear=0",
+              "giver_vnum": 19616
+            }
+          ],
+          "id": "tiamat-cadaver-tribute",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Selected boss G stock has its own thirty-three-percent roll. Existing or supplied exact proof can prepare this return without your own boss victory or first floor recovery.",
+              "id": "item-19641",
+              "item_vnums": [
+                19641
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact bits and pieces of Tiamat loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:19641;receive=I:19639,I:19640;disappear=0",
+                  "giver_vnum": 19616
+                }
+              ],
+              "hint": "One accepted offering records one history despite two reward items. Current loot, death echoes or reward copies do not replace it. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this accepted two-item tribute"
+            }
+          ],
+          "summary": "Return the exact cadaver bits for both polished scale and flesh strip through one accepted history. The timed heart, spirit, stinger and kit equipment are different objects.",
+          "title": "Fashion a tribute from Tiamat remains"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Ivar rules Shairak from his house. Ask about the dragons, tribute lottery and Raltron. His two-heart and talon rewards are independent, and either makes him leave.",
           "keyword": "ivar",
           "mob_vnum": 20239,

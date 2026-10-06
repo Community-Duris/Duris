@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 162 &&
+		require(catalog.story_mappings.size() == 163 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,156 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "tiamat"; });
+			require(mapping.stories.size() == 8 && mapping.contacts.size() == 17 &&
+					mapping.revision == 1,
+				"Tiamat journal scope failed");
+			const auto &ruby = story_for("tiamat", "ruby-key");
+			const auto &tribute = story_for("tiamat", "tiamat-cadaver-tribute");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 196)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 8 && dailies == 8,
+				"Tiamat reset mode changed existing daily classification");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 196, 19600, 100, "arrival") ==
+					result::applied,
+				"Tiamat discovery failed");
+			for (const auto &[v, room] :
+			     { std::pair{ 19600, 19600 }, std::pair{ 19606, 19615 },
+			       std::pair{ 19700, 19617 }, std::pair{ 19617, 19624 } })
+				require(journey.meet_npc(7, 42, v, room, 101) == result::applied,
+					"Tiamat source encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 196, 10, 1, 102, false, false);
+			for (const auto &s : mapping.stories)
+				require(journal.find("] " + s.title + "\r\n") == std::string::npos,
+					"Tiamat source carrier exposed accepting giver card");
+			require(journey.meet_npc(7, 42, 19616, 19611, 103) == result::applied,
+				"Tiamat craftsman encounter failed");
+			const auto status = [&](const auto &s, size_t row, const char *state)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos, "Tiamat accepting card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at, end == std::string::npos ? end : end - at)
+					       .find(std::string("[") + state + "] " +
+						     s.steps[row].text) != std::string::npos;
+			};
+			const auto before = journey.serialize_state();
+			for (const auto &s : mapping.stories)
+			{
+				supplies = {};
+				for (const auto &t : s.steps)
+					if (t.kind == "carried_item")
+						for (int v : t.item_vnums)
+							supplies.carried[v] = t.count;
+				journal = journey.render_journal(7, 42, 196, 10, 1, 106, false,
+								 false, &supplies);
+				for (size_t row = 0; row < s.steps.size(); ++row)
+					require(status(s, row,
+						       row == s.steps.size() - 1 ? "Pending" :
+										   "Ready now"),
+						"Tiamat exact supplied set preparation failed");
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+				{
+					const int v = s.steps[row].item_vnums.front();
+					supplies.carried[v] = 0;
+					supplies.equipped[18] = v;
+					journal = journey.render_journal(7, 42, 196, 10, 1, 107,
+									 false, false, &supplies);
+					require(status(s, row, "Missing now") &&
+							status(s, s.steps.size() - 1, "Pending"),
+						"Tiamat held or partial proof replaced loose set");
+					supplies.equipped.clear();
+					supplies.carried[v] = s.steps[row].count;
+				}
+			}
+			supplies = {};
+			supplies.carried[19608] = 3;
+			journal = journey.render_journal(7, 42, 196, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(ruby, 0, "Ready now") && status(ruby, 1, "Missing now") &&
+					status(ruby, 2, "Missing now") &&
+					status(ruby, 3, "Pending"),
+				"Tiamat three duplicates substituted distinct same-name ruby types");
+			supplies = {};
+			for (int v :
+			     { 19601, 19602, 19603, 19604, 19605, 19606, 19611, 19612, 19613, 19614,
+			       19615, 19620, 19624, 19625, 19628, 19630, 19634, 19637, 19638, 19639,
+			       19640, 19642, 55080, 19911, 19916, 51006, 66,	360,   25106 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 196, 10, 1, 109, false, false,
+							 &supplies);
+			for (const auto &s : mapping.stories)
+				require(status(s, 0, "Missing now") &&
+						status(s, s.steps.size() - 1, "Pending"),
+					"Tiamat key, décor, timed heart, rare item or reward copy forged an accepted return");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 196).completed == 0,
+				"Tiamat readiness forged crafting, first-source recovery, death or shared access history");
+			// Synthetic authoritative receipts test projection/recovery; they do not claim played crafting, key travel or death generation.
+			record(journey, tribute.contracts.front(), "tiamat-tribute", 196, 19611);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 196, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(tribute, 1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 196).completed == 1,
+				"Tiamat two-item tribute split into multiple histories");
+			for (const auto &s : mapping.stories)
+				if (s.id != tribute.id)
+				{
+					require(status(s, s.steps.size() - 1, "Pending"),
+						"Tiamat shared giver completed another recipe");
+					const auto tx = "tiamat-" + s.id;
+					record(journey, s.contracts.front(), tx.c_str(), 196,
+					       19611);
+				}
+			journal = journey.render_journal(7, 42, 196, 10, 1, 120, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 196).completed == 8,
+				"Tiamat eight independent same-giver histories failed");
+			for (const auto &s : mapping.stories)
+			{
+				require(status(s, s.steps.size() - 1, "Recorded"),
+					"Tiamat spent key or proof lost accepted history");
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+					require(status(s, row, "Missing now"),
+						"Tiamat receipt restored consumed fragments");
+			}
+			auto replay = completion(tribute.contracts.front(), "tiamat-tribute", 120);
+			replay.transaction.zone_number = 196;
+			replay.transaction.room_vnum = 19611;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Tiamat exact replay duplicated two-item tribute");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 196).completed == 8,
+				"Tiamat cold recovery lost eight histories");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 196, 19600, 100, "arrival") ==
+					result::applied,
+				"Tiamat raw discovery failed");
+			for (const auto &s : mapping.stories)
+			{
+				const auto tx = "tiamat-raw-" + s.id;
+				record(raw, s.contracts.front(), tx.c_str(), 196, 19611);
+			}
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 196).completed == 8,
+				"Tiamat raw-to-authored recovery lost exact recipes");
 		}
 
 		{
