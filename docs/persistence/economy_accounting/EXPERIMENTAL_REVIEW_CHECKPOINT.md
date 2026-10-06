@@ -1,5 +1,14 @@
 # Experimental accounting review checkpoint
 
+## Saved NPC images validated during flatfile restore — 2026-10-06
+
+[Current primary qualification](PLAN5_NATIVE_MOBILE_RESTORE_PRIMARY_QUALIFICATION_2026-10-06.md)
+imports the completed Plan5 flatfile saved-NPC image check. The complete original
+native method passes:4 valid/48 refused images plus20 valid stores/367 retained
+corruption cases, zero skips and unchanged bytes. Original providers, sanitizer
+flags and deadlines remain. No birth/source, full Plan or release qualification
+is claimed; auction, quest, held recovery and incoming SQL reader work remain.
+
 ## Claim consumption schema0062 qualified — 2026-10-06
 
 [Exact additive0062 qualification](CLAIM_CONSUMPTION_SCHEMA_0062_PRIMARY_QUALIFICATION_2026-10-06.md)
@@ -11,16 +20,21 @@ opening/spending/recovery, independent readers, full R6/R8 and release remain op
 
 ## Private money candidate and parallel producer work — 2026-10-06
 
-[Current opening handoff](SQL_OPENING_AUCTION_CLAIM_IMPLEMENTATION_HANDOFF_2026-10-06.md)
-records independent acceptance of the three money recovery corrections and the
-measured additive0062 private candidate. Original runtime units pass; both-engine
-fresh/populated-fork qualification is rerunning after an obsolete55-receipt
-fixture expectation was repaired; native money journeys are
-pending. Separate workers continue first-auction claim endpoints, typed lockpick
-retirement with the original post-wear held forest, and quest fees/coin GIVE with
-authentic born-wallet identity. Their private source/component evidence does not
-qualify complete gameplay, cold recovery, activation or release. Published source
-remains `f528a46b4`; all three unrelated WIP paths are preserved.
+Published schema milestone8030e71b5 qualifies registered0062 on both engines and
+both production backends. Primary privately composes the frozen reviewed opening,
+first-endpoint and complete original-sale receipt successor with that sealed
+schema, genuine zero-proceeds lifecycle adapter and actual native providers.
+All older immutable files remain exact. Producer first-absence/replay wiring
+and the combined original native/SQL recovery batch are still pending.
+
+Held retirement has a private reviewed coordinator/journal/dispatch successor;
+its declaration mismatch and HRT-only full receipt/pointer/envelope terminal
+binding are corrected. Complete source/current-cut SQL adapters and qualification
+remain open. Quest's distinct private v16 money participant retains both actual
+mapping lifetimes, normalized cash and original birth provenance; current-cut
+publication/recovery and genuine paid/zero-item journeys remain unfinished.
+Source/object checks do not qualify gameplay, cold ACK, activation or release.
+The three unrelated WIP paths remain preserved.
 
 ## Matching equipment capture and production-build evidence consumed — 2026-10-06
 
