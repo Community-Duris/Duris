@@ -1,5 +1,17 @@
 # Finish accounting implementation plan
 
+## Independent quarantined containment fix integrated — 2026-10-06
+
+[Exact primary integration](PLAN5_QUARANTINED_TOPOLOGY_PRIMARY_INTEGRATION_2026-10-06.md)
+imports five owned blobs from4528dbfd7. Quarantined owner/root disagreements
+now receive the existing topology finding; no authority changes. The new actual
+CLI case, AST and normal/matrix/current61 metadata pass. All committed code/test
+inputs match the qualified peer composition; native source, complete manifest
+and unrelated WIP remain. Peer native/both-engine component evidence retains
+its recorded scope. No primary native rerun, complete capture or full release
+qualification is claimed. Original Plans and major native work remain open.
+
+
 ## Independent retained flatfile semantics fix integrated — 2026-10-06
 
 [Exact primary integration](PLAN5_FLATFILE_PLAN_SEMANTICS_PRIMARY_INTEGRATION_2026-10-06.md)

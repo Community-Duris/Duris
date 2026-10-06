@@ -219,6 +219,32 @@ def rejected_snapshot():
     return snapshot
 
 
+def quarantined_topology_snapshot(damage="clean", states=("quarantined",) * 3):
+    """Matching static projections; no synthetic retained mutation plan."""
+    from test_item_equipment_reconciliation import baseline
+    snapshot = baseline()
+    items = [dict(uid=uid, revision=3, root=83, parent=parent, owner=[1, 7, 0],
+                  state=state, equipment_slot=0)
+             for (uid, parent), state in zip(((81, 82), (82, 83), (83, None)), states)]
+    changes = {
+        "clean": {}, "owner-id": {81: {"owner": [1, 8, 0]}},
+        "owner-type": {81: {"owner": [2, 7, 0]}},
+        "owner-context": {81: {"owner": [1, 7, 1]}},
+        "root": {81: {"root": 99}},
+        "ancestor-owner": {82: {"owner": [1, 8, 0]}},
+        "ancestor-root": {82: {"root": 99}},
+        "retired-parent": {83: {"state": "tombstone", "owner": [8, 0, 0]}},
+        "cycle": {83: {"parent": 81}}, "orphan": {},
+    }[damage]
+    for row in items:
+        row.update(changes.get(row["uid"], {}))
+    if damage == "orphan":
+        items.pop()
+    snapshot["native"]["items"] = items
+    snapshot["item_origins"] = [dict(row, origin="baseline") for row in copy.deepcopy(items)]
+    return snapshot
+
+
 def shop_supply_snapshot():
     """Clean synthetic expense before damaging its retained root outcome."""
     snapshot = clean_snapshot()
@@ -1304,6 +1330,50 @@ class ReconciliationTests(unittest.TestCase):
             del row["equipment_slot"]
         self.assertEqual(Reconciler().audit(snapshot)["exception_count"], 0)
         self.assertEqual(Reconciler().audit(creation_snapshot())["exception_count"], 0)
+
+    def test_quarantined_containment_mismatches_cannot_share_a_clean_opening(self):
+        expected = {
+            "clean": {}, "owner-id": {"inconsistent_native_topology": 1},
+            "owner-type": {"inconsistent_native_topology": 1},
+            "owner-context": {"inconsistent_native_topology": 1},
+            "root": {"inconsistent_native_topology": 1},
+            "ancestor-owner": {"inconsistent_native_topology": 2},
+            "ancestor-root": {"inconsistent_native_topology": 2},
+            "retired-parent": {"inconsistent_native_topology": 2},
+            "cycle": {"cyclic_native_topology": 3}, "orphan": {"orphan_item_parent": 1},
+        }
+        with tempfile.TemporaryDirectory(prefix="duris-quarantined-topology-") as directory:
+            path = Path(directory) / "snapshot.json"
+            for damage, counts in expected.items():
+                snapshot = quarantined_topology_snapshot(damage)
+                snapshot["item_origins"][0]["personal_alias"] = "private-quarantined-alias"
+                original = copy.deepcopy(snapshot)
+                payload = json.dumps(snapshot, sort_keys=True).encode()
+                path.write_bytes(payload)
+                for limit in (0, 1, 100):
+                    with self.subTest(damage=damage, limit=limit):
+                        report = Reconciler(limit).audit(snapshot)
+                        self.assertEqual(report["exception_counts"], counts)
+                        self.assertEqual(report["exception_count"], sum(counts.values()))
+                        self.assertLessEqual(len(report["exceptions"]), limit)
+                        for name in ("holdings", "provenance", "operation", "supply", "prices", "routes"):
+                            result = view(snapshot, report, name, limit, uid=81,
+                                          operation_id=OP if name == "operation" else None)
+                            self.assertEqual(result["coverage"]["exception_count"], sum(counts.values()))
+                        command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                   str(path), "--limit", str(limit)]
+                        result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                        self.assertEqual(result.returncode, 1 if counts else 0, result.stderr)
+                        self.assertFalse(result.stderr)
+                        self.assertEqual(json.loads(result.stdout), report)
+                        self.assertNotIn("alias", result.stdout)
+                        self.assertNotIn("private-quarantined", result.stdout)
+                        self.assertEqual(path.read_bytes(), payload)
+                        self.assertEqual(snapshot, original)
+        # Active and quarantined nodes can share a valid containment forest.
+        for states in (("live",) * 3, ("quarantined",) * 3,
+                       ("live", "quarantined", "live"), ("quarantined", "live", "quarantined")):
+            self.assertEqual(Reconciler().audit(quarantined_topology_snapshot(states=states))["exception_count"], 0)
 
     def test_supply_requires_one_committed_root_and_preserves_findings(self):
         with tempfile.TemporaryDirectory(prefix="duris-supply-outcome-") as directory:
