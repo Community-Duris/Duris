@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 137 &&
+		require(catalog.story_mappings.size() == 138 &&
 				tracker.summary_for(7, 42).total == 1528,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7687,6 +7687,117 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "yuan_ti"; });
+			const auto &blood = story_for("yuan_ti", "ranger-skrentherlog-blood");
+			require(mapping.stories.size() == 1 && mapping.contacts.size() == 8,
+				"Temple authored request/context scope failed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 805, 80500, 100, "arrival") ==
+					result::applied,
+				"Temple actual arrival failed");
+			std::string journal =
+				journey.render_journal(7, 42, 805, 10, 1, 101, false, false);
+			require(journal.find(blood.title) == std::string::npos,
+				"Temple exposed unseen blood request");
+			for (const auto &[mob, room] :
+			     std::vector<std::pair<int, int>>{ { 80516, 80520 },
+							       { 80524, 80531 },
+							       { 80526, 80536 },
+							       { 80530, 80538 },
+							       { 80534, 80539 },
+							       { 80538, 80544 },
+							       { 80539, 80544 } })
+				require(journey.meet_npc(7, 42, mob, room, 102) == result::applied,
+					"Temple source/context encounter failed");
+			journal = journey.render_journal(7, 42, 805, 10, 1, 103, false, false);
+			require(journal.find(blood.title) == std::string::npos &&
+					journey.progress_for_zone(7, 42, 805).completed == 0,
+				"Temple keys,captive,hammer or boss context invented accepted exchange");
+			require(journey.meet_npc(7, 42, 80517, 80520, 104) == result::applied,
+				"Temple ranger encounter failed");
+			const auto status = [&](const char *state)
+			{
+				const auto start = journal.find("] " + blood.title + "\r\n");
+				require(start != std::string::npos,
+					"Temple blood journal card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     blood.steps[0].text) != std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[80572] = 1;
+			supplies.equipped[0] = 80570;
+			journal = journey.render_journal(7, 42, 805, 10, 1, 105, false, false,
+							 &supplies);
+			require(status("Missing now"),
+				"Temple held blood or reward custody prepared offering");
+			supplies = {};
+			supplies.carried[2] = supplies.carried[80524] = supplies.carried[80525] =
+				supplies.carried[80556] = supplies.carried[80561] =
+					supplies.carried[55177] = supplies.carried[80579] = 1;
+			journal = journey.render_journal(7, 42, 805, 10, 1, 106, false, false,
+							 &supplies);
+			require(status("Missing now"),
+				"Temple corpse,vials,keys,hammer,memory or other hammer substituted exact blood");
+			supplies = {};
+			supplies.carried[80570] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 805, 10, 1, 107, false, false,
+							 &supplies);
+			require(status("Ready now"),
+				"Temple supplied exact loose blood required personal recovery or defeat");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 805).completed == 0,
+				"Temple rendering invented acceptance,cure,access,demolition or touch");
+			record(journey, blood.contracts.front(), "yuan-ti-blood", 805, 80520);
+			require(journey.progress_for_zone(7, 42, 805).completed == 1 &&
+					journey.progress_for_zone(7, 42, 805).total == 1,
+				"Temple accepted exchange counted context or custom endpoints");
+			supplies = {};
+			journal = journey.render_journal(7, 42, 805, 10, 1, 121, false, false,
+							 &supplies);
+			require(status("Missing now") &&
+					journey.evidence_for(blood.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Temple spent custody replaced accepted history");
+			auto replay = completion(blood.contracts.front(), "yuan-ti-blood", 120);
+			replay.transaction.zone_number = 805;
+			replay.transaction.room_vnum = 80520;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Temple replay duplicated blood exchange");
+			int local_units = 0, achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 805)
+				{
+					++local_units;
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(local_units == 1 && achievements == 1 && dailies == 0,
+				"Temple mode0 touch lead or context generated dailies/custom units");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 805) &&
+					recovered.progress_for_zone(7, 42, 805).completed == 1,
+				"Temple cold recovery lost accepted history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 805, 80500, 100, "arrival") ==
+					result::applied,
+				"Temple historical arrival failed");
+			record(historical, blood.contracts.front(), "yuan-ti-old-blood", 805,
+			       80520);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 805).completed == 1,
+				"Temple authored grouping lost raw historical receipt");
 		}
 
 		{

@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 137 authored journals.
+2668 distinct Q contracts; 138 authored journals.
 
 Regenerate with:
 
@@ -247,7 +247,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Ruins of Turolopolis (`willem`) | 6 | 19 | 1 | Yes | [1 × a brown Glory Badge; 1 × a green Glory Badge; 1 × a blue Glory Badge; other required items → a lesser bloodsaber](../../areas/qst/willem.qst#L117) | — |
 | Woodseer (`woodseer`) | 7 | 11 | 0 | Yes | [1 × some raw turtle meat → a bowl of turtle soup](../../areas/qst/woodseer.qst#L140) | artifact_invisible, guild_guard, inn, pet_shops, world_quest |
 | The Caverns of the Worms (`worms`) | 16 | 17 | 0 | Yes | [1 × a purple wormhide; 1 × a glowing wormhide; 2 × a piece of red wormskin; other required items → a thick wormhide-plated shield](../../areas/qst/worms.qst#L187) | — |
-| The Temple to Skrentherlog (`yuan_ti`) | 1 | 9 | 0 | Fallback | [1 × blood of Skrentherlog → the scimitar of speed](../../areas/qst/yuan_ti.qst#L51) | dragonarmor, drowcrusher, squelcher |
+| The Temple to Skrentherlog (`yuan_ti`) | 1 | 9 | 0 | Yes | [1 × blood of Skrentherlog → the scimitar of speed](../../areas/qst/yuan_ti.qst#L51) | dragonarmor, drowcrusher, squelcher |
 
 ## Areas without native Q contracts
 

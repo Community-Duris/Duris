@@ -110975,6 +110975,139 @@
     {
       "contacts": [
         {
+          "description": "The hooded shaman is a declared key source beside the ranger. Meeting him does not complete her blood exchange.",
+          "keyword": "shaman",
+          "mob_vnum": 80516,
+          "name": "a hooded Yuan-ti",
+          "topics": []
+        },
+        {
+          "description": "The ranger explains the blood request through six ASK aliases, grants the scimitar and leaves after acceptance.",
+          "keyword": "ranger",
+          "mob_vnum": 80517,
+          "name": "a tortured elven ranger",
+          "topics": [
+            "yuan-ti",
+            "yuan",
+            "shaman",
+            "cure",
+            "god",
+            "skrentherlog"
+          ]
+        },
+        {
+          "description": "The small priest declares an ebon key for optional chest access, without another accepted request.",
+          "keyword": "priest",
+          "mob_vnum": 80524,
+          "name": "a small priest",
+          "topics": []
+        },
+        {
+          "description": "The chief priest and nearby chests explain the key-amulet and hammer routes. Encountering him creates no access or demolition receipt.",
+          "keyword": "priest",
+          "mob_vnum": 80526,
+          "name": "the chief priest",
+          "topics": []
+        },
+        {
+          "description": "The warrior declares serpent and prison keys. Key custody, unlocking and passage are separate.",
+          "keyword": "warrior",
+          "mob_vnum": 80530,
+          "name": "a true-blood Yuan-ti warrior",
+          "topics": []
+        },
+        {
+          "description": "The captive explains the stone and Drowcrusher lead through eight native aliases. Her distress creates no lethal quest or inferred rescue.",
+          "keyword": "woman",
+          "mob_vnum": 80534,
+          "name": "an elven woman",
+          "topics": [
+            "die",
+            "death",
+            "stone",
+            "priest",
+            "priests",
+            "destroy",
+            "god",
+            "skrentherlog"
+          ]
+        },
+        {
+          "description": "The creature declares exact blood, a bone key and a memory. The local hand-in accepts the blood; the memory exchange belongs to Winterhaven.",
+          "keyword": "skrentherlog",
+          "mob_vnum": 80538,
+          "name": "Skrentherlog",
+          "topics": []
+        },
+        {
+          "description": "The attendant is a follower encounter beside Skrentherlog, without an accepted request or extra completion.",
+          "keyword": "attendant",
+          "mob_vnum": 80539,
+          "name": "Skrentherlog's attendant",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore the temple, learn what its captives know and bring the ranger the exact blood of Skrentherlog for the scimitar of speed. The hammer, keys, ruins and epic stone provide separate leads. Discovery is separate. New progress requires active, ready accounting.",
+      "orientation": [
+        "The hooded shaman and captive ranger share a declared room in the temple. ASK RANGER about yuan-ti or yuan, shaman, cure, god and skrentherlog. These topics explain her request; hearing them does not complete it. Her rare declared appearance and later departure can affect availability.",
+        "Bring the exact blood of Skrentherlog to the ranger and keep it loose in your inventory. Skrentherlog declares this blood among his possessions. A corpse, a vial, the scimitar reward or another blood item cannot substitute. Matching supplied blood also fits; this exchange does not require proof of a personal kill or first recovery.",
+        "The ranger accepts the blood, gives the scimitar of speed and departs. Her cure and departure are narrated. The accepted return is the tracked endpoint; it does not establish a separately persisted cure, rescued captive or destroyed temple. Current material readiness and accepted history have separate meanings.",
+        "The shaman carries the heavy iron key for the pickproof iron chest near the chief priest. That chest contains a key-amulet for the approach toward Skrentherlog. The warrior declares separate serpent and prison keys, and Skrentherlog declares a bone key for a hidden treasure-room door. Possession, unlocking, opening and actual passage remain separate. Existing shared access can change which keys you need.",
+        "ASK WOMAN about stone, priest or priests, destroy, god or skrentherlog for the hammer lead. She also responds to die or death; her distress is setting, without a lethal quest or an inferred rescue achievement. Her story points toward Drowcrusher and a ground stone, rather than another native hand-in.",
+        "Drowcrusher is declared inside an iron-banded chest with a damaged keyhole. This chest is locked, has no configured key and is pickable with the normal skill and a held pick. The hammer must be wielded to HIT the visible ground stone in the treasure room. The current action consumes the hammer and stone and moves every occupant to rubble. It has no committed journal endpoint, and its narrated collapse does not explicitly kill the god or free captives.",
+        "The rubble and intact temple routes already coexist. The rubble ascent continues through cave-ins and collapsed corridors to the temple approach; that approach also leads back into the intact entrance. The described closing tunnels do not create a recorded phase change. Winterhaven has a separate incoming approach to the treasure room, outside the local key chain.",
+        "Squelcher is distinct from Drowcrusher and is declared in the rubble. Its combat restrictions and silence effect are equipment behavior. Dragonslayer armor can attack visible dragon or dragonkin targets and restrict combat removal and fleeing. Receiving or wearing these items does not record successful protection or a quest outcome.",
+        "The epic stone in the rubble records its own selected touch transaction. It can request reset behavior for this reset-mode-zero zone, but that does not make the ranger exchange a daily or guarantee another rare ranger or fresh items. Skrentherlog also declares a memory used by the Winterhaven ambassador; that accepted return belongs to Winterhaven.",
+        "This blood exchange contributes one achievement and no daily under its current native classification. Fresh reset-issued items are gated while accounting is active, so the journal relies on admitted existing stock until issuance is integrated. New discovery, encounters and progress require active, ready accounting. The journal explains leads without creating stock, access, demolition or liberation credit."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "yuan_ti",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:80570;receive=I:80572;disappear=1",
+              "giver_vnum": 80517
+            }
+          ],
+          "id": "ranger-skrentherlog-blood",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Skrentherlog declares this exact item. Recover admitted existing stock or use matching supplied blood. A corpse, held or nested item, vial, other blood or the scimitar reward does not prepare this row. First recovery and personal defeat are separate evidence.",
+              "id": "item-80570",
+              "item_vnums": [
+                80570
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the blood of Skrentherlog loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:80570;receive=I:80572;disappear=1",
+                  "giver_vnum": 80517
+                }
+              ],
+              "hint": "Completion records the ranger accepting the exact blood and granting the scimitar before departure. New credit requires active, ready accounting. Cure, rescue, hammer use, key access and epic touch need their own evidence; this native exchange is story-only.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete the ranger\u2019s blood exchange"
+            }
+          ],
+          "summary": "Return the exact blood of Skrentherlog for the scimitar of speed. The ranger narrates a cure and departs; the accepted exchange is distinct from a persisted rescue or temple collapse.",
+          "title": "Blood for the captive ranger"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Shapes the violet crystal into a collar; other listed colors are returned.",
           "keyword": "violet",
           "mob_vnum": 80706,
