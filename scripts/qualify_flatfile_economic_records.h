@@ -3,6 +3,7 @@
 #define DURIS_QUALIFY_FLATFILE_ECONOMIC_RECORDS_H
 #include "qualify_flatfile_economic_baseline.h"
 #include "qualify_flatfile_economic_lifecycle.h"
+#include <bit>
 #include <tuple>
 
 namespace restore_economic_records
@@ -37,6 +38,315 @@ template <size_t N> inline digest tagged_hash(const char (&tag)[N], std::span<co
 	bytes encoded(tag, tag + N); // The native wire contract includes the NUL delimiter.
 	encoded.insert(encoded.end(), value.begin(), value.end());
 	return hash(encoded);
+}
+// Independent interpretation of the version-1 reason contract. The native
+// codec is a qualification oracle, never an implementation dependency.
+inline bool source_allowed(uint64_t reason, uint64_t kind)
+{
+	switch (reason)
+	{
+	case 3:
+	case 41:
+	case 42:
+		return kind == 16;
+	case 5:
+		return kind == 1;
+	case 44:
+		return kind == 19;
+	case 6:
+		return kind == 2;
+	case 7:
+		return kind == 3 || kind == 7;
+	case 8:
+		return kind == 3;
+	case 9:
+		return kind == 4;
+	case 10:
+		return kind == 5;
+	case 11:
+	case 12:
+	case 13:
+	case 14:
+	case 15:
+	case 16:
+		return kind == 17;
+	case 17:
+		return kind == 8;
+	case 18:
+	case 19:
+	case 45:
+	case 46:
+		return kind == 6;
+	case 21:
+	case 22:
+		return kind == 12 || kind == 18;
+	case 24:
+		return kind == 17 || kind == 18;
+	case 26:
+	case 27:
+	case 28:
+	case 29:
+	case 30:
+		return kind == 13;
+	case 31:
+		return kind == 13 || kind == 17;
+	case 36:
+		return kind == 14;
+	case 38:
+		return kind == 10;
+	case 43:
+		return kind == 18;
+	default:
+		return true;
+	}
+}
+inline void intent_semantics(std::span<const uint8_t> intent)
+{
+	const auto reason = number(intent, 24, 2);
+	need(reason >= 1 && reason <= 46 && number(intent, 16, 4) == 1 &&
+	     number(intent, 20, 4) == 1 && intent[26] == (reason >= 38 && reason <= 42 ? 2 : 1) &&
+	     !same(intent.subspan(64, 16), intent.subspan(80, 16)));
+	const bool original = reason == 19 || reason == 20 || reason == 40 || reason == 45 ||
+			      reason == 46;
+	const bool source = (reason >= 5 && reason <= 22) || (reason >= 26 && reason <= 31) ||
+			    (reason >= 33 && reason <= 36) || reason >= 38;
+	need((!original || nonzero(intent.subspan(80, 16))) && (!source || intent[27]));
+	if (intent[27])
+		need(number(intent, 114, 2) == 1 && nonzero(intent.subspan(116, 16)) &&
+		     nonzero(intent.subspan(132, 16)) &&
+		     source_allowed(reason, number(intent, 112, 2)));
+}
+using wide = __int128_t;
+using coins = std::array<int64_t, 4>;
+inline coins coin_vector(std::span<const uint8_t> row, size_t offset)
+{
+	coins result;
+	for (size_t i = 0; i < result.size(); ++i)
+		result[i] = std::bit_cast<int64_t>(number(row, offset + i * 8, 8));
+	return result;
+}
+inline int64_t coin_value(const coins &value)
+{
+	constexpr std::array<int, 4> units = { 1, 10, 100, 1000 };
+	wide total = 0;
+	for (size_t i = 0; i < value.size(); ++i)
+		total += wide(value[i]) * units[i];
+	need(total >= INT64_MIN && total <= INT64_MAX);
+	return static_cast<int64_t>(total);
+}
+inline bool ordinary(uint64_t kind)
+{
+	return kind <= 6 || kind == 11;
+}
+inline void position_semantics(uint64_t uid, std::span<const uint8_t> value)
+{
+	need(value.size() == 56 && !nonzero(value.subspan(2, 6)) && !nonzero(value.subspan(50, 6)));
+	const auto type = value[0], state = value[1];
+	if (!state)
+	{
+		need(!nonzero(value));
+		return;
+	}
+	const auto owner = number(value, 8, 8), context = number(value, 16, 8),
+		   root = number(value, 24, 8), parent = number(value, 32, 8),
+		   revision = number(value, 40, 8), slot = number(value, 48, 2);
+	need(type >= 1 && type <= 12 && state <= 3 && root && parent != uid);
+	if (type == 7 || type == 8)
+		need(!owner && !context);
+	else
+		need(owner && (type != 10 || !context) &&
+		     (type != 11 || (context && context <= INT32_MAX)) &&
+		     (type != 12 || (owner < UINT64_MAX && !context)));
+	need(type != 12 || slot <= 43);
+	need(!slot ||
+	     ((type == 1 || type == 12) && !parent && state == 1 && (type != 12 || root == uid)));
+	need(state == 2 ? type == 8 && revision : type != 8 && (parent || root == uid));
+}
+using item = std::pair<uint64_t, std::span<const uint8_t>>;
+inline auto item_at(const std::vector<item> &items, uint64_t uid)
+{
+	return std::lower_bound(items.begin(), items.end(), uid,
+				[](const auto &row, uint64_t value) { return row.first < value; });
+}
+inline std::vector<item> snapshots(reader &in, size_t count)
+{
+	std::vector<item> result;
+	for (size_t i = 0; i < count; ++i)
+	{
+		auto row = in.take(64);
+		const auto uid = number(row, 0, 8);
+		need(uid && (result.empty() || result.back().first < uid));
+		position_semantics(uid, row.subspan(8));
+		result.emplace_back(uid, row.subspan(8));
+	}
+	std::vector<uint8_t> colors(count);
+	std::vector<size_t> path;
+	for (size_t start = 0; start < count; ++start)
+	{
+		if (colors[start] == 2 || result[start].second[1] == 0 ||
+		    result[start].second[1] == 2)
+			continue;
+		path.clear();
+		size_t current = start;
+		while (colors[current] != 2)
+		{
+			need(colors[current] != 1);
+			colors[current] = 1;
+			path.push_back(current);
+			const auto child = result[current].second;
+			const auto parent_uid = number(child, 32, 8);
+			if (!parent_uid)
+				break;
+			const auto parent = item_at(result, parent_uid);
+			need(parent != result.end() && parent->first == parent_uid);
+			const auto ancestor = parent->second;
+			need((ancestor[1] == 1 || ancestor[1] == 3) && ancestor[0] == child[0] &&
+			     same(ancestor.subspan(8, 24), child.subspan(8, 24)));
+			current = static_cast<size_t>(parent - result.begin());
+		}
+		for (auto index : path)
+			colors[index] = 2;
+	}
+	return result;
+}
+inline void plan_semantics(std::span<const uint8_t> plan, const identity &lineage)
+{
+	constexpr std::array<unsigned, 47> masks = {
+		0,   126, 126,	126,  126, 134, 134, 134, 134,	134, 134, 326, 326, 326,  326, 326,
+		326, 326, 2050, 2178, 382, 326, 198, 0,	  326,	0,   274, 306, 306, 306,  306, 306,
+		0,   136, 264,	138,  382, 126, 638, 126, 1150, 382, 638, 394, 326, 2304, 2050
+	};
+	const auto reason = number(plan, 96, 2);
+	need(reason >= 1 && reason < masks.size());
+	std::array<uint64_t, 6> counts;
+	for (size_t i = 0; i < counts.size(); ++i)
+		counts[i] = number(plan, 216 + 4 * i, 4);
+	// Retained flatfile storage has no child reservations. Preserve that refusal.
+	need(!counts[2]);
+	reader in{ plan.subspan(256) };
+	std::vector<std::span<const uint8_t>> accounts, postings;
+	std::vector<uint64_t> kinds;
+	std::tuple<uint64_t, uint64_t, uint64_t> previous;
+	for (size_t i = 0; i < counts[0]; ++i)
+	{
+		auto row = in.take(120);
+		auto key = restore_economic_baseline::account(row.first(40), lineage);
+		const auto kind = std::get<0>(key);
+		need((!i || previous < key) && (masks[reason] & (1U << kind)));
+		previous = key;
+		const auto before = coin_vector(row, 40), after = coin_vector(row, 72);
+		const auto before_revision = number(row, 104, 8),
+			   after_revision = number(row, 112, 8);
+		if (ordinary(kind))
+		{
+			need(std::all_of(before.begin(), before.end(),
+					 [](auto value) { return value >= 0; }) &&
+			     std::all_of(after.begin(), after.end(),
+					 [](auto value) { return value >= 0; }));
+			(void)coin_value(before);
+			(void)coin_value(after);
+			need(after_revision >= before_revision &&
+			     (before == after || after_revision > before_revision));
+		}
+		else
+			need(!nonzero(row.subspan(40)));
+		accounts.push_back(row);
+		kinds.push_back(kind);
+	}
+	std::vector<std::array<wide, 4>> totals(accounts.size());
+	std::vector<bool> referenced(accounts.size());
+	wide balance = 0;
+	for (size_t i = 0; i < counts[1]; ++i)
+	{
+		auto row = in.take(48);
+		const auto index = number(row, 4, 2);
+		need(number(row, 0, 4) == i && index < accounts.size() && !number(row, 6, 2) &&
+		     nonzero(row.subspan(8, 32)));
+		const auto delta = coin_vector(row, 8);
+		const auto value = std::bit_cast<int64_t>(number(row, 40, 8));
+		const auto kind = kinds[index];
+		need(coin_value(delta) == value && ((kind != 7 && kind != 10) || value < 0) &&
+		     (kind != 8 || (reason == 20 ? value < 0 : value > 0)) &&
+		     (ordinary(kind) || value));
+		balance += value;
+		referenced[index] = true;
+		for (size_t part = 0; part < delta.size(); ++part)
+			totals[index][part] += delta[part];
+		postings.push_back(row);
+	}
+	need(!balance);
+	for (size_t i = 0; i < accounts.size(); ++i)
+	{
+		const auto row = accounts[i];
+		const auto before = coin_vector(row, 40), after = coin_vector(row, 72);
+		need(referenced[i] || (ordinary(kinds[i]) && before == after &&
+				       number(row, 112, 8) > number(row, 104, 8)));
+		if (ordinary(kinds[i]))
+			for (size_t part = 0; part < before.size(); ++part)
+				need(wide(before[part]) + totals[i][part] == after[part]);
+	}
+	if (reason == 18 || reason == 19 || reason == 45 || reason == 46)
+	{
+		const bool opening = reason == 18;
+		need(plan[100] && number(plan, 148, 4) == (opening ? 0 : 1) && !counts[3] &&
+		     !counts[4] && !counts[5]);
+		const auto wallets = std::count(kinds.begin(), kinds.end(), 1),
+			   sinks = std::count(kinds.begin(), kinds.end(), 8),
+			   issuances = std::count(kinds.begin(), kinds.end(), 7),
+			   stakes = std::count(kinds.begin(), kinds.end(), 11);
+		need(stakes == 1 && (reason == 45 ? sinks == 1 && kinds.size() == 2 :
+				     reason == 19 ? wallets == 1 && issuances <= 1 &&
+							    kinds.size() == size_t(2 + issuances) :
+						    wallets == 1 && kinds.size() == 2));
+		const auto held =
+			accounts[std::find(kinds.begin(), kinds.end(), 11) - kinds.begin()];
+		need(number(held, 28, 8) && number(held, 28, 8) == number(plan, 140, 8));
+		const auto stake = coin_vector(held, opening ? 72 : 40);
+		need(!nonzero(held.subspan(opening ? 40 : 72, 32)));
+		size_t denomination = stake.size();
+		for (size_t i = 0; i < stake.size(); ++i)
+			if (stake[i])
+			{
+				need(stake[i] > 0 && denomination == stake.size());
+				denomination = i;
+			}
+		need(denomination != stake.size());
+		size_t issuance_postings = 0;
+		for (auto row : postings)
+		{
+			const auto delta = coin_vector(row, 8);
+			for (size_t i = 0; i < delta.size(); ++i)
+				need(i == denomination || !delta[i]);
+			if (reason == 19 && issuances && kinds[number(row, 4, 2)] == 7)
+			{
+				++issuance_postings;
+				need(delta[denomination] == -stake[denomination]);
+			}
+		}
+		need(reason != 19 || !issuances || issuance_postings == 1);
+	}
+	auto current = snapshots(in, counts[3]);
+	const auto after = snapshots(in, counts[4]);
+	need(current.size() == after.size());
+	for (size_t i = 0; i < current.size(); ++i)
+		need(current[i].first == after[i].first);
+	for (size_t i = 0; i < counts[5]; ++i)
+	{
+		auto row = in.take(128);
+		const auto uid = number(row, 8, 8);
+		const auto found = item_at(current, uid);
+		need(number(row, 0, 4) == i && !number(row, 4, 2) && !nonzero(row.subspan(6, 2)) &&
+		     found != current.end() && found->first == uid);
+		const auto before = row.subspan(16, 56), next = row.subspan(72, 56);
+		position_semantics(uid, next);
+		need(same(found->second, before) && before[1] != 2 && next[1] != 0 &&
+		     (before[1] != 0 || next[1] == 1 || next[1] == 3) &&
+		     number(next, 40, 8) > number(before, 40, 8));
+		current[found - current.cbegin()].second = next;
+	}
+	in.done();
+	for (size_t i = 0; i < current.size(); ++i)
+		need(same(current[i].second, after[i].second));
 }
 struct entry
 {
@@ -135,6 +445,7 @@ class checker
 			     nonzero(event.subspan(20, 16)));
 		else
 			need(!nonzero(event));
+		intent_semantics(intent);
 		bytes normalized(command.begin(), command.begin() + prefix_size);
 		normalized[4] = 1;
 		normalized[31] = 0;
@@ -169,6 +480,7 @@ class checker
 		     counts[3] <= 6000 && counts[4] <= 6000 && counts[5] <= 3000 &&
 		     plan.size() == 256 + counts[0] * 120 + counts[1] * 48 +
 					    (counts[3] + counts[4]) * 64 + counts[5] * 128);
+		plan_semantics(plan, lineage);
 		if (type == 20 || number(intent, 24, 2) == 38 || number(event, 0, 2) == 10)
 		{
 			// Native baselines retain dedupe in their witness/reservation book.
