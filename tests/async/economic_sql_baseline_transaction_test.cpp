@@ -394,6 +394,7 @@ void corruption(MYSQL *c)
 	const auto root = "operation_id=" + id(op.operation_id);
 	const auto lineage = "lineage=" + id(ident(777001));
 	const std::vector<std::string> damage = {
+		"UPDATE economic_accounting_operation SET realized_price_copper=1 WHERE " + root,
 		"UPDATE economic_baseline_witness SET canonical_witness=INSERT(canonical_witness,121,1,CHAR(99)) WHERE " +
 			root,
 		"UPDATE economic_baseline_witness SET witness_digest=REPEAT(CHAR(9),32) WHERE " +
