@@ -61,6 +61,7 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
         cls.old_umask = os.umask(0o077)
         cls.fixture = ROOT / "bin/tools/persistence_restore_fixture"
         cls.native_built = False
+        cls.claim_pairs = None
 
     @classmethod
     def build_native_fixture(cls):
@@ -69,6 +70,149 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
         native.build()
         build_fixture(cls.fixture)
         cls.native_built = True
+
+    @classmethod
+    def native_claim_history(cls):
+        if cls.claim_pairs is not None:
+            return cls.claim_pairs
+        from test_restore_economic_coin_effects import build_coin_fixture
+        from test_economic_sql_canonical_audit import ClaimProjectionFixture
+        import economic_restore_evidence as evidence
+        work = ROOT / "bin/tests/managed-claim-native"
+        work.mkdir(mode=0o700, parents=True, exist_ok=True)
+        raw = []
+        for mode in ("sql", "flatfile"):
+            binary = build_coin_fixture(work, mode)
+            output = subprocess.check_output([str(binary), "--claim-history"], timeout=60,
+                env=dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
+                         UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"))
+            (work / ("claims-" + mode + ".bin")).write_bytes(output)
+            raw.append(output)
+            print("MANAGED_CLAIM_NATIVE " + json.dumps({"mode": mode,
+                "binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
+                "fixture_sha256": hashlib.sha256(output).hexdigest()}, sort_keys=True), flush=True)
+        assert raw[0] == raw[1]
+        blocks, offset = [], 0
+        while offset < len(raw[0]):
+            size, = struct.unpack_from("<I", raw[0], offset)
+            offset += 4
+            blocks.append(raw[0][offset:offset + size])
+            offset += size
+        assert offset == len(raw[0]) and len(blocks) == 10
+        cls.claim_pairs = list(zip(blocks[::2], blocks[1::2]))
+        evidence.require_integrity(ClaimProjectionFixture("partial", cls.claim_pairs))
+        return cls.claim_pairs
+
+    def seed_claim_history(self, env):
+        """Modeled allocations over native capsules; no opening/producer proof."""
+        from test_economic_sql_canonical_audit import ClaimProjectionFixture
+        from economic_restore_evidence import decode_plan
+        model = ClaimProjectionFixture("partial", self.native_claim_history())
+        def literal(value):
+            if value is None:
+                return "NULL"
+            if type(value) is bytes:
+                return "X'" + value.hex() + "'"
+            assert type(value) is int
+            return str(value)
+        def insert(table, values, columns=""):
+            sql(env, "INSERT INTO " + table + columns + " VALUES(" + ",".join(map(literal, values)) + ");")
+        sql(env, "INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,command_type,"
+                 "schema_version,payload_version,status,result_payload,committed_at) VALUES("
+                 "UNHEX(REPEAT('07',16)),UNHEX(REPEAT('01',32)),UNHEX(REPEAT('02',32)),1,1,1,1,X'',CURRENT_TIMESTAMP(6));"
+                 "INSERT INTO economic_epoch(lineage,epoch,ordinal,transition_kind,transition_digest,creating_operation_id) "
+                 "VALUES(UNHEX(REPEAT('11',16)),UNHEX(REPEAT('22',16)),1,1,UNHEX(REPEAT('03',32)),UNHEX(REPEAT('07',16)));"
+                 "INSERT INTO economic_lineage_state(lineage,active_epoch) VALUES(UNHEX(REPEAT('11',16)),NULL);")
+        for root in model.roots.values():
+            plan = decode_plan(root.encoded)
+            meta = plan["metadata"]
+            operation = meta[2]
+            sql(env, "INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,command_type,"
+                     "schema_version,payload_version,status,result_payload,committed_at) VALUES(" + literal(operation) +
+                     ",UNHEX(REPEAT('00',32)),UNHEX(REPEAT('00',32)),1,2,1,1,X'',CURRENT_TIMESTAMP(6));")
+            insert("economic_accounting_operation", (operation, *meta[:2], meta[3] if any(meta[3]) else None,
+                *meta[4:11], meta[11], plan["intent_digest"], plan["domain_digest"], plan["plan_digest"],
+                root.frozen, root.encoded, 1, 0, *plan["counts"]),
+                "(operation_id,lineage,epoch,original_operation_id,accounting_version,writer_id,policy_version,"
+                "compiler_version,actor_kind,actor_id,reason,source_event,intent_digest,domain_digest,plan_digest,"
+                "canonical_intent,canonical_plan,outcome,result_code,account_count,posting_count,child_count,"
+                "before_witness_count,after_witness_count,item_event_count)")
+            insert("economic_accounting_source_claim", (meta[0], meta[11], operation, 1))
+            for index, (key, before, after, old, new) in enumerate(plan["effects"]):
+                insert("economic_accounting_account_effect", (operation, index, key, *before, *after, old, new))
+            for index, (event, account, child, delta, amount) in enumerate(plan["postings"]):
+                insert("economic_accounting_coin_posting", (operation, index, event, account, child, *delta, amount))
+        sql(env, "INSERT INTO economic_account_mapping(mapping_id,lineage,account_kind,context_id,backend_kind,"
+                 "locator_kind,native_id,active_native_id,creating_operation_id) VALUES(9,UNHEX(REPEAT('11',16)),5,0,1,5,"
+                 "42,42,UNHEX(REPEAT('81',16)));INSERT INTO auction_money_pickups(pid,money,claim_revision) VALUES(42,6,3);")
+        for row in model.pending_sources:
+            insert("economic_pending_claim_source", (bytes.fromhex(row[0]), row[1], bytes.fromhex(row[2]), *row[3:6], None))
+        for row in model.pending_consumptions:
+            insert("economic_pending_claim_consumption", (bytes.fromhex(row[0]), bytes.fromhex(row[1]), *row[2:]))
+
+    def claim_capture(self, env):
+        """Independent SELECT-only cut of the retained and residual claim scope."""
+        import pymysql
+        import economic_sql_audit_snapshot as exporter
+        import economic_sql_canonical_audit as canonical
+        from reconcile_economy_accounting import Reconciler
+        from collections import Counter
+        reader = pymysql.connect(unix_socket=env["DB_SOCKET"], user="managed_claim_reader",
+            password="disposable-claim-reader", database=env["DB_NAME"], autocommit=True,
+            cursorclass=pymysql.cursors.DictCursor)
+        try:
+            with reader.cursor() as cursor:
+                with self.assertRaises(pymysql.err.OperationalError) as denied:
+                    cursor.execute("UPDATE auction_money_pickups SET money=money WHERE pid=42")
+                self.assertEqual(denied.exception.args[0], 1142)
+            verified = canonical.capture(reader)
+            self.assertEqual(verified["retained_roots"], 3)
+            self.assertEqual(verified["retained_pending_claim_allocations"], "verified")
+            self.assertTrue(verified["read_only"])
+            self.assertFalse(verified["source_capture_qualified"])
+            self.assertFalse(verified["release_qualified"])
+            with reader.cursor() as cursor:
+                cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+                cursor.execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
+                native, _, _ = exporter.read_native(cursor, bytes.fromhex("11" * 16))
+                native["pending_claim_consumers"], native["pending_claim_consumer_coverage"] = (
+                    exporter.read_pending_claim_consumers(cursor, bytes.fromhex("11" * 16)))
+                report = Reconciler()
+                report.audit_pending_claim_consumers("sql_partial", "11" * 16, native)
+                self.assertEqual(dict(report.counts), {})
+                self.assertEqual(native["pending_claim_consumption_coverage"], {"rows": 1})
+                self.assertEqual(native["pending_claim_source_coverage"], {"rows": 2, "open_rows": 2,
+                    "consumed_rows": 0, "invalid_account_mappings": 0, "invalid_source_roots": 0,
+                    "invalid_consumer_roots": 0})
+                spent, remaining = Counter(), Counter()
+                for row in native["pending_claim_consumptions"]:
+                    spent[(row["source_operation_id"], row["source_slot"])] += row["amount"]
+                for row in native["pending_claim_sources"]:
+                    remaining[row["account_key"]] += row["amount"] - spent[(row["source_operation_id"], row["source_slot"])]
+                self.assertEqual(list(remaining.values()), [6])
+                self.assertEqual([row["balance"] for row in native["holdings"]], [[6, 0, 0, 0]])
+                captured = []
+                for table in ("economic_lineage_state", "economic_epoch", "economic_accounting_operation",
+                    "economic_accounting_source_claim", "economic_accounting_account_effect",
+                    "economic_accounting_coin_posting", "economic_account_mapping", "economic_pending_claim_source",
+                    "economic_pending_claim_consumption", "auction_money_pickups"):
+                    cursor.execute("SELECT * FROM " + table + " ORDER BY 1,2")
+                    captured.append(cursor.fetchall())
+                cursor.execute("SELECT * FROM critical_operation_inbox WHERE operation_id IN (" +
+                    ",".join("UNHEX(REPEAT('" + value + "',16))" for value in ("07", "81", "82", "83")) + ") ORDER BY 1,2")
+                captured.append(cursor.fetchall())
+                return captured
+        finally:
+            reader.rollback()
+            reader.close()
+
+    def create_claim_reader(self, env):
+        # This administrative connection names only the freshly initialized,
+        # TCP-disabled daemon owned by this test. The dump excludes mysql.user.
+        backup.run(["mysql", "--no-defaults", "--protocol=socket", "--socket=" + env["DB_SOCKET"],
+                    "--user=root", "-e", "CREATE USER 'managed_claim_reader'@'localhost' "
+                    "IDENTIFIED BY 'disposable-claim-reader';GRANT SELECT ON duris_restore.* "
+                    "TO 'managed_claim_reader'@'localhost';"], env=dict(env, MYSQL_PWD=""))
 
     @classmethod
     def tearDownClass(cls):
@@ -514,6 +658,9 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                      "INSERT INTO currency_bank_baseline(bank_id,opening_copper,opening_silver,opening_gold,opening_platinum) VALUES(1,21,22,23,24);"
                      "INSERT INTO epic_balance_baseline(pid,opening_balance) VALUES(42,15);"
                      "INSERT INTO combat_frag_baseline(pid,opening_frags) VALUES(42,0);")
+            self.seed_claim_history(env)
+            self.create_claim_reader(env)
+            claim_before = self.claim_capture(env)
             restore.database_qualify(env)
             query = ("SELECT CONCAT(a.account_name,':',p.pid,':',p.copper,':',p.epics,':',b.bank_gold) "
                      "FROM accounts a JOIN player_data p ON p.account_name=a.account_name "
@@ -533,19 +680,71 @@ class PersistenceRecoveryIntegration(unittest.TestCase):
                 self.assertEqual(require_selected_engine(restored_env), source_version)
                 self.assertNotEqual(restored_env["DB_SOCKET"], env["DB_SOCKET"])
                 self.assertEqual(sql(restored_env, query), expected)
+                self.create_claim_reader(restored_env)
+                self.assertEqual(self.claim_capture(restored_env), claim_before)
                 checked.append(mode)
                 actual_service_load(candidate, mode, restored_env)
+                self.assertEqual(self.claim_capture(restored_env), claim_before)
             with mock.patch.object(restore, "service_load", check_values_then_boot):
                 receipt = restore.restore(self.p, result["generation"], self.ledger())
             self.assertEqual(checked, ["mariadb-primary"])
             self.assertEqual(receipt["result"], "qualified")
             self.assertEqual(receipt["checks"]["database_engine"], engine)
             self.assertEqual(sql(env, query), expected)
+            self.assertEqual(self.claim_capture(env), claim_before)
             self.assertEqual(backup.inventory(generation), captured)
             candidate = self.p["restore_root"] / receipt["candidate"]
             self.assertEqual((candidate / "journals/critical/locker-identification/42.receipt").read_bytes(),
                              receipt_bytes)
             self.assertIn(b"Entering game loop.", (candidate / "service.log").read_bytes())
+            restore.remove_candidate(self.p["restore_root"], candidate)
+            import economic_sql_canonical_audit as canonical
+            actual_import = restore.database_import
+            corruptions = (
+                ("missing-partial-allocation", "DELETE FROM economic_pending_claim_consumption;"),
+                ("wrong-partial-amount", "UPDATE economic_pending_claim_consumption SET amount=1;"),
+                ("missing-credit-source", "DELETE FROM economic_pending_claim_source WHERE "
+                 "source_operation_id=UNHEX(REPEAT('82',16));"),
+            )
+            refused_imports = 0
+            for name, damage in corruptions:
+                with self.subTest(engine=engine, claim_import=name):
+                    imported = []
+                    def corrupt_import(import_generation, restored_env):
+                        actual_import(import_generation, restored_env)
+                        imported.append("imported")
+                        self.assertNotEqual(restored_env["DB_SOCKET"], env["DB_SOCKET"])
+                        sql(restored_env, damage)
+                        self.create_claim_reader(restored_env)
+                        with self.assertRaisesRegex(canonical.AuditError, "pending_claim"):
+                            self.claim_capture(restored_env)
+                        imported.append("audit-refused")
+                    before_candidates = set(self.p["restore_root"].glob("candidate-*"))
+                    with mock.patch.object(restore, "database_import", corrupt_import), \
+                         mock.patch.object(restore, "service_load") as service:
+                        with self.assertRaises(backup.BackupError) as refused:
+                            restore.restore(self.p, result["generation"], self.ledger())
+                        service.assert_not_called()
+                    self.assertEqual(str(refused.exception), "subprocess_failed")
+                    self.assertEqual(imported, ["imported", "audit-refused"])
+                    failed_candidates = set(self.p["restore_root"].glob("candidate-*")) - before_candidates
+                    self.assertEqual(len(failed_candidates), 1)
+                    failed = failed_candidates.pop()
+                    self.assertFalse((failed / "QUALIFIED.json").exists())
+                    self.assertEqual(backup.read_json(failed / "FAILED.json"), {"result": "failed"})
+                    self.assertEqual(self.claim_capture(env), claim_before)
+                    self.assertEqual(backup.inventory(generation), captured)
+                    # private_database has stopped this failed candidate's daemon.
+                    # Keep the original 512 MiB bound for each independent cut.
+                    restore.remove_candidate(self.p["restore_root"], failed)
+                    refused_imports += 1
+            self.assertEqual(refused_imports, len(corruptions))
+            print("MANAGED_CLAIM_RESTORE " + json.dumps({"engine": engine, "native_roots": 3,
+                "immutable_sources": 2, "partial_allocations": 1, "residual_copper": 6,
+                "corrupt_import_refusals_before_boot": refused_imports, "select_only": True,
+                "source_and_generation_unchanged": True, "original_opening_qualified": False,
+                "financial_producer_qualified": False, "complete_capture": False,
+                "accounting_activated": False}, sort_keys=True), flush=True)
             sql(env, "INSERT INTO accounts(account_name,confirmed) VALUES('OtherSynthetic',1);"
                      "UPDATE player_data SET account_name='OtherSynthetic' WHERE pid=42;")
             with self.assertRaises(backup.BackupError):
