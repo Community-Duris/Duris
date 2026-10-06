@@ -50,11 +50,21 @@ Retirement without an authenticated supported owner continues to refuse.
 The three-file private successor is frozen as
 `5552a71bfd7b401ff9d1400cf1a1f1b8e4a55af195aa9fac9fc9acf268513421`.
 It changes only the original birth SQL provider/header and lifecycle caller.
-Original contracts and production qualification are underway; source remains
-private and no cold success is claimed. Original startup opens SQL and restores
-accounting before world boot and coordinator initialization. Authentic retained
-origin registration/world restoration and the pending-journal handoff therefore
-remain concrete integration work, in addition to the wallet mapping repair.
+Both original 747-unit production builds and nine original contracts pass.
+[Normal cold SQL startup/readback](NATIVE_WALLET_STARTUP_PRIMARY_QUALIFICATION_2026-10-06.md)
+now passes on MySQL and MariaDB after genuine warm publication with the same
+executable. It exercises the complete original initialize_mysql path and actual
+retained origin/current-native/custody/wallet/source proofs. All four daemons
+close cleanly. Primary authenticated the terminal evidence manifest and every
+local sealed evidence size/hash. Source remains private.
+
+Original startup restores accounting before world boot and coordinator
+initialization. Authentic published-origin world restoration and the distinct
+pending-journal handoff remain concrete integration work. The completed SQL
+readback stops before world boot and establishes neither physical restoration
+nor full activation. Private captured item openings, complete auction source
+claims and a recovery-only original birth pump are being integrated; their new
+behavior is not yet compiled or runtime-qualified.
 
 This recovery repair does not invent a generic full-history startup audit.
 Existing lifecycle player mapping recovery is identity-based; the native SQL
