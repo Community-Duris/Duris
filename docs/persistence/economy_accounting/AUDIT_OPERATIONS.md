@@ -585,6 +585,26 @@ use the independent retained-evidence interpreter, without importing mutation
 code or changing native rows. See
 [the exact position qualification](PLAN5_ITEM_CUSTODY_POSITION_QUALIFICATION_2026-10-06.md).
 
+## Retained flatfile intent and plan semantics
+
+The independent flatfile restore reader validates retained generic EAI1/EAP1
+semantics as well as physical checksums and command/intent bindings. A correctly
+checksummed record still refuses when its policy, source kind, account effects,
+postings, native item positions, containment forest or event replay is invalid.
+The same refusal applies to the economic operator audit, restore preflight and
+post-replay qualification. Readability remains subject to the separate opening
+and lifecycle provenance gates.
+
+Money checks preserve individual denomination legs, zero-sum copper, allowed
+account kinds and system signs, increasing changed-state revisions, and exact
+reconstruction. Item checks preserve equipment, valid quarantined custody,
+destruction's retained former edges and all-zero absent creation witnesses.
+The original flatfile child-reservation refusal remains. These checks use an
+independent interpretation of the versioned wire contract; production mutation
+code supplies qualification oracles only in tests. Every observation leaves
+retained economic bytes unchanged. See
+[the exact semantic qualification](PLAN5_FLATFILE_PLAN_SEMANTICS_QUALIFICATION_2026-10-06.md).
+
 ## Native mobile custody grammar
 
 Original native-mobile custody uses owner type12 with a durable lifetime ID
