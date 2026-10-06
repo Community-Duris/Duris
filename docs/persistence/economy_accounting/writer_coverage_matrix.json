@@ -13,7 +13,7 @@
     "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending. Reviewed native placement-order conversion is integrated into the read-only world witness; original publication driver remains unfinished and native qualification deferred. Reviewed NPC flat native image reader/exact-before bundle preparer is integrated with no in-tree caller or standalone write/commit; protected namespace lifecycle/Plan5 handling and same-root native parent remain unfinished. Existing corruption-guard declaration header is included in native NPC capture after peer both-backend compiler refusal; copied-source dual-backend probes are peer evidence only, combined maintained build remains deferred. Source provenance now explicitly distinguishes known integrated-unqualified and unpublished candidate shapes; strict contracts bind every integrated component pin and locate the reviewed native callsites by function/excerpt. No route or execution evidence is promoted. Source-reviewed typed keeper sell-store insertion ordering shares the existing player ordering implementation; no private native publication consumer is installed or qualified. Source-reviewed pure active-root custody census shares old root observation and preserves retained historical states; private shop consumer remains unintegrated and unqualified. Source-reviewed bounded canonical shop recovery forest binding codecs are integrated as pure value helpers; the explicit v8 command, producer, original SQL validation, cold replay/publication and final qualification remain private/unfinished. Existing journal limits, inactive shop versions and admission/ACK gates are unchanged. Maintained native reference/source-event codecs are extracted without changing original encoded bytes or image/capture policy; complete production and focused link recipes are updated. Native char_data now has zeroable runtime-only reference storage and a read-only accessor requiring the originally observed runtime generation before pointer access. No birth writer, durable restore record, UID issuance or ACK authority is installed by this slice; major-plan execution remains deferred. Reviewed SHOP v8 producer/checkpoint, literal runtime payload, complete destination weight, original SQL images, exact retained receipt verification and held live publication source are composed with all companion headers and production objects. Current cold image observation grants no startup/rebind/native publication or ACK authority. Central accounted SHOP admission remains closed and canonical schema0056 is unchanged; schema0057, real producer invocation, cold continuation, flat parity and major-plan native/gameplay/recovery qualification remain unfinished. Previously reviewed detached native-mobile loader is source integrated with both legacy overloads/probe kept on their original path. Preparation has no live list/count/runtime/event publication; consumption precedes room/special hooks. Private dormant stage grants no original source, durable UID or ACK, and adds no durable recovery format or NPC state ledger. Original issuer/birth/restore/retirement and major-plan qualification remain open. SHOP owned submission now accepts the original native v7 or recovery v8 command; the v8 builder was previously rejected by a v7-only guard. Decode, exact operation/checkpoint/held-player proof, all other version restrictions and admission/activation gates remain unchanged. Source-only correction; major-plan execution remains deferred. Four SHOP producers and the original retained driver are source integrated; central SHOP availability remains closed. Source review corrected actor-independent uncertain readback ordering and removed an unnecessary live-keeper gate after proven local cancellation. No native/SQL/services or major-plan tests ran; cold recovery, coherent schemas, flat parity and R1-R8 qualification remain open. Native mobile v2 economic images retain exact four-denomination cash and an original owner-supplied cash revision. Historical v1 cash remains unknown/read-only; both native participants enforce known cash and exact cash/mobile revision changes. Source review/pins only; original birth/source/restore/retirement and major-plan native qualification remain open. Private SQL SHOP runtime publication now stages a missing revision cache entry from the original authenticated current projection, preserving newer-cache refusal and final session/census proof. Source-reviewed only; native/cold/major-plan qualification stays open. Explicit native-mobile owner/key and v11 quest item contracts, final-giver reward binding, read-only native custody compatibility and complete extracted-codec recipe closure are source-integrated. Legacy/default payload10 remains unchanged; ordinary schema1 execution and generic admission reject native mutations. Source review/AST/syntax/pins/census only; original native parent, birth/source/restore/producer/publication and major-plan qualification remain open. Pure cold SHOP observation now records exact addressed-body presence, disconnected account availability, complete physical forests and original role bindings without rebind/publication authority. Stale same-template foreign shop bindings refuse rather than masquerading as absence. Source review/format/pins only; original replay/native mutation/guarded ACK and major-plan native qualification remain open. Explicit native quest SQL/flat borrowed item participants, ordered stock transitions and focused recipe closure are source-integrated, with full-player subtree closure, separate forest/event bounds and preserved transient error classification. Generic admission, schema0056 and inactive behavior stay closed/unchanged; native birth/source/root/publication/restore/ACK and major-plan qualification remain open. SHOP preparation reads the decoded frozen epoch through admission.metadata.epoch, preserving exact original mapping equality and all wallet/bank/token/timestamp guards. Source-only compiler-defect repair; combined native qualification remains deferred. SHOP original-refusal cancellation authenticates and pins the exact command/receipt before its private cleanup callback; false cleanup retains fences/hold, and the explicit existing live no-effect continuation remains. Source-only; cold SQL BEFORE integration and native qualification remain open. Explicit absent native-mobile context initializes all three ordinary movement/batch/craft payload aggregates; original semantics and safety gates remain. Peer reproduced both-policy missing-field build diagnostics; local source-only repair, maintained build qualification deferred. Explicit SELECT-only original never-admitted SHOP BEFORE reader retains exact bound revisions/manifests and inbox/root/source/evidence/outbox absence under original session; no execution receipt or rejection synthesized. Source-reviewed interface only; cold caller/native/flat qualification remain open. Recovery prototypes parse after deterministic boot binders before populated native sidecar restoration; allocation-free serialized boot finalizer snapshots final existing procedure bindings before workers. No native index binding writes or runtime reseal. Source-only; lazy binding/restoration staleness and native recovery qualification remain open. Only inner capture_literal_root vector renamed tree_literal for maintained SQL GCC shadow error; exact outer capture and original literal policy retained. Source-only; major-plan executable qualification pending. Reviewed original cold SHOP SQL owner registered/pulsed with exact literal staging, retained callback tails, full original receipt-or-never-admitted refusal proof and confirmed original-session rollback before guarded ACK/cancellation. Eight new native mutation sites classified; current final boot binding seal preserved. Source-only: flat parity, missing lazy bindings and major-plan native/gameplay/recovery qualification remain open. Original cold procedure binding is prepared before fresh original proof and allocation-free retained enrollment; normal native policy stays. Source-only; native link/recovery and flat parity remain unqualified.",
     "source_pins": {
       "migrations/data_lifecycle_manifest.json": "d6beaeffce264e49aaa351bae946d18c3d480026bf6a32a7ddde5c6a9b072136",
-      "scripts/generate_economy_writer_coverage.py": "94c9b23de635c7e2f67fda0ee04582227ad895b306f36138836827ef02f39675",
+      "scripts/generate_economy_writer_coverage.py": "f8dcf450bc77e87ba3a2da2d5a279ba4e090969a1919bdf4b96596b05123b793",
       "scripts/validate_data_lifecycle.py": "34979216bb645038129e61e6ad44e3a213f20b25a5d834273d3998fab6095d68",
       "scripts/validate_economy_accounting.py": "90b8811f1d3785cdc26a9590e90a048c078e078e6db45e07be336faccbf43f3b",
       "src/Makefile": "2ae8f1f3e8cba75233c75a5680e1ca423abf5e4cf5b4e1f1cf56b1b7f5a1d00e",
@@ -131,7 +131,7 @@
     "non_writer_or_out_of_scope_candidates": 108,
     "offline_operational_writer_routes": 4,
     "routes_with_current_schema_1_path": 85,
-    "routes_with_schema_2_gameplay_producer": 15,
+    "routes_with_schema_2_gameplay_producer": 16,
     "routes_with_unified_double_entry_evidence": 2,
     "runtime_mutation_and_projection_routes": 766,
     "supplemental_candidates_found": 0
@@ -6321,34 +6321,37 @@
       "counts_as_operational_writer": false,
       "counts_as_runtime_writer": true,
       "current_critical_command_schema": {
-        "accounting_intent_attached_by_current_gameplay_route": false,
+        "accounting_intent_attached_by_current_gameplay_route": true,
         "current_schema": 1,
         "evidence": [
           "src/economy/coin_transfer_command.c:194",
           "src/persistence/critical_command.h:9-10",
-          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17",
+          "src/cmd/actobj.c:submit_coin_give (exact-denomination player/morph wallet endpoints)",
+          "src/economy/currency_transaction.c:currency_transaction_submit_coin (freeze accounting intent before retained admission)",
+          "src/economy/economic_gameplay_authority.c:prepare_coin_transfer (existing wallet mappings and balanced typed intent)"
         ],
-        "interpretation": "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected.",
-        "route_mode": "schema_1_typed_command_path",
-        "schema_2_gameplay_producer_connected": false
+        "interpretation": "Inactive player giving retains its schema-1 compound coin path. Active player giving freezes one exact-denomination schema-2 wallet-to-wallet root using the existing player mappings; morph recipients resolve to their original player wallet. Unsupported active NPC and mint routes refuse before native mutation. Complete command-to-native backend, publication and restart qualification remains pending.",
+        "route_mode": "schema_1_when_inactive_schema_2_exact_wallet_transfer_when_active",
+        "schema_2_gameplay_producer_connected": true
       },
       "disposition": "runtime_mutation_route",
       "double_entry_evidence": {
         "global_evidence": [
-          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
-          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+          "src/cmd/actobj.c:submit_coin_give",
+          "src/economy/currency_transaction.c:currency_transaction_submit_coin",
+          "src/economy/economic_gameplay_authority.c:prepare_coin_transfer"
         ],
         "legacy_domain_evidence": [
-          "currency_ledger captures native wallet/bank deltas, after-vectors and revisions on applicable SQL paths; no balancing counter-account/source posting is present in this route evidence."
+          "The active producer connects two exact-denomination player wallets to the existing typed coin owner; inactive behavior retains its schema-1 path."
         ],
-        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "note": "Source connection is reviewed; component evidence does not qualify the complete gameplay route or activation.",
         "required_atomic_evidence": [
-          "economic_accounting_operation",
-          "economic_accounting_account_effect",
-          "balanced economic_accounting_coin_posting rows where currency changes",
-          "linked item event references for custody-changing roots"
+          "Actual MySQL, MariaDB and flat-file command-to-native peer journeys",
+          "Exact native wallet vectors/revisions, balanced root and receipt",
+          "Morph identity, endpoint failure, held publication, lost reply and restart"
         ],
-        "status": "legacy_domain_ledger_only_not_double_entry",
+        "status": "typed_schema2_wallet_transfer_source_without_qualified_gameplay",
         "unified_operation_postings_observed": false
       },
       "id": "coin.player_give",
@@ -6373,7 +6376,7 @@
         "function": "submit_coin_give",
         "original_draft_symbol": "submit_coin_give"
       },
-      "source_classification": "Player wallet to player wallet.",
+      "source_classification": "Exact-denomination player-to-player wallet root; morph recipients resolve to their original player wallet. Active schema-2 source connection is reviewed, with complete backend gameplay qualification still pending.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     },
     {

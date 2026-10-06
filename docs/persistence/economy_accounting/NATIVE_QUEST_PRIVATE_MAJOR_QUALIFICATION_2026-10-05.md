@@ -1,5 +1,100 @@
 # Native quest private major source and component qualification
 
+## Immutable original birth recipe handoff — 2026-10-06
+
+[Accepted codec, wrapper and corrected SQL readback](NATIVE_BIRTH_RECIPE_SOURCE_HANDOFF_2026-10-06.md)
+are frozen and composed into5769 exact private source inputs. The birth-v2 wrapper
+retains original stock choices, preserves v1 readability/native image and original
+limits, and canonically binds the recipe. Parsed parameters already survive in
+literal descriptions. This is source acceptance only: actual factory restoration,
+mutable typed continuation, remaining reset mechanics and native qualification
+remain open. No maintained native install or full Plan/release gate is claimed.
+
+The reviewed live subset and its two narrow corrections are now composed with
+that contract on5771-input private4057 source. Original preimages match; cold
+factory/carrier/provider/mechanics and native qualification remain unfinished.
+
+## Retained original birth refusal source — 2026-10-06
+
+Original coordinator refusal delivery retained player-guarded owners but erased
+birth21, which correctly has no player-save token. That erased the genuine proof
+before the original detached constructor owner could safely clean up.
+
+Private two-file candidate03172 conservatively retains the original birth
+refusal in both existing delivery paths. Its friend-only
+`critical_native_mobile_birth_publication_owner::cancel_refusal` requires the
+exact immutable command, complete delivered `never_admitted` receipt and original
+coordinator generation. It pins the operation across native cleanup outside the
+coordinator mutex; uncertain admission and executed receipts cannot cancel.
+No execution ACK, journal checkpoint or completed-cache result is fabricated.
+
+Independent source review first found an actual post-cleanup allocation defect:
+the candidate encoded the command again after cleanup, so allocation failure
+could retain an already delivered entry after freeing its native owner. The
+corrected source compares full canonical bytes before cleanup, then rechecks
+the exact operation pointer/generation/pin and full receipt allocation-free.
+The architect accepts this bounded source slice. The actual producer must retain
+cleanup-returned state if a later owner proof refuses, avoiding duplicate cleanup.
+
+- Parent complete source manifest:
+  `616d9beb6a74b6b9a7863cacb66208fd4ca405d8c23a25c525082273e30c599c`.
+- Two-file manifest:
+  `03172ed7f643af7f831abfec361652e03494d675289b7bef123484be245ad268`.
+- Frozen receipt:
+  `7f6c0c6d101a3afc40aa8a3347def3dd7ababd0a6c67344adcf3d07186de32f7`.
+- Complete composed successor manifest:
+  `1c6c6fc1e4dd334b85c03a7cd6609d01c5d05a375f02adb52a9a2ca821744ab5`.
+
+Private packets are retained under `tmp/plan3-native-mobile-birth-refusal-owner-20261005`
+and `tmp/plan3-native-mobile-birth-refusal-major-source-20261006`. Forward/inverse
+byte edits, original preimages, all5767 composed inputs and changed-line clang18
+fixed points verify. Original driver is unchanged. The actual reset owner has
+the exact dependency; source and native integration/qualification remain separate.
+No maintained native source, native test/build, complete cold recovery or Plan
+completion is claimed by this source handoff.
+
+The next original cold recipe preserves successful library order and references
+the actual parsed descriptor rows already carried verbatim by player-item literals;
+it does not duplicate parameters or reparse prototype arguments. Immutable recipe
+and mutable publication progress remain separate. Its private codec/wrapper and
+actual factory integration are unfinished and not qualified by earlier builds.
+
+## Shared birth publication and retained budget handoff — 2026-10-05
+
+Primary implemented the actual original SQL birth publication verifier and a
+private birth-only retained-byte setter in four private source files. The verifier
+authenticates the complete original120-byte success result/inbox/evidence before
+locking original mapping, current native/cash, owner revision and complete custody.
+It reuses the existing current-cut verifier and preserves caller-owned reconnect-
+disabled transaction cleanup, world publication and ACK. Outputs stay unchanged
+on failure. Birth bytes, original quest-driver bytes and acceptance preparations
+share the existing32MiB aggregate cap; failed replacement keeps its old charge.
+The birth friend receives no quest publication capabilities or separate allowance.
+
+Packet `tmp/plan3-native-mobile-birth-publication-bridges-20261005` has manifest
+`e15f9579d304461515ca747b4d6633a299a84db1779abc2a820ae5db4fcd39ae`
+and frozen receipt
+`443fea459065d7f8784252a79ffbe51afc8d3fe9df9a4b24825fea6f6ac621d4`.
+Independent source review found no concrete blocker. Four exact a761 preimages,
+byte-forward/inverse proofs and changed-line clang18 fixed points pass. Composition
+`tmp/plan3-native-mobile-birth-publication-major-source-20261005` verifies all5767
+inputs at manifest
+`616d9beb6a74b6b9a7863cacb66208fd4ca405d8c23a25c525082273e30c599c`;
+original driver is unchanged. No maintained native installation, build, tests,
+SQL or service execution is claimed. The worker received the exact frozen handoff.
+
+The original reset-source tuple is source-reviewed: one actual invocation ID
+issued at first successful M, retained as source and generation, sequence0 and
+original cmd_no slot; each birth has a distinct operation and UID. Retry preserves
+the original tuple; replay does not rerun the current zone program. No new reset
+cursor, source kind or journal is introduced.
+
+Actual producer integration continues. Original cold constructor effect choices,
+reducing-container prototype probe, occupied-equipment-slot effects and alchemist
+spawn remain explicit implementation seams, not waived mechanics or permanent
+refusal substitutes. Major native gameplay/persistence/recovery qualification,
+flat parity, writer registration and full Plan/R1–R8/release remain open.
+
 The maintained production-source baseline for this checkpoint is
 `55a7c0492b80f8a920a11f7c567ab43cefe333c2`.
 The native quest proposals below are frozen private candidates, not installed
