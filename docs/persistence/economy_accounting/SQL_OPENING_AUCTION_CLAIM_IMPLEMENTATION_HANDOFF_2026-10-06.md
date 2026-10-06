@@ -1,5 +1,51 @@
 # SQL auction and claim opening implementation handoff
 
+## Reviewed private candidate — 2026-10-06
+
+The published source remains `f528a46b4`. The private opening successor fixes
+retired-escrow recovery after genuine event6 collection, authenticates original
+claim slots/counts even after full consumption, and supplies the real fixture
+inbox parent. Independent source review accepts these corrections; eight
+production objects and sanitizer component checks pass. The full native link
+timed out at420 seconds and is not passing evidence. Both-engine native money
+journeys remain pending.
+
+The primary private schema candidate applies additive0062 after the original
+canonical61 runner on MySQL8.0.46 and MariaDB10.11.19. Application and rerun pass,
+with measured exact five-table metadata and229 tables. All126 older immutable
+files and the three61-entry prefixes remain unchanged. Registration/source
+review and the original ten runtime unit tests pass; the original both-engine
+fresh/populated-fork/runtime sealer is being rerun after correcting its obsolete
+55-receipt staging/master expectations. It now checks complete registered history, preserving
+the original historical-prefix and tamper controls. No maintained schema,
+production data or activation authority has changed. Private evidence lives in
+`tmp/sql-money-opening-schema-source-20261006`; the reviewed money successor is
+`tmp/sql-auction-claim-opening-source-review1-20261006`.
+
+A separate original producer gap remains: a player without an opening pickup
+needs typed absent-endpoint admission; only a genuine native refund/proceeds
+creates a later claim endpoint within its original auction root. Opening
+coverage and the private corrections do not close that gap or full R6.
+
+### Narrow Plan5 allocation interface
+
+The private additive0062 representation preserves original
+`economic_pending_claim_source` identities, beneficiaries and amounts. New
+`economic_pending_claim_consumption` rows retain `spending_operation_id`,
+`source_operation_id`, `source_slot` and positive `amount`. Their primary key is
+the first three fields; restrictive foreign keys bind the spending accounting
+root and the original composite source. Remaining value is original amount
+minus authenticated retained consumption. A historical whole-claim link and
+new partial consumption are mutually exclusive for the same source.
+
+The nullable `economic_baseline_witness.claim_origin_version` stays NULL for
+historical witnesses; version1 binds actual opening root, canonical
+holding-index-plus-one slot, original mapping/PID/amount and exact origin count.
+Even a fully consumed origin remains required evidence. No witness, origin,
+balance or epoch is backfilled. Plan5's independent readers must authenticate
+this representation before qualifying the integrated candidate; metadata and
+synthetic opening fixtures do not prove the original producer/restore journeys.
+
 Source checkpoint: `6083deabbfe31fcad13699670fd5d5cdf09e245c`.
 This is the remaining implementation boundary for existing R6 opening capture,
 not a new acceptance gate or a qualification result. The independent persistence
