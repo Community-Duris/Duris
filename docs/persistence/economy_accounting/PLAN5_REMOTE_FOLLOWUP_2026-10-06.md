@@ -171,3 +171,23 @@ follow-up without blocking independent work. Accounting stays inactive.
 ## Shared provider and published pin follow-up — 2026-10-06
 
 [The exact composition qualification](PLAN5_RESTORE_PROVIDER_COMPOSITION_QUALIFICATION_2026-10-06.md) follows the earlier native-provider work through primary 11a83b62c on the same remote codex/accounting-plan5. Original native linking reproduces duplicate providers; the separate one-line owned fix c82931a182e81edd92ac011b2b35485471b8e822 passes the complete original restore-authority recipe, including 20 positive stores, 367 corruption refusals, 54 native decodes and 1058 metadata comparisons. Exact primary 43c729214 pin/attribute repair is imported at a674246ad89fde0850e57191fe7ebd76acf9e8bb; all 58 original contracts and 153 raw pins pass. Historical failures, both seals and all seven old tips remain. Current native/migration/script/test blobs match primary43 exactly; no release gate, activation or production authority is promoted.
+
+## Exact UID provenance follow-up — 2026-10-06
+
+[The query qualification](PLAN5_PROVENANCE_UID_REPRESENTATION_QUALIFICATION_2026-10-06.md)
+publishes separate fix `68c6938d9f0ddd2e308f31cea62e9df97746194d`, based on
+`1ec48f46590ab80aa4faeabf73d5506a7b8a4cdc`, on this same remote branch. The original
+reader matches float and boolean aliases and displays the requested integer UID;
+nine frozen regression failures establish the defect. Exact integer matching
+preserves legitimate provenance and whole-audit refusal. The focused method,
+137 original pure methods and unchanged SELECT-only exporter recipes on MariaDB
+10.11.14 and MySQL 8.0.46 pass with zero skips. Failed and passing archives, logs,
+all 3,122 qualified code inputs and 25 artifacts are sealed in the report.
+
+No shared schema/interface or metadata change is required. Primary `f528a46b43`
+is already imported and the native/migration trees are unchanged. This owned
+report and delivery receipt supply the locally maintained notebook's curator
+packet. All previous branch tips and evidence remain. Complete opening,
+authentic activation verification, real writers/ACK/recovery, backend/lifecycle
+parity, typed erasure and release-host budgets remain open; accounting stays
+inactive and no release gate is promoted.
