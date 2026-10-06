@@ -585,6 +585,14 @@ use the independent retained-evidence interpreter, without importing mutation
 code or changing native rows. See
 [the exact position qualification](PLAN5_ITEM_CUSTODY_POSITION_QUALIFICATION_2026-10-06.md).
 
+The containment audit applies to both live and quarantined children. Parent and
+child owner identity and root must agree throughout the captured ancestor path;
+a quarantined child cannot use a destroyed parent as a current containment edge.
+`inconsistent_native_topology` remains a finding even when opening and current
+projections match. Valid forests may mix live and quarantined nodes. Detail
+limit0 preserves the full finding counts and CLI status. See
+[the exact quarantined containment qualification](PLAN5_QUARANTINED_TOPOLOGY_QUALIFICATION_2026-10-06.md).
+
 ## Retained flatfile intent and plan semantics
 
 The independent flatfile restore reader validates retained generic EAI1/EAP1
