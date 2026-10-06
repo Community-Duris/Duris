@@ -245,11 +245,42 @@ transfer/destruction, contradictory group masks, lost-session output preservatio
 and native publication/persistence/restart proof. Native testing remains deferred
 until the major candidate is connected, per the user's instruction.
 
-Still required: durable constructor recipe/explicit command wrapper and actual
+Still required: explicit constructor command wrapper and actual
 birth-owner capture/restore connection; arbitrary incumbent NPC binding seals;
 authentic latest child phase2 carrier, guarded exact paired journal/coordinator
-transition and reward owner cleanup integration. The paired storage seam is in
-private source review; the codec is being implemented independently. Existing
+transition and reward owner cleanup integration. The reviewed paired storage seam and fixed codec are now composed below;
+their actual owner connections remain unfinished. Existing
 reset mechanics, alchemist/container/occupied-slot/other lifecycle routes, flat
 parity, writer journeys, activation and full qualification remain open. No full
 Plan, coverage or release gate is promoted by these source-only results.
+
+### Fixed constructor codec and paired journal source composed — 2026-10-06
+
+Private `tmp/plan3-native-mobile-constructor-codec-paired-major-source-20261006`
+has manifest `d57b06d602fcec7626f780ed4a1043730fada3c355e083d5213e079ad5689b61`.
+All5,779 inputs match, including the unchanged current published scripts/tests;
+original drivers remain byte-exact. Six paths change from the767632 parent.
+
+Independently accepted codec19b793 moves the existing constructor value declarations
+unchanged into a pure header and canonically encodes exactly372 bytes as NBC1.
+Encode/decode allocate nothing, match actual constructor/RNG bounds, preserve signed
+VNUM/clock bits, and leave outputs untouched on refusal. Root adds only its object
+to the original Makefile (SHA2565055c14be10870902d97601b8503772be660204cbe0a6ebb9a63450886ee3133).
+The existing NBR1 and birth command wrapper versions remain byte-identical.
+The new codec is linked in private source; actual command/owner use is pending.
+
+Independently accepted journal packetcab49 extends the original atomic rewrite to
+replace/retire an exact phase2 parent and retire an exact distinct phase2 child
+together. Both frames are verified before mutation; complete pair/postimage identity
+controls uncertain retry. It adds no store, journal wire or quota. Missing records
+remain refusal, including repeats after confirmed success; owner returned-success
+retention is required. Frozen receipt:
+`aa578aba61f0ed83e3346d31956e50831947647d2c33bef32ee3c0fa5f5cbfd2`.
+Coordinator lifetime pins, authentic latest-child carrier, domain authorization and
+actual reward/parent retirement use remain unimplemented. Major qualification must
+exercise record orders, replace versus joint-retire, mismatched/missing records,
+allocation refusal, rename/fsync faults, exact/different uncertain retry and mixed
+legacy/native replay. Codec corruption/roundtrip controls are also unrun.
+
+These are source-only acceptance and composition. No maintained native install,
+build/test execution, full cold recovery, Plan or release qualification is claimed.
