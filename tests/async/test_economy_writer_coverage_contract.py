@@ -185,6 +185,10 @@ class SplitEconomyActivationContract(unittest.TestCase):
             self.source_site("src/economy/shop.c", "static bool shop_trade_publish_physical_impl(",
                              "item_publication", "obj_to_char_checked(object, buying ? ch : keeper)")[:2]:
                 "shop.buy_produced",
+            self.source_site("src/item/item_movement_transaction.c",
+                             "bool item_native_quest_publication_owner::native_publish(",
+                             "item_publication", "obj_to_char_checked(root, mobile)")[:2]:
+                "quest.native_item_current_publication",
             self.source_site("src/world/handler.c", "obj_to_char_result obj_to_char_checked(",
                              "item_publication")[:2]: "item.obj_to_char_admission",
             self.source_site("src/world/handler.c", "void obj_to_char(", "item_publication",
@@ -612,7 +616,8 @@ class SplitEconomyActivationContract(unittest.TestCase):
         clear_calls = {
             ("src/mob/mobpatrol.c", 89, "money_helper"),
             ("src/combat/justice.c", 258, "money_helper"),
-            ("src/specs/specs.venthix.c", 918, "money_helper"),
+            self.source_site("src/specs/specs.venthix.c", "int zgame_load_zombie(",
+                             "money_helper", "CLEAR_MONEY(z)"),
         }
         self.assertTrue(clear_calls <= current & mapped)
         self.assertEqual(self.routes["macro.clear_money_definition"]["disposition"],
@@ -676,15 +681,23 @@ class SplitEconomyActivationContract(unittest.TestCase):
             for site in writer.get("sites", []):
                 if site[0] == path:
                     owners.setdefault(tuple(site), set()).add(writer["id"])
-        self.assertEqual(owners[(path, 1573, "economic_submit")],
+        self.assertEqual(owners[self.source_site(
+            path, "static bool submit_durable_quest_offering(", "economic_submit",
+            "item_movement_transaction_submit_batch(")],
                          {"quest.durable_offering_submission"})
-        self.assertEqual(owners[(path, 951, "item_lifecycle")],
+        self.assertEqual(owners[self.source_site(
+            path, "static bool publish_quest_offering(", "item_lifecycle",
+            "extract_obj(roots[index], TRUE)")],
                          {"quest.durable_offering_publication"})
-        for line, family in ((910, "item_lifecycle"), (910, "item_publication"),
-                             (912, "item_lifecycle"), (1085, "item_lifecycle"),
-                             (1085, "item_publication"), (1087, "item_lifecycle")):
-            self.assertEqual(owners[(path, line, family)],
-                             {"quest.disappearing_npc_cleanup"})
+        for signature in ("static void finish_quest_reward(",
+                          "static void complete_quest_offering("):
+            for family, expression in (
+                ("item_lifecycle", "extract_obj(unequip_char(mob, slot), TRUE)"),
+                ("item_publication", "extract_obj(unequip_char(mob, slot), TRUE)"),
+                ("item_lifecycle", "extract_obj(mob->carrying, TRUE)"),
+            ):
+                self.assertEqual(owners[self.source_site(path, signature, family, expression)],
+                                 {"quest.disappearing_npc_cleanup"})
         self.assertTrue(self.routes["quest.durable_offering_submission"]
                         ["current_critical_command_schema"]["schema_2_gameplay_producer_connected"])
         self.assertEqual(self.routes["quest.durable_offering_publication"]["disposition"],
@@ -1580,9 +1593,12 @@ class SplitEconomyActivationContract(unittest.TestCase):
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertEqual(current, owners.keys(), "review new Heavens special item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[(path, 5840, "item_publication")],
+        self.assertEqual(owners[self.source_site(path, "int treasure_chest(",
+                                                "item_publication", "obj_from_room(obj)")],
                          {"special.treasure_chest_detach"})
-        self.assertEqual(owners[(path, 5727, "item_lifecycle")],
+        self.assertEqual(owners[self.source_site(path, "int slot_machine(",
+                                                "item_lifecycle",
+                                                "obj_to_char(read_object(44, VIRTUAL), ch)")],
                          {"gambling.slot_coupon_grant"})
         self.assertEqual(self.routes["special.flying_citadel_unreachable_move"]["disposition"],
                          "non_writer_candidate")
