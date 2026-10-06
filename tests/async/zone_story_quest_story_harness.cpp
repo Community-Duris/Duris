@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 142 &&
-				tracker.summary_for(7, 42).total == 1528,
+		require(catalog.story_mappings.size() == 143 &&
+				tracker.summary_for(7, 42).total == 1524,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7687,6 +7687,141 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "goblincave"; });
+			const auto &backpack = story_for("goblincave", "chothe-backpack");
+			const auto &earring = story_for("goblincave", "bone-earring");
+			const auto &gloves = story_for("goblincave", "leather-gloves");
+			const auto &sword = story_for("goblincave", "bone-sword");
+			require(mapping.stories.size() == 6 && mapping.contacts.size() == 4,
+				"Gagga-Jobo mapping scope failed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 190, 19000, 100, "arrival") ==
+					result::applied,
+				"Gagga-Jobo arrival failed");
+			require(journey.meet_npc(7, 42, 19000, 19018, 102) == result::applied &&
+					journey.meet_npc(7, 42, 19001, 19012, 102) ==
+						result::applied,
+				"Gagga-Jobo source encounters failed");
+			std::string journal =
+				journey.render_journal(7, 42, 190, 10, 1, 103, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Gagga-Jobo sources exposed unmet craftspeople");
+			require(journey.meet_npc(7, 42, 19005, 19008, 104) == result::applied &&
+					journey.meet_npc(7, 42, 19006, 19011, 104) ==
+						result::applied,
+				"Gagga-Jobo craftsperson encounters failed");
+			const auto status = [&](const auto &story, size_t row, const char *state)
+			{
+				const auto start = journal.find("] " + story.title + "\r\n");
+				require(start != std::string::npos,
+					"Gagga-Jobo visible card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     story.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			for (int v : { 19001, 19002, 19003, 19004, 19007, 19008, 19009, 19010,
+				       19012, 19014 })
+				supplies.carried[v] = 1;
+			supplies.equipped[18] = 19006;
+			journal = journey.render_journal(7, 42, 190, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				for (size_t i = 0; i + 1 < story.steps.size(); ++i)
+					require(status(story, i, "Missing now"),
+						"Gagga-Jobo held hide/meat/products/containers substituted exact materials");
+			supplies = {};
+			supplies.carried[19006] = 2;
+			supplies.carried[19011] = 1;
+			journal = journey.render_journal(7, 42, 190, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(backpack, 0, "Missing now") &&
+					status(gloves, 0, "Missing now") &&
+					status(earring, 0, "Missing now"),
+				"Gagga-Jobo partial counts prepared larger repeated offerings");
+			supplies.carried[19006] = 3;
+			supplies.carried[19011] = 2;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 190, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(backpack, 0, "Ready now") &&
+					status(earring, 0, "Ready now") &&
+					status(gloves, 0, "Missing now") &&
+					status(sword, 1, "Missing now") &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 190).completed == 0,
+				"Gagga-Jobo supplied exact counts forged dispatch/fees/craft history");
+			supplies.carried[19006] = 4;
+			supplies.carried[19013] = 1;
+			journal = journey.render_journal(7, 42, 190, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(gloves, 0, "Ready now") && status(sword, 0, "Ready now") &&
+					status(sword, 1, "Ready now") &&
+					status(sword, 2, "Ready now") &&
+					status(gloves, 1, "Pending") && status(sword, 3, "Pending"),
+				"Gagga-Jobo paid material rows claimed settlement or lost distinct input kinds");
+			// Synthetic accepted receipts qualify retained projection, not current native dispatch.
+			for (const auto &story : mapping.stories)
+				if (story.category == "service")
+					record(journey, story.contracts.front(),
+					       ("goblincave-service-" + story.id).c_str(), 190,
+					       story.id == sword.id ? 19011 : 19008);
+			require(journey.progress_for_zone(7, 42, 190).completed == 0,
+				"Gagga-Jobo paid services inflated achievements");
+			record(journey, earring.contracts.front(), "goblincave-earring-first", 190,
+			       19011);
+			require(journey.progress_for_zone(7, 42, 190).completed == 1 &&
+					journey.evidence_for(backpack.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Gagga-Jobo earring required backpack history or completed it");
+			record(journey, backpack.contracts.front(),
+			       "goblincave-historical-backpack", 190, 19008);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 190, 10, 1, 120, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(status(story, story.steps.size() - 1, "Recorded") &&
+						status(story, 0, "Missing now"),
+					"Gagga-Jobo spent materials erased service/request history");
+			require(journey.progress_for_zone(7, 42, 190).completed == 2 &&
+					journey.progress_for_zone(7, 42, 190).total == 2,
+				"Gagga-Jobo material/service rows inflated request units");
+			auto replay = completion(earring.contracts.front(),
+						 "goblincave-earring-first", 120);
+			replay.transaction.zone_number = 190;
+			replay.transaction.room_vnum = 19011;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Gagga-Jobo replay duplicated earring");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 190).completed == 2,
+				"Gagga-Jobo cold recovery lost request/service projection");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 190, 19000, 100, "arrival") ==
+					result::applied,
+				"Gagga-Jobo raw discovery failed");
+			for (const auto &story : mapping.stories)
+				record(historical, story.contracts.front(),
+				       ("goblincave-raw-" + story.id).c_str(), 190,
+				       story.id == sword.id || story.id == earring.id ? 19011 :
+											19008);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 190).completed == 2,
+				"Gagga-Jobo raw-to-authored classification lost receipt history");
+			for (const auto &story : mapping.stories)
+				require(authored.evidence_for(story.contracts.front(), 2)
+							.successful_attempts == 1,
+					"Gagga-Jobo classification discarded exact native receipt");
 		}
 
 		{
