@@ -153,6 +153,53 @@ def item_revision_transition(before: object, after: object) -> bool:
     return unsigned_revision(before) and unsigned_revision(after) and after == before + 1
 
 
+def item_equipment_slot(row: dict, field: str = "equipment_slot") -> int | None:
+    """Keep historical omission unknown; never coerce a recorded slot."""
+    if field not in row:
+        return None
+    value = row[field]
+    if type(value) is not int or not 0 <= value <= 65535:
+        raise SnapshotError("invalid item equipment slot")
+    return value
+
+
+def valid_item_equipment_slot(value: object) -> bool:
+    return type(value) is int and 0 <= value <= 65535
+
+
+def valid_item_custody_position(row: dict, creation_origin: bool = False) -> bool:
+    """Apply independent native position grammar to captured authority rows."""
+    from economic_restore_evidence import EvidenceError, valid_position
+
+    state = row.get("state")
+    if state == "absent" and creation_origin:
+        # A logical creation opening names its UID; its original EAP1 before
+        # witness is the all-zero absent position. Preserve that representation.
+        return (row.get("owner") == [0, 0, 0] and row.get("root") == row.get("uid") and
+                row.get("parent") is None and row.get("revision") == 0 and
+                item_equipment_slot(row) in (None, 0))
+    if not isinstance(state, str) or state not in ("live", "tombstone", "quarantined"):
+        return False
+    owner = row.get("owner")
+    if (not isinstance(owner, list) or len(owner) != 3 or
+            any(type(part) is not int for part in owner) or
+            not unsigned_revision(row.get("uid")) or not row["uid"] or
+            not unsigned_revision(row.get("root")) or not unsigned_revision(row.get("revision")) or
+            any(not unsigned_revision(part) for part in owner[1:]) or
+            (row.get("parent") is not None and
+             (not unsigned_revision(row["parent"]) or not row["parent"]))):
+        return False
+    slot = item_equipment_slot(row)
+    try:
+        # Missing historical equipment remains unknown in the snapshot and in
+        # the separate equipment audit. It supplies no equipment constraint here.
+        valid_position(row["uid"], (owner[0], {"live": 1, "tombstone": 2, "quarantined": 3}[state],
+            *owner[1:], row["root"], row["parent"] or 0, row["revision"], slot or 0))
+    except EvidenceError:
+        return False
+    return True
+
+
 def require_id(value: object, label: str) -> str:
     if not isinstance(value, str) or not HEX_ID.fullmatch(value) or value == "0" * 32:
         raise SnapshotError(f"invalid {label}")
@@ -248,6 +295,7 @@ class Reconciler:
         # projections, not values to coerce into an opening or current owner.
         for positions in (tables["item_origins"], items):
             for row in positions:
+                item_equipment_slot(row)
                 owner = row.get("owner")
                 if (not unsigned_revision(row.get("uid")) or not row["uid"] or
                         not unsigned_revision(row.get("root")) or "parent" not in row or
@@ -257,6 +305,10 @@ class Reconciler:
                         type(owner[0]) is not int or not 0 <= owner[0] <= 12 or
                         any(not unsigned_revision(value) for value in owner[1:])):
                     raise SnapshotError("invalid item position")
+                slot = item_equipment_slot(row)
+                if slot and (owner[0] not in (1, 12) or row["parent"] is not None or
+                             row.get("state") != "live" or (owner[0] == 12 and slot > 43)):
+                    raise SnapshotError("invalid item equipment position")
         unreferenced_uid_events = native.get("unreferenced_uid_events")
         uid_event_coverage = native.get("uid_event_coverage")
         if unreferenced_uid_events is None and snapshot.get("backend") == "sql_partial":
@@ -1891,7 +1943,8 @@ class Reconciler:
                 state = {"revision": row["revision"], "root": row["root"],
                          "parent": row["parent"], "owner": row["owner"], "state": row["state"]}
             current_item = current.get((uid,))
-            if current_item and any(current_item.get(field) != state[field] for field in state):
+            slot_stale = self.audit_item_equipment(uid, origin, rows, current_item)
+            if current_item and (slot_stale or any(current_item.get(field) != state[field] for field in state)):
                 self.emit("stale_native_item", uid=uid)
 
     def audit_uid_scope_coverage(self, backend: object, native: dict,
@@ -2256,11 +2309,46 @@ class Reconciler:
         if not created:
             self.emit("missing_item_creation", uid=uid)
 
+    def audit_item_equipment(self, uid: int, origin: dict, rows: list[dict],
+                             current: dict | None) -> bool:
+        """Reconstruct the recorded slot separately from legacy position fields."""
+        expected = item_equipment_slot(origin)
+        actual = item_equipment_slot(current) if current is not None else None
+        missing = expected is None
+        recorded = expected is not None or actual is not None
+        for row in rows:
+            slots = []
+            for field in ("from_equipment_slot", "to_equipment_slot"):
+                value = row.get(field)
+                if field in row and not valid_item_equipment_slot(value):
+                    self.emit("invalid_item_equipment_slot", uid=uid,
+                              operation_id=row.get("operation_id"))
+                    slots.append(None)
+                else:
+                    slots.append(value)
+            before, after = slots
+            recorded |= before is not None or after is not None
+            missing |= before is None or after is None
+            if expected is not None and before is not None and before != expected:
+                self.emit("broken_item_equipment_history", uid=uid,
+                          operation_id=row.get("operation_id"))
+            expected = after
+        if current is not None:
+            missing |= actual is None
+        if recorded and missing:
+            self.emit("missing_item_equipment_evidence", uid=uid)
+        return expected is not None and actual is not None and expected != actual
+
     def audit_items(self, ownership: dict, references: dict, origins: dict, native: dict,
                     lineage_history_uids: set[int] | None = None) -> None:
-        for row in list(origins.values()) + list(native.values()):
-            if not unsigned_revision(row.get("revision")):
-                raise SnapshotError("invalid item origin or native revision")
+        for positions, code, opening in ((origins, "invalid_item_origin_position", True),
+                                         (native, "invalid_native_item_position", False)):
+            for row in positions.values():
+                item_equipment_slot(row)
+                if not unsigned_revision(row.get("revision")):
+                    raise SnapshotError("invalid item origin or native revision")
+                if not valid_item_custody_position(row, opening and row.get("origin") == "creation"):
+                    self.emit(code, uid=row.get("uid"))
         referenced = set()
         for ref in references.values():
             if (not unsigned_revision(ref.get("before_revision")) or
@@ -2307,9 +2395,10 @@ class Reconciler:
                 if event.get("before_revision") != state["revision"] or event.get("revision") != state["revision"] + 1:
                     self.emit("broken_item_history", uid=uid, operation_id=event.get("operation_id"))
                 state = {field: event.get(field) for field in ("revision", "root", "parent", "owner", "state")}
+            slot_stale = self.audit_item_equipment(uid, origin, rows, current)
             if not current:
                 self.emit("missing_native_item", uid=uid)
-            elif any(current.get(field) != state[field] for field in state):
+            elif slot_stale or any(current.get(field) != state[field] for field in state):
                 self.emit("stale_native_item", uid=uid)
         topology = {}
         edge_mismatches = {}
@@ -2397,7 +2486,10 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
         rows = [{"uid": uid, "operation_id": row["operation_id"],
                  "event_index": row["event_index"], "revision": row["revision"],
                  "root": row["root"], "parent": row["parent"], "owner": row["owner"],
-                 "state": row["state"], "action": row["action"]}
+                 "state": row["state"], "action": row["action"],
+                 **{field: item_equipment_slot(row, field)
+                    for field in ("from_equipment_slot", "to_equipment_slot")
+                    if field in row and valid_item_equipment_slot(row[field])}}
                 for row in (snapshot["ownership_events"] +
                             (snapshot["native"].get("uid_history_events") or []) +
                             (snapshot["native"].get("unattributed_uid_events") or []))
@@ -2480,12 +2572,17 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
         totals: dict[tuple, int] = defaultdict(int)
         effect_kind = {(row["operation_id"], row["account_index"]): account_key(row["account_key"])[1]
                        for row in snapshot["effects"]}
-        reasons = {row["operation_id"]: row.get("reason") for row in snapshot["operations"]}
+        operations = {row["operation_id"]: row for row in snapshot["operations"]}
+        root_counts = Counter(row["operation_id"] for row in snapshot["operations"])
         for post in snapshot["postings"]:
             kind = effect_kind.get((post.get("operation_id"), post.get("account_index")))
-            reason = reasons.get(post["operation_id"])
-            if kind in (7, 8, 9, 10) and type(reason) is int:
-                totals[(kind, reason)] += copper(vector(post["delta"]))
+            root = operations.get(post["operation_id"])
+            # A rejected/unknown root cannot realize supply. Duplicate root
+            # identities do not select an outcome or policy by export order.
+            if (kind in (7, 8, 9, 10) and root is not None and
+                    root_counts[post["operation_id"]] == 1 and root.get("outcome") == "committed" and
+                    type(root.get("reason")) is int):
+                totals[(kind, root["reason"])] += copper(vector(post["delta"]))
         rows = [{"account_kind": kind, "reason": reason, "net_copper": total}
                 for (kind, reason), total in sorted(totals.items())]
     elif name == "prices":

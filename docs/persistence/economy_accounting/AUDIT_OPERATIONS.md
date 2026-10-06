@@ -63,6 +63,17 @@ operation scope fields remain present. The CLI exit status still reflects the
 whole audit. Coverage describes the supplied snapshot; it does not qualify the
 writer matrix or assert that an empty price/provenance view exhausts history.
 
+The `--view supply` totals use captured postings attached to exactly one
+committed root identity. Rejected or unknown outcomes and duplicate root
+identities contribute no supply rows; their audit findings remain in the global
+exception count and CLI exit status. Export order cannot choose an outcome for
+an ambiguous root. This rule applies to issuance, sinks, opening equity and
+restitution. Totals remain selected-epoch evidence, grouped by account kind and
+reason, with the full count retained at `--limit 0`. Other discrepancies in a
+committed root remain audit exceptions: a displayed total does not certify that
+root, its policy or its native effect. See
+[the exact outcome qualification](PLAN5_SUPPLY_OUTCOME_VIEW_QUALIFICATION_2026-10-06.md).
+
 The bounded `--view prices` query combines selected-epoch roots with captured
 `native.lineage_realized_prices`. Each row contains only `epoch`,
 `operation_id`, numeric `reason`, and persisted `price_copper`. It includes
@@ -150,6 +161,24 @@ root, parent, UID revision, and equipment slots. Coherent rewrites of projected
 child derivations or reassignment of posting/item children produce specific
 `original_plan_*_mismatch` findings. These checks retain all earlier semantic
 findings and never change the supplied snapshot.
+
+Native item positions and both retained UID-history projections also preserve
+equipment slots. Reconciliation compares the current slot with its authenticated
+opening and final ledger slot, and verifies every recorded from/to transition.
+Slot-only drift produces `stale_native_item`; a discontinuity produces
+`broken_item_equipment_history`. A combined position/slot mismatch counts one
+stale item. Slots must be exact unsigned16 integers; equipped openings/current
+items must be live, have no parent, and belong to a player or native mobile;
+mobile slots are limited to43. Malformed history slots produce
+`invalid_item_equipment_slot` without masking original-capsule mismatch findings.
+
+EAB1 equipment omission remains unknown. When other projections record a slot,
+an omitted required opening/history/current slot produces one
+`missing_item_equipment_evidence` per UID. No omitted historical slot is filled
+with zero. A proven revision0 absent creation origin has slot0. Older snapshots
+with all equipment projections omitted remain readable at their original scope;
+they cannot supply complete equipment proof. Bounded UID provenance includes
+valid numeric from/to slots and excludes personal aliases and malformed slots.
 
 All five detail projections require the exact decoded native representation,
 including nested coin and owner vectors. An integer-valued JSON float or a
@@ -536,6 +565,26 @@ atomic new root receipt. It must reject a changed state before mutation and
 append new evidence rather than editing history. A manual SQL UPDATE, a missing
 original operation, or an unlinked credit cannot resolve an audit exception.
 
+## Captured item position validity
+
+Matching opening and current rows can still describe an impossible native
+position. The independent reader checks both against the native custody
+grammar and reports `invalid_item_origin_position` or
+`invalid_native_item_position` with the UID. Unknown states, invalid owner
+identities, destruction ownership on a live item, player ownership on a
+tombstone, impossible root/parent fields and invalid equipment constraints do
+not become an all-clear merely because both projections agree. Counts and
+the whole-snapshot CLI status retain these findings at detail limit0.
+
+Live and quarantined custody are both valid native states. A tombstone retains
+destruction ownership and may preserve its former root or parent; those fields
+are retained evidence. A logical creation opening represents its original
+all-zero absent witness while naming the new UID. Missing historical equipment
+remains unknown and is handled by the separate equipment audit. These checks
+use the independent retained-evidence interpreter, without importing mutation
+code or changing native rows. See
+[the exact position qualification](PLAN5_ITEM_CUSTODY_POSITION_QUALIFICATION_2026-10-06.md).
+
 ## Native mobile custody grammar
 
 Original native-mobile custody uses owner type12 with a durable lifetime ID
@@ -552,6 +601,19 @@ provide the required equipment and authority evidence. Native decoder agreement
 and private SQL cuts remain component evidence, not quest producer completion.
 
 ## Qualification budgets
+
+The maintained `test_native_sql_baseline_audit.py` recipe also exercises the
+full independent SQL snapshot reader before and after actual dump/import into
+new private MariaDB and MySQL daemons. Its EAB2 books and commands come from the
+original native fixture; its two current equipment placements are explicit
+modeled inputs. A slot-only discrepancy must remain visible after restore,
+with identical exception totals at detail limits0,1 and100. SELECT-only roles,
+transaction rollback, and all application-table data hashes are checked.
+The retained-evidence qualifier and native replay can pass while the live-state
+reader reports equipment drift; those observations have different scopes.
+This recipe retains its partial-capture findings and cannot qualify a complete
+world backup, managed backup generation, service boot or release. See
+[the exact cold-restore qualification](PLAN5_EQUIPMENT_COLD_RESTORE_QUALIFICATION_2026-10-06.md).
 
 These are release gates to measure on each backend and the final integrated
 commit. They are not claimed as measured results here.
