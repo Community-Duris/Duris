@@ -1,3 +1,4 @@
+#include "classes/summoner_pet.h"
 /*
  * ***************************************************************************
  * *  File: events.c                                           Part of Duris *
@@ -114,6 +115,11 @@ void calculate_regen_values(int reg, int *per_pulse, int *delay)
 // codemod
 void event_mana_regen(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 {
+	if (summoner_owned_pet(ch))
+	{
+		summoner_pet_start_recovery(GET_MASTER(ch));
+		return;
+	}
 	struct regen_event_state state = regen_state_from_data(data);
 	unsigned long long elapsed_ticks = regen_elapsed_ticks(&state);
 	int regen_value_int;
@@ -181,6 +187,21 @@ void event_move_regen(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 	unsigned long long elapsed_ticks = regen_elapsed_ticks(&state);
 	int regen_value_int;
 	int per_tick = move_regen(ch, FALSE);
+	if (GET_VITALITY(ch) < GET_MAX_VITALITY(ch))
+	{
+		int flight_bonus = 0;
+		for (auto *af = ch->affected; af; af = af->next)
+			if (af->type == SONG_FLIGHT && af->location == APPLY_MOVE_REG)
+				flight_bonus += af->modifier;
+		if (flight_bonus > 0)
+		{
+			ch->points.move_reg -= flight_bonus;
+			const int baseline = move_regen(ch, FALSE);
+			ch->points.move_reg += flight_bonus;
+			if (per_tick > baseline && !summoner_pet_flight_regen(ch, elapsed_ticks))
+				per_tick = baseline;
+		}
+	}
 
 #if defined(CTF_MUD) && (CTF_MUD == 1)
 	affected_type *af;

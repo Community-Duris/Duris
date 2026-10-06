@@ -1,3 +1,4 @@
+#include "classes/summoner_pet.h"
 /*
  * ***************************************************************************
  * *  File: bard.c                                             Part of Duris *
@@ -141,6 +142,8 @@ bool SINGING(P_char ch)
 }
 */
 
+void event_echosong(P_char ch, P_char victim, P_obj obj, void *data);
+
 void stop_singing(P_char ch)
 {
 	struct affected_type *af, *next_af;
@@ -164,6 +167,11 @@ void stop_singing(P_char ch)
 	while ((tch = get_linking_char(ch, LNK_SONG)))
 	{
 		unlink_char(tch, ch, LNK_SONG);
+	}
+	if (summoner_owned_pet(ch))
+	{
+		ch->only.npc->summoner_flight_tick = 0;
+		disarm_char_nevents(ch, event_echosong);
 	}
 	if (get_scheduled(ch, event_bardsong))
 	{
@@ -1715,6 +1723,11 @@ void event_echosong(P_char ch, P_char victim, P_obj /*obj*/, void *data)
 				songDescrip = &songs[i];
 				break;
 			}
+		if (!songDescrip ||
+		    !summoner_pet_song(ch, song, songDescrip->flags & SONG_AGGRESSIVE,
+				       songDescrip->flags & SONG_SELF_ONLY,
+				       songDescrip->flags & SONG_ALLIES, room))
+			return;
 		// for each person in the room
 		for (victim = world[room].people; victim; victim = victim2)
 		{
@@ -1863,6 +1876,10 @@ void event_bardsong(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 		return;
 	}
 	room = ch->in_room;
+
+	if (!summoner_pet_song(ch, song, sd->flags & SONG_AGGRESSIVE, sd->flags & SONG_SELF_ONLY,
+			       sd->flags & SONG_ALLIES, room))
+		return;
 
 	// Chance for an aggressive bard song to hit someone in the room.
 	if (IS_SET(sd->flags, SONG_AGGRESSIVE))
@@ -2278,6 +2295,9 @@ void do_riff(P_char ch, char *arg, int /*cmd*/)
 		return;
 	}
 	room = ch->in_room;
+	if (!summoner_pet_song(ch, s, sd->flags & SONG_AGGRESSIVE, sd->flags & SONG_SELF_ONLY,
+			       sd->flags & SONG_ALLIES, room, 30))
+		return;
 
 	for (tch = world[room].people; tch; tch = next)
 	{

@@ -1,3 +1,4 @@
+#include "classes/summoner_pet.h"
 /*
 ***************************************************************************
 *  File: sparser.c              Part of Duris *
@@ -1833,6 +1834,8 @@ bool parse_spell(P_char ch, char *argument, struct spell_target_data *target_dat
 	}
 	memset(target_data, 0, sizeof(struct spell_target_data));
 	target_data->ttype = spl;
+	if (!summoner_pet_spell_ready(ch, circle))
+		return FALSE;
 
 	if (IS_TRUSTED(ch))
 		;
@@ -1841,6 +1844,7 @@ bool parse_spell(P_char ch, char *argument, struct spell_target_data *target_dat
 	{
 		if (GET_MANA(ch) < 1 && circle != -1)
 		{
+			summoner_pet_exhausted(ch);
 			send_to_char("&+mYou don't have the energy left to alter reality!\n", ch);
 			return FALSE;
 		}
@@ -1849,6 +1853,7 @@ bool parse_spell(P_char ch, char *argument, struct spell_target_data *target_dat
 	{
 		if (circle != -1 && !ch->specials.undead_spell_slots[circle])
 		{
+			summoner_pet_exhausted(ch);
 			if (GET_CLASS(ch, CLASS_DRUID) || GET_CLASS(ch, CLASS_RANGER))
 				send_to_char("&+gYou must commune with nature more before "
 					     "invoking its power.\n",
