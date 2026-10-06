@@ -1,0 +1,170 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "icetower",
+  "coverage": "complete",
+  "introduction": "Follow the Utuva necklace request or deliver the wedding ring. The spoken entrance, brittle keys, source recovery and wider rescue narrative are separate progression leads.",
+  "orientation": [
+    "The tundra approach reaches the snowy mountains and the Ice Tower entrance. The plaque asks for the Frost Giant God name. Successful speech of the complete door word Thrym unlocks both sides of the magic entrance; you still need to open it and enter. Speech admission, unlocking, opening and arrival are separate actions.",
+    "Another player may have opened the entrance already. A shared open door admits travel without proving your own speech or unlock. Silence, suppression, underwater speech and incompatible forms can prevent the normal speech path. Bring suitable visibility and movement capabilities; the journal does not promise safe travel.",
+    "The strong barbarian nomad waits in the small cave outside the tower. Ask tribe, utuva, clan or angry to learn why he came; ask help, mage or sorceress for his necklace request. Returning the exact necklace of ice earns the platemail of the barbarians.",
+    "The sergeant in the first-floor guard post carries a small ice key. It unlocks the pickproof door to the ice staircase and is configured to break on use. The other side unlocks too, but key destruction can be pending or refused. Check the live door and inventory; opening, travel and recorded history remain separate.",
+    "The upper floors include ice stairs, balconies, a hot hydra cave, hidden walls, mines, holding cells and a roof. Wind, vertigo and slippery-stair descriptions supply atmosphere; they do not themselves prove a scripted fall, a current or a quest action. Actual exits, shared states and movement restrictions determine access.",
+    "The severely wounded barbarian on the lower balcony describes her husband and asks about him through husband. Her request is to deliver her silver wedding ring. Her own dialogue has no reward contract. Recovering that exact ring, receiving it from another player and personally performing her requested action are distinct evidence.",
+    "Find the husband among the slaves in the mines. His eyes retain their natural color in his description, unlike the enchanted slaves. Several NPCs share slave or barbarian keywords, so inspect the actual target. Delivering the exact ring to him earns ivory bracers and experience; talking to a different slave does not select his contract.",
+    "Both the wedding ring and necklace begin hidden. Successfully reveal and recover the actual material before preparing the offering. A source victory alone does not put the item in your inventory. Prepared material supplied by another player fits the native exchange without proving your own first recovery.",
+    "The frost giant slavemaster carries a rusted iron key for the pickproof gate to the granite staircase. This key has the same configured break behavior; check whether it actually breaks rather than infer key loss from an unlocked gate. His office and holding-cell doors permit qualified PICK attempts. KNOCK currently handles containers and is not a room-door alternative.",
+    "Ashivahr wears the necklace requested by the nomad and carries separate imported stock. The necklace return does not require an earlier wedding-ring receipt. Her defeat, source recovery, breaking enslavement and returning the item are different outcomes; the native exchange does not certify a permanent rescue.",
+    "The husband can accept a supplied ring without your own conversation, victory or an earlier necklace return. His acceptance text thanks you for his wife, but the recorded receipt proves the item exchange. Lasting liberation, escort, burning enchantments away or changing slave behavior need explicit committed outcomes.",
+    "Present the requested ring or necklace loose and visible. Worn items, held items, bag contents and unrevealed hidden copies do not replace prepared loose offerings. The necklace, wedding ring, ring of souls, armor reward and wounded barbarian are separate typed identities.",
+    "The memory of the Ice Tower is a separate offering for an outside ambassador, who consumes it for a scroll, coins and a shopkeepers token. Current memory possession does not complete either local card or that outside request. The ambassador has his own target and accepted receipt.",
+    "The rune-covered stone has its own eligibility, local peaceful touch and committed group reward service. Seeing it, recovering it, touching it or receiving a pending message does not complete the ring or necklace card. The cold saber icicle has a disabled custom assignment; possession does not prove a custom effect.",
+    "Both accepting givers stay after their native exchange. Another attempt still needs the giver and material stock to be available. Reset when empty, shared state and stock limits govern availability; daily rollover does not replenish the tower or erase recorded history.",
+    "New discovery, encounter, journal, achievement and daily credit requires active, ready accounting. The two exact native returns keep independent histories, achievements and potential dailies. Recovering frozen recorded history is separate from earning new credit."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 31800,
+      "name": "a strong barbarian nomad",
+      "keyword": "nomad",
+      "description": "Ask the tribe and help aliases. The nomad accepts the exact necklace for barbarian platemail and stays. His rescue narrative is separate from a personal victory or lasting world rescue.",
+      "topics": [
+        "tribe",
+        "utuva",
+        "clan",
+        "angry",
+        "help",
+        "mage",
+        "sorceress"
+      ]
+    },
+    {
+      "mob_vnum": 31822,
+      "name": "a severely wounded barbarian",
+      "keyword": "wounded",
+      "description": "Ask husband. This wounded barbarian carries the hidden wedding ring and has dialogue without a reward contract. Her request, actual recovery and the husband return are different outcomes.",
+      "topics": [
+        "husband"
+      ]
+    },
+    {
+      "mob_vnum": 31823,
+      "name": "a barbarian slave",
+      "keyword": "slave",
+      "description": "Inspect the actual slave with naturally colored eyes among similar targets. He accepts the exact wedding ring for ivory bracers and experience, then stays.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31824,
+      "name": "Ashivahr, the ice sorceress",
+      "keyword": "sorceress",
+      "description": "Ashivahr wears the hidden necklace and carries the memory, stone and saber as separate stock. Encounter, victory, reveal, recovery and each accepted return are distinct.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31801,
+      "name": "a barbarian sergeant",
+      "keyword": "sergeant",
+      "description": "The first-floor sergeant carries the small ice key for the pickproof staircase. Its break attempt is distinct from confirmed key loss; shared access does not prove your action.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31818,
+      "name": "the frost giant slavemaster",
+      "keyword": "slavemaster",
+      "description": "The slavemaster carries the rusted gate key. Qualify office access and the actual source; the configured break attempt and live door access are separate, and the key is not a quest material.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31810,
+      "name": "an ice cleric",
+      "keyword": "cleric",
+      "description": "The cleric lore names Thrym. An NPC conversation alias is different from successful speech at the magic door, and other players can change its shared state.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31817,
+      "name": "a large ice drake",
+      "keyword": "drake",
+      "description": "The ice drake guards the route between upper floors and carries an emerald pendant. That pendant is equipment, not the nomad necklace or the wedding ring.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "utuva-necklace",
+      "title": "Return the necklace to the Utuva nomad",
+      "category": "request",
+      "summary": "One exact visible loose necklace of ice earns the platemail of the barbarians. Supplied proof fits without a personal Ashivahr victory, permanent rescue or earlier wedding-ring history. The nomad stays; another attempt depends on available stock.",
+      "contracts": [
+        {
+          "giver_vnum": 31800,
+          "completion_key": "give=I:31821;receive=I:31822;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "ice-necklace",
+          "text": "Carry the exact necklace of ice loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            31821
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Prepare the exact visible loose material. Supplied proof fits without personal recovery; worn, held, nested or still-hidden copies do not substitute visible loose offerings."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 31800,
+              "completion_key": "give=I:31821;receive=I:31822;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted return completes the card. Recorded history stays after the material is spent; the accepting giver stays and later attempts depend on available stock. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "wedding-ring",
+      "title": "Deliver the wedding ring to the husband",
+      "category": "request",
+      "summary": "One exact visible loose silver wedding ring earns ivory bracers and experience. Supplied proof fits without a personal recovery, conversation, requested action or earlier necklace history. The husband stays; acceptance does not prove permanent liberation.",
+      "contracts": [
+        {
+          "giver_vnum": 31823,
+          "completion_key": "give=I:31815;receive=E:30000,I:31816;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "silver-ring",
+          "text": "Carry the exact silver wedding ring loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            31815
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Prepare the exact visible loose material. Supplied proof fits without personal recovery; worn, held, nested or still-hidden copies do not substitute visible loose offerings."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 31823,
+              "completion_key": "give=I:31815;receive=E:30000,I:31816;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted return completes the card. Recorded history stays after the material is spent; the accepting giver stays and later attempts depend on available stock. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

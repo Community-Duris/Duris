@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 170 &&
+		require(catalog.story_mappings.size() == 171 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,167 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "icetower"; });
+			require(mapping.stories.size() == 2 && mapping.contacts.size() == 8 &&
+					mapping.revision == 1,
+				"Ice Tower journal scope failed");
+			const auto &necklace = story_for("icetower", "utuva-necklace");
+			const auto &ring = story_for("icetower", "wedding-ring");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 318)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 2 && dailies == 2,
+				"Ice Tower native classification changed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 318, 31800, 100, "arrival") ==
+					result::applied,
+				"Ice Tower discovery failed");
+			for (const auto &[v, room] :
+			     { std::pair{ 31822, 31881 }, std::pair{ 31824, 31945 },
+			       std::pair{ 31801, 31850 }, std::pair{ 31818, 31942 },
+			       std::pair{ 31810, 31865 }, std::pair{ 31817, 31920 } })
+				require(journey.meet_npc(7, 42, v, room, 101) == result::applied,
+					"Ice Tower source/dialogue encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 318, 10, 1, 102, false, false);
+			for (const auto &s : mapping.stories)
+				require(journal.find("] " + s.title + "\r\n") == std::string::npos,
+					"Ice Tower wife/source encounter exposed accepting card");
+			require(journey.meet_npc(7, 42, 31800, 31812, 103) == result::applied,
+				"Ice Tower nomad encounter failed");
+			journal = journey.render_journal(7, 42, 318, 10, 1, 104, false, false);
+			for (const auto &s : mapping.stories)
+				require((journal.find("] " + s.title + "\r\n") !=
+					 std::string::npos) == (s.id == necklace.id),
+					"Ice Tower nomad encounter exposed husband return");
+			require(journey.meet_npc(7, 42, 31823, 31939, 105) == result::applied,
+				"Ice Tower husband encounter failed");
+			const auto section = [&](const auto &s)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos, "Ice Tower card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at,
+						      end == std::string::npos ? end : end - at);
+			};
+			const auto status = [&](const auto &s, size_t row, const char *state)
+			{
+				return section(s).find(std::string("[") + state + "] " +
+						       s.steps[row].text) != std::string::npos;
+			};
+			const auto before = journey.serialize_state();
+			for (const auto &s : mapping.stories)
+			{
+				const auto v = s.steps[0].item_vnums.front();
+				supplies = {};
+				supplies.carried[v] = 1;
+				journal = journey.render_journal(7, 42, 318, 10, 1, 106, false,
+								 false, &supplies);
+				require(status(s, 0, "Ready now") && status(s, 1, "Pending"),
+					"Ice Tower supplied material forged accepted return");
+				const auto &other = s.id == ring.id ? necklace : ring;
+				require(status(other, 0, "Missing now") &&
+						status(other, 1, "Pending"),
+					"Ice Tower one material prepared unrelated return");
+				for (int slot : { 0, 3, 18 })
+				{
+					supplies = {};
+					supplies.equipped[slot] = v;
+					journal = journey.render_journal(7, 42, 318, 10, 1, 107,
+									 false, false, &supplies);
+					require(status(s, 0, "Missing now") &&
+							status(s, 1, "Pending"),
+						"Ice Tower worn or held material replaced loose offering");
+				}
+			}
+			supplies = {};
+			for (int v :
+			     { 31822, 31816, 31819, 31808, 31804, 31810, 55192, 359, 67258 })
+				supplies.carried[v] = 2;
+			journal = journey.render_journal(7, 42, 318, 10, 1, 108, false, false,
+							 &supplies);
+			for (const auto &s : mapping.stories)
+				require(status(s, 0, "Missing now") && status(s, 1, "Pending"),
+					"Ice Tower reward, key or imported stock substituted material/history");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 318).completed == 0,
+				"Ice Tower possession invented gate/source/rescue history");
+			supplies = {};
+			supplies.carried[31821] = 1;
+			supplies.carried[31815] = 1;
+			journal = journey.render_journal(7, 42, 318, 10, 1, 109, false, false,
+							 &supplies);
+			require(status(necklace, 0, "Ready now") && status(ring, 0, "Ready now"),
+				"Ice Tower distinct supplied materials failed readiness");
+			require(section(necklace).find("nomad stays") != std::string::npos &&
+					section(necklace).find("permanent rescue") !=
+						std::string::npos &&
+					section(ring).find("husband stays") != std::string::npos &&
+					section(ring).find("permanent liberation") !=
+						std::string::npos,
+				"Ice Tower Ready now hid actual receipt/rescue limits");
+			require(journal.find("Thrym") != std::string::npos &&
+					journal.find("KNOCK") != std::string::npos &&
+					journal.find("another player") != std::string::npos &&
+					journal.find("breaks") != std::string::npos,
+				"Ice Tower dynamic access/source guidance missing");
+			// Synthetic committed receipts test projection/recovery; actual gameplay and rescue outcomes remain separate qualifications.
+			record(journey, ring.contracts.front(), "icetower-ring", 318, 31939);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 318, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(ring, 0, "Missing now") && status(ring, 1, "Recorded") &&
+					status(necklace, 1, "Pending") &&
+					journey.progress_for_zone(7, 42, 318).completed == 1,
+				"Ice Tower ring receipt imposed necklace/source history");
+			supplies.carried[31815] = 1;
+			journal = journey.render_journal(7, 42, 318, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(ring, 0, "Ready now") && status(ring, 1, "Recorded") &&
+					status(necklace, 1, "Pending"),
+				"Ice Tower reacquired material changed accepted histories");
+			record(journey, necklace.contracts.front(), "icetower-necklace", 318,
+			       31812);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 318, 10, 1, 122, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 318).completed == 2,
+				"Ice Tower exact receipt classification failed");
+			for (const auto &s : mapping.stories)
+				require(status(s, 0, "Missing now") && status(s, 1, "Recorded"),
+					"Ice Tower spent proof lost history or restored material");
+			auto replay = completion(ring.contracts.front(), "icetower-ring", 120);
+			replay.transaction.zone_number = 318;
+			replay.transaction.room_vnum = 31939;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Ice Tower replay duplicated return");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 318).completed == 2,
+				"Ice Tower cold recovery lost histories");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 318, 31947, 100, "arrival") ==
+					result::applied,
+				"Ice Tower alternate arrival discovery failed");
+			for (const auto &s : mapping.stories)
+			{
+				const auto tx = "icetower-raw-" + s.id;
+				record(raw, s.contracts.front(), tx.c_str(), 318, 31947);
+			}
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 318).completed == 2,
+				"Ice Tower raw-to-authored recovery lost histories");
 		}
 
 		{

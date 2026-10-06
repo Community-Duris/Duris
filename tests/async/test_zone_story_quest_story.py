@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 170 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 171 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,14 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+icetower=next(m for m in catalog['story_mappings'] if m['source_area']=='icetower')
+assert (icetower['coverage'],icetower['schema_version'],icetower['revision'])==('complete',3,1) and not icetower['exclusions']
+assert len(icetower['stories'])==2 and len(icetower['contacts'])==8 and sum(len(c['topics']) for c in icetower['contacts'])==8
+assert [len(s['steps']) for s in icetower['stories']]==[2,2]
+assert [[t['item_vnums'][0] for t in s['steps'][:-1]] for s in icetower['stories']]==[[31821],[31815]]
+assert sum(t.get('optional',False) for s in icetower['stories'] for t in s['steps'])==2
+assert len({(s['contracts'][0]['giver_vnum'],s['contracts'][0]['completion_key']) for s in icetower['stories']})==2 and report['eligible_by_zone']['318']==2
 
 gibber=next(m for m in catalog['story_mappings'] if m['source_area']=='gibber')
 assert gibber['coverage']=='complete' and gibber['schema_version']==3 and gibber['revision']==1 and not gibber['exclusions']
