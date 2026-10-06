@@ -58,6 +58,75 @@ class Cursor:
 
 
 class UidScopeTests(unittest.TestCase):
+    def test_compound_item_actions_follow_retained_supply_endpoints(self):
+        import copy
+        import economic_sql_audit_snapshot as exporter
+
+        cases = ((34, 7, 1, 1, "create"), (9, 7, 6, 1, "create"),
+                 (34, 1, 8, 2, "destroy"), (33, 1, 8, 2, "destroy"),
+                 (21, 1, 8, 2, "destroy"), (34, 1, 1, 2, "move"),
+                 (34, 7, 1, 2, "move"), (2, 1, 8, 2, "create"),
+                 (3, 1, 1, 2, "destroy"), (8, 1, 1, 2, "move"))
+        for reason, old_owner, new_owner, revision, expected in cases:
+            row = dict(operation_id=b"a" * 16, event_index=0, item_uid=81,
+                       root_item_uid=81, parent_item_uid=None, from_owner_type=old_owner,
+                       from_owner_id=0 if old_owner == 7 else 7, from_owner_context_id=0,
+                       to_owner_type=new_owner, to_owner_id=0 if new_owner == 8 else 7,
+                       to_owner_context_id=0, item_revision=revision, before_revision=revision - 1,
+                       from_equipment_slot=0, to_equipment_slot=0, reason_type=reason,
+                       operation_epoch=b"e" * 16, operation_outcome=1, personal_alias="private-compound-action")
+
+            class ActionCursor:
+                sql = ""
+                def __init__(self):
+                    self.queries = []
+                def execute(self, query, _params=()):
+                    self.sql = query
+                    self.queries.append(query)
+                def fetchone(self):
+                    return dict(source_operations=0, missing_claim_operations=0,
+                                duplicate_source_values=0, required_operations=0, missing_source_events=0,
+                                root_count=0, plan_bytes=0, max_plan_bytes=0)
+                def fetchall(self):
+                    if "SELECT DISTINCT l.item_uid,o.lineage" in self.sql:
+                        return [dict(item_uid=81, lineage=b"l" * 16), dict(item_uid=82, lineage=None)]
+                    if "WHERE o.operation_id IS NULL" in self.sql:
+                        return [dict(row, item_uid=82, root_item_uid=82)]
+                    if "FROM economic_accounting_item_reference r" in self.sql:
+                        return [dict(row, operation_id=b"b" * 16, child_index=0,
+                                     before_revision=revision - 1, after_revision=revision,
+                                     legacy_operation_id=row["operation_id"], legacy_event_index=0,
+                                     epoch=b"e" * 16, outcome=1, item_event_count=1, ledger_uid=81)]
+                    if "SELECT l.operation_id,l.event_index,l.item_uid" in self.sql:
+                        return [dict(row)]
+                    return []
+
+            cursor = ActionCursor()
+            original = copy.deepcopy(row)
+            with self.subTest(reason=reason, old_owner=old_owner, new_owner=new_owner, revision=revision):
+                evidence = exporter.read_evidence(cursor, b"l" * 16, b"e" * 16, False)
+                references, _, _ = exporter.read_lineage_uid_references(cursor, b"l" * 16)
+                history = read_uid_event_census(cursor, b"l" * 16, [{"uid": 81, "revision": 0}],
+                                               {"item_references": []}, [], [])
+                actions = [evidence["ownership_events"][0]["action"], references[0]["ledger_action"],
+                           history[0][0]["action"], history[6][0]["action"]]
+                self.assertEqual(actions, [expected] * 4)
+                self.assertEqual(row, original)
+                self.assertNotIn("private-compound", json.dumps([evidence, references, history]))
+                queries = [query for query in cursor.queries
+                           if "SELECT l.operation_id,l.event_index,l.item_uid" in query or
+                           "FROM economic_accounting_item_reference r" in query]
+                self.assertTrue(queries and all("l.from_owner_type" in query for query in queries))
+                self.assertTrue(all(query.startswith("SELECT ") for query in cursor.queries))
+                for action in actions[:3]:
+                    origins, known = [], set()
+                    appended = append_committed_item_creation_origin(
+                        origins, known, 81, action, revision - 1, "committed")
+                    self.assertEqual(appended, expected == "create" and revision == 1)
+                    for outcome in ("rejected", "unknown"):
+                        self.assertFalse(append_committed_item_creation_origin(
+                            [], set(), 81, action, revision - 1, outcome))
+
     def test_coin_payload_bounds_refuse_before_mapping_payload_reads(self):
         from economic_sql_audit_snapshot import MAX_INPUT_BYTES, MAX_ITEM_PAYLOAD_BYTES, MAX_ROWS
 

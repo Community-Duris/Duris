@@ -222,6 +222,18 @@ def read_orphan_evidence(cursor) -> tuple[list[dict], dict]:
     return result, {"scope": "database", "table_counts": counts}
 
 
+def item_ledger_action(row: dict) -> str:
+    """Classify supply endpoints without replacing explicit legacy reasons."""
+    reason = row["reason_type"]
+    if reason == 2:
+        return "create"
+    if reason == 3 or row["to_owner_type"] == 8:
+        return "destroy"
+    if row.get("from_owner_type") == 7 and row["item_revision"] == 1:
+        return "create"
+    return "move"
+
+
 def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool) -> dict:
     result = {name: [] for name in TABLES}
     result["operations"], _ = operation_rows(cursor, lineage, epoch, has_realized_price)
@@ -358,7 +370,6 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
         "WHERE o.lineage=%s AND o.epoch=%s AND o.reason<>38 "
         "ORDER BY l.operation_id,l.event_index", (lineage, epoch))
     for row in ledger:
-        reason = row["reason_type"]
         result["ownership_events"].append({
             "operation_id": hex_id(row["operation_id"]), "event_index": row["event_index"],
             "uid": row["item_uid"], "before_revision": row["before_revision"],
@@ -368,7 +379,7 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
             "from_owner": [row["from_owner_type"], row["from_owner_id"], row["from_owner_context_id"]],
             "from_equipment_slot": row["from_equipment_slot"], "to_equipment_slot": row["to_equipment_slot"],
             "state": "tombstone" if row["to_owner_type"] == 8 else "live",
-            "action": "create" if reason == 2 else "destroy" if reason == 3 else "move"})
+            "action": item_ledger_action(row)})
     return result
 
 
@@ -453,7 +464,7 @@ def read_lineage_uid_references(cursor, lineage: bytes) -> tuple[list[dict], lis
         "SELECT r.operation_id,r.event_index,r.child_index,r.item_uid,r.before_revision,"
         "r.after_revision,r.legacy_operation_id,r.legacy_event_index,o.epoch,o.outcome,"
         "o.item_event_count,l.item_uid AS ledger_uid,l.item_revision,"
-        "l.root_item_uid,l.parent_item_uid,l.to_owner_type,l.to_owner_id,"
+        "l.root_item_uid,l.parent_item_uid,l.from_owner_type,l.to_owner_type,l.to_owner_id,"
         "l.to_owner_context_id,l.reason_type "
         "FROM economic_accounting_item_reference r "
         "JOIN economic_accounting_operation o ON o.operation_id=r.operation_id "
@@ -468,8 +479,7 @@ def read_lineage_uid_references(cursor, lineage: bytes) -> tuple[list[dict], lis
         if row["ledger_uid"] is not None:
             owner = [row["to_owner_type"], row["to_owner_id"], row["to_owner_context_id"]]
             state = "tombstone" if row["to_owner_type"] == 8 else "live"
-            reason = row["reason_type"]
-            action = "create" if reason == 2 else "destroy" if reason == 3 else "move"
+            action = item_ledger_action(row)
         result.append({
             "operation_id": hex_id(row["operation_id"]), "event_index": row["event_index"],
             "child_index": row["child_index"], "uid": row["item_uid"],
@@ -566,7 +576,7 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
         rows = bounded(cursor,
             "SELECT l.operation_id,l.event_index,l.item_uid,l.root_item_uid,l.parent_item_uid,"
             "l.from_equipment_slot,l.to_equipment_slot,"
-            "l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
+            "l.from_owner_type,l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
             "l.reason_type,o.epoch AS operation_epoch,"
             "o.outcome AS operation_outcome "
             "FROM item_ownership_ledger l "
@@ -583,7 +593,6 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
                 raise ExportError("UID ownership history exceeds audit bounds")
             event_key = (row["operation_id"], row["event_index"], row["item_uid"])
             is_referenced = event_key in referenced
-            reason = row["reason_type"]
             event = {
                 "operation_id": hex_id(row["operation_id"]),
                 "event_index": row["event_index"], "uid": row["item_uid"],
@@ -594,7 +603,7 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
                 "from_equipment_slot": row["from_equipment_slot"],
                 "to_equipment_slot": row["to_equipment_slot"],
                 "state": "tombstone" if row["to_owner_type"] == 8 else "live",
-                "action": "create" if reason == 2 else "destroy" if reason == 3 else "move",
+                "action": item_ledger_action(row),
                 "operation_epoch": hex_id(row["operation_epoch"]),
                 "operation_outcome": {1: "committed", 2: "rejected"}.get(
                     row["operation_outcome"], "unknown"),
@@ -610,7 +619,7 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
         rows = bounded(cursor,
             "SELECT l.operation_id,l.event_index,l.item_uid,l.root_item_uid,l.parent_item_uid,"
             "l.from_equipment_slot,l.to_equipment_slot,"
-            "l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
+            "l.from_owner_type,l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
             "l.reason_type FROM item_ownership_ledger l "
             "LEFT JOIN economic_accounting_operation o ON o.operation_id=l.operation_id "
             "WHERE o.operation_id IS NULL "
@@ -622,7 +631,6 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
                 continue
             if len(unattributed_events) >= MAX_ROWS:
                 raise ExportError("unattributed UID ownership history exceeds audit bounds")
-            reason = row["reason_type"]
             unattributed_events.append({
                 "operation_id": hex_id(row["operation_id"]),
                 "event_index": row["event_index"], "uid": row["item_uid"],
@@ -633,7 +641,7 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
                 "from_equipment_slot": row["from_equipment_slot"],
                 "to_equipment_slot": row["to_equipment_slot"],
                 "state": "tombstone" if row["to_owner_type"] == 8 else "live",
-                "action": "create" if reason == 2 else "destroy" if reason == 3 else "move"})
+                "action": item_ledger_action(row)})
     return (events, unreferenced, {
         "tracked_uids": len(history_uids), "ledger_events": ledger_events,
         "referenced_events": referenced_events,

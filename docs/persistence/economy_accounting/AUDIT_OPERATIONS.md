@@ -185,6 +185,17 @@ with all equipment projections omitted remain readable at their original scope;
 they cannot supply complete equipment proof. Bounded UID provenance includes
 valid numeric from/to slots and excludes personal aliases and malformed slots.
 
+SQL ownership actions retain compound producer semantics. An explicit generic
+creation/destruction reason keeps its original action so contradictory endpoints
+still produce existing findings. Other reasons classify a destruction-owner
+endpoint as `destroy`, or a system-owner source at UID revision1 as `create`;
+remaining events stay `move`. This applies to selected roots, linked references,
+historical UID events and unattributed history. Craft, quest and collector
+reasons remain unchanged in retained authority. Creation-origin inference still
+requires a committed revision0-to1 creation; rejected and unknown outcomes cannot
+supply an origin. These actions do not authenticate an original plan, infer an
+unrecorded custody state or promote a partial SQL export to complete evidence.
+
 All five detail projections require the exact decoded native representation,
 including nested coin and owner vectors. An integer-valued JSON float or a
 Boolean does not authenticate an integer field even when Python equality would
