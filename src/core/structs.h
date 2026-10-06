@@ -1370,6 +1370,7 @@ struct npc_only_data
 	int idnum; /* Given only to pets, used for crashsave */
 	uint32_t summon_kind; // stable summoned_pet_kind; zero for ordinary area mobs
 	int summoner_resource_slot; // owner-side prepared resource bank, 1..4
+	int summoner_dex_weight; // runtime training weight before the owner link exists
 	int summoner_hp_ceiling;
 	int summoner_expected_mana;
 	int summoner_expected_slots[MAX_CIRCLE + 1];

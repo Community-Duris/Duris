@@ -131,6 +131,12 @@ void refresh_npc_spell_slots(P_char pet) {
     for (int circle = 1; circle <= MAX_CIRCLE; ++circle)
         pet->specials.undead_spell_slots[circle] = spl_table[GET_LEVEL(pet)][circle-1];
 }
+char affect_total(P_char pet, int) {
+    test_strength(pet, 0, 0); test_dex(pet, 0, 0); test_agi(pet, 0, 0);
+    test_pow(pet, 0, 0); test_int(pet, 0, 0); test_wis(pet, 0, 0); test_cha(pet, 0, 0);
+    summoner_pet_finish_affects(pet);
+    return FALSE;
+}
 void summoned_pet_mark(P_char pet, summoned_pet_kind kind) {
     pet->only.npc->summon_kind = static_cast<uint32_t>(kind);
     const uint64_t intrinsic[] = {pet->specials.affected_by & ~AFF_CHARM,
@@ -411,7 +417,8 @@ int main() {
         summoner_elemental_body(&heater.ch, &owner.ch, true, habitat, 700, 25);
         assert(GET_MAX_HIT(&elemental.ch) <= necro_hp_ceiling(&owner.ch));
         assert(GET_MAX_HIT(&elemental.ch) <= GET_MAX_HIT(&heater.ch));
-        assert(elemental.ch.points.base_damroll <= heater.ch.points.base_damroll);
+        assert(elemental.ch.points.base_damroll >= heater.ch.points.base_damroll);
+        assert(elemental.ch.points.base_damroll <= 58); // half toward ordinary old level-56 damage
         assert(GET_LEVEL((&elemental.ch)) == 56);
         assert(get_max_circle(&elemental.ch) == 12);
         assert(GET_MAX_HIT(&elemental.ch) <= normal_capture_hp(&elemental.ch, &owner.ch));
@@ -427,13 +434,16 @@ int main() {
     terrain = 0;
     summoner_pet_configure(&mental_pet.ch, &mental_owner.ch, true);
     assert(GET_MAX_MANA(&mental_pet.ch) == 29 * 4);
+    assert(test_dex(&mental_pet.ch, 0, 0) == 120); // pre-30 spec cannot grant 50% weighting
     assert(GET_MAX_HIT(&mental_pet.ch) <= normal_capture_hp(&mental_pet.ch, &mental_owner.ch));
     mental_owner.ch.player.level = 30;
     mental_pet.ch.player.level = 30;
     summoner_pet_configure(&mental_pet.ch, &mental_owner.ch, true);
     assert(GET_MAX_MANA(&mental_pet.ch) == 150);
     assert(GET_MAX_HIT(&mental_pet.ch) == 215); // old 195-HP body dominates the bounded blend
-    assert(mental_pet.ch.points.base_damroll == 11); // matched lesser: 10
+    assert(mental_pet.ch.points.base_damroll == 21); // 11 halfway toward original 30
+    assert(mental_pet.ch.points.base_hitroll == 13); // 11 halfway toward original 15
+    assert(test_dex(&mental_pet.ch, 0, 0) == 140); // also works before the owner link
     assert(GET_MAX_HIT(&mental_pet.ch) > normal_capture_hp(&mental_pet.ch, &mental_owner.ch));
     summoner_pet_finish_affects(&mental_pet.ch); // pre-owner-link affect rebuild retains 5L
     assert(GET_MAX_MANA(&mental_pet.ch) == 150 && GET_SIZE(&mental_pet.ch) == SIZE_TINY);
@@ -455,7 +465,7 @@ int main() {
         summoner_pet_configure(&fire.ch, &mental_owner.ch);
         // The old 2494-HP body dominates; terrain only changes the blend by 5%.
         assert(GET_MAX_HIT(&fire.ch) == (habitat == 1 ? 2357 : habitat == 0 ? 2245 : 2133));
-        assert(fire.ch.points.base_damroll == (habitat == 1 ? 61 : 33));
+        assert(fire.ch.points.base_damroll == (habitat == 1 ? 61 : 46));
         assert(GET_MAX_MANA(&fire.ch) == 336 && GET_LEVEL((&fire.ch)) == 56);
         assert(get_max_circle(&fire.ch) == 12);
         assert(GET_MAX_HIT(&fire.ch) <= necro_hp_ceiling(&mental_owner.ch));
@@ -466,12 +476,74 @@ int main() {
     Fixture earth(true, RACE_E_ELEMENTAL, CLASS_WARRIOR, 56);
     summoner_pet_configure(&earth.ch, &mental_owner.ch, true);
     assert(GET_MAX_HIT(&earth.ch) == 2271);
-    assert(earth.ch.points.base_damroll == 39); // earth king peak: 35
+    assert(earth.ch.points.base_damroll == 49); // 39 halfway toward original 58
     Fixture air(true, RACE_A_ELEMENTAL, CLASS_WARRIOR, 56);
     summoner_pet_configure(&air.ch, &mental_owner.ch, true);
     assert(GET_MAX_HIT(&air.ch) == 1190);
-    assert(air.ch.points.base_damroll == 28);
+    assert(air.ch.points.base_damroll == 43); // 28 halfway toward original 58
     assert(GET_MAX_HIT(&air.ch) < GET_MAX_HIT(&earth.ch));
+    assert(GET_C_DEX(&air.ch) == 140 && GET_C_POW(&air.ch) == 113);
+
+    // Production apply_affs uses frozen prototype attributes, with normal stat buffs.
+    assert(test_dex(&air.ch, 0, 0) == 140 && test_agi(&air.ch, 0, 0) == 125);
+    assert(test_pow(&air.ch, 0, 0) == 113);
+    assert(test_int(&air.ch, 0, 0) == 100 && test_wis(&air.ch, 0, 0) == 100);
+    assert(test_cha(&air.ch, 0, 0) == 100);
+    assert(test_dex(&air.ch, 20, 20) == 168); // intrinsic cap does not cap ordinary buffs
+    assert(test_agi(&air.ch, 20, 20) == 150);
+    for (int attribute : {1, 2, 4, 5, 6, 7}) stat_factor[RACE_A_ELEMENTAL][attribute] = 500;
+    assert(test_dex(&air.ch, 0, 0) == 140 && test_agi(&air.ch, 0, 0) == 125);
+    assert(test_pow(&air.ch, 0, 0) == 113 && test_int(&air.ch, 0, 0) == 100);
+    const int air_hp = GET_MAX_HIT(&air.ch), air_mana = GET_MAX_MANA(&air.ch);
+    for (int repeat = 0; repeat < 3; ++repeat) {
+        summoner_pet_configure(&air.ch, &mental_owner.ch, true, true);
+        assert(test_dex(&air.ch, 0, 0) == 140);
+        assert(air.ch.points.base_damroll == 43 && air.ch.points.base_hitroll == 28);
+        assert(GET_MAX_HIT(&air.ch) == air_hp && GET_MAX_MANA(&air.ch) == air_mana);
+    }
+    masters[&air.ch] = &mental_owner.ch;
+    mental_owner.ch.player.spec = SPEC_CONTROLLER;
+    assert(test_dex(&air.ch, 0, 0) == 120); // no stale Mentalist bonus after owner respec
+    mental_owner.ch.player.spec = SPEC_MENTALIST;
+    assert(test_dex(&air.ch, 0, 0) == 140);
+    Fixture attribute_bard(true, RACE_GREY, CLASS_BARD, 56);
+    summoner_pet_configure(&attribute_bard.ch, &owner.ch, true);
+    assert(GET_C_INT(&attribute_bard.ch) == 104 && GET_C_CHA(&attribute_bard.ch) == 105);
+    assert(test_dex(&attribute_bard.ch, 0, 0) == 103);
+    assert(test_agi(&attribute_bard.ch, 0, 0) == 105 && test_pow(&attribute_bard.ch, 0, 0) == 101);
+    assert(test_int(&attribute_bard.ch, 0, 0) == 104);
+    assert(test_wis(&attribute_bard.ch, 0, 0) == 105 && test_cha(&attribute_bard.ch, 0, 0) == 105);
+    for (int attribute : {1, 2, 4, 5, 6, 7}) stat_factor[RACE_GREY][attribute] = 500;
+    assert(test_int(&attribute_bard.ch, 20, 20) == 125);
+    assert(test_wis(&attribute_bard.ch, 20, 20) == 126);
+    assert(test_pow(&attribute_bard.ch, 20, 20) == 121);
+    assert(test_cha(&attribute_bard.ch, 20, 20) == 126);
+    Fixture extreme_attributes(true, RACE_GHOST, CLASS_PSIONICIST, 56);
+    summoner_pet_configure(&extreme_attributes.ch, &owner.ch, true);
+    assert(test_agi(&extreme_attributes.ch, 0, 0) == 125);
+    assert(test_pow(&extreme_attributes.ch, 0, 0) == 125);
+    assert(summoner_pet_attribute_factor(&extreme_attributes.ch, RACE_BEHOLDER, 5) == 125);
+    for (int race = 0; race <= LAST_RACE; ++race)
+        for (int attribute : {1, 2, 4, 5, 6, 7}) {
+            const int value = summoner_pet_attribute_factor(&air.ch, race, attribute);
+            assert(value >= 100 && value <= (attribute == 1 ? 145 : 125));
+        }
+    assert(test_dex(&bran.ch, 0, 0) == 100 && test_int(&bran.ch, 0, 0) == 100);
+    assert(bran.ch.points.base_hitroll == 39); // trained accuracy already exceeds old 28
+    stat_factor[RACE_F_ELEMENTAL].Dex = stat_factor[RACE_F_ELEMENTAL].Agi = 210;
+    stat_factor[RACE_F_ELEMENTAL].Pow = stat_factor[RACE_F_ELEMENTAL].Int = 210;
+    stat_factor[RACE_F_ELEMENTAL].Wis = stat_factor[RACE_F_ELEMENTAL].Cha = 210;
+    assert(test_dex(&untouched.ch, 0, 0) == 210 && test_agi(&untouched.ch, 0, 0) == 210);
+    assert(test_pow(&untouched.ch, 0, 0) == 210 && test_int(&untouched.ch, 0, 0) == 210);
+    assert(test_wis(&untouched.ch, 0, 0) == 210 && test_cha(&untouched.ch, 0, 0) == 210);
+    Fixture wild_air(true, RACE_A_ELEMENTAL, CLASS_WARRIOR, 56);
+    assert(test_dex(&wild_air.ch, 0, 0) == 500); // wild races retain live property factors
+    Fixture pc_air(false, RACE_A_ELEMENTAL, CLASS_WARRIOR, 56);
+    assert(test_dex(&pc_air.ch, 0, 0) == 500);
+    Fixture weak_accuracy(true, RACE_HUMAN, CLASS_WARRIOR, 70);
+    weak_accuracy.ch.points.base_hitroll = 0;
+    blend_capture_accuracy(&weak_accuracy.ch);
+    assert(weak_accuracy.ch.points.base_hitroll == 15); // maximum base-accuracy addition
 
     // Actual Library capture classes preserve their original HP difference.
     for (int habitat : {-1, 0, 1}) {
@@ -481,6 +553,8 @@ int main() {
         summoner_pet_configure(&library_air.ch, &mental_owner.ch);
         summoner_pet_configure(&library_earth.ch, &mental_owner.ch);
         assert(GET_MAX_HIT(&library_air.ch) == (habitat == 1 ? 953 : habitat == 0 ? 908 : 862));
+        assert(library_air.ch.points.base_damroll == (habitat == 1 ? 56 : 42));
+        assert(library_earth.ch.points.base_damroll == (habitat == 1 ? 66 : 48));
         assert(GET_MAX_HIT(&library_earth.ch) == (habitat == 1 ? 1713 : habitat == 0 ? 1632 : 1550));
         library_air.ch.points.base_hit = GET_MAX_HIT(&library_air.ch) = 90000;
         chaos = true;
@@ -646,6 +720,18 @@ int main() {
     assert(test_strength(&restored_size.ch, 0, 0) == 145);
     summoner_pet_configure(&restored_size.ch, &mental_owner.ch, false, true);
     assert(IS_AFFECTED(&restored_size.ch, AFF_HASTE) && test_strength(&restored_size.ch, 0, 0) == 145);
+    state.kind = summoned_pet_kind::summoner_capture;
+    state.race = RACE_A_ELEMENTAL; state.level = 53;
+    state.base_points[4] = state.base_points[5] = 100; // older/buffed saved body is not a reference
+    Fixture restored_air(true, RACE_A_ELEMENTAL, 90112U, 53);
+    assert(summoned_pet_apply(&restored_air.ch, state));
+    for (int repeat = 0; repeat < 3; ++repeat) {
+        summoner_pet_configure(&restored_air.ch, &mental_owner.ch, false, true);
+        assert(GET_C_DEX(&restored_air.ch) == 140 && GET_C_POW(&restored_air.ch) == 113);
+        assert(test_dex(&restored_air.ch, 0, 0) == 140 && test_pow(&restored_air.ch, 0, 0) == 113);
+        assert(restored_air.ch.points.base_hitroll == 28 && restored_air.ch.points.base_damroll == 42);
+    }
+    state.race = RACE_E_ELEMENTAL; state.level = 35;
     state.kind = summoned_pet_kind::undead_first;
     assert(summoned_pet_apply(&restored_size.ch, state));
     assert(GET_SIZE(&restored_size.ch) == SIZE_MEDIUM);
@@ -772,7 +858,7 @@ int main() {
         for (int vnum : recipes) assert(approved.contains(vnum));
         summoner_chaos_recipes(&owner.ch); assert(recipes.size() == 3);
     }
-    std::puts("summoner class preservation, HP/DR/vamp caps, ordinary/orb levels and capacity, bounded Mentalist HP, blended dice, 20% Naturalist melee target and slower slots, prototype size, mana/slots, useful songs, 60-second flight, restoration and Chaos passed");
+    std::puts("summoner class preservation, HP/DR/vamp caps, ordinary/orb levels and capacity, bounded Mentalist HP, blended dice/accuracy/elemental damroll, seven frozen attributes, 20% Naturalist melee target and slower slots, prototype size, mana/slots, useful songs, 60-second flight, restoration and Chaos passed");
 }
 '''
 
@@ -806,6 +892,14 @@ engine += "\nint test_strength(P_char ch, int bonus, int maximum) {\n" + \
     "struct { int r_Str = 0, c_Str, m_Str; } TmpAffs = {0, bonus, maximum};\n" + \
     "bool mode = true; int t1, t2, t3;\n" + affects[strength_start:strength_end] + \
     "return GET_C_STR(ch);\n}\n"
+for attribute, next_attribute in (("Dex", "Agi"), ("Agi", "Con"), ("Pow", "Int"),
+                                  ("Int", "Wis"), ("Wis", "Cha"), ("Cha", "Kar")):
+    start = affects.index(f"\tt1 = (!mode || !TmpAffs.r_{attribute})")
+    end = affects.index(f"\tt1 = (!mode || !TmpAffs.r_{next_attribute})", start)
+    engine += f"\nint test_{attribute.lower()}(P_char ch, int bonus, int maximum) {{\n" + \
+        f"struct {{ int r_{attribute}, c_{attribute}, m_{attribute}; }} TmpAffs = {{0, bonus, maximum}};\n" + \
+        "bool mode = true; int t1, t2, t3;\n" + affects[start:end] + \
+        f"return GET_C_{attribute.upper()}(ch);\n}}\n"
 HARNESS = HARNESS.replace("__TABLES__", tables).replace("__ENGINE_FUNCTIONS__", engine).replace("__SKILLS__", skill_setup)
 build_dir = ROOT / "bin/tests"
 build_dir.mkdir(parents=True, exist_ok=True)

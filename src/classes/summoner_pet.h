@@ -9,6 +9,7 @@ bool summoner_capture(P_char pet);
 bool summoner_balanced_body(P_char pet);
 bool summoner_owned_pet(P_char pet);
 int summoner_pet_strength_factor(int race);
+int summoner_pet_attribute_factor(P_char pet, int race, int attribute);
 void summoner_pet_apply_traits(P_char pet, const std::array<uint64_t, 5> &traits);
 void summoner_pet_cast_buffs(P_char pet, const std::array<uint64_t, 5> &traits);
 int summoner_pet_level(P_char pet, P_char owner);

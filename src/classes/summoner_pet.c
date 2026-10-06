@@ -333,7 +333,7 @@ int normal_capture_hp(P_char pet, P_char owner)
 	return std::clamp(static_cast<int>(hp * (1 + life / 500.0)), 1, 8000);
 }
 
-std::pair<int, int> normal_capture_dice(P_char pet)
+std::array<int, 3> normal_capture_damage(P_char pet)
 {
 	// Frozen ordinary prototype dice from convertMob, without elite or zone boosts.
 	// Recompute at the trained level so restored dice never compound the blend.
@@ -344,34 +344,53 @@ std::pair<int, int> normal_capture_dice(P_char pet)
 	const auto &body = bodies[std::clamp((level - 1) / 5, 0, 11)];
 	const int count = body[0] + (IS_MELEE_CLASS(pet) ? level / 15 : 0);
 	if (body[2] + count * (1 + body[1]) / 2 > 90)
-		return { std::max(1, (90 - (30 + level / 2)) / 4), 7 };
-	return { count, body[1] };
+		return { std::max(1, (90 - (30 + level / 2)) / 4), 7, 30 + level / 2 };
+	return { count, body[1], body[2] + level / 2 };
 }
 
 void blend_capture_dice(P_char pet, P_char owner)
 {
-	const auto original = normal_capture_dice(pet);
+	const auto original = normal_capture_damage(pet);
 	const bool naturalist = specialization_level(pet, owner, SPEC_NATURALIST);
 	if (naturalist)
 		++pet->points.damnodice;
 	const int count = pet->points.damnodice, sides = pet->points.damsizedice;
 	const int trained_average = count * (sides + 1);
-	const int original_average = original.first * (original.second + 1);
+	const int original_average = original[0] * (original[1] + 1);
 	if (original_average <= trained_average)
 		return;
 	const int weight = naturalist ? 80 : 50;
-	int blended_count = (count * (100 - weight) + original.first * weight + 50) / 100;
-	int blended_sides = (sides * (100 - weight) + original.second * weight + 50) / 100;
+	int blended_count = (count * (100 - weight) + original[0] * weight + 50) / 100;
+	int blended_sides = (sides * (100 - weight) + original[1] * weight + 50) / 100;
 	// Whole dice must stay between the trained floor and the original average.
 	if (blended_count * (blended_sides + 1) > original_average)
 	{
-		blended_count = original.first;
-		blended_sides = original.second;
+		blended_count = original[0];
+		blended_sides = original[1];
 	}
 	if (blended_count * (blended_sides + 1) >= trained_average)
 	{
 		pet->points.damnodice = blended_count;
 		pet->points.damsizedice = blended_sides;
+	}
+}
+
+void blend_capture_accuracy(P_char pet)
+{
+	const int level = GET_LEVEL(pet);
+	const int original = IS_MELEE_CLASS(pet) || IS_DRAGON(pet) || IS_DEMON(pet) ||
+					     IS_GIANT(pet) ?
+				     std::clamp(level / 2, 2, 35) :
+				     std::clamp(level / 3, 0, 25);
+	pet->points.base_hitroll +=
+		std::min(15, (std::max(0, original - pet->points.base_hitroll) + 1) / 2);
+	if (IS_ELEMENTAL(pet))
+	{
+		const int original_damage = normal_capture_damage(pet)[2];
+		pet->points.base_damroll = std::min(
+			100,
+			pet->points.base_damroll +
+				(std::max(0, original_damage - pet->points.base_damroll) + 1) / 2);
 	}
 }
 
@@ -517,6 +536,132 @@ int summoner_pet_strength_factor(int race)
 		185, 125, 200, 100, 100, 95,  350, 350, 105, 55,  35,  100, 100, 100, 250, 75
 	};
 	return 100 + (std::max(100, racial_strength[std::clamp(race, 0, LAST_RACE)]) - 100 + 1) / 2;
+}
+
+int summoner_pet_attribute_factor(P_char pet, int race, int attribute)
+{
+	// Frozen normal racial factors in stat_data order: Dex, Agi, Pow, Int, Wis, Cha.
+	constexpr int racial_attributes[LAST_RACE + 1][6] = {
+		{ 100, 100, 100, 100, 100, 100 }, // None
+		{ 100, 100, 100, 100, 100, 100 }, // Human
+		{ 90, 90, 70, 70, 95, 75 }, // Barbarian
+		{ 110, 130, 110, 120, 115, 110 }, // DrowElf
+		{ 110, 120, 105, 115, 120, 120 }, // GreyElf
+		{ 95, 85, 90, 85, 125, 80 }, // MountainDwarf
+		{ 90, 90, 85, 75, 130, 70 }, // DuergarDwarf
+		{ 130, 125, 80, 100, 115, 110 }, // Halfling
+		{ 115, 120, 105, 130, 95, 95 }, // Gnome
+		{ 75, 75, 60, 70, 80, 50 }, // Ogre
+		{ 90, 100, 75, 75, 90, 70 }, // Troll
+		{ 110, 110, 125, 115, 110, 115 }, // Half-Elf
+		{ 90, 90, 200, 150, 110, 25 }, // Illithid
+		{ 100, 95, 100, 90, 90, 85 }, // Orc
+		{ 125, 130, 70, 65, 65, 75 }, // Thri-Kreen
+		{ 90, 90, 65, 80, 100, 90 }, // Centaur
+		{ 100, 100, 130, 120, 100, 75 }, // Githyanki
+		{ 80, 80, 65, 85, 85, 70 }, // Minotaur
+		{ 140, 125, 120, 140, 100, 100 }, // Shade
+		{ 90, 110, 85, 70, 75, 50 }, // Revenant
+		{ 135, 115, 85, 110, 105, 90 }, // Goblin
+		{ 100, 115, 150, 145, 100, 90 }, // Lich
+		{ 125, 115, 110, 120, 100, 120 }, // Vampire
+		{ 95, 95, 105, 100, 95, 70 }, // DeathKnight
+		{ 130, 130, 100, 70, 70, 70 }, // ShadowBeast
+		{ 70, 70, 80, 80, 80, 65 }, // StormGiant
+		{ 80, 80, 100, 60, 60, 50 }, // Wight
+		{ 140, 130, 125, 100, 100, 100 }, // Phantom
+		{ 115, 130, 100, 120, 110, 100 }, // Harpy
+		{ 120, 120, 50, 40, 80, 50 }, // Orog
+		{ 100, 100, 120, 115, 110, 90 }, // Githzerai
+		{ 110, 110, 85, 100, 90, 70 }, // Drider
+		{ 110, 120, 95, 125, 105, 100 }, // Kobold
+		{ 105, 105, 125, 120, 100, 100 }, // Pillithid
+		{ 115, 115, 95, 85, 85, 90 }, // KuoToa
+		{ 115, 115, 95, 85, 91, 85 }, // WoodElf
+		{ 75, 75, 65, 75, 80, 80 }, // Firbolg
+		{ 110, 110, 100, 120, 100, 120 }, // Tiefling
+		{ 115, 115, 110, 100, 100, 100 }, // Agathinon
+		{ 115, 115, 170, 135, 100, 90 }, // Eladrin
+		{ 120, 140, 100, 130, 110, 95 }, // Gargoyle
+		{ 110, 250, 150, 90, 25, 100 }, // FireElemental
+		{ 180, 400, 150, 90, 25, 100 }, // AirElemental
+		{ 80, 100, 150, 90, 25, 100 }, // WaterElemental
+		{ 60, 50, 150, 90, 25, 100 }, // EarthElemental
+		{ 130, 130, 150, 120, 110, 100 }, // Demon
+		{ 150, 150, 150, 120, 110, 100 }, // Devil
+		{ 90, 90, 50, 100, 90, 100 }, // Undead
+		{ 125, 115, 110, 120, 100, 120 }, // Vampire
+		{ 150, 300, 300, 100, 100, 100 }, // Ghost
+		{ 100, 110, 100, 100, 100, 100 }, // Lycanthrope
+		{ 75, 60, 50, 80, 110, 100 }, // Giant
+		{ 100, 100, 90, 95, 95, 100 }, // HalfOrc
+		{ 130, 40, 110, 35, 25, 100 }, // Golem
+		{ 130, 160, 150, 120, 90, 130 }, // Faerie
+		{ 120, 100, 140, 165, 150, 100 }, // Dragon
+		{ 110, 110, 120, 120, 120, 100 }, // Dragonkin
+		{ 100, 120, 10, 5, 10, 100 }, // Reptile
+		{ 85, 130, 10, 5, 10, 100 }, // Snake
+		{ 120, 150, 10, 5, 10, 100 }, // Insect
+		{ 85, 150, 10, 5, 10, 100 }, // Arachnid
+		{ 125, 130, 10, 5, 10, 100 }, // AquaticAnimal
+		{ 100, 100, 100, 100, 100, 100 }, // WingedAnimal
+		{ 60, 120, 10, 10, 10, 100 }, // Quadruped
+		{ 90, 100, 10, 40, 10, 100 }, // Primate
+		{ 110, 110, 90, 90, 90, 100 }, // Humanoid
+		{ 75, 110, 10, 15, 10, 100 }, // Animal
+		{ 110, 1, 200, 25, 40, 100 }, // Plant
+		{ 75, 110, 10, 5, 10, 100 }, // Herbivore
+		{ 75, 120, 10, 10, 10, 100 }, // Carnivore
+		{ 120, 100, 10, 15, 20, 100 }, // Parasite
+		{ 150, 100, 200, 200, 150, 10 }, // Beholder
+		{ 80, 100, 125, 144, 132, 100 }, // Dracolich
+		{ 110, 1, 5, 5, 5, 5 }, // Slime
+		{ 120, 120, 200, 120, 150, 150 }, // Angel
+		{ 100, 120, 100, 100, 100, 100 }, // Rakshasa
+		{ 100, 100, 100, 100, 100, 100 }, // Construct
+		{ 120, 120, 60, 70, 70, 110 }, // Efreet
+		{ 85, 30, 40, 40, 90, 30 }, // SnowOgre
+		{ 90, 110, 130, 130, 90, 30 }, // Beholderkin
+		{ 80, 60, 15, 5, 5, 10 }, // Zombie
+		{ 115, 125, 85, 70, 65, 25 }, // Spectre
+		{ 105, 115, 100, 1, 20, 100 }, // Skeleton
+		{ 100, 100, 105, 125, 110, 25 }, // Wraith
+		{ 100, 200, 135, 120, 105, 25 }, // Shadow
+		{ 100, 100, 25, 75, 10, 20 }, // PurpleWorm
+		{ 150, 150, 150, 90, 25, 100 }, // VoidElemental
+		{ 60, 50, 150, 90, 25, 100 }, // IceElemental
+		{ 100, 100, 100, 100, 100, 100 }, // Phoenix
+		{ 105, 115, 100, 1, 20, 100 }, // Archon
+		{ 115, 125, 85, 70, 65, 25 }, // Asura
+		{ 80, 100, 125, 144, 132, 100 }, // Titan
+		{ 80, 100, 125, 144, 132, 100 }, // Avatar
+		{ 105, 115, 120, 100, 100, 100 }, // Ghaele
+		{ 100, 100, 105, 125, 110, 25 }, // Bralani
+		{ 40, 20, 20, 15, 10, 5 }, // Whiner
+		{ 100, 100, 100, 100, 100, 100 }, // Incubus
+		{ 100, 100, 100, 100, 100, 100 }, // Succubus
+		{ 100, 100, 100, 100, 100, 100 }, // FireGiant
+		{ 75, 60, 50, 80, 110, 100 }, // FrostGiant
+		{ 100, 200, 135, 120, 105, 25 }, // Deva
+	};
+	const int column = attribute == 1		    ? 0 :
+			   attribute == 2		    ? 1 :
+			   attribute >= 4 && attribute <= 7 ? attribute - 2 :
+							      -1;
+	if (column < 0 || !summoner_balanced_body(pet))
+		return 100;
+	int weight = 25, cap = 125;
+	if (attribute == 1)
+	{
+		cap = 145;
+		if (IS_ELEMENTAL(pet))
+			weight = GET_MASTER(pet) ?
+					 (specialization_level(pet, nullptr, SPEC_MENTALIST) ? 50 :
+											       25) :
+					 (pet->only.npc->summoner_dex_weight == 50 ? 50 : 25);
+	}
+	const int original = racial_attributes[std::clamp(race, 0, LAST_RACE)][column];
+	return std::min(cap, 100 + (std::max(0, original - 100) * weight + 50) / 100);
 }
 
 void summoner_pet_apply_traits(P_char pet, const std::array<uint64_t, 5> &traits)
@@ -859,6 +1004,8 @@ void summoner_pet_configure(P_char pet, P_char owner, bool preview, bool restori
 		  std::begin(pet->specials.undead_spell_slots) + MAX_CIRCLE + 1, slots);
 	pet->player.level = summoner_pet_level(pet, owner);
 	pet->only.npc->summon_kind = static_cast<uint32_t>(summoned_pet_kind::summoner_capture);
+	pet->only.npc->summoner_dex_weight = specialization_level(pet, owner, SPEC_MENTALIST) ? 50 :
+												25;
 	pet->specials.act &= ~(ACT_ELITE | ACT_IGNORE | ACT_NO_BASH | ACT_IMMUNE_TO_PARA);
 	for (int i = 0; i < 10; ++i)
 		pet->base_stats[i] = 100;
@@ -908,6 +1055,7 @@ void summoner_pet_configure(P_char pet, P_char owner, bool preview, bool restori
 	}
 	summoner_pet_apply_traits(pet, traits);
 	blend_capture_dice(pet, owner);
+	blend_capture_accuracy(pet);
 	const int old_hp_ceiling = specialization_level(pet, owner, SPEC_MENTALIST) ?
 					   capture_hp_cap :
 					   normal_capture_hp(pet, owner);
@@ -967,6 +1115,8 @@ void summoner_pet_configure(P_char pet, P_char owner, bool preview, bool restori
 		mark_resources(owner);
 		summoner_pet_start_recovery(owner);
 	}
+	// Apply trained attributes immediately, including preview/restore before ownership.
+	affect_total(pet, FALSE);
 }
 
 void summoner_pet_finish_affects(P_char pet)

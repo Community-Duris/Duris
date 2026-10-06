@@ -743,19 +743,25 @@ void apply_affs(P_char ch, int mode)
 	t1 = BOUNDED(0, t1, LAST_RACE);
 	t3 = (mode) ? (100 + TmpAffs.m_Dex) : 100;
 	t2 = BOUNDED(1, (ch->base_stats.Dex + ((mode) ? TmpAffs.c_Dex : 0)), t3);
-	GET_C_DEX(ch) = BOUNDED(
-		1,
-		(int)((summoner_balanced_body(ch) ? 100 : stat_factor[t1].Dex) * t2 / 100. + .55),
-		511);
+	GET_C_DEX(ch) = BOUNDED(1,
+				(int)((summoner_balanced_body(ch) ?
+					       summoner_pet_attribute_factor(ch, t1, 1) :
+					       stat_factor[t1].Dex) *
+					      t2 / 100. +
+				      .55),
+				511);
 
 	t1 = (!mode || !TmpAffs.r_Agi) ? (int)GET_RACE(ch) : TmpAffs.r_Agi;
 	t1 = BOUNDED(0, t1, LAST_RACE);
 	t3 = (mode) ? (100 + TmpAffs.m_Agi) : 100;
 	t2 = BOUNDED(1, (ch->base_stats.Agi + ((mode) ? TmpAffs.c_Agi : 0)), t3);
-	GET_C_AGI(ch) = BOUNDED(
-		1,
-		(int)((summoner_balanced_body(ch) ? 100 : stat_factor[t1].Agi) * t2 / 100. + .55),
-		511);
+	GET_C_AGI(ch) = BOUNDED(1,
+				(int)((summoner_balanced_body(ch) ?
+					       summoner_pet_attribute_factor(ch, t1, 2) :
+					       stat_factor[t1].Agi) *
+					      t2 / 100. +
+				      .55),
+				511);
 
 	// t1 = which race to apply racial con with.
 	t1 = (!mode || !TmpAffs.r_Con) ? (int)GET_RACE(ch) : TmpAffs.r_Con;
@@ -776,37 +782,49 @@ void apply_affs(P_char ch, int mode)
 	t1 = BOUNDED(0, t1, LAST_RACE);
 	t3 = (mode) ? (100 + TmpAffs.m_Pow) : 100;
 	t2 = BOUNDED(1, (ch->base_stats.Pow + ((mode) ? TmpAffs.c_Pow : 0)), t3);
-	GET_C_POW(ch) = BOUNDED(
-		1,
-		(int)((summoner_balanced_body(ch) ? 100 : stat_factor[t1].Pow) * t2 / 100. + .55),
-		511);
+	GET_C_POW(ch) = BOUNDED(1,
+				(int)((summoner_balanced_body(ch) ?
+					       summoner_pet_attribute_factor(ch, t1, 4) :
+					       stat_factor[t1].Pow) *
+					      t2 / 100. +
+				      .55),
+				511);
 
 	t1 = (!mode || !TmpAffs.r_Int) ? (int)GET_RACE(ch) : TmpAffs.r_Int;
 	t1 = BOUNDED(0, t1, LAST_RACE);
 	t3 = (mode) ? (100 + TmpAffs.m_Int) : 100;
 	t2 = BOUNDED(1, (ch->base_stats.Int + ((mode) ? TmpAffs.c_Int : 0)), t3);
-	GET_C_INT(ch) = BOUNDED(
-		1,
-		(int)((summoner_balanced_body(ch) ? 100 : stat_factor[t1].Int) * t2 / 100. + .55),
-		511);
+	GET_C_INT(ch) = BOUNDED(1,
+				(int)((summoner_balanced_body(ch) ?
+					       summoner_pet_attribute_factor(ch, t1, 5) :
+					       stat_factor[t1].Int) *
+					      t2 / 100. +
+				      .55),
+				511);
 
 	t1 = (!mode || !TmpAffs.r_Wis) ? (int)GET_RACE(ch) : TmpAffs.r_Wis;
 	t1 = BOUNDED(0, t1, LAST_RACE);
 	t3 = (mode) ? (100 + TmpAffs.m_Wis) : 100;
 	t2 = BOUNDED(1, (ch->base_stats.Wis + ((mode) ? TmpAffs.c_Wis : 0)), t3);
-	GET_C_WIS(ch) = BOUNDED(
-		1,
-		(int)((summoner_balanced_body(ch) ? 100 : stat_factor[t1].Wis) * t2 / 100. + .55),
-		511);
+	GET_C_WIS(ch) = BOUNDED(1,
+				(int)((summoner_balanced_body(ch) ?
+					       summoner_pet_attribute_factor(ch, t1, 6) :
+					       stat_factor[t1].Wis) *
+					      t2 / 100. +
+				      .55),
+				511);
 
 	t1 = (!mode || !TmpAffs.r_Cha) ? (int)GET_RACE(ch) : TmpAffs.r_Cha;
 	t1 = BOUNDED(0, t1, LAST_RACE);
 	t3 = (mode) ? (100 + TmpAffs.m_Cha) : 100;
 	t2 = BOUNDED(1, (ch->base_stats.Cha + ((mode) ? TmpAffs.c_Cha : 0)), t3);
-	GET_C_CHA(ch) = BOUNDED(
-		1,
-		(int)((summoner_balanced_body(ch) ? 100 : stat_factor[t1].Cha) * t2 / 100. + .55),
-		511);
+	GET_C_CHA(ch) = BOUNDED(1,
+				(int)((summoner_balanced_body(ch) ?
+					       summoner_pet_attribute_factor(ch, t1, 7) :
+					       stat_factor[t1].Cha) *
+					      t2 / 100. +
+				      .55),
+				511);
 
 	t1 = (!mode || !TmpAffs.r_Kar) ? (int)GET_RACE(ch) : TmpAffs.r_Kar;
 	t1 = BOUNDED(0, t1, LAST_RACE);
