@@ -140096,36 +140096,135 @@
     {
       "contacts": [
         {
-          "description": "Start with these conversation topics, then follow the requests below.",
+          "description": "Needs a potato, a carrot and a cutting knife together for the family supper. The mother you help leaves after accepting the complete errand.",
           "keyword": "busy",
           "mob_vnum": 95508,
           "name": "a busy dwarven mother",
           "topics": [
             "hi",
+            "hello",
             "help",
-            "vegetables"
+            "busy",
+            "vegetables",
+            "carrot",
+            "potato"
           ]
         },
         {
-          "description": "Start with these conversation topics, then follow the requests below.",
+          "description": "Pays separately for goatskin, black boarskin and brown boarskin. Bring each exact kind; completing one trade does not complete the others.",
           "keyword": "dirty",
           "mob_vnum": 95512,
           "name": "a dirty dwarf",
           "topics": [
             "hi",
-            "skin"
+            "hello",
+            "skin",
+            "skins",
+            "boar",
+            "goat",
+            "money"
           ]
+        },
+        {
+          "description": "Dorfgon supplies the errand materials, but his shop purchases are currently unavailable while accounting is active. Existing or supplied items can still fit the request.",
+          "keyword": "dorfgon",
+          "mob_vnum": 95500,
+          "name": "Dorfgon",
+          "topics": []
+        },
+        {
+          "description": "Some goats in the grazing fields carry prepared goatskin. Not every animal instance carries it; the accepted skin trade is separate from a personal hunt.",
+          "keyword": "goat",
+          "mob_vnum": 95510,
+          "name": "a goat",
+          "topics": []
+        },
+        {
+          "description": "Some angry boars carry prepared black boarskin. Bring the black skin to the tanner; an animal encounter or brown skin does not replace it.",
+          "keyword": "angry",
+          "mob_vnum": 95511,
+          "name": "an angry boar",
+          "topics": []
+        },
+        {
+          "description": "Some tame boars carry prepared brown boarskin. Bring the brown skin to the tanner; an animal encounter or black skin does not replace it.",
+          "keyword": "tame",
+          "mob_vnum": 95509,
+          "name": "a tame boar",
+          "topics": []
+        },
+        {
+          "description": "The Mother Lode bartender offers separate world quests. Those assignments, fees and rewards are distinct from these four local exchanges.",
+          "keyword": "brutish",
+          "mob_vnum": 95517,
+          "name": "a brutish bartender",
+          "topics": []
+        },
+        {
+          "description": "The general patrols the stronghold and can call elite guards during combat. Fighting or meeting him does not complete the local errands.",
+          "keyword": "general",
+          "mob_vnum": 95535,
+          "name": "General Kimordril",
+          "topics": []
+        },
+        {
+          "description": "The High Priestess guides visitors toward the bank for coin conversion. Her service and temple lore are separate from the accepted local requests.",
+          "keyword": "high",
+          "mob_vnum": 95503,
+          "name": "the High Priestess",
+          "topics": []
+        },
+        {
+          "description": "Ratroper is the town\u2019s banker. Banking and locker services are separate from an accepted supper or skin exchange.",
+          "keyword": "ratroper",
+          "mob_vnum": 95513,
+          "name": "Ratroper",
+          "topics": []
+        },
+        {
+          "description": "The postal-center clerk provides town context. Visiting the postal center does not complete a delivery story.",
+          "keyword": "postal",
+          "mob_vnum": 95552,
+          "name": "a dwarven postal clerk",
+          "topics": []
+        },
+        {
+          "description": "The House of Justice clerk provides town context. Crime, imprisonment and prison access are separate from the four local requests.",
+          "keyword": "clerk",
+          "mob_vnum": 95551,
+          "name": "The Justice Clerk",
+          "topics": []
+        },
+        {
+          "description": "Gildak works at the armory. Equipment and craft services do not stand in for accepted local errand receipts.",
+          "keyword": "gildak",
+          "mob_vnum": 95542,
+          "name": "Gildak",
+          "topics": []
+        },
+        {
+          "description": "The beastmaster tends the stables. Mounting, training and animal care remain separate from a skin exchange.",
+          "keyword": "beast",
+          "mob_vnum": 95524,
+          "name": "the beastmaster",
+          "topics": []
         }
       ],
       "coverage": "complete",
       "exclusions": [],
-      "introduction": "Explore Kimordril and meet its people to uncover local requests.",
+      "introduction": "Help a busy mother prepare supper and learn the tanner\u2019s three separate skin trades. The journal explains exact materials and accepted exchanges alongside Kimordril\u2019s shared town services.",
       "orientation": [
-        "Start with look and exits to learn your surroundings.",
-        "Use help home to learn about hometowns and help quest for quest commands."
+        "The busy dwarven mother asks for a potato, a carrot and a new cutting knife together. Ask about help or vegetables to hear the request. All three exact items must be available for the accepted errand.",
+        "Two potatoes look identical, but the errand requires the kind stored in the fungi crate above Dorfgon\u2019s shop. The other potato does not fit. The journal checks the exact errand item rather than its displayed name.",
+        "Dorfgon\u2019s shop normally supplies the potato, carrot and cutting knife, but purchases are currently unavailable while accounting is active. The journal cannot promise a new shop purchase. Existing or supplied materials can fit the request without proving your own purchase.",
+        "Recover the errand potato from the storage crate when available, follow ordinary container rules, and carry the materials loose. Readiness describes what you have now; it does not record finding or buying anything.",
+        "The mother who accepts the complete errand departs. Two mother instances can reset in separate homes, and their availability is shared. A new daily entry does not immediately bring back a mother or restock the world.",
+        "The dirty dwarf in the Tanners Guild pays separately for goatskin, black boarskin and brown boarskin. Some grazing animals carry prepared skins as stock; not every animal instance carries one. These trades do not require carving a corpse or a journal record of your own kill.",
+        "Give each exact skin to the tanner for its own accepted trade. Brown and black boarskins are different items even though they share targeting words. Goat meat, duplicate skins and an animal encounter do not replace another kind.",
+        "Hidden panels, gates, the cell key, the general\u2019s defenders and the town\u2019s bank, inn, stables, forge, postal center and bartender provide separate routes and services. Visiting them or receiving their equipment does not complete these four exchanges."
       ],
-      "revision": 1,
-      "schema_version": 2,
+      "revision": 2,
+      "schema_version": 3,
       "source_area": "kimordril",
       "stories": [
         {
@@ -140140,33 +140239,36 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Checks this exact item carried loose now. Worn or nested items and similarly named substitutes are separate. Supplied proof can fit the request without recording your own purchase, first recovery or personal hunt. The potato stored in the fungi crate or supplied by Dorfgon is the errand kind; the other identical-looking potato does not replace it.",
               "id": "item-1",
               "item_vnums": [
                 95506
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a potato"
+              "optional": true,
+              "text": "Carry 1 \u00d7 the errand potato loose"
             },
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Checks this exact item carried loose now. Worn or nested items and similarly named substitutes are separate. Supplied proof can fit the request without recording your own purchase, first recovery or personal hunt.",
               "id": "item-2",
               "item_vnums": [
                 95507
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a cutting knife"
+              "optional": true,
+              "text": "Carry 1 \u00d7 a cutting knife loose"
             },
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Checks this exact item carried loose now. Worn or nested items and similarly named substitutes are separate. Supplied proof can fit the request without recording your own purchase, first recovery or personal hunt.",
               "id": "item-3",
               "item_vnums": [
                 95508
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a carrot"
+              "optional": true,
+              "text": "Carry 1 \u00d7 a carrot loose"
             },
             {
               "contracts": [
@@ -140175,14 +140277,14 @@
                   "giver_vnum": 95508
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Records the accepted exchange after its materials are spent. Other trades, source recovery and shared NPC availability remain separate. New credit requires active, ready accounting.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Complete this accepted exchange"
             }
           ],
-          "summary": "Bring 1 x a potato, 1 x a cutting knife, 1 x a carrot. Reward: 60 copper, 100 experience.",
-          "title": "Deliver 1 x a potato, 1 x a cutting knife, 1 x a carrot"
+          "summary": "Bring one exact errand potato, one carrot and one cutting knife together. The accepted errand pays 60 copper and 100 experience; the mother who accepts it departs.",
+          "title": "Help prepare the family supper"
         },
         {
           "category": "request",
@@ -140196,13 +140298,14 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Checks this exact item carried loose now. Worn or nested items and similarly named substitutes are separate. Supplied proof can fit the request without recording your own purchase, first recovery or personal hunt.",
               "id": "item-1",
               "item_vnums": [
                 95512
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x some goatskin"
+              "optional": true,
+              "text": "Carry 1 \u00d7 some goatskin loose"
             },
             {
               "contracts": [
@@ -140211,14 +140314,14 @@
                   "giver_vnum": 95512
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Records the accepted exchange after its materials are spent. Other trades, source recovery and shared NPC availability remain separate. New credit requires active, ready accounting.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Complete this accepted exchange"
             }
           ],
-          "summary": "Bring 1 x some goatskin. Reward: 30 copper.",
-          "title": "Deliver 1 x some goatskin"
+          "summary": "Bring one prepared goatskin to the tanner for 30 copper. Goat meat and boar skins do not replace it.",
+          "title": "Trade prepared goatskin"
         },
         {
           "category": "request",
@@ -140232,13 +140335,14 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Checks this exact item carried loose now. Worn or nested items and similarly named substitutes are separate. Supplied proof can fit the request without recording your own purchase, first recovery or personal hunt.",
               "id": "item-1",
               "item_vnums": [
                 95513
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x some black boarskin"
+              "optional": true,
+              "text": "Carry 1 \u00d7 some black boarskin loose"
             },
             {
               "contracts": [
@@ -140247,14 +140351,14 @@
                   "giver_vnum": 95512
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Records the accepted exchange after its materials are spent. Other trades, source recovery and shared NPC availability remain separate. New credit requires active, ready accounting.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Complete this accepted exchange"
             }
           ],
-          "summary": "Bring 1 x some black boarskin. Reward: 35 copper.",
-          "title": "Deliver 1 x some black boarskin"
+          "summary": "Bring one black boarskin to the tanner for 35 copper. This is a separate trade from brown boarskin.",
+          "title": "Trade prepared black boarskin"
         },
         {
           "category": "request",
@@ -140268,13 +140372,14 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Checks this exact item carried loose now. Worn or nested items and similarly named substitutes are separate. Supplied proof can fit the request without recording your own purchase, first recovery or personal hunt.",
               "id": "item-1",
               "item_vnums": [
                 95514
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x some brown boarskin"
+              "optional": true,
+              "text": "Carry 1 \u00d7 some brown boarskin loose"
             },
             {
               "contracts": [
@@ -140283,14 +140388,14 @@
                   "giver_vnum": 95512
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Records the accepted exchange after its materials are spent. Other trades, source recovery and shared NPC availability remain separate. New credit requires active, ready accounting.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Complete this accepted exchange"
             }
           ],
-          "summary": "Bring 1 x some brown boarskin. Reward: 20 copper.",
-          "title": "Deliver 1 x some brown boarskin"
+          "summary": "Bring one brown boarskin to the tanner for 20 copper. This is a separate trade from black boarskin.",
+          "title": "Trade prepared brown boarskin"
         }
       ]
     },

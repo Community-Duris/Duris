@@ -6759,6 +6759,50 @@ assert all(r['definition']['daily_exclusion']=='Unsupported durable offering' fo
 assert sum(len(s['steps'])-1 for s in mapping['stories'])==8
 
 
+# Kimordril: preserved errands, lookalike potato, shared stock and effective services.
+kimordril=inventory_module.area_evidence(ROOT,'kimordril')
+mapping=next(m for m in catalog['story_mappings'] if m['source_area']=='kimordril')
+blocks=sorted((r['block'] for r in kimordril['requests']),key=lambda b:b['line'])
+assert [(b['line'],b['giver_vnum'],b['disappear']) for b in blocks]==[(20,95508,True),(44,95512,False),(49,95512,False),(54,95512,False)]
+assert [b['give'] for b in blocks]==[[('I',95506),('I',95508),('I',95507)],[('I',95512)],[('I',95513)],[('I',95514)]]
+assert [b['receive'] for b in blocks]==[[('C',60),('E',100)],[('C',30)],[('C',35)],[('C',20)]]
+assert (mapping['schema_version'],mapping['revision'],mapping['coverage'])==(3,2,'complete') and not mapping['exclusions']
+assert [s['id'] for s in mapping['stories']]==['request-95508-58bfef7fc357','request-95512-17faf4eac94d','request-95512-6d0c1a6c969d','request-95512-64ea923287af']
+assert [s['contracts'] for s in mapping['stories']]==[[b['binding']] for b in blocks] and all(s['category']=='request' for s in mapping['stories'])
+assert [len(s['steps']) for s in mapping['stories']]==[4,2,2,2]
+for s,b in zip(mapping['stories'],blocks):
+ assert [(t['item_vnums'],t['count'],t['optional']) for t in s['steps'][:-1]]==[([v],n,True) for v,n in sorted(collections.Counter(v for k,v in b['give']).items())]
+ assert [t['id'] for t in s['steps']]==['item-'+str(i) for i in range(1,len(s['steps']))]+['turn-in']
+contacts={c['mob_vnum']:c for c in mapping['contacts']};assert len(contacts)==14 and len(kimordril['dialogue'])==5
+assert contacts[95508]['keyword']=='busy' and contacts[95512]['keyword']=='dirty'
+for v,c in contacts.items():
+ assert c['name']==inventory_mobs[v]['name'] and c['keyword'] in inventory_mobs[v]['keywords']
+ assert c['topics']==[w for d in kimordril['dialogue'] if d['giver_vnum']==v for w in d['body'][0].rstrip('~').split()]
+assert sum(len(c['topics']) for c in contacts.values())==14
+assert (kimordril['zone']['zone_number'],kimordril['zone']['first_vnum'],kimordril['zone']['last_vnum'],kimordril['zone']['reset_mode'])==(955,95431,95658,2)
+rooms=dawndale_bodies('kimordril','wld');objects=dawndale_bodies('kimordril','obj');mobiles=dawndale_bodies('kimordril','mob')
+assert set(rooms)==set(range(95500,95659)) and set(objects)==set(range(95500,95549)) and set(mobiles)==set(range(95500,95560))
+assert len(re.findall(r'\bD\d+\s+[^~]*~[^~]*~\s*-?\d+\s+-?\d+\s+-?\d+',''.join(rooms.values()),re.S))==351
+assert collections.Counter(r['command'] for r in kimordril['reset_commands'])=={'D':38,'O':15,'P':15,'M':126,'E':42,'R':4,'F':4,'G':53}
+reset=(ROOT/'areas/zon/kimordril.zon').read_text().splitlines();assert len(reset)==422 and reset[-1]=='S'
+assert sum(r['command']=='P' and r['arguments'][1]==95506 and r['arguments'][3]==95504 for r in kimordril['reset_commands'])==3
+assert [r['arguments'][3] for r in kimordril['reset_commands'] if r['command']=='M' and r['arguments'][1]==95508]==[95625,95639]
+assert objects[95506].split('~')[:2]==objects[95510].split('~')[:2] and objvalues(objects[95506])[8]!=objvalues(objects[95510])[8]
+assert objvalues(objects[95500])[0]==29 and objvalues(objects[95500])[11:15]==[270,95574,2,0] and objvalues(objects[95501])[11:15]==[270,95598,0,0]
+assert '8 0 95598' in rooms[95574] and '8 0 95574' in rooms[95598] and '3 95548 95644' in rooms[95643] and '3 95548 95643' in rooms[95644]
+assert [(a['kind'],a['vnum'],a['function']) for a in kimordril['special_assignments']]==[('mob',95517,'world_quest'),('mob',95506,'archer'),('mob',95503,'money_changer'),('mob',95535,'kimordril_shout'),('room',95569,'inn')]
+assert [v for v,b in mobiles.items() if int(b.split('~',4)[4].strip().split()[0])&65536]==[95535]
+shop=(ROOT/'src/economy/shop.c').read_text();db=(ROOT/'src/world/db.c').read_text();mail=(ROOT/'src/cmd/mail.c').read_text();general=(ROOT/'src/specs/specs.kimordril.c').read_text()
+assert 'Shop trades and services are unavailable while economic accounting is active.' in shop and 'SHOP_FUNC(shop) = mob_index[keeper].func.mob;' in shop
+assert 'IS_ACT(mob, ACT_TEACHER) && !mob_index[nr].func.mob' in db and 'int helpers[] = { 95505, 95532, 0 };' in general
+postmaster=re.sub(r'/\*[\s\S]*?\*/','',mail.split('int postmaster[',1)[1].split('};',1)[0])
+assert '95552' not in postmaster and all(str(v) in postmaster for v in (6097,16695,97583,73))
+assert 'for (i = 0; postmaster[i] != -1; i++)' in mail
+guidance=' '.join(mapping['orientation']+[c['description'] for c in mapping['contacts']]+[s['summary'] for s in mapping['stories']])
+for phrase in ('two potatoes look identical','currently unavailable','not every animal instance','mother who accepts','brown','black','supplied','loose','daily'):assert phrase in guidance.lower(),phrase
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==955];assert len(units)==4 and all(u['achievement'] and u['daily_candidate'] for u in units)
+
+
 # Cerberus: exact quantities, alternative trades and effective dispatch/supply limits.
 cerebusp=inventory_module.area_evidence(ROOT,'cerebusp')
 mapping=next(m for m in catalog['story_mappings'] if m['source_area']=='cerebusp')
@@ -8610,7 +8654,7 @@ units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==429]
 assert len(units)==10 and all(u['achievement'] and u['daily_candidate'] for u in units)
 assert 'retires' in mapping['stories'][1]['summary'] and 'together' in mapping['stories'][7]['summary']
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold", "troll_caves", "centaur_zone", "opalphoenix", "mira", "surfacekeeps", "icecrag", "cloister", "willem", "ixarkon", "mntcastl", "tundra", "fields_between", "goblinht", "ceothia", "brad", "desert", "ceopast", "basin_wa", "crypt", "val", "harrow", "mountaintracks", "shortc", "lavcav", "nomads", "undermountain", "desolateinv", "spshold", "harpyht", "herders", "jotun", "temple", "pods", "citadel", "element", "earth", "githzer", "worms", "ravenloft", "barovia2", "werrun", "newhope", "raxthan", "library", "mistywood", "pharrvly", "oasis", "connectorzones", "battlefi", "mansion", "woodseer", "ruins", "ttowers", "minopass", "pyramid", "earthp", "yuan_ti", "caves_skelenak", "highway", "labyrinth", "khildarak", "stormht", "goblincave", "tharnadian_ruin", "clfhaven", "shabo", "firesworn_altar", "Voluntown", "negplane", "prison", "cerebusp"):
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold", "troll_caves", "centaur_zone", "opalphoenix", "mira", "surfacekeeps", "icecrag", "cloister", "willem", "ixarkon", "mntcastl", "tundra", "fields_between", "goblinht", "ceothia", "brad", "desert", "ceopast", "basin_wa", "crypt", "val", "harrow", "mountaintracks", "shortc", "lavcav", "nomads", "undermountain", "desolateinv", "spshold", "harpyht", "herders", "jotun", "temple", "pods", "citadel", "element", "earth", "githzer", "worms", "ravenloft", "barovia2", "werrun", "newhope", "raxthan", "library", "mistywood", "pharrvly", "oasis", "connectorzones", "battlefi", "mansion", "woodseer", "ruins", "ttowers", "minopass", "pyramid", "earthp", "yuan_ti", "caves_skelenak", "highway", "labyrinth", "khildarak", "stormht", "goblincave", "tharnadian_ruin", "clfhaven", "shabo", "firesworn_altar", "Voluntown", "negplane", "prison", "cerebusp", "kimordril"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

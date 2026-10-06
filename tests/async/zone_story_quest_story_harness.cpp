@@ -7719,6 +7719,130 @@ int main(int argc, char **argv)
 		{
 			const auto &mapping = *std::find_if(
 				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "kimordril"; });
+			require(mapping.stories.size() == 4 && mapping.contacts.size() == 14 &&
+					mapping.revision == 2,
+				"Kimordril upgrade scope failed");
+			const auto &supper = story_for("kimordril", "request-95508-58bfef7fc357");
+			const auto &goat = story_for("kimordril", "request-95512-17faf4eac94d");
+			const auto &black = story_for("kimordril", "request-95512-6d0c1a6c969d");
+			const auto &brown = story_for("kimordril", "request-95512-64ea923287af");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 955, 95553, 100, "arrival") ==
+					result::applied,
+				"Kimordril discovery failed");
+			for (int v : { 95500, 95517, 95535, 95552 })
+				require(journey.meet_npc(7, 42, v, 95553, 102) == result::applied,
+					"Kimordril context encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 955, 10, 1, 103, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Kimordril town service forged local request");
+			for (int v : { 95508, 95512 })
+				require(journey.meet_npc(7, 42, v, 95553, 104) == result::applied,
+					"Kimordril giver encounter failed");
+			const auto status = [&](const auto &story, size_t row, const char *state)
+			{
+				const auto start = journal.find("] " + story.title + "\r\n");
+				require(start != std::string::npos,
+					"Kimordril visible card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     story.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[95510] = 1;
+			supplies.carried[95507] = 1;
+			supplies.equipped[16] = 95508;
+			supplies.carried[95513] = 3;
+			supplies.carried[95546] = 1;
+			journal = journey.render_journal(7, 42, 955, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(supper, 0, "Missing now") &&
+					status(supper, 1, "Ready now") &&
+					status(supper, 2, "Missing now"),
+				"Kimordril lookalike potato or worn carrot replaced loose ingredients");
+			require(status(black, 0, "Ready now") && status(goat, 0, "Missing now") &&
+					status(brown, 0, "Missing now"),
+				"Kimordril duplicate black skin or meat replaced another skin");
+			supplies = {};
+			for (int v : { 95506, 95507, 95508, 95512, 95513, 95514 })
+				supplies.carried[v] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 955, 10, 1, 106, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+			{
+				for (size_t i = 0; i + 1 < story.steps.size(); ++i)
+					require(status(story, i, "Ready now"),
+						"Kimordril exact supplied material missing");
+				require(status(story, story.steps.size() - 1, "Pending"),
+					"Kimordril preparation forged accepted exchange");
+			}
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 955).completed == 0,
+				"Kimordril readiness mutated source or hunt history");
+			record(journey, brown.contracts.front(), "kimordril-brown", 955, 95558);
+			record(journey, supper.contracts.front(), "kimordril-supper", 955, 95625);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 955, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(brown, 1, "Recorded") && status(supper, 3, "Recorded") &&
+					status(supper, 0, "Missing now") &&
+					status(goat, 1, "Pending") && status(black, 1, "Pending"),
+				"Kimordril spent ingredients lost receipt or merged independent trades");
+			require(journey.progress_for_zone(7, 42, 955).completed == 2 &&
+					journey.progress_for_zone(7, 42, 955).total == 4,
+				"Kimordril changed native completion units");
+			auto replay = completion(brown.contracts.front(), "kimordril-brown", 120);
+			replay.transaction.zone_number = 955;
+			replay.transaction.room_vnum = 95558;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Kimordril exact replay duplicated progress");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 955).completed == 2,
+				"Kimordril cold recovery lost receipts");
+			auto legacy_catalog = catalog;
+			auto &legacy = *std::find_if(legacy_catalog.story_mappings.begin(),
+						     legacy_catalog.story_mappings.end(),
+						     [](const auto &m)
+						     { return m.source_area == "kimordril"; });
+			legacy.revision = 1;
+			legacy.contacts.resize(2);
+			legacy.orientation.clear();
+			for (auto &story : legacy.stories)
+				for (auto &step : story.steps)
+					step.optional = false;
+			service historical(legacy_catalog);
+			require(historical.discover_zone(7, 42, 955, 95553, 100, "arrival") ==
+					result::applied,
+				"Kimordril legacy discovery failed");
+			record(historical, goat.contracts.front(), "kimordril-legacy", 955, 95558);
+			service upgraded(catalog);
+			require(upgraded.deserialize_state(historical.serialize_state(), &error) &&
+					upgraded.progress_for_zone(7, 42, 955).completed == 1 &&
+					upgraded.evidence_for(goat.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Kimordril metadata upgrade lost accepted history");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 955, 95553, 100, "arrival") ==
+					result::applied,
+				"Kimordril raw discovery failed");
+			record(raw, black.contracts.front(), "kimordril-raw", 955, 95558);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 955).completed == 1,
+				"Kimordril raw-to-authored recovery lost exchange");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
 				[](const auto &m) { return m.source_area == "cerebusp"; });
 			require(mapping.stories.size() == 9 && mapping.contacts.size() == 17,
 				"Cerberus scope failed");
