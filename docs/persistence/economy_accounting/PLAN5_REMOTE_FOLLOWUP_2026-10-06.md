@@ -565,3 +565,21 @@ They are imported byte-exactly; no script/test/native/migration input changes.
 Its private genuine birth/schema 0063 publication evidence remains primary
 qualified at its own scope. This delivery retains the exact canonical 0062
 Plan5 component source and does not claim cold success or private producer proof.
+
+## Current opt-in native and budget followup — 2026-10-06
+
+Same branch/worktree: `codex/accounting-plan5`,
+`C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`.
+Exact tested source/base `19af82ffbc75212b4ff14cf4f4d70aca71dbe628`. The
+[qualification report](PLAN5_CURRENT_OPTIN_QUALIFICATION_2026-10-06.md) records
+the three previously skipped original methods passing with zero skips:
+native SQL stake on both fresh canonical 0062 engines and both original audit
+budget methods. It preserves all cases/flags/deadlines and the earlier failed
+observer. The two code-equivalent batches cover 216 distinct executed methods.
+Twelve CLI measurements retain their original 30-second/256-MiB bounds;
+maximum 0.985723204s/144097280 bytes.
+Seal `7fb1cad4a12b9d50f183880700bb6671e627a0060f1fa504f3a3fb48f4037baf` verifies 81 protected artifacts and unchanged raw-Git source.
+Only owned reports change. No new shared interface is requested. Durable
+resumable fair sweeps and full source/lifecycle/gameplay/release acceptance
+remain open; this synthetic/component evidence does not qualify release.
+The report/seal remain the primary-local notebook curator packet, nonblocking.
