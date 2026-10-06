@@ -1,5 +1,14 @@
 # Experimental accounting review checkpoint
 
+## Native audit recipe providers repaired — 2026-10-06
+
+[Primary integration](PLAN5_NATIVE_PROVIDER_PRIMARY_INTEGRATION_2026-10-06.md)
+adds the actual missing shop-trade recovery manifest provider to nine original
+native recipes. Shared restore SOURCES supplies it exactly once; flags and
+assertions remain. Original native flatfile ASan/UBSan passes, including85 fault
+cases; normal contracts and matrix pass. Separate child/census fixes and the
+current major SQL/gameplay/release qualification remain pending.
+
 ## Equipment capture v2 integrated — 2026-10-06
 
 [Primary source integration](SQL_EQUIPMENT_CAPTURE_V2_PRIMARY_INTEGRATION_2026-10-06.md)
