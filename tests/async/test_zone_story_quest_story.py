@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 178 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 179 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,14 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+troll_hills=next(m for m in catalog['story_mappings'] if m['source_area']=='troll_hills')
+assert (troll_hills['coverage'],troll_hills['schema_version'],troll_hills['revision'])==('complete',3,1) and not troll_hills['exclusions']
+assert len(troll_hills['stories'])==1 and len(troll_hills['contacts'])==3 and sum(len(c['topics']) for c in troll_hills['contacts'])==8
+s=troll_hills['stories'][0];assert s['id']=='adventurer-idol' and len(s['steps'])==2
+assert (s['steps'][0]['item_vnums'],s['steps'][0]['count'],s['steps'][0]['optional'],s['steps'][0]['kind'])==([1804],1,True,'carried_item')
+assert s['steps'][-1]['kind']=='completion' and s['contracts']==s['steps'][-1]['contracts']==[{'giver_vnum':1810,'completion_key':'give=I:1804;receive=E:5000,I:1807;disappear=1'}]
+assert report['eligible_by_zone']['18']==1
 
 teka2=next(m for m in catalog['story_mappings'] if m['source_area']=='teka2')
 assert (teka2['coverage'],teka2['schema_version'],teka2['revision'])==('complete',3,1) and not teka2['exclusions']
