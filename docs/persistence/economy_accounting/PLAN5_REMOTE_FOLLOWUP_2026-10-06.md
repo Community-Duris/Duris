@@ -533,4 +533,7 @@ The full recovery canonical gate still refuses two missing source claims; see
 commands, failed attempts, native fixture activation scope and remaining gates.
 Seal SHA256 is `21fed942f620a7144dc1470a77e34ffc95ef537701c2457fea86c326b5417f38`. This is the primary's notebook curator packet;
 the local shared notebook is nonblocking. Latest primary
-`f324c877ec56f2e17b5e6cc2f62aae9004720db2`/private0063 combined proof remains separate.
+`5759a4783f7785486e8d1ec5592fbf17d6020d3b`/private0063 combined proof remains separate.
+The last fetch observes the published UID/partial-allocation reader changes;
+their native/migration trees match, while their reader/test inputs require a
+separate import and combined qualification on this same remote Plan5 branch.

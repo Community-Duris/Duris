@@ -118,7 +118,7 @@ policy fact cannot be promoted into complete-capture proof. Complete R6 capture,
 the genuine borrowed-connection activation verifier, composed producer/ACK/lost
 reply/cold journeys, typed active erasure, full flatfile parity, managed retention
 and release-host workload budgets remain open. Primary
-`f324c877ec56f2e17b5e6cc2f62aae9004720db2` and private 0063 changes are not qualified by
+`5759a4783f7785486e8d1ec5592fbf17d6020d3b` and private 0063 changes are not qualified by
 these frozen inputs. Wallet-root exclusions, inactive behavior and the declined
 inactive spell change are preserved. Accounting is not activated in maintained
 services; no production data, deployment or audit finding is changed.
@@ -127,3 +127,10 @@ This report, seal and narrow handoff are the Plan5 curator packet on the expecte
 remote branch. The user confirms the primary maintains the shared notebook
 locally; that is nonblocking. No direct shared-notebook edit or cross-chat message
 is claimed, and release completion remains false.
+
+The final fetch observes primary `5759a4783f7785486e8d1ec5592fbf17d6020d3b`,
+which follows the exact-UID view fix with partial-claim snapshot/allocation
+changes. Its native and migration trees remain identical to this slice, but
+its Python readers, fixtures and partial snapshot fields are separate inputs.
+Importing those published changes and testing their combination with this
+original-policy/PID repair remain the next Plan5 source qualification step.
