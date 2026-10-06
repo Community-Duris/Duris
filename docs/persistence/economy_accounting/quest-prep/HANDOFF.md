@@ -1,106 +1,89 @@
-# Quest accounting prep handoff
+# Quest accounting prep handoff — refreshed 2026-10-06
 
-Status: usable seven-case source/fixture/component pack committed, pushed and
-reviewable on `origin/codex/accounting-quest-prep`.
-Accounting stays inactive; no release or native journey qualification is claimed.
+The seven-case pack is refreshed for published accounting candidate
+`2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a` and remains on
+`origin/codex/accounting-quest-prep`. Original base:
+`17c033d69316b21da8598791fc95cae79baa8dc2`. Research PR #678:
+`55905eac1906cf59405764407f9d22497cccfff3`.
 
-Branch `codex/accounting-quest-prep`, separate managed worktree. Base accounting
-commit `17c033d69316b21da8598791fc95cae79baa8dc2`. PR #678 research head
-`55905eac1906cf59405764407f9d22497cccfff3`. Static production catalog computed
-with `scripts/zone_story_quest_catalog.py` against `areas/AREA`: 2,668 definitions,
-fingerprint `04d687493b02ed27a3b32d070a0a71e9d10c1643406d5fb95fe6b1538b4bb314`.
-Dynamic bartender quests are excluded and separately traced to runtime producers.
+Upstream merge `a28763fcb66a88a286136df1503bd8cc0ed2f72e` preserves original
+prep commits `f1a15f1d982bf330d57428b20797beb96aa34c71`,
+`cd6e62e331aae0b81b23ed858ec900420e70bbf5` and
+`a7c7efb269bdeb3e7d0ef803ac3d2c441fecaf26`. The refresh bundle's exact SHA is
+recorded by the following handoff metadata commit after publication. Import the
+owned refresh bundle on a compatible candidate; the merge imports upstream
+history and is not a prep-authored production change.
 
-## Import order and owned files
+## Current evidence and priorities
 
-First gap/four-priority bundle (already pushed within the two-hour milestone):
-`f1a15f1d982bf330d57428b20797beb96aa34c71`.
-Second bundle (committed and pushed):
-`cd6e62e331aae0b81b23ed858ec900420e70bbf5` — complete specifications,
-source-fact snapshot, results and six owned Python files. This subsequent
-handoff-only metadata commit records its exact SHA; it adds no fixture or
-production changes. Resolve the published metadata tip with
-`git rev-parse origin/codex/accounting-quest-prep` after fetching.
-Import in order or review the combined owned-path diff from the accounting base.
-Production source, migrations, shared tests/contracts,
-manifests, registries, finish plan and Plan5 audit/restore are untouched.
+Production AREA/catalog, quest area data, dispatch assignments and bartender
+callback inputs are unchanged from the original accounting base. All 23 selected
+production input/bartender producer files still agree with the research pin.
+Catalog: 2,668 static definitions, fingerprint
+`04d687493b02ed27a3b32d070a0a71e9d10c1643406d5fb95fe6b1538b4bb314`.
+The candidate installs native birth/quest owners. Static SQL GIVE now reaches
+submit_native_quest_give and prepare_original; the old selector and prototype/room
+recipient seam have been replaced for that route. Dynamic services retain their
+runtime producer and are outside the static catalog.
 
-Owned files:
+| Priority/case | Current small-check result | Remaining acceptance |
+| --- | --- | --- |
+| P0 QP01 exact sapphire kinds + consumed Orb | Source/fixture and native selection slice PASS | Authentic birth/source, four exact retirements and reward/replay |
+| P0 QP02 three-hide backpack/paid overlap | Observation PASS; acceptance RED code30 | New owner's paid first branch refuses before availability; current pulse blocks, so supported backpack remains unreachable |
+| P0 QP03 disappearing Auriam/reset recipient | Current observe_give acceptance PASS | Replacement-generation predicate resolved at component scope; actual D stock/cash, birth/cold recovery/ACK/pair retirement pending |
+| P0 QP04 dynamic failed paid creation/refund | Observation PASS; acceptance RED code30 | Actual unchanged ADD_MONEY refuses injected active refund; genuine active debit/refund/held recovery owner pending |
+| P1 QP05 repeated skins/cap-one supply | Source/fixture and native selection slice PASS | Real supplied custody/birth and ordinary huge-skin availability; preserve cap/quantity |
+| P1 QP06 Kord item/C3000/XP/lost ACK | Source/fixture and native selection slice PASS | Real mixed reward, later custody change, historical ACK and pair retirement |
+| P1 QP07 dynamic stale map/abandon | Observation PASS; acceptance RED code31 | Callback mutates replacement task; exact paid attempt, recovery/history/quota ownership pending |
 
-- `docs/persistence/economy_accounting/quest-prep/HANDOFF.md`
-- `docs/persistence/economy_accounting/quest-prep/GAPS.md`
-- `docs/persistence/economy_accounting/quest-prep/CASES.md`
-- `docs/persistence/economy_accounting/quest-prep/RESULTS.md`
-- `docs/persistence/economy_accounting/quest-prep/SOURCE_FACTS.json`
-- `tests/async/quest_accounting_prep/case_data.py`
-- `tests/async/quest_accounting_prep/prepare_fixture.py`
-- `tests/async/quest_accounting_prep/test_production_terms.py`
-- `tests/async/quest_accounting_prep/test_native_selectors.py`
-- `tests/async/quest_accounting_prep/test_bartender_settlement.py`
-- `tests/async/quest_accounting_prep/test_recipient_retirement.py`
+Seven source cases, five static mini fixtures, two full-world fixture preparations
+and seven observation components pass on this pin. Four diagnostic commands now
+produce one PASS and three RED. Six Python ASTs, snapshot raw hashes and whitespace
+checks pass. No native journey, server boot, DB operation or gameplay batch ran.
+Native qualification remains on the primary's actual integrated binary/schema at
+its agreed major-batch boundary.
 
-## Priority and evidence
+## Exact small commands
 
-Read [GAPS.md](GAPS.md) for existing versus missing coverage and [CASES.md](CASES.md)
-for QP01 exact sapphire kinds, QP02 overlap/paid fee, QP03 disappearance/birth,
-QP04 dynamic fee/refund, QP05 repeated skins/cap, QP06 real mixed Kord
-rewards and QP07 dynamic stale map/abandon attempt. Seven total; do not add
-duplicates of the existing synthetic crash or reward-callback tests.
-
-Source facts were checked against this pinned worktree. The latest linked native
-quest/birth handoffs describe private source (including terminal pair manifest
-`4b0e7821471740024042dc2be19269cbe9f68760a31c8a9ad73ce6e1f4a04d7b`), not maintained
-native installation. No private tmp candidate was imported or tested here.
-
-Read [RESULTS.md](RESULTS.md) for exact commands, limitations and integration
-seams. Seven source cases pass; five static mini fixtures and two isolated
-full-world run-root fixtures pass preparation checks. Seven extracted-function
-observation components pass under WSL Python3.10.12/g++11.4.0. Four local acceptance
-assertions are RED as expected on the pin: QP02 backpack reachability,
-QP03 replacement incarnation, QP04 active refund and QP07 stale map. Those
-diagnostic seams must follow the primary's actual owner when it replaces an old
-helper; their current RED is not an additional release gate.
-
-All seven native journeys remain pending. No server, migrations, operational
-scripts, gameplay or database qualification ran; the major-batch cadence is
-preserved. No synthetic birth binding, epoch, UID, SQL root or receipt is seeded.
-Fixtures explicitly distinguish authentic source bytes from supplied roots,
-relocated mini room and unqualified full-world runtime setup.
-
-The source snapshot's hashes match the actual worktree; 23 selected production
-input/bartender producer files match PR #678 head exactly. `world_quest.c` has
-daily/journal UI differences outside the selected economic facts. Six owned Python
-ASTs and owned diff whitespace pass. Source review corrected the first bundle's
-totem attribution: dark shaman16087@16161, not Altrucali16086, owns its G16080 row.
-
-## Primary integration blockers
-
-- Authentic reset birth/source/cash/forest binding and incarnation-aware native12
-  producer/publication, cold reconstruction and callback uncertainty.
-- Reachable supported recipe policy at the existing overlapping Q dispatch;
-  mixed-fee settlement must retain guards until coupled authority exists.
-- Bartender debit/refund and exact task-attempt settlement/recovery.
-- Acknowledged historical reward proof and original parent/child pair retirement.
-
-Primary should fetch this branch, review/import compatible owned commits, recheck
-producer pins, and qualify selected SQL-first journeys on its actual integrated
-binary/schema at the agreed batch boundary. Keep blocked cases pending and update
-its existing native quest handoff with consumed SHAs and actual evidence.
-
-Small prep commands from repository root on Linux:
+From repository root under Linux/WSL:
 
 ```bash
 python3 tests/async/quest_accounting_prep/test_production_terms.py
 python3 tests/async/quest_accounting_prep/test_native_selectors.py
+python3 tests/async/quest_accounting_prep/test_recipient_retirement.py --acceptance
 python3 tests/async/quest_accounting_prep/test_bartender_settlement.py
-python3 tests/async/quest_accounting_prep/test_recipient_retirement.py
+python3 tests/async/quest_accounting_prep/test_native_selectors.py --case QP02 --acceptance
+python3 tests/async/quest_accounting_prep/test_bartender_settlement.py --case QP04 --acceptance
+python3 tests/async/quest_accounting_prep/test_bartender_settlement.py --case QP07 --acceptance
 python3 tests/async/quest_accounting_prep/prepare_fixture.py --case QP06 --output /tmp/quest-prep-QP06
 python3 tests/async/quest_accounting_prep/prepare_fixture.py --case QP04 --output /tmp/quest-prep-QP04
 ```
 
-The maintained world driver defaults to level56 at Woodseer16633/giver16553;
-QP04/QP07 require real Quietus1734/1709 arrival and the actual quoted level/fee.
-The level11 examples are controlled case inputs, not a claimed mortal journey.
-Do not copy a real `.env`, use production authority or relax active refusals to
-run these tests. Primary lifecycle ownership supplies the authentic disposable
-SQL candidate and frozen runtime/binary/schema pins for final qualification.
+The three RED commands exit1 intentionally; components return30/30/31. These
+predicates are diagnostics, not additional release gates. Static selection runs
+only the current availability/selection slice with constructed NPC holdings;
+QP03 executes observe_give with lookup/census stubs. Bartender debit is injected
+hypothetically: this pack does not prove that an active player was charged.
+Fixtures seed no epoch, birth binding, UID or receipt. Static mini O roots are
+supplied goods; full-world setup creates no task. Quietus needs real1734/1709
+arrival/quoted fees, whereas the shared driver defaults to Woodseer and level56.
+
+## Owned files and shared blockers
+
+Owned documentation: [GAPS.md](GAPS.md), [CASES.md](CASES.md),
+[RESULTS.md](RESULTS.md), [SOURCE_FACTS.json](SOURCE_FACTS.json), this HANDOFF.md.
+Owned executable paths under `tests/async/quest_accounting_prep/`:
+`case_data.py`, `prepare_fixture.py`, `test_production_terms.py`,
+`test_native_selectors.py`, `test_recipient_retirement.py`,
+`test_bartender_settlement.py`. Source facts retain both accounting pins, research
+pin, exact terms/reset declarations, raw hashes and current runtime owners.
+
+Primary owns recipe/coin policy; bartender debit/refund/task-attempt authority;
+authentic native birth/source/custody/publication/cold ACK and pair retirement;
+and the shared crash driver's real fixture/VNUM/alias selection. The driver fixes
+synthetic22802–5/C1000; QP06 needs29262/3/4→29237/C3000 and later legitimate reward
+custody change. Required changes are detailed in RESULTS.md. Shared production,
+migrations, tests/contracts, manifests, registries and finish plan have no prep
+edits; Plan5 remains independently owned. Primary can fetch/review/import the
+compatible owned bundle and record consumed SHAs in its native handoff before
+integrated qualification. All original R1–R8 and SQL-first release gates remain.

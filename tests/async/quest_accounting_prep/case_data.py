@@ -12,7 +12,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "tests/async"))
 import zone_story_quest_catalog as catalog
 
-ACCOUNTING_PIN = "17c033d69316b21da8598791fc95cae79baa8dc2"
+ORIGINAL_ACCOUNTING_PIN = "17c033d69316b21da8598791fc95cae79baa8dc2"
+ACCOUNTING_PIN = "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a"
 RESEARCH_PIN = "55905eac1906cf59405764407f9d22497cccfff3"
 CATALOG_PIN = "04d687493b02ed27a3b32d070a0a71e9d10c1643406d5fb95fe6b1538b4bb314"
 CASES = {
@@ -147,6 +148,10 @@ def facts(case_id):
                   ROOT / "src/core/utility.c", ROOT / "areas/shp/quietus.shp"]
     else:
         paths.append(ROOT / f"areas/qst/{case['area']}.qst")
+        paths += [ROOT / "src/world/quest_mobile_native_binding.c",
+                  ROOT / "src/world/quest_mobile_native_birth.c",
+                  ROOT / "src/world/native_quest_recovery_context.c",
+                  ROOT / "src/item/item_movement_transaction.c"]
     source_areas = [case["area"]] + (["tikit"] if case_id == "QP01" else [])
     needed = {number for block in selected for group in ("give", "receive")
               for kind, number in block[group] if kind == "I"}
@@ -174,8 +179,18 @@ def facts(case_id):
                 paths.append(path)
             prototype_records.append(dict(kind=kind, vnum=vnum, line=line,
                 path=str(path.relative_to(ROOT)).replace("\\", "/")))
-    return dict(case_id=case_id, accounting_pin=ACCOUNTING_PIN, research_pin=RESEARCH_PIN,
+    return dict(case_id=case_id, accounting_pin=ACCOUNTING_PIN,
+                original_accounting_pin=ORIGINAL_ACCOUNTING_PIN, research_pin=RESEARCH_PIN,
                 candidate_scope="working-tree source hashes below; base pin is not an integrated-candidate claim",
+                runtime_owners=(dict(dispatch="shop_keeper -> SHOP_FUNC(world_quest) -> CMD_ASK",
+                                    settlement="world_quest_payment_committed",
+                                    producer="createQuestForGiverVnum -> runtime world-quest policy")
+                    if case.get("dynamic") else
+                    dict(dispatch="assign_the_questers/qst_func -> quester CMD_GIVE -> active_regular_sql submit_native_quest_give",
+                         selection="quest_native_completion_owner::prepare_original",
+                         observation="item_native_quest_gameplay_publication_owner::observe_give",
+                         birth_reset="db.c reset -> quest_mobile_native_birth_owner begin_reset/seal_mobile/finish_reset",
+                         binding="quest_mobile_native_reference_copy; original generation and canonical encoded reference")),
                 config=case, blocks=selected, reset_families=reset_family(case_id),
                 prototype_records=prototype_records, ingredient_reward_reset_declarations=sources,
                 source_hashes={str(p.relative_to(ROOT)).replace("\\", "/"): digest(p) for p in paths},
@@ -189,6 +204,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     rendered = json.dumps([facts(key) for key in CASES], indent=2) + "\n"
     if args.output:
-        args.output.write_text(rendered, encoding="utf-8")
+        args.output.write_text(rendered, encoding="utf-8", newline="\n")
     else:
         print(rendered, end="")
