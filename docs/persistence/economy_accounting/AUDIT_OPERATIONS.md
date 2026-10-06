@@ -64,15 +64,20 @@ whole audit. Coverage describes the supplied snapshot; it does not qualify the
 writer matrix or assert that an empty price/provenance view exhausts history.
 
 The `--view supply` totals use captured postings attached to exactly one
-committed root identity. Rejected or unknown outcomes and duplicate root
-identities contribute no supply rows; their audit findings remain in the global
-exception count and CLI exit status. Export order cannot choose an outcome for
-an ambiguous root. This rule applies to issuance, sinks, opening equity and
+committed root identity, with exactly one posting at its line identity and one
+account effect at the referenced account index. Rejected or unknown outcomes
+and duplicate root/effect/line identities contribute no supply rows, including
+exact repeats; their audit findings remain in the global exception count and
+CLI exit status. Export order cannot choose an outcome, account kind or amount
+for ambiguous evidence. Distinct posting lines may still aggregate against the
+same account. This rule applies to issuance, sinks, opening equity and
 restitution. Totals remain selected-epoch evidence, grouped by account kind and
 reason, with the full count retained at `--limit 0`. Other discrepancies in a
 committed root remain audit exceptions: a displayed total does not certify that
 root, its policy or its native effect. See
 [the exact outcome qualification](PLAN5_SUPPLY_OUTCOME_VIEW_QUALIFICATION_2026-10-06.md).
+Duplicate projection qualification is recorded in
+[the unique evidence report](PLAN5_SUPPLY_EVIDENCE_QUALIFICATION_2026-10-06.md).
 
 The bounded `--view prices` query combines selected-epoch roots with captured
 `native.lineage_realized_prices`. Each row contains only `epoch`,
