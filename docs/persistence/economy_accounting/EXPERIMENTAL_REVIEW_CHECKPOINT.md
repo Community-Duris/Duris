@@ -1,5 +1,14 @@
 # Experimental accounting review checkpoint
 
+## Claim consumption schema0062 qualified — 2026-10-06
+
+[Exact additive0062 qualification](CLAIM_CONSUMPTION_SCHEMA_0062_PRIMARY_QUALIFICATION_2026-10-06.md)
+registers immutable partial claims and nullable new-origin witnesses without
+backfilling history. Both original engine/fork/compiled-boot and native session
+fault suites pass; both fresh738-object production builds and current contracts
+pass. Original receipt comparisons now cover complete manifests. Producer money
+opening/spending/recovery, independent readers, full R6/R8 and release remain open.
+
 ## Private money candidate and parallel producer work — 2026-10-06
 
 [Current opening handoff](SQL_OPENING_AUCTION_CLAIM_IMPLEMENTATION_HANDOFF_2026-10-06.md)

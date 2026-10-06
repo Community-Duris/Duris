@@ -48,6 +48,7 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0059_quest_mobile_native.sql",
     ROOT / "migrations" / "immutable" / "0060_native_mobile_item_owner.sql",
     ROOT / "migrations" / "immutable" / "0061_economic_baseline_equipment.sql",
+    ROOT / "migrations" / "immutable" / "0062_economic_pending_claim_consumption.sql",
 )
 
 ROOT_FIELDS = {
