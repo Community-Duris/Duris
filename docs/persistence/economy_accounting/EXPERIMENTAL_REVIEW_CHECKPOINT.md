@@ -1,5 +1,18 @@
 # Experimental accounting review checkpoint
 
+## Constructor and quest recovery source composed — 2026-10-06
+
+[The owning source handoff](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
+records the reviewed real constructor capsule/classless fix, automatic running-
+executable witness, combined final GIVE/program CAS and exact acknowledged reward
+reader. All5,777 private candidate inputs match manifest767632, including1,560
+published scripts/tests from8df2b58f4; original drivers and unrelated WIP are
+preserved. Source review, corrected XP mask consistency, formatting and inverse
+checks pass. Durable recipe/producer connection, arbitrary NPC binding seal,
+latest-child and paired retirement integration, remaining routes and major native
+qualification are ongoing. No maintained native installation or full gate passes.
+
+
 ## Independent supply outcome fix integrated — 2026-10-06
 
 [Exact peer import and primary checks](PLAN5_SUPPLY_OUTCOME_PRIMARY_INTEGRATION_2026-10-06.md)

@@ -190,3 +190,66 @@ against the reviewed RNG seam. A proven build-input compatibility provider and
 immutable transport integration remain primary-owned dependencies. This and
 all original reset mechanics/flat/lifecycle and final combined qualification
 remain required; source composition does not close full Plan/release gates.
+
+## Constructor capsule and quest handoff corrections composed — 2026-10-06
+
+Private `tmp/plan3-native-mobile-constructor-reviewed-major-source-20261006`
+composes the independently reviewed constructor capsule, classless correction,
+running-executable witness, final GIVE save and exact reward readback over the
+original3ee546 candidate. Manifest SHA256:
+`767632511c69b136cbb5addd721f66149955029a405f247147c0ead46c652ad4`.
+All5,777 source inputs are verified, including1,560 committed script/test inputs
+from published8df2b58f4. Eight native paths change from that private parent.
+Both original source/build drivers remain byte-identical; unrelated SHOP working
+copies are excluded. No maintained C/C++ installation or native execution occurs.
+
+The actual final GIVE callback previously persisted returned progress before
+capturing its original post-hook quest branches. Packetb2ba9d now saves both in
+one context CAS. Actual returned/captured values survive refused writes without
+repeating callbacks or adopting a later catalog. Capture failure stays held.
+The existing context format and original post-hook selection semantics remain.
+
+The original pending-obligation reader excludes acknowledged rewards. New
+packet930bb8 adds a bounded SELECT-only exact operation/PID/literal-term reader,
+including acknowledged rows, with original economic witnesses and the complete
+frozen XP entitlement set. Source review found and corrected contradictory owner
+XP masks: grouped owner bits must equal the owner's applied original entitlement
+rows, including pending obligations. ACKed rows require every required receipt.
+Reconnect-disabled, autocommit-on IN_TRANS identity is checked around reads;
+failed proof leaves output unchanged. Historical native core authentication,
+confirmed rollback and terminal parent/child cleanup remain caller work. This
+reader grants no reward repetition, actor rebinding or automatic retirement.
+Its frozen receipt is2f1f0e66aa3b28b35d7a2b4ab8ba9587de004d309c086fa90e117ba2566986cf.
+
+Constructor capsule4db5b7 captures/replays the real original RNG, two clocks,
+consumed raw-template prefix, cached strings, selected effective inputs and
+known original binding transitions in the detached constructor. Source review
+found invalid refusal of classless low-level/ignored NPCs; successor67356a skips
+the class rows the original skill helper does not read. Finaldb.c is78b4646e;
+db.h is0cdfde37. The capsule and correction preserve the frozen original parent,
+ordinary loader behavior and exact fallback cleanup. Their source checks,
+reversible byte edits and clang18 formatting pass; native controls are unrun.
+
+Provider8755e6 streams SHA256 of the actual opened running Linux ELF with fixed
+memory, exact descriptor length/EOF/stability checks and an immutable process
+cache. Makefile adds only its object. This is a same-executable witness; it does
+not authenticate shared libraries or authorize different/stripped/rebuilt binary
+recovery. Original constructor/data/world checks still apply. Its frozen receipt
+is98c07680017c868e27956d6664a83f7f3d6899792488ecd6a7d016b337c14011.
+
+All listed packets are accepted at independent source-review scope. The coherent
+major batch still needs actual final-hook CAS refusal/retry and cold recovery,
+classless/ignored/nonzero-class constructor controls, selected-input corruption,
+unchanged global RNG during replay, acknowledged reward readback after later
+transfer/destruction, contradictory group masks, lost-session output preservation,
+and native publication/persistence/restart proof. Native testing remains deferred
+until the major candidate is connected, per the user's instruction.
+
+Still required: durable constructor recipe/explicit command wrapper and actual
+birth-owner capture/restore connection; arbitrary incumbent NPC binding seals;
+authentic latest child phase2 carrier, guarded exact paired journal/coordinator
+transition and reward owner cleanup integration. The paired storage seam is in
+private source review; the codec is being implemented independently. Existing
+reset mechanics, alchemist/container/occupied-slot/other lifecycle routes, flat
+parity, writer journeys, activation and full qualification remain open. No full
+Plan, coverage or release gate is promoted by these source-only results.
