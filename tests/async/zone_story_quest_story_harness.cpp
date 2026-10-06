@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 165 &&
+		require(catalog.story_mappings.size() == 166 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,168 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "kastle"; });
+			require(mapping.stories.size() == 3 && mapping.contacts.size() == 12 &&
+					mapping.revision == 1,
+				"Varathorn journal scope failed");
+			const auto &talons = story_for("kastle", "night-crawler-talons");
+			const auto &ring = story_for("kastle", "stolen-ring");
+			const auto &ossuary = story_for("kastle", "varathorn-ossuary");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 994)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 3 && dailies == 3,
+				"Varathorn departing item returns lost native daily eligibility");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 994, 99400, 100, "arrival") ==
+					result::applied,
+				"Varathorn discovery failed");
+			for (const auto &[v, room] :
+			     { std::pair{ 99401, 99471 }, std::pair{ 99424, 99463 },
+			       std::pair{ 99429, 99436 }, std::pair{ 99430, 99436 },
+			       std::pair{ 99431, 99436 }, std::pair{ 99438, 99494 } })
+				require(journey.meet_npc(7, 42, v, room, 101) == result::applied,
+					"Varathorn contextual encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 994, 10, 1, 102, false, false);
+			for (const auto &s : mapping.stories)
+				require(journal.find("] " + s.title + "\r\n") == std::string::npos,
+					"Varathorn source or captive encounter exposed accepting giver card");
+			require(journey.meet_npc(7, 42, 99434, 99400, 103) == result::applied,
+				"Varathorn Volordles encounter failed");
+			journal = journey.render_journal(7, 42, 994, 10, 1, 104, false, false);
+			for (const auto &s : mapping.stories)
+				require((journal.find("] " + s.title + "\r\n") !=
+					 std::string::npos) == (s.id == talons.id),
+					"Varathorn Volordles exposed another return");
+			require(journey.meet_npc(7, 42, 99436, 99401, 105) == result::applied &&
+					journey.meet_npc(7, 42, 99453, 99491, 105) ==
+						result::applied,
+				"Varathorn distinct accepting encounters failed");
+			const auto section = [&](const auto &s)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos, "Varathorn card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at,
+						      end == std::string::npos ? end : end - at);
+			};
+			const auto status = [&](const auto &s, size_t row, const char *state)
+			{
+				return section(s).find(std::string("[") + state + "] " +
+						       s.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			const auto before = journey.serialize_state();
+			for (const auto &s : mapping.stories)
+			{
+				supplies = {};
+				supplies.carried[s.steps[0].item_vnums.front()] = s.steps[0].count;
+				journal = journey.render_journal(7, 42, 994, 10, 1, 106, false,
+								 false, &supplies);
+				require(status(s, 0, "Ready now") && status(s, 1, "Pending"),
+					"Varathorn exact supplied proof fabricated return history");
+				supplies.carried.clear();
+				supplies.equipped[18] = s.steps[0].item_vnums.front();
+				journal = journey.render_journal(7, 42, 994, 10, 1, 107, false,
+								 false, &supplies);
+				require(status(s, 0, "Missing now"),
+					"Varathorn held proof substituted loose offering");
+			}
+			supplies = {};
+			supplies.carried[98914] = 1;
+			journal = journey.render_journal(7, 42, 994, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(talons, 0, "Missing now"),
+				"Varathorn one talon prepared two-instance offering");
+			supplies = {};
+			for (int v : { 99447, 99419, 99448, 99404, 99403, 99445, 99432, 99429,
+				       132620, 99412 })
+				supplies.carried[v] = 2;
+			journal = journey.render_journal(7, 42, 994, 10, 1, 109, false, false,
+							 &supplies);
+			for (const auto &s : mapping.stories)
+				require(status(s, 0, "Missing now") && status(s, 1, "Pending"),
+					"Varathorn wrong insignia, rewards, lore or outside stock forged proof");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 994).completed == 0,
+				"Varathorn preparation fabricated personal search, source, combat or accepted history");
+			supplies = {};
+			supplies.carried[98914] = 2;
+			supplies.carried[99414] = 1;
+			supplies.carried[99430] = 1;
+			journal = journey.render_journal(7, 42, 994, 10, 1, 110, false, false,
+							 &supplies);
+			require(section(talons).find("384000 copper") != std::string::npos &&
+					section(ring).find("124000 experience and 50000 copper") !=
+						std::string::npos &&
+					section(ring).find("no earlier talon return is required") !=
+						std::string::npos &&
+					section(ossuary).find("successful SEARCH") !=
+						std::string::npos &&
+					section(ossuary).find(
+						"wider liberation is a separate outcome") !=
+						std::string::npos,
+				"Varathorn Ready now hid durable reward, source or independence guidance");
+			require(journal.find("special effect needs builder review") !=
+					std::string::npos,
+				"Varathorn journal promised unregistered claymore magic");
+			// Synthetic authoritative receipts verify projection/recovery; no played grants, retirement or rescue are claimed.
+			record(journey, ring.contracts.front(), "kastle-ring", 994, 99401);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 994, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(ring, 1, "Recorded") && status(talons, 1, "Pending") &&
+					status(ossuary, 1, "Pending") &&
+					journey.progress_for_zone(7, 42, 994).completed == 1,
+				"Varathorn ring return completed talons or liberation");
+			for (const auto &s : mapping.stories)
+				if (s.id != ring.id)
+				{
+					const auto tx = "kastle-" + s.id;
+					record(journey, s.contracts.front(), tx.c_str(), 994,
+					       99400);
+				}
+			journal = journey.render_journal(7, 42, 994, 10, 1, 120, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 994).completed == 3,
+				"Varathorn three receipts or combined rewards classification failed");
+			for (const auto &s : mapping.stories)
+				require(status(s, 0, "Missing now") && status(s, 1, "Recorded"),
+					"Varathorn spent proof restored inventory or lost history");
+			auto replay = completion(ring.contracts.front(), "kastle-ring", 120);
+			replay.transaction.zone_number = 994;
+			replay.transaction.room_vnum = 99401;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Varathorn replay duplicated return");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 994).completed == 3,
+				"Varathorn cold recovery lost histories");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 994, 99400, 100, "arrival") ==
+					result::applied,
+				"Varathorn raw discovery failed");
+			for (const auto &s : mapping.stories)
+			{
+				const auto tx = "kastle-raw-" + s.id;
+				record(raw, s.contracts.front(), tx.c_str(), 994, 99400);
+			}
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 994).completed == 3,
+				"Varathorn raw-to-authored recovery lost independent histories");
 		}
 
 		{

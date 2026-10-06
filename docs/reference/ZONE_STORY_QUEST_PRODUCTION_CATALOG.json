@@ -148718,6 +148718,242 @@
     {
       "contacts": [
         {
+          "description": "Ask tezcatlipoca, night, crawler or talons. Two exact loose talons earn the dagger and 384000 copper in one return. This wandering giver departs after acceptance.",
+          "keyword": "volordles",
+          "mob_vnum": 99434,
+          "name": "Volordles, The Mystical Knight",
+          "topics": [
+            "tezcatlipoca",
+            "night",
+            "crawler",
+            "talons"
+          ]
+        },
+        {
+          "description": "Ask nrohtereb, ring, skull or snake. The exact snake-skull ring earns 124000 experience and 50000 copper. This wandering giver departs after acceptance.",
+          "keyword": "slordlak",
+          "mob_vnum": 99436,
+          "name": "Sir Slordlak",
+          "topics": [
+            "nrohtereb",
+            "ring",
+            "skull",
+            "snake"
+          ]
+        },
+        {
+          "description": "Ask keep or history. Return the exact ossuary for his serpent insignia. The accepted return is one history; wider liberation needs its own outcome evidence.",
+          "keyword": "varathorn",
+          "mob_vnum": 99453,
+          "name": "Varathorn, The Forsaken One",
+          "topics": [
+            "keep",
+            "history"
+          ]
+        },
+        {
+          "description": "Nrohtereb wears the exact ring Slordlak requests. His serpent insignia is different from Varathorn's reward; meeting or defeating him is not the recorded ring return.",
+          "keyword": "nrohtereb",
+          "mob_vnum": 99401,
+          "name": "Nrohtereb",
+          "topics": []
+        },
+        {
+          "description": "Dicalk carries the study key. The study starts closed but unlocked, so this is an access lead rather than a required first entry step.",
+          "keyword": "dicalk",
+          "mob_vnum": 99435,
+          "name": "Dicalk, Man at Arms",
+          "topics": []
+        },
+        {
+          "description": "The vampire hunter carries a different claymore. Its special effect needs builder review; no hunter defeat quest is defined.",
+          "keyword": "zarthos",
+          "mob_vnum": 99423,
+          "name": "Zarthos, The Vampire Hunter",
+          "topics": []
+        },
+        {
+          "description": "Lord Quaden is near the hidden ossuary in the embalming room. A successful SEARCH, recovery, personal victory and the accepted return are separate outcomes.",
+          "keyword": "quaden",
+          "mob_vnum": 99424,
+          "name": "Lord Quaden",
+          "topics": []
+        },
+        {
+          "description": "The captive human woman provides family lore. No native actor-specific rescue or escort receipt is defined.",
+          "keyword": "woman",
+          "mob_vnum": 99429,
+          "name": "a human woman",
+          "topics": []
+        },
+        {
+          "description": "The captive human man supplies another part of the family lead. Seeing or meeting the family is not liberation history.",
+          "keyword": "man",
+          "mob_vnum": 99430,
+          "name": "a human man",
+          "topics": []
+        },
+        {
+          "description": "The captive child adds context to the family story. No native reunion, escort or rescue exchange is defined.",
+          "keyword": "child",
+          "mob_vnum": 99431,
+          "name": "a human child",
+          "topics": []
+        },
+        {
+          "description": "An escaped halfling slave has independent reset stock. Meeting this copy does not prove that you freed a shackled slave.",
+          "keyword": "halfling",
+          "mob_vnum": 99438,
+          "name": "an escaped halfling slave",
+          "topics": []
+        },
+        {
+          "description": "Kastar describes a curse and a release condition involving the vampire hunter. Treat this as lore until an authoritative actor and outcome integration is qualified.",
+          "keyword": "kastar",
+          "mob_vnum": 99428,
+          "name": "Kastar, The Trice Cursed",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow three independent returns through the keep's curses: exact talons, the stolen ring and the hidden ossuary. Passage, source and captive leads explain the world while each accepted return keeps its own history.",
+      "orientation": [
+        "Choose among three independent returns: two Night Crawler talons for Volordles, the stolen snake-skull ring for Sir Slordlak, or the ossuary for Varathorn. These are separate histories; no earlier return is required by another.",
+        "Ask Volordles tezcatlipoca, night, crawler or talons. Ask Slordlak nrohtereb, ring, skull or snake. Ask Varathorn keep or history. Their replies explain the requests; each keyword does not create another achievement.",
+        "Volordles wants two separate exact Night Crawler talons, not just any claws. One large Night Crawler follower in the Nest of Tezcatlipoca carries both. Its leader and other creatures with the same short name are different source instances. Carry both talons loose.",
+        "Volordles rewards the two talons with a twisted blood dagger and 384000 copper together. Slordlak rewards the exact stolen ring with 124000 experience and 50000 copper together. These coin amounts are paid to you, not fees to supply.",
+        "Nrohtereb wears the exact snake-skull ring in his chamber. His serpent insignia is a different object from both the ring and the insignia Varathorn rewards. Carry the ring loose for Slordlak; merely meeting Nrohtereb does not complete the return.",
+        "The ossuary starts hidden in the embalming room near Lord Quaden. SEARCH the room successfully to reveal it before recovering it yourself. Someone else may already have revealed or recovered a copy. Shared visibility and supplied material do not prove your own search, combat or first-source recovery.",
+        "PUSH the boulder, TOUCH the glowing stone and TOUCH the image to operate their fixed passage controls. Other routes can reach the public areas. Open shared passages do not prove your own activation, and these controls are not offerings to collect.",
+        "Dicalk carries the stone key that fits the study door. The door starts closed but unlocked, so obtaining the key is not a required first entry step. Search the open bookshelf for its hidden dark-bound tome and bluejay feather; neither is an offering for these three returns.",
+        "The upper trapdoor area has a falling hazard once the downward route is open and the character is eligible to fall. Its initial closed state matters. Flight, levitation, climbing and mount state can affect outcomes; no journal completion promises a safe crossing.",
+        "Volordles and Slordlak spawn in internal mobile distribution rooms and may wander into public areas under normal movement restrictions. Varathorn waits at the tower top. Each accepting giver departs after a successful return. A daily rollover does not create another giver or refill its stock.",
+        "Varathorn tells of his curse and the ossuary. His accepted return records that one exchange and its insignia reward. The captive family, shackled slaves, independently reset escaped slaves and other cursed inhabitants are contextual leads; their presence does not record your rescue or a whole-keep liberation.",
+        "The dagger reward has a worn-weapon special that can drain vitality. Zarthos carries a different claymore whose special effect needs builder review; do not rely on it as a quest requirement. Possessing either weapon, seeing a combat message or attempting its effect does not complete another local quest.",
+        "Local equipment also circulates through selected outside merchants, and Zaberetornaz in Tharnadia can reward the local quill for a magical text. Those are separate sources and exchanges; an outside purchase or reward does not prove your personal recovery in the keep.",
+        "Preparation checks present exact loose materials, including two distinct talons. Supplied copies can prepare a return; held or nested items cannot substitute loose offerings. Recorded history survives spent materials. All new discovery, encounter, journal, achievement and daily credit requires active, ready accounting."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "kastle",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:98914,I:98914;receive=C:384000,I:99447;disappear=1",
+              "giver_vnum": 99434
+            }
+          ],
+          "id": "night-crawler-talons",
+          "steps": [
+            {
+              "count": 2,
+              "hint": "Present exact loose material only. Supplied copies fit without personal search, combat or first-source credit; held or nested copies do not substitute loose offerings.",
+              "id": "talons",
+              "item_vnums": [
+                98914
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry two exact Night Crawler talons loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:98914,I:98914;receive=C:384000,I:99447;disappear=1",
+                  "giver_vnum": 99434
+                }
+              ],
+              "hint": "Only this exact accepted return completes the card. The selected giver departs; stock, access, lore and other returns remain separate. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this accepted return"
+            }
+          ],
+          "summary": "Two exact loose Night Crawler talons earn a twisted blood dagger and 384000 copper in one exchange. Volordles departs; supplied copies fit without proving personal combat or recovery.",
+          "title": "Return the Night Crawler talons"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:99414;receive=C:50000,E:124000;disappear=1",
+              "giver_vnum": 99436
+            }
+          ],
+          "id": "stolen-ring",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Present exact loose material only. Supplied copies fit without personal search, combat or first-source credit; held or nested copies do not substitute loose offerings.",
+              "id": "ring",
+              "item_vnums": [
+                99414
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact snake-skull ring loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:99414;receive=C:50000,E:124000;disappear=1",
+                  "giver_vnum": 99436
+                }
+              ],
+              "hint": "Only this exact accepted return completes the card. The selected giver departs; stock, access, lore and other returns remain separate. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this accepted return"
+            }
+          ],
+          "summary": "The exact snake-skull ring earns 124000 experience and 50000 copper in one exchange. Slordlak departs. Nrohtereb's other insignia is not this offering; no earlier talon return is required.",
+          "title": "Return the stolen ring"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:99430;receive=I:99419;disappear=1",
+              "giver_vnum": 99453
+            }
+          ],
+          "id": "varathorn-ossuary",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Present exact loose material only. Supplied copies fit without personal search, combat or first-source credit; held or nested copies do not substitute loose offerings.",
+              "id": "ossuary",
+              "item_vnums": [
+                99430
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact ossuary loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:99430;receive=I:99419;disappear=1",
+                  "giver_vnum": 99453
+                }
+              ],
+              "hint": "Only this exact accepted return completes the card. The selected giver departs; stock, access, lore and other returns remain separate. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this accepted return"
+            }
+          ],
+          "summary": "The exact ossuary earns Varathorn's serpent insignia in one exchange; he departs. It starts hidden in the embalming room and needs successful SEARCH for personal recovery. Supplied proof fits; wider liberation is a separate outcome.",
+          "title": "Return Varathorn's ossuary"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Ask yeti. Bring five exact pelts and one thick leather strap together for one girdle exchange. His registered shop sells other clothing, not those inputs.",
           "keyword": "trader",
           "mob_vnum": 99501,
