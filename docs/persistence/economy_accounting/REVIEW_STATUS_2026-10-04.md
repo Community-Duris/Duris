@@ -1,5 +1,15 @@
 # Accounting review status — 2026-10-04
 
+## Plan5 original managed restore follow-up delivered — 2026-10-05
+
+[The exact independent report](PLAN5_INTEGRATED_CURRENT61_MANAGED_RESTORE_QUALIFICATION_2026-10-05.md)
+is imported from176b612c8 with native/migration and committed executable-input
+scope verified against tested7e4d. Both original SQL methods and the original
+flat lifecycle method pass with zero skips in peer execution. This closes that
+pending follow-up, retaining modeled/inactive flat limitations; it does not
+qualify private quest/birth or SHOP WIP, complete capture, active erasure, actual
+world/player workloads, any full Plan/R1–R8 or release. No local runtime rerun.
+
 ## Player-give source metadata corrected — 2026-10-05
 
 [The exact metadata repair](PLAYER_GIVE_SOURCE_CLASSIFICATION_2026-10-05.md)

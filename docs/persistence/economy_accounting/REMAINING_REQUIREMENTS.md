@@ -1,5 +1,15 @@
 # Double-entry economy: remaining requirements
 
+## Integrated current61 managed restore evidence — 2026-10-05
+
+[The exact peer176b612c8 report](PLAN5_INTEGRATED_CURRENT61_MANAGED_RESTORE_QUALIFICATION_2026-10-05.md)
+closes its pending current-reader managed-restore follow-up: two original SQL
+methods and one original flat lifecycle method pass with zero skips. Primary
+verified tested native/schema and committed reader/fixture/manifest scope. Peer
+execution remains attributed; flat modeled sources/inactive lifecycle, complete
+capture, active erasure, actual world/player journeys and full R8/release stay
+open. Private quest/birth candidates and unrelated SHOP WIP are not qualified.
+
 ## Plan2 player-give source classification — 2026-10-05
 
 [The metadata repair](PLAYER_GIVE_SOURCE_CLASSIFICATION_2026-10-05.md) records
