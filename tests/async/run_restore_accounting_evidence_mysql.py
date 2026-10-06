@@ -226,7 +226,7 @@ try:
     subprocess.run(command, input=(ROOT / "migrations/bootstrap_multithread_safe.sql").read_bytes(),
                    env=dict(os.environ, MYSQL_PWD=settings["password"]), check=True, timeout=180)
     manifest = migrations.load_manifest()
-    assert manifest.migrations[-1].migration_id == "0061_economic_baseline_equipment"
+    assert manifest.migrations[-1].migration_id == "0062_economic_pending_claim_consumption"
     executor = migrations.MysqlExecutor(manifest)
     try:
         executor.adopt("fresh_bootstrap")
@@ -564,7 +564,7 @@ try:
               "refusals": sum(row["code"] is not None for row in canonical_cuts),
               "full_entry_cuts": sum(row["full_entry"] for row in canonical_cuts),
               "page_roots": 259, "intent_bound": 8192, "plan_bound": 4 * 1024 * 1024,
-              "authority_unchanged": True, "schema_head": "0061_economic_baseline_equipment",
+              "authority_unchanged": True, "schema_head": "0062_economic_pending_claim_consumption",
               "production_access": False}, sort_keys=True), flush=True)
     if native_blocks:
         cases = [json.loads(block) for block in native_blocks[5:]]
@@ -621,7 +621,7 @@ try:
                 assert captured() == original
         assert qualified == 30 and constrained == 2
         print("COIN_RESTORE_QUALIFIED " + json.dumps({"native_cases": 32, "audited_cases": qualified,
-              "canonical_constraint_refusals": constrained, "schema_head": "0061_economic_baseline_equipment",
+              "canonical_constraint_refusals": constrained, "schema_head": "0062_economic_pending_claim_consumption",
               "authority_unchanged": True, "production_access": False}, sort_keys=True), flush=True)
     print("economic restore: intact/inactive/rejected histories pass; damaged retained rows, "
           "receipts, sources, values and item links refuse with SELECT-only unchanged authority", flush=True)

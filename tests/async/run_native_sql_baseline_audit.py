@@ -65,14 +65,14 @@ try:
     try:
         executor.adopt("fresh_bootstrap")
         migrations.run_pending(manifest, executor)
-        assert manifest.migrations[-1].migration_id == "0061_economic_baseline_equipment"
+        assert manifest.migrations[-1].migration_id == "0062_economic_pending_claim_consumption"
     finally:
         executor.release_lock()
     with owner.cursor() as cursor:
         cursor.execute("SELECT VERSION() AS version")
         engine_version = cursor.fetchone()["version"]
         engine_name = "mariadb" if "MariaDB" in engine_version else "mysql"
-        print("native baseline engine=" + engine_version + " migration_head=0061_economic_baseline_equipment", flush=True)
+        print("native baseline engine=" + engine_version + " migration_head=0062_economic_pending_claim_consumption", flush=True)
     initial = captured()
     encoded = subprocess.check_output([str(fixture)], env=dict(os.environ), timeout=120)
     native = json.loads(encoded)
