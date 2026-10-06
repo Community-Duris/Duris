@@ -1,0 +1,303 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "mount",
+  "coverage": "complete",
+  "introduction": "Explore the prison through spoken seals and ENTER routes, then follow the battered-warangel return, mirror-case return and the high-priest four-essence tribute.",
+  "orientation": [
+    "Meet the high-priest at the base of the mountain and ask prophecy, await, wait, waiting, dream, dreaming or lokpan, then soul, souls, pakar, tolog, zooox, essence or essences. He accepts all four exact essences together for two tribute items, through one accepted return.",
+    "At the peak, the matching pattern carried by Yilox gives the seal word Pandora. Speak the word by the locked seal, then open it. This is a word-based lock, not a physical key slot; possession or reading of that clue is not an invented personal-history requirement.",
+    "Below the seal, enter the thin black line to reach the prison heart. Its matching return line leads back to the approach below the seal. The slab word Lokpan, also described on Xoliy rune-covered stone, unlocks the deeper crevice route. Unlocking, opening and actual arrival have distinct outcomes.",
+    "Thin lines, the iron maiden and the pools of light are actual ENTER travel objects. Their available stock and destinations matter. Knowing a route, seeing an object or using a shared open passage does not record that you personally traveled through it.",
+    "Ask the demonic torturer about torture, angel, warangel, torturing, enemy, capture, limp or battered. Bring the exact limp battered warangel item lying in the interrogator room for his mask. The proof is a carried object; the native exchange does not require capturing, escorting or killing a live warangel.",
+    "The concubine can carry a case full of small mirrors. Bring that exact case to the wager wildmage, and ask lightning, bolt, bounce, contest, bet, walls or reward for his clue. Your native reward is the snowglobe. The broom and three beetles are his wager stakes, not three additional player rewards or a required spellcasting contest.",
+    "Tolog can carry his essence, Pakar his, Zooox his and Lokpan his. Bring one of each exact essence loose to the high-priest. These hidden handcrafted proof objects are distinct from ordinary corpses, similarly named beings, supplied substitutes and foreign fugitive essences.",
+    "The second high-priest deeper under the mountain accepts the same four-essence contract. Both instances share one history and one possible daily. Asking every alias or visiting both priests does not create another exchange; the two tribute rewards do not split into two completions.",
+    "The spawning-room crack, sabotage and reincarnation describe the prison story. The selected native recipe records the four-essence return; its farewell does not dispatch a world resurrection, an escape or a separate sabotage objective.",
+    "A magical fountain in Pakar room has a real rotating spell service. Tolog can also carry a large epic rune stone and a memory. Drinking for a buff, committed epic touching and returning essences remain separate outcomes; carrying a stone or memory does not complete one of these exchanges.",
+    "The old level potion and smaller-stone absorption code is legacy cleanup, without a level or payout upgrade. Its extraction and durable retirement need separate qualification. Do not gather the potion expecting a promised new quest reward or upgraded stone.",
+    "Dinok and Tallin bodyguard can wander in from outside load rooms. Their own essences lead to independent outside returns, not extra ingredients for this high-priest. An item reward whose number matches a mobile is still an item; it does not prove that a companion was summoned.",
+    "Three administrative load and holding rooms are outside the normal entrance routes even with stocked travel objects assumed available. Their report-to-staff descriptions are not hidden exploration objectives. Their NPC circulation needs builder intent qualification before any route change.",
+    "Fresh reset proof, clues, travel objects and imported services are currently unavailable while accounting is active. Existing owned or supplied proof can prepare a return. Daily rollover does not create stock, unlock the seal or replenish shared world effects.",
+    "Carry the exact requested items loose. Held warangel or mirrors, held essences, nested proof and reward copies do not replace loose preparation. Historical accepted returns remain after proof is spent. All new story credit requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 9107,
+      "name": "the demonic torturer",
+      "keyword": "torturer",
+      "description": "Ask torture, angel, warangel, torturing, enemy, capture, limp or battered. Return the exact battered-warangel object for his mask; no live capture or escort is specified.",
+      "topics": [
+        "torture",
+        "angel",
+        "warangel",
+        "torturing",
+        "enemy",
+        "capture",
+        "limp",
+        "battered"
+      ]
+    },
+    {
+      "mob_vnum": 9123,
+      "name": "a wildmage",
+      "keyword": "wildmage",
+      "description": "Ask lightning, bolt, bounce, contest, bet, walls or reward. Bring the mirror case for the snowglobe. Other wildmages have different prototypes; broom and beetles are wager lore.",
+      "topics": [
+        "lightning",
+        "bolt",
+        "bounce",
+        "contest",
+        "bet",
+        "walls",
+        "reward"
+      ]
+    },
+    {
+      "mob_vnum": 9136,
+      "name": "the high-priest of Lokpan",
+      "keyword": "high-priest",
+      "description": "Ask prophecy or the essence topics. Both high-priest instances accept the same four-essence set for symbol and visor through one history. Reincarnation prose does not define another world outcome.",
+      "topics": [
+        "prophecy",
+        "await",
+        "wait",
+        "waiting",
+        "dream",
+        "dreaming",
+        "lokpan",
+        "soul",
+        "souls",
+        "pakar",
+        "tolog",
+        "zooox",
+        "essence",
+        "essences"
+      ]
+    },
+    {
+      "mob_vnum": 9124,
+      "name": "a god's former concubine",
+      "keyword": "concubine",
+      "description": "This selected concubine can carry the exact mirror case. Supplied or recovered stock may prepare the return without recording your own fight or first acquisition.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 9110,
+      "name": "Tolog, Demi-God of the Apocalypse",
+      "keyword": "tolog",
+      "description": "Tolog can carry his essence, the imported epic stone and a memory. These have different roles; epic touch and the essence return remain separate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 9114,
+      "name": "Pakar, the Demi-God of Purity",
+      "keyword": "pakar",
+      "description": "Pakar can carry his exact essence. His griffon is a native R mount relationship; its presence is not a second ingredient or proof that you won this encounter.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 9125,
+      "name": "Zooox, the Demi-God of Wildmagic",
+      "keyword": "zooox",
+      "description": "Zooox can carry his exact essence. His elephant and creation lore do not define a required summoning or level-potion upgrade quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 9119,
+      "name": "Lokpan, the Plotter",
+      "keyword": "lokpan",
+      "description": "Lokpan can carry his exact essence. The plotting and sabotage lore is separate from the accepted four-essence return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 9100,
+      "name": "Yilox, the cloud giant",
+      "keyword": "yilox",
+      "description": "Yilox can carry the matching pattern with the seal word Pandora. This is a clue to spoken unlocking, not an ITEM_KEY offering or required personal receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 9133,
+      "name": "Xoliy, the stone giant",
+      "keyword": "xoliy",
+      "description": "Xoliy can carry the rune-covered stone describing Lokpan. Use the word at the slab; carrying or reading the stone is not a recorded unlock.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 9101,
+      "name": "the divine guardian golem",
+      "keyword": "golem",
+      "description": "The golem guards the prison heart. Neutral NO_MOB approaches and creature combat have native rules; the review establishes no separate golem defeat or capture prerequisite for a return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 9121,
+      "name": "the devious imp",
+      "keyword": "devious",
+      "description": "The devious imp describes sabotaging the spawning room. Its selected quest-file entry contains no accepted sabotage recipe or dispatched resurrection outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 9122,
+      "name": "a mutated wildmage",
+      "keyword": "mutated",
+      "description": "The trapped mutated wildmage is spawning-room context. Its equipment and suffering do not substitute for a requested essence or another accepted story.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 9112,
+      "name": "the holy interrogator",
+      "keyword": "interrogator",
+      "description": "The exact battered-warangel item is stocked on the floor in this interrogator room. Taking that item is distinct from collecting an ordinary corpse or escorting an NPC.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "battered-warangel-return",
+      "title": "Bring the battered warangel to the torturer",
+      "category": "request",
+      "summary": "Bring the exact loose warangel item from the interrogator room for the demonic mask. Live capture, escort and ordinary corpses are distinct.",
+      "contracts": [
+        {
+          "giver_vnum": 9107,
+          "completion_key": "give=I:9106;receive=I:9109;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-9106",
+          "text": "Carry 1 × a limp battered warangel loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            9106
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Current exact loose proof only. Held, nested, similarly named or ordinary corpse proof is separate. Supplied proof can fit the return without recording your own first recovery, victory, speech or travel. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 9107,
+              "completion_key": "give=I:9106;receive=I:9109;disappear=0"
+            }
+          ],
+          "hint": "Retains the canonical native receipt after proof is spent. Dialogue, magic-word unlocking, travel, buffs, epic touch, companion lore or reward copies do not replace this return. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "mirrors-for-snowglobe",
+      "title": "Bring the mirror case to the wager wildmage",
+      "category": "request",
+      "summary": "Bring the exact loose case of mirrors from the concubine for the snowglobe. The mage wager stakes do not add a player spellcasting challenge or more rewards.",
+      "contracts": [
+        {
+          "giver_vnum": 9123,
+          "completion_key": "give=I:9107;receive=I:9108;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-9107",
+          "text": "Carry 1 × a case full of small mirrors loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            9107
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Current exact loose proof only. Held, nested, similarly named or ordinary corpse proof is separate. Supplied proof can fit the return without recording your own first recovery, victory, speech or travel. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 9123,
+              "completion_key": "give=I:9107;receive=I:9108;disappear=0"
+            }
+          ],
+          "hint": "Retains the canonical native receipt after proof is spent. Dialogue, magic-word unlocking, travel, buffs, epic touch, companion lore or reward copies do not replace this return. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "four-essences-for-lokpan",
+      "title": "Bring four essences to the high-priest",
+      "category": "request",
+      "summary": "Bring one each Tolog, Pakar, Zooox and Lokpan essence together for symbol and visor. Both high-priest instances use one accepted history; reincarnation lore does not create another world event.",
+      "contracts": [
+        {
+          "giver_vnum": 9136,
+          "completion_key": "give=I:9117,I:9118,I:9119,I:9120;receive=I:9132,I:9135;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-9117",
+          "text": "Carry 1 × the essence of Tolog loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            9117
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Current exact loose proof only. Held, nested, similarly named or ordinary corpse proof is separate. Supplied proof can fit the return without recording your own first recovery, victory, speech or travel. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "item-9118",
+          "text": "Carry 1 × the essence of Pakar loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            9118
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Current exact loose proof only. Held, nested, similarly named or ordinary corpse proof is separate. Supplied proof can fit the return without recording your own first recovery, victory, speech or travel. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "item-9119",
+          "text": "Carry 1 × the essence of Zooox loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            9119
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Current exact loose proof only. Held, nested, similarly named or ordinary corpse proof is separate. Supplied proof can fit the return without recording your own first recovery, victory, speech or travel. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "item-9120",
+          "text": "Carry 1 × the essence of Lokpan loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            9120
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Current exact loose proof only. Held, nested, similarly named or ordinary corpse proof is separate. Supplied proof can fit the return without recording your own first recovery, victory, speech or travel. Fresh reset stock is unavailable with active accounting."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 9136,
+              "completion_key": "give=I:9117,I:9118,I:9119,I:9120;receive=I:9132,I:9135;disappear=0"
+            }
+          ],
+          "hint": "Retains the canonical native receipt after proof is spent. Dialogue, magic-word unlocking, travel, buffs, epic touch, companion lore or reward copies do not replace this return. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

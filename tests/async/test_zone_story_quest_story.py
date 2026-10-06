@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 161 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 162 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -432,6 +432,13 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
  assert 'Accounting currently blocks' in s['summary'] and s['steps'][-1]['contracts']==s['contracts']
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
+
+
+mount=next(m for m in catalog['story_mappings'] if m['source_area']=='mount')
+assert (mount['schema_version'],mount['revision'],mount['coverage'])==(3,1,'complete') and not mount['exclusions']
+assert len(mount['stories'])==3 and len(mount['contacts'])==14 and sum(len(c['topics']) for c in mount['contacts'])==29
+assert sum(len(s['steps']) for s in mount['stories'])==9 and sum(t.get('optional',False) for s in mount['stories'] for t in s['steps'])==6
+assert mount['stories'][2]['contracts'][0]['completion_key']=='give=I:9117,I:9118,I:9119,I:9120;receive=I:9132,I:9135;disappear=0' and report['eligible_by_zone']['91']==3
 
 
 cloud=next(m for m in catalog['story_mappings'] if m['source_area']=='cldgt')

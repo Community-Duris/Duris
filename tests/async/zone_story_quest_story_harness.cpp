@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 161 &&
+		require(catalog.story_mappings.size() == 162 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,177 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "mount"; });
+			require(mapping.stories.size() == 3 && mapping.contacts.size() == 14 &&
+					mapping.revision == 1,
+				"Mountain journal scope failed");
+			const auto &angel = story_for("mount", "battered-warangel-return");
+			const auto &mirrors = story_for("mount", "mirrors-for-snowglobe");
+			const auto &essences = story_for("mount", "four-essences-for-lokpan");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 91)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 3 && dailies == 3,
+				"Mountain duplicated shared priest or two-reward return");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 91, 9100, 100, "arrival") ==
+					result::applied,
+				"Mountain discovery failed");
+			for (const auto &[v, room] :
+			     { std::pair{ 9110, 9141 }, std::pair{ 9124, 9123 },
+			       std::pair{ 9100, 9112 }, std::pair{ 9133, 9160 } })
+				require(journey.meet_npc(7, 42, v, room, 101) == result::applied,
+					"Mountain source encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 91, 10, 1, 102, false, false);
+			for (const auto &s : mapping.stories)
+				require(journal.find("] " + s.title + "\r\n") == std::string::npos,
+					"Mountain source carrier exposed accepting giver card");
+			require(journey.meet_npc(7, 42, 9107, 9138, 103) == result::applied,
+				"Mountain torturer encounter failed");
+			journal = journey.render_journal(7, 42, 91, 10, 1, 104, false, false);
+			require(journal.find("] " + angel.title + "\r\n") != std::string::npos &&
+					journal.find("] " + mirrors.title + "\r\n") ==
+						std::string::npos &&
+					journal.find("] " + essences.title + "\r\n") ==
+						std::string::npos,
+				"Mountain torturer exposed another giver card");
+			require(journey.meet_npc(7, 42, 9123, 9152, 105) == result::applied &&
+					journey.meet_npc(7, 42, 9136, 9100, 105) == result::applied,
+				"Mountain separate giver encounters failed");
+			journey.meet_npc(7, 42, 9136, 9163, 105);
+			const auto status = [&](const auto &s, size_t row, const char *state)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos, "Mountain card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at, end == std::string::npos ? end : end - at)
+					       .find(std::string("[") + state + "] " +
+						     s.steps[row].text) != std::string::npos;
+			};
+			const auto before = journey.serialize_state();
+			for (const auto &s : mapping.stories)
+			{
+				supplies = {};
+				for (const auto &t : s.steps)
+					if (t.kind == "carried_item")
+						for (int v : t.item_vnums)
+							supplies.carried[v] = t.count;
+				journal = journey.render_journal(7, 42, 91, 10, 1, 106, false,
+								 false, &supplies);
+				for (size_t row = 0; row < s.steps.size(); ++row)
+					require(status(s, row,
+						       row == s.steps.size() - 1 ? "Pending" :
+										   "Ready now"),
+						"Mountain exact supplied proof preparation failed");
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+				{
+					const int v = s.steps[row].item_vnums.front();
+					supplies.carried[v] = 0;
+					supplies.equipped[18] = v;
+					journal = journey.render_journal(7, 42, 91, 10, 1, 107,
+									 false, false, &supplies);
+					require(status(s, row, "Missing now") &&
+							status(s, s.steps.size() - 1, "Pending"),
+						"Mountain held proof replaced loose proof");
+					supplies.equipped.clear();
+					supplies.carried[v] = s.steps[row].count;
+				}
+			}
+			supplies = {};
+			supplies.carried[9117] = 4;
+			journal = journey.render_journal(7, 42, 91, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(essences, 0, "Ready now"),
+				"Mountain Tolog essence unavailable");
+			for (size_t row = 1; row < 4; ++row)
+				require(status(essences, row, "Missing now"),
+					"Mountain duplicate essence substituted another demi-god");
+			supplies = {};
+			for (int v : { 9103, 9127, 9128, 72, 359, 371, 55444, 9108, 9109, 9132,
+				       9135, 71228, 87588 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 91, 10, 1, 109, false, false,
+							 &supplies);
+			for (const auto &s : mapping.stories)
+				require(status(s, 0, "Missing now") &&
+						status(s, s.steps.size() - 1, "Pending"),
+					"Mountain clue, foreign essence, service or reward copy forged an accepted return");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 91).completed == 0,
+				"Mountain readiness forged first recovery, speech, travel or accepted history");
+			// Synthetic authoritative receipts test projection/recovery; they do not claim played travel, supply or service outcomes.
+			record(journey, essences.contracts.front(), "mount-essences", 91, 9163);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 91, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(essences, 4, "Recorded") &&
+					journey.progress_for_zone(7, 42, 91).completed == 1 &&
+					status(angel, 1, "Pending") &&
+					status(mirrors, 1, "Pending"),
+				"Mountain two-reward priest receipt duplicated completion or another return");
+			record(journey, essences.contracts.front(), "mount-second-priest", 91,
+			       9100);
+			require(journey.progress_for_zone(7, 42, 91).completed == 1,
+				"Mountain second priest created another quest history");
+			for (const auto &s : mapping.stories)
+				if (s.id != essences.id)
+				{
+					const auto tx = "mount-" + s.id;
+					record(journey, s.contracts.front(), tx.c_str(), 91,
+					       s.id == angel.id ? 9138 : 9152);
+				}
+			journal = journey.render_journal(7, 42, 91, 10, 1, 120, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 91).completed == 3,
+				"Mountain three independent histories failed");
+			for (const auto &s : mapping.stories)
+			{
+				require(status(s, s.steps.size() - 1, "Recorded"),
+					"Mountain spent proof lost accepted history");
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+					require(status(s, row, "Missing now"),
+						"Mountain receipt restored consumed supplies");
+			}
+			auto replay = completion(essences.contracts.front(), "mount-essences", 120);
+			replay.transaction.zone_number = 91;
+			replay.transaction.room_vnum = 9163;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Mountain exact frozen replay duplicated tribute");
+			replay.transaction.room_vnum = 9100;
+			require(journey.record_completion(replay) == result::conflict,
+				"Mountain replay silently rewrote the accepting priest room");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 91).completed == 3,
+				"Mountain cold recovery lost three returns");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 91, 9100, 100, "arrival") ==
+					result::applied,
+				"Mountain raw discovery failed");
+			for (const auto &s : mapping.stories)
+			{
+				const auto tx = "mount-raw-" + s.id;
+				record(raw, s.contracts.front(), tx.c_str(), 91,
+				       s.id == angel.id	  ? 9138 :
+				       s.id == mirrors.id ? 9152 :
+							    9100);
+			}
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 91).completed == 3,
+				"Mountain raw-to-authored recovery lost native returns");
 		}
 
 		{
