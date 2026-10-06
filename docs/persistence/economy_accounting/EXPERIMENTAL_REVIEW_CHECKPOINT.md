@@ -5,14 +5,22 @@
 [The frozen private source and actual component evidence](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)
 record a passing production SQL build, both-engine current SQL cut component,
 and ASan/UBSan native journal carrier component under their original limits.
-The independent flatfile production build fails on a remaining SQL-only unused
-helper; its declaration correction is being prepared. Failed compiler/link
-and stale-runner-pin attempts remain evidence. Context/admission/coordinator
-source reviews pass after a post-durable allocation correction; actual boot,
-physical stages, continuation and full native writer integration remain open.
+The real-provider context codec and actual production capacity helper pass
+strict sanitizers and their original deadline. Shared candidate907's SQL
+production build passes; flatfile stops on one SQL-only unused quest helper.
+Its narrow correction is included in the next private physical-stage candidate.
+Legacy journal faults pass; uncertain/admission remain link-blocked and the
+coordinator fixture's missing original document is being corrected. Failures
+remain evidence. Physical-stage source review passes, but actual boot, physical
+fault/restart checks, continuation and full native writer integration remain open.
 These private candidates are not installed on the maintained branch. No Plan,
 R1–R8, full capture, release or activation completion is claimed; inactive
 behavior and all original safety gates remain.
+
+The separate [lifecycle source provenance repair](CURRENT61_LIFECYCLE_SOURCE_PIN_REPAIR_2026-10-05.md)
+is committed and pushed as `34fa307cb`. Only two stale registry/matrix hashes
+change; all55 original coverage/activation methods, matrix check and normal
+validation pass. This solves metadata drift, without changing coverage or release.
 
 ## Current combined source qualification — 2026-10-05
 
