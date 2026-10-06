@@ -2535,12 +2535,17 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
         totals: dict[tuple, int] = defaultdict(int)
         effect_kind = {(row["operation_id"], row["account_index"]): account_key(row["account_key"])[1]
                        for row in snapshot["effects"]}
-        reasons = {row["operation_id"]: row.get("reason") for row in snapshot["operations"]}
+        operations = {row["operation_id"]: row for row in snapshot["operations"]}
+        root_counts = Counter(row["operation_id"] for row in snapshot["operations"])
         for post in snapshot["postings"]:
             kind = effect_kind.get((post.get("operation_id"), post.get("account_index")))
-            reason = reasons.get(post["operation_id"])
-            if kind in (7, 8, 9, 10) and type(reason) is int:
-                totals[(kind, reason)] += copper(vector(post["delta"]))
+            root = operations.get(post["operation_id"])
+            # A rejected/unknown root cannot realize supply. Duplicate root
+            # identities do not select an outcome or policy by export order.
+            if (kind in (7, 8, 9, 10) and root is not None and
+                    root_counts[post["operation_id"]] == 1 and root.get("outcome") == "committed" and
+                    type(root.get("reason")) is int):
+                totals[(kind, root["reason"])] += copper(vector(post["delta"]))
         rows = [{"account_kind": kind, "reason": reason, "net_copper": total}
                 for (kind, reason), total in sorted(totals.items())]
     elif name == "prices":
