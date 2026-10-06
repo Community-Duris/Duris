@@ -1,5 +1,14 @@
 # Finish accounting implementation plan
 
+## Saved NPC images validated during flatfile restore — 2026-10-06
+
+[Current primary qualification](PLAN5_NATIVE_MOBILE_RESTORE_PRIMARY_QUALIFICATION_2026-10-06.md)
+imports the completed Plan5 flatfile saved-NPC image check. The complete original
+native method passes:4 valid/48 refused images plus20 valid stores/367 retained
+corruption cases, zero skips and unchanged bytes. Original providers, sanitizer
+flags and deadlines remain. No birth/source, full Plan or release qualification
+is claimed; auction, quest, held recovery and incoming SQL reader work remain.
+
 ## Claim consumption schema0062 qualified — 2026-10-06
 
 [Exact additive0062 qualification](CLAIM_CONSUMPTION_SCHEMA_0062_PRIMARY_QUALIFICATION_2026-10-06.md)

@@ -22,6 +22,7 @@
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_craft_progression.h"
 #include "kingdom/kingdom_restore.h"
+#include "world/quest_mobile_native.h"
 #include "qualify_flatfile_economic_records.h"
 
 // Native parsers may log diagnostics containing identities; this process reports
@@ -80,6 +81,38 @@ static std::string account_name(const std::string &stem)
 		name += character;
 	}
 	return name;
+}
+
+// Validate copied native image values after authority-bundle recovery. The
+// value decoder does not recover storage, issue IDs, publish or authenticate
+// birth/source/epoch authority. Independent economic evidence remains separate.
+static void qualify_native_mobile_images(const std::filesystem::path &directory)
+{
+	struct stat status = {};
+	require(lstat(directory.c_str(), &status) == 0 && S_ISDIR(status.st_mode));
+	for (const auto &entry : std::filesystem::directory_iterator(directory))
+	{
+		const auto name = entry.path().filename().string();
+		if (!name.starts_with("quest-mobile-native"))
+			continue;
+		const std::string prefix = "quest-mobile-native-", extension = ".qmn";
+		require(name.starts_with(prefix) && name.ends_with(extension) &&
+			name.size() > prefix.size() + extension.size());
+		const auto identity =
+			name.substr(prefix.size(), name.size() - prefix.size() - extension.size());
+		uint64_t lifetime = 0;
+		const auto parsed = std::from_chars(identity.data(),
+						    identity.data() + identity.size(), lifetime);
+		require(parsed.ec == std::errc() &&
+			parsed.ptr == identity.data() + identity.size() && lifetime &&
+			lifetime != UINT64_MAX && identity == std::to_string(lifetime));
+		const auto encoded = restore_economic_authority::file_bytes(
+			directory, name, PLAYER_SNAPSHOT_MAX_BYTES);
+		quest_mobile_native_image image;
+		require(quest_mobile_native_image_decode(encoded, &image) ==
+				player_snapshot_codec_result::ok &&
+			image.reference.mobile_instance_id == lifetime);
+	}
 }
 
 // Locker identification stores durable payment receipts alongside the critical
@@ -249,6 +282,7 @@ int main(int argc, char **argv)
 		// Recovery is complete on this copied candidate. Audit retained authority
 		// without invoking the storage readers, which also perform recovery.
 		require(restore_economic_records::checker(root).run().lifecycle_complete());
+		qualify_native_mobile_images(std::filesystem::path(root) / "domains");
 		// Mini-world boot does not materialize every persistent world domain.
 		// Exercise their native decoders before any qualification receipt.
 		require(flatfile_corpse_repository_validate(root, &error));
