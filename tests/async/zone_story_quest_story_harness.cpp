@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 157 &&
+		require(catalog.story_mappings.size() == 158 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,170 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "maze_are"; });
+			require(mapping.stories.size() == 7 && mapping.contacts.size() == 10 &&
+					mapping.revision == 1,
+				"Undead Maze journal scope failed");
+			const auto &pentagram = story_for("maze_are", "lich-fiery-pentagram");
+			const auto &fingers = story_for("maze_are", "restore-coordinators-hand");
+			const auto &dust = story_for("maze_are", "krugors-dust-mixture");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 940)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 7 && dailies == 7,
+				"Undead Maze split materials or lost resettable departing-giver candidates");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 940, 94177, 100, "arrival") ==
+					result::applied,
+				"Undead Maze discovery failed");
+			require(journey.meet_npc(7, 42, 94017, 94115, 101) == result::applied,
+				"Undead Maze Kalroh encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 940, 10, 1, 102, false, false);
+			require(journal.find("] " + dust.title + "\r\n") == std::string::npos &&
+					journal.find("] " + pentagram.title + "\r\n") ==
+						std::string::npos &&
+					journal.find("] " + fingers.title + "\r\n") ==
+						std::string::npos,
+				"Undead Maze master dialogue forged actual giver exposure");
+			for (const auto &c : mapping.contacts)
+				if (c.mob_vnum != 94017)
+					require(journey.meet_npc(7, 42, c.mob_vnum,
+								 c.mob_vnum == 94035 ? 94139 :
+										       94115,
+								 103) == result::applied,
+						"Undead Maze progression encounter failed");
+			const auto status = [&](const auto &s, size_t row, const char *state)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos,
+					"Undead Maze request card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at, end == std::string::npos ? end : end - at)
+					       .find(std::string("[") + state + "] " +
+						     s.steps[row].text) != std::string::npos;
+			};
+			const auto before = journey.serialize_state();
+			for (const auto &s : mapping.stories)
+			{
+				const auto completion_row =
+					std::find_if(s.steps.begin(), s.steps.end(),
+						     [](const auto &t)
+						     { return t.kind == "completion"; }) -
+					s.steps.begin();
+				supplies = {};
+				for (const auto &t : s.steps)
+					if (t.kind == "carried_item")
+						for (int v : t.item_vnums)
+							supplies.carried[v] = t.count;
+				journal = journey.render_journal(7, 42, 940, 10, 1, 104, false,
+								 false, &supplies);
+				for (size_t row = 0; row < s.steps.size(); ++row)
+					require(status(s, row,
+						       row == static_cast<size_t>(completion_row) ?
+							       "Pending" :
+							       "Ready now"),
+						"Undead Maze exact supplied quantity readiness failed");
+				for (size_t row = 0; row < s.steps.size(); ++row)
+				{
+					const auto &t = s.steps[row];
+					if (t.kind != "carried_item")
+						continue;
+					const int v = t.item_vnums.front();
+					const auto saved = supplies.carried[v];
+					supplies.carried[v] = t.count - 1;
+					supplies.equipped[18] = v;
+					journal = journey.render_journal(7, 42, 940, 10, 1, 105,
+									 false, false, &supplies);
+					require(status(s, row, "Missing now") &&
+							status(s, completion_row, "Pending"),
+						"Undead Maze missing or worn item substituted for exact loose quantity");
+					supplies.equipped.clear();
+					supplies.carried[v] = saved;
+				}
+			}
+			supplies = {};
+			for (int v :
+			     { 94005, 94011, 94013, 94015, 94017, 94014, 94020, 94023, 94019 })
+				supplies.carried[v] = 5;
+			journal = journey.render_journal(7, 42, 940, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(fingers, 0, "Missing now") &&
+					status(fingers, 1, "Pending") &&
+					status(fingers, 2, "Ready now") &&
+					status(fingers, 3, "Ready now") &&
+					status(dust, 0, "Missing now") &&
+					status(dust, 1, "Pending"),
+				"Undead Maze keys/rewards/nested container forged return or source recovery");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 940).completed == 0,
+				"Undead Maze readiness fabricated search/victory/choice/key use or receipt");
+			// Synthetic authoritative receipts test projection and recovery, not unavailable fresh stock or live exchanges.
+			record(journey, pentagram.contracts.front(), "maze-pentagram", 940, 94115);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 940, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(pentagram, pentagram.steps.size() - 1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 940).completed == 1,
+				"Undead Maze departing choice lost independent receipt");
+			for (const auto &s : mapping.stories)
+				if (s.id != pentagram.id)
+				{
+					const auto row =
+						std::find_if(s.steps.begin(), s.steps.end(),
+							     [](const auto &t)
+							     { return t.kind == "completion"; }) -
+						s.steps.begin();
+					require(status(s, row, "Pending"),
+						"Undead Maze one choice completed another request");
+					const auto tx = "maze-" + s.id;
+					record(journey, s.contracts.front(), tx.c_str(), 940,
+					       s.id == fingers.id ? 94139 : 94115);
+				}
+			journal = journey.render_journal(7, 42, 940, 10, 1, 120, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 940).completed == 7 &&
+					status(fingers, 0, "Missing now") &&
+					status(fingers, 1, "Recorded") &&
+					status(fingers, 2, "Missing now") &&
+					status(fingers, 3, "Missing now") &&
+					status(dust, 0, "Missing now") &&
+					status(dust, 1, "Recorded"),
+				"Undead Maze spent ingredients/broken keys erased history or split exchange");
+			auto replay =
+				completion(pentagram.contracts.front(), "maze-pentagram", 120);
+			replay.transaction.zone_number = 940;
+			replay.transaction.room_vnum = 94115;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Undead Maze exact replay duplicated acceptance");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 940).completed == 7,
+				"Undead Maze cold recovery lost seven receipts");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 940, 94177, 100, "arrival") ==
+					result::applied,
+				"Undead Maze raw discovery failed");
+			for (const auto &s : mapping.stories)
+			{
+				const auto tx = "maze-raw-" + s.id;
+				record(raw, s.contracts.front(), tx.c_str(), 940,
+				       s.id == fingers.id ? 94139 : 94115);
+			}
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 940).completed == 7,
+				"Undead Maze raw-to-authored recovery lost choices");
 		}
 
 		{

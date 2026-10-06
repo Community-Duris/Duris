@@ -140102,6 +140102,451 @@
     {
       "contacts": [
         {
+          "description": "Kalroh occupies the Mazekeeper's Tower. Ask about hi, hello or potion for his directions to Krugor. He may carry a bloody finger. Spellbind lessons are currently unavailable here.",
+          "keyword": "kalroh",
+          "mob_vnum": 94017,
+          "name": "Kalroh the retired alchemist",
+          "topics": [
+            "hi",
+            "hello",
+            "potion"
+          ]
+        },
+        {
+          "description": "Krugor, the assistant, handles the five-dust exchange for the neon blue potion. Bring all five small piles loose. He departs after a successful exchange.",
+          "keyword": "krugor",
+          "mob_vnum": 94043,
+          "name": "Krugor, the assistant",
+          "topics": []
+        },
+        {
+          "description": "Ask the lich about quest, power, list or items. Choose one of his five three-piece bargains and carry only that combination loose. The pentagram reward makes him depart.",
+          "keyword": "lich",
+          "mob_vnum": 94018,
+          "name": "lich high priest",
+          "topics": [
+            "quest",
+            "power",
+            "list",
+            "items"
+          ]
+        },
+        {
+          "description": "Ask about fingers or finger. Return five bloody fingers together for the golden catacomb key. Find him behind the door in the rear chamber of the Guardians Station.",
+          "keyword": "coordinator",
+          "mob_vnum": 94035,
+          "name": "the official coordinator of the Undead Army",
+          "topics": [
+            "fingers",
+            "finger"
+          ]
+        },
+        {
+          "description": "The nightcrawler is the green-piece carrier. Look for its current whereabouts in the maze.",
+          "keyword": "nightcrawler",
+          "mob_vnum": 94020,
+          "name": "A nightcrawler from the negative plane",
+          "topics": []
+        },
+        {
+          "description": "The ghostly illusion of Tiamat is the yellow-piece carrier. Its current whereabouts affect recovery.",
+          "keyword": "illusion",
+          "mob_vnum": 94019,
+          "name": "the ghostly illusion of Tiamat",
+          "topics": []
+        },
+        {
+          "description": "The ghost of Cwoczek's enemy is the red-piece carrier. Its piece belongs to several different lich combinations.",
+          "keyword": "ghost",
+          "mob_vnum": 94015,
+          "name": "the ghost of massacred Cwoczek's enemy",
+          "topics": []
+        },
+        {
+          "description": "A wandering bard's wraith can carry one of the bloody fingers. Other bard equipment is separate from the coordinator's request.",
+          "keyword": "wraith",
+          "mob_vnum": 94010,
+          "name": "the wraith of a wandering bard",
+          "topics": []
+        },
+        {
+          "description": "The colossal bone dragon occupies the end of the mine and can carry a bloody finger alongside its earring.",
+          "keyword": "dragon",
+          "mob_vnum": 94039,
+          "name": "a colossal bone dragon",
+          "topics": []
+        },
+        {
+          "description": "The conservator of the undead occupies the Mining Equipment Room and can carry a bloody finger.",
+          "keyword": "conservator",
+          "mob_vnum": 94041,
+          "name": "the conservator of the undead",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow the maze's dust, colored-piece and five-finger stories, with key routes and current stock limits explained.",
+      "orientation": [
+        "The graveyard opens into the Maze of Death, the Mazekeeper's Tower, the hidden dwarven mine and the Forbidden Catacomb. Follow the available exits and current shared door state; similar tunnel descriptions can conceal different routes.",
+        "Fresh quest items are currently unavailable from zone resets while accounting is active. The journal explains the intended sources and keeps recorded successful exchanges. Existing or supplied owned items can show preparation; a new daily does not create stock or reopen a missing service.",
+        "In the tower, ask Kalroh about hi, hello or potion. He directs you to Krugor, the assistant. Krugor accepts five small piles of dust for a neon blue potion and departs after the exchange. Kalroh and Krugor are different people; carry all five exact piles together.",
+        "Dust is hidden in several dark tunnel rooms, including two dead ends. Use SEARCH in the stocked rooms, then pick up any revealed pile. Search can fail, and another player may already have revealed or taken the dust.",
+        "Ask the lich high priest about quest, power, list or items. His five bargains require three colored pieces each: green/red/yellow for the fiery pentagram; green/yellow/yellow for the nightmare hammer; green/green/red for the polished sphere; yellow/yellow/yellow for the demon-faced mask; red/yellow/yellow for the decaying quiver.",
+        "Choose the reward before offering a piece. Carry only the three pieces for that bargain loose. If you carry several complete combinations, the exchange follows its own matching order rather than your journal selection. The pentagram bargain makes the lich depart; the other four bargains keep him present.",
+        "Look for the nightcrawler, the ghostly illusion of Tiamat and the ghost of Cwoczek's enemy for green, yellow and red pieces respectively. Their whereabouts can change. Shared stock limits each color, so gathering a second or third copy is not guaranteed by waiting for another reset.",
+        "Ask the official coordinator of the Undead Army about fingers or finger. He wants five bloody fingers and rewards a golden key to the Catacomb. One finger has ground stock on the graveyard hillock; others are carried by a wandering bard's wraith, Kalroh, the bone dragon and the conservator of the undead.",
+        "The golden key fits the hidden locked tomb entrance in the Old Graveyard. When that entrance is still hidden, SEARCH the room first, then unlock and open the tomb. Someone else may already have opened the route. Owning or borrowing the key does not record your own five-finger return.",
+        "Inside the catacomb, the small black key leads to the stone sarcophagus in the Dusty Tomb. Unlock the sarcophagus and open it before retrieving its crystal contents. The black key is designed to break on a successful unlock; the golden catacomb key has a different role.",
+        "The tower well, graveyard tombs, hidden hill path and mine-shaft entrances may need to be found or opened. Reaching a room, using a shared route and taking an item are separate from a recorded exchange. Supplied items can prepare a recipe without establishing your own discovery or victory.",
+        "Spellbind lessons are currently unavailable from Kalroh. This is separate from Krugor's dust exchange and the lich's item bargains. Keep the actual giver and reward distinct when following the tower's explanations.",
+        "Keep the exact requested items loose to show preparation. Worn pieces and contents of containers do not count as loose materials. Recorded exchanges remain after ingredients are spent, keys break or rewards are stored. All new story progress requires active, ready accounting."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "maze_are",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:94002,I:94003,I:94004;receive=I:94005;disappear=1",
+              "giver_vnum": 94018
+            }
+          ],
+          "id": "lich-fiery-pentagram",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks the exact quantity carried loose now. Supplied items can prepare the set without recording your own discovery. Fresh quest stock is currently unavailable from zone resets while accounting is active.",
+              "id": "item-94002",
+              "item_vnums": [
+                94002
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a green piece of magical item loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks the exact quantity carried loose now. Supplied items can prepare the set without recording your own discovery. Fresh quest stock is currently unavailable from zone resets while accounting is active.",
+              "id": "item-94003",
+              "item_vnums": [
+                94003
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a red piece of magical item loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks the exact quantity carried loose now. Supplied items can prepare the set without recording your own discovery. Fresh quest stock is currently unavailable from zone resets while accounting is active.",
+              "id": "item-94004",
+              "item_vnums": [
+                94004
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a yellow piece of magical item loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:94002,I:94003,I:94004;receive=I:94005;disappear=1",
+                  "giver_vnum": 94018
+                }
+              ],
+              "hint": "Keeps the recorded exchange after spent ingredients or stored rewards. Materials, dialogue, a key or a room visit do not complete the return.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this successful exchange"
+            }
+          ],
+          "summary": "Prepare one green, one red and one yellow piece. The lich departs after this reward. Fresh quest stock is currently unavailable from zone resets while accounting is active; the journal retains the recipe and accepted history. Carry only the chosen combination to avoid a different matching bargain.",
+          "title": "Lich bargain: fiery pentagram"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:94002,I:94004,I:94004;receive=I:94011;disappear=0",
+              "giver_vnum": 94018
+            }
+          ],
+          "id": "lich-nightmare-hammer",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks the exact quantity carried loose now. Supplied items can prepare the set without recording your own discovery. Fresh quest stock is currently unavailable from zone resets while accounting is active.",
+              "id": "item-94002",
+              "item_vnums": [
+                94002
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a green piece of magical item loose"
+            },
+            {
+              "count": 2,
+              "hint": "Checks the exact quantity carried loose now. Supplied items can prepare the set without recording your own discovery. Fresh quest stock is currently unavailable from zone resets while accounting is active.",
+              "id": "item-94004",
+              "item_vnums": [
+                94004
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 2 \u00d7 a yellow piece of magical item loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:94002,I:94004,I:94004;receive=I:94011;disappear=0",
+                  "giver_vnum": 94018
+                }
+              ],
+              "hint": "Keeps the recorded exchange after spent ingredients or stored rewards. Materials, dialogue, a key or a room visit do not complete the return.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this successful exchange"
+            }
+          ],
+          "summary": "Prepare one green and two yellow pieces. The lich remains after this reward. Fresh quest stock is currently unavailable from zone resets while accounting is active; the journal retains the recipe and accepted history. Carry only the chosen combination to avoid a different matching bargain.",
+          "title": "Lich bargain: nightmare hammer"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:94002,I:94002,I:94003;receive=I:94013;disappear=0",
+              "giver_vnum": 94018
+            }
+          ],
+          "id": "lich-polished-sphere",
+          "steps": [
+            {
+              "count": 2,
+              "hint": "Checks the exact quantity carried loose now. Supplied items can prepare the set without recording your own discovery. Fresh quest stock is currently unavailable from zone resets while accounting is active.",
+              "id": "item-94002",
+              "item_vnums": [
+                94002
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 2 \u00d7 a green piece of magical item loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks the exact quantity carried loose now. Supplied items can prepare the set without recording your own discovery. Fresh quest stock is currently unavailable from zone resets while accounting is active.",
+              "id": "item-94003",
+              "item_vnums": [
+                94003
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a red piece of magical item loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:94002,I:94002,I:94003;receive=I:94013;disappear=0",
+                  "giver_vnum": 94018
+                }
+              ],
+              "hint": "Keeps the recorded exchange after spent ingredients or stored rewards. Materials, dialogue, a key or a room visit do not complete the return.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this successful exchange"
+            }
+          ],
+          "summary": "Prepare two green and one red piece. The lich remains after this reward. Fresh quest stock is currently unavailable from zone resets while accounting is active; the journal retains the recipe and accepted history. Carry only the chosen combination to avoid a different matching bargain.",
+          "title": "Lich bargain: polished sphere"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:94004,I:94004,I:94004;receive=I:94015;disappear=0",
+              "giver_vnum": 94018
+            }
+          ],
+          "id": "lich-demon-mask",
+          "steps": [
+            {
+              "count": 3,
+              "hint": "Checks the exact quantity carried loose now. Supplied items can prepare the set without recording your own discovery. Fresh quest stock is currently unavailable from zone resets while accounting is active.",
+              "id": "item-94004",
+              "item_vnums": [
+                94004
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 3 \u00d7 a yellow piece of magical item loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:94004,I:94004,I:94004;receive=I:94015;disappear=0",
+                  "giver_vnum": 94018
+                }
+              ],
+              "hint": "Keeps the recorded exchange after spent ingredients or stored rewards. Materials, dialogue, a key or a room visit do not complete the return.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this successful exchange"
+            }
+          ],
+          "summary": "Prepare three yellow pieces. The lich remains after this reward. Fresh quest stock is currently unavailable from zone resets while accounting is active; the journal retains the recipe and accepted history. Carry only the chosen combination to avoid a different matching bargain.",
+          "title": "Lich bargain: demon-faced mask"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:94003,I:94004,I:94004;receive=I:94017;disappear=0",
+              "giver_vnum": 94018
+            }
+          ],
+          "id": "lich-decaying-quiver",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks the exact quantity carried loose now. Supplied items can prepare the set without recording your own discovery. Fresh quest stock is currently unavailable from zone resets while accounting is active.",
+              "id": "item-94003",
+              "item_vnums": [
+                94003
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a red piece of magical item loose"
+            },
+            {
+              "count": 2,
+              "hint": "Checks the exact quantity carried loose now. Supplied items can prepare the set without recording your own discovery. Fresh quest stock is currently unavailable from zone resets while accounting is active.",
+              "id": "item-94004",
+              "item_vnums": [
+                94004
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 2 \u00d7 a yellow piece of magical item loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:94003,I:94004,I:94004;receive=I:94017;disappear=0",
+                  "giver_vnum": 94018
+                }
+              ],
+              "hint": "Keeps the recorded exchange after spent ingredients or stored rewards. Materials, dialogue, a key or a room visit do not complete the return.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this successful exchange"
+            }
+          ],
+          "summary": "Prepare one red and two yellow pieces. The lich remains after this reward. Fresh quest stock is currently unavailable from zone resets while accounting is active; the journal retains the recipe and accepted history. Carry only the chosen combination to avoid a different matching bargain.",
+          "title": "Lich bargain: decaying quiver"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:94024,I:94024,I:94024,I:94024,I:94024;receive=I:94020;disappear=0",
+              "giver_vnum": 94035
+            }
+          ],
+          "id": "restore-coordinators-hand",
+          "steps": [
+            {
+              "count": 5,
+              "hint": "Checks the exact quantity carried loose now. Supplied items can prepare the set without recording your own discovery. Fresh quest stock is currently unavailable from zone resets while accounting is active.",
+              "id": "item-94024",
+              "item_vnums": [
+                94024
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 5 \u00d7 a bloody finger loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:94024,I:94024,I:94024,I:94024,I:94024;receive=I:94020;disappear=0",
+                  "giver_vnum": 94035
+                }
+              ],
+              "hint": "Keeps the recorded exchange after spent ingredients or stored rewards. Materials, dialogue, a key or a room visit do not complete the return.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this successful exchange"
+            },
+            {
+              "count": 1,
+              "hint": "A current route lead. SEARCH, unlock and open the hidden graveyard tomb when needed. A supplied key or an already open route does not record your own finger return.",
+              "id": "catacomb-key",
+              "item_vnums": [
+                94020
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the golden catacomb key loose"
+            },
+            {
+              "count": 1,
+              "hint": "A later route lead from inside the catacomb. The black key is designed to break on a successful sarcophagus unlock. A missing spent key does not erase the recorded finger exchange.",
+              "id": "sarcophagus-key",
+              "item_vnums": [
+                94023
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small black sarcophagus key loose"
+            }
+          ],
+          "summary": "Prepare five bloody fingers. The reward is the golden key to the Catacomb. The coordinator remains. Fresh quest stock is currently unavailable from zone resets while accounting is active; the journal retains the recipe and accepted history.",
+          "title": "Return the coordinator's five fingers"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:94001,I:94001,I:94001,I:94001,I:94001;receive=I:94014;disappear=1",
+              "giver_vnum": 94043
+            }
+          ],
+          "id": "krugors-dust-mixture",
+          "steps": [
+            {
+              "count": 5,
+              "hint": "Checks the exact quantity carried loose now. Supplied items can prepare the set without recording your own discovery. Fresh quest stock is currently unavailable from zone resets while accounting is active.",
+              "id": "item-94001",
+              "item_vnums": [
+                94001
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 5 \u00d7 a small pile of dust loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:94001,I:94001,I:94001,I:94001,I:94001;receive=I:94014;disappear=1",
+                  "giver_vnum": 94043
+                }
+              ],
+              "hint": "Keeps the recorded exchange after spent ingredients or stored rewards. Materials, dialogue, a key or a room visit do not complete the return.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record this successful exchange"
+            }
+          ],
+          "summary": "Prepare five small piles of dust. Return them to Krugor, the assistant, for the neon blue potion. Krugor departs. Fresh quest stock is currently unavailable from zone resets while accounting is active; the journal retains the recipe and accepted history.",
+          "title": "Gather dust for Krugor's mixture"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "In the first warlord group: greeting yields a refusal, without a quest reward.",
           "keyword": "highlord",
           "mob_vnum": 94319,

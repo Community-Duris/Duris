@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 157 authored journals.
+2668 distinct Q contracts; 158 authored journals.
 
 Regenerate with:
 
@@ -138,7 +138,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Para-Elemental Plane of Magma (`magma`) | 1 | 2 | 0 | Fallback | [1 × the smoldering heart of an ancient magma drake → a wand of writhing magma, Palenian's pipe of neverending flavors](../../areas/qst/magma.qst#L34) | ship_shop_proc |
 | Malch'Hor Ganl the Goblin City (`malch`) | 3 | 3 | 0 | Fallback | [3 × a dark shadowy circle → native reward/response](../../areas/qst/malch.qst#L24) | — |
 | The Forgotten Mansion (`mansion`) | 3 | 12 | 0 | Yes | [1 × the bloody head of Gaultair; 1 × the horn of Tyrlos → a golden key with the Englehardt emblem](../../areas/qst/mansion.qst#L126) | — |
-| The Maze of Undead Army (`maze_are`) | 7 | 4 | 0 | Fallback | [5 × a bloody finger → a golden key to the Catacomb](../../areas/qst/maze_are.qst#L96) | — |
+| The Maze of Undead Army (`maze_are`) | 7 | 4 | 0 | Yes | [5 × a bloody finger → a golden key to the Catacomb](../../areas/qst/maze_are.qst#L96) | — |
 | Mazzolin (`mazzolin`) | 1 | 2 | 0 | Fallback | [1 × a hematite shard; 1 × a hematite shard; 1 × a hematite shard; other required items → the sleeves of zephyrs, the wand of the Spider Queen](../../areas/qst/mazzolin.qst#L15) | — |
 | Menden-on-the-Deep (`menden`) | 1 | 3 | 0 | Fallback | [1 × the holy elven relic of life → native reward/response](../../areas/qst/menden.qst#L19) | crystal_golem_die, hippogriff_die, llyms_altar, magic_pool, menden_figurine, menden_figurine_die |
 | The Halfling Silver Mine (`mining`) | 1 | 1 | 0 | Fallback | [1 × a balor's whip → a badge of purity](../../areas/qst/mining.qst#L8) | poison, wanderer |
