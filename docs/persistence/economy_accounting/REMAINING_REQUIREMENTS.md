@@ -10,6 +10,10 @@ literal descriptions. This is source acceptance only: actual factory restoration
 mutable typed continuation, remaining reset mechanics and native qualification
 remain open. No maintained native install or full Plan/release gate is claimed.
 
+The reviewed live subset and its two narrow corrections are now composed with
+that contract on5771-input private4057 source. Original preimages match; cold
+factory/carrier/provider/mechanics and native qualification remain unfinished.
+
 ## Birth refusal owner and full-reader evidence — 2026-10-06
 
 The [private native handoff](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)

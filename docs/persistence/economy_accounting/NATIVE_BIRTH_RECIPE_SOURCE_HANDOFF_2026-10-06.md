@@ -81,8 +81,30 @@ No maintained native installation, compilation, gameplay/SQL/recovery test or
 full cold-route qualification is claimed. Factory capture/literal restoration,
 ZombieGame retained-ID hydration, mutable typed journal progress, provider linkage,
 remaining original reset mechanics and combined native qualification remain open.
-The connected live producer is separately frozen and under review; two concrete
-findings concern current-birth container lookup and retryable runtime projection.
-They are being corrected in its successor, not hidden by this contract handoff.
+The connected live producer is separately frozen. Review found current-birth
+container lookup and runtime-projection retry defects; both narrow corrections
+are source-accepted in successor84e62f8d. They still require native qualification.
 All full Plan/R1–R8 and activation/release gates remain open; accounting stays
 inactive and the declined inactive spell-path change is untouched.
+
+## Connected live subset composed with the shared contract
+
+The primary verifies and composes the original13-input producer manifest
+`e609ed28abd214b7ae9f8c5beb862cef7718405e9a9e2828645b355ab636d649`
+and its independently accepted one-file correction
+`84e62f8d6850b3f01698f6ae9c9f9cab99b2aff7cd6b74e9eec84ff29f957f28`
+over the exactf5b shared source. Current reverse stock now takes precedence
+for supported same-forest P lookup after birth-slot reuse. Runtime hydration
+refusal stays retryable under repeated full original SQL/world proof; external
+started-effect protections remain. The original faulty source remains frozen.
+
+The complete5771-input private candidate is
+`tmp/plan3-native-mobile-connected-live-major-source-20261006`, manifest
+`4057b693b2af446dfe56e20265eb49bbf515051b6b41a755b51e56dcb4809df4`.
+Every producer preimage and all composed inputs match exact pins; original driver
+is unchanged. The cold factory owner received that same candidate as its next
+baseline, keeping both streams on one source. Original image-only live submission
+remains the connected subset; v2 factory/cold-carrier integration, recipe-provider
+linkage, original unsupported reset mechanics and native qualification remain
+unfinished. This is source composition only, not maintained installation or
+execution evidence, and closes no full Plan/R1–R8 or release gate.
