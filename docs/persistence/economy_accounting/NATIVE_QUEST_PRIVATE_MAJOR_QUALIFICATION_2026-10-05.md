@@ -251,17 +251,33 @@ checks at manifest
 with 5757 declared inputs. Item source is unchanged from the reviewed physical
 slice; quest source SHA256 is
 `3930d05c19a77f0dff0fcf9dfb6eede053cf9d9f0b3c6e9583ee3d9b6c595f5b`.
-Its original both-backend production builds are running in a fresh owned runner
-at `bin/tests/native-quest-phase1-major-builds-native-copy-successor-20261005-567e53c6d264`.
-Their terminal results remain pending and no older build pass is transferred.
+Its SQL production build passes in1629.871532 seconds with ELF SHA256
+`14b58f9fd42ac5af2f9da6441634f836f400589a198b6ccd2918011dd17437c0`
+and an empty error stream. The original flatfile production build is running
+sequentially in the same fresh owned runner at
+`bin/tests/native-quest-phase1-major-builds-native-copy-successor-20261005-567e53c6d264`.
+The wrapper remains live; no terminal flat result or older pass is transferred.
 
-The affected original coordinator recipe is also running separately on this
-same source, with driver manifest
-`73a4e2d907e649a6d6d40829316b6f23cc94b8e18b52fc244e7f1a0b66fdbe3d`
-at `bin/tests/native-quest-coordinator-doc-20261005-f5b2d95f4aaa`.
-Its original harness, assertions, flags, wrappers and30-second runtime limit
-remain, with genuine provider linkage only. This coordinator-only attempt
-cannot qualify the two still link-blocked recipes; terminal result is pending.
+The first corrected coordinator transport at
+`bin/tests/native-quest-coordinator-doc-20261005-f5b2d95f4aaa`
+stopped before any recipe/compile because its launcher omitted the driver's
+declared `HANDOFF.md`. Its exact source copy passed and that failure is retained.
+The metadata-complete successor supplies all declared driver inputs, with driver
+manifest `73a4e2d907e649a6d6d40829316b6f23cc94b8e18b52fc244e7f1a0b66fdbe3d`,
+and the unchanged private5bb source. It passes the complete original coordinator
+recipe in63.363344 seconds, with one56.126615-second compile and ELF SHA256
+`40f3e3b4d3460a42c79e9249b2d4f50d78f175e14dd201c87cbf37d2d0e41bc4`.
+All142 C++ assertion occurrences and34 Python assertion statements, original
+flags, providers prefix, fsync wrapper, section collection and30-second runtime
+limit remain. Thirteen actual pure production providers supplement linkage;
+no fake native/save/ACK owner or changed assertion/deadline is supplied.
+Artifact root is
+`bin/tests/native-quest-coordinator-doc-metadata-successor-20261005-8ebbacddca4a`.
+Ten regular artifacts export byte-exactly and the owned runner/both volumes are
+removed. This is original coordinator compatibility, not full native quest
+publication/recovery proof. The uncertain/admission recipes remain genuinely
+link-blocked at the actual pipeline-owned consume_acknowledged_hold provider;
+their original failures and limits remain. No all-four or full-plan pass is claimed.
 
 The next phase2 continuation slice is being implemented against the same frozen
 parent. A separate source-only primary caller handoff at manifest
@@ -285,3 +301,109 @@ handoff recovery, never-admitted absence proof, native birth/source/cash/lifetim
 integration, remaining stock on disappearance, zero-item/hook routes, flatfile
 parity and the original full gameplay/recovery/release gates remain unfinished.
 No new policy or acceptance gate is added and none of the original gates is waived.
+
+
+## Original phase2 reward and command handoff source integration
+
+The reviewed private reward owner preserves the complete original command,
+version5 reward terms, real recipient runtime and actual repository masks.
+Started/returned writers are fully allocated before effects, uncertain writers
+retain exact successors, and terminal retirement requires both durable returned
+context and the genuine matching PID/operation successful error-zero reward ACK.
+The original net pulse forwards those actual completions through its private
+owner. Its separate settling pulse dispatches no reward effects. Existing
+original reward/save receipt functions and inactive behavior remain unchanged.
+The existing32MiB gameplay/native/physical owner includes every retained phase2
+envelope and command; no separate budget/store or public ACK capability is added.
+Source review accepts this slice; no native execution is claimed for phase2.
+
+The apparent immediate-parent mismatch was a raw-versus-canonical comparison:
+worker and actual5bb parent quest bytes are both exactly raw3930d05c, with3068
+ordinary CRLF and no doubled CR. Both LF projections hash
+`d38f8b0a8b1a1081e9445477fea4f75325512ef9efbba59aab95685368565c9d`.
+The immutable transport successor at manifest
+`a7b2f8bb1463485502e9f7b234c7270013ed0083d96d644291509533df72e872`
+retains original raw artifacts and every removed-CR offset/full inverse.
+Primary composition requires BOTH exact raw-parent equality and exact canonical
+equality; it does not weaken source identity. The original3a066 packet remains
+unchanged, as do43 original function bodies and the formatting fixed point.
+The four-file reward/caller composition is frozen at source manifest
+`34d941dc1a35d0e7fa1a5b772ca63e6f79e4ac43e37c49ee51fab3159061279e`.
+It is uninstalled and unbuilt, with hooks/branch/child/cold integration pending.
+
+A separately reviewed private item C/header observation seam has manifest
+`59cab35babc163170d0aae0f3a779b8d0907ad16514d2fbfe12eb4d69a736d22`.
+It supplies the identical retained immutable command only after genuine guarded
+publication acknowledgement and continuation return, with exact token generation,
+operation and shared command identity. Pending/unavailable preserve output and
+the original entry stays retained; the existing take body is unchanged.
+Changed-line clang18 and exact byte inverses pass. This enables the original
+quest owner to reserve its shared budget, authenticate the actual phase2 carrier
+and persist GIVE/branch/child handoff BEFORE consuming the entry. That caller
+implementation is underway and is not accepted or qualified by this seam alone.
+
+## Original NPC generation integration boundary
+
+Read-only tracing confirms that actual detached stage prepare/publish exists,
+but its sole friend birth owner is only declared and has no production caller.
+The private candidate already wires binding advance to quest publication; it
+can advance an existing valid LIVE binding, but cannot create its initial birth.
+Actual reset M still uses immediate legacy read_mobile, and active quest give
+refuses the zero-bound NPC before operation creation/checkpoint/mutation.
+
+Existing npc_reward/npc_generation policy, source-event codec, reserved UID
+allocator, absent-row native SQL participant and accounting/source/custody stores
+can serve the original birth contract. No admitted command yet retains the
+original reset generation/selection, cash lifetime and initial stock/binding.
+The actual zone command is epic-stone awards, not reset-generation admission;
+native acceptance/consumption cannot masquerade as birth. Implementing that
+original Plan3 producer/atomic participant remains primary-owned. Current raw
+NPC stock, runtime/prototype/birthplace or a passive cold slot cannot supply
+historical birth authority. Empty-stock birth alone would not close day-one
+reset stock, loot/cash, native quest, restoration or retirement requirements.
+This is an existing implementation gap, not a new gameplay policy/release gate.
+
+The exact Plan5 report c7ddf667e independently confirms the published lifecycle
+pin repair with71 original coverage/audit methods and normal validators, while
+retaining its frozen current61/schema61 scope and the release evidence failure.
+Its report is imported byte-exactly; original286-method evidence is unchanged.
+No implementation, schema, activation, production data or peer-owned WIP changes
+are made by this report integration. Original R1–R8 and all plan acceptance remain.
+
+
+## Exact original child command before submission
+
+The source-reviewed private preparation interface at manifest
+`fc752125db0de124bce96ac56b5fee24e5a910a9cb818577785bf37b76775bc1`
+retains the final original consumption command from its actual acknowledged
+held save, native capture, source/epoch and admission timestamp. It observes
+the same immutable command before the original submit route, without submitting
+or granting publication/ACK proof. Original submit diagnostics, exact token
+generation and inactive/flat refusal remain. This preparation can acquire the
+existing in-memory hold/cache; the caller still owns sequencing and persistence.
+Actual item C is `907c4267aba341d07004f6bd6eca3a9cb91ac07a3348ed88bad6559547ef4ec3`.
+The header raw SHA is
+`d1441df7853ac299530dcc29fa9d25a2400cbbcca5df6b6e7dbb33b16f6a9e87`;
+its LF projection is
+`e817dab76c63e4f81ada20fa0a8673d350ef220d2134bb05aa66397a5e07ec96`.
+
+A separate reviewed codec C/header packet at manifest
+`63f27ca7f8295c1e01a0e6212957066cd90f915bc6783304e89600dc84490a77`
+adds one exact bounded child command to the existing recovery context. Empty
+frames preserve original NQR1 bytes; nonempty frames use NQR2. Child length
+and the same combined retained-program budget are checked before copying;
+strong outputs, trailing refusal and canonical whole-context re-encoding remain.
+The child must match the original operation, consumption shape, final-giver PID
+and sealed native birth. These remain structural facts, not current source,
+native-row, SQL, execution or acknowledgement authority. Candidate C SHA is
+`43430d0e567f800b074df2b3825c76994378445e3edc050b405e006b626009d0`;
+header SHA is
+`43a15c8a35a0c6c0f22a8edb7703ce75d7e335c8c9d1b007f40270360a51fc0a`.
+Both packets pass changed-line clang18 fixed points and exact source inverses.
+
+The gameplay owner must charge the original aggregate, persist these actual
+final bytes in the original parent before child submission, and retain exact
+handoff/revision ordering. That quest-only integration remains underway.
+Historical ID-only contexts cannot be filled from later player/native stock.
+Original NQR1/NQR2 native, allocation/corruption, child and restart checks remain
+at coherent major readiness. No full plan or recovery completion is claimed.
