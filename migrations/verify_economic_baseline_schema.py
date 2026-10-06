@@ -8,8 +8,8 @@ from verify_economy_accounting_schema import Client, VerificationError
 TABLES = ('economic_baseline_control', 'economic_baseline_witness', 'economic_baseline_reservation')
 HISTORICAL_0032_EXPECTED = {'mysql8': 'f0551ebf630d1e18f4bdec863f239da3d974f783f3acafbc243483b8e67bf3bc', 'mariadb10_11': '778e7d3815bc4c66d2bb13072c9bc6689df9008a332bee02b5fd3c84548e0e3e'}
 
-# Current0061 metadata measured on both owned engines; original hashes stay historical.
-EXPECTED = {'mysql8': '858f37fb10734428601d4a10bacb1892154d6fb77cd656fe8a90a004ef00016d', 'mariadb10_11': '31f31065ee4e95d08049748eb49372a71ab7569f2f775aaaa9b1dbebf0978272'}
+# Current0062 metadata measured on both owned engines; original hashes stay historical.
+EXPECTED = {'mysql8': 'fcda92ac8244729a41978dd4c1b1579732ace2a80cf3ab12fcfe3414f4494316', 'mariadb10_11': 'e305033606fbbd6c168c72990a5eceaa6c3c2e3673ff970e90c91c64214f4f95'}
 
 # The accepted0061 canonical reader preserves phase ordering (ordinary T/C/I/F/K,
 # then MySQL enforcement E), counts NULL rows, and refuses truncated GROUP_CONCAT.
@@ -108,7 +108,7 @@ def main():
     if args.print_fingerprint:
         print(engine + ' ' + actual)
     elif EXPECTED[engine] is None:
-        raise VerificationError('0061 baseline metadata awaits actual engine measurement')
+        raise VerificationError('0062 baseline metadata awaits actual engine measurement')
     elif actual != EXPECTED[engine]:
         raise VerificationError('baseline retention metadata fingerprint mismatch')
     else:
