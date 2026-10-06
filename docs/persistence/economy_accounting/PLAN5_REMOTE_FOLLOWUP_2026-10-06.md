@@ -352,3 +352,12 @@ activation verifier, genuine financial producer/replay/lost-reply/cold-recovery
 journeys, typed erasure, full managed backup/restore/retention and release-host
 operational budgets remain gates. Notebook availability is nonblocking;
 accounting remains inactive and no complete Plan5 or release result is claimed.
+
+The final publication refresh observes primary
+`9817f58b57a4a4179c4db5506fce3ccfe166c12b`, which integrates the prior retained
+claim allocation slice and its primary qualification packet. Its native tree
+remains `cf8dc0761057de7087a347b8e8c21285968ef4f9`, including the newer baseline
+repair; migration tree remains `1d041c8bc27cfc2b2bfdc8095b6c1348ac3a15c5`.
+That observation does not replace these new slices' exact tested source.
+The three new fixes and their reports are published here for the primary's
+next regular integration and combined candidate qualification.
