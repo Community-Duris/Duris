@@ -372,7 +372,7 @@ this interface.
 
 ### SQL opening-origin extraction
 
-`scripts/economic_sql_audit_origins.py` reads retained EAB1 baseline witnesses
+`scripts/economic_sql_audit_origins.py` reads retained EAB1/EAB2 baseline witnesses
 through a dedicated repeatable-read, consistent-snapshot, read-only SQL
 transaction. Give it an explicit host, database, user, lineage, epoch and new
 output path; its password comes from the named environment variable (default
@@ -382,6 +382,18 @@ baseline root/inbox receipt, stored SHA-256 and EAB1 framing, canonical row
 order, nonzero source digests and unique account lifetimes/UIDs. A missing or
 zero-revision baseline refuses. The output is bounded by the audit input limit
 and contains only non-personal account keys, UID positions and revisions.
+
+For schemas retaining `economic_baseline_witness.command_accepted_at_usec`, a
+present admission time must be an exact positive unsigned64-bit integer. The
+reader independently reconstructs the full original schema2 CCM1 command,
+including that time and its original EAI1 intent, and compares its SHA-256 with
+`critical_operation_inbox.command_hash`. Restore qualification consumes the
+same independent comparison. The normalized EAI1 binding is checked separately.
+Historical NULL times and older schemas without the column remain unknown;
+neither reader infers a timestamp or authenticates a missing command preimage.
+Their existing partial audit output cannot establish complete receipt or
+release qualification. A known-time/hash disagreement refuses before export
+and still rolls back and closes the cursor.
 
 The `economic_sql_audit_origins_v1` artifact supplies **only**
 `account_origins` and `item_origins` for a later full SQL exporter. It is not a
