@@ -2,52 +2,74 @@
 
 ## Current integration boundary
 
-Auction/opening retained proof is now integrated in the maintained candidate.
-Seven original native suites pass on each fresh canonical0062 MySQL8.0.46 and
-MariaDB10.11 engine, including genuine item-claim and consumed-money corruption
-refusals. The full original MariaDB740-object production build passes. Its
-formatting-only lifecycle successor also passes the actual strict object and
-original Make-selected server relink, with unchanged objects authenticated.
-The original flatfile740-object full build and final formatting successor also
-pass. This completed component is being committed separately; the durable
-[qualification](AUCTION_OPENING_RETAINED_PRIMARY_QUALIFICATION_2026-10-06.md)
-records exact final source and build evidence.
+The auction/opening shared milestone is published as de3296fd0 on
+experimental-accounting. Seven original native suites pass on each fresh
+canonical0062 MySQL8.0.46 and MariaDB10.11.14 engine, including retained item
+claim and consumed-money corruption refusals. Both full740-object production
+builds and final formatting-only strict objects/server relinks pass.
+[Exact qualification](AUCTION_OPENING_RETAINED_PRIMARY_QUALIFICATION_2026-10-06.md)
+records the maintained source and terminal evidence. The normal contracts and
+matrix pass:14 fixtures,920 routes,2876 occurrences/2818 unique sites, zero
+unmapped. Coverage remains incomplete and release BLOCKED.
 
-The writer registry pins and13 moved source locations now match the maintained
-source. The complete actual census remains2876 occurrences/2818 unique sites,
-with zero unmapped sites. Normal14-fixture accounting contracts and920 routes
-validate. Coverage remains incomplete and release BLOCKED.
+The PRIVATE fee recovery successor passes independent source review, ten
+original strict production objects across both backends, and the original pure
+ASan/UBSan fixture with80 original plus17 additive assertion sites. It retains
+first-write/live parent authority, proves durable child history after normal
+parent retirement, and permits exact physically-proven fee ACK retries without
+altering generic uncertainty or integrity-poison fences. Actual coordinator,
+SQL, held ownership, gameplay and cold recovery remain unqualified.
 
-The complete native fee financial/shared graph passes eight strict production
-objects across both backends, including all six required financial definitions.
-Independent review then established two real recovery omissions: ACK uncertainty
-blocked a genuine publication retry, and historical committed fee replay required
-a parent removed by normal quest progression. A source-pinned six-file successor
-now keeps original first-write/live parent authorization, proves the durable
-child root for historical replay, and permits only exact physically-proven fee
-ACK retry while preserving generic uncertainty and integrity-poison fences.
-Independent source review passes; updated original native/object qualification
-is underway. Full coordinator/SQL/gameplay/cold fault journeys remain open.
+The PRIVATE transport successor passes four original strict journal/coordinator
+objects and the unchanged original journal fault suite. A real codec-built
+fee14 journal comparison proves the original refusal and successor durable
+append/checkpoint/phase2/reopen/replay with exact bytes and stale/corrupt identity
+refusals. These typed synthetic values establish journal behavior; they confer
+no SQL, native actor, hold or ACK authority.
 
-The new birth-origin schema0063 has passed original metadata measurements on
-both engines, source/lifecycle/runtime contracts and the complete10-method boot
-component. The unchanged original full both-engine canonical/staging/master
-migration and compiled/shell boot qualifier is running against private unmeasured
-sentinels; its final measured contract is not integrated yet. No full birth
-publication, activation, complete Plan or release claim follows from these checks.
+The PRIVATE schema0063 contract completes the unchanged original full qualifier
+on MySQL8.0.46 and MariaDB10.11.19: canonical/staging/master upgrades/reruns,
+native session faults, exact metadata/history and positive/negative shell plus
+compiled boot checks. The10-method runtime component also passes. Only the two
+actual measured engine fields were sealed. Immutable0–62 files and all three
+old manifest prefixes remain exact. The executed archive's other differences
+from raw Git were proven CRLF/LF conversions, with no behavior or mode drift;
+the earlier stale-source inference was withdrawn. The schema contract is not
+yet maintained/published, and no full game boot or birth publication is proved.
 
-A separate private transport successor repairs the confirmed journal refusal of
-acknowledged fee14 and coordinator omission of coin-GIVE16. Its shared pure
-classifier recognizes only accounting-schema item12/14/16; unacknowledged and
-legacy routes, source/domain/held-owner gates and the declined inactive spell
-path remain unchanged. Both strict journal/coordinator object pairs and the original journal fault
-suite pass. Genuine typed fee journal qualification is running; complete
-coordinator/SQL/gameplay/cold authority remains unqualified.
+New PRIVATE coin-GIVE16 root dispatch and exact acknowledged12/14/16 SQL
+admission successors pass independent source review. Their strict object and
+immutable admission runtime qualification is underway. The existing two-wallet
+executor, full held forest, retained birth proof and original reconnect-disabled
+transaction supply authority; the admission predicate only regenerates frozen
+intent bytes. Flat native admission and unacknowledged/legacy gates remain.
+No genuine durable-rejection producer has been demonstrated for the money
+executor; synthetic rejection values do not establish that case.
 
-All prior failure/preimage evidence and the three unrelated worktree paths are
-preserved. Production accounting is inactive. No production data, merge,
+One shared major candidate now combines these private producer/schema changes
+with published de3296fd0 and all other current-head source. Exact common Git
+preimages authenticate74 changed files, including three disjoint source merges.
+The sole overlapping backend-refusal guard preserves the auction, fee and money
+exclusions together in a primary-owned formatted successor. Raw Git export and
+immutable migration proofs replace archive line-ending assumptions. Full strict
+production qualification is preparing; the genuine original constructor driver
+will consume matching sealed objects rather than repeat those builds.
+
+Independent tracing found no demonstrated money ACK defect in the actual warm
+uncertain-journal retry. Existing recovery state skips completed cash/notice
+effects, the held slot is authenticated directly, and the identical journal
+rewrite confirms its postimage/directory durability. ACK source stays unchanged.
+Actual injected directory-fsync failure/retry and cold producer journeys remain
+qualification work. An invented interruption before the nonfallible hold consumer
+is not counted as a healthy production failure.
+
+Plan5 remote refresh is445b4caa9; its new nonempty claim restore/retention slices
+are fetched for integration review. Shared coordinator/activation and actual
+HRT/quest/birth gameplay/publication/ACK/cold checks, writer coverage and the
+complete requested Plan5/R1–R8 release qualification remain open. Prior failure/preimage
+evidence and three unrelated WIP paths are preserved. Accounting is inactive;
+the declined inactive spell path is unchanged. No production data, merge,
 deployment or force push occurred.
-
 
 This integration began from published experimental-accounting head ad2ebe4dbe803f429fa5195ad4671f94499f1f29. The separately qualified baseline repair is recorded below. Remote refresh confirmed that starting head; Plan5 independently advanced to1b4ab18728e10b302d72ecff38650451a4fac53c. The newer production changes described here are private composed source, awaiting qualification and integration. No full Plan, R1–R8, coverage or release completion is claimed. Inactive accounting and the declined inactive spell-path change remain untouched.
 
