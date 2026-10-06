@@ -1,5 +1,12 @@
 # Double-entry economy: remaining requirements
 
+## Canonical0062 verifier executable mode repaired — 2026-10-06
+
+[Mode-only repair](CLAIM_CONSUMPTION_VERIFIER_MODE_PRIMARY_2026-10-06.md) fixes the raw-Git Linux PermissionError without
+changing sealed bytes. The original full native/restore test passes on both
+fresh schema0062 engines with zero skips. NPC reader integration is separate;
+producer/recovery and full release qualification remain open.
+
 ## Saved NPC images validated during flatfile restore — 2026-10-06
 
 [Current primary qualification](PLAN5_NATIVE_MOBILE_RESTORE_PRIMARY_QUALIFICATION_2026-10-06.md)
