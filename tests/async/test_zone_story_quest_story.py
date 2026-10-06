@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1410
-assert report['mapped_area_count'] == 138 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 139 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,13 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+caves_skelenak=next(m for m in catalog['story_mappings'] if m['source_area']=='caves_skelenak')
+assert (caves_skelenak['schema_version'],caves_skelenak['revision'],caves_skelenak['coverage'])==(3,1,'complete')
+assert len(caves_skelenak['stories'])==9 and len(caves_skelenak['contacts'])==8 and sum(len(c['topics']) for c in caves_skelenak['contacts'])==17 and not caves_skelenak['exclusions']
+assert [s['contracts'][0]['giver_vnum'] for s in caves_skelenak['stories']]==[4027]*3+[4038]*6
+assert [[t['item_vnums'][0] for t in s['steps'][:-1]] for s in caves_skelenak['stories']]==[[4021],[4022],[4023],[4005,4025],[26438],[16071],[20604],[4016,4017],[26013]]
+assert all(t['count']==1 and t['optional'] for s in caves_skelenak['stories'] for t in s['steps'][:-1]) and report['eligible_by_zone']['40']==9
 
 yuan_ti=next(m for m in catalog['story_mappings'] if m['source_area']=='yuan_ti')
 assert (yuan_ti['schema_version'],yuan_ti['revision'],yuan_ti['coverage'])==(3,1,'complete')

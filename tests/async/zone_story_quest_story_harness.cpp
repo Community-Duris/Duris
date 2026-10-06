@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 138 &&
+		require(catalog.story_mappings.size() == 139 &&
 				tracker.summary_for(7, 42).total == 1528,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7687,6 +7687,174 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "caves_skelenak"; });
+			const auto &silver = story_for("caves_skelenak", "goortok-silver-disc");
+			const auto &vial = story_for("caves_skelenak", "goortok-strange-vial");
+			const auto &tribal = story_for("caves_skelenak", "monk-tribal-leaders");
+			const auto &hydra = story_for("caves_skelenak", "monk-pyrohydra-bracelets");
+			const auto &sphere = story_for("caves_skelenak", "monk-troll-king-sphere");
+			require(mapping.stories.size() == 9 && mapping.contacts.size() == 8,
+				"Skelenak authored request/context scope failed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 40, 4001, 100, "arrival") ==
+					result::applied,
+				"Skelenak arrival failed");
+			std::string journal =
+				journey.render_journal(7, 42, 40, 10, 1, 101, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Skelenak exposed unseen recipient card");
+			for (const auto &[mob, room] :
+			     std::vector<std::pair<int, int>>{ { 4009, 4049 },
+							       { 4019, 4021 },
+							       { 4026, 4069 },
+							       { 4032, 4106 },
+							       { 4034, 4119 },
+							       { 4037, 4118 } })
+				require(journey.meet_npc(7, 42, mob, room, 102) == result::applied,
+					"Skelenak contextual source encounter failed");
+			journal = journey.render_journal(7, 42, 40, 10, 1, 103, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Skelenak source or hazard revealed unseen recipient requests");
+			require(journey.meet_npc(7, 42, 4027, 4076, 104) == result::applied,
+				"Skelenak Goortok encounter failed");
+			journal = journey.render_journal(7, 42, 40, 10, 1, 105, false, false);
+			require(journal.find("] " + silver.title + "\r\n") != std::string::npos &&
+					journal.find("] " + sphere.title + "\r\n") ==
+						std::string::npos,
+				"Skelenak independent recipient visibility failed");
+			require(journey.meet_npc(7, 42, 4038, 4153, 106) == result::applied,
+				"Skelenak monk encounter failed");
+			const auto status = [&](const auto &story, size_t row, const char *state)
+			{
+				const auto start = journal.find("] " + story.title + "\r\n");
+				require(start != std::string::npos,
+					"Skelenak visible journal card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     story.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[4030] = supplies.carried[4028] = supplies.carried[4029] =
+				supplies.carried[4031] = 1;
+			supplies.equipped[0] = 4021;
+			journal = journey.render_journal(7, 42, 40, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(silver, 0, "Missing now") &&
+					status(tribal, 0, "Missing now") &&
+					status(tribal, 1, "Missing now") &&
+					status(hydra, 0, "Missing now") &&
+					status(sphere, 0, "Missing now"),
+				"Skelenak held offering or rewards prepared requests");
+			supplies = {};
+			supplies.carried[4005] = 2;
+			supplies.carried[4016] = 2;
+			supplies.carried[4020] = supplies.carried[4010] = supplies.carried[4027] =
+				1;
+			journal = journey.render_journal(7, 42, 40, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(tribal, 0, "Ready now") &&
+					status(tribal, 1, "Missing now") &&
+					status(hydra, 0, "Ready now") &&
+					status(hydra, 1, "Missing now") &&
+					status(silver, 0, "Missing now"),
+				"Skelenak duplicate one kind or context goods prepared distinct pair");
+			supplies.carried[4025] = supplies.carried[4017] = 1;
+			journal = journey.render_journal(7, 42, 40, 10, 1, 109, false, false,
+							 &supplies);
+			require(status(tribal, 0, "Ready now") && status(tribal, 1, "Ready now") &&
+					status(hydra, 0, "Ready now") &&
+					status(hydra, 1, "Ready now"),
+				"Skelenak supplied exact loose pairs required personal defeat");
+			supplies = {};
+			for (int item : { 4021, 4022, 4023, 4005, 4025, 26438, 16071, 20604, 4016,
+					  4017, 26013 })
+				supplies.carried[item] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 40, 10, 1, 110, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				for (size_t row = 0; row + 1 < story.steps.size(); ++row)
+					require(status(story, row, "Ready now"),
+						"Skelenak matching supplied loose stock was not projected");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 40).completed == 0,
+				"Skelenak rendering invented returns,knowledge,cure,access or liberation");
+			record(journey, sphere.contracts.front(), "skelenak-sphere-first", 40,
+			       4153);
+			record(journey, vial.contracts.front(), "skelenak-vial-first", 40, 4076);
+			require(journey.progress_for_zone(7, 42, 40).completed == 2 &&
+					journey.evidence_for(silver.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Skelenak narrated order became an acceptance gate");
+			for (const auto &story : mapping.stories)
+				if (story.id != sphere.id && story.id != vial.id)
+				{
+					const std::string txid = "skelenak-" + story.id;
+					record(journey, story.contracts.front(), txid.c_str(), 40,
+					       story.id.find("goortok-") != std::string::npos ?
+						       4076 :
+						       4153);
+				}
+			require(journey.progress_for_zone(7, 42, 40).completed == 9 &&
+					journey.progress_for_zone(7, 42, 40).total == 9,
+				"Skelenak rewardless or independent returns lost units");
+			supplies = {};
+			journal = journey.render_journal(7, 42, 40, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(tribal, 0, "Missing now") &&
+					status(tribal, 1, "Missing now") &&
+					status(silver, 0, "Missing now") &&
+					journey.evidence_for(silver.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Skelenak spent custody replaced accepted history");
+			auto replay =
+				completion(sphere.contracts.front(), "skelenak-sphere-first", 120);
+			replay.transaction.zone_number = 40;
+			replay.transaction.room_vnum = 4153;
+			require(journey.record_completion(replay) == result::already_applied &&
+					journey.progress_for_zone(7, 42, 40).completed == 9,
+				"Skelenak replay duplicated accepted return");
+			int local_units = 0, achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 40)
+				{
+					++local_units;
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(local_units == 9 && achievements == 9 && dailies == 9,
+				"Skelenak context or materials changed native unit/daily policy");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 40) &&
+					recovered.progress_for_zone(7, 42, 40).completed == 9,
+				"Skelenak cold recovery lost history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 40, 4001, 100, "arrival") ==
+					result::applied,
+				"Skelenak historical arrival failed");
+			for (const auto &story : mapping.stories)
+			{
+				const auto txid = "skelenak-old-" + story.id;
+				record(historical, story.contracts.front(), txid.c_str(), 40,
+				       story.id.find("goortok-") != std::string::npos ? 4076 :
+											4153);
+			}
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 40).completed == 9,
+				"Skelenak authored cards lost raw historical receipts");
 		}
 
 		{

@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 138 authored journals.
+2668 distinct Q contracts; 139 authored journals.
 
 Regenerate with:
 
@@ -55,7 +55,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Bugger Caves (`bugger`) | 2 | 1 | 0 | Fallback | [1 × a bugger egg; 1 × a bugger egg; 1 × a buggers carapace → some spiked carapace armor](../../areas/qst/bugger.qst#L7) | — |
 | The Twin Keeps of Devastated Tharnadia (`caertannad`) | 30 | 37 | 10 | Yes | [3 × a Bren'Shan harpy feather; 3 × a Straka harpy feather → a necklace of frost harpy feathers](../../areas/qst/caertannad.qst#L395) | caertannad_summon |
 | Quintaragon Castle (`castle`) | 2 | 2 | 0 | Fallback | [1 × a white bone studded with fine diamonds → the flaming orb of revenge](../../areas/qst/castle.qst#L31) | — |
-| Caves of Mt. Skelenak (`caves_skelenak`) | 9 | 8 | 0 | Fallback | [1 × a bronze scepter; 1 × an engraved bracelet of human bones → a copper mask](../../areas/qst/caves_skelenak.qst#L143) | guild_guard, piercer |
+| Caves of Mt. Skelenak (`caves_skelenak`) | 9 | 8 | 0 | Yes | [1 × a bronze scepter; 1 × an engraved bracelet of human bones → a copper mask](../../areas/qst/caves_skelenak.qst#L143) | guild_guard, piercer |
 | Centaur Villages (`centaur_zone`) | 7 | 4 | 2 | Yes | [2 × a half amulet → a centaurian bracelet of honor, the centaurian legplates of honor](../../areas/qst/centaur_zone.qst#L152) | — |
 | Ceothia (`ceofutur`) | 1 | 1 | 0 | Fallback | [1 × a bluestone vial → a shard of bluestone](../../areas/qst/ceofutur.qst#L27) | — |
 | Ceothia (`ceopast`) | 6 | 8 | 1 | Yes | [1 × a shard of bluestone; 1 × a lock of green hair; 1 × a blood red feather → a bluestone key, a bluestone vial](../../areas/qst/ceopast.qst#L104) | — |
