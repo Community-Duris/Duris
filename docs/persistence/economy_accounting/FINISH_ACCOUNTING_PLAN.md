@@ -1,5 +1,14 @@
 # Finish accounting implementation plan
 
+## Matching equipment capture and production-build evidence consumed — 2026-10-06
+
+[Primary source comparison](PLAN5_EQUIPMENT_V2_PRIMARY_QUALIFICATION_2026-10-06.md)
+confirms identical native/canonical61/script inputs for Plan5's new both-engine
+equipment capture/exporter batch and fresh738-unit production builds on both
+backends. Results remain peer-attributed; external artifacts were not locally
+re-inspected. The partial exporter grants no activation authority. Full R6,
+real producer/ACK/cold journeys and release qualification remain open.
+
 ## Published source pin representation repaired — 2026-10-06
 
 [Primary provenance repair](PUBLISHED_SOURCE_PIN_PRIMARY_REPAIR_2026-10-06.md)
