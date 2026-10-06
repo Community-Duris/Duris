@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 172 authored journals.
+2668 distinct Q contracts; 173 authored journals.
 
 Regenerate with:
 
@@ -36,7 +36,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Arcium, the Plagued Kingdom (`arcium`) | 1 | 1 | 0 | Fallback | [1 × a bleeding heart of Kovii; 1 × a bleeding heart of Granra; 1 × a bleeding heart of Kurlon; other required items → the shield proclaimed 'Hope'](../../areas/qst/arcium.qst#L11) | world_quest |
 | Ashrumite Village (`ashrumite`) | 12 | 13 | 8 | Yes | [1 × a necklace of silver set with gems; 1 × an amethyst; 1 × an exotic tigers-eye gem; other required items → a small gold nugget](../../areas/qst/ashrumite.qst#L101) | cityguard, drunk_one, dump, guild_guard, inn, janitor |
 | The Lair of Tiamat (`azhural`) | 2 | 2 | 0 | Fallback | [8 × a shard of bone → a key of fused bone shards](../../areas/qst/azhural.qst#L18) | sphinx_prefect_crown |
-| Bahamut's Palace (`bahamut`) | 1 | 3 | 0 | Fallback | [1 × Bahamut's personal seal → a glowing white key](../../areas/qst/bahamut.qst#L24) | artifact_stone, bahamut, bloodfeast, dragonlord_plate, mrinlor_whip, sunblade |
+| Bahamut's Palace (`bahamut`) | 1 | 3 | 0 | Yes | [1 × Bahamut's personal seal → a glowing white key](../../areas/qst/bahamut.qst#L24) | artifact_stone, bahamut, bloodfeast, dragonlord_plate, mrinlor_whip, sunblade |
 | The Bandit Canyons (`bandit`) | 1 | 0 | 0 | Fallback | [1 × the still-beating heart of Bel; 1 × the orb of unmaking; 1 × A mystic runed stone tablet → the scroll of Strength](../../areas/qst/bandit.qst#L13) | — |
 | Bandit Camp (`banditca`) | 4 | 4 | 0 | Yes | [1 × a shackle key → native reward/response](../../areas/qst/banditca.qst#L38) | — |
 | The Realm of Barovia (`barovia`) | 9 | 41 | 2 | Yes | [1 × a silver horse shoe; 1 × a gold chalice; 1 × a rare engraved electrum coin; other required items → the time warp mask](../../areas/qst/barovia.qst#L169) | — |

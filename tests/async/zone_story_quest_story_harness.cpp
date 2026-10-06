@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 172 &&
+		require(catalog.story_mappings.size() == 173 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,113 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "bahamut"; });
+			const auto &seal = story_for("bahamut", "personal-seal");
+			require(mapping.stories.size() == 1 && mapping.contacts.size() == 8 &&
+					mapping.revision == 1,
+				"Bahamut journal scope failed");
+			int achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 257)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 1 && dailies == 0,
+				"Bahamut departing quest became a daily");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 257, 25700, 100, "arrival") ==
+					result::applied,
+				"Bahamut discovery failed");
+			for (int v : { 25700, 25712, 25728, 25729, 25717, 25719, 25741 })
+				require(journey.meet_npc(7, 42, v, 25700, 101) == result::applied,
+					"Bahamut source encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 257, 10, 1, 102, false, false);
+			require(journal.find("] " + seal.title + "\r\n") == std::string::npos,
+				"Bahamut source encounter exposed custodian card");
+			require(journey.meet_npc(7, 42, 25723, 25921, 103) == result::applied,
+				"Bahamut custodian encounter failed");
+			const auto status = [&](size_t row, const char *state)
+			{
+				return journal.find(std::string("[") + state + "] " +
+						    seal.steps[row].text) != std::string::npos;
+			};
+			const auto before = journey.serialize_state();
+			// Snapshots contain observed visible loose inventory only; omitted hidden/nested items do not prepare an offering.
+			supplies = {};
+			journal = journey.render_journal(7, 42, 257, 10, 1, 104, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Pending"),
+				"Bahamut absent/unobserved proof was ready");
+			for (int slot : { 0, 3, 4, 18 })
+			{
+				supplies = {};
+				supplies.equipped[slot] = 25760;
+				journal = journey.render_journal(7, 42, 257, 10, 1, 105, false,
+								 false, &supplies);
+				require(status(0, "Missing now") && status(1, "Pending"),
+					"Bahamut held/worn seal substituted loose proof");
+			}
+			supplies = {};
+			for (int v : { 25723, 25724, 25734, 55081, 55024, 55241 })
+				supplies.carried[v] = 2;
+			journal = journey.render_journal(7, 42, 257, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Pending"),
+				"Bahamut plate/key/heart/foreign reward forged seal history");
+			supplies = {};
+			supplies.carried[25760] = 1;
+			journal = journey.render_journal(7, 42, 257, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Pending"),
+				"Bahamut supplied exact seal imposed source history or completed exchange");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 257).completed == 0,
+				"Bahamut current supply or encounters created source/keyword/accepted history");
+			require(journal.find("custodian departs") != std::string::npos &&
+					journal.find("excluded from dailies") !=
+						std::string::npos &&
+					journal.find("another player") != std::string::npos,
+				"Bahamut guidance lost native departure/supply limits");
+			// Synthetic committed receipt qualifies projection and recovery; it does not claim played boss, door or exchange outcomes.
+			record(journey, seal.contracts.front(), "bahamut-seal", 257, 25921);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 257, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 257).completed == 1,
+				"Bahamut spent seal lost accepted history");
+			supplies.carried[25760] = 1;
+			journal = journey.render_journal(7, 42, 257, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 257).completed == 1,
+				"Bahamut reacquired seal created another exchange");
+			auto replay = completion(seal.contracts.front(), "bahamut-seal", 120);
+			replay.transaction.zone_number = 257;
+			replay.transaction.room_vnum = 25921;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Bahamut replay duplicated departing receipt");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 257).completed == 1,
+				"Bahamut cold recovery lost departing receipt");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 257, 25922, 100, "arrival") ==
+					result::applied,
+				"Bahamut alternate arrival failed");
+			record(raw, seal.contracts.front(), "bahamut-raw", 257, 25921);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 257).completed == 1,
+				"Bahamut raw-to-authored recovery lost receipt");
 		}
 
 		{

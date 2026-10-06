@@ -60119,6 +60119,129 @@
     {
       "contacts": [
         {
+          "description": "The gold dragon sage accepts the seal and departs. Ask the grouped greeting, permission or vault topics. Finding him, completing his request and entering the vault are separate goals.",
+          "keyword": "tamarand",
+          "mob_vnum": 25723,
+          "name": "Tamarand, loremaster and sage",
+          "topics": [
+            "hello",
+            "hi",
+            "help",
+            "bahamut",
+            "permission",
+            "vault"
+          ]
+        },
+        {
+          "description": "The platinum dragon carries the personal seal and leaves the separate timed heart on death. Meeting him or receiving a supplied seal does not record a personal victory or the custodian exchange.",
+          "keyword": "bahamut",
+          "mob_vnum": 25700,
+          "name": "Bahamut, the grand platinum dragon",
+          "topics": []
+        },
+        {
+          "description": "Brueldin carries the mist key when stock is present. The fountain and mist branch are encounter and access context, without a separate native quest reward.",
+          "keyword": "brueldin",
+          "mob_vnum": 25712,
+          "name": "Brueldin the Ancient",
+          "topics": []
+        },
+        {
+          "description": "The huge ancient bronze dragon carries the bronze key for one early route. Recovering his key, receiving one from another player and passing an open door are separate events.",
+          "keyword": "bronze",
+          "mob_vnum": 25728,
+          "name": "a HUGE bronze dragon",
+          "topics": []
+        },
+        {
+          "description": "Lurgot wears the key of virtue when it is available. Recover it before using it. Carrying this key does not prove that you personally received a blessing.",
+          "keyword": "lurgot",
+          "mob_vnum": 25729,
+          "name": "Lurgot, the jann prince",
+          "topics": []
+        },
+        {
+          "description": "The Tree of Life carries the elders key and acorn. Encountering it and recovering its stock are distinct from passing the elders gate.",
+          "keyword": "tree",
+          "mob_vnum": 25717,
+          "name": "the Tree of Life",
+          "topics": []
+        },
+        {
+          "description": "Grimsoar carries the rough bronze key. His work and assistants explain this branch of the palace; there is no additional native request here.",
+          "keyword": "grimsoar",
+          "mob_vnum": 25719,
+          "name": "Grimsoar, the aged",
+          "topics": []
+        },
+        {
+          "description": "The imprisoned balrog carries the scorched silver key and may wield the flaming whip. Meeting him does not record a liberation or replace the personal seal needed by the custodian.",
+          "keyword": "mrinlor",
+          "mob_vnum": 25741,
+          "name": "Mrinlor, personal servant to Asmodeus",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow the palace key routes, show the custodian the personal seal, and keep the vault, timed heart and epic reward as separate outcomes.",
+      "orientation": [
+        "Bahamut's Palace rises on the Elemental Plane of Air. Flight supports ordinary horizontal travel; levitation alone supports leaving an air room only upward or downward. Bring suitable movement and visibility. Keys, secret doors, source stock and dangerous encounters shape the route; this journal does not promise safe travel.",
+        "Meet Tamarand, the gold dragon sage and custodian. Ask hello, hi or help for the greeting, bahamut or permission for his role, and vault for the request. These are three grouped topics with six aliases, without separate keyword achievements.",
+        "The custodian accepts the exact personal seal for a glowing white key and then leaves. A seal supplied by another player fits without your personally defeating Bahamut, receiving a blessing or hearing the dialogue. The seal must be visible and carried loose when offered; secret, held, worn or nested material is a different state.",
+        "Bahamut carries the personal seal when it is available. His death releases his carried and worn items to the floor and separately leaves a timed heart. Recovering his seal, receiving one from another player and completing the custodian exchange are different events.",
+        "The palace has a long chain of keys, from the bronze and mist branches through crystal, virtue, bark, elders, brass, rough bronze, black iron, scorched silver, golden and platinum gates. Sources include the palace dragons, Tree of Life and imprisoned Mrinlor. Supplied keys or doors already opened by others can change your route.",
+        "Search can reveal the hidden vault door beside the custodian. The glowing white key can unlock it; opening the door and entering the treasure room are later actions. The key can break when used. Possession or current access alone does not record the custodian exchange.",
+        "Bahamut's heart is a separate timed trophy. It joins the Tiamat and Dragonnia hearts for independent requests in Winterhaven or Alatorin. Each heart has its own remaining lifetime. Choose the return you want to pursue: the same three hearts cannot pay both recipients. The prison's deadline lore needs further review.",
+        "The treasure room contains equipment and an epic monolith. The monolith offers its own reward to eligible adventurers. Receiving that reward and completing the custodian request are separate goals.",
+        "This custodian exchange is excluded from dailies. Tamarand leaves after giving you the key. A new day does not automatically bring him back or supply another personal seal."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "bahamut",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:25760;receive=I:25724;disappear=1",
+              "giver_vnum": 25723
+            }
+          ],
+          "id": "personal-seal",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Prepare the exact visible loose seal. Hidden, held, worn or nested copies do not substitute a loose offering. A supplied seal proves no personal source recovery or blessing.",
+              "id": "seal",
+              "item_vnums": [
+                25760
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact personal seal loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:25760;receive=I:25724;disappear=1",
+                  "giver_vnum": 25723
+                }
+              ],
+              "hint": "Only the accepted exchange completes this card. Its history stays after the seal is spent. The custodian departs; owning the key, entering the vault and obtaining the separate timed heart are later goals.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Record the accepted seal exchange"
+            }
+          ],
+          "summary": "Offer the exact visible loose personal seal for the glowing white key. Supplied proof fits without a personal victory, blessing or earlier conversation. The custodian departs; later vault access is a separate action. This non-repeatable exchange is excluded from dailies.",
+          "title": "Show the custodian the personal seal"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Ask Tristan about the lost sword, Cymrych Hugh or the king. He accepts the exact lost sword for a scarlet ring and 99,000 experience; an earlier Brigit return is not required.",
           "keyword": "tristan",
           "mob_vnum": 26208,

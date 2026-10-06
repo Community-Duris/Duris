@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 172 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 173 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,13 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+bahamut=next(m for m in catalog['story_mappings'] if m['source_area']=='bahamut')
+assert (bahamut['coverage'],bahamut['schema_version'],bahamut['revision'])==('complete',3,1) and not bahamut['exclusions']
+assert len(bahamut['stories'])==1 and len(bahamut['contacts'])==8 and sum(len(c['topics']) for c in bahamut['contacts'])==6
+s=bahamut['stories'][0];assert len(s['steps'])==2 and s['steps'][0]['item_vnums']==[25760] and s['steps'][0]['optional'] and s['steps'][1]['kind']=='completion'
+assert s['contracts']==s['steps'][1]['contracts'] and s['contracts'][0]['giver_vnum']==25723
+assert report['eligible_by_zone']['257']==1
 
 underdark=next(m for m in catalog['story_mappings'] if m['source_area']=='underdark')
 assert (underdark['coverage'],underdark['schema_version'],underdark['revision'])==('complete',3,1) and not underdark['exclusions']
