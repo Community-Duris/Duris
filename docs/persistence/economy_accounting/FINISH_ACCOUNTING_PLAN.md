@@ -1,5 +1,46 @@
 # Finish accounting implementation plan
 
+## Reuse PR #678 zone-source research — 2026-10-06
+
+Before investigating native quest, NPC birth/reset, custom item grant/cost, or
+paid-service writers for Plans 2–4, consult the source dossiers in
+[PR #678](https://github.com/Community-Duris/Duris/pull/678). Reuse the existing
+research to locate real producers and prepare focused acceptance cases.
+Plan 5 should consume the same facts for independent source and custody checks.
+
+Reviewed reference snapshot: `beeb031030106a0c72e9321bbd1e2baaaea24259`.
+Start with its
+[integration plan](https://github.com/Community-Duris/Duris/blob/beeb031030106a0c72e9321bbd1e2baaaea24259/docs/design/ZONE_STORY_INTEGRATION_PLAN.md)
+and [execution register](https://github.com/Community-Duris/Duris/blob/beeb031030106a0c72e9321bbd1e2baaaea24259/docs/design/ZONE_STORY_ROADMAP_EXECUTION.md),
+then follow the relevant zone dossier and linked native sources. Confirm the
+current PR revision and compare each relevant producer with the current
+accounting candidate; the reference branch's older accounting base and reported
+tests do not qualify this candidate.
+
+For each relevant existing accounting requirement:
+
+1. Verify actual procedure/dispatch bindings, including full-boot assignments,
+   reset/custom issuance and foreign sources. Preserve exact ingredient/reward
+   VNUMs and quantities, denominations/fees, nested custody, stock limits,
+   recipient retention/retirement, and callback order. Distinguish item proof
+   from monetary payment, and acquisition from consumption or transformation.
+2. Reuse documented edge cases in the owned domain's focused native tests and
+   player journeys: identical-looking distinct items, repeated ingredients,
+   mixed payments, competing consumers, disappearing recipients, and source
+   depletion. Add applicable rollback, replay, lost-reply and cold-recovery
+   checks at the existing durable boundaries and agreed batch cadence.
+3. Record the dossier, verified current source, existing requirement, and
+   resulting executable evidence in the existing owner handoff. The primary
+   owner updates shared writer/source registries; Plan 5 reuses that handoff
+   for independent reconciliation. Avoid duplicating source investigation.
+
+Journal/daily features, proposed campaigns and builder-selected content repairs
+remain separate work. A proposed capability is not an automatic addition to
+accounting scope. Source-comprehensive review supplies research and test inputs;
+it does not establish transaction atomicity, complete writer coverage, gameplay
+publication or restart recovery. Existing R1–R8 requirements, activation guards,
+release gates and the fresh-world SQL-first delivery scope remain in force.
+
 ## Independent unique supply evidence fix integrated — 2026-10-06
 
 [Exact primary integration](PLAN5_SUPPLY_EVIDENCE_PRIMARY_INTEGRATION_2026-10-06.md) imports five owned blobs from `62ad380b6`. The new actual CLI regression, AST and normal/matrix/current61 metadata pass. All committed code/test/schema inputs match the qualified peer composition; native source, complete central manifest and unrelated WIP remain. Peer native/both-engine results retain their recorded component scope. No primary native rerun, complete capture or full release qualification is claimed. Original Plans and major native work remain open.
