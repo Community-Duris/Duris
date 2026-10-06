@@ -160,3 +160,10 @@ repair, complete capture, producer/receipt/recovery journeys, typed active
 erasure, parity and mixed release-host budgets remain open. Primary maintains
 the shared notebook; this owned report/receipt packet supplies the curator
 follow-up without blocking independent work. Accounting stays inactive.
+
+
+## Equipment capture v2 current-source follow-up — 2026-10-06
+
+[Current-source qualification](PLAN5_EQUIPMENT_V2_CAPTURE_QUALIFICATION_2026-10-06.md) imports primary8795a0b086a7f581c6c4b8080bc83245646fbf5d on the same remote `codex/accounting-plan5`, preserves all seven earlier branch tips and independently qualifies both original native/exporter recipes and both fresh maintained production builds. The exact tested source is e1f50802b80d5c788bd4909a169a41348fd7d5b7, native tree03a97173396f720857b1ad58a2ab69b7859a2387, canonical61 migration tree2eb9da7bf64bcd86e05f85d2f4bdf60ef113962d. Four selected recipe invocations pass with zero skips; each build has738 fresh units/objects and zero warnings/errors.
+
+[The separate five-pin handoff](PLAN5_PUBLISHED_SOURCE_PIN_HANDOFF_2026-10-06.md) retains the original provenance contract failure and requests primary bind its shared registry/matrix to published LF blobs. No shared repair or release waiver is made here. The source/evidence seal and curator packet are linked in the qualification report; primary locally maintains the shared notebook, which remains nonblocking. Complete opening, authentic activation verification, original writer/player/recovery, typed erasure, flat parity and release-host budgets remain open. Accounting stays inactive.
