@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 152 &&
+		require(catalog.story_mappings.size() == 153 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,127 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "ixxillikor"; });
+			require(mapping.stories.size() == 2 && mapping.contacts.size() == 12 &&
+					mapping.revision == 1,
+				"Ixxillikor scope failed");
+			const auto &scroll = story_for("ixxillikor", "legacy-power-scroll");
+			const auto &auction = story_for("ixxillikor", "legacy-auction-purchase");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 42)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 2 && dailies == 1,
+				"Ixxillikor changed legacy unit classification");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 42, 4200, 100, "arrival") ==
+					result::applied,
+				"Ixxillikor discovery failed");
+			for (int v : { 4245, 4257, 4208, 4254, 4204, 4212, 4205, 4206, 4213, 4264 })
+				require(journey.meet_npc(7, 42, v, 4200, 102) == result::applied,
+					"Ixxillikor context encounter failed");
+			for (int v : { 4246, 4247, 4248 })
+				require(journey.meet_npc(7, 42, v, 4200, 102) == result::rejected,
+					"Ixxillikor untracked advertised companion forged encounter");
+			std::string journal =
+				journey.render_journal(7, 42, 42, 10, 1, 103, false, false);
+			for (const auto &s : mapping.stories)
+				require(journal.find("] " + s.title + "\r\n") == std::string::npos,
+					"Ixxillikor context forged request");
+			for (int v : { 4203, 4224 })
+				require(journey.meet_npc(7, 42, v, 4323, 104) == result::applied,
+					"Ixxillikor giver encounter failed");
+			const auto status = [&](const auto &s, size_t row, const char *state)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos, "Ixxillikor visible card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at, end == std::string::npos ? end : end - at)
+					       .find(std::string("[") + state + "] " +
+						     s.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[32490] = 3;
+			supplies.carried[26662] = 1;
+			supplies.carried[55282] = 1;
+			supplies.carried[408] = 1;
+			journal = journey.render_journal(7, 42, 42, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(scroll, 0, "Ready now") &&
+					status(scroll, 1, "Missing now") &&
+					status(scroll, 2, "Missing now") &&
+					status(scroll, 3, "Pending") &&
+					status(auction, 0, "Pending"),
+				"Ixxillikor duplicate heart, wrong orb/femur or reward forged acceptance");
+			supplies = {};
+			supplies.carried[32490] = 1;
+			supplies.equipped[3] = 26614;
+			supplies.carried[3097] = 1;
+			journal = journey.render_journal(7, 42, 42, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(scroll, 1, "Missing now") &&
+					status(scroll, 2, "Missing now"),
+				"Ixxillikor worn or nested ingredients counted loose proof");
+			supplies = {};
+			for (int v : { 32490, 26614, 402 })
+				supplies.carried[v] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 42, 10, 1, 107, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 3; i++)
+				require(status(scroll, i, "Ready now"),
+					"Ixxillikor supplied proof readiness failed");
+			require(status(scroll, 3, "Pending") && status(auction, 0, "Pending") &&
+					journal.find("currently unavailable") != std::string::npos,
+				"Ixxillikor proof forged return or hid auction availability");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 42).completed == 0,
+				"Ixxillikor readiness mutated source or purchase history");
+			record(journey, scroll.contracts.front(), "ixxillikor-scroll", 42, 4323);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 42, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(scroll, 3, "Recorded") && status(scroll, 0, "Missing now") &&
+					status(auction, 0, "Pending") &&
+					journey.progress_for_zone(7, 42, 42).completed == 1,
+				"Ixxillikor spent proof lost receipt or forged purchase");
+			// Inject an existing historical receipt; this is not a native currency purchase journey.
+			record(journey, auction.contracts.front(), "ixxillikor-historical-auction",
+			       42, 4266);
+			journal = journey.render_journal(7, 42, 42, 10, 1, 122, false, false,
+							 &supplies);
+			require(status(auction, 0, "Recorded") &&
+					journey.progress_for_zone(7, 42, 42).completed == 2 &&
+					journey.progress_for_zone(7, 42, 42).total == 2,
+				"Ixxillikor historical purchase recovery changed units");
+			auto replay = completion(auction.contracts.front(),
+						 "ixxillikor-historical-auction", 120);
+			replay.transaction.zone_number = 42;
+			replay.transaction.room_vnum = 4266;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Ixxillikor exact historical replay duplicated progress");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 42).completed == 2,
+				"Ixxillikor cold recovery lost receipts");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 42, 4200, 100, "arrival") ==
+					result::applied,
+				"Ixxillikor raw discovery failed");
+			record(raw, scroll.contracts.front(), "ixxillikor-raw", 42, 4323);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 42).completed == 1,
+				"Ixxillikor raw-to-authored recovery lost exchange");
 		}
 
 		{

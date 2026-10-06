@@ -1,0 +1,203 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "ixxillikor",
+  "coverage": "complete",
+  "introduction": "Trace Ezallixxel's three-ingredient legacy return and understand the unavailable auction. Current preparation, service availability, ambient lore and accepted history have distinct roles.",
+  "orientation": [
+    "Ezallixxel accepts the still-beating heart of Bel, the orb of unmaking and the mystic runed stone tablet together for the scroll of Power. The three exact preparations lead to one accepted exchange. His native recipe does not require an extra arbitrary artifact or a previous auction purchase.",
+    "Bel can carry the heart in Avernus, and the Dark Prince can carry the orb in the fortress of Hell. Those are selected outside source leads. Supplied ingredients can fit the return without proving your own boss victory, first recovery or source custody.",
+    "No current producer for the required tablet was found in the reviewed reset and compiled source inventory. An existing or supplied tablet can fit the recipe, but this journal cannot promise a working starter. The scroll is a legacy reward; obtaining or reading it does not establish a new ability.",
+    "Ezallixxel also has an epic training service, assigned during normal startup. PRACTICE Epic Power follows that service's own requirements. Epic skill purchases are currently unavailable while economic accounting is active; training is separate from the scroll exchange.",
+    "The auctioneer answers hi, hello, goblin, dwarf and spider. These describe advertised choices. The goblin and spider native recipes have the same 10,000-copper payment and reward identity, and no dwarf recipe is defined. The reward item is missing from the active object catalog.",
+    "The auction purchase is currently unavailable while economic accounting is active. Do not pay in expectation of a working companion purchase. Its journal card retains one historical accepted receipt identity, rather than inventing three purchases; it is excluded from potential dailies.",
+    "Ask the scrawny drow hi or hello for the warning about the city. The drow's warning, Ezallixxel's ambient projection and the spores' growth messages are context. Hearing them does not record a rescue, a harvest, a conversation achievement or an accepted return.",
+    "A flesh golem at the city entrance can carry the iron key for the northern gate. Current key possession and shared door access are preparation. The cliff descent, secret rubble routes and falls have their own movement rules; none is an invented personal-history gate for the exchange.",
+    "The elder brain has a separate Spatial Focus training service under normal startup. Its loading room, follower and surrounding loot rooms need builder qualification: normal wandering cannot take it into the adjacent NO_MOB rooms. Do not treat finding another copy of its lore or loot as your own victory.",
+    "The clothing shop, metalsmith, banker and inn reception are local context and services. Current accounting restrictions apply to purchases. They do not create additional native quest receipts or a required chain of shopping, rental and banking.",
+    "Carry each exact ingredient loose. Readiness describes current inventory; worn, nested or similarly named items do not replace it. A recorded accepted exchange remains complete after its ingredients are spent. All new journal and quest credit requires active, ready accounting. Daily rollover does not restock shared loot or restore an unavailable service."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 4203,
+      "name": "Ezallixxel",
+      "keyword": "ezallixxel",
+      "description": "Ezallixxel accepts three exact ingredients for the legacy scroll of Power. The tablet's current producer needs qualification. His separately bound Epic Power training purchases are unavailable while accounting is active.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4224,
+      "name": "an illithid auctioneer",
+      "keyword": "auctioneer",
+      "description": "Ask about the advertised goblin, dwarf or spider. The two native 10,000-copper recipes share one missing item reward, and accounting currently refuses the purchase. These topics do not select three working companion exchanges.",
+      "topics": [
+        "hi",
+        "hello",
+        "goblin",
+        "dwarf",
+        "spider"
+      ]
+    },
+    {
+      "mob_vnum": 4245,
+      "name": "a scrawny drow",
+      "keyword": "scrawny",
+      "description": "Ask hi or hello for the warning about the illithid city and elder brain. This room-wide warning is context, without a native rescue return.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 4257,
+      "name": "a flesh golem",
+      "keyword": "flesh",
+      "description": "One flesh golem at the entrance can carry the iron key for the northern city gate. Another golem or current shared access does not establish your own recovery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4208,
+      "name": "the elder brain",
+      "keyword": "brain",
+      "description": "The elder brain is loaded with a follower in a separate room. Its normal wandering is blocked by adjacent NO_MOB rooms. Spatial Focus training is separately bound at normal startup and purchases are unavailable with active accounting.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4254,
+      "name": "A dwarf slave",
+      "keyword": "slave",
+      "description": "This dwarf follows the elder brain at loading. His role is separate from the dwarf advertised by the auctioneer; no native liberation receipt is defined.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4204,
+      "name": "an illithid shopkeeper",
+      "keyword": "shopkeeper",
+      "description": "The registered clothing shop stocks local garments. Shopping and current equipment are separate from either accepted quest receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4212,
+      "name": "a duergar metalsmith",
+      "keyword": "metalsmith",
+      "description": "The registered metalsmith stocks local weapons and armor. Existing accounting purchase restrictions apply; his service is not another native quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4205,
+      "name": "a drow banker",
+      "keyword": "banker",
+      "description": "The banker stands beside an imported counter with a storage handler. Account banking and paid storage have their own rules; neither is a prerequisite for the scroll recipe.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4206,
+      "name": "an illithid",
+      "keyword": "receptionist",
+      "description": "The receptionist describes meditation rooms. The lore does not define a native room-key quest or a required rental step.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4213,
+      "name": "the neogi queen",
+      "keyword": "queen",
+      "description": "The neogi queen and colony are local context. Their presence does not define another accepted return or an ordered prerequisite campaign.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4264,
+      "name": "a spore",
+      "keyword": "spore",
+      "description": "Spores have periodic growth text. These ambient messages do not themselves dispatch a mossling quest, harvest or accepted return.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "legacy-power-scroll",
+      "title": "Bring three exact ingredients to Ezallixxel",
+      "category": "request",
+      "summary": "Bring the heart of Bel, orb of unmaking and mystic runed stone tablet together for the legacy scroll of Power. No current tablet producer was found in the reviewed inventory, and the reward does not establish a new ability. The accepted return is separate from Epic Power training.",
+      "contracts": [
+        {
+          "giver_vnum": 4203,
+          "completion_key": "give=I:402,I:26614,I:32490;receive=I:408;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-32490",
+          "text": "Carry 1 × the still-beating heart of Bel loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            32490
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact ingredient carried loose now. Worn or nested proof and similar names are separate. Supplied proof can fit the exchange without recording your own first recovery or victory. The tablet has no current producer in the reviewed inventory."
+        },
+        {
+          "id": "item-26614",
+          "text": "Carry 1 × the orb of unmaking loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            26614
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact ingredient carried loose now. Worn or nested proof and similar names are separate. Supplied proof can fit the exchange without recording your own first recovery or victory. The tablet has no current producer in the reviewed inventory."
+        },
+        {
+          "id": "item-402",
+          "text": "Carry 1 × A mystic runed stone tablet loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            402
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact ingredient carried loose now. Worn or nested proof and similar names are separate. Supplied proof can fit the exchange without recording your own first recovery or victory. The tablet has no current producer in the reviewed inventory."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 4203,
+              "completion_key": "give=I:402,I:26614,I:32490;receive=I:408;disappear=0"
+            }
+          ],
+          "hint": "Records an accepted native receipt after proof is spent. Clues, source recovery, personal victory and another reward copy remain separate. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "legacy-auction-purchase",
+      "title": "Legacy auction purchase — currently unavailable",
+      "category": "request",
+      "summary": "The goblin and spider recipes share one 10,000-copper payment and one missing reward identity. Accounting currently refuses the purchase. This card preserves a historical accepted receipt; it does not promise a companion, three choice branches or a potential daily.",
+      "contracts": [
+        {
+          "giver_vnum": 4224,
+          "completion_key": "give=C:10000;receive=I:35708;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "turn-in",
+          "text": "Historical accepted purchase",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 4224,
+              "completion_key": "give=C:10000;receive=I:35708;disappear=0"
+            }
+          ],
+          "hint": "Historical receipt only. Current accounting refuses currency offerings and the configured reward is missing. Asking a topic, holding coins or encountering an advertised companion does not record a purchase."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
