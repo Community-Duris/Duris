@@ -77,7 +77,8 @@ def bind_original_plans(snapshot):
     def position(row):
         if row.get("state") == "absent":
             return bytes(56)
-        return struct.pack("<BB6xQQQQQH6x", row["owner"][0], 2 if row["state"] == "tombstone" else 1,
+        state = {"live": 1, "tombstone": 2, "quarantined": 3}[row["state"]]
+        return struct.pack("<BB6xQQQQQH6x", row["owner"][0], state,
                            *row["owner"][1:], row["root"], row["parent"] or 0,
                            row["revision"], row.get("equipment_slot", 0))
 
@@ -2550,6 +2551,62 @@ class ReconciliationTests(unittest.TestCase):
                         reconciler.audit_lineage_uid_references(
                             LINEAGE, EPOCH, "disposable", native, {(OP, 0): reference})
 
+    def test_quarantined_custody_is_valid_in_every_uid_history_scope(self):
+        for scope in ("lineage", "unreferenced", "unattributed"):
+            for state in ("quarantined", None, 3, "unknown", True):
+                with self.subTest(scope=scope, state=state):
+                    snapshot = clean_snapshot()
+                    snapshot["ownership_events"][0].update(owner=[7, 0, 0], state="quarantined")
+                    snapshot["native"]["items"][0].update(owner=[7, 0, 0], state="quarantined")
+                    bind_original_plans(snapshot)
+                    event = copy.deepcopy(snapshot["ownership_events"][0])
+                    event.update(state=state, referenced=False, operation_outcome="committed")
+                    native = snapshot["native"]
+                    if scope == "lineage":
+                        native["uid_history_events"] = [event]
+                    elif scope == "unreferenced":
+                        native["uid_history_events"] = [event]
+                        native["unreferenced_uid_events"] = [event]
+                        native["uid_event_coverage"] = {
+                            "tracked_uids": 1, "ledger_events": 1,
+                            "referenced_events": 0, "unreferenced_events": 1}
+                    else:
+                        native["unattributed_uid_events"] = [event]
+                        native["unattributed_uid_event_coverage"] = {"uids": 1, "events": 1}
+                    if state == "quarantined":
+                        codes = self.codes(snapshot)
+                        self.assertNotIn("broken_uid_history", codes)
+                        self.assertNotIn("stale_native_item", codes)
+                        self.assertNotIn("original_plan_item_mismatch", codes)
+                        if scope == "unreferenced":
+                            self.assertIn("unreferenced_uid_event", codes)
+                        elif scope == "unattributed":
+                            self.assertIn("unattributed_ownership_event", codes)
+                    else:
+                        with self.assertRaises(SnapshotError):
+                            Reconciler().audit(snapshot)
+
+    def test_quarantined_lineage_reference_preserves_unknown_state_diagnostics(self):
+        for state in ("quarantined", None, 3, "unknown", True):
+            with self.subTest(state=state):
+                snapshot = clean_snapshot()
+                reference = copy.deepcopy(snapshot["item_references"][0])
+                reference.update(operation_epoch=EPOCH, operation_outcome="committed",
+                                 operation_item_event_count=1, ledger_uid=81,
+                                 ledger_before_revision=1, ledger_revision=2,
+                                 ledger_root=81, ledger_parent=None, ledger_owner=[7, 0, 0],
+                                 ledger_state=state, ledger_action="move")
+                root = copy.deepcopy(snapshot["operations"][0])
+                root["reference_count"] = 1
+                native = {"lineage_uid_references": [reference],
+                          "lineage_uid_reference_roots": [root],
+                          "lineage_uid_reference_coverage": {"rows": 1, "root_rows": 1}}
+                reconciler = Reconciler()
+                reconciler.audit_lineage_uid_references(
+                    LINEAGE, EPOCH, "disposable", native, {(OP, 0): reference})
+                expected = {} if state == "quarantined" else {"lineage_orphan_uid_reference": 1}
+                self.assertEqual(dict(reconciler.counts), expected)
+
     def test_duplicate_item_revision(self):
         snapshot = clean_snapshot()
         duplicate = copy.deepcopy(snapshot["ownership_events"][0])
@@ -2726,7 +2783,7 @@ class ReconciliationTests(unittest.TestCase):
         )
         self.assertEqual(reconciler.counts["uid_history_operation_not_committed"], 1)
 
-    def lineage_lifetime_report(self, actions, origin=None):
+    def lineage_lifetime_report(self, actions, origin=None, quarantined_indices=()):
         origin = origin or creation_snapshot()["item_origins"][0]
         events = []
         for index, action in enumerate(actions):
@@ -2740,6 +2797,8 @@ class ReconciliationTests(unittest.TestCase):
                 "action": action, "operation_outcome": "committed", "referenced": False,
                 "from_equipment_slot": 0, "to_equipment_slot": 0,
             })
+            if index in quarantined_indices:
+                events[-1].update(owner=[7, 0, 0], state="quarantined")
         current = {field: events[-1][field]
                    for field in ("uid", "revision", "root", "parent", "owner", "state")}
         current["equipment_slot"] = 0
@@ -2767,6 +2826,22 @@ class ReconciliationTests(unittest.TestCase):
             with self.subTest(action=action):
                 self.assertEqual(self.lineage_lifetime_report(
                     ["create", "destroy", action]).counts["resurrected_item_uid"], 1)
+
+    def test_quarantined_custody_preserves_retired_uid_lifetimes(self):
+        retired_origin = copy.deepcopy(clean_snapshot()["item_origins"][0])
+        retired_origin.update(owner=[8, 0, 0], state="tombstone")
+        event = {"operation_id": OP, "action": "move", "state": "quarantined"}
+        reconciler = Reconciler()
+        reconciler.audit_item_lifetime(81, retired_origin, [event])
+        self.assertEqual(dict(reconciler.counts), {"resurrected_item_uid": 1})
+        self.assertEqual(dict(self.lineage_lifetime_report(
+            ["create", "move"], quarantined_indices=(1,)).counts), {})
+        self.assertEqual(self.lineage_lifetime_report(
+            ["create", "destroy", "move"], quarantined_indices=(2,)).counts[
+                "resurrected_item_uid"], 1)
+        self.assertEqual(self.lineage_lifetime_report(
+            ["move"], retired_origin, quarantined_indices=(0,)).counts[
+                "resurrected_item_uid"], 1)
 
     def test_lineage_history_rejects_second_retirement(self):
         report = self.lineage_lifetime_report(["create", "destroy", "destroy"])
@@ -3409,6 +3484,7 @@ def native_stake_sql():
     sources=['src/economy/economic_accounting_plan.c', 'src/economy/economic_source_event.c','src/economy/economic_accounting_types.c',
              'src/economy/economic_accounting_intent.c','src/persistence/critical_command.c',
              'src/item/item_transfer_command.c', 'src/world/quest_mobile_native_reference.c','src/item/craft_pouch_mutation.c',
+             'src/economy/shop_trade_recovery_manifest.c',
              'src/combat/chaos_pouch_ledger.c','src/player/player_snapshot_codec.c']
     environment=dict(os.environ,ASAN_OPTIONS='detect_leaks=1:halt_on_error=1',UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1')
     outputs=[]

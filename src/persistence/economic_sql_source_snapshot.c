@@ -77,6 +77,11 @@ constexpr source item_sources[] = {
 	{ "shopkeeper_items", "id,shopkeeper_id,container_id,obj_uid,vnum,item_condition", "id" },
 	{ "siege_items", "id,room_vnum,container_id,obj_uid,vnum", "id" },
 };
+// Separate framing prevents an equipment-only change from rewriting the
+// existing ESR1 item/coin rows, ESM1 source digest or EIM1 item manifest.
+constexpr source item_equipment_sources[] = {
+	{ "item_current_owner", "item_uid,equipment_slot", "item_uid" },
+};
 struct failure
 {
 	unsigned int code;
@@ -140,6 +145,33 @@ std::vector<std::string> columns(std::string_view names)
 		names.remove_prefix(end + 1);
 	}
 	return output;
+}
+void validate_equipment_binding(const economic_sql_source_snapshot &input)
+{
+	require(input.item_equipment_sources.size() == std::size(item_equipment_sources));
+	const auto native = std::find_if(input.tables.begin(), input.tables.end(),
+					 [](const auto &table)
+					 { return table.name == "item_current_owner"; });
+	require(native != input.tables.end());
+	const auto &equipment = input.item_equipment_sources[0];
+	require(equipment.rows.size() == native->rows.size());
+	for (size_t index = 0; index < equipment.rows.size(); ++index)
+	{
+		const auto &cells = equipment.rows[index].cells;
+		require(cells.size() == 2 && !native->rows[index].cells.empty());
+		// Raw correspondence only: malformed native numeric bytes remain
+		// evidence. Canonical numeric parsing belongs to normalization.
+		require(cells[0] == native->rows[index].cells[0]);
+	}
+}
+economic_sql_source_digest custody_digest(const economic_sql_source_snapshot &input)
+{
+	digest result;
+	result.text("ESC2");
+	result.bytes(input.digest);
+	result.bytes(input.item_sources_digest);
+	result.bytes(input.item_equipment_sources_digest);
+	return result.finish();
 }
 #ifndef __NO_MYSQL__
 using result_ptr = std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)>;
@@ -351,10 +383,16 @@ unsigned int capture_sources(MYSQL *connection, const economic_sql_source_limits
 		economic_sql_source_snapshot captured;
 		captured.tables.reserve(std::size(sources));
 		captured.item_sources.reserve(std::size(item_sources));
+		captured.item_equipment_sources.reserve(std::size(item_equipment_sources));
 		for (const auto &s : sources)
 			capture(connection, session, s, limits, captured, captured.tables);
 		for (const auto &s : item_sources)
 			capture(connection, session, s, limits, captured, captured.item_sources);
+		// Its physical table already holds a metadata lock from sources; the
+		// InnoDB registry count remains 23 unique tables, not 24 projections.
+		for (const auto &s : item_equipment_sources)
+			capture(connection, session, s, limits, captured,
+				captured.item_equipment_sources);
 		digest manifest;
 		manifest.text("ESM1");
 		manifest.number(captured.tables.size());
@@ -367,6 +405,14 @@ unsigned int capture_sources(MYSQL *connection, const economic_sql_source_limits
 		for (const auto &table : captured.item_sources)
 			item_manifest.bytes(table.content_digest);
 		captured.item_sources_digest = item_manifest.finish();
+		digest equipment_manifest;
+		equipment_manifest.text("EIE2");
+		equipment_manifest.number(captured.item_equipment_sources.size());
+		for (const auto &table : captured.item_equipment_sources)
+			equipment_manifest.bytes(table.content_digest);
+		captured.item_equipment_sources_digest = equipment_manifest.finish();
+		validate_equipment_binding(captured);
+		captured.custody_digest = custody_digest(captured);
 		active(connection, session);
 		if (!caller_transaction)
 		{
@@ -420,8 +466,14 @@ unsigned int economic_sql_validate_sources(const economic_sql_source_snapshot &i
 	try
 	{
 		const economic_sql_source_limits hard;
-		require(input.version == 1 && input.tables.size() == std::size(sources) &&
+		require((input.version == 1 || input.version == 2) &&
+			input.tables.size() == std::size(sources) &&
 			input.item_sources.size() == std::size(item_sources));
+		if (input.version == 1)
+			require(input.item_equipment_sources.empty() &&
+				input.item_equipment_sources_digest ==
+					economic_sql_source_digest{} &&
+				input.custody_digest == economic_sql_source_digest{});
 		require(limits.maximum_rows && limits.maximum_rows <= hard.maximum_rows &&
 				limits.maximum_cells &&
 				limits.maximum_cells <= hard.maximum_cells &&
@@ -488,6 +540,17 @@ unsigned int economic_sql_validate_sources(const economic_sql_source_snapshot &i
 		item_manifest.text("EIM1");
 		validate_registry(input.tables, sources, manifest);
 		validate_registry(input.item_sources, item_sources, item_manifest);
+		if (input.version == 2)
+		{
+			digest equipment_manifest;
+			equipment_manifest.text("EIE2");
+			validate_registry(input.item_equipment_sources, item_equipment_sources,
+					  equipment_manifest);
+			require(equipment_manifest.finish() ==
+					input.item_equipment_sources_digest &&
+				input.custody_digest == custody_digest(input));
+			validate_equipment_binding(input);
+		}
 		require(manifest.finish() == input.digest &&
 			item_manifest.finish() == input.item_sources_digest &&
 			input.rows == row_count && input.cells == cell_count &&

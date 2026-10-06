@@ -7,7 +7,7 @@ import hashlib
 import json
 import struct
 
-from reconcile_economy_accounting import (ORDINARY_KINDS, account_key, copper,
+from reconcile_economy_accounting import (MAX_ROWS, ORDINARY_KINDS, account_key, copper,
                                           decode_source_event, same_projection, source_kind_allowed)
 
 MAX_INTENT = 8192
@@ -256,6 +256,89 @@ def decode_plan(value):
             "before": before, "after": after}
 
 
+def decode_native_mobile(value):
+    """Independent QMNIMG v1/v2 value grammar; no lifetime/custody authority.
+
+    Historical v1 has no cash observation. This returns only the four persisted
+    row bindings and never synthesizes holdings, transitions or birth evidence.
+    """
+    need(type(value) is bytes and 220 <= len(value) <= MAX_PLAN)
+    need(value[:8] == b"QMNIMG\0\0" and value[10] in (1, 2) and value[11] == 0 and
+         number(value, 12, 4) == len(value) and hashlib.sha256(value[:-32]).digest() == value[-32:])
+    version = number(value, 8, 2)
+    need(version in (1, 2) and any(value[164:180]))
+    reference = value[16:164]
+    need(reference[:8] == b"QMNREF\0\0" and number(reference, 8, 2) == 1 and
+         reference[10] in (1, 2) and reference[11] == 0 and number(reference, 12, 4) == 148 and
+         hashlib.sha256(reference[:-32]).digest() == reference[-32:])
+    identity = number(reference, 16, 8)
+    need(0 < identity < 2**64-1 and any(reference[24:40]))
+    decode_source_event(reference[40:88].hex())
+    vnum, birthplace, zone, mobile_revision, stock_revision = struct.unpack_from('<iiiQQ', reference, 88)
+    need(vnum >= 0 and mobile_revision > 0 and stock_revision > 0 and
+         (zone >= 0 if reference[10] == 1 else zone == -1))
+    length_offset = 180
+    if version == 2:
+        need(len(value) >= 260)
+        cash_revision, *cash = struct.unpack_from('<Q4q', value, 180)
+        need(cash_revision > 0 and all(0 <= coin <= 2147483647 for coin in cash) and
+             (value[10] != 2 or not any(cash)))
+        length_offset = 220
+    offset, end, rows = length_offset + 4, len(value) - 32, 0
+    need(number(value, length_offset, 4) == end - offset)
+
+    def take(width):
+        nonlocal offset
+        need(offset + width <= end)
+        result = value[offset:offset+width]
+        offset += width
+        return result
+
+    def count():
+        nonlocal rows
+        size, = struct.unpack('<I', take(4))
+        need(size <= 8192 and rows + size <= 8192)
+        rows += size
+        return size
+
+    def string():
+        size, = struct.unpack('<I', take(4))
+        need(size <= 4096)
+        take(size)  # Literal byte strings, including NUL/non-UTF8, are preserved.
+
+    objects = count()
+    need(objects <= 4096 and (value[10] != 2 or objects == 0))
+    uids, path, last_slot, inventory_started = set(), [], 0, False
+    for index in range(objects):
+        parent, slot, uid, generated_key, item_vnum, item_type, mask = struct.unpack('<ihQqibB', take(28))
+        need(0 < uid < 2**64-1 and uid not in uids and item_vnum >= 0 and mask == 15)
+        uids.add(uid)
+        if parent == -1:
+            need(0 <= slot <= 43 and (not slot or (not inventory_started and slot > last_slot)))
+            if slot:
+                last_slot = slot
+            else:
+                inventory_started = True
+            path = [index]
+        else:
+            need(0 <= parent < index and slot == 0)
+            while path and path[-1] != parent:
+                path.pop()
+            need(path and len(path) < 32)
+            path.append(index)
+        for _ in range(4):
+            string()
+        take(169)  # Original scalar values/timers/flags/material/affects.
+        take(12 * count())  # Dynamic affects.
+        for _ in range(count()):
+            string()
+            string()
+            need(take(1)[0] in (0, 1))
+            take(4 * count())  # Spellbook IDs share the decoder's row budget.
+    need(offset == end)
+    return identity, mobile_revision, stock_revision, value[10]
+
+
 def require_integrity(executor):
     """Bind every retained root to bounded canonical bytes and SQL projections.
 
@@ -299,6 +382,131 @@ def require_integrity(executor):
                 mismatch(code)
             result.extend(part)
         return bytes(result)
+
+    # Allocation metadata has no authority by itself. Bind its exact identities
+    # and amounts below to the independently decoded original root effects.
+    if executor.sql("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
+                    "AND ENGINE='InnoDB' AND table_name IN ('economic_pending_claim_source',"
+                    "'economic_pending_claim_consumption','economic_account_mapping');") != "3":
+        mismatch("pending_claim_source")
+
+    def allocation_rows(table, columns, identities, code):
+        count = executor.sql("SELECT COUNT(*) FROM " + table.split()[0] + ";")
+        if not isinstance(count, str) or not count.isdecimal() or not 0 <= int(count) <= MAX_ROWS:
+            mismatch(code)
+        count = int(count)
+        processed, previous = 0, None
+        while processed < count:
+            where = "1=1"
+            if previous is not None:
+                literals = ["UNHEX('" + value.hex() + "')" for value in previous[:-1]] + [str(previous[-1])]
+                where = "(" + ",".join(identities) + ")>(" + ",".join(literals) + ")"
+            page = arrays(table, columns, where, ",".join(identities) + " LIMIT 256")
+            if not page or len(page) > min(256, count - processed):
+                mismatch(code)
+            for row in page:
+                try:
+                    need(type(row) is list and len(row) == len(columns) and
+                         type(row[len(identities)-1]) is int and 0 < row[len(identities)-1] < 2**16)
+                    key = tuple(binary(value, 16) for value in row[:len(identities)-1]) + (row[len(identities)-1],)
+                    need(all(any(value) for value in key[:-1]) and (previous is None or key > previous))
+                except (ValueError, TypeError):
+                    mismatch(code)
+                previous = key
+                processed += 1
+                yield key, row
+
+    columns = [hexadecimal("s.source_operation_id"), "s.source_slot", hexadecimal("s.lineage"),
+               "s.claim_mapping_id", "s.beneficiary_pid", "s.amount", hexadecimal("s.claim_operation_id"),
+               "m.mapping_id", hexadecimal("m.lineage"), "m.backend_kind", "m.account_kind", "m.locator_kind",
+               "m.native_id", "m.context_id"]
+    table = ("economic_pending_claim_source s LEFT JOIN economic_account_mapping m "
+             "ON m.mapping_id=s.claim_mapping_id AND m.lineage=s.lineage")
+    sources, source_counts, credits, debits = {}, {}, {}, {}
+
+    def add_amount(values, key, amount):
+        values[key] = values.get(key, 0) + amount
+
+    for identity, row in allocation_rows(table, columns, ("s.source_operation_id", "s.source_slot"),
+                                          "pending_claim_source"):
+        try:
+            lineage, mapped_lineage = binary(row[2], 16), binary(row[8], 16)
+            need(any(lineage) and lineage == mapped_lineage and
+                 all(type(row[index]) is int for index in (3, 4, 5, 7, 9, 10, 11, 12, 13)) and
+                 0 < row[3] < 2**64 and 0 < row[4] < 2**32 and 0 < row[5] < 2**32 and
+                 row[3] == row[7] and row[4] == row[12] and row[9:12] == [1, 5, 5] and row[13] == 0)
+            consumer = binary(row[6], 16, True)
+            need(consumer is None or any(consumer))
+            key = lineage + struct.pack('<HHQQ4x', 1, 5, row[3], 0)
+            account_key(key.hex())
+        except (ValueError, TypeError, struct.error):
+            mismatch("pending_claim_source")
+        sources[identity] = dict(key=key, amount=row[5], whole=consumer, consumed=0)
+        add_amount(source_counts, identity[0], 1)
+        add_amount(credits, (identity[0], key), row[5])
+        if consumer is not None:
+            add_amount(debits, (consumer, key), row[5])
+
+    columns = [hexadecimal("spending_operation_id"), hexadecimal("source_operation_id"), "source_slot", "amount"]
+    for identity, row in allocation_rows("economic_pending_claim_consumption c", columns,
+                ("spending_operation_id", "source_operation_id", "source_slot"), "pending_claim_consumption"):
+        source = sources.get(identity[1:])
+        if (source is None or source["whole"] is not None or type(row[3]) is not int or
+                not 0 < row[3] < 2**64 or source["consumed"] + row[3] > source["amount"]):
+            mismatch("pending_claim_consumption")
+        source["consumed"] += row[3]
+        add_amount(debits, (identity[0], source["key"]), row[3])
+
+    committed = ("o.operation_id IS NULL OR i.operation_id IS NULL OR o.lineage<>s.lineage "
+                 "OR o.outcome<>1 OR o.result_code<>0 OR i.status<>1 OR i.result_code<>0 "
+                 "OR i.failure_stage<>0 OR i.committed_at IS NULL")
+    references = (
+        ("economic_pending_claim_source s", "s.source_operation_id", "1=1", "pending_claim_source"),
+        ("economic_pending_claim_source s", "s.claim_operation_id", "s.claim_operation_id IS NOT NULL",
+         "pending_claim_consumption"),
+        ("economic_pending_claim_consumption c LEFT JOIN economic_pending_claim_source s "
+         "ON s.source_operation_id=c.source_operation_id AND s.source_slot=c.source_slot",
+         "c.spending_operation_id", "1=1", "pending_claim_consumption"),
+    )
+    for table, operation, scope, code in references:
+        if executor.sql("SELECT COUNT(*) FROM " + table + " LEFT JOIN economic_accounting_operation o "
+                        "ON o.operation_id=" + operation + " LEFT JOIN critical_operation_inbox i "
+                        "ON i.operation_id=o.operation_id WHERE (" + scope + ") AND (" + committed + ");") != "0":
+            mismatch(code)
+
+    claim_origin_column_count = executor.sql("SELECT COUNT(*) FROM information_schema.columns "
+        "WHERE table_schema=DATABASE() AND table_name='economic_baseline_witness' "
+        "AND column_name='claim_origin_version';")
+    if claim_origin_column_count not in ("0", "1"):
+        mismatch("baseline_claim_origin")
+    claim_origin_column = "w.claim_origin_version" if claim_origin_column_count == "1" else "NULL"
+
+    if executor.sql("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
+                    "AND ENGINE='InnoDB' AND table_name='quest_mobile_native';") != "1":
+        mismatch("native_mobile")
+    mobile_count = executor.sql("SELECT COUNT(*) FROM quest_mobile_native;")
+    if not mobile_count.isdecimal():
+        mismatch("native_mobile")
+    processed, cursor = 0, -1
+    while processed < int(mobile_count):
+        values = arrays("quest_mobile_native", ["mobile_instance_id", "mobile_revision", "stock_revision",
+                        "lifetime_state", "OCTET_LENGTH(canonical_image)"],
+                        "1=1" if cursor < 0 else "mobile_instance_id>" + str(cursor),
+                        "mobile_instance_id LIMIT 256")
+        if not values or len(values) > min(256, int(mobile_count) - processed):
+            mismatch("native_mobile")
+        for row in values:
+            try:
+                need(type(row) is list and len(row) == 5 and all(type(field) is int for field in row) and
+                     cursor < row[0] < 2**64-1 and row[0] > 0 and
+                     0 < row[1] < 2**64 and 0 < row[2] < 2**64 and row[3] in (1, 2))
+                image = capsule("mobile_instance_id=" + str(row[0]), "canonical_image", row[4], MAX_PLAN,
+                                "native_mobile", table="quest_mobile_native", minimum=220)
+                need(tuple(row[:4]) == decode_native_mobile(image))
+            except (ValueError, struct.error):
+                mismatch("native_mobile")
+            cursor = row[0]
+            processed += 1
 
     # Restore must retain the opening witness namespace as well as the generic
     # canonical roots. These checks span all books, including inactive epochs
@@ -371,7 +579,7 @@ def require_integrity(executor):
                    "OCTET_LENGTH(w.canonical_witness)", hexadecimal("c.opening_account"),
                    "i.durable_revision", "i.command_type", "i.schema_version", "i.payload_version",
                    hexadecimal("i.result_payload"), hexadecimal("i.keys_hash"),
-                   admission_column, hexadecimal("i.command_hash")]
+                   admission_column, hexadecimal("i.command_hash"), claim_origin_column]
         table = ("economic_baseline_witness w JOIN economic_baseline_control c "
                  "ON c.lineage=w.lineage AND c.epoch=w.epoch "
                  "JOIN critical_operation_inbox i ON i.operation_id=w.operation_id")
@@ -408,6 +616,24 @@ def require_integrity(executor):
         if not same_projection(arrays("economic_baseline_reservation", columns, where,
                   "identity_kind,identity_id,lineage,epoch LIMIT " + str(len(expected) + 1)), expected):
             mismatch("baseline_reservation")
+        if value[17] is not None:
+            if type(value[17]) is not int or value[17] != 1:
+                mismatch("baseline_claim_origin")
+            expected_origins = {}
+            for index, holding in enumerate(holdings):
+                if account_key(holding["account_key"])[1] == 5:
+                    if any(holding["balance"][1:]):
+                        mismatch("baseline_claim_origin")
+                    if holding["balance"][0]:
+                        expected_origins[(meta[2], index+1)] = (bytes.fromhex(holding["account_key"]),
+                                                               holding["balance"][0])
+            if source_counts.get(meta[2], 0) != len(expected_origins):
+                mismatch("baseline_claim_origin")
+            for identity, expected_origin in expected_origins.items():
+                source = sources.get(identity)
+                if source is None or (source["key"], source["amount"]) != expected_origin:
+                    mismatch("baseline_claim_origin")
+        return value[17]
 
     # Ordinary histories may have no baseline book. Their canonical capsules
     # still require the retained lifecycle namespace, including inactive epochs.
@@ -514,10 +740,31 @@ def require_integrity(executor):
                             for i, (event, child, uid, old, new) in enumerate(plan["events"])]
                 if not same_projection(arrays(table, fields, "r." + where, "r.line_index"), expected):
                     mismatch("canonical_custody")
+                origin_version = None
                 if meta[10] == 38:
-                    baseline_witness(where, meta, original, row, frozen, encoded)
+                    origin_version = baseline_witness(where, meta, original, row, frozen, encoded)
+                for key, before, after, before_revision, after_revision in plan["effects"]:
+                    if account_key(key.hex())[1] != 5:
+                        continue
+                    pair = (meta[2], key)
+                    amount = after[0] - before[0]
+                    credit, debit = credits.pop(pair, 0), debits.pop(pair, 0)
+                    # Historical NULL witnesses retain unknown allocation
+                    # coverage; new version1 openings require exact origins.
+                    if amount > 0 and not credit and not debit and meta[10] == 38 and origin_version is None:
+                        continue
+                    if credit != max(amount, 0):
+                        mismatch("pending_claim_source")
+                    if debit != max(-amount, 0):
+                        mismatch("pending_claim_consumption")
+                    if (credit or debit) and before[1:] != after[1:]:
+                        mismatch("pending_claim_source" if credit else "pending_claim_consumption")
             else:
                 mismatch("plan")
             processed += 1
     if processed != root_count:
         mismatch("canonical_root_count")
+    if credits:
+        mismatch("pending_claim_source")
+    if debits:
+        mismatch("pending_claim_consumption")

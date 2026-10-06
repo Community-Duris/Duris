@@ -486,6 +486,7 @@ class NativeChildIdentityTests(unittest.TestCase):
         sources = [str(source), 'src/economy/economic_accounting_types.c',
                    'src/economy/economic_accounting_plan.c', 'src/economy/economic_source_event.c', 'src/economy/economic_accounting_intent.c',
                    'src/persistence/critical_command.c', 'src/item/item_transfer_command.c', 'src/world/quest_mobile_native_reference.c',
+                   'src/economy/shop_trade_recovery_manifest.c',
                    'src/item/craft_pouch_mutation.c', 'src/combat/chaos_pouch_ledger.c',
                    'src/player/player_snapshot_codec.c']
         builds = []
@@ -682,7 +683,8 @@ class NativeChildIdentityTests(unittest.TestCase):
                         legacy_cut = capture(baseline['economic_sql_audit_snapshot'], 'legacy-projection')
                         self.assertEqual(baseline['reconcile_economy_accounting'].Reconciler().audit(legacy_cut)['exception_count'], 0)
                         self.assertEqual(Reconciler(0).audit(legacy_cut)['exception_counts'],
-                                         {'missing_child_identity_evidence': 2, 'missing_original_plan': 1})
+                                         {'missing_child_identity_evidence': 2, 'missing_item_equipment_evidence': 1,
+                                          'missing_original_plan': 1})
                         cuts.append({'engine': engine, 'kind': 'legacy_projection', 'red_clean': True, 'green_code': 'missing_child_identity_evidence'})
                         child_receipt = bytes.fromhex(native['children'][0]['child_operation_id'])
                         insert('critical_operation_inbox', dict(operation_id=child_receipt, command_hash=bytes([6])*32,

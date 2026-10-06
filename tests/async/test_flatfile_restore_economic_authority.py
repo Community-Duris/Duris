@@ -165,6 +165,156 @@ int main(int argc, char **argv) {
                 path.unlink()
             subprocess.run([str(fixture), str(state), "evidence-bootstrap"], env=environment, check=True)
             check("native empty initialized evidence before any epoch", True)
+
+            mobile_checks = {"positive_images": 0, "refused_images": 0, "invocations": 0}
+            domains = state / "domains"
+            mobile = domains / "quest-mobile-native-42.qmn"
+            independent_values = True
+
+            def mobile_check(label, valid):
+                def retained_images():
+                    result = {}
+                    for path in domains.iterdir():
+                        if not path.name.startswith("quest-mobile-native"):
+                            continue
+                        info = path.lstat()
+                        payload = (path.read_bytes() if path.is_file() and not path.is_symlink()
+                                   else os.readlink(path) if path.is_symlink() else None)
+                        result[path.name] = (info.st_mode, info.st_nlink, payload)
+                    return result
+                before = retained_images()
+                if independent_values:
+                    from economic_restore_evidence import decode_native_mobile
+                    try:
+                        decoded = decode_native_mobile(mobile.read_bytes())
+                        accepted = decoded[:3] == (42, 2, 3)
+                    except ValueError:
+                        accepted = False
+                    assert accepted == valid, (label, "independent native-mobile value disagreement")
+                for command in ([str(binary), "--state-preflight", str(state)], [str(binary), str(state)]):
+                    result = subprocess.run(command, env=environment, capture_output=True, text=True, timeout=30)
+                    assert (result.returncode == 0) == valid, (label, result.returncode,
+                                                             result.stdout, result.stderr)
+                    if valid:
+                        assert json.loads(result.stdout) == {
+                            "accounts": 0, "identities": 0, "players_loaded": 0, "snapshots": 0}
+                    else:
+                        assert not result.stdout and result.stderr.strip() == "native_restore_qualification_failed"
+                    assert retained_images() == before, label + ": native images changed"
+                    mobile_checks["invocations"] += 1
+                mobile_checks["positive_images" if valid else "refused_images"] += 1
+                print(("MOBILE_PASS " if valid else "MOBILE_REFUSED ") + label, flush=True)
+
+            def seal_image(data):
+                return bytes(data[:-32]) + hashlib.sha256(data[:-32]).digest()
+
+            images = {}
+            for version in (1, 2):
+                for lifetime in ("live", "retired"):
+                    label = f"mobile-v{version}-{lifetime}"
+                    subprocess.run([str(fixture), str(state), label], env=environment, check=True)
+                    images[label] = mobile.read_bytes()
+                    mobile_check(label, True)
+            live = images["mobile-v2-live"]
+            mobile.write_bytes(b"corrupt-native-mobile-image")
+            mobile_check("damaged retained native mobile image", False)
+
+            for label, offset, data in (
+                    ("image magic", 0, b"X"), ("image version", 8, struct.pack("<H", 3)),
+                    ("image state", 10, b"\x03"), ("image reserved", 11, b"\x01"),
+                    ("image length", 12, b"\x00" * 4),
+                    ("zero last transition", 164, b"\x00" * 16),
+                    ("zero cash revision", 180, b"\x00" * 8),
+                    ("negative cash", 188, struct.pack("<q", -1)),
+                    ("cash native overflow", 188, struct.pack("<q", 2**31)),
+                    ("stock length", 220, b"\x00" * 4),
+                    ("stock count", 224, struct.pack("<I", 3001))):
+                changed = bytearray(live)
+                changed[offset:offset + len(data)] = data
+                mobile.write_bytes(seal_image(changed))
+                mobile_check(label, False)
+            for label, offset, data in (
+                    ("reference magic", 0, b"X"), ("reference version", 8, struct.pack("<H", 2)),
+                    ("reference provenance", 10, b"\x03"), ("reference reserved", 11, b"\x01"),
+                    ("reference length", 12, b"\x00" * 4),
+                    ("zero lifetime ID", 16, b"\x00" * 8),
+                    ("reserved lifetime ID", 16, struct.pack("<Q", 2**64-1)),
+                    ("zero birth operation", 24, b"\x00" * 16),
+                    ("invalid birth source", 40, b"\x00" * 48),
+                    ("negative mobile vnum", 88, struct.pack("<i", -1)),
+                    ("invalid reset zone", 96, struct.pack("<i", -1)),
+                    ("zero mobile revision", 100, b"\x00" * 8),
+                    ("zero stock revision", 108, b"\x00" * 8),
+                    ("filename lifetime differs", 16, struct.pack("<Q", 43))):
+                changed = bytearray(live)
+                reference = bytearray(changed[16:164])
+                reference[offset:offset + len(data)] = data
+                changed[16:164] = seal_image(reference)
+                mobile.write_bytes(seal_image(changed))
+                mobile_check(label, False)
+            mobile.write_bytes(live[:-1] + bytes([live[-1] ^ 1]))
+            mobile_check("image checksum", False)
+            mobile.write_bytes(live[:-1])
+            mobile_check("truncated image", False)
+            mobile.write_bytes(live + b"\x00")
+            mobile_check("trailing image bytes", False)
+            changed = bytearray(images["mobile-v2-retired"])
+            changed[188:196] = struct.pack("<q", 1)
+            mobile.write_bytes(seal_image(changed))
+            mobile_check("retired image retains cash", False)
+            changed = bytearray(live)
+            changed[10] = 2
+            changed[188:220] = b"\x00" * 32
+            mobile.write_bytes(seal_image(changed))
+            mobile_check("retired image retains stock", False)
+            from test_economic_sql_canonical_audit import (NATIVE_MOBILE_STOCK_DAMAGE,
+                native_mobile_forests, native_mobile_image, native_mobile_stock)
+            stock = native_mobile_stock()
+            mobile.write_bytes(native_mobile_image(items=stock))
+            mobile_check("modeled literal stock with dynamic affects and spellbook", True)
+            for label, offset, data in NATIVE_MOBILE_STOCK_DAMAGE:
+                changed = bytearray(stock)
+                changed[offset:offset+len(data)] = data
+                mobile.write_bytes(native_mobile_image(items=bytes(changed)))
+                mobile_check("modeled stock " + label, False)
+            for label, valid, stock in native_mobile_forests():
+                mobile.write_bytes(native_mobile_image(items=stock))
+                mobile_check("modeled forest " + label, valid)
+            mobile.write_bytes(live)
+            independent_values = False  # File/name safety is the native reader's responsibility.
+            for name in ("quest-mobile-native-042.qmn", "quest-mobile-native-0.qmn",
+                         "quest-mobile-native-18446744073709551615.qmn",
+                         "quest-mobile-native-18446744073709551616.qmn",
+                         "quest-mobile-native-+42.qmn", "quest-mobile-native-42.qmn.tmp",
+                         "quest-mobile-native-42", "quest-mobile-native-42.QMN",
+                         "quest-mobile-native42.qmn", "quest-mobile-native.qmn",
+                         "quest-mobile-native-.qmn"):
+                mobile.unlink()
+                alternate = domains / name
+                alternate.write_bytes(live)
+                mobile_check("noncanonical filename " + name, False)
+                alternate.unlink()
+                mobile.write_bytes(live)
+            mobile.chmod(0o644)
+            mobile_check("nonprivate native image", False)
+            mobile.chmod(0o600)
+            os.link(mobile, domains / "quest-mobile-native-hardlink")
+            mobile_check("hardlinked native image", False)
+            (domains / "quest-mobile-native-hardlink").unlink()
+            mobile.unlink()
+            mobile.symlink_to(domains / ".critical-authority.lock")
+            mobile_check("symlink native image", False)
+            mobile.unlink()
+            os.mkfifo(mobile, 0o600)
+            mobile_check("FIFO native image refuses without blocking", False)
+            mobile.unlink()
+            mobile.mkdir(mode=0o700)
+            mobile_check("directory native image", False)
+            mobile.rmdir()
+            mobile.write_bytes(live + b"\x00" * (4 * 1024 * 1024 + 1 - len(live)))
+            mobile_check("oversized native image", False)
+            mobile.unlink()
+            print("NATIVE_MOBILE_RESTORE_CHECKS " + json.dumps(mobile_checks, sort_keys=True), flush=True)
             for path in evidence.iterdir():
                 path.unlink()
             subprocess.run([str(fixture), str(state), "lifetimes"], env=environment, check=True)

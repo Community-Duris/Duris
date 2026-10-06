@@ -6,7 +6,9 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
+import struct
 import subprocess
 import sys
 import time
@@ -23,14 +25,73 @@ from test_reconcile_economy_accounting import clean_snapshot, Reconciler
 from reconcile_economy_accounting import SnapshotError, view
 
 
+def native_mobile_stock():
+    def string(value):
+        return struct.pack('<I', len(value)) + value
+    return (struct.pack('<IihQqibB', 1, -1, 7, 81, 0, 100, 1, 15) +
+            string(b'\0\xff') + string(b'') * 3 + bytes(169) +
+            struct.pack('<IhhQ', 1, 2, -3, 4) + struct.pack('<I', 1) +
+            string(b'key') + string(b'description') + struct.pack('<BIii', 1, 2, 0, -1))
+
+
+NATIVE_MOBILE_STOCK_DAMAGE = (
+    ('object count', 0, struct.pack('<I', 4097)), ('parent', 4, struct.pack('<i', 0)),
+    ('slot', 8, struct.pack('<h', 44)), ('zero UID', 10, bytes(8)),
+    ('reserved UID', 10, struct.pack('<Q', 2**64-1)),
+    ('vnum', 26, struct.pack('<i', -1)), ('literal mask', 31, b'\0'),
+    ('string bound', 32, struct.pack('<I', 4097)),
+    ('dynamic row budget', 219, struct.pack('<I', 8192)),
+    ('extra row budget', 235, struct.pack('<I', 8192)),
+    ('spellbook boolean', 261, b'\x02'), ('spell row budget', 262, struct.pack('<I', 8192)))
+
+
+def native_mobile_forests():
+    def forest(rows):
+        result = bytearray(struct.pack('<I', len(rows)))
+        for parent, slot, uid in rows:
+            item = bytearray(native_mobile_stock()[4:])
+            struct.pack_into('<ihQ', item, 0, parent, slot, uid)
+            result.extend(item)
+        return bytes(result)
+    return [(label, valid, forest(rows)) for label, valid, rows in (
+        ('equipped-carried-DFS', True, [(-1, 1, 81), (-1, 43, 82), (-1, 0, 83), (2, 0, 84), (3, 0, 85), (2, 0, 86)]),
+        ('maximum UID', True, [(-1, 0, 2**64-2)]),
+        ('maximum depth', True, [(index-1, 0, index+81) for index in range(32)]),
+        ('depth overflow', False, [(index-1, 0, index+81) for index in range(33)]),
+        ('duplicate UID', False, [(-1, 0, 81), (-1, 0, 81)]),
+        ('reopened subtree', False, [(-1, 0, 81), (0, 0, 82), (-1, 0, 83), (0, 0, 84)]),
+        ('negative parent', False, [(-2, 0, 81)]),
+        ('forward parent', False, [(1, 0, 81), (-1, 0, 82)]),
+        ('child equipment', False, [(-1, 0, 81), (0, 1, 82)]),
+        ('equipment order', False, [(-1, 2, 81), (-1, 1, 82)]),
+        ('equipment after carried', False, [(-1, 0, 81), (-1, 1, 82)]),
+        ('negative equipment', False, [(-1, -1, 81)]))]
+
+
+def native_mobile_image(version=2, state=1, items=b'\0' * 4, identity=42):
+    """Modeled wire bytes; the original flatfile fixture supplies native proof."""
+    source = struct.pack('<HH16s16sQI', 10, 1, b'\x47' + bytes(15), b'\x48' + bytes(15), 3, 5)
+    reference = (b'QMNREF\0\0' + struct.pack('<HBBIQ', 1, 1, 0, 148, identity) +
+                 b'\x46' + bytes(15) + source + struct.pack('<iiiQQ', 9001, 3000, 30, 2, 3))
+    reference += hashlib.sha256(reference).digest()
+    image = (b'QMNIMG\0\0' + struct.pack('<HBBI', version, state, 0,
+             (216 if version == 1 else 256) + len(items)) + reference + b'\x49' + bytes(15))
+    if version == 2:
+        image += struct.pack('<Q4q', 4, *(0 if state == 2 else coin for coin in (5, 6, 7, 8)))
+    image += struct.pack('<I', len(items)) + items
+    return image + hashlib.sha256(image).digest()
+
+
 class RestoreProjectionFixture:
     """Synthetic SQL JSON projections; native proof uses original C++ bytes."""
 
-    def __init__(self, baseline=False, rejected=False):
+    def __init__(self, baseline=False, rejected=False, canonical=None):
         from test_plan5_child_identity import ChildIdentityTests
         from test_economic_sql_audit_origins import witness, baseline_projections
-        self.baseline = witness() if baseline else None
-        if baseline:
+        self.baseline = baseline if isinstance(baseline, dict) else witness() if baseline else None
+        if canonical is not None:
+            self.frozen, self.encoded = canonical
+        elif baseline:
             self.encoded = self.baseline['canonical_plan']
             self.frozen = self.baseline['canonical_intent']
         else:
@@ -72,17 +133,37 @@ class RestoreProjectionFixture:
                 value['holding_count'], value['item_count'], value['witness_digest'].hex(), len(value['canonical_witness']),
                 value['canonical_witness'][80:120].hex(), value['inbox_revision'], value['inbox_type'], value['inbox_schema'],
                 value['inbox_payload'], value['inbox_result_payload'].hex(), value['inbox_keys_hash'].hex(),
-                value['command_accepted_at_usec'], value['inbox_command_hash'].hex()]]
+                value['command_accepted_at_usec'], value['inbox_command_hash'].hex(), None]]
         if rejected:
             self.rows['metadata'][0][14] = self.rows['metadata'][0][16] = None
             self.rows['metadata'][0][17:25] = [2, 5, 0, 0, 0, 0, 0, 0]
         self.queries = []
         self.admission_column_count = '1'
+        self.mobile_image = None
+        self.mobile_row = None
+        self.pending_sources = []
+        self.pending_consumptions = []
+        self.claim_origin_column_count = '1'
 
     def sql(self, query):
         if not query.startswith('SELECT '):
             raise AssertionError(query)
         self.queries.append(query)
+        for table, values in (('economic_pending_claim_source', self.pending_sources),
+                              ('economic_pending_claim_consumption', self.pending_consumptions)):
+            if query.startswith('SELECT COUNT(*) FROM ' + table + ';'):
+                return str(len(values))
+            if query.startswith('SELECT JSON_ARRAY(') and ' FROM ' + table + ' ' in query:
+                return '\n'.join(json.dumps(row) for row in values)
+        if 'FROM quest_mobile_native' in query:
+            if query.startswith('SELECT COUNT(*)'):
+                return '0' if self.mobile_image is None else '1'
+            if query.startswith('SELECT JSON_ARRAY('):
+                return '' if self.mobile_row is None else json.dumps(self.mobile_row)
+            if query.startswith('SELECT HEX(SUBSTRING('):
+                offset, count = map(int, query.split('canonical_image,')[1].split(')')[0].split(','))
+                return self.mobile_image[offset-1:offset-1+count].hex()
+            raise AssertionError(query)
         if 'SELECT JSON_ARRAY(' in query:
             table = query.split(' FROM ', 1)[1].split(' ', 1)[0]
             name = {'economic_accounting_operation': 'metadata', 'economic_accounting_account_effect': 'accounts',
@@ -103,10 +184,85 @@ class RestoreProjectionFixture:
                 return self.encoded.hex()
             return self.baseline['canonical_witness'].hex()
         if 'information_schema.tables' in query:
+            if "table_name='quest_mobile_native'" in query:
+                return '1'
             return '3'
         if 'information_schema.columns' in query:
+            if "column_name='claim_origin_version'" in query:
+                return self.claim_origin_column_count
             return self.admission_column_count
         return '0'
+
+
+def claim_capsules(operation, before, after):
+    """Modeled coin roots for pure tests; integration supplies native codec bytes."""
+    fixture = RestoreProjectionFixture()
+    frozen, encoded = bytearray(fixture.frozen), bytearray(fixture.encoded)
+    frozen[64:80] = encoded[40:56] = bytes([operation])*16
+    frozen[116:132] = encoded[108:124] = bytes([operation-0x80])*16
+    delta = after-before
+    wallet = max(20, delta)
+    for index, old, new in ((0, wallet, wallet-delta), (1, before, after)):
+        offset = 256+index*120
+        if index == 1:
+            struct.pack_into('<H', encoded, offset+18, 5)
+        struct.pack_into('<4q', encoded, offset+40, old, 0, 0, 0)
+        struct.pack_into('<4q', encoded, offset+72, new, 0, 0, 0)
+    counts = struct.unpack_from('<6I', encoded, 216)
+    offset = 256+counts[0]*120
+    for index, amount in enumerate((-delta, delta)):
+        struct.pack_into('<4qq', encoded, offset+index*48+8, amount, 0, 0, 0, amount)
+    offset += counts[1]*48
+    children = []
+    for index in range(counts[2]):
+        domain, discriminator, parent, relationship = struct.unpack_from('<IQHH', encoded, offset+index*32+16)
+        parent_id = children[parent-1] if parent else bytes([operation])*16
+        child = hashlib.sha256(parent_id+struct.pack('<IQ', domain, discriminator)).digest()[:16]
+        encoded[offset+index*32:offset+index*32+16] = child
+        children.append(child)
+    encoded[152:184] = evidence.decode_intent(bytes(frozen))['intent_digest']
+    evidence.decode_plan(bytes(encoded))
+    return bytes(frozen), bytes(encoded)
+
+
+class ClaimProjectionFixture:
+    def __init__(self, mode='partial', canonical=None):
+        pairs = canonical or [claim_capsules(*values) for values in
+            ((0x81, 0, 5), (0x82, 5, 8), (0x83, 8, 6), (0x84, 6, 0), (0x85, 8, 0))]
+        indices = {'unspent': (0, 1), 'partial': (0, 1, 2), 'consumed': (0, 1, 2, 3), 'whole': (0, 1, 4)}[mode]
+        self.roots = {fixture.operation: fixture for fixture in
+                      (RestoreProjectionFixture(canonical=pairs[index]) for index in indices)}
+        self.pending_sources = [[bytes([0x81+index]).hex()*16, 1, '11'*16, 9, 42, amount,
+                                 '85'*16 if mode == 'whole' else None,
+                                 9, '11'*16, 1, 5, 5, 42, 0] for index, amount in enumerate((5, 3))]
+        self.pending_consumptions = []
+        if mode in ('partial', 'consumed'):
+            self.pending_consumptions.append(['83'*16, '81'*16, 1, 2])
+        if mode == 'consumed':
+            self.pending_consumptions.extend([['84'*16, '81'*16, 1, 3], ['84'*16, '82'*16, 1, 3]])
+        self.queries = []
+        self.count_overrides = {}
+        self.reference_failures = set()
+
+    def sql(self, query):
+        assert query.startswith('SELECT '), query
+        self.queries.append(query)
+        for table, values in (('economic_pending_claim_source', self.pending_sources),
+                              ('economic_pending_claim_consumption', self.pending_consumptions)):
+            if query == 'SELECT COUNT(*) FROM '+table+';':
+                return self.count_overrides.get(table, str(len(values)))
+            if query.startswith('SELECT JSON_ARRAY(') and ' FROM '+table+' ' in query:
+                return '\n'.join(json.dumps(row) for row in values[:256])
+        if query.startswith('SELECT COUNT(*) FROM economic_accounting_operation;'):
+            return str(len(self.roots))
+        if query.startswith('SELECT LOWER(HEX(operation_id))'):
+            after = query.split("UNHEX('")[1].split("')")[0]
+            return '\n'.join(operation for operation in sorted(self.roots) if operation > after)
+        if 'LEFT JOIN critical_operation_inbox i ON i.operation_id=o.operation_id WHERE' in query:
+            return '1' if any(field in query for field in self.reference_failures) else '0'
+        match = re.search(r"operation_id=UNHEX\('([0-9a-f]+)'\)", query)
+        root = self.roots.get(match.group(1)) if match else next(iter(self.roots.values()))
+        return root.sql(query) if root is not None else '0'
 
 
 class RestoreProjectionTests(unittest.TestCase):
@@ -131,6 +287,179 @@ class RestoreProjectionTests(unittest.TestCase):
                 evidence.require_integrity(fixture)
                 self.assertEqual(fixture.rows, before)
                 self.assertTrue(all(query.startswith('SELECT ') for query in fixture.queries))
+
+    def test_sql_native_mobile_corruption_is_not_qualified(self):
+        fixture = RestoreProjectionFixture()
+        fixture.mobile_image = b'corrupt-native-mobile-image'
+        fixture.mobile_row = [42, 2, 3, 1, len(fixture.mobile_image)]
+        self.refuse(fixture, 'native_mobile')
+
+    def test_unattached_pending_claim_allocation_is_not_qualified(self):
+        fixture = RestoreProjectionFixture()
+        # A well-shaped source/mapping with no authenticated claim credit.
+        fixture.pending_sources = [[fixture.operation, 1, '11'*16, 9, 42, 5, None,
+                                    9, '11'*16, 1, 5, 5, 42, 0]]
+        self.refuse(fixture, 'pending_claim_source')
+
+    def test_unattached_pending_claim_consumption_is_not_qualified(self):
+        fixture = RestoreProjectionFixture()
+        fixture.pending_consumptions = [['55'*16, '66'*16, 1, 1]]
+        self.refuse(fixture, 'pending_claim_consumption')
+
+    def test_pending_claim_partial_whole_and_full_consumption_controls(self):
+        for mode in ('unspent', 'partial', 'consumed', 'whole'):
+            fixture = ClaimProjectionFixture(mode)
+            before = copy.deepcopy((fixture.pending_sources, fixture.pending_consumptions,
+                                    [root.rows for root in fixture.roots.values()]))
+            with self.subTest(mode=mode):
+                evidence.require_integrity(fixture)
+                self.assertEqual((fixture.pending_sources, fixture.pending_consumptions,
+                                  [root.rows for root in fixture.roots.values()]), before)
+                self.assertTrue(all(query.startswith('SELECT ') for query in fixture.queries))
+
+    def test_pending_claim_sources_require_exact_identity_mapping_and_credit(self):
+        for index, changed in ((0, '00'*16), (0, '99'*16), (1, 0), (1, 65536), (2, '22'*16),
+                               (3, 0), (3, 10), (3, 2**64), (4, 0), (4, 43), (4, 2**32), (5, 0), (5, 6), (5, 2**32),
+                               (6, '00'*16), (7, None), (7, 10), (8, '22'*16), (9, 2),
+                               (10, 1), (11, 1), (12, 43), (13, 1)):
+            fixture = ClaimProjectionFixture()
+            fixture.pending_sources[0][index] = changed
+            with self.subTest(index=index, changed=changed):
+                with self.assertRaisesRegex(RuntimeError, 'restore_economic_pending_claim_(source|consumption)_mismatch'):
+                    evidence.require_integrity(fixture)
+        for index in (1, 3, 4, 5, 7, 9, 10, 11, 12, 13):
+            for alias in (True, 1.0, '1', None):
+                fixture = ClaimProjectionFixture()
+                fixture.pending_sources[0][index] = alias
+                with self.subTest(index=index, alias=alias):
+                    with self.assertRaisesRegex(RuntimeError, 'restore_economic_pending_claim_source_mismatch'):
+                        evidence.require_integrity(fixture)
+
+    def test_pending_claim_consumption_requires_original_source_and_exact_debit(self):
+        for index, changed in ((0, '00'*16), (0, '99'*16), (0, '81'*16), (1, '00'*16),
+                               (1, '99'*16), (2, 0), (2, 65536), (2, 2),
+                               (3, 0), (3, 1), (3, 3), (3, 6), (3, 2**64),
+                               (2, True), (2, 1.0), (3, True), (3, 2.0), (3, '2'), (3, None)):
+            fixture = ClaimProjectionFixture()
+            fixture.pending_consumptions[0][index] = changed
+            with self.subTest(index=index, changed=changed):
+                with self.assertRaisesRegex(RuntimeError, 'restore_economic_pending_claim_consumption_mismatch'):
+                    evidence.require_integrity(fixture)
+        fixture = ClaimProjectionFixture()
+        fixture.pending_consumptions = []
+        with self.assertRaisesRegex(RuntimeError, 'restore_economic_pending_claim_consumption_mismatch'):
+            evidence.require_integrity(fixture)
+        fixture = ClaimProjectionFixture()
+        fixture.pending_sources[0][6] = '83'*16
+        with self.assertRaisesRegex(RuntimeError, 'restore_economic_pending_claim_consumption_mismatch'):
+            evidence.require_integrity(fixture)
+
+    def test_pending_claim_reference_roots_and_collection_bounds(self):
+        for field, code in (('s.source_operation_id', 'source'), ('s.claim_operation_id', 'consumption'),
+                            ('c.spending_operation_id', 'consumption')):
+            fixture = ClaimProjectionFixture()
+            fixture.reference_failures.add(field)
+            with self.subTest(field=field):
+                with self.assertRaisesRegex(RuntimeError, 'restore_economic_pending_claim_'+code+'_mismatch'):
+                    evidence.require_integrity(fixture)
+        for table, code in (('economic_pending_claim_source', 'source'),
+                            ('economic_pending_claim_consumption', 'consumption')):
+            for count in ('100001', '-1', '1.0', ''):
+                fixture = ClaimProjectionFixture()
+                fixture.count_overrides[table] = count
+                with self.subTest(table=table, count=count):
+                    with self.assertRaisesRegex(RuntimeError, 'restore_economic_pending_claim_'+code+'_mismatch'):
+                        evidence.require_integrity(fixture)
+                    self.assertFalse(any('SUBSTRING(canonical_' in query for query in fixture.queries))
+
+    def test_versioned_baseline_claim_slots_and_historical_unknown_coverage(self):
+        from test_economic_sql_audit_origins import key, witness
+        baseline = witness([key(1, 7), key(5, 9)])
+        for version in (None, 1):
+            fixture = RestoreProjectionFixture(baseline=baseline)
+            fixture.rows['witness'][0][17] = version
+            if version == 1:
+                fixture.pending_sources = [[fixture.operation, 2, '11'*16, 9, 42, 5, None,
+                                            9, '11'*16, 1, 5, 5, 42, 0]]
+            with self.subTest(version=version):
+                evidence.require_integrity(fixture)
+        for damage in ('missing', 'wrong_slot', 'extra', 'amount'):
+            fixture = RestoreProjectionFixture(baseline=baseline)
+            fixture.rows['witness'][0][17] = 1
+            fixture.pending_sources = [[fixture.operation, 2, '11'*16, 9, 42, 5, None,
+                                        9, '11'*16, 1, 5, 5, 42, 0]]
+            if damage == 'missing':
+                fixture.pending_sources = []
+            elif damage == 'wrong_slot':
+                fixture.pending_sources[0][1] = 1
+            elif damage == 'amount':
+                fixture.pending_sources[0][5] = 4
+            else:
+                fixture.pending_sources.append(fixture.pending_sources[0].copy())
+                fixture.pending_sources[1][1] = 3
+            with self.subTest(damage=damage):
+                self.refuse(fixture, 'baseline_claim_origin')
+        for version in (0, 2, True, 1.0, '1'):
+            fixture = RestoreProjectionFixture(baseline=baseline)
+            fixture.rows['witness'][0][17] = version
+            with self.subTest(version=version):
+                self.refuse(fixture, 'baseline_claim_origin')
+
+    def test_sql_native_mobile_valid_versions_lifetimes_and_stock(self):
+        for version, state, stock in ((1, 1, bytes(4)), (1, 2, bytes(4)), (2, 1, bytes(4)),
+                                      (2, 2, bytes(4)), (1, 1, native_mobile_stock()),
+                                      (2, 1, native_mobile_stock())):
+            fixture = RestoreProjectionFixture()
+            fixture.mobile_image = native_mobile_image(version, state, stock)
+            fixture.mobile_row = [42, 2, 3, state, len(fixture.mobile_image)]
+            before = fixture.mobile_image, copy.deepcopy(fixture.mobile_row)
+            with self.subTest(version=version, state=state, stock=len(stock)):
+                evidence.require_integrity(fixture)
+                self.assertEqual((fixture.mobile_image, fixture.mobile_row), before)
+                self.assertEqual(evidence.decode_native_mobile(fixture.mobile_image), (42, 2, 3, state))
+                self.assertTrue(all(query.startswith('SELECT ') for query in fixture.queries))
+
+    def test_sql_native_mobile_projection_types_values_and_binding(self):
+        for index, changed in ((0, 0), (0, 43), (0, 2**64-1), (1, 0), (1, 3), (1, 2**64),
+                               (2, 0), (2, 4), (3, 0), (3, 2), (3, 3), (4, 219),
+                               (4, 4*1024*1024+1), (4, 261)):
+            fixture = RestoreProjectionFixture()
+            fixture.mobile_image = native_mobile_image()
+            fixture.mobile_row = [42, 2, 3, 1, len(fixture.mobile_image)]
+            fixture.mobile_row[index] = changed
+            with self.subTest(index=index, changed=changed):
+                self.refuse(fixture, 'native_mobile')
+        for index in range(5):
+            for changed in (True, 42.0, '42', None):
+                fixture = RestoreProjectionFixture()
+                fixture.mobile_image = native_mobile_image()
+                fixture.mobile_row = [42, 2, 3, 1, len(fixture.mobile_image)]
+                fixture.mobile_row[index] = changed
+                with self.subTest(index=index, changed=changed):
+                    self.refuse(fixture, 'native_mobile')
+
+    def test_sql_native_mobile_stock_value_corruption_refuses(self):
+        stock = native_mobile_stock()
+        # The native oracle also consumes this deliberately modeled stock.
+        for label, offset, changed in NATIVE_MOBILE_STOCK_DAMAGE:
+            damaged = bytearray(stock)
+            damaged[offset:offset+len(changed)] = changed
+            fixture = RestoreProjectionFixture()
+            fixture.mobile_image = native_mobile_image(items=bytes(damaged))
+            fixture.mobile_row = [42, 2, 3, 1, len(fixture.mobile_image)]
+            with self.subTest(label=label):
+                self.refuse(fixture, 'native_mobile')
+
+    def test_sql_native_mobile_forest_topology_and_depth(self):
+        for label, valid, stock in native_mobile_forests():
+            fixture = RestoreProjectionFixture()
+            fixture.mobile_image = native_mobile_image(items=stock)
+            fixture.mobile_row = [42, 2, 3, 1, len(fixture.mobile_image)]
+            with self.subTest(label=label):
+                if valid:
+                    evidence.require_integrity(fixture)
+                else:
+                    self.refuse(fixture, 'native_mobile')
 
     def test_original_admission_time_and_command_hash_refuse_restore(self):
         for index, value in [(15, value) for value in (0, -1, 2**64, True, 123456.0, "123456", 123457)] + [
@@ -213,7 +542,7 @@ class CanonicalAuditTests(unittest.TestCase):
     def connection(self):
         connection = mock.Mock()
         cursor = connection.cursor.return_value
-        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': 0}], [], [{'size': 0}], [],
+        cursor.fetchmany.side_effect = [[{'count': 19}], [], [{'count': 0}], [], [{'mobiles': 0}], [], [{'size': 0}], [],
                                        [{'unwanted': 0}], [], [{'claims': 0}], [], [{'unwanted_claim': 0}], []]
         return connection, cursor
 
@@ -229,7 +558,7 @@ class CanonicalAuditTests(unittest.TestCase):
 
     def test_root_limit_refuses_before_capsule_reads(self):
         connection, cursor = self.connection()
-        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': audit.MAX_ROWS+1}], []]
+        cursor.fetchmany.side_effect = [[{'count': 19}], [], [{'count': audit.MAX_ROWS+1}], []]
         with mock.patch.object(audit, 'require_integrity') as verifier:
             with self.assertRaisesRegex(audit.AuditError, 'root count'):
                 audit.capture(connection)
@@ -239,7 +568,7 @@ class CanonicalAuditTests(unittest.TestCase):
 
     def test_missing_or_nontransactional_source_refuses(self):
         connection, cursor = self.connection()
-        cursor.fetchmany.side_effect = [[{'count': 14}], []]
+        cursor.fetchmany.side_effect = [[{'count': 18}], []]
         with mock.patch.object(audit, 'require_integrity') as verifier:
             with self.assertRaisesRegex(audit.AuditError, 'not InnoDB'):
                 audit.capture(connection)
@@ -249,8 +578,8 @@ class CanonicalAuditTests(unittest.TestCase):
 
     def test_capsule_budget_refuses_before_decoding(self):
         connection, cursor = self.connection()
-        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': 1}], [],
-                                       [{'size': audit.MAX_INPUT_BYTES+1}], []]
+        cursor.fetchmany.side_effect = [[{'count': 19}], [], [{'count': 1}], [],
+                                       [{'mobiles': 0}], [], [{'size': audit.MAX_INPUT_BYTES+1}], []]
         with mock.patch.object(audit, 'require_integrity') as verifier:
             with self.assertRaisesRegex(audit.AuditError, 'capsules exceed'):
                 audit.capture(connection)
@@ -258,9 +587,21 @@ class CanonicalAuditTests(unittest.TestCase):
         connection.rollback.assert_called_once_with()
         cursor.close.assert_called_once_with()
 
+    def test_native_mobile_budget_refuses_before_capsule_reads(self):
+        for mobiles in (-1, audit.MAX_ROWS+1):
+            connection, cursor = self.connection()
+            cursor.fetchmany.side_effect = [[{'count': 19}], [], [{'count': 0}], [],
+                                           [{'mobiles': mobiles}], []]
+            with self.subTest(mobiles=mobiles), mock.patch.object(audit, 'require_integrity') as verifier:
+                with self.assertRaisesRegex(audit.AuditError, 'native mobile count'):
+                    audit.capture(connection)
+                verifier.assert_not_called()
+            connection.rollback.assert_called_once_with()
+            cursor.close.assert_called_once_with()
+
     def test_orphan_and_rejected_details_refuse_before_decoding(self):
         connection, cursor = self.connection()
-        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': 0}], [], [{'size': 0}], [], [{'unwanted': 1}], []]
+        cursor.fetchmany.side_effect = [[{'count': 19}], [], [{'count': 0}], [], [{'mobiles': 0}], [], [{'size': 0}], [], [{'unwanted': 1}], []]
         with mock.patch.object(audit, 'require_integrity') as verifier:
             with self.assertRaisesRegex(audit.AuditError, 'orphan_or_rejected_detail'):
                 audit.capture(connection)
@@ -318,7 +659,7 @@ class CanonicalAuditTests(unittest.TestCase):
 
     def test_source_claim_limit_refuses_before_original_capsule_decoding(self):
         connection, cursor = self.connection()
-        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': 1}], [], [{'size': 512}], [],
+        cursor.fetchmany.side_effect = [[{'count': 19}], [], [{'count': 1}], [], [{'mobiles': 0}], [], [{'size': 512}], [],
                                        [{'unwanted': 0}], [], [{'claims': audit.MAX_ROWS+1}], []]
         with mock.patch.object(audit, 'require_integrity') as verifier:
             with self.assertRaisesRegex(audit.AuditError, 'source_claim'):
@@ -329,7 +670,7 @@ class CanonicalAuditTests(unittest.TestCase):
 
     def test_database_wide_source_claim_disagreement_refuses_before_decoding(self):
         connection, cursor = self.connection()
-        cursor.fetchmany.side_effect = [[{'count': 15}], [], [{'count': 1}], [], [{'size': 512}], [],
+        cursor.fetchmany.side_effect = [[{'count': 19}], [], [{'count': 1}], [], [{'mobiles': 0}], [], [{'size': 512}], [],
                                        [{'unwanted': 0}], [], [{'claims': 1}], [], [{'unwanted_claim': 1}], []]
         with mock.patch.object(audit, 'require_integrity') as verifier:
             with self.assertRaisesRegex(audit.AuditError, 'source_claim'):
@@ -372,6 +713,7 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                    'src/economy/economic_accounting_plan.c', 'src/economy/economic_source_event.c',
                    'src/economy/economic_accounting_intent.c', 'src/persistence/critical_command.c',
                    'src/item/item_transfer_command.c', 'src/world/quest_mobile_native_reference.c',
+                   'src/economy/shop_trade_recovery_manifest.c',
                    'src/item/craft_pouch_mutation.c',
                    'src/combat/chaos_pouch_ledger.c', 'src/player/player_snapshot_codec.c']
         for backend in ('sql', 'flatfile'):
@@ -433,7 +775,7 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                     executor = migrations.MysqlExecutor(manifest)
                     executor.adopt('fresh_bootstrap')
                     migrations.run_pending(manifest, executor)
-                self.assertEqual(sql(env, 'SELECT sequence_number FROM mud_schema_history ORDER BY sequence_number DESC LIMIT 1'), '61')
+                self.assertEqual(sql(env, 'SELECT sequence_number FROM mud_schema_history ORDER BY sequence_number DESC LIMIT 1'), '62')
                 owner = pymysql.connect(unix_socket=env['DB_SOCKET'], user='root', database='duris_restore',
                                         autocommit=True, cursorclass=pymysql.cursors.DictCursor)
                 try:

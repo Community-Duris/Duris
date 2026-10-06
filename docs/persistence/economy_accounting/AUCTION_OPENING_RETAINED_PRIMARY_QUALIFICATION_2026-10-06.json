@@ -1,0 +1,518 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "base_head": "9817f58b57a4a4179c4db5506fce3ccfe166c12b",
+  "scope": "auction and original opening retained-proof component integration; not full Plan or release",
+  "source_files": [
+    {
+      "path": "src/economy/auction_accounting.c",
+      "maintained_raw_sha256": "7c8d7cc7c5aa34c151ebbc74b94673113e03c360c4443863feb039c09c2e8753",
+      "transport_lf_sha256": "7c8d7cc7c5aa34c151ebbc74b94673113e03c360c4443863feb039c09c2e8753"
+    },
+    {
+      "path": "src/economy/auction_accounting.h",
+      "maintained_raw_sha256": "8336591e1dae4939a14e82268068becaa48100494278af487e1a041bc4d2e963",
+      "transport_lf_sha256": "8336591e1dae4939a14e82268068becaa48100494278af487e1a041bc4d2e963"
+    },
+    {
+      "path": "src/economy/auction_repository.c",
+      "maintained_raw_sha256": "606a466723bc7dd4993b5297146ad82761ccba8e7b0048ebdade69af903fffd8",
+      "transport_lf_sha256": "606a466723bc7dd4993b5297146ad82761ccba8e7b0048ebdade69af903fffd8"
+    },
+    {
+      "path": "src/economy/auction_repository.h",
+      "maintained_raw_sha256": "9a9242d1d6c2f00f5641e426b35d5e36df4124e7c1fe17e9843933be42c946a8",
+      "transport_lf_sha256": "9a9242d1d6c2f00f5641e426b35d5e36df4124e7c1fe17e9843933be42c946a8"
+    },
+    {
+      "path": "src/economy/auction_settlement_accounting.c",
+      "maintained_raw_sha256": "d9db2233aad85dd85aad3838cff523fdd52d8ad4bfe9579eb9c44a43372fb9c2",
+      "transport_lf_sha256": "d9db2233aad85dd85aad3838cff523fdd52d8ad4bfe9579eb9c44a43372fb9c2"
+    },
+    {
+      "path": "src/economy/auction_settlement_accounting.h",
+      "maintained_raw_sha256": "3f1993fc91306e20bd9ba62559334d24bb46f7e71576b63f74db3d9278f35d60",
+      "transport_lf_sha256": "3f1993fc91306e20bd9ba62559334d24bb46f7e71576b63f74db3d9278f35d60"
+    },
+    {
+      "path": "src/economy/economic_gameplay_authority.c",
+      "maintained_raw_sha256": "1442599fa03bc3d47c9219e8d53f7f0b719cec1ea240c230cc81d873230b6aed",
+      "transport_lf_sha256": "1442599fa03bc3d47c9219e8d53f7f0b719cec1ea240c230cc81d873230b6aed"
+    },
+    {
+      "path": "src/economy/economic_gameplay_authority.h",
+      "maintained_raw_sha256": "4dce3d494c9636b1f335a2b24c39f0e15f4ec1ad84423fdfa057fe3b0eff0352",
+      "transport_lf_sha256": "4dce3d494c9636b1f335a2b24c39f0e15f4ec1ad84423fdfa057fe3b0eff0352"
+    },
+    {
+      "path": "src/persistence/economic_sql_accounting_lifecycle_transaction.c",
+      "maintained_raw_sha256": "d1a3564b38008b7afef557666fb236677c701bf49183a4d07c27a0d8c3a7b011",
+      "transport_lf_sha256": "d1a3564b38008b7afef557666fb236677c701bf49183a4d07c27a0d8c3a7b011"
+    },
+    {
+      "path": "src/persistence/economic_sql_auction_bid_transaction.c",
+      "maintained_raw_sha256": "fbd4c0ae3021d9db142bca8e77962b1a7367f560e699dc110240e38de27aebf8",
+      "transport_lf_sha256": "fbd4c0ae3021d9db142bca8e77962b1a7367f560e699dc110240e38de27aebf8"
+    },
+    {
+      "path": "src/persistence/economic_sql_auction_claim_endpoint.c",
+      "maintained_raw_sha256": "c6e91af4fc3d6b18537f057a5ef0282ca7f8d5747d8c3b9b519b8fa1d5596875",
+      "transport_lf_sha256": "c6e91af4fc3d6b18537f057a5ef0282ca7f8d5747d8c3b9b519b8fa1d5596875"
+    },
+    {
+      "path": "src/persistence/economic_sql_auction_money_claim_transaction.c",
+      "maintained_raw_sha256": "be9868e763ef6ed8730c02ed3c7d56765693db0caab67e86a7d492fd325bec4d",
+      "transport_lf_sha256": "be9868e763ef6ed8730c02ed3c7d56765693db0caab67e86a7d492fd325bec4d"
+    },
+    {
+      "path": "src/persistence/economic_sql_auction_retained.c",
+      "maintained_raw_sha256": "2231a5056ee2b634e5d83c8be8990454b627451e5ef44cd0beea5b6e9f155453",
+      "transport_lf_sha256": "2231a5056ee2b634e5d83c8be8990454b627451e5ef44cd0beea5b6e9f155453"
+    },
+    {
+      "path": "src/persistence/economic_sql_auction_retained.h",
+      "maintained_raw_sha256": "4b7fab95960bcde2bab6d73c8adbef8ce35c9c6744e56a682121c742cd01ef7c",
+      "transport_lf_sha256": "4b7fab95960bcde2bab6d73c8adbef8ce35c9c6744e56a682121c742cd01ef7c"
+    },
+    {
+      "path": "src/persistence/economic_sql_auction_settlement_transaction.c",
+      "maintained_raw_sha256": "557b3982d850525e192cf284ddd6384dda62e40c5b11ab957e6d5d1fa7a8dada",
+      "transport_lf_sha256": "557b3982d850525e192cf284ddd6384dda62e40c5b11ab957e6d5d1fa7a8dada"
+    },
+    {
+      "path": "src/persistence/economic_sql_baseline_transaction.c",
+      "maintained_raw_sha256": "337c0c2f554d63bdca57fb54bba92104a405e9f4157b39e42ab089dbc5eaaed0",
+      "transport_lf_sha256": "337c0c2f554d63bdca57fb54bba92104a405e9f4157b39e42ab089dbc5eaaed0"
+    },
+    {
+      "path": "src/persistence/economic_sql_baseline_transaction.h",
+      "maintained_raw_sha256": "fe7afd809e94e877a1969e7d7387a9e2f3635dbed697a038e4675f791c459026",
+      "transport_lf_sha256": "16e6525b4323a25f83c23fb81353f7806f50f0c0d1c418fd0230ec9370f1c115"
+    },
+    {
+      "path": "src/persistence/economic_sql_pending_claim_source.c",
+      "maintained_raw_sha256": "386cb5b72960b2adb9e76f5fd5170dd039ddf7106dc8faef738898926f4ccea3",
+      "transport_lf_sha256": "386cb5b72960b2adb9e76f5fd5170dd039ddf7106dc8faef738898926f4ccea3"
+    },
+    {
+      "path": "src/persistence/economic_sql_pending_claim_source.h",
+      "maintained_raw_sha256": "6df939c7140220468860497a47dc415cbef7db658dfc8b64a4275aaf1209e648",
+      "transport_lf_sha256": "6df939c7140220468860497a47dc415cbef7db658dfc8b64a4275aaf1209e648"
+    },
+    {
+      "path": "tests/async/auction_bid_sql_accounting_mysql_harness.cpp",
+      "maintained_raw_sha256": "f43d7992d6f9a9f321e10149c5cae729ee676c0ea4be56062b4758c34a6fd7fe",
+      "transport_lf_sha256": "f43d7992d6f9a9f321e10149c5cae729ee676c0ea4be56062b4758c34a6fd7fe"
+    },
+    {
+      "path": "tests/async/auction_settlement_sql_accounting_mysql_harness.cpp",
+      "maintained_raw_sha256": "01f9a15c8c2fb21897258744931f3eb224fefa54b9f3fa41097c661a47b40d39",
+      "transport_lf_sha256": "01f9a15c8c2fb21897258744931f3eb224fefa54b9f3fa41097c661a47b40d39"
+    },
+    {
+      "path": "tests/async/economic_sql_baseline_transaction_test.cpp",
+      "maintained_raw_sha256": "5b9f25ee93780c4901371389bc2fe00fefdb886d3c136e6863c724597fa72e69",
+      "transport_lf_sha256": "5b9f25ee93780c4901371389bc2fe00fefdb886d3c136e6863c724597fa72e69"
+    },
+    {
+      "path": "tests/async/economic_sql_lifecycle_owner_mysql_harness.cpp",
+      "maintained_raw_sha256": "3561a0fca268598bec620da0c98b70e7ff6e8d16992238be9688f2bb8b1a3f2e",
+      "transport_lf_sha256": "3561a0fca268598bec620da0c98b70e7ff6e8d16992238be9688f2bb8b1a3f2e"
+    },
+    {
+      "path": "src/Makefile",
+      "maintained_raw_sha256": "6077ffd42ef7cbe2a41da421723d027282f7a360ad5cfe67a6ff9f6875e0ee49",
+      "transport_lf_sha256": "6077ffd42ef7cbe2a41da421723d027282f7a360ad5cfe67a6ff9f6875e0ee49"
+    },
+    {
+      "path": "src/persistence/critical_command_repository.c",
+      "maintained_raw_sha256": "eed81b3a31b3a0586cd6e449e11ce7e91e3778e4635c1b61fd2609fed3113188",
+      "transport_lf_sha256": "eed81b3a31b3a0586cd6e449e11ce7e91e3778e4635c1b61fd2609fed3113188"
+    },
+    {
+      "path": "tests/async/run_auction_bid_sql_accounting_mysql.py",
+      "maintained_raw_sha256": "e7e7d12aa8567329ffe82cdd8e1f7aa967cd80a8003f73dfbdb5153da6d69d7e",
+      "transport_lf_sha256": "e7e7d12aa8567329ffe82cdd8e1f7aa967cd80a8003f73dfbdb5153da6d69d7e"
+    },
+    {
+      "path": "tests/async/run_auction_settlement_sql_accounting_mysql.py",
+      "maintained_raw_sha256": "fb80b9e880c7dafdb33281eadd013b402b156baea6ad342d10d0d9f637bb8aa1",
+      "transport_lf_sha256": "fb80b9e880c7dafdb33281eadd013b402b156baea6ad342d10d0d9f637bb8aa1"
+    },
+    {
+      "path": "tests/async/run_economic_sql_baseline_transaction_mysql.py",
+      "maintained_raw_sha256": "9cf03eb4ef09c4be720f646bee5e9e4362b9916cfa9592bbc17c3461c945eb84",
+      "transport_lf_sha256": "9cf03eb4ef09c4be720f646bee5e9e4362b9916cfa9592bbc17c3461c945eb84"
+    },
+    {
+      "path": "tests/async/run_economic_sql_lifecycle_owner_mysql.sh",
+      "maintained_raw_sha256": "10db51c8b4c64edf13f94b3caac289d141fe38796cd226092028e9119769e995",
+      "transport_lf_sha256": "10db51c8b4c64edf13f94b3caac289d141fe38796cd226092028e9119769e995"
+    }
+  ],
+  "native_archive_sha256": "9ae305a09abc80d9390a6cf2abea3d73d984273fe5298051507cc7ae56e15ea5",
+  "maintained_build_archive_sha256": "c5af5ff92a0a2fd27886acedd115bbbc6766be2a2d78f88fdce1dc3f2ab53c71",
+  "final_formatted_archive_sha256": "a7554a3c1b41ae3e226bcb946c281ea42dc406e15dad25615f477b396dfd5773",
+  "native_results": {
+    "mysql8-migrate": {
+      "exit_code": 0,
+      "seconds": 51.953,
+      "args": []
+    },
+    "mysql8-baseline": {
+      "exit_code": 0,
+      "seconds": 114.609,
+      "args": []
+    },
+    "mysql8-bid": {
+      "exit_code": 0,
+      "seconds": 8.266,
+      "args": []
+    },
+    "mysql8-bid-first-endpoints": {
+      "exit_code": 0,
+      "seconds": 10.125,
+      "args": [
+        "--first-endpoints"
+      ]
+    },
+    "mysql8-settlement": {
+      "exit_code": 0,
+      "seconds": 8.781,
+      "args": []
+    },
+    "mysql8-lifecycle": {
+      "exit_code": 0,
+      "seconds": 10.281,
+      "args": []
+    },
+    "mysql8-lifecycle-money-opening": {
+      "exit_code": 0,
+      "seconds": 9.219,
+      "args": [
+        "--money-opening"
+      ]
+    },
+    "mysql8-lifecycle-money-recovery": {
+      "exit_code": 0,
+      "seconds": 22.734,
+      "args": [
+        "--money-recovery"
+      ]
+    },
+    "mariadb10_11-migrate": {
+      "exit_code": 0,
+      "seconds": 27.813,
+      "args": []
+    },
+    "mariadb10_11-baseline": {
+      "exit_code": 0,
+      "seconds": 54.063,
+      "args": []
+    },
+    "mariadb10_11-bid": {
+      "exit_code": 0,
+      "seconds": 6.797,
+      "args": []
+    },
+    "mariadb10_11-bid-first-endpoints": {
+      "exit_code": 0,
+      "seconds": 6.922,
+      "args": [
+        "--first-endpoints"
+      ]
+    },
+    "mariadb10_11-settlement": {
+      "exit_code": 0,
+      "seconds": 7.203,
+      "args": []
+    },
+    "mariadb10_11-lifecycle": {
+      "exit_code": 0,
+      "seconds": 9.281,
+      "args": []
+    },
+    "mariadb10_11-lifecycle-money-opening": {
+      "exit_code": 0,
+      "seconds": 8.594,
+      "args": [
+        "--money-opening"
+      ]
+    },
+    "mariadb10_11-lifecycle-money-recovery": {
+      "exit_code": 0,
+      "seconds": 13.781,
+      "args": [
+        "--money-recovery"
+      ]
+    }
+  },
+  "full_production_builds": [
+    {
+      "backend": "mariadb",
+      "command": [
+        "make",
+        "-C",
+        "/tmp/auction-integrated-source/src",
+        "-j2",
+        "BUILD_PROFILE=production",
+        "PERSISTENCE_BACKEND=mariadb",
+        "DMS_BINARY=/evidence/build/server/mariadb/dms_new",
+        "PFILE_BINARY=/evidence/build/tools/mariadb/pfile"
+      ],
+      "status": "PASS",
+      "source_archive_sha256": "c5af5ff92a0a2fd27886acedd115bbbc6766be2a2d78f88fdce1dc3f2ab53c71",
+      "exit": 0,
+      "seconds": 1477.37,
+      "log_sha256": "08bf48ce9598ab20bf2a1aea202afba67f4d5bc1f449d65f2ac35faf6d023f2c",
+      "binary_sha256": "b1ea4ef65eaafbb06061ebaa19bb89cadedffe4c74ffe8fd030767679ab31d43"
+    },
+    {
+      "backend": "flatfile",
+      "command": [
+        "make",
+        "-C",
+        "/tmp/auction-integrated-source/src",
+        "-j2",
+        "BUILD_PROFILE=production",
+        "PERSISTENCE_BACKEND=flatfile",
+        "DMS_BINARY=/evidence/build/server/flatfile/dms_new",
+        "PFILE_BINARY=/evidence/build/tools/flatfile/pfile"
+      ],
+      "status": "PASS",
+      "source_archive_sha256": "c5af5ff92a0a2fd27886acedd115bbbc6766be2a2d78f88fdce1dc3f2ab53c71",
+      "exit": 0,
+      "seconds": 1819.9,
+      "log_sha256": "665282bb40cc6fa5391f3c0321d5323a2a54044ef2ae3d1c9e55f6dd4e453534",
+      "binary_sha256": "0d95033aecfad333c9be4b877aa2c4576bb48f358bab8d7c122a35d240d384be"
+    }
+  ],
+  "final_formatted_relinks": [
+    {
+      "backend": "mariadb",
+      "command": [
+        "make",
+        "-C",
+        "/tmp/auction-integrated-source/src",
+        "-j2",
+        "BUILD_PROFILE=production",
+        "PERSISTENCE_BACKEND=mariadb",
+        "DMS_BINARY=/evidence/build/server/mariadb/dms_new",
+        "PFILE_BINARY=/evidence/build/tools/mariadb/pfile"
+      ],
+      "exit": 0,
+      "compiled_sources": [
+        "persistence/economic_sql_accounting_lifecycle_transaction.c"
+      ],
+      "seconds": 469.26,
+      "binary_sha256": "bd3644faccb93b93dd65a0115394a54d89424c00296c955a02a247bef22fa4c0",
+      "log_sha256": "84c4406649bbce87b9607483ff9d54e87cc782954e5e5a72e1eb081d7dd0361e"
+    },
+    {
+      "backend": "flatfile",
+      "command": [
+        "make",
+        "-C",
+        "/tmp/auction-integrated-source/src",
+        "-j2",
+        "BUILD_PROFILE=production",
+        "PERSISTENCE_BACKEND=flatfile",
+        "DMS_BINARY=/evidence/build/server/flatfile/dms_new",
+        "PFILE_BINARY=/evidence/build/tools/flatfile/pfile"
+      ],
+      "exit": 0,
+      "compiled_sources": [
+        "persistence/economic_sql_accounting_lifecycle_transaction.c"
+      ],
+      "seconds": 13.24,
+      "binary_sha256": "0d95033aecfad333c9be4b877aa2c4576bb48f358bab8d7c122a35d240d384be",
+      "log_sha256": "3d1a7d4228736f03f71ea022ea3c2c5e131ed4998b88de08549f962e9cec609d"
+    }
+  ],
+  "strict_formatted_owner_objects": [
+    {
+      "backend": "mariadb",
+      "command": [
+        "g++",
+        "-I/tmp/auction-integrated-source/src",
+        "-g",
+        "-std=c++20",
+        "-Og",
+        "-U_FORTIFY_SOURCE",
+        "-D_FORTIFY_SOURCE=3",
+        "-fstack-protector-strong",
+        "-fstack-clash-protection",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+        "-Werror",
+        "-Wformat=2",
+        "-Wformat-overflow=2",
+        "-Wformat-truncation=2",
+        "-Wnull-dereference",
+        "-Wduplicated-cond",
+        "-Wduplicated-branches",
+        "-Wlogical-op",
+        "-Wimplicit-fallthrough=5",
+        "-Walloca",
+        "-Wvla",
+        "-Wdate-time",
+        "-Wundef",
+        "-Wshadow=compatible-local",
+        "-Wcast-align=strict",
+        "-Wstringop-overflow=4",
+        "-Warray-bounds=2",
+        "-Wstrict-overflow=2",
+        "-Wuse-after-free=3",
+        "-Wwrite-strings",
+        "-Wunused-parameter",
+        "-Wunused-variable",
+        "-Wunused-but-set-variable",
+        "-Wmissing-field-initializers",
+        "-Wunused-function",
+        "-D__NO_TESTS__",
+        "-DDURIS_PERSISTENT_TRANSPORT",
+        "-I.",
+        "-I../tests/async",
+        "-I/usr/include/libxml2",
+        "-I/usr/include/mysql",
+        "-ggdb3",
+        "-c",
+        "/tmp/auction-integrated-source/src/persistence/economic_sql_accounting_lifecycle_transaction.c",
+        "-o",
+        "/evidence/mariadb-lifecycle-strict.o"
+      ],
+      "exit": 0,
+      "source_sha256": "d1a3564b38008b7afef557666fb236677c701bf49183a4d07c27a0d8c3a7b011"
+    },
+    {
+      "backend": "flatfile",
+      "command": [
+        "g++",
+        "-I/tmp/auction-integrated-source/src",
+        "-g",
+        "-std=c++20",
+        "-Og",
+        "-U_FORTIFY_SOURCE",
+        "-D_FORTIFY_SOURCE=3",
+        "-fstack-protector-strong",
+        "-fstack-clash-protection",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+        "-Werror",
+        "-Wformat=2",
+        "-Wformat-overflow=2",
+        "-Wformat-truncation=2",
+        "-Wnull-dereference",
+        "-Wduplicated-cond",
+        "-Wduplicated-branches",
+        "-Wlogical-op",
+        "-Wimplicit-fallthrough=5",
+        "-Walloca",
+        "-Wvla",
+        "-Wdate-time",
+        "-Wundef",
+        "-Wshadow=compatible-local",
+        "-Wcast-align=strict",
+        "-Wstringop-overflow=4",
+        "-Warray-bounds=2",
+        "-Wstrict-overflow=2",
+        "-Wuse-after-free=3",
+        "-Wwrite-strings",
+        "-Wunused-parameter",
+        "-Wunused-variable",
+        "-Wunused-but-set-variable",
+        "-Wmissing-field-initializers",
+        "-Wunused-function",
+        "-D__NO_TESTS__",
+        "-DDURIS_PERSISTENT_TRANSPORT",
+        "-D__NO_MYSQL__",
+        "-I.",
+        "-I../tests/async",
+        "-I/usr/include/libxml2",
+        "-I./no_mysql",
+        "-ggdb3",
+        "-c",
+        "/tmp/auction-integrated-source/src/persistence/economic_sql_accounting_lifecycle_transaction.c",
+        "-o",
+        "/evidence/flatfile-lifecycle-strict.o"
+      ],
+      "exit": 0,
+      "source_sha256": "d1a3564b38008b7afef557666fb236677c701bf49183a4d07c27a0d8c3a7b011"
+    }
+  ],
+  "source_contracts": [
+    {
+      "path": "scripts/validate_data_lifecycle.py",
+      "exit": 0,
+      "seconds": 0.12
+    },
+    {
+      "path": "scripts/validate_runtime_compatibility.py",
+      "exit": 0,
+      "seconds": 0.2
+    },
+    {
+      "path": "tests/async/test_auction_transactional_cutover.py",
+      "exit": 0,
+      "seconds": 3.34
+    },
+    {
+      "path": "tests/async/test_auction_ownership_publication.py",
+      "exit": 0,
+      "seconds": 77.36
+    },
+    {
+      "path": "tests/async/test_economic_sql_lifecycle_activation_contract.py",
+      "exit": 0,
+      "seconds": 0.12
+    },
+    {
+      "path": "tests/async/test_economic_sql_retained_publication_contract.py",
+      "exit": 0,
+      "seconds": 0.1
+    },
+    {
+      "path": "tests/async/test_economic_sql_wallet_root_projection_contract.py",
+      "exit": 0,
+      "seconds": 0.28
+    }
+  ],
+  "build_contracts": [
+    {
+      "path": "tests/async/test_compiler_warning_profile.py",
+      "exit": 0
+    },
+    {
+      "path": "tests/async/test_supported_server_build_contract.py",
+      "exit": 0
+    }
+  ],
+  "private_artifact_pins": {
+    "native-durable-successor/native-results.json": "bf9d62fe385719f513946669f40ac7df021586de7dd109847ebd30d17372f206",
+    "native-durable-successor/integration-graph-head9817.json": "42657eff2f0a30cf01471594b41b747d77008c267bbadb8c89f79de56c651d54",
+    "native-durable-successor/integration-graph-evidence-pins.json": "43cdd84d2139c03463b3dfddb9f4a5fbe943dc005b7a2d73a492b1024dac8c28",
+    "native-durable-successor/compiled-dependency-graph.json": "608ced2823c0f8a5b9afc5d2c869c00406105bd69cf713e7b0bf746ebb17e344",
+    "maintained-integration/native-graph-identity.json": "245de280e19e44ee9f3df681959489a3c0e589fd9ce0606d1499be8240ed8962",
+    "maintained-integration/native-runner-closure-identity.json": "bbd9b4fd244c3636ee9af62dc5d4c0c509334ce43d654061ea5417d06f4364c4",
+    "maintained-integration/source-contract-results.json": "b25788f406b6a0c0995ff044f7cb0224d72f8dc62fa613a2e4dae42806610dc9",
+    "maintained-integration/build-contract-results.json": "3e51b747a0b2494d687c633a0f39a0526123e999dc975c65c79665cb87ae5671",
+    "maintained-integration/changed-lines-format-results.json": "f58b947961afa5451e050990e001a31bae1b27e7137865cf8f517222baf52293",
+    "maintained-integration/production-build-results.json": "f1878d0eae8a779f68ddd84a9d5bb601d3da65031382fb1be4bb58952e1cd821",
+    "maintained-integration/writer-registry-updates.json": "975ed822d05f0b0b828ee257f02a59ac25fdaac2770113e146b314059aa8843b",
+    "maintained-integration/writer-sites-refresh.json": "3e99bbe1af10f44ad6a31b5cd500d7bf5fc34832b497cf572ffd7092e4c53140",
+    "maintained-format-successor/final-maintained-slice-pins.json": "e53f8b9f7ea7a4b3d77db6840a7e12adc698bda86ed52138e3d1ea6bfb6a61f2",
+    "maintained-format-successor/authenticated-build-cache-mariadb.json": "1a18129d67a11ccc46f12241c5f87d45760ad20955789e88e860ad9ee3215562",
+    "maintained-format-successor/strict-owner-mariadb-results.json": "9f96ff201fcc8420019097f168c11cf858f20125f72d3adb3364fc8fda6981e8",
+    "maintained-format-successor/incremental-mariadb-results.json": "feb048820e597ed5d07a20c1bbd79a7b167b5b691b54964cb187c98868a65c4f",
+    "maintained-format-successor/reused-mariadb-object-dependency-server-proof.json": "a74ca328c7e07b7052d15f2c54d293c7d9e4c2f86de077a6e279caf6c2f30f12",
+    "maintained-format-successor/authenticated-build-cache-flatfile.json": "9a2d3b1f756dc999dd2aa2ba8be43b5808f196e0ddc8635f110f49332c496764",
+    "maintained-format-successor/strict-owner-flatfile-results.json": "58f752af2cf3fffcff27156bdbb6a20213fe3a7e1e571d3fa95227c1fc7eaa95",
+    "maintained-format-successor/incremental-flatfile-results.json": "9b9b6988960e98e5788e72a763f5ea5f54caa0a0e9677f5cbdd56dde85fc2a90",
+    "maintained-format-successor/reused-flatfile-object-dependency-server-proof.json": "c968e59f64e5f258dd9cbbd7ace341749a8df7411a11f239134e2a4676626294"
+  },
+  "full_plan_qualification": false,
+  "full_release_qualification": false,
+  "accounting_activation_changed": false
+}

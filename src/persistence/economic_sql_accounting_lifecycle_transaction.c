@@ -1,9 +1,12 @@
 #include "persistence/economic_sql_accounting_lifecycle_transaction.h"
 #include "economy/economic_baseline_command.h"
+#include "economy/auction_item_claim_accounting.h"
+#include "economy/auction_command.h"
 #include "economy/economic_gameplay_authority.h"
 #include "economy/economic_sql_source_normalize.h"
 #include "persistence/economic_sql_baseline_transaction.h"
 #include "persistence/economic_accounting_repository.h"
+#include "persistence/economic_sql_pending_claim_source.h"
 #include "world/vnum.obj.h"
 #include <algorithm>
 #include <cerrno>
@@ -114,6 +117,10 @@ uint16_t native_locator(economic_account_kind kind)
 		return 2;
 	case economic_account_kind::treasury:
 		return 6;
+	case economic_account_kind::auction_escrow:
+		return 4;
+	case economic_account_kind::pending_claim:
+		return 5;
 	default:
 		throw failure{ EINVAL };
 	}
@@ -130,10 +137,13 @@ void number(std::vector<uint8_t> &output, uint64_t value)
 	for (size_t index = 0; index < 8; ++index)
 		output.push_back(static_cast<uint8_t>(value >> (index * 8)));
 }
-economic_sql_source_digest request_digest(const economic_sql_lifecycle_request &request)
+economic_sql_source_digest request_digest(const economic_sql_lifecycle_request &request,
+					  bool money_opening = false)
 {
 	std::vector<uint8_t> data{ 'D', 'U', 'R', 'I', 'S', '-', 'S', 'Q', 'L', '-', 'L',
 				   'I', 'F', 'E', 'C', 'Y', 'C', 'L', 'E', '-', 'V', '1' };
+	if (money_opening)
+		data.back() = '2';
 	frame(data, request.operation_id.bytes);
 	frame(data, request.lineage.bytes);
 	frame(data, request.epoch.bytes);
@@ -181,6 +191,28 @@ economic_sql_source_digest native_digest(const economic_sql_source_snapshot &sna
 	{
 		data[3] = '3';
 		frame(data, shops->content_digest);
+	}
+	std::vector<const holding_source *> money;
+	for (const auto &holding : holdings)
+		if (holding.account_kind == economic_account_kind::auction_escrow ||
+		    holding.account_kind == economic_account_kind::pending_claim)
+			money.push_back(&holding);
+	if (!money.empty())
+	{
+		// Wrap, rather than reinterpret, the exact old ESN1/2/3 preimage.
+		std::vector<uint8_t> complete{ 'E', 'S', 'N', '4' };
+		frame(complete, sha(data));
+		number(complete, money.size());
+		for (const auto *holding : money)
+		{
+			number(complete, static_cast<uint16_t>(holding->account_kind));
+			number(complete, holding->native_id);
+			number(complete, holding->native_revision);
+			for (auto amount : holding->balance)
+				number(complete, static_cast<uint64_t>(amount));
+			frame(complete, holding->digest);
+		}
+		return sha(complete);
 	}
 	return sha(data);
 }
@@ -236,13 +268,17 @@ size_t table_index(const economic_sql_source_snapshot &snapshot, std::string_vie
 	require(found != snapshot.tables.end());
 	return static_cast<size_t>(found - snapshot.tables.begin());
 }
-std::vector<holding_source> read_native_holdings(const economic_sql_source_snapshot &snapshot,
+critical_operation_id parse_id(const std::optional<std::string> &value);
+std::vector<holding_source> read_native_holdings(MYSQL *connection,
+						 const economic_sql_source_snapshot &snapshot,
 						 const economic_sql_normalized_sources &normalized)
 {
 	const auto wallets = table_index(snapshot, "player_data");
 	const auto banks = table_index(snapshot, "account_banks");
 	const auto shops = table_index(snapshot, "shopkeepers");
 	const auto items = table_index(snapshot, "item_current_owner");
+	const auto auctions = table_index(snapshot, "auctions");
+	const auto claims = table_index(snapshot, "auction_money_pickups");
 	const auto shop_items = std::find_if(snapshot.item_sources.begin(),
 					     snapshot.item_sources.end(), [](const auto &source)
 					     { return source.name == "shopkeeper_items"; });
@@ -250,6 +286,59 @@ std::vector<holding_source> read_native_holdings(const economic_sql_source_snaps
 	for (const auto &source : shop_items->rows)
 		require(source.cells.size() == 6 && source.cells[5], EBUSY);
 	std::vector<holding_source> output;
+	size_t open_auctions = 0;
+	for (const auto &source : snapshot.tables[auctions].rows)
+	{
+		require(source.cells.size() == 12 && source.cells[2]);
+		const auto bidder = integer<int64_t>(source.cells[3]);
+		require(bidder >= 0 && static_cast<uint64_t>(bidder) <= UINT32_MAX, ERANGE);
+		if (*source.cells[2] == "CLOSED")
+			continue;
+		if (*source.cells[2] == "REMOVED")
+		{
+			require(!bidder, EBUSY);
+			continue;
+		}
+		require(*source.cells[2] == "OPEN", EBUSY);
+		holding_source native;
+		native.account_kind = economic_account_kind::auction_escrow;
+		native.native_id = integer<uint32_t>(source.cells[0]);
+		require(native.native_id, EILSEQ);
+		native.native_revision = integer<uint64_t>(source.cells[7]);
+		const auto price = integer<uint64_t>(source.cells[4]);
+		require(price <= UINT_MAX, ERANGE);
+		// An asking price is not a retained bid. Keep the zero mapping so the
+		// original first-bid owner can debit the bidder and credit this escrow.
+		native.balance[0] = bidder ? static_cast<int64_t>(price) : 0;
+		native.digest = source.digest;
+		if (bidder)
+		{
+			require(price, EILSEQ);
+			const auto bid = one(
+				connection,
+				"SELECT HEX(operation_id),actor_pid,final_price FROM auction_ledger "
+				"WHERE auction_id=" +
+					std::to_string(native.native_id) +
+					" AND auction_revision=" +
+					std::to_string(native.native_revision) +
+					" AND event_type=2 LOCK IN SHARE MODE",
+				3);
+			const auto bid_operation = parse_id(bid[0]);
+			require(!critical_operation_id_is_zero(bid_operation) &&
+					integer<uint32_t>(bid[1]) ==
+						static_cast<uint32_t>(bidder) &&
+					integer<uint64_t>(bid[2]) == price,
+				EILSEQ);
+			std::vector<uint8_t> bound{ 'E', 'S', 'A', '1' };
+			frame(bound, source.digest);
+			frame(bound, bid_operation.bytes);
+			number(bound, static_cast<uint64_t>(bidder));
+			number(bound, price);
+			native.digest = sha(bound);
+		}
+		output.push_back(std::move(native));
+		++open_auctions;
+	}
 	std::set<std::pair<std::string, uint8_t>> bank_names;
 	uint64_t active_coin_rows = 0, unresolved_coin_rows = 0;
 	for (const auto &source : snapshot.tables[items].rows)
@@ -271,7 +360,8 @@ std::vector<holding_source> read_native_holdings(const economic_sql_source_snaps
 		if (holding.kind != economic_sql_holding_kind::wallet &&
 		    holding.kind != economic_sql_holding_kind::bank &&
 		    holding.kind != economic_sql_holding_kind::treasury &&
-		    holding.kind != economic_sql_holding_kind::pile)
+		    holding.kind != economic_sql_holding_kind::pile &&
+		    holding.kind != economic_sql_holding_kind::claim)
 			continue;
 		require(holding.disposition == economic_sql_holding_disposition::current &&
 			holding.balance && holding.native_revision.has_value() &&
@@ -280,6 +370,7 @@ std::vector<holding_source> read_native_holdings(const economic_sql_source_snaps
 			holding.kind == economic_sql_holding_kind::wallet   ? wallets :
 			holding.kind == economic_sql_holding_kind::bank	    ? banks :
 			holding.kind == economic_sql_holding_kind::treasury ? shops :
+			holding.kind == economic_sql_holding_kind::claim    ? claims :
 									      items;
 		require(holding.source.row != SIZE_MAX && holding.source.table == expected_table);
 		const auto &source = snapshot.tables[holding.source.table].rows[holding.source.row];
@@ -296,6 +387,8 @@ std::vector<holding_source> read_native_holdings(const economic_sql_source_snaps
 					      economic_account_kind::bank :
 				      holding.kind == economic_sql_holding_kind::treasury ?
 					      economic_account_kind::treasury :
+				      holding.kind == economic_sql_holding_kind::claim ?
+					      economic_account_kind::pending_claim :
 					      economic_account_kind::pile;
 		native.native_id = holding.native_id;
 		native.balance = *holding.balance;
@@ -325,6 +418,14 @@ std::vector<holding_source> read_native_holdings(const economic_sql_source_snaps
 					(*holding.balance)[3] == 0,
 				ERANGE);
 			native.shop_id = integer<uint32_t>(source.cells[1]);
+		}
+		else if (native.account_kind == economic_account_kind::pending_claim)
+		{
+			require(holding.native_id <= UINT32_MAX && source.cells.size() == 3 &&
+					(*holding.balance)[0] <= UINT_MAX &&
+					!(*holding.balance)[1] && !(*holding.balance)[2] &&
+					!(*holding.balance)[3],
+				ERANGE);
 		}
 		else
 		{
@@ -361,7 +462,19 @@ std::vector<holding_source> read_native_holdings(const economic_sql_source_snaps
 	require(selected_wallets == static_cast<uint64_t>(wallet_rows) &&
 			selected_banks == static_cast<uint64_t>(bank_rows) &&
 			selected_shops == static_cast<uint64_t>(shop_rows) &&
-			selected_coin_rows == active_coin_rows,
+			selected_coin_rows == active_coin_rows &&
+			static_cast<size_t>(
+				std::count_if(output.begin(), output.end(),
+					      [](const auto &h) {
+						      return h.account_kind ==
+							     economic_account_kind::pending_claim;
+					      })) == snapshot.tables[claims].rows.size() &&
+			static_cast<size_t>(
+				std::count_if(output.begin(), output.end(),
+					      [](const auto &h) {
+						      return h.account_kind ==
+							     economic_account_kind::auction_escrow;
+					      })) == open_auctions,
 		EILSEQ);
 	return output;
 }
@@ -514,6 +627,118 @@ void verify_request(const stored_installation &stored,
 			stored.phase >= 1 && stored.phase <= 2,
 		EEXIST);
 }
+bool baseline_has_money_opening(const economic_baseline_batch &batch)
+{
+	return std::any_of(batch.holdings.begin(), batch.holdings.end(),
+			   [](const auto &h)
+			   {
+				   return h.account.kind == economic_account_kind::auction_escrow ||
+					  h.account.kind == economic_account_kind::pending_claim;
+			   });
+}
+struct authenticated_opening
+{
+	economic_sql_lifecycle_request request;
+	economic_baseline_batch witness;
+	bool money = false;
+};
+authenticated_opening authenticate_opening(MYSQL *connection, const stored_installation &stored)
+{
+	require(stored.baseline_operation.has_value(), EILSEQ);
+	// The stored plan is bound to the actual original command. Pure preparation
+	// leaves different intent/domain digests and cannot be compared directly.
+	// Borrow the complete original retained proof under this same transaction.
+	const auto baseline_error = economic_sql_baseline_verify_known_retained_in_transaction(
+		connection, *stored.baseline_operation, nullptr);
+	require(!baseline_error, baseline_error);
+	const auto row = one(
+		connection,
+		"SELECT w.canonical_witness,HEX(w.witness_digest),w.command_accepted_at_usec,"
+		"w.claim_origin_version,HEX(i.command_hash),o.canonical_plan "
+		"FROM economic_baseline_witness w JOIN critical_operation_inbox i "
+		"ON i.operation_id=w.operation_id JOIN economic_accounting_operation o "
+		"ON o.operation_id=w.operation_id WHERE w.operation_id=" +
+			id(*stored.baseline_operation) + " AND w.lineage=" + id(stored.lineage) +
+			" AND w.epoch=" + id(stored.epoch) +
+			" AND o.lineage=w.lineage AND o.epoch=w.epoch AND o.outcome=1 AND i.status=1 "
+			"AND i.result_code=0 AND i.failure_stage=0 AND i.committed_at IS NOT NULL "
+			"LOCK IN SHARE MODE",
+		6);
+	require(row[0] && row[5] && row[0]->size() <= ECONOMIC_BASELINE_MAX_BYTES);
+	std::optional<economic_prepared_baseline> prepared;
+	require(economic_baseline_decode({ reinterpret_cast<const uint8_t *>(row[0]->data()),
+					   row[0]->size() },
+					 &prepared) == economic_accounting_error::ok,
+		EILSEQ);
+	require(sha({ reinterpret_cast<const uint8_t *>(row[0]->data()), row[0]->size() }) ==
+				parse_digest(row[1]) &&
+			prepared->witness().lineage.bytes == stored.lineage.bytes &&
+			prepared->witness().epoch.bytes == stored.epoch.bytes &&
+			prepared->witness().preparation_id.bytes == stored.operation.bytes &&
+			prepared->witness().boundary_digest == stored.native_hash,
+		EILSEQ);
+	authenticated_opening result;
+	result.witness = prepared->witness();
+	result.money = baseline_has_money_opening(result.witness);
+	result.request.operation_id = stored.operation;
+	result.request.lineage = stored.lineage;
+	result.request.epoch = stored.epoch;
+	result.request.actor_id = result.witness.actor_id;
+	const auto receipt = one(
+		connection,
+		"SELECT HEX(command_hash),HEX(keys_hash),command_type,schema_version,payload_version,"
+		"status,result_code,failure_stage,durable_revision,OCTET_LENGTH(result_payload),"
+		"committed_at IS NOT NULL FROM critical_operation_inbox WHERE operation_id=" +
+			id(stored.operation) + " LOCK IN SHARE MODE",
+		11);
+	require(parse_digest(receipt[0]) == stored.request_hash &&
+			parse_digest(receipt[1]) == sha({}) &&
+			integer<uint16_t>(receipt[2]) ==
+				static_cast<uint16_t>(critical_command_type::economic_baseline) &&
+			integer<uint16_t>(receipt[3]) ==
+				CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+			integer<uint16_t>(receipt[4]) == 1 && integer<uint16_t>(receipt[5]) == 1 &&
+			!integer<uint64_t>(receipt[6]) && !integer<uint64_t>(receipt[7]) &&
+			!integer<uint64_t>(receipt[8]) && !integer<uint64_t>(receipt[9]) &&
+			integer<uint16_t>(receipt[10]) == 1,
+		EILSEQ);
+	if (row[2])
+	{
+		result.request.accepted_at_usec = integer<uint64_t>(row[2]);
+		require(result.request.actor_id && result.request.accepted_at_usec, EILSEQ);
+		critical_command original;
+		require(economic_baseline_command_build(*prepared, result.request.accepted_at_usec,
+							&original) ==
+					economic_accounting_error::ok &&
+				original.operation_id.bytes == stored.baseline_operation->bytes,
+			EILSEQ);
+		std::vector<uint8_t> encoded;
+		require(critical_command_encode(original, &encoded) ==
+					critical_command_codec_result::ok &&
+				sha(encoded) == parse_digest(row[4]) &&
+				request_digest(result.request, result.money) == stored.request_hash,
+			EILSEQ);
+	}
+	else
+	{
+		// Genuine historical V1 may lack its original timestamp. No clock,
+		// creation timestamp or supplied caller preimage repairs that absence.
+		require(!result.money && !row[3], ENOTSUP);
+	}
+	if (result.money)
+		require(row[3] && integer<uint16_t>(row[3]) == 1 && result.request.accepted_at_usec,
+			ENODATA);
+	else if (row[3])
+		require(integer<uint16_t>(row[3]) == 1, EILSEQ);
+	if (row[3])
+	{
+		const auto origin_error = economic_sql_pending_claim_source_verify_baseline(
+			connection, *stored.baseline_operation, result.witness);
+		require(!origin_error, origin_error);
+	}
+	return result;
+}
+
 std::vector<uint64_t> create_or_verify_mappings(MYSQL *connection,
 						const economic_sql_lifecycle_request &request,
 						const std::vector<holding_source> &holdings,
@@ -599,6 +824,395 @@ std::vector<uint64_t> create_or_verify_mappings(MYSQL *connection,
 	}
 	return account_ids;
 }
+void verify_retired_escrow(MYSQL *connection, const stored_installation &stored, uint64_t native,
+			   const critical_operation_id &retiring, std::span<const uint8_t> account)
+{
+	const auto auction = std::to_string(native);
+	const auto terminal = one(
+		connection,
+		"SELECT l.auction_revision,a.auction_revision,l.event_type,a.status,"
+		"a.winning_bidder_pid,a.seller_pid,HEX(a.listing_operation_id) "
+		"FROM economic_accounting_operation o JOIN critical_operation_inbox i "
+		"ON i.operation_id=o.operation_id JOIN economic_accounting_account_effect e "
+		"ON e.operation_id=o.operation_id JOIN auctions a ON a.id=" +
+			auction +
+			" JOIN auction_ledger l ON l.auction_id=a.id AND l.operation_id=o.operation_id "
+			"WHERE o.operation_id=" +
+			id(retiring) + " AND o.lineage=" + id(stored.lineage) +
+			" AND o.epoch=" + id(stored.epoch) +
+			" AND o.outcome=1 AND i.status=1 AND i.result_code=0 AND i.failure_stage=0 "
+			"AND i.committed_at IS NOT NULL AND e.account_key=" +
+			binary(account) +
+			" AND e.after_copper=0 AND e.after_silver=0 AND e.after_gold=0 AND e.after_platinum=0 "
+			"AND a.custody_state=1 AND l.event_type IN (3,4,7) LOCK IN SHARE MODE",
+		7);
+	auto revision = integer<uint64_t>(terminal[0]);
+	const auto current = integer<uint64_t>(terminal[1]);
+	const auto type = integer<uint16_t>(terminal[2]);
+	const auto winner = integer<uint32_t>(terminal[4]);
+	const auto seller = integer<uint32_t>(terminal[5]);
+	require(revision && revision <= current && seller && terminal[3] &&
+			((type == 3 && *terminal[3] == "CLOSED" && winner) ||
+			 (type == 4 && *terminal[3] == "CLOSED" && !winner) ||
+			 (type == 7 && *terminal[3] == "REMOVED")),
+		EILSEQ);
+	count(connection, "auction_ledger", "auction_id=" + auction + " AND event_type IN (3,4,7)",
+	      1);
+	// Retirement stays at its original sale/expiry/removal revision. Native
+	// item collection alone may then advance the auction, once per staged
+	// item subset. Authenticate every contiguous successor; <= is not proof.
+	const auto successors = query(
+		connection,
+		"SELECT HEX(l.operation_id),l.event_type,l.auction_revision,l.actor_pid,l.item_count,"
+		"o.canonical_plan,HEX(o.plan_digest),o.canonical_intent,i.durable_revision,i.result_payload "
+		"FROM auction_ledger l LEFT JOIN economic_accounting_operation o ON o.operation_id=l.operation_id "
+		"LEFT JOIN critical_operation_inbox i ON i.operation_id=l.operation_id WHERE l.auction_id=" +
+			auction + " AND l.auction_revision>" + std::to_string(revision) +
+			" ORDER BY l.auction_revision,l.operation_id LOCK IN SHARE MODE",
+		10);
+	require(successors.size() <= AUCTION_COMMAND_MAX_ITEMS, EILSEQ);
+	const auto claimant = type == 3 ? winner : seller;
+	for (const auto &record : successors)
+	{
+		require(revision < UINT64_MAX && integer<uint16_t>(record[1]) == 6 &&
+				integer<uint64_t>(record[2]) == revision + 1 &&
+				integer<uint32_t>(record[3]) == claimant && record[5] &&
+				record[7] && record[9] &&
+				record[9]->size() == AUCTION_RESULT_PAYLOAD_BYTES,
+			EILSEQ);
+		const auto operation = parse_id(record[0]);
+		const auto items = integer<uint16_t>(record[4]);
+		require(items && items <= AUCTION_COMMAND_MAX_ITEMS &&
+				!critical_operation_id_is_zero(operation),
+			EILSEQ);
+		// The native root retains the maximum of all five returned revisions,
+		// not just the auction's contiguous revision. Decode the complete original
+		// receipt and compare its exact canonical bytes, including unused tail.
+		auction_command_result result{};
+		std::array<uint8_t, AUCTION_RESULT_PAYLOAD_BYTES> canonical_result{};
+		require(auction_command_decode_result(
+				reinterpret_cast<const uint8_t *>(record[9]->data()),
+				record[9]->size(), &result) &&
+				auction_command_encode_result(result, &canonical_result) &&
+				std::memcmp(canonical_result.data(), record[9]->data(),
+					    canonical_result.size()) == 0 &&
+				result.action == auction_action::claim_item &&
+				result.event_type == auction_event_type::item_claimed &&
+				result.auction_id == native &&
+				result.auction_revision == revision + 1 &&
+				result.status == (type == 7 ? 3U : 2U) &&
+				result.seller_pid == seller && result.winner_pid == claimant &&
+				result.item_count == items &&
+				integer<uint64_t>(record[8]) ==
+					std::max({ result.auction_revision, result.wallet_revision,
+						   result.bank_revision,
+						   result.player_owner_revision,
+						   result.auction_owner_revision }),
+			EILSEQ);
+		economic_accounting_plan plan;
+		require(economic_plan_decode({ reinterpret_cast<const uint8_t *>(record[5]->data()),
+					       record[5]->size() },
+					     &plan) == economic_accounting_error::ok &&
+				sha({ reinterpret_cast<const uint8_t *>(record[5]->data()),
+				      record[5]->size() }) == parse_digest(record[6]) &&
+				record[7]->size() <= CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES,
+			EILSEQ);
+		economic_frozen_intent intent;
+		economic_digest intent_digest = {};
+		require(economic_intent_decode(
+				{ reinterpret_cast<const uint8_t *>(record[7]->data()),
+				  record[7]->size() },
+				&intent) == economic_accounting_error::ok &&
+				economic_intent_digest(intent, &intent_digest) ==
+					economic_accounting_error::ok &&
+				intent_digest == plan.metadata.intent_digest &&
+				intent.domain_digest == plan.metadata.domain_digest,
+			EILSEQ);
+		const auto &meta = plan.metadata;
+		const auto listing = parse_id(terminal[6]);
+		require(meta.operation_id.bytes == operation.bytes &&
+				meta.lineage.bytes == stored.lineage.bytes &&
+				meta.epoch.bytes == stored.epoch.bytes &&
+				meta.actor_kind == economic_actor_kind::domain &&
+				meta.actor_id == claimant &&
+				meta.writer_id == ECONOMIC_WRITER_AUCTION_ITEM_CLAIM &&
+				meta.reason == economic_reason::auction_claim &&
+				meta.original_operation_id.bytes == listing.bytes &&
+				meta.source_event &&
+				meta.source_event->kind == economic_source_kind::auction &&
+				meta.source_event->source.bytes == retiring.bytes &&
+				meta.source_event->generation.bytes == listing.bytes &&
+				meta.source_event->sequence == revision &&
+				!meta.source_event->slot && plan.accounts.empty() &&
+				plan.postings.empty() && plan.children.empty() &&
+				plan.item_events.size() == items &&
+				plan.items_before.size() == items &&
+				plan.items_after.size() == items,
+			EILSEQ);
+		std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> source = {};
+		require(economic_source_event_encode(*meta.source_event, &source) ==
+				economic_accounting_error::ok,
+			EILSEQ);
+		count(connection,
+		      "economic_accounting_operation o JOIN critical_operation_inbox i ON i.operation_id=o.operation_id",
+		      "o.operation_id=" + id(operation) + " AND o.lineage=" + id(stored.lineage) +
+			      " AND o.epoch=" + id(stored.epoch) +
+			      " AND o.outcome=1 AND o.writer_id=" +
+			      std::to_string(ECONOMIC_WRITER_AUCTION_ITEM_CLAIM) +
+			      " AND o.reason=" +
+			      std::to_string(
+				      static_cast<uint16_t>(economic_reason::auction_claim)) +
+			      " AND o.actor_id=" + std::to_string(claimant) +
+			      " AND o.original_operation_id=" + id(listing) +
+			      " AND o.source_event=" + binary(source) +
+			      " AND i.status=1 AND i.result_code=0 AND i.failure_stage=0 AND i.committed_at IS NOT NULL",
+		      1);
+		count(connection, "auction_item_custody",
+		      "auction_id=" + auction + " AND claim_operation_id=" + id(operation) +
+			      " AND claim_pid=" + std::to_string(claimant) +
+			      " AND claimed_at IS NOT NULL",
+		      items);
+		count(connection, "economic_accounting_item_reference",
+		      "operation_id=" + id(operation), items);
+		count(connection, "item_ownership_ledger", "operation_id=" + id(operation), items);
+		for (const auto &event : plan.item_events)
+		{
+			require(!event.child_index && event.uid &&
+					event.event_index < result.item_count &&
+					result.item_uids[event.event_index] == event.uid &&
+					result.item_revisions[event.event_index] ==
+						event.after.revision &&
+					event.before.owner.type == item_owner_type::auction &&
+					event.before.owner.id == native &&
+					!event.before.owner.context_id &&
+					event.before.root_uid == event.uid &&
+					!event.before.parent_uid &&
+					event.before.state == item_custody_state::active &&
+					event.before.revision < UINT64_MAX &&
+					event.after.owner.type == item_owner_type::player &&
+					event.after.owner.id == claimant &&
+					!event.after.owner.context_id &&
+					event.after.root_uid == event.uid &&
+					!event.after.parent_uid &&
+					event.after.state == item_custody_state::active &&
+					event.after.revision == event.before.revision + 1 &&
+					!event.before.equipment_slot && !event.after.equipment_slot,
+				EILSEQ);
+			count(connection,
+			      "auction_item_custody c JOIN economic_accounting_item_reference r ON r.item_uid=c.item_uid "
+			      "JOIN item_ownership_ledger l ON l.operation_id=r.legacy_operation_id AND l.event_index=r.legacy_event_index "
+			      "AND l.item_uid=r.item_uid AND l.item_revision=r.after_revision",
+			      "c.auction_id=" + auction +
+				      " AND c.item_uid=" + std::to_string(event.uid) +
+				      " AND c.claim_operation_id=" + id(operation) +
+				      " AND c.claim_pid=" + std::to_string(claimant) +
+				      " AND c.claimed_at IS NOT NULL AND c.item_revision=" +
+				      std::to_string(event.after.revision) +
+				      " AND r.operation_id=" + id(operation) +
+				      " AND r.legacy_operation_id=" + id(operation) +
+				      " AND r.event_index=" + std::to_string(event.event_index) +
+				      " AND r.legacy_event_index=" +
+				      std::to_string(event.event_index) +
+				      " AND r.before_revision=" +
+				      std::to_string(event.before.revision) +
+				      " AND r.after_revision=" +
+				      std::to_string(event.after.revision) +
+				      " AND l.from_owner_type=6 AND l.from_owner_id=" + auction +
+				      " AND l.from_owner_context_id=0 "
+				      "AND l.to_owner_type=1 AND l.to_owner_id=" +
+				      std::to_string(claimant) + " AND l.to_owner_context_id=0",
+			      1);
+		}
+		++revision;
+	}
+	require(revision == current, EILSEQ);
+}
+
+std::vector<uint64_t> verify_current_mappings(MYSQL *connection, const stored_installation &stored,
+					      const authenticated_opening &opening,
+					      const std::vector<holding_source> &holdings)
+{
+	const auto rows = query(
+		connection,
+		"SELECT mapping_id,account_kind,context_id,backend_kind,locator_kind,native_id,"
+		"active_native_id,HEX(creating_operation_id),HEX(retiring_operation_id),revision "
+		"FROM economic_account_mapping WHERE lineage=" +
+			id(stored.lineage) + " ORDER BY mapping_id FOR UPDATE",
+		10);
+	using locator_key = std::pair<economic_account_kind, uint64_t>;
+	std::map<locator_key, uint64_t> live;
+	std::map<uint64_t, uint64_t> contexts;
+	for (const auto &record : rows)
+	{
+		const auto mapping = integer<uint64_t>(record[0]);
+		const auto kind = static_cast<economic_account_kind>(integer<uint16_t>(record[1]));
+		const auto context = integer<uint64_t>(record[2]);
+		const auto native = integer<uint64_t>(record[5]);
+		const auto creating = parse_id(record[7]);
+		const auto revision = integer<uint64_t>(record[9]);
+		require(mapping && native &&
+				integer<uint16_t>(record[3]) == ECONOMIC_MAPPING_BACKEND_SQL &&
+				integer<uint16_t>(record[4]) == native_locator(kind) &&
+				!critical_operation_id_is_zero(creating),
+			EILSEQ);
+		require(kind == economic_account_kind::bank ? context <= 1 : context == 0, EILSEQ);
+		const bool original = creating.bytes == stored.operation.bytes;
+		const bool money = kind == economic_account_kind::auction_escrow ||
+				   kind == economic_account_kind::pending_claim;
+		const bool retired = record[8].has_value();
+		economic_account_key account{ stored.lineage, kind, mapping, context };
+		std::array<uint8_t, ECONOMIC_ACCOUNT_KEY_BYTES> encoded = {};
+		require(economic_account_key_encode(account, &encoded) ==
+			economic_accounting_error::ok);
+		const auto original_holding =
+			std::find_if(opening.witness.holdings.begin(),
+				     opening.witness.holdings.end(), [&](const auto &h)
+				     { return economic_account_key_equal(h.account, account); });
+		if (original)
+			require(original_holding != opening.witness.holdings.end(), EILSEQ);
+		if (!money)
+		{
+			require(original && !retired && revision == 0 && record[6] &&
+					integer<uint64_t>(record[6]) == native,
+				EILSEQ);
+		}
+		else
+		{
+			require(context == 0 && native <= UINT32_MAX, EILSEQ);
+			if (!original)
+			{
+				bool zero_created_pending = false;
+				if (kind == economic_account_kind::pending_claim)
+				{
+					const auto creator_effect = query(
+						connection,
+						"SELECT e.before_copper,e.before_silver,e.before_gold,e.before_platinum,"
+						"e.after_copper,e.after_silver,e.after_gold,e.after_platinum,"
+						"e.before_revision,e.after_revision FROM economic_accounting_operation o "
+						"JOIN critical_operation_inbox i ON i.operation_id=o.operation_id "
+						"JOIN economic_accounting_account_effect e ON e.operation_id=o.operation_id "
+						"WHERE o.operation_id=" +
+							id(creating) +
+							" AND o.lineage=" + id(stored.lineage) +
+							" AND o.epoch=" + id(stored.epoch) +
+							" AND o.outcome=1 AND i.status=1 AND i.result_code=0 "
+							"AND i.failure_stage=0 AND i.committed_at IS NOT NULL AND e.account_key=" +
+							binary(encoded),
+						10);
+					require(creator_effect.size() == 1, EILSEQ);
+					zero_created_pending = true;
+					for (size_t column = 0; column < 9; ++column)
+						zero_created_pending =
+							zero_created_pending &&
+							integer<uint64_t>(
+								creator_effect[0][column]) == 0;
+					zero_created_pending =
+						zero_created_pending &&
+						integer<uint64_t>(creator_effect[0][9]) == 1;
+					if (zero_created_pending)
+						require(economic_sql_pending_claim_endpoint_verify_zero_creator(
+								connection, creating, account,
+								static_cast<uint32_t>(native)) == 0,
+							EILSEQ);
+				}
+				if (!zero_created_pending)
+					count(connection,
+					      "economic_accounting_operation o JOIN critical_operation_inbox i "
+					      "ON i.operation_id=o.operation_id JOIN economic_accounting_account_effect e "
+					      "ON e.operation_id=o.operation_id",
+					      "o.operation_id=" + id(creating) +
+						      " AND o.lineage=" + id(stored.lineage) +
+						      " AND o.epoch=" + id(stored.epoch) +
+						      " AND o.outcome=1 AND i.status=1 "
+						      "AND i.result_code=0 AND i.failure_stage=0 AND i.committed_at IS NOT NULL "
+						      "AND e.account_key=" +
+						      binary(encoded) +
+						      (kind == economic_account_kind::pending_claim ?
+							       " AND e.after_copper>e.before_copper AND e.before_silver=e.after_silver "
+							       "AND e.before_gold=e.after_gold AND e.before_platinum=e.after_platinum" :
+							       " AND e.before_copper=0 AND e.after_copper=0 AND e.before_silver=0 "
+							       "AND e.after_silver=0 AND e.before_gold=0 AND e.after_gold=0 "
+							       "AND e.before_platinum=0 AND e.after_platinum=0"),
+					      1);
+				if (kind == economic_account_kind::auction_escrow)
+					count(connection,
+					      "auctions a JOIN auction_ledger l ON l.auction_id=a.id",
+					      "a.id=" + std::to_string(native) +
+						      " AND a.listing_operation_id=" +
+						      id(creating) + " AND l.operation_id=" +
+						      id(creating) + " AND l.event_type=1",
+					      1);
+				else if (!zero_created_pending)
+					count(connection, "economic_pending_claim_source",
+					      "source_operation_id=" + id(creating) +
+						      " AND lineage=" + id(stored.lineage) +
+						      " AND claim_mapping_id=" +
+						      std::to_string(mapping) +
+						      " AND beneficiary_pid=" +
+						      std::to_string(native),
+					      1);
+			}
+			if (retired)
+			{
+				// Only the existing auction settlement/buyout owners retire
+				// these money lifetimes. Pending claim rows keep their mapping.
+				require(kind == economic_account_kind::auction_escrow &&
+						!record[6] && revision == 1,
+					EILSEQ);
+				const auto retiring = parse_id(record[8]);
+				require(!critical_operation_id_is_zero(retiring), EILSEQ);
+				verify_retired_escrow(connection, stored, native, retiring,
+						      encoded);
+				continue;
+			}
+			require(record[6] && integer<uint64_t>(record[6]) == native &&
+					revision == 0,
+				EILSEQ);
+		}
+		require(live.emplace(locator_key{ kind, native }, mapping).second, EEXIST);
+		contexts.emplace(mapping, context);
+	}
+	std::vector<uint64_t> ids;
+	ids.reserve(holdings.size());
+	for (const auto &holding : holdings)
+	{
+		if (holding.account_kind == economic_account_kind::pile)
+		{
+			ids.push_back(holding.native_id);
+			continue;
+		}
+		const auto found = live.find({ holding.account_kind, holding.native_id });
+		require(found != live.end(), EILSEQ);
+		require(contexts.at(found->second) ==
+				(holding.account_kind == economic_account_kind::bank ?
+					 holding.racewar :
+					 0),
+			EILSEQ);
+		ids.push_back(found->second);
+		// Bind retained claim allocations to native current money at cold boot.
+		if (holding.account_kind == economic_account_kind::pending_claim)
+		{
+			economic_account_key account{ stored.lineage, holding.account_kind,
+						      found->second, 0 };
+			std::vector<economic_sql_pending_claim_remaining> sources;
+			const auto error = economic_sql_pending_claim_source_remaining(
+				connection, account, static_cast<uint32_t>(holding.native_id),
+				&sources);
+			require(!error, error);
+			uint64_t total = 0;
+			for (const auto &source : sources)
+			{
+				require(source.remaining_amount <= UINT_MAX - total, EILSEQ);
+				total += source.remaining_amount;
+			}
+			require(total == static_cast<uint64_t>(holding.balance[0]), EILSEQ);
+		}
+		live.erase(found);
+	}
+	require(live.empty(), EILSEQ);
+	return ids;
+}
+
 economic_baseline_batch make_batch(const economic_sql_lifecycle_request &request,
 				   const std::vector<holding_source> &holdings,
 				   const std::vector<uint64_t> &account_ids,
@@ -717,7 +1331,7 @@ void fill_export(const economic_sql_lifecycle_request &request,
 			receipt.treasuries.push_back({ source.shop_id,
 						       static_cast<uint32_t>(source.native_id),
 						       account });
-		else
+		else if (source.account_kind == economic_account_kind::wallet)
 			receipt.wallets.push_back(
 				{ static_cast<uint32_t>(source.native_id), account });
 	}
@@ -845,7 +1459,7 @@ capture_current_holdings(MYSQL *connection, bool reject_defects)
 		status == economic_accounting_error::capacity ? ENOMEM : EILSEQ);
 	if (reject_defects)
 		reject_cutover_defects(normalized);
-	auto holdings = read_native_holdings(snapshot, normalized);
+	auto holdings = read_native_holdings(connection, snapshot, normalized);
 	return { std::move(snapshot), std::move(holdings) };
 }
 struct transaction
@@ -884,13 +1498,14 @@ unsigned int economic_sql_accounting_lifecycle_transaction::install(
 				request.operation_id.bytes != request.epoch.bytes &&
 				request.lineage.bytes != request.epoch.bytes,
 			EINVAL);
+		const auto contract_error = economic_sql_pending_claim_source_contract(connection);
+		require(!contract_error, contract_error);
 		// Raw death-conflict archives are never opening holdings. Until a
 		// separately audited resolution path exists, every case remains open.
 		// Maintenance owns the writer fence also used by the retention writer.
 		require(scalar(connection, "SELECT COUNT(*) FROM player_death_conflict_evidence") ==
 				0,
 			EBUSY);
-		const auto expected_request_hash = request_digest(request);
 		execute(connection, "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED");
 		economic_sql_source_snapshot snapshot;
 		const auto captured = economic_sql_capture_sources(connection, {}, &snapshot);
@@ -901,7 +1516,15 @@ unsigned int economic_sql_accounting_lifecycle_transaction::install(
 		require(normalized_result == economic_accounting_error::ok,
 			normalized_result == economic_accounting_error::capacity ? ENOMEM : EILSEQ);
 		reject_cutover_defects(normalized);
-		const auto holdings = read_native_holdings(snapshot, normalized);
+		const auto holdings = read_native_holdings(connection, snapshot, normalized);
+		const bool money_opening = std::any_of(
+			holdings.begin(), holdings.end(),
+			[](const auto &h)
+			{
+				return h.account_kind == economic_account_kind::auction_escrow ||
+				       h.account_kind == economic_account_kind::pending_claim;
+			});
+		const auto expected_request_hash = request_digest(request, money_opening);
 		const auto native_hash = native_digest(snapshot, holdings);
 		const auto capture_hash = snapshot.digest;
 		const auto wallets = static_cast<uint64_t>(std::count_if(
@@ -1001,6 +1624,11 @@ unsigned int economic_sql_accounting_lifecycle_transaction::install(
 		if (stored.phase == 1)
 			verify_staged_epoch(connection, request, expected_baseline_id,
 					    receipt.durable_revision);
+		(void)authenticate_opening(connection,
+					   load_installation(connection, request.lineage));
+		require(mysql_thread_id(connection) == selection.session &&
+				(connection->server_status & SERVER_STATUS_IN_TRANS),
+			ENOTCONN);
 		execute(connection, "COMMIT");
 		selection.started = false;
 		fill_export(request, holdings, account_ids, stored, receipt.durable_revision,
@@ -1053,7 +1681,10 @@ unsigned int economic_sql_accounting_lifecycle_transaction::activate_verified(
 			require(staged.exists && staged.phase == 2 && staged.baseline_operation &&
 					staged.operation.bytes == request.operation_id.bytes &&
 					staged.epoch.bytes == request.epoch.bytes &&
-					staged.request_hash == request_digest(request) &&
+					staged.request_hash ==
+						request_digest(request, authenticate_opening(
+										connection, staged)
+										.money) &&
 					existing.epoch.bytes == request.epoch.bytes &&
 					existing.installation.bytes == request.operation_id.bytes &&
 					existing.baseline.bytes ==
@@ -1076,7 +1707,7 @@ unsigned int economic_sql_accounting_lifecycle_transaction::activate_verified(
 		}
 		auto [snapshot, holdings] = capture_current_holdings(connection, true);
 		execute(connection, "SAVEPOINT economic_sql_activation_verifier");
-		const auto verified = verify(connection, evidence, snapshot);
+		const auto verified = verify(connection, request, evidence, snapshot);
 		require(!verified, verified);
 		execute(connection, "ROLLBACK TO SAVEPOINT economic_sql_activation_verifier");
 		execute(connection, "RELEASE SAVEPOINT economic_sql_activation_verifier");
@@ -1084,7 +1715,10 @@ unsigned int economic_sql_accounting_lifecycle_transaction::activate_verified(
 		const auto stored = load_installation(connection, request.lineage);
 		require(stored.exists && stored.operation.bytes == request.operation_id.bytes &&
 				stored.epoch.bytes == request.epoch.bytes &&
-				stored.request_hash == request_digest(request) &&
+				stored.request_hash ==
+					request_digest(
+						request,
+						authenticate_opening(connection, stored).money) &&
 				stored.wallet_count ==
 					static_cast<uint64_t>(std::count_if(
 						holdings.begin(), holdings.end(),
@@ -1100,9 +1734,18 @@ unsigned int economic_sql_accounting_lifecycle_transaction::activate_verified(
 							       economic_account_kind::bank;
 						})),
 			EILSEQ);
-		verify_baseline_receipt(connection, stored, holdings.size());
-		(void)create_or_verify_mappings(connection, request, holdings, false);
 		const auto activation = load_activation(connection, request.lineage);
+		if (activation.exists)
+		{
+			const auto opening = authenticate_opening(connection, stored);
+			verify_baseline_receipt(connection, stored);
+			(void)verify_current_mappings(connection, stored, opening, holdings);
+		}
+		else
+		{
+			verify_baseline_receipt(connection, stored, holdings.size());
+			(void)create_or_verify_mappings(connection, request, holdings, false);
+		}
 		const auto lineage =
 			one(connection,
 			    "SELECT HEX(active_epoch) FROM economic_lineage_state WHERE lineage=" +
@@ -1197,6 +1840,7 @@ unsigned int economic_sql_accounting_lifecycle_transaction::activate(
 				digest_nonzero(decision.audit_digest),
 			ENODATA);
 		verify_baseline_receipt(connection, stored);
+		(void)authenticate_opening(connection, stored);
 		const auto state = one(
 			connection,
 			"SELECT HEX(active_epoch),revision FROM economic_lineage_state WHERE lineage=" +
@@ -1330,6 +1974,7 @@ unsigned int economic_sql_accounting_lifecycle_transaction::recover_runtime(
 				digest_nonzero(activation.audit_digest),
 			EILSEQ);
 		verify_baseline_receipt(connection, stored);
+		const auto opening = authenticate_opening(connection, stored);
 		auto [snapshot, holdings] = capture_current_holdings(connection, false);
 		(void)snapshot;
 		require(stored.wallet_count == static_cast<uint64_t>(std::count_if(
@@ -1351,7 +1996,7 @@ unsigned int economic_sql_accounting_lifecycle_transaction::recover_runtime(
 		request.lineage = lineage;
 		request.epoch = epoch;
 		const auto account_ids =
-			create_or_verify_mappings(connection, request, holdings, false);
+			verify_current_mappings(connection, stored, opening, holdings);
 		economic_sql_lifecycle_receipt receipt;
 		fill_export(request, holdings, account_ids, stored, 1, &receipt);
 		require(mysql_thread_id(connection) == owner.session &&

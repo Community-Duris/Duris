@@ -4,6 +4,21 @@
 #include "persistence/critical_command_completion.h"
 #include <mysql/mysql.h>
 
+// Verify the actual original sealed baseline in the caller's trusted transaction.
+// Acquire before participant/mapping locks: original inbox, lineage/epoch, book,
+// witness. No START/COMMIT, reconstruction of missing headers or current balances.
+// Output stays unchanged on failure; caller confirms rollback on every error.
+unsigned int
+economic_sql_baseline_verify_retained_in_transaction(MYSQL *, const critical_command &,
+						     uint64_t *durable_revision) noexcept;
+
+// Authenticates all known retained witness/root/normalized/source values. A real
+// stored timestamp additionally proves the exact original command. Historical
+// NULL timestamps remain explicitly unobserved; never synthesize that header.
+// Caller borrows the original trusted transaction before participant locks.
+unsigned int economic_sql_baseline_verify_known_retained_in_transaction(
+	MYSQL *, const critical_operation_id &, economic_baseline_batch *optional_witness) noexcept;
+
 // Private baseline persistence owner, not authority to establish a native
 // snapshot or activate a domain. The lifecycle caller must retain its frozen
 // native boundary throughout apply. No production caller exists yet.

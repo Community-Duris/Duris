@@ -42,6 +42,21 @@ changed, duplicate or rejected-root claims refuse across the entire database.
 Roots with no source identity and rejected roots require no source claim. Orphan details and
 details attached to rejected roots also refuse. It never repairs a discrepancy.
 
+At canonical 0062, this check also reads retained pending-claim source lots and
+partial-consumption rows, with a 100,000-row bound per collection and 256-row
+primary-key pages. It binds original lot amounts and whole/partial debits to
+the original decoded root effects, requires exact source/mapping/PID identities
+and committed references, and refuses missing, extra, mixed or overdrawn
+allocations. Fully consumed sources retain their original positive amounts.
+Declared version1 opening metadata requires exact canonical holding slots and
+counts; historical NULL opening metadata retains unknown allocation coverage.
+The report's `retained_pending_claim_allocations: verified` covers these
+retained projections. It does not authenticate the origin-policy selector or
+the original PID from a frozen source digest, reconcile current native claim
+balances, or qualify claim producers. The saved snapshot exporter/reconciler
+still needs partial-consumption coverage. Source capture and release remain
+unqualified; a successful check never authorizes correction of a finding.
+
 Status 0 emits a small JSON report with database scope and verified root/byte
 counts. A discrepancy or missing/oversized source emits no report, prints a
 fixed diagnostic refusal on stderr, and exits 2. Capsule and command bodies,
@@ -656,6 +671,34 @@ provide the required equipment and authority evidence. Native decoder agreement
 and private SQL cuts remain component evidence, not quest producer completion.
 
 ## Qualification budgets
+
+The isolated native flatfile restore qualifier validates every retained
+`domains/quest-mobile-native-<id>.qmn` image after authority-bundle recovery, in
+both state preflight and final qualification. It requires a canonical nonzero
+decimal lifetime ID below UINT64_MAX, a private regular file with one link,
+the existing 4 MiB native image bound, canonical native reference/stock/cash
+bytes, and exact filename/reference identity. Corrupt values or malformed names
+in the protected namespace refuse with the existing fixed diagnostic. The image
+check does not write those files or materialize a mobile.
+
+Historical v1 images retain unknown cash; v2 images validate exact denominations
+and cash revision. Retired images retain their original lifetime and have no
+stock or cash. These are native value-format checks, separate from the
+independent economic evidence reader. They do not authenticate birth/source
+authority, resolve runtime custody or qualify complete opening, activation or a
+release. The surrounding original restore and lineage checks remain required.
+
+SQL restore and the standalone canonical audit independently interpret every
+`quest_mobile_native.canonical_image`, with 256-row ID pagination and 64 KiB
+capsule chunks. Each row's mobile identity, mobile/stock revisions and lifetime
+state must exactly match its canonical QMNIMG v1/v2 reference and image. The
+reader checks image/reference checksums, literal stock grammar, contiguous DFS,
+equipment, shared nested-row/string/depth bounds, cash revision and denominations,
+and retired stock/v2 cash. Historical v1 cash remains unobserved. The standalone
+audit includes these rows in its 100,000-row collection limit and the images in
+its 32 MiB aggregate capsule budget. Both consumers use SELECT only and refuse
+corruption; neither authenticates birth/source admission, compares complete
+live-world custody, creates money holdings or provides activation authority.
 
 The maintained `test_native_sql_baseline_audit.py` recipe also exercises the
 full independent SQL snapshot reader before and after actual dump/import into

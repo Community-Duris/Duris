@@ -4,6 +4,7 @@
 #include <cassert>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <initializer_list>
 #include <limits>
 #include <new>
@@ -158,6 +159,14 @@ extern "C" void *__wrap__Znwm(size_t size)
 	if (refuse_allocation)
 		throw std::bad_alloc();
 	return __real__Znwm(size);
+}
+
+// Census qualification has no native quest publication capability. Any call
+// into that unrelated retained entry point must fail instead of granting it.
+bool nevent_is_game_thread()
+{
+	std::fputs("UNEXPECTED native quest publication in custody census\n", stderr);
+	std::abort();
 }
 
 int main()

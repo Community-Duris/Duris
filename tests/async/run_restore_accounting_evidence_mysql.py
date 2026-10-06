@@ -69,7 +69,10 @@ TABLES = ("economic_accounting_operation", "economic_accounting_account_effect",
           "economic_accounting_item_reference", "economic_accounting_source_claim",
           "critical_operation_inbox", "item_ownership_ledger", "economic_epoch",
           "economic_lineage_state", "player_data", "currency_wallet_baseline",
-          "epic_balance_baseline", "mud_schema_migrations", "mud_schema_migration_state")
+          "epic_balance_baseline", "mud_schema_migrations", "mud_schema_migration_state",
+          "quest_mobile_native", "economic_pending_claim_source", "economic_pending_claim_consumption",
+          "economic_account_mapping", "economic_baseline_control", "economic_baseline_witness",
+          "economic_baseline_reservation")
 
 
 def execute(query, params=None):
@@ -159,11 +162,17 @@ def damaged(query, repair, code, params=None, repair_params=None, broken_fk=Fals
 canonical_cuts = []
 
 
-def canonical_cut(label, changes, repairs, code, full=False):
+def canonical_cut(label, changes, repairs, code, full=False, broken_fk=False):
     original = captured()
     try:
-        for query, params in changes:
-            execute(query, params)
+        try:
+            if broken_fk:
+                execute("SET SESSION FOREIGN_KEY_CHECKS=0")
+            for query, params in changes:
+                execute(query, params)
+        finally:
+            execute("SET SESSION FOREIGN_KEY_CHECKS=1")
+        assert scalar("SELECT @@SESSION.foreign_key_checks") == 1
         cut = captured()
         try:
             if full:
@@ -179,10 +188,28 @@ def canonical_cut(label, changes, repairs, code, full=False):
             assert code is None, (label, "corrupt canonical evidence was admitted", code)
         finally:
             reader.rollback()
+        if label.startswith(("native-mobile-", "pending-claim-")):
+            import economic_sql_canonical_audit as canonical_audit
+            audit_reader = pymysql.connect(**(settings | {"database": "duris_restore", "user": READER,
+                "password": "plan5-disposable-reader", "cursorclass": pymysql.cursors.DictCursor}))
+            try:
+                try:
+                    result = canonical_audit.capture(audit_reader)
+                except canonical_audit.AuditError as error:
+                    assert str(error) == code, (label, str(error), code)
+                else:
+                    assert code is None and result["read_only"] and not result["release_qualified"]
+            finally:
+                audit_reader.close()
         assert captured() == cut, label + ": audit changed authority"
     finally:
-        for query, params in repairs:
-            execute(query, params)
+        try:
+            if broken_fk:
+                execute("SET SESSION FOREIGN_KEY_CHECKS=0")
+            for query, params in repairs:
+                execute(query, params)
+        finally:
+            execute("SET SESSION FOREIGN_KEY_CHECKS=1")
     assert captured() == original, label + ": disposable fixture was not restored"
     canonical_cuts.append({"label": label, "code": code, "full_entry": full})
     print("CANONICAL_CUT " + json.dumps(canonical_cuts[-1], sort_keys=True), flush=True)
@@ -200,6 +227,128 @@ def canonical_field(table, field, changed, code, condition="", full=False, opera
                   [(query, (original, operation))], code, full)
 
 
+def pending_claim_cuts():
+    """Native codec roots with modeled retained allocations, never producer proof."""
+    from test_economic_sql_canonical_audit import ClaimProjectionFixture
+    from economic_restore_evidence import decode_plan
+    path = Path(os.environ["DURIS_PLAN5_CLAIM_FIXTURE"]).resolve()
+    assert path.parent == fixture_path.parent and path.name == "claims-sql.bin"
+    raw = path.read_bytes()
+    assert len(raw) <= 1024*1024
+    blocks, offset = [], 0
+    while offset < len(raw):
+        size, = struct.unpack_from("<I", raw, offset)
+        offset += 4
+        blocks.append(raw[offset:offset+size])
+        offset += size
+    assert offset == len(raw) and len(blocks) == 10
+    pairs = list(zip(blocks[::2], blocks[1::2]))
+    initial, first_cut = captured(), len(canonical_cuts)
+    for mode in ("unspent", "partial", "consumed", "whole"):
+        model = ClaimProjectionFixture(mode, pairs)
+        source_rows = [(bytes.fromhex(row[0]), row[1], bytes.fromhex(row[2]), *row[3:6],
+                        bytes.fromhex(row[6]) if row[6] else None) for row in model.pending_sources]
+        consumption_rows = [(bytes.fromhex(row[0]), bytes.fromhex(row[1]), *row[2:])
+                            for row in model.pending_consumptions]
+        operations = []
+        try:
+            for root in model.roots.values():
+                plan = decode_plan(root.encoded)
+                meta = plan["metadata"]
+                operation = meta[2]
+                execute("INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,"
+                        "command_type,schema_version,payload_version,status,result_payload,committed_at) "
+                        "VALUES(%s,%s,%s,1,2,1,1,'',CURRENT_TIMESTAMP(6))", (operation, bytes(32), bytes(32)))
+                operations.append(operation)
+                values = (operation, *meta[:2], meta[3] if any(meta[3]) else None, *meta[4:11], meta[11],
+                          plan["intent_digest"], plan["domain_digest"], plan["plan_digest"],
+                          root.frozen, root.encoded, 1, 0, *plan["counts"])
+                execute("INSERT INTO economic_accounting_operation(operation_id,lineage,epoch,original_operation_id,"
+                        "accounting_version,writer_id,policy_version,compiler_version,actor_kind,actor_id,reason,"
+                        "source_event,intent_digest,domain_digest,plan_digest,canonical_intent,canonical_plan,"
+                        "outcome,result_code,account_count,posting_count,child_count,before_witness_count,"
+                        "after_witness_count,item_event_count) VALUES("+",".join(["%s"]*25)+")", values)
+                execute("INSERT INTO economic_accounting_source_claim VALUES(%s,%s,%s,1)", (LINEAGE, meta[11], operation))
+                for index, (key, before, after, old, new) in enumerate(plan["effects"]):
+                    execute("INSERT INTO economic_accounting_account_effect VALUES("+",".join(["%s"]*13)+")",
+                            (operation, index, key, *before, *after, old, new))
+                for index, (event, account, child, delta, amount) in enumerate(plan["postings"]):
+                    execute("INSERT INTO economic_accounting_coin_posting VALUES("+",".join(["%s"]*10)+")",
+                            (operation, index, event, account, child, *delta, amount))
+            execute("INSERT INTO economic_account_mapping(mapping_id,lineage,account_kind,context_id,backend_kind,"
+                    "locator_kind,native_id,active_native_id,creating_operation_id) VALUES(9,%s,5,0,1,5,42,42,%s)",
+                    (LINEAGE, bytes.fromhex("81"*16)))
+            for row in source_rows:
+                execute("INSERT INTO economic_pending_claim_source VALUES("+",".join(["%s"]*7)+")", row)
+            for row in consumption_rows:
+                execute("INSERT INTO economic_pending_claim_consumption VALUES(%s,%s,%s,%s)", row)
+            canonical_cut("pending-claim-"+mode, [], [], None, full=True)
+
+            def cut(label, changes, repairs, code, broken_fk=False):
+                canonical_cut("pending-claim-"+mode+"-"+label, changes, repairs,
+                              "restore_economic_pending_claim_"+code+"_mismatch", broken_fk=broken_fk)
+
+            original = source_rows[0]
+            source = bytes.fromhex("81"*16)
+            if mode == "unspent":
+                cut("missing-source", [("DELETE FROM economic_pending_claim_source WHERE source_operation_id=%s", (source,))],
+                    [("INSERT INTO economic_pending_claim_source VALUES("+",".join(["%s"]*7)+")", original)], "source")
+                for field, changed, old in (("amount", 6, 5), ("lineage", EPOCH, LINEAGE), ("beneficiary_pid", 43, 42)):
+                    query = "UPDATE economic_pending_claim_source SET "+field+"=%s WHERE source_operation_id=%s"
+                    cut(field, [(query, (changed, source))], [(query, (old, source))], "source")
+                cut("mapping-backend", [("UPDATE economic_account_mapping SET backend_kind=2 WHERE mapping_id=9", None)],
+                    [("UPDATE economic_account_mapping SET backend_kind=1 WHERE mapping_id=9", None)], "source")
+                cut("missing-mapping", [("DELETE FROM economic_account_mapping WHERE mapping_id=9", None)],
+                    [("INSERT INTO economic_account_mapping(mapping_id,lineage,account_kind,context_id,backend_kind,"
+                      "locator_kind,native_id,active_native_id,creating_operation_id) VALUES(9,%s,5,0,1,5,42,42,%s)",
+                      (LINEAGE, source))], "source", broken_fk=True)
+            if mode == "partial":
+                spending = bytes.fromhex("83"*16)
+                for amount in (1, 3, 6):
+                    query = "UPDATE economic_pending_claim_consumption SET amount=%s WHERE spending_operation_id=%s"
+                    cut("amount-"+str(amount), [(query, (amount, spending))], [(query, (2, spending))], "consumption")
+                cut("missing-consumption", [("DELETE FROM economic_pending_claim_consumption WHERE spending_operation_id=%s", (spending,))],
+                    [("INSERT INTO economic_pending_claim_consumption VALUES(%s,%s,1,2)", (spending, source))], "consumption")
+                cut("whole-and-partial", [("UPDATE economic_pending_claim_source SET claim_operation_id=%s WHERE source_operation_id=%s", (spending, source))],
+                    [("UPDATE economic_pending_claim_source SET claim_operation_id=NULL WHERE source_operation_id=%s", (source,))], "consumption")
+                cut("extra-consumption", [("INSERT INTO economic_pending_claim_consumption VALUES(%s,%s,1,1)", (OP, source))],
+                    [("DELETE FROM economic_pending_claim_consumption WHERE spending_operation_id=%s", (OP,))], "consumption")
+                cut("orphan-consumption", [("UPDATE economic_pending_claim_consumption SET source_operation_id=%s WHERE spending_operation_id=%s", (ORPHAN, spending))],
+                    [("UPDATE economic_pending_claim_consumption SET source_operation_id=%s WHERE spending_operation_id=%s", (source, spending))], "consumption", broken_fk=True)
+                cut("rejected-consumer", [("UPDATE economic_pending_claim_consumption SET spending_operation_id=%s", (REJECTED,))],
+                    [("UPDATE economic_pending_claim_consumption SET spending_operation_id=%s", (spending,))], "consumption")
+                # Both retained-allocation cursors must traverse a second PK page
+                # before rejecting these individually valid, extra source lots.
+                extras = [(source, slot, LINEAGE, 9, 42, 5, None) for slot in range(2, 258)]
+                changes = [("INSERT INTO economic_pending_claim_source VALUES("+",".join(["%s"]*7)+")", row)
+                           for row in extras]
+                changes += [("INSERT INTO economic_pending_claim_consumption VALUES(%s,%s,%s,1)",
+                             (spending, source, row[1])) for row in extras]
+                cut("paged-extra-allocations", changes,
+                    [("DELETE FROM economic_pending_claim_consumption WHERE spending_operation_id=%s AND source_slot>1", (spending,)),
+                     ("DELETE FROM economic_pending_claim_source WHERE source_operation_id=%s AND source_slot>1", (source,))], "source")
+            if mode == "consumed":
+                cut("lost-fully-consumed-source", [("DELETE FROM economic_pending_claim_source WHERE source_operation_id=%s", (source,))],
+                    [("INSERT INTO economic_pending_claim_source VALUES("+",".join(["%s"]*7)+")", original)], "consumption", broken_fk=True)
+            if mode == "whole":
+                cut("wrong-whole-consumer", [("UPDATE economic_pending_claim_source SET claim_operation_id=%s WHERE source_operation_id=%s", (OP, source))],
+                    [("UPDATE economic_pending_claim_source SET claim_operation_id=%s WHERE source_operation_id=%s", (bytes.fromhex("85"*16), source))], "consumption")
+        finally:
+            execute("DELETE FROM economic_pending_claim_consumption")
+            execute("DELETE FROM economic_pending_claim_source")
+            execute("DELETE FROM economic_account_mapping WHERE mapping_id=9")
+            for operation in operations:
+                for table in ("economic_accounting_coin_posting", "economic_accounting_account_effect", "economic_accounting_source_claim",
+                              "economic_accounting_operation", "critical_operation_inbox"):
+                    execute("DELETE FROM "+table+" WHERE operation_id=%s", (operation,))
+        assert captured() == initial, mode
+    print("PENDING_CLAIM_RESTORE_CUTS "+json.dumps({"controls": 4, "cuts": len(canonical_cuts)-first_cut,
+          "original_readers": 2, "native_roots": 5, "native_fixture_sha256": hashlib.sha256(raw).hexdigest(),
+          "allocation_pagination_rows": {"sources": 258, "consumptions": 257},
+          "schema_head": "0062_economic_pending_claim_consumption", "authority_unchanged": True,
+          "producer_journey_qualified": False}, sort_keys=True), flush=True)
+
+
 try:
     assert scalar("SELECT COUNT(*) FROM information_schema.schemata "
                   "WHERE schema_name='duris_restore'") == 0, "existing restore database refused"
@@ -212,7 +361,7 @@ try:
     subprocess.run(command, input=(ROOT / "migrations/bootstrap_multithread_safe.sql").read_bytes(),
                    env=dict(os.environ, MYSQL_PWD=settings["password"]), check=True, timeout=180)
     manifest = migrations.load_manifest()
-    assert manifest.migrations[-1].migration_id == "0061_economic_baseline_equipment"
+    assert manifest.migrations[-1].migration_id == "0062_economic_pending_claim_consumption"
     executor = migrations.MysqlExecutor(manifest)
     try:
         executor.adopt("fresh_bootstrap")
@@ -236,6 +385,56 @@ try:
     os.environ["DB_USER"] = READER
     os.environ["DB_PASSWD"] = "plan5-disposable-reader"
     admitted()  # Inactive legacy/empty evidence remains eligible for restore.
+    from test_economic_sql_canonical_audit import (NATIVE_MOBILE_STOCK_DAMAGE,
+        native_mobile_forests, native_mobile_image, native_mobile_stock)
+    insert_mobile = "INSERT INTO quest_mobile_native VALUES(%s,%s,%s,%s,%s)"
+    remove_mobile = "DELETE FROM quest_mobile_native WHERE mobile_instance_id=%s"
+    mobile_code = "restore_economic_native_mobile_mismatch"
+    for version in (1, 2):
+        for lifetime in (1, 2):
+            stock = native_mobile_stock() if lifetime == 1 else bytes(4)
+            image = native_mobile_image(version, lifetime, stock)
+            canonical_cut(f"native-mobile-v{version}-state{lifetime}",
+                [(insert_mobile, (42, 2, 3, lifetime, image))], [(remove_mobile, (42,))], None, full=True)
+    image = native_mobile_image()
+    for label, fields in (
+            ("ID binding", (43, 2, 3, 1, image)), ("zero ID", (0, 2, 3, 1, image)),
+            ("reserved ID", (2**64-1, 2, 3, 1, image)),
+            ("mobile revision", (42, 3, 3, 1, image)), ("stock revision", (42, 2, 4, 1, image)),
+            ("lifetime state", (42, 2, 3, 2, image)),
+            ("zero mobile revision", (42, 0, 3, 1, image)), ("zero stock revision", (42, 2, 0, 1, image)),
+            ("unknown lifetime", (42, 2, 3, 3, image)),
+            ("corrupt body", (42, 2, 3, 1, b"corrupt-native-mobile-image")),
+            ("checksum", (42, 2, 3, 1, image[:-1] + bytes([image[-1] ^ 1]))),
+            ("truncated", (42, 2, 3, 1, image[:-1])),
+            ("trailing", (42, 2, 3, 1, image + b"\0")),
+            ("size bound", (42, 2, 3, 1, bytes(4*1024*1024+1)))):
+        canonical_cut("native-mobile-" + label, [(insert_mobile, fields)],
+                      [(remove_mobile, (fields[0],))], mobile_code, full=True)
+    for label, offset, changed in NATIVE_MOBILE_STOCK_DAMAGE:
+        stock = bytearray(native_mobile_stock())
+        stock[offset:offset+len(changed)] = changed
+        canonical_cut("native-mobile-stock-" + label,
+            [(insert_mobile, (42, 2, 3, 1, native_mobile_image(items=bytes(stock))))],
+            [(remove_mobile, (42,))], mobile_code, full=True)
+    for label, valid, stock in native_mobile_forests():
+        canonical_cut("native-mobile-forest-" + label,
+            [(insert_mobile, (42, 2, 3, 1, native_mobile_image(items=stock)))],
+            [(remove_mobile, (42,))], None if valid else mobile_code, full=True)
+    highest = 2**64-2
+    canonical_cut("native-mobile-highest-lifetime",
+        [(insert_mobile, (highest, 2, 3, 1, native_mobile_image(identity=highest)))],
+        [(remove_mobile, (highest,))], None, full=True)
+    page = [(identity, 2, 3, 1, native_mobile_image(identity=identity)) for identity in range(1000, 1259)]
+    canonical_cut("native-mobile-259-row-two-page-cut", [(insert_mobile, row) for row in page],
+                  [(remove_mobile, (row[0],)) for row in page], None, full=True)
+    page[-1] = (*page[-1][:4], page[-1][4][:-1] + bytes([page[-1][4][-1] ^ 1]))
+    canonical_cut("native-mobile-second-page-corruption", [(insert_mobile, row) for row in page],
+                  [(remove_mobile, (row[0],)) for row in page], mobile_code, full=True)
+    print("NATIVE_MOBILE_RESTORE_CUTS " + json.dumps({
+        "cuts": len(canonical_cuts), "original_readers": 2, "versions": 2,
+        "page_rows": 259, "image_bound": 4*1024*1024,
+        "authority_unchanged": True, "modeled_images_are_not_birth_authority": True}, sort_keys=True), flush=True)
     execute("INSERT INTO player_data(pid,name,copper,silver,gold,platinum,wallet_revision,epics,epic_revision) "
             "VALUES(42,'SyntheticRestore',7,0,0,0,1,0,0)")
     execute("INSERT INTO currency_wallet_baseline(pid,opening_copper,opening_silver,opening_gold,"
@@ -496,11 +695,13 @@ try:
                 execute("DELETE FROM critical_operation_inbox WHERE operation_id=%s", (operation,))
         assert captured() == page_original
         admitted()
+        if os.environ.get("DURIS_PLAN5_CLAIM_FIXTURE"):
+            pending_claim_cuts()
         print("CANONICAL_RESTORE_QUALIFIED " + json.dumps({"cuts": len(canonical_cuts),
               "refusals": sum(row["code"] is not None for row in canonical_cuts),
               "full_entry_cuts": sum(row["full_entry"] for row in canonical_cuts),
               "page_roots": 259, "intent_bound": 8192, "plan_bound": 4 * 1024 * 1024,
-              "authority_unchanged": True, "schema_head": "0061_economic_baseline_equipment",
+              "authority_unchanged": True, "schema_head": "0062_economic_pending_claim_consumption",
               "production_access": False}, sort_keys=True), flush=True)
     if native_blocks:
         cases = [json.loads(block) for block in native_blocks[5:]]
@@ -557,7 +758,7 @@ try:
                 assert captured() == original
         assert qualified == 30 and constrained == 2
         print("COIN_RESTORE_QUALIFIED " + json.dumps({"native_cases": 32, "audited_cases": qualified,
-              "canonical_constraint_refusals": constrained, "schema_head": "0061_economic_baseline_equipment",
+              "canonical_constraint_refusals": constrained, "schema_head": "0062_economic_pending_claim_consumption",
               "authority_unchanged": True, "production_access": False}, sort_keys=True), flush=True)
     print("economic restore: intact/inactive/rejected histories pass; damaged retained rows, "
           "receipts, sources, values and item links refuse with SELECT-only unchanged authority", flush=True)

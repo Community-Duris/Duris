@@ -235,7 +235,8 @@ static void decoder_corpus(const economic_accounting_plan &base,
 int main(int argc, char **argv)
 {
 	const bool corpus = argc == 2 && std::string(argv[1]) == "--decode-corpus";
-	const bool history = argc == 2 && std::string(argv[1]) == "--restore-history";
+	const bool claims = argc == 2 && std::string(argv[1]) == "--claim-history";
+	const bool history = argc == 2 && (std::string(argv[1]) == "--restore-history" || claims);
 	assert(argc == 1 || corpus || history);
 	std::vector<std::pair<bool, std::vector<uint8_t>>> goldens;
 	auto emit = [&](bool intent, const std::vector<uint8_t> &bytes)
@@ -268,6 +269,56 @@ int main(int argc, char **argv)
 				     {},
 				     0,
 				     1 };
+	if (claims)
+	{
+		const int64_t wallet_before[] = { 20, 15, 12, 14, 12 };
+		const int64_t wallet_after[] = { 15, 12, 14, 20, 20 };
+		const int64_t claim_before[] = { 0, 5, 8, 6, 8 };
+		const int64_t claim_after[] = { 5, 8, 6, 0, 0 };
+		const uint64_t revisions[] = { 0, 1, 2, 3, 2 };
+		for (size_t index = 0; index < 5; ++index)
+		{
+			auto candidate = base;
+			candidate.metadata.operation_id = id(static_cast<uint8_t>(0x81 + index));
+			candidate.metadata.source_event = { economic_source_kind::lifecycle,
+							    id(static_cast<uint8_t>(0x91 + index)),
+							    meta.epoch, 0, 0 };
+			candidate.accounts = {
+				{ { meta.lineage, economic_account_kind::wallet, 7, 0 },
+				  { wallet_before[index], 0, 0, 0 },
+				  { wallet_after[index], 0, 0, 0 },
+				  revisions[index],
+				  revisions[index] + 1 },
+				{ { meta.lineage, economic_account_kind::pending_claim, 9, 0 },
+				  { claim_before[index], 0, 0, 0 },
+				  { claim_after[index], 0, 0, 0 },
+				  revisions[index],
+				  revisions[index] + 1 }
+			};
+			const auto delta = claim_after[index] - claim_before[index];
+			candidate.postings = { { 0, 0, 0, { -delta, 0, 0, 0 }, -delta },
+					       { 1, 1, 0, { delta, 0, 0, 0 }, delta } };
+			economic_frozen_intent frozen_intent;
+			frozen_intent.admission.metadata = candidate.metadata;
+			frozen_intent.command_binding[0] = 21;
+			frozen_intent.domain_digest[0] = 22;
+			std::vector<uint8_t> frozen_bytes, plan_bytes;
+			assert(economic_intent_encode(frozen_intent, &frozen_bytes) ==
+			       economic_accounting_error::ok);
+			assert(economic_intent_digest(frozen_intent,
+						      &candidate.metadata.intent_digest) ==
+			       economic_accounting_error::ok);
+			candidate.metadata.domain_digest = frozen_intent.domain_digest;
+			assert(economic_plan_encode(candidate, &plan_bytes) ==
+			       economic_accounting_error::ok);
+			economic_accounting_plan verified;
+			assert(economic_plan_decode(plan_bytes, &verified) ==
+			       economic_accounting_error::ok);
+			output(frozen_bytes);
+			output(plan_bytes);
+		}
+		return 0;
+	}
 	economic_frozen_intent intent;
 	intent.admission.metadata = meta;
 	intent.command_binding[0] = 21;

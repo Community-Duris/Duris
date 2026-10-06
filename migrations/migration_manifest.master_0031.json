@@ -788,6 +788,16 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "c728260b0f02d6de9343b6abaf162ebd0aae0416efbc220b2fac41b676d5c072",
       "verify_checksum": "479a11417a5bc9cd31b1705efffbfb68b640625651883e051b75ef8fb68fbb31"
+    },
+    {
+      "id": "0062_economic_pending_claim_consumption",
+      "sequence": 62,
+      "description": "Retain partial pending-claim consumption and explicit opening-origin witness contract",
+      "apply": "immutable/0062_economic_pending_claim_consumption.sql",
+      "verify": "immutable/0062_economic_pending_claim_consumption.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "da6d5044e860528b14a3bcfcca0f95f1a2e178946303ab5e339d3ea93a46094d",
+      "verify_checksum": "6693a797f7d4a259f412f0ac54d2324ac34e9612a5dcdac298aa459afdbf29ed"
     }
   ]
 }

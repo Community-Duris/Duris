@@ -6,6 +6,7 @@
 #include "economy/auction_item_claim_accounting.h"
 #include "economy/auction_settlement_accounting.h"
 #include "item/item_transfer_command.h"
+#include "persistence/economic_sql_pending_claim_source.h"
 
 #include <algorithm>
 #include <array>
@@ -14,6 +15,11 @@
 #include <cstring>
 #include <ctime>
 #include <limits>
+#include <memory>
+#include <charconv>
+#include <type_traits>
+#include <utility>
+#include <strings.h>
 #include <mysql.h>
 #include <string>
 #include <vector>
@@ -987,5 +993,540 @@ bool auction_repository_execute_accounted(MYSQL *connection, const critical_comm
 	}
 	return auction_repository_execute_impl(connection, command, result, result_code,
 					       mutation_applied);
+#endif
+}
+
+// Read-only producer capture. These facts confer no execution authority: the
+// admitted SQL owners renew every mapping and native prestate in their transaction.
+#ifndef __NO_MYSQL__
+namespace
+{
+std::string auction_capture_id(const critical_operation_id &value)
+{
+	return "UNHEX('" + operation_hex(value) + "')";
+}
+
+bool auction_capture_rows(MYSQL *connection, const std::string &sql, size_t fields,
+			  std::vector<std::vector<std::string>> *values)
+{
+	if (!execute(connection, sql))
+	{
+		errno = mysql_errno(connection) ? static_cast<int>(mysql_errno(connection)) : EIO;
+		return false;
+	}
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+		mysql_store_result(connection), mysql_free_result);
+	if (!rows || mysql_num_fields(rows.get()) != fields)
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	std::vector<std::vector<std::string>> result;
+	while (MYSQL_ROW row = mysql_fetch_row(rows.get()))
+	{
+		const unsigned long *lengths = mysql_fetch_lengths(rows.get());
+		if (!lengths)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		std::vector<std::string> cells;
+		for (size_t index = 0; index < fields; ++index)
+		{
+			if (!row[index])
+			{
+				errno = EILSEQ;
+				return false;
+			}
+			cells.emplace_back(row[index], lengths[index]);
+		}
+		result.push_back(std::move(cells));
+	}
+	if (mysql_errno(connection))
+	{
+		errno = static_cast<int>(mysql_errno(connection));
+		return false;
+	}
+	*values = std::move(result);
+	return true;
+}
+
+bool auction_capture_row(MYSQL *connection, const std::string &sql, size_t fields,
+			 std::vector<std::string> *values, bool optional = false)
+{
+	std::vector<std::vector<std::string>> rows;
+	if (!auction_capture_rows(connection, sql, fields, &rows))
+		return false;
+	if (rows.size() > 1 || (!optional && rows.empty()))
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	*values = rows.empty() ? std::vector<std::string>{} : std::move(rows[0]);
+	return true;
+}
+
+bool auction_capture_mapping(MYSQL *connection, const critical_operation_id &lineage,
+			     economic_account_kind kind, uint16_t locator, uint64_t native,
+			     uint64_t context, economic_account_key *output, bool optional = false)
+{
+	std::vector<std::string> row;
+	if (!auction_capture_row(
+		    connection,
+		    "SELECT mapping_id FROM economic_account_mapping WHERE lineage=" +
+			    auction_capture_id(lineage) +
+			    " AND account_kind=" + std::to_string(static_cast<uint16_t>(kind)) +
+			    " AND context_id=" + std::to_string(context) +
+			    " AND backend_kind=1 AND locator_kind=" + std::to_string(locator) +
+			    " AND native_id=" + std::to_string(native) +
+			    " AND active_native_id=" + std::to_string(native),
+		    1, &row, optional))
+		return false;
+	economic_account_key key{};
+	if (!row.empty())
+	{
+		uint64_t mapping = 0;
+		if (!parse_u64(row[0].c_str(), &mapping) || !mapping)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		key = { lineage, kind, mapping, context };
+	}
+	*output = key;
+	return true;
+}
+
+bool auction_capture_claim(MYSQL *connection, const critical_operation_id &lineage, uint32_t pid,
+			   economic_account_key *key, uint32_t *absent)
+{
+	std::vector<std::string> row;
+	if (!auction_capture_row(
+		    connection,
+		    "SELECT money,claim_revision FROM auction_money_pickups WHERE pid=" +
+			    std::to_string(pid) + " FOR UPDATE",
+		    2, &row, true) ||
+	    !auction_capture_mapping(connection, lineage, economic_account_kind::pending_claim, 5,
+				     pid, 0, key, true))
+		return false;
+	// Row presence is independent of amount and revision, including an existing zero.
+	if (!row.empty())
+	{
+		uint64_t money = 0, revision = 0;
+		if (!key->authority_id || !parse_u64(row[0].c_str(), &money) || money > UINT_MAX ||
+		    !parse_u64(row[1].c_str(), &revision))
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		*absent = 0;
+		return true;
+	}
+	std::vector<std::vector<std::string>> retained;
+	const auto scope = auction_capture_id(lineage), native = std::to_string(pid);
+	if (key->authority_id ||
+	    !auction_capture_rows(
+		    connection,
+		    "SELECT mapping_id FROM economic_account_mapping WHERE lineage=" + scope +
+			    " AND account_kind=5 AND native_id=" + native + " FOR UPDATE",
+		    1, &retained))
+	{
+		if (key->authority_id)
+			errno = EILSEQ;
+		return false;
+	}
+	if (!retained.empty())
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	if (!auction_capture_rows(
+		    connection,
+		    "SELECT source_slot FROM economic_pending_claim_source WHERE lineage=" + scope +
+			    " AND beneficiary_pid=" + native + " FOR UPDATE",
+		    1, &retained))
+		return false;
+	if (!retained.empty())
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	*absent = pid;
+	return true;
+}
+
+bool auction_capture_listing(MYSQL *connection, uint32_t auction,
+			     auction_settlement_listing *listing)
+{
+	std::vector<std::string> row;
+	if (!auction_capture_row(
+		    connection,
+		    "SELECT seller_pid,winning_bidder_pid,status+0,custody_state,quantity,cur_price,"
+		    "buy_price,auction_revision,UNIX_TIMESTAMP(end_time),HEX(listing_operation_id) "
+		    "FROM auctions WHERE id=" +
+			    std::to_string(auction) + " FOR UPDATE",
+		    10, &row))
+		return false;
+	uint64_t numbers[9]{};
+	for (size_t index = 0; index < 9; ++index)
+		if (!parse_u64(row[index].c_str(), &numbers[index]) ||
+		    (index < 5 && numbers[index] > UINT32_MAX))
+		{
+			errno = EILSEQ;
+			return false;
+		}
+	if (numbers[5] > INT64_MAX || numbers[6] > INT64_MAX || row[9].size() != 32 ||
+	    !critical_operation_id_from_hex(row[9].c_str(), &listing->listing_operation))
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	listing->auction_id = auction;
+	listing->seller_pid = static_cast<uint32_t>(numbers[0]);
+	listing->winner_pid = static_cast<uint32_t>(numbers[1]);
+	listing->status = static_cast<uint32_t>(numbers[2]);
+	listing->custody_state = static_cast<uint32_t>(numbers[3]);
+	listing->quantity = static_cast<uint32_t>(numbers[4]);
+	listing->current_price = static_cast<int64_t>(numbers[5]);
+	listing->buy_price = static_cast<int64_t>(numbers[6]);
+	listing->revision = numbers[7];
+	listing->end_time = numbers[8];
+	if (!listing->winner_pid)
+		return true;
+	if (!auction_capture_row(
+		    connection,
+		    "SELECT HEX(operation_id),actor_pid,final_price FROM auction_ledger WHERE auction_id=" +
+			    std::to_string(auction) + " AND auction_revision=" +
+			    std::to_string(listing->revision) + " AND event_type=2 FOR UPDATE",
+		    3, &row))
+		return false;
+	uint64_t bidder = 0, price = 0;
+	if (row[0].size() != 32 ||
+	    !critical_operation_id_from_hex(row[0].c_str(), &listing->winning_bid_operation) ||
+	    !parse_u64(row[1].c_str(), &bidder) || bidder != listing->winner_pid ||
+	    !parse_u64(row[2].c_str(), &price) ||
+	    price != static_cast<uint64_t>(listing->current_price))
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	return true;
+}
+
+bool auction_capture_items(MYSQL *connection, auction_settlement_listing *listing)
+{
+	if (!listing->quantity || listing->quantity > AUCTION_COMMAND_MAX_ITEMS)
+	{
+		errno = EOPNOTSUPP;
+		return false;
+	}
+	std::vector<std::vector<std::string>> rows;
+	if (!auction_capture_rows(
+		    connection,
+		    "SELECT item_uid,item_revision,slot,vnum,COALESCE(claim_pid,0),claimed_at IS NOT NULL "
+		    "FROM auction_item_custody WHERE auction_id=" +
+			    std::to_string(listing->auction_id) + " ORDER BY slot FOR UPDATE",
+		    6, &rows))
+		return false;
+	if (rows.size() != listing->quantity)
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	listing->item_count = static_cast<uint16_t>(rows.size());
+	for (size_t index = 0; index < rows.size(); ++index)
+	{
+		uint64_t fields[6]{};
+		for (size_t field = 0; field < 6; ++field)
+			if (!parse_u64(rows[index][field].c_str(), &fields[field]))
+			{
+				errno = EILSEQ;
+				return false;
+			}
+		if (fields[2] != index || fields[3] > INT32_MAX || fields[4] > UINT32_MAX ||
+		    fields[5] > 1)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		listing->items[index] = { fields[0],
+					  fields[1],
+					  static_cast<uint16_t>(index),
+					  static_cast<int32_t>(fields[3]),
+					  static_cast<uint32_t>(fields[4]),
+					  fields[5] != 0 };
+	}
+	return true;
+}
+
+unsigned int auction_capture_failure()
+{
+	return errno ? static_cast<unsigned int>(errno) : EILSEQ;
+}
+} // namespace
+#endif
+
+bool auction_repository_frozen_accounting_valid(const critical_command &command) noexcept
+{
+	try
+	{
+		economic_frozen_intent intent;
+		auction_command_payload payload{};
+		auction_bid_accounting_listing bid;
+		auction_bid_accounting_accounts bid_accounts;
+		auction_settlement_listing settlement;
+		auction_settlement_accounts settlement_accounts;
+		return auction_bid_accounting_decode(command, &intent, &payload, &bid,
+						     &bid_accounts) ==
+			       economic_accounting_error::ok ||
+		       auction_settlement_accounting_decode(command, &intent, &payload, &settlement,
+							    &settlement_accounts) ==
+			       economic_accounting_error::ok;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+unsigned int auction_repository_prepare_accounting(MYSQL *connection,
+						   const critical_operation_id &lineage,
+						   const critical_operation_id &epoch,
+						   critical_command *command)
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)lineage;
+	(void)epoch;
+	(void)command;
+	return ENOTSUP;
+#else
+	if (!connection || !command || !(connection->server_status & SERVER_STATUS_IN_TRANS) ||
+	    critical_operation_id_is_zero(lineage) || critical_operation_id_is_zero(epoch))
+		return EINVAL;
+	// Frozen replay belongs to validation/readback, never to this current capture.
+	if (command->schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+	    !command->accounting_intent.empty() || !critical_command_envelope_valid(*command))
+		return EPROTONOSUPPORT;
+	using client_flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+	client_flag reconnect = false;
+	if (mysql_get_option(connection, MYSQL_OPT_RECONNECT, &reconnect) || reconnect)
+		return EPERM;
+	const auto session = mysql_thread_id(connection);
+	try
+	{
+		auction_command_payload payload{};
+		if (!auction_command_decode_payload(*command, &payload) ||
+		    (payload.action != auction_action::bid &&
+		     payload.action != auction_action::finalize &&
+		     payload.action != auction_action::remove))
+			return EPROTONOSUPPORT;
+		auction_settlement_listing listing;
+		if (!auction_capture_listing(connection, payload.auction_id, &listing))
+			return auction_capture_failure();
+		std::vector<economic_sql_mapping_request> requests;
+		auto mapping = [&](economic_account_kind kind, uint16_t locator, uint64_t native,
+				   uint64_t context, economic_account_key *key)
+		{
+			if (!auction_capture_mapping(connection, lineage, kind, locator, native,
+						     context, key))
+				return false;
+			requests.push_back({ *key, locator, native });
+			return true;
+		};
+		auto claim = [&](uint32_t pid, economic_account_key *key, uint32_t *absent)
+		{
+			if (!auction_capture_claim(connection, lineage, pid, key, absent))
+				return false;
+			if (!*absent)
+				requests.push_back({ *key, 5, pid });
+			return true;
+		};
+		economic_account_key escrow{}, wallet{}, bank{};
+		if (!mapping(economic_account_kind::auction_escrow, 4, payload.auction_id, 0,
+			     &escrow))
+			return auction_capture_failure();
+		if (payload.actor_pid)
+		{
+			std::vector<std::string> row;
+			if (!auction_capture_row(
+				    connection,
+				    "SELECT account_name,racewar FROM player_data WHERE pid=" +
+					    std::to_string(payload.actor_pid) + " FOR UPDATE",
+				    2, &row))
+				return auction_capture_failure();
+			uint64_t race = 0;
+			if (row[0].size() != strnlen(payload.account_name.data(),
+						     payload.account_name.size()) ||
+			    strcasecmp(row[0].c_str(), payload.account_name.data()) ||
+			    !parse_u64(row[1].c_str(), &race) || race != payload.racewar)
+				return ESTALE;
+			const auto account = "'" +
+					     escape(connection, payload.account_name.data(),
+						    strnlen(payload.account_name.data(),
+							    payload.account_name.size())) +
+					     "'";
+			if (!auction_capture_row(
+				    connection,
+				    "SELECT id FROM account_banks WHERE account_name=" + account +
+					    " AND racewar=" + std::to_string(payload.racewar) +
+					    " FOR UPDATE",
+				    1, &row))
+				return auction_capture_failure();
+			uint64_t native_bank = 0;
+			if (!parse_u64(row[0].c_str(), &native_bank) || !native_bank ||
+			    native_bank > UINT32_MAX)
+				return EILSEQ;
+			if (!mapping(economic_account_kind::wallet, 1, payload.actor_pid, 0,
+				     &wallet) ||
+			    !mapping(economic_account_kind::bank, 2, native_bank, payload.racewar,
+				     &bank))
+				return auction_capture_failure();
+		}
+		std::vector<uint8_t> encoded;
+		economic_accounting_error error;
+		if (payload.action == auction_action::bid)
+		{
+			auction_bid_accounting_listing bid{
+				listing.auction_id,	   listing.seller_pid,
+				listing.winner_pid,	   listing.status,
+				listing.custody_state,	   listing.current_price,
+				listing.buy_price,	   listing.revision,
+				listing.listing_operation, listing.winning_bid_operation
+			};
+			auction_bid_accounting_accounts accounts;
+			accounts.wallet = wallet;
+			accounts.bank = bank;
+			accounts.escrow = escrow;
+			const bool outbid = listing.winner_pid &&
+					    listing.winner_pid != payload.actor_pid;
+			const bool sold = listing.buy_price > 0 &&
+					  payload.value >= listing.buy_price;
+			if (!claim(payload.actor_pid, &accounts.bidder_claim,
+				   &accounts.absent_bidder_pid) ||
+			    (outbid && !claim(listing.winner_pid, &accounts.previous_claim,
+					      &accounts.absent_previous_pid)) ||
+			    (sold && !claim(listing.seller_pid, &accounts.seller_claim,
+					    &accounts.absent_seller_pid)))
+				return auction_capture_failure();
+			error = auction_bid_accounting_intent(*command, epoch, bid, accounts,
+							      &encoded);
+		}
+		else
+		{
+			if (!auction_capture_items(connection, &listing))
+				return auction_capture_failure();
+			auction_settlement_accounts accounts;
+			accounts.escrow = escrow;
+			accounts.actor_wallet = wallet;
+			accounts.actor_bank = bank;
+			if (payload.action == auction_action::finalize && listing.winner_pid &&
+			    !claim(listing.seller_pid, &accounts.seller_claim,
+				   &accounts.absent_seller_pid))
+				return auction_capture_failure();
+			error = auction_settlement_accounting_intent(*command, epoch, listing,
+								     accounts, &encoded);
+		}
+		if (error != economic_accounting_error::ok)
+			return EILSEQ;
+		economic_sql_authority_snapshot locked;
+		const auto lock_error =
+			economic_sql_lock_authority(connection, lineage, epoch, requests, &locked);
+		if (lock_error)
+			return lock_error;
+		if (!(connection->server_status & SERVER_STATUS_IN_TRANS) ||
+		    mysql_thread_id(connection) != session)
+			return ENOTCONN;
+		critical_command frozen = *command;
+		frozen.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+		frozen.accounting_intent = std::move(encoded);
+		if (!auction_repository_frozen_accounting_valid(frozen))
+			return EILSEQ;
+		*command = std::move(frozen);
+		return 0;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+#endif
+}
+
+unsigned int auction_repository_readback_endpoints(MYSQL *connection,
+						   const critical_command &command,
+						   auction_accounting_endpoint_readback *output)
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)output;
+	return ENOTSUP;
+#else
+	if (!connection || !output || !(connection->server_status & SERVER_STATUS_IN_TRANS))
+		return EINVAL;
+	using client_flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+	client_flag reconnect = false;
+	if (mysql_get_option(connection, MYSQL_OPT_RECONNECT, &reconnect) || reconnect)
+		return EPERM;
+	const auto session = mysql_thread_id(connection);
+	try
+	{
+		economic_frozen_intent intent;
+		auction_command_payload payload{};
+		auction_bid_accounting_listing bid;
+		auction_bid_accounting_accounts accounts;
+		auction_settlement_listing settlement;
+		auction_settlement_accounts settlement_accounts;
+		auction_accounting_endpoint_readback candidate;
+		uint32_t bidder = 0, previous = 0, seller = 0;
+		if (auction_bid_accounting_decode(command, &intent, &payload, &bid, &accounts) ==
+		    economic_accounting_error::ok)
+		{
+			candidate.bidder_claim = accounts.bidder_claim;
+			candidate.previous_claim = accounts.previous_claim;
+			candidate.seller_claim = accounts.seller_claim;
+			bidder = accounts.absent_bidder_pid;
+			previous = accounts.absent_previous_pid;
+			seller = accounts.absent_seller_pid;
+		}
+		else if (auction_settlement_accounting_decode(command, &intent, &payload,
+							      &settlement, &settlement_accounts) ==
+			 economic_accounting_error::ok)
+		{
+			candidate.seller_claim = settlement_accounts.seller_claim;
+			seller = settlement_accounts.absent_seller_pid;
+		}
+		else
+			return EPROTONOSUPPORT;
+		// This endpoint evidence helper is deliberately not a mapped-only receipt verifier.
+		if (!bidder && !previous && !seller)
+			return ENODATA;
+		if (bidder)
+		{
+			const auto error = economic_sql_pending_claim_endpoint_readback(
+				connection, command, bidder, &candidate.bidder_claim);
+			if (error != ENODATA)
+				return error ? error : EILSEQ;
+			candidate.unused_bidder = true;
+		}
+		for (auto pair : { std::pair{ previous, &candidate.previous_claim },
+				   std::pair{ seller, &candidate.seller_claim } })
+			if (pair.first)
+			{
+				const auto error = economic_sql_pending_claim_endpoint_readback(
+					connection, command, pair.first, pair.second);
+				if (error)
+					return error;
+			}
+		if (!(connection->server_status & SERVER_STATUS_IN_TRANS) ||
+		    mysql_thread_id(connection) != session)
+			return ENOTCONN;
+		*output = std::move(candidate);
+		return 0;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
 #endif
 }

@@ -25,6 +25,7 @@ executable = work / "auction-settlement"
 files = [
     "tests/async/auction_settlement_sql_accounting_mysql_harness.cpp",
     "src/economy/auction_settlement_accounting.c",
+    "src/economy/auction_accounting.c",
     "src/economy/auction_item_claim_accounting.c",
     "src/economy/auction_command.c",
     "src/economy/auction_repository.c",
@@ -37,8 +38,10 @@ files = [
     "src/item/economic_accounting_item_reference.c",
     "src/persistence/economic_accounting_repository.c",
     "src/persistence/economic_sql_pending_claim_source.c",
+    "src/persistence/economic_sql_auction_claim_endpoint.c",
     "src/persistence/economic_sql_auction_settlement_transaction.c",
     "src/persistence/economic_sql_auction_item_claim_transaction.c",
+    "src/economy/shop_trade_recovery_manifest.c",
     "src/persistence/critical_command.c",
 ]
 flags = [os.environ.get("CXX", "g++"), "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",

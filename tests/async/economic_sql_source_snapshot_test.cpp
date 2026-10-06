@@ -12,6 +12,324 @@
 #include <new>
 #include <string_view>
 #include <type_traits>
+#include <openssl/evp.h>
+#include <span>
+
+namespace
+{
+class equipment_test_digest
+{
+	std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> context{ EVP_MD_CTX_new(),
+									 EVP_MD_CTX_free };
+
+    public:
+	equipment_test_digest()
+	{
+		assert(context && EVP_DigestInit_ex(context.get(), EVP_sha256(), nullptr) == 1);
+	}
+	void bytes(std::span<const uint8_t> value)
+	{
+		assert(EVP_DigestUpdate(context.get(), value.data(), value.size()) == 1);
+	}
+	void number(uint64_t value)
+	{
+		std::array<uint8_t, 8> encoded = {};
+		for (size_t i = 0; i < encoded.size(); ++i)
+			encoded[i] = static_cast<uint8_t>(value >> (8 * i));
+		bytes(encoded);
+	}
+	void text(std::string_view value)
+	{
+		number(value.size());
+		bytes({ reinterpret_cast<const uint8_t *>(value.data()), value.size() });
+	}
+	economic_sql_source_digest finish()
+	{
+		economic_sql_source_digest result = {};
+		unsigned length = 0;
+		assert(EVP_DigestFinal_ex(context.get(), result.data(), &length) == 1 &&
+		       length == result.size());
+		return result;
+	}
+};
+// Test-only reframing makes each malformed numeric/correspondence case carry
+// genuine matching hashes. Refusal must arise from the violated contract.
+void reframe_equipment_test(economic_sql_source_snapshot &value)
+{
+	value.rows = value.cells = value.cell_bytes = 0;
+	auto registry = [&](auto &tables, const char *tag)
+	{
+		equipment_test_digest manifest;
+		manifest.text(tag);
+		manifest.number(tables.size());
+		for (auto &table : tables)
+		{
+			equipment_test_digest content;
+			content.text("EST1");
+			content.bytes(table.definition_digest);
+			content.number(table.rows.size());
+			value.rows += table.rows.size();
+			for (auto &row : table.rows)
+			{
+				equipment_test_digest hash;
+				hash.text("ESR1");
+				hash.bytes(table.definition_digest);
+				value.cells += row.cells.size();
+				for (const auto &cell : row.cells)
+				{
+					hash.number(cell ? 1 : 0);
+					if (cell)
+					{
+						hash.text(*cell);
+						value.cell_bytes += cell->size();
+					}
+				}
+				row.digest = hash.finish();
+				content.bytes(row.digest);
+			}
+			table.content_digest = content.finish();
+			manifest.bytes(table.content_digest);
+		}
+		return manifest.finish();
+	};
+	value.digest = registry(value.tables, "ESM1");
+	value.item_sources_digest = registry(value.item_sources, "EIM1");
+	if (value.version == 2)
+	{
+		value.item_equipment_sources_digest =
+			registry(value.item_equipment_sources, "EIE2");
+		equipment_test_digest custody;
+		custody.text("ESC2");
+		custody.bytes(value.digest);
+		custody.bytes(value.item_sources_digest);
+		custody.bytes(value.item_equipment_sources_digest);
+		value.custody_digest = custody.finish();
+	}
+	else
+	{
+		value.item_equipment_sources_digest = {};
+		value.custody_digest = {};
+	}
+}
+[[maybe_unused]] void equipment_projection_cases(const economic_sql_source_snapshot &input)
+{
+	using error = economic_accounting_error;
+	assert(input.version == 2 && !economic_sql_validate_sources(input));
+	auto main = std::find_if(input.tables.begin(), input.tables.end(),
+				 [](const auto &t) { return t.name == "item_current_owner"; });
+	assert(main != input.tables.end() && !main->rows.empty());
+	assert(main->columns.size() == 10 && main->columns[9] == "coin_payload");
+	economic_sql_normalized_sources original;
+	assert(economic_sql_normalize_sources(input, 512, &original) == error::ok);
+	assert(original.custody_digest == input.custody_digest &&
+	       original.custody_digest != economic_sql_source_digest{});
+	for (size_t i = 0; i < original.items.size(); ++i)
+	{
+		const auto &item = original.items[i];
+		assert(item.observed_equipment_slot == 0 && item.item.position.equipment_slot == 0);
+		assert(item.equipment_source && item.equipment_source->row == i &&
+		       item.equipment_source->digest ==
+			       input.item_equipment_sources[0].rows[i].digest);
+	}
+	auto legacy = input;
+	legacy.version = 1;
+	legacy.item_equipment_sources.clear();
+	reframe_equipment_test(legacy);
+	assert(!economic_sql_validate_sources(legacy) && legacy.digest == input.digest &&
+	       legacy.item_sources_digest == input.item_sources_digest);
+	economic_sql_normalized_sources report;
+	assert(economic_sql_normalize_sources(legacy, 512, &report) == error::ok);
+	assert(report.custody_digest == economic_sql_source_digest{} &&
+	       report.issue_counts == original.issue_counts);
+	for (const auto &item : report.items)
+		assert(!item.observed_equipment_slot && !item.equipment_source);
+	for (int field = 0; field < 2; ++field)
+	{
+		auto broken = legacy;
+		if (field == 0)
+			broken.item_equipment_sources_digest[0] = 1;
+		else
+			broken.custody_digest[0] = 1;
+		report.diagnostic_count = 987;
+		assert(economic_sql_validate_sources(broken));
+		assert(economic_sql_normalize_sources(broken, 512, &report) ==
+			       error::corrupt_evidence &&
+		       report.diagnostic_count == 987);
+	}
+	for (int field = 0; field < 3; ++field)
+	{
+		economic_sql_source_limits limit;
+		if (field == 0)
+			limit.maximum_rows = legacy.rows;
+		if (field == 1)
+			limit.maximum_cells = legacy.cells;
+		if (field == 2)
+			limit.maximum_cell_bytes = legacy.cell_bytes;
+		assert(!economic_sql_validate_sources(legacy, limit));
+		assert(economic_sql_validate_sources(input, limit) == E2BIG);
+	}
+	for (const char *slot : { "7", "65535" })
+	{
+		auto changed = input;
+		changed.item_equipment_sources[0].rows[0].cells[1] = slot;
+		reframe_equipment_test(changed);
+		assert(!economic_sql_validate_sources(changed));
+		assert(changed.tables == input.tables &&
+		       changed.item_sources == input.item_sources &&
+		       changed.digest == input.digest &&
+		       changed.item_sources_digest == input.item_sources_digest &&
+		       changed.custody_digest != input.custody_digest);
+		assert(economic_sql_normalize_sources(changed, 512, &report) == error::ok);
+		assert(report.items[0].observed_equipment_slot == std::stoul(slot) &&
+		       report.items[0].item.position.equipment_slot == std::stoul(slot));
+		assert(report.holdings.size() == original.holdings.size());
+		for (size_t i = 0; i < report.holdings.size(); ++i)
+			assert(report.holdings[i].source.digest ==
+				       original.holdings[i].source.digest &&
+			       report.holdings[i].balance == original.holdings[i].balance);
+	}
+	for (const auto &slot : std::vector<std::optional<std::string>>{
+		     std::nullopt, "", "-1", "65536", "01", "1x", std::string("1\0", 2) })
+	{
+		auto broken = input;
+		broken.item_equipment_sources[0].rows[0].cells[1] = slot;
+		reframe_equipment_test(broken);
+		assert(!economic_sql_validate_sources(
+			broken)); // Raw malformed bytes remain evidence.
+		report.diagnostic_count = 987;
+		assert(economic_sql_normalize_sources(broken, 512, &report) ==
+			       error::corrupt_evidence &&
+		       report.diagnostic_count == 987);
+	}
+	for (int change = 0; change < 9; ++change)
+	{
+		auto broken = input;
+		switch (change)
+		{
+		case 0:
+			broken.item_equipment_sources.clear();
+			break;
+		case 1:
+			broken.item_equipment_sources[0].rows.pop_back();
+			break;
+		case 2:
+			broken.item_equipment_sources[0].rows.push_back(
+				broken.item_equipment_sources[0].rows[0]);
+			break;
+		case 3:
+			broken.item_equipment_sources[0].rows[0].cells[0] = "999999";
+			break;
+		case 4:
+			broken.version = 1;
+			break;
+		case 5:
+			broken.version = 3;
+			break;
+		case 6:
+			broken.item_equipment_sources[0].columns[1] = "different";
+			break;
+		case 7:
+			broken.item_equipment_sources_digest[0] ^= 1;
+			break;
+		case 8:
+			broken.custody_digest[0] ^= 1;
+			break;
+		}
+		if (change < 6)
+			reframe_equipment_test(broken);
+		report.diagnostic_count = 987;
+		assert(economic_sql_validate_sources(broken));
+		assert(economic_sql_normalize_sources(broken, 512, &report) ==
+			       error::corrupt_evidence &&
+		       report.diagnostic_count == 987);
+	}
+	// Even correctly framed, identically duplicated or noncanonical UIDs are
+	// refused by normalization; neither raw hashes nor side matching are custody.
+	for (const char *uid : { "01", "1x", "-1" })
+	{
+		auto broken = input;
+		const auto index = static_cast<size_t>(main - input.tables.begin());
+		broken.tables[index].rows[0].cells[0] = uid;
+		broken.item_equipment_sources[0].rows[0].cells[0] = uid;
+		reframe_equipment_test(broken);
+		assert(!economic_sql_validate_sources(broken));
+		report.diagnostic_count = 987;
+		assert(economic_sql_normalize_sources(broken, 512, &report) ==
+			       error::corrupt_evidence &&
+		       report.diagnostic_count == 987);
+	}
+	for (int order = 0; order < 2; ++order)
+	{
+		auto broken = input;
+		const auto index = static_cast<size_t>(main - input.tables.begin());
+		auto owner = broken.tables[index].rows[0];
+		auto side = broken.item_equipment_sources[0].rows[0];
+		if (order == 1)
+		{
+			owner.cells[0] = "1";
+			side.cells[0] = "1";
+		}
+		broken.tables[index].rows.push_back(owner);
+		broken.item_equipment_sources[0].rows.push_back(side);
+		reframe_equipment_test(broken);
+		assert(!economic_sql_validate_sources(broken));
+		report.diagnostic_count = 987;
+		assert(economic_sql_normalize_sources(broken, 512, &report) ==
+			       error::corrupt_evidence &&
+		       report.diagnostic_count == 987);
+	}
+	// A valid player root accepts the full uint16 range. Native mobile bounds,
+	// nested equipment and inactive equipment remain explicit custody defects.
+	for (int contradiction = 0; contradiction < 5; ++contradiction)
+	{
+		auto value = input;
+		auto &cells = value.tables[main - input.tables.begin()].rows[0].cells;
+		cells[0] = "100";
+		cells[1] = "100";
+		cells[2] = std::nullopt;
+		cells[3] = "1";
+		cells[4] = "11";
+		cells[5] = "0";
+		cells[7] = "1";
+		cells[8] = "1";
+		auto &side = value.item_equipment_sources[0].rows[0].cells;
+		side[0] = "100";
+		side[1] = "65535";
+		if (contradiction == 1)
+			cells[3] = "12";
+		if (contradiction == 2)
+		{
+			cells[1] = "99";
+			cells[2] = "99";
+		}
+		if (contradiction == 3)
+			cells[8] = "3";
+		if (contradiction == 4)
+		{
+			cells[3] = "12";
+			cells[1] = "99";
+			side[1] = "1";
+		}
+		reframe_equipment_test(value);
+		assert(economic_sql_normalize_sources(value, 512, &report) == error::ok);
+		const auto native = std::find_if(report.items.begin(), report.items.end(),
+						 [](const auto &item)
+						 { return item.item.uid == 100; });
+		assert(native != report.items.end() && native->observed_equipment_slot);
+		const auto invalid = std::any_of(
+			report.diagnostics.begin(), report.diagnostics.end(),
+			[&](const auto &d)
+			{
+				return d.issue ==
+					       economic_sql_normalization_issue::invalid_custody &&
+				       d.source.table == native->source.table &&
+				       d.source.row == native->source.row;
+			});
+		assert(invalid == (contradiction != 0));
+	}
+	std::cout << "equipment projection framing/legacy/observed-slot/custody controls PASS\n";
+}
+}
 
 #ifdef __NO_MYSQL__
 int main()
@@ -60,6 +378,7 @@ extern "C" int __wrap_mysql_real_query(MYSQL *c, const char *data, unsigned long
 			     { "START TRANSACTION",
 			       "UPDATE player_data SET copper=999 WHERE pid=11",
 			       "UPDATE account_banks SET bank_copper=999 WHERE id=7",
+			       "UPDATE item_current_owner SET equipment_slot=7 WHERE item_uid=100",
 			       "INSERT INTO player_data(pid,name) VALUES(44,'synthetic_new')",
 			       "COMMIT" })
 				assert(!__real_mysql_real_query(other, q, std::strlen(q)));
@@ -286,7 +605,7 @@ void normalization(MYSQL *c)
 		switch (change)
 		{
 		case 0:
-			broken.version = 2;
+			broken.version = 3;
 			break;
 		case 1:
 			broken.tables.pop_back();
@@ -442,6 +761,25 @@ int main()
 	sql(c.get(),
 	    "INSERT INTO critical_outbox(operation_id,event_index,destination,event_type,payload_version,payload) VALUES(REPEAT('a',16),0,1,1,1,X'ff0000')");
 	auto baseline = capture(c.get());
+	equipment_projection_cases(baseline);
+	// A real equipment-only SQL change binds ESC2 without changing historical
+	// source/item/coin row framing used by existing retry and monetary readers.
+	sql(c.get(), "UPDATE item_current_owner SET equipment_slot=7 WHERE item_uid=100");
+	const auto equipped = capture(c.get());
+	assert(equipped.item_equipment_sources[0].rows[0].cells[1] == "7");
+	economic_sql_normalized_sources equipped_report;
+	assert(economic_sql_normalize_sources(equipped, 512, &equipped_report) ==
+		       economic_accounting_error::ok &&
+	       equipped_report.items[0].observed_equipment_slot == 7 &&
+	       equipped_report.items[0].item.position.equipment_slot == 7);
+	assert(equipped.tables == baseline.tables &&
+	       equipped.item_sources == baseline.item_sources &&
+	       equipped.digest == baseline.digest &&
+	       equipped.item_sources_digest == baseline.item_sources_digest &&
+	       equipped.custody_digest != baseline.custody_digest);
+	sql(c.get(), "UPDATE item_current_owner SET equipment_slot=0 WHERE item_uid=100");
+	assert(capture(c.get()) == baseline);
+
 	assert(baseline == capture(c.get())); // Native rows remain unchanged.
 	const auto &wallet = table(baseline, "player_data");
 	assert(wallet.rows.size() == 2 && wallet.rows[0].cells[0] == "11" &&
@@ -489,9 +827,11 @@ int main()
 	assert(capture(c.get()) == baseline && !concurrent_write);
 	changed = capture(c.get());
 	assert(changed.digest != baseline.digest && table(changed, "player_data").rows.size() == 3);
+	assert(changed.item_equipment_sources[0].rows[0].cells[1] == "7");
 	sql(c.get(), "UPDATE player_data SET copper=7 WHERE pid=11");
 	sql(c.get(), "UPDATE account_banks SET bank_copper=18446744073709551615 WHERE id=7");
 	sql(c.get(), "DELETE FROM player_data WHERE pid=44");
+	sql(c.get(), "UPDATE item_current_owner SET equipment_slot=0 WHERE item_uid=100");
 	assert(capture(c.get()) == baseline);
 	concurrent_ddl = true;
 	assert(capture(c.get()) == baseline && !concurrent_ddl);
