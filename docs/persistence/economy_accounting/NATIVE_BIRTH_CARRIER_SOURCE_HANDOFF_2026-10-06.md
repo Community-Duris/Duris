@@ -1,5 +1,19 @@
 # Native birth journal carrier source handoff — 2026-10-06
 
+## Quest terminal pair and actual NBC2 producer composed — 2026-10-06
+
+[The integrated source handoff](NATIVE_QUEST_TERMINAL_PAIR_SOURCE_2026-10-06.md)
+records authentic parent/child receipt plus exact reward ACK cleanup, atomic
+terminal rejection, handoff1/2 and preserved uncertain-pair retries. The actual
+NBC2 factory/producer and immutable birthplace correlation are connected.
+All5,783 private inputs match4b0e7821, including1,560 published scripts/tests
+from743551948; original drivers and unrelated WIP are preserved. Independent
+source review, exact pins/inverses, helper AST and formatting pass. Cold birth
+adoption/body-loss restoration, remaining mechanics/flat parity and major native
+qualification continue in parallel. No maintained native installation, full Plan
+or release gate is claimed; accounting and safety behavior stay unchanged.
+
+
 The shared journal/coordinator carrier now supports original birth-v2 mutable
 recovery through the existing native envelope. Independent source review accepts
 this three-file private slice. It is not installed in maintained native source
