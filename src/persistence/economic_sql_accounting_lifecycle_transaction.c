@@ -5,6 +5,7 @@
 #include "economy/economic_gameplay_authority.h"
 #include "economy/economic_sql_source_normalize.h"
 #include "persistence/economic_sql_baseline_transaction.h"
+#include "persistence/economic_sql_auction_source_claim.h"
 #include "persistence/economic_accounting_repository.h"
 #include "persistence/economic_sql_pending_claim_source.h"
 #include "world/vnum.obj.h"
@@ -833,7 +834,10 @@ void verify_retired_escrow(MYSQL *connection, const stored_installation &stored,
 		"SELECT l.auction_revision,a.auction_revision,l.event_type,a.status,"
 		"a.winning_bidder_pid,a.seller_pid,HEX(a.listing_operation_id) "
 		"FROM economic_accounting_operation o JOIN critical_operation_inbox i "
-		"ON i.operation_id=o.operation_id JOIN economic_accounting_account_effect e "
+		"ON i.operation_id=o.operation_id JOIN economic_accounting_source_claim claim "
+		"ON claim.operation_id=o.operation_id AND claim.lineage=o.lineage "
+		"AND claim.source_event=o.source_event AND claim.outcome=1 "
+		"JOIN economic_accounting_account_effect e "
 		"ON e.operation_id=o.operation_id JOIN auctions a ON a.id=" +
 			auction +
 			" JOIN auction_ledger l ON l.auction_id=a.id AND l.operation_id=o.operation_id "
@@ -953,6 +957,9 @@ void verify_retired_escrow(MYSQL *connection, const stored_installation &stored,
 		require(economic_source_event_encode(*meta.source_event, &source) ==
 				economic_accounting_error::ok,
 			EILSEQ);
+		const auto claim_status = economic_sql_auction_source_claim_verify_known_metadata(
+			connection, meta, 0);
+		require(!claim_status, claim_status);
 		count(connection,
 		      "economic_accounting_operation o JOIN critical_operation_inbox i ON i.operation_id=o.operation_id",
 		      "o.operation_id=" + id(operation) + " AND o.lineage=" + id(stored.lineage) +

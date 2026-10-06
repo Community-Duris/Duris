@@ -441,7 +441,7 @@ def require_integrity(executor):
             account_key(key.hex())
         except (ValueError, TypeError, struct.error):
             mismatch("pending_claim_source")
-        sources[identity] = dict(key=key, amount=row[5], whole=consumer, consumed=0)
+        sources[identity] = dict(key=key, pid=row[4], amount=row[5], whole=consumer, consumed=0)
         add_amount(source_counts, identity[0], 1)
         add_amount(credits, (identity[0], key), row[5])
         if consumer is not None:
@@ -573,7 +573,8 @@ def require_integrity(executor):
     def baseline_witness(where, meta, original, row, frozen, encoded):
         # The second consumer reuses pure independent EAB1/EAB2 interpretation. The
         # import is local because the origin reader also consumes this decoder.
-        from economic_sql_audit_origins import MAX_WITNESS_BYTES, decode_witness, verify_baseline_root
+        from economic_sql_audit_origins import (MAX_WITNESS_BYTES, CLAIM_POLICY_COLUMNS, CLAIM_MAPPING_COLUMNS,
+            decode_witness, verify_baseline_root, verify_baseline_claim_policy, verify_baseline_claim_identity)
         columns = [hexadecimal("w.lineage"), hexadecimal("w.epoch"), "w.book_revision", "w.witness_version",
                    "w.holding_count", "w.item_count", hexadecimal("w.witness_digest"),
                    "OCTET_LENGTH(w.canonical_witness)", hexadecimal("c.opening_account"),
@@ -599,7 +600,7 @@ def require_integrity(executor):
                 inbox_revision=value[9], inbox_type=value[10], inbox_schema=value[11], inbox_payload=value[12],
                 inbox_result_payload=binary(value[13], 0), canonical_intent=frozen, canonical_plan=encoded,
                 inbox_keys_hash=binary(value[14], 32), command_accepted_at_usec=value[15],
-                inbox_command_hash=binary(value[16], 32),
+                inbox_command_hash=binary(value[16], 32), claim_origin_version=value[17],
                 intent_digest=binary(row[12], 32), domain_digest=binary(row[13], 32), plan_digest=binary(row[14], 32))
             witness.update(zip(("account_count", "posting_count", "child_count", "before_witness_count",
                                 "after_witness_count", "item_event_count"), row[19:25]))
@@ -616,23 +617,48 @@ def require_integrity(executor):
         if not same_projection(arrays("economic_baseline_reservation", columns, where,
                   "identity_kind,identity_id,lineage,epoch LIMIT " + str(len(expected) + 1)), expected):
             mismatch("baseline_reservation")
-        if value[17] is not None:
-            if type(value[17]) is not int or value[17] != 1:
-                mismatch("baseline_claim_origin")
-            expected_origins = {}
-            for index, holding in enumerate(holdings):
-                if account_key(holding["account_key"])[1] == 5:
-                    if any(holding["balance"][1:]):
-                        mismatch("baseline_claim_origin")
-                    if holding["balance"][0]:
-                        expected_origins[(meta[2], index+1)] = (bytes.fromhex(holding["account_key"]),
-                                                               holding["balance"][0])
-            if source_counts.get(meta[2], 0) != len(expected_origins):
-                mismatch("baseline_claim_origin")
-            for identity, expected_origin in expected_origins.items():
-                source = sources.get(identity)
-                if source is None or (source["key"], source["amount"]) != expected_origin:
+        try:
+            parents = []
+            if any(account_key(holding["account_key"])[1] in (4, 5) for holding in holdings):
+                need(executor.sql("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
+                    "AND ENGINE='InnoDB' AND table_name IN ('economic_sql_lifecycle_installation',"
+                    "'economic_account_mapping','economic_pending_claim_source');") == "3")
+                binary_columns = {0: 16, 1: 16, 2: 16, 3: 32, 4: 32, 6: 16, 7: 32, 8: 32, 16: 0}
+                columns = [hexadecimal(column) if index in binary_columns else column
+                           for index, column in enumerate(CLAIM_POLICY_COLUMNS)]
+                rows = arrays("economic_sql_lifecycle_installation p LEFT JOIN critical_operation_inbox i "
+                    "ON i.operation_id=p.operation_id", columns,
+                    "p.operation_id=UNHEX('" + witness["canonical_witness"][48:64].hex() + "')",
+                    "p.operation_id LIMIT 2")
+                for parent in rows:
+                    need(type(parent) is list and len(parent) == len(columns))
+                    parents.append(tuple(binary(field, binary_columns[index], True)
+                        if index in binary_columns else field for index, field in enumerate(parent)))
+            if verify_baseline_claim_policy(witness, holdings, parents):
+                identities = [account_key(holding["account_key"])[2] for holding in holdings
+                              if account_key(holding["account_key"])[1] == 5]
+                mappings = []
+                for start in range(0, len(identities), 256):
+                    page = identities[start:start+256]
+                    columns = [hexadecimal(column) if column == "lineage" else column
+                               for column in CLAIM_MAPPING_COLUMNS]
+                    rows = arrays("economic_account_mapping", columns,
+                        "lineage=UNHEX('" + lineage.hex() + "') AND mapping_id IN (" +
+                        ",".join(map(str, page)) + ")", "mapping_id LIMIT " + str(len(page)+1))
+                    for mapping in rows:
+                        need(type(mapping) is list and len(mapping) == len(columns))
+                        mappings.append((mapping[0], binary(mapping[1], 16), *mapping[2:]))
+                expected_origins = verify_baseline_claim_identity(witness, holdings, mappings)
+                if source_counts.get(meta[2], 0) != len(expected_origins):
                     mismatch("baseline_claim_origin")
+                for slot, mapped_lineage, mapping, pid, amount in expected_origins:
+                    source = sources.get((meta[2], slot))
+                    key = mapped_lineage + struct.pack('<HHQQ4x', 1, 5, mapping, 0)
+                    if source is None or not same_projection((source["key"], source["pid"], source["amount"]),
+                                                            (key, pid, amount)):
+                        mismatch("baseline_claim_origin")
+        except (ValueError, struct.error, TypeError, KeyError):
+            mismatch("baseline_claim_origin")
         return value[17]
 
     # Ordinary histories may have no baseline book. Their canonical capsules

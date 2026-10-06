@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "base_head": "2ab76dd519223c5557fee1f22e7bdab7e4c85112",
+  "status": "SOLVED_SOURCE_CLAIM_COMPONENT_QUALIFIED",
+  "scope": "Nine-source auction source-claim recording, retained verification and retired custody proof",
+  "qualified_source_archive_sha256": "743d6aafa75d66d9ff64bf493f06dc638c11c3754949a0e8667a8417677132fe",
+  "qualified_source_manifest_sha256": "6022a35007ae32cc9862f349ea2ef69be525daaeec446d59bc5cd1434879140c",
+  "source_slice": {
+    "src/persistence/economic_sql_auction_bid_transaction.c": {
+      "sha256": "e5487287f07faf01064f5108ba6548091650c6aa88b84fe77cfeed8e748aa14c",
+      "preimage_sha256": "fbd4c0ae3021d9db142bca8e77962b1a7367f560e699dc110240e38de27aebf8",
+      "mode": 420,
+      "qualified77_exact_source": true
+    },
+    "src/persistence/economic_sql_auction_claim_endpoint.c": {
+      "sha256": "d64711d6c75804ae57f7e82ea8c6011e4020527aa5d894060bb33735f167d284",
+      "preimage_sha256": "c6e91af4fc3d6b18537f057a5ef0282ca7f8d5747d8c3b9b519b8fa1d5596875",
+      "mode": 420,
+      "qualified77_exact_source": true
+    },
+    "src/persistence/economic_sql_auction_item_claim_transaction.c": {
+      "sha256": "24593cfdb7f835c9abc253eb57d8d2416a51f5b9ed741b19d4f5f4846d6b8c34",
+      "preimage_sha256": "40079f01dd2e27a138ef0ba7519a11c8ced566706736ac08d3248fc8723bfd37",
+      "mode": 420,
+      "qualified77_exact_source": true
+    },
+    "src/persistence/economic_sql_auction_listing_transaction.c": {
+      "sha256": "32f8f5f4931fae146aa175572e074669208db2981833ef0e329b37f12adfeb10",
+      "preimage_sha256": "4ddb4cf4fe21855abbfe5358395fcf00532ee6dc236dbd295e5a0cca0b95f336",
+      "mode": 420,
+      "qualified77_exact_source": true
+    },
+    "src/persistence/economic_sql_auction_money_claim_transaction.c": {
+      "sha256": "3a0beff2a3e3444a8472a8567aeba8eb1b5fc5d16a103d4fa7b76de565575972",
+      "preimage_sha256": "be9868e763ef6ed8730c02ed3c7d56765693db0caab67e86a7d492fd325bec4d",
+      "mode": 420,
+      "qualified77_exact_source": true
+    },
+    "src/persistence/economic_sql_auction_retained.c": {
+      "sha256": "78c1b12034448a9c81d50f47e46854b6c0f128efa1bc06feb5c5704d312bacd8",
+      "preimage_sha256": "2231a5056ee2b634e5d83c8be8990454b627451e5ef44cd0beea5b6e9f155453",
+      "mode": 420,
+      "qualified77_exact_source": true
+    },
+    "src/persistence/economic_sql_auction_settlement_transaction.c": {
+      "sha256": "5e94253599353df3eb591d975754722cd1ce13b169ac5f59f8f1c9a3f1b24c07",
+      "preimage_sha256": "557b3982d850525e192cf284ddd6384dda62e40c5b11ab957e6d5d1fa7a8dada",
+      "mode": 420,
+      "qualified77_exact_source": true
+    },
+    "src/persistence/economic_sql_auction_source_claim.h": {
+      "sha256": "520242743de4c4f74a92130edeab7f9310d2bfb3e2f1c998715834f9d49bf1af",
+      "preimage_sha256": null,
+      "mode": 420,
+      "qualified77_exact_source": true
+    },
+    "src/persistence/economic_sql_accounting_lifecycle_transaction.c": {
+      "sha256": "9a728c2c3ebdb796e55eb82294ebc2d9fb92fc0bd95df5b2611bd9e14ff330b6",
+      "preimage_sha256": "d1a3564b38008b7afef557666fb236677c701bf49183a4d07c27a0d8c3a7b011",
+      "mode": 420,
+      "exact_qualified_three_hunks_only": true,
+      "all_other_raw_preimage_preserved_before_format": true,
+      "format_token_identity": true
+    }
+  },
+  "native": {
+    "status": "PASS_PRIMARY_MAINTAINED_NATIVE_REINSPECTION",
+    "handoff_sha256": "d54cdd19e7938cf4a56eb665082d917bcf03375a80604899645e7598a7e3dd50",
+    "artifact_count": 175,
+    "original_cases": 18,
+    "migration_cases": 2,
+    "native_compile_boundary": 1,
+    "original_profiles": 7,
+    "original_flat_unit_pass": true,
+    "both_source_audits_pass": true,
+    "standalone_original_assertions_preserved_by_exact_additive_wrapper": true,
+    "original_standalone_sha256": "349633530917a9b08777f16cc8b16a912b4d55dd4bc0ab558b4a1aa26bab096d",
+    "maintained740_builds_or_full_gameplay_activation_claimed": false,
+    "primary_authentication_sha256": "28ac7f1370ee47074bb7f15bc847cccaa45762e06b6c5e184f260a7f5464e06a"
+  },
+  "production": {
+    "status": "PASS_PRIMARY_FRESH740_BUILD_REINSPECTION",
+    "handoff_sha256": "a3919d83ae675357458e48cd1ecfe6be96c18f47599cc67245ecabc47faad01d",
+    "source_files": 6339,
+    "artifacts_verified": 25,
+    "backends": {
+      "mariadb": {
+        "fresh_units": 740,
+        "reused_units": 0,
+        "cache_files": 1482,
+        "binary_sha256": "0730805d3eef0fa2bf000efc98703d8fd580209f74b72fe18063d905dd26851d",
+        "seconds": 666.99
+      },
+      "flatfile": {
+        "fresh_units": 740,
+        "reused_units": 0,
+        "cache_files": 1482,
+        "binary_sha256": "cf6e6f8584a7edc704ed7061d2015d5d1bd9528071b87c89f5f1d8b1ab484c8c",
+        "seconds": 541.82
+      }
+    },
+    "original_contract_files": 9,
+    "native_gameplay_full_cold_or_activation_proven": false,
+    "primary_authentication_sha256": "f4b132d392e827ffbac8ad501cb6b3fc44e0032f587836ffc49092dd7b5c19d6"
+  },
+  "changed_line_clang18_pass": true,
+  "source_claim_controls": [
+    "successful typed owner exact one",
+    "rejected owner zero",
+    "duplicate EEXIST and whole transaction rollback",
+    "deleted claim retained EILSEQ",
+    "orphan foreign key 1452",
+    "full22-table rollback",
+    "both canonical money-recovery audits"
+  ],
+  "control_fixture_scope": "Original nine cases per engine with authenticated additive private controls; standalone append-only fault regression already committed as 2ab76dd51",
+  "migration_files_changed": false,
+  "current_inactive_behavior_or_safety_gates_changed": false,
+  "declined_inactive_spell_path_changed": false,
+  "full_native_gameplay_cold_world_recovery_activation_or_release_qualified": false,
+  "writer_coverage_complete": false,
+  "release": "BLOCKED",
+  "unrelated_wip_preserved": true
+}

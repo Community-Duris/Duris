@@ -4,6 +4,8 @@
 
 #include <mysql.h>
 
+#include <algorithm>
+#include <vector>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
@@ -67,6 +69,91 @@ std::string value(const std::string &sql)
 	MYSQL_ROW row = mysql_fetch_row(rows);
 	assert(row && row[0]);
 	const std::string result = row[0];
+	mysql_free_result(rows);
+	return result;
+}
+
+std::string money_claim_transaction_snapshot()
+{
+	std::string snapshot;
+	for (const char *table : { "critical_operation_inbox",
+				   "critical_outbox",
+				   "economic_accounting_operation",
+				   "economic_accounting_source_claim",
+				   "economic_accounting_account_effect",
+				   "economic_accounting_coin_posting",
+				   "economic_accounting_child",
+				   "economic_accounting_item_reference",
+				   "economic_account_mapping",
+				   "economic_pending_claim_source",
+				   "economic_pending_claim_consumption",
+				   "auctions",
+				   "auction_ledger",
+				   "auction_item_custody",
+				   "auction_item_pickups",
+				   "auction_money_pickups",
+				   "currency_ledger",
+				   "player_data",
+				   "account_banks",
+				   "item_current_owner",
+				   "item_ownership_ledger",
+				   "item_owner_revision" })
+	{
+		execute(std::string("SELECT * FROM ") + table);
+		MYSQL_RES *rows = mysql_store_result(connection);
+		assert(rows);
+		std::vector<std::string> records;
+		while (MYSQL_ROW row = mysql_fetch_row(rows))
+		{
+			const auto lengths = mysql_fetch_lengths(rows);
+			assert(lengths);
+			std::string record;
+			for (unsigned n = 0; n < mysql_num_fields(rows); ++n)
+			{
+				if (!row[n])
+					record += "N;";
+				else
+				{
+					record += std::to_string(lengths[n]) + ":";
+					record.append(row[n], lengths[n]);
+					record += ";";
+				}
+			}
+			records.push_back(std::move(record));
+		}
+		assert(mysql_errno(connection) == 0);
+		mysql_free_result(rows);
+		std::sort(records.begin(), records.end());
+		snapshot += std::string(table) + ":";
+		for (const auto &row : records)
+			snapshot += std::to_string(row.size()) + ":" + row;
+	}
+	return snapshot;
+}
+// Compare every immutable original source cell, including nullable legacy fields.
+std::string private_money_immutable_sources()
+{
+	execute("SELECT * FROM economic_pending_claim_source ORDER BY source_operation_id,source_slot");
+	MYSQL_RES *rows = mysql_store_result(connection);
+	assert(rows);
+	std::string result;
+	while (MYSQL_ROW row = mysql_fetch_row(rows))
+	{
+		const auto lengths = mysql_fetch_lengths(rows);
+		assert(lengths);
+		for (unsigned n = 0; n < mysql_num_fields(rows); ++n)
+		{
+			if (!row[n])
+				result += "N;";
+			else
+			{
+				result += std::to_string(lengths[n]) + ":";
+				result.append(row[n], lengths[n]);
+				result += ";";
+			}
+		}
+	}
+	assert(mysql_errno(connection) == 0);
 	mysql_free_result(rows);
 	return result;
 }
@@ -239,10 +326,12 @@ int main()
 	execute("UPDATE economic_pending_claim_source SET amount=200 WHERE "
 		"source_operation_id=" +
 		literal(id(11)));
+	const auto immutable_source_before = private_money_immutable_sources();
 	// Force failure after native wallet credit and accounting postings.
-	execute("CREATE TRIGGER fail_auction_money_claim_source BEFORE UPDATE ON "
-		"economic_pending_claim_source FOR EACH ROW SIGNAL SQLSTATE '45000' "
+	execute("CREATE TRIGGER fail_auction_money_claim_source BEFORE INSERT ON "
+		"economic_pending_claim_consumption FOR EACH ROW SIGNAL SQLSTATE '45000' "
 		"SET MESSAGE_TEXT='forced claim source failure'");
+	const auto forced_owner_before = money_claim_transaction_snapshot();
 	execute("START TRANSACTION");
 	inbox(command.operation_id, 2, 0);
 	assert(economic_sql_auction_money_claim_lock(connection, command, &context) == 0);
@@ -251,6 +340,10 @@ int main()
 								   &mutation_applied) != 0);
 	execute("ROLLBACK");
 	execute("DROP TRIGGER fail_auction_money_claim_source");
+	assert(money_claim_transaction_snapshot() == forced_owner_before);
+	assert(private_money_immutable_sources() == immutable_source_before);
+	assert(scalar("SELECT COUNT(*) FROM economic_accounting_source_claim WHERE operation_id=" +
+		      literal(command.operation_id)) == 0);
 	assert(scalar("SELECT money FROM auction_money_pickups WHERE pid=" +
 		      std::to_string(PLAYER)) == 500);
 	assert(scalar("SELECT platinum FROM player_data WHERE pid=" + std::to_string(PLAYER)) ==
@@ -277,12 +370,18 @@ int main()
 	assert(scalar("SELECT gold FROM player_data WHERE pid=" + std::to_string(PLAYER)) == 5);
 	assert(scalar("SELECT platinum FROM player_data WHERE pid=" + std::to_string(PLAYER)) ==
 	       10);
-	assert(scalar("SELECT COUNT(*) FROM economic_pending_claim_source WHERE "
-		      "claim_operation_id=" +
+	assert(scalar("SELECT COUNT(*) FROM economic_pending_claim_consumption WHERE "
+		      "spending_operation_id=" +
 		      literal(command.operation_id)) == 2);
 	assert(value("SELECT GROUP_CONCAT(amount ORDER BY source_operation_id,source_slot) "
-		     "FROM economic_pending_claim_source WHERE claim_operation_id=" +
+		     "FROM economic_pending_claim_consumption WHERE spending_operation_id=" +
 		     literal(command.operation_id)) == "300,200");
+	assert(private_money_immutable_sources() == immutable_source_before);
+	assert(value("SELECT GROUP_CONCAT(CONCAT(LOWER(HEX(source_operation_id)),':',source_slot,':',amount) ORDER BY source_operation_id,source_slot) FROM economic_pending_claim_consumption WHERE spending_operation_id=" +
+		     literal(command.operation_id)) ==
+	       hex(id(10).bytes.data(), 16) + ":1:300," + hex(id(11).bytes.data(), 16) + ":2:200");
+	assert(scalar("SELECT COUNT(*) FROM economic_accounting_source_claim WHERE operation_id=" +
+		      literal(command.operation_id)) == 1);
 	assert(scalar("SELECT SUM(copper_value) FROM economic_accounting_coin_posting "
 		      "WHERE operation_id=" +
 		      literal(command.operation_id)) == 0);
@@ -295,6 +394,7 @@ int main()
 		      literal(command.operation_id)) == 1);
 	assert(scalar("SELECT status FROM critical_operation_inbox WHERE operation_id=" +
 		      literal(command.operation_id)) == 1);
+	const auto committed_before = money_claim_transaction_snapshot();
 	mysql_close(connection);
 	connection = mysql_init(nullptr);
 	assert(connection && mysql_real_connect(connection, getenv("DB_HOST"), getenv("DB_USER"),
@@ -302,12 +402,16 @@ int main()
 						static_cast<unsigned int>(
 							strtoul(getenv("DB_PORT"), nullptr, 10)),
 						nullptr, 0));
-	assert(scalar("SELECT COUNT(*) FROM economic_pending_claim_source WHERE "
-		      "claim_operation_id=" +
+	assert(scalar("SELECT COUNT(*) FROM economic_pending_claim_consumption WHERE "
+		      "spending_operation_id=" +
 		      literal(command.operation_id)) == 2);
 	assert(scalar("SELECT OCTET_LENGTH(result_payload) FROM critical_operation_inbox "
 		      "WHERE operation_id=" +
 		      literal(command.operation_id)) == AUCTION_RESULT_PAYLOAD_BYTES);
+	assert(private_money_immutable_sources() == immutable_source_before);
+	assert(money_claim_transaction_snapshot() == committed_before);
+	assert(scalar("SELECT COUNT(*) FROM economic_accounting_source_claim WHERE operation_id=" +
+		      literal(command.operation_id)) == 1);
 	execute("UPDATE economic_lineage_state SET active_epoch=NULL WHERE lineage=" +
 		literal(lineage));
 	execute("START TRANSACTION");

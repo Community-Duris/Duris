@@ -1,5 +1,108 @@
 # Shared producer integration progress — 2026-10-06
 
+## Current auction and startup boundaries
+
+Primary authentication now covers the original 18 native cases, both complete
+canonical0063 migration chains, all39 sealed native artifacts and19 preserved
+predecessor results. Both genuine money-recovery fixtures pass the unchanged
+independent canonical source-claim audit. The source-claim slice and standalone
+money-consumption fault regression are frozen separately against maintained
+HEAD `b687b199fd0c9185f87d793b3318f2d4b6d06ee2`: archive
+`743d6aafa75d66d9ff64bf493f06dc638c11c3754949a0e8667a8417677132fe`,
+manifest `6022a35007ae32cc9862f349ea2ef69be525daaeec446d59bc5cd1434879140c`.
+Only nine source paths and the standalone fixture change; original schema0–62
+remains exact. These exact inputs are now applied to the maintained worktree;
+unrelated SHOP fixture/report edits are preserved. The current native batch runs
+each of the original nine cases once per engine, with the additive corruption
+controls included. All18 original cases, all18 SELECT source gates, both full
+canonical audits, both complete0062 migration/runtime verifiers, all seven strict
+profiles and the original flat unit pass. Primary authenticates all175 sealed
+artifacts and the exact inverse of the additive money wrapper. Native handoff:
+`d54cdd19e7938cf4a56eb665082d917bcf03375a80604899645e7598a7e3dd50`.
+The test-only fixture repair is published as `2ab76dd51`. The nine production
+source files now pass [complete source-claim component qualification](
+AUCTION_SOURCE_CLAIM_PRIMARY_QUALIFICATION_2026-10-06.md). Both original740
+production builds pass with740 fresh compiles/link each and zero inherited
+objects: MariaDB666.99 seconds; flatfile541.82 seconds. Nine source contracts
+pass. Primary authenticates all25 artifacts, all6339 source members and both
+1482-file caches with actual compiler/link inputs. Build handoff:
+`a3919d83ae675357458e48cd1ecfe6be96c18f47599cc67245ecabc47faad01d`.
+These component proofs do not qualify native gameplay publication, cold
+restoration or complete activation.
+
+The complete-startup394 SQL build exposed a genuine ambiguous digest-helper
+name; its failure is preserved. The minimal four-identifier successor
+`3c7e646bcddd4b9e05c5e7ce9aab4940d3fe84e9c6f23cf2191b457ae2dead4b`
+passes all nine original contracts but its SQL build exposes the inline
+private constructor's incomplete entry type. That failure is also retained.
+The two-file successor
+`113824dc58cc7a06c69164a78914e35395470b173c8427cb91b5d356e34a5db7`
+moves the same default noexcept constructor after the complete entry. Its SQL
+build then exposed the missing declaration for the existing game-thread query.
+The one-include successor imports its real `core/prototypes.h` declaration:
+archive `4888ef8554b35825d2e39a3928471ce1fa02de16576c3181c28100d6b54fbbef`,
+manifest `d674bcfe47009bc8b5707d7bae752b4fa63bbbb06908d2294a9963b75c8efd3a`.
+Both original750-provider production builds and all nine contracts now pass.
+Primary independently verifies all23 sealed artifacts, all6361 source bytes/
+modes, both1502-file build caches, dependency identities, actual compiler argv
+and the fresh original links. Build handoff:
+`e7bf7ea3676eadcc6ab35256e9a4c933bfb7bfb5ae3f6b976d3c38d77eddb292`.
+Private evidence remains in `bin/tests/native-complete-boot-event-production-primary-20261006`;
+the primary receipt is `tmp/native-complete-boot-event-declaration-primary-20261006/PRIMARY-BUILD-AUTHENTICATION.json`.
+Primary reauthenticates the final cold recipe612d seal and all15 files, with
+the authentic drivers, provider graph, flags, assertions and deadlines unchanged.
+The original first launch refuses before execution because a readonly packet
+mount lacked its nested evidence mountpoint; a byte-identical owned mount scaffold
+fixes only that launcher boundary. The actual same-ELF MySQL warm publication
+passes; cold recovery exits2 after1.028 seconds at the genuine selected world
+recovery step. This is an immediate refusal, not a deadline expiry. Original
+logs/SQL/journal/native evidence are retained and source diagnosis continues;
+MariaDB and genuine origin-INSERT journal recovery have not run in this batch.
+[The exact item-opening reader interface](CAPTURED_ITEM_OPENING_PLAN5_INTERFACE_2026-10-06.md)
+lets Plan5 qualify source bindings independently. Full Plans2–4, complete
+source/activation ownership and R1–R8 release qualification remain open.
+
+The next auction slice separately prepares listing, item pickup and money pickup
+capture/original-receipt verification. Primary's private shared dispatch selects
+their existing typed transaction owners explicitly instead of sending every
+non-bid action to settlement. Admission remains closed until the complete native
+publication, save reservation and replay/ACK owner is connected and qualified.
+These private source changes have no new native execution claim. The reviewed
+five-file route slice is composed privately as archive
+`8d346e2ba7a9a3d92b8627e4829af904c7fe33a5fa2d84edc637c5435a482571`.
+The primary has implemented/formatted a distinct auction STATUS/EQ/INV checkpoint
+profile for the entire original player forest, including empty inventory, and a
+private friendship to the established complete literal stage. It is uncompiled;
+original-command submission, passive replay, physical publication and guarded ACK
+remain required. Original gameplay already rejects nonempty listed containers
+and supports1..9 independent roots; no new quantity or container restriction is
+introduced. Review establishes a concrete original per-UID value gap: listing
+copies the first root's legacy object blob into every custody row. Complete native
+pickup must retain each selected root's genuine full literal and transport it
+into custody within the same transaction. The module and persistence interfaces
+are being coordinated; no first-template inference qualifies that requirement.
+
+The Plan5 peer is freshly read at `82377e05c`; its resumable canonical audit,
+integer-storage authentication, baseline continuity and orphan candidate work
+remain peer-owned source awaiting primary narrow integration. Its independent
+component/native evidence retains its original source attribution.
+
+## Independent opening-policy reader integrated — 2026-10-06
+
+[Primary integration](PLAN5_OPENING_POLICY_PID_PRIMARY_INTEGRATION_2026-10-06.md)
+authenticates original policy/PID facts, including zero and retired claims.
+All 209 selected pure methods pass, zero skips; exact native/migration inputs
+match the separately reported Plan5 qualification. External native artifacts
+remain peer-attributed. Producer claims, complete startup and release stay open.
+
+## Projection contract parser repaired — 2026-10-06
+
+[Primary repair](PROJECTION_DEFAULT_ARGUMENT_PARSER_PRIMARY_REPAIR_2026-10-06.md)
+fixes the default-argument brace parser without changing production policy.
+The original failure reproduces; the same frozen-method check and all seven
+maintained methods pass, zero skips. Complete startup-source builds and cold
+world/journal qualification remain open; no Plan or release gate is promoted.
+
 ## Combined build and genuine publication boundary
 
 The private final candidate `74b88535fbfa555cb016276591053b16d7a29631d87cc85e9fedf5774c99f916`
@@ -50,11 +153,21 @@ Retirement without an authenticated supported owner continues to refuse.
 The three-file private successor is frozen as
 `5552a71bfd7b401ff9d1400cf1a1f1b8e4a55af195aa9fac9fc9acf268513421`.
 It changes only the original birth SQL provider/header and lifecycle caller.
-Original contracts and production qualification are underway; source remains
-private and no cold success is claimed. Original startup opens SQL and restores
-accounting before world boot and coordinator initialization. Authentic retained
-origin registration/world restoration and the pending-journal handoff therefore
-remain concrete integration work, in addition to the wallet mapping repair.
+Both original 747-unit production builds and nine original contracts pass.
+[Normal cold SQL startup/readback](NATIVE_WALLET_STARTUP_PRIMARY_QUALIFICATION_2026-10-06.md)
+now passes on MySQL and MariaDB after genuine warm publication with the same
+executable. It exercises the complete original initialize_mysql path and actual
+retained origin/current-native/custody/wallet/source proofs. All four daemons
+close cleanly. Primary authenticated the terminal evidence manifest and every
+local sealed evidence size/hash. Source remains private.
+
+Original startup restores accounting before world boot and coordinator
+initialization. Authentic published-origin world restoration and the distinct
+pending-journal handoff remain concrete integration work. The completed SQL
+readback stops before world boot and establishes neither physical restoration
+nor full activation. Private captured item openings, complete auction source
+claims and a recovery-only original birth pump are being integrated; their new
+behavior is not yet compiled or runtime-qualified.
 
 This recovery repair does not invent a generic full-history startup audit.
 Existing lifecycle player mapping recovery is identity-based; the native SQL
