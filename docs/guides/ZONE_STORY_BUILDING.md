@@ -3863,3 +3863,89 @@ The [complete Troll Hills dossier](../design/zone-stories/TROLL_HILLS.md) maps o
 | ZSQ-TROLL-HILLS-18 | Water eligibility changes graph148 to124 on road/marsh entries;Ghore1909 cannot leave in the land variant. | Present route-specific swimming/flight/state admission and current availability. Source and recipient remain reachable by the selected land route after secret access;water or personal source history is not a native return gate. |
 | ZSQ-TROLL-HILLS-19 | TWILIGHT fog prose differs from BLOCKS_SIGHT;ladder SILENT, mound NO_TELEPORT, rivers NO_HEAL, monolith NO_MAGIC/HEAL are actual metadata. | Decode current flags and loader adjustments rather than prose. Preserve magic/visibility/speech/healing admission;no F/C current, inn orshop service is selected. Environmental state is separate from an owned quest outcome. |
 | ZSQ-TROLL-HILLS-20 | Mode2 resets, source caps and a departed adventurer can change recipient/source availability independently of daily rollover. | Add reset-generation and recipient availability status. Daily eligibility cannot regenerate source stock or restore an NPC. Retain supplied exact offerings and durable historical receipt while builders select explicit longer campaigns. |
+
+## Twisted Wood: optional camp and explicit campaign outcomes
+
+The [complete Twisted Wood dossier](../design/zone-stories/DARK_AND_TWISTED_WOOD.md) maps one two-item faerie return, three contacts, three addressed responses/five aliases and 20 follow-ups. Two optional loose-custody rows remain separate from one accepted receipt; active READY accounting and one-achievement/one-potential-daily classification are preserved. Imported armor/lance compete with Pine Hollow returns anddeparture cleanup; the faerie's promised report/further reward needs explicit builder intent. Secret camp and nested belt/emerald treasure are optional. Expand dynamic admission/source availability, owned cross-zone choice/report/recovery/access and durable reset issuance before counted episodes. Roomcases alone do not establish class barriers. No native repair ships; selected fixes require named commits, prominent news and before/after qualification.
+
+## Builder follow-ups
+
+### 1. Q29 consumes16014+16016 for16313 without departure.
+
+Preserve one transaction, one achievement and one potential daily. Commit both distinct roots, collar publication and acceptance once; qualify refusal, replay, interruption and frozen recovery.
+
+### 2. Three addressed responses use five aliases.
+
+Capture owned successful NPC response dispatch separately from attempts and aliases; do not require saved conversation for the existing native offering or multiply keyword achievements.
+
+### 3. Pine Hollow warrior M265/E266 armor16014 and Auriam M258/G259 lance16016 declare source equipment.
+
+Capture exact UID, NPC/reset episode and equipment recovery lineage after committed transfer. Supplied items remain valid; personal kill and first-source acquisition are separate optional history.
+
+### 4. Loose journal preparation omits sight and UID admission.
+
+Add dynamic admission-aware preparation state before promising offerability. Distinguish worn/held/nested/hidden/foreign custody without weakening native offering checks.
+
+### 5. Two different imported materials are consumed together.
+
+Keep exact typed prototypes and distinct roots; one material alone is insufficient. Multi-input does not imply saved sequential subquests, partial deposits or two completions.
+
+### 6. Pine Hollow Q69 consumes armor; Q35 consumes lance.
+
+Add optional cross-zone links and explicit branch/attempt policy if builders want allegiance. Do not infer mutual exclusion, source kills or mandatory foreign completion from narrative.
+
+### 7. Foreign D1 returns retire remaining NPC equipment and inventory.
+
+Project live source availability and warn about prior recovery before departure. Qualify both orders, supplied stock, absent/replacement episodes and cancellation; daily rollover cannot restore sources.
+
+### 8. Pine Hollow Q35 consumes gold scale16015 and creates a new same-type scale.
+
+Keep recipient-zone receipts, root consumption and new reward UID separate. Prototype equality does not establish uninterrupted custody or a shared faerie completion.
+
+### 9. Faerie promises Auriam report and possible further reward, without a matching local terminal.
+
+Builders choose prose clarification or explicit linked reporting/reward contract. Do not grant Auriam items or relationship state from the faerie receipt alone.
+
+### 10. Native faerie accepts supplied exact items without kill/faction gate.
+
+Preserve delivery eligibility while adding independent first-source or campaign history. Narrative dark-man defeat is not confirmed personal combat or alignment choice.
+
+### 11. Secret16388W/16389E each reset state5; graph91 OPEN/97 SEARCH+OPEN.
+
+Capture successful personal reveal, shared open state and actual owned arrival independently. Keep camp optional and preserve eligible alternate movement paths.
+
+### 12. Corpse16333 contains belt16330, which contains three emerald16334.
+
+Add nested current-custody/access projections and committed OPEN/GET evidence. Belt flags5 is closed/unlocked, key0; container presence or open state is not personal recovery.
+
+### 13. Other corpse/barrel, sword and throne/crown stock has no native local quest consumer.
+
+Keep ordinary optional treasure separate from quest receipts. Builders can map explicit treasure episodes with exact roots, stock generations and count policy without inventing corpse-recovery quests.
+
+### 14. Obelisk16300, fallen paladin16330 and barbarian F49/F51 scene have no selected terminal.
+
+Author explicit ritual/redemption/rescue/follower participants, success/failure and reward policy before counting. Reset followers are not a player escort or rescue contract.
+
+### 15. Bloodyclaw16336 has SECRET/NOIDENTIFY/FLOAT, weight-2 and regeneration-themed prose.
+
+Review intended negative weight and lore effect fairly; no selected binding establishes regeneration suppression. Select any balance/content repair separately with named fix/news and before/after tests.
+
+### 16. Roomcases16392/16383 exist in guild_guard, but no local literal guard binding is selected.
+
+Validate effective typed actor binding and birthplace at dispatch before advertising rogue/shaman barriers. Roomcase matching alone cannot manufacture a class prerequisite; review builder intent before a separate fix.
+
+### 17. All100 rooms are forest; holding16397..99 have outgoing-only local routes.
+
+Project normal source movement and actual current location separately from spawn owner. Holding names do not prove random scatter; preserve intentional staging and do not add public entrances without builder review.
+
+### 18. Eligible Githzerai SHIFT from Astral19701 can randomly arrive16302.
+
+Capture race/current-plane/combat/cooldown and actual successful arrival separately. Keep this conditional route optional; it is not a universal access requirement or native faerie stage.
+
+### 19. Active reset_zone refuses item issuance before live placement.
+
+Add durable reset-generation identity and owned O/P/E/G issuance before promising fresh-world stock. Qualify both imported materials and nested treasures under active accounting; preserve existing recovered stock and refusal safety.
+
+### 20. Four reciprocal boundaries, two incoming-only Pine Hollow load links and foreign recipes are bounded.
+
+Keep owner-zone/current-location/recipient identities distinct and retain wider dossiers. Qualify foreign arrival, source wandering, daily renewal and cold persistence without double credit or unsupported played claims.

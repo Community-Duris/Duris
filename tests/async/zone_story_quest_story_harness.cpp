@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 179 &&
+		require(catalog.story_mappings.size() == 180 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,142 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "twstwd"; });
+			const auto &story = story_for("twstwd", "guardian-token");
+			require(mapping.stories.size() == 1 && mapping.contacts.size() == 3 &&
+					story.steps.size() == 3 && mapping.revision == 1,
+				"Twisted Wood journal scope failed");
+			int achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 163)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 1 && dailies == 1,
+				"Twisted Wood two materials became two quests");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 163, 16300, 100, "arrival") ==
+					result::applied,
+				"Twisted Wood discovery failed");
+			require(journey.meet_npc(7, 42, 16324, 16391, 101) == result::applied,
+				"Twisted Wood optional camp encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 163, 10, 1, 102, false, false);
+			require(journal.find("] " + story.title + "\r\n") == std::string::npos,
+				"Twisted Wood camp exposed guardian receipt card");
+			require(journey.meet_npc(7, 42, 16311, 16364, 103) == result::applied,
+				"Twisted Wood guardian encounter failed");
+			const auto status = [&](size_t row, const char *state)
+			{
+				return journal.find(std::string("[") + state + "] " +
+						    story.steps[row].text) != std::string::npos;
+			};
+			const auto before = journey.serialize_state();
+			supplies = {};
+			journal = journey.render_journal(7, 42, 163, 10, 1, 104, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now") &&
+					status(2, "Pending"),
+				"Twisted Wood invented imported custody");
+			supplies.carried[16014] = 1;
+			journal = journey.render_journal(7, 42, 163, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Missing now") &&
+					status(2, "Pending"),
+				"Twisted Wood armor substituted both inputs");
+			supplies = {};
+			supplies.carried[16016] = 1;
+			journal = journey.render_journal(7, 42, 163, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Ready now") &&
+					status(2, "Pending"),
+				"Twisted Wood lance substituted both inputs");
+			supplies = {};
+			for (int v : { 16313, 16314, 16321, 16330, 16334, 16013, 16015 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 163, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now") &&
+					status(2, "Pending"),
+				"Twisted Wood rewards or optional loot substituted materials");
+			supplies = {};
+			supplies.equipped[5] = 16014;
+			supplies.equipped[18] = 16016;
+			supplies.carried[16330] = 1;
+			journal = journey.render_journal(7, 42, 163, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now"),
+				"Twisted Wood worn or nested roots filled loose preparation");
+			supplies = {};
+			supplies.carried[16014] = 1;
+			supplies.carried[16016] = 1;
+			journal = journey.render_journal(7, 42, 163, 10, 1, 109, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Ready now") &&
+					status(2, "Pending") && journey.serialize_state() == before,
+				"Twisted Wood supplied preparation created source or acceptance history");
+			require(journal.find("SEARCH") != std::string::npos &&
+					journal.find(
+						"does not guarantee the faerie can see or accept") !=
+						std::string::npos &&
+					journal.find("ready accounting") != std::string::npos,
+				"Twisted Wood guidance lost optional access or admission/accounting boundaries");
+			for (int giver : { 16005, 16006 })
+			{
+				const auto &foreign = *std::find_if(
+					catalog.definitions.begin(), catalog.definitions.end(),
+					[&](const auto &d) { return d.giver_vnum == giver; });
+				record(journey, foreign.definition_id,
+				       (giver == 16005 ? "twstwd-warrior" : "twstwd-auriam"), 160,
+				       giver == 16005 ? 16081 : 16077);
+			}
+			journal = journey.render_journal(7, 42, 163, 10, 1, 110, false, false,
+							 &supplies);
+			require(status(2, "Pending") &&
+					journey.progress_for_zone(7, 42, 163).completed == 0,
+				"Twisted Wood Pine Hollow receipts completed guardian");
+			record(journey, story.contracts.front(), "twstwd-guardian", 163, 16364);
+			supplies = {};
+			supplies.carried[16313] = 1;
+			journal = journey.render_journal(7, 42, 163, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now") &&
+					status(2, "Recorded") &&
+					journey.progress_for_zone(7, 42, 163).completed == 1,
+				"Twisted Wood spent materials lost accepted receipt");
+			supplies.carried[16014] = 2;
+			supplies.carried[16016] = 2;
+			journal = journey.render_journal(7, 42, 163, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Ready now") &&
+					status(2, "Recorded") &&
+					journey.progress_for_zone(7, 42, 163).completed == 1,
+				"Twisted Wood reacquisition doubled acceptance");
+			auto replay = completion(story.contracts.front(), "twstwd-guardian", 120);
+			replay.transaction.zone_number = 163;
+			replay.transaction.room_vnum = 16364;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Twisted Wood replay duplicated receipt");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 163).completed == 1,
+				"Twisted Wood cold recovery lost receipt");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 163, 16300, 100, "arrival") ==
+					result::applied,
+				"Twisted Wood raw discovery failed");
+			record(raw, story.contracts.front(), "twstwd-raw", 163, 16364);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 163).completed == 1,
+				"Twisted Wood raw-to-authored recovery lost receipt");
 		}
 
 		{

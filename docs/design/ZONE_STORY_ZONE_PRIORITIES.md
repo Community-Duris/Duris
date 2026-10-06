@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 166 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 167 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -371,7 +371,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 | 164 | [Mitashi - Capital City of the Jade Empire](zone-stories/MITASHI.md) (`mitashi`) | Six clan swords→Kunji/Retribution;hidden stock/search;competing Savannah instruments/Air proofs;city shops/inn/scene lore. | Comprehensive schema3/revision1:1Q/1 card/14 contacts/3M/4 aliases/6 optional rows/7 steps;229 rooms/62 mobiles/81 objects/337 resets/full selected closure.22 source/gear/branch/service follow-ups;1 achievement/1 potential daily;no native repair. |
 | 165 | [The Dark Stone Tower of the Northern Realms](zone-stories/DARK_STONE_TOWER.md) (`teka2`) | Aerlyn rhinestone→mask/mace;dragon egg;travel objects/keys/mirrors/river;mining/crypt lore;epic teachers/node. | Comprehensive schema3/revision1:1Q/1 card/12 contacts/3M/6 aliases/1 optional row/2 steps;98 rooms/42 mobiles/68 objects/231 resets/full selected closure.22 source/access/service follow-ups;1 achievement/1 potential daily;no native repair. |
 | 166 | [The Troll Hills](zone-stories/TROLL_HILLS.md) (`troll_hills`) | Adventurer idol→goo/experience;secret mound/magi;desk/key/gold;wand/potion;old bridge;monolith/marsh. | Comprehensive schema3/revision1:1Q/1 card/3 contacts/3M/8 aliases/1 optional row/2 steps;148 rooms/20 mobiles/8 objects/123 resets/full selected closure.20 source/access/binding follow-ups;1 achievement/1 potential daily;no native repair. |
-| 167 | A Dark and Twisted Wood (`twstwd`) | [Meet the giver → 1 × a full suit of black platemail; 1 × a broken mithral lance → an iridescent faerie collar](../../areas/qst/twstwd.qst#L29) | 1 Q; 3 dialogue; 0 candidate link items |
+| 167 | [A Dark and Twisted Wood](zone-stories/DARK_AND_TWISTED_WOOD.md) (`twstwd`) | Guardian armor/lance→collar;competing Pine Hollow returns;secret thornman camp;nested belt/emeralds;obelisk/paladin/party lore. | Comprehensive schema3/revision1:1Q/1 card/3 contacts/3M/5 aliases/2 optional rows/3 steps;100 rooms/31 mobiles/37 objects/145 resets/full selected closure.20 source/branch/access follow-ups;1 achievement/1 potential daily;no native repair. |
 | 168 | The Underworld (`underworld`) | [Meet the giver → 1 × the unholy relic of life and death → native reward/response](../../areas/qst/underworld.qst#L18) | 1 Q; 3 dialogue; 0 candidate link items |
 | 169 | Zalkapfaan, City of the Headless Horde (`headless`) | [Meet the giver → 1 × a purchase requisition; 1 × the scales of a sea serpent → platemail of the sea serpent](../../areas/qst/headless.qst#L42) | 8 Q; 2 dialogue; 0 candidate link items |
 | 170 | The Spires of the Elder Eternal Evil (`eternal`) | [Meet the giver → 1 × the scale of the Death Serpent; 1 × the scale of the Night Serpent; 1 × the scale of the Shadow Serpent and the remaining ingredients → the key of the Elder Eternal Evil](../../areas/qst/eternal.qst#L2) | 6 Q; 2 dialogue; 0 candidate link items |

@@ -1,0 +1,100 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "twstwd",
+  "coverage": "complete",
+  "introduction": "Help the guardian faerie with one two-item return, choosing carefully between competing Pine Hollow requests and exploring the concealed camp as an optional branch.",
+  "orientation": [
+    "Follow the forest paths between the surface, Pine Hollow and Krindor. Find the guardian faerie near the mountains. Hidden camp paths and optional treasures are separate from his request; current sight, enemies and available items still matter.",
+    "Ask the guardian faerie guard or guarding about his duty, man or dark about the armored visitor, and auriam about the golden dragon. These aliases explain three topics. Hearing a response does not complete the return or prove that you chose a side.",
+    "The faerie requests a full suit of black platemail and a broken mithral lance. The cruel warrior in Pine Hollow wears the armor when stocked; Auriam carries the broken lance when stocked. The broken lance is already a distinct item: you do not need to break a working weapon.",
+    "Carry both exact items loose before offering them to the faerie. Worn armor, held items and items inside containers do not fill the loose preparation rows. Supplied exact items also fit. Ready now checks current counts and does not guarantee the faerie can see or accept the items.",
+    "The faerie consumes both items together and awards an iridescent collar. This is one quest return, even though it needs two materials. The recorded return persists after those materials are spent. The faerie stays; another accepted return still requires another valid offering.",
+    "Choose how to use the armor and lance. Auriam also requests the armor in Pine Hollow, and the cruel warrior also requests the lance. The same objects cannot be spent in both returns. Their separate exchanges can remove the NPC and remaining stock, so secure any items you need before completing them.",
+    "The faerie says he will tell Auriam and that she may offer another reward. The current faerie return awards the collar. It does not automatically report to Auriam, award her dragon treasures or prove that the dark warrior was defeated.",
+    "The thornman camp has a concealed bramble passage. An eligible successful SEARCH can reveal the way before OPEN and entry. The faerie is reachable without that camp. Another player opening a passage does not prove you personally discovered it.",
+    "Optional camp treasures include a crown inside a throne and equipment inside a dessicated corpse. The rope belt contains three declared emeralds; its clasp is closed but unlocked, so OPEN precedes taking them. Treasure custody is separate from the faerie return.",
+    "The bloody claw, humming obelisk, fallen paladin and barbarian party suggest more forest stories. This journal records no regeneration cure, obelisk ritual, redemption, escort or rescue for those scenes. Builders can add explicit goals once their outcomes are designed.",
+    "Declared source equipment and treasures depend on actual live stock. Daily rollover does not replenish consumed armor or lances and does not restore departed Pine Hollow NPCs. New discovery, encounter, journal, achievement and daily progress requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 16311,
+      "name": "the guardian faerie",
+      "keyword": "faerie",
+      "description": "Ask guard, guarding, man, dark or auriam about his duty and request. Offer the exact black platemail and broken mithral lance together for an iridescent collar.",
+      "topics": [
+        "guard",
+        "guarding",
+        "man",
+        "dark",
+        "auriam"
+      ]
+    },
+    {
+      "mob_vnum": 16324,
+      "name": "the thornman king",
+      "keyword": "king",
+      "description": "The thornman king rules the concealed camp. Camp exploration and ordinary treasures are optional; defeating him is not required by the faerie return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 16330,
+      "name": "a fallen paladin",
+      "keyword": "paladin",
+      "description": "The fallen paladin is an unresolved forest story lead. His sorrow has no mapped redemption return or compulsory role in the faerie request.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "guardian-token",
+      "title": "Reassure the guardian faerie",
+      "category": "request",
+      "summary": "Bring the guardian faerie the exact black platemail and broken mithral lance for an iridescent collar. Both materials have other uses in Pine Hollow. Current loose custody, source recovery and those separate returns do not substitute this accepted receipt.",
+      "contracts": [
+        {
+          "giver_vnum": 16311,
+          "completion_key": "give=I:16014,I:16016;receive=I:16313;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "armor",
+          "text": "Carry the full suit of black platemail loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            16014
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The cruel warrior wears this armor when stocked. A supplied exact suit also fits. Wearing it does not fill this current loose count; this row does not prove recovery or accepted return."
+        },
+        {
+          "id": "lance",
+          "text": "Carry the broken mithral lance loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            16016
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Auriam carries this already broken lance when stocked. A supplied exact lance also fits. Other lances, old custody and the faerie collar do not fill this current count."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record the faerie's accepted armor and lance return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 16311,
+              "completion_key": "give=I:16014,I:16016;receive=I:16313;disappear=0"
+            }
+          ],
+          "hint": "Records one accepted two-item return for the iridescent collar. Conversation, personal kills, Pine Hollow returns, camp treasure and any promised later reward remain separate."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

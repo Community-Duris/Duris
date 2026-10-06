@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 179 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 180 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,14 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+twstwd=next(m for m in catalog['story_mappings'] if m['source_area']=='twstwd')
+assert (twstwd['coverage'],twstwd['schema_version'],twstwd['revision'])==('complete',3,1) and not twstwd['exclusions']
+assert len(twstwd['stories'])==1 and len(twstwd['contacts'])==3 and sum(len(c['topics']) for c in twstwd['contacts'])==5
+s=twstwd['stories'][0];assert s['id']=='guardian-token' and len(s['steps'])==3
+assert [(r['item_vnums'],r['count'],r['optional'],r['kind']) for r in s['steps'][:2]]==[([16014],1,True,'carried_item'),([16016],1,True,'carried_item')]
+assert s['steps'][-1]['kind']=='completion' and s['contracts']==s['steps'][-1]['contracts']==[{'giver_vnum':16311,'completion_key':'give=I:16014,I:16016;receive=I:16313;disappear=0'}]
+assert report['eligible_by_zone']['163']==1
 
 troll_hills=next(m for m in catalog['story_mappings'] if m['source_area']=='troll_hills')
 assert (troll_hills['coverage'],troll_hills['schema_version'],troll_hills['revision'])==('complete',3,1) and not troll_hills['exclusions']
