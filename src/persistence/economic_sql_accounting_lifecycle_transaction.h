@@ -64,9 +64,13 @@ struct economic_sql_activation_evidence
 	uint64_t verified_route_count = 0;
 	uint64_t unclassified_route_count = 0;
 };
-using economic_sql_activation_verifier =
-	unsigned int (*)(MYSQL *, const economic_sql_activation_evidence &,
-			 const economic_sql_source_snapshot &) noexcept;
+// The synchronous verifier borrows the caller's exact request as context; it
+// must independently authenticate that binding against retained SQL evidence.
+// The request itself grants no authority and must not be retained. The existing
+// owner still authenticates the staged request before recording a decision.
+using economic_sql_activation_verifier = unsigned int (*)(
+	MYSQL *, const economic_sql_lifecycle_request &, const economic_sql_activation_evidence &,
+	const economic_sql_source_snapshot &) noexcept;
 
 // Private SQL lifecycle owner. Requires a live, lock-backed maintenance token
 // obtained from economic_sql_lifecycle_guard::acquire_maintenance(). It captures

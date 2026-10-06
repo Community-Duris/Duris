@@ -65742,7 +65742,11 @@
       "src/world/specs.prototypes.h": "814e7a01ae7f3bd62639226728e1933f05ca467d1472baad3746078dfac5d685",
       "src/world/world_activity.c": "6c7443dc54ffb37f33a3d4b9a0d3a24405efd2822a4b4695c299bf21501c6c04",
       "src/world/world_activity.h": "2b581aaee6228e30b2e66a4ab3bb9e78878b3112bfbc38fa95aca4f1f2ab5942",
-      "tests/async/test_economy_writer_coverage_contract.py": "aab17ec89061094dbc05ef2267184f4cbb92e613af413cb0228bb1cc3f7d9fbb"
+      "tests/async/test_economy_writer_coverage_contract.py": "aab17ec89061094dbc05ef2267184f4cbb92e613af413cb0228bb1cc3f7d9fbb",
+      "src/persistence/economic_sql_accounting_lifecycle_transaction.c": "36a5d707b4174b25f4757d01eac3ce4303a9b63e0faac2d1ac47c993c5881f2c",
+      "src/persistence/economic_sql_accounting_lifecycle_transaction.h": "9db963588ebb5af1051e5381e443776bc9e96fd49eedcbb15ad0c8a0813b374f",
+      "tests/async/economic_sql_lifecycle_owner_mysql_harness.cpp": "f3e8c47f9306770348969aa446661096b652b34bf21c4cf557d3b28c8ed61194",
+      "tests/async/test_economic_sql_lifecycle_activation_contract.py": "1be30c4c5051ec295cf8b8d9cc0326646ed4b6792e8b9cd3b6405a6895c275fd"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
@@ -65752,6 +65756,16 @@
       "original_pinned_paths": 107,
       "current_pinned_paths": 149,
       "previous_source_pins_sha256": "2d34da03eff9c1500cd65f9e6b19e707b6eae84bbeba2cc12048dea645b83ccd"
+    },
+    "activation_verifier_request_context": {
+      "base_commit": "e9e4db11522c125bfb554031d30d02e025c15796",
+      "scope": "Explicit synchronous borrowed lifecycle request for independent verifier binding; capture, orchestration and production verifier remain unqualified.",
+      "updated_source_pins": [
+        "src/persistence/economic_sql_accounting_lifecycle_transaction.c",
+        "src/persistence/economic_sql_accounting_lifecycle_transaction.h",
+        "tests/async/economic_sql_lifecycle_owner_mysql_harness.cpp",
+        "tests/async/test_economic_sql_lifecycle_activation_contract.py"
+      ]
     }
   },
   "pending_source_integration": {
