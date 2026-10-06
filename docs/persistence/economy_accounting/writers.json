@@ -5243,10 +5243,10 @@
       "reason": "wallet_transfer",
       "integration_issue": 480,
       "owner": "primary / #480",
-      "coverage": "legacy",
-      "classification": "Player wallet to player wallet.",
+      "coverage": "observed",
+      "classification": "Exact-denomination player-to-player wallet root; morph recipients resolve to their original player wallet. Active schema-2 source connection is reviewed, with complete backend gameplay qualification still pending.",
       "authority_boundary": "One compound coin command",
-      "current_support": "Existing behavior only; accounting integration unverified",
+      "current_support": "The existing active producer freezes one typed schema-2 wallet transfer before retained admission. Inactive schema-1 behavior remains; MySQL, MariaDB and flatfile gameplay/publication/restart acceptance remains unverified.",
       "backends": {
         "mysql": {
           "status": "unverified",
@@ -64781,7 +64781,7 @@
       "src/economy/shop_trade_accounting.c": "e9e428cdb65a30679a04e8ae044410c9fde042d82278045d441d0d66a2dabd5c",
       "src/economy/shop_trade_accounting.h": "60dbe36c5216ba4e72ad9d12e708ddac1ebb8b80c5d424a5748b502b8cfc9946",
       "scripts/validate_economy_accounting.py": "90b8811f1d3785cdc26a9590e90a048c078e078e6db45e07be336faccbf43f3b",
-      "scripts/generate_economy_writer_coverage.py": "94c9b23de635c7e2f67fda0ee04582227ad895b306f36138836827ef02f39675",
+      "scripts/generate_economy_writer_coverage.py": "f8dcf450bc77e87ba3a2da2d5a279ba4e090969a1919bdf4b96596b05123b793",
       "src/world/quest_mobile_native.c": "7d381e3bb44d0ed7ff77ee4887bf0238586ce19cd659a3e7cc45a4cad8a712ac",
       "src/world/quest_mobile_native.h": "1b4dd5989a82d4c27a7cea03180f8d17c8e9e2599495fa15112d734e5b994035",
       "src/economy/shop_trade_world_witness.c": "f1b1c99c9a8cb8ffcecd86580482f13b6b15b2b36873701702c036820842c8c7",
