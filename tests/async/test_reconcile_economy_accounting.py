@@ -3629,8 +3629,8 @@ def native_stake_sql():
                 with mock.patch.dict(os.environ,env,clear=True):
                     manifest=migrations.load_manifest(); executor=migrations.MysqlExecutor(manifest)
                     executor.adopt('fresh_bootstrap'); migrations.run_pending(manifest,executor)
-                assert sql(env,'SELECT sequence_number,migration_id FROM mud_schema_history ORDER BY sequence_number DESC LIMIT 1')=='61\t0061_economic_baseline_equipment'
-                print('STAKE_SQL_SCHEMA '+engine+' '+version+' through=0061',flush=True)
+                assert sql(env,'SELECT sequence_number,migration_id FROM mud_schema_history ORDER BY sequence_number DESC LIMIT 1')=='62\t0062_economic_pending_claim_consumption'
+                print('STAKE_SQL_SCHEMA '+engine+' '+version+' through=0062',flush=True)
                 owner=pymysql.connect(unix_socket=env['DB_SOCKET'],user='root',database='duris_restore',
                                       autocommit=True,cursorclass=pymysql.cursors.DictCursor)
                 try:
