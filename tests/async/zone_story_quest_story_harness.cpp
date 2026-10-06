@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 155 &&
+		require(catalog.story_mappings.size() == 156 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,126 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "pworm"; });
+			require(mapping.stories.size() == 1 && mapping.contacts.size() == 11 &&
+					mapping.revision == 1,
+				"Purple Worm scope failed");
+			const auto &s = story_for("pworm", "family-amulet-and-seven-hides");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 425)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 1 && dailies == 1,
+				"Purple Worm split quantity or lost retained-giver daily");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 425, 42500, 100, "arrival") ==
+					result::applied,
+				"Purple Worm discovery failed");
+			for (const auto &c : mapping.contacts)
+				if (c.mob_vnum != 42506)
+					require(journey.meet_npc(7, 42, c.mob_vnum, 42500, 102) ==
+							result::applied,
+						"Purple Worm context encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 425, 10, 1, 103, false, false);
+			require(journal.find("] " + s.title + "\r\n") == std::string::npos,
+				"Purple Worm segments/mouth forged giver exposure");
+			require(journey.meet_npc(7, 42, 42506, 42594, 104) == result::applied,
+				"Purple Worm actual giver encounter failed");
+			const auto status = [&](size_t row, const char *state)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos, "Purple Worm card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at, end == std::string::npos ? end : end - at)
+					       .find(std::string("[") + state + "] " +
+						     s.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			for (int v : { 42504, 42503, 42505, 42515 })
+				supplies.carried[v] = 7;
+			journal = journey.render_journal(7, 42, 425, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now") &&
+					status(2, "Pending"),
+				"Purple Worm corpse/armor/ring/leggings forged ingredients");
+			const auto before = journey.serialize_state();
+			for (int count = 0; count < 7; ++count)
+			{
+				supplies = {};
+				supplies.carried[42502] = 1;
+				supplies.carried[42500] = count;
+				journal = journey.render_journal(7, 42, 425, 10, 1, 106, false,
+								 false, &supplies);
+				require(status(0, "Ready now") && status(1, "Missing now") &&
+						status(2, "Pending"),
+					"Purple Worm fewer than seven hides collapsed multiset");
+			}
+			supplies = {};
+			supplies.carried[42500] = 7;
+			journal = journey.render_journal(7, 42, 425, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Ready now") &&
+					status(2, "Pending"),
+				"Purple Worm seven hides replaced missing amulet");
+			supplies.carried[42500] = 6;
+			supplies.equipped[3] = 42500;
+			supplies.carried[42503] = 1;
+			journal = journey.render_journal(7, 42, 425, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now") &&
+					status(2, "Pending"),
+				"Purple Worm worn/nested proof forged loose quantity");
+			for (int count : { 7, 8 })
+			{
+				supplies = {};
+				supplies.carried[42502] = 1;
+				supplies.carried[42500] = count;
+				journal = journey.render_journal(7, 42, 425, 10, 1, 109, false,
+								 false, &supplies);
+				require(status(0, "Ready now") && status(1, "Ready now") &&
+						status(2, "Pending"),
+					"Purple Worm supplied quantity readiness failed");
+			}
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 425).completed == 0,
+				"Purple Worm readiness manufactured recovery/combat/swallow/return");
+			record(journey, s.contracts.front(), "pworm-combined", 425, 42594);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 425, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now") &&
+					status(2, "Recorded") &&
+					journey.progress_for_zone(7, 42, 425).completed == 1,
+				"Purple Worm lost spent-proof history or split eight inputs");
+			auto replay = completion(s.contracts.front(), "pworm-combined", 120);
+			replay.transaction.zone_number = 425;
+			replay.transaction.room_vnum = 42594;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Purple Worm exact replay duplicated progress");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 425).completed == 1,
+				"Purple Worm cold recovery lost combined return");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 425, 42500, 100, "arrival") ==
+					result::applied,
+				"Purple Worm raw discovery failed");
+			record(raw, s.contracts.front(), "pworm-raw", 425, 42594);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 425).completed == 1,
+				"Purple Worm raw-to-authored recovery lost combined return");
 		}
 
 		{
