@@ -167,6 +167,39 @@ def valid_item_equipment_slot(value: object) -> bool:
     return type(value) is int and 0 <= value <= 65535
 
 
+def valid_item_custody_position(row: dict, creation_origin: bool = False) -> bool:
+    """Apply independent native position grammar to captured authority rows."""
+    from economic_restore_evidence import EvidenceError, valid_position
+
+    state = row.get("state")
+    if state == "absent" and creation_origin:
+        # A logical creation opening names its UID; its original EAP1 before
+        # witness is the all-zero absent position. Preserve that representation.
+        return (row.get("owner") == [0, 0, 0] and row.get("root") == row.get("uid") and
+                row.get("parent") is None and row.get("revision") == 0 and
+                item_equipment_slot(row) in (None, 0))
+    if not isinstance(state, str) or state not in ("live", "tombstone", "quarantined"):
+        return False
+    owner = row.get("owner")
+    if (not isinstance(owner, list) or len(owner) != 3 or
+            any(type(part) is not int for part in owner) or
+            not unsigned_revision(row.get("uid")) or not row["uid"] or
+            not unsigned_revision(row.get("root")) or not unsigned_revision(row.get("revision")) or
+            any(not unsigned_revision(part) for part in owner[1:]) or
+            (row.get("parent") is not None and
+             (not unsigned_revision(row["parent"]) or not row["parent"]))):
+        return False
+    slot = item_equipment_slot(row)
+    try:
+        # Missing historical equipment remains unknown in the snapshot and in
+        # the separate equipment audit. It supplies no equipment constraint here.
+        valid_position(row["uid"], (owner[0], {"live": 1, "tombstone": 2, "quarantined": 3}[state],
+            *owner[1:], row["root"], row["parent"] or 0, row["revision"], slot or 0))
+    except EvidenceError:
+        return False
+    return True
+
+
 def require_id(value: object, label: str) -> str:
     if not isinstance(value, str) or not HEX_ID.fullmatch(value) or value == "0" * 32:
         raise SnapshotError(f"invalid {label}")
@@ -2308,10 +2341,14 @@ class Reconciler:
 
     def audit_items(self, ownership: dict, references: dict, origins: dict, native: dict,
                     lineage_history_uids: set[int] | None = None) -> None:
-        for row in list(origins.values()) + list(native.values()):
-            item_equipment_slot(row)
-            if not unsigned_revision(row.get("revision")):
-                raise SnapshotError("invalid item origin or native revision")
+        for positions, code, opening in ((origins, "invalid_item_origin_position", True),
+                                         (native, "invalid_native_item_position", False)):
+            for row in positions.values():
+                item_equipment_slot(row)
+                if not unsigned_revision(row.get("revision")):
+                    raise SnapshotError("invalid item origin or native revision")
+                if not valid_item_custody_position(row, opening and row.get("origin") == "creation"):
+                    self.emit(code, uid=row.get("uid"))
         referenced = set()
         for ref in references.values():
             if (not unsigned_revision(ref.get("before_revision")) or

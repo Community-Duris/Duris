@@ -1,5 +1,17 @@
 # Experimental accounting review checkpoint
 
+## Independent item custody-position fix integrated — 2026-10-06
+
+[Exact peer import and primary checks](PLAN5_ITEM_CUSTODY_PRIMARY_INTEGRATION_2026-10-06.md)
+integrate the completed impossible-custody finding fix from560f91d9d. Five owned
+blobs and all code/test inputs match its qualified composition; original native
+source, migrations, complete central manifest and unrelated WIP are preserved.
+Primary's two new custody methods and affected topology method pass, zero skips,
+plus normal/matrix/current61 metadata. Peer native/both-engine component results
+retain their recorded scope. No primary native rerun, full capture, Plan or
+release qualification is claimed.
+
+
 ## Constructor and quest recovery source composed — 2026-10-06
 
 [The owning source handoff](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
