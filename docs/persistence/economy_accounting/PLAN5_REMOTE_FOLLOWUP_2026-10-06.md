@@ -583,3 +583,28 @@ Only owned reports change. No new shared interface is requested. Durable
 resumable fair sweeps and full source/lifecycle/gameplay/release acceptance
 remain open; this synthetic/component evidence does not qualify release.
 The report/seal remain the primary-local notebook curator packet, nonblocking.
+
+## Durable SQL root audit pages - 2026-10-06
+
+Same `codex/accounting-plan5` worktree/remote. Base `e4ea41892063dbd553d61b3d44d9d0ebd1e05904`.
+[The owned qualification](PLAN5_SQL_ROOT_SWEEP_QUALIFICATION_2026-10-06.md)
+records the completed SELECT-only root-page reader, protected atomic progress,
+capped historical ranges, low-ID revisit, retained findings and distinct budget
+refusals that do not advance progress. Current source archive
+`62cc2a885eb27386f216a69c94e57ad5efd917c2d40d726a8ea5bb4003ce483e` passes 43 canonical, 46 origin and one full
+original restore method: 90 executed/zero skips, fresh canonical 0062 on both
+engines and original native SQL/flatfile encodings. All 106 measured pages stay
+within declared bounds; earlier missing-API, query-plan, collector and budget
+failures remain preserved. Seal `ebf59ac590c68749801773f39a4f725ea0aa082ee58eb85963f63d636016b3de` inventories
+6930 artifacts/5052230942 bytes with zero links.
+Only owned readers/tests/guides change. The report names exact primary-owned
+integration-manifest arguments/required-case additions; no shared edit is made.
+Every page keeps incomplete coverage; full R7/R8, flatfile/all-store sweeps,
+complete capture/activation, source claims and real producer/recovery/release
+gates remain open. Primary was refreshed to `3ec919ab7b6eaa8b96f227ee7b6efd0d7cc43787`;
+its private qualified wallet SQL startup is preserved at its stated scope.
+The report/seal/delivery receipt is the nonblocking primary-local notebook
+curator packet, without acknowledgement or cross-chat message. Maintained
+accounting stays inactive. The unchanged original money-recovery fixture's
+private synthetic activation does not qualify genuine R6 or release activation.
+All earlier tips/work remain preserved.

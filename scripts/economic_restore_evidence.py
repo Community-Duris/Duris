@@ -339,6 +339,154 @@ def decode_native_mobile(value):
     return identity, mobile_revision, stock_revision, value[10]
 
 
+class CanonicalReader:
+    """Bounded SELECT projections for the independent original-byte checks."""
+
+    def __init__(self, executor):
+        self.executor = executor
+
+    def mismatch(self, code):
+        raise RuntimeError("restore_economic_" + code + "_mismatch")
+
+    def arrays(self, table, columns, where, order):
+        output = self.executor.sql("SELECT JSON_ARRAY(" + ",".join(columns) + ") FROM " + table +
+                              " WHERE " + where + " ORDER BY " + order + ";")
+        try:
+            return [json.loads(row) for row in output.splitlines()]
+        except ValueError:
+            self.mismatch("canonical_projection")
+
+    def hexadecimal(self, column):
+        return "LOWER(HEX(" + column + "))"
+
+    def binary(self, value, size, nullable=False):
+        if value is None and nullable:
+            return None
+        need(isinstance(value, str) and len(value) == 2 * size)
+        return bytes.fromhex(value)
+
+    def capsule(self, operation, field, size, limit, code, table="economic_accounting_operation", minimum=256):
+        if type(size) is not int or not minimum <= size <= limit:
+            self.mismatch(code)
+        result = bytearray()
+        for offset in range(0, size, 65536):
+            count = min(65536, size - offset)
+            output = self.executor.sql("SELECT HEX(SUBSTRING(" + field + "," + str(offset + 1) + "," +
+                                  str(count) + ")) FROM " + table + " WHERE " + operation + ";")
+            try:
+                part = bytes.fromhex(output)
+            except ValueError:
+                self.mismatch(code)
+            if len(part) != count:
+                self.mismatch(code)
+            result.extend(part)
+        return bytes(result)
+
+
+def verify_canonical_root(reader, operation):
+    """Authenticate one original root and its details in the caller's read view.
+
+    Surrounding openings, allocations, receipts and native authority remain
+    the caller's checks. This is shared by restore and bounded live sweeps.
+    """
+    mismatch = reader.mismatch
+    arrays = reader.arrays
+    hexadecimal = reader.hexadecimal
+    binary = reader.binary
+    capsule = reader.capsule
+
+    if (not isinstance(operation, str) or len(operation) != 32 or
+            any(c not in "0123456789abcdef" for c in operation) or not int(operation, 16)):
+        mismatch("metadata")
+    where = "operation_id=UNHEX('" + operation + "')"
+    fields = [hexadecimal(name) for name in ("lineage", "epoch", "operation_id", "original_operation_id")]
+    fields += ["accounting_version", "writer_id", "policy_version", "compiler_version",
+               "actor_kind", "actor_id", "reason", hexadecimal("source_event")]
+    fields += [hexadecimal(name) for name in ("intent_digest", "domain_digest", "plan_digest")]
+    fields += ["OCTET_LENGTH(canonical_intent)", "OCTET_LENGTH(canonical_plan)", "outcome", "result_code",
+               "account_count", "posting_count", "child_count", "before_witness_count",
+               "after_witness_count", "item_event_count"]
+    rows = arrays("economic_accounting_operation", fields, where, "operation_id")
+    if len(rows) != 1 or len(rows[0]) != 25:
+        mismatch("metadata")
+    row = rows[0]
+    try:
+        original = binary(row[3], 16, True)
+        need(original is None or any(original))
+        meta = (*[binary(value, 16) for value in row[:3]], original or bytes(16),
+                *row[4:11], binary(row[11], 48, True))
+        need(meta[2].hex() == operation)
+        frozen = capsule(where, "canonical_intent", row[15], MAX_INTENT, "intent")
+        intent = decode_intent(frozen)
+        if (intent["intent_digest"] != binary(row[12], 32) or
+                intent["domain_digest"] != binary(row[13], 32)):
+            mismatch("intent")
+    except (ValueError, struct.error):
+        mismatch("intent")
+    if not same_projection(meta, intent["metadata"]):
+        mismatch("metadata")
+    counts = tuple(row[19:25])
+    plan = None
+    encoded = None
+    if type(row[17]) is not int or type(row[18]) is not int or not 0 <= row[18] < 2**32:
+        mismatch("plan")
+    if row[17] == 2:
+        if (row[18] == 0 or row[14] is not None or row[16] is not None or
+                not same_projection(counts, (0,) * 6)):
+            mismatch("plan")
+    elif row[17] == 1 and row[18] == 0:
+        try:
+            encoded = capsule(where, "canonical_plan", row[16], MAX_PLAN, "plan")
+            plan = decode_plan(encoded)
+            if (not same_projection(plan["metadata"], meta) or plan["intent_digest"] != intent["intent_digest"] or
+                    plan["domain_digest"] != intent["domain_digest"] or
+                    plan["plan_digest"] != binary(row[14], 32)):
+                mismatch("plan")
+        except (ValueError, struct.error):
+            mismatch("plan")
+        if not same_projection(counts, plan["counts"]):
+            mismatch("canonical_count")
+        coins = ("copper", "silver", "gold", "platinum")
+        fields = ["account_index", hexadecimal("account_key")]
+        fields += [side + "_" + coin for side in ("before", "after") for coin in coins]
+        fields += ["before_revision", "after_revision"]
+        expected = [[i, key.hex(), *before, *after, before_revision, after_revision]
+                    for i, (key, before, after, before_revision, after_revision) in enumerate(plan["effects"])]
+        if not same_projection(arrays("economic_accounting_account_effect", fields, where, "account_index"), expected):
+            mismatch("canonical_account")
+        fields = ["line_index", "event_index", "account_index", "child_index"]
+        fields += ["delta_" + coin for coin in coins] + ["copper_value"]
+        expected = [[i, event, account, child, *delta, amount]
+                    for i, (event, account, child, delta, amount) in enumerate(plan["postings"])]
+        if not same_projection(arrays("economic_accounting_coin_posting", fields, where, "line_index"), expected):
+            mismatch("canonical_posting")
+        fields = ["child_index", hexadecimal("child_operation_id"), "domain_id", "discriminator",
+                  "parent_index", "relationship"]
+        expected = [[i + 1, child.hex(), domain, discriminator, parent, relationship]
+                    for i, (child, domain, discriminator, parent, relationship) in enumerate(plan["children"])]
+        if not same_projection(arrays("economic_accounting_child", fields, where, "child_index"), expected):
+            mismatch("canonical_child")
+        fields = ["line_index", "event_index", "child_index", "item_uid", "before_revision", "after_revision"]
+        expected = [[i, event, child, uid, old[6], new[6]]
+                    for i, (event, child, uid, old, new) in enumerate(plan["events"])]
+        if not same_projection(arrays("economic_accounting_item_reference", fields, where, "line_index"), expected):
+            mismatch("canonical_item")
+        fields = ["r.line_index", "l.item_uid", "l.root_item_uid", "COALESCE(l.parent_item_uid,0)",
+                  "l.from_owner_type", "l.from_owner_id", "l.from_owner_context_id", "l.to_owner_type",
+                  "l.to_owner_id", "l.to_owner_context_id", "l.item_revision",
+                  "l.from_equipment_slot", "l.to_equipment_slot"]
+        table = ("economic_accounting_item_reference r LEFT JOIN item_ownership_ledger l "
+                 "ON l.operation_id=r.legacy_operation_id AND l.event_index=r.legacy_event_index")
+        expected = [[i, uid, new[4], new[5], *( (7, 0, 0) if old[1] == 0 else (old[0], old[2], old[3]) ),
+                     new[0], new[2], new[3], new[6], old[7], new[7]]
+                    for i, (event, child, uid, old, new) in enumerate(plan["events"])]
+        if not same_projection(arrays(table, fields, "r." + where, "r.line_index"), expected):
+            mismatch("canonical_custody")
+    else:
+        mismatch("plan")
+    return meta, row, frozen, encoded, plan
+
+
 def require_integrity(executor):
     """Bind every retained root to bounded canonical bytes and SQL projections.
 
@@ -346,42 +494,12 @@ def require_integrity(executor):
     this helper issues SELECT only and never repairs retained evidence. ID
     pagination enumerates the candidate, not a live commit watermark.
     """
-    def mismatch(code):
-        raise RuntimeError("restore_economic_" + code + "_mismatch")
-
-    def arrays(table, columns, where, order):
-        output = executor.sql("SELECT JSON_ARRAY(" + ",".join(columns) + ") FROM " + table +
-                              " WHERE " + where + " ORDER BY " + order + ";")
-        try:
-            return [json.loads(row) for row in output.splitlines()]
-        except ValueError:
-            mismatch("canonical_projection")
-
-    def hexadecimal(column):
-        return "LOWER(HEX(" + column + "))"
-
-    def binary(value, size, nullable=False):
-        if value is None and nullable:
-            return None
-        need(isinstance(value, str) and len(value) == 2 * size)
-        return bytes.fromhex(value)
-
-    def capsule(operation, field, size, limit, code, table="economic_accounting_operation", minimum=256):
-        if type(size) is not int or not minimum <= size <= limit:
-            mismatch(code)
-        result = bytearray()
-        for offset in range(0, size, 65536):
-            count = min(65536, size - offset)
-            output = executor.sql("SELECT HEX(SUBSTRING(" + field + "," + str(offset + 1) + "," +
-                                  str(count) + ")) FROM " + table + " WHERE " + operation + ";")
-            try:
-                part = bytes.fromhex(output)
-            except ValueError:
-                mismatch(code)
-            if len(part) != count:
-                mismatch(code)
-            result.extend(part)
-        return bytes(result)
+    reader = CanonicalReader(executor)
+    mismatch = reader.mismatch
+    arrays = reader.arrays
+    hexadecimal = reader.hexadecimal
+    binary = reader.binary
+    capsule = reader.capsule
 
     # Allocation metadata has no authority by itself. Bind its exact identities
     # and amounts below to the independently decoded original root effects.
@@ -684,90 +802,12 @@ def require_integrity(executor):
                     operation <= cursor):
                 mismatch("metadata")
             cursor = operation
-            where = "operation_id=UNHEX('" + operation + "')"
-            fields = [hexadecimal(name) for name in ("lineage", "epoch", "operation_id", "original_operation_id")]
-            fields += ["accounting_version", "writer_id", "policy_version", "compiler_version",
-                       "actor_kind", "actor_id", "reason", hexadecimal("source_event")]
-            fields += [hexadecimal(name) for name in ("intent_digest", "domain_digest", "plan_digest")]
-            fields += ["OCTET_LENGTH(canonical_intent)", "OCTET_LENGTH(canonical_plan)", "outcome", "result_code",
-                       "account_count", "posting_count", "child_count", "before_witness_count",
-                       "after_witness_count", "item_event_count"]
-            rows = arrays("economic_accounting_operation", fields, where, "operation_id")
-            if len(rows) != 1 or len(rows[0]) != 25:
-                mismatch("metadata")
-            row = rows[0]
-            try:
-                original = binary(row[3], 16, True)
-                need(original is None or any(original))
-                meta = (*[binary(value, 16) for value in row[:3]], original or bytes(16),
-                        *row[4:11], binary(row[11], 48, True))
-                need(meta[2].hex() == operation)
-                frozen = capsule(where, "canonical_intent", row[15], MAX_INTENT, "intent")
-                intent = decode_intent(frozen)
-                if (intent["intent_digest"] != binary(row[12], 32) or
-                        intent["domain_digest"] != binary(row[13], 32)):
-                    mismatch("intent")
-            except (ValueError, struct.error):
-                mismatch("intent")
-            if not same_projection(meta, intent["metadata"]):
-                mismatch("metadata")
-            counts = tuple(row[19:25])
-            if type(row[17]) is not int or type(row[18]) is not int or not 0 <= row[18] < 2**32:
-                mismatch("plan")
-            if row[17] == 2:
-                if (row[18] == 0 or row[14] is not None or row[16] is not None or
-                        not same_projection(counts, (0,) * 6)):
-                    mismatch("plan")
-            elif row[17] == 1 and row[18] == 0:
-                try:
-                    encoded = capsule(where, "canonical_plan", row[16], MAX_PLAN, "plan")
-                    plan = decode_plan(encoded)
-                    if (not same_projection(plan["metadata"], meta) or plan["intent_digest"] != intent["intent_digest"] or
-                            plan["domain_digest"] != intent["domain_digest"] or
-                            plan["plan_digest"] != binary(row[14], 32)):
-                        mismatch("plan")
-                except (ValueError, struct.error):
-                    mismatch("plan")
-                if not same_projection(counts, plan["counts"]):
-                    mismatch("canonical_count")
-                coins = ("copper", "silver", "gold", "platinum")
-                fields = ["account_index", hexadecimal("account_key")]
-                fields += [side + "_" + coin for side in ("before", "after") for coin in coins]
-                fields += ["before_revision", "after_revision"]
-                expected = [[i, key.hex(), *before, *after, before_revision, after_revision]
-                            for i, (key, before, after, before_revision, after_revision) in enumerate(plan["effects"])]
-                if not same_projection(arrays("economic_accounting_account_effect", fields, where, "account_index"), expected):
-                    mismatch("canonical_account")
-                fields = ["line_index", "event_index", "account_index", "child_index"]
-                fields += ["delta_" + coin for coin in coins] + ["copper_value"]
-                expected = [[i, event, account, child, *delta, amount]
-                            for i, (event, account, child, delta, amount) in enumerate(plan["postings"])]
-                if not same_projection(arrays("economic_accounting_coin_posting", fields, where, "line_index"), expected):
-                    mismatch("canonical_posting")
-                fields = ["child_index", hexadecimal("child_operation_id"), "domain_id", "discriminator",
-                          "parent_index", "relationship"]
-                expected = [[i + 1, child.hex(), domain, discriminator, parent, relationship]
-                            for i, (child, domain, discriminator, parent, relationship) in enumerate(plan["children"])]
-                if not same_projection(arrays("economic_accounting_child", fields, where, "child_index"), expected):
-                    mismatch("canonical_child")
-                fields = ["line_index", "event_index", "child_index", "item_uid", "before_revision", "after_revision"]
-                expected = [[i, event, child, uid, old[6], new[6]]
-                            for i, (event, child, uid, old, new) in enumerate(plan["events"])]
-                if not same_projection(arrays("economic_accounting_item_reference", fields, where, "line_index"), expected):
-                    mismatch("canonical_item")
-                fields = ["r.line_index", "l.item_uid", "l.root_item_uid", "COALESCE(l.parent_item_uid,0)",
-                          "l.from_owner_type", "l.from_owner_id", "l.from_owner_context_id", "l.to_owner_type",
-                          "l.to_owner_id", "l.to_owner_context_id", "l.item_revision",
-                          "l.from_equipment_slot", "l.to_equipment_slot"]
-                table = ("economic_accounting_item_reference r LEFT JOIN item_ownership_ledger l "
-                         "ON l.operation_id=r.legacy_operation_id AND l.event_index=r.legacy_event_index")
-                expected = [[i, uid, new[4], new[5], *( (7, 0, 0) if old[1] == 0 else (old[0], old[2], old[3]) ),
-                             new[0], new[2], new[3], new[6], old[7], new[7]]
-                            for i, (event, child, uid, old, new) in enumerate(plan["events"])]
-                if not same_projection(arrays(table, fields, "r." + where, "r.line_index"), expected):
-                    mismatch("canonical_custody")
+            meta, row, frozen, encoded, plan = verify_canonical_root(reader, operation)
+            if plan is not None:
                 origin_version = None
                 if meta[10] == 38:
+                    where = "operation_id=UNHEX('" + operation + "')"
+                    original = binary(row[3], 16, True)
                     origin_version = baseline_witness(where, meta, original, row, frozen, encoded)
                 for key, before, after, before_revision, after_revision in plan["effects"]:
                     if account_key(key.hex())[1] != 5:
@@ -785,8 +825,6 @@ def require_integrity(executor):
                         mismatch("pending_claim_consumption")
                     if (credit or debit) and before[1:] != after[1:]:
                         mismatch("pending_claim_source" if credit else "pending_claim_consumption")
-            else:
-                mismatch("plan")
             processed += 1
     if processed != root_count:
         mismatch("canonical_root_count")

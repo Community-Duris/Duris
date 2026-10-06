@@ -84,6 +84,52 @@ against those retained plans; the canonical SQL check additionally authenticates
 the retained intent and its SQL binding. Capture the two checks under the release's
 quiescence procedure; independent runs do not constitute one combined cut.
 
+For repeated SQL canonical-root checks, add `--progress-path` pointing to a
+protected local file. Its parent directory must already exist. The maintained
+Linux/POSIX CLI uses an exclusive OS lock and writes a mode-0600 checkpoint by
+fsync, atomic rename, and directory fsync. A killed process releases its lock;
+a page interrupted before checkpoint publication is retried. Malformed,
+oversized, foreign-target, symlinked, or unprotected checkpoints refuse.
+
+```sh
+python3 scripts/economic_sql_canonical_audit.py \
+  --host 127.0.0.1 --user accounting_audit --database duris \
+  --password-env ACCOUNTING_AUDIT_PASSWORD \
+  --progress-path /protected/audit/canonical-progress.json --page-roots 2
+```
+
+Each invocation checks at most two roots in one read-only consistent snapshot
+and rolls back before publishing local progress. It bounds each projection to
+8,192 rows, the page to 1,024 SELECTs and 32 MiB of returned text, and admission
+of additional queries to 30 seconds. The connection retains its 30-second SQL
+read timeout. These are component bounds, not game-loop or release-host budgets.
+The sweep freezes its upper ID at the start, finishes that finite range even
+while higher IDs arrive, then starts again at the lowest ID. IDs schedule
+reads; they never certify commit order. A lower-ID transaction committed behind
+the cursor is eligible on the next sweep. Every page has one read view; the
+whole sweep combines different read views and always reports `complete=false`.
+
+This mode reuses the full reader's original EAI1/EAP1 metadata, digest, count,
+effect, posting, child, item-reference and custody checks. It also checks each
+root's lifecycle namespace and exact source claim. Rejected roots must have no
+details. It does not authenticate baseline witnesses, pending-claim allocations,
+orphan evidence, complete command receipts, or current native holdings. These
+coverage fields remain false, including after an empty or completed range.
+The existing full-database check remains necessary under release quiescence.
+Flatfile resumable scans and complete reconciliation remain separate gates.
+
+Routine output has aggregate counts, diagnostic codes, page resource metrics,
+sweep age and time since the last completed range. Backlog is a lower bound
+from the same page's extra key, explicitly inexact; it excludes unseen late
+commits and new higher IDs. The protected checkpoint retains at most 32
+operation-ID/diagnostic observations and a sticky truncation flag. Subsequent
+clean pages do not erase earlier findings or make the CLI report clearance.
+Status 1 means retained findings; status 2 means refusal without advancing the
+checkpoint. Status 0 means this partial page completed without retained
+findings. Local cursor target binding is not a database incarnation or trusted
+capture seal. Checkpoint reuse after restore cannot establish historical
+coverage, native authority, activation or release readiness.
+
 Every non-exception view includes the whole audited input's `coverage` object:
 `lineage`, `selected_epoch`, `complete`, `quiescent`, and `exception_count`.
 This includes unfiltered holdings, supply, prices, routes and provenance. The

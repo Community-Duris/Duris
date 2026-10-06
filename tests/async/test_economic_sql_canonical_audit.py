@@ -11,6 +11,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import tempfile
 import time
 import unittest
 from unittest import mock
@@ -728,9 +729,362 @@ class CanonicalAuditTests(unittest.TestCase):
         cursor.close.assert_called_once_with()
 
 
+class CanonicalSweepTests(unittest.TestCase):
+    def test_empty_range_and_zero_key_never_claim_complete_coverage(self):
+        for key in ('', '00'*16):
+            connection = mock.Mock()
+            executor = mock.Mock(queries=3, bytes=64)
+            executor.sql.side_effect = ['10', key, key]
+            with self.subTest(key=key), mock.patch.object(audit, 'CursorExecutor', return_value=executor):
+                report, state = audit.scan_page(connection, audit.new_progress('ab'*32, 100), now=101)
+            self.assertTrue(report['range_exhausted'])
+            self.assertEqual(state['completed_sweeps'], 1)
+            self.assertFalse(report['coverage']['complete'])
+            self.assertFalse(report['release_qualified'])
+            self.assertEqual(report['findings'], [{'code': 'restore_economic_metadata_mismatch'}] if key else [])
+
+    def test_durable_resume_revisits_delayed_lower_id_without_clearance(self):
+        class Database:
+            def __init__(self):
+                self.roots = {fixture.operation: fixture for fixture in
+                    (RestoreProjectionFixture(canonical=claim_capsules(value, 0, 1)) for value in (0x82, 0x84))}
+                self.queries = self.bytes = 0
+
+            def sql(self, query):
+                self.queries += 1
+                if 'information_schema.tables' in query:
+                    return '10'
+                if query.startswith('SELECT LOWER(HEX(operation_id))'):
+                    if 'DESC' in query:
+                        return max(self.roots, default='')
+                    low, high = re.findall(r"UNHEX\('([0-9a-f]*)'\)", query)
+                    limit = int(re.search(r'LIMIT (\d+)', query).group(1))
+                    return '\n'.join(key for key in sorted(self.roots) if low < key <= high)[:limit*33-1]
+                identities = re.findall(r"operation_id=UNHEX\('([0-9a-f]{32})'\)", query)
+                if 'FROM (SELECT 1 FROM economic_accounting_source_claim' in query:
+                    return '1'
+                if query.startswith('SELECT JSON_ARRAY(') and 'FROM economic_accounting_source_claim' in query:
+                    row = self.roots[identities[0]].rows['metadata'][0]
+                    return json.dumps([row[0], row[11], row[2], 1]) if row[17] == 1 and row[11] else ''
+                return self.roots[identities[0]].sql(query) if identities else '0'
+
+        database, connection = Database(), mock.Mock()
+        source = 'ab' * 32
+        with tempfile.TemporaryDirectory() as directory, mock.patch.object(audit, 'CursorExecutor', return_value=database):
+            path = Path(directory) / 'progress.json'
+            state = audit.load_progress(path, source, now=100)
+            report, state = audit.scan_page(connection, state, page_roots=1, now=101)
+            self.assertEqual(state['cursor'], '82' * 16)
+            self.assertFalse(report['coverage']['complete'])
+            audit.save_progress(path, state)
+            state = audit.load_progress(path, source, now=102)
+            late = RestoreProjectionFixture(canonical=claim_capsules(0x81, 0, 1))
+            late.rows['postings'][0][4] += 1
+            database.roots[late.operation] = late
+            report, state = audit.scan_page(connection, state, page_roots=1, now=103)
+            self.assertTrue(report['range_exhausted'])
+            report, state = audit.scan_page(connection, state, page_roots=1, now=104)
+            self.assertEqual(state['cursor'], late.operation)
+            self.assertEqual(report['findings'][0]['code'], 'restore_economic_canonical_posting_mismatch')
+            self.assertFalse(report['coverage']['complete'])
+            self.assertFalse(report['release_qualified'])
+            self.assertEqual(connection.rollback.call_count, 3)
+
+    def test_progress_refuses_foreign_corrupt_and_aliased_state(self):
+        source = 'ab' * 32
+        state = audit.new_progress(source, 100)
+        for name, value in (('source_digest', 'cd' * 32), ('cursor', 'ff' * 16),
+                            ('completed_sweeps', True), ('total_rows', 1.0),
+                            ('started_at', float('nan')), ('last_page_at', 102),
+                            ('findings', [{'operation_id': '00' * 16, 'code': 'private-capsule'}])):
+            damaged = copy.deepcopy(state)
+            damaged[name] = value
+            with self.subTest(field=name), self.assertRaises(audit.AuditError):
+                audit.validate_progress(damaged, source, 101)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'progress.json'
+            audit.save_progress(path, state)
+            before = path.read_bytes()
+            with mock.patch.object(audit.os, 'replace', side_effect=OSError('interrupted before rename')):
+                with self.assertRaises(OSError):
+                    audit.save_progress(path, audit.new_progress(source, 101))
+            self.assertEqual(path.read_bytes(), before)
+            self.assertEqual(audit.load_progress(path, source, now=101), state)
+            path.write_bytes(b'{"format":0,"format":1}')
+            with self.assertRaisesRegex(audit.AuditError, 'progress JSON'):
+                audit.load_progress(path, source, now=101)
+            path.write_bytes(b' ' * (audit.MAX_PROGRESS_BYTES + 1))
+            with self.assertRaises(audit.AuditError):
+                audit.load_progress(path, source, now=101)
+
+    def test_page_failure_preserves_cursor_and_always_rolls_back(self):
+        state = audit.new_progress('ab' * 32, 100)
+        connection = mock.Mock()
+        with mock.patch.object(audit, 'CursorExecutor') as constructor:
+            constructor.return_value.sql.side_effect = OSError('private transport failed')
+            with self.assertRaises(OSError):
+                audit.scan_page(connection, state, now=101)
+        self.assertEqual(state, audit.new_progress('ab' * 32, 100))
+        connection.rollback.assert_called_once_with()
+        connection.cursor.return_value.close.assert_called_once_with()
+        for value in (0, 3, True, 1.0):
+            with self.subTest(limit=value), self.assertRaises(audit.AuditError):
+                audit.scan_page(connection, state, page_roots=value, now=101)
+
+    def test_page_executor_has_query_byte_row_and_time_bounds(self):
+        for options, kind, code in (({'query_limit': 0}, audit.PageBudgetError, 'page budget'),
+                                   ({'deadline': 0}, audit.PageBudgetError, 'page budget'),
+                                   ({'row_limit': 1}, audit.AuditError, 'input limit'),
+                                   ({'total_bytes': 3}, audit.PageBudgetError, 'page byte budget')):
+            cursor = mock.Mock()
+            cursor.fetchmany.side_effect = [[{'value': '123'}, {'value': '456'}], []]
+            with self.subTest(bound=options), self.assertRaisesRegex(kind, code):
+                audit.CursorExecutor(cursor, **options).sql('SELECT value FROM detail')
+
+    def test_capsule_budget_refusal_never_becomes_a_finding_or_advances_progress(self):
+        for field in ('canonical_intent', 'canonical_plan'):
+            fixture, connection = RestoreProjectionFixture(), mock.Mock()
+            original = fixture.sql
+            budget = audit.CursorExecutor(mock.Mock(), query_limit=0)
+            def read(query):
+                if 'information_schema.tables' in query:
+                    return '10'
+                if query.startswith('SELECT LOWER(HEX(operation_id))'):
+                    return fixture.operation
+                if query.startswith('SELECT HEX(SUBSTRING('+field):
+                    return budget.sql(query)
+                return original(query)
+            fixture.sql = read
+            state = audit.new_progress('ab'*32, 100)
+            with self.subTest(capsule=field), mock.patch.object(audit, 'CursorExecutor', return_value=fixture):
+                with self.assertRaisesRegex(audit.PageBudgetError, 'page budget'):
+                    audit.scan_page(connection, state, now=101)
+            self.assertEqual(state, audit.new_progress('ab'*32, 100))
+            connection.rollback.assert_called_once_with()
+            connection.cursor.return_value.close.assert_called_once_with()
+
+    @unittest.skipUnless(os.name == 'posix', 'durable CLI progress uses POSIX locks')
+    def test_progress_lock_and_symlink_refusal(self):
+        import select
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'progress.json'
+            with audit.progress_lock(path):
+                with self.assertRaisesRegex(audit.AuditError, 'already in use'):
+                    with audit.progress_lock(path):
+                        self.fail('two owners acquired the progress file')
+            with audit.progress_lock(path):
+                audit.save_progress(path, audit.new_progress('ab' * 32, 100))
+            self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+            link = Path(directory) / 'link.json'
+            link.symlink_to(path)
+            with self.assertRaises((OSError, audit.AuditError)):
+                audit.load_progress(link, 'ab' * 32, now=101)
+            command = [sys.executable, '-B', '-c',
+                'import signal,sys; sys.path.insert(0,' + repr(str(ROOT/'scripts')) + '); '
+                'from economic_sql_canonical_audit import progress_lock; '
+                'lock=progress_lock(' + repr(str(path)) + '); lock.__enter__(); '
+                'print("LOCKED",flush=True); signal.pause()']
+            holder = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            try:
+                ready, _, _ = select.select([holder.stdout], [], [], 5)
+                self.assertTrue(ready, 'progress lock holder did not start within original 5-second bound')
+                self.assertEqual(holder.stdout.readline(), b'LOCKED\n')
+                with self.assertRaisesRegex(audit.AuditError, 'already in use'):
+                    with audit.progress_lock(path):
+                        self.fail('live process lock was ignored')
+            finally:
+                holder.kill()
+                stdout, stderr = holder.communicate(timeout=5)
+            self.assertEqual((holder.returncode, stdout, stderr), (-9, b'', b''))
+            with audit.progress_lock(path):
+                self.assertEqual(audit.load_progress(path, 'ab'*32, now=101), audit.new_progress('ab'*32, 100))
+
+
 @unittest.skipUnless(os.environ.get('DURIS_PLAN5_CANONICAL_NATIVE') == '1',
                      'requires explicitly selected native and fresh private SQL checks')
 class NativeCanonicalAuditTests(unittest.TestCase):
+    def test_resumable_pages_delayed_commit_and_growing_tail_both_engines(self):
+        import pymysql
+        import migration_runner as migrations
+        import persistence_restore as restore
+        from test_persistence_backup_integration import sql
+
+        work = Path(os.environ['DURIS_PLAN5_CANONICAL_ARTIFACTS'] + '-sweep').resolve()
+        self.assertFalse(work.exists())
+        self.assertTrue(work.is_relative_to((ROOT/'bin').resolve()))
+        work.mkdir(parents=True)
+        results = []
+        for engine in ('mariadb', 'mysql'):
+            with restore.private_database(work/engine, engine) as env:
+                version = sql(env, 'SELECT VERSION()')
+                sql(env, payload=(ROOT/'migrations/bootstrap_multithread_safe.sql').read_bytes())
+                with mock.patch.dict(os.environ, env, clear=True):
+                    manifest = migrations.load_manifest()
+                    executor = migrations.MysqlExecutor(manifest)
+                    executor.adopt('fresh_bootstrap')
+                    migrations.run_pending(manifest, executor)
+                self.assertEqual(sql(env, 'SELECT MAX(sequence_number) FROM mud_schema_history'), '62')
+                owner = pymysql.connect(unix_socket=env['DB_SOCKET'], user='root', database='duris_restore',
+                                        autocommit=True, cursorclass=pymysql.cursors.DictCursor)
+                late_writer = pymysql.connect(unix_socket=env['DB_SOCKET'], user='root', database='duris_restore',
+                                              autocommit=False, cursorclass=pymysql.cursors.DictCursor)
+                reader = None
+                try:
+                    def insert(connection, table, fields):
+                        with connection.cursor() as cursor:
+                            cursor.execute('INSERT INTO '+table+' ('+','.join(fields)+') VALUES ('+
+                                           ','.join(['%s']*len(fields))+')', tuple(fields.values()))
+                    low = RestoreProjectionFixture(rejected=True, canonical=claim_capsules(0x81, 0, 1))
+                    lineage, epoch = (bytes.fromhex(value) for value in low.rows['metadata'][0][:2])
+                    creator = b'\x70'*16
+                    insert(owner, 'critical_operation_inbox', dict(operation_id=creator, command_hash=b'\x01'*32,
+                        keys_hash=b'\x02'*32, command_type=3, schema_version=2, payload_version=1,
+                        status=1, result_code=0, durable_revision=1, result_payload=b''))
+                    insert(owner, 'economic_lineage_state', dict(lineage=lineage, active_epoch=None))
+                    insert(owner, 'economic_epoch', dict(lineage=lineage, epoch=epoch, ordinal=1,
+                        transition_kind=1, transition_digest=b'\x03'*32, creating_operation_id=creator))
+                    def root(value, connection=owner, damage=False):
+                        fixture = RestoreProjectionFixture(rejected=True, canonical=claim_capsules(value, 0, 1))
+                        row = fixture.rows['metadata'][0]
+                        names = ('lineage','epoch','operation_id','original_operation_id', 'accounting_version',
+                            'writer_id','policy_version','compiler_version','actor_kind','actor_id','reason','source_event',
+                            'intent_digest','domain_digest','plan_digest')
+                        fields = dict(zip(names, row[:15]))
+                        for name in ('lineage','epoch','operation_id','original_operation_id','source_event',
+                                     'intent_digest','domain_digest','plan_digest'):
+                            fields[name] = bytes.fromhex(fields[name]) if fields[name] is not None else None
+                        insert(connection, 'critical_operation_inbox', dict(operation_id=fields['operation_id'],
+                            command_hash=b'\x04'*32, keys_hash=b'\x05'*32, command_type=3, schema_version=2,
+                            payload_version=1, status=2, result_code=5, durable_revision=1, result_payload=b''))
+                        fields.update(canonical_intent=fixture.frozen, canonical_plan=None, outcome=2, result_code=5)
+                        fields.update(zip(('account_count','posting_count','child_count','before_witness_count',
+                                           'after_witness_count','item_event_count'), row[19:25]))
+                        if damage:
+                            fields['actor_id'] += 1
+                        insert(connection, 'economic_accounting_operation', fields)
+                        return fixture.operation
+                    root(0x82)
+                    root(0x84)
+                    root(0x81, late_writer, damage=True)  # Original transaction remains uncommitted.
+                    with owner.cursor() as cursor:
+                        cursor.execute("CREATE USER 'sweep_reader'@'localhost' IDENTIFIED BY 'private-sweep-reader'")
+                        cursor.execute("GRANT SELECT ON duris_restore.* TO 'sweep_reader'@'localhost'")
+                    reader = pymysql.connect(unix_socket=env['DB_SOCKET'], user='sweep_reader',
+                        password='private-sweep-reader', database='duris_restore', autocommit=True,
+                        cursorclass=pymysql.cursors.SSDictCursor)
+                    with reader.cursor() as cursor:
+                        with self.assertRaises(pymysql.MySQLError) as denied:
+                            cursor.execute('UPDATE economic_lineage_state SET revision=revision')
+                        self.assertEqual(denied.exception.args[0], 1142)
+                    progress_path = work/(engine+'-progress.json')
+                    source = 'ab'*32
+                    state = audit.load_progress(progress_path, source)
+                    observations = []
+                    range_queries = []
+                    def page(label):
+                        nonlocal state
+                        before = sql(env, "SELECT SHA2(GROUP_CONCAT(CONCAT(HEX(operation_id),':',actor_id) "
+                            "ORDER BY operation_id),256) FROM economic_accounting_operation")
+                        previous = copy.deepcopy(state)
+                        wrapped = mock.Mock(wraps=reader)
+                        captured_cursor = mock.Mock(wraps=reader.cursor())
+                        wrapped.cursor.return_value = captured_cursor
+                        report, state = audit.scan_page(wrapped, state, page_roots=1)
+                        wrapped.rollback.assert_called_once_with()
+                        captured_cursor.close.assert_called_once_with()
+                        queries = [call.args[0] for call in captured_cursor.execute.call_args_list]
+                        self.assertTrue(all(query.startswith(('SELECT ', 'SET TRANSACTION ', 'START TRANSACTION ')) for query in queries))
+                        range_queries.extend(query for query in queries if 'WHERE operation_id>UNHEX' in query)
+                        self.assertEqual(previous['source_digest'], state['source_digest'])
+                        self.assertFalse(report['coverage']['complete'])
+                        self.assertFalse(report['coverage']['consistent_entire_sweep'])
+                        self.assertFalse(report['release_qualified'])
+                        self.assertLessEqual(report['queries'], audit.MAX_PAGE_QUERIES)
+                        self.assertLessEqual(report['read_bytes'], audit.MAX_INPUT_BYTES)
+                        self.assertLess(report['seconds'], audit.PAGE_SECONDS)
+                        self.assertEqual(before, sql(env, "SELECT SHA2(GROUP_CONCAT(CONCAT(HEX(operation_id),':',actor_id) "
+                            "ORDER BY operation_id),256) FROM economic_accounting_operation"))
+                        observations.append(dict(label=label, report=report, state=copy.deepcopy(state)))
+                        audit.save_progress(progress_path, state)
+                        state = audit.load_progress(progress_path, source)
+                        return report
+                    first = page('initial range')
+                    self.assertEqual(state['cursor'], '82'*16)
+                    self.assertEqual(state['ceiling'], '84'*16)
+                    self.assertEqual(first['backlog_lower_bound'], 1)
+                    root(0x85)
+                    late_writer.commit()  # Lower than the persisted cursor, after its read view.
+                    second = page('finish pinned range despite growing tail')
+                    self.assertTrue(second['range_exhausted'])
+                    self.assertEqual(state['completed_sweeps'], 1)
+                    root(0x86)
+                    third = page('revisit committed low root after restart')
+                    self.assertEqual(third['findings'], [{'code': 'restore_economic_metadata_mismatch'}])
+                    self.assertEqual(state['cursor'], '81'*16)
+                    # Repeated process starts retain the finding. No clean later
+                    # page or completed historical pass becomes all-clear.
+                    for index in range(4):
+                        root(0x87+index)
+                        page('continuing tail '+str(index))
+                    self.assertGreaterEqual(state['completed_sweeps'], 2)
+                    self.assertEqual(state['total_findings'], 1)
+                    with owner.cursor() as cursor:
+                        cursor.execute('EXPLAIN '+range_queries[1])
+                        query_plan = cursor.fetchall()
+                    indexed = [row for row in query_plan if row['table'] == 'economic_accounting_operation']
+                    self.assertEqual(len(indexed), 1)
+                    self.assertEqual(indexed[0]['key'], 'PRIMARY')
+                    self.assertEqual(indexed[0]['type'], 'range')
+                    # Commit a changed metadata projection after its first read.
+                    # The remaining checks retain the original read view; the
+                    # next page using a fresh view must report the new mismatch.
+                    original_executor = audit.CursorExecutor
+                    moved = []
+                    class MovingExecutor(original_executor):
+                        def sql(self, query):
+                            result = super().sql(query)
+                            if query.startswith('SELECT JSON_ARRAY(') and (
+                                    "FROM economic_accounting_operation WHERE operation_id=UNHEX('"+'82'*16+"')") in query:
+                                with owner.cursor() as mutation:
+                                    mutation.execute("UPDATE economic_accounting_operation SET actor_id=actor_id+1 "
+                                                     "WHERE operation_id=UNHEX('"+'82'*16+"')")
+                                moved.append(True)
+                            return result
+                    moving = audit.new_progress(source, time.time())
+                    moving.update(cursor='81'*16, ceiling='8a'*16)
+                    try:
+                        with mock.patch.object(audit, 'CursorExecutor', MovingExecutor):
+                            same_view, _ = audit.scan_page(reader, moving, page_roots=1)
+                        self.assertEqual(moved, [True])
+                        self.assertEqual(same_view['findings'], [])
+                        next_view, _ = audit.scan_page(reader, moving, page_roots=1)
+                        self.assertEqual(next_view['findings'], [{'code': 'restore_economic_metadata_mismatch'}])
+                    finally:
+                        with owner.cursor() as cursor:
+                            cursor.execute("UPDATE economic_accounting_operation SET actor_id=%s WHERE operation_id=UNHEX('"+
+                                           '82'*16+"')", (low.rows['metadata'][0][9],))
+                    command = [sys.executable, str(ROOT/'scripts/economic_sql_canonical_audit.py'),
+                        '--host','127.0.0.1','--socket',env['DB_SOCKET'],'--user','sweep_reader',
+                        '--database','duris_restore','--password-env','PLAN5_SWEEP_PASSWORD',
+                        '--progress-path',str(work/(engine+'-cli-progress.json')),'--page-roots','1']
+                    ran = subprocess.run(command, capture_output=True, text=True, timeout=35,
+                        env=dict(os.environ, PLAN5_SWEEP_PASSWORD='private-sweep-reader'))
+                    self.assertEqual((ran.returncode, ran.stderr), (1, ''), ran.stdout+ran.stderr)
+                    self.assertEqual(json.loads(ran.stdout)['retained_finding_count'], 1)
+                    self.assertNotIn('81'*16, ran.stdout)
+                    self.assertEqual(sql(env, 'SELECT COUNT(*) FROM economic_lineage_state WHERE active_epoch IS NOT NULL'), '0')
+                    results.append(dict(engine=engine, version=version, observations=observations, query_plan=query_plan,
+                        executed_range_queries=range_queries, same_view=same_view, next_view=next_view,
+                        CLI_command=command, CLI_exit=ran.returncode, SELECT_only_denial=1142,
+                        modeled_capsules=True, native_producer_or_gameplay=False, release_qualified=False))
+                    (work/'results.json').write_text(json.dumps(results, indent=2)+'\n')
+                finally:
+                    late_writer.rollback()
+                    if reader is not None:
+                        reader.close()
+                    late_writer.close()
+                    owner.close()
+
     def test_original_plans_and_projection_faults_both_engines(self):
         import pymysql
         import migration_runner as migrations
@@ -940,6 +1294,16 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                             else:
                                 self.assertEqual(ran.stderr, '')
                                 self.assertEqual(json.loads(ran.stdout)['retained_roots'], 1)
+                            self.assertEqual(before, inventory())
+                            page_report, progress = audit.scan_page(reader, audit.new_progress('ab'*32, time.time()))
+                            self.assertFalse(page_report['coverage']['complete'])
+                            self.assertFalse(page_report['release_qualified'])
+                            if code is None:
+                                self.assertEqual(page_report['findings'], [])
+                            elif code.startswith('restore_economic_'):
+                                self.assertEqual(page_report['findings'], [{'code': code}])
+                            (work/(engine+'-'+label+'-page.json')).write_text(json.dumps(
+                                dict(report=page_report, progress=progress, unchanged=before == inventory()), indent=2)+'\n')
                             self.assertEqual(before, inventory())
                             results.append({'engine': engine,'version': version,'label': label,'code': code,
                                 'command': command,'exit': ran.returncode,'queries': queries,
