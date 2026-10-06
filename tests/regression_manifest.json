@@ -432,6 +432,7 @@
   "test_issue_551_flatfile_craft.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":2,"memory_mb":1536,"seconds":151.215,"purpose":"issue 551 flatfile craft"},
   "test_issue_551_runtime_state_save.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":2.152,"purpose":"Exercise the synchronous item-state writer with multiple captured roots."},
   "test_issue_552_local_shop_contract.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.074,"purpose":"Contract checks for the five durable local drug-dealer shop identities."},
+  "test_item_equipment_reconciliation.py": {"profile":"fast","mode":"unittest","minimum_cases":7,"cpu":1,"memory_mb":256,"seconds":0.03,"purpose":"Equipment-slot drift, transition continuity, unknown openings, native scalar grammar and bounded provenance."},
   "test_item_actions_runtime.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":512,"seconds":8.579,"purpose":"Execute the item-action runtime with the production nevent scheduler under sanitizers."},
   "test_item_command_pipeline_contract.py": {"profile":"native","mode":"unittest","minimum_cases":6,"cpu":1,"memory_mb":512,"seconds":0.58,"purpose":"Contracts for the shared item command parser and ownership boundary."},
   "test_item_custody_history_classification.py": {"profile":"fast","mode":"unittest","minimum_cases":8,"cpu":1,"memory_mb":256,"seconds":0.052,"purpose":"Focused protected-case classification for anomalous custody history."},

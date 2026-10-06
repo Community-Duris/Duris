@@ -1,5 +1,17 @@
 # Double-entry economy: remaining requirements
 
+## Independent equipment-custody fix integrated — 2026-10-06
+
+[Exact source import and primary registration](PLAN5_EQUIPMENT_PRIMARY_REGISTRATION_2026-10-06.md)
+integrate peera781ab425's completed equipment-slot drift/history/scalar/provenance
+fix. Ten owned blobs match; the only manifest addition is its original seven-case
+test. All existing fields, UID minimum11 and105 integration rows are preserved.
+Actual central adapters pass7 equipment and11 affected UID methods, zero skips;
+normal/matrix/current61 metadata checks pass. Complete918-entry discovery is
+inventory only. Both-engine/native component results retain the peer's exact
+qualified scope; no primary native rerun or full Plan/release completion is claimed.
+
+
 ## Shared birth journal carrier handoff — 2026-10-06
 
 [The reviewed three-file private carrier](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)

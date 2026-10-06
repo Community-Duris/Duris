@@ -34,12 +34,14 @@ class Cursor:
             return [{"operation_id": b"z" * 16, "event_index": 0, "item_uid": 3,
                      "root_item_uid": 3, "parent_item_uid": None, "to_owner_type": 1,
                      "to_owner_id": 8, "to_owner_context_id": 0, "item_revision": 1,
+                     "from_equipment_slot": 0, "to_equipment_slot": 5,
                      "from_owner_revision": 0, "reason_type": 2}]
         if "SELECT l.operation_id,l.event_index,l.item_uid" in self.sql:
             return [{
                 "operation_id": bytes([uid + 96]) * 16, "event_index": 0, "item_uid": uid,
                 "root_item_uid": uid, "parent_item_uid": None, "to_owner_type": 1,
                 "to_owner_id": 7, "to_owner_context_id": 0, "item_revision": 1,
+                "from_equipment_slot": 0, "to_equipment_slot": 5,
                 "from_owner_revision": 0, "reason_type": 2, "operation_outcome": 1,
                 "operation_epoch": b"e" * 16,
             } for uid in (1, 5)]
@@ -168,7 +170,7 @@ class UidScopeTests(unittest.TestCase):
             origins, known, 9001, "create", 0, "committed"))
         self.assertEqual(origins, [{"uid": 9001, "origin": "creation", "revision": 0,
                                    "root": 9001, "parent": None, "owner": [0, 0, 0],
-                                   "state": "absent"}])
+                                   "state": "absent", "equipment_slot": 0}])
 
     def test_global_ownership_census_is_partitioned_by_lineage(self):
         operation = b"a" * 16
@@ -185,12 +187,14 @@ class UidScopeTests(unittest.TestCase):
         (events, unreferenced, event_coverage, unanchored, ambiguous, scope,
          unattributed, unattributed_coverage) = result
         self.assertEqual(len(events), 2)
+        self.assertEqual([(row['from_equipment_slot'], row['to_equipment_slot']) for row in events], [(0, 5), (0, 5)])
         self.assertEqual(events[0]["operation_outcome"], "committed")
         self.assertEqual({row["uid"] for row in unreferenced}, {5})
         self.assertEqual(event_coverage["referenced_events"], 1)
         self.assertEqual(unanchored, [5])
         self.assertEqual(ambiguous, [4])
         self.assertEqual([(row["uid"], row["action"]) for row in unattributed], [(3, "create")])
+        self.assertEqual([(row['from_equipment_slot'], row['to_equipment_slot']) for row in unattributed], [(0, 5)])
         self.assertEqual(unattributed_coverage, {"uids": 1, "events": 1})
         self.assertEqual(scope, {
             "ownership_uid_count": 2, "anchored_ownership_uid_count": 1,

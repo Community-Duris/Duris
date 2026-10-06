@@ -151,6 +151,24 @@ child derivations or reassignment of posting/item children produce specific
 `original_plan_*_mismatch` findings. These checks retain all earlier semantic
 findings and never change the supplied snapshot.
 
+Native item positions and both retained UID-history projections also preserve
+equipment slots. Reconciliation compares the current slot with its authenticated
+opening and final ledger slot, and verifies every recorded from/to transition.
+Slot-only drift produces `stale_native_item`; a discontinuity produces
+`broken_item_equipment_history`. A combined position/slot mismatch counts one
+stale item. Slots must be exact unsigned16 integers; equipped openings/current
+items must be live, have no parent, and belong to a player or native mobile;
+mobile slots are limited to43. Malformed history slots produce
+`invalid_item_equipment_slot` without masking original-capsule mismatch findings.
+
+EAB1 equipment omission remains unknown. When other projections record a slot,
+an omitted required opening/history/current slot produces one
+`missing_item_equipment_evidence` per UID. No omitted historical slot is filled
+with zero. A proven revision0 absent creation origin has slot0. Older snapshots
+with all equipment projections omitted remain readable at their original scope;
+they cannot supply complete equipment proof. Bounded UID provenance includes
+valid numeric from/to slots and excludes personal aliases and malformed slots.
+
 All five detail projections require the exact decoded native representation,
 including nested coin and owner vectors. An integer-valued JSON float or a
 Boolean does not authenticate an integer field even when Python equality would

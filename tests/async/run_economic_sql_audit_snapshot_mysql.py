@@ -36,6 +36,8 @@ LEDGER_INSERT = ("INSERT INTO item_ownership_ledger(operation_id,event_index,ite
                  "parent_item_uid,to_owner_type,to_owner_id,to_owner_context_id,item_revision,"
                  "from_owner_revision,reason_type) VALUES ")
 CHILD_INSERT = ("INSERT INTO economic_accounting_child(operation_id,child_index,child_operation_id,parent_index) VALUES ")
+ITEM_INSERT = ("INSERT INTO item_current_owner(item_uid,root_item_uid,parent_item_uid,owner_type,"
+               "owner_id,owner_context_id,item_revision,state,vnum,coin_payload) VALUES ")
 
 
 def bind_synthetic_baseline(cursor, blob):
@@ -140,7 +142,7 @@ TABLES = (
     "outcome_revision BIGINT UNSIGNED NOT NULL) ENGINE=InnoDB",
     "CREATE TABLE item_current_owner (item_uid BIGINT,root_item_uid BIGINT,parent_item_uid BIGINT,"
     "owner_type INT,owner_id BIGINT,owner_context_id BIGINT,item_revision BIGINT UNSIGNED,state INT,"
-    "vnum INT,coin_payload MEDIUMBLOB) ENGINE=InnoDB",
+    "vnum INT,coin_payload MEDIUMBLOB,equipment_slot SMALLINT UNSIGNED NOT NULL DEFAULT 0) ENGINE=InnoDB",
     "CREATE TABLE item_ownership_ledger (operation_id BINARY(16),event_index INT,item_uid BIGINT,"
     "root_item_uid BIGINT,parent_item_uid BIGINT,to_owner_type INT,to_owner_id BIGINT,"
     "to_owner_context_id BIGINT,item_revision BIGINT UNSIGNED,from_owner_revision BIGINT,"
@@ -229,7 +231,7 @@ def verify_coin_payload_source_bounds(setup, audit, snapshot):
 
     def seed(uid, size, mapping_ids):
         with setup.cursor() as cursor:
-            cursor.execute("INSERT INTO item_current_owner VALUES (%s,%s,NULL,1,7,0,1,1,3,%s)",
+            cursor.execute(ITEM_INSERT + "(%s,%s,NULL,1,7,0,1,1,3,%s)",
                            (uid, uid, bounded_coin_payload(uid, size)))
             for mapping_id in mapping_ids:
                 cursor.execute("INSERT INTO economic_account_mapping VALUES "
@@ -454,7 +456,7 @@ try:
             cursor.execute("INSERT INTO auctions VALUES (5,'REMOVED',123,1,7)")
             cursor.execute("INSERT INTO auction_money_pickups VALUES (7,250,1)")
             cursor.execute("INSERT INTO shopkeepers VALUES (3,500,1)")
-            cursor.execute("INSERT INTO item_current_owner VALUES "
+            cursor.execute(ITEM_INSERT +
                            "(81,81,NULL,1,7,0,2,1,1,NULL),"
                            "(82,82,NULL,1,7,0,1,1,3,%s),"
                            "(83,83,NULL,8,0,0,2,2,3,NULL),"
@@ -687,7 +689,7 @@ try:
                 if row["operation_outcome"] == "committed")
             assert next(row for row in snapshot["item_origins"] if row["uid"] == 84) == {
                 "uid": 84, "origin": "creation", "revision": 0, "root": 84,
-                "parent": None, "owner": [0, 0, 0], "state": "absent"}
+                "parent": None, "owner": [0, 0, 0], "state": "absent", "equipment_slot": 0}
             assert snapshot["native"]["uid_event_coverage"] == {
                 "tracked_uids": 4, "ledger_events": 1,
                 "referenced_events": 1, "unreferenced_events": 0}
@@ -705,7 +707,10 @@ try:
             report = Reconciler().audit(snapshot)
             # This cut deliberately includes an unrelated-lineage wallet and
             # a deposit root that cannot authorize creating a wallet mapping.
+            # All three EAB1 item origins omit equipment positions; the live
+            # native columns cannot supply their authenticated opening slots.
             expected_exceptions = {"evidence_loss": 1,
+                                   "missing_item_equipment_evidence": 3,
                                    "unmapped_native_wallet": 1,
                                    "unauthorized_mapping_creation": 1,
                                    "missing_original_plan": 3}
@@ -1140,7 +1145,7 @@ try:
             deep_first, deep_count = 1000, 1200
             deep_last = deep_first + deep_count - 1
             with setup.cursor() as writer:
-                writer.executemany("INSERT INTO item_current_owner VALUES "
+                writer.executemany(ITEM_INSERT +
                                    "(%s,%s,%s,1,7,0,1,1,1,NULL)",
                                    [(uid, deep_last, uid + 1 if uid < deep_last else None)
                                     for uid in range(deep_first, deep_last + 1)])
@@ -1176,7 +1181,7 @@ try:
                 writer.execute(LEDGER_INSERT +
                                "(%s,0,86,86,NULL,8,0,0,2,1,3)",
                                (prior_unlinked_operation,))
-                writer.execute("INSERT INTO item_current_owner VALUES "
+                writer.execute(ITEM_INSERT +
                                "(86,86,NULL,8,0,0,2,2,1,NULL)")
             with setup.cursor() as writer:
                 writer.execute("UPDATE item_ownership_ledger SET from_owner_revision=99 "
@@ -1283,7 +1288,7 @@ try:
                 writer.execute(ROOT_INSERT +
                                "(%s,%s,%s,NULL,33,1,0,NULL,0,0,0,0,NULL)",
                                (other_lineage_operation, other_lineage, EPOCH))
-                writer.execute("INSERT INTO item_current_owner VALUES "
+                writer.execute(ITEM_INSERT +
                                "(85,85,NULL,1,7,0,1,1,1,NULL)")
                 writer.execute(LEDGER_INSERT +
                                "(%s,0,85,85,NULL,1,7,0,1,0,2)",
@@ -1406,7 +1411,7 @@ try:
                 writer.execute("UPDATE item_current_owner SET coin_payload=%s WHERE item_uid=82",
                                (coin_payload(82, [1, 2, 3, 4]),))
             with setup.cursor() as writer:
-                writer.execute("INSERT INTO item_current_owner VALUES "
+                writer.execute(ITEM_INSERT +
                                "(85,85,NULL,1,7,0,1,1,3,X'00')")
             try:
                 capture(audit, LINEAGE, EPOCH)

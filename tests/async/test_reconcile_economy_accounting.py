@@ -156,7 +156,8 @@ def clean_snapshot():
                 {"account_key": BANK, "balance": [3, 0, 0, 0], "revision": 2},
             ],
             "items": [{"uid": 81, "revision": 2, "root": 81, "parent": None,
-                       "owner": [1, 7, 0], "state": "live", "alias": None}],
+                       "owner": [1, 7, 0], "state": "live", "alias": None,
+                       "equipment_slot": 0}],
             "retired_mappings": [],
             "retirement_roots": [],
             "retirement_coverage": {"rows": 0, "current_epoch_rows": 0,
@@ -168,7 +169,8 @@ def clean_snapshot():
             {"account_key": BANK, "origin": "baseline", "balance": [0, 0, 0, 0], "revision": 1},
         ],
         "item_origins": [{"uid": 81, "origin": "baseline", "revision": 1, "root": 81,
-                          "parent": None, "owner": [2, 8, 0], "state": "live"}],
+                          "parent": None, "owner": [2, 8, 0], "state": "live",
+                          "equipment_slot": 0}],
         "operations": [{"operation_id": OP, "lineage": LINEAGE, "epoch": EPOCH,
                         "reason": 3, "outcome": "committed", "source_event": SOURCE,
                         "result_code": 0,
@@ -2423,9 +2425,11 @@ class ReconciliationTests(unittest.TestCase):
                 "owner": [8, 0, 0] if action == "destroy" else [1, 7, 0],
                 "state": "tombstone" if action == "destroy" else "live",
                 "action": action, "operation_outcome": "committed", "referenced": False,
+                "from_equipment_slot": 0, "to_equipment_slot": 0,
             })
         current = {field: events[-1][field]
                    for field in ("uid", "revision", "root", "parent", "owner", "state")}
+        current["equipment_slot"] = 0
         reconciler = Reconciler()
         reconciler.audit_lineage_uid_history(
             "disposable", {"uid_history_events": events}, {(81,): origin}, {(81,): current})
