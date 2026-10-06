@@ -40,7 +40,7 @@ def build_fixture(destination, native_source=ROOT):
     sources = ["src/flatfile/flatfile_accounting_authority.c",
                "src/flatfile/flatfile_accounting_baseline.c", "src/economy/economic_baseline_adapter.c",
                "src/economy/economic_baseline_codec.c", "src/economy/economic_baseline_command.c",
-               *SOURCES[1:]]
+               *SOURCES[1:], "src/economy/shop_trade_recovery_manifest.c"]
     flags = ["-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-O1", "-g",
              "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
              "-DDURIS_FLATFILE_ACCOUNTING_TEST", "-I" + str(native_source / "src"), "-pthread"]
