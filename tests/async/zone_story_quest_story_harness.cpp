@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 146 &&
+		require(catalog.story_mappings.size() == 147 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7687,6 +7687,102 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "firesworn_altar"; });
+			const auto &essences = story_for("firesworn_altar", "divine-essences");
+			require(mapping.stories.size() == 1 && mapping.contacts.size() == 8 &&
+					essences.steps.size() == 5,
+				"Firesworn mapping scope failed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 1351, 135101, 100, "arrival") ==
+					result::applied,
+				"Firesworn discovery failed");
+			require(journey.meet_npc(7, 42, 135110, 135131, 102) == result::applied &&
+					journey.meet_npc(7, 42, 135103, 135112, 102) ==
+						result::applied,
+				"Firesworn context encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 1351, 10, 1, 103, false, false);
+			require(journal.find("] " + essences.title + "\r\n") == std::string::npos &&
+					journey.progress_for_zone(7, 42, 1351).completed == 0,
+				"Firesworn context exposed unmet giver or forged a return");
+			require(journey.meet_npc(7, 42, 135114, 135140, 104) == result::applied,
+				"Firesworn Tiliwibble encounter failed");
+			const auto status = [&](size_t row, const char *state)
+			{
+				const auto start = journal.find("] " + essences.title + "\r\n");
+				require(start != std::string::npos,
+					"Firesworn visible story missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     essences.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			for (int v : { 135101, 135110, 135111, 135119, 135120, 135123, 135130,
+				       135131, 135133 })
+				supplies.carried[v] = 1;
+			supplies.equipped[18] = 135106;
+			journal = journey.render_journal(7, 42, 1351, 10, 1, 106, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 4; ++i)
+				require(status(i, "Missing now"),
+					"Firesworn held essence, keys, sword pieces or portals replaced exact proof");
+			supplies = {};
+			supplies.carried[135106] = 4;
+			supplies.carried[135107] = 1;
+			supplies.carried[135108] = 1;
+			journal = journey.render_journal(7, 42, 1351, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(2, "Ready now") &&
+					status(3, "Missing now"),
+				"Firesworn duplicate essence replaced fourth identity");
+			supplies.carried[135109] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 1351, 10, 1, 108, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 4; ++i)
+				require(status(i, "Ready now"),
+					"Firesworn supplied exact essence not ready");
+			require(status(4, "Pending") && journey.serialize_state() == before,
+				"Firesworn supplies forged kills/access/reforging history");
+			// Accepted receipt projection is separate from actual stock/combat and authority settlement.
+			record(journey, essences.contracts.front(), "firesworn-accepted", 1351,
+			       135140);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 1351, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(4, "Recorded") && status(0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 1351).completed == 1 &&
+					journey.progress_for_zone(7, 42, 1351).total == 1,
+				"Firesworn spent proof erased receipt or material/context inflated units");
+			auto replay =
+				completion(essences.contracts.front(), "firesworn-accepted", 120);
+			replay.transaction.zone_number = 1351;
+			replay.transaction.room_vnum = 135140;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Firesworn exact replay duplicated return");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 1351).completed == 1,
+				"Firesworn cold recovery lost accepted history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 1351, 135101, 100, "arrival") ==
+					result::applied,
+				"Firesworn raw discovery failed");
+			record(historical, essences.contracts.front(), "firesworn-raw", 1351,
+			       135140);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 1351).completed == 1 &&
+					authored.evidence_for(essences.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Firesworn raw-to-authored recovery lost native receipt");
 		}
 
 		{

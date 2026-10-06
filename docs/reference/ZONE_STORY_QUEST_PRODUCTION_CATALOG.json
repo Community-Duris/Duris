@@ -147414,6 +147414,166 @@
     {
       "contacts": [
         {
+          "description": "Explains the four-essence return and awards a skeleton key plus two broken-sword pieces. Library reforging and defeating Maelshem are separate leads with no additional local accepted receipt.",
+          "keyword": "tiliwibble",
+          "mob_vnum": 135114,
+          "name": "Tiliwibble, the halfling thief",
+          "topics": [
+            "maelshem",
+            "tower",
+            "treasures",
+            "voluntown",
+            "frost",
+            "queen",
+            "auril",
+            "hi",
+            "hello",
+            "firesworn",
+            "legion",
+            "devils"
+          ]
+        },
+        {
+          "description": "The blood guardian at its altar carries the exact blood essence. Dialogue and carrying supplied proof do not record your personal source recovery or disabling the altar.",
+          "keyword": "blood",
+          "mob_vnum": 135103,
+          "name": "the guardian of the blood",
+          "topics": []
+        },
+        {
+          "description": "The fire guardian carries the fire essence. Its specialization keyword and packed weapon effects are combat behavior, not a custom quest receipt.",
+          "keyword": "fire",
+          "mob_vnum": 135104,
+          "name": "the guardian of the fire",
+          "topics": []
+        },
+        {
+          "description": "The mist guardian carries the mist essence. Its spire has a different key and source location from the other guardians.",
+          "keyword": "mists",
+          "mob_vnum": 135105,
+          "name": "the guardian of the mists",
+          "topics": []
+        },
+        {
+          "description": "The enchantment guardian carries the fourth essence. Similar ESSENCE names do not merge the four item identities.",
+          "keyword": "enchantment",
+          "mob_vnum": 135106,
+          "name": "the guardian of enchantment",
+          "topics": []
+        },
+        {
+          "description": "The devil priest supplies the forged shadowsteel gate key. Possession and shared door state do not establish a successful personal entry.",
+          "keyword": "vrolithin",
+          "mob_vnum": 135109,
+          "name": "Vrolithin, the devil priest of Maelshem",
+          "topics": []
+        },
+        {
+          "description": "The false god carries a dream rift toward the nightmare realm. Death, floor publication, source recovery and successful portal travel need separate outcome qualification.",
+          "keyword": "maelshem",
+          "mob_vnum": 135110,
+          "name": "Maelshem, the false god",
+          "topics": []
+        },
+        {
+          "description": "The nightmare projection has an independent reset source and carries a tear toward the hidden vault. Encountering it is not proof that you defeated Maelshem or completed a triggered second phase.",
+          "keyword": "projection",
+          "mob_vnum": 135117,
+          "name": "the nightmare projection of Maelshem",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Tiliwibble asks for four different divine essences to oppose Maelshem\u2019s ascent. Her return awards a skeleton key and two pieces of a broken sword. The guarded spires and dream realm add exploration leads. Discovery is separate; new progress requires active, ready accounting.",
+      "orientation": [
+        "ASK TILIWIBBLE about maelshem, tower, treasures, firesworn or legion. She asks for the essences of blood, fire, mist and enchantment. Carry one of each exact essence loose and make the accepted return. Four copies of one essence cannot replace the four different kinds. Questions supply leads without creating an achievement for each keyword.",
+        "The four guardians at their altars carry the different essences. Their spires use different keys supplied by sentries near the stair entrances. Vrolithin supplies the forged shadowsteel gate key. Supplied matching proof can fit the recipe; it does not establish a personal guardian defeat, first source recovery, altar interaction or successful door action.",
+        "The accepted return awards Tiliwibble\u2019s skeleton key, a jagged gem-studded hilt and a shattered fragment of a silvery blade. Both sword pieces are rewards, not ingredients in this return. The native completion text is blank; this journal explains the accepted contract. QA is a room-echo marker, not an extra automatic quest or a prerequisite gate.",
+        "The skeleton key opens the cathedral and the route toward the upper spire. A silver key on a hellhound fits the summit door. Shared, picked or already-open doors and direction-specific key settings are separate from the accepted receipt. Key possession does not record reaching or defeating Maelshem, and the code does not require earlier journal history for access.",
+        "Maelshem carries a dream rift aimed at the nightmare realm; his projection carries a second tear aimed at the hidden vault. Use ENTER on a present, visible portal. Generic no-corpse death handling can publish their carried objects on the floor. The projection has its own reset source; seeing it does not establish a death-triggered second phase or personal victory. Successful travel needs separate outcome support.",
+        "Tiliwibble suggests the Library of Drakenstone for reforging the broken sword, and speaks of Auril, Voluntown and the legion. No active selected recipe consumes these two sword pieces, so reforging remains a builder integration lead. Empty altar descriptions, hidden proc names and the unused bloodstone key do not create additional accepted local quests.",
+        "The reviewed static world has no external room boundary or declared external portal into this zone. Its two declared portals originate locally. Entry, runtime-created access and finite resetmode0 supply need builder qualification; this journal does not promise a connected route or refreshed daily stock. Optional materials show loose supplies now; accepted history remains after spending them."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "firesworn_altar",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:135106,I:135107,I:135108,I:135109;receive=I:135110,I:135119,I:135120;disappear=0",
+              "giver_vnum": 135114
+            }
+          ],
+          "id": "divine-essences",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it.",
+              "id": "proof-135106",
+              "item_vnums": [
+                135106
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the divine essence of blood loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it.",
+              "id": "proof-135107",
+              "item_vnums": [
+                135107
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the divine essence of fire loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it.",
+              "id": "proof-135108",
+              "item_vnums": [
+                135108
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the divine essence of mist loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it.",
+              "id": "proof-135109",
+              "item_vnums": [
+                135109
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the divine essence of enchantment loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:135106,I:135107,I:135108,I:135109;receive=I:135110,I:135119,I:135120;disappear=0",
+                  "giver_vnum": 135114
+                }
+              ],
+              "hint": "Records the exact native return and retains it after materials are spent. Source kills, successful access, dream travel, defeating Maelshem and sword reforging are separate. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete Tiliwibble\u2019s accepted four-essence return"
+            }
+          ],
+          "summary": "Bring four different divine essences to Tiliwibble for her skeleton key, a jagged hilt and a shattered blade fragment. This accepted return prepares the larger journey; it does not record a personal guardian kill, Maelshem\u2019s defeat, dream travel or a reforged sword.",
+          "title": "Four essences against Maelshem\u2019s ascent"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Lynstar is in the pit beneath the Butsu village, reached through the well or termite tunnels. She makes six distinct legendary instruments and six matching epic upgrades. Each epic upgrade consumes Retribution and she leaves afterward; her sister's full-set request is an unfinished lead.",
           "keyword": "bard",
           "mob_vnum": 138500,

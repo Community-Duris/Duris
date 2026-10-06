@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 146 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 147 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,13 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+firesworn=next(m for m in catalog['story_mappings'] if m['source_area']=='firesworn_altar')
+assert (firesworn['schema_version'],firesworn['revision'],firesworn['coverage'])==(3,1,'complete') and not firesworn['exclusions']
+assert len(firesworn['stories'])==1 and len(firesworn['contacts'])==8 and sum(len(c['topics']) for c in firesworn['contacts'])==12
+assert len(firesworn['stories'][0]['contracts'])==1 and len(firesworn['stories'][0]['steps'])==5
+assert sum(t.get('optional',False) for t in firesworn['stories'][0]['steps'])==4
+assert report['eligible_by_zone']['1351']==1
 
 shabo=next(m for m in catalog['story_mappings'] if m['source_area']=='shabo')
 assert (shabo['schema_version'],shabo['revision'],shabo['coverage'])==(3,1,'complete') and not shabo['exclusions']
