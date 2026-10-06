@@ -1,5 +1,15 @@
 # Double-entry economy: remaining requirements
 
+## Independent collector quarantine reader integrated — 2026-10-06
+
+[Primary integration](PLAN5_COLLECTOR_QUARANTINE_PRIMARY_INTEGRATION_2026-10-06.md)
+consumes the exact completed Plan5 issue977a5f317. All four ownership projections
+retain quarantine; history readers and retired-UID checks preserve its semantics.
+Four focused methods, five ASTs and normal accounting validation pass. Peer native
+and both-engine results retain their older source/component scope; combined
+producer, opening capture, restart and release qualification remain unfinished.
+No authority, activation, manifest or unrelated WIP changes are introduced.
+
 ## Explicit activation verifier request context — 2026-10-06
 
 [Shared contract and Plan 5 handoff](ACTIVATION_VERIFIER_REQUEST_CONTEXT_2026-10-06.md)
