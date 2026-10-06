@@ -1,0 +1,351 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "obcita",
+  "coverage": "complete",
+  "introduction": "Follow the cleric staff, three shadowsteel commissions and Rolart shield. Hidden access, boss summons, services and captive lore remain distinct leads.",
+  "orientation": [
+    "Three separate leads await you: the formerly drow necromancer in the northwest tower wants the cleric holy golden staff; the eccentric vampire near the mountain approach offers three shadowsteel commissions; the shade of Rolart in the courtyard wants the shield carried by Rolart the death knight.",
+    "Ask the necromancer want, quest, help or what. His request describes striking before the shrine is reconsecrated, but the quest has no enforced deadline. Returning the exact staff records the accepted exchange; supplied proof does not establish your own cleric victory.",
+    "The cleric carries the holy golden staff at the ruined shrine south of the approach. The necromancer offers a malevolent scimitar for it. Neither the broken altar nor the nearby ascension location is another required offering.",
+    "Ask the odd vampire tools, forge, shadow, want, shadowsteel, quest or smithy. A minuscule shard and ten platinum buys the ring; a small shard and twenty platinum buys the bracelet; a large shard and one hundred platinum buys the boots. Similar shard names and having only the money do not substitute for the exact offering.",
+    "The vampire commissions are currently unavailable while accounting is active: their item-and-coin payments need owned settlement support. Their native rewards and fees are recorded here for integration. Each accepted commission makes the vampire depart; one commission does not complete its alternatives. Their current daily exclusion is unsupported payment, not departure alone.",
+    "The courtyard shadow carries the minuscule shard, the lesser shadowbeast below the southwest tower carries the small shard, and the following greater shadowbeast in the cold hidden lair carries the large shard. Only one of the two greater shadowbeasts carries the large shard. A shard given to you can prepare the return; it does not establish that you recovered it yourself.",
+    "Ask the shade death, knight, undead, help or quest. Rolart the death knight in the northeast tower carries his shield. Return that exact shield for Rolart's signet ring. The other knights, their shields and Calon signet are distinct. The farewell text does not define a new escort or disappearance objective.",
+    "The hidden tunnels, ancient library, armory, livestock cells and dragon hoard have their own access routes. Some keys break on use. A borrowed gate item or shared open door can grant access without personal victory, recovery or earlier quest completion.",
+    "In the west end of Lord Ghulan's library, examine the unusual bookshelf and its invitation to prove thy insanity. CACKLE bookshelf uses that exact travel object to reach the top of the central spire; CACKLE orb can return you to the library. The ordinary shelves are containers with the same name. Actual successful arrival is separate from reading lore or issuing a social.",
+    "Satar Ghulan can summon flesh golems, while three other massive flesh golems load in the laboratory. A matching golem name does not prove a boss-created summon or your own boss victory. His rune-covered stone and memory are separate from the five exchanges.",
+    "Rolart also offers Expert Riposte training when that service is available. Training purchases are unavailable while accounting is active. The undead smithy in the barracks is a different mobile from the eccentric vampire; his ore-forging service is likewise unavailable while accounting is active.",
+    "The book describes Orcus, the former lord, Satar's rise and the fallen paladins. The captive cells suggest further rescue stories, but these leads have no defined liberation, escort, keystone destruction or whole-citadel conquest objective. Those leads need their own integration before they can earn story credit.",
+    "The Ready now row checks the loose item only; current coin readiness is not supported by the journal. Provide the stated full fee too. Native acceptance still requires both item and fee. Carry the exact offering loose and provide its complete fee. Current material and coin readiness is separate from an accepted history, which remains after the offering is spent. All new credit requires active, ready accounting. Daily rollover does not replenish item stock or restore a departed giver."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 75604,
+      "name": "the formerly drow necromancer.",
+      "keyword": "necromancer",
+      "description": "Ask want, quest, help or what. Return the cleric holy golden staff for the malevolent scimitar. The reconsecration warning has no enforced quest deadline.",
+      "topics": [
+        "want",
+        "quest",
+        "help",
+        "what"
+      ]
+    },
+    {
+      "mob_vnum": 75614,
+      "name": "an odd vampire",
+      "keyword": "eccentric",
+      "description": "Ask tools, forge, shadow, want, shadowsteel, quest or smithy. Three exact shard-and-fee commissions; the vampire departs after any accepted commission.",
+      "topics": [
+        "tools",
+        "forge",
+        "shadow",
+        "want",
+        "shadowsteel",
+        "quest",
+        "smithy"
+      ]
+    },
+    {
+      "mob_vnum": 75630,
+      "name": "the shade of Rolart",
+      "keyword": "shade",
+      "description": "Ask death, knight, undead, help or quest. Return Rolart's exact shield for his signet ring; the the shade stays after the accepted return.",
+      "topics": [
+        "death",
+        "knight",
+        "shade",
+        "undead",
+        "help",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 75602,
+      "name": "the cleric",
+      "keyword": "cleric",
+      "description": "The ruined shrine cleric carries the staff. Recovery and personal victory need distinct source evidence; the shrine is not an extra quest ingredient.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75603,
+      "name": "a shadow",
+      "keyword": "shadow",
+      "description": "The courtyard shadow can carry the minuscule shard for the ring commission. Other shadows and supplied copies do not establish personal recovery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75613,
+      "name": "a lesser shadowbeast",
+      "keyword": "lesser",
+      "description": "The lesser shadowbeast below the southwest tower can carry the small shard for the bracelet commission.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75618,
+      "name": "a greater shadowbeast",
+      "keyword": "greater",
+      "description": "Two greater shadowbeasts occupy the hidden cold lair; only the selected follower stock row carries the large shard for the boots commission.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75615,
+      "name": "Rolart the death knight",
+      "keyword": "rolart",
+      "description": "Rolart the death knight at the northeast tower carries his shield; his shade is a separate mobile. He also offers Expert Riposte training, currently unavailable for purchases while accounting is active.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75628,
+      "name": "an undead smithy",
+      "keyword": "smithy",
+      "description": "The barracks undead smithy offers a separate ore-forging service, refused while accounting is active. He is not the eccentric vampire accepting shadow shards.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75631,
+      "name": "Kyrir the death knight",
+      "keyword": "kyrir",
+      "description": "Kyrir carries two distinct small-key types and a shadowsteel torc near the underground holy-sword room. Shared access is not another native return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75632,
+      "name": "Kyrix the death knight",
+      "keyword": "kyrix",
+      "description": "Kyrix follows his brother Kyrir. The pair is a separate combat encounter; defeating either does not record Rolart shield return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75635,
+      "name": "Rileas the death knight",
+      "keyword": "rileas",
+      "description": "Rileas carries the first-floor key at the center of the central spire. It opens laboratory and upper-floor routes; the boss room has a separate bookshelf route.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75641,
+      "name": "Kaketkralix, the shadowdragon",
+      "keyword": "kaketkralix",
+      "description": "The shadowdragon carries the old shadowsteel key for her hoard and chest. The egg is inert equipment, without an authored hatching quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75622,
+      "name": "a skeletal guardian",
+      "keyword": "guardian",
+      "description": "Only one selected skeletal guardian at the barracks entrance carries the armory key. The identical second guardian has no matching stock row.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75629,
+      "name": "a livestock guardian",
+      "keyword": "livestock",
+      "description": "Two livestock guardians hold the shared cell-key prototype. An opened cell is not an accepted captive rescue or escort.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75640,
+      "name": "Satar Ghulan, vampire lord of undead",
+      "keyword": "satar",
+      "description": "Satar has separate boss stock, followers and dynamically summoned flesh golems. Rune-stone touch and actual boss victory are distinct outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75652,
+      "name": "a human thief",
+      "keyword": "thief",
+      "description": "The captive human thief carries lockpicks and weapons but has no defined escape quest. Other captives and cell access remain contextual rescue leads.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "cleric-staff",
+      "title": "Return the cleric staff",
+      "category": "request",
+      "summary": "Return the exact proof to this accepting giver for one recorded exchange. The giver remains under the native definition.",
+      "contracts": [
+        {
+          "giver_vnum": 75604,
+          "completion_key": "give=I:75602;receive=I:75604;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "offering",
+          "text": "Carry the exact holy golden staff loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            75602
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The cleric at the ruined shrine carries this staff. A staff given to you prepares the return without establishing that you defeated the cleric yourself."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 75604,
+              "completion_key": "give=I:75602;receive=I:75604;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted exchange completes this card. Supplied proof and spent materials preserve separate readiness and historical acceptance. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "shadow-ring",
+      "title": "Commission the shadowsteel ring",
+      "category": "request",
+      "summary": "Currently unavailable while accounting is active. Once owned mixed payments are supported, provide the exact minuscule shard and 10 platinum together. Ready now checks the loose item only; the journal does not check your money or service availability. The vampire departs after acceptance; other commissions remain independent.",
+      "contracts": [
+        {
+          "giver_vnum": 75614,
+          "completion_key": "give=C:10000,I:75618;receive=I:75619;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "offering",
+          "text": "Carry the exact minuscule shard of shadow loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            75618
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The courtyard shadow can carry this minuscule shard. The vampire departs after accepting the commission. Also provide 10 platinum. Ready now checks only this loose item; the journal does not check your money. The accepted exchange requires both item and full fee."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 75614,
+              "completion_key": "give=C:10000,I:75618;receive=I:75619;disappear=1"
+            }
+          ],
+          "hint": "This commission is currently refused while accounting is active until owned mixed payments are supported. Only its exact accepted exchange records completion. Receiving or carrying the shard does not establish payment or your own recovery."
+        }
+      ]
+    },
+    {
+      "id": "shadow-boots",
+      "title": "Commission the shadowsteel boots",
+      "category": "request",
+      "summary": "Currently unavailable while accounting is active. Once owned mixed payments are supported, provide the exact large shard and 100 platinum together. Ready now checks the loose item only; the journal does not check your money or service availability. The vampire departs after acceptance; other commissions remain independent.",
+      "contracts": [
+        {
+          "giver_vnum": 75614,
+          "completion_key": "give=C:100000,I:75620;receive=I:75621;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "offering",
+          "text": "Carry the exact large shard of shadow loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            75620
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Only one of the two greater shadowbeasts in the cold hidden lair carries this large shard. The vampire departs after accepting the commission. Also provide 100 platinum. Ready now checks only this loose item; the journal does not check your money. The accepted exchange requires both item and full fee."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 75614,
+              "completion_key": "give=C:100000,I:75620;receive=I:75621;disappear=1"
+            }
+          ],
+          "hint": "This commission is currently refused while accounting is active until owned mixed payments are supported. Only its exact accepted exchange records completion. Receiving or carrying the shard does not establish payment or your own recovery."
+        }
+      ]
+    },
+    {
+      "id": "shadow-bracelet",
+      "title": "Commission the shadowsteel bracelet",
+      "category": "request",
+      "summary": "Currently unavailable while accounting is active. Once owned mixed payments are supported, provide the exact small shard and 20 platinum together. Ready now checks the loose item only; the journal does not check your money or service availability. The vampire departs after acceptance; other commissions remain independent.",
+      "contracts": [
+        {
+          "giver_vnum": 75614,
+          "completion_key": "give=C:20000,I:75607;receive=I:75608;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "offering",
+          "text": "Carry the exact small shard of shadow loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            75607
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The lesser shadowbeast below the southwest tower can carry this small shard. The vampire departs after accepting the commission. Also provide 20 platinum. Ready now checks only this loose item; the journal does not check your money. The accepted exchange requires both item and full fee."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 75614,
+              "completion_key": "give=C:20000,I:75607;receive=I:75608;disappear=1"
+            }
+          ],
+          "hint": "This commission is currently refused while accounting is active until owned mixed payments are supported. Only its exact accepted exchange records completion. Receiving or carrying the shard does not establish payment or your own recovery."
+        }
+      ]
+    },
+    {
+      "id": "rolart-shield",
+      "title": "Return Rolart's shield to his shade",
+      "category": "request",
+      "summary": "Return the exact proof to this accepting giver for one recorded exchange. The giver remains under the native definition.",
+      "contracts": [
+        {
+          "giver_vnum": 75630,
+          "completion_key": "give=I:75641;receive=I:75642;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "offering",
+          "text": "Carry the exact shield of Rolart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            75641
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Rolart the death knight in the northeast tower equips this shield. A shield given to you prepares the return without establishing that you defeated him yourself."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 75630,
+              "completion_key": "give=I:75641;receive=I:75642;disappear=0"
+            }
+          ],
+          "hint": "Only this exact accepted exchange completes this card. Supplied proof and spent materials preserve separate readiness and historical acceptance. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 163 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 164 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,13 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+obcita=next(m for m in catalog['story_mappings'] if m['source_area']=='obcita')
+assert (obcita['schema_version'],obcita['revision'],obcita['coverage'])==(3,1,'complete') and not obcita['exclusions']
+assert len(obcita['stories'])==5 and len(obcita['contacts'])==17 and sum(len(c['topics']) for c in obcita['contacts'])==17
+assert sum(len(s['steps']) for s in obcita['stories'])==10 and sum(t.get('optional',False) for s in obcita['stories'] for t in s['steps'])==5
+assert len({s['contracts'][0]['completion_key'] for s in obcita['stories']})==5 and report['eligible_by_zone']['756']==5
+assert all([t['kind'] for t in s['steps']]==['carried_item','completion'] for s in obcita['stories'])
 
 tiamat=next(m for m in catalog['story_mappings'] if m['source_area']=='tiamat')
 assert (tiamat['schema_version'],tiamat['revision'],tiamat['coverage'])==(3,1,'complete') and not tiamat['exclusions']
