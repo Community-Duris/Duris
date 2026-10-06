@@ -93,6 +93,12 @@ def prepare(case_id, output):
     assert text.count("\nS\n") == 1
     path.write_text(text.replace("\nS\n", "\n" + "\n".join(resets) + "\nS\n"))
     metadata["fixture_input_counts"] = dict(counts)
+    metadata["integration_hooks"] = [
+        "Primary integrated SQL-first candidate and authentic reset birth/source/binding; synthetic O is supplied stock only",
+        "Native GIVE first transfers to the original NPC, then prepare_original selects from NPC inventory",
+        "Exact original child/source/custody/receipt observations and actual reward ACK/paired retirement faults",
+        "Maintained crash driver fixture/alias/VNUM selection remains primary-owned; no native journey is run here",
+    ]
     metadata["fixture_hashes"] = {p.name: digest(p) for p in sorted(mini.iterdir()) if p.is_file()}
     (output / "quest-prep-provenance.json").write_text(json.dumps(metadata, indent=2) + "\n")
     return metadata

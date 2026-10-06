@@ -1,9 +1,17 @@
 [
   {
     "case_id": "QP01",
-    "accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
+    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
     "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "runtime_owners": {
+      "dispatch": "assign_the_questers/qst_func -> quester CMD_GIVE -> active_regular_sql submit_native_quest_give",
+      "selection": "quest_native_completion_owner::prepare_original",
+      "observation": "item_native_quest_gameplay_publication_owner::observe_give",
+      "birth_reset": "db.c reset -> quest_mobile_native_birth_owner begin_reset/seal_mobile/finish_reset",
+      "binding": "quest_mobile_native_reference_copy; original generation and canonical encoded reference"
+    },
     "config": {
       "area": "tikitt",
       "giver": 44101,
@@ -157,11 +165,15 @@
     "source_hashes": {
       "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
       "areas/zon/tikitt.zon": "3a8967d02bd2b3f49791619ea68d8b82faec2252dc8c27071d0611aa19e49106",
-      "src/world/db.c": "6dc1651425126fe0e63835312eb2bd0e71d9b48f988e41b18b073b391384fea8",
-      "src/world/quest.c": "33f32049e14ecbf193d5ef526244198d2f18c904186fd454eac2771744737cbb",
+      "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
+      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
       "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
       "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
       "areas/qst/tikitt.qst": "7101f86829c6d32bc259b6c4bb085188a5dd5c010321684ee1b3a92924374d74",
+      "src/world/quest_mobile_native_binding.c": "1b04901860ca7395000a8cb9a66d02de3177d4c7daa46338775133c6b1c6df37",
+      "src/world/quest_mobile_native_birth.c": "234a60250d51ba423467c214359a7af590f0fcf3923b5e5fb99ffd6ec9d2db27",
+      "src/world/native_quest_recovery_context.c": "299ef8882e3cc76f1afe9df43984678c609b21d68d4770520114d1caa7ef5a94",
+      "src/item/item_movement_transaction.c": "18dfd4dbd07f44674e2feb8ff633b82547bf1f3e796f56da0ab7f98aaf7d5ef1",
       "areas/zon/tikit.zon": "1a6ee9f5c8736dc7ee921a5cddc01f30864c44070bffb0751af1f0c9a518dfff",
       "areas/mob/tikitt.mob": "acd8198aebd1c4283226f09138fb665d02756a07159c42ae3e96a1339cbcf3c1",
       "areas/obj/tikit.obj": "a38f679fa6a652d001067338ab24862589f65cfcf871277d2aa5ecfa5891b2e4",
@@ -171,9 +183,17 @@
   },
   {
     "case_id": "QP02",
-    "accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
+    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
     "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "runtime_owners": {
+      "dispatch": "assign_the_questers/qst_func -> quester CMD_GIVE -> active_regular_sql submit_native_quest_give",
+      "selection": "quest_native_completion_owner::prepare_original",
+      "observation": "item_native_quest_gameplay_publication_owner::observe_give",
+      "birth_reset": "db.c reset -> quest_mobile_native_birth_owner begin_reset/seal_mobile/finish_reset",
+      "binding": "quest_mobile_native_reference_copy; original generation and canonical encoded reference"
+    },
     "config": {
       "area": "goblincave",
       "giver": 19005,
@@ -544,11 +564,15 @@
     "source_hashes": {
       "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
       "areas/zon/goblincave.zon": "ae9ecc8247febfee94f6f40d7b8616f4fb66db54c7e8f8d951ab1e94c7f9267d",
-      "src/world/db.c": "6dc1651425126fe0e63835312eb2bd0e71d9b48f988e41b18b073b391384fea8",
-      "src/world/quest.c": "33f32049e14ecbf193d5ef526244198d2f18c904186fd454eac2771744737cbb",
+      "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
+      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
       "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
       "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
       "areas/qst/goblincave.qst": "ff8c735e1258bd05f9065c041f24b68ef621b5c952c14e04a4d97b8c492e30f9",
+      "src/world/quest_mobile_native_binding.c": "1b04901860ca7395000a8cb9a66d02de3177d4c7daa46338775133c6b1c6df37",
+      "src/world/quest_mobile_native_birth.c": "234a60250d51ba423467c214359a7af590f0fcf3923b5e5fb99ffd6ec9d2db27",
+      "src/world/native_quest_recovery_context.c": "299ef8882e3cc76f1afe9df43984678c609b21d68d4770520114d1caa7ef5a94",
+      "src/item/item_movement_transaction.c": "18dfd4dbd07f44674e2feb8ff633b82547bf1f3e796f56da0ab7f98aaf7d5ef1",
       "areas/mob/goblincave.mob": "1e1eb3ae41578d2e63595a8cd1c2c782d5ca234e9fae72ee0e5177392776495a",
       "areas/obj/goblincave.obj": "bcdf9cca82ce8d7c28461d68d9769bb6c49c8f0b24eb80fbde64b8937b0f9d34"
     },
@@ -556,9 +580,17 @@
   },
   {
     "case_id": "QP03",
-    "accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
+    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
     "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "runtime_owners": {
+      "dispatch": "assign_the_questers/qst_func -> quester CMD_GIVE -> active_regular_sql submit_native_quest_give",
+      "selection": "quest_native_completion_owner::prepare_original",
+      "observation": "item_native_quest_gameplay_publication_owner::observe_give",
+      "birth_reset": "db.c reset -> quest_mobile_native_birth_owner begin_reset/seal_mobile/finish_reset",
+      "binding": "quest_mobile_native_reference_copy; original generation and canonical encoded reference"
+    },
     "config": {
       "area": "pineholl",
       "giver": 16006,
@@ -720,11 +752,15 @@
     "source_hashes": {
       "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
       "areas/zon/pineholl.zon": "a46a388b07e50aa1767be5f1263d84275748e85d86b5b99531703ec151138aaa",
-      "src/world/db.c": "6dc1651425126fe0e63835312eb2bd0e71d9b48f988e41b18b073b391384fea8",
-      "src/world/quest.c": "33f32049e14ecbf193d5ef526244198d2f18c904186fd454eac2771744737cbb",
+      "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
+      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
       "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
       "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
       "areas/qst/pineholl.qst": "257713a2c62b0f40b6fcacb75b6efbaa037dcf83e31c7e9b9849fceb1b75d2a5",
+      "src/world/quest_mobile_native_binding.c": "1b04901860ca7395000a8cb9a66d02de3177d4c7daa46338775133c6b1c6df37",
+      "src/world/quest_mobile_native_birth.c": "234a60250d51ba423467c214359a7af590f0fcf3923b5e5fb99ffd6ec9d2db27",
+      "src/world/native_quest_recovery_context.c": "299ef8882e3cc76f1afe9df43984678c609b21d68d4770520114d1caa7ef5a94",
+      "src/item/item_movement_transaction.c": "18dfd4dbd07f44674e2feb8ff633b82547bf1f3e796f56da0ab7f98aaf7d5ef1",
       "areas/mob/pineholl.mob": "af568e9f8f3fcd800cac256bc14788e1be47a946e02b39a55320221b9c7f9e33",
       "areas/obj/pineholl.obj": "315e62d04c2a786699d16b07e0738142d6228d54b717566684bb1ceacb62f0ad"
     },
@@ -732,9 +768,15 @@
   },
   {
     "case_id": "QP04",
-    "accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
+    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
     "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "runtime_owners": {
+      "dispatch": "shop_keeper -> SHOP_FUNC(world_quest) -> CMD_ASK",
+      "settlement": "world_quest_payment_committed",
+      "producer": "createQuestForGiverVnum -> runtime world-quest policy"
+    },
     "config": {
       "area": "quietus",
       "giver": 1709,
@@ -770,14 +812,14 @@
     "source_hashes": {
       "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
       "areas/zon/quietus.zon": "db805a1e425995a5fa2e9639f6f771ec06be3c15622686556481b279275ff0f1",
-      "src/world/db.c": "6dc1651425126fe0e63835312eb2bd0e71d9b48f988e41b18b073b391384fea8",
-      "src/world/quest.c": "33f32049e14ecbf193d5ef526244198d2f18c904186fd454eac2771744737cbb",
+      "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
+      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
       "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
       "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
       "src/specs/specs.world_quest.c": "a808577b3573d224df4ed52b9ec0dc9e89aaa05fa056f8b1f44cb8e853aa2ebf",
       "src/world/world_quest.c": "cef7f6e43527a34cefd750056ba7308702a526aec82ceb956ac7191b0dfe3517",
       "src/world/world_quest_policy.c": "f5d00185f49dce98948348149a5242ebe379eee714a834bbb76ac5abeb712fd8",
-      "src/economy/shop.c": "bb872e42d47c482fe8c68fc3cbdbe4aa784e1232a6a220ad3603cb18ddd42618",
+      "src/economy/shop.c": "de8bdbe95cfa626c6ca869495ccc34afc0097af4c964d021ad2d66cb99d34393",
       "src/core/utility.c": "1930fb6bbcea509818c5a9986d47086ef1033adf124e8d396cd73df7a7b60668",
       "areas/shp/quietus.shp": "95cdf1e5830e72a8a9aac1e8526ca2b4cf9eb7ab52b50d8c52153dcc5ec1710b",
       "areas/mob/quietus.mob": "557f12686cd1be056391c1d1642a825501827a755d8b936b80702d233da28895"
@@ -786,9 +828,17 @@
   },
   {
     "case_id": "QP05",
-    "accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
+    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
     "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "runtime_owners": {
+      "dispatch": "assign_the_questers/qst_func -> quester CMD_GIVE -> active_regular_sql submit_native_quest_give",
+      "selection": "quest_native_completion_owner::prepare_original",
+      "observation": "item_native_quest_gameplay_publication_owner::observe_give",
+      "birth_reset": "db.c reset -> quest_mobile_native_birth_owner begin_reset/seal_mobile/finish_reset",
+      "binding": "quest_mobile_native_reference_copy; original generation and canonical encoded reference"
+    },
     "config": {
       "area": "pineholl",
       "giver": 16080,
@@ -998,11 +1048,15 @@
     "source_hashes": {
       "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
       "areas/zon/pineholl.zon": "a46a388b07e50aa1767be5f1263d84275748e85d86b5b99531703ec151138aaa",
-      "src/world/db.c": "6dc1651425126fe0e63835312eb2bd0e71d9b48f988e41b18b073b391384fea8",
-      "src/world/quest.c": "33f32049e14ecbf193d5ef526244198d2f18c904186fd454eac2771744737cbb",
+      "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
+      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
       "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
       "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
       "areas/qst/pineholl.qst": "257713a2c62b0f40b6fcacb75b6efbaa037dcf83e31c7e9b9849fceb1b75d2a5",
+      "src/world/quest_mobile_native_binding.c": "1b04901860ca7395000a8cb9a66d02de3177d4c7daa46338775133c6b1c6df37",
+      "src/world/quest_mobile_native_birth.c": "234a60250d51ba423467c214359a7af590f0fcf3923b5e5fb99ffd6ec9d2db27",
+      "src/world/native_quest_recovery_context.c": "299ef8882e3cc76f1afe9df43984678c609b21d68d4770520114d1caa7ef5a94",
+      "src/item/item_movement_transaction.c": "18dfd4dbd07f44674e2feb8ff633b82547bf1f3e796f56da0ab7f98aaf7d5ef1",
       "areas/mob/pineholl.mob": "af568e9f8f3fcd800cac256bc14788e1be47a946e02b39a55320221b9c7f9e33",
       "areas/obj/pineholl.obj": "315e62d04c2a786699d16b07e0738142d6228d54b717566684bb1ceacb62f0ad"
     },
@@ -1010,9 +1064,17 @@
   },
   {
     "case_id": "QP06",
-    "accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
+    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
     "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "runtime_owners": {
+      "dispatch": "assign_the_questers/qst_func -> quester CMD_GIVE -> active_regular_sql submit_native_quest_give",
+      "selection": "quest_native_completion_owner::prepare_original",
+      "observation": "item_native_quest_gameplay_publication_owner::observe_give",
+      "birth_reset": "db.c reset -> quest_mobile_native_birth_owner begin_reset/seal_mobile/finish_reset",
+      "binding": "quest_mobile_native_reference_copy; original generation and canonical encoded reference"
+    },
     "config": {
       "area": "newbie",
       "giver": 29257,
@@ -1166,11 +1228,15 @@
     "source_hashes": {
       "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
       "areas/zon/newbie.zon": "72687b0101859783f6472e7ff4eb29645551ecc8e69cbac77ff9804b6fd6e16c",
-      "src/world/db.c": "6dc1651425126fe0e63835312eb2bd0e71d9b48f988e41b18b073b391384fea8",
-      "src/world/quest.c": "33f32049e14ecbf193d5ef526244198d2f18c904186fd454eac2771744737cbb",
+      "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
+      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
       "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
       "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
       "areas/qst/newbie.qst": "889ea5560152e48d3766e7a10296e889387d75311b889a3d4b1c8faaa06ec874",
+      "src/world/quest_mobile_native_binding.c": "1b04901860ca7395000a8cb9a66d02de3177d4c7daa46338775133c6b1c6df37",
+      "src/world/quest_mobile_native_birth.c": "234a60250d51ba423467c214359a7af590f0fcf3923b5e5fb99ffd6ec9d2db27",
+      "src/world/native_quest_recovery_context.c": "299ef8882e3cc76f1afe9df43984678c609b21d68d4770520114d1caa7ef5a94",
+      "src/item/item_movement_transaction.c": "18dfd4dbd07f44674e2feb8ff633b82547bf1f3e796f56da0ab7f98aaf7d5ef1",
       "areas/mob/newbie.mob": "f7075a745335f973235983af430094be28ca23a7d5212ef48a9e50abda7791a5",
       "areas/obj/newbie.obj": "4025c500b3aca83b9a8b59bdd69d4c7f2f84267309871f12dab028ca4aa4660a"
     },
@@ -1178,9 +1244,15 @@
   },
   {
     "case_id": "QP07",
-    "accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
+    "accounting_pin": "2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a",
+    "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
     "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "runtime_owners": {
+      "dispatch": "shop_keeper -> SHOP_FUNC(world_quest) -> CMD_ASK",
+      "settlement": "world_quest_payment_committed",
+      "producer": "createQuestForGiverVnum -> runtime world-quest policy"
+    },
     "config": {
       "area": "quietus",
       "giver": 1709,
@@ -1216,14 +1288,14 @@
     "source_hashes": {
       "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
       "areas/zon/quietus.zon": "db805a1e425995a5fa2e9639f6f771ec06be3c15622686556481b279275ff0f1",
-      "src/world/db.c": "6dc1651425126fe0e63835312eb2bd0e71d9b48f988e41b18b073b391384fea8",
-      "src/world/quest.c": "33f32049e14ecbf193d5ef526244198d2f18c904186fd454eac2771744737cbb",
+      "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
+      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
       "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
       "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
       "src/specs/specs.world_quest.c": "a808577b3573d224df4ed52b9ec0dc9e89aaa05fa056f8b1f44cb8e853aa2ebf",
       "src/world/world_quest.c": "cef7f6e43527a34cefd750056ba7308702a526aec82ceb956ac7191b0dfe3517",
       "src/world/world_quest_policy.c": "f5d00185f49dce98948348149a5242ebe379eee714a834bbb76ac5abeb712fd8",
-      "src/economy/shop.c": "bb872e42d47c482fe8c68fc3cbdbe4aa784e1232a6a220ad3603cb18ddd42618",
+      "src/economy/shop.c": "de8bdbe95cfa626c6ca869495ccc34afc0097af4c964d021ad2d66cb99d34393",
       "src/core/utility.c": "1930fb6bbcea509818c5a9986d47086ef1033adf124e8d396cd73df7a7b60668",
       "areas/shp/quietus.shp": "95cdf1e5830e72a8a9aac1e8526ca2b4cf9eb7ab52b50d8c52153dcc5ec1710b",
       "areas/mob/quietus.mob": "557f12686cd1be056391c1d1642a825501827a755d8b936b80702d233da28895"
