@@ -476,3 +476,33 @@ recovery, typed active erasure, full backend/managed retention and release-host
 mixed workload budgets remain open. Accounting remains inactive and full Plan5/
 release are incomplete; wallet-root exclusions and declined inactive spell
 behavior remain.
+
+
+## Exact auction/opening import and fresh build follow-up
+
+Same branch `codex/accounting-plan5` imports primary `de3296fd028261f650e86165f632690e14f98b4a`
+exactly at `304ecea84d3b009b5b0dfc2963addd07ad100bf9`, preserving all37 incoming and all37 newer
+Plan5 paths without conflicts. All seven earlier tips/follow-ups remain here.
+[The exact report](PLAN5_AUCTION_OPENING_PRIMARY_IMPORT_QUALIFICATION_2026-10-06.md)
+records both original fresh740-object maintained builds,86 original unittest
+cases,2787 manual site checks, exact normal/matrix validation and the expected
+release refusal. Frozen archive SHA256 is `422e4c8ff9e4d1b836a9eeb26be9ad9a9da509898235f38e6029386df4e39654`.
+Final protected seal SHA256 is `2b100be68df02d3d0e526c99e22f347e9086ac5b035956250cd984a42d0a287b`; publication receipt separately
+verifies the final remote documentation tip and unchanged qualified code.
+
+Native tree is `4abb609524a1f1682ea4c190f82d75003c4d679b`; canonical0062 migration tree remains
+`1d041c8bc27cfc2b2bfdc8095b6c1348ac3a15c5`. The new selector/PID handoff follow-up acknowledges
+published original lifecycle/digest/reference definitions; independent reader
+execution/integration remains required. These are exact-source compilation and
+contract results, not both-engine runtime or financial-producer qualification.
+The prior flatfile source-loss result remains scoped to its older native tree.
+No earlier result is transferred merely by this merge. Failed contract observer01
+and corrected whole six-command observer02 are retained with precise scopes.
+
+Only owned report/follow-up/handoff documentation is authored after import.
+Shared native/schema/coordinator/registry changes are taken exactly from primary.
+Its local notebook stays nonblocking and receives this curator packet through
+the same remote branch. Complete capture/verifier, actual writer/ACK/recovery,
+typed erasure, full managed/backend retention and release-host budgets remain
+open; no full Plan5 or release completion is claimed. Accounting stays inactive,
+with wallet-root exclusions and declined inactive spell behavior preserved.

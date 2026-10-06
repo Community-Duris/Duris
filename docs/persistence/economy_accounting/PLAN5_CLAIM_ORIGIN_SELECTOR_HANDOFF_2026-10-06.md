@@ -110,3 +110,35 @@ downgrade proof open. This is primary-reported private progress, not an
 independently qualified new producer result. The requested exact reference,
 invariants, consumers and genuine tests remain pending; independent Plan5 work
 and the primary's locally maintained notebook remain nonblocking.
+
+## Published auction/opening follow-up
+
+Primary now publishes `de3296fd028261f650e86165f632690e14f98b4a`, imported exactly
+on remote-work branch `codex/accounting-plan5` at
+`304ecea84d3b009b5b0dfc2963addd07ad100bf9`. The original baseline provider now
+checks the retained V2 lifecycle preparation, request/inbox digest, boundary,
+phase and original timestamp for money openings. Its request preimage is
+`DURIS-SQL-LIFECYCLE-V2`, then length-framed preparation/lineage/epoch IDs,
+actor and accepted-at microseconds as little-endian u64 values. An existing
+money parent or declared origin requires marker1 and the genuine original
+timestamp; historical roots without that parent/marker retain their unknown
+coverage policy. No wire or schema change is independently requested here.
+
+The published source provider also recomputes the exact ESD1/ESR1 original
+`auction_money_pickups` PID/money/revision digest, and the original lifecycle
+harness emits `OPENING_ORIGINAL_REFERENCE` with framed bytes, digests, account,
+native revision, original PID/amount, lifecycle inputs, baseline operation,
+marker and source-slot ordinal. These are now available maintained definitions
+and a genuine reference producer. This narrows the earlier unpublished-contract
+request; it does not yet qualify the independent reader's consumption of them.
+
+The primary's adjacent auction/opening report records its seven native suites
+on both canonical0062 engines. Those results remain primary-attributed; protected
+native reference artifacts were not independently inspected on this system.
+Plan5 still needs its own original reference execution and independent
+recomputation, SELECT-only lifecycle/selector capture, historical compatibility,
+joint PID/mapping corruption and marker/timestamp/origin-loss refusal controls,
+including after legitimate whole/partial consumption and cold recovery. No
+current pickup value, inferred origin or mutation-provider implementation may
+replace that retained proof. Complete capture, producer and release gates remain
+open; source publication alone does not satisfy them.
