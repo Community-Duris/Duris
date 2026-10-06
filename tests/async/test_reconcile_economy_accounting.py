@@ -1460,6 +1460,64 @@ class ReconciliationTests(unittest.TestCase):
                                      if outcome == "committed" else [])
                     self.assertEqual(output["coverage"]["exception_count"], report["exception_count"])
 
+    def test_supply_requires_unique_effect_and_posting_identities(self):
+        with tempfile.TemporaryDirectory(prefix="duris-supply-identities-") as directory:
+            path = Path(directory) / "snapshot.json"
+            for kind in (7, 8, 9, 10):
+                for damage in ("same-effect", "conflicting-effect", "same-posting", "conflicting-posting"):
+                    for reverse in (False, True):
+                        snapshot = shop_supply_snapshot()
+                        snapshot["effects"][1]["account_key"] = key(kind, 9)
+                        table = "effects" if "effect" in damage else "postings"
+                        duplicate = copy.deepcopy(snapshot[table][1])
+                        duplicate["personal_alias"] = "private-supply-identity"
+                        if damage == "conflicting-effect":
+                            duplicate["account_key"] = key(8 if kind == 7 else 7, 9)
+                        elif damage == "conflicting-posting":
+                            duplicate.update(delta=[6, 0, 0, 0], copper_value=6)
+                        snapshot[table].append(duplicate)
+                        if reverse:
+                            snapshot[table].reverse()
+                        payload = json.dumps(snapshot, sort_keys=True).encode()
+                        path.write_bytes(payload)
+                        for limit in (0, 1, 100):
+                            with self.subTest(kind=kind, damage=damage, reverse=reverse, limit=limit):
+                                report = Reconciler(limit).audit(snapshot)
+                                self.assertIn("duplicate_effect" if table == "effects" else "duplicate_posting",
+                                              report["exception_counts"])
+                                output = view(snapshot, report, "supply", limit)
+                                self.assertEqual(output["rows"], [])
+                                self.assertEqual(output["count"], 0)
+                                self.assertFalse(output["truncated"])
+                                self.assertEqual(output["coverage"]["exception_count"], report["exception_count"])
+                                command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                           str(path), "--view", "supply", "--limit", str(limit)]
+                                result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                                self.assertEqual(result.returncode, 1, result.stderr)
+                                self.assertFalse(result.stderr)
+                                self.assertEqual(json.loads(result.stdout), output)
+                                self.assertNotIn("alias", result.stdout)
+                                self.assertNotIn("private-supply", result.stdout)
+                                self.assertEqual(path.read_bytes(), payload)
+                                self.assertEqual(json.dumps(snapshot, sort_keys=True).encode(), payload)
+        # Distinct posting lines may legitimately refer to the same account.
+        snapshot = shop_supply_snapshot()
+        snapshot["operations"][0]["posting_count"] = 3
+        snapshot["postings"][1].update(delta=[1, 0, 0, 0], copper_value=1)
+        snapshot["postings"].append(dict(snapshot["postings"][1], line_index=2,
+                                        delta=[2, 0, 0, 0], copper_value=2))
+        bind_original_plans(snapshot)
+        snapshot["effects"].reverse()
+        snapshot["postings"].reverse()
+        original = copy.deepcopy(snapshot)
+        for limit in (0, 1, 100):
+            report = Reconciler(limit).audit(snapshot)
+            self.assertEqual(report["exception_count"], 0)
+            output = view(snapshot, report, "supply", limit)
+            self.assertEqual(output["count"], 1)
+            self.assertEqual(output["rows"], [{"account_kind": 8, "reason": 21, "net_copper": 3}][:limit])
+            self.assertEqual(snapshot, original)
+
     def test_provenance_includes_retained_and_unattributed_uid_history(self):
         snapshot = clean_snapshot()
         current = snapshot["ownership_events"][0]

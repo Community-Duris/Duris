@@ -2572,16 +2572,20 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
             "operation_id": operation_id}}
     elif name == "supply":
         totals: dict[tuple, int] = defaultdict(int)
+        effect_counts = Counter((row["operation_id"], row["account_index"]) for row in snapshot["effects"])
+        posting_counts = Counter((row["operation_id"], row["line_index"]) for row in snapshot["postings"])
         effect_kind = {(row["operation_id"], row["account_index"]): account_key(row["account_key"])[1]
-                       for row in snapshot["effects"]}
+                       for row in snapshot["effects"]
+                       if effect_counts[(row["operation_id"], row["account_index"])] == 1}
         operations = {row["operation_id"]: row for row in snapshot["operations"]}
         root_counts = Counter(row["operation_id"] for row in snapshot["operations"])
         for post in snapshot["postings"]:
             kind = effect_kind.get((post.get("operation_id"), post.get("account_index")))
             root = operations.get(post["operation_id"])
-            # A rejected/unknown root cannot realize supply. Duplicate root
-            # identities do not select an outcome or policy by export order.
+            # Duplicate root/effect/line identities cannot choose an outcome,
+            # account kind or amount by export order or multiply supply.
             if (kind in (7, 8, 9, 10) and root is not None and
+                    posting_counts[(post["operation_id"], post["line_index"])] == 1 and
                     root_counts[post["operation_id"]] == 1 and root.get("outcome") == "committed" and
                     type(root.get("reason")) is int):
                 totals[(kind, root["reason"])] += copper(vector(post["delta"]))

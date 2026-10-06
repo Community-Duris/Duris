@@ -402,6 +402,23 @@ def verify_supply_outcome_views(owner, reader):
                     if reversed_rows:
                         altered["operations"].reverse()
                     probes.append(("conflicting-reversed" if reversed_rows else "conflicting", altered))
+                # SQL primary keys cannot contain duplicate identities. Damage
+                # only the saved read-only projection, retaining its SQL source.
+                for damage in ("same-effect", "conflicting-effect", "same-posting", "conflicting-posting"):
+                    for reversed_rows in (False, True):
+                        altered = copy.deepcopy(snapshot)
+                        table = "effects" if "effect" in damage else "postings"
+                        selected = next(row for row in altered[table]
+                                        if row["operation_id"] == root.hex() and row["account_index"] == 1)
+                        duplicate = copy.deepcopy(selected)
+                        if damage == "conflicting-effect":
+                            duplicate["account_key"] = key(7, 9).hex()
+                        elif damage == "conflicting-posting":
+                            duplicate.update(delta=[6, 0, 0, 0], copper_value=6)
+                        altered[table].append(duplicate)
+                        if reversed_rows:
+                            altered[table].reverse()
+                        probes.append((damage + ("-reversed" if reversed_rows else ""), altered))
             for label, probe in probes:
                 target = output / label
                 target.mkdir()
@@ -415,8 +432,12 @@ def verify_supply_outcome_views(owner, reader):
                     assert "rejected_operation_has_effects" in report["exception_counts"]
                 if label == "unknown":
                     assert "unknown_outcome" in report["exception_counts"]
-                if label.startswith("conflicting"):
+                if label in ("conflicting", "conflicting-reversed"):
                     assert "duplicate_operation" in report["exception_counts"]
+                if label.startswith(("same-effect", "conflicting-effect")):
+                    assert "duplicate_effect" in report["exception_counts"]
+                if label.startswith(("same-posting", "conflicting-posting")):
+                    assert "duplicate_posting" in report["exception_counts"]
                 expected = [{"account_kind": 8, "reason": 3, "net_copper": 3}] if label == "committed" else []
                 commands = []
                 for limit in (0, 1, 100):
