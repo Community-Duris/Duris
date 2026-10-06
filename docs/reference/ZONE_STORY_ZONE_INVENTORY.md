@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 160 authored journals.
+2668 distinct Q contracts; 161 authored journals.
 
 Regenerate with:
 
@@ -63,7 +63,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Pits of Cerberus (`cerebusp`) | 9 | 5 | 0 | Yes | [1 × a large coconut; 1 × a broken coconut; 2 × a small coconut; other required items → a coconut belt](../../areas/qst/cerebusp.qst#L20) | cerberus_load, master_set, revenant_helm |
 | The Church of the Eternal Dusk (`church`) | 2 | 2 | 0 | Fallback | [1 × a badge of holy patronage → native reward/response](../../areas/qst/church.qst#L14) | — |
 | The Citadel (`citadel`) | 3 | 39 | 0 | Yes | [1 × a bluish key → native reward/response](../../areas/qst/citadel.qst#L47) | — |
-| Cloud Giant Kingdom (`cldgt`) | 3 | 4 | 0 | Fallback | [5 × a yeti pelt; 1 × a thick leather strap → a girdle lined with fur](../../areas/qst/cldgt.qst#L7) | — |
+| Cloud Giant Kingdom (`cldgt`) | 3 | 4 | 0 | Yes | [5 × a yeti pelt; 1 × a thick leather strap → a girdle lined with fur](../../areas/qst/cldgt.qst#L7) | — |
 | The Forest City of Aravne (`clfhaven`) | 3 | 7 | 0 | Yes | [1 × the heart of Enzekail; 1 × the heart of the female weretor; 1 × the heart of the male weretor; other required items → an ornate gold key](../../areas/qst/clfhaven.qst#L32) | inn, llyren, wh_corpse_to_object |
 | Father Tel's Holy Cloister (`cloister`) | 8 | 19 | 1 | Yes | [1 × the ring of a duergar elder; 1 × a vial of poison → a rib bone](../../areas/qst/cloister.qst#L256) | — |
 | The Clawed Caverns (`clwcvrn`) | 20 | 8 | 4 | Yes | [1 × a large, flat, blue crystal → a large, flat, blue crystal](../../areas/qst/clwcvrn.qst#L11) | burn_touch_obj, claw_cavern_drow_mage, clwcvrn_golem_shatter, clwcvrn_protect |

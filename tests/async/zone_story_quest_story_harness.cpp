@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 160 &&
+		require(catalog.story_mappings.size() == 161 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,196 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "cldgt"; });
+			require(mapping.stories.size() == 3 && mapping.contacts.size() == 17 &&
+					mapping.revision == 1,
+				"Cloud journal scope failed");
+			const auto &pelts = story_for("cldgt", "five-pelts-and-strap");
+			const auto &scalps = story_for("cldgt", "six-scalps-for-anne");
+			const auto &rare = story_for("cldgt", "legacy-charisma-scroll");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 995)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 3 && dailies == 3,
+				"Cloud lost independent or departing daily candidates");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 995, 99500, 100, "arrival") ==
+					result::applied,
+				"Cloud discovery failed");
+			for (const auto &[v, room] :
+			     { std::pair{ 99508, 99562 }, std::pair{ 99503, 99555 },
+			       std::pair{ 99507, 99561 }, std::pair{ 99524, 99585 } })
+				require(journey.meet_npc(7, 42, v, room, 101) == result::applied,
+					"Cloud source encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 995, 10, 1, 102, false, false);
+			for (const auto &s : mapping.stories)
+				require(journal.find("] " + s.title + "\r\n") == std::string::npos,
+					"Cloud source carrier forged accepting giver exposure");
+			require(journey.meet_npc(7, 42, 99501, 99537, 103) == result::applied,
+				"Cloud trader encounter failed");
+			journal = journey.render_journal(7, 42, 995, 10, 1, 104, false, false);
+			require(journal.find("] " + pelts.title + "\r\n") != std::string::npos &&
+					journal.find("] " + scalps.title + "\r\n") ==
+						std::string::npos &&
+					journal.find("] " + rare.title + "\r\n") ==
+						std::string::npos,
+				"Cloud trader exposed another giver card");
+			require(journey.meet_npc(7, 42, 99520, 99529, 105) == result::applied &&
+					journey.meet_npc(7, 42, 99548, 99607, 105) ==
+						result::applied,
+				"Cloud separate giver encounters failed");
+			const auto status = [&](const auto &s, size_t row, const char *state)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos, "Cloud card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at, end == std::string::npos ? end : end - at)
+					       .find(std::string("[") + state + "] " +
+						     s.steps[row].text) != std::string::npos;
+			};
+			const auto before = journey.serialize_state();
+			for (const auto &s : mapping.stories)
+			{
+				supplies = {};
+				for (const auto &t : s.steps)
+					if (t.kind == "carried_item")
+						for (int v : t.item_vnums)
+							supplies.carried[v] = t.count;
+				journal = journey.render_journal(7, 42, 995, 10, 1, 106, false,
+								 false, &supplies);
+				for (size_t row = 0; row < s.steps.size(); ++row)
+					require(status(s, row,
+						       row == s.steps.size() - 1 ? "Pending" :
+										   "Ready now"),
+						"Cloud exact supplied multiset preparation failed");
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+				{
+					const int v = s.steps[row].item_vnums.front();
+					supplies.carried[v] = 0;
+					supplies.equipped[18] = v;
+					journal = journey.render_journal(7, 42, 995, 10, 1, 107,
+									 false, false, &supplies);
+					require(status(s, row, "Missing now") &&
+							status(s, s.steps.size() - 1, "Pending"),
+						"Cloud held or worn proof replaced loose proof");
+					supplies.equipped.clear();
+					supplies.carried[v] = s.steps[row].count;
+				}
+			}
+			supplies = {};
+			supplies.carried[99509] = 4;
+			supplies.carried[99510] = 1;
+			journal = journey.render_journal(7, 42, 995, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(pelts, 0, "Missing now") && status(pelts, 1, "Ready now") &&
+					status(pelts, 3, "Pending"),
+				"Cloud four pelts satisfied five-pelt requirement");
+			supplies.carried[99509] = 5;
+			journal = journey.render_journal(7, 42, 995, 10, 1, 109, false, false,
+							 &supplies);
+			require(status(pelts, 0, "Ready now") && status(pelts, 2, "Missing now") &&
+					status(pelts, 3, "Pending"),
+				"Cloud exact five pelts fabricated a key or acceptance");
+			supplies = {};
+			supplies.carried[99518] = 6;
+			journal = journey.render_journal(7, 42, 995, 10, 1, 110, false, false,
+							 &supplies);
+			require(status(scalps, 0, "Ready now"),
+				"Cloud exact duergar scalp unavailable");
+			for (size_t row = 1; row < 6; ++row)
+				require(status(scalps, row, "Missing now"),
+					"Cloud six duplicate scalps satisfied distinct scalp types");
+			supplies = {};
+			for (int v : { 99503, 99516, 405, 99524, 99525, 99526, 99531, 99538 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 995, 10, 1, 111, false, false,
+							 &supplies);
+			for (const auto &s : mapping.stories)
+				require(status(s, 0, "Missing now") &&
+						status(s, s.steps.size() - 1, "Pending"),
+					"Cloud décor, notes, kit or reward copies forged exchange or learned outcome");
+			supplies = {};
+			supplies.carried[32490] = 1;
+			supplies.carried[26614] = 1;
+			journal = journey.render_journal(7, 42, 995, 10, 1, 112, false, false,
+							 &supplies);
+			require(status(rare, 0, "Ready now") && status(rare, 1, "Ready now") &&
+					status(rare, 2, "Missing now") &&
+					status(rare, 4, "Pending"),
+				"Cloud outside pair fabricated unavailable tablet or accepted exchange");
+			supplies.carried[402] = 1;
+			journal = journey.render_journal(7, 42, 995, 10, 1, 113, false, false,
+							 &supplies);
+			require(status(rare, 2, "Ready now") && status(rare, 4, "Pending"),
+				"Cloud supplied tablet implied Charisma, skill learning or acceptance");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 995).completed == 0,
+				"Cloud readiness forged first-source recovery, search, training or accepted history");
+			// Synthetic authoritative receipts verify projection/recovery, without claiming played supply or service settlement.
+			record(journey, scalps.contracts.front(), "cloud-scalps", 995, 99529);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 995, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(scalps, 6, "Recorded") &&
+					journey.progress_for_zone(7, 42, 995).completed == 1 &&
+					status(pelts, 3, "Pending") && status(rare, 4, "Pending"),
+				"Cloud departing scalp receipt completed another quest");
+			for (const auto &s : mapping.stories)
+				if (s.id != scalps.id)
+				{
+					const auto tx = "cloud-" + s.id;
+					record(journey, s.contracts.front(), tx.c_str(), 995,
+					       s.id == pelts.id ? 99537 : 99607);
+				}
+			journal = journey.render_journal(7, 42, 995, 10, 1, 120, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 995).completed == 3,
+				"Cloud independent accepted histories failed");
+			for (const auto &s : mapping.stories)
+			{
+				require(status(s, s.steps.size() - 1, "Recorded"),
+					"Cloud spent proof lost historical completion");
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+					require(status(s, row, "Missing now"),
+						"Cloud receipt restored consumed supplies or key");
+			}
+			auto replay = completion(scalps.contracts.front(), "cloud-scalps", 120);
+			replay.transaction.zone_number = 995;
+			replay.transaction.room_vnum = 99529;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Cloud replay duplicated accepted scalp set");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 995).completed == 3,
+				"Cloud cold recovery lost three histories");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 995, 99500, 100, "arrival") ==
+					result::applied,
+				"Cloud raw discovery failed");
+			for (const auto &s : mapping.stories)
+			{
+				const auto tx = "cloud-raw-" + s.id;
+				record(raw, s.contracts.front(), tx.c_str(), 995,
+				       s.id == pelts.id	 ? 99537 :
+				       s.id == scalps.id ? 99529 :
+							   99607);
+			}
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 995).completed == 3,
+				"Cloud raw-to-authored recovery lost native multisets");
 		}
 
 		{
