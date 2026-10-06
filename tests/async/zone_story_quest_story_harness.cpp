@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 143 &&
-				tracker.summary_for(7, 42).total == 1524,
+		require(catalog.story_mappings.size() == 144 &&
+				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7687,6 +7687,163 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "tharnadian_ruin"; });
+			const auto &clearance = story_for("tharnadian_ruin", "armoury-clearance");
+			const auto &necro = story_for("tharnadian_ruin", "necromancer-proof");
+			const auto &spirit = story_for("tharnadian_ruin", "spirit-release");
+			require(mapping.stories.size() == 3 && mapping.contacts.size() == 5 &&
+					clearance.contracts.size() == 2 &&
+					necro.contracts.size() == 2,
+				"Tharnadian mapping scope failed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 55, 5500, 100, "arrival") ==
+					result::applied,
+				"Tharnadian arrival failed");
+			require(journey.meet_npc(7, 42, 5503, 5544, 102) == result::applied &&
+					journey.meet_npc(7, 42, 5520, 5661, 102) == result::applied,
+				"Tharnadian context encounters failed");
+			std::string journal =
+				journey.render_journal(7, 42, 55, 10, 1, 103, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Tharnadian knight/banker context exposed unmet recipients");
+			require(journey.meet_npc(7, 42, 5528, 5528, 104) == result::applied,
+				"Tharnadian alternate encounter failed");
+			journal = journey.render_journal(7, 42, 55, 10, 1, 105, false, false);
+			require(journal.find("] " + clearance.title + "\r\n") !=
+						std::string::npos &&
+					journal.find("] " + necro.title + "\r\n") !=
+						std::string::npos &&
+					journal.find("] " + spirit.title + "\r\n") ==
+						std::string::npos,
+				"Tharnadian alternate recipient visibility failed");
+			const auto status = [&](const auto &story, size_t row, const char *state)
+			{
+				const auto start = journal.find("] " + story.title + "\r\n");
+				require(start != std::string::npos,
+					"Tharnadian visible card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     story.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			for (int v : { 5500, 5504, 5505, 5509, 5521, 5527, 5528, 5534, 66200 })
+				supplies.carried[v] = 1;
+			supplies.equipped[18] = 66201;
+			journal = journey.render_journal(7, 42, 55, 10, 1, 106, false, false,
+							 &supplies);
+			for (size_t i = 0; i + 1 < clearance.steps.size(); ++i)
+				require(status(clearance, i, "Missing now"),
+					"Tharnadian wrong remains/keys/containers prepared five-proof clearance");
+			require(status(necro, 0, "Missing now"),
+				"Tharnadian held remains prepared loose proof");
+			supplies = {};
+			supplies.carried[1375] = 5;
+			supplies.carried[66225] = 1;
+			supplies.carried[66226] = 1;
+			supplies.carried[66227] = 1;
+			journal = journey.render_journal(7, 42, 55, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(clearance, 0, "Ready now") &&
+					status(clearance, 3, "Ready now") &&
+					status(clearance, 4, "Missing now"),
+				"Tharnadian duplicate remains replaced fifth distinct kind");
+			supplies.carried[66230] = 1;
+			supplies.carried[66201] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 55, 10, 1, 108, false, false,
+							 &supplies);
+			for (size_t i = 0; i + 1 < clearance.steps.size(); ++i)
+				require(status(clearance, i, "Ready now"),
+					"Tharnadian supplied distinct loose proof not ready");
+			require(status(necro, 0, "Ready now") && status(clearance, 5, "Pending") &&
+					status(necro, 1, "Pending") &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 55).completed == 0,
+				"Tharnadian materials forged kill/clearance/access/retaking history");
+			// Accepted receipt projection; source fights, keys and native dispatch are separate.
+			record(journey, necro.contracts.back(), "tharn-cloaked-necro-first", 55,
+			       5528);
+			require(journey.progress_for_zone(7, 42, 55).completed == 1 &&
+					journey.evidence_for(clearance.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(clearance.contracts.back(), 2)
+							.successful_attempts == 0,
+				"Tharnadian final return required or completed earlier clearance");
+			record(journey, necro.contracts.front(), "tharn-leader-necro-later", 55,
+			       5568);
+			require(journey.progress_for_zone(7, 42, 55).completed == 1,
+				"Tharnadian alternate necromancer recipient doubled unit");
+			record(journey, clearance.contracts.back(), "tharn-cloaked-clearance", 55,
+			       5528);
+			record(journey, clearance.contracts.front(), "tharn-leader-clearance", 55,
+			       5568);
+			require(journey.progress_for_zone(7, 42, 55).completed == 2,
+				"Tharnadian alternate clearance recipient doubled unit");
+			require(journey.meet_npc(7, 42, 5514, 5660, 115) == result::applied,
+				"Tharnadian spirit encounter failed");
+			supplies = {};
+			supplies.carried[5521] = 1;
+			journal = journey.render_journal(7, 42, 55, 10, 1, 116, false, false,
+							 &supplies);
+			require(status(spirit, 0, "Missing now") && status(spirit, 1, "Pending"),
+				"Tharnadian bank key replaced spirit key or made departure");
+			supplies.carried[5513] = 1;
+			journal = journey.render_journal(7, 42, 55, 10, 1, 117, false, false,
+							 &supplies);
+			require(status(spirit, 0, "Ready now") && status(spirit, 1, "Pending"),
+				"Tharnadian supplied black key changed accepted spirit history");
+			record(journey, spirit.contracts.front(), "tharn-spirit-key", 55, 5660);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 55, 10, 1, 120, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(status(story, story.steps.size() - 1, "Recorded") &&
+						status(story, 0, "Missing now"),
+					"Tharnadian spent proofs erased accepted history");
+			require(journey.progress_for_zone(7, 42, 55).completed == 3 &&
+					journey.progress_for_zone(7, 42, 55).total == 3,
+				"Tharnadian material/alternative rows inflated story units");
+			auto replay = completion(necro.contracts.back(),
+						 "tharn-cloaked-necro-first", 120);
+			replay.transaction.zone_number = 55;
+			replay.transaction.room_vnum = 5528;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Tharnadian exact replay duplicated history");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 55).completed == 3,
+				"Tharnadian cold recovery lost grouped histories");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 55, 5500, 100, "arrival") ==
+					result::applied,
+				"Tharnadian raw discovery failed");
+			for (const auto &story : mapping.stories)
+				for (size_t i = 0; i < story.contracts.size(); ++i)
+					record(historical, story.contracts[i],
+					       ("tharn-raw-" + story.id + "-" + std::to_string(i))
+						       .c_str(),
+					       55,
+					       story.id == spirit.id ? 5660 :
+					       i == 0		     ? 5568 :
+								       5528);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 55).completed == 3,
+				"Tharnadian raw-to-authored grouping lost native histories");
+			for (const auto &story : mapping.stories)
+				for (const auto &contract : story.contracts)
+					require(authored.evidence_for(contract, 2)
+								.successful_attempts == 1,
+						"Tharnadian grouping discarded exact alternative receipt");
 		}
 
 		{

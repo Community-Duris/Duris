@@ -42974,6 +42974,252 @@
     {
       "contacts": [
         {
+          "description": "Explains the expedition\u2019s Old Quarter, Braddistock and cathedral leads. Accepts five distinct remains for the armoury key, or exact necromancer remains for the gate key.",
+          "keyword": "leader",
+          "mob_vnum": 5506,
+          "name": "the leader of the expeditionary force",
+          "topics": [
+            "hi",
+            "help",
+            "hello",
+            "tharnadia",
+            "old",
+            "quarter",
+            "braddistock",
+            "cathedral"
+          ]
+        },
+        {
+          "description": "Offers an alternative recipient for the same five-proof clearance and necromancer return. His purpose and eventual departure differ from the expedition\u2019s; neither creates a second journal unit for the same story.",
+          "keyword": "cloaked",
+          "mob_vnum": 5528,
+          "name": "a mysterious cloaked humanoid",
+          "topics": [
+            "hi",
+            "hello",
+            "help",
+            "quest",
+            "braddistock",
+            "mansion",
+            "old",
+            "quarter"
+          ]
+        },
+        {
+          "description": "Accepts the exact small black key for experience and departs. This spirit is a separate local return, without an advertised ASK topic.",
+          "keyword": "slack-jawed",
+          "mob_vnum": 5514,
+          "name": "the spirit of a slack-jawed prostitute",
+          "topics": []
+        },
+        {
+          "description": "Carries the skull used as the abbatoir key. His feared howl has a source dispatch mismatch requiring qualification; encounter, combat, skull recovery and container access remain separate.",
+          "keyword": "knight",
+          "mob_vnum": 5503,
+          "name": "a fifty foot skeletal knight",
+          "topics": []
+        },
+        {
+          "description": "Carries the bank safe key. His appearance and the safe\u2019s shared contents are exploration context, without a selected native quest return.",
+          "keyword": "banker",
+          "mob_vnum": 5520,
+          "name": "the spirit of Sarn, the banker",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Tharnadia\u2019s expedition and a cloaked figure seek proof from the Old Quarter and Braddistock. Three cards track armoury clearance, the necromancer\u2019s remains and a local spirit\u2019s release. Keys, the cathedral, buried treasure and the larger retaking story add separate leads. Discovery is separate; new progress requires active, ready accounting.",
+      "orientation": [
+        "ASK LEADER about hi, old, quarter, braddistock or cathedral. ASK CLOAKED about hi, quest, braddistock, mansion, old or quarter. They describe competing purposes, but accept the same five kinds for armoury access. Choose either recipient for that offering; each has a separate native receipt, within one journal story.",
+        "Armoury clearance needs the remains of Lord Braddistock, the mansion\u2019s former master, the warrior guildmaster, the mage guildmaster and the rogue guildmaster. Carry one of each loose. The four Old Quarter remains share broad names, so check their identities carefully. Five copies of one kind cannot replace five different kinds.",
+        "Braddistock\u2019s lead follows a silver key, the chained jaguar\u2019s collar and the lord\u2019s accepted return. The four other proofs are declared on different Old Quarter foes. These are source leads: matching items supplied by another player fit the Tharnadian offering without separately proving who fought, recovered them first or freed those spirits.",
+        "The shiny armoury key leads to the Old Quarter armoury. The necromancer stands at its entrance, while his requested remains are separately declared on the armoury floor. Carry those exact remains loose to either the leader or the cloaked figure for the gate key. This accepted return does not require a recorded earlier clearance, despite the dialogue\u2019s larger sequence.",
+        "The gate key is used on the route through the Twin Keeps. Holding a key, opening a shared door and entering an area are different events. A key may also be found in the leader\u2019s pouch. Neither key possession nor an accepted proof return records that the keeps were investigated or Tharnadia retaken.",
+        "A small black key in a ruined bedroom belongs to the spirit at the old rack. Return that exact item loose to the spirit for experience; the native return makes the spirit depart. Its accepted receipt is separate from the banker\u2019s safe key, an ordinary corpse, a personal first recovery or permanent peace for the city.",
+        "The cathedral uses an ethereal key associated with Lord Perrin at the Winterhaven Outpost. The skeletal knight\u2019s skull opens the abbatoir container. The warning about a death howl needs gameplay qualification: the current special procedure and engine dispatch disagree. This journal cannot promise that the warning triggers, that surviving it is recorded or that the cathedral is cleared.",
+        "The banker\u2019s safe, directional tunnel keys, secret trapdoor, old coins, tracks, ruined weapons and shadowrift provide other exploration leads. Their shared state and actual outcomes are separate from these three accepted stories. Optional material rows show loose supplies now; accepted history remains after they are spent. Alternative recipients share one achievement and one potential daily per story, without guaranteeing admitted stock."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "tharnadian_ruin",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:1375,I:66225,I:66226,I:66227,I:66230;receive=C:300000,E:275000,I:66200;disappear=0",
+              "giver_vnum": 5506
+            },
+            {
+              "completion_key": "give=I:1375,I:66225,I:66226,I:66227,I:66230;receive=C:300000,E:275000,I:66200;disappear=0",
+              "giver_vnum": 5528
+            }
+          ],
+          "id": "armoury-clearance",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks this exact item identity loose now. Matching supplied proof fits; worn or nested items, similarly named remains and reward keys are different evidence. Source leads do not prove a personal kill or first recovery.",
+              "id": "proof-1375",
+              "item_vnums": [
+                1375
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Lord Braddistock\u2019s remains loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact item identity loose now. Matching supplied proof fits; worn or nested items, similarly named remains and reward keys are different evidence. Source leads do not prove a personal kill or first recovery.",
+              "id": "proof-66225",
+              "item_vnums": [
+                66225
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the former master\u2019s remains loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact item identity loose now. Matching supplied proof fits; worn or nested items, similarly named remains and reward keys are different evidence. Source leads do not prove a personal kill or first recovery.",
+              "id": "proof-66226",
+              "item_vnums": [
+                66226
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the warrior guildmaster\u2019s remains loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact item identity loose now. Matching supplied proof fits; worn or nested items, similarly named remains and reward keys are different evidence. Source leads do not prove a personal kill or first recovery.",
+              "id": "proof-66227",
+              "item_vnums": [
+                66227
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the mage guildmaster\u2019s remains loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact item identity loose now. Matching supplied proof fits; worn or nested items, similarly named remains and reward keys are different evidence. Source leads do not prove a personal kill or first recovery.",
+              "id": "proof-66230",
+              "item_vnums": [
+                66230
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the rogue guildmaster\u2019s remains loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:1375,I:66225,I:66226,I:66227,I:66230;receive=C:300000,E:275000,I:66200;disappear=0",
+                  "giver_vnum": 5506
+                },
+                {
+                  "completion_key": "give=I:1375,I:66225,I:66226,I:66227,I:66230;receive=C:300000,E:275000,I:66200;disappear=0",
+                  "giver_vnum": 5528
+                }
+              ],
+              "hint": "Records one of this story\u2019s exact native returns. Alternative recipients preserve separate receipts within one achievement and one potential daily unit. Public dialogue, shared access, personal combat and city safety are separate. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete an accepted return for this story"
+            }
+          ],
+          "summary": "Bring five different remains from Braddistock and the Old Quarter to either recipient for a shiny armoury key, experience and coins. Accepted clearance does not separately prove personal kills or complete city safety.",
+          "title": "Five proofs for armoury clearance"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:66201;receive=I:5504;disappear=0",
+              "giver_vnum": 5506
+            },
+            {
+              "completion_key": "give=I:66201;receive=I:5504;disappear=1",
+              "giver_vnum": 5528
+            }
+          ],
+          "id": "necromancer-proof",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks this exact item identity loose now. Matching supplied proof fits; worn or nested items, similarly named remains and reward keys are different evidence. Source leads do not prove a personal kill or first recovery.",
+              "id": "proof-66201",
+              "item_vnums": [
+                66201
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the skeletal necromancer\u2019s remains loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:66201;receive=I:5504;disappear=0",
+                  "giver_vnum": 5506
+                },
+                {
+                  "completion_key": "give=I:66201;receive=I:5504;disappear=1",
+                  "giver_vnum": 5528
+                }
+              ],
+              "hint": "Records one of this story\u2019s exact native returns. Alternative recipients preserve separate receipts within one achievement and one potential daily unit. Public dialogue, shared access, personal combat and city safety are separate. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete an accepted return for this story"
+            }
+          ],
+          "summary": "Bring the exact Old Quarter necromancer remains to either recipient for the gate key. Acceptance has no required earlier clearance receipt; the cloaked figure departs on his variant. Actual keeps access and retaking remain separate.",
+          "title": "The necromancer\u2019s proof for the gate key"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:5513;receive=E:75000;disappear=1",
+              "giver_vnum": 5514
+            }
+          ],
+          "id": "spirit-release",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks this exact item identity loose now. Matching supplied proof fits; worn or nested items, similarly named remains and reward keys are different evidence. Source leads do not prove a personal kill or first recovery.",
+              "id": "proof-5513",
+              "item_vnums": [
+                5513
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small black key loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:5513;receive=E:75000;disappear=1",
+                  "giver_vnum": 5514
+                }
+              ],
+              "hint": "Records one of this story\u2019s exact native returns. Alternative recipients preserve separate receipts within one achievement and one potential daily unit. Public dialogue, shared access, personal combat and city safety are separate. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete an accepted return for this story"
+            }
+          ],
+          "summary": "Return the exact small black key to the local spirit for experience and her departure. Matching supplied proof fits; the bank key, other remains and personal first recovery are separate.",
+          "title": "Return the spirit\u2019s black key"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Broken Blade kitchen. Ask waittress about the disputed tips; delivering her jar gives gratitude and a cutpurse clue, without a material reward.",
           "keyword": "dishwasher",
           "mob_vnum": 5750,

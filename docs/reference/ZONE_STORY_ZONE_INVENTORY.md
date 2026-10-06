@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 143 authored journals.
+2668 distinct Q contracts; 144 authored journals.
 
 Regenerate with:
 
@@ -213,7 +213,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Dark Stone Tower of the Northern Realms (`teka2`) | 1 | 3 | 0 | Fallback | [1 × a small rhinestone → a shiny golden mask of Teka, a flaming mace of the Ruzdo](../../areas/qst/teka2.qst#L32) | — |
 | Temple of Flames (`temple`) | 6 | 33 | 0 | Yes | [2 × a yellow dagger; 1 × a green token; 1 × a blue wooden sword → native reward/response](../../areas/qst/temple.qst#L233) | temple_illyn |
 | Tharnadia - City of Humans (`tharnadia`) | 19 | 24 | 1 | Yes | [1 × A small reed flute; 1 × A small clumsily made mandolin; 1 × a small bamboo lyre → native reward/response](../../areas/qst/tharnadia.qst#L239) | assoc_founder, crew_shop_proc, die_roller, inn, janitor, learn_tradeskill |
-| The Tharnadian Ruin (`tharnadian_ruin`) | 5 | 7 | 0 | Fallback | [1 × the remains of Lord Braddistock; 1 × the remains of the master of the house; 1 × the remains of the warrior guildmaster; other required items → a shiny key](../../areas/qst/tharnadian_ruin.qst#L71) | bouncer_four, bouncer_one, bouncer_three, bouncer_two, dagger_submission, frost_elb_dagger |
+| The Tharnadian Ruin (`tharnadian_ruin`) | 5 | 7 | 0 | Yes | [1 × the remains of Lord Braddistock; 1 × the remains of the master of the house; 1 × the remains of the warrior guildmaster; other required items → a shiny key](../../areas/qst/tharnadian_ruin.qst#L71) | bouncer_four, bouncer_one, bouncer_three, bouncer_two, dagger_submission, frost_elb_dagger |
 | Thetis's Realm (`thetis`) | 3 | 2 | 0 | Fallback | [1 × a torn treasure map → a deep-sea spade, a torn treasure map](../../areas/qst/thetis.qst#L37) | — |
 | Tiamat (`tiamat`) | 8 | 3 | 0 | Fallback | [1 × a fragment of a ruby encrusted key; 1 × a fragment of a ruby encrusted key; 1 × a fragment of a ruby encrusted key → a ruby-encrusted key](../../areas/qst/tiamat.qst#L19) | block_dir, tiamat_human_to_rareloads, zion_shield_absorb_proc |
 | Lost City of Tikitzopl (`tikit`) | 1 | 0 | 0 | Fallback | [1 × a scared kitty cat → the temple key](../../areas/qst/tikit.qst#L2) | — |
