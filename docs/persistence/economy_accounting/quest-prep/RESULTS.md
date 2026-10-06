@@ -75,7 +75,7 @@ python3 tests/async/quest_accounting_prep/case_data.py --output docs/persistence
 
 ## Source comparison and handoff checks
 
-The selected production AREA, QST, mobile/object/zone inputs, Quietus SHOP data and
+The 23 selected production AREA, QST, mobile/object/zone inputs, Quietus SHOP data and
 `specs.world_quest.c` agree byte-for-byte with research head for the bounded facts
 used here. `git diff <research> HEAD -- <selected-paths>` is empty for those inputs.
 `world_quest.c` differs only in the daily/journal UI section; the selected payment,

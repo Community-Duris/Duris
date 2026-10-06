@@ -1,6 +1,7 @@
 # Quest accounting prep handoff
 
-Status: usable seven-case source/fixture/component pack assembled and verified.
+Status: usable seven-case source/fixture/component pack committed, pushed and
+reviewable on `origin/codex/accounting-quest-prep`.
 Accounting stays inactive; no release or native journey qualification is claimed.
 
 Branch `codex/accounting-quest-prep`, separate managed worktree. Base accounting
@@ -14,8 +15,12 @@ Dynamic bartender quests are excluded and separately traced to runtime producers
 
 First gap/four-priority bundle (already pushed within the two-hour milestone):
 `f1a15f1d982bf330d57428b20797beb96aa34c71`.
-Second bundle: complete specifications, source-fact snapshot, results and six
-owned Python files; exact SHA is recorded in the following metadata commit.
+Second bundle (committed and pushed):
+`cd6e62e331aae0b81b23ed858ec900420e70bbf5` — complete specifications,
+source-fact snapshot, results and six owned Python files. This subsequent
+handoff-only metadata commit records its exact SHA; it adds no fixture or
+production changes. Resolve the published metadata tip with
+`git rev-parse origin/codex/accounting-quest-prep` after fetching.
 Import in order or review the combined owned-path diff from the accounting base.
 Production source, migrations, shared tests/contracts,
 manifests, registries, finish plan and Plan5 audit/restore are untouched.
