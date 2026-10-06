@@ -1179,7 +1179,7 @@ class NativeSQLOriginTests(unittest.TestCase):
             # run_pending closes its owned SQL session; inspect history in a new private one.
             terminal = sql(env, "SELECT sequence_number,migration_id FROM mud_schema_history "
                                 "ORDER BY sequence_number DESC LIMIT 1")
-            self.assertEqual(terminal, "61\t0061_economic_baseline_equipment")
+            self.assertEqual(terminal, "62\t0062_economic_pending_claim_consumption")
             print("ORIGIN_SQL_SCHEMA " + engine + " " + version + " through=" + terminal.replace("\t", " "), flush=True)
             owner = pymysql.connect(unix_socket=env["DB_SOCKET"], user="root", database="duris_restore",
                                     autocommit=True, cursorclass=pymysql.cursors.DictCursor)
