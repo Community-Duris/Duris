@@ -63,6 +63,17 @@ operation scope fields remain present. The CLI exit status still reflects the
 whole audit. Coverage describes the supplied snapshot; it does not qualify the
 writer matrix or assert that an empty price/provenance view exhausts history.
 
+The `--view supply` totals use captured postings attached to exactly one
+committed root identity. Rejected or unknown outcomes and duplicate root
+identities contribute no supply rows; their audit findings remain in the global
+exception count and CLI exit status. Export order cannot choose an outcome for
+an ambiguous root. This rule applies to issuance, sinks, opening equity and
+restitution. Totals remain selected-epoch evidence, grouped by account kind and
+reason, with the full count retained at `--limit 0`. Other discrepancies in a
+committed root remain audit exceptions: a displayed total does not certify that
+root, its policy or its native effect. See
+[the exact outcome qualification](PLAN5_SUPPLY_OUTCOME_VIEW_QUALIFICATION_2026-10-06.md).
+
 The bounded `--view prices` query combines selected-epoch roots with captured
 `native.lineage_realized_prices`. Each row contains only `epoch`,
 `operation_id`, numeric `reason`, and persisted `price_copper`. It includes
