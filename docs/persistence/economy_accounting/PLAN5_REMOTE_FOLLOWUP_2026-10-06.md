@@ -191,3 +191,24 @@ packet. All previous branch tips and evidence remain. Complete opening,
 authentic activation verification, real writers/ACK/recovery, backend/lifecycle
 parity, typed erasure and release-host budgets remain open; accounting stays
 inactive and no release gate is promoted.
+
+## Retained native-mobile restore follow-up — 2026-10-06
+
+[The exact flatfile qualification](PLAN5_NATIVE_MOBILE_RESTORE_QUALIFICATION_2026-10-06.md)
+publishes separate fix `232aed48a104355677cc7ac3b0feb451475cdf67`, based on
+`4245289d7ad7742de7c47342c69d100852705310`, on the same remote branch. The original
+native qualifier falsely accepts a damaged retained QMN image. Complete namespace
+validation now checks private bounded canonical values and exact lifetime names
+without writing or materializing them. Four controls and 48 refusals pass across
+104 invocations; all original 20 positive/367 corruption cases remain. The fresh
+738-object flatfile production build and original managed pending-replay/backup/
+restore/service-boot method pass with zero skips. Exact failed/passing source,
+commands, binary/source/artifact hashes and gates are sealed in the report.
+
+No shared interface/schema or producer file is changed. Native and canonical 61
+source trees remain unchanged; the same SQL native-mobile table still needs its
+separate independent value/projection validation. The primary's local notebook
+receives this owned curator packet. All seven old tips and prior evidence remain.
+Birth/source authority, complete capture, actual writers/ACK/recovery, full
+backend/lifecycle/erasure/retention and release-host qualification remain open.
+Accounting stays inactive and no release gate is promoted.
