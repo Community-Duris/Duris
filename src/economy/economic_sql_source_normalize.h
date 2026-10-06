@@ -41,12 +41,22 @@ struct economic_sql_native_holding
 	// raw cells, including unsigned amounts above the accounting range.
 	std::optional<economic_coin_vector> balance;
 };
+struct economic_sql_equipment_source_reference
+{
+	// Addresses item_equipment_sources[0].rows, never snapshot.tables.
+	size_t row = 0;
+	economic_sql_source_digest digest = {};
+};
 struct economic_sql_native_item
 {
 	economic_sql_source_reference source;
 	economic_item_snapshot item;
 	int32_t vnum = 0;
 	std::optional<uint64_t> owner_revision;
+	// Absent for legacy v1: position.equipment_slot's default is not evidence
+	// of carried custody. A v2 observed zero is distinct from unobserved.
+	std::optional<uint16_t> observed_equipment_slot;
+	std::optional<economic_sql_equipment_source_reference> equipment_source;
 	// Only a successfully decoded, UID/vnum/type-matching native money payload.
 	std::optional<economic_coin_vector> coin_values;
 };
@@ -86,6 +96,8 @@ struct economic_sql_normalization_diagnostic
 struct economic_sql_normalized_sources
 {
 	economic_sql_source_digest source_digest = {};
+	// ESC2 only for a validated v2 projection; zero for unobserved legacy v1.
+	economic_sql_source_digest custody_digest = {};
 	std::vector<economic_sql_native_holding> holdings;
 	std::vector<economic_sql_native_item> items;
 	std::vector<economic_sql_native_owner> owners;
