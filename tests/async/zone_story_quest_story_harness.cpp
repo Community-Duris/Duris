@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 158 &&
+		require(catalog.story_mappings.size() == 159 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,184 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "banditca"; });
+			require(mapping.stories.size() == 4 && mapping.contacts.size() == 14 &&
+					mapping.revision == 1,
+				"Bandit Camp journal scope failed");
+			const auto &slaves = story_for("banditca", "free-slave-groups");
+			const auto &ring = story_for("banditca", "perrins-son-ring");
+			const auto &insignia = story_for("banditca", "disrupt-inner-circle");
+			const auto &daughter = story_for("banditca", "free-perrins-daughter");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 148)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 4 && dailies == 4,
+				"Bandit Camp split slave groups or lost resettable departing-giver candidates");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 148, 14800, 100, "arrival") ==
+					result::applied,
+				"Bandit Camp discovery failed");
+			require(journey.meet_npc(7, 42, 14820, 14808, 101) == result::applied,
+				"Bandit Camp paladin encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 148, 10, 1, 102, false, false);
+			require(journal.find("] " + ring.title + "\r\n") != std::string::npos &&
+					journal.find("] " + insignia.title + "\r\n") !=
+						std::string::npos,
+				"Bandit Camp paladin lost its two accepted endpoints");
+			require(journal.find("] " + slaves.title + "\r\n") == std::string::npos &&
+					journal.find("] " + daughter.title + "\r\n") ==
+						std::string::npos,
+				"Bandit Camp paladin explanation forged rescue-giver exposure");
+			require(journey.meet_npc(7, 42, 14823, 14835, 103) == result::applied &&
+					journey.meet_npc(7, 42, 14814, 14864, 103) ==
+						result::applied,
+				"Bandit Camp source contact exposure failed");
+			journal = journey.render_journal(7, 42, 148, 10, 1, 103, false, false);
+			require(journal.find("] " + slaves.title + "\r\n") == std::string::npos &&
+					journal.find("] " + daughter.title + "\r\n") ==
+						std::string::npos,
+				"Bandit Camp source holders exposed prisoner return cards");
+			require(journey.meet_npc(7, 42, 14807, 14835, 104) == result::applied &&
+					journey.meet_npc(7, 42, 14824, 14843, 104) ==
+						result::applied,
+				"Bandit Camp actual rescue-giver exposure failed");
+			const auto status = [&](const auto &s, size_t row, const char *state)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos,
+					"Bandit Camp request card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at, end == std::string::npos ? end : end - at)
+					       .find(std::string("[") + state + "] " +
+						     s.steps[row].text) != std::string::npos;
+			};
+			const auto before = journey.serialize_state();
+			for (const auto &s : mapping.stories)
+			{
+				supplies = {};
+				for (const auto &t : s.steps)
+					if (t.kind == "carried_item")
+						for (int v : t.item_vnums)
+							supplies.carried[v] = t.count;
+				journal = journey.render_journal(7, 42, 148, 10, 1, 105, false,
+								 false, &supplies);
+				for (size_t row = 0; row < s.steps.size(); ++row)
+					require(status(s, row,
+						       row == s.steps.size() - 1 ? "Pending" :
+										   "Ready now"),
+						"Bandit Camp exact supplied proof readiness failed");
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+				{
+					const int v = s.steps[row].item_vnums.front();
+					supplies.carried[v] = 0;
+					supplies.equipped[18] = v;
+					journal = journey.render_journal(7, 42, 148, 10, 1, 106,
+									 false, false, &supplies);
+					require(status(s, row, "Missing now") &&
+							status(s, s.steps.size() - 1, "Pending"),
+						"Bandit Camp worn or held proof substituted for loose proof");
+					supplies.equipped.clear();
+					supplies.carried[v] = 1;
+				}
+			}
+			supplies = {};
+			supplies.carried[14828] = 1;
+			journal = journey.render_journal(7, 42, 148, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(slaves, 0, "Missing now") &&
+					status(daughter, 0, "Ready now") &&
+					status(daughter, 2, "Pending"),
+				"Bandit Camp daughter key substituted for slave key or release");
+			supplies = {};
+			supplies.carried[14831] = 1;
+			journal = journey.render_journal(7, 42, 148, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(daughter, 0, "Missing now") &&
+					status(slaves, 0, "Ready now") &&
+					status(slaves, 1, "Pending"),
+				"Bandit Camp slave key substituted for daughter key or rescue");
+			supplies = {};
+			for (int v : { 14820, 14832, 14833, 14822, 14827, 14834 })
+				supplies.carried[v] = 1;
+			supplies.equipped[24] = 14821;
+			journal = journey.render_journal(7, 42, 148, 10, 1, 109, false, false,
+							 &supplies);
+			require(status(ring, 0, "Missing now") && status(ring, 1, "Ready now") &&
+					status(ring, 2, "Pending") &&
+					status(daughter, 0, "Missing now") &&
+					status(daughter, 1, "Ready now") &&
+					status(daughter, 2, "Pending") &&
+					status(insignia, 0, "Missing now"),
+				"Bandit Camp chest, diary, key, reward, currency or worn insignia forged contained proof or return");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 148).completed == 0,
+				"Bandit Camp readiness fabricated release, reading, source recovery, access or victory");
+			// Synthetic authoritative receipts qualify projection and recovery; they do not restore stock or prove played rescues.
+			record(journey, slaves.contracts.front(), "bandit-slaves", 148, 14835);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 148, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(slaves, 1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 148).completed == 1 &&
+					status(daughter, 2, "Pending") &&
+					status(ring, 2, "Pending") &&
+					status(insignia, 1, "Pending"),
+				"Bandit Camp one slave return completed another endpoint");
+			for (const auto &s : mapping.stories)
+				if (s.id != slaves.id)
+				{
+					const auto tx = "bandit-" + s.id;
+					record(journey, s.contracts.front(), tx.c_str(), 148,
+					       s.id == daughter.id ? 14843 : 14808);
+				}
+			journal = journey.render_journal(7, 42, 148, 10, 1, 120, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 148).completed == 4,
+				"Bandit Camp independent accepted histories failed");
+			for (const auto &s : mapping.stories)
+			{
+				require(status(s, s.steps.size() - 1, "Recorded"),
+					"Bandit Camp spent proof lost accepted history");
+				for (size_t row = 0; row + 1 < s.steps.size(); ++row)
+					require(status(s, row, "Missing now"),
+						"Bandit Camp receipt manufactured proof, restored key or diary readiness");
+			}
+			auto replay = completion(slaves.contracts.front(), "bandit-slaves", 120);
+			replay.transaction.zone_number = 148;
+			replay.transaction.room_vnum = 14835;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Bandit Camp exact replay duplicated slave-group acceptance");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 148).completed == 4,
+				"Bandit Camp cold recovery lost four receipts");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 148, 14800, 100, "arrival") ==
+					result::applied,
+				"Bandit Camp raw discovery failed");
+			for (const auto &s : mapping.stories)
+			{
+				const auto tx = "bandit-raw-" + s.id;
+				record(raw, s.contracts.front(), tx.c_str(), 148,
+				       s.id == daughter.id ? 14843 :
+				       s.id == slaves.id   ? 14835 :
+							     14808);
+			}
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 148).completed == 4,
+				"Bandit Camp raw-to-authored recovery lost independent returns");
 		}
 
 		{

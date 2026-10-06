@@ -1,0 +1,304 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "banditca",
+  "coverage": "complete",
+  "introduction": "Follow the paladin's ring and insignia missions, the two rescue-key returns and their locked-source preparation.",
+  "orientation": [
+    "Ask the paladin warrior outside the west wall about hi, hello, quest, help or hail. His boy, girl and kill topics explain three missions. The slaves have their own key return, and the young woman accepts her key directly; each accepted return keeps its own history.",
+    "The main entrance leads into the camp, with mercenaries nearby. The paladin suggests posing as a slave trader, but that advice does not guarantee safety from the guards. Follow the actual exits and account for hostile residents.",
+    "The west-wall tunnel connects the outside path to the interior wall. Its trapdoors may need opening. Reaching the camp, opening a shared passage and returning quest proof are separate actions.",
+    "The groups of emaciated slaves accept a shackle key from the nearby bandit guards. Guards can hold a copy in either pen. Give the exact shackle key to an available group; they depart after acceptance. The shackles key for the young woman is a different item.",
+    "For Perrin's daughter, recover the key for shackles from Isoril's desk and give it to the young half-elven woman. The desk is locked and needs a successful way to open it before retrieving its contents. The woman departs after accepting the key; her story is separate from the paladin's ring and insignia returns.",
+    "Isoril's quarters have a locked entrance. Use the available native access methods or an already open shared route. Defeating Isoril is not part of either rescue's accepted item recipe, and holding his equipment does not record a rescue.",
+    "For Perrin's son, bring the ornate gold ring to the paladin for the metal eye protectors. Its intended source is the auctioneer's massive steel chest. The ring has a chance to appear there; an empty chest does not prove another player completed your return.",
+    "The auctioneer can carry the ornate steel key for that chest. Unlock and open the chest before retrieving any stocked contents. The steel key is designed to break on a successful unlock. Recovering or spending that key does not replace the ring return.",
+    "For the kill mission, the paladin accepts one blood red tear insignia per return for a coin reward. Several different residents may wear that exact insignia. An identical copy also has a source on a bandit leader in the Tharnadian ruins. Supplied or outside proof can fit the return without proving your own kills in this camp.",
+    "Isoril's diary offers a separate lead about an escaped thief, the serpentine dagger and a distant mountain hoard. Inspecting the book can explain that lead. Carrying the diary is only current preparation; it does not record reading, finish a local return or establish a verified campaign connection.",
+    "Auction calls, slave pleas and warnings about gongs provide context. Hearing them does not record a bid, a purchase, a guard defeat or a rescue. The two slave groups share one accepted quest identity; they are not two new achievement branches.",
+    "Fresh quest items are currently unavailable from zone resets while accounting is active. Existing or supplied owned items can prepare a return, while accepted history remains. A daily entry does not create stock, refill a chance-based chest or guarantee an available prisoner.",
+    "Keep the exact requested item loose. Worn insignias, held keys, nested chest contents and similarly named objects do not replace loose preparation. Recorded returns remain after proof is spent or keys break. All new story progress requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 14820,
+      "name": "a paladin warrior",
+      "keyword": "paladin",
+      "description": "Ask hi, hello, quest, help or hail, then boy, girl or kill. He accepts the ornate gold ring and one blood red tear insignia through separate returns. The young woman accepts her rescue key herself.",
+      "topics": [
+        "hi",
+        "hello",
+        "quest",
+        "help",
+        "hail",
+        "boy",
+        "girl",
+        "kill"
+      ]
+    },
+    {
+      "mob_vnum": 14807,
+      "name": "a group of emaciated slaves",
+      "keyword": "slaves",
+      "description": "Two pens can hold groups of emaciated slaves. Give the exact shackle key from a bandit guard to an available group. They depart after acceptance; their pleas are context rather than a separate recorded discovery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 14824,
+      "name": "a young half-elven woman",
+      "keyword": "woman",
+      "description": "The young half-elven woman accepts the key for shackles from Isoril's desk, then departs. Bring the exact key loose. Her response describes release, while the recorded endpoint is her accepted key return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 14823,
+      "name": "a bandit guard",
+      "keyword": "guard",
+      "description": "Bandit guards in the two slave pens can hold shackle keys. The guard in one pen can also wear an insignia. Taking a supplied key does not prove your own guard defeat.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 14814,
+      "name": "the auctioneer",
+      "keyword": "auctioneer",
+      "description": "The auctioneer can carry the ornate steel chest key and wear an insignia. His chest can contain the boy's ring. Auction speeches do not establish a working slave purchase.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 14813,
+      "name": "Isoril the bandit leader",
+      "keyword": "isoril",
+      "description": "Isoril occupies the desk side of his quarters beside the young woman. The desk contains the intended rescue key and diary. Entering the quarters or obtaining his loot does not complete the woman's return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 14811,
+      "name": "a bandit officer",
+      "keyword": "officer",
+      "description": "The bandit officer can wear an insignia alongside his kryss. The paladin wants the insignia, not the weapon.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 14826,
+      "name": "an experienced bandit warrior",
+      "keyword": "warrior",
+      "description": "This warrior can wear an insignia in the eastern barracks. Other warriors share his name but can have different stock.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 14817,
+      "name": "an auction guard",
+      "keyword": "auction",
+      "description": "Selected auction guards can wear insignias. Other guards follow leaders or carry different equipment; stock depends on the actual instance.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 14822,
+      "name": "a human bandit",
+      "keyword": "bandit",
+      "description": "One selected human bandit can wear an insignia. The same name appears on other instances without that item.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 14825,
+      "name": "a visiting slaver",
+      "keyword": "slaver",
+      "description": "One visiting slaver can wear an insignia. A second slaver instance does not have the same selected stock.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 14805,
+      "name": "an inexperienced guard",
+      "keyword": "inexperienced",
+      "description": "One inexperienced guard can wear an insignia. Other new recruits have separate equipment and source availability.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 14806,
+      "name": "an experienced bandit warrior",
+      "keyword": "warrior",
+      "description": "These experienced warriors can wear insignias in the southern barracks. The other similarly named warrior types have different source roles.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 14819,
+      "name": "a patrolling guard",
+      "keyword": "tough",
+      "description": "One patrolling guard can wear an insignia on a wooden platform. The nearby gongs and other guards are separate from an accepted return.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "free-slave-groups",
+      "title": "Return a shackle key to the slaves",
+      "category": "request",
+      "summary": "Give the exact shackle key to an available group of emaciated slaves for an experience reward. The accepting group departs. The two pens share one accepted quest identity.",
+      "contracts": [
+        {
+          "giver_vnum": 14807,
+          "completion_key": "give=I:14831;receive=E:10000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-14831",
+          "text": "Carry 1 × a shackle key loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            14831
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact proof carried loose now. Supplied proof can prepare a return without recording your own recovery, kill, access or rescue. Fresh quest stock is currently unavailable from zone resets while accounting is active."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 14807,
+              "completion_key": "give=I:14831;receive=E:10000;disappear=1"
+            }
+          ],
+          "hint": "Keeps the accepted native return after proof is spent. Conversation, a key route, another reward copy or a nearby prisoner does not record this exchange."
+        }
+      ]
+    },
+    {
+      "id": "perrins-son-ring",
+      "title": "Bring Perrin's son's ring to the paladin",
+      "category": "request",
+      "summary": "Return the ornate gold ring for the metal eye protectors. The auctioneer's locked chest is its intended source, with a chance to contain the ring. The paladin remains.",
+      "contracts": [
+        {
+          "giver_vnum": 14820,
+          "completion_key": "give=I:14826;receive=I:14827;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-14826",
+          "text": "Carry 1 × an ornate gold ring loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            14826
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact proof carried loose now. Supplied proof can prepare a return without recording your own recovery, kill, access or rescue. Fresh quest stock is currently unavailable from zone resets while accounting is active."
+        },
+        {
+          "id": "item-14833",
+          "text": "Carry 1 × an ornate steel key loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            14833
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "A chest-access lead. The ornate steel key can come from the auctioneer and is designed to break on a successful unlock. Key readiness or use does not record the ring return."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 14820,
+              "completion_key": "give=I:14826;receive=I:14827;disappear=0"
+            }
+          ],
+          "hint": "Keeps the accepted native return after proof is spent. Conversation, a key route, another reward copy or a nearby prisoner does not record this exchange."
+        }
+      ]
+    },
+    {
+      "id": "disrupt-inner-circle",
+      "title": "Return an inner-circle insignia",
+      "category": "request",
+      "summary": "The paladin accepts one exact blood red tear insignia for a coin reward and remains. Multiple local carriers and an outside bandit leader can supply that prototype; preparation does not prove personal camp kills.",
+      "contracts": [
+        {
+          "giver_vnum": 14820,
+          "completion_key": "give=I:14821;receive=C:5000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-14821",
+          "text": "Carry 1 × a blood red tear insignia loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            14821
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact proof carried loose now. Supplied proof can prepare a return without recording your own recovery, kill, access or rescue. Fresh quest stock is currently unavailable from zone resets while accounting is active."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 14820,
+              "completion_key": "give=I:14821;receive=C:5000;disappear=0"
+            }
+          ],
+          "hint": "Keeps the accepted native return after proof is spent. Conversation, a key route, another reward copy or a nearby prisoner does not record this exchange."
+        }
+      ]
+    },
+    {
+      "id": "free-perrins-daughter",
+      "title": "Return the daughter's key for shackles",
+      "category": "request",
+      "summary": "Give the key for shackles from Isoril's locked desk to the young half-elven woman for an experience reward. She departs after acceptance. The paladin's explanation does not make him the accepting giver.",
+      "contracts": [
+        {
+          "giver_vnum": 14824,
+          "completion_key": "give=I:14828;receive=E:125000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-14828",
+          "text": "Carry 1 × a key for shackles loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            14828
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact proof carried loose now. Supplied proof can prepare a return without recording your own recovery, kill, access or rescue. Fresh quest stock is currently unavailable from zone resets while accounting is active."
+        },
+        {
+          "id": "item-14822",
+          "text": "Carry 1 × Isoril's diary loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            14822
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "An optional lore lead from the same desk. Current diary possession does not record reading, verify the escaped thief's identity or complete any local return."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record this accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 14824,
+              "completion_key": "give=I:14828;receive=E:125000;disappear=1"
+            }
+          ],
+          "hint": "Keeps the accepted native return after proof is spent. Conversation, a key route, another reward copy or a nearby prisoner does not record this exchange."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
