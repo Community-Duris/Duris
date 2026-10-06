@@ -1,5 +1,13 @@
 # Shared producer integration progress — 2026-10-06
 
+## Projection contract parser repaired — 2026-10-06
+
+[Primary repair](PROJECTION_DEFAULT_ARGUMENT_PARSER_PRIMARY_REPAIR_2026-10-06.md)
+fixes the default-argument brace parser without changing production policy.
+The original failure reproduces; the same frozen-method check and all seven
+maintained methods pass, zero skips. Complete startup-source builds and cold
+world/journal qualification remain open; no Plan or release gate is promoted.
+
 ## Combined build and genuine publication boundary
 
 The private final candidate `74b88535fbfa555cb016276591053b16d7a29631d87cc85e9fedf5774c99f916`
