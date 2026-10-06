@@ -1167,3 +1167,118 @@ bool shop_trade_original_item_stage::proclib_probe(
 		return false;
 	}
 }
+
+// Birth-only complete persisted literal hydration. Existing SHOP/legacy bodies
+// are unchanged; reuse their actual raw allocator and metadata/spellbook rules.
+bool native_mobile_birth_literal_stage::prepare(const object_template &prototype,
+						const player_item_snapshot &literal,
+						native_mobile_birth_literal_stage &output) noexcept
+{
+	try
+	{
+		if (!literal.object_uid || !std::in_range<unsigned long>(literal.object_uid) ||
+		    !std::in_range<long>(literal.generated_key) || literal.vnum <= 0 ||
+		    literal.type < ITEM_LOWEST || literal.type > ITEM_LAST ||
+		    literal.string_mask !=
+			    (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3) ||
+		    !player_load_item_snapshot_metadata_valid(literal))
+			return false;
+		// Complete full-literal SHOP capture uses these exact four strings. No
+		// prototype default is substituted for a missing original string.
+		for (const auto *text : { &literal.name, &literal.short_description,
+					  &literal.description, &literal.action_description })
+			if (text->size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
+			    text->find('\0') != std::string::npos)
+				return false;
+		for (const auto &affect : literal.affects)
+			if (!std::in_range<decltype(std::declval<obj_data &>().affected[0].location)>(
+				    affect[0]) ||
+			    !std::in_range<decltype(std::declval<obj_data &>().affected[0].modifier)>(
+				    affect[1]))
+				return false;
+		for (auto value : literal.bitvectors)
+			if (!std::in_range<unsigned long>(value))
+				return false;
+		for (auto timer : literal.timers)
+			if (!std::in_range<time_t>(timer))
+				return false;
+		player_item_snapshot decoded = literal;
+		for (auto &description : decoded.extra_descriptions)
+		{
+			if (description.spellbook)
+			{
+				std::array<char, (MAX_SKILLS + 1) / 8 + 1> bits{};
+				if (!decode_saved_spellbook(description, bits.data()))
+					return false;
+				description.keyword.assign("\3\1\3", 3);
+				description.description.assign(bits.data(), bits.size());
+			}
+			else if (description.keyword.find('\0') != std::string::npos ||
+				 description.description.find('\0') != std::string::npos)
+				return false;
+		}
+		inert_item_stage raw;
+		if (inert_item_stage::allocate_literal(prototype, decoded, raw) !=
+		    inert_item_stage_result::ok)
+			return false;
+		native_mobile_birth_literal_stage candidate;
+		candidate.object_ = std::exchange(raw.object_, nullptr);
+		candidate.pool_ = std::exchange(raw.pool_, nullptr);
+		// Exact trap values come from the original birth recipe, never this template.
+		if (!literal.dynamic_affects.empty())
+		{
+			// Keep native pool ownership: obj_affect_remove returns consumed nodes
+			// to this existing pool. All creation/growth happens before enrollment.
+			extern mm_ds *dead_obj_affect_pool;
+			if (!dead_obj_affect_pool)
+				dead_obj_affect_pool = mm_create("OBJ_AFFECTS", sizeof(obj_affect),
+								 offsetof(obj_affect, next), 100);
+			candidate.affect_pool_ = dead_obj_affect_pool;
+			obj_affect **tail = &candidate.object_->affects;
+			for (const auto &saved : literal.dynamic_affects)
+			{
+				auto *node =
+					static_cast<obj_affect *>(mm_get(candidate.affect_pool_));
+				if (!node)
+					return false;
+				node->type = saved.type;
+				node->data = saved.data;
+				node->extra2 = static_cast<ulong>(saved.extra2);
+				node->next = nullptr;
+				*tail = node;
+				tail = &node->next;
+			}
+		}
+		if (output.object_)
+			return false;
+		output.object_ = std::exchange(candidate.object_, nullptr);
+		output.pool_ = std::exchange(candidate.pool_, nullptr);
+		output.affect_pool_ = std::exchange(candidate.affect_pool_, nullptr);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+native_mobile_birth_literal_stage::~native_mobile_birth_literal_stage() noexcept
+{
+	reset();
+}
+void native_mobile_birth_literal_stage::reset() noexcept
+{
+	if (!object_)
+		return;
+	for (obj_affect *affect = object_->affects; affect;)
+	{
+		obj_affect *next = affect->next;
+		mm_release(affect_pool_, affect);
+		affect = next;
+	}
+	object_->affects = nullptr;
+	inert_item_stage literal;
+	literal.object_ = std::exchange(object_, nullptr);
+	literal.pool_ = std::exchange(pool_, nullptr);
+	affect_pool_ = nullptr;
+}

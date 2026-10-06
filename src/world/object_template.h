@@ -65,6 +65,7 @@ bool finalize_recovery_object_template_bindings() noexcept;
 const object_template *find_recovery_object_template(int vnum) noexcept;
 struct player_item_snapshot;
 class shop_trade_native_publication_owner;
+class quest_mobile_native_item_binding;
 class shop_trade_original_procedure_binding_stage
 {
     public:
@@ -80,6 +81,7 @@ class shop_trade_original_procedure_binding_stage
 
     private:
 	friend class shop_trade_native_publication_owner;
+	friend class quest_mobile_native_birth_owner;
 	friend int proclibObj_add(P_obj, char *, char *);
 	friend P_obj instantiate_object_template(const object_template &);
 	struct binding
@@ -90,6 +92,9 @@ class shop_trade_original_procedure_binding_stage
 	};
 	static bool prepare(std::span<const P_obj>, std::span<const player_item_snapshot>,
 			    shop_trade_original_procedure_binding_stage &) noexcept;
+	static bool prepare_native_birth(std::span<const quest_mobile_native_item_binding>,
+					 shop_trade_original_procedure_binding_stage &) noexcept;
+	size_t retained_bytes() const noexcept;
 	bool valid() const noexcept;
 	void commit_unchecked() noexcept;
 	static void observe_normal_binding(int, obj_proc_type, obj_proc_type) noexcept;

@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <vector>
 
 struct item_ownership_runtime_entry
@@ -53,6 +54,25 @@ bool item_ownership_runtime_snapshot_active_root(
 bool item_ownership_runtime_peek_owner_revision(const item_owner_identity &owner,
 						uint64_t *revision) noexcept;
 bool item_ownership_runtime_owner_revision(const item_owner_identity &owner, uint64_t *revision);
+class item_native_quest_publication_owner;
+// Only the original native publication owner may project an authenticated
+// CURRENT cut. This grants neither SQL nor physical publication authority.
+class item_ownership_runtime_native_quest_publication_owner final
+{
+    private:
+	friend class item_native_quest_publication_owner;
+	enum class publication_result : uint8_t
+	{
+		applied,
+		rejected
+	};
+	static bool apply(const item_transfer_payload &, const item_transfer_result &,
+			  publication_result,
+			  std::span<const item_ownership_runtime_entry> current_custody,
+			  uint64_t current_from_revision, uint64_t current_to_revision,
+			  uint64_t current_player_revision) noexcept;
+};
+
 bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 				  const item_transfer_result &result);
 bool item_ownership_runtime_apply_collector(const collector_command_payload &payload,

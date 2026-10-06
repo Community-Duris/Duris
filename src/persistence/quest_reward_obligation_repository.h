@@ -7,6 +7,7 @@
 #include <mysql/mysql.h>
 
 #include <cstdint>
+#include <span>
 #include <vector>
 
 struct quest_reward_obligation_record
@@ -72,5 +73,26 @@ quest_reward_obligation_result
 quest_reward_obligation_repository_acknowledge(MYSQL *connection, uint32_t player_pid,
 					       const critical_operation_id &offering_operation,
 					       unsigned int *database_error_code);
+
+struct quest_reward_obligation_readback
+{
+	quest_reward_obligation_record record;
+	bool acknowledged = false;
+	// Indexed by the original frozen XP award, not by reward slot.
+	uint64_t xp_entitlement_applied_mask = 0;
+};
+
+constexpr size_t QUEST_REWARD_EXACT_QUERY_MAX = 4;
+// Read the exact original obligation, including an acknowledged row, on the
+// caller's reconnect-disabled, autocommit-on IN_TRANS session. Validate literal retained terms,
+// the applied inbox, native item/cash witnesses and the complete original XP set.
+// An ACKed row must have all required receipts. No writes, actor publication or
+// reward/skill repetition. Caller separately authenticates the historical native
+// quest core and confirms transaction cleanup before terminal journal mutation.
+// Missing/invalid evidence never changes output; attempted reads count in metrics.
+quest_reward_obligation_result quest_reward_obligation_repository_read_exact_in_transaction(
+	MYSQL *, uint32_t player_pid, const critical_operation_id &offering_operation,
+	std::span<const uint8_t> original_continuation, quest_reward_obligation_readback *,
+	unsigned int *database_error_code, quest_reward_read_metrics *metrics = nullptr) noexcept;
 
 #endif

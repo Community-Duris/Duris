@@ -1,5 +1,8 @@
 #include "economy/economic_gameplay_authority.h"
+#include "economy/native_quest_consumption_capture.h"
+#include "player/player_snapshot_codec.h"
 #include "economy/economic_command_admission.h"
+#include "economy/native_mobile_birth_command.h"
 #include "economy/coin_transfer_accounting.h"
 #include "economy/item_transfer_accounting.h"
 #include "economy/collector_accounting.h"
@@ -203,6 +206,128 @@ bool economic_gameplay_authority::active_regular_sql()
 	const auto selected = current.load(std::memory_order_acquire);
 	return persistence_mode_requires_mysql() && selected &&
 	       selected->scope == projection_scope::regular && selected->scope_version == 0;
+}
+
+economic_accounting_error economic_gameplay_authority::prepare_native_mobile_birth(
+	const quest_mobile_native_image &original, critical_source_site original_site,
+	uint64_t accepted_at_usec, critical_command *output) noexcept
+{
+	using error = economic_accounting_error;
+	if (!output || !persistence_mode_requires_mysql())
+		return error::unauthorized;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!selected || selected->scope != projection_scope::regular ||
+		    selected->scope_version != 0)
+			return error::unauthorized;
+		economic_operation_metadata metadata{};
+		metadata.operation_id = original.reference.birth_operation;
+		metadata.lineage = selected->lineage;
+		metadata.epoch = selected->epoch;
+		metadata.actor_kind = economic_actor_kind::domain;
+		metadata.actor_id = original.reference.mobile_instance_id;
+		metadata.writer_id = ECONOMIC_WRITER_NATIVE_MOBILE_BIRTH;
+		metadata.reason = economic_reason::npc_reward;
+		metadata.policy_version = 1;
+		metadata.compiler_version = 1;
+		metadata.source_event = original.reference.birth_source;
+		// Freeze the actual retained image exactly once. Replay decodes its
+		// original command and never calls this current-projection preparation.
+		return native_mobile_birth_command_build(metadata, original, original_site,
+							 accepted_at_usec, output);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+}
+
+economic_accounting_error economic_gameplay_authority::prepare_native_mobile_birth(
+	const quest_mobile_native_image &original,
+	std::span<const native_mobile_birth_item_recipe> recipes,
+	critical_source_site original_site, uint64_t accepted_at_usec,
+	critical_command *output) noexcept
+{
+	using error = economic_accounting_error;
+	if (!output || !persistence_mode_requires_mysql())
+		return error::unauthorized;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!selected || selected->scope != projection_scope::regular ||
+		    selected->scope_version != 0)
+			return error::unauthorized;
+		economic_operation_metadata metadata{};
+		metadata.operation_id = original.reference.birth_operation;
+		metadata.lineage = selected->lineage;
+		metadata.epoch = selected->epoch;
+		metadata.actor_kind = economic_actor_kind::domain;
+		metadata.actor_id = original.reference.mobile_instance_id;
+		metadata.writer_id = ECONOMIC_WRITER_NATIVE_MOBILE_BIRTH;
+		metadata.reason = economic_reason::npc_reward;
+		metadata.policy_version = 1;
+		metadata.compiler_version = 1;
+		metadata.source_event = original.reference.birth_source;
+		// Freeze the actual retained image exactly once. Replay decodes its
+		// original command and never calls this current-projection preparation.
+		return native_mobile_birth_command_build(metadata, original, recipes, original_site,
+							 accepted_at_usec, output);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
+}
+
+economic_accounting_error economic_gameplay_authority::prepare_native_mobile_birth(
+	const quest_mobile_native_image &original,
+	std::span<const native_mobile_birth_item_recipe> recipes,
+	const quest_mobile_native_constructor_recipe &constructor,
+	critical_source_site original_site, uint64_t accepted_at_usec,
+	critical_command *output) noexcept
+{
+	using error = economic_accounting_error;
+	if (!output || !persistence_mode_requires_mysql())
+		return error::unauthorized;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (!selected || selected->scope != projection_scope::regular ||
+		    selected->scope_version != 0)
+			return error::unauthorized;
+		economic_operation_metadata metadata{};
+		metadata.operation_id = original.reference.birth_operation;
+		metadata.lineage = selected->lineage;
+		metadata.epoch = selected->epoch;
+		metadata.actor_kind = economic_actor_kind::domain;
+		metadata.actor_id = original.reference.mobile_instance_id;
+		metadata.writer_id = ECONOMIC_WRITER_NATIVE_MOBILE_BIRTH;
+		metadata.reason = economic_reason::npc_reward;
+		metadata.policy_version = 1;
+		metadata.compiler_version = 1;
+		metadata.source_event = original.reference.birth_source;
+		// Freeze the actual retained image exactly once. Replay decodes its
+		// original command and never calls this current-projection preparation.
+		return native_mobile_birth_command_build(metadata, original, recipes, constructor,
+							 original_site, accepted_at_usec, output);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+	catch (...)
+	{
+		return error::corrupt_evidence;
+	}
 }
 
 bool economic_gameplay_authority::observe_shop_checkpoint(
@@ -653,3 +778,174 @@ void economic_gameplay_authority::reset_for_tests()
 	current.store(std::shared_ptr<const admission_projection>{}, std::memory_order_release);
 }
 #endif
+
+quest_native_consumption_capture::quest_native_consumption_capture(
+	critical_command original, const quest_mobile_native_reference &reference,
+	uint64_t runtime_generation, uint32_t final_giver_pid, uint32_t completion_slot,
+	std::vector<uint64_t> ordered_consumed_roots,
+	item_native_quest_publication_terms publication_terms, economic_source_kind action)
+	: original_(std::move(original))
+	, reference_(reference)
+	, runtime_generation_(runtime_generation)
+	, final_giver_pid_(final_giver_pid)
+	, consumed_root_order_(std::move(ordered_consumed_roots))
+	, publication_terms_(std::move(publication_terms))
+	, source_{ action, reference.birth_operation, reference.birth_source.generation,
+		   reference.stock_revision, completion_slot }
+{
+}
+
+economic_accounting_error economic_gameplay_authority::prepare_native_item_transfer(
+	critical_command *command, uint32_t final_giver_pid,
+	const quest_native_consumption_capture *original)
+{
+	using error = economic_accounting_error;
+	if (!command || !final_giver_pid || final_giver_pid > INT32_MAX)
+		return error::invalid_identity;
+	try
+	{
+		const auto selected = current.load(std::memory_order_acquire);
+		if (selected && sql_wallet_root_scope(*selected))
+			return error::unauthorized;
+		if (command->type != critical_command_type::item_transfer ||
+		    command->payload_version !=
+			    ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION)
+			return error::unauthorized;
+		item_transfer_payload payload = {};
+		if (!item_transfer_command_decode_payload(*command, &payload) ||
+		    !item_transfer_native_mobile_recovery_shape_valid(payload) ||
+		    payload.native_mobile.final_giver_pid != final_giver_pid)
+			return error::corrupt_evidence;
+		const economic_source_event *event = nullptr;
+		if (payload.native_mobile.action == item_native_mobile_action::acceptance)
+		{
+			if (original ||
+			    payload.continuation.kind != item_transfer_continuation_kind::none)
+				return error::unauthorized;
+		}
+		else
+		{
+			if (!original || !original->runtime_generation() ||
+			    original->final_giver_pid() != final_giver_pid ||
+			    !quest_mobile_native_reference_valid(original->reference()) ||
+			    !critical_operation_id_equal(command->operation_id,
+							 original->original_command().operation_id))
+				return error::unauthorized;
+			std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> captured = {},
+										 supplied = {};
+			if (quest_mobile_native_reference_encode(original->reference(),
+								 &captured) !=
+				    player_snapshot_codec_result::ok ||
+			    quest_mobile_native_reference_encode(payload.native_mobile.reference,
+								 &supplied) !=
+				    player_snapshot_codec_result::ok ||
+			    captured != supplied)
+				return error::payload_conflict;
+			// Failed consumed prefixes retain their real ITEM-pass/TYPE-pass
+			// order even without a reward continuation. Original notifications
+			// are immutable decision facts, never today's completion table.
+			const auto &terms = payload.native_recovery.publication_terms;
+			const auto &captured_terms = original->publication_terms();
+			if (payload.native_recovery.consumed_root_order !=
+				    original->consumed_root_order() ||
+			    terms.message != captured_terms.message ||
+			    terms.disappear_message != captured_terms.disappear_message ||
+			    terms.echo_all != captured_terms.echo_all ||
+			    terms.disappear != captured_terms.disappear)
+				return error::payload_conflict;
+			// Rebuild the original structural command. The recovery extension
+			// may add only its acknowledged player hold/fence, not new quest
+			// selection, revisions, ordered roots, continuation, or operation.
+			auto selected = payload;
+			selected.native_recovery = {};
+			critical_command structural = {};
+			auto captured_command = original->original_command();
+			if (captured_command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+			    captured_command.payload_version !=
+				    ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION ||
+			    captured_command.accepted_at_usec ||
+			    captured_command.publication_required ||
+			    !captured_command.accounting_intent.empty())
+				return error::unauthorized;
+			if (!item_transfer_command_build_native_mobile(
+				    &structural, command->operation_id, selected,
+				    command->source_site, command->deadline_class))
+				return error::payload_conflict;
+			// The wire comparator requires accepted envelopes. Normalize only
+			// these local copies after proving the capture was unaccepted.
+			structural.accepted_at_usec = 1;
+			captured_command.accepted_at_usec = 1;
+			if (!critical_command_equal(structural, captured_command))
+				return error::payload_conflict;
+			event = &original->source_event();
+			if (!economic_source_event_valid(*event) ||
+			    (event->kind != economic_source_kind::quest_action &&
+			     event->kind != economic_source_kind::quest_completion) ||
+			    (payload.continuation.kind == item_transfer_continuation_kind::none) !=
+				    (event->kind == economic_source_kind::quest_action))
+				return error::unauthorized;
+		}
+
+		auto envelope = *command;
+		if (!envelope.accepted_at_usec)
+			envelope.accepted_at_usec = 1;
+		if (!critical_command_envelope_valid(envelope))
+			return error::corrupt_evidence;
+		if (command->schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
+		{
+			economic_frozen_intent retained;
+			auto status = economic_intent_decode(command->accounting_intent, &retained);
+			if (status != error::ok)
+				return status;
+			status = economic_intent_verify_binding(envelope, retained);
+			if (status != error::ok)
+				return status;
+			// Only this temporary projection becomes unaccepted. Retained
+			// command bytes, acceptance time, epoch and source stay untouched.
+			auto projection = *command;
+			projection.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+			projection.accounting_intent.clear();
+			projection.accepted_at_usec = 0;
+			projection.publication_required = false;
+			std::vector<uint8_t> rebuilt;
+			status = item_native_mobile_accounting_intent(
+				projection, retained.admission.metadata.lineage,
+				retained.admission.metadata.epoch, final_giver_pid, event,
+				&rebuilt);
+			return status != error::ok		     ? status :
+			       rebuilt == command->accounting_intent ? error::ok :
+								       error::payload_conflict;
+		}
+
+		if (!selected || command->schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+		    !command->accounting_intent.empty() || command->accepted_at_usec ||
+		    command->publication_required)
+			return error::unauthorized;
+		if (selected->wallets.find(final_giver_pid) == selected->wallets.end())
+			return error::incomplete_coverage;
+		critical_command frozen = *command;
+		std::vector<uint8_t> intent;
+		auto status = item_native_mobile_accounting_intent(frozen, selected->lineage,
+								   selected->epoch, final_giver_pid,
+								   event, &intent);
+		if (status != error::ok)
+			return status;
+		frozen.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+		frozen.accounting_intent = std::move(intent);
+		envelope = frozen;
+		envelope.accepted_at_usec = 1;
+		economic_frozen_intent verified;
+		status = economic_intent_decode(frozen.accounting_intent, &verified);
+		if (status != error::ok)
+			return status;
+		status = economic_intent_verify_binding(envelope, verified);
+		if (status != error::ok)
+			return status;
+		*command = std::move(frozen);
+		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}

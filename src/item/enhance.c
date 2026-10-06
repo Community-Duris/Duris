@@ -2087,16 +2087,29 @@ void enhance_on_eligible_npc_death(P_char ch, P_char killer)
 	enhance_load_essence_drop(ch, killer);
 }
 
+namespace
+{
+bool original_npc_reset_material(P_char mob, P_obj missing_item, int *vnum) noexcept
+{
+	if (!vnum || !enhance_stat_enabled || !enhance_stat_npc_material_fallback_enabled || !mob ||
+	    !IS_NPC(mob) || !missing_item)
+		return false;
+	*vnum = get_matstart(missing_item) + 4;
+	return true;
+}
+}
+bool quest_mobile_native_reset_material_owner::select(P_char mob, P_obj missing_item,
+						      int *vnum) noexcept
+{
+	return original_npc_reset_material(mob, missing_item, vnum);
+}
 void enhance_on_npc_item_reset_skipped(P_char mob, P_obj missing_item)
 {
 	P_obj material;
 	int high_vnum;
 
-	if (!enhance_stat_enabled || !enhance_stat_npc_material_fallback_enabled || !mob ||
-	    !IS_NPC(mob) || !missing_item)
+	if (!original_npc_reset_material(mob, missing_item, &high_vnum))
 		return;
-
-	high_vnum = get_matstart(missing_item) + 4;
 	if (!(material = read_object(high_vnum, VIRTUAL)))
 	{
 		logit(LOG_DEBUG,

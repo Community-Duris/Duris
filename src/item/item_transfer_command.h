@@ -2,6 +2,7 @@
 #define ITEM_TRANSFER_COMMAND_H
 
 #include "persistence/critical_command.h"
+#include "economy/shop_trade_recovery_manifest.h"
 #include "world/quest_mobile_native_reference.h"
 
 #include <array>
@@ -11,6 +12,21 @@
 
 constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 10;
 constexpr uint16_t ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION = 11;
+constexpr uint16_t ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION = 12;
+constexpr uint16_t ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_VERSION = 2;
+constexpr size_t ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_HEADER_BYTES = 24;
+constexpr size_t ITEM_TRANSFER_NATIVE_MOBILE_PUBLICATION_HEADER_BYTES = 12;
+constexpr size_t ITEM_TRANSFER_NATIVE_MOBILE_MESSAGE_MAX_BYTES = 65536;
+constexpr size_t ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_MIN_BYTES =
+	ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_HEADER_BYTES +
+	2 * SHOP_TRADE_RECOVERY_FOREST_HEADER_BYTES +
+	ITEM_TRANSFER_NATIVE_MOBILE_PUBLICATION_HEADER_BYTES;
+constexpr size_t ITEM_TRANSFER_NATIVE_MOBILE_MAX_CONSUMED_ROOTS = 3000;
+constexpr size_t ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_MAX_BYTES =
+	ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_MIN_BYTES +
+	(2 * SHOP_TRADE_RECOVERY_MAX_UIDS + ITEM_TRANSFER_NATIVE_MOBILE_MAX_CONSUMED_ROOTS) *
+		sizeof(uint64_t) +
+	2 * (ITEM_TRANSFER_NATIVE_MOBILE_MESSAGE_MAX_BYTES - 1);
 constexpr uint16_t ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_VERSION = 1;
 constexpr size_t ITEM_TRANSFER_NATIVE_MOBILE_CONTEXT_BYTES = 168;
 constexpr uint16_t ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION = 9;
@@ -23,6 +39,7 @@ constexpr uint16_t ITEM_TRANSFER_PREVIOUS_PAYLOAD_VERSION = 3;
 constexpr uint16_t ITEM_TRANSFER_LEGACY_PAYLOAD_VERSION = 2;
 constexpr size_t ITEM_TRANSFER_LEGACY_MAX_ITEMS = 12;
 constexpr size_t ITEM_TRANSFER_MAX_ITEMS = 3000;
+static_assert(ITEM_TRANSFER_NATIVE_MOBILE_MAX_CONSUMED_ROOTS == ITEM_TRANSFER_MAX_ITEMS);
 constexpr size_t ITEM_TRANSFER_HEADER_BYTES = 96;
 constexpr size_t ITEM_TRANSFER_ENTRY_BYTES = 40;
 constexpr size_t ITEM_TRANSFER_PAYLOAD_BYTES =
@@ -222,6 +239,30 @@ struct item_native_mobile_context
 	uint32_t final_giver_pid = 0;
 };
 
+// Immutable value evidence only. The original quest hold/checkpoint and source
+// owner must authenticate the PID/save fence and complete literal forest cut.
+// Consumption has no player item mutation: both forest bindings are absent.
+struct item_native_quest_publication_terms
+{
+	std::string message;
+	std::string disappear_message;
+	bool echo_all = false;
+	bool disappear = false;
+};
+
+struct item_native_mobile_recovery_context
+{
+	bool present = false;
+	uint32_t player_pid = 0;
+	uint64_t acknowledged_save_revision = 0;
+	shop_trade_recovery_forest_binding player_before;
+	shop_trade_recovery_forest_binding player_after;
+	// Original ITEM pass then TYPE pass decision; never UID/native order.
+	// Empty for acceptance, including an empty no-reward continuation prefix.
+	std::vector<uint64_t> consumed_root_order;
+	item_native_quest_publication_terms publication_terms;
+};
+
 struct item_transfer_payload
 {
 	item_owner_identity from_owner;
@@ -245,6 +286,7 @@ struct item_transfer_payload
 	item_collector_death_enrollment collector;
 	item_transfer_continuation continuation;
 	item_native_mobile_context native_mobile;
+	item_native_mobile_recovery_context native_recovery;
 };
 
 struct item_transfer_result
@@ -301,6 +343,30 @@ bool item_transfer_command_encode_native_mobile(const item_transfer_payload &,
 bool item_transfer_command_build_native_mobile(critical_command *, critical_operation_id,
 					       const item_transfer_payload &, critical_source_site,
 					       critical_deadline_class) noexcept;
+// Explicit v12 successor; v11/context1 and default v10 remain literal.
+// Tail: context1, then LE recovery version16/zero16/length32/PID32/zero32/
+// acknowledged_save_revision64, followed by existing role1/role2 forest frames.
+bool item_transfer_native_mobile_recovery_shape_valid(const item_transfer_payload &) noexcept;
+bool item_transfer_native_mobile_recovery_freeze(
+	item_transfer_payload *, uint32_t player_pid, uint64_t acknowledged_save_revision,
+	std::span<const uint8_t> original_player_items) noexcept;
+// Consumption needs its independently sealed original decision order. The
+// four-argument compatibility entry remains and refuses a missing order.
+bool item_transfer_native_mobile_recovery_freeze(
+	item_transfer_payload *, uint32_t player_pid, uint64_t acknowledged_save_revision,
+	std::span<const uint8_t> original_player_items,
+	std::span<const uint64_t> consumed_root_order) noexcept;
+bool item_transfer_native_mobile_recovery_freeze(
+	item_transfer_payload *, uint32_t player_pid, uint64_t acknowledged_save_revision,
+	std::span<const uint8_t> original_player_items,
+	std::span<const uint64_t> consumed_root_order,
+	const item_native_quest_publication_terms &) noexcept;
+bool item_transfer_command_encode_native_mobile_recovery(const item_transfer_payload &,
+							 std::vector<uint8_t> *encoded) noexcept;
+bool item_transfer_command_build_native_mobile_recovery(critical_command *, critical_operation_id,
+							const item_transfer_payload &,
+							critical_source_site,
+							critical_deadline_class) noexcept;
 bool item_transfer_command_decode_payload(const critical_command &command,
 					  item_transfer_payload *payload);
 bool item_transfer_command_encode_result(const item_transfer_result &result,

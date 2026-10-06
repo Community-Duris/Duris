@@ -34,6 +34,7 @@ class inert_item_stage
 	friend class coin_physical_recovery_owner;
 	friend class shop_trade_native_publication_owner;
 	friend class shop_trade_original_item_stage;
+	friend class native_mobile_birth_literal_stage;
 	void reset() noexcept;
 	P_obj object_ = nullptr;
 	mm_ds *pool_ = nullptr;
@@ -47,6 +48,25 @@ class inert_item_stage
 								 uint64_t,
 								 const std::array<int32_t, 4> &,
 								 inert_item_stage &) noexcept;
+};
+
+// Distinct private birth literal allocator. No construction/probe/conversion,
+// UID issuance, native enrollment or publication authority; private stage only.
+class native_mobile_birth_literal_stage final
+{
+    private:
+	friend class quest_mobile_native_item_stage;
+	native_mobile_birth_literal_stage() noexcept = default;
+	~native_mobile_birth_literal_stage() noexcept;
+	native_mobile_birth_literal_stage(const native_mobile_birth_literal_stage &) = delete;
+	native_mobile_birth_literal_stage &
+	operator=(const native_mobile_birth_literal_stage &) = delete;
+	static bool prepare(const object_template &, const player_item_snapshot &,
+			    native_mobile_birth_literal_stage &) noexcept;
+	void reset() noexcept;
+	P_obj object_ = nullptr;
+	mm_ds *pool_ = nullptr;
+	mm_ds *affect_pool_ = nullptr;
 };
 
 // Value state only. These flags cannot grant SQL/native publication authority.

@@ -47,3 +47,39 @@ bool quest_mobile_native_reference_copy(const char_data *character,
 	*output = candidate;
 	return true;
 }
+
+bool quest_mobile_native_publication_binding::advance(
+	char_data *character, std::uint64_t expected_runtime_id,
+	const quest_mobile_native_reference &before,
+	const quest_mobile_native_reference &after) noexcept
+{
+	if (!nevent_is_game_thread() || before.mobile_revision == UINT64_MAX ||
+	    before.stock_revision == UINT64_MAX)
+		return false;
+	// Every birth/source/type fact is unchanged; both revisions advance once.
+	auto expected = before;
+	++expected.mobile_revision;
+	++expected.stock_revision;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> old_bytes{}, next{}, exact{};
+	quest_mobile_native_reference observed;
+	if (quest_mobile_native_reference_encode(before, &old_bytes) !=
+		    player_snapshot_codec_result::ok ||
+	    quest_mobile_native_reference_encode(after, &next) !=
+		    player_snapshot_codec_result::ok ||
+	    quest_mobile_native_reference_encode(expected, &exact) !=
+		    player_snapshot_codec_result::ok ||
+	    next != exact ||
+	    !quest_mobile_native_reference_copy(character, expected_runtime_id, &observed))
+		return false;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> current{};
+	if (quest_mobile_native_reference_encode(observed, &current) !=
+	    player_snapshot_codec_result::ok)
+		return false;
+	if (current == next)
+		return true; // Exact same originally proven transition retry only.
+	if (current != old_bytes)
+		return false;
+	// Nonallocating serialized value install, after every fallible comparison.
+	std::copy(next.begin(), next.end(), character->native_mobile_binding.encoded_reference_);
+	return true;
+}

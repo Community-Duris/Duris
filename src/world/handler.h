@@ -34,4 +34,54 @@ bool corpse_raise_player_save_fenced(P_char);
 void corpse_raise_player_ready(P_char, bool inventory_reloaded);
 bool corpse_has_death_conflict(P_obj);
 
+// Detached original reset topology only; world enrollment remains with the
+// original birth owner after authenticated SQL publication. No caller values
+// grant ownership/source or ACK authority.
+class quest_mobile_native_birth_owner;
+class quest_mobile_native_item_stage;
+class quest_mobile_native_local_stock;
+// Transient original returned shell-probe witness. Only the actual factory can
+// construct a valid value; the detached placement consumes it. It grants no
+// durable ownership, SQL, source, recovery or acknowledgement authority.
+class quest_mobile_native_container_shell final
+{
+    public:
+	quest_mobile_native_container_shell() noexcept = default;
+	quest_mobile_native_container_shell(const quest_mobile_native_container_shell &) = delete;
+	quest_mobile_native_container_shell &
+	operator=(const quest_mobile_native_container_shell &) = delete;
+
+    private:
+	friend class quest_mobile_native_item_stage;
+	friend class quest_mobile_native_local_stock;
+	P_obj target_ = nullptr;
+	int target_rnum_ = -1;
+	int32_t shell_weight_ = 0;
+	bool valid_ = false;
+};
+class quest_mobile_native_local_stock final
+{
+	friend class quest_mobile_native_birth_owner;
+	static bool carry(P_obj, P_char) noexcept;
+	static bool equip(P_obj, P_char, int) noexcept;
+	static bool nest(P_obj, P_obj, P_char) noexcept;
+	static bool nest(P_obj, P_obj, P_char, quest_mobile_native_container_shell &) noexcept;
+	// Root retains any begun unpublished placement if its original probe fails.
+	static bool begin_reducing_nest(P_obj, P_obj, P_char) noexcept;
+	static bool finish_reducing_nest(P_obj, P_obj, P_char,
+					 quest_mobile_native_container_shell &) noexcept;
+	static bool detach(P_obj, P_char) noexcept;
+	static bool enroll(P_obj, P_char) noexcept;
+	static bool restore_enrollment(P_obj, P_char) noexcept;
+};
+
+class quest_mobile_native_stage;
+// Callback-free room/runtime projection owned exclusively by the original
+// native birth stage. Progress is retained by that stage after consumption.
+class quest_mobile_native_room_restore_owner final
+{
+	friend class quest_mobile_native_stage;
+	static bool restore(P_char, int room_rnum, size_t *retained_step) noexcept;
+};
+
 #endif

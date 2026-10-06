@@ -8,6 +8,10 @@
 #include <strings.h>
 #include <time.h>
 #include <vector>
+#include <algorithm>
+#include <climits>
+#include <memory>
+#include <limits>
 using namespace std;
 
 #include "core/prototypes.h"
@@ -452,24 +456,27 @@ void event_super_cannon(P_char /*pl*/, P_char /*vict*/, P_obj obj, void *data)
 	}
 }
 
+int native_birth_super_cannon_initialize(P_obj obj)
+{
+	// Make sure the cannon is reset on object creation.
+	for (int i = 0; i < 6; ++i)
+		obj->value[i] = 0;
+	return FALSE;
+}
+
 int super_cannon(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	char load[MAX_STRING_LENGTH], dirstr[MAX_STRING_LENGTH];
 	char arg1[MAX_STRING_LENGTH], arg2[MAX_STRING_LENGTH];
 	char buf[MAX_STRING_LENGTH];
-	int i, found = 0;
+	int found = 0;
 
 	struct cannon_data cdata;
 	cdata.fuze = 3;
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
-		// Make sure the cannon is reset on object creation
-		for (i = 0; i < 6; i++)
-		{
-			obj->value[i] = 0;
-		}
-		return FALSE;
+		return native_birth_super_cannon_initialize(obj);
 	}
 
 	if (cmd == CMD_PERIODIC)
@@ -596,6 +603,123 @@ void halloween_mine_proc(P_char ch)
 #define ZOMBIES_LEVEL 2 // current game level
 #define ZOMBIES_WAVE 3 // wave # of the level
 
+// Same original local constructor for normal and private-born stock. Global
+// game enrollment/mob assignment remains at its existing ordinary call site.
+static ZombieGame *native_birth_zombie_initialize(P_obj obj)
+{
+	obj->value[ZOMBIES_STATUS] = FALSE;
+	return new ZombieGame(obj);
+}
+static size_t retained_birth_zombie_reservations = 0;
+bool quest_mobile_native_zombie_stage::prepare(P_obj object,
+					       quest_mobile_native_zombie_stage &output) noexcept
+{
+	extern int top_of_mobt;
+	if (!nevent_is_game_thread() || !object || !object->obj_uid || output.game_ || !mob_index ||
+	    ZombieGame::next_id <= 0 || ZombieGame::next_id == INT_MAX ||
+	    retained_birth_zombie_reservations == std::numeric_limits<size_t>::max() ||
+	    zgames.size() >= zgames.max_size() ||
+	    retained_birth_zombie_reservations >= zgames.max_size() - zgames.size())
+		return false;
+	const int number = real_mobile0(87);
+	if (number < 0 || number > top_of_mobt || mob_index[number].virtual_number != 87)
+		return false;
+	try
+	{
+		std::unique_ptr<ZombieGame> game(native_birth_zombie_initialize(object));
+		zgames.reserve(zgames.size() + retained_birth_zombie_reservations + 1);
+		object->value[ZOMBIES_ID] = game->id;
+		output.mob_rnum_ = number;
+		output.original_mob_index_ = mob_index;
+		output.original_mob_proc_ = mob_index[number].func.mob;
+		output.item_uid_ = object->obj_uid;
+		output.game_ = game.release();
+		++retained_birth_zombie_reservations;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+bool quest_mobile_native_zombie_stage::restore(P_obj object,
+					       quest_mobile_native_zombie_stage &output) noexcept
+{
+	extern int top_of_mobt;
+	if (!nevent_is_game_thread() || !object || !object->obj_uid || output.game_ || !mob_index ||
+	    object->value[ZOMBIES_ID] <= 0 || object->value[ZOMBIES_ID] == INT_MAX ||
+	    object->value[ZOMBIES_STATUS] != FALSE || ZombieGame::next_id <= 0 ||
+	    retained_birth_zombie_reservations == std::numeric_limits<size_t>::max() ||
+	    zgames.size() >= zgames.max_size() ||
+	    retained_birth_zombie_reservations >= zgames.max_size() - zgames.size())
+		return false;
+	const int number = real_mobile0(87);
+	if (number < 0 || number > top_of_mobt || mob_index[number].virtual_number != 87)
+		return false;
+	for (const auto *game : zgames)
+		if (!game || game->id == object->value[ZOMBIES_ID] || game->generator == object)
+			return false;
+	try
+	{
+		std::unique_ptr<ZombieGame> game(new ZombieGame());
+		game->generator = object;
+		game->id = object->value[ZOMBIES_ID];
+		// Off-state birth has no spawned zombies or current round. Periodic code
+		// never reads this counter until its original start command sets it.
+		game->zombies_to_load = 0;
+		zgames.reserve(zgames.size() + retained_birth_zombie_reservations + 1);
+		output.mob_rnum_ = number;
+		output.original_mob_index_ = mob_index;
+		output.original_mob_proc_ = mob_index[number].func.mob;
+		output.item_uid_ = object->obj_uid;
+		output.game_ = game.release();
+		++retained_birth_zombie_reservations;
+		// Reserve the already retained ephemeral ID; do not allocate a new ID or
+		// publish a generator. Subsequent original construction must not collide.
+		if (ZombieGame::next_id <= object->value[ZOMBIES_ID])
+			ZombieGame::next_id = object->value[ZOMBIES_ID] + 1;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool quest_mobile_native_zombie_stage::publish(P_obj object) noexcept
+{
+	if (!nevent_is_game_thread() || !object || !game_ || game_->generator != object ||
+	    object->obj_uid != item_uid_ || object->value[ZOMBIES_ID] != game_->id ||
+	    object->value[ZOMBIES_STATUS] != FALSE || !game_->zombies.empty() ||
+	    !retained_birth_zombie_reservations || zgames.size() >= zgames.capacity() ||
+	    mob_index != original_mob_index_ || real_mobile0(87) != mob_rnum_ ||
+	    (mob_index[mob_rnum_].func.mob != original_mob_proc_ &&
+	     mob_index[mob_rnum_].func.mob != zgame_mob_proc))
+		return false;
+	// All fallible allocation happened during original private preparation.
+	// Consume before enrolling; no callback or further object dereference follows.
+	ZombieGame *game = game_;
+	game_ = nullptr;
+	zgames.push_back(game);
+	--retained_birth_zombie_reservations;
+	mob_index[mob_rnum_].func.mob = zgame_mob_proc;
+	return true;
+}
+bool quest_mobile_native_zombie_stage::discard() noexcept
+{
+	if (!game_)
+		return true;
+	if (!nevent_is_game_thread() || !retained_birth_zombie_reservations ||
+	    !game_->zombies.empty() ||
+	    std::find(zgames.begin(), zgames.end(), game_) != zgames.end())
+		return false;
+	game_->generator = nullptr;
+	delete game_; // Original unload sees an empty private vector, no extraction.
+	game_ = nullptr;
+	--retained_birth_zombie_reservations;
+	return true;
+}
+
 // Zombies game: loads zombies per round until all players are dead. :)
 // Need to setup a zombies class to load zombie vectors per spawner item.
 int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
@@ -619,10 +743,7 @@ int zombies_game(P_obj obj, P_char ch, int cmd, char *arg)
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
-		// load object with game status set to off
-		obj->value[ZOMBIES_STATUS] = FALSE;
-		// load the zombies game class object with mob vector
-		ZombieGame *zgame = new ZombieGame(obj);
+		ZombieGame *zgame = native_birth_zombie_initialize(obj);
 		zgames.push_back(zgame);
 		obj->value[ZOMBIES_ID] = zgame->id;
 		mob_index[real_mobile0(87)].func.mob = zgame_mob_proc;
@@ -1061,4 +1182,25 @@ int ZombieGame::unload()
 		extract_char(zombie);
 	}
 	return TRUE;
+}
+
+bool quest_mobile_native_zombie_stage::observe_published(P_obj object) noexcept
+{
+	extern int top_of_mobt;
+	if (!nevent_is_game_thread() || !object || !object->obj_uid ||
+	    object->value[ZOMBIES_ID] <= 0 || object->value[ZOMBIES_STATUS] != FALSE)
+		return false;
+	const ZombieGame *matched = nullptr;
+	for (const auto *game : zgames)
+		if (game && (game->id == object->value[ZOMBIES_ID] || game->generator == object))
+		{
+			if (matched || game->id != object->value[ZOMBIES_ID] ||
+			    game->generator != object || !game->zombies.empty())
+				return false;
+			matched = game;
+		}
+	const int number = real_mobile0(87);
+	return matched && mob_index && number >= 0 && number <= top_of_mobt &&
+	       mob_index[number].virtual_number == 87 &&
+	       mob_index[number].func.mob == zgame_mob_proc;
 }

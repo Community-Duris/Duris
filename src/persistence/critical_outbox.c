@@ -1,6 +1,7 @@
 #include "persistence/critical_outbox.h"
 
 #include "economy/collector_command.h"
+#include "economy/native_mobile_birth_result.h"
 #include "persistence/corpse_lifecycle_command.h"
 #include "sql/sql_thread_init.h"
 
@@ -476,8 +477,14 @@ critical_outbox_test_destination(const critical_outbox_record &record, void *con
 				   corpse_lifecycle_command_decode_result(record.payload.data(),
 									  record.payload.size(),
 									  &corpse_result);
-	return test_record || epic_record || currency_record || item_record || auction_record ||
-			       coin_receipt || collector_record || corpse_record ?
+	native_mobile_birth_result birth_result;
+	// Shape-only delivery records an outbox receipt, never native publication/ACK.
+	const bool birth_record = record.destination == NATIVE_MOBILE_BIRTH_OUTBOX_DESTINATION &&
+				  record.event_type == NATIVE_MOBILE_BIRTH_OUTBOX_EVENT &&
+				  record.payload_version == NATIVE_MOBILE_BIRTH_RESULT_VERSION &&
+				  native_mobile_birth_result_decode(record.payload, &birth_result);
+	return birth_record || test_record || epic_record || currency_record || item_record ||
+			       auction_record || coin_receipt || collector_record || corpse_record ?
 		       critical_outbox_delivery_result::delivered :
 		       critical_outbox_delivery_result::terminal_failure;
 }

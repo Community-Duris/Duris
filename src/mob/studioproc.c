@@ -119,6 +119,10 @@
 #include <pthread.h>
 #include <vector>
 
+#include <array>
+#include <memory>
+#include <openssl/evp.h>
+
 #include "core/prototypes.h"
 #include "world/world_activity.h"
 #include "core/structs.h"
@@ -2928,7 +2932,7 @@ static int sp_parse_action(int targ, int vnum, struct sp_trig *t, char *line)
 		 * and hands back the NEXT word as the value, so "affect curse 40 on
 		 * actor" would look up a spell called "40", fail, and take the whole
 		 * record down with it.  sp_qval also makes "affect 'cure serious' 30"
-		 * work, which is the grammar PACK_DESIGN.md §1.1 documents.
+		 * work, which is the grammar PACK_DESIGN.md Ã‚Â§1.1 documents.
 		 */
 		p = sp_qval(p, name, sizeof(name));
 		a->num = sp_spell_by_name(name);
@@ -3408,4 +3412,128 @@ void studioproc_boot(void)
 	fprintf(stderr, "--    STUDIOPROC: %d records, %d triggers.\r\n", nrec, studioproc_count);
 	/* the HOUR timer is armed lazily, from the first dispatch - see
 	   sp_arm_hour().  The event pool does not exist yet at this point. */
+}
+
+namespace
+{
+class native_birth_studio_hash
+{
+	std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> context{ EVP_MD_CTX_new(),
+									 EVP_MD_CTX_free };
+	bool healthy = context && EVP_DigestInit_ex(context.get(), EVP_sha256(), nullptr) == 1;
+
+    public:
+	bool bytes(const void *data, size_t length) noexcept
+	{
+		healthy = healthy && (!length || data) &&
+			  EVP_DigestUpdate(context.get(), data, length) == 1;
+		return healthy;
+	}
+	bool integer(uint64_t value) noexcept
+	{
+		std::array<uint8_t, 8> wire{};
+		for (size_t i = 0; i < wire.size(); ++i)
+			wire[i] = static_cast<uint8_t>(value >> (i * 8));
+		return bytes(wire.data(), wire.size());
+	}
+	bool text(const char *value) noexcept
+	{
+		if (!integer(value ? 1 : 0))
+			return false;
+		if (!value)
+			return true;
+		const size_t length = strnlen(value, MAX_STRING_LENGTH + 1);
+		return length <= MAX_STRING_LENGTH && integer(length) && bytes(value, length);
+	}
+	bool counter(int slot) noexcept
+	{
+		return slot >= 0 && slot < sp_ncounters && slot < SP_MAX_COUNTERS &&
+		       sp_cname[slot] && text(sp_cname[slot]);
+	}
+	bool finish(native_mobile_birth_procedure_digest *output) noexcept
+	{
+		native_mobile_birth_procedure_digest candidate{};
+		unsigned int size = 0;
+		if (!healthy || EVP_DigestFinal_ex(context.get(), candidate.data(), &size) != 1 ||
+		    size != candidate.size())
+			return false;
+		*output = candidate;
+		return true;
+	}
+};
+} // namespace
+
+bool studioproc_native_mobile_birth_definition(int32_t vnum,
+					       native_mobile_birth_procedure_digest *definition,
+					       mob_proc_type *predecessor) noexcept
+{
+	if (!definition || !predecessor || vnum <= 0 || !sp_on_game_thread())
+		return false;
+	const sp_rec *record = sp_find(SP_T_MOB, vnum);
+	if (!record || record->target != SP_T_MOB || record->vnum != vnum ||
+	    record->num_trigs < 0 || record->num_trigs > SP_MAX_TRIGS)
+		return false;
+	native_birth_studio_hash hash;
+	constexpr char domain[] = "NMP-STUDIO-1";
+	if (!hash.bytes(domain, sizeof(domain) - 1) || !hash.integer(record->target) ||
+	    !hash.integer(record->vnum) || !hash.integer(record->num_trigs) ||
+	    !hash.integer(record->events))
+		return false;
+	const sp_trig *trigger = record->trigs;
+	for (int i = 0; i < record->num_trigs; ++i)
+	{
+		if (!trigger || trigger->num_conds < 0 || trigger->num_conds > SP_MAX_CONDS ||
+		    trigger->num_actions < 0 || trigger->num_actions > SP_MAX_ACTIONS)
+			return false;
+		for (const int value : { trigger->event, trigger->chance, trigger->arg,
+					 trigger->arg2, trigger->cmdnum, trigger->trig_index,
+					 trigger->num_conds, trigger->num_actions })
+			if (!hash.integer(static_cast<uint64_t>(static_cast<int64_t>(value))))
+				return false;
+		if (!hash.text(trigger->keywords))
+			return false;
+		for (int c = 0; c < trigger->num_conds; ++c)
+		{
+			const auto &condition = trigger->conds[c];
+			for (const int value :
+			     { condition.kind, condition.neg, condition.op, condition.num,
+			       condition.num2, condition.who, condition.slot })
+				if (!hash.integer(
+					    static_cast<uint64_t>(static_cast<int64_t>(value))))
+					return false;
+			if (!hash.text(condition.text) ||
+			    (condition.kind == SP_C_COUNTER && !hash.counter(condition.slot)))
+				return false;
+		}
+		for (int a = 0; a < trigger->num_actions; ++a)
+		{
+			const auto &action = trigger->actions[a];
+			for (const int value :
+			     { action.op, action.num, action.num2, action.dnum, action.dsize,
+			       action.dbonus, action.who, action.scope, action.dtype, action.save,
+			       action.savehalf, action.cooldown, action.slot, action.count,
+			       action.dur, action.state, action.apply, action.amod,
+			       action.affword })
+				if (!hash.integer(
+					    static_cast<uint64_t>(static_cast<int64_t>(value))))
+					return false;
+			if (!hash.integer(action.affbit) || !hash.text(action.text) ||
+			    !hash.text(action.text2) || !hash.text(action.text3))
+				return false;
+			if ((action.op == SP_A_SET || action.op == SP_A_ADD ||
+			     action.op == SP_A_RSET || action.op == SP_A_RADD) &&
+			    !hash.counter(action.slot))
+				return false;
+		}
+		trigger = trigger->next;
+	}
+	if (trigger)
+		return false;
+	native_mobile_birth_procedure_digest candidate{};
+	if (!hash.finish(&candidate))
+		return false;
+	const mob_proc_type actual_predecessor = record->prev_mob;
+	*definition = candidate;
+	*predecessor = actual_predecessor;
+	return true;
 }

@@ -960,6 +960,13 @@ static int stat_pool_common(P_obj obj, P_char ch, int cmd, sh_int *statPtr, cons
 	return TRUE;
 }
 
+int native_birth_spell_pool_initialize(P_obj obj, int selected_spell, int original_time)
+{
+	obj->value[0] = selected_spell;
+	obj->timer[0] = original_time;
+	return TRUE;
+}
+
 int spell_pool(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int curr_time, rannum;
@@ -980,12 +987,7 @@ int spell_pool(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
-		curr_time = time(NULL);
-
-		obj->value[0] = rannum;
-		obj->timer[0] = curr_time;
-
-		return TRUE;
+		return native_birth_spell_pool_initialize(obj, rannum, time(NULL));
 	}
 
 	spell_func = spells[obj->value[0]];

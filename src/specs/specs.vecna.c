@@ -231,14 +231,19 @@ int vecna_deathaltar(P_obj /*obj*/, P_char /*ch*/, int cmd, char *arg)
 	return FALSE;
 }
 
+int native_birth_vecna_deathportal_initialize(P_obj obj)
+{
+	obj->value[5] = 0;
+	return TRUE;
+}
+
 int vecna_deathportal(P_obj obj, P_char ch, int cmd, char *arg)
 {
 	int rooms[] = { 130072, 130073, 130075 };
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
-		obj->value[5] = 0;
-		return TRUE;
+		return native_birth_vecna_deathportal_initialize(obj);
 	}
 
 	if (!obj || !ch)
