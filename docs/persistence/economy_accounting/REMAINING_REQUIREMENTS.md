@@ -1,5 +1,10 @@
 # Double-entry economy: remaining requirements
 
+## Independent quarantined coin reader fix integrated — 2026-10-06
+
+[Exact primary integration](PLAN5_QUARANTINED_COIN_PRIMARY_INTEGRATION_2026-10-06.md) imports five owned blobs from `eadeec0e7`. The new actual CLI regression, AST and normal/matrix/current61 metadata pass. All committed code/test/schema inputs match the qualified peer composition; native source, complete central manifest and unrelated WIP remain. Peer native/both-engine results retain their recorded component scope. No primary native rerun, complete capture or full release qualification is claimed. Original Plans and major native work remain open.
+
+
 ## Independent quarantined containment fix integrated — 2026-10-06
 
 [Exact primary integration](PLAN5_QUARANTINED_TOPOLOGY_PRIMARY_INTEGRATION_2026-10-06.md)

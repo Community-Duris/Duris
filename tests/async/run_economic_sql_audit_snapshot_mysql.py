@@ -289,6 +289,76 @@ def item_origin(uid, owner_type, state, owner_id, revision):
                        uid, 0, revision, bytes.fromhex("a5" * 32))
 
 
+def verify_quarantined_coin_views(owner, reader, snapshot, expected_exceptions):
+    """Keep quarantined money visible without admitting an active holding."""
+    from _plan5_equipment_restore import Connection, inventory
+
+    output = ROOT / "bin/tests/plan5-quarantined-coin-views" / uuid.uuid4().hex
+    output.mkdir(parents=True)
+    initial = inventory(owner)
+    records = []
+    try:
+        for phase, payload in (("payload", coin_payload(82, [1, 2, 3, 4])), ("missing-payload", None)):
+            with owner.cursor() as cursor:
+                cursor.execute("UPDATE item_current_owner SET state=3,coin_payload=%s WHERE item_uid=82", (payload,))
+            before = inventory(owner)
+            connection = Connection(reader)
+            captured = capture(connection, LINEAGE, EPOCH)
+            counts = {**expected_exceptions, "quarantined_coin_pile": 1,
+                      "dangling_pile_mapping": 1, "dangling_coin_pile_mapping": 1,
+                      "missing_native_holding": 1, "stale_native_item": 1}
+            report = Reconciler().audit(captured)
+            assert report["exception_counts"] == counts, report
+            assert captured["complete"] is False and captured["backend"] == "sql_partial"
+            pile = next(row for row in captured["native"]["coin_piles"] if row["uid"] == 82)
+            assert pile["state"] == "quarantined" and pile["amounts"] == ([1, 2, 3, 4] if payload else None)
+            assert captured["native_mapping_coverage"]["pile_rows"] == 0
+            assert captured["native"]["coin_pile_coverage"]["mapped_live_rows"] == 0
+            assert captured["native"]["coin_pile_coverage"]["unmapped_live_rows"] == 0
+            assert all(row["account_key"] != key(3, 11).hex() for row in captured["native"]["holdings"])
+            assert connection.rollbacks == connection.observer.closes == 1
+            assert inventory(owner) == before
+            target = output / phase
+            target.mkdir()
+            encoded = json.dumps(captured, sort_keys=True).encode()
+            path = target / "snapshot.json"
+            path.write_bytes(encoded)
+            commands = []
+            for limit in (0, 1, 100):
+                command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                           str(path), "--limit", str(limit)]
+                result = subprocess.run(command, capture_output=True, timeout=30)
+                assert result.returncode == 1 and not result.stderr, result.stderr
+                value = json.loads(result.stdout)
+                assert value["exception_counts"] == counts and value["exception_count"] == sum(counts.values())
+                assert len(value["exceptions"]) <= limit and path.read_bytes() == encoded
+                (target / ("limit-" + str(limit) + ".json")).write_bytes(result.stdout)
+                commands.append(dict(command=command, exit=result.returncode))
+            for name in ("before", "after"):
+                (target / ("authority-" + name + ".json")).write_text(json.dumps(before, sort_keys=True) + "\n")
+            (target / "queries.json").write_text(json.dumps(connection.observer.queries) + "\n")
+            records.append(dict(phase=phase, exception_counts=counts, commands=commands,
+                application_tables_unchanged=len(before), query_count=len(connection.observer.queries),
+                rollback_calls=1, cursor_close_calls=1, active_coin_holdings=0, active_coin_piles=0))
+        with reader.cursor() as cursor:
+            try:
+                cursor.execute("UPDATE item_current_owner SET state=state WHERE item_uid=82")
+            except pymysql.MySQLError as error:
+                assert error.args[0] == 1142, error.args
+            else:
+                raise AssertionError("quarantined coin reader admitted UPDATE")
+        assert inventory(owner) == before
+    finally:
+        with owner.cursor() as cursor:
+            cursor.execute("UPDATE item_current_owner SET state=1,coin_payload=%s WHERE item_uid=82",
+                           (coin_payload(82, [1, 2, 3, 4]),))
+    assert inventory(owner) == initial and capture(reader, LINEAGE, EPOCH) == snapshot
+    result = dict(probes=records, modeled_partial_sql=True, source_fixture_restored=True,
+                  permission_denial=1142, output=str(output), accounting_activated=False, release_complete=False)
+    (output / "results.json").write_text(json.dumps(result, indent=2) + "\n")
+    print("QUARANTINED_COIN_SQL_QUALIFIED " + json.dumps(result, sort_keys=True), flush=True)
+
+
 def verify_supply_outcome_views(owner, reader):
     """Retain SQL corruption findings while excluding noncommitted supply."""
     from _plan5_equipment_restore import Connection, inventory
@@ -823,6 +893,7 @@ try:
             # original-plan authentication is covered by the canonical SQL class.
             assert report["checked"]["original_plans_verified"] == 0
             assert report["exception_counts"] == expected_exceptions, report
+            verify_quarantined_coin_views(setup, audit, snapshot, expected_exceptions)
             # Matching root/claim values can still be invalid native S48
             # identities, including retained roots outside the selected epoch.
             def source_rows():
