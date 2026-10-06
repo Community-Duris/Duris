@@ -1,5 +1,11 @@
 # Plan 5 published source pin handoff — 2026-10-06
 
+Resolved by exact primary `43c72921404c80fcf15de1eeede3db816fca238e`, imported
+at `a674246ad89fde0850e57191fe7ebd76acf9e8bb`. All 58 original contracts pass
+with zero skips and all 153 pins match actual bytes. The original failed source
+and reproduction below remain historical evidence. [The exact follow-up](PLAN5_RESTORE_PROVIDER_COMPOSITION_QUALIFICATION_2026-10-06.md)
+records ownership, current source, commands, evidence and remaining release gates.
+
 The current published writer registry has five source pins for CRLF working-copy
 bytes. The corresponding published Git blobs have LF bytes. The original
 coverage contract therefore fails on an exact published-source checkout. This
