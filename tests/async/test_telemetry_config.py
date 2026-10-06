@@ -91,6 +91,7 @@ def run_harness() -> None:
                 "src",
                 str((HARNESS.parent / "telemetry_config_review.cc").relative_to(ROOT)),
                 str(SOURCE.relative_to(ROOT)),
+                "src/telemetry/telemetry_progression.c",
                 "-lcrypto",
                 "-o",
                 executable,

@@ -32,9 +32,7 @@ ADVANCE_IMPL = function_body(
 ILLITHID_ADVANCE = function_body("void illithid_advance_level(P_char ch)\n{")
 ADVANCE_LEVEL = function_body("void advance_level(P_char ch)\n{")
 ADVANCE_TO_LEVEL = function_body("void advance_to_level(P_char ch, int target_level)\n{")
-GAIN_EXP_START = LIMITS.index(
-    "int gain_exp(P_char ch, P_char victim, const int value, int type)\n{"
-)
+GAIN_EXP_START = LIMITS.index("int gain_exp(")
 GAIN_EXP_END = LIMITS.index("\nint gain_condition(P_char ch, int condition, int value)", GAIN_EXP_START)
 GAIN_EXP = LIMITS[GAIN_EXP_START:GAIN_EXP_END]
 

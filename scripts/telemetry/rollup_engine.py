@@ -14,7 +14,7 @@ import math
 from typing import Any, Callable, Mapping, MutableMapping, Protocol, Sequence, cast
 
 try:
-    from . import observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles, battle_contribution_contract as contributions, battle_build_contract as builds, control_contract as controls, battle_result_contract as results, battle_source
+    from . import observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles, battle_contribution_contract as contributions, battle_build_contract as builds, control_contract as controls, battle_result_contract as results, battle_source, progression_context_contract as progression_context, progression_publication as progression
 except ImportError:
     import observation_semantics as observations
     import identity_publication
@@ -24,6 +24,8 @@ except ImportError:
     import control_contract as controls
     import battle_result_contract as results
     import battle_source
+    import progression_context_contract as progression_context
+    import progression_publication as progression
 
 try:  # Running as a package.
     from .rollup_definitions import (
@@ -324,6 +326,7 @@ class PageContribution:
     observations: observations.ObservationPage = field(default_factory=observations.ObservationPage)
     identity_inputs: list[Mapping[str, Any]] = field(default_factory=list)
     battle_inputs: list[Mapping[str, Any]] = field(default_factory=list)
+    progression_inputs: list[Mapping[str, Any]] = field(default_factory=list)
     state_quality_flags: int = 0
     coverage_start_utc_usec: int | None = None
     coverage_end_utc_usec: int | None = None
@@ -603,7 +606,7 @@ def _validate_common_row(row: Mapping[str, Any], previous_ingest_id: int | None)
     if isinstance(schema_version, bool) or not isinstance(schema_version, int) or schema_version != 1:
         raise SemanticError(f"unsupported raw telemetry schema_version {schema_version!r}")
     kind = row.get("record_kind")
-    if isinstance(kind, bool) or not isinstance(kind, int) or kind not in range(1, 15):
+    if isinstance(kind, bool) or not isinstance(kind, int) or kind not in range(1, 17):
         raise SemanticError(f"unsupported raw telemetry record_kind {kind!r}")
     return ingest_id
 
@@ -917,7 +920,8 @@ def build_page_contributions(
         start_cursor=start_cursor,
         page_last_ingest_id=start_cursor,
         fetched_rows=len(rows),
-        estimated_bytes=battle_source.HEADER_BYTE_BOUND if target.definition_version in battle_source.DEFINITION_VERSIONS else 0,
+        estimated_bytes=progression.HEADER_BYTE_BOUND if target.definition_version == progression.DEFINITION_VERSION else
+            battle_source.HEADER_BYTE_BOUND if target.definition_version in battle_source.DEFINITION_VERSIONS else 0,
     )
     previous_ingest: int | None = None
     coverage_end_seen: int | None = prior_coverage_end_utc_usec
@@ -929,6 +933,35 @@ def build_page_contributions(
             contribution.estimated_bytes += identity_publication.INPUT_ROW_BYTE_BOUND
             if max_page_bytes is not None and contribution.estimated_bytes > max_page_bytes:
                 raise BoundsExceeded("retained identity input exceeds page byte budget")
+
+    def retain_progression_input(row):
+        nonlocal coverage_end_seen
+        if target.definition_version != progression.DEFINITION_VERSION or row["record_kind"] not in progression.COUNTS:
+            return
+        kind = row["record_kind"]
+        if tuple(row[name] for name in progression.SOURCE_SCOPE[kind]) != target.scope_tuple[2:]:
+            return
+        prefix = {15: "pctx_", 16: "pcfg_"}.get(kind, "")
+        quality = 0 if kind == 16 else _normalize_raw_quality(row[prefix + "quality_flags"])
+        occurrence = row["occurrence_utc_usec"]
+        if occurrence == UTC_UNKNOWN:
+            quality |= ROLLUP_QUALITY_UTC_UNKNOWN
+        else:
+            if coverage_end_seen is not None and occurrence < coverage_end_seen:
+                quality |= ROLLUP_QUALITY_LATE_INPUT
+            first = row["start_utc_usec"] if kind == 1 and row["start_utc_usec"] != UTC_UNKNOWN else occurrence
+            contribution.coverage_start_utc_usec = min(value for value in (contribution.coverage_start_utc_usec, first, occurrence) if value is not None)
+            contribution.coverage_end_utc_usec = max(value for value in (contribution.coverage_end_utc_usec, occurrence) if value is not None)
+            coverage_end_seen = occurrence if coverage_end_seen is None else max(coverage_end_seen, occurrence)
+        try:
+            retained = progression.retain_input(row, target.scope_tuple, quality)
+        except progression.PublicationError as error:
+            raise SemanticError(str(error)) from error
+        contribution.estimated_bytes += progression.INPUT_ROW_BYTE_BOUND + progression.PUBLICATION_INPUT_BYTE_BOUND
+        if max_page_bytes is not None and contribution.estimated_bytes > max_page_bytes:
+            raise BoundsExceeded("retained progression input exceeds page byte budget")
+        contribution.progression_inputs.append(retained)
+        contribution.state_quality_flags |= quality
 
     def retain_battle_input(row):
         nonlocal coverage_end_seen
@@ -982,6 +1015,16 @@ def build_page_contributions(
         if replay_key in seen_replay_keys:
             raise SemanticError("raw page contains a duplicate replay key")
         seen_replay_keys.add(replay_key)
+        if kind in (15, 16):
+            try:
+                progression_context.validate_raw_observation(row)
+            except progression_context.ContextContractError as error:
+                raise SemanticError(str(error)) from error
+            retain_progression_input(row)
+            # Sealed definitions advance over independently validated context
+            # and XP configuration packets. They select none of these values
+            # and retain their original source, duration and XP meanings.
+            continue
         if kind == 14:
             try:
                 results.validate_raw_observation(row)
@@ -1030,6 +1073,9 @@ def build_page_contributions(
         if kind in (6, 7, 8, 9):
             try:
                 observation = observations.validate_observation(row)
+                if target.definition_version == progression.DEFINITION_VERSION:
+                    retain_progression_input(row)
+                    continue
                 # Ownership is retained for the identity generation. It adds
                 # no duration or new metrics to the existing v1/v2 definitions.
                 if kind == 9:
@@ -1097,6 +1143,11 @@ def build_page_contributions(
             continue
 
         contribution.state_quality_flags |= raw_quality
+        if target.definition_version == progression.DEFINITION_VERSION:
+            retain_progression_input(row)
+            if kind == GAP_KIND:
+                contribution.state_quality_flags |= ROLLUP_QUALITY_PROCESS_GAP
+            continue
         if target.definition_version == battle_source.DEFINITION_VERSION:
             # Legacy families are outside this selected source window. Generic
             # capture gaps still qualify its cursor, but produce no playtime rows.
@@ -1247,6 +1298,7 @@ def build_page_contributions(
         + contribution.observations.output_fanout
         + len(contribution.identity_inputs)
         + len(contribution.battle_inputs)
+        + len(contribution.progression_inputs)
     )
     if max_output_fanout is not None and contribution.output_fanout > max_output_fanout:
         raise BoundsExceeded(
@@ -1416,6 +1468,7 @@ def coverage_from_state_row(
     incident_coverage: Mapping[str, Any] | None = None,
     identity_coverage: Mapping[str, Any] | None = None,
     battle_coverage: Mapping[str, Any] | None = None,
+    progression_coverage: Mapping[str, Any] | None = None,
 ) -> RollupCoverage:
     snapshot = (
         int(row.get("rebuild_through_ingest_id", 0))
@@ -1431,13 +1484,15 @@ def coverage_from_state_row(
         coverage_end_utc_usec=row.get("coverage_end_utc_usec"),
         quality_flags=int(row["quality_flags"]) | (0 if incident_coverage is None else int(incident_coverage["quality_flags"])) |
             (0 if identity_coverage is None else int(identity_coverage["quality_flags"])) |
-            (0 if battle_coverage is None else int(battle_coverage["quality_flags"])),
+            (0 if battle_coverage is None else int(battle_coverage["quality_flags"])) |
+            (0 if progression_coverage is None else int(progression_coverage["quality_flags"])),
         provisional=bool(row["provisional"]),
         rebuild_from_ingest_id=int(row["rebuild_from_ingest_id"]),
         rebuild_through_ingest_id=int(row["rebuild_through_ingest_id"]),
         incident_coverage=incident_coverage,
         identity_coverage=identity_coverage,
         battle_coverage=battle_coverage,
+        progression_coverage=progression_coverage,
     )
 
 

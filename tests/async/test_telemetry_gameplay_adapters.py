@@ -357,7 +357,7 @@ def result_performance(output: Path) -> None:
             completed = subprocess.check_output([str(executable), "--native-result-performance"], cwd=ROOT,
                 text=True, timeout=90)
             profiles.extend(dict(json.loads(line), repetition=repetition) for line in completed.splitlines())
-        assert len(profiles) == 30
+        assert len(profiles) == 75
         for profile in profiles:
             assert profile["event_heap_calls"] == profile["event_crypto_heap_calls"] == 0
             assert profile["samples"] == 4096 and profile["world_nodes"] == 4096
@@ -365,10 +365,11 @@ def result_performance(output: Path) -> None:
             assert profile["watched_players"] in (50, 200, 256)
         report = dict(status="passed", profiles=profiles, compiler=subprocess.check_output(
             ["g++", "--version"], text=True).splitlines()[0], compile_optimization="-O2",
-            measurement="native begin/finish or full game-thread pulse; fixture world and private fake writer; SQL and Telnet excluded",
+            measurement="native result, progression presence/mutation/XP callbacks or full game-thread pulse; fixture world and private fake writer; SQL and Telnet excluded",
             watched_player_workloads=[50, 200, 256], session_capacity=256, fixed_watch_capacity=512,
             fixed_watch_state_upper_bytes=256 * 1024, world_node_limit=4096,
             combined_selection_limit=16, build_read_limit_per_second=16,
+            progression_span_capacity=256, fixed_progression_span_upper_bytes=128 * 1024,
             capture_p99_budget_ns=1_000_000, capture_p999_budget_ns=5_000_000,
             event_heap_calls=0, running_server=False, positive_gameplay_qualification=False,
             synthetic_escape_clock_fixture=True, session_capacity_refusal=True,

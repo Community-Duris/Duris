@@ -494,6 +494,7 @@ void event_balance_affects(P_char ch, P_char /*victim*/, P_obj /*obj*/, void * /
 
 void balance_affects(P_char ch)
 {
+	telemetry_runtime_game_progression_changed(ch);
 	if (!IS_ALIVE(ch) || get_scheduled(ch, event_balance_affects))
 		return;
 
@@ -1536,6 +1537,7 @@ void all_affects(P_char ch, int mode)
 
 	if (ch == NULL) /* replaced call to SanityCheck with this */
 		return;
+	telemetry_runtime_game_progression_changed(ch);
 	telemetry_control_mutation_scope control_state(ch, mode != FALSE);
 
 	/* Keep relative ward deadlines current before an equipment transition or
@@ -1882,6 +1884,7 @@ void event_short_affect(P_char ch, P_char /*victim*/, P_obj /*obj*/, void *data)
 struct affected_type *affect_to_char(P_char ch, struct affected_type *af)
 {
 	struct affected_type *affected_alloc;
+	telemetry_runtime_game_progression_changed(ch);
 	telemetry_control_mutation_scope control_state(ch);
 
 	if (!dead_affect_pool)
@@ -2010,6 +2013,7 @@ void affect_to_end(P_char ch, struct affected_type *af)
 {
 	struct affected_type *afp, *prev = NULL;
 	int create = TRUE;
+	telemetry_runtime_game_progression_changed(ch);
 
 	for (afp = ch->affected; afp; afp = afp->next)
 	{
@@ -2058,6 +2062,7 @@ void affect_remove(P_char ch, struct affected_type *af)
 	/*
 	 * remove structure *af from linked list
 	 */
+	telemetry_runtime_game_progression_changed(ch);
 
 	if (spell_ward_is_managed(af))
 		spell_ward_cancel_events(ch, af);

@@ -19,7 +19,7 @@ import math
 from typing import Any, Callable, Mapping, Sequence
 
 try:
-    from . import incident, identity_history as identity, observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles, battle_contribution_contract as contributions, battle_build_contract as builds, control_contract as controls, battle_result_contract as results, battle_source, battle_publication
+    from . import incident, identity_history as identity, observation_semantics as observations, identity_publication as identity_publication, battle_contract as battles, battle_contribution_contract as contributions, battle_build_contract as builds, control_contract as controls, battle_result_contract as results, battle_source, battle_publication, progression_context_contract as progression_context, progression_publication as progression
 except ImportError:
     import incident
     import identity_history as identity
@@ -31,7 +31,9 @@ except ImportError:
     import control_contract as controls
     import battle_result_contract as results
     import battle_source
+    import progression_context_contract as progression_context
     import battle_publication
+    import progression_publication as progression
 
 try:  # Running as a package.
     from .rollup_definitions import (
@@ -425,6 +427,20 @@ RAW_COLUMNS = (
     "backend",
     "enabled",
 ) + observations.PROGRESSION_RAW_COLUMNS + observations.ENCOUNTER_RAW_COLUMNS + observations.COMBAT_RAW_COLUMNS + observations.OWNERSHIP_RAW_COLUMNS + battles.FIELDS + contributions.FIELDS + builds.FIELDS + controls.FIELDS + results.FIELDS
+
+# The sealed parent stays at 537 columns. New typed payloads share its exact
+# receipt and are inserted by the native writer in the same transaction.
+RAW_BASE_COLUMNS = RAW_COLUMNS
+RAW_SOURCE_COLUMNS = (*RAW_COLUMNS, *progression_context.FIELDS,
+    *(name for name, _width, _signed in progression_context.CONFIGURATION_CHUNK_LAYOUT))
+RAW_PAYLOAD_JOIN = (
+    " FROM telemetry_interval r FORCE INDEX (PRIMARY)"
+    " LEFT JOIN telemetry_progression_context px ON r.record_kind=15 AND px.boot_id=r.boot_id"
+    " AND px.process_id=r.process_id AND px.record_seq=r.record_seq"
+    " LEFT JOIN telemetry_progression_configuration pf ON r.record_kind=16 AND pf.boot_id=r.boot_id"
+    " AND pf.process_id=r.process_id AND pf.record_seq=r.record_seq")
+RAW_SELECT_COLUMNS = tuple(("px" if name.startswith("pctx_") else
+    "pf" if name.startswith("pcfg_") else "r") + "." + name + " AS " + name for name in RAW_SOURCE_COLUMNS)
 
 SESSION_COLUMNS = (
     "definition_version",
@@ -825,7 +841,7 @@ class PyMySQLRollupDatabase:
         if status in {PUBLICATION_FAILED, PUBLICATION_SUPERSEDED}:
             raise GenerationConflict("non-active rollup generation requires a new explicit generation")
         stored_through = int(row["rebuild_through_ingest_id"])
-        if target.definition_version in (identity_publication.DEFINITION_VERSION, *battle_source.DEFINITION_VERSIONS) and status == PUBLICATION_PUBLISHED and through_ingest_id > stored_through:
+        if target.definition_version in (identity_publication.DEFINITION_VERSION, progression.DEFINITION_VERSION, *battle_source.DEFINITION_VERSIONS) and status == PUBLICATION_PUBLISHED and through_ingest_id > stored_through:
             raise GenerationConflict("published source generations require a new generation for additional input")
         if origin_ingest_id is not None and through_ingest_id < stored_through:
             raise GenerationConflict(
@@ -843,6 +859,8 @@ class PyMySQLRollupDatabase:
             self._ensure_identity_source_header(target, row)
         if target.definition_version in battle_source.DEFINITION_VERSIONS:
             self._ensure_battle_source_header(target, row)
+        if target.definition_version == progression.DEFINITION_VERSION:
+            self._ensure_progression_source_header(target, row)
         return row
 
     def snapshot_high_watermark(self) -> int:
@@ -863,9 +881,9 @@ class PyMySQLRollupDatabase:
             raise BoundsExceeded("raw page limit must be positive")
         statement = (
             "SELECT "
-            + ",".join(RAW_COLUMNS)
-            + " FROM telemetry_interval FORCE INDEX (PRIMARY)"
-            " WHERE ingest_id>%s AND ingest_id<=%s ORDER BY ingest_id LIMIT %s"
+            + ",".join(RAW_SELECT_COLUMNS)
+            + RAW_PAYLOAD_JOIN +
+            " WHERE r.ingest_id>%s AND r.ingest_id<=%s ORDER BY r.ingest_id LIMIT %s"
         )
         rows, _count, _ = self._execute(statement, (cursor, through_ingest_id, limit))
         return rows
@@ -1204,6 +1222,8 @@ class PyMySQLRollupDatabase:
             self._apply_identity_inputs(target, state, contribution)
         if target.definition_version in battle_source.DEFINITION_VERSIONS:
             self._apply_battle_inputs(target, state, contribution)
+        if target.definition_version == progression.DEFINITION_VERSION:
+            self._apply_progression_inputs(target, state, contribution)
         self._update_state(target, state, contribution)
 
     def _apply_observations(self, contribution: PageContribution) -> None:
@@ -1358,11 +1378,14 @@ class PyMySQLRollupDatabase:
                     # Every selected C field is a fixed-width integer/NULL or
                     # 32-byte fingerprint. Reserve worst-case bytes BEFORE fetch,
                     # not after buffering an oversized page in the SQL driver.
-                    row_byte_bound = 32 + sum(len(name.encode("utf-8")) + 8 + 32 for name in RAW_COLUMNS)
+                    row_byte_bound = 32 + sum(len(name.encode("utf-8")) + 8 + 32 for name in RAW_SOURCE_COLUMNS)
                     page_bytes = min(bounds.max_page_bytes, max_bytes_remaining)
                     if target.definition_version in battle_source.DEFINITION_VERSIONS:
                         row_byte_bound += battle_source.PUBLICATION_INPUT_BYTE_BOUND
                         page_bytes -= battle_source.HEADER_BYTE_BOUND
+                    if target.definition_version == progression.DEFINITION_VERSION:
+                        row_byte_bound += progression.INPUT_ROW_BYTE_BOUND + progression.PUBLICATION_INPUT_BYTE_BOUND
+                        page_bytes -= progression.HEADER_BYTE_BOUND
                     limit = min(bounds.page_size, max_rows_remaining,
                                 max(0, page_bytes) // row_byte_bound)
                     if limit < 1:
@@ -1537,7 +1560,7 @@ class PyMySQLRollupDatabase:
         # invocation deadline and retry ceiling through the validated policy.
         requested = requested or RollupBounds(max_runtime_s=10.0, max_retries=2)
         requested.validate()
-        if target is not None and target.definition_version in (identity_publication.DEFINITION_VERSION, *battle_source.DEFINITION_VERSIONS):
+        if target is not None and target.definition_version in (identity_publication.DEFINITION_VERSION, progression.DEFINITION_VERSION, *battle_source.DEFINITION_VERSIONS):
             return requested
         return RollupBounds(
             page_size=1,
@@ -1695,6 +1718,227 @@ class PyMySQLRollupDatabase:
             raise identity.IdentityError("generation_identity_not_reserved")
         identity.public_generation(rows[0])
         return rows[0]
+
+    def _ensure_progression_source_header(self, target: RollupTarget, state: Mapping[str, Any]) -> Mapping[str, Any]:
+        self._identity_reservation(target)
+        rows, _, _ = self._execute("SELECT " + ",".join(progression.HEADER_COLUMNS) +
+            " FROM telemetry_progression_source_v9 WHERE " + SCOPE_WHERE + " LIMIT 1 FOR UPDATE", target.scope_tuple)
+        if rows:
+            header = rows[0]
+            progression.validate_header(header)
+            if header["input_watermark"] != state["input_watermark"] or header["input_origin"] != state["rebuild_from_ingest_id"]:
+                raise SemanticError("progression_source_cursor_conflict")
+            if bool(header["publication_complete"]) != (int(state["publication_status"]) in (PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED)):
+                raise SemanticError("progression_source_publication_state_conflict")
+            return header
+        if state["input_watermark"] != state["rebuild_from_ingest_id"] or state["publication_status"] != PUBLICATION_BUILDING:
+            raise SemanticError("progression_source_header_missing_after_input")
+        header = progression.initial_header(target.scope_tuple, state["input_watermark"])
+        self._insert_review_rows("telemetry_progression_source_v9", progression.HEADER_COLUMNS, (header,))
+        return header
+
+    def _progression_configuration(self, source: Mapping[str, Any]) -> Mapping[str, Any] | None:
+        if source["record_kind"] not in (15, 16):
+            return None
+        prefix = "pctx_" if source["record_kind"] == 15 else "pcfg_"
+        rows, _, _ = self._execute("SELECT " + ",".join(progression.CONFIG_COLUMNS) +
+            " FROM telemetry_config WHERE environment_id=%s AND config_id=%s LIMIT 1",
+            (source[prefix + "environment_id"], source[prefix + "config_id"]))
+        return rows[0] if rows else None
+
+    def _apply_progression_inputs(self, target: RollupTarget, state: Mapping[str, Any], contribution: PageContribution) -> None:
+        header = self._ensure_progression_source_header(target, state)
+        if header["publication_complete"] or header["reference_count"]:
+            raise GenerationConflict("progression selected inputs require an unbound building source")
+        if header["source_fact_count"] + len(contribution.progression_inputs) > progression.MAX_INPUTS:
+            raise BoundsExceeded("progression generation exceeds retained source capacity")
+        retained = []
+        try:
+            for row in contribution.progression_inputs:
+                self._check_deadline()
+                decoded = progression.decode_input(row, target.scope_tuple)
+                retained.append(progression.retain_input(decoded.source, target.scope_tuple, decoded.projection_quality,
+                    configuration=self._progression_configuration(decoded.source)))
+            updated = progression.advance_header(header, retained, contribution.page_last_ingest_id,
+                max_total_bytes=contribution.estimated_bytes, check_deadline=self._check_deadline)
+        except progression.PublicationError as error:
+            raise SemanticError(str(error)) from error
+        updated["quality_flags"] |= contribution.state_quality_flags
+        self._insert_review_rows("telemetry_progression_input_v9", progression.INPUT_COLUMNS, retained, max_rows=progression.MAX_INPUTS)
+        fields = progression.HEADER_COLUMNS[4:]
+        _, affected, _ = self._execute("UPDATE telemetry_progression_source_v9 SET " +
+            ",".join(name + "=%s" for name in fields) + " WHERE " + SCOPE_WHERE + " AND publication_complete=0",
+            (*tuple(updated[name] for name in fields), *target.scope_tuple))
+        if affected != 1:
+            raise SemanticError("progression_source_header_not_building")
+
+    def _progression_inputs(self, table: str, target: RollupTarget, count: int) -> list[Mapping[str, Any]]:
+        if table not in ("telemetry_progression_input_v9", "telemetry_progression_reference_v9") or not 1 <= count <= progression.MAX_INPUTS + 1:
+            raise BoundsExceeded("progression input read reservation invalid")
+        columns = [f"LEFT(payload,{progression.MAX_PAYLOAD_BYTES + 1}) AS payload" if name == "payload" else
+            "LEFT(payload_digest,33) AS payload_digest" if name == "payload_digest" else name for name in progression.INPUT_COLUMNS]
+        return self._execute("SELECT " + ",".join(columns) + " FROM " + table + " FORCE INDEX(PRIMARY) WHERE " +
+            SCOPE_WHERE + " ORDER BY ingest_id LIMIT %s", (*target.scope_tuple, count))[0]
+
+    def _progression_source_in_transaction(self, target: RollupTarget, state: Mapping[str, Any], max_bytes: int):
+        rows, _, _ = self._execute("SELECT " + ",".join(progression.HEADER_COLUMNS) +
+            " FROM telemetry_progression_source_v9 WHERE " + SCOPE_WHERE + " LIMIT 1", target.scope_tuple)
+        if not rows:
+            raise SemanticError("progression_source_header_missing_after_input")
+        header = rows[0]
+        progression.validate_header(header)
+        if header["input_watermark"] != state["input_watermark"] or header["input_origin"] != state["rebuild_from_ingest_id"]:
+            raise SemanticError("progression_source_cursor_conflict")
+        if bool(header["publication_complete"]) != (state["publication_status"] in (PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED)):
+            raise SemanticError("progression_source_publication_state_conflict")
+        reserved = progression.HEADER_BYTE_BOUND + (header["source_fact_count"] + header["reference_count"] + 2) * (
+            progression.INPUT_ROW_BYTE_BOUND + progression.PUBLICATION_INPUT_BYTE_BOUND)
+        if reserved > max_bytes:
+            raise BoundsExceeded("progression source fetch/verification byte reservation exceeded")
+        inputs = self._progression_inputs("telemetry_progression_input_v9", target, header["source_fact_count"] + 1)
+        references = self._progression_inputs("telemetry_progression_reference_v9", target, header["reference_count"] + 1)
+        return progression.verify_source(header, inputs, references=references, expected_scope=target.scope_tuple,
+            max_total_bytes=max_bytes, check_deadline=self._check_deadline), inputs
+
+    def read_progression_source(self, target: RollupTarget, *, max_bytes: int = progression.DEFAULT_BYTE_LIMIT,
+                                max_runtime_s: float = REPORT_RUNTIME_DEFAULT_S):
+        """Private retained-source verification; public report roles have no access."""
+        target.__post_init__()
+        if target.definition_version != progression.DEFINITION_VERSION:
+            raise ValueError("progression source requires definition 9")
+        self._prepare_report_budget(max_runtime_s, max_bytes, reserve_sentinel=False)
+        try:
+            self._rollback()
+            self._execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+            self._execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
+            state = self._fetch_state(target, for_update=False)
+            if state is None:
+                raise GenerationConflict("progression source generation has no state")
+            return self._progression_source_in_transaction(target, state, max_bytes)[0]
+        except progression.PublicationError as error:
+            raise SemanticError(str(error)) from error
+        except BoundsExceeded:
+            self._drop_connection()
+            raise
+        finally:
+            self._rollback()
+            self._clear_transaction_budget()
+
+    def _bind_progression_references(self, target: RollupTarget, window, inputs, max_bytes: int):
+        targets, roots = progression._reference_targets(window.inputs)
+        missing = {key: kind for key, kind in targets.items() if key not in window.by_receipt}
+        retained_chunks = dict.fromkeys(roots, 0)
+        for item in window.inputs:
+            self._check_deadline()
+            source = item.source
+            if source["record_kind"] == 16:
+                root = source["pcfg_boot_id"], source["pcfg_process_id"], source["pcfg_root_record_seq"]
+                if root in retained_chunks:
+                    retained_chunks[root] += 1
+        maximum = len(missing) + sum(max(0, 15 - count) for count in retained_chunks.values())
+        raw_buffer_bound = 32 + sum(len(name.encode("utf-8")) + 8 + 32 for name in RAW_SOURCE_COLUMNS)
+        reserved = progression.HEADER_BYTE_BOUND + (len(inputs) + maximum + 2) * (
+            progression.INPUT_ROW_BYTE_BOUND + progression.PUBLICATION_INPUT_BYTE_BOUND) + progression.REVIEW_BYTE_BOUND + raw_buffer_bound + 16 * 512
+        if len(inputs) + maximum > progression.MAX_INPUTS or reserved > max_bytes:
+            raise BoundsExceeded("progression exact reference fetch reservation exceeded")
+        keys = set(missing)
+        for root, count in sorted(retained_chunks.items()):
+            self._check_deadline()
+            if count == 15:
+                continue
+            chunks, _, _ = self._execute("SELECT boot_id,process_id,record_seq FROM telemetry_progression_configuration "
+                "FORCE INDEX(uq_telemetry_pcfg_root) WHERE pcfg_boot_id=%s AND pcfg_process_id=%s AND pcfg_root_record_seq=%s "
+                "ORDER BY pcfg_chunk_index LIMIT 16", root)
+            if len(chunks) > 15:
+                raise SemanticError("progression_configuration_reference_capacity")
+            keys.update(tuple(row[name] for name in progression.REPLAY) for row in chunks if
+                tuple(row[name] for name in progression.REPLAY) not in window.by_receipt)
+        references = []
+        for key in sorted(keys):
+            self._check_deadline()
+            rows, _, _ = self._execute("SELECT " + ",".join(RAW_SELECT_COLUMNS) +
+                RAW_PAYLOAD_JOIN.replace("FORCE INDEX(PRIMARY)", "FORCE INDEX(uq_replay)") +
+                " WHERE r.boot_id=%s AND r.process_id=%s AND r.record_seq=%s LIMIT 1", key)
+            if not rows:
+                continue  # Missing original evidence remains explicit in resolution.
+            source = rows[0]
+            if key in missing and source["record_kind"] != missing[key]:
+                raise SemanticError("progression_original_reference_family_conflict")
+            prefix = {15: "pctx_", 16: "pcfg_"}.get(source["record_kind"], "")
+            quality = 0 if source["record_kind"] == 16 else int(source[prefix + "quality_flags"])
+            if source["occurrence_utc_usec"] == observations.UTC_UNKNOWN:
+                quality |= progression.identity_publication.ROLLUP_QUALITY_UTC_UNKNOWN
+            references.append(progression.retain_input(source, target.scope_tuple, quality,
+                configuration=self._progression_configuration(source)))
+        if len(references) > maximum:
+            raise BoundsExceeded("progression original reference reservation exceeded")
+        references.sort(key=lambda row: row["ingest_id"])
+        header = progression.bind_references(window.header, inputs, references, max_total_bytes=max_bytes,
+            check_deadline=self._check_deadline)
+        self._insert_review_rows("telemetry_progression_reference_v9", progression.INPUT_COLUMNS, references, max_rows=progression.MAX_INPUTS)
+        if references:
+            _, affected, _ = self._execute("UPDATE telemetry_progression_source_v9 SET reference_count=%s,reference_digest=%s WHERE " +
+                SCOPE_WHERE + " AND publication_complete=0 AND reference_count=0",
+                (header["reference_count"], header["reference_digest"], *target.scope_tuple))
+            if affected != 1:
+                raise SemanticError("progression_reference_header_not_building")
+        return progression.verify_source(header, inputs, references=references, expected_scope=target.scope_tuple,
+            max_total_bytes=max_bytes, check_deadline=self._check_deadline)
+
+    def _publish_progression(self, target: RollupTarget, state: Mapping[str, Any], bounds: RollupBounds) -> None:
+        if bounds.max_total_bytes < progression.REPORT_METADATA_BYTE_BOUND:
+            raise BoundsExceeded("progression publication cannot reserve snapshot metadata")
+        if state["publication_status"] == PUBLICATION_PUBLISHED:
+            self._read_published_progression(target, state, verify_private_header=True)
+            return
+        header = self._ensure_progression_source_header(target, state)
+        if header["source_fact_count"] + header["reference_count"] > bounds.max_rows:
+            raise BoundsExceeded("progression publication exceeds retained source row reservation")
+        window, inputs = self._progression_source_in_transaction(target, state, bounds.max_total_bytes - progression.REVIEW_BYTE_BOUND)
+        window = self._bind_progression_references(target, window, inputs, bounds.max_total_bytes)
+        if len(window.inputs) > bounds.max_rows:
+            raise BoundsExceeded("progression publication exceeds source/reference row reservation")
+        buffered = (window.header["source_fact_count"] + window.header["reference_count"] + 2) * progression.INPUT_ROW_BYTE_BOUND
+        remaining = bounds.max_total_bytes - buffered
+        reservation = self._identity_reservation(target)
+        registry = None if reservation["registry_version"] is None else self._read_identity_registry(target.scope_tuple[2:], reservation["registry_version"])
+        expected = identity.generation_row(target.scope_tuple, registry)
+        if any(expected[name] != reservation[name] for name in identity.GENERATION_COLUMNS):
+            raise identity.IdentityError("reserved_registry_changed_or_missing")
+        reviewed = self._read_incident_coverage(target, state, max_bytes=remaining)
+        try:
+            output = progression.build_publication(window, registry, reviewed, max_total_bytes=remaining,
+                max_output_rows=min(bounds.max_output_fanout, progression.MAX_OUTPUT_ROWS), check_deadline=self._check_deadline)
+        except progression.PublicationError as error:
+            raise SemanticError(str(error)) from error
+        self._insert_review_rows("telemetry_rollup_progression_coverage_v9", progression.COVERAGE_COLUMNS, (output.header,))
+        self._insert_review_rows("telemetry_rollup_progression_row_v9", progression.ROW_COLUMNS, output.rows, max_rows=progression.MAX_OUTPUT_ROWS)
+        _, affected, _ = self._execute("UPDATE telemetry_progression_source_v9 SET publication_complete=1 WHERE " +
+            SCOPE_WHERE + " AND publication_complete=0", target.scope_tuple)
+        if affected != 1:
+            raise SemanticError("progression_source_header_not_building")
+        self._execute("UPDATE telemetry_rollup_state SET quality_flags=(quality_flags | %s) WHERE " + SCOPE_WHERE,
+            (output.header["quality_flags"], *target.scope_tuple))
+
+    def _read_published_progression(self, target: RollupTarget, state: Mapping[str, Any], *, verify_private_header: bool = False):
+        reservation = self._identity_reservation(target)
+        rows, _, _ = self._execute("SELECT " + ",".join(progression.COVERAGE_COLUMNS) +
+            " FROM telemetry_rollup_progression_coverage_v9 WHERE " + SCOPE_WHERE + " LIMIT 1", target.scope_tuple)
+        if not rows or rows[0]["input_watermark"] != state["input_watermark"] or rows[0]["input_origin"] != state["rebuild_from_ingest_id"]:
+            raise SemanticError("progression_publication_cursor_or_header_missing")
+        if verify_private_header:
+            source_rows, _, _ = self._execute("SELECT " + ",".join(progression.HEADER_COLUMNS) +
+                " FROM telemetry_progression_source_v9 WHERE " + SCOPE_WHERE + " LIMIT 1", target.scope_tuple)
+            if not source_rows or source_rows[0]["quality_flags"] & ~rows[0]["quality_flags"] or any(
+                    source_rows[0][name] != rows[0][name] for name in progression.HEADER_COLUMNS if name != "quality_flags"):
+                raise SemanticError("progression_publication_source_header_conflict")
+        receipts, _, _ = self._execute("SELECT row_kind,LEFT(row_key,33) AS row_key,LEFT(payload_digest,33) AS payload_digest,quality_flags "
+            "FROM telemetry_rollup_progression_row_v9 FORCE INDEX(PRIMARY) WHERE " + SCOPE_WHERE +
+            " ORDER BY row_kind,row_key LIMIT %s", (*target.scope_tuple, progression.MAX_OUTPUT_ROWS + 1))
+        try:
+            return progression.public_header(rows[0], reservation, receipts, check_deadline=self._check_deadline)
+        except progression.PublicationError as error:
+            raise SemanticError(str(error)) from error
 
     def _ensure_battle_source_header(self, target: RollupTarget, state: Mapping[str, Any]) -> Mapping[str, Any]:
         self._identity_reservation(target)
@@ -2045,12 +2289,12 @@ class PyMySQLRollupDatabase:
                     # New or corrected references must still prove a real commit.
                     continue
                 verified, _, _ = self._execute(
-                    "SELECT record_kind,occurrence_utc_usec,"
-                    "CASE WHEN record_kind=14 THEN bout_environment_id WHEN record_kind=13 THEN ctl_environment_id WHEN record_kind=12 THEN bctx_environment_id WHEN record_kind=11 THEN bc_environment_id WHEN record_kind=10 THEN battle_environment_id ELSE "
-                    "COALESCE(environment_id,encounter_environment_id,combat_environment_id) END AS environment_id,"
-                    "CASE WHEN record_kind=14 THEN bout_season_id WHEN record_kind=13 THEN ctl_season_id WHEN record_kind=12 THEN bctx_season_id WHEN record_kind=11 THEN bc_season_id WHEN record_kind=10 THEN battle_season_id ELSE "
-                    "COALESCE(season_id,encounter_season_id,combat_season_id) END AS season_id "
-                    "FROM telemetry_interval WHERE boot_id=%s AND process_id=%s AND record_seq=%s LIMIT 1",
+                    "SELECT r.record_kind,r.occurrence_utc_usec,"
+                    "CASE WHEN r.record_kind=16 THEN pf.pcfg_environment_id WHEN r.record_kind=15 THEN px.pctx_environment_id WHEN r.record_kind=14 THEN r.bout_environment_id WHEN r.record_kind=13 THEN r.ctl_environment_id WHEN r.record_kind=12 THEN r.bctx_environment_id WHEN r.record_kind=11 THEN r.bc_environment_id WHEN r.record_kind=10 THEN r.battle_environment_id ELSE "
+                    "COALESCE(r.environment_id,r.encounter_environment_id,r.combat_environment_id) END AS environment_id,"
+                    "CASE WHEN r.record_kind=16 THEN pf.pcfg_season_id WHEN r.record_kind=15 THEN px.pctx_season_id WHEN r.record_kind=14 THEN r.bout_season_id WHEN r.record_kind=13 THEN r.ctl_season_id WHEN r.record_kind=12 THEN r.bctx_season_id WHEN r.record_kind=11 THEN r.bc_season_id WHEN r.record_kind=10 THEN r.battle_season_id ELSE "
+                    "COALESCE(r.season_id,r.encounter_season_id,r.combat_season_id) END AS season_id " +
+                    RAW_PAYLOAD_JOIN + " WHERE r.boot_id=%s AND r.process_id=%s AND r.record_seq=%s LIMIT 1",
                     (row["verified_boot_id"], row["verified_process_id"], row["verified_record_seq"]),
                 )
                 if not verified:
@@ -2193,6 +2437,8 @@ class PyMySQLRollupDatabase:
                         self._publish_identity(target, state, publication_bounds)
                     if target.definition_version in battle_source.DEFINITION_VERSIONS:
                         self._publish_battle(target, state, publication_bounds)
+                    if target.definition_version == progression.DEFINITION_VERSION:
+                        self._publish_progression(target, state, publication_bounds)
                     self._execute(
                         "UPDATE telemetry_rollup_state SET publication_status=%s, provisional=1 WHERE "
                         + SCOPE_WHERE,
@@ -2227,6 +2473,8 @@ class PyMySQLRollupDatabase:
                                 self._read_published_identity(target, row)
                             if target.definition_version in battle_source.DEFINITION_VERSIONS:
                                 self._read_published_battle(target, row, verify_private_header=True)
+                            if target.definition_version == progression.DEFINITION_VERSION:
+                                self._read_published_progression(target, row, verify_private_header=True)
                             return self._publication_result(target)
                     except Exception as reread_error:
                         self._drop_connection()
@@ -2280,6 +2528,22 @@ class PyMySQLRollupDatabase:
         max_bytes: int = REPORT_BYTE_LIMIT_DEFAULT,
     ) -> tuple[list[Mapping[str, Any]], bool]:
         definition = report_definition(report_name, target.definition_version)
+        if target.definition_version == progression.DEFINITION_VERSION:
+            row_bound = progression.ROW_FETCH_BYTE_BOUND + progression.ROW_VALUE_BYTE_BOUND
+            limit, fetch_limit = _report_fetch_limits(max_rows, max_bytes - progression.REPORT_METADATA_BYTE_BOUND, row_bound)
+            columns = [f"LEFT(payload,{progression.MAX_PAYLOAD_BYTES + 1}) AS payload" if name == "payload" else
+                "LEFT(payload_digest,33) AS payload_digest" if name == "payload_digest" else
+                "LEFT(row_key,33) AS row_key" if name == "row_key" else name for name in progression.ROW_COLUMNS]
+            rows, _, _ = self._execute("SELECT " + ",".join(columns) +
+                " FROM telemetry_rollup_progression_row_v9 FORCE INDEX(PRIMARY) WHERE " + SCOPE_WHERE +
+                " AND row_kind=%s ORDER BY row_key LIMIT %s", (*target.scope_tuple, progression.ROW_KINDS[definition.name], fetch_limit))
+            if len(rows) > fetch_limit:
+                raise BoundsExceeded("progression report exceeds its SQL fetch limit")
+            try:
+                values = [progression.decode_row(target.scope_tuple, row) for row in rows]
+            except progression.PublicationError as error:
+                raise SemanticError(str(error)) from error
+            return values[:limit], len(rows) > limit
         if definition.name in battle_publication.row_kinds(target.scope_tuple):
             row_bound = battle_publication.ROW_FETCH_BYTE_BOUND + battle_publication.ROW_VALUE_BYTE_BOUND
             limit, fetch_limit = _report_fetch_limits(max_rows, max_bytes - battle_publication.REPORT_METADATA_BYTE_BOUND, row_bound)
@@ -2375,7 +2639,7 @@ class PyMySQLRollupDatabase:
             self._execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
             state = self._fetch_state(target, for_update=False)
             if state is None or int(state["publication_status"]) not in (
-                {PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED} if target.definition_version in (identity_publication.DEFINITION_VERSION, *battle_source.DEFINITION_VERSIONS) else {PUBLICATION_PUBLISHED}):
+                {PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED} if target.definition_version in (identity_publication.DEFINITION_VERSION, progression.DEFINITION_VERSION, *battle_source.DEFINITION_VERSIONS) else {PUBLICATION_PUBLISHED}):
                 raise GenerationConflict("requested report generation is not published")
             published_battle = None
             if target.definition_version in battle_source.DEFINITION_VERSIONS:
@@ -2383,6 +2647,11 @@ class PyMySQLRollupDatabase:
                         battle_publication.ROW_FETCH_BYTE_BOUND + battle_publication.ROW_VALUE_BYTE_BOUND):
                     raise BoundsExceeded("battle report cannot reserve metadata and one row with its sentinel")
                 published_battle = self._read_published_battle(target, state)
+            published_progression = None
+            if target.definition_version == progression.DEFINITION_VERSION:
+                if max_bytes < progression.REPORT_METADATA_BYTE_BOUND + 2 * (progression.ROW_FETCH_BYTE_BOUND + progression.ROW_VALUE_BYTE_BOUND):
+                    raise BoundsExceeded("progression report cannot reserve metadata and one row with its sentinel")
+                published_progression = self._read_published_progression(target, state)
             rows, truncated = self._read_report_rows(
                 target,
                 definition.name,
@@ -2393,13 +2662,17 @@ class PyMySQLRollupDatabase:
             if published_battle is not None and any(row.get("registry_version") != published_battle["identity"]["registry_version"]
                     for row in public_rows if "registry_version" in row):
                 raise SemanticError("battle_report_reserved_identity_conflict")
+            if published_progression is not None and any(row.get("registry_version") != published_progression["identity"]["registry_version"]
+                    for row in public_rows if "registry_version" in row):
+                raise SemanticError("progression_report_reserved_identity_conflict")
             incident_coverage = self._read_incident_coverage(target, state, max_bytes=max_bytes)
             identity_coverage = self._read_published_identity(target, state) if target.definition_version == identity_publication.DEFINITION_VERSION else None
             if _report_rows_bytes((*public_rows, incident_coverage, *(() if identity_coverage is None else (identity_coverage,)),
-                    *(() if published_battle is None else (published_battle,)))) > max_bytes:
+                    *(() if published_battle is None else (published_battle,)),
+                    *(() if published_progression is None else (published_progression,)))) > max_bytes:
                 raise BoundsExceeded("public report and coverage exceed their explicit byte budget")
             coverage = coverage_from_state_row(target, state, incident_coverage=incident_coverage, identity_coverage=identity_coverage,
-                battle_coverage=published_battle)
+                battle_coverage=published_battle, progression_coverage=published_progression)
             self._check_deadline()
             return ReportSnapshot(definition=definition, coverage=coverage, rows=public_rows, truncated=truncated)
         except BoundsExceeded:
@@ -2428,14 +2701,18 @@ class PyMySQLRollupDatabase:
                 raise DatabaseAccessError("requested generation has no rollup state")
             if target.definition_version in battle_source.DEFINITION_VERSIONS and max_bytes < battle_publication.REPORT_METADATA_BYTE_BOUND:
                 raise BoundsExceeded("battle coverage cannot reserve its metadata and snapshot receipts")
+            if target.definition_version == progression.DEFINITION_VERSION and max_bytes < progression.REPORT_METADATA_BYTE_BOUND:
+                raise BoundsExceeded("progression coverage cannot reserve its metadata and snapshot receipts")
             reviewed = self._read_incident_coverage(target, state, max_bytes=max_bytes)
             published_identity = self._read_published_identity(target, state) if target.definition_version == identity_publication.DEFINITION_VERSION and int(state["publication_status"]) in {PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED} else None
             published_battle = self._read_published_battle(target, state) if target.definition_version in battle_source.DEFINITION_VERSIONS and int(state["publication_status"]) in {PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED} else None
+            published_progression = self._read_published_progression(target, state) if target.definition_version == progression.DEFINITION_VERSION and int(state["publication_status"]) in {PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED} else None
             if _report_rows_bytes((state, reviewed, *(() if published_identity is None else (published_identity,)),
-                    *(() if published_battle is None else (published_battle,)))) > max_bytes:
+                    *(() if published_battle is None else (published_battle,)),
+                    *(() if published_progression is None else (published_progression,)))) > max_bytes:
                 raise BoundsExceeded("coverage metadata exceeds its report byte budget")
             return coverage_from_state_row(target, state, incident_coverage=reviewed, identity_coverage=published_identity,
-                battle_coverage=published_battle)
+                battle_coverage=published_battle, progression_coverage=published_progression)
         finally:
             self._rollback()
             self._clear_transaction_budget()
@@ -2525,6 +2802,7 @@ __all__ = [
     "PyMySQLConnectionFactory",
     "PyMySQLRollupDatabase",
     "RAW_COLUMNS",
+    "RAW_SOURCE_COLUMNS",
     "REPORT_BYTE_LIMIT_DEFAULT",
     "REPORT_BYTE_LIMIT_HARD_MAX",
     "REPORT_ROW_BYTE_BOUND",

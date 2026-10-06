@@ -908,6 +908,26 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "cb53c4cbad9a8bad2af7260fcdc1c6d8c080579cea41e964523af86c35849a0c",
       "verify_checksum": "60010330c9219535e74f1bd899580a749eefb2cba9e05b20a2f085bb538f5f2b"
+    },
+    {
+      "id": "0071_telemetry_progression_context",
+      "sequence": 74,
+      "description": "Retain exact progression context and XP configuration sources with independent incident coverage",
+      "apply": "immutable/0071_telemetry_progression_context.sql",
+      "verify": "immutable/0071_telemetry_progression_context.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "f22dc33394cd7ee6204b23c74a1a5b91ebc3854183d475000524530c3abc2d85",
+      "verify_checksum": "386294cce37b8d554f9894f66929577e315f87d500c6bee8684ef444f69b3fb7"
+    },
+    {
+      "id": "0072_telemetry_progression_publication",
+      "sequence": 75,
+      "description": "Publish exact retained progression milestones and dated character rotation with qualified coverage",
+      "apply": "immutable/0072_telemetry_progression_publication.sql",
+      "verify": "immutable/0072_telemetry_progression_publication.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "be902825e2fe777be2628b27220ab466d4e7c54be8d6eddc38c79b57a783c74c",
+      "verify_checksum": "c6216427c1dba77a8ca41646edbb7be861db2fc98cdbb76d3e1dd88a3da6e759"
     }
   ]
 }

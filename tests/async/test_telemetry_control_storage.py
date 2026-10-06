@@ -137,9 +137,9 @@ def qualification():
         token = hashlib.sha256(database.encode()).hexdigest()[:12]
         user, password = "tctl_review_" + token, "control-review-fixture-" + token
         query("CREATE USER %s@'%%' IDENTIFIED BY %s", (user, password))
-        for table in ("telemetry_interval", "telemetry_incident_registry_v6", "telemetry_incident_v6",
+        for table in ("telemetry_interval", "telemetry_progression_context", "telemetry_progression_configuration", "telemetry_incident_registry_v6", "telemetry_incident_v6",
                       "telemetry_incident_registry_v7", "telemetry_incident_v7"):
-            permissions = "SELECT" if table == "telemetry_interval" else "SELECT,INSERT"
+            permissions = "SELECT" if table in ("telemetry_interval", "telemetry_progression_context", "telemetry_progression_configuration") else "SELECT,INSERT"
             query("GRANT " + permissions + " ON `" + database + "`." + table + " TO %s@'%%'", (user,))
         reviewer = PyMySQLRollupDatabase(PyMySQLConnectionFactory(ConnectionSettings(
             host="127.0.0.1", port=int(environment["DB_PORT"]), database=database, user=user, password=password)))

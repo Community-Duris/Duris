@@ -305,8 +305,9 @@ def sql_qualification():
             'report': {table:'SELECT' for table in (*base_tables,*observation_tables,*public_tables,'telemetry_generation_identity')},
             'writer': {'telemetry_interval':'SELECT,INSERT'},
         }
-        grants['review'].update(telemetry_identity_reviewer='SELECT',telemetry_interval='SELECT')
-        grants['rollup'].update({table:'SELECT' for table in ('telemetry_interval','telemetry_identity_registry',
+        grants['review'].update(telemetry_identity_reviewer='SELECT',telemetry_interval='SELECT',
+            telemetry_progression_context='SELECT',telemetry_progression_configuration='SELECT')
+        grants['rollup'].update({table:'SELECT' for table in ('telemetry_interval','telemetry_progression_context','telemetry_progression_configuration','telemetry_identity_registry',
             'telemetry_identity_association','telemetry_incident_registry','telemetry_incident',
             'telemetry_incident_registry_v2','telemetry_incident_v2')})
         grants['rollup'].update({table:'SELECT,INSERT' for table in (*public_tables,'telemetry_generation_identity','telemetry_identity_input')})

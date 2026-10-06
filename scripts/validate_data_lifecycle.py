@@ -59,6 +59,8 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0068_telemetry_control_publication.sql",
     ROOT / "migrations" / "immutable" / "0069_telemetry_battle_results.sql",
     ROOT / "migrations" / "immutable" / "0070_telemetry_result_publication.sql",
+    ROOT / "migrations" / "immutable" / "0071_telemetry_progression_context.sql",
+    ROOT / "migrations" / "immutable" / "0072_telemetry_progression_publication.sql",
     ROOT / "migrations" / "immutable" / "0055_sql_room_item_payload.sql",
 )
 

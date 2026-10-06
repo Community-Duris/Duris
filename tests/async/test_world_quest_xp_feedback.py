@@ -101,6 +101,16 @@ bool record_zone_trophy_award(P_char, P_char, int, int) { return false; }
 void mark_player_dirty_components(int, player_component_mask_t) { ++dirty; }
 telemetry_capture_result telemetry_runtime_game_progression(
     P_char, P_desc, telemetry_progression_observation) { return {}; }
+telemetry_capture_result telemetry_runtime_game_progression(
+    P_char ch, P_desc d, telemetry_progression_observation observation,
+    const telemetry_progression_context_snapshot *) {
+    return telemetry_runtime_game_progression(ch, d, observation);
+}
+bool telemetry_runtime_game_progression_context(
+    const char_data *, telemetry_progression_context_snapshot *output) noexcept {
+    *output = {};
+    return false;
+}
 void gmcp_char_vitals(P_char) {}
 void gmcp_quest_status(P_char) {}
 void logexp(const char *, ...) {}
@@ -352,6 +362,7 @@ def main() -> None:
             "float gain_exp_modifiers_race_only(",
             "int exp_level_percent_modifier(",
             "int gain_exp(",
+            "int gain_exp(P_char ch, P_char victim, const int value, int type)\n",
         )
     ]
     functions += [extract_function("world_quest.c", signature) for signature in (

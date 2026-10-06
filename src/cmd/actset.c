@@ -1390,7 +1390,20 @@ static void setbit_parseTable(P_char ch, void *ptr, SetBitTable *table, int size
 	}
 
 	/* Now call copy function */
+	const bool observe_exp = type == SETBIT_CHAR && SAME_STRING(entry->sb_flag, "exp") &&
+				 IS_PC(static_cast<P_char>(ptr));
+	const std::int64_t before_exp = observe_exp ? GET_EXP(static_cast<P_char>(ptr)) : 0;
+	if (type == SETBIT_CHAR)
+		telemetry_runtime_game_progression_changed(static_cast<P_char>(ptr));
 	(*(entry->sb_func))(ptr, entry->sb_offset, value, bit, on_off);
+	if (observe_exp)
+	{
+		const std::int64_t requested_delta = static_cast<std::int64_t>(bit) - before_exp;
+		(void)telemetry_runtime_game_progression_adjustment(
+			static_cast<P_char>(ptr), before_exp, requested_delta, requested_delta,
+			telemetry_progression_source::administration,
+			telemetry_progression_reason::administration);
+	}
 	if (type == SETBIT_CHAR && entry->sb_func == ac_bitCopy &&
 	    (SAME_STRING(entry->sb_flag, "aff") || SAME_STRING(entry->sb_flag, "aff2")))
 		telemetry_runtime_game_control_changed(static_cast<P_char>(ptr));

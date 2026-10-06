@@ -1,5 +1,6 @@
 #include "telemetry/telemetry_runtime.h"
 #include "telemetry/telemetry_config_private.h"
+#include "telemetry/telemetry_progression.h"
 
 #include <climits>
 #include <cmath>
@@ -989,4 +990,18 @@ telemetry_config_validation telemetry_config_status(void)
 telemetry_capture_result telemetry_config_publish(telemetry_config_snapshot config)
 {
 	return runtime_result(telemetry_config_state_publish(&GLOBAL_STATE, config));
+}
+
+bool telemetry_progression_configuration_digest(
+	const telemetry_progression_configuration_snapshot &v, std::uint8_t *digest,
+	std::size_t digest_size) noexcept
+{
+	if (!digest || digest_size != SHA256_DIGEST_LENGTH)
+		return false;
+	for (std::size_t index = 0U; index < digest_size; ++index)
+		digest[index] = 0U;
+	std::uint8_t canonical[TELEMETRY_PROGRESSION_CONFIGURATION_CANONICAL_BYTES]{};
+	if (!telemetry_progression_configuration_encode(v, canonical, sizeof(canonical)))
+		return false;
+	return SHA256(canonical, sizeof(canonical), digest) != nullptr;
 }

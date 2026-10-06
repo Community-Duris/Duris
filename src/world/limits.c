@@ -696,6 +696,7 @@ static void advance_level_impl(P_char ch, bool notify_player, bool process_boons
    ///TODO CODE THIS PIECE OF MASTER    */
 
 	const int previous_level = GET_LEVEL(ch);
+	telemetry_runtime_game_progression_changed(ch);
 	ch->player.level++;
 	sql_update_level(ch);
 	(void)telemetry_runtime_game_progression(
@@ -858,6 +859,7 @@ static void lose_level_impl(P_char ch, std::uint64_t threshold_xp,
 	}
 
 	const int previous_level = GET_LEVEL(ch);
+	telemetry_runtime_game_progression_changed(ch);
 	ch->player.level = MAX(1, ch->player.level - 1);
 	sql_update_level(ch);
 	(void)telemetry_runtime_game_progression(
@@ -1160,10 +1162,12 @@ int exp_level_percent_modifier(P_char killer, P_char victim)
 	return mod;
 }
 
-int gain_exp(P_char ch, P_char victim, const int value, int type)
+int gain_exp(P_char ch, P_char victim, const int value, int type,
+	     const telemetry_progression_assistance_inputs *assistance)
 {
 	int goodcap = get_property("exp.level.cap.good", 15);
 	int evilcap = get_property("exp.level.cap.evil", 15);
+	const int max_exp_level = get_property("exp.maxExpLevel", 46);
 	int levelcap = sql_level_cap(GET_RACEWAR(ch));
 	bool pvp = FALSE;
 	float XP = MAX(1, value);
@@ -1220,21 +1224,70 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_PVP;
 	if (victim != nullptr)
 		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_VICTIM;
+	telemetry_progression_context_snapshot progression_context{};
+	const bool observed_progression_context =
+		telemetry_runtime_game_progression_context(ch, &progression_context);
+	if (observed_progression_context)
+	{
+		progression_context.decision_level_cap = levelcap;
+		progression_context.decision_good_assistance_gap = goodcap;
+		progression_context.decision_evil_assistance_gap = evilcap;
+		progression_context.decision_max_exp_level = max_exp_level;
+		progression_context.flags |= TELEMETRY_PCTX_DECISION_POLICY_KNOWN |
+					     TELEMETRY_PCTX_APPLICATION_KNOWN;
+		if (IS_HARDCORE(ch))
+		{
+			progression_context.flags |= TELEMETRY_PCTX_HARDCORE;
+			if (hardcore_config_get()->level_exp_bypass_property_cap)
+				progression_context.flags |= TELEMETRY_PCTX_HARDCORE_BYPASS;
+		}
+		/* The lack of a source-specific gate is not proof of solo play. Kill
+		 * sharing is supplied at kill_gain; healing/tanking below use their
+		 * actual passed native gates, never the formal roster count. */
+		if (type != EXP_KILL && type != EXP_HEALING && type != EXP_TANKING)
+		{
+			progression_context.flags |= TELEMETRY_PCTX_ASSISTANCE_KNOWN;
+			progression_context.assistance =
+				telemetry_progression_assistance::no_assistance_gate;
+		}
+		else if (type == EXP_KILL && assistance &&
+			 ((assistance->kind == telemetry_progression_assistance::solo_kill_share &&
+			   assistance->eligible_group_size == 1U &&
+			   assistance->highest_group_level == GET_LEVEL(ch)) ||
+			  (assistance->kind == telemetry_progression_assistance::group_kill_share &&
+			   assistance->eligible_group_size != 0U &&
+			   assistance->highest_group_level >= GET_LEVEL(ch))))
+		{
+			progression_context.flags |= TELEMETRY_PCTX_ASSISTANCE_KNOWN |
+						     TELEMETRY_PCTX_GROUP_ELIGIBILITY_KNOWN;
+			progression_context.assistance = assistance->kind;
+			progression_context.eligible_group_size = assistance->eligible_group_size;
+			progression_context.highest_group_level = assistance->highest_group_level;
+		}
+	}
 
 	if (type == EXP_RESURRECT)
 	{
-		;
+		progression_context.rested_application =
+			telemetry_progression_rested_application::resurrection_exempt;
 	}
 	else if (has_active_rested_bonus(ch, TAG_WELLRESTED))
 	{
 		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_WELLRESTED;
+		progression_context.rested_application =
+			telemetry_progression_rested_application::wellrested;
 		XP *= 2;
 	}
 	else if (has_active_rested_bonus(ch, TAG_RESTED))
 	{
 		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_RESTED;
+		progression_context.rested_application =
+			telemetry_progression_rested_application::rested;
 		XP *= 1.5;
 	}
+	else
+		progression_context.rested_application =
+			telemetry_progression_rested_application::none;
 	if (progression_reason_for_type(type) == telemetry_progression_reason::earned)
 		progression_modifier_flags |= TELEMETRY_PROGRESSION_MODIFIER_RACE;
 
@@ -1269,7 +1322,11 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			if (GET_LEVEL(tank) >=
 			    GET_LEVEL(ch) - (IS_RACEWAR_GOOD(ch) ? goodcap : evilcap))
 			{
-				gain_exp(tank, victim, XP, EXP_TANKING);
+				const telemetry_progression_assistance_inputs support = {
+					telemetry_progression_assistance::group_tank_support, 0U,
+					0U, static_cast<std::uint16_t>(GET_LEVEL(ch))
+				};
+				gain_exp(tank, victim, XP, EXP_TANKING, &support);
 			}
 		}
 
@@ -1308,6 +1365,14 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		}
 
 		XP = ((XP + 10) / 5) * ((GET_LEVEL(ch) + GET_LEVEL(victim)) / 2);
+		if (observed_progression_context)
+		{
+			progression_context.flags |= TELEMETRY_PCTX_ASSISTANCE_KNOWN;
+			progression_context.assistance =
+				ch == victim ? telemetry_progression_assistance::self_healing :
+					       telemetry_progression_assistance::group_healing;
+			progression_context.assistance_level = GET_LEVEL(victim);
+		}
 		XP *= exp_mods[EXPMOD_HEALING];
 
 		// debug("healing 1 (%d)", (int)XP);
@@ -1357,6 +1422,22 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		else
 			return 0;
 
+		if (observed_progression_context && group_size <= UINT16_MAX)
+		{
+			progression_context.flags |= TELEMETRY_PCTX_ASSISTANCE_KNOWN |
+						     TELEMETRY_PCTX_GROUP_ELIGIBILITY_KNOWN;
+			const bool supported =
+				assistance &&
+				assistance->kind ==
+					telemetry_progression_assistance::group_tank_support;
+			progression_context.assistance =
+				supported ? assistance->kind :
+					    telemetry_progression_assistance::group_tanking;
+			progression_context.assistance_level =
+				supported ? assistance->assistance_level : 0U;
+			progression_context.eligible_group_size =
+				static_cast<std::uint16_t>(group_size);
+		}
 		XP *= exp_mods[EXPMOD_TANK];
 		// debug("tanking 1 (%d)", (int)XP);
 		XP = gain_global_exp_modifiers(ch, XP);
@@ -1562,10 +1643,14 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 
 	// increase exp only to some limit (cumulative exp for mortals)
 	const int before_exp = GET_EXP(ch);
+	if (observed_progression_context)
+		progression_context.flags |= TELEMETRY_PCTX_STORAGE_GATE_KNOWN;
 	if (GET_LEVEL(ch) < MINLVLIMMORTAL &&
 	    (XP_final < 0 || ((GET_EXP(ch) < global_exp_limit) &&
 			      GET_EXP(ch) < (2 * new_exp_table[GET_LEVEL(ch) + 1]))))
 	{
+		if (observed_progression_context)
+			progression_context.flags |= TELEMETRY_PCTX_STORAGE_GATE_PASSED;
 		GET_EXP(ch) += (int)XP_final;
 		player_component_mask_t components = PLAYER_COMPONENT_STATUS;
 		if (record_zone_trophy_award(ch, victim, XP_final, type))
@@ -1573,6 +1658,28 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		mark_player_dirty_components(GET_PID(ch), components);
 	}
 	const int after_exp = GET_EXP(ch);
+	if (observed_progression_context)
+	{
+		progression_context.current_exp = after_exp;
+		if (progression_context.current_level != GET_LEVEL(ch))
+		{
+			/* A nested decision may have changed the level after the initial
+			 * snapshot. Keep the observed applied state in agreement with the
+			 * XP receipt, and leave the original decision context unknown. */
+			progression_context.current_level = GET_LEVEL(ch);
+			progression_context.flags &=
+				~(TELEMETRY_PCTX_THRESHOLD_KNOWN | TELEMETRY_PCTX_ASSISTANCE_KNOWN |
+				  TELEMETRY_PCTX_GROUP_ELIGIBILITY_KNOWN);
+			progression_context.next_threshold_xp = 0U;
+			progression_context.threshold_level = 0U;
+			progression_context.threshold_catalog_version = 0U;
+			progression_context.assistance = telemetry_progression_assistance::unknown;
+			progression_context.eligible_group_size = 0U;
+			progression_context.highest_group_level = 0U;
+			progression_context.assistance_level = 0U;
+			progression_context.quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+		}
+	}
 	(void)telemetry_runtime_game_progression(
 		ch, ch->desc,
 		telemetry_progression_make_experience(
@@ -1580,7 +1687,8 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 			static_cast<std::int64_t>(value), static_cast<std::int64_t>(computed_xp),
 			static_cast<std::int64_t>(before_exp), static_cast<std::int64_t>(after_exp),
 			static_cast<std::uint16_t>(GET_LEVEL(ch)), progression_modifier_flags,
-			TELEMETRY_QUALITY_NONE));
+			TELEMETRY_QUALITY_NONE),
+		observed_progression_context ? &progression_context : nullptr);
 	display_gain(ch, type == EXP_WORLD_QUEST ? after_exp - before_exp : (int)XP_final, type);
 	if (GET_LEVEL(ch) >= MINLVLIMMORTAL)
 	{
@@ -1610,7 +1718,7 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 		else
 		{
 			// Level cap capped by exp.maxExpLevel too.
-			levelcap = MIN(levelcap, get_property("exp.maxExpLevel", 46));
+			levelcap = MIN(levelcap, max_exp_level);
 			for (int i = GET_LEVEL(ch) + 1;
 			     (i <= levelcap) && (new_exp_table[i] <= GET_EXP(ch)); i++)
 			{
@@ -1650,6 +1758,11 @@ int gain_exp(P_char ch, P_char victim, const int value, int type)
 
 	// debug("Gain exps final return (%d).", XP_final);
 	return XP_final;
+}
+
+int gain_exp(P_char ch, P_char victim, const int value, int type)
+{
+	return gain_exp(ch, victim, value, type, nullptr);
 }
 
 int gain_condition(P_char ch, int condition, int value)

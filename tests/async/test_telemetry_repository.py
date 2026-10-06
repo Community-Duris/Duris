@@ -65,7 +65,9 @@ def repository_mapping_contract() -> None:
         if line.startswith(("#define FIELD", "#define TELEMETRY_BATTLE_FIELD", "#define TELEMETRY_BC_FIELD",
                             "#define TELEMETRY_BUILD_FIELD", "#define TELEMETRY_BUILD_BYTES",
                             "#define TELEMETRY_CONTROL_FIELD", "#define TELEMETRY_RESULT_FIELD",
-                            "#define TELEMETRY_RESULT_BYTES")):
+                            "#define TELEMETRY_RESULT_BYTES",
+                            "#define TELEMETRY_PROGRESSION_CONTEXT_FIELD",
+                            "#define TELEMETRY_PROGRESSION_CONFIGURATION_FIELD")):
             macro = True
         if not macro:
             serializer_lines.append(line)
@@ -157,6 +159,26 @@ def repository_mapping_contract() -> None:
     assert '#include "telemetry/telemetry_battle_result_fields.inc"' in result
     assert 'number(values, telemetry_column_id::name, p.member)' in result
     assert 'hex(p.member, width)' in result
+
+    typed_schema = (ROOT / "migrations/immutable/0071_telemetry_progression_context.sql").read_text()
+    for family, prefix, count, end in (
+        ("context", "pctx", 82, "progression_configuration"),
+        ("configuration", "pcfg", 95, "encounter"),
+    ):
+        macro = "TELEMETRY_PROGRESSION_" + family.upper() + "_FIELD"
+        include = "telemetry/telemetry_progression_" + family + "_fields.inc"
+        fields = (ROOT / "src" / include).read_text()
+        canonical = re.findall(macro + r"\(([a-z0-9_]+),", fields)
+        assert len(canonical) == len(set(canonical)) == count
+        assert set(canonical) <= names
+        table = "telemetry_progression_" + family
+        definition = typed_schema.split("CREATE TABLE IF NOT EXISTS " + table + " (", 1)[1].split(") ENGINE=", 1)[0]
+        stored = re.findall(r"^    (" + prefix + r"_[a-z0-9_]+) ", definition, re.MULTILINE)
+        assert canonical == stored, "typed progression source/schema field order differs"
+        payload = function_body(repository, "case telemetry_record_kind::progression_" + family + ":",
+                                "case telemetry_record_kind::" + end + ":")
+        assert '#include "' + include + '"' in payload
+        assert 'number(values, telemetry_column_id::name, p.member)' in payload
 
 
 def sql_environment() -> tuple[dict[str, str], list[str], str]:
@@ -405,7 +427,10 @@ def main():
                 manifest = json.loads((ROOT / "migrations/migration_manifest.json").read_text())
                 proof = dict(status="passed", evidence_source="native repository fixtures",
                     actual_gameplay=False, engine=os.environ["TELEMETRY_REPOSITORY_DB_IMAGE"],
-                    record_kinds_checked=list(range(1, 15)), result_named_fields=74,
+                    record_kinds_checked=list(range(1, 17)), result_named_fields=74,
+                    progression_context_fields=82, progression_configuration_fields=95,
+                    progression_configuration_chunks=15, atomic_typed_receipts=True,
+                    missing_typed_receipt_conflict=True,
                     result_operation_bytes=16, tagged_record_bytes=488,
                     migration_count=len(manifest["migrations"]),
                     migration_head=manifest["migrations"][-1]["id"],

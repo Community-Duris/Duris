@@ -548,6 +548,24 @@ fields record_fields(const telemetry_record &record)
 #undef TELEMETRY_RESULT_BYTES
 		break;
 	}
+	case telemetry_record_kind::progression_context:
+	{
+		const auto &p = record.payload.progression_context;
+#define TELEMETRY_PROGRESSION_CONTEXT_FIELD(name, member, width, signed_value) \
+	number(values, telemetry_column_id::name, p.member);
+#include "telemetry/telemetry_progression_context_fields.inc"
+#undef TELEMETRY_PROGRESSION_CONTEXT_FIELD
+		break;
+	}
+	case telemetry_record_kind::progression_configuration:
+	{
+		const auto &p = record.payload.progression_configuration;
+#define TELEMETRY_PROGRESSION_CONFIGURATION_FIELD(name, member, width, signed_value) \
+	number(values, telemetry_column_id::name, p.member);
+#include "telemetry/telemetry_progression_configuration_fields.inc"
+#undef TELEMETRY_PROGRESSION_CONFIGURATION_FIELD
+		break;
+	}
 	case telemetry_record_kind::coverage_gap:
 	{
 		const auto &p = record.payload.gap;
@@ -703,6 +721,13 @@ std::string signature(const telemetry_record &record)
 		for (auto byte : record.payload.control.target.actor.reserved)
 			value += ':' + std::to_string(byte);
 		break;
+	case telemetry_record_kind::progression_context:
+		value += ':' + std::to_string(record.payload.progression_context.reserved);
+		value += ':' + std::to_string(record.payload.progression_context.context.reserved);
+		break;
+	case telemetry_record_kind::progression_configuration:
+		value += ':' + std::to_string(record.payload.progression_configuration.reserved);
+		break;
 	case telemetry_record_kind::battle_result:
 		for (auto byte : record.payload.battle_result.reserved)
 			value += ':' + std::to_string(byte);
@@ -800,8 +825,12 @@ std::uint64_t unsigned_cell(const char *value)
 
 void validate_writer_schema()
 {
-	constexpr const char *tables[] = { "telemetry_interval", "telemetry_config",
-					   "telemetry_session", "telemetry_quarantine" };
+	constexpr const char *tables[] = { "telemetry_interval",
+					   "telemetry_config",
+					   "telemetry_session",
+					   "telemetry_quarantine",
+					   "telemetry_progression_context",
+					   "telemetry_progression_configuration" };
 	auto schema_failure = []()
 	{ throw sql_failure{ 1054U, telemetry_failure_class::permanent_schema }; };
 	for (const char *table : tables)
@@ -996,11 +1025,28 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 		return telemetry_apply_outcome::rejected_invalid;
 	const auto values = record_fields(record);
 	const fields replay(values.begin(), values.begin() + 3);
-	auto stored = query("SELECT " + names(values, true) + " FROM telemetry_interval WHERE " +
+	const char *payload_table =
+		record.header.kind == telemetry_record_kind::progression_context ?
+			"telemetry_progression_context" :
+		record.header.kind == telemetry_record_kind::progression_configuration ?
+			"telemetry_progression_configuration" :
+			"telemetry_interval";
+	const bool separate_payload =
+		record.header.kind == telemetry_record_kind::progression_context ||
+		record.header.kind == telemetry_record_kind::progression_configuration;
+	auto stored = query("SELECT " + names(values, true) + " FROM " + payload_table + " WHERE " +
 			    where(replay));
 	if (auto row = mysql_fetch_row(stored.get()))
 		return equal_row(row, values) ? telemetry_apply_outcome::duplicate_identical :
 						telemetry_apply_outcome::duplicate_conflict;
+	if (separate_payload)
+	{
+		// An existing header without its exact typed payload is a conflicting
+		// receipt. Never backfill it or acknowledge incomplete durable source.
+		auto header = query("SELECT 1 FROM telemetry_interval WHERE " + where(replay));
+		if (mysql_fetch_row(header.get()))
+			return telemetry_apply_outcome::duplicate_conflict;
+	}
 	if (record.header.kind == telemetry_record_kind::battle)
 	{
 		const auto &p = record.payload.battle;
@@ -1213,6 +1259,81 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 			return telemetry_apply_outcome::rejected_invalid;
 	}
 
+	if (record.header.kind == telemetry_record_kind::progression_context ||
+	    record.header.kind == telemetry_record_kind::progression_configuration)
+	{
+		const bool context = record.header.kind ==
+				     telemetry_record_kind::progression_context;
+		const auto &p = record.payload.progression_context;
+		const auto &c = record.payload.progression_configuration;
+		fields logical_key;
+		if (context)
+		{
+			number(logical_key, telemetry_column_id::pctx_boot_id, p.producer.boot_id);
+			number(logical_key, telemetry_column_id::pctx_process_id,
+			       p.producer.process_id);
+			number(logical_key, telemetry_column_id::pctx_sequence, p.sequence);
+		}
+		else
+		{
+			number(logical_key, telemetry_column_id::pcfg_boot_id, c.producer.boot_id);
+			number(logical_key, telemetry_column_id::pcfg_process_id,
+			       c.producer.process_id);
+			number(logical_key, telemetry_column_id::pcfg_sequence, c.sequence);
+			number(logical_key, telemetry_column_id::pcfg_chunk_index, c.chunk_index);
+		}
+		std::string logical_where = where(logical_key);
+		if (!context)
+		{
+			fields root_key;
+			number(root_key, telemetry_column_id::pcfg_boot_id, c.producer.boot_id);
+			number(root_key, telemetry_column_id::pcfg_process_id,
+			       c.producer.process_id);
+			number(root_key, telemetry_column_id::pcfg_root_record_seq,
+			       c.root_record_seq);
+			number(root_key, telemetry_column_id::pcfg_chunk_index, c.chunk_index);
+			logical_where += " OR (" + where(root_key) + ')';
+		}
+		auto existing = query("SELECT 1 FROM " + std::string(payload_table) + " WHERE " +
+				      logical_where);
+		if (mysql_fetch_row(existing.get()))
+			return telemetry_apply_outcome::duplicate_conflict;
+		const auto config_id = context ? p.context.config_id : c.config_id;
+		const auto environment = context ? p.session.environment_id : c.environment_id;
+		if (config_id)
+		{
+			fields expected;
+			number(expected, telemetry_column_id::season_id,
+			       context ? p.session.season_id : c.season_id);
+			number(expected, telemetry_column_id::classifier_version,
+			       context ? p.context.classifier_version : c.classifier_version);
+			number(expected, telemetry_column_id::policy_version,
+			       context ? p.context.policy_version : c.policy_version);
+			number(expected, telemetry_column_id::build_version,
+			       context ? p.context.build_version : c.build_version);
+			number(expected, telemetry_column_id::content_version,
+			       context ? p.context.content_version : c.content_version);
+			auto config = query("SELECT " + names(expected, true) +
+					    " FROM telemetry_config WHERE environment_id=" +
+					    std::to_string(environment) +
+					    " AND config_id=" + std::to_string(config_id));
+			auto row = mysql_fetch_row(config.get());
+			if (!row || !equal_row(row, expected))
+				return telemetry_apply_outcome::rejected_invalid;
+		}
+		if (context)
+		{
+			fields expected;
+			session_fields(expected, p.session);
+			auto current = query("SELECT " + names(expected, true) +
+					     " FROM telemetry_session WHERE " +
+					     session_identity(p.session));
+			auto row = mysql_fetch_row(current.get());
+			if (row && !equal_row(row, expected))
+				return telemetry_apply_outcome::rejected_invalid;
+		}
+	}
+
 	const auto *session = session_of(record);
 	const bool scoped = session && !telemetry_session_ref_is_zero(*session);
 	if (scoped && record.header.kind != telemetry_record_kind::coverage_gap)
@@ -1354,11 +1475,15 @@ telemetry_apply_outcome apply_record(const telemetry_record &record)
 	}
 
 	fields fact = values;
+	if (separate_payload)
+		fact = fields(values.begin(), values.begin() + 6);
 	// The sole writer's transaction defines the committed ingest prefix. UTC
 	// is assigned by the database, never copied from the occurrence label.
 	fact.emplace_back(telemetry_column(telemetry_column_id::ingested_utc_usec).name,
 			  "CAST(UNIX_TIMESTAMP(CURRENT_TIMESTAMP(6))*1000000 AS SIGNED)");
 	insert("telemetry_interval", fact);
+	if (separate_payload)
+		insert(payload_table, values);
 	if (scoped)
 	{
 		number(projection, telemetry_column_id::last_ingest_id,

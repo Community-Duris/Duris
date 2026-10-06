@@ -50,6 +50,7 @@ def harness():
 #include <string>
 #include <vector>
 #include "world/rested.h"
+#include "telemetry/telemetry_types.h"
 int setting = -1;
 int get_property(const char *key, int fallback) {
     assert(std::string(key) == "exp.rested.enabled");
@@ -67,8 +68,6 @@ constexpr int AFF_HASTE=1, AFF_PROT_FIRE=2, AFF2_PROT_COLD=4, AFF_FLY=8,
     AFF4_EPIC_INCREASE=16, TAG_SNEAK=6, TAG_WITCHSPELL=7;
 constexpr int CMD_SET_PERIODIC=1, CMD_LIST=2, CMD_BUY=3;
 constexpr int FALSE=0, TRUE=1, TO_ROOM=1, TO_CHAR=2, TO_VICT=3;
-constexpr int TELEMETRY_PROGRESSION_MODIFIER_RESTED=1,
-    TELEMETRY_PROGRESSION_MODIFIER_WELLRESTED=2;
 struct affected_type {
     int type, duration, flags, location, modifier, wear_off_message_index;
     uint bitvector,bitvector2,bitvector3,bitvector4,bitvector5;
@@ -83,6 +82,9 @@ struct char_data {
 using character = char_data;
 using P_char = char_data *;
 using P_obj = void *;
+// This isolated gameplay-math fixture owns no telemetry session. Native
+// progression admission and invalidation are exercised by its linked adapter.
+void telemetry_runtime_game_progression_changed(const char_data *) noexcept {}
 constexpr int SPELL_TYPE_SPELL=0, LOG_WIZ=1;
 #define IS_ALIVE(ch) true
 #define GET_NAME(ch) "test"
@@ -147,7 +149,7 @@ void wizardlogf(const char *, ...) {}
     cpp += "\nint witch_doctor(P_char witch,P_char customer,int cmd,char *arg) " + merchant
     cpp += "\nint visible_score_affects(P_char ch) { int count=0; for(auto *aff=ch->affected;aff;aff=aff->next) { " + score_guard + " ++count; } return count; }"
     cpp += "\nvoid login_bonus(P_char ch,long rest,bool nobonus) { affected_type af1; " + login + "\n}"
-    cpp += "\nint earned(P_char ch,int type, unsigned &progression_modifier_flags) { double XP=100; " + xp + " return static_cast<int>(XP); }"
+    cpp += "\nint earned(P_char ch,int type, unsigned &progression_modifier_flags) { double XP=100; telemetry_progression_context_snapshot progression_context{}; " + xp + " assert(progression_context.rested_application == (type == EXP_RESURRECT ? telemetry_progression_rested_application::resurrection_exempt : progression_modifier_flags == TELEMETRY_PROGRESSION_MODIFIER_WELLRESTED ? telemetry_progression_rested_application::wellrested : progression_modifier_flags == TELEMETRY_PROGRESSION_MODIFIER_RESTED ? telemetry_progression_rested_application::rested : telemetry_progression_rested_application::none)); return static_cast<int>(XP); }"
     cpp += r'''
 int main() {
     character ch, caster, witch;

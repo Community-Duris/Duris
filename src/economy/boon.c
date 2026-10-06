@@ -52,6 +52,7 @@ using namespace std;
 #include "persistence/persistence_mode.h"
 #include "magic/spells.h"
 #include "sql/sql.h"
+#include "telemetry/telemetry_runtime.h"
 
 extern P_desc descriptor_list;
 extern P_room world;
@@ -3699,7 +3700,12 @@ void check_boon_completion_legacy(P_char ch, P_char victim, double data, int opt
 			if ((int)bdata.bonus2)
 			{
 				// bypass epics
+				const std::int64_t before_exp = GET_EXP(ch);
+				const std::int64_t cost = new_exp_table[GET_LEVEL(ch) + 1];
 				GET_EXP(ch) -= new_exp_table[GET_LEVEL(ch) + 1];
+				(void)telemetry_runtime_game_progression_adjustment(
+					ch, before_exp, -cost, -cost, telemetry_progression_source::boon,
+					telemetry_progression_reason::level_threshold);
 				advance_level(ch);
 			}
 			else
@@ -4039,7 +4045,13 @@ void boon_publish_transaction_result(P_char ch, double event_data, const boon_re
 			{
 				if (static_cast<int>(entry.bonus2))
 				{
+					const std::int64_t before_exp = GET_EXP(ch);
+					const std::int64_t cost = new_exp_table[GET_LEVEL(ch) + 1];
 					GET_EXP(ch) -= new_exp_table[GET_LEVEL(ch) + 1];
+					(void)telemetry_runtime_game_progression_adjustment(
+						ch, before_exp, -cost, -cost,
+						telemetry_progression_source::boon,
+						telemetry_progression_reason::level_threshold);
 					advance_level(ch);
 				}
 				else

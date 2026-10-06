@@ -353,6 +353,10 @@ telemetry_capture_result telemetry_runtime_game_presence(struct char_data *chara
  * Call after game_enter or copyover resume; no SQL or filesystem work occurs. */
 telemetry_capture_result telemetry_runtime_game_context(struct char_data *character,
 							struct descriptor_data *descriptor);
+/* Invalidate duration evidence after a progression stratum mutation. This only
+ * marks one fixed value slot; the next observation seals the uncertain span
+ * using the existing classifier and segment budget before refreshing it. */
+void telemetry_runtime_game_progression_changed(const struct char_data *character) noexcept;
 /* Copyover adapters preserve the logical session key while allocating a new
  * connection in the replacement process. A null/zero handoff is an explicit
  * absent handoff and starts a new session with an unclosed-tail marker. */
@@ -496,6 +500,30 @@ void telemetry_runtime_game_combat_context(struct char_data *actor) noexcept;
 telemetry_capture_result
 telemetry_runtime_game_progression(struct char_data *character, struct descriptor_data *descriptor,
 				   telemetry_progression_observation observation);
+/* Actual decision inputs supplied by the native XP writer. This overload shares
+ * the same observed-XP capture and never writes gameplay state. */
+telemetry_capture_result
+telemetry_runtime_game_progression(struct char_data *character, struct descriptor_data *descriptor,
+				   telemetry_progression_observation observation,
+				   const telemetry_progression_context_snapshot *decision);
+/* Observe an existing direct XP mutation after its writer. The caller supplies
+ * the pre-write value and actual requested/computed delta; this reads the
+ * post-write value and never changes XP or claims that a character save committed. */
+telemetry_capture_result
+telemetry_runtime_game_progression_adjustment(struct char_data *character, std::int64_t before_exp,
+					      std::int64_t requested_xp, std::int64_t computed_xp,
+					      telemetry_progression_source source,
+					      telemetry_progression_reason reason);
+/* Point reader only. Reads at most 64 distinct affects and the maintained
+ * bounded formal group roster; no hashes, allocation, SQL or XP mutation.
+ * Actual assistance/application/storage decisions require their source hook. */
+/* Cold, read-only actual XP inventory. False clears output when a native source
+ * is missing or invalid. Call at bootstrap/property application, not per hit. */
+bool telemetry_runtime_game_progression_configuration(
+	telemetry_progression_configuration_snapshot *) noexcept;
+
+bool telemetry_runtime_game_progression_context(const struct char_data *,
+						telemetry_progression_context_snapshot *) noexcept;
 std::uint16_t telemetry_runtime_pulse_slot_count(void) noexcept;
 telemetry_capture_result telemetry_runtime_session_enter(telemetry_session_enter enter);
 /* Copyover owner only, after capturing its complete handoff batch while normal

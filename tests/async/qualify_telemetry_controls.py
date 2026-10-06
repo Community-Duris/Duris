@@ -22,11 +22,12 @@ IMAGES = {"mariadb": "mariadb:10.11.14", "mysql": "mysql:8.0.46"}
 FOCUSED = (
     "test_telemetry_control_inventory.py", "test_telemetry_battle_contribution_contract.py",
     "test_telemetry_control_stream.py", "test_telemetry_battle_history.py",
-    "test_telemetry_contract_headers.py", "test_telemetry_repository.py", "test_telemetry_reports_contract.py",
+    "test_telemetry_progression.py", "test_telemetry_contract_headers.py", "test_telemetry_repository.py", "test_telemetry_reports_contract.py",
     "test_telemetry_identity_publication.py", "test_telemetry_rollup_schema.py", "test_telemetry_outage.py",
     "test_telemetry_incidents.py",
     "test_telemetry_runtime_integration.py", "test_telemetry_runtime_outage.py", "test_telemetry_runtime_exhaustion.py",
     "test_epic_stone_runtime.py", "test_boon_reward_zone_transactional_cutover.py",
+    "test_rested_bonus_runtime.py", "test_world_quest_xp_feedback.py", "test_chaos_infinite_starting_grants.py",
 )
 
 
@@ -114,6 +115,12 @@ def run(args):
             "tests/async/telemetry_battle_result_harness.cc", "src/telemetry/telemetry_types.h",
             "src/telemetry/telemetry_repository.c", "src/telemetry/telemetry_outage.c",
             "tests/async/telemetry_repository_harness.cc", "tests/async/telemetry_outage_harness.cc")
+        changed += ("src/telemetry/telemetry_config.c", "src/telemetry/telemetry_progression.c", "src/telemetry/telemetry_progression.h",
+            "tests/async/telemetry_progression_harness.cc", "tests/async/telemetry_runtime_integration.cc",
+            "src/telemetry/telemetry_session.c", "src/telemetry/telemetry_session.h",
+            "src/telemetry/telemetry_health.c", "src/world/limits.c", "src/combat/fight.c", "src/core/prototypes.h",
+            "src/economy/boon.c", "src/combat/chaos.c", "src/cmd/actwiz.c", "src/cmd/actinf.c", "src/cmd/actset.c",
+            "src/guild/guild.c", "src/magic/affects.c", "src/magic/spells.c")
         format_args = ["bash", "scripts/format.sh", "--check"]
         for path in changed:
             if Path(path).suffix in (".c", ".h", ".cc", ".cpp", ".hpp"):
@@ -121,6 +128,8 @@ def run(args):
         docker_exec(format_args, "format")
         for test in FOCUSED:
             docker_exec(["python3", "tests/async/" + test], test.removesuffix(".py"))
+        docker_exec(["python3", "tests/async/test_telemetry_progression.py", "--sanitize"],
+            "progression-context-asan-ubsan")
         docker_exec(["python3", "tests/async/test_telemetry_gameplay_adapters.py", "--native-affects", "--sanitize"], "native-affects-asan-ubsan")
         docker_exec(["python3", "tests/async/test_telemetry_gameplay_adapters.py", "--sanitize"],
             "native-result-adapters-asan-ubsan")
@@ -166,15 +175,17 @@ def run(args):
                 engine + "-lineages", lineage_env)
             for mode, test in (("writer", "test_telemetry_repository.py"),
                     ("storage", "test_telemetry_control_storage.py"),
+                    ("progression", "test_telemetry_progression.py"),
                     ("native", "test_telemetry_battle_runtime_sql.py"), ("gameplay", "run_telemetry_control_journey.py")):
                 env.update(TELEMETRY_REPOSITORY_DATABASE=fixture_database(token, mode),
                     TELEMETRY_REPOSITORY_RESULT=output_root + "/" + engine + "-writer.json",
                     TELEMETRY_CONTROL_STORAGE_RESULT=output_root + "/" + engine + "-storage.json",
+                    TELEMETRY_PROGRESSION_STORAGE_RESULT=output_root + "/" + engine + "-progression.json",
                     TELEMETRY_BATTLE_RUNTIME_RESULT=output_root + "/" + engine + "-native.json",
                     TELEMETRY_CONTROL_JOURNEY_RESULT=output_root + "/" + engine + "-gameplay.json")
                 docker_exec(["python3", "tests/async/" + test, "--sql-fixture"], engine + "-" + mode, env)
             receipt["engines"][engine] = {mode: json.loads((directory / (engine + "-" + mode + ".json")).read_text(encoding="utf-8"))
-                for mode in ("lineages", "writer", "storage", "native", "gameplay")}
+                for mode in ("lineages", "writer", "storage", "progression", "native", "gameplay")}
             owned_remove(container)
         receipt["actual_gameplay"] = True
         receipt["performance"] = json.loads((directory / "control-performance.json").read_text(encoding="utf-8"))

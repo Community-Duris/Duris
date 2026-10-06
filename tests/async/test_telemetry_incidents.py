@@ -41,15 +41,35 @@ def project(p: dict, start=100, end=200):
 
 
 class IncidentSemantics(unittest.TestCase):
+    def test_progression_inventory_is_independent_and_preserves_all_prior_ceilings(self):
+        for kind in (15, 16):
+            p = packet(8)
+            p["incidents"][0].update(record_kind_mask=1 << kind, fix_reference_digest="44" * 32,
+                first_verified_postfix=dict(boot_id=11, process_id=22, record_seq=34,
+                    record_kind=kind, occurrence_utc_usec=None))
+            meta, rows = incident.validate_packet(p)
+            incident.validate_stored(meta, rows, registry_schema_version=8)
+            self.assertEqual(rows[0]["verified_record_kind"], kind)
+            for version in range(1, 8):
+                old = deepcopy(p)
+                old["registry_schema_version"] = version
+                with self.assertRaisesRegex(incident.IncidentError, "unknown_record_family"):
+                    incident.validate_packet(old)
+        future = packet(8)
+        future["incidents"][0]["record_kind_mask"] = 1 << 17
+        with self.assertRaisesRegex(incident.IncidentError, "unknown_record_family"):
+            incident.validate_packet(future)
+
     def test_cli_templates_include_control_schema_without_changing_the_default(self):
         command = [sys.executable, str(ROOT / "scripts/telemetry/incident.py"), "--template"]
         for arguments, version in (([], 1), (["--registry-schema-version", "5"], 5),
                                    (["--registry-schema-version", "6"], 6),
-                                   (["--registry-schema-version", "7"], 7)):
+                                   (["--registry-schema-version", "7"], 7),
+                                   (["--registry-schema-version", "8"], 8)):
             result = subprocess.run(command + arguments, check=True, capture_output=True,
                                     text=True, timeout=10)
             self.assertEqual(json.loads(result.stdout)["registry_schema_version"], version)
-        refused = subprocess.run(command + ["--registry-schema-version", "8"],
+        refused = subprocess.run(command + ["--registry-schema-version", "9"],
                                  capture_output=True, text=True, timeout=10)
         self.assertEqual(refused.returncode, 2)
 
@@ -82,7 +102,7 @@ class IncidentSemantics(unittest.TestCase):
         with self.assertRaisesRegex(incident.IncidentError, "stored_inventory_digest_mismatch"):
             incident.validate_stored(first, rows, registry_schema_version=2)
         self.assertEqual([incident.generation_schema(v) for v in (1, 2, 3, 4, 5, 6, 7)], [1, 1, 2, 3, 4, 5, 6])
-        for version in (True, 0, 8, "2", None):
+        for version in (True, 0, 9, "2", None):
             with self.assertRaises(incident.IncidentError):
                 incident.template(version)
         p = packet(2)
@@ -548,11 +568,13 @@ def sql_qualification() -> None:
         token = hashlib.sha256(name.encode()).hexdigest()[:10]
         password = "synthetic-incident-fixture-" + token
         grants = {
-            "review": {"telemetry_incident_registry": "SELECT,INSERT", "telemetry_incident": "SELECT,INSERT", "telemetry_interval": "SELECT"},
+            "review": {"telemetry_incident_registry": "SELECT,INSERT", "telemetry_incident": "SELECT,INSERT", "telemetry_interval": "SELECT",
+                "telemetry_progression_context": "SELECT", "telemetry_progression_configuration": "SELECT"},
             "rollup": {t: "SELECT,INSERT,UPDATE" for t in ("telemetry_rollup_state", "telemetry_rollup_session", "telemetry_cohort_day", "telemetry_cohort_member", "telemetry_player_day")},
             "report": {t: "SELECT" for t in ("telemetry_rollup_state", "telemetry_rollup_session", "telemetry_cohort_day", "telemetry_cohort_member", "telemetry_rollup_incident_coverage", "telemetry_rollup_incident")},
         }
-        grants["rollup"].update({t: "SELECT" for t in ("telemetry_interval", "telemetry_incident_registry", "telemetry_incident")})
+        grants["rollup"].update({t: "SELECT" for t in ("telemetry_interval", "telemetry_progression_context",
+            "telemetry_progression_configuration", "telemetry_incident_registry", "telemetry_incident")})
         grants["rollup"].update({t: "SELECT,INSERT" for t in ("telemetry_rollup_incident_coverage", "telemetry_rollup_incident")})
         grants["review"].update({t: "SELECT,INSERT" for t in ("telemetry_incident_registry_v2", "telemetry_incident_v2")})
         grants["rollup"].update({t: "SELECT" for t in ("telemetry_incident_registry_v2", "telemetry_incident_v2")})

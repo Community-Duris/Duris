@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include "classes/epic_skills.h"
 #include "magic/spells.h"
+#include "telemetry/telemetry_runtime.h"
 #include "string.h"
 /*
  * external variables
@@ -65,6 +66,7 @@ void update_skills(P_char ch)
 
 	if (!ch || !IS_PC(ch))
 		return;
+	telemetry_runtime_game_progression_changed(ch);
 	chaos_mode = chaos_mud_enabled();
 
 	for (skl = FIRST_SKILL; skl <= LAST_SKILL; skl++)

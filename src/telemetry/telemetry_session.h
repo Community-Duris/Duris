@@ -180,6 +180,12 @@ struct telemetry_session_slot
 	 * Admitted SQL retries retain their keys downstream. No owned allocation. */
 	telemetry_record ownership_pending[2];
 	telemetry_ownership_payload ownership_last_sample;
+	/* Exact last admitted ownership receipt, never a pending/fabricated key.
+	 * Read with the pending/anchor flags and matching current sample. */
+	telemetry_record_key ownership_last_record;
+	telemetry_id ownership_last_record_account_token;
+	telemetry_monotonic_usec ownership_last_record_monotonic_usec;
+	std::uint16_t progression_starting_level;
 	std::uint8_t ownership_pending_count;
 	std::uint8_t ownership_has_sample;
 	std::uint8_t ownership_overflow;

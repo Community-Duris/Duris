@@ -114,7 +114,8 @@ def qualification() -> None:
             "writer": {"telemetry_interval": "SELECT,INSERT"},
         }
         grants["review"]["telemetry_interval"] = "SELECT"
-        grants["rollup"].update({table: "SELECT" for table in (*private, "telemetry_interval")})
+        grants["review"].update({table: "SELECT" for table in ("telemetry_progression_context", "telemetry_progression_configuration")})
+        grants["rollup"].update({table: "SELECT" for table in (*private, "telemetry_interval", "telemetry_progression_context", "telemetry_progression_configuration")})
         grants["rollup"].update({table: "SELECT,INSERT" for table in (*public, "telemetry_generation_identity", "telemetry_identity_input")})
         grants["rollup"]["telemetry_rollup_identity_coverage"] = "SELECT,INSERT,UPDATE"
         for role, tables in grants.items():

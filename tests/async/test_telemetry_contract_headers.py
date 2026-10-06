@@ -79,6 +79,14 @@ static_assert(telemetry_record_kind_is_control(telemetry_record_kind::configurat
 static_assert(!telemetry_record_kind_is_control(telemetry_record_kind::interval));
 static_assert(!telemetry_record_kind_is_control(telemetry_record_kind::battle_result));
 static_assert(static_cast<std::uint8_t>(telemetry_record_kind::battle_result) == 14U);
+static_assert(static_cast<std::uint8_t>(telemetry_record_kind::progression_context) == 15U);
+static_assert(static_cast<std::uint8_t>(telemetry_record_kind::progression_configuration) == 16U);
+static_assert(!telemetry_record_kind_is_control(telemetry_record_kind::progression_context));
+static_assert(telemetry_record_kind_is_control(telemetry_record_kind::progression_configuration));
+static_assert(sizeof(telemetry_record) == 488U);
+static_assert(sizeof(telemetry_progression_configuration_observation) == 400U);
+static_assert(TELEMETRY_PROGRESSION_CONFIGURATION_WIRE_BYTES == 396U);
+static_assert(TELEMETRY_PROGRESSION_CONTEXT_WIRE_BYTES == 373U);
 static_assert(static_cast<std::uint8_t>(telemetry_record_kind::configuration) == 5U);
 static_assert(static_cast<std::uint8_t>(telemetry_record_kind::progression) == 6U);
 static_assert(static_cast<std::uint8_t>(telemetry_lifecycle_kind::session_entered) == 1U);
@@ -272,8 +280,13 @@ static_assert(std::is_same_v<decltype(&telemetry_transport_enqueue), enqueue_sig
 static_assert(std::is_same_v<decltype(&telemetry_repository_apply), apply_signature>);
 static_assert(std::is_same_v<decltype(&telemetry_runtime_connection_transition),
                              transition_signature>);
-static_assert(std::is_same_v<decltype(&telemetry_runtime_game_progression),
+static_assert(std::is_same_v<decltype(static_cast<progression_signature>(&telemetry_runtime_game_progression)),
                              progression_signature>);
+using progression_context_signature = telemetry_capture_result (*)(struct char_data *,
+    struct descriptor_data *, telemetry_progression_observation,
+    const telemetry_progression_context_snapshot *);
+static_assert(std::is_same_v<decltype(static_cast<progression_context_signature>(&telemetry_runtime_game_progression)),
+                             progression_context_signature>);
 static_assert(std::is_same_v<decltype(&telemetry_config_publish), config_signature>);
 constexpr telemetry_session_resume resume = [] {
     telemetry_session_resume value{};

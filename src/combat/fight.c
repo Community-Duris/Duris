@@ -1929,6 +1929,7 @@ static P_char credited_player_killer(P_char victim, P_char killer)
 
 void die(P_char ch, P_char killer)
 {
+	telemetry_runtime_game_progression_changed(ch);
 	char buf[MAX_STRING_LENGTH];
 	P_char tmp_ch;
 	P_obj tempobj;
@@ -2151,7 +2152,14 @@ void die(P_char ch, P_char killer)
 			long tmp = loss = GET_EXP(ch);
 			lose_level(ch);
 			// This is complicated because 10M exp at 51 is not the same as 10M exp at 50/52/etc.
+			const std::int64_t before_exp = GET_EXP(ch);
 			GET_EXP(ch) = lich_death_residual_experience(tmp, GET_LEVEL(ch));
+			const std::int64_t residual_delta =
+				static_cast<std::int64_t>(GET_EXP(ch)) - before_exp;
+			(void)telemetry_runtime_game_progression_adjustment(
+				ch, before_exp, residual_delta, residual_delta,
+				telemetry_progression_source::death,
+				telemetry_progression_reason::death_loss);
 			// Amount of exp lost is all exp to lose level + the portion lost into the level below.
 			loss += new_exp_table[GET_LEVEL(ch)] - GET_EXP(ch);
 			loss *= -1;
@@ -2758,7 +2766,11 @@ void kill_gain(P_char ch, P_char victim)
 	if (!ch->group)
 	{
 		send_to_char("You receive your share of experience.\r\n", ch);
-		gain_exp(ch, victim, gain, EXP_KILL);
+		const telemetry_progression_assistance_inputs assistance = {
+			telemetry_progression_assistance::solo_kill_share, 1U,
+			static_cast<std::uint16_t>(GET_LEVEL(ch)), 0U
+		};
+		gain_exp(ch, victim, gain, EXP_KILL, &assistance);
 		if (IS_PC(ch))
 			add_bloodlust(ch, victim);
 
@@ -2866,7 +2878,13 @@ void kill_gain(P_char ch, P_char victim)
 			}
 
 			send_to_char("You receive your share of experience.\r\n", gl->ch);
-			gain_exp(gl->ch, victim, XP, EXP_KILL);
+			telemetry_progression_assistance_inputs assistance{};
+			if (group_size > 0 && group_size <= UINT16_MAX && highest_level > 0 &&
+			    highest_level <= UINT16_MAX)
+				assistance = { telemetry_progression_assistance::group_kill_share,
+					       static_cast<std::uint16_t>(group_size),
+					       static_cast<std::uint16_t>(highest_level), 0U };
+			gain_exp(gl->ch, victim, XP, EXP_KILL, &assistance);
 			if (IS_PC(gl->ch))
 				add_bloodlust(gl->ch, victim);
 			// this is for all kinds of kill-type quests

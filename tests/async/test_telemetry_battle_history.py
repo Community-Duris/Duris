@@ -1849,7 +1849,7 @@ class BattleHistoryTests(unittest.TestCase):
         with self.assertRaisesRegex(source.SourceError, "published_immutable"):
             source.advance_header(header, [], header["input_watermark"] + 1)
         from scripts.telemetry.rollup_definitions import SUPPORTED_DEFINITION_VERSIONS
-        self.assertEqual(SUPPORTED_DEFINITION_VERSIONS, {1, 2, 3, 5, 6, 7, 8})
+        self.assertEqual(SUPPORTED_DEFINITION_VERSIONS, {1, 2, 3, 5, 6, 7, 8, 9})
 
     def test_bounds_and_deadline_refuse_without_mutating_source(self):
         saved = deepcopy(self.rows)

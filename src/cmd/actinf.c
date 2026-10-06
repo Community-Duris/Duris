@@ -2271,6 +2271,7 @@ void ShowCharSpellBookSpells(P_char ch, P_obj obj, char *short_desc)
 	if (obj->value[1])
 	{
 		l = ch->player.m_class;
+		telemetry_runtime_game_progression_changed(ch);
 		ch->player.m_class = obj->value[1];
 
 		/* whee, what a gay hack! */
@@ -9814,7 +9815,12 @@ void do_punish(P_char ch, char *arg, int /*cmd*/)
 		lose_level(t_ch);
 	}
 
+	const std::int64_t before_exp = GET_EXP(t_ch);
 	GET_EXP(t_ch) = 1;
+	(void)telemetry_runtime_game_progression_adjustment(
+		t_ch, before_exp, 1 - before_exp, 1 - before_exp,
+		telemetry_progression_source::administration,
+		telemetry_progression_reason::administration);
 	send_to_char("&+WPunished...\n", ch);
 }
 

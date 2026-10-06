@@ -9889,6 +9889,286 @@
       "dependencies": [
         "database:telemetry_rollup_battle_coverage_v8"
       ]
+    },
+    {
+      "id": "database:telemetry_progression_context",
+      "kind": "database_table",
+      "locator": "telemetry_progression_context",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "environment_season_subject_id_and_pid",
+      "technical_purpose": "Exact immutable observational progression source payload bound to its original raw receipt; atomic native insertion and cascading raw retention; no XP or save authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_interval"
+      ]
+    },
+    {
+      "id": "database:telemetry_progression_configuration",
+      "kind": "database_table",
+      "locator": "telemetry_progression_configuration",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_producer_configuration_inventory_no_character_identity",
+      "technical_purpose": "Exact immutable observational progression source payload bound to its original raw receipt; atomic native insertion and cascading raw retention; no XP or save authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_interval"
+      ]
+    },
+    {
+      "id": "database:telemetry_incident_registry_v8",
+      "kind": "database_table",
+      "locator": "telemetry_incident_registry_v8",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_producer_lifetime_no_character_or_account_identity",
+      "technical_purpose": "Independent immutable incident schema 8 covers progression context family 15 and exact XP configuration family 16 without reinterpreting earlier reviews",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:telemetry_outage_ledger"
+      ]
+    },
+    {
+      "id": "database:telemetry_incident_v8",
+      "kind": "database_table",
+      "locator": "telemetry_incident_v8",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_producer_lifetime_no_character_or_account_identity",
+      "technical_purpose": "Independent immutable incident schema 8 covers progression context family 15 and exact XP configuration family 16 without reinterpreting earlier reviews",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "not_subject_scoped",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_incident_registry_v8"
+      ]
+    },
+    {
+      "id": "database:telemetry_progression_source_v9",
+      "kind": "database_table",
+      "locator": "telemetry_progression_source_v9",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_character_account_confirmed_controller_identity_or_generation_coverage",
+      "technical_purpose": "Private exact selected-source and independently retained-reference counts/digests, original cursor and immutable generation identity; preparation is not publication",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_generation_identity",
+        "database:telemetry_rollup_state"
+      ]
+    },
+    {
+      "id": "database:telemetry_progression_input_v9",
+      "kind": "database_table",
+      "locator": "telemetry_progression_input_v9",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_character_account_confirmed_controller_identity_or_generation_coverage",
+      "technical_purpose": "Private immutable selected activity, lifecycle, XP, ownership and context/configuration inputs with original occurrence/arrival clocks and exact source configuration",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_progression_source_v9"
+      ]
+    },
+    {
+      "id": "database:telemetry_progression_reference_v9",
+      "kind": "database_table",
+      "locator": "telemetry_progression_reference_v9",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_character_account_confirmed_controller_identity_or_generation_coverage",
+      "technical_purpose": "Private original source/ownership/configuration references requested by selected context; independent receipt retention never fabricates or advances the selected cursor",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_progression_source_v9"
+      ]
+    },
+    {
+      "id": "database:telemetry_rollup_progression_coverage_v9",
+      "kind": "database_table",
+      "locator": "telemetry_rollup_progression_coverage_v9",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_character_account_confirmed_controller_identity_or_generation_coverage",
+      "technical_purpose": "Immutable public progression source/reference and output-snapshot coverage tied to reserved dated identity and independent incident schema 8; uncertainty and unfinished milestones remain explicit",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_progression_source_v9"
+      ]
+    },
+    {
+      "id": "database:telemetry_rollup_progression_row_v9",
+      "kind": "database_table",
+      "locator": "telemetry_rollup_progression_row_v9",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_character_account_confirmed_controller_identity_or_generation_coverage",
+      "technical_purpose": "Bounded canonical public point context, milestone censoring, rotation/overlap, summed/covered effort and comparable observed XP cells; no reward/save authority, human census, causal advantage or universal progression score",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_rollup_progression_coverage_v9"
+      ]
     }
   ]
 }

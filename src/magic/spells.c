@@ -3071,6 +3071,7 @@ static void apply_rested_bonus(P_char ch, P_char victim, bool staff_override)
 
 	if ((afp = get_spell_from_char(victim, TAG_WELLRESTED)) != NULL)
 	{
+		telemetry_runtime_game_progression_changed(victim);
 		if (staff_override)
 			afp->flags |= AFFTYPE_CUSTOM1;
 		afp->duration = 150;
@@ -3081,6 +3082,7 @@ static void apply_rested_bonus(P_char ch, P_char victim, bool staff_override)
 
 	if ((afp = get_spell_from_char(victim, TAG_RESTED)) != NULL)
 	{
+		telemetry_runtime_game_progression_changed(victim);
 		if (staff_override)
 			afp->flags |= AFFTYPE_CUSTOM1;
 		afp->duration = 150;

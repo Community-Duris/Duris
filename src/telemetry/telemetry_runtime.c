@@ -20,6 +20,7 @@
 #include "telemetry/telemetry_transport_private.h"
 #include "core/defines.h"
 #include "magic/spells.h"
+#include "world/difficulty.h"
 #include "sql/sql_telemetry_account_identity.h"
 
 extern P_char get_linked_char(P_char ch, ush_int type);
@@ -29,6 +30,7 @@ extern P_char get_linked_char(P_char ch, ush_int type);
 
 #include <algorithm>
 #include <atomic>
+#include <bit>
 #include <chrono>
 #include <condition_variable>
 #include <cstddef>
@@ -56,6 +58,13 @@ extern P_char find_character_by_runtime_id(std::uint64_t) __attribute__((weak));
  * the strong game implementation; an absent weak symbol makes bootstrap fail
  * closed instead of manufacturing an effective value. */
 extern float get_property(const char *, double) __attribute__((weak));
+extern int get_property(const char *, int) __attribute__((weak));
+extern long new_exp_table[TOTALLVLS] __attribute__((weak));
+extern long global_exp_limit __attribute__((weak));
+extern float exp_mods[EXPMOD_MAX + 1] __attribute__((weak));
+extern float racial_exp_mods[LAST_RACE + 1] __attribute__((weak));
+extern float racial_exp_mod_victims[LAST_RACE + 1] __attribute__((weak));
+extern double difficulty_multiplier(difficulty_dial) __attribute__((weak));
 
 namespace
 {
@@ -280,7 +289,43 @@ struct battle_result_capture_state
 	std::size_t occupied = 0U;
 	telemetry_quality_mask quality_flags = TELEMETRY_QUALITY_NONE;
 };
+
+/* One cold inventory, never an event-time property hash or an unbounded cache.
+ * Rejected admissions retry the same value with a fresh raw key. A new effective
+ * configuration cuts the old incomplete inventory rather than mixing chunks. */
+struct progression_configuration_capture_state
+{
+	telemetry_progression_configuration_snapshot snapshot{};
+	telemetry_progression_configuration_observation basis{};
+	telemetry_config_id attempted_config_id = 0U;
+	telemetry_config_revision prepared_revision = 0U;
+	telemetry_sequence next_sequence = 1U;
+	std::uint16_t next_chunk = 0U;
+	bool available = false;
+	bool complete = false;
+};
+
+static_assert(sizeof(progression_configuration_capture_state) <= 8U * 1024U);
 static_assert(sizeof(battle_result_capture_state) <= 256U * 1024U);
+
+/* Value-only span evidence, indexed by the existing bounded session slots.
+ * It is never copied through handoff or used to write gameplay state. */
+struct progression_span_capture
+{
+	std::uint64_t runtime_id = 0U;
+	telemetry_session_ref session{};
+	telemetry_connection_id connection{};
+	telemetry_progression_context_snapshot context{};
+	telemetry_record_key ownership{};
+	telemetry_id account_token = 0U;
+	telemetry_monotonic_usec anchor = 0U;
+	telemetry_utc_usec anchor_utc = TELEMETRY_UTC_UNKNOWN;
+	bool observed = false;
+	bool continuous = false;
+	bool dirty = false;
+};
+
+static_assert(sizeof(progression_span_capture) <= 512U);
 
 struct runtime_state
 {
@@ -314,6 +359,9 @@ struct runtime_state
 	telemetry_session_state session{};
 	telemetry_activity_state activity{};
 	telemetry_progression_state progression{};
+	progression_configuration_capture_state progression_configuration{};
+	telemetry_record last_progression_lifecycle{};
+	progression_span_capture progression_spans[TELEMETRY_SESSION_STATE_MAX_SLOTS]{};
 	telemetry_encounter_state encounter{};
 	telemetry_combat_summary_state combat_summary{};
 	telemetry_battle_state battle{};
@@ -336,6 +384,14 @@ struct runtime_state
 };
 
 runtime_state R;
+telemetry_capture_result game_progression_baseline(const char_data *,
+						   const descriptor_data *) noexcept;
+telemetry_capture_result game_progression_lifecycle_cut(const char_data *,
+							const telemetry_session_exit &) noexcept;
+void game_progression_interval(const telemetry_record &) noexcept;
+void game_progression_span_refresh(const char_data *, const telemetry_session_ref &,
+				   const telemetry_connection_id &, telemetry_monotonic_usec,
+				   telemetry_utc_usec) noexcept;
 // Process-lifetime ledger, deliberately NOT reset by final_reap. Reject rather
 // than evict an old identity or restart its attempted record sequence at one.
 telemetry_producer_id used_producers[256]{};
@@ -471,7 +527,8 @@ bool environment_enabled(bool *enabled) noexcept
 
 bool production_property_reader(void *, const char *key, float *value) noexcept
 {
-	if (key == nullptr || value == nullptr || get_property == nullptr)
+	if (key == nullptr || value == nullptr ||
+	    static_cast<float (*)(const char *, double)>(get_property) == nullptr)
 		return false;
 	std::size_t count = 0U;
 	const telemetry_config_property_definition *registry =
@@ -809,8 +866,109 @@ bool enqueue_record(void *, const telemetry_record *record) noexcept
 			      result.admission ==
 				      telemetry_queue_admission::accepted_control_reserve;
 	if (accepted)
+	{
+		if (record->header.kind == telemetry_record_kind::session_lifecycle)
+			R.last_progression_lifecycle = *record;
+		if (record->header.kind == telemetry_record_kind::interval)
+			game_progression_interval(*record);
 		wake_worker();
+	}
 	return accepted;
+}
+
+void drain_progression_configuration(std::uint16_t max_chunks) noexcept
+{
+	auto &state = R.progression_configuration;
+	if (!state.available || state.complete || !R.config_available ||
+	    state.attempted_config_id != R.config.config_id)
+		return;
+	for (std::uint16_t attempt = 0U;
+	     attempt < max_chunks && state.next_chunk < state.basis.chunk_count; ++attempt)
+	{
+		telemetry_record record{};
+		record.header.schema_version = TELEMETRY_SCHEMA_VERSION;
+		record.header.kind = telemetry_record_kind::progression_configuration;
+		record.header.occurrence_utc_usec = state.basis.at_utc_usec;
+		if (!allocate_record_key(nullptr, record.header.kind, &record.header.key))
+			return;
+		if (state.next_chunk == 0U)
+			state.basis.root_record_seq = record.header.key.record_seq;
+		auto &value = record.payload.progression_configuration;
+		value = state.basis;
+		value.chunk_index = state.next_chunk;
+		const auto first =
+			state.next_chunk * TELEMETRY_PROGRESSION_CONFIGURATION_CHUNK_VALUES;
+		value.value_count = static_cast<std::uint16_t>(
+			std::min(TELEMETRY_PROGRESSION_CONFIGURATION_CHUNK_VALUES,
+				 TELEMETRY_PROGRESSION_CONFIGURATION_VALUES - first));
+		for (std::size_t index = 0U; index < value.value_count; ++index)
+		{
+			const auto &source = state.snapshot.values[first + index];
+			value.value_ids[index] = source.id;
+			value.value_kinds[index] = source.kind;
+			value.value_bits[index] = source.bits;
+		}
+		if (!enqueue_record(nullptr, &record))
+			return;
+		++state.next_chunk;
+	}
+	state.complete = state.next_chunk == state.basis.chunk_count;
+}
+
+void bind_progression_configuration(const telemetry_config_snapshot &visible) noexcept
+{
+	auto &state = R.progression_configuration;
+	const auto &basis = state.basis;
+	if (!R.config_available || state.available || !basis.sequence ||
+	    visible.revision != state.prepared_revision ||
+	    visible.build_version != basis.build_version ||
+	    visible.content_version != basis.content_version ||
+	    visible.classifier_version != basis.classifier_version ||
+	    visible.policy_version != basis.policy_version ||
+	    visible.environment_id != basis.environment_id || visible.season_id != basis.season_id)
+		return;
+	state.attempted_config_id = state.snapshot.config_id = state.basis.config_id =
+		visible.config_id;
+	state.available = true;
+	drain_progression_configuration(basis.chunk_count);
+}
+
+void prepare_progression_configuration(telemetry_config_revision revision) noexcept
+{
+	auto &state = R.progression_configuration;
+	if (!R.initialized || !R.enabled)
+		return;
+	const auto next = state.next_sequence;
+	state = {};
+	state.next_sequence = next;
+	state.prepared_revision = revision;
+	std::uint8_t digest[32]{};
+	if (!next || !telemetry_runtime_game_progression_configuration(&state.snapshot) ||
+	    !telemetry_progression_configuration_digest(state.snapshot, digest, sizeof(digest)))
+		return;
+	auto &basis = state.basis;
+	if (!production_clock_now(nullptr, &basis.at_monotonic_usec, &basis.at_utc_usec))
+		return;
+	basis.producer = R.producer;
+	basis.sequence = next;
+	state.next_sequence = next == std::numeric_limits<telemetry_sequence>::max() ? 0U :
+										       next + 1U;
+	basis.environment_id = R.config.environment_id;
+	basis.season_id = R.config.season_id;
+	basis.build_version = state.snapshot.build_version;
+	basis.content_version = state.snapshot.content_version;
+	basis.classifier_version = state.snapshot.classifier_version;
+	basis.policy_version = state.snapshot.policy_version;
+	basis.version = state.snapshot.version;
+	basis.source_inventory_version = state.snapshot.source_inventory_version;
+	basis.total_values = state.snapshot.count;
+	basis.chunk_count = static_cast<std::uint16_t>(
+		(basis.total_values + TELEMETRY_PROGRESSION_CONFIGURATION_CHUNK_VALUES - 1U) /
+		TELEMETRY_PROGRESSION_CONFIGURATION_CHUNK_VALUES);
+	for (std::size_t word = 0U; word < 4U; ++word)
+		for (std::size_t byte = 0U; byte < 8U; ++byte)
+			basis.digest_words[word] = (basis.digest_words[word] << 8U) |
+						   digest[word * 8U + byte];
 }
 
 telemetry_transport_config transport_config_for(const telemetry_config_snapshot &config) noexcept
@@ -1467,6 +1625,7 @@ void merge_capture(telemetry_capture_result &target,
 		   const telemetry_capture_result &source) noexcept
 {
 	const bool target_empty = target.records_emitted == 0U && target.records_dropped == 0U &&
+				  target.quality_flags == TELEMETRY_QUALITY_NONE &&
 				  target.first_record.record_seq == 0U &&
 				  target.last_record.record_seq == 0U;
 	if (target_empty)
@@ -1516,6 +1675,7 @@ bool adopt_visible_config(const telemetry_config_snapshot &visible) noexcept
 		return false;
 	R.config = visible;
 	R.config_available = true;
+	bind_progression_configuration(visible); // Only value copies/admission; no event hash.
 	if (!publish_activity_config(visible))
 		return false;
 	return telemetry_activity_state_config_is_admitted(&R.activity, visible.config_id) &&
@@ -1624,6 +1784,12 @@ void reload_observer(void *context) noexcept
 	telemetry_utc_usec reload_utc = TELEMETRY_UTC_UNKNOWN;
 	const bool has_reload_clock = production_clock_now(nullptr, &reload_at, &reload_utc);
 	telemetry_config_state *state = static_cast<telemetry_config_state *>(context);
+	/* The notification runs after actual XP consumers update. Capture once
+	 * here, even if config admission is delayed; hot adoption only binds the
+	 * exact expected revision and matching metadata to these frozen values. */
+	if (state &&
+	    state->highest_revision < std::numeric_limits<telemetry_config_revision>::max())
+		prepare_progression_configuration(state->highest_revision + 1U);
 	telemetry_config_reload_observer(state);
 	/* R.config is an admitted effective snapshot, never a fallback for a
 	 * post-reload capture.  Keep session scope separately so detach/exit/
@@ -1631,6 +1797,8 @@ void reload_observer(void *context) noexcept
 	 * honestly unavailable. */
 	R.config = {};
 	R.config_available = false;
+	R.progression_configuration.available = false;
+	R.progression_configuration.complete = false;
 	R.reload_revision = 0U;
 	if (!capture_reloaded_config(state) && has_reload_clock)
 		suspend_battle_capture(reload_at, reload_utc);
@@ -2092,6 +2260,10 @@ telemetry_runtime_outcome telemetry_runtime_init(telemetry_runtime_options optio
 	R.next_session_sequence = 1U;
 	R.next_encounter_sequence = 1U;
 	R.next_group_sequence = 1U;
+	R.progression_configuration = {};
+	R.last_progression_lifecycle = {};
+	std::fill(std::begin(R.progression_spans), std::end(R.progression_spans),
+		  progression_span_capture{});
 	R.battle = {};
 	R.battle_contribution = {};
 	R.control = {};
@@ -2201,9 +2373,16 @@ telemetry_runtime_outcome telemetry_runtime_init(telemetry_runtime_options optio
 
 	R.initialized = true;
 	(void)telemetry_config_reload_register(reload_observer, telemetry_config_global_state());
+	/* Bootstrap may retain the effective config in its pending FIFO until the
+	 * worker qualifies. Its native XP values are still captured once here. */
+	if (R.enabled)
+		prepare_progression_configuration(R.config.revision);
 	const telemetry_capture_result published = telemetry_config_publish(R.config);
 	if (R.enabled && published.outcome == telemetry_runtime_outcome::accepted)
+	{
 		(void)adopt_visible_config(telemetry_config_snapshot_copy());
+		bind_progression_configuration(R.config);
+	}
 
 	if (R.enabled)
 	{
@@ -2482,6 +2661,7 @@ telemetry_pulse_result telemetry_runtime_pulse(telemetry_pulse_request pulse)
 		result.quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
 		return result;
 	}
+	drain_progression_configuration(1U); // One fixed packet per pulse retry; no hash.
 
 	telemetry_counter_update deltas[TELEMETRY_ACTIVITY_STATE_MAX_SLOTS]{};
 	telemetry_activity_pulse_request request{};
@@ -2646,6 +2826,9 @@ telemetry_runtime_outcome telemetry_runtime_final_reap(void)
 	telemetry_combat_summary_state_init(&R.combat_summary);
 	R.initialized = false;
 	R.clock_bound = false;
+	R.progression_configuration = {};
+	std::fill(std::begin(R.progression_spans), std::end(R.progression_spans),
+		  progression_span_capture{});
 	R.battle = {};
 	R.battle_contribution = {};
 	R.control = {};
@@ -3694,7 +3877,10 @@ void telemetry_runtime_game_group_changed(struct group_list *group) noexcept
 	for (auto *member = group; member != nullptr && visited < GAME_GROUP_MAX_NODES;
 	     member = member->next, ++visited)
 		if (member->ch != nullptr)
+		{
+			telemetry_runtime_game_progression_changed(member->ch);
 			(void)telemetry_runtime_game_battle_context(member->ch);
+		}
 }
 
 bool telemetry_runtime_game_battle_actor(const struct char_data *character,
@@ -4369,6 +4555,7 @@ void telemetry_runtime_game_battle_build_changed(const char_data *character) noe
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending || !character)
 		return;
+	telemetry_runtime_game_progression_changed(character);
 	for (auto &entry : R.battle_build.entries)
 		if (entry.character == character && entry.runtime_id == character->runtime_id)
 			entry.dirty = true;
@@ -4494,7 +4681,10 @@ telemetry_capture_result telemetry_runtime_game_enter(struct char_data *characte
 		game_clear_session(character);
 	}
 	else
+	{
 		merge_capture(result, game_observe_ownership(character, descriptor));
+		merge_capture(result, game_progression_baseline(character, descriptor));
+	}
 	return result;
 }
 
@@ -4515,7 +4705,47 @@ telemetry_capture_result telemetry_runtime_game_presence(struct char_data *chara
 		if (!game_session_ref(character, &session) ||
 		    !game_connection_id(descriptor, &connection))
 			return game_capture_invalid();
-		return game_observe_ownership(character, descriptor);
+		auto result = game_observe_ownership(character, descriptor);
+		for (std::size_t index = 0U; index < R.session.max_slots; ++index)
+		{
+			const auto &span = R.progression_spans[index];
+			if (!session_equal(R.session.slots[index].session, session))
+				continue;
+			bool build_changed =
+				span.context.current_level != character->player.level ||
+				span.context.primary_class_mask != character->player.m_class ||
+				span.context.secondary_class_mask !=
+					character->player.secondary_class ||
+				span.context.specialization != character->player.spec ||
+				span.context.race != character->player.race ||
+				span.context.faction != character->player.racewar ||
+				bool(span.context.flags & TELEMETRY_PCTX_ALIVE) !=
+					bool(IS_ALIVE(character));
+			for (std::size_t stat = 0U; stat < TELEMETRY_PROGRESSION_CONTEXT_STATS;
+			     ++stat)
+				build_changed = build_changed ||
+						span.context.base_stats[stat] !=
+							character->base_stats[stat] ||
+						span.context.effective_stats[stat] !=
+							character->curr_stats[stat];
+			if (!span.observed || span.dirty || build_changed ||
+			    span.context.config_id != R.config.config_id ||
+			    (R.progression_configuration.complete &&
+			     span.context.configuration_record_seq !=
+				     R.progression_configuration.basis.root_record_seq) ||
+			    span.connection.connection_seq != connection.connection_seq ||
+			    span.ownership.record_seq !=
+				    R.session.slots[index].ownership_last_record.record_seq)
+			{
+				telemetry_monotonic_usec at = 0U;
+				telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+				if (game_time(&at, &utc))
+					game_progression_span_refresh(character, session,
+								      connection, at, utc);
+			}
+			break;
+		}
+		return result;
 	}
 	telemetry_capture_result result{};
 	if (descriptor->telemetry_resume_pending != 0U)
@@ -4646,6 +4876,7 @@ telemetry_runtime_game_session_resume(struct char_data *character,
 		game_clear_pending_resume(descriptor);
 		merge_capture(result, game_observe_ownership(character, descriptor,
 							     telemetry_ownership_source::copyover));
+		merge_capture(result, game_progression_baseline(character, descriptor));
 		return result;
 	}
 	game_clear_connection(descriptor);
@@ -4690,8 +4921,11 @@ telemetry_capture_result telemetry_runtime_game_context(struct char_data *charac
 	update.config_id = R.config.config_id;
 	update.classifier_version = R.config.classifier_version;
 	update.policy_version = R.config.policy_version;
+	game_progression_span_refresh(character, update.session, update.connection,
+				      update.at_monotonic_usec, update.at_utc_usec);
 	telemetry_capture_result result = telemetry_runtime_update_context(update);
 	merge_capture(result, game_observe_ownership(character, descriptor));
+	merge_capture(result, game_progression_baseline(character, descriptor));
 	merge_capture(result, telemetry_runtime_game_encounter_observe(character));
 	merge_capture(result, telemetry_runtime_game_battle_context(character));
 	if ((character->specials.act & PLR_AFK) != 0U)
@@ -4773,6 +5007,7 @@ telemetry_capture_result telemetry_runtime_game_session_exit(struct char_data *c
 		game_battle_leave_at(character, exit.at_monotonic_usec, exit.at_utc_usec);
 	merge_capture(result, battle_capture_from_update({}, outcome_emitter));
 	merge_capture(result, telemetry_runtime_session_exit(exit));
+	merge_capture(result, game_progression_lifecycle_cut(character, exit));
 	game_clear_connection(descriptor);
 	game_clear_session(character);
 	return result;
@@ -5769,9 +6004,582 @@ void telemetry_runtime_game_combat_context(struct char_data *actor_character) no
 		&R.combat_summary, actor, has_opponent ? &opponent_actor : nullptr, at, modifiers);
 }
 
+bool telemetry_runtime_game_progression_configuration(
+	telemetry_progression_configuration_snapshot *output) noexcept
+{
+	if (!output)
+		return false;
+	*output = {};
+	const auto integer_reader = static_cast<int (*)(const char *, int)>(get_property);
+	const auto float_reader = static_cast<float (*)(const char *, double)>(get_property);
+	if (!R.initialized || !R.enabled || R.shutdown_pending ||
+	    !telemetry_config_snapshot_identity_is_valid(R.config) || !new_exp_table || !exp_mods ||
+	    !racial_exp_mods || !racial_exp_mod_victims || &global_exp_limit == nullptr ||
+	    !difficulty_multiplier || !integer_reader || !float_reader)
+		return false;
+	static_assert(TOTALLVLS == 63 && EXPMOD_MAX == 61 && LAST_RACE == 100);
+	using kind = telemetry_progression_configuration_value_kind;
+	telemetry_progression_configuration_snapshot value{};
+	value.config_id = R.config.config_id;
+	value.build_version = R.config.build_version;
+	value.content_version = R.config.content_version;
+	value.classifier_version = R.config.classifier_version;
+	value.policy_version = R.config.policy_version;
+	value.version = TELEMETRY_PROGRESSION_CONFIGURATION_VERSION;
+	value.source_inventory_version = TELEMETRY_PROGRESSION_SOURCE_INVENTORY_VERSION;
+	auto append = [&value](std::uint16_t id, kind type, std::uint64_t bits) noexcept
+	{
+		auto &entry = value.values[value.count++];
+		entry.id = id;
+		entry.kind = type;
+		entry.bits = bits;
+	};
+	for (std::uint16_t index = 1U; index < TOTALLVLS; ++index)
+		append(index, kind::signed_integer,
+		       static_cast<std::uint64_t>(new_exp_table[index]));
+	for (std::uint16_t index = 0U; index <= EXPMOD_MAX; ++index)
+		append(100U + index, kind::float32_bits,
+		       std::bit_cast<std::uint32_t>(exp_mods[index]));
+	for (std::uint16_t index = 0U; index <= LAST_RACE; ++index)
+		append(200U + index, kind::float32_bits,
+		       std::bit_cast<std::uint32_t>(racial_exp_mods[index]));
+	for (std::uint16_t index = 0U; index <= LAST_RACE; ++index)
+		append(400U + index, kind::float32_bits,
+		       std::bit_cast<std::uint32_t>(racial_exp_mod_victims[index]));
+	append(600U, kind::signed_integer, static_cast<std::uint64_t>(global_exp_limit));
+	append(601U, kind::float64_bits,
+	       std::bit_cast<std::uint64_t>(difficulty_multiplier(DIFFICULTY_EXP_REQUIRED)));
+	append(602U, kind::float64_bits,
+	       std::bit_cast<std::uint64_t>(difficulty_multiplier(DIFFICULTY_EXP_EARNED)));
+	append(603U, kind::float64_bits,
+	       std::bit_cast<std::uint64_t>(difficulty_multiplier(DIFFICULTY_DEATH_PENALTY)));
+	append(604U, kind::signed_integer,
+	       static_cast<std::uint64_t>(integer_reader("exp.level.cap.good", 15)));
+	append(605U, kind::signed_integer,
+	       static_cast<std::uint64_t>(integer_reader("exp.level.cap.evil", 15)));
+	append(606U, kind::signed_integer,
+	       static_cast<std::uint64_t>(integer_reader("exp.maxExpLevel", 46)));
+	append(607U, kind::float32_bits,
+	       std::bit_cast<std::uint32_t>(float_reader("exp.death.level.loss", 0.10)));
+	append(608U, kind::signed_integer,
+	       static_cast<std::uint64_t>(integer_reader("exp.rested.enabled", 1)));
+	append(609U, kind::signed_integer,
+	       static_cast<std::uint64_t>(integer_reader("exp.zoneTrophy.observe", 0)));
+	append(610U, kind::signed_integer,
+	       static_cast<std::uint64_t>(
+		       integer_reader("exp.goodieDeathExpLossLevelThreshold", 20)));
+	if (!telemetry_progression_configuration_is_valid(value))
+		return false;
+	*output = value;
+	return true;
+}
+
+bool telemetry_runtime_game_progression_context(
+	const struct char_data *character, telemetry_progression_context_snapshot *output) noexcept
+{
+	if (output == nullptr)
+		return false;
+	*output = {};
+	if (character == nullptr || !IS_PC(character) || character->only.pc == nullptr ||
+	    character->only.pc->pid <= 0 || character->player.level == 0U || !R.initialized ||
+	    !R.enabled || R.shutdown_pending || !ensure_current_config())
+		return false;
+	telemetry_progression_context_snapshot v{};
+	v.version = TELEMETRY_PROGRESSION_CONTEXT_VERSION;
+	v.config_id = R.config.config_id;
+	v.build_version = R.config.build_version;
+	v.content_version = R.config.content_version;
+	v.classifier_version = R.config.classifier_version;
+	v.policy_version = R.config.policy_version;
+	v.current_exp = GET_EXP(character);
+	v.current_level = character->player.level;
+	v.primary_class_mask = character->player.m_class;
+	v.secondary_class_mask = character->player.secondary_class;
+	v.specialization = character->player.spec;
+	v.race = character->player.race;
+	v.faction = character->player.racewar;
+	v.flags = TELEMETRY_PCTX_BUILD_KNOWN;
+	const auto &catalog = R.progression_configuration;
+	if (catalog.complete && catalog.attempted_config_id == v.config_id)
+	{
+		v.configuration_record_seq = catalog.basis.root_record_seq;
+		std::copy(std::begin(catalog.basis.digest_words),
+			  std::end(catalog.basis.digest_words),
+			  std::begin(v.configuration_digest_words));
+		v.flags |= TELEMETRY_PCTX_CONFIG_CATALOG_KNOWN;
+	}
+	else
+		v.quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+	if (IS_ALIVE(character))
+		v.flags |= TELEMETRY_PCTX_ALIVE;
+	for (std::size_t index = 0U; index < TELEMETRY_PROGRESSION_CONTEXT_STATS; ++index)
+	{
+		v.base_stats[index] = character->base_stats[index];
+		v.effective_stats[index] = character->curr_stats[index];
+	}
+	if (game_group_size(character, &v.formal_group_size))
+		v.flags |= TELEMETRY_PCTX_GROUP_ROSTER_KNOWN;
+	else
+	{
+		v.formal_group_size = 0U;
+		v.quality_flags |= TELEMETRY_QUALITY_DIMENSION_UNKNOWN;
+	}
+	const unsigned threshold_level = static_cast<unsigned>(v.current_level) + 1U;
+	if (new_exp_table != nullptr && threshold_level < TOTALLVLS &&
+	    new_exp_table[threshold_level] > 0)
+	{
+		v.threshold_level = static_cast<std::uint16_t>(threshold_level);
+		v.next_threshold_xp = static_cast<std::uint64_t>(new_exp_table[threshold_level]);
+		v.threshold_catalog_version = 1U;
+		v.flags |= TELEMETRY_PCTX_THRESHOLD_KNOWN;
+	}
+	else
+		v.quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+	const auto property_reader = static_cast<int (*)(const char *, int)>(get_property);
+	const bool automatic = property_reader != nullptr &&
+			       property_reader("exp.rested.enabled", 1) != 0;
+	if (automatic)
+		v.flags |= TELEMETRY_PCTX_AUTOMATIC_RESTED;
+	const affected_type *visited[TELEMETRY_PROGRESSION_CONTEXT_MAX_AFFECTS]{};
+	std::size_t count = 0U;
+	const auto *affect = character->affected;
+	for (; affect != nullptr && count < TELEMETRY_PROGRESSION_CONTEXT_MAX_AFFECTS;
+	     affect = affect->next)
+	{
+		bool repeated = false;
+		for (std::size_t index = 0U; index < count; ++index)
+			if (visited[index] == affect)
+				repeated = true;
+		if (repeated)
+			break;
+		visited[count++] = affect;
+		/* These two tag types are not managed spell wards. The actual lookup
+		 * gates their staff override on AFFTYPE_CUSTOM1 and IS_ALIVE, but
+		 * does not filter duration or AFFTYPE_NOAPPLY. Preserve those rules. */
+		if (affect->type == TAG_RESTED)
+		{
+			v.flags |= TELEMETRY_PCTX_RESTED_PRESENT;
+			if (affect->flags & AFFTYPE_CUSTOM1)
+				v.flags |= TELEMETRY_PCTX_RESTED_STAFF;
+		}
+		else if (affect->type == TAG_WELLRESTED)
+		{
+			v.flags |= TELEMETRY_PCTX_WELLRESTED_PRESENT;
+			if (affect->flags & AFFTYPE_CUSTOM1)
+				v.flags |= TELEMETRY_PCTX_WELLRESTED_STAFF;
+		}
+	}
+	if (affect == nullptr)
+	{
+		v.flags |= TELEMETRY_PCTX_AFFECTS_COMPLETE;
+		if (property_reader != nullptr)
+		{
+			v.flags |= TELEMETRY_PCTX_SELECTION_KNOWN;
+			const bool alive = v.flags & TELEMETRY_PCTX_ALIVE;
+			const bool well = (v.flags & TELEMETRY_PCTX_WELLRESTED_PRESENT) &&
+					  (automatic ||
+					   (alive && (v.flags & TELEMETRY_PCTX_WELLRESTED_STAFF)));
+			const bool rested =
+				(v.flags & TELEMETRY_PCTX_RESTED_PRESENT) &&
+				(automatic || (alive && (v.flags & TELEMETRY_PCTX_RESTED_STAFF)));
+			v.rested_selection =
+				well   ? telemetry_progression_rested_selection::wellrested :
+				rested ? telemetry_progression_rested_selection::rested :
+					 telemetry_progression_rested_selection::none;
+		}
+	}
+	else
+		v.quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN |
+				   TELEMETRY_QUALITY_CONTEXT_OVERFLOW;
+	if (property_reader == nullptr)
+		v.quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+	if (!telemetry_progression_context_snapshot_is_valid(v))
+		return false;
+	*output = v;
+	return true;
+}
+
+namespace
+{
+bool progression_connection_equal(const telemetry_connection_id &a,
+				  const telemetry_connection_id &b) noexcept
+{
+	return a.producer.boot_id == b.producer.boot_id &&
+	       a.producer.process_id == b.producer.process_id &&
+	       a.connection_seq == b.connection_seq;
+}
+
+bool progression_span_context_equal(const telemetry_progression_context_snapshot &a,
+				    const telemetry_progression_context_snapshot &b) noexcept
+{
+	/* XP is a point observation. It does not define a duration stratum. */
+	return a.config_id == b.config_id &&
+	       a.configuration_record_seq == b.configuration_record_seq &&
+	       std::equal(std::begin(a.configuration_digest_words),
+			  std::end(a.configuration_digest_words),
+			  std::begin(b.configuration_digest_words)) &&
+	       a.build_version == b.build_version && a.content_version == b.content_version &&
+	       a.classifier_version == b.classifier_version &&
+	       a.policy_version == b.policy_version && a.flags == b.flags &&
+	       a.quality_flags == b.quality_flags && a.current_level == b.current_level &&
+	       a.next_threshold_xp == b.next_threshold_xp &&
+	       a.threshold_level == b.threshold_level &&
+	       a.threshold_catalog_version == b.threshold_catalog_version &&
+	       a.primary_class_mask == b.primary_class_mask &&
+	       a.secondary_class_mask == b.secondary_class_mask &&
+	       a.specialization == b.specialization && a.race == b.race && a.faction == b.faction &&
+	       a.formal_group_size == b.formal_group_size &&
+	       a.rested_selection == b.rested_selection &&
+	       std::equal(std::begin(a.base_stats), std::end(a.base_stats),
+			  std::begin(b.base_stats)) &&
+	       std::equal(std::begin(a.effective_stats), std::end(a.effective_stats),
+			  std::begin(b.effective_stats));
+}
+
+void game_progression_span_refresh(const char_data *character, const telemetry_session_ref &session,
+				   const telemetry_connection_id &connection,
+				   telemetry_monotonic_usec at, telemetry_utc_usec utc) noexcept
+{
+	telemetry_progression_context_snapshot observed{};
+	if (!telemetry_runtime_game_progression_context(character, &observed))
+		return;
+	for (std::size_t index = 0U; index < R.session.max_slots; ++index)
+	{
+		const auto &slot = R.session.slots[index];
+		if (slot.lifecycle != telemetry_session_slot_lifecycle::resident ||
+		    !session_equal(slot.session, session))
+			continue;
+		auto &span = R.progression_spans[index];
+		const bool owner_known =
+			slot.ownership_has_sample && !slot.ownership_pending_count &&
+			!slot.ownership_needs_anchor && !slot.ownership_overflow &&
+			!(slot.quality_flags & TELEMETRY_QUALITY_CLOCK_DISCONTINUITY) &&
+			slot.ownership_last_record_monotonic_usec <= at &&
+			slot.ownership_last_record_account_token != 0U &&
+			slot.ownership_last_sample.account_token ==
+				slot.ownership_last_record_account_token;
+		const bool same = span.observed && session_equal(span.session, session) &&
+				  progression_connection_equal(span.connection, connection) &&
+				  progression_span_context_equal(span.context, observed) &&
+				  span.ownership.record_seq ==
+					  slot.ownership_last_record.record_seq &&
+				  span.account_token == slot.ownership_last_record_account_token;
+		if (same && !span.dirty)
+			return;
+		/* An after-mutation observation cannot retrospectively qualify the
+		 * preceding interval. Seal it before replacing the value snapshot. */
+		if (!same)
+			span.continuous = false;
+		(void)capture_with_delta(
+			telemetry_activity_state_flush_at(&R.activity, session, at, utc));
+		span = {};
+		span.runtime_id = character->runtime_id;
+		span.session = session;
+		span.connection = connection;
+		span.context = observed;
+		span.ownership = slot.ownership_last_record;
+		span.account_token = slot.ownership_last_record_account_token;
+		span.anchor = at;
+		span.anchor_utc = utc;
+		span.observed = true;
+		span.continuous = owner_known && observed.quality_flags == TELEMETRY_QUALITY_NONE &&
+				  (observed.flags & TELEMETRY_PCTX_ALIVE) &&
+				  utc != TELEMETRY_UTC_UNKNOWN && character->desc &&
+				  character->desc->connected == CON_PLAYING;
+		return;
+	}
+}
+
+void game_progression_interval(const telemetry_record &source) noexcept
+{
+	const auto &interval = source.payload.interval;
+	if (interval.category == telemetry_interval_category::resident_linkdead)
+		return;
+	for (std::size_t index = 0U; index < R.session.max_slots; ++index)
+	{
+		const auto &slot = R.session.slots[index];
+		const auto &span = R.progression_spans[index];
+		if (!span.observed || !session_equal(slot.session, interval.session) ||
+		    !session_equal(span.session, interval.session) ||
+		    span.context.config_id != interval.config_id ||
+		    span.context.classifier_version != interval.classifier_version ||
+		    span.context.policy_version != interval.policy_version)
+			continue;
+		telemetry_record record{};
+		record.header.kind = telemetry_record_kind::progression_context;
+		record.header.schema_version = TELEMETRY_SCHEMA_VERSION;
+		record.header.occurrence_utc_usec = interval.window.end_utc_usec;
+		if (!allocate_record_key(nullptr, record.header.kind, &record.header.key))
+			return;
+		auto &v = record.payload.progression_context;
+		v.producer = R.producer;
+		v.sequence = record.header.key.record_seq;
+		v.session = interval.session;
+		v.connection = interval.connection;
+		v.source_record = source.header.key;
+		v.source_kind = telemetry_record_kind::interval;
+		v.boundary = telemetry_progression_context_boundary::exposure;
+		v.start_monotonic_usec = interval.window.start_monotonic_usec;
+		v.at_monotonic_usec = interval.window.end_monotonic_usec;
+		v.start_utc_usec = interval.window.start_utc_usec;
+		v.at_utc_usec = interval.window.end_utc_usec;
+		v.starting_level = slot.progression_starting_level;
+		v.source_inventory_version = TELEMETRY_PROGRESSION_SOURCE_INVENTORY_VERSION;
+		v.context = span.context;
+		const bool owner_known =
+			slot.ownership_has_sample && !slot.ownership_pending_count &&
+			!slot.ownership_needs_anchor && !slot.ownership_overflow &&
+			!(slot.quality_flags & TELEMETRY_QUALITY_CLOCK_DISCONTINUITY) &&
+			slot.ownership_last_record_monotonic_usec <= v.at_monotonic_usec &&
+			progression_connection_equal(slot.ownership_last_sample.connection,
+						     interval.connection) &&
+			slot.ownership_last_sample.account_token ==
+				slot.ownership_last_record_account_token;
+		if (owner_known)
+		{
+			v.ownership_record = slot.ownership_last_record;
+			v.account_token = slot.ownership_last_record_account_token;
+		}
+		/* Events run after descriptor presence reads and before interval
+		 * delivery. Recheck the live actor by value at this boundary so a
+		 * legacy field writer cannot publish a stale positive span. Mutation
+		 * markers independently reject mutate-and-restore sequences. */
+		const auto *live = span.runtime_id && find_character_by_runtime_id ?
+					   find_character_by_runtime_id(span.runtime_id) :
+					   nullptr;
+		telemetry_progression_context_snapshot current{};
+		telemetry_session_ref current_session{};
+		telemetry_connection_id current_connection{};
+		bool live_matches =
+			live && live->runtime_id == span.runtime_id &&
+			game_session_ref(live, &current_session) &&
+			session_equal(current_session, interval.session) && live->desc &&
+			live->desc->connected == CON_PLAYING &&
+			game_connection_id(live->desc, &current_connection) &&
+			progression_connection_equal(current_connection, interval.connection) &&
+			telemetry_runtime_game_progression_context(live, &current) &&
+			progression_span_context_equal(span.context, current);
+		const auto *account = live_matches ? live->desc->account : nullptr;
+		live_matches =
+			live_matches && account && !account->acct_blocked &&
+			account->telemetry_account_token == v.account_token && v.account_token &&
+			account->telemetry_environment_id == interval.session.environment_id &&
+			account->telemetry_season_id == interval.session.season_id;
+		unsigned matches = 0U, inspected = 0U;
+		const auto *member = live_matches ? account->acct_character_list : nullptr;
+		for (; member && inspected < MAX_CHARS_PER_ACCOUNT;
+		     member = member->next, ++inspected)
+			matches += member->pid == interval.session.pid && !member->blocked;
+		live_matches = live_matches && !member && matches == 1U;
+		if (!live_matches && span.continuous)
+		{
+			R.progression_spans[index].continuous = false;
+			R.progression_spans[index].dirty = true;
+		}
+		const bool continuous =
+			span.continuous && live_matches && owner_known && v.account_token &&
+			progression_connection_equal(span.connection, interval.connection) &&
+			interval.category != telemetry_interval_category::resident_linkdead &&
+			v.start_monotonic_usec >= span.anchor &&
+			v.start_utc_usec != TELEMETRY_UTC_UNKNOWN &&
+			v.at_utc_usec != TELEMETRY_UTC_UNKNOWN && span.anchor_utc >= 0 &&
+			v.start_utc_usec >= span.anchor_utc &&
+			static_cast<telemetry_monotonic_usec>(v.start_utc_usec - span.anchor_utc) ==
+				v.start_monotonic_usec - span.anchor &&
+			v.at_utc_usec >= v.start_utc_usec &&
+			static_cast<telemetry_duration_usec>(v.at_utc_usec - v.start_utc_usec) ==
+				interval.duration_usec &&
+			span.context.config_id == interval.config_id &&
+			span.context.classifier_version == interval.classifier_version &&
+			span.context.policy_version == interval.policy_version &&
+			span.ownership.record_seq == v.ownership_record.record_seq &&
+			span.account_token == v.account_token &&
+			interval.quality_flags == TELEMETRY_QUALITY_NONE;
+		if (continuous)
+			v.context.flags |= TELEMETRY_PCTX_CONTIGUOUS_EXPOSURE;
+		else
+			v.context.quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+		if (telemetry_record_is_valid(record))
+			(void)enqueue_record(nullptr, &record);
+		return;
+	}
+}
+
+telemetry_capture_result emit_progression_point(
+	const char_data *character, const telemetry_session_ref &session,
+	const telemetry_connection_id &connection, const telemetry_record_key &source,
+	telemetry_progression_context_boundary boundary, telemetry_monotonic_usec at,
+	telemetry_utc_usec utc, const telemetry_progression_context_snapshot *decision) noexcept
+{
+	telemetry_capture_result result{};
+	result.outcome = telemetry_runtime_outcome::accepted;
+	result.admission = telemetry_queue_admission::accepted_detail;
+	telemetry_progression_context_observation value{};
+	if (decision)
+		value.context = *decision;
+	else if (!telemetry_runtime_game_progression_context(character, &value.context))
+		return game_capture_invalid();
+	value.producer = R.producer;
+	value.session = session;
+	value.connection = connection;
+	value.source_record = source;
+	value.source_kind = telemetry_progression_key_zero(source) ?
+				    telemetry_record_kind::invalid :
+			    boundary == telemetry_progression_context_boundary::lifecycle_cut ?
+				    telemetry_record_kind::session_lifecycle :
+				    telemetry_record_kind::progression;
+	value.boundary = boundary;
+	value.start_monotonic_usec = value.at_monotonic_usec = at;
+	value.start_utc_usec = value.at_utc_usec = utc;
+	value.source_inventory_version = TELEMETRY_PROGRESSION_SOURCE_INVENTORY_VERSION;
+	telemetry_session_slot *matched = nullptr;
+	for (std::size_t index = 0U; index < R.session.max_slots; ++index)
+	{
+		auto &slot = R.session.slots[index];
+		if (slot.lifecycle == telemetry_session_slot_lifecycle::empty ||
+		    !session_equal(slot.session, session))
+			continue;
+		matched = &slot;
+		value.starting_level = slot.progression_starting_level;
+		if (character->desc && character->desc->connected == CON_PLAYING &&
+		    slot.ownership_has_sample && !slot.ownership_pending_count &&
+		    !slot.ownership_needs_anchor && !slot.ownership_overflow &&
+		    !(slot.quality_flags & TELEMETRY_QUALITY_CLOCK_DISCONTINUITY) &&
+		    slot.ownership_last_record_monotonic_usec <= at &&
+		    slot.ownership_last_sample.account_token ==
+			    slot.ownership_last_record_account_token &&
+		    slot.ownership_last_record.producer.boot_id == R.producer.boot_id &&
+		    slot.ownership_last_record.producer.process_id == R.producer.process_id &&
+		    telemetry_record_key_is_valid(slot.ownership_last_record) &&
+		    slot.ownership_last_sample.connection.producer.boot_id ==
+			    connection.producer.boot_id &&
+		    slot.ownership_last_sample.connection.producer.process_id ==
+			    connection.producer.process_id &&
+		    slot.ownership_last_sample.connection.connection_seq ==
+			    connection.connection_seq)
+		{
+			value.ownership_record = slot.ownership_last_record;
+			value.account_token = slot.ownership_last_record_account_token;
+		}
+		break;
+	}
+	if (boundary == telemetry_progression_context_boundary::baseline)
+		value.starting_level = value.context.current_level;
+	if (telemetry_progression_key_zero(value.ownership_record))
+		value.context.quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+	telemetry_record record{};
+	record.header.kind = telemetry_record_kind::progression_context;
+	record.header.schema_version = TELEMETRY_SCHEMA_VERSION;
+	record.header.occurrence_utc_usec = utc;
+	if (!allocate_record_key(nullptr, record.header.kind, &record.header.key))
+		return game_capture_invalid();
+	value.sequence = record.header.key.record_seq;
+	record.payload.progression_context = value;
+	result.first_record = result.last_record = record.header.key;
+	result.quality_flags = value.context.quality_flags;
+	if (!enqueue_record(nullptr, &record))
+	{
+		result.records_dropped = 1U;
+		result.outcome = telemetry_runtime_outcome::queue_full;
+		result.admission = telemetry_queue_admission::rejected_detail_full;
+		result.quality_flags |= TELEMETRY_QUALITY_QUEUE_DROP |
+					TELEMETRY_QUALITY_SEQUENCE_GAP;
+	}
+	else
+	{
+		result.records_emitted = 1U;
+		if (matched && boundary == telemetry_progression_context_boundary::baseline)
+			matched->progression_starting_level = value.starting_level;
+	}
+	return result;
+}
+
+telemetry_capture_result game_progression_lifecycle_cut(const char_data *character,
+							const telemetry_session_exit &exit) noexcept
+{
+	telemetry_capture_result result{};
+	result.outcome = telemetry_runtime_outcome::accepted;
+	result.admission = telemetry_queue_admission::accepted_detail;
+	const auto &record = R.last_progression_lifecycle;
+	const auto &source = record.payload.lifecycle;
+	if (!character || !character->only.pc || !character->player.level ||
+	    record.header.kind != telemetry_record_kind::session_lifecycle ||
+	    source.lifecycle != telemetry_lifecycle_kind::session_exited ||
+	    !session_equal(source.session, exit.session) || source.end_reason != exit.reason ||
+	    source.connection.producer.boot_id != exit.connection.producer.boot_id ||
+	    source.connection.producer.process_id != exit.connection.producer.process_id ||
+	    source.connection.connection_seq != exit.connection.connection_seq ||
+	    source.at_monotonic_usec != exit.at_monotonic_usec ||
+	    source.at_utc_usec != exit.at_utc_usec)
+		return result;
+	return emit_progression_point(character, exit.session, exit.connection, record.header.key,
+				      telemetry_progression_context_boundary::lifecycle_cut,
+				      exit.at_monotonic_usec, exit.at_utc_usec, nullptr);
+}
+
+telemetry_capture_result game_progression_baseline(const char_data *character,
+						   const descriptor_data *descriptor) noexcept
+{
+	telemetry_capture_result result{};
+	result.outcome = telemetry_runtime_outcome::accepted;
+	result.admission = telemetry_queue_admission::accepted_detail;
+	telemetry_session_ref session{};
+	telemetry_connection_id connection{};
+	if (!character || !character->player.level)
+	{
+		result.quality_flags |= TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+		return result;
+	}
+	if (!game_session_ref(character, &session) || !game_connection_id(descriptor, &connection))
+		return result;
+	for (std::size_t index = 0U; index < R.session.max_slots; ++index)
+	{
+		const auto &slot = R.session.slots[index];
+		if (slot.lifecycle != telemetry_session_slot_lifecycle::resident ||
+		    !session_equal(slot.session, session))
+			continue;
+		if (slot.progression_starting_level != 0U)
+			return result;
+		telemetry_monotonic_usec at = 0U;
+		telemetry_utc_usec utc = TELEMETRY_UTC_UNKNOWN;
+		if (!game_time(&at, &utc))
+			return game_capture_invalid();
+		return emit_progression_point(character, session, connection, {},
+					      telemetry_progression_context_boundary::baseline, at,
+					      utc, nullptr);
+	}
+	return result;
+}
+} // namespace
+
+void telemetry_runtime_game_progression_changed(const char_data *character) noexcept
+{
+	if (!R.initialized || !R.enabled || R.shutdown_pending || !character || !IS_PC(character) ||
+	    !character->only.pc)
+		return;
+	telemetry_session_ref session{};
+	if (!game_session_ref(character, &session))
+		return;
+	for (std::size_t index = 0U; index < R.session.max_slots; ++index)
+		if (session_equal(R.session.slots[index].session, session))
+		{
+			R.progression_spans[index].continuous = false;
+			R.progression_spans[index].dirty = true;
+			return;
+		}
+}
+
 telemetry_capture_result
 telemetry_runtime_game_progression(struct char_data *character, struct descriptor_data *descriptor,
 				   telemetry_progression_observation observation)
+{
+	return telemetry_runtime_game_progression(character, descriptor, observation, nullptr);
+}
+
+telemetry_capture_result
+telemetry_runtime_game_progression(struct char_data *character, struct descriptor_data *descriptor,
+				   telemetry_progression_observation observation,
+				   const telemetry_progression_context_snapshot *decision)
 {
 	if (!R.initialized || !R.enabled || R.shutdown_pending)
 		return game_capture_not_ready();
@@ -5784,18 +6592,57 @@ telemetry_runtime_game_progression(struct char_data *character, struct descripto
 	telemetry_connection_id connection{};
 	if (descriptor != nullptr && !game_connection_id(descriptor, &connection))
 		return game_capture_invalid();
+	const auto ownership = game_observe_ownership(character, descriptor);
 	telemetry_monotonic_usec at_monotonic_usec = 0U;
 	telemetry_utc_usec at_utc_usec = TELEMETRY_UTC_UNKNOWN;
 	if (!game_time(&at_monotonic_usec, &at_utc_usec))
 		return game_capture_invalid();
+	game_progression_span_refresh(character, session, connection, at_monotonic_usec,
+				      at_utc_usec);
 	telemetry_dimensions dimensions{};
 	telemetry_quality_mask dimension_quality = TELEMETRY_QUALITY_NONE;
 	game_dimensions(character, &dimensions, &dimension_quality);
 	observation.quality_flags |= dimension_quality;
-	return capture_from_progression(telemetry_progression_state_record(
+	const auto progression = capture_from_progression(telemetry_progression_state_record(
 		&R.progression, session, connection, at_monotonic_usec, at_utc_usec, dimensions,
 		R.config.config_id, R.config.classifier_version, R.config.policy_version,
 		observation));
+	auto result = ownership;
+	merge_capture(result, progression);
+	if (progression.outcome == telemetry_runtime_outcome::accepted &&
+	    progression.records_emitted == 1U)
+		merge_capture(
+			result,
+			emit_progression_point(
+				character, session, connection, progression.first_record,
+				observation.kind ==
+						telemetry_progression_kind::experience_observed ?
+					telemetry_progression_context_boundary::experience :
+					telemetry_progression_context_boundary::level,
+				at_monotonic_usec, at_utc_usec, decision));
+	/* Use the XP receipt's exact clock frontier. The observed award can only
+	 * be compared with a retained interval that actually covers that point. */
+	merge_capture(result, capture_with_delta(telemetry_activity_state_flush_at(
+				      &R.activity, session, at_monotonic_usec, at_utc_usec)));
+	return result;
+}
+
+telemetry_capture_result
+telemetry_runtime_game_progression_adjustment(struct char_data *character, std::int64_t before_exp,
+					      std::int64_t requested_xp, std::int64_t computed_xp,
+					      telemetry_progression_source source,
+					      telemetry_progression_reason reason)
+{
+	if (!R.initialized || !R.enabled || R.shutdown_pending)
+		return game_capture_not_ready();
+	if (!character || !IS_PC(character) || !character->only.pc)
+		return game_capture_invalid();
+	return telemetry_runtime_game_progression(
+		character, character->desc,
+		telemetry_progression_make_experience(
+			source, reason, requested_xp, computed_xp, before_exp, GET_EXP(character),
+			character->player.level, TELEMETRY_PROGRESSION_MODIFIER_NONE,
+			TELEMETRY_QUALITY_NONE));
 }
 
 std::uint16_t telemetry_runtime_pulse_slot_count(void) noexcept

@@ -12,7 +12,8 @@ from types import MappingProxyType
 from typing import Any, Mapping
 
 DEFINITION_VERSION = 1
-SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION, 2, 3, 5, 6, 7, 8})
+SUPPORTED_DEFINITION_VERSIONS = frozenset({DEFINITION_VERSION, 2, 3, 5, 6, 7, 8, 9})
+PROGRESSION_DEFINITION_VERSION = 9
 BATTLE_DEFINITION_VERSION = 5
 BATTLE_BUILD_DEFINITION_VERSION = 6
 BATTLE_CONTROL_DEFINITION_VERSION = 7
@@ -188,6 +189,7 @@ class RollupCoverage:
     incident_coverage: Mapping[str, Any] | None = None
     identity_coverage: Mapping[str, Any] | None = None
     battle_coverage: Mapping[str, Any] | None = None
+    progression_coverage: Mapping[str, Any] | None = None
 
     @property
     def input_complete_to_snapshot(self) -> bool:
@@ -226,6 +228,7 @@ class RollupCoverage:
             "incident_coverage": self.incident_coverage,
             **({"identity_coverage": self.identity_coverage} if self.target.definition_version >= 3 else {}),
             **({"battle_coverage": self.battle_coverage} if self.target.definition_version in BATTLE_DEFINITION_VERSIONS else {}),
+            **({"progression_coverage": self.progression_coverage} if self.target.definition_version == PROGRESSION_DEFINITION_VERSION else {}),
         }
 
 
@@ -636,8 +639,53 @@ RESULT_REPORT_DEFINITIONS = MappingProxyType({
 })
 
 
+PROGRESSION_REPORT_DEFINITIONS = MappingProxyType({
+    name: ReportDefinition(name=name, definition_version=PROGRESSION_DEFINITION_VERSION,
+        grain=grain, table="telemetry_rollup_progression_row_v9", dimensions=dimensions, metrics=metrics,
+        denominator=denominator,
+        distinct_semantics="Character, account and dated confirmed-controller views are separate projections. Unknown identities remain visible; covered unions and summed character time are distinct. Repeated characters/controllers are not independent people.",
+        distribution_semantics="Exact retained sources, configuration, review, clock, lifecycle and loss coverage qualify each observation. Unfinished and already-past milestones remain present. Rates are observational exact XP/usec fractions; no causal advantage or completed-only median is inferred.",
+        account_metrics_available=True,
+        unavailable_metrics=("character_save_commit", "XP_award_commit", "complete_human_population", "time_to_level_median",
+            "causal_rotation_advantage", "universal_progression_score", "economic_reward_rate_pending_issue_487"),
+        rate_unit="xp_per_hour_exact_fraction" if name == "progression_portfolio" else "not_computed")
+    for name, grain, dimensions, metrics, denominator in (
+        ("progression_context", "original_native_decision_or_exposure",
+            ("receipt", "pctx_boundary", "registry_version", "account_token", "controller_token", "stratum"),
+            ("pctx_current_level", "pctx_starting_level", "pctx_next_threshold_xp", "source_progression", "unknown"),
+            "Actual XP eligibility/application and assistance gates are points. Only separately proven contiguous interval context establishes exposure. Persistence of telemetry does not establish an XP or save commit."),
+        ("progression_milestones", "observed_character_level_stage_segment",
+            ("subject_id", "session", "producer", "stage_level", "milestone_level", "stratum", "status"),
+            ("observed_connected_usec", "observed_heuristic_active_usec", "observed_elapsed_usec", "missing_interval_usec",
+                "left_censored", "right_censored", "unknown", "full_stage_elapsed_usec"),
+            "Connected time, input-heuristic active time and paired-clock elapsed time are separate. Full-stage values require an observed start and completion with compatible configuration and complete observed coverage. Left/right censoring and unfinished stages are not removed."),
+        ("character_rotation", "dated_identity_configuration_observed_regions",
+            ("basis", "identity_token", "registry_version", "config_id", "classifier_version", "policy_version", "effort_category"),
+            ("summed_character_usec", "covered_union_usec", "observed_characters", "observed_simultaneous_session_usec",
+                "observed_simultaneous_character_usec", "sequential_switches", "ambiguous_region_transitions"),
+            "Sequential switches and their observed elapsed gaps require compatible clocks and known dated identity. Simultaneous sessions/characters remain overlap observations; activity uses the existing input heuristic."),
+        ("progression_effort", "dated_identity_configuration_activity_union",
+            ("scope", "registry_version", "basis", "token", "config_id", "category"),
+            ("character_usec", "covered_character_usec", "unknown_clock_character_usec", "union_usec"),
+            "Summed character effort and covered account/controller unions retain the qualified identity-effort meaning. Union cells are not additive across overlapping bases or configurations."),
+        ("progression_portfolio", "dated_identity_exact_xp_and_exposure_stratum",
+            ("basis", "identity_token", "config_id", "level_stage", "source", "reason", "observation_status", "stratum", "rate_stratum"),
+            ("requested_xp", "computed_xp", "observed_applied_xp", "observed_earned_positive_xp", "death_loss_xp",
+                "restored_positive_xp", "threshold_consumed_xp", "covered_connected_union_usec", "covered_heuristic_active_union_usec",
+                "observed_earned_xp_per_connected_hour", "observed_earned_xp_per_heuristic_active_hour", "unknown"),
+            "Comparable earned-XP rates require observed continuous exposure in the same level, class/build, configuration, selected-rested and formal-group stratum. Assistance and rested application remain award points. Requested/computed/applied, losses, restoration, threshold use and administrative/system XP retain separate units and provenance."),
+    )
+})
+
+
 def report_definition(name: str, definition_version: int | None = None) -> ReportDefinition:
     canonical = REPORT_ALIASES.get(name, name)
+    if canonical in PROGRESSION_REPORT_DEFINITIONS:
+        if definition_version is not None and (type(definition_version) is not int or definition_version != PROGRESSION_DEFINITION_VERSION):
+            raise ValueError("progression report requires its independent definition version 9")
+        return PROGRESSION_REPORT_DEFINITIONS[canonical]
+    if definition_version == PROGRESSION_DEFINITION_VERSION:
+        raise ValueError("definition 9 requires a progression report")
     try:
         definition = REPORT_DEFINITIONS.get(canonical) or OBSERVATION_REPORT_DEFINITIONS.get(canonical) or IDENTITY_REPORT_DEFINITIONS.get(canonical) or BATTLE_REPORT_DEFINITIONS.get(canonical) or BUILD_REPORT_DEFINITIONS.get(canonical) or CONTROL_REPORT_DEFINITIONS.get(canonical) or RESULT_REPORT_DEFINITIONS[canonical]
     except KeyError as error:
@@ -663,6 +711,8 @@ def report_definition(name: str, definition_version: int | None = None) -> Repor
 
 
 def report_definitions(definition_version: int = 1) -> tuple[ReportDefinition, ...]:
+    if definition_version == PROGRESSION_DEFINITION_VERSION:
+        return tuple(PROGRESSION_REPORT_DEFINITIONS[name] for name in sorted(PROGRESSION_REPORT_DEFINITIONS))
     if definition_version in BATTLE_DEFINITION_VERSIONS:
         definitions = RESULT_REPORT_DEFINITIONS if definition_version == BATTLE_RESULT_DEFINITION_VERSION else CONTROL_REPORT_DEFINITIONS if definition_version == BATTLE_CONTROL_DEFINITION_VERSION else BUILD_REPORT_DEFINITIONS if definition_version == BATTLE_BUILD_DEFINITION_VERSION else BATTLE_REPORT_DEFINITIONS
         return tuple(report_definition(name, definition_version) for name in sorted(definitions))

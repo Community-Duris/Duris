@@ -1,5 +1,6 @@
 #include "telemetry/telemetry_progression.h"
 
+#include <bit>
 #include <limits>
 
 namespace
@@ -186,4 +187,204 @@ telemetry_progression_result telemetry_progression_state_record(
 		result.quality_flags |= TELEMETRY_QUALITY_QUEUE_DROP;
 	}
 	return result;
+}
+
+namespace
+{
+template <std::size_t Width, bool Signed, typename T>
+void encode_progression_context_value(T value, std::uint8_t *&bytes) noexcept
+{
+	static_assert(sizeof(T) == Width);
+	static_assert(std::is_signed_v<T> == Signed);
+	const auto number = static_cast<std::uint64_t>(value);
+	for (std::size_t index = 0U; index < Width; ++index)
+		*bytes++ = static_cast<std::uint8_t>(number >> ((Width - 1U - index) * 8U));
+}
+
+template <std::size_t Width, bool Signed, typename T>
+void decode_progression_context_value(T &value, const std::uint8_t *&bytes) noexcept
+{
+	static_assert(sizeof(T) == Width);
+	static_assert(std::is_signed_v<T> == Signed);
+	std::uint64_t number = 0U;
+	for (std::size_t index = 0U; index < Width; ++index)
+		number = (number << 8U) | *bytes++;
+	if constexpr (Signed)
+		value = std::bit_cast<T>(static_cast<std::make_unsigned_t<T>>(number));
+	else
+		value = static_cast<T>(number);
+}
+} // namespace
+
+bool telemetry_progression_context_observation_equal(
+	const telemetry_progression_context_observation &a,
+	const telemetry_progression_context_observation &b) noexcept
+{
+	if (!telemetry_progression_context_observation_is_valid(a) ||
+	    !telemetry_progression_context_observation_is_valid(b))
+		return false;
+#define TELEMETRY_PROGRESSION_CONTEXT_FIELD(name, member, width, signed_value) \
+	if (a.member != b.member)                                              \
+		return false;
+#include "telemetry/telemetry_progression_context_fields.inc"
+#undef TELEMETRY_PROGRESSION_CONTEXT_FIELD
+	return true;
+}
+
+bool telemetry_progression_context_observation_encode(
+	const telemetry_progression_context_observation &v, std::uint8_t *bytes,
+	std::size_t size) noexcept
+{
+	if (!bytes || size != TELEMETRY_PROGRESSION_CONTEXT_WIRE_BYTES ||
+	    !telemetry_progression_context_observation_is_valid(v))
+		return false;
+#define TELEMETRY_PROGRESSION_CONTEXT_FIELD(name, member, width, signed_value) \
+	encode_progression_context_value<width, signed_value>(v.member, bytes);
+#include "telemetry/telemetry_progression_context_fields.inc"
+#undef TELEMETRY_PROGRESSION_CONTEXT_FIELD
+	return true;
+}
+
+bool telemetry_progression_context_observation_decode(
+	const std::uint8_t *bytes, std::size_t size,
+	telemetry_progression_context_observation *output) noexcept
+{
+	if (!output)
+		return false;
+	*output = {};
+	if (!bytes || size != TELEMETRY_PROGRESSION_CONTEXT_WIRE_BYTES)
+		return false;
+	telemetry_progression_context_observation v{};
+#define TELEMETRY_PROGRESSION_CONTEXT_FIELD(name, member, width, signed_value) \
+	decode_progression_context_value<width, signed_value>(v.member, bytes);
+#include "telemetry/telemetry_progression_context_fields.inc"
+#undef TELEMETRY_PROGRESSION_CONTEXT_FIELD
+	if (!telemetry_progression_context_observation_is_valid(v))
+		return false;
+	*output = v;
+	return true;
+}
+
+bool telemetry_progression_configuration_is_valid(
+	const telemetry_progression_configuration_snapshot &v) noexcept
+{
+	if (!v.config_id || !v.build_version || !v.content_version || !v.classifier_version ||
+	    !v.policy_version || v.version != TELEMETRY_PROGRESSION_CONFIGURATION_VERSION ||
+	    v.source_inventory_version != TELEMETRY_PROGRESSION_SOURCE_INVENTORY_VERSION ||
+	    v.count != TELEMETRY_PROGRESSION_CONFIGURATION_VALUES || v.reserved)
+		return false;
+	for (std::size_t index = 0U; index < TELEMETRY_PROGRESSION_CONFIGURATION_MAX_VALUES;
+	     ++index)
+	{
+		const auto &entry = v.values[index];
+		for (const auto byte : entry.reserved)
+			if (byte)
+				return false;
+		if (index < v.count)
+		{
+			if (entry.id != telemetry_progression_configuration_source_id(index) ||
+			    !telemetry_progression_configuration_value_is_valid(
+				    entry.id, entry.kind, entry.bits))
+				return false;
+		}
+		else
+		{
+			if (entry.id || entry.bits || static_cast<std::uint8_t>(entry.kind))
+				return false;
+		}
+	}
+	return true;
+}
+
+bool telemetry_progression_configuration_encode(
+	const telemetry_progression_configuration_snapshot &v, std::uint8_t *bytes,
+	std::size_t size) noexcept
+{
+	if (!bytes || size != TELEMETRY_PROGRESSION_CONFIGURATION_CANONICAL_BYTES ||
+	    !telemetry_progression_configuration_is_valid(v))
+		return false;
+	/* Exclude the process-local config ID. Equal digests still require exact
+	 * retained source/configuration receipts before publication. */
+	encode_progression_context_value<2U, false>(v.version, bytes);
+	encode_progression_context_value<2U, false>(v.source_inventory_version, bytes);
+	encode_progression_context_value<2U, false>(v.count, bytes);
+	encode_progression_context_value<4U, false>(v.build_version, bytes);
+	encode_progression_context_value<4U, false>(v.content_version, bytes);
+	encode_progression_context_value<4U, false>(v.classifier_version, bytes);
+	encode_progression_context_value<4U, false>(v.policy_version, bytes);
+	for (std::size_t index = 0U; index < v.count; ++index)
+	{
+		const auto &entry = v.values[index];
+		encode_progression_context_value<2U, false>(entry.id, bytes);
+		encode_progression_context_value<1U, false>(entry.kind, bytes);
+		encode_progression_context_value<8U, false>(entry.bits, bytes);
+	}
+	return true;
+}
+
+bool telemetry_progression_configuration_decode(
+	const std::uint8_t *bytes, std::size_t size, telemetry_config_id config_id,
+	telemetry_progression_configuration_snapshot *output) noexcept
+{
+	if (!output)
+		return false;
+	*output = {};
+	if (!bytes || size != TELEMETRY_PROGRESSION_CONFIGURATION_CANONICAL_BYTES || !config_id)
+		return false;
+	telemetry_progression_configuration_snapshot v{};
+	v.config_id = config_id;
+	decode_progression_context_value<2U, false>(v.version, bytes);
+	decode_progression_context_value<2U, false>(v.source_inventory_version, bytes);
+	decode_progression_context_value<2U, false>(v.count, bytes);
+	decode_progression_context_value<4U, false>(v.build_version, bytes);
+	decode_progression_context_value<4U, false>(v.content_version, bytes);
+	decode_progression_context_value<4U, false>(v.classifier_version, bytes);
+	decode_progression_context_value<4U, false>(v.policy_version, bytes);
+	if (v.count != TELEMETRY_PROGRESSION_CONFIGURATION_VALUES)
+		return false;
+	for (std::size_t index = 0U; index < v.count; ++index)
+	{
+		auto &entry = v.values[index];
+		decode_progression_context_value<2U, false>(entry.id, bytes);
+		decode_progression_context_value<1U, false>(entry.kind, bytes);
+		decode_progression_context_value<8U, false>(entry.bits, bytes);
+	}
+	if (!telemetry_progression_configuration_is_valid(v))
+		return false;
+	*output = v;
+	return true;
+}
+
+bool telemetry_progression_configuration_observation_encode(
+	const telemetry_progression_configuration_observation &v, std::uint8_t *bytes,
+	std::size_t size) noexcept
+{
+	if (!bytes || size != TELEMETRY_PROGRESSION_CONFIGURATION_WIRE_BYTES ||
+	    !telemetry_progression_configuration_observation_is_valid(v))
+		return false;
+#define TELEMETRY_PROGRESSION_CONFIGURATION_FIELD(name, member, width, signed_value) \
+	encode_progression_context_value<width, signed_value>(v.member, bytes);
+#include "telemetry/telemetry_progression_configuration_fields.inc"
+#undef TELEMETRY_PROGRESSION_CONFIGURATION_FIELD
+	return true;
+}
+
+bool telemetry_progression_configuration_observation_decode(
+	const std::uint8_t *bytes, std::size_t size,
+	telemetry_progression_configuration_observation *output) noexcept
+{
+	if (!output)
+		return false;
+	*output = {};
+	if (!bytes || size != TELEMETRY_PROGRESSION_CONFIGURATION_WIRE_BYTES)
+		return false;
+	telemetry_progression_configuration_observation v{};
+#define TELEMETRY_PROGRESSION_CONFIGURATION_FIELD(name, member, width, signed_value) \
+	decode_progression_context_value<width, signed_value>(v.member, bytes);
+#include "telemetry/telemetry_progression_configuration_fields.inc"
+#undef TELEMETRY_PROGRESSION_CONFIGURATION_FIELD
+	if (!telemetry_progression_configuration_observation_is_valid(v))
+		return false;
+	*output = v;
+	return true;
 }

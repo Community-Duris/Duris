@@ -7,6 +7,7 @@
 #include "economy/currency_transaction.h"
 #include "economy/economic_gameplay_authority.h"
 #include "core/utils.h"
+#include "telemetry/telemetry_runtime.h"
 
 #include <stdlib.h>
 
@@ -122,6 +123,7 @@ static void chaos_side(P_char ch, const char *arg)
 		{
 			if (ch->player.racewar == sidenames[i].id)
 				return send_to_char("You reaffirm your allegiance.\n", ch);
+			telemetry_runtime_game_progression_changed(ch);
 			ch->player.racewar = sidenames[i].id;
 			act("Your allegiance changes.", 0, ch, 0, 0, TO_CHAR);
 			// boot from guilds?
@@ -286,7 +288,13 @@ void do_chaos(P_char ch, char *arg, int /*cmd*/)
 		if (oldl == newl)
 			return send_to_char("Refusing to do a no-op operation!\n", ch);
 
+		const std::int64_t before_exp = GET_EXP(ch);
+		const std::int64_t reset_delta = new_exp_table[GET_LEVEL(ch) + 1] / 2 - before_exp;
 		GET_EXP(ch) = new_exp_table[GET_LEVEL(ch) + 1] / 2;
+		(void)telemetry_runtime_game_progression_adjustment(
+			ch, before_exp, reset_delta, reset_delta,
+			telemetry_progression_source::administration,
+			telemetry_progression_reason::administration);
 		if (oldl < newl)
 			advance_to_level(ch, newl);
 		for (; oldl > newl; oldl--)

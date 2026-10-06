@@ -8,86 +8,95 @@ constexpr const char *RUNTIME_BASELINE_ID = "duris-schema-2026-08-27-session11";
 constexpr const char *RUNTIME_BASELINE_FINGERPRINT =
 	"db13d7a42bf82bcbd32bac8d83224913c755fefd000ade6d4e798b1bd4f494dd";
 constexpr unsigned RUNTIME_BASELINE_TABLE_COUNT = 170;
-constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 273;
+constexpr unsigned RUNTIME_CURRENT_TABLE_COUNT = 282;
 constexpr const char *RUNTIME_TABLE_SQL_LIST =
-	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons','ac"
-	"count_bound_rewards','account_characters','account_erasure_evidence','account_erasure"
-	"_requests','account_erasure_stores','account_erasure_tombstones','account_ips','accou"
-	"nt_locker_access','account_locker_item_affects','account_locker_item_extra_descr','ac"
-	"count_locker_items','account_lockers','accounts','alliances','artifact_bind','artifac"
-	"t_delta_ledger','artifact_domain_baseline','artifact_domain_state','artifact_guild_ou"
-	"tcome','artifact_guild_outcome_delta','artifact_mana','artifacts','artifacts_mortal',"
-	"'associations','auction_bid_history','auction_item_custody','auction_item_pickups','a"
-	"uction_ledger','auction_money_pickups','auction_reconciliation_quarantine','auctions'"
-	",'boon_reward_outcome','boon_reward_outcome_entry','boons','boons_progress','boons_sh"
-	"op','categories','changes','classes','collector_catalog_state','collector_deaths','co"
-	"llector_ledger','collector_listings','collector_reconciliation_quarantine','combat_fr"
-	"ag_baseline','combat_frag_ledger','combat_outcome','combat_outcome_participant','corp"
-	"se_catalog_state','corpse_item_affects','corpse_item_extra_descr','corpse_items','cor"
-	"pses','critical_operation_inbox','critical_outbox','critical_outbox_delivery_dedupe',"
-	"'critical_test_state','ctf_data','currency_bank_baseline','currency_ledger','currency"
-	"_wallet_baseline','economic_account_mapping','economic_accounting_account_effect','ec"
-	"onomic_accounting_child','economic_accounting_coin_posting','economic_accounting_item"
-	"_reference','economic_accounting_operation','economic_accounting_source_claim','econo"
-	"mic_baseline_control','economic_baseline_reservation','economic_baseline_witness','ec"
-	"onomic_epoch','economic_lineage_state','economic_pending_claim_source','economic_sql_"
-	"activation_receipt','economic_sql_global_activation','economic_sql_lifecycle_installa"
-	"tion','epic_balance_baseline','epic_bonus','epic_gain','epic_ledger','epic_stone_clai"
-	"m','eq_drop','frag_leaderboard','guild_members','guild_outcome_ledger','guild_ranks',"
-	"'guild_transactions','guildhall_rooms','guildhalls','guilds','ip_info','item_current_"
-	"owner','item_owner_revision','item_ownership_baseline','item_ownership_ledger','item_"
-	"ownership_quarantine','item_uid_allocator','items','kingdom_garrison','kingdom_land',"
-	"'kingdom_realms','level_cap','lifecycle_archive_batches','lifecycle_archive_evidence'"
-	",'lifecycle_archive_jobs','lifecycle_archive_rows','locker_access','locker_activity_l"
-	"og','locker_chests','locker_item_affects','locker_item_extra_descr','locker_items','l"
-	"ocker_kickouts','locker_session_state','lockers','log_entries','lookup_dataset_state'"
-	",'mud_info','mud_schema_baselines','mud_schema_history','mud_schema_migration_state',"
-	"'mud_schema_migrations','multiplay_whitelist','nexus_stones','offline_message_receipt"
-	"s','offline_messages','outposts','pages','persistence_item_events','persistence_scala"
-	"r_events','personal_data_export_audit','personal_data_export_requests','personal_data"
-	"_export_sections','ping','pkill_event','pkill_info','player_affects','player_craft_pr"
-	"ogression','player_data','player_death_conflict_evidence','player_death_custody','pla"
-	"yer_death_disposition','player_death_restitution_delivery','player_death_restitution_"
-	"item','player_death_restitution_receipt','player_death_restitution_runtime','player_f"
-	"orged_items','player_granted_cmds','player_intros','player_item_affects','player_item"
-	"_extra_descr','player_item_runtime_state','player_items','player_languages','player_p"
-	"et_item_affects','player_pet_item_extra_descr','player_pet_items','player_pets','play"
-	"er_recipes','player_shapechanges','player_skills','player_spell_effect_receipt','play"
-	"er_spellbooks','player_timers','player_undead_slots','player_witnesses','poll_options"
-	"','poll_votes','polls','prepstatement_duris_sql','private_chest_log','private_chests'"
-	",'progress','quest_reward_obligation','quest_reward_xp_entitlement','quest_trophy','r"
-	"aces','racewar_stat_mods','saved_item_affects','saved_item_extra_descr','saved_item_r"
-	"ecovery_handoff','saved_items','season_reset_state','server_reboots','session_audit_o"
-	"utcome','ship_armor','ship_cargo_market_mods','ship_cargo_prices','ship_crew','ship_s"
-	"lots','ships','shop_trophy','shopkeeper_affects','shopkeeper_item_affects','shopkeepe"
-	"r_item_extra_descr','shopkeeper_items','shopkeepers','siege_item_affects','siege_item"
-	"_extra_descr','siege_items','sql_room_item_payload','statistics','telemetry_account_l"
-	"ifetime','telemetry_account_token','telemetry_battle_input','telemetry_battle_input_v"
-	"6','telemetry_battle_input_v7','telemetry_battle_input_v8','telemetry_battle_source',"
-	"'telemetry_battle_source_v6','telemetry_battle_source_v7','telemetry_battle_source_v8"
-	"','telemetry_cohort_day','telemetry_cohort_member','telemetry_config','telemetry_gene"
-	"ration_identity','telemetry_identity_association','telemetry_identity_input','telemet"
-	"ry_identity_registry','telemetry_identity_reviewer','telemetry_incident','telemetry_i"
-	"ncident_registry','telemetry_incident_registry_v2','telemetry_incident_registry_v3','"
-	"telemetry_incident_registry_v4','telemetry_incident_registry_v5','telemetry_incident_"
-	"registry_v6','telemetry_incident_registry_v7','telemetry_incident_v2','telemetry_inci"
-	"dent_v3','telemetry_incident_v4','telemetry_incident_v5','telemetry_incident_v6','tel"
-	"emetry_incident_v7','telemetry_interval','telemetry_player_day','telemetry_quarantine"
-	"','telemetry_reward_projection','telemetry_reward_projection_state','telemetry_rollup"
-	"_battle_coverage','telemetry_rollup_battle_coverage_v6','telemetry_rollup_battle_cove"
-	"rage_v7','telemetry_rollup_battle_coverage_v8','telemetry_rollup_battle_row','telemet"
-	"ry_rollup_battle_row_v6','telemetry_rollup_battle_row_v7','telemetry_rollup_battle_ro"
-	"w_v8','telemetry_rollup_combat_actor','telemetry_rollup_encounter','telemetry_rollup_"
-	"encounter_participant','telemetry_rollup_identity_coverage','telemetry_rollup_identit"
-	"y_effort','telemetry_rollup_incident','telemetry_rollup_incident_coverage','telemetry"
-	"_rollup_level_event','telemetry_rollup_portfolio_xp','telemetry_rollup_progression_da"
-	"y','telemetry_rollup_session','telemetry_rollup_state','telemetry_session','timers','"
-	"towns','world_quest_accomplished','zone_story_quest_state','zone_touch_outcome','zone"
-	"_touch_outcome_participant','zone_touches','zone_trophy','zones'";
+	"'account_banks','account_bound_reward_pwipe_state','account_bound_reward_summons"
+	"','account_bound_rewards','account_characters','account_erasure_evidence','accou"
+	"nt_erasure_requests','account_erasure_stores','account_erasure_tombstones','acco"
+	"unt_ips','account_locker_access','account_locker_item_affects','account_locker_i"
+	"tem_extra_descr','account_locker_items','account_lockers','accounts','alliances'"
+	",'artifact_bind','artifact_delta_ledger','artifact_domain_baseline','artifact_do"
+	"main_state','artifact_guild_outcome','artifact_guild_outcome_delta','artifact_ma"
+	"na','artifacts','artifacts_mortal','associations','auction_bid_history','auction"
+	"_item_custody','auction_item_pickups','auction_ledger','auction_money_pickups','"
+	"auction_reconciliation_quarantine','auctions','boon_reward_outcome','boon_reward"
+	"_outcome_entry','boons','boons_progress','boons_shop','categories','changes','cl"
+	"asses','collector_catalog_state','collector_deaths','collector_ledger','collecto"
+	"r_listings','collector_reconciliation_quarantine','combat_frag_baseline','combat"
+	"_frag_ledger','combat_outcome','combat_outcome_participant','corpse_catalog_stat"
+	"e','corpse_item_affects','corpse_item_extra_descr','corpse_items','corpses','cri"
+	"tical_operation_inbox','critical_outbox','critical_outbox_delivery_dedupe','crit"
+	"ical_test_state','ctf_data','currency_bank_baseline','currency_ledger','currency"
+	"_wallet_baseline','economic_account_mapping','economic_accounting_account_effect"
+	"','economic_accounting_child','economic_accounting_coin_posting','economic_accou"
+	"nting_item_reference','economic_accounting_operation','economic_accounting_sourc"
+	"e_claim','economic_baseline_control','economic_baseline_reservation','economic_b"
+	"aseline_witness','economic_epoch','economic_lineage_state','economic_pending_cla"
+	"im_source','economic_sql_activation_receipt','economic_sql_global_activation','e"
+	"conomic_sql_lifecycle_installation','epic_balance_baseline','epic_bonus','epic_g"
+	"ain','epic_ledger','epic_stone_claim','eq_drop','frag_leaderboard','guild_member"
+	"s','guild_outcome_ledger','guild_ranks','guild_transactions','guildhall_rooms','"
+	"guildhalls','guilds','ip_info','item_current_owner','item_owner_revision','item_"
+	"ownership_baseline','item_ownership_ledger','item_ownership_quarantine','item_ui"
+	"d_allocator','items','kingdom_garrison','kingdom_land','kingdom_realms','level_c"
+	"ap','lifecycle_archive_batches','lifecycle_archive_evidence','lifecycle_archive_"
+	"jobs','lifecycle_archive_rows','locker_access','locker_activity_log','locker_che"
+	"sts','locker_item_affects','locker_item_extra_descr','locker_items','locker_kick"
+	"outs','locker_session_state','lockers','log_entries','lookup_dataset_state','mud"
+	"_info','mud_schema_baselines','mud_schema_history','mud_schema_migration_state',"
+	"'mud_schema_migrations','multiplay_whitelist','nexus_stones','offline_message_re"
+	"ceipts','offline_messages','outposts','pages','persistence_item_events','persist"
+	"ence_scalar_events','personal_data_export_audit','personal_data_export_requests'"
+	",'personal_data_export_sections','ping','pkill_event','pkill_info','player_affec"
+	"ts','player_craft_progression','player_data','player_death_conflict_evidence','p"
+	"layer_death_custody','player_death_disposition','player_death_restitution_delive"
+	"ry','player_death_restitution_item','player_death_restitution_receipt','player_d"
+	"eath_restitution_runtime','player_forged_items','player_granted_cmds','player_in"
+	"tros','player_item_affects','player_item_extra_descr','player_item_runtime_state"
+	"','player_items','player_languages','player_pet_item_affects','player_pet_item_e"
+	"xtra_descr','player_pet_items','player_pets','player_recipes','player_shapechang"
+	"es','player_skills','player_spell_effect_receipt','player_spellbooks','player_ti"
+	"mers','player_undead_slots','player_witnesses','poll_options','poll_votes','poll"
+	"s','prepstatement_duris_sql','private_chest_log','private_chests','progress','qu"
+	"est_reward_obligation','quest_reward_xp_entitlement','quest_trophy','races','rac"
+	"ewar_stat_mods','saved_item_affects','saved_item_extra_descr','saved_item_recove"
+	"ry_handoff','saved_items','season_reset_state','server_reboots','session_audit_o"
+	"utcome','ship_armor','ship_cargo_market_mods','ship_cargo_prices','ship_crew','s"
+	"hip_slots','ships','shop_trophy','shopkeeper_affects','shopkeeper_item_affects',"
+	"'shopkeeper_item_extra_descr','shopkeeper_items','shopkeepers','siege_item_affec"
+	"ts','siege_item_extra_descr','siege_items','sql_room_item_payload','statistics',"
+	"'telemetry_account_lifetime','telemetry_account_token','telemetry_battle_input',"
+	"'telemetry_battle_input_v6','telemetry_battle_input_v7','telemetry_battle_input_"
+	"v8','telemetry_battle_source','telemetry_battle_source_v6','telemetry_battle_sou"
+	"rce_v7','telemetry_battle_source_v8','telemetry_cohort_day','telemetry_cohort_me"
+	"mber','telemetry_config','telemetry_generation_identity','telemetry_identity_ass"
+	"ociation','telemetry_identity_input','telemetry_identity_registry','telemetry_id"
+	"entity_reviewer','telemetry_incident','telemetry_incident_registry','telemetry_i"
+	"ncident_registry_v2','telemetry_incident_registry_v3','telemetry_incident_regist"
+	"ry_v4','telemetry_incident_registry_v5','telemetry_incident_registry_v6','teleme"
+	"try_incident_registry_v7','telemetry_incident_registry_v8','telemetry_incident_v"
+	"2','telemetry_incident_v3','telemetry_incident_v4','telemetry_incident_v5','tele"
+	"metry_incident_v6','telemetry_incident_v7','telemetry_incident_v8','telemetry_in"
+	"terval','telemetry_player_day','telemetry_progression_configuration','telemetry_"
+	"progression_context','telemetry_progression_input_v9','telemetry_progression_ref"
+	"erence_v9','telemetry_progression_source_v9','telemetry_quarantine','telemetry_r"
+	"eward_projection','telemetry_reward_projection_state','telemetry_rollup_battle_c"
+	"overage','telemetry_rollup_battle_coverage_v6','telemetry_rollup_battle_coverage"
+	"_v7','telemetry_rollup_battle_coverage_v8','telemetry_rollup_battle_row','teleme"
+	"try_rollup_battle_row_v6','telemetry_rollup_battle_row_v7','telemetry_rollup_bat"
+	"tle_row_v8','telemetry_rollup_combat_actor','telemetry_rollup_encounter','teleme"
+	"try_rollup_encounter_participant','telemetry_rollup_identity_coverage','telemetr"
+	"y_rollup_identity_effort','telemetry_rollup_incident','telemetry_rollup_incident"
+	"_coverage','telemetry_rollup_level_event','telemetry_rollup_portfolio_xp','telem"
+	"etry_rollup_progression_coverage_v9','telemetry_rollup_progression_day','telemet"
+	"ry_rollup_progression_row_v9','telemetry_rollup_session','telemetry_rollup_state"
+	"','telemetry_session','timers','towns','world_quest_accomplished','zone_story_qu"
+	"est_state','zone_touch_outcome','zone_touch_outcome_participant','zone_touches',"
+	"'zone_trophy','zones'";
 constexpr const char *RUNTIME_MYSQL8_METADATA_FINGERPRINT =
-	"7240e35acdbfb9ba4de6bbd5b2dd0635c9f3f9963fc98f0ea3f31de28a24ce27";
+	"dcd66f88886b2f4041494d45b1249344b3d773f0396f1747754f89b5a23be0a1";
 constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
-	"84a48b5c8767c39c81f67389f9e8ae87bc667979512f9a4d6a14b852a5626408";
+	"1c7fb936dc997e870189d5400c57b8882696bcf3382e6645da7e9bc5beff2232";
 /* Includes the six telemetry stores introduced by migration 0014, the two
  * rollup stores introduced by migration 0017, the five Collector authority
  * stores introduced by migration 0018, corpse catalog authority introduced by
@@ -115,72 +124,75 @@ constexpr const char *RUNTIME_MARIADB10_11_METADATA_FINGERPRINT =
  * a durable quest XP receipt mask and migration 0048 adds per-recipient XP
  * entitlements. Migration 0049 adds player spell-effect receipts, 0051 adds
  * player item runtime state, and 0052 indexes quest item witness reads. */
-constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0070_telemetry_result_publication";
-constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 73;
+constexpr const char *RUNTIME_MIGRATION_HEAD_ID = "0072_telemetry_progression_publication";
+constexpr unsigned RUNTIME_MIGRATION_HEAD_SEQUENCE = 75;
 constexpr const char *RUNTIME_MIGRATION_APPLY_CHECKSUM =
-	"cb53c4cbad9a8bad2af7260fcdc1c6d8c080579cea41e964523af86c35849a0c";
+	"be902825e2fe777be2628b27220ab466d4e7c54be8d6eddc38c79b57a783c74c";
 constexpr const char *RUNTIME_MIGRATION_VERIFY_CHECKSUM =
-	"60010330c9219535e74f1bd899580a749eefb2cba9e05b20a2f085bb538f5f2b";
+	"c6216427c1dba77a8ca41646edbb7be861db2fc98cdbb76d3e1dd88a3da6e759";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_CHECKSUM =
-	"714f51a02c89fc16dd51deea7dadf861e2b668c60123e64672a53d82e968b145";
-constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID = "0070_telemetry_result_publication";
-constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 73;
+	"c33e0c4dc70c6fa4e82085b7675b364a03bbb917d1aa62af621138bf8543ffb9";
+constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HEAD_ID =
+	"0072_telemetry_progression_publication";
+constexpr unsigned RUNTIME_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 75;
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_APPLY_CHECKSUM =
-	"cb53c4cbad9a8bad2af7260fcdc1c6d8c080579cea41e964523af86c35849a0c";
+	"be902825e2fe777be2628b27220ab466d4e7c54be8d6eddc38c79b57a783c74c";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_VERIFY_CHECKSUM =
-	"60010330c9219535e74f1bd899580a749eefb2cba9e05b20a2f085bb538f5f2b";
+	"c6216427c1dba77a8ca41646edbb7be861db2fc98cdbb76d3e1dd88a3da6e759";
 constexpr const char *RUNTIME_STAGING_0045_MIGRATION_HISTORY_CHECKSUM =
-	"687f947bf8b6e504df2d1c8774ed05b18be180c62341c10641200cc71cb658ec";
+	"0db67c541eb9f613cbd34ffc02c5f5eaad86e18873ee8407ee18f3b46f23189d";
 /* Master recorded runtime state at 0031; its accounting upgrade retains that prefix. */
-constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID = "0070_telemetry_result_publication";
-constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 73;
+constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HEAD_ID =
+	"0072_telemetry_progression_publication";
+constexpr unsigned RUNTIME_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 75;
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_APPLY_CHECKSUM =
-	"cb53c4cbad9a8bad2af7260fcdc1c6d8c080579cea41e964523af86c35849a0c";
+	"be902825e2fe777be2628b27220ab466d4e7c54be8d6eddc38c79b57a783c74c";
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_VERIFY_CHECKSUM =
-	"60010330c9219535e74f1bd899580a749eefb2cba9e05b20a2f085bb538f5f2b";
+	"c6216427c1dba77a8ca41646edbb7be861db2fc98cdbb76d3e1dd88a3da6e759";
 constexpr const char *RUNTIME_MASTER_0031_MIGRATION_HISTORY_CHECKSUM =
-	"aa7aa2ada3a4a9fead2c859758f9bc6cefc575accb3125b66eaa4d53a84279a3";
+	"90fbbb0f9e24b9d81faa597ceb4b43f3e0e2962c60ef565fbadc2fed1f476cbe";
 /* Recorded telemetry prefixes converge by appending the three independent base migrations. */
 constexpr const char *RUNTIME_TELEMETRY_0067_MIGRATION_HEAD_ID =
-	"0070_telemetry_result_publication";
-constexpr unsigned RUNTIME_TELEMETRY_0067_MIGRATION_HEAD_SEQUENCE = 73;
+	"0072_telemetry_progression_publication";
+constexpr unsigned RUNTIME_TELEMETRY_0067_MIGRATION_HEAD_SEQUENCE = 75;
 constexpr const char *RUNTIME_TELEMETRY_0067_MIGRATION_APPLY_CHECKSUM =
-	"cb53c4cbad9a8bad2af7260fcdc1c6d8c080579cea41e964523af86c35849a0c";
+	"be902825e2fe777be2628b27220ab466d4e7c54be8d6eddc38c79b57a783c74c";
 constexpr const char *RUNTIME_TELEMETRY_0067_MIGRATION_VERIFY_CHECKSUM =
-	"60010330c9219535e74f1bd899580a749eefb2cba9e05b20a2f085bb538f5f2b";
+	"c6216427c1dba77a8ca41646edbb7be861db2fc98cdbb76d3e1dd88a3da6e759";
 constexpr const char *RUNTIME_TELEMETRY_0067_MIGRATION_HISTORY_CHECKSUM =
-	"cb76887ef7d22b78b75a626670fdbca5644770b5f2a228244295ba87ac99845f";
+	"6d2e2e6ff8d7bfa962029f241926d413062b989415b4d4f2e527065b3b6e55b7";
 constexpr const char *RUNTIME_TELEMETRY_0067_STAGING_0045_MIGRATION_HEAD_ID =
-	"0070_telemetry_result_publication";
-constexpr unsigned RUNTIME_TELEMETRY_0067_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 73;
+	"0072_telemetry_progression_publication";
+constexpr unsigned RUNTIME_TELEMETRY_0067_STAGING_0045_MIGRATION_HEAD_SEQUENCE = 75;
 constexpr const char *RUNTIME_TELEMETRY_0067_STAGING_0045_MIGRATION_APPLY_CHECKSUM =
-	"cb53c4cbad9a8bad2af7260fcdc1c6d8c080579cea41e964523af86c35849a0c";
+	"be902825e2fe777be2628b27220ab466d4e7c54be8d6eddc38c79b57a783c74c";
 constexpr const char *RUNTIME_TELEMETRY_0067_STAGING_0045_MIGRATION_VERIFY_CHECKSUM =
-	"60010330c9219535e74f1bd899580a749eefb2cba9e05b20a2f085bb538f5f2b";
+	"c6216427c1dba77a8ca41646edbb7be861db2fc98cdbb76d3e1dd88a3da6e759";
 constexpr const char *RUNTIME_TELEMETRY_0067_STAGING_0045_MIGRATION_HISTORY_CHECKSUM =
-	"855b5cef43ae76380e386561aa4dc5f3d99c8fe4b5c4f4ec8504005ef5a0b55f";
+	"746e1a0892d2d7684e0b321ecabaac73958f9cea1e7096e18bf654d1aca09f56";
 constexpr const char *RUNTIME_TELEMETRY_0067_MASTER_0031_MIGRATION_HEAD_ID =
-	"0070_telemetry_result_publication";
-constexpr unsigned RUNTIME_TELEMETRY_0067_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 73;
+	"0072_telemetry_progression_publication";
+constexpr unsigned RUNTIME_TELEMETRY_0067_MASTER_0031_MIGRATION_HEAD_SEQUENCE = 75;
 constexpr const char *RUNTIME_TELEMETRY_0067_MASTER_0031_MIGRATION_APPLY_CHECKSUM =
-	"cb53c4cbad9a8bad2af7260fcdc1c6d8c080579cea41e964523af86c35849a0c";
+	"be902825e2fe777be2628b27220ab466d4e7c54be8d6eddc38c79b57a783c74c";
 constexpr const char *RUNTIME_TELEMETRY_0067_MASTER_0031_MIGRATION_VERIFY_CHECKSUM =
-	"60010330c9219535e74f1bd899580a749eefb2cba9e05b20a2f085bb538f5f2b";
+	"c6216427c1dba77a8ca41646edbb7be861db2fc98cdbb76d3e1dd88a3da6e759";
 constexpr const char *RUNTIME_TELEMETRY_0067_MASTER_0031_MIGRATION_HISTORY_CHECKSUM =
-	"e97465d3fee2a6d733038d0e33857f88331e7ac6aa0f920323d8f19e537d47bb";
+	"80bfcd11e9c905757e0f0aeed4e806f1646b2725a8342605af22dc82be26f2ab";
 constexpr const char *RUNTIME_MIGRATION_HISTORY_SQL =
-	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING utf8mb4))),1"
-	"6,'0')),CONVERT(migration_id USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST("
-	"sequence_number AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(sequence_number AS CH"
-	"AR) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(description USING utf8mb4))),1"
-	"6,'0')),CONVERT(description USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER("
-	"HEX(apply_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(apply_checksum)) USI"
-	"NG utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LOWER(HEX(verify_checksum)) USING utf"
-	"8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OC"
-	"TET_LENGTH(CONVERT(compatibility USING utf8mb4))),16,'0')),CONVERT(compatibility USIN"
-	"G utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(CAST(runner_version AS CHAR) USING utf"
-	"8mb4))),16,'0')),CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))) FROM mud_schem"
-	"a_history ORDER BY sequence_number LIMIT 74";
+	"SELECT HEX(CONCAT(UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(migration_id USING utf8mb4"
+	"))),16,'0')),CONVERT(migration_id USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CON"
+	"VERT(CAST(sequence_number AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST(sequen"
+	"ce_number AS CHAR) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(descriptio"
+	"n USING utf8mb4))),16,'0')),CONVERT(description USING utf8mb4),UNHEX(LPAD(HEX(OC"
+	"TET_LENGTH(CONVERT(LOWER(HEX(apply_checksum)) USING utf8mb4))),16,'0')),CONVERT("
+	"LOWER(HEX(apply_checksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(LO"
+	"WER(HEX(verify_checksum)) USING utf8mb4))),16,'0')),CONVERT(LOWER(HEX(verify_che"
+	"cksum)) USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LENGTH(CONVERT(compatibility USING u"
+	"tf8mb4))),16,'0')),CONVERT(compatibility USING utf8mb4),UNHEX(LPAD(HEX(OCTET_LEN"
+	"GTH(CONVERT(CAST(runner_version AS CHAR) USING utf8mb4))),16,'0')),CONVERT(CAST("
+	"runner_version AS CHAR) USING utf8mb4))) FROM mud_schema_history ORDER BY sequen"
+	"ce_number LIMIT 76";
 constexpr const char *RUNTIME_EXTRA_DESCRIPTION_GENERATION_SQL =
 	"SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN "
 	"('player_item_extra_descr','player_pet_item_extra_descr') AND column_name='description_sha256' AND "

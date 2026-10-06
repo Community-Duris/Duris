@@ -6,7 +6,7 @@ stores described below. Migration `0030_telemetry_quarantine` adds a durable,
 operator-controlled quarantine for record-specific SQL failures. Migration
 `0054_telemetry_incident_coverage` adds the four reviewed/published incident stores.
 Existing immutable migrations retain their original content and checksums; the
-current complete runtime inventory is 273 tables through migration 0070.
+current complete runtime inventory is 282 tables through migration 0072.
 Migration `0055_telemetry_observation_projections` adds five bounded definition 2
 stores for already collected progression, encounter and combat facts. See
 [OBSERVATION_PROJECTIONS.md](OBSERVATION_PROJECTIONS.md) for their grains and limits.
@@ -22,10 +22,16 @@ build observations and typed selected-control evidence. Migration 0069 adds the
 kind-14 participant/objective values and independent schema-7 incident review.
 Migration 0070 adds four independent definition-8 retained/published stores. See
 [BATTLE_RESULTS.md](BATTLE_RESULTS.md) for exact keys, limits and qualification.
+Migration 0071 adds two immutable progression payload tables and independent
+schema-8 incident review. The original raw table remains 537 columns; the bounded
+reader joins the payloads by their original receipt to expose 714 logical columns.
+Migration 0072 adds five definition-9 retained/published stores. See
+[PROGRESSION_CONTEXT.md](PROGRESSION_CONTEXT.md) for the source, milestone,
+rotation, effort and observed-XP portfolio contracts.
 
 | Table | Grain and ownership |
 | --- | --- |
-| `telemetry_interval` | Immutable tagged facts of all fourteen current record kinds; writer inserts and reads replay evidence. `ingest_id` is the keyset cursor. Global unique `(boot_id,process_id,record_seq)` also covers process-wide gaps. Shared battle facts use `(battle_boot_id,battle_process_id,battle_seq,battle_fact_sequence)`. Disjoint contributions use `(bc_battle_boot_id,bc_battle_process_id,bc_segment_seq)`, independent of battle/actor attribution. Typed results use `(bout_boot_id,bout_process_id,bout_sequence)` with exact optional movement parents and 16-byte objective operation IDs. |
+| `telemetry_interval` | Immutable tagged facts of all sixteen current record kinds; writer inserts and reads replay evidence. `ingest_id` is the keyset cursor. Global unique `(boot_id,process_id,record_seq)` also covers process-wide gaps. Shared battle facts use `(battle_boot_id,battle_process_id,battle_seq,battle_fact_sequence)`. Disjoint contributions use `(bc_battle_boot_id,bc_battle_process_id,bc_segment_seq)`, independent of battle/actor attribution. Typed results use `(bout_boot_id,bout_process_id,bout_sequence)` with exact optional movement parents and 16-byte objective operation IDs. |
 | `telemetry_session` | Latest absolute checkpoint totals plus observed enter/exit flags and quality. Scoped primary key includes environment/season and original session identity; a second global session identity unique key prevents a changed scope from creating a second projection. Writer owns insertion/update. |
 | `telemetry_config` | Immutable `(environment_id,config_id)` and the complete typed effective snapshot, including its SHA-256 fingerprint and publication metadata. Writer owns insertion; publication reuse must match semantic content, excluding process-local revision and effective time. |
 | `telemetry_player_day` | Rollup definition/generation/environment/season/UTC-day/subject/session contribution. The six duration counters, attributable coverage and watermark remain separate from raw session totals. |
@@ -42,6 +48,10 @@ Migration 0070 adds four independent definition-8 retained/published stores. See
 | `telemetry_battle_source_v8` / `telemetry_battle_input_v8` | Private bounded original battle/build/control/result inputs and immutable configuration evidence retained with the committed cursor and source digest. Earlier versioned stores retain their independent definition meaning. |
 | `telemetry_rollup_battle_coverage_v8` / `telemetry_rollup_battle_row_v8` | One atomic published generation with exact points, typed outcomes and conserved denominators/qualification coverage. Only published rows/coverage are readable by its restricted report role. |
 | `telemetry_incident_registry_v7` / `telemetry_incident_v7` | Independent family-1–14 reviewed inventory, with the existing registrar's bounded append-only contract. Earlier incident schemas cannot claim loss coverage for newly introduced families. |
+| `telemetry_progression_context` / `telemetry_progression_configuration` | Immutable family-15 context and family-16 exact configuration payloads. Their original transport headers remain in `telemetry_interval`; header and payload insert atomically and replay must match both. Raw retention cascades to these payloads. |
+| `telemetry_incident_registry_v8` / `telemetry_incident_v8` | Independent reviewed family-1–16 inventory. Earlier schemas retain their original family coverage. |
+| `telemetry_progression_source_v9` / `telemetry_progression_input_v9` / `telemetry_progression_reference_v9` | Private bounded source header, selected inputs and exact original references retained with the definition-9 cursor. References do not advance that cursor. Retention has no foreign key to the raw stream. |
+| `telemetry_rollup_progression_coverage_v9` / `telemetry_rollup_progression_row_v9` | Atomic immutable published coverage and five report families, with exact source/configuration/identity/loss references and explicit uncertainty. The restricted report role reads these stores and pinned public generation metadata. |
 
 The tagged fact stream stores named columns, with SQL NULL for fields absent from
 the selected kind. Allowed all-zero session and connection references remain zero
@@ -106,8 +116,8 @@ the dedicated session UPDATE permission.
 
 | Role | Allowed table operations |
 | --- | --- |
-| Telemetry writer | SELECT and INSERT on `telemetry_interval`, `telemetry_config` and `telemetry_quarantine`; SELECT, INSERT and UPDATE on `telemetry_session`. No quarantine UPDATE/DELETE, aggregate writes or gameplay-table privileges. |
-| External rollup | Bounded SELECT on `telemetry_interval`, `telemetry_config`, `telemetry_session`, `telemetry_incident_registry` and `telemetry_incident`; SELECT, INSERT and UPDATE on `telemetry_player_day`, `telemetry_cohort_day`, `telemetry_rollup_session`, `telemetry_cohort_member` and `telemetry_rollup_state`; SELECT/INSERT on `telemetry_rollup_incident_coverage` and `telemetry_rollup_incident`. No gameplay writes or raw/registry UPDATE/DELETE. |
+| Telemetry writer | SELECT and INSERT on `telemetry_interval`, `telemetry_progression_context`, `telemetry_progression_configuration`, `telemetry_config` and `telemetry_quarantine`; SELECT, INSERT and UPDATE on `telemetry_session`. No quarantine UPDATE/DELETE, aggregate writes or gameplay-table privileges. |
+| External rollup | Bounded SELECT on `telemetry_interval`, `telemetry_progression_context`, `telemetry_progression_configuration`, `telemetry_config`, `telemetry_session`, `telemetry_incident_registry` and `telemetry_incident`; SELECT, INSERT and UPDATE on `telemetry_player_day`, `telemetry_cohort_day`, `telemetry_rollup_session`, `telemetry_cohort_member` and `telemetry_rollup_state`; SELECT/INSERT on `telemetry_rollup_incident_coverage` and `telemetry_rollup_incident`. No gameplay writes or raw/registry UPDATE/DELETE. |
 | Restricted incident registrar | SELECT/INSERT on the two reviewed incident registry tables and bounded SELECT on raw facts to verify a named post-fix replay key. See [INCIDENT_COVERAGE.md](INCIDENT_COVERAGE.md). |
 | Reports | SELECT only on reviewed aggregate/state tables or restricted views; no unrestricted raw history or gameplay access. |
 | Migration/lifecycle operator | Existing reviewed administrative workflow; distinct from runtime identities. No automatic purge is authorized. |
@@ -293,8 +303,28 @@ were changed. The 0017 extension is statically verified here; parent-owned Maria
 migration, grant, and drift checks remain required. These results do not qualify
 rollup/report plans or the future load gate. Permission grant provisioning, scoped
 disclosure and lifecycle activation remain explicit operator/integration work.
-The runtime contract is pinned to migration head 0017. A previously built binary
+At that historical delivery, the runtime contract was pinned to migration head 0017. A previously built binary
 pinned to head 0016 will refuse the upgraded schema; additive tables do not make a
 binary-only rollback compatible. Recovery requires a reviewed compatible
 binary/schema pair. Disabling telemetry retains its tables and does not authorize a
 destructive down migration.
+
+The current raw reader joins the two immutable progression payload tables by the
+original `(boot_id,process_id,record_seq)` receipt. Raw worker and reviewer roles
+require SELECT on both tables, including when rebuilding an earlier definition.
+The writer requires INSERT as well; its existing batch transaction inserts a
+header and its typed payload together. Public report roles receive neither raw
+nor typed-source privileges. Source availability does not certify a character
+save. Definition 9 additionally publishes the private retained progression
+inputs and exact references through the five `0072` stores documented in
+`PROGRESSION_CONTEXT.md`. Rollup workers need SELECT/INSERT on those private and
+published stores and UPDATE on the private source header; report readers need
+only SELECT on the public coverage and row stores plus their existing pinned
+generation/incident metadata. Independent review uses incident schema 8.
+The five report names are `progression_context`, `progression_milestones`,
+`character_rotation`, `progression_effort`, and `progression_portfolio`.
+The complete source-stable 45-phase command qualifies native source storage,
+atomic publication, retained readback, role separation and actual-server
+progression on both engines. Exact windows, budgets and limitations are in
+[PROGRESSION_CONTEXT.md](PROGRESSION_CONTEXT.md#qualified-local-delivery-2026-10-06).
+Telemetry persistence cannot establish an XP-award or character-save commit.

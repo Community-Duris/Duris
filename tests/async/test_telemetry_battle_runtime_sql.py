@@ -125,13 +125,15 @@ def qualify_native_battle_publication(query, environment, command, name, origin,
     try:
         grants = {
             "rollup": {"telemetry_rollup_state": "SELECT,INSERT,UPDATE", "telemetry_generation_identity": "SELECT,INSERT",
-                "telemetry_interval": "SELECT", "telemetry_config": "SELECT", "telemetry_identity_registry": "SELECT",
+                "telemetry_interval": "SELECT", "telemetry_config": "SELECT",
+                "telemetry_progression_context": "SELECT", "telemetry_progression_configuration": "SELECT", "telemetry_identity_registry": "SELECT",
                 "telemetry_identity_association": "SELECT", review_tables[0]: "SELECT", review_tables[1]: "SELECT",
                 tables[0]: "SELECT,INSERT,UPDATE", tables[1]: "SELECT,INSERT", tables[2]: "SELECT,INSERT", tables[3]: "SELECT,INSERT",
                 "telemetry_rollup_incident_coverage": "SELECT,INSERT", "telemetry_rollup_incident": "SELECT,INSERT"},
             "report": {"telemetry_rollup_state": "SELECT", "telemetry_generation_identity": "SELECT", tables[2]: "SELECT", tables[3]: "SELECT",
                 "telemetry_rollup_incident_coverage": "SELECT", "telemetry_rollup_incident": "SELECT"},
-            "review": {"telemetry_interval": "SELECT", review_tables[0]: "SELECT,INSERT", review_tables[1]: "SELECT,INSERT"},
+            "review": {"telemetry_interval": "SELECT",
+                "telemetry_progression_context": "SELECT", "telemetry_progression_configuration": "SELECT", review_tables[0]: "SELECT,INSERT", review_tables[1]: "SELECT,INSERT"},
         }
         if definition == 8:
             # Native session entry/exit also produces the maintained base
@@ -177,7 +179,8 @@ def qualify_native_battle_publication(query, environment, command, name, origin,
             else:
                 assert config is None
 
-        for table in (tables[0], tables[1], "telemetry_interval", "telemetry_config", *review_tables):
+        for table in (tables[0], tables[1], "telemetry_interval", "telemetry_config",
+            "telemetry_progression_context", "telemetry_progression_configuration", *review_tables):
             try:
                 reporter._execute("SELECT COUNT(*) AS n FROM " + table)
             except Exception as error:
@@ -490,11 +493,13 @@ def qualify_persisted_source(query, environment, command, name, history, executa
             "rollup": {"telemetry_rollup_state": "SELECT,INSERT,UPDATE",
                 "telemetry_generation_identity": "SELECT,INSERT", "telemetry_battle_source": "SELECT,INSERT,UPDATE",
                 "telemetry_battle_input": "SELECT,INSERT", "telemetry_interval": "SELECT",
+                "telemetry_progression_context": "SELECT", "telemetry_progression_configuration": "SELECT",
                 "telemetry_identity_registry": "SELECT", "telemetry_identity_association": "SELECT",
                 "telemetry_incident_registry_v4": "SELECT", "telemetry_incident_v4": "SELECT"},
             "report": {"telemetry_rollup_state": "SELECT", "telemetry_generation_identity": "SELECT"},
             "review": {"telemetry_identity_reviewer": "SELECT", "telemetry_identity_registry": "SELECT,INSERT",
                 "telemetry_identity_association": "SELECT,INSERT", "telemetry_interval": "SELECT",
+                "telemetry_progression_context": "SELECT", "telemetry_progression_configuration": "SELECT",
                 "telemetry_incident_registry_v4": "SELECT,INSERT", "telemetry_incident_v4": "SELECT,INSERT"},
         }
         for table in ("telemetry_rollup_battle_coverage", "telemetry_rollup_battle_row",
@@ -1064,7 +1069,8 @@ def qualify() -> None:
 
             query("CREATE USER %s@'%%' IDENTIFIED BY %s", (user, password))
             user_created = True
-            for table in ("telemetry_interval", "telemetry_config", "telemetry_quarantine"):
+            for table in ("telemetry_interval", "telemetry_config", "telemetry_quarantine",
+                "telemetry_progression_context", "telemetry_progression_configuration"):
                 query(f"GRANT SELECT,INSERT ON `{name}`.`{table}` TO %s@'%%'", (user,))
             query(f"GRANT SELECT,INSERT,UPDATE ON `{name}`.telemetry_session TO %s@'%%'", (user,))
             run_environment = dict(environment, TELEMETRY_BATTLE_WRITER_USER=user,

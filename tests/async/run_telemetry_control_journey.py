@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -21,8 +22,9 @@ from test_telemetry_repository import prepare_sql_fixture, drop_sql_fixture, sql
 ROOT = journey.ROOT
 sys.path.insert(0, str(ROOT))
 from scripts.telemetry import battle_publication, battle_source, battle_result_contract, battle_comparison, control_contract, incident, outage
+from scripts.telemetry import progression_context_contract as progression_context, progression_publication
 from scripts.telemetry.db_access import ConnectionSettings, PyMySQLConnectionFactory, PyMySQLRollupDatabase
-from scripts.telemetry.rollup_definitions import RollupTarget
+from scripts.telemetry.rollup_definitions import RollupTarget, PUBLICATION_PUBLISHED, PUBLICATION_SUPERSEDED
 from scripts.telemetry.rollup_engine import RollupEngine, RollupBounds, BoundsExceeded
 
 
@@ -36,7 +38,7 @@ def run():
     root = pymysql.connect(host="127.0.0.1", port=int(environment["DB_PORT"]), user=environment["DB_USER"],
         password=environment["DB_PASSWD"], database=database, autocommit=True, cursorclass=pymysql.cursors.DictCursor)
     users, adapters = [], []
-    receipt = dict(status="running", actual_running_server=True, synthetic_accounts=7,
+    receipt = dict(status="running", actual_running_server=True, synthetic_accounts=9,
         production_or_staging_access=False, engine=os.environ["TELEMETRY_REPOSITORY_DB_IMAGE"])
     result = Path(os.environ["TELEMETRY_CONTROL_JOURNEY_RESULT"])
     token = hashlib.sha256(database.encode()).hexdigest()[:12]
@@ -64,7 +66,8 @@ def run():
             query("CREATE USER %s@'%%' IDENTIFIED BY %s", (user, password))
             users.append(user)
         query(f"GRANT ALL ON `{database}`.* TO %s@'%%'", (users[0],))
-        for table in ("telemetry_config", "telemetry_interval", "telemetry_quarantine"):
+        for table in ("telemetry_config", "telemetry_interval", "telemetry_quarantine",
+            "telemetry_progression_context", "telemetry_progression_configuration"):
             query(f"GRANT SELECT,INSERT ON `{database}`.`{table}` TO %s@'%%'", (users[1],))
         query(f"GRANT SELECT,INSERT,UPDATE ON `{database}`.telemetry_session TO %s@'%%'", (users[1],))
         # Minimal world boot skips SQL zone publication. Provide its native
@@ -88,6 +91,21 @@ def run():
             world = world[:end] + "\nD0\n~\n~\n0 0 22801" + world[end:]
             world = world.replace("$~", "#22801\nThe Regression Refuge~\nA quiet room beyond the arena.\n~\n1 0 0\nD2\n~\n~\n0 0 22800\nS\n$~")
             world_path.write_text(world)
+            # Ordinary prototype data only: XP still goes through native combat,
+            # assistance, rested, caps, storage and level-threshold decisions.
+            mobiles = runtime / "areas_mini/mini.mob"
+            mobiles.write_text(mobiles.read_text().replace("$~", """#22802
+progression subject~
+the progression subject~
+A progression subject waits here.
+~
+~
+10 0 0 0 0 0 0 0 S
+PH 0 0 -1
+10 0 0 1d1+1 1d1+1
+0.0.0.0 800
+8 8 0
+$~"""))
             value = objects.read_text()
             start, end = value.index("#358\n"), value.index("#359\n")
             value = value[:start] + value[start:end].replace("1 4 0 0 0 0 0 0", "1 4 1 0 0 0 0 0") + value[end:]
@@ -193,12 +211,15 @@ def run():
                 characters = (("Ctlstaffacct", "Ctlstaff", "w"), ("Ctltargacct", "Ctltarget", "w"),
                     ("Pvpcastacct", "Pvpcast", "sorcerer"), ("Pvphealacct", "Pvpheal", "cleric"),
                     ("Pvpallyacct", "Pvpally", "w"), ("Pvpvictacct", "Pvpvictim", "w"),
-                    ("Pvpmateacct", "Pvpmate", "w"))
+                    ("Pvpmateacct", "Pvpmate", "w"), ("Progacct", "Progfirst", "w"),
+                    ("Progacct", "Progsecond", "w"), ("Progpeeracct", "Progpeer", "w"))
+                created_accounts = set()
                 for account, character, class_name in characters:
                     client = journey.MudClient(port)
                     clients.append(client)
                     journey.create_character(client, account=account, character=character, class_name=class_name,
-                        email=account.lower() + "@example.invalid")
+                        email=account.lower() + "@example.invalid", new_account=account not in created_accounts)
+                    created_accounts.add(account)
                     save(client, character)
                     client.send("quit")
                     client.expect("ACCOUNT MENU", timeout=30)
@@ -282,6 +303,9 @@ def run():
                 issue(staff, "instacast 'major paralysis' Ctltarget")
                 until(lambda: count("record_kind=13 AND " + producer_where) > before_resumed_control,
                     "fresh control baseline after copyover absent")
+                until(lambda: count(f"record_kind=13 AND ctl_kind=2 AND ctl_target_actor_pid={target_pid} " +
+                    "AND (ctl_after_mask & 4)<>0 AND " + producer_where) > 0,
+                    "admitted active control baseline before writer outage absent")
                 # Kill only private writer connections after revoking new login.
                 # Gameplay save remains authoritative through its distinct role.
                 outage_start = time.time_ns() // 1000
@@ -306,6 +330,7 @@ def run():
                 # as newly observed activity under the next producer.
                 outage_end = time.time_ns() // 1000
                 before_recovery = count("record_kind=13")
+                control_origin = int(query("SELECT COALESCE(MAX(ingest_id),0) AS n FROM telemetry_interval")[0]["n"])
                 # Preserve the original control fixture's special suppression.
                 # The separate outcome producer enables native object procedures.
                 boot()
@@ -322,7 +347,7 @@ def run():
                 # Fresh ordinary players enter only after the failed producer
                 # has stopped. Their positive prefixes belong to the separately
                 # witnessed, clean-drained recovery producer.
-                pvp = {character: reconnect(account, character) for account, character, _ in characters[2:]}
+                pvp = {character: reconnect(account, character) for account, character, _ in characters[2:7]}
                 pids = {row["name"]: row["pid"] for row in query("SELECT name,pid FROM player_data WHERE name LIKE %s", ("Pvp%",))}
                 caster, healer, ally, victim, mate = (pvp[name] for name in
                     ("Pvpcast", "Pvpheal", "Pvpally", "Pvpvictim", "Pvpmate"))
@@ -404,14 +429,24 @@ def run():
                 # Native quit supplies an observed actor departure; status on the
                 # far side of that boundary cannot extend the battle prefix.
                 issue(staff, "tranquilize", "entire room nods off")
-                victim.send("quit")
-                victim.expect("ACCOUNT MENU", timeout=30)
+                wake_stand(victim)
+                departure_retries = 0
+                for departure_attempt in range(3):
+                    victim.send("quit")
+                    response, _ = victim.expect_any(("ACCOUNT MENU", "You're too stunned to think of camping!"), timeout=180)
+                    if response == "ACCOUNT MENU":
+                        break
+                    departure_retries += 1
+                    wake_stand(victim)
+                else:
+                    raise AssertionError("native participant departure remained stun-refused")
                 until(lambda: any(row["ctl_kind"] == 3 and row["ctl_boundary"] == 5 for row in live_controls()),
                     "ordinary participant lifecycle cut absent")
                 receipt["ordinary_pvp"] = dict(producer=pvp_producer, target_pid=pids["Pvpvictim"],
                     caster_pid=pids["Pvpcast"], healer_pid=pids["Pvpheal"], solo_ingest_range=[solo_start+1, solo_end],
                     group_ingest_range=[group_start+1, int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])], refresh=True, expiry=True, cure=True,
                     changing_group_participation=True, observed_departure=True,
+                    native_wake_stand_before_departure=True, stun_refused_quit_retries=departure_retries,
                     expiry_record_seq=expiry["record_seq"], cure_record_seq=cure["record_seq"],
                     positive_capture="ordinary untrusted cast and combat paths",
                     seeded_prerequisites="level, HP, memorized spells, non-selected saving penalty",
@@ -426,7 +461,7 @@ def run():
                 outcome_origin = int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])
                 boot(specials=True)
                 staff = reconnect("Ctlstaffacct", "Ctlstaff")
-                pvp = {character: reconnect(account, character) for account, character, _ in characters[2:] if character != "Pvpvictim"}
+                pvp = {character: reconnect(account, character) for account, character, _ in characters[2:7] if character != "Pvpvictim"}
                 caster, healer, ally, mate = (pvp[name] for name in ("Pvpcast", "Pvpheal", "Pvpally", "Pvpmate"))
                 outcome_producer = query("SELECT boot_id,process_id FROM telemetry_interval ORDER BY ingest_id DESC LIMIT 1")[0]
                 assert outcome_producer != pvp_producer
@@ -536,8 +571,9 @@ def run():
                 assert len(committed) == len(claim) == len(credit) == 1 and committed[0]["committed_at"] is not None
                 assert claim[0]["operation_id"] == operation and credit[0]["toucher_pid"] == pids["Pvpmate"]
                 assert credit[0]["group_size"] == objective["bout_participant_count"] and credit[0]["zone_number"] == objective["bout_credited_zone_vnum"]
+                outcome_through = int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])
                 receipt["ordinary_outcomes"] = dict(producer=outcome_producer, ingest_range=[outcome_start+1,
-                    int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])],
+                    outcome_through],
                     equipment_actor_pid=pids["Pvpally"], equipment_point_sequences=[gear_before["bctx_sequence"], gear_after["bctx_sequence"]],
                     support_ingest_id=support["ingest_id"], support_record_seq=support["record_seq"],
                     support_departure_ingest_id=support_departure["ingest_id"], changing_support_group_participation=True,
@@ -559,8 +595,303 @@ def run():
                     copyover_fresh_control_baseline=True,
                     save_latency_ns={"telemetry_off": off_save, "telemetry_on_status_present": on_save})
                 stop()
+                # Use the actual captured threshold catalog as a gameplay
+                # prerequisite, with the server stopped. No telemetry output or
+                # earned award is seeded, and every later level gain is native.
+                catalog_root = query("SELECT pf.pcfg_boot_id,pf.pcfg_process_id,pf.pcfg_root_record_seq "
+                    "FROM telemetry_progression_configuration pf WHERE pcfg_chunk_index=0 "
+                    "ORDER BY record_seq DESC LIMIT 1")[0]
+                catalog_rows = query("SELECT * FROM telemetry_progression_configuration "
+                    "WHERE pcfg_boot_id=%s AND pcfg_process_id=%s AND pcfg_root_record_seq=%s ORDER BY pcfg_chunk_index",
+                    (catalog_root["pcfg_boot_id"], catalog_root["pcfg_process_id"], catalog_root["pcfg_root_record_seq"]))
+                catalog = progression_context.reconcile_configuration_chunks(
+                    [{name: row[name] for name, _, _ in progression_context.CONFIGURATION_CHUNK_LAYOUT}
+                        for row in catalog_rows], [(row["boot_id"], row["process_id"], row["record_seq"]) for row in catalog_rows])
+                thresholds = {entry["id"]: entry["bits"] for entry in catalog["values"] if 1 <= entry["id"] <= 62}
+                assert 1 < thresholds[11] < 2**31
+                query("UPDATE player_data SET level=10,highest_level=10,exp=0,base_hit=50000,hit_diff=0 WHERE name LIKE %s", ("Prog%",))
+                query("UPDATE player_data SET exp=%s WHERE name='Progfirst'", (thresholds[11]-1,))
+                progress_origin = int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])
+                # The independently versioned progression producer uses a
+                # coarser cadence to keep this several-minute native journey
+                # inside the unchanged retained/publication byte budget.
+                env["TELEMETRY_INTERVAL_USEC"] = "10000000"
+                env["TELEMETRY_CHECKPOINT_INTERVAL_USEC"] = "20000000"
+                boot(specials=True)
+                staff = reconnect("Ctlstaffacct", "Ctlstaff")
+                paging = issue(staff, "toggle paging")
+                if "mode on." in paging:
+                    paging = issue(staff, "toggle paging")
+                assert "mode off." in paging
+                first = reconnect("Progacct", "Progfirst")
+                peer = reconnect("Progpeeracct", "Progpeer")
+                progress_pids = {row["name"]: row["pid"] for row in query("SELECT name,pid FROM player_data WHERE name LIKE %s", ("Prog%",))}
+
+                def progress_points(character=None, through=None):
+                    clause = "" if character is None else " AND px.pctx_pid=%s"
+                    parameters = (progress_origin,) if character is None else (progress_origin, progress_pids[character])
+                    if through is not None:
+                        clause += " AND r.ingest_id<=%s"
+                        parameters += (through,)
+                    return query("SELECT px.*,r.ingest_id FROM telemetry_progression_context px "
+                        "JOIN telemetry_interval r USING(boot_id,process_id,record_seq) WHERE r.ingest_id>%s" + clause +
+                        " ORDER BY r.ingest_id", parameters)
+
+                receipt["native_progression_attack_attempts"] = []
+
+                def native_kill(client, character, *, wait_for_receipt=True, npc_xp=1000000):
+                    before = int(query("SELECT COALESCE(MAX(ingest_id),0) AS n FROM telemetry_interval")[0]["n"])
+                    issue(staff, "load mob 22802", "You have created")
+                    if npc_xp == 800:
+                        # Keep the narrow rate prerequisite at one maximum HP;
+                        # regeneration during command prompts must not turn it
+                        # into a prolonged fight with changing build exposure.
+                        # Native kills of opponents within five levels add a
+                        # bloodlust affect after the award. A level-4 target
+                        # keeps this level-10 rate scenario in a stable build
+                        # stratum; native level-difference XP modifiers apply.
+                        issue(staff, "setbit char subject level 4")
+                        issue(staff, "setbit char subject basehit 1")
+                        issue(staff, "setattr subject hit 1", "OK.")
+                    issue(staff, "setbit char subject hit 1")
+                    if npc_xp == 800:
+                        inspected = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", issue(staff, "stat char subject"))
+                        assert re.search(r"Level:\s*4\(", inspected), inspected
+                        assert re.search(r"Hits:\s*\[\s*1/\s*1/\s*1\+", inspected), inspected
+                    # convertMob replaces prototype XP during native loading.
+                    # Set only the NPC prerequisite; player XP still follows
+                    # native damage/kill awards, modifiers, caps and levels.
+                    issue(staff, "setbit char subject exp " + str(npc_xp))
+                    # The native toggle command flips this preference; it
+                    # ignores a trailing "on". Observe its reply and enable
+                    # it if the first toggle switched it off.
+                    preference = issue(client, "toggle vicious")
+                    if "mode off." in preference:
+                        preference = issue(client, "toggle vicious")
+                    assert "will kill mortally wounded victims." in preference
+                    issue(client, "wield mace")
+                    transcript_start = len(client.transcript)
+                    attempt = dict(character=character, npc_xp=npc_xp, ordinary_command_attempts=1,
+                        completion_budget_seconds=180 if wait_for_receipt else 60)
+                    receipt["native_progression_attack_attempts"].append(attempt)
+                    issue(client, "kill subject")
+                    # Native critical misses can stop fighting altogether, not
+                    # merely delay a hit. Reissue the same ordinary attack in
+                    # the existing bounded wait; never load another subject or
+                    # clear an affect. All misses/context cuts stay retained.
+                    deadline = time.monotonic() + attempt["completion_budget_seconds"]
+                    next_attack = time.monotonic() + 5
+                    while b"You receive your share of experience." not in client.transcript[transcript_start:]:
+                        assert time.monotonic() < deadline, "ordinary progression kill-share gameplay absent"
+                        client._receive()
+                        if b"You receive your share of experience." in client.transcript[transcript_start:]:
+                            break
+                        if time.monotonic() >= next_attack:
+                            attempt["ordinary_command_attempts"] += 1
+                            issue(client, "kill subject")
+                            next_attack = time.monotonic() + 5
+                        time.sleep(0.1)
+                    attempt["native_kill_share_message_observed"] = True
+                    if not wait_for_receipt:
+                        return []
+                    until(lambda: count("record_kind=6 AND ingest_id>" + str(before) +
+                        " AND pid=" + str(progress_pids[character]) + " AND progression_source=3 AND progression_applied_xp>0") > 0,
+                        "ordinary progression kill-share receipt absent")
+                    awards = query("SELECT * FROM telemetry_interval WHERE record_kind=6 AND ingest_id>%s "
+                        "AND pid=%s AND progression_applied_xp>0 ORDER BY ingest_id", (before, progress_pids[character]))
+                    sources = {(row["boot_id"], row["process_id"], row["record_seq"]) for row in awards}
+                    until(lambda: sources <= {(row["pctx_source_boot_id"], row["pctx_source_process_id"], row["pctx_source_record_seq"])
+                        for row in progress_points(character)}, "native award decision contexts absent")
+                    return awards
+
+                print("Ordinary progression: solo XP, two completed milestones and rested/group decisions", flush=True)
+                native_kill(first, "Progfirst")
+                until(lambda: any(row["pctx_boundary"] == 4 and row["pctx_current_level"] == 11
+                    for row in progress_points("Progfirst")), "first native level advance absent")
+                # Retain the original fixture's segment cap. Spreading fights
+                # also exposes real elapsed time between native milestones.
+                for attempt in range(4):
+                    if any(row["pctx_boundary"] == 4 and row["pctx_current_level"] >= 12
+                            for row in progress_points("Progfirst")):
+                        break
+                    time.sleep(62)
+                    native_kill(first, "Progfirst")
+                until(lambda: any(row["pctx_boundary"] == 4 and row["pctx_current_level"] == 12
+                    for row in progress_points("Progfirst")), "full native level stage did not complete")
+                milestone_through = int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])
+                issue(staff, "newbsu Progfirst", "Done.")
+                issue(peer, "follow Progfirst", "now follow")
+                issue(peer, "consent Progfirst")
+                issue(first, "group Progpeer", "now a member of your group")
+                issue(first, "look")
+                issue(peer, "look")
+                time.sleep(62)
+                group_awards = native_kill(first, "Progfirst")
+                until(lambda: any(row["pctx_assistance"] == 2 and row["pctx_eligible_group_size"] == 2
+                    for row in progress_points("Progfirst")), "native group-share context absent")
+                assert any(row["pctx_assistance"] == 1 for row in progress_points("Progfirst"))
+                assert any(row["pctx_rested_application"] in (3, 4) and
+                    row["pctx_flags"] & progression_context.APPLICATION_KNOWN for row in progress_points("Progfirst"))
+                after_group_award = max(row["ingest_id"] for row in group_awards)
+                issue(first, "look")
+                issue(peer, "look")
+                until(lambda: any(row["ingest_id"] > after_group_award and row["pctx_boundary"] == 2 and
+                    row["pctx_quality_flags"] == 0 and row["pctx_flags"] & progression_context.CONTIGUOUS_EXPOSURE
+                    for row in progress_points("Progfirst")), "first-character connected exposure before rotation absent", 45)
+                group_through = int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])
+                # Save evidence is checked against the independent player store;
+                # the published telemetry observations remain observed-mutable.
+                save(first, "Progfirst")
+                saved = query("SELECT level,exp FROM player_data WHERE name='Progfirst'")[0]
+                assert saved["level"] >= 12
+                first.send("quit")
+                # Both mortal character switches preserve the ordinary camp
+                # timer rather than changing its property for the fixture.
+                first.expect("ACCOUNT MENU", timeout=180)
+                time.sleep(1)
+                second = reconnect("Progacct", "Progsecond")
+                issue(second, "wield mace")
+                issue(second, "look")
+                issue(peer, "look")
+                native_kill(second, "Progsecond", npc_xp=800)
+                time.sleep(62)
+                # A separate retained window starts after native warmup. It
+                # excludes earlier setup/context cuts without omitting unknown
+                # exposure from the full milestone/rotation generation.
+                until(lambda: any(row["pctx_boundary"] == 2 and row["pctx_quality_flags"] == 0 and
+                    row["pctx_flags"] & progression_context.CONTIGUOUS_EXPOSURE
+                    for row in progress_points("Progsecond")), "stable second-character exposure absent")
+                rate_probe_origin = int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])
+                rate_probe_awards = native_kill(second, "Progsecond", npc_xp=800)
+                assert all(row["progression_before_level"] == row["progression_after_level"] == 10 for row in rate_probe_awards)
+                last_rate_award = max(row["ingest_id"] for row in rate_probe_awards)
+                until(lambda: any(row["ingest_id"] > last_rate_award and row["pctx_boundary"] == 2
+                    for row in progress_points("Progsecond")), "native rate interval absent")
+                # Native no-misfire tags cut the wider fight's exposure. Qualify
+                # one declared prefix through the native kill-share boundary.
+                # Earlier fight awards/cuts remain in the adjacent rotation
+                # generation; subsequent lifecycle/recovery stays in the next
+                # generation. This proves a connected-time rate path, never a
+                # full-fight rate or active attention. No unknown interval is
+                # filtered out of a retained publication window.
+                kill_share_awards = [row for row in rate_probe_awards if row["progression_source"] == 3]
+                assert len(kill_share_awards) == 1
+                first_rate_award = kill_share_awards[0]
+                native_exposures = [row for row in progress_points("Progsecond") if
+                    row["ingest_id"] > rate_probe_origin and row["pctx_boundary"] == 2 and
+                    row["pctx_quality_flags"] == 0 and row["pctx_flags"] & progression_context.CONTIGUOUS_EXPOSURE]
+                before_award = [row for row in native_exposures if row["ingest_id"] < first_rate_award["ingest_id"] and
+                    row["pctx_at_usec"] <= first_rate_award["at_monotonic_usec"]]
+                covering_award = [row for row in native_exposures if row["ingest_id"] > first_rate_award["ingest_id"] and
+                    row["pctx_start_usec"] <= first_rate_award["at_monotonic_usec"] <= row["pctx_at_usec"]]
+                assert before_award and covering_award, "native kill-share clean exposure prefix absent"
+                anchor = before_award[-1]
+                prefix = covering_award[0]
+                anchor_source = query("SELECT ingest_id,quality_flags FROM telemetry_interval WHERE boot_id=%s "
+                    "AND process_id=%s AND record_seq=%s AND record_kind=1",
+                    (anchor["pctx_source_boot_id"], anchor["pctx_source_process_id"], anchor["pctx_source_record_seq"]))[0]
+                assert anchor_source["quality_flags"] == 0
+                rate_origin, rate_through = anchor_source["ingest_id"] - 1, prefix["ingest_id"]
+                rate_awards = [row for row in rate_probe_awards if rate_origin < row["ingest_id"] <= rate_through]
+                assert rate_awards == [first_rate_award]
+                second.send("quit")
+                # Mortal quit follows the ordinary camp timer (about 140 s).
+                # Preserve that lifecycle rather than changing its property.
+                second.expect("ACCOUNT MENU", timeout=180)
+                before_reload = int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])
+                first = reconnect("Progacct", "Progfirst")
+                until(lambda: any(row["ingest_id"] > before_reload and row["pctx_boundary"] == 1
+                    for row in progress_points("Progfirst")), "saved progression reload baseline absent")
+                loaded = next(row for row in progress_points("Progfirst") if row["ingest_id"] > before_reload and row["pctx_boundary"] == 1)
+                assert loaded["pctx_current_level"] == saved["level"] and loaded["pctx_current_exp"] == saved["exp"]
+                progress_before_copyover = int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])
+                staff.send("shutdown copyover")
+                staff.expect("Copyover complete!", timeout=90)
+                save(first, "Progfirst")
+                issue(first, "look")
+                issue(peer, "look")
+                until(lambda: any(row["ingest_id"] > progress_before_copyover and row["pctx_boundary"] == 1
+                    for row in progress_points("Progfirst")), "progression copyover baseline absent")
+                # A real XP decision and player save continue through a private
+                # telemetry writer outage. The absent source cannot be rebuilt
+                # from that independent save or counted as observed zero XP.
+                save(first, "Progfirst")
+                before_failure_save = query("SELECT level,exp FROM player_data WHERE name='Progfirst'")[0]
+                progression_failed_producer = query("SELECT boot_id,process_id FROM telemetry_interval ORDER BY ingest_id DESC LIMIT 1")[0]
+                progression_outage_start = time.time_ns() // 1000
+                query("ALTER USER %s@'%%' IDENTIFIED BY %s", (users[1], password + "-progression-unavailable"))
+                for row in query("SELECT ID FROM information_schema.PROCESSLIST WHERE USER=%s", (users[1],)):
+                    query("KILL CONNECTION " + str(int(row["ID"])))
+                native_kill(first, "Progfirst", wait_for_receipt=False)
+                save(first, "Progfirst")
+                after_failure_save = query("SELECT level,exp FROM player_data WHERE name='Progfirst'")[0]
+                assert after_failure_save != before_failure_save
+                def progression_circuit_open():
+                    health = issue(staff, "world telemetry")
+                    producer = "producer={boot_id}:{process_id}".format(**progression_failed_producer)
+                    return "state=circuit-open" in health and producer in health
+
+                until(progression_circuit_open, "progression outage did not open the current producer's circuit")
+                query("ALTER USER %s@'%%' IDENTIFIED BY %s", (users[1], password))
+                stop()
+                progression_failed_evidence = outage.read_evidence(runtime / "telemetry-ledger")
+                progression_failed_witness = next(row for row in progression_failed_evidence["observations"] if
+                    (row["boot_id"], row["process_id"]) == (progression_failed_producer["boot_id"], progression_failed_producer["process_id"]))
+                assert progression_failed_witness["circuit_open_count"] > 0 and (
+                    progression_failed_witness["unknown_after_last_sample"] or progression_failed_witness["known_abandoned_unattempted_records"] > 0)
+                progression_outage_end = time.time_ns() // 1000
+                before_progression_recovery = int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])
+                boot(specials=True)
+                staff = reconnect("Ctlstaffacct", "Ctlstaff")
+                first = reconnect("Progacct", "Progfirst")
+                recovery_awards = native_kill(first, "Progfirst")
+                assert any(row["ingest_id"] > before_progression_recovery and row["progression_source"] == 3 for row in recovery_awards)
+                save(first, "Progfirst")
+                progress_through = int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])
+                progress_capture = progress_points(through=progress_through)
+                owners = {name: {row["pctx_account_token"] for row in progress_capture if row["pctx_pid"] == pid and row["pctx_account_token"]}
+                    for name, pid in progress_pids.items()}
+                assert len(owners["Progfirst"]) == len(owners["Progsecond"]) == len(owners["Progpeer"]) == 1
+                assert owners["Progfirst"] == owners["Progsecond"] and owners["Progfirst"] != owners["Progpeer"]
+                progress_scope = (progress_capture[0]["pctx_environment_id"], progress_capture[0]["pctx_season_id"])
+                progress_clocks = query("SELECT MIN(CASE WHEN record_kind=1 THEN start_utc_usec ELSE occurrence_utc_usec END) AS first_clock,"
+                    "MAX(occurrence_utc_usec) AS through_clock FROM telemetry_interval WHERE ingest_id>%s AND ingest_id<=%s "
+                    "AND record_kind IN (1,2,6,9,15,16) AND occurrence_utc_usec>=0", (progress_origin, progress_through))[0]
+                progress_times = [progress_clocks["first_clock"], progress_clocks["through_clock"]]
+                assert progress_times
+                receipt["ordinary_progression"] = dict(origin=progress_origin, watermark=progress_through,
+                    scope=list(progress_scope), character_pids=progress_pids, saved_player_readback=saved,
+                    actual_threshold_catalog_digest=progression_context.configuration_digest(catalog),
+                    captured_contexts=len(progress_capture), account_tokens={name: next(iter(tokens)) for name, tokens in owners.items()},
+                    group_award_receipts=[[row["boot_id"], row["process_id"], row["record_seq"]] for row in group_awards],
+                    reviewed_clock_range=[min(progress_times)-1,max(progress_times)+1],
+                    actual_native_kills=True, native_threshold_consumption=True, actual_rested_application=True,
+                    actual_solo_and_group_share=True, sequential_same_account_switch=True, overlapping_accounts=True,
+                    normal_save_readback=True, successful_progression_copyover=True,
+                    private_writer_outage_native_XP_and_save=True,
+                    failure_player_store_before=before_failure_save, failure_player_store_after=after_failure_save,
+                    failure_native_source_reconstructed=False, failure_XP_counted_as_observed_zero=False,
+                    failed_producer=progression_failed_producer,
+                    private_writer_outage_clock_range=[progression_outage_start, progression_outage_end],
+                    private_writer_recovery="fresh producer after terminal-circuit lifecycle restart",
+                    recovery_kill_award_receipts=[[row["boot_id"], row["process_id"], row["record_seq"]] for row in recovery_awards if row["progression_source"] == 3],
+                    XP_award_committed=False, telemetry_certifies_character_save=False,
+                    seeded_prerequisites="stopped server: level 10, HP, first character's XP one below the actual native level-11 threshold; native NPC prototype; staff sets NPC current HP to 1 and NPC XP to 1000000 for milestones or 800, level 4 and one verified maximum HP for the narrow rate window before each ordinary kill; native level-difference XP modifiers and mortality apply; ordinary staff rested buff; ordinary mortal camp before switching back",
+                    rate_input_origin=rate_origin, rate_input_watermark=rate_through,
+                    rate_window_selection="native connected exposure through the kill-share decision; earlier fight cuts and awards retained in adjacent generations; no whole-fight or active-attention rate",
+                    rate_probe_origin=rate_probe_origin,
+                    rate_probe_award_receipts=[[row["boot_id"], row["process_id"], row["record_seq"]] for row in rate_probe_awards],
+                    publication_windows=[dict(name="milestones", generation=1, origin=progress_origin, watermark=milestone_through),
+                        dict(name="group_decisions", generation=2, origin=milestone_through, watermark=group_through),
+                        dict(name="rotation", generation=3, origin=group_through, watermark=rate_probe_origin),
+                        dict(name="uncertain_fight_exposure", generation=4, origin=rate_probe_origin, watermark=rate_origin),
+                        dict(name="comparable_rates", generation=5, origin=rate_origin, watermark=rate_through),
+                        dict(name="persistence_and_recovery", generation=6, origin=rate_through, watermark=progress_through)],
+                    rate_award_receipts=[[row["boot_id"], row["process_id"], row["record_seq"]] for row in rate_awards],
+                    budget_evidence="original 64-segment fixture cap, 10-second progression intervals, native fights separated by 62 seconds")
+                stop()
                 receipt["worker_outage_evidence"] = outage.read_evidence(runtime / "telemetry-ledger")
-                assert receipt["worker_outage_evidence"]["ledger_version"] == 6
+                assert receipt["worker_outage_evidence"]["ledger_version"] == 7
                 witness = next(row for row in receipt["worker_outage_evidence"]["observations"] if
                     (row["boot_id"], row["process_id"]) == (pvp_producer["boot_id"], pvp_producer["process_id"]))
                 assert witness["phase"] == "clean_drained" and not witness["unknown_after_last_sample"]
@@ -602,13 +933,15 @@ def run():
             2: {"telemetry_rollup_state": "SELECT,INSERT,UPDATE", "telemetry_generation_identity": "SELECT,INSERT",
                 "telemetry_rollup_session": "SELECT,INSERT,UPDATE", "telemetry_player_day": "SELECT,INSERT,UPDATE",
                 "telemetry_cohort_day": "SELECT,INSERT,UPDATE", "telemetry_cohort_member": "SELECT,INSERT,UPDATE",
-                "telemetry_interval": "SELECT", "telemetry_config": "SELECT", "telemetry_identity_registry": "SELECT",
+                "telemetry_interval": "SELECT", "telemetry_config": "SELECT",
+                "telemetry_progression_context": "SELECT", "telemetry_progression_configuration": "SELECT", "telemetry_identity_registry": "SELECT",
                 "telemetry_identity_association": "SELECT", review_tables[0]: "SELECT", review_tables[1]: "SELECT",
                 tables[0]: "SELECT,INSERT,UPDATE", tables[1]: "SELECT,INSERT", tables[2]: "SELECT,INSERT", tables[3]: "SELECT,INSERT",
                 "telemetry_rollup_incident_coverage": "SELECT,INSERT", "telemetry_rollup_incident": "SELECT,INSERT"},
             3: {"telemetry_rollup_state": "SELECT", "telemetry_generation_identity": "SELECT", tables[2]: "SELECT", tables[3]: "SELECT",
                 "telemetry_rollup_incident_coverage": "SELECT", "telemetry_rollup_incident": "SELECT"},
-            4: {"telemetry_interval": "SELECT", review_tables[0]: "SELECT,INSERT", review_tables[1]: "SELECT,INSERT"},
+            4: {"telemetry_interval": "SELECT",
+                "telemetry_progression_context": "SELECT", "telemetry_progression_configuration": "SELECT", review_tables[0]: "SELECT,INSERT", review_tables[1]: "SELECT,INSERT"},
         }
         for index, permissions in grants.items():
             for table, permission in permissions.items():
@@ -616,12 +949,16 @@ def run():
             adapters.append(PyMySQLRollupDatabase(PyMySQLConnectionFactory(ConnectionSettings(host="127.0.0.1",
                 port=int(environment["DB_PORT"]), database=database, user=users[index], password=password))))
         rollup, reporter, reviewer = adapters
-        result_through = int(query("SELECT MAX(ingest_id) AS n FROM telemetry_interval")[0]["n"])
+        result_through = outcome_through
         recovery_rows = query("SELECT boot_id,process_id,MIN(record_seq) AS first_seq FROM telemetry_interval WHERE ingest_id>%s "
             "AND ingest_id<=%s GROUP BY boot_id,process_id", (outcome_origin, result_through))
         assert len(recovery_rows) == 1 and recovery_rows[0]["first_seq"] == 1
         assert all(recovery_rows[0][name] == outcome_producer[name] for name in ("boot_id", "process_id"))
         through = control_through
+        control_recovery = query("SELECT boot_id,process_id,MIN(record_seq) AS first_seq FROM telemetry_interval WHERE ingest_id>%s "
+            "AND ingest_id<=%s GROUP BY boot_id,process_id", (control_origin, control_through))
+        assert len(control_recovery) == 1 and control_recovery[0]["first_seq"] == 1
+        assert all(control_recovery[0][name] == pvp_producer[name] for name in ("boot_id", "process_id"))
         def prepare(scope, *, origin=0, watermark=through):
             # Resume the maintained committed cursor in bounded invocations.
             # Keep default byte/page limits as this longer journey adds rows.
@@ -640,37 +977,45 @@ def run():
                     receipt.setdefault("bounded_preparation", []).append(dict(generation=scope.generation,
                         definition=scope.definition_version, invocations=invocation, max_rows_per_invocation=128,
                         max_bytes_per_invocation=RollupBounds().max_total_bytes, input_origin=origin, input_watermark=watermark))
-                    prepared = rollup.read_battle_source(scope)
+                    prepared = (rollup.read_progression_source(scope) if scope.definition_version == 9 else
+                        rollup.read_battle_source(scope))
+                    source_count = len(prepared.inputs) if scope.definition_version == 9 else len(prepared.facts)
+                    reserved_bytes = (progression_publication.HEADER_BYTE_BOUND +
+                        (prepared.header["source_fact_count"] + prepared.header["reference_count"] + 2) *
+                        (progression_publication.INPUT_ROW_BYTE_BOUND + progression_publication.PUBLICATION_INPUT_BYTE_BOUND)
+                        if scope.definition_version == 9 else prepared.reserved_bytes)
                     print(json.dumps(dict(phase="source_prepared", definition=scope.definition_version,
                         generation=scope.generation, input_origin=origin, input_watermark=watermark,
-                        retained_inputs=len(prepared.facts), reserved_bytes=prepared.reserved_bytes)), flush=True)
+                        retained_inputs=source_count, reserved_bytes=reserved_bytes)), flush=True)
                     return
             raise AssertionError("bounded source preparation did not complete")
 
-        rollup.reserve_identity_generation(target_scope.scope_tuple, None)
-        prepare(target_scope)
-        retained = rollup.read_battle_source(target_scope)
         fields = battle_source.SOURCE_COLUMNS[13]
         expected_controls = {row["ingest_id"]: {name: row[name] for name in fields} for row in controls}
-        assert expected_controls == {row["ingest_id"]: row for row in retained.facts if row["record_kind"] == 13}
-        # Freeze an actual-source generation without independent review first.
-        # Delivering every row alone must not qualify any elapsed duration.
-        unreviewed_scope = target_scope
-        assert rollup.publish_generation(unreviewed_scope, bounds=RollupBounds(max_runtime_s=60))["status"] == "published"
-        unreviewed = reporter.read_report(unreviewed_scope, "battle_control_states", max_rows=1024)
-        assert unreviewed.rows and not unreviewed.truncated
-        assert all(row["qualified_status_usec"] == [None] * 8 for row in unreviewed.rows)
-        target_scope = RollupTarget(7, 2, target_scope.environment_id, target_scope.season_id)
-        rollup.reserve_identity_generation(target_scope.scope_tuple, None)
-        prepare(target_scope)
-        retained = rollup.read_battle_source(target_scope)
-        assert expected_controls == {row["ingest_id"]: row for row in retained.facts if row["record_kind"] == 13}
+        # Adjacent windows preserve every source row while separating the
+        # earlier outage producers from the complete recovery-study prefix.
+        # SQL buffering and publication share the original 32 MiB budget.
+        control_windows = ((0, control_origin), (control_origin, control_through))
+        unreviewed_controls, prepared_controls = [], []
+        for generation, (origin, watermark) in enumerate(control_windows, 1):
+            unreviewed_scope = replace(target_scope, generation=generation)
+            rollup.reserve_identity_generation(unreviewed_scope.scope_tuple, None)
+            prepare(unreviewed_scope, origin=origin, watermark=watermark)
+            retained = rollup.read_battle_source(unreviewed_scope)
+            assert {key: row for key, row in expected_controls.items() if origin < key <= watermark} == {
+                row["ingest_id"]: row for row in retained.facts if row["record_kind"] == 13}
+            assert rollup.publish_generation(unreviewed_scope, bounds=RollupBounds(max_runtime_s=60))["status"] == "published"
+            unreviewed = reporter.read_report(unreviewed_scope, "battle_control_states", max_rows=1024)
+            assert unreviewed.rows and not unreviewed.truncated
+            assert all(row["qualified_status_usec"] == [None] * 8 for row in unreviewed.rows)
+            unreviewed_controls.append((unreviewed_scope, unreviewed))
+            prepared_controls.append(retained)
         # The real outage is reviewed as uncertainty. Retained report prefixes
         # must never turn its unobserved activity into measured zero duration.
         # Review the entire retained association prefix, including kind-10
         # clocks before the first control. Independent worker/lifecycle evidence
         # witnesses delivery; an unclosed producer still has an unknown tail.
-        times = [row[name] for row in retained.facts for name in row if
+        times = [row[name] for window in prepared_controls for row in window.facts for name in row if
             name.endswith("utc_usec") and row[name] is not None and row[name] != control_contract.UTC_UNKNOWN]
         evidence_digest = hashlib.sha256(json.dumps(receipt["worker_outage_evidence"], sort_keys=True).encode()).hexdigest()
         loss = dict(incident.template(6)["incidents"][0], producer_boot_id=resumed_producer["boot_id"],
@@ -690,19 +1035,52 @@ def run():
             season_id=target_scope.season_id, reviewer_token="a" * 64, review_evidence_digest=evidence_digest,
             reviewed_from_utc_usec=min(times)-1, reviewed_through_utc_usec=max(times)+1)
         reviewer.register_incident_packet(packet)
-        assert rollup.publish_generation(target_scope, bounds=RollupBounds(max_runtime_s=60))["status"] == "published"
-        states = reporter.read_report(target_scope, "battle_control_states", max_rows=1024)
-        operations = reporter.read_report(target_scope, "battle_control_operations", max_rows=1024)
-        assert len(states.rows) + len(operations.rows) == len(controls) and not states.truncated and not operations.truncated
+        reviewed_states, reviewed_operations = [], []
+        for generation, (origin, watermark) in enumerate(control_windows, 3):
+            target_scope = replace(target_scope, generation=generation)
+            rollup.reserve_identity_generation(target_scope.scope_tuple, None)
+            prepare(target_scope, origin=origin, watermark=watermark)
+            retained = rollup.read_battle_source(target_scope)
+            assert {key: row for key, row in expected_controls.items() if origin < key <= watermark} == {
+                row["ingest_id"]: row for row in retained.facts if row["record_kind"] == 13}
+            assert rollup.publish_generation(target_scope, bounds=RollupBounds(max_runtime_s=60))["status"] == "published"
+            states = reporter.read_report(target_scope, "battle_control_states", max_rows=1024)
+            operations = reporter.read_report(target_scope, "battle_control_operations", max_rows=1024)
+            assert not states.truncated and not operations.truncated
+            reviewed_states.extend(states.rows)
+            reviewed_operations.extend(operations.rows)
+            assert states.coverage.incident_coverage["quality_flags"] & incident.QUALITY_INCIDENT_GAP
+            assert states.coverage.incident_coverage["zero_activity_implied"] is False
+        assert len(reviewed_states) + len(reviewed_operations) == len(controls)
         assert expected_controls == {
-            row["ingest_id"]: {name: row[name] for name in fields} for row in (*states.rows, *operations.rows)}
+            row["ingest_id"]: {name: row[name] for name in fields} for row in (*reviewed_states, *reviewed_operations)}
         assert all(row["proven_action_restriction_usec"] is None and row["caster_attributed_duration_usec"] is None
-            for row in states.rows)
-        assert states.coverage.incident_coverage["quality_flags"] & incident.QUALITY_INCIDENT_GAP
-        assert states.coverage.incident_coverage["zero_activity_implied"] is False
-        assert all(row["qualified_status_usec"] == [None] * 8 for row in states.rows if
-            row["publication_quality_flags"] & incident.QUALITY_INCIDENT_GAP)
-        assert reporter.read_report(unreviewed_scope, "battle_control_states", max_rows=1024).rows == unreviewed.rows
+            for row in reviewed_states)
+        gap_states = [row for row in reviewed_states if row["publication_quality_flags"] & incident.QUALITY_INCIDENT_GAP]
+        assert all(row["qualified_status_usec"] == [None] * 8 for row in gap_states)
+        failed_control_rows = [row for row in (*reviewed_states, *reviewed_operations) if
+            (row["ctl_boot_id"], row["ctl_process_id"]) == (failed_producer["boot_id"], failed_producer["process_id"])]
+        active_baselines = [row for row in failed_control_rows if row["ctl_kind"] == 2 and row["ctl_after_mask"] & 4]
+        # The writer can lose every endpoint after an admitted active baseline.
+        # No retained prefix then overlaps the reviewed tail, so gap_states may
+        # be empty. Qualify the actual open baseline and missing endpoint rather
+        # than requiring the worker to have persisted a row inside the outage.
+        assert active_baselines and all(row["qualified_status_usec"] == [None] * 8 for row in active_baselines)
+        assert all(row["record_seq"] <= failed_producer["last_committed_record_seq"] for row in failed_control_rows)
+        tail = next(row for row in states.coverage.incident_coverage["incidents"] if
+            (row["producer_boot_id"], row["producer_process_id"]) ==
+            (failed_producer["boot_id"], failed_producer["process_id"]) and row["end_utc_usec"] is None)
+        assert tail["first_record_seq"] == failed_producer["last_committed_record_seq"] + 1
+        assert tail["observation_provenance"] == "original_observation"
+        receipt["native_outage_control_evidence"] = dict(active_baseline_ingest_ids=[row["ingest_id"] for row in active_baselines],
+            active_baseline_durations_unknown=True, overlapping_gap_state_count=len(gap_states),
+            last_committed_record_seq=failed_producer["last_committed_record_seq"],
+            first_unknown_record_seq=tail["first_record_seq"], missing_endpoints_not_synthesized=True)
+        for unreviewed_scope, unreviewed in unreviewed_controls:
+            assert reporter.read_report(unreviewed_scope, "battle_control_states", max_rows=1024).rows == unreviewed.rows
+        receipt["control_publication_windows"] = [dict(origin=origin, watermark=watermark,
+            unreviewed_generation=index+1, reviewed_generation=index+3) for index, (origin, watermark) in enumerate(control_windows)]
+        receipt["adjacent_control_windows_cover_original_source"] = True
         # Tampering with bindings alone must first fail the original digest.
         # A separately sealed in-memory negative copy then proves missing
         # configuration stays NULL. Original stored source is never changed.
@@ -724,7 +1102,7 @@ def run():
             for row in unknown_publication.rows if row["row_kind"] == 8]
         assert unknown_states and all(row["qualified_status_usec"] == [None] * 8 for row in unknown_states)
         receipt["negative_evidence"] = dict(unreviewed_native_generation=unreviewed_scope.generation,
-            unreviewed_state_rows=len(unreviewed.rows), immutable_unreviewed_generation=True,
+            unreviewed_state_rows=sum(len(report.rows) for _, report in unreviewed_controls), immutable_unreviewed_generation=True,
             missing_configuration_publication_probe_rows=len(unknown_states),
             configuration_digest_tamper_refused=True,
             real_private_writer_loss_preserved=True,
@@ -858,7 +1236,8 @@ def run():
         match = battle_comparison.compare_points(*sorted(gear, key=lambda row: row["bctx_sequence"]), ("level", "classes", "equipment"))
         assert match["matched_dimensions"] == ["level", "classes"] and match["different_dimensions"] == ["equipment"]
         assert not match["unknown_dimensions"] and not match["combat_strength_equivalence_implied"]
-        for table in (*result_tables[:2], "telemetry_interval", "telemetry_config", *result_review):
+        for table in (*result_tables[:2], "telemetry_interval", "telemetry_config",
+            "telemetry_progression_context", "telemetry_progression_configuration", *result_review):
             try:
                 reporter._execute("SELECT COUNT(*) AS n FROM " + table)
             except Exception as error:
@@ -894,8 +1273,153 @@ def run():
             exact_effective_support_relation=True, changing_support_group_participation=True, generic_buff_origin_unknown=True,
             restricted_role=True, missing_configuration_fixture=True, missing_configuration_fixture_mutates_sql=False,
             same_atomic_coverage=True, complete_win_or_zone_clear_claimed=False, controller_identity_unknown=True)
-        receipt.update(status="passed", raw_controls=len(controls), published_states=len(states.rows),
-            published_operations=len(operations.rows), qualified_prefixes=states.coverage.battle_coverage["qualified_control_prefixes"],
+        # The native progression window uses independent definition 9. The
+        # explicit synthetic-controller declaration belongs to this owned
+        # gameplay fixture; account names and network addresses prove no link.
+        import test_telemetry_identity_history as identity_review_fixture
+        from scripts.telemetry import identity_history
+        progression_target = RollupTarget(9, 1, *progress_scope)
+        private_progression = ("telemetry_progression_source_v9", "telemetry_progression_input_v9", "telemetry_progression_reference_v9")
+        public_progression = ("telemetry_rollup_progression_coverage_v9", "telemetry_rollup_progression_row_v9")
+        progression_incidents = incident.schema_contract(8)[2:]
+        progression_grants = {
+            2: {private_progression[0]: "SELECT,INSERT,UPDATE",
+                **{table: "SELECT,INSERT" for table in (*private_progression[1:], *public_progression)},
+                **{table: "SELECT" for table in progression_incidents}},
+            3: {table: "SELECT" for table in public_progression},
+            4: {"telemetry_identity_registry": "SELECT,INSERT", "telemetry_identity_association": "SELECT,INSERT",
+                "telemetry_identity_reviewer": "SELECT", **{table: "SELECT,INSERT" for table in progression_incidents}},
+        }
+        for index, permissions in progression_grants.items():
+            for table, permission in permissions.items():
+                query(f"GRANT {permission} ON `{database}`.`{table}` TO %s@'%%'", (users[index],))
+        query(f"GRANT SELECT (environment_id,season_id,account_token) ON `{database}`.telemetry_account_token TO %s@'%%'", (users[4],))
+        principal_name = reviewer._execute("SELECT CURRENT_USER() AS principal")[0][0]["principal"]
+        query("INSERT INTO telemetry_identity_reviewer VALUES(%s,%s,%s,%s,1)",
+            (*progress_scope, principal_name, bytes.fromhex("b"*64)))
+        first_clock, through_clock = receipt["ordinary_progression"]["reviewed_clock_range"]
+        declared_tokens = sorted({value for value in receipt["ordinary_progression"]["account_tokens"].values()})
+        registry_packet = identity_review_fixture.packet([
+            identity_review_fixture.association(index+1, value, 901, first_clock, through_clock)
+            for index, value in enumerate(declared_tokens)], environment_id=progress_scope[0], season_id=progress_scope[1],
+            reviewed_from_utc_usec=first_clock, reviewed_through_utc_usec=through_clock,
+            reviewed_at_utc_usec=through_clock, review_evidence_digest=hashlib.sha256(
+                b"owned native gameplay fixture: explicitly declared controller 901 for two synthetic accounts").hexdigest())
+        assert reviewer.register_identity_packet(registry_packet)["status"] == "registered"
+        registry = identity_history.Registry.from_packet(registry_packet)
+        progression_producers = {(row["boot_id"], row["process_id"]) for row in query(
+            "SELECT DISTINCT boot_id,process_id FROM telemetry_interval WHERE ingest_id>%s AND ingest_id<=%s",
+            (progress_origin, progress_through))}
+        progression_losses, progression_witnesses = [], []
+        delivery_digest = hashlib.sha256(json.dumps(receipt["worker_outage_evidence"], sort_keys=True).encode()).hexdigest()
+        failed_progression_producer = receipt["ordinary_progression"]["failed_producer"]
+        for witness in receipt["worker_outage_evidence"]["observations"]:
+            if (witness["boot_id"], witness["process_id"]) not in progression_producers:
+                continue
+            progression_witnesses.append(witness)
+            if (witness["boot_id"], witness["process_id"]) == (failed_progression_producer["boot_id"], failed_progression_producer["process_id"]):
+                start_clock, end_clock = receipt["ordinary_progression"]["private_writer_outage_clock_range"]
+                progression_losses.append(dict(incident.template(8)["incidents"][0], incident_id=len(progression_losses)+1,
+                    producer_boot_id=witness["boot_id"], producer_process_id=witness["process_id"],
+                    start_utc_usec=start_clock-1_000_003, end_utc_usec=end_clock+1_000_003,
+                    backlog_disposition="abandoned", observation_provenance="original_observation", evidence_digest=delivery_digest))
+            else:
+                assert all(witness[name] == 0 for name in ("rejected_detail_admissions", "rejected_control_admissions",
+                    "quarantined_records", "invalid_records", "conflict_records", "sequence_gap_count", "unclosed_tail_count"))
+            if witness["unknown_after_last_sample"]:
+                progression_losses.append(dict(incident.template(8)["incidents"][0], incident_id=len(progression_losses)+1,
+                    producer_boot_id=witness["boot_id"], producer_process_id=witness["process_id"],
+                    start_utc_usec=witness["observed_utc_usec"], end_utc_usec=None,
+                    first_record_seq=witness["last_committed_record_seq"]+1, last_record_seq=None,
+                    observation_provenance="original_observation", evidence_digest=delivery_digest))
+        assert len(progression_witnesses) == len(progression_producers)
+        reviewed_progression = dict(incident.template(8), incidents=progression_losses,
+            environment_id=progress_scope[0], season_id=progress_scope[1],
+            reviewed_from_utc_usec=first_clock, reviewed_through_utc_usec=through_clock,
+            reviewer_token="a"*64, review_evidence_digest=hashlib.sha256(json.dumps(
+                receipt["ordinary_progression"], sort_keys=True).encode()).hexdigest())
+        reviewer.register_incident_packet(reviewed_progression)
+        # Adjacent immutable generations cover the whole native journey under
+        # the original 32 MiB limit. Context churn is preserved, never filtered
+        # away or combined into a population-wide rate or milestone estimate.
+        specifications = receipt["ordinary_progression"]["publication_windows"]
+        assert specifications[0]["origin"] == progress_origin and specifications[-1]["watermark"] == progress_through
+        assert all(left["watermark"] == right["origin"] for left, right in zip(specifications, specifications[1:]))
+        published_progression, progression_windows = {}, []
+        for specification in specifications:
+            target = replace(progression_target, generation=specification["generation"])
+            rollup.reserve_identity_generation(target.scope_tuple, registry.registry_version)
+            prepare(target, origin=specification["origin"], watermark=specification["watermark"])
+            assert rollup.publish_generation(target, bounds=RollupBounds(max_runtime_s=60))["status"] == "published"
+            reports = {name: reporter.read_report(target, name, max_rows=progression_publication.MAX_OUTPUT_ROWS)
+                for name in progression_publication.ROW_KINDS}
+            assert all(snapshot.rows and not snapshot.truncated for snapshot in reports.values())
+            coverage = reports["progression_context"].coverage.progression_coverage
+            for snapshot in reports.values():
+                assert snapshot.coverage.progression_coverage == coverage
+                assert all(not row.get("character_save_committed", False) and not row.get("XP_award_committed", False)
+                    for row in snapshot.rows)
+            retained = rollup.read_progression_source(target)
+            assert retained.header["source_fact_count"] == coverage["source_fact_count"]
+            published_progression[specification["name"]] = (target, reports)
+            progression_windows.append(dict(specification, coverage=coverage,
+                report_counts={name: len(snapshot.rows) for name, snapshot in reports.items()}))
+        progression_reports = published_progression["milestones"][1]
+        progression_coverage = progression_reports["progression_context"].coverage.progression_coverage
+        assert progression_coverage["completed_milestone_count"] >= 2
+        assert progression_coverage["unfinished_milestone_count"] > 0
+        assert progression_coverage["qualified_full_stage_count"] > 0
+        rotations = published_progression["rotation"][1]["character_rotation"].rows
+        first_account = receipt["ordinary_progression"]["account_tokens"]["Progfirst"]
+        assert any(row["basis"] == "account" and row["identity_token"] == first_account and
+            row["sequential_switches"] for row in rotations)
+        assert any(row["basis"] == "controller" and row["identity_token"] == 901 and
+            (row["maximum_observed_simultaneous_sessions"] or 0) >= 2 for row in rotations)
+        assert any(row["basis"] == "unknown_controller" for row in rotations)
+        group_contexts = published_progression["group_decisions"][1]["progression_context"].rows
+        assert any(row["pctx_assistance"] == 2 and row["pctx_eligible_group_size"] == 2 for row in group_contexts)
+        assert reporter.read_report(target_scope, "battle_control_states", max_rows=1024) == frozen_control
+        assert reporter.read_report(result_scope, "battle_outcomes", max_rows=1024).rows == outcomes.rows
+        receipt["progression_publication"] = dict(definition=9, independent_incident_schema=8,
+            native_source=True, restricted_role=True, source_origin=progress_origin, source_watermark=progress_through,
+            coverage=progression_coverage, windows=progression_windows, adjacent_windows_cover_journey=True,
+            dated_confirmed_controller_fixture=True, controller_links_inferred=False,
+            unknown_controller_population_preserved=True, old_battle_generations_preserved=True,
+            independent_delivery_witnesses=progression_witnesses,
+            public_readback_uses_private_source=False, economic_authority_dependency_issue=487)
+        rate_target, rate_reports = published_progression["comparable_rates"]
+        rate_report = rate_reports["progression_portfolio"]
+        assert not rate_report.truncated
+        rate_pid = progress_pids["Progsecond"]
+        subject = query("SELECT pctx_subject_id AS subject FROM telemetry_progression_context WHERE pctx_pid=%s LIMIT 1", (rate_pid,))[0]["subject"]
+        qualified_rates = [row for row in rate_report.rows if row["basis"] == "character" and row["identity_token"] == subject and
+            row["observed_earned_positive_xp"] > 0 and row["observed_earned_xp_per_connected_hour"] is not None]
+        assert qualified_rates, "native progression window produced no comparable observed XP rate"
+        uncertain_fight_rates = published_progression["uncertain_fight_exposure"][1]["progression_portfolio"].rows
+        assert any(row["basis"] == "character" and row["identity_token"] == subject and
+            row["observed_earned_positive_xp"] > 0 and "unclassified_stratum_exposure" in row["unknown"] and
+            row["observed_earned_xp_per_heuristic_active_hour"] is None and
+            row["observed_earned_xp_per_connected_hour"] is None for row in uncertain_fight_rates), \
+            "native earlier fight cuts must remain retained with unknown rates"
+        for target, reports in published_progression.values():
+            for name, snapshot in reports.items():
+                reread = reporter.read_report(target, name, max_rows=progression_publication.MAX_OUTPUT_ROWS)
+                expected_status = (PUBLICATION_PUBLISHED if target.generation == specifications[-1]["generation"] else
+                    PUBLICATION_SUPERSEDED)
+                assert reread.coverage.publication_status == expected_status
+                # Supersession changes freshness metadata, never the retained
+                # report values, source bounds or atomic coverage snapshot.
+                assert replace(reread, coverage=replace(reread.coverage,
+                    publication_status=snapshot.coverage.publication_status)) == snapshot
+        receipt["progression_publication"]["native_rate_window"] = dict(generation=rate_target.generation, source_origin=rate_origin,
+            source_watermark=rate_through, qualified_character_rates=qualified_rates,
+            coverage=rate_report.coverage.progression_coverage, earlier_generation_preserved=True)
+        receipt["progression_publication"]["native_rate_window"].update(
+            bounded_observed_prefix=True, complete_kill_rate_claimed=False,
+            denominator_basis="connected", heuristic_active_rate_required=False,
+            earlier_fight_awards_and_unknown_rates_retained=True)
+        receipt.update(status="passed", raw_controls=len(controls), published_states=len(reviewed_states),
+            published_operations=len(reviewed_operations), qualified_prefixes=states.coverage.battle_coverage["qualified_control_prefixes"],
             exact_retained_inputs=True, report_definition=7, private_incident_schema=6,
             report_uses_restricted_role=True, action_restriction_and_caster_duration_unknown=True,
             uncertainty_preserved=True, migration_steps=int(environment["TELEMETRY_REPOSITORY_MIGRATION_COUNT"]))
@@ -913,7 +1437,10 @@ def run():
                 raise TypeError(type(value).__name__)
             (result.parent / (result.stem + "-failure-source.json")).write_text(json.dumps(dict(
                 raw=query("SELECT * FROM telemetry_interval ORDER BY ingest_id"),
-                configuration=query("SELECT * FROM telemetry_config")), default=diagnostic_value) + "\n", encoding="utf-8")
+                configuration=query("SELECT * FROM telemetry_config"),
+                progression_context=query("SELECT * FROM telemetry_progression_context ORDER BY boot_id,process_id,record_seq"),
+                progression_configuration=query("SELECT * FROM telemetry_progression_configuration ORDER BY boot_id,process_id,record_seq")),
+                default=diagnostic_value) + "\n", encoding="utf-8")
         for adapter in adapters:
             adapter.close()
         for user in users:

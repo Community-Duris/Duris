@@ -245,7 +245,13 @@ void epic_level_committed(P_char ch, bool committed, const epic_command_result &
 					critical_deadline_class::recovery, nullptr, nullptr, 0);
 		return;
 	}
+	const std::int64_t before_exp = GET_EXP(ch);
 	GET_EXP(ch) -= context.experience_cost;
+	(void)telemetry_runtime_game_progression_adjustment(
+		ch, before_exp, -static_cast<std::int64_t>(context.experience_cost),
+		-static_cast<std::int64_t>(context.experience_cost),
+		telemetry_progression_source::system,
+		telemetry_progression_reason::level_threshold);
 	advance_level(ch);
 	wizlog(56, "%s has attained epic level &+W%d&n!", GET_NAME(ch), GET_LEVEL(ch));
 }

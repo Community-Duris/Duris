@@ -1,4 +1,4 @@
-# Personal-local selected-control qualification
+# Personal-local battle and progression qualification
 
 Run from the repository root with Python 3 and Docker Desktop or a local Docker
 daemon:
@@ -11,8 +11,8 @@ This command builds the maintained tools image, builds `bin/server/dms_new`,
 checks touched C++ formatting, runs focused contracts and ASan/UBSan, measures
 control capture, native result/watch callbacks and the existing transport/report budgets, and starts disposable
 MariaDB 10.11.14 and MySQL 8.0.46 fixtures sequentially. Each engine exercises all
-six migration histories, the native repository for all 14 raw families, exact
-control/result value storage and independent loss review, the native runtime/writer/report
+six migration histories, the native repository for all 16 raw families, exact
+control/result/progression value storage and independent loss review, the native runtime/writer/report
 journey, and a real server journey. It creates no host-facing listener or port.
 
 The comparability/outcome extension is locally qualified by the complete
@@ -22,6 +22,42 @@ native fixture uses a synthetic watch clock and remains distinct from positive
 actual-server qualification. Current exact evidence is in
 [BATTLE_RESULTS.md](BATTLE_RESULTS.md#qualified-local-delivery-2026-10-05).
 Earlier control receipts below retain their historical scope.
+
+The progression follow-up extends this same command with the definition-9
+source/publication fixture, progression ASan/UBSan, cached presence and context
+refresh performance, and existing rested/quest/starting-grant regressions.
+Its actual-server journey adds XP/level decisions, rested and group-share
+evidence, completed and unfinished milestones, a same-account character switch,
+overlapping accounts, independent player-store save/readback, copyover, and
+native XP/save during a private writer outage followed by fresh-producer
+recovery. Exact retained inputs, dated confirmed-controller review, atomic
+publication and restricted readback are tested together. Positive comparable
+rates require a separately bounded native exposure window. Adjacent milestone,
+group-decision, rotation, rate and persistence/recovery generations cover the
+full progression source range under the unchanged 32 MiB limit. Each retains
+its setup, lifecycle and loss uncertainty; totals and clock unions across
+generations are not asserted to form a comparable population rate. The complete
+45-phase two-engine gate is qualified; exact source, receipt, native windows and
+measurement evidence are in [PROGRESSION_CONTEXT.md](PROGRESSION_CONTEXT.md#qualified-local-delivery-2026-10-06).
+
+The narrow rate prerequisite uses a staff-inspected level-4 NPC with one current,
+maximum and base HP, then awards XP through an ordinary level-10 player's kill.
+Native level-difference modifiers remain effective. A near-level kill's automatic
+bloodlust affect would cut build exposure; those broader milestone/group cases
+retain their uncertainty instead of relaxing the rate gate. The player toggle
+reply proves vicious mode is enabled. Character rotation back from the second
+character waits for ordinary mortal camping to finish, without changing the
+camp timer or importing unobserved time.
+
+The rate generation declares one clean native prefix through a positive
+kill-share decision and its exact covering exposure receipt. It begins at the
+original immediately preceding qualified interval. Native `no misfire` command
+tags cut the wider fight's exposure. Earlier fight awards and uncertain intervals
+remain retained in generations 3 and 4 with unknown rates; generation 6 retains
+subsequent lifecycle and recovery evidence. No interval is filtered from a
+declared window, and the native mutation, clock and publisher quality gates stay
+unchanged. This controlled prefix qualifies the rate path; it cannot measure the
+total effort that earned the reward or establish a whole-fight/population rate.
 
 For an explicitly selected compatible local tools image, the same command accepts
 `--tools-image IMAGE`. The image must contain the maintained build dependencies,
@@ -43,7 +79,7 @@ Per-mode names use 33 ASCII characters, including a digest of the unique run and
 mode. The runtime's 31-character exclusion prefix then fits MySQL's 64-character
 named-lock limit. The real-game fixture rejects longer names before provisioning.
 
-The real game uses seven synthetic accounts and a dedicated gameplay SQL role.
+The real game uses nine synthetic accounts and a dedicated gameplay SQL role.
 Telemetry has a separate writer role with the existing table-level grants.
 Retention/publication, reporting and reviewed incidents each use their own role.
 The report role cannot read private inputs or mutate the report stores. The game
@@ -115,10 +151,17 @@ The longer raw window is prepared through the committed cursor in at most 64
 invocations of 128 rows, retaining the default page and byte limits. Only the
 expected invocation row-budget boundary is resumed, with verified cursor
 progress; publication still requires the complete fixed source watermark.
-The definition-7 window ends after the observed target departure and before the
-producer's bulk shutdown observations. Its independent clean-drained delivery
-witness covers the retained prefixes; later shutdown facts are outside this
-declared study window and do not establish a complete battle.
+Definition 7 uses two adjacent source windows: the earlier copyover/outage
+producers, then the recovery producer from its first admitted sequence through
+the observed target departure. Together they cover every source row in the
+original control-study range. Generations 1 and 2 publish these windows before
+independent incident review; generations 3 and 4 publish the same respective
+inputs after review. Both earlier generations retain NULL durations after the
+reviewed generations are published. The recovery study ends before the producer's
+bulk shutdown observations. Its independent clean-drained delivery witness covers
+the retained prefixes; later shutdown facts are outside this declared study
+window and do not establish a complete battle. The real earlier outage remains
+in the reviewed inventory, and affected state durations remain NULL.
 Definition 8 uses a separate complete clean-drained producer, from its first
 admitted sequence through shutdown. Its independent origin and watermark retain
 all association prefixes and authenticated entries for those cases. Both windows
@@ -177,8 +220,11 @@ projection. Its ASan/UBSan run records p99/p99.9/max and uses the same 1 ms/5 ms
 guards. Context refresh and SQL are excluded from this clock measurement.
 
 A separate optimized native-result probe measures begin/finish callbacks and
-pending-watch pulses with 4,096 world characters at 50/200/256 admitted sessions,
-4,096 samples per profile and five repetitions. The 256-session ceiling is the
+pending-watch pulses, cached progression presence, mutation refresh and XP
+observation with 4,096 world characters at 50/200/256 admitted sessions,
+4,096 samples per profile and five repetitions: 75 profiles across five stages.
+Queue draining before separate lifetime/watch assertions is outside measured
+callbacks and retains the existing queue capacity. The 256-session ceiling is the
 existing native session capacity. It checks zero event-time heap allocation and
 cryptographic calls, the combined 16-selection pulse limit, the 512-slot watch
 capacity and the existing p99 1 ms / p99.9 5 ms guards. ASan/UBSan also verifies
@@ -202,17 +248,23 @@ applications and signed configured ticks remain distinct units. Overlapping
 family durations cannot be added to obtain time controlled. Action-restriction
 time and caster-attributed duration remain NULL.
 
-This command qualifies the selected-control and reviewed comparison/outcome slices.
-Issue #258 remains open
-with all seven final acceptance requirements preserved. The maintained command
-now requires positively qualified normal PvP prefixes and definition-8 build
-comparisons, typed death/movement/escape and an exact supported objective,
-alongside native context, paired clocks and complete independent review windows.
-The full expanded gate passed in run `89625dc38352`; exact source and receipt
-digests are recorded in [BATTLE_RESULTS.md](BATTLE_RESULTS.md#qualified-local-delivery-2026-10-05).
-Prevention/faction coverage, distinct PvE attempts and
-committed reward links, progression/portfolio additions and the four complete
-balance report suites remain in the accepted expansion.
+This command qualifies the selected-control, reviewed comparison/outcome and
+observed-XP context/milestone/rotation slices. The current complete 45-phase
+receipt and its exact native evidence are in
+[PROGRESSION_CONTEXT.md](PROGRESSION_CONTEXT.md#qualified-local-delivery-2026-10-06).
+Ordinary native XP and level paths, rested/group decisions, completed and
+unfinished stages, sequential/overlapping play, independent saves/readback,
+copyover and private-writer failure/recovery pass on both SQL engines.
+A very short native kill-share decision window qualifies a connected-time
+rate; earlier fight awards and unknown exposure remain retained. A zero
+heuristic-active denominator retains a NULL rate. The window cannot measure the
+total effort that earned the reward or establish a whole-fight/population rate.
+
+Issue #258 remains OPEN with all seven final checkbox lines verbatim and
+unchecked, and PR #683 stays DRAFT. Canonical other-unit reward compatibility
+is tracked in #490 section 4 (formerly #487; versioned reports retain 487).
+Prevention/faction coverage, distinct PvE attempts and committed reward links,
+the four complete balance suites and statistical exports remain unfinished.
 
 ## Historical selected-control qualification: 2026-10-04 (before ordinary PvP)
 

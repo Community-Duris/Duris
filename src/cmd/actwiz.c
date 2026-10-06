@@ -53,6 +53,7 @@
 #include "world/weather.h"
 #include "net/ws_handlers.h"
 #include "core/safe_format.h"
+#include "telemetry/telemetry_runtime.h"
 
 /*
  * external variables
@@ -1399,6 +1400,7 @@ void do_purge(P_char ch, char *argument, int /*cmd*/)
 void roll_basic_attributes(P_char ch, int type)
 {
 	int faces, rolls, base, value;
+	telemetry_runtime_game_progression_changed(ch);
 	/* screw 'bell curves' and stat totalling, let's keep it simple */
 
 	/*
@@ -1620,7 +1622,12 @@ void do_advance(P_char ch, char *argument, int /*cmd*/)
 
 	advance_to_level(victim, newlevel);
 
+	const std::int64_t before_exp = GET_EXP(victim);
 	GET_EXP(victim) = 1;
+	(void)telemetry_runtime_game_progression_adjustment(
+		victim, before_exp, 1 - before_exp, 1 - before_exp,
+		telemetry_progression_source::administration,
+		telemetry_progression_reason::administration);
 
 	if (newlevel >= MINLVLIMMORTAL && oldlevel < MINLVLIMMORTAL)
 	{
@@ -2649,6 +2656,7 @@ void do_unspec(P_char ch, char *argument, int /*cmd*/)
 		send_to_char("They are not specialized.\n", ch);
 		return;
 	}
+	telemetry_runtime_game_progression_changed(victim);
 	victim->player.spec = 0;
 	send_to_char("You are no longer specialized.\n", victim);
 	send_to_char("They are no longer specialized.\n", ch);

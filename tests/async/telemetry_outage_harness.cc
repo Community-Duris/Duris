@@ -228,7 +228,28 @@ void legacy_and_battle_versions()
 	assert(telemetry_outage_checkpoint(&journal, sampled()) == result::ready);
 	telemetry_outage_close(&journal);
 	const auto current = bytes(f.path / "outages.ledger");
-	assert(std::memcmp(current.data(), "DMSTLJ06", 8U) == 0);
+	assert(std::memcmp(current.data(), "DMSTLJ07", 8U) == 0);
+	auto result_version = current;
+	result_version[7] = '6';
+	word(result_version, 32U + 9U * 8U, sampled().record_kind_mask | (1U << 14U));
+	checksum(result_version);
+	replace(f.path / "outages.ledger", result_version);
+	assert(telemetry_outage_read(&journal, f.path.c_str()) == result::ready);
+	telemetry_outage_close(&journal);
+	assert(bytes(f.path / "outages.ledger") == result_version);
+	for (const auto version : { '1', '2', '3', '4', '5', '6' })
+		for (const auto kind : { 15U, 16U })
+			for (const auto field : { 9U, 36U })
+			{
+				auto incompatible = current;
+				incompatible[7] = version;
+				word(incompatible, 32U + field * 8U, 1U << kind);
+				checksum(incompatible);
+				replace(f.path / "outages.ledger", incompatible);
+				assert(telemetry_outage_read(&journal, f.path.c_str()) ==
+				       result::corrupt);
+				assert(bytes(f.path / "outages.ledger") == incompatible);
+			}
 	auto control_version = current;
 	control_version[7] = '5';
 	word(control_version, 32U + 9U * 8U, sampled().record_kind_mask | (1U << 13U));
@@ -327,7 +348,7 @@ void legacy_and_battle_versions()
 	assert(journal.observations[0].record_kind_mask == sampled().record_kind_mask);
 	auto battle = sampled(2);
 	battle.record_kind_mask |= (1U << 10U) | (1U << 11U) | (1U << 12U) | (1U << 13U) |
-				   (1U << 14U);
+				   (1U << 14U) | (1U << 15U) | (1U << 16U);
 	assert(telemetry_outage_checkpoint(&journal, battle) == result::ready);
 	telemetry_outage_close(&journal);
 	assert(telemetry_outage_read(&journal, f.path.c_str()) == result::ready);
@@ -335,9 +356,9 @@ void legacy_and_battle_versions()
 	       journal.observations[1].record_kind_mask == battle.record_kind_mask);
 	assert(journal.observations[0].record_kind_mask == sampled().record_kind_mask);
 	telemetry_outage_close(&journal);
-	assert(std::memcmp(bytes(f.path / "outages.ledger").data(), "DMSTLJ06", 8U) == 0);
+	assert(std::memcmp(bytes(f.path / "outages.ledger").data(), "DMSTLJ07", 8U) == 0);
 	std::puts(
-		"outage v1/v2/v3/v4/v5 read-only compatibility, v6 typed-result evidence and atomic upgrade passed");
+		"outage v1/v2/v3/v4/v5/v6 read-only compatibility, v7 progression evidence and atomic upgrade passed");
 }
 
 void corruption()
@@ -579,7 +600,7 @@ int main(int argc, char **argv)
 		assert(telemetry_outage_open(&journal, argv[2], registration()) == result::ready);
 		auto battle = sampled();
 		battle.record_kind_mask |= (1U << 10U) | (1U << 11U) | (1U << 12U) | (1U << 13U) |
-					   (1U << 14U);
+					   (1U << 14U) | (1U << 15U) | (1U << 16U);
 		assert(telemetry_outage_checkpoint(&journal, battle) == result::ready);
 		telemetry_outage_close(&journal);
 		assert(telemetry_outage_open(&journal, argv[2], registration(2)) == result::ready);

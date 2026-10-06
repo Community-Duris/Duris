@@ -171,7 +171,9 @@ extern "C" int __wrap_mysql_real_query(MYSQL *connection, const char *query, uns
 		injected_error = 2013U;
 		return 1;
 	}
-	if (sql.find("INSERT INTO telemetry_interval") != std::string::npos &&
+	if ((sql.find("INSERT INTO telemetry_interval") != std::string::npos ||
+	     sql.find("INSERT INTO telemetry_progression_context") != std::string::npos ||
+	     sql.find("INSERT INTO telemetry_progression_configuration") != std::string::npos) &&
 	    (fault == fault_kind::statement || fault == fault_kind::deadlock ||
 	     fault == fault_kind::unknown_column || fault == fault_kind::permission ||
 	     fault == fault_kind::invalid_data || fault == fault_kind::rollback_lost ||
@@ -859,6 +861,211 @@ template <typename T> static std::string battle_number(T value)
 		return std::to_string(static_cast<std::underlying_type_t<T>>(value));
 	else
 		return std::to_string(value);
+}
+
+static telemetry_record progression_context_record(std::uint64_t sequence = 50000U)
+{
+	const auto source = progression_record(49500U, 25);
+	const auto &config = normal_interval_configs[0].payload.configuration.config;
+	telemetry_record record{};
+	record.header = source.header;
+	record.header.kind = telemetry_record_kind::progression_context;
+	record.header.key.record_seq = sequence;
+	record.header.occurrence_utc_usec = source.payload.progression.at_utc_usec;
+	auto &p = record.payload.progression_context;
+	p.producer = record.header.key.producer;
+	p.sequence = sequence;
+	p.session = source.payload.progression.session;
+	p.connection = source.payload.progression.connection;
+	p.source_record = source.header.key;
+	p.source_kind = telemetry_record_kind::progression;
+	p.start_monotonic_usec = p.at_monotonic_usec = source.payload.progression.at_monotonic_usec;
+	p.start_utc_usec = p.at_utc_usec = record.header.occurrence_utc_usec;
+	p.boundary = telemetry_progression_context_boundary::experience;
+	p.source_inventory_version = TELEMETRY_PROGRESSION_SOURCE_INVENTORY_VERSION;
+	p.starting_level = 10U;
+	auto &c = p.context;
+	c.version = TELEMETRY_PROGRESSION_CONTEXT_VERSION;
+	c.current_level = 10U;
+	c.current_exp = 125;
+	c.config_id = config.config_id;
+	c.build_version = config.build_version;
+	c.content_version = config.content_version;
+	c.classifier_version = config.classifier_version;
+	c.policy_version = config.policy_version;
+	c.quality_flags = TELEMETRY_QUALITY_CONTEXT_UNKNOWN;
+	CHECK(telemetry_record_is_valid(record));
+	return record;
+}
+
+static telemetry_record progression_configuration_record(std::uint16_t index)
+{
+	const auto &config = normal_interval_configs[0].payload.configuration.config;
+	telemetry_record record{};
+	record.header = interval_record().header;
+	record.header.kind = telemetry_record_kind::progression_configuration;
+	record.header.key.record_seq = 60000U + index;
+	auto &p = record.payload.progression_configuration;
+	p.producer = record.header.key.producer;
+	p.sequence = 59000U;
+	p.root_record_seq = 60000U;
+	p.config_id = config.config_id;
+	p.environment_id = config.environment_id;
+	p.season_id = config.season_id;
+	p.at_monotonic_usec = 1200U;
+	p.at_utc_usec = record.header.occurrence_utc_usec;
+	p.build_version = config.build_version;
+	p.content_version = config.content_version;
+	p.classifier_version = config.classifier_version;
+	p.policy_version = config.policy_version;
+	p.version = TELEMETRY_PROGRESSION_CONFIGURATION_VERSION;
+	p.source_inventory_version = TELEMETRY_PROGRESSION_SOURCE_INVENTORY_VERSION;
+	p.total_values = TELEMETRY_PROGRESSION_CONFIGURATION_VALUES;
+	p.chunk_index = index;
+	p.chunk_count = 15U;
+	p.value_count = index == 14U ? 1U : 24U;
+	// This qualifies durable packet storage, not a complete reconciled catalogue.
+	p.digest_words[0] = 12345U;
+	using kind = telemetry_progression_configuration_value_kind;
+	for (unsigned ordinal = 0U; ordinal < p.value_count; ++ordinal)
+	{
+		const auto id =
+			telemetry_progression_configuration_source_id(index * 24U + ordinal);
+		p.value_ids[ordinal] = id;
+		if (telemetry_progression_configuration_value_is_valid(id, kind::signed_integer,
+								       0U))
+		{
+			p.value_kinds[ordinal] = kind::signed_integer;
+			p.value_bits[ordinal] = id + 1000U;
+		}
+		else if (telemetry_progression_configuration_value_is_valid(id, kind::float32_bits,
+									    0U))
+		{
+			p.value_kinds[ordinal] = kind::float32_bits;
+			p.value_bits[ordinal] = 0x3f800000U;
+		}
+		else
+		{
+			p.value_kinds[ordinal] = kind::float64_bits;
+			p.value_bits[ordinal] = 0x3ff0000000000000ULL;
+		}
+	}
+	CHECK(telemetry_record_is_valid(record));
+	return record;
+}
+
+static void check_progression_fields(const telemetry_record &record)
+{
+	const bool context = record.header.kind == telemetry_record_kind::progression_context;
+	const std::string table = context ? "telemetry_progression_context" :
+					    "telemetry_progression_configuration";
+	std::string query =
+		"SELECT COUNT(*) FROM " + table +
+		" WHERE boot_id=" + battle_number(record.header.key.producer.boot_id) +
+		" AND process_id=" + battle_number(record.header.key.producer.process_id) +
+		" AND record_seq=" + battle_number(record.header.key.record_seq) +
+		" AND schema_version=1 AND record_kind=" + battle_number(record.header.kind) +
+		" AND occurrence_utc_usec=" + battle_number(record.header.occurrence_utc_usec);
+	if (context)
+	{
+		const auto &p = record.payload.progression_context;
+#define TELEMETRY_PROGRESSION_CONTEXT_FIELD(name, member, width, signed_value) \
+	query += " AND " #name "=" + battle_number(p.member);
+#include "telemetry/telemetry_progression_context_fields.inc"
+#undef TELEMETRY_PROGRESSION_CONTEXT_FIELD
+	}
+	else
+	{
+		const auto &p = record.payload.progression_configuration;
+#define TELEMETRY_PROGRESSION_CONFIGURATION_FIELD(name, member, width, signed_value) \
+	query += " AND " #name "=" + battle_number(p.member);
+#include "telemetry/telemetry_progression_configuration_fields.inc"
+#undef TELEMETRY_PROGRESSION_CONFIGURATION_FIELD
+	}
+	CHECK(scalar(query.c_str()) == 1U);
+}
+
+static void progression_context_storage_tests()
+{
+	case_name = "native typed progression source exact values and replay";
+	reset_fixture();
+	seed_config();
+	expect_one(progression_record(49500U, 25), telemetry_apply_outcome::applied);
+	const auto context = progression_context_record();
+	expect_one(context, telemetry_apply_outcome::applied);
+	expect_one(context, telemetry_apply_outcome::duplicate_identical);
+	check_progression_fields(context);
+	for (unsigned index = 0U; index < 15U; ++index)
+	{
+		const auto chunk = progression_configuration_record(index);
+		expect_one(chunk, telemetry_apply_outcome::applied);
+		expect_one(chunk, telemetry_apply_outcome::duplicate_identical);
+		check_progression_fields(chunk);
+	}
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_progression_context") == 1U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_progression_configuration") == 15U);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_interval WHERE record_kind IN (15,16) AND "
+		     "(environment_id IS NOT NULL OR config_id IS NOT NULL OR progression_applied_xp IS NOT NULL)") ==
+	      0U);
+	for (auto record : { context, progression_configuration_record(1U) })
+	{
+		auto changed = record;
+		if (record.header.kind == telemetry_record_kind::progression_context)
+			changed.payload.progression_context.context.current_exp++;
+		else
+			changed.payload.progression_configuration.value_bits[0]++;
+		expect_one(changed, telemetry_apply_outcome::duplicate_conflict);
+		changed = record;
+		changed.header.key.record_seq += 100U;
+		expect_one(changed, telemetry_apply_outcome::duplicate_conflict);
+		check_progression_fields(record);
+	}
+	auto root_conflict = progression_configuration_record(1U);
+	root_conflict.header.key.record_seq += 200U;
+	root_conflict.payload.progression_configuration.sequence++;
+	expect_one(root_conflict, telemetry_apply_outcome::duplicate_conflict);
+	CHECK(scalar("SELECT COUNT(*) FROM telemetry_progression_configuration") == 15U);
+
+	for (auto record : { context, progression_configuration_record(0U) })
+	{
+		const std::string table =
+			record.header.kind == telemetry_record_kind::progression_context ?
+				"telemetry_progression_context" :
+				"telemetry_progression_configuration";
+		for (auto selected : { fault_kind::statement, fault_kind::commit_lost_committed,
+				       fault_kind::commit_lost_rolled_back })
+		{
+			case_name =
+				"native typed payload failure is atomic and exact receipt retry reconciles";
+			reset_fixture();
+			seed_config();
+			fault = selected;
+			fault_insert_skips = 1U; // Fail the typed INSERT after its raw header.
+			const auto failed = telemetry_repository_apply(&record, 1U);
+			CHECK(failed.outcome == telemetry_batch_outcome::retryable_failure ||
+			      failed.outcome == telemetry_batch_outcome::commit_ambiguous);
+			CHECK(failed.applied_count == 0U && failed.duplicate_count == 0U);
+			const auto committed = selected == fault_kind::commit_lost_committed;
+			CHECK(scalar(("SELECT COUNT(*) FROM " + table).c_str()) ==
+			      (committed ? 1U : 0U));
+			CHECK(scalar(("SELECT COUNT(*) FROM telemetry_interval WHERE record_seq=" +
+				      battle_number(record.header.key.record_seq))
+					     .c_str()) == (committed ? 1U : 0U));
+			expect_one(record, committed ?
+						   telemetry_apply_outcome::duplicate_identical :
+						   telemetry_apply_outcome::applied);
+			check_progression_fields(record);
+		}
+		case_name = "native replay refuses a header without its original typed payload";
+		reset_fixture();
+		seed_config();
+		expect_one(record, telemetry_apply_outcome::applied);
+		execute("DELETE FROM " + table);
+		expect_one(record, telemetry_apply_outcome::duplicate_conflict);
+		CHECK(scalar(("SELECT COUNT(*) FROM " + table).c_str()) == 0U);
+	}
+	std::puts(
+		"Native progression context/configuration storage: PASS (82/95 fields, 15 packets; exact replay, root conflicts, atomic rollback/lost acknowledgements and incomplete receipts; no save authority)");
 }
 
 static void check_battle_fields(const telemetry_record &record)
@@ -2070,6 +2277,10 @@ static void startup_contract_tests()
 	refuses_schema();
 	execute("ALTER TABLE telemetry_interval ALTER COLUMN progression_applied_xp SET DEFAULT NULL");
 	case_name = "startup rejects a missing replay key";
+	// This owned empty fixture temporarily removes only the two new inbound
+	// edges so the existing missing/reordered replay-index negative still runs.
+	execute("ALTER TABLE telemetry_progression_context DROP FOREIGN KEY fk_telemetry_pctx_receipt");
+	execute("ALTER TABLE telemetry_progression_configuration DROP FOREIGN KEY fk_telemetry_pcfg_receipt");
 	execute("ALTER TABLE telemetry_interval DROP INDEX uq_telemetry_replay");
 	refuses_schema();
 	case_name = "startup rejects a reordered replay key";
@@ -2077,6 +2288,12 @@ static void startup_contract_tests()
 	refuses_schema();
 	execute("ALTER TABLE telemetry_interval DROP INDEX uq_telemetry_replay, "
 		"ADD UNIQUE KEY uq_telemetry_replay (boot_id,process_id,record_seq)");
+	execute("ALTER TABLE telemetry_progression_context ADD CONSTRAINT fk_telemetry_pctx_receipt "
+		"FOREIGN KEY (boot_id,process_id,record_seq) REFERENCES telemetry_interval (boot_id,process_id,record_seq) "
+		"ON DELETE CASCADE ON UPDATE RESTRICT");
+	execute("ALTER TABLE telemetry_progression_configuration ADD CONSTRAINT fk_telemetry_pcfg_receipt "
+		"FOREIGN KEY (boot_id,process_id,record_seq) REFERENCES telemetry_interval (boot_id,process_id,record_seq) "
+		"ON DELETE CASCADE ON UPDATE RESTRICT");
 	case_name = "startup rejects an unrecognized uniqueness constraint";
 	execute("ALTER TABLE telemetry_interval ADD UNIQUE KEY uq_fixture_unreviewed (record_seq)");
 	refuses_schema();
@@ -2121,7 +2338,8 @@ static void startup_contract_tests()
 	fixture_user = writer;
 	fixture_password = "telemetry-fixture-writer-only";
 	for (const char *table : { "telemetry_interval", "telemetry_config", "telemetry_session",
-				   "telemetry_quarantine" })
+				   "telemetry_quarantine", "telemetry_progression_context",
+				   "telemetry_progression_configuration" })
 		execute("GRANT SELECT ON `" + fixture_database + "`." + table + " TO '" + writer +
 			"'@'%'");
 	CHECK(telemetry_repository_init(repository_config()) ==
@@ -2131,7 +2349,8 @@ static void startup_contract_tests()
 	shutdown_fixture();
 	case_name = "missing session UPDATE is detected before admission";
 	for (const char *table : { "telemetry_interval", "telemetry_config", "telemetry_session",
-				   "telemetry_quarantine" })
+				   "telemetry_quarantine", "telemetry_progression_context",
+				   "telemetry_progression_configuration" })
 		execute("GRANT INSERT ON `" + fixture_database + "`." + table + " TO '" + writer +
 			"'@'%'");
 	CHECK(telemetry_repository_init(repository_config()) ==
@@ -2357,6 +2576,7 @@ int main()
 	every_record_kind_round_trip_tests();
 	replay_and_isolation_tests();
 	progression_replay_tests();
+	progression_context_storage_tests();
 	shared_battle_storage_tests();
 	contribution_storage_tests();
 	build_storage_tests();
@@ -2375,7 +2595,7 @@ int main()
 	shutdown_fixture();
 	mysql_close(observer);
 	std::puts(
-		"SQL repository runtime: PASS (record kinds 1-14, 10 golden fixtures, and focused "
+		"SQL repository runtime: PASS (record kinds 1-16, 10 golden fixtures, and focused "
 		"failure/isolation regressions)");
 }
 #endif

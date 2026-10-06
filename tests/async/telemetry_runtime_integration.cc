@@ -545,6 +545,22 @@ void check_enabled_lifecycle()
 	character.only.pc = &pc;
 	pc.pid = 8591;
 	character.in_room = -1;
+	telemetry_progression_configuration_snapshot unavailable_configuration{};
+	unavailable_configuration.count = 337U;
+	assert(!telemetry_runtime_game_progression_configuration(&unavailable_configuration));
+	assert(unavailable_configuration.count == 0U && unavailable_configuration.config_id == 0U);
+	char_data progression_character{};
+	progression_character.only.pc = &pc;
+	progression_character.player.level = 10U;
+	telemetry_progression_context_snapshot progression_context{};
+	assert(telemetry_runtime_game_progression_context(&progression_character,
+							  &progression_context));
+	assert(!(progression_context.flags &
+		 (TELEMETRY_PCTX_THRESHOLD_KNOWN | TELEMETRY_PCTX_SELECTION_KNOWN)) &&
+	       progression_context.next_threshold_xp == 0U &&
+	       progression_context.rested_selection ==
+		       telemetry_progression_rested_selection::unknown &&
+	       (progression_context.quality_flags & TELEMETRY_QUALITY_CONTEXT_UNKNOWN));
 	telemetry_battle_build_context build{};
 	assert(telemetry_runtime_game_battle_build_context(&character, &build));
 	assert(build.actor.id == 8591U &&
@@ -650,6 +666,9 @@ void check_game_context_and_copyover_handoff()
 	const telemetry_capture_result oversized_context =
 		telemetry_runtime_game_context(&player, &descriptor);
 	assert(oversized_context.outcome == telemetry_runtime_outcome::accepted);
+	// An empty secondary adapter must not replace a primary context result
+	// merely because its uncertainty update emits no source record itself.
+	assert(oversized_context.records_emitted == 0U && oversized_context.records_dropped == 0U);
 	assert((oversized_context.quality_flags & TELEMETRY_QUALITY_DIMENSION_UNKNOWN) != 0U);
 	group_member.next = nullptr;
 	const telemetry_handoff_result handoff = telemetry_runtime_game_handoff_copy(&player);

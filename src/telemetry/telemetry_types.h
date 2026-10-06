@@ -76,6 +76,8 @@ enum class telemetry_record_kind : std::uint8_t
 	battle_build = 12,
 	control = 13,
 	battle_result = 14,
+	progression_context = 15,
+	progression_configuration = 16,
 };
 
 /* Observed authenticated descriptor ownership; preparation alone emits no fact. */
@@ -729,6 +731,226 @@ struct telemetry_progression_payload
 	std::uint32_t policy_version;
 	telemetry_quality_mask quality_flags;
 };
+
+/* Independently versioned progression context. The sealed kind-6 amount
+ * payload above remains the XP observation, never an authoritative award.
+ * Selection, application, group presence and actual assistance gates are
+ * distinct. A point does not imply continuously valid exposure. */
+inline constexpr std::uint16_t TELEMETRY_PROGRESSION_CONTEXT_VERSION = 1U;
+inline constexpr std::uint16_t TELEMETRY_PROGRESSION_SOURCE_INVENTORY_VERSION = 1U;
+inline constexpr std::size_t TELEMETRY_PROGRESSION_CONTEXT_STATS = 10U;
+inline constexpr std::size_t TELEMETRY_PROGRESSION_CONTEXT_MAX_AFFECTS = 64U;
+
+enum class telemetry_progression_rested_selection : std::uint8_t
+{
+	unknown = 0,
+	none = 1,
+	rested = 2,
+	wellrested = 3,
+};
+
+enum class telemetry_progression_rested_application : std::uint8_t
+{
+	unknown = 0,
+	resurrection_exempt = 1,
+	none = 2,
+	rested = 3,
+	wellrested = 4,
+};
+
+enum class telemetry_progression_assistance : std::uint8_t
+{
+	unknown = 0,
+	solo_kill_share = 1,
+	group_kill_share = 2,
+	self_healing = 3,
+	group_healing = 4,
+	group_tanking = 5,
+	group_tank_support = 6,
+	no_assistance_gate = 7,
+};
+
+enum class telemetry_progression_context_boundary : std::uint8_t
+{
+	baseline = 1,
+	exposure = 2,
+	experience = 3,
+	level = 4,
+	lifecycle_cut = 5,
+	unknown = 6,
+};
+
+inline constexpr std::uint32_t TELEMETRY_PCTX_AFFECTS_COMPLETE = 1U << 0;
+inline constexpr std::uint32_t TELEMETRY_PCTX_AUTOMATIC_RESTED = 1U << 1;
+inline constexpr std::uint32_t TELEMETRY_PCTX_RESTED_PRESENT = 1U << 2;
+inline constexpr std::uint32_t TELEMETRY_PCTX_WELLRESTED_PRESENT = 1U << 3;
+inline constexpr std::uint32_t TELEMETRY_PCTX_RESTED_STAFF = 1U << 4;
+inline constexpr std::uint32_t TELEMETRY_PCTX_WELLRESTED_STAFF = 1U << 5;
+inline constexpr std::uint32_t TELEMETRY_PCTX_SELECTION_KNOWN = 1U << 6;
+inline constexpr std::uint32_t TELEMETRY_PCTX_APPLICATION_KNOWN = 1U << 7;
+inline constexpr std::uint32_t TELEMETRY_PCTX_ASSISTANCE_KNOWN = 1U << 8;
+inline constexpr std::uint32_t TELEMETRY_PCTX_GROUP_ELIGIBILITY_KNOWN = 1U << 9;
+inline constexpr std::uint32_t TELEMETRY_PCTX_THRESHOLD_KNOWN = 1U << 10;
+inline constexpr std::uint32_t TELEMETRY_PCTX_BUILD_KNOWN = 1U << 11;
+inline constexpr std::uint32_t TELEMETRY_PCTX_GROUP_ROSTER_KNOWN = 1U << 12;
+inline constexpr std::uint32_t TELEMETRY_PCTX_STORAGE_GATE_KNOWN = 1U << 13;
+inline constexpr std::uint32_t TELEMETRY_PCTX_STORAGE_GATE_PASSED = 1U << 14;
+inline constexpr std::uint32_t TELEMETRY_PCTX_CONTIGUOUS_EXPOSURE = 1U << 15;
+inline constexpr std::uint32_t TELEMETRY_PCTX_ALIVE = 1U << 16;
+inline constexpr std::uint32_t TELEMETRY_PCTX_CONFIG_CATALOG_KNOWN = 1U << 17;
+inline constexpr std::uint32_t TELEMETRY_PCTX_DECISION_POLICY_KNOWN = 1U << 18;
+inline constexpr std::uint32_t TELEMETRY_PCTX_HARDCORE = 1U << 19;
+inline constexpr std::uint32_t TELEMETRY_PCTX_HARDCORE_BYPASS = 1U << 20;
+inline constexpr std::uint32_t TELEMETRY_PCTX_FLAGS = (1U << 21) - 1U;
+
+/* Independent XP configuration inventory. Entries are actual cached/native
+ * values, not a property-file dump. This value is captured only at bootstrap or
+ * after property consumers update; it never traverses a character or writes XP.
+ * Definition 1 enumerates all threshold/race/modifier slots plus live XP gates.
+ * Original configuration/property catalogs retain their sealed meanings. */
+inline constexpr std::uint16_t TELEMETRY_PROGRESSION_CONFIGURATION_VERSION = 1U;
+inline constexpr std::size_t TELEMETRY_PROGRESSION_CONFIGURATION_VALUES = 337U;
+inline constexpr std::size_t TELEMETRY_PROGRESSION_CONFIGURATION_MAX_VALUES = 384U;
+inline constexpr std::size_t TELEMETRY_PROGRESSION_CONFIGURATION_CHUNK_VALUES = 24U;
+
+enum class telemetry_progression_configuration_value_kind : std::uint8_t
+{
+	unsigned_integer = 1,
+	signed_integer = 2,
+	float32_bits = 3,
+	float64_bits = 4,
+};
+
+struct telemetry_progression_configuration_value
+{
+	std::uint64_t bits;
+	std::uint16_t id;
+	telemetry_progression_configuration_value_kind kind;
+	std::uint8_t reserved[5];
+};
+
+struct telemetry_progression_configuration_snapshot
+{
+	telemetry_config_id config_id;
+	std::uint32_t build_version;
+	std::uint32_t content_version;
+	std::uint32_t classifier_version;
+	std::uint32_t policy_version;
+	std::uint16_t version;
+	std::uint16_t source_inventory_version;
+	std::uint16_t count;
+	std::uint16_t reserved;
+	telemetry_progression_configuration_value
+		values[TELEMETRY_PROGRESSION_CONFIGURATION_MAX_VALUES];
+};
+
+static_assert(std::is_trivially_copyable_v<telemetry_progression_configuration_snapshot>);
+static_assert(std::is_standard_layout_v<telemetry_progression_configuration_snapshot>);
+static_assert(sizeof(telemetry_progression_configuration_snapshot) <= 8U * 1024U);
+
+/* One exact chunk of the independent cold XP inventory. The first raw receipt
+ * is its immutable root. Chunks do not make a complete inventory until retained
+ * reconciliation verifies every source ordinal, version and canonical digest. */
+struct telemetry_progression_configuration_observation
+{
+	telemetry_producer_id producer;
+	telemetry_sequence sequence;
+	telemetry_record_sequence root_record_seq;
+	telemetry_config_id config_id;
+	telemetry_environment_id environment_id;
+	telemetry_season_id season_id;
+	telemetry_monotonic_usec at_monotonic_usec;
+	telemetry_utc_usec at_utc_usec;
+	std::uint64_t digest_words[4];
+	std::uint32_t build_version;
+	std::uint32_t content_version;
+	std::uint32_t classifier_version;
+	std::uint32_t policy_version;
+	std::uint16_t total_values;
+	std::uint16_t chunk_index;
+	std::uint16_t chunk_count;
+	std::uint16_t value_count;
+	std::uint16_t version;
+	std::uint16_t source_inventory_version;
+	std::uint32_t reserved;
+	std::uint64_t value_bits[TELEMETRY_PROGRESSION_CONFIGURATION_CHUNK_VALUES];
+	std::uint16_t value_ids[TELEMETRY_PROGRESSION_CONFIGURATION_CHUNK_VALUES];
+	telemetry_progression_configuration_value_kind
+		value_kinds[TELEMETRY_PROGRESSION_CONFIGURATION_CHUNK_VALUES];
+};
+
+static_assert(std::is_trivially_copyable_v<telemetry_progression_configuration_observation>);
+static_assert(std::is_standard_layout_v<telemetry_progression_configuration_observation>);
+static_assert(sizeof(telemetry_progression_configuration_observation) <= 440U);
+
+struct telemetry_progression_context_snapshot
+{
+	telemetry_config_id config_id;
+	/* Relative to this observation's producer; publication resolves the exact
+	 * complete retained catalog before comparing its effective digest. */
+	telemetry_record_sequence configuration_record_seq;
+	std::uint64_t configuration_digest_words[4];
+	std::int32_t decision_level_cap;
+	std::int32_t decision_good_assistance_gap;
+	std::int32_t decision_evil_assistance_gap;
+	std::int32_t decision_max_exp_level;
+	std::uint64_t next_threshold_xp;
+	std::int64_t current_exp;
+	std::uint32_t primary_class_mask;
+	std::uint32_t secondary_class_mask;
+	std::uint32_t build_version;
+	std::uint32_t content_version;
+	std::uint32_t classifier_version;
+	std::uint32_t policy_version;
+	telemetry_quality_mask quality_flags;
+	std::uint32_t flags;
+	/* Str,Dex,Agi,Con,Pow,Int,Wis,Cha,Kar,Luk, as in the native build reader. */
+	std::int16_t base_stats[TELEMETRY_PROGRESSION_CONTEXT_STATS];
+	std::int16_t effective_stats[TELEMETRY_PROGRESSION_CONTEXT_STATS];
+	std::uint32_t formal_group_size;
+	std::uint16_t current_level;
+	std::uint16_t threshold_level;
+	std::uint16_t threshold_catalog_version;
+	std::uint16_t specialization;
+	std::uint16_t race;
+	std::uint16_t faction;
+	std::uint16_t eligible_group_size;
+	std::uint16_t highest_group_level;
+	std::uint16_t assistance_level;
+	std::uint16_t version;
+	telemetry_progression_rested_selection rested_selection;
+	telemetry_progression_rested_application rested_application;
+	telemetry_progression_assistance assistance;
+	std::uint8_t reserved;
+};
+
+struct telemetry_progression_context_observation
+{
+	telemetry_producer_id producer;
+	telemetry_sequence sequence;
+	telemetry_session_ref session;
+	telemetry_connection_id connection;
+	telemetry_record_key source_record;
+	telemetry_record_key ownership_record;
+	telemetry_id account_token;
+	telemetry_monotonic_usec start_monotonic_usec;
+	telemetry_monotonic_usec at_monotonic_usec;
+	telemetry_utc_usec start_utc_usec;
+	telemetry_utc_usec at_utc_usec;
+	telemetry_progression_context_snapshot context;
+	std::uint16_t starting_level;
+	std::uint16_t source_inventory_version;
+	telemetry_progression_context_boundary boundary;
+	telemetry_record_kind source_kind;
+	std::uint16_t reserved;
+};
+
+static_assert(std::is_trivially_copyable_v<telemetry_progression_context_snapshot>);
+static_assert(std::is_standard_layout_v<telemetry_progression_context_snapshot>);
+static_assert(std::is_trivially_copyable_v<telemetry_progression_context_observation>);
+static_assert(std::is_standard_layout_v<telemetry_progression_context_observation>);
+static_assert(sizeof(telemetry_progression_context_observation) + sizeof(telemetry_record_header) <=
+	      TELEMETRY_RECORD_MAX_BYTES);
 
 /*
  * Gap/disabled records are control records.  A zero session reference denotes
@@ -1402,6 +1624,8 @@ union telemetry_record_payload
 	telemetry_coverage_gap_payload gap;
 	telemetry_configuration_payload configuration;
 	telemetry_progression_payload progression;
+	telemetry_progression_context_observation progression_context;
+	telemetry_progression_configuration_observation progression_configuration;
 	telemetry_encounter_payload encounter;
 	telemetry_combat_summary_payload combat_summary;
 	telemetry_ownership_payload ownership;
@@ -1484,7 +1708,9 @@ constexpr bool telemetry_record_kind_is_valid(telemetry_record_kind kind) noexce
 	       kind == telemetry_record_kind::battle_contribution ||
 	       kind == telemetry_record_kind::battle_build ||
 	       kind == telemetry_record_kind::control ||
-	       kind == telemetry_record_kind::battle_result;
+	       kind == telemetry_record_kind::battle_result ||
+	       kind == telemetry_record_kind::progression_context ||
+	       kind == telemetry_record_kind::progression_configuration;
 }
 
 /* Per-attempt/state control detail does not consume the lifecycle reserve. */
@@ -1498,7 +1724,8 @@ constexpr bool telemetry_record_kind_is_control(telemetry_record_kind kind) noex
 	       kind == telemetry_record_kind::combat_summary ||
 	       kind == telemetry_record_kind::ownership || kind == telemetry_record_kind::battle ||
 	       kind == telemetry_record_kind::battle_contribution ||
-	       kind == telemetry_record_kind::battle_build;
+	       kind == telemetry_record_kind::battle_build ||
+	       kind == telemetry_record_kind::progression_configuration;
 }
 
 constexpr bool telemetry_lifecycle_kind_is_valid(telemetry_lifecycle_kind kind) noexcept
@@ -2926,6 +3153,271 @@ telemetry_battle_result_observation_is_valid(const telemetry_battle_result_obser
 		  v.from_room_vnum == v.to_room_vnum)));
 }
 
+constexpr std::uint16_t telemetry_progression_configuration_source_id(std::size_t index) noexcept
+{
+	return index < 62U  ? index + 1U :
+	       index < 124U ? index - 62U + 100U :
+	       index < 225U ? index - 124U + 200U :
+	       index < 326U ? index - 225U + 400U :
+	       index < 337U ? index - 326U + 600U :
+			      0U;
+}
+
+constexpr bool telemetry_progression_configuration_value_is_valid(
+	std::uint16_t id, telemetry_progression_configuration_value_kind type,
+	std::uint64_t bits) noexcept
+{
+	using kind = telemetry_progression_configuration_value_kind;
+	if ((id >= 1U && id <= 62U) || id == 600U || (id >= 604U && id <= 606U) ||
+	    (id >= 608U && id <= 610U))
+		return type == kind::signed_integer;
+	if ((id >= 100U && id <= 161U) || (id >= 200U && id <= 300U) ||
+	    (id >= 400U && id <= 500U) || id == 607U)
+		return type == kind::float32_bits && bits <= UINT32_MAX &&
+		       (bits & 0x7f800000U) != 0x7f800000U;
+	return id >= 601U && id <= 603U && type == kind::float64_bits &&
+	       (bits & 0x7ff0000000000000ULL) != 0x7ff0000000000000ULL;
+}
+
+constexpr bool telemetry_progression_configuration_observation_is_valid(
+	const telemetry_progression_configuration_observation &v) noexcept
+{
+	constexpr auto chunks = (TELEMETRY_PROGRESSION_CONFIGURATION_VALUES +
+				 TELEMETRY_PROGRESSION_CONFIGURATION_CHUNK_VALUES - 1U) /
+				TELEMETRY_PROGRESSION_CONFIGURATION_CHUNK_VALUES;
+	if (!telemetry_producer_id_is_valid(v.producer) || !v.sequence || !v.root_record_seq ||
+	    !v.config_id || !v.environment_id || !v.season_id || !v.build_version ||
+	    !v.content_version || !v.classifier_version || !v.policy_version || v.reserved ||
+	    v.version != TELEMETRY_PROGRESSION_CONFIGURATION_VERSION ||
+	    v.source_inventory_version != TELEMETRY_PROGRESSION_SOURCE_INVENTORY_VERSION ||
+	    v.total_values != TELEMETRY_PROGRESSION_CONFIGURATION_VALUES ||
+	    v.chunk_count != chunks || v.chunk_index >= chunks ||
+	    !(v.digest_words[0] || v.digest_words[1] || v.digest_words[2] || v.digest_words[3]))
+		return false;
+	const auto first = v.chunk_index * TELEMETRY_PROGRESSION_CONFIGURATION_CHUNK_VALUES;
+	const auto available = TELEMETRY_PROGRESSION_CONFIGURATION_VALUES - first;
+	const auto count = available < TELEMETRY_PROGRESSION_CONFIGURATION_CHUNK_VALUES ?
+				   available :
+				   TELEMETRY_PROGRESSION_CONFIGURATION_CHUNK_VALUES;
+	if (v.value_count != count)
+		return false;
+	for (std::size_t index = 0U; index < TELEMETRY_PROGRESSION_CONFIGURATION_CHUNK_VALUES;
+	     ++index)
+	{
+		if (index < count)
+		{
+			if (v.value_ids[index] !=
+				    telemetry_progression_configuration_source_id(first + index) ||
+			    !telemetry_progression_configuration_value_is_valid(
+				    v.value_ids[index], v.value_kinds[index], v.value_bits[index]))
+				return false;
+		}
+		else if (v.value_ids[index] || v.value_bits[index] ||
+			 static_cast<std::uint8_t>(v.value_kinds[index]))
+			return false;
+	}
+	return true;
+}
+
+constexpr bool telemetry_progression_optional_key(const telemetry_record_key &key,
+						  const telemetry_producer_id &producer) noexcept
+{
+	return (key.producer.boot_id == 0U && key.producer.process_id == 0U &&
+		key.record_seq == 0U) ||
+	       (telemetry_record_key_is_valid(key) &&
+		(key.producer.boot_id == producer.boot_id &&
+		 key.producer.process_id == producer.process_id));
+}
+
+constexpr bool telemetry_progression_key_zero(const telemetry_record_key &key) noexcept
+{
+	return key.producer.boot_id == 0U && key.producer.process_id == 0U && key.record_seq == 0U;
+}
+
+constexpr bool telemetry_progression_context_snapshot_is_valid(
+	const telemetry_progression_context_snapshot &v) noexcept
+{
+	using selection = telemetry_progression_rested_selection;
+	using application = telemetry_progression_rested_application;
+	using assistance = telemetry_progression_assistance;
+	if (v.version != TELEMETRY_PROGRESSION_CONTEXT_VERSION || v.reserved != 0U ||
+	    v.current_level == 0U || (v.flags & ~TELEMETRY_PCTX_FLAGS) != 0U ||
+	    !telemetry_quality_mask_is_valid(v.quality_flags))
+		return false;
+	const bool configured = v.config_id && v.build_version && v.content_version &&
+				v.classifier_version && v.policy_version;
+	if (!configured &&
+	    (v.config_id || v.build_version || v.content_version || v.classifier_version ||
+	     v.policy_version || !(v.quality_flags & TELEMETRY_QUALITY_CONTEXT_UNKNOWN)))
+		return false;
+	if (((v.flags & TELEMETRY_PCTX_RESTED_STAFF) &&
+	     !(v.flags & TELEMETRY_PCTX_RESTED_PRESENT)) ||
+	    ((v.flags & TELEMETRY_PCTX_WELLRESTED_STAFF) &&
+	     !(v.flags & TELEMETRY_PCTX_WELLRESTED_PRESENT)))
+		return false;
+	if (v.flags & TELEMETRY_PCTX_SELECTION_KNOWN)
+	{
+		if (v.rested_selection < selection::none ||
+		    v.rested_selection > selection::wellrested)
+			return false;
+		if (v.flags & TELEMETRY_PCTX_AFFECTS_COMPLETE)
+		{
+			const bool automatic = v.flags & TELEMETRY_PCTX_AUTOMATIC_RESTED;
+			const bool alive = v.flags & TELEMETRY_PCTX_ALIVE;
+			const bool well = (v.flags & TELEMETRY_PCTX_WELLRESTED_PRESENT) &&
+					  (automatic ||
+					   (alive && (v.flags & TELEMETRY_PCTX_WELLRESTED_STAFF)));
+			const bool rested =
+				(v.flags & TELEMETRY_PCTX_RESTED_PRESENT) &&
+				(automatic || (alive && (v.flags & TELEMETRY_PCTX_RESTED_STAFF)));
+			if (v.rested_selection != (well	  ? selection::wellrested :
+						   rested ? selection::rested :
+							    selection::none))
+				return false;
+		}
+	}
+	else if (v.rested_selection != selection::unknown)
+		return false;
+	if (v.flags & TELEMETRY_PCTX_APPLICATION_KNOWN)
+	{
+		if (v.rested_application < application::resurrection_exempt ||
+		    v.rested_application > application::wellrested)
+			return false;
+		if ((v.flags & TELEMETRY_PCTX_SELECTION_KNOWN) &&
+		    v.rested_application != application::resurrection_exempt &&
+		    static_cast<unsigned>(v.rested_application) !=
+			    static_cast<unsigned>(v.rested_selection) + 1U)
+			return false;
+	}
+	else if (v.rested_application != application::unknown)
+		return false;
+	if (v.flags & TELEMETRY_PCTX_THRESHOLD_KNOWN)
+	{
+		if (!configured || !v.next_threshold_xp || v.threshold_catalog_version != 1U ||
+		    v.current_level == std::numeric_limits<std::uint16_t>::max() ||
+		    v.threshold_level != v.current_level + 1U)
+			return false;
+	}
+	else if (v.next_threshold_xp || v.threshold_level || v.threshold_catalog_version)
+		return false;
+	if (!(v.flags & TELEMETRY_PCTX_BUILD_KNOWN))
+	{
+		if (v.primary_class_mask || v.secondary_class_mask || v.specialization || v.race ||
+		    v.faction)
+			return false;
+		for (std::size_t index = 0U; index < TELEMETRY_PROGRESSION_CONTEXT_STATS; ++index)
+			if (v.base_stats[index] || v.effective_stats[index])
+				return false;
+	}
+	if (v.flags & TELEMETRY_PCTX_GROUP_ROSTER_KNOWN)
+	{
+		if (!v.formal_group_size)
+			return false;
+	}
+	else if (v.formal_group_size)
+		return false;
+	const bool has_digest = v.configuration_digest_words[0] ||
+				v.configuration_digest_words[1] ||
+				v.configuration_digest_words[2] || v.configuration_digest_words[3];
+	if (v.flags & TELEMETRY_PCTX_CONFIG_CATALOG_KNOWN)
+	{
+		if (!configured || !v.configuration_record_seq || !has_digest)
+			return false;
+	}
+	else if (v.configuration_record_seq || has_digest)
+		return false;
+	if (!(v.flags & TELEMETRY_PCTX_DECISION_POLICY_KNOWN) &&
+	    (v.decision_level_cap || v.decision_good_assistance_gap ||
+	     v.decision_evil_assistance_gap || v.decision_max_exp_level ||
+	     (v.flags & TELEMETRY_PCTX_HARDCORE_BYPASS)))
+		return false;
+	if ((v.flags & TELEMETRY_PCTX_HARDCORE_BYPASS) && !(v.flags & TELEMETRY_PCTX_HARDCORE))
+		return false;
+	if ((v.flags & TELEMETRY_PCTX_STORAGE_GATE_PASSED) &&
+	    !(v.flags & TELEMETRY_PCTX_STORAGE_GATE_KNOWN))
+		return false;
+	if (v.flags & TELEMETRY_PCTX_ASSISTANCE_KNOWN)
+	{
+		if (v.assistance < assistance::solo_kill_share ||
+		    v.assistance > assistance::no_assistance_gate)
+			return false;
+		if (v.assistance == assistance::solo_kill_share &&
+		    (!(v.flags & TELEMETRY_PCTX_GROUP_ELIGIBILITY_KNOWN) ||
+		     v.eligible_group_size != 1U || v.highest_group_level != v.current_level))
+			return false;
+		if (v.assistance == assistance::group_kill_share &&
+		    (!(v.flags & TELEMETRY_PCTX_GROUP_ELIGIBILITY_KNOWN) ||
+		     !v.eligible_group_size || v.highest_group_level < v.current_level))
+			return false;
+		if (v.assistance == assistance::group_tanking &&
+		    (!(v.flags & TELEMETRY_PCTX_GROUP_ELIGIBILITY_KNOWN) ||
+		     v.eligible_group_size < 2U || v.highest_group_level))
+			return false;
+	}
+	else if (v.assistance != assistance::unknown ||
+		 (v.flags & TELEMETRY_PCTX_GROUP_ELIGIBILITY_KNOWN) || v.assistance_level)
+		return false;
+	if (!(v.flags & TELEMETRY_PCTX_GROUP_ELIGIBILITY_KNOWN) &&
+	    (v.eligible_group_size || v.highest_group_level))
+		return false;
+	return true;
+}
+
+constexpr bool telemetry_progression_context_observation_is_valid(
+	const telemetry_progression_context_observation &v) noexcept
+{
+	using boundary = telemetry_progression_context_boundary;
+	if (!telemetry_producer_id_is_valid(v.producer) || !v.sequence ||
+	    !telemetry_session_ref_is_valid(v.session) ||
+	    !telemetry_connection_reference_is_valid(v.connection) ||
+	    !telemetry_progression_optional_key(v.source_record, v.producer) ||
+	    !telemetry_progression_optional_key(v.ownership_record, v.producer) ||
+	    (v.account_token && telemetry_progression_key_zero(v.ownership_record)) ||
+	    v.source_inventory_version != TELEMETRY_PROGRESSION_SOURCE_INVENTORY_VERSION ||
+	    v.reserved || !telemetry_progression_context_snapshot_is_valid(v.context) ||
+	    v.start_monotonic_usec > v.at_monotonic_usec || v.boundary < boundary::baseline ||
+	    v.boundary > boundary::unknown)
+		return false;
+	if (!telemetry_connection_id_is_zero(v.connection) &&
+	    (v.connection.producer.boot_id != v.producer.boot_id ||
+	     v.connection.producer.process_id != v.producer.process_id))
+		return false;
+	if (v.start_utc_usec != TELEMETRY_UTC_UNKNOWN && v.at_utc_usec != TELEMETRY_UTC_UNKNOWN &&
+	    v.start_utc_usec > v.at_utc_usec &&
+	    !(v.context.quality_flags & TELEMETRY_QUALITY_CLOCK_DISCONTINUITY))
+		return false;
+	const bool has_source = !telemetry_progression_key_zero(v.source_record);
+	if (has_source != (v.source_kind != telemetry_record_kind::invalid))
+		return false;
+	if (v.boundary == boundary::baseline && has_source)
+		return false;
+	if (v.boundary == boundary::exposure && (v.source_kind != telemetry_record_kind::interval ||
+						 v.start_monotonic_usec == v.at_monotonic_usec))
+		return false;
+	if ((v.boundary == boundary::experience || v.boundary == boundary::level) &&
+	    v.source_kind != telemetry_record_kind::progression)
+		return false;
+	if (v.boundary == boundary::lifecycle_cut &&
+	    v.source_kind != telemetry_record_kind::session_lifecycle)
+		return false;
+	if (v.source_kind != telemetry_record_kind::invalid &&
+	    v.source_kind != telemetry_record_kind::interval &&
+	    v.source_kind != telemetry_record_kind::progression &&
+	    v.source_kind != telemetry_record_kind::session_lifecycle)
+		return false;
+	if ((v.context.flags & TELEMETRY_PCTX_CONTIGUOUS_EXPOSURE) &&
+	    v.boundary != boundary::exposure)
+		return false;
+	if ((v.context.flags &
+	     (TELEMETRY_PCTX_APPLICATION_KNOWN | TELEMETRY_PCTX_STORAGE_GATE_KNOWN |
+	      TELEMETRY_PCTX_DECISION_POLICY_KNOWN)) &&
+	    v.boundary != boundary::experience)
+		return false;
+	return v.boundary != boundary::unknown ||
+	       ((v.context.quality_flags & TELEMETRY_QUALITY_CONTEXT_UNKNOWN) &&
+		!(v.context.flags & TELEMETRY_PCTX_CONTIGUOUS_EXPOSURE));
+}
+
 constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcept
 {
 	if (!telemetry_record_header_is_valid(record.header))
@@ -2995,6 +3487,29 @@ constexpr bool telemetry_record_is_valid(const telemetry_record &record) noexcep
 			       record.payload.battle_result.producer.process_id &&
 		       record.header.occurrence_utc_usec ==
 			       record.payload.battle_result.at_utc_usec;
+	case telemetry_record_kind::progression_context:
+		return telemetry_progression_context_observation_is_valid(
+			       record.payload.progression_context) &&
+		       record.header.key.producer.boot_id ==
+			       record.payload.progression_context.producer.boot_id &&
+		       record.header.key.producer.process_id ==
+			       record.payload.progression_context.producer.process_id &&
+		       record.header.occurrence_utc_usec ==
+			       record.payload.progression_context.at_utc_usec;
+	case telemetry_record_kind::progression_configuration:
+		return telemetry_progression_configuration_observation_is_valid(
+			       record.payload.progression_configuration) &&
+		       record.header.key.producer.boot_id ==
+			       record.payload.progression_configuration.producer.boot_id &&
+		       record.header.key.producer.process_id ==
+			       record.payload.progression_configuration.producer.process_id &&
+		       record.header.occurrence_utc_usec ==
+			       record.payload.progression_configuration.at_utc_usec &&
+		       (record.payload.progression_configuration.chunk_index == 0U ?
+				record.header.key.record_seq ==
+					record.payload.progression_configuration.root_record_seq :
+				record.header.key.record_seq >
+					record.payload.progression_configuration.root_record_seq);
 	case telemetry_record_kind::invalid:
 		break;
 	}

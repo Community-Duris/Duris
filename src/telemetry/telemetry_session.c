@@ -387,6 +387,10 @@ bool drain_ownership(telemetry_session_state *state, telemetry_session_slot &slo
 		if (!submit_record(state, record, result, &slot.session,
 				   &record.payload.ownership.connection))
 			return false;
+		slot.ownership_last_record = record.header.key;
+		slot.ownership_last_record_account_token = record.payload.ownership.account_token;
+		slot.ownership_last_record_monotonic_usec =
+			record.payload.ownership.at_monotonic_usec;
 		if (slot.ownership_overflow && slot.ownership_pending_count == 1U)
 		{
 			slot.ownership_overflow = 0U;

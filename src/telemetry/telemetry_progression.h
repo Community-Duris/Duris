@@ -33,6 +33,16 @@ struct telemetry_progression_observation
 	telemetry_quality_mask quality_flags;
 };
 
+/* Caller-local inputs from an actual passed sharing/support boundary. No game
+ * pointers, inferred roster eligibility, durable receipt or XP mutation. */
+struct telemetry_progression_assistance_inputs
+{
+	telemetry_progression_assistance kind;
+	std::uint16_t eligible_group_size;
+	std::uint16_t highest_group_level;
+	std::uint16_t assistance_level;
+};
+
 enum class telemetry_progression_outcome : std::uint8_t
 {
 	accepted = 0,
@@ -144,5 +154,57 @@ static_assert(std::is_trivially_copyable_v<telemetry_progression_observation>);
 static_assert(std::is_standard_layout_v<telemetry_progression_observation>);
 static_assert(std::is_trivially_copyable_v<telemetry_progression_state>);
 static_assert(std::is_trivially_copyable_v<telemetry_progression_result>);
+
+inline constexpr std::size_t TELEMETRY_PROGRESSION_CONFIGURATION_CANONICAL_BYTES =
+	22U + TELEMETRY_PROGRESSION_CONFIGURATION_VALUES * 11U;
+
+bool telemetry_progression_configuration_encode(
+	const telemetry_progression_configuration_snapshot &, std::uint8_t *, std::size_t) noexcept;
+bool telemetry_progression_configuration_decode(
+	const std::uint8_t *, std::size_t, telemetry_config_id,
+	telemetry_progression_configuration_snapshot *) noexcept;
+
+/* Pure configuration qualification and canonical digest, for the cold capture
+ * boundary and retained-input reconciliation. Never invoke hashing per XP hit. */
+bool telemetry_progression_configuration_is_valid(
+	const telemetry_progression_configuration_snapshot &) noexcept;
+bool telemetry_progression_configuration_digest(const telemetry_progression_configuration_snapshot &,
+						std::uint8_t *digest,
+						std::size_t digest_size) noexcept;
+
+inline constexpr std::size_t TELEMETRY_PROGRESSION_CONFIGURATION_WIRE_BYTES = 0U
+#define TELEMETRY_PROGRESSION_CONFIGURATION_FIELD(name, member, width, signed_value) +width
+#include "telemetry/telemetry_progression_configuration_fields.inc"
+#undef TELEMETRY_PROGRESSION_CONFIGURATION_FIELD
+	;
+
+bool telemetry_progression_configuration_observation_encode(
+	const telemetry_progression_configuration_observation &, std::uint8_t *,
+	std::size_t) noexcept;
+bool telemetry_progression_configuration_observation_decode(
+	const std::uint8_t *, std::size_t,
+	telemetry_progression_configuration_observation *) noexcept;
+
+static_assert(TELEMETRY_PROGRESSION_CONFIGURATION_WIRE_BYTES + sizeof(telemetry_record_header) <=
+	      TELEMETRY_RECORD_MAX_BYTES);
+
+/* Pure value qualification/encoding. These do not emit or acknowledge an XP
+ * award, assign identity, or infer continuous exposure from point values. */
+inline constexpr std::size_t TELEMETRY_PROGRESSION_CONTEXT_WIRE_BYTES = 0U
+#define TELEMETRY_PROGRESSION_CONTEXT_FIELD(name, member, width, signed_value) +width
+#include "telemetry/telemetry_progression_context_fields.inc"
+#undef TELEMETRY_PROGRESSION_CONTEXT_FIELD
+	;
+
+bool telemetry_progression_context_observation_equal(
+	const telemetry_progression_context_observation &,
+	const telemetry_progression_context_observation &) noexcept;
+bool telemetry_progression_context_observation_encode(
+	const telemetry_progression_context_observation &, std::uint8_t *, std::size_t) noexcept;
+bool telemetry_progression_context_observation_decode(
+	const std::uint8_t *, std::size_t, telemetry_progression_context_observation *) noexcept;
+
+static_assert(TELEMETRY_PROGRESSION_CONTEXT_WIRE_BYTES + sizeof(telemetry_record_header) <=
+	      TELEMETRY_RECORD_MAX_BYTES);
 
 #endif

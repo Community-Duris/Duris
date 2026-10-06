@@ -12,6 +12,7 @@
 #include "core/utils.h"
 #include "core/prototypes.h"
 #include "magic/spells.h"
+#include "world/difficulty.h"
 #ifdef TELEMETRY_TEST_NATIVE_AFFECTS
 #include "combat/spell_wards.h"
 #include "combat/racewar_stat_mods.h"
@@ -45,6 +46,17 @@ P_char character_list = nullptr;
 struct zone_data *zone_table = nullptr;
 int top_of_zone_table = -1;
 int top_of_world = -1;
+long new_exp_table[TOTALLVLS]{};
+long global_exp_limit = 0;
+float exp_mods[EXPMOD_MAX + 1]{};
+float racial_exp_mods[LAST_RACE + 1]{};
+float racial_exp_mod_victims[LAST_RACE + 1]{};
+double fixture_exp_difficulty = 1.0;
+double difficulty_multiplier(difficulty_dial)
+{
+	return fixture_exp_difficulty;
+}
+int fixture_rested_enabled = 1;
 Skill skills[MAX_AFFECT_TYPES + 1]{};
 struct arena_data arena
 {
@@ -355,14 +367,6 @@ bool innate_two_daggers(P_char)
 {
 	return false;
 }
-float get_property(const char *, double fallback)
-{
-	return fallback;
-}
-int get_property(const char *, int fallback)
-{
-	return fallback;
-}
 void apply_reaver_mods(P_char) {}
 int GET_CHAR_SKILL_P(P_char, int)
 {
@@ -409,6 +413,16 @@ void die(P_char character, P_char)
 }
 #endif
 
+float get_property(const char *, double fallback)
+{
+	return fallback;
+}
+int get_property(const char *name, int fallback)
+{
+	if (std::strcmp(name, "exp.rested.enabled") == 0)
+		return fixture_rested_enabled;
+	return fallback;
+}
 namespace
 {
 struct fixture_native_lifetimes
@@ -440,8 +454,11 @@ struct fake_repository
 	bool saw_combat_context = false;
 	bool saw_idle_combat = false;
 	std::vector<telemetry_interval_payload> intervals; // worker writes; read after join
+	std::vector<telemetry_record_key> interval_keys;
 	std::vector<telemetry_session_lifecycle_payload> lifecycles;
+	std::vector<telemetry_record_key> lifecycle_keys;
 	std::vector<telemetry_ownership_payload> ownership;
+	std::vector<telemetry_record_key> ownership_keys;
 	std::vector<telemetry_encounter_payload> encounters;
 	std::vector<telemetry_combat_summary_payload> combat;
 	std::vector<telemetry_record> battles;
@@ -449,6 +466,9 @@ struct fake_repository
 	std::vector<telemetry_record> builds;
 	std::vector<telemetry_record> controls;
 	std::vector<telemetry_record> results;
+	std::vector<telemetry_record> progression_contexts;
+	std::vector<telemetry_record> progression_configurations;
+	std::vector<telemetry_record> progressions;
 };
 
 telemetry_repository_outcome fake_init(void *context, telemetry_repository_config config) noexcept
@@ -488,13 +508,20 @@ telemetry_apply_batch_result fake_apply(void *context, const telemetry_record *r
 		result.results[index].key = records[index].header.key;
 		result.results[index].outcome = telemetry_apply_outcome::applied;
 		if (records[index].header.kind == telemetry_record_kind::interval)
+		{
 			fake->intervals.push_back(records[index].payload.interval);
+			fake->interval_keys.push_back(records[index].header.key);
+		}
 		if (records[index].header.kind == telemetry_record_kind::session_lifecycle)
+		{
 			fake->lifecycles.push_back(records[index].payload.lifecycle);
+			fake->lifecycle_keys.push_back(records[index].header.key);
+		}
 		if (records[index].header.kind == telemetry_record_kind::ownership)
 		{
 			assert(telemetry_record_is_valid(records[index]));
 			fake->ownership.push_back(records[index].payload.ownership);
+			fake->ownership_keys.push_back(records[index].header.key);
 		}
 		if (records[index].header.kind == telemetry_record_kind::encounter)
 		{
@@ -531,6 +558,18 @@ telemetry_apply_batch_result fake_apply(void *context, const telemetry_record *r
 			assert(telemetry_record_is_valid(records[index]));
 			fake->results.push_back(records[index]);
 		}
+		if (records[index].header.kind == telemetry_record_kind::progression_context)
+		{
+			assert(telemetry_record_is_valid(records[index]));
+			fake->progression_contexts.push_back(records[index]);
+		}
+		if (records[index].header.kind == telemetry_record_kind::progression_configuration)
+		{
+			assert(telemetry_record_is_valid(records[index]));
+			fake->progression_configurations.push_back(records[index]);
+		}
+		if (records[index].header.kind == telemetry_record_kind::progression)
+			fake->progressions.push_back(records[index]);
 		if (records[index].header.kind == telemetry_record_kind::interval &&
 		    records[index].payload.interval.context == telemetry_activity_context::combat)
 		{
@@ -1221,6 +1260,439 @@ void check_native_battle_context()
 	top_of_world = top_of_zone_table = -1;
 	std::puts(
 		"PASS: native live actor reuse, roster revisions/presence, session links and pet ownership cuts");
+}
+
+void check_native_progression_capture()
+{
+	fake_repository fake{};
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	new_exp_table[11] = 4'000;
+	new_exp_table[12] = 5'000;
+	auto options = enabled_options();
+	/* Keep the normal eight-segment cap; the shared adapter fixture's 100-us
+	 * buckets intentionally overflow during a millisecond of real time. */
+	options.config.interval_usec = 5'000'000U;
+	options.config.checkpoint_interval_usec = 10'000'000U;
+	options.config.active_window_usec = 20'000'000U;
+	assert(telemetry_config_compute_fingerprint(options.config, options.config.fingerprint,
+						    sizeof(options.config.fingerprint)));
+	options.config.config_id = telemetry_config_id_from_fingerprint(
+		options.config.fingerprint, sizeof(options.config.fingerprint));
+	telemetry_test_start_runtime(options);
+	for (unsigned retry = 0U; retry < 15U; ++retry)
+	{
+		telemetry_monotonic_usec at{};
+		telemetry_utc_usec utc{};
+		assert(telemetry_runtime_now(&at, &utc));
+		(void)telemetry_runtime_pulse({ at, utc, 0U, 0U });
+	}
+	char_data player{};
+	pc_only_data pc{};
+	pc.pid = 8582;
+	player.runtime_id = allocate_character_runtime_id();
+	register_character_runtime_id(&player);
+	player.only.pc = &pc;
+	room_data rooms[1]{};
+	zone_data zones[1]{};
+	rooms[0].zone = 0U;
+	zones[0].number = 1701;
+	world = rooms;
+	zone_table = zones;
+	top_of_world = top_of_zone_table = 0;
+	player.in_room = 0;
+	player.player.level = 10U;
+	player.player.m_class = CLASS_CLERIC;
+	player.player.race = RACE_HUMAN;
+	player.player.racewar = 2U;
+	player.specials.position = POS_STANDING | STAT_NORMAL;
+	GET_EXP(&player) = 500;
+	acct_chars member{};
+	member.pid = pc.pid;
+	acct_entry account{};
+	account.acct_character_list = &member;
+	account.telemetry_account_token = 858U;
+	account.telemetry_environment_id = options.config.environment_id;
+	account.telemetry_season_id = options.config.season_id;
+	descriptor_data descriptor{};
+	descriptor.character = &player;
+	descriptor.account = &account;
+	descriptor.connected = CON_PLAYING;
+	player.desc = &descriptor;
+	assert(telemetry_runtime_game_enter(&player, &descriptor).outcome ==
+	       telemetry_runtime_outcome::accepted);
+	(void)telemetry_runtime_game_context(&player, &descriptor);
+	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	// The native evidence adapter samples its cut before refreshing unchanged
+	// ownership. The later sample must not displace the earlier admitted receipt.
+	telemetry_monotonic_usec command_from{}, command_through{};
+	telemetry_utc_usec command_utc{};
+	assert(telemetry_runtime_now(&command_from, &command_utc));
+	const auto command_cut = telemetry_runtime_game_evidence(
+		&player, &descriptor, telemetry_runtime_evidence_kind::player_action);
+	assert(telemetry_runtime_now(&command_through, &command_utc));
+	assert(command_cut.outcome == telemetry_runtime_outcome::accepted &&
+	       command_cut.records_emitted > 0U);
+	telemetry_progression_context_snapshot context{};
+	assert(telemetry_runtime_game_progression_context(&player, &context));
+	assert(context.flags & TELEMETRY_PCTX_CONFIG_CATALOG_KNOWN);
+	assert(context.configuration_record_seq != 0U);
+	context.flags |= TELEMETRY_PCTX_APPLICATION_KNOWN | TELEMETRY_PCTX_STORAGE_GATE_KNOWN |
+			 TELEMETRY_PCTX_STORAGE_GATE_PASSED | TELEMETRY_PCTX_DECISION_POLICY_KNOWN;
+	context.rested_application = telemetry_progression_rested_application::none;
+	context.decision_level_cap = 56;
+	context.decision_good_assistance_gap = context.decision_evil_assistance_gap = 15;
+	context.decision_max_exp_level = 46;
+	GET_EXP(&player) = 625;
+	context.current_exp = 625;
+	const auto heap = fixture_game_heap_calls, crypto = fixture_crypto_heap_calls;
+	fixture_track_game_heap = fixture_track_crypto = true;
+	const auto earned = telemetry_runtime_game_progression(
+		&player, &descriptor,
+		telemetry_progression_make_experience(telemetry_progression_source::quest,
+						      telemetry_progression_reason::earned, 1'000,
+						      2'000, 500, 625, 10U, 0U, 0U),
+		&context);
+	fixture_track_game_heap = fixture_track_crypto = false;
+	assert(heap == fixture_game_heap_calls && crypto == fixture_crypto_heap_calls);
+	assert(earned.outcome == telemetry_runtime_outcome::accepted &&
+	       earned.records_emitted >= 2U);
+	// A mutate-and-restore sequence cannot turn matching endpoint values into
+	// proof that the entire intervening interval had one build context.
+	telemetry_runtime_game_battle_build_changed(&player);
+	++player.base_stats[0];
+	--player.base_stats[0];
+	(void)telemetry_runtime_game_context(&player, &descriptor);
+	// Legacy persistent field writes are detected by the bounded presence read;
+	// returning to the old value cannot qualify either preceding span.
+	player.player.racewar = 3U;
+	(void)telemetry_runtime_game_presence(&player, &descriptor);
+	player.player.racewar = 2U;
+	(void)telemetry_runtime_game_presence(&player, &descriptor);
+	player.player.level = 11U;
+	GET_EXP(&player) = 125;
+	const auto level = telemetry_runtime_game_progression(
+		&player, &descriptor,
+		telemetry_progression_make_level_transition(
+			telemetry_progression_kind::level_advanced,
+			telemetry_progression_source::system,
+			telemetry_progression_reason::level_threshold, 10U, 11U, 4'000U, 0U, 0U));
+	assert(level.outcome == telemetry_runtime_outcome::accepted && level.records_emitted >= 2U);
+	GET_EXP(&player) = 100;
+	fixture_track_game_heap = fixture_track_crypto = true;
+	const auto cost = telemetry_runtime_game_progression_adjustment(
+		&player, 125, -25, -25, telemetry_progression_source::boon,
+		telemetry_progression_reason::level_threshold);
+	fixture_track_game_heap = fixture_track_crypto = false;
+	assert(heap == fixture_game_heap_calls && crypto == fixture_crypto_heap_calls);
+	assert(cost.outcome == telemetry_runtime_outcome::accepted && cost.records_emitted >= 2U);
+	descriptor.account = nullptr; // A new observation must not reuse the old owner.
+	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	const auto unknown = telemetry_runtime_game_progression_adjustment(
+		&player, 100, 0, 0, telemetry_progression_source::administration,
+		telemetry_progression_reason::administration);
+	assert(unknown.outcome == telemetry_runtime_outcome::accepted &&
+	       unknown.records_emitted >= 3U);
+	player.player.level = 63U;
+	(void)telemetry_runtime_game_presence(&player, &descriptor);
+	for (unsigned retry = 0U; retry < 16U; ++retry)
+		assert(telemetry_runtime_game_presence(&player, &descriptor).records_emitted == 0U);
+	player.player.level = 11U;
+	(void)telemetry_runtime_game_presence(&player, &descriptor);
+	fixture_track_game_heap = fixture_track_crypto = true;
+	const auto ended = telemetry_runtime_game_session_exit(
+		&player, &descriptor, telemetry_session_end_reason::logout);
+	fixture_track_game_heap = fixture_track_crypto = false;
+	assert(heap == fixture_game_heap_calls && crypto == fixture_crypto_heap_calls);
+	assert(ended.outcome == telemetry_runtime_outcome::accepted);
+	telemetry_monotonic_usec now{};
+	telemetry_utc_usec utc{};
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	std::vector<telemetry_record> points;
+	unsigned continuous = 0U, uncertain = 0U;
+	bool linked_command_cut = false;
+	for (const auto &record : fake.progression_contexts)
+	{
+		const auto &span = record.payload.progression_context;
+		if (span.boundary != telemetry_progression_context_boundary::exposure)
+		{
+			points.push_back(record);
+			continue;
+		}
+		assert(telemetry_record_is_valid(record));
+		bool linked = false;
+		for (std::size_t index = 0U; index < fake.intervals.size(); ++index)
+			if (fake.interval_keys[index].record_seq == span.source_record.record_seq)
+			{
+				const auto &interval = fake.intervals[index];
+				assert(span.start_monotonic_usec ==
+					       interval.window.start_monotonic_usec &&
+				       span.at_monotonic_usec ==
+					       interval.window.end_monotonic_usec &&
+				       span.start_utc_usec == interval.window.start_utc_usec &&
+				       span.at_utc_usec == interval.window.end_utc_usec);
+				linked = true;
+			}
+		assert(linked);
+		if (command_from <= span.at_monotonic_usec &&
+		    span.at_monotonic_usec <= command_through)
+		{
+			linked_command_cut = true;
+			assert(span.context.flags & TELEMETRY_PCTX_CONTIGUOUS_EXPOSURE);
+		}
+		if (span.context.flags & TELEMETRY_PCTX_CONTIGUOUS_EXPOSURE)
+		{
+			++continuous;
+			assert(span.context.quality_flags == 0U && span.account_token == 858U);
+		}
+		else
+		{
+			++uncertain;
+			assert(span.context.quality_flags & TELEMETRY_QUALITY_CONTEXT_UNKNOWN);
+		}
+	}
+	assert(linked_command_cut && continuous > 0U && uncertain > 0U);
+	assert(fake.progression_configurations.size() == 15U && points.size() == 6U);
+	assert(fake.progressions.size() == 4U && fake.ownership.size() == 2U);
+	const auto &root = fake.progression_configurations.front();
+	for (std::size_t index = 0U; index < 15U; ++index)
+	{
+		const auto &chunk =
+			fake.progression_configurations[index].payload.progression_configuration;
+		assert(chunk.chunk_index == index &&
+		       chunk.sequence == root.payload.progression_configuration.sequence);
+		assert(chunk.root_record_seq == root.header.key.record_seq);
+	}
+	const auto &baseline = points[0].payload.progression_context;
+	assert(baseline.boundary == telemetry_progression_context_boundary::baseline &&
+	       baseline.starting_level == 10U && baseline.account_token == 858U);
+	const auto &xp = points[1].payload.progression_context;
+	assert(xp.source_record.record_seq == earned.first_record.record_seq &&
+	       xp.source_kind == telemetry_record_kind::progression);
+	assert(xp.starting_level == 10U && xp.context.current_level == 10U &&
+	       xp.context.current_exp == 625);
+	assert(xp.context.configuration_record_seq == root.header.key.record_seq &&
+	       xp.account_token == 858U);
+	assert(xp.ownership_record.record_seq == baseline.ownership_record.record_seq);
+	const auto &observed = fake.progressions[0].payload.progression;
+	assert(observed.requested_xp == 1'000 && observed.computed_xp == 2'000 &&
+	       observed.applied_xp == 125);
+	assert(observed.observation_status ==
+	       telemetry_progression_observation_status::observed_mutable);
+	const auto &advanced = points[2].payload.progression_context;
+	assert(advanced.boundary == telemetry_progression_context_boundary::level &&
+	       advanced.context.current_level == 11U);
+	assert(advanced.starting_level == 10U &&
+	       !(advanced.context.flags & TELEMETRY_PCTX_APPLICATION_KNOWN));
+	const auto &consumed = fake.progressions[2].payload.progression;
+	assert(consumed.kind == telemetry_progression_kind::experience_observed &&
+	       consumed.reason == telemetry_progression_reason::level_threshold &&
+	       consumed.source == telemetry_progression_source::boon &&
+	       consumed.before_exp == 125 && consumed.after_exp == 100 &&
+	       consumed.requested_xp == -25 && consumed.computed_xp == -25 &&
+	       consumed.applied_xp == -25 && consumed.threshold_xp == 0U &&
+	       consumed.observation_status ==
+		       telemetry_progression_observation_status::observed_mutable);
+	assert(points[3].payload.progression_context.source_record.record_seq ==
+	       cost.first_record.record_seq);
+	const auto &missing = points[4].payload.progression_context;
+	assert(missing.account_token == 0U &&
+	       missing.ownership_record.record_seq != xp.ownership_record.record_seq);
+	assert(!(missing.context.flags &
+		 (TELEMETRY_PCTX_APPLICATION_KNOWN | TELEMETRY_PCTX_DECISION_POLICY_KNOWN)));
+	const auto &cut = points.back().payload.progression_context;
+	assert(cut.boundary == telemetry_progression_context_boundary::lifecycle_cut &&
+	       cut.source_kind == telemetry_record_kind::session_lifecycle &&
+	       cut.starting_level == 10U && cut.context.current_level == 11U);
+	assert(fake.lifecycles.back().lifecycle == telemetry_lifecycle_kind::session_exited &&
+	       fake.lifecycles.back().end_reason == telemetry_session_end_reason::logout);
+	assert(cut.source_record.producer.boot_id == fake.lifecycle_keys.back().producer.boot_id &&
+	       cut.source_record.producer.process_id ==
+		       fake.lifecycle_keys.back().producer.process_id &&
+	       cut.source_record.record_seq == fake.lifecycle_keys.back().record_seq);
+	assert(cut.at_monotonic_usec == fake.lifecycles.back().at_monotonic_usec &&
+	       cut.at_utc_usec == fake.lifecycles.back().at_utc_usec);
+	assert(!(cut.context.flags &
+		 (TELEMETRY_PCTX_CONTIGUOUS_EXPOSURE | TELEMETRY_PCTX_APPLICATION_KNOWN |
+		  TELEMETRY_PCTX_STORAGE_GATE_KNOWN | TELEMETRY_PCTX_DECISION_POLICY_KNOWN)));
+	telemetry_transport_unbind_for_tests();
+	new_exp_table[11] = new_exp_table[12] = 0;
+	unregister_character_runtime_id(&player);
+	world = nullptr;
+	zone_table = nullptr;
+	top_of_world = top_of_zone_table = -1;
+	std::puts(
+		"PASS: progression point/configuration native admission and exact ownership/XP references; observed mutable only; zero event heap/crypto");
+}
+
+void check_native_progression_context()
+{
+	using selection = telemetry_progression_rested_selection;
+	char_data player{}, peer{}, npc{};
+	pc_only_data player_pc{}, peer_pc{};
+	player.only.pc = &player_pc;
+	peer.only.pc = &peer_pc;
+	player_pc.pid = 8572;
+	peer_pc.pid = 8573;
+	player.player.level = 10U;
+	player.player.m_class = 0x8000'0001U;
+	player.player.secondary_class = 0x4000'0002U;
+	player.player.spec = 3U;
+	player.player.race = RACE_HUMAN;
+	player.player.racewar = 2U;
+	GET_EXP(&player) = 1'125;
+	player.specials.position = POS_STANDING | STAT_NORMAL;
+	for (std::size_t index = 0U; index < TELEMETRY_PROGRESSION_CONTEXT_STATS; ++index)
+	{
+		player.base_stats[index] = static_cast<std::int16_t>(100 + index);
+		player.curr_stats[index] = static_cast<std::int16_t>(200 + index);
+	}
+	telemetry_progression_context_snapshot context{};
+	context.version = 999U;
+	assert(!telemetry_runtime_game_progression_context(&player, &context));
+	assert(context.version == 0U && context.flags == 0U);
+	telemetry_progression_configuration_snapshot absent_configuration{};
+	absent_configuration.count = 99U;
+	assert(!telemetry_runtime_game_progression_configuration(&absent_configuration));
+	assert(absent_configuration.count == 0U && absent_configuration.config_id == 0U);
+	fake_repository fake{};
+	const telemetry_transport_repository_binding repository = { fake_init, fake_apply,
+								    fake_request_stop,
+								    fake_shutdown, &fake };
+	const telemetry_transport_clock_binding clock = { fake_clock, nullptr };
+	assert(telemetry_transport_bind_for_tests(&repository, &clock) ==
+	       telemetry_transport_outcome::started);
+	auto options = enabled_options();
+	telemetry_test_start_runtime(options);
+	new_exp_table[11] = 4'000;
+	telemetry_progression_configuration_snapshot configuration{};
+	assert(telemetry_runtime_game_progression_configuration(&configuration));
+	assert(configuration.count == 337U && configuration.values[10].bits == 4'000U);
+	assert(configuration.values[335].id == 609U && configuration.values[336].id == 610U);
+	const auto inventory_before = configuration;
+	exp_mods[EXPMOD_DAMAGE] = 1.25F;
+	global_exp_limit = 8'000'000;
+	fixture_exp_difficulty = 0.75;
+	assert(telemetry_runtime_game_progression_configuration(&configuration));
+	assert(configuration.values[62U + EXPMOD_DAMAGE].bits !=
+	       inventory_before.values[62U + EXPMOD_DAMAGE].bits);
+	assert(configuration.values[326].bits == 8'000'000U);
+	assert(configuration.values[328].bits != inventory_before.values[328].bits);
+	exp_mods[EXPMOD_DAMAGE] = std::numeric_limits<float>::infinity();
+	assert(!telemetry_runtime_game_progression_configuration(&configuration));
+	assert(configuration.count == 0U && configuration.config_id == 0U);
+	exp_mods[EXPMOD_DAMAGE] = 0.0F;
+	fixture_exp_difficulty = 1.0;
+	global_exp_limit = 0;
+	auto read = [&](const char_data *character = nullptr)
+	{
+		fixture_track_game_heap = fixture_track_crypto = true;
+		const auto heap = fixture_game_heap_calls, crypto = fixture_crypto_heap_calls;
+		const bool accepted = telemetry_runtime_game_progression_context(
+			character ? character : &player, &context);
+		fixture_track_game_heap = fixture_track_crypto = false;
+		assert(heap == fixture_game_heap_calls && crypto == fixture_crypto_heap_calls);
+		return accepted;
+	};
+	assert(read() && telemetry_progression_context_snapshot_is_valid(context));
+	assert(context.current_exp == 1'125 && context.current_level == 10U);
+	assert(context.threshold_level == 11U && context.next_threshold_xp == 4'000U &&
+	       context.threshold_catalog_version == 1U);
+	assert(context.primary_class_mask == 0x8000'0001U &&
+	       context.secondary_class_mask == 0x4000'0002U && context.specialization == 3U);
+	assert(context.base_stats[9] == 109 && context.effective_stats[9] == 209);
+	assert(context.formal_group_size == 1U);
+	assert(context.rested_selection == selection::none);
+	assert(context.rested_application == telemetry_progression_rested_application::unknown &&
+	       context.assistance == telemetry_progression_assistance::unknown &&
+	       context.eligible_group_size == 0U && context.highest_group_level == 0U &&
+	       !(context.flags &
+		 (TELEMETRY_PCTX_CONTIGUOUS_EXPOSURE | TELEMETRY_PCTX_STORAGE_GATE_KNOWN)));
+	affected_type affects[65U]{};
+	affects[0].type = TAG_RESTED;
+	affects[0].flags = AFFTYPE_NOAPPLY;
+	affects[0].duration = 0;
+	player.affected = &affects[0];
+	assert(read() && context.rested_selection == selection::rested &&
+	       (context.flags & TELEMETRY_PCTX_RESTED_PRESENT));
+	fixture_rested_enabled = 0;
+	assert(read() && context.rested_selection == selection::none &&
+	       (context.flags & TELEMETRY_PCTX_RESTED_PRESENT) &&
+	       !(context.flags & TELEMETRY_PCTX_AUTOMATIC_RESTED));
+	affects[0].flags |= AFFTYPE_CUSTOM1;
+	assert(read() && context.rested_selection == selection::rested &&
+	       (context.flags & TELEMETRY_PCTX_RESTED_STAFF));
+	player.specials.position = STAT_DEAD;
+	assert(read() && context.rested_selection == selection::none &&
+	       !(context.flags & TELEMETRY_PCTX_ALIVE));
+	player.specials.position = POS_STANDING | STAT_NORMAL;
+	affects[1].type = TAG_WELLRESTED;
+	affects[1].flags = AFFTYPE_CUSTOM1;
+	affects[0].next = &affects[1];
+	assert(read() && context.rested_selection == selection::wellrested &&
+	       (context.flags & TELEMETRY_PCTX_WELLRESTED_STAFF));
+	fixture_rested_enabled = 1;
+	for (std::size_t index = 0U; index < 63U; ++index)
+		affects[index].next = &affects[index + 1U];
+	assert(read() && (context.flags & TELEMETRY_PCTX_AFFECTS_COMPLETE) &&
+	       context.rested_selection == selection::wellrested);
+	affects[63].next = &affects[64];
+	assert(read() && !(context.flags & TELEMETRY_PCTX_AFFECTS_COMPLETE) &&
+	       !(context.flags & TELEMETRY_PCTX_SELECTION_KNOWN) &&
+	       context.rested_selection == selection::unknown &&
+	       (context.quality_flags & TELEMETRY_QUALITY_CONTEXT_OVERFLOW));
+	affects[0].next = &affects[0];
+	assert(read() && context.rested_selection == selection::unknown &&
+	       (context.quality_flags & TELEMETRY_QUALITY_CONTEXT_OVERFLOW));
+	player.affected = nullptr;
+	assert(read() && context.rested_selection == selection::none &&
+	       !(context.flags &
+		 (TELEMETRY_PCTX_RESTED_PRESENT | TELEMETRY_PCTX_WELLRESTED_PRESENT)));
+	group_list group[2]{};
+	group[0].ch = &player;
+	group[0].next = &group[1];
+	group[1].ch = &peer;
+	player.group = group;
+	assert(read() && context.formal_group_size == 2U &&
+	       context.assistance == telemetry_progression_assistance::unknown);
+	group[1].next = group;
+	assert(read() && context.formal_group_size == 0U &&
+	       !(context.flags & TELEMETRY_PCTX_GROUP_ROSTER_KNOWN) &&
+	       (context.quality_flags & TELEMETRY_QUALITY_DIMENSION_UNKNOWN));
+	player.group = nullptr;
+	new_exp_table[11] = 5'000;
+	assert(read() && context.next_threshold_xp == 5'000U);
+	new_exp_table[11] = 0;
+	assert(read() && context.next_threshold_xp == 0U && context.threshold_level == 0U &&
+	       !(context.flags & TELEMETRY_PCTX_THRESHOLD_KNOWN));
+	player.player.level = TOTALLVLS - 1U;
+	assert(read() && !(context.flags & TELEMETRY_PCTX_THRESHOLD_KNOWN));
+	player.player.level = 0U;
+	assert(!read() && context.version == 0U && context.flags == 0U);
+	player.player.level = 10U;
+	player_pc.pid = 0;
+	assert(!read() && context.version == 0U && context.config_id == 0U);
+	npc.specials.act = ACT_ISNPC;
+	assert(!read(&npc));
+	assert(!telemetry_runtime_game_progression_context(nullptr, &context));
+	assert(!telemetry_runtime_game_progression_context(&player, nullptr));
+	telemetry_monotonic_usec now{};
+	telemetry_utc_usec utc{};
+	assert(telemetry_runtime_now(&now, &utc));
+	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
+	       telemetry_runtime_outcome::accepted);
+	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
+	telemetry_transport_unbind_for_tests();
+	assert(fake.battles.empty() && fake.contributions.empty() && fake.lifecycles.empty());
+	std::puts(
+		"PASS: native bounded progression reader: actual rested selection, threshold identity, observed build and unknown assistance; zero event heap/crypto calls");
 }
 
 void check_native_build_context(bool export_context = false)
@@ -2202,6 +2674,9 @@ void check_authenticated_ownership_path()
 	next_descriptor.character = &recovered;
 	next_descriptor.account = &account;
 	next_descriptor.connected = CON_PLAYING;
+	recovered.desc = &next_descriptor;
+	recovered.player.level = 14U;
+	GET_EXP(&recovered) = 500;
 	account.telemetry_account_token =
 		13U; // Real reloaded authority may differ from the old observation.
 	assert(telemetry_runtime_game_session_resume(&recovered, &next_descriptor, &handoff.handoff)
@@ -2215,12 +2690,31 @@ void check_authenticated_ownership_path()
 		       handoff.handoff.session.id.producer.process_id &&
 	       resumed_context.session.session_seq == handoff.handoff.session.id.session_seq &&
 	       resumed_context.encounter.sequence == 0U);
+	for (unsigned index = 0U; index < 4U; ++index)
+		assert(telemetry_runtime_game_presence(&recovered, &next_descriptor)
+			       .records_emitted == 0U);
 	assert(telemetry_runtime_now(&now, &utc));
 	assert(telemetry_runtime_shutdown({ now + 5'000'000U, 1U, {} }) ==
 	       telemetry_runtime_outcome::accepted);
 	assert(telemetry_runtime_final_reap() == telemetry_runtime_outcome::accepted);
 	telemetry_transport_unbind_for_tests();
 	assert(next_fake.ownership.size() == 1U);
+	assert(next_fake.progression_contexts.size() == 1U);
+	const auto &resumed_progression =
+		next_fake.progression_contexts[0].payload.progression_context;
+	assert(resumed_progression.boundary == telemetry_progression_context_boundary::baseline &&
+	       resumed_progression.starting_level == 14U &&
+	       resumed_progression.context.current_level == 14U &&
+	       resumed_progression.context.current_exp == 500 &&
+	       resumed_progression.account_token == 13U);
+	assert(resumed_progression.ownership_record.record_seq ==
+		       next_fake.ownership_keys[0].record_seq &&
+	       resumed_progression.ownership_record.producer.boot_id ==
+		       next_fake.ownership_keys[0].producer.boot_id &&
+	       resumed_progression.ownership_record.producer.process_id ==
+		       next_fake.ownership_keys[0].producer.process_id);
+	assert(resumed_progression.session.id.producer.boot_id ==
+	       handoff.handoff.session.id.producer.boot_id);
 	const auto &resumed_owner = next_fake.ownership[0];
 	assert(resumed_owner.account_token == 13U &&
 	       resumed_owner.source == telemetry_ownership_source::copyover);
@@ -3931,6 +4425,39 @@ void check_native_result_budgets(std::size_t population, bool measure)
 			(void)telemetry_runtime_game_battle_result_finish(token, &actors[0],
 									  kind::withdrawal);
 		});
+	std::size_t progression_index = 0U;
+	profile("native_progression_cached_presence",
+		[&]
+		{
+			auto &actor = actors[progression_index++ % population];
+			(void)telemetry_runtime_game_presence(&actor, actor.desc);
+		});
+	profile("native_progression_mutation_refresh",
+		[&]
+		{
+			auto &actor = actors[progression_index++ % population];
+			telemetry_runtime_game_progression_changed(&actor);
+			(void)telemetry_runtime_game_presence(&actor, actor.desc);
+		});
+	profile("native_progression_observation",
+		[&]
+		{
+			auto &actor = actors[progression_index++ % population];
+			(void)telemetry_runtime_game_progression(
+				&actor, actor.desc,
+				telemetry_progression_make_experience(
+					telemetry_progression_source::quest,
+					telemetry_progression_reason::earned, 0, 0, 0, 0, 25U, 0U,
+					0U));
+		});
+	// The measured loops can fill the unchanged bounded queue. The subsequent
+	// retired-address and escape-watch assertions test different behavior;
+	// let the private worker drain before requiring fresh record admission.
+	const auto drain_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+	while (telemetry_transport_health_copy().queue_depth != 0U &&
+	       std::chrono::steady_clock::now() < drain_deadline)
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	assert(telemetry_transport_health_copy().queue_depth == 0U);
 	char_data extra{};
 	pc_only_data extra_pc{};
 	descriptor_data extra_descriptor{};
@@ -5025,6 +5552,8 @@ int main(int argc, char **argv)
 	(void)argv;
 	assert(CRYPTO_set_mem_functions(fixture_crypto_malloc, fixture_crypto_realloc,
 					fixture_crypto_free) == 1);
+	check_native_progression_context();
+	check_native_progression_capture();
 	check_native_build_context();
 	check_native_result_capture();
 	check_native_build_capture();

@@ -5,6 +5,11 @@ records what the game observed at the existing XP storage and level-transition
 boundaries. It does not become an XP authority, change balance, or claim that
 an accepted queue record is durable.
 
+The later context, milestone and character-rotation contract is documented in
+[PROGRESSION_CONTEXT.md](PROGRESSION_CONTEXT.md). It preserves these family-6
+observational meanings and earlier report definitions while adding exact
+decision/configuration evidence and independent definition-9 publication.
+
 ## Scope and boundary
 
 `gain_exp` emits one bounded progression fact after the existing XP storage

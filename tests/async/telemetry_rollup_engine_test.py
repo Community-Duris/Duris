@@ -379,7 +379,7 @@ class RollupSemanticsTest(unittest.TestCase):
         self.assertNotIn("SELECT *", raw_statement.upper())
         self.assertNotIn("OFFSET", raw_statement.upper())
         self.assertIn("FORCE INDEX (PRIMARY)", raw_statement)
-        self.assertIn("ingest_id>%s AND ingest_id<=%s ORDER BY ingest_id LIMIT %s", raw_statement)
+        self.assertIn("r.ingest_id>%s AND r.ingest_id<=%s ORDER BY r.ingest_id LIMIT %s", raw_statement)
         database.close()
         self.assertTrue(factory.connection.closed)
 
