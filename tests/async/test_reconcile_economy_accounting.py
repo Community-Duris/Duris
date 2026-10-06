@@ -245,6 +245,24 @@ def quarantined_topology_snapshot(damage="clean", states=("quarantined",) * 3):
     return snapshot
 
 
+def quarantined_coin_snapshot(amounts, mapped=False):
+    from test_item_equipment_reconciliation import baseline
+    snapshot = baseline()
+    for row in (snapshot["native"]["items"][0], snapshot["item_origins"][0]):
+        row.update(state="quarantined", equipment_slot=0)
+    snapshot["native"].update(
+        coin_piles=[dict(uid=81, owner=[1, 7, 0], revision=3,
+                        state="quarantined", amounts=amounts)],
+        coin_pile_mappings=[dict(account_key=key(3, 101), uid=81,
+                                item_exists=False, holding_valid=False)] if mapped else [],
+        coin_pile_coverage=dict(rows=1, payload_rows=int(amounts is not None),
+                               missing_payload_rows=int(amounts is None),
+                               mapped_live_rows=0, unmapped_live_rows=0,
+                               multiply_mapped_live_rows=0, dangling_mappings=int(mapped),
+                               invalid_mappings=0))
+    return snapshot
+
+
 def shop_supply_snapshot():
     """Clean synthetic expense before damaging its retained root outcome."""
     snapshot = clean_snapshot()
@@ -2825,6 +2843,51 @@ class ReconciliationTests(unittest.TestCase):
             {(81,): {"owner": [1, 7, 0], "revision": 2, "state": "live"}},
             LINEAGE)
         self.assertEqual(mismatched.counts["coin_pile_holding_mismatch"], 1)
+
+    def test_quarantined_coin_piles_report_without_becoming_active_holdings(self):
+        with tempfile.TemporaryDirectory(prefix="duris-quarantined-coins-") as directory:
+            path = Path(directory) / "snapshot.json"
+            for amounts in ([1, 2, 3, 4], [0, 0, 0, 0], None):
+                for mapped in (False, True):
+                    snapshot = quarantined_coin_snapshot(amounts, mapped)
+                    snapshot["native"]["coin_piles"][0]["personal_alias"] = "private-coin-alias"
+                    original = copy.deepcopy(snapshot)
+                    payload = json.dumps(snapshot, sort_keys=True).encode()
+                    path.write_bytes(payload)
+                    expected = {"quarantined_coin_pile": 1}
+                    if mapped:
+                        expected["dangling_coin_pile_mapping"] = 1
+                    for limit in (0, 1, 100):
+                        with self.subTest(amounts=amounts, mapped=mapped, limit=limit):
+                            report = Reconciler(limit).audit(snapshot)
+                            self.assertEqual(report["exception_counts"], expected)
+                            self.assertEqual(report["exception_count"], sum(expected.values()))
+                            self.assertLessEqual(len(report["exceptions"]), limit)
+                            for name in ("holdings", "provenance", "operation", "supply", "prices", "routes"):
+                                result = view(snapshot, report, name, limit, uid=81,
+                                              operation_id=OP if name == "operation" else None)
+                                self.assertEqual(result["coverage"]["exception_count"], sum(expected.values()))
+                                if name == "holdings":
+                                    self.assertEqual(result["count"], 0)
+                            result = subprocess.run([
+                                sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                str(path), "--limit", str(limit)], capture_output=True, text=True, timeout=30)
+                            self.assertEqual(result.returncode, 1, result.stderr)
+                            self.assertFalse(result.stderr)
+                            self.assertEqual(json.loads(result.stdout), report)
+                            self.assertNotIn("alias", result.stdout)
+                            self.assertNotIn("private-coin", result.stdout)
+                            self.assertEqual(path.read_bytes(), payload)
+                            self.assertEqual(snapshot, original)
+                            self.assertEqual(snapshot["native"]["coin_pile_coverage"]["mapped_live_rows"], 0)
+                            self.assertEqual(snapshot["native"]["coin_pile_coverage"]["unmapped_live_rows"], 0)
+        snapshot = quarantined_coin_snapshot([1, 2, 3, 4])
+        snapshot["native"]["coin_piles"][0]["state"] = "unknown"
+        with self.assertRaisesRegex(SnapshotError, "invalid coin-pile row"):
+            Reconciler().audit(snapshot)
+        snapshot = quarantined_coin_snapshot([-1, 0, 0, 0])
+        with self.assertRaisesRegex(SnapshotError, "negative coin-pile denomination"):
+            Reconciler().audit(snapshot)
 
     def test_coin_pile_lifecycle_source_matches_create_and_retire_events(self):
         raw = bytearray(48)
