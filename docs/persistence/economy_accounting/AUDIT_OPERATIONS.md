@@ -593,6 +593,17 @@ projections match. Valid forests may mix live and quarantined nodes. Detail
 limit0 preserves the full finding counts and CLI status. See
 [the exact quarantined containment qualification](PLAN5_QUARANTINED_TOPOLOGY_QUALIFICATION_2026-10-06.md).
 
+## Quarantined coin diagnostics
+
+The SQL exporter retains quarantined coin rows and their available denomination
+payloads. The reconciler reads those rows and reports `quarantined_coin_pile`
+with the UID; quarantine cannot make the entire diagnostic cut unreadable.
+Quarantined coins remain outside active holdings and live-pile census totals.
+Existing missing-holding, dangling-mapping, stale-custody and partial-capture
+findings remain. Missing payloads are retained as unknown, and malformed states
+or negative denominations still refuse. See
+[the exact quarantined coin qualification](PLAN5_QUARANTINED_COIN_QUALIFICATION_2026-10-06.md).
+
 ## Retained flatfile intent and plan semantics
 
 The independent flatfile restore reader validates retained generic EAI1/EAP1

@@ -2049,7 +2049,7 @@ class Reconciler:
         for pile in piles:
             uid = pile.get("uid")
             state = pile.get("state")
-            if type(uid) is not int or not 0 < uid < 2**64 or state not in ("live", "tombstone"):
+            if type(uid) is not int or not 0 < uid < 2**64 or state not in ("live", "tombstone", "quarantined"):
                 raise SnapshotError("invalid coin-pile row")
             if uid in pile_by_uid:
                 self.emit("duplicate_coin_pile_uid", uid=uid)
@@ -2067,6 +2067,8 @@ class Reconciler:
             pile_by_uid[uid] = pile
             if state == "live":
                 live_piles.add(uid)
+            elif state == "quarantined":
+                self.emit("quarantined_coin_pile", uid=uid)
         mapping_counts = Counter()
         dangling = invalid = 0
         seen_mapping_keys = set()
