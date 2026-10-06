@@ -93,3 +93,20 @@ No backfill, new acceptance scope or activation is requested. Plan 5's current
 canonical reports keep source capture and release qualification false. This
 handoff supplies the primary's local notebook curator packet and leaves the
 independent retained-allocation work free to proceed.
+
+## Independent snapshot follow-up
+
+Owned snapshot fix `1047e8c48cb9214d1c3fd76984472201ca80a4fd` closes the separate
+partial-consumption omission, with its [exact qualification](PLAN5_PARTIAL_CLAIM_SNAPSHOT_QUALIFICATION_2026-10-06.md)
+on the expected remote `codex/accounting-plan5`. It adds no shared schema/wire
+and does not change the selector/PID request above. Selected-epoch projections
+remain bound to original EAP1; auxiliary historical capsules require the
+separate canonical SQL audit under release quiescence.
+
+Latest primary observed is `26d7b66b86e1a38d09430386be257a065fceacd5`. Its shared
+integration progress records a private ESR1 claim PID/money/revision comparison
+and leaves the independently usable published reference and generalized marker
+downgrade proof open. This is primary-reported private progress, not an
+independently qualified new producer result. The requested exact reference,
+invariants, consumers and genuine tests remain pending; independent Plan5 work
+and the primary's locally maintained notebook remain nonblocking.

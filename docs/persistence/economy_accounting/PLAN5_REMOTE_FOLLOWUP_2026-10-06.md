@@ -299,3 +299,56 @@ complete R6 capture/activation, real producers/replay/lost reply/cold recovery,
 typed erasure, full managed retention and release-host budgets remain gates.
 The notebook remains nonblocking; accounting remains inactive and release is
 not qualified.
+
+## Saved claim allocations, posting batches and native recipe follow-up
+
+Three independently qualified issues stay on remote `codex/accounting-plan5`:
+
+- Base `1b4ab18728e10b302d72ecff38650451a4fac53c` to
+  `09b7ceac7925fd9e144302219c0709cafbc7aa07` fixes discarded source posting
+  summaries after the64-pair query boundary. The isolated two-file original
+  restore method reproduces64 false invalid roots on both engines, then passes
+  both fresh0062 engines with the fix. [Exact qualification](PLAN5_CLAIM_POSTING_BATCH_QUALIFICATION_2026-10-06.md)
+  keeps the67-source probe explicitly modeled SQL metadata, with no original
+  capsule identity or producer qualification for its copied roots.
+- Base `09b7ceac7925fd9e144302219c0709cafbc7aa07` to
+  `53c46b132eb3074d5cd60e1c7a503ff498be10d9` corrects the original native stake
+  recipe's stale0061 guard/output. The isolated original method first fails
+  its strict schema guard, then passes the complete two-engine method after
+  exactly two lines change. [Exact qualification](PLAN5_NATIVE_STAKE_0062_RECIPE_QUALIFICATION_2026-10-06.md)
+  records all original controls and zero skips.
+- Base `53c46b132eb3074d5cd60e1c7a503ff498be10d9` to
+  `1047e8c48cb9214d1c3fd76984472201ca80a4fd` adds the independent saved-snapshot
+  partial-consumption book, residual native claim comparison, generic debit
+  census and per-account/source/root refusals. Original readers reproduce the
+  eight-versus-six copper defect on both engines. [Exact qualification](PLAN5_PARTIAL_CLAIM_SNAPSHOT_QUALIFICATION_2026-10-06.md)
+  records173 pure passes,109 canonical cuts/90 refusals per engine,25 claim cuts/
+  seven valid controls, original baseline dump/import and final full native
+  stake passes. The observer's earlier skipped red overlay, repaired retired
+  fixture and stale recipe failures remain labeled as failures or skips.
+
+The first three broad methods pass on the repaired snapshot source before the
+stale stake recipe stops that observer. Final code differs only in that
+method's two guard/output lines; the original full stake method is repeated
+on final composed raw source. This is exact component/dependency evidence,
+not one successful whole-source four-method observer. All3,125 committed code
+inputs match the final native stake transport; the protected seals retain
+original commands, modes, hashes, terminal states and native artifacts.
+
+All seven earlier branch tips remain ancestors; no work is dropped or left
+requiring integration from another branch. Owned reports, seals and operator
+guide provide the primary's locally maintained notebook curator packet.
+Primary `26d7b66b86e1a38d09430386be257a065fceacd5` is observed remotely; its newer
+shared baseline repair is outside these slices' unchanged native tree
+`f0ae5c63273e94035552a75a1b70596d5021e54d`. The primary owns integrating these
+commits and qualifying that combined candidate. No shared files are
+independently changed and no direct experimental-accounting push occurs.
+
+The saved-snapshot allocation omission is closed within the explicit partial
+capture scope. Auxiliary historical consumer capsules still require the
+canonical SQL audit under release quiescence. Authenticated original opening
+selector/PID reference, complete R6 live-world/native capture and actual
+activation verifier, genuine financial producer/replay/lost-reply/cold-recovery
+journeys, typed erasure, full managed backup/restore/retention and release-host
+operational budgets remain gates. Notebook availability is nonblocking;
+accounting remains inactive and no complete Plan5 or release result is claimed.
