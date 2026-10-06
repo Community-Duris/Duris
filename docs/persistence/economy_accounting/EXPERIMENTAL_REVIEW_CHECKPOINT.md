@@ -1,5 +1,14 @@
 # Experimental accounting review checkpoint
 
+## Retained claim allocation readers qualified — 2026-10-06
+
+[Current primary integration and full component qualification](PLAN5_RETAINED_CLAIM_PRIMARY_QUALIFICATION_2026-10-06.md)
+closes the independent retained-allocation omission. Both original failures
+reproduce; all33 reader methods and the full native/SQL restore method pass
+on both fresh canonical0062 engines. Each passes105 cuts/89 refusals, including
+whole/partial allocation and second-page corruption. Producer policy/PID,
+current-balance reconciliation, full Plans and release remain open.
+
 ## Baseline absent-price replay proof qualified — 2026-10-06
 
 [Exact original baseline qualification](BASELINE_NULL_PRICE_PRIMARY_QUALIFICATION_2026-10-06.md)
