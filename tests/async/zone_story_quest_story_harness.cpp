@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 134 &&
-				tracker.summary_for(7, 42).total == 1529,
+		require(catalog.story_mappings.size() == 135 &&
+				tracker.summary_for(7, 42).total == 1528,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7687,6 +7687,207 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "minopass"; });
+			const auto &oesh = story_for("minopass", "oesh-spore-truth");
+			const auto &contractor = story_for("minopass", "contractor-signet-ring");
+			const auto &dwarf = story_for("minopass", "dwarf-paired-relics");
+			const auto &nahasp = story_for("minopass", "nahasp-grate-key");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 947, 94700, 100, "arrival") ==
+					result::applied,
+				"Deep Ravine discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 947, 10, 1, 101, false, false);
+			for (const auto &entry : mapping.stories)
+				require(journal.find(entry.title) == std::string::npos,
+					"Deep Ravine exposed unseen requests");
+			for (const auto &[mob, room] : std::vector<std::pair<int, int>>{
+				     { 94706, 94821 }, { 94707, 94846 }, { 94762, 94877 } })
+				require(journey.meet_npc(7, 42, mob, room, 102) == result::applied,
+					"Deep Ravine context encounters failed");
+			journal = journey.render_journal(7, 42, 947, 10, 1, 103, false, false);
+			for (const auto &entry : mapping.stories)
+				require(journal.find(entry.title) == std::string::npos,
+					"Deep Ravine context unlocked unrelated requests");
+			require(journey.progress_for_zone(7, 42, 947).completed == 0,
+				"Deep Ravine invented rescue,healing or virtue history");
+			for (const auto &[mob, room] :
+			     std::vector<std::pair<int, int>>{ { 94704, 94819 },
+							       { 94705, 94843 },
+							       { 94738, 94872 },
+							       { 94757, 94726 } })
+				require(journey.meet_npc(7, 42, mob, room, 104) == result::applied,
+					"Deep Ravine request encounters failed");
+			const auto status =
+				[&](const auto &entry, const auto &step, const char *state)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Deep Ravine journal card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " + step.text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[94724] = supplies.carried[94716] =
+				supplies.carried[94727] = supplies.carried[94726] =
+					supplies.carried[94729] = 1;
+			supplies.equipped[0] = 94723;
+			supplies.equipped[1] = 94715;
+			supplies.equipped[2] = 88807;
+			supplies.equipped[3] = 4402;
+			journal = journey.render_journal(7, 42, 947, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				for (const auto &step : entry.steps)
+					if (step.kind == "carried_item")
+						require(status(entry, step, "Missing now"),
+							"Deep Ravine equipped/reward/key custody prepared offerings");
+			require(journal.find("currently unavailable while accounting is active") !=
+					std::string::npos,
+				"Deep Ravine paid-key refusal missing");
+			supplies = {};
+			supplies.carried[88807] = 2;
+			journal = journey.render_journal(7, 42, 947, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(dwarf, dwarf.steps[0], "Ready now") &&
+					status(dwarf, dwarf.steps[1], "Missing now"),
+				"Deep Ravine duplicate unholy relic prepared both distinct slots");
+			supplies = {};
+			supplies.carried[4402] = 2;
+			journal = journey.render_journal(7, 42, 947, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(dwarf, dwarf.steps[0], "Missing now") &&
+					status(dwarf, dwarf.steps[1], "Ready now"),
+				"Deep Ravine duplicate holy relic prepared both distinct slots");
+			supplies.carried[88807] = supplies.carried[94723] =
+				supplies.carried[94715] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 947, 10, 1, 108, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				for (const auto &step : entry.steps)
+					if (step.kind == "carried_item")
+						require(status(entry, step, "Ready now"),
+							"Deep Ravine supplied exact roots required prior personal sources or campaign stages");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 947).completed == 0,
+				"Deep Ravine read-only rendering invented acceptance,travel or revival");
+			record(journey, dwarf.contracts.front(), "minopass-dwarf", 947, 94872);
+			require(journey.progress_for_zone(7, 42, 947).completed == 1 &&
+					journey.evidence_for(oesh.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.evidence_for(contractor.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Deep Ravine paired return completed earlier stages");
+			record(journey, nahasp.contracts.front(), "minopass-paid-history", 947,
+			       94726);
+			require(journey.progress_for_zone(7, 42, 947).completed == 1 &&
+					journey.evidence_for(nahasp.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Deep Ravine paid service became achievement or lost raw history");
+			record(journey, oesh.contracts.front(), "minopass-oesh", 947, 94819);
+			record(journey, contractor.contracts.front(), "minopass-contractor", 947,
+			       94843);
+			require(journey.progress_for_zone(7, 42, 947).completed == 3 &&
+					journey.progress_for_zone(7, 42, 947).total == 3,
+				"Deep Ravine three story returns were counted incorrectly");
+			supplies = {};
+			journal = journey.render_journal(7, 42, 947, 10, 1, 121, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				for (const auto &step : entry.steps)
+					if (step.kind == "carried_item")
+						require(status(entry, step, "Missing now"),
+							"Deep Ravine history replaced current spent/nested custody");
+			auto replay = completion(dwarf.contracts.front(), "minopass-dwarf", 120);
+			replay.transaction.zone_number = 947;
+			replay.transaction.room_vnum = 94872;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Deep Ravine replay duplicated relic acceptance");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			const auto native = std::find_if(
+				catalog.definitions.begin(), catalog.definitions.end(),
+				[&](const auto &d)
+				{ return d.definition_id == nahasp.contracts.front(); });
+			require(native != catalog.definitions.end() &&
+					native->eligible_for_zone_completion &&
+					!native->daily_eligible,
+				"Deep Ravine paid native identity changed");
+			const auto paid = std::find_if(
+				units.begin(), units.end(),
+				[&](const auto &u)
+				{
+					return std::find(u.contracts.begin(), u.contracts.end(),
+							 native->definition_id) !=
+					       u.contracts.end();
+				});
+			require(paid != units.end() && !paid->achievement && !paid->daily_candidate,
+				"Deep Ravine service retained raw achievement or daily eligibility");
+			int local_units = 0, achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 947)
+				{
+					++local_units;
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(local_units == 4 && achievements == 3 && dailies == 3,
+				"Deep Ravine paid service generated story units");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 947) &&
+					recovered.progress_for_zone(7, 42, 947).completed == 3 &&
+					recovered.evidence_for(nahasp.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Deep Ravine cold recovery lost service or story history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 947, 94878, 100, "arrival") ==
+					result::applied,
+				"Deep Ravine alternate historical arrival failed");
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("minopass-old-" + entry.id).c_str(), 947, 94872);
+			require(historical.progress_for_zone(7, 42, 947).completed == 4,
+				"Deep Ravine raw historical recipes missing");
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 947).completed == 3 &&
+					authored.evidence_for(nahasp.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Deep Ravine service grouping lost or inflated historical progress");
+			service foreign(catalog);
+			require(foreign.discover_zone(7, 42, 947, 94818, 100, "arrival") ==
+					result::applied,
+				"Deep Ravine foreign-owner arrival failed");
+			for (const auto &[giver, room] : std::vector<std::pair<int, int>>{
+				     { 4401, 4610 }, { 88816, 88860 }, { 83519, 83490 } })
+			{
+				const auto owner = std::find_if(catalog.definitions.begin(),
+								catalog.definitions.end(),
+								[&](const auto &d)
+								{ return d.giver_vnum == giver; });
+				require(owner != catalog.definitions.end(),
+					"Deep Ravine foreign receipt missing");
+				require(foreign.discover_zone(7, 42, owner->zone_number, room, 121,
+							      "arrival") == result::applied,
+					"Deep Ravine foreign owner discovery failed");
+				record(foreign, owner->definition_id,
+				       ("minopass-foreign-" + std::to_string(giver)).c_str(),
+				       owner->zone_number, room);
+				require(foreign.evidence_for(owner->definition_id, 2)
+							.successful_attempts == 1,
+					"Deep Ravine foreign acceptance lost owner history");
+			}
+			require(foreign.progress_for_zone(7, 42, 947).completed == 0,
+				"Deep Ravine duplicated foreign relic/symbol acceptance locally");
 		}
 
 		{

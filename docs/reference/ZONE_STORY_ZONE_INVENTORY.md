@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 134 authored journals.
+2668 distinct Q contracts; 135 authored journals.
 
 Regenerate with:
 
@@ -143,7 +143,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Menden-on-the-Deep (`menden`) | 1 | 3 | 0 | Fallback | [1 × the holy elven relic of life → native reward/response](../../areas/qst/menden.qst#L19) | crystal_golem_die, hippogriff_die, llyms_altar, magic_pool, menden_figurine, menden_figurine_die |
 | The Halfling Silver Mine (`mining`) | 1 | 1 | 0 | Fallback | [1 × a balor's whip → a badge of purity](../../areas/qst/mining.qst#L8) | poison, wanderer |
 | Mini Zones (`minizones`) | 7 | 11 | 1 | Yes | [1 × a pair of ghostly sleeves; 5 × a huge blood crystal → a set of jagged blood crystal arm plates](../../areas/qst/minizones.qst#L143) | dryad, navagator, pet_shops, sword_named_magik, world_quest |
-| The Deep Ravine of Passage (`minopass`) | 4 | 9 | 0 | Fallback | [1 × the unholy relic of life and death; 1 × the holy elven relic of life → a spectral holy symbol of Berronar Truesilver](../../areas/qst/minopass.qst#L130) | — |
+| The Deep Ravine of Passage (`minopass`) | 4 | 9 | 0 | Yes | [1 × the unholy relic of life and death; 1 × the holy elven relic of life → a spectral holy symbol of Berronar Truesilver](../../areas/qst/minopass.qst#L130) | — |
 | Forest of Mir (`mir`) | 1 | 1 | 0 | Fallback | [1 × a light and dark scroll → a satanic token](../../areas/qst/mir.qst#L10) | amphisbean, blade_of_paladins, blue_wyrm_shout, elfdawn_sword, fade_drusus, flame_of_north_sword |
 | Myrabolus (`mira`) | 16 | 1 | 2 | Yes | [1 × a token of light; 1 × a token of evil; 1 × a token of undeath → the mage boots of the maelstrom, the axe of the maelstrom](../../areas/qst/mira.qst#L140) | crew_shop_proc, generic_parry_proc, inn, master_set, money_changer, ship_shop_proc |
 | The Shadow Forest (`mist`) | 1 | 1 | 0 | Fallback | [1 × the bloody head of Darnac → a crown of light](../../areas/qst/mist.qst#L6) | mist_protect |

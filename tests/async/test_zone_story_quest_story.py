@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1410
-assert report['mapped_area_count'] == 134 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 135 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,15 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+minopass=next(m for m in catalog['story_mappings'] if m['source_area']=='minopass')
+assert (minopass['schema_version'],minopass['revision'],minopass['coverage'])==(3,1,'complete')
+assert len(minopass['stories'])==4 and len(minopass['contacts'])==7 and sum(len(c['topics']) for c in minopass['contacts'])==23 and not minopass['exclusions']
+assert [s['category'] for s in minopass['stories']]==['story','story','story','service']
+assert [len(s['contracts']) for s in minopass['stories']]==[1,1,1,1]
+assert [[t['item_vnums'] for t in s['steps'][:-1]] for s in minopass['stories']]==[[[94723]],[[94715]],[[88807],[4402]],[]]
+assert all(t['optional'] and t['count']==1 for s in minopass['stories'] for t in s['steps'][:-1])
+assert report['eligible_by_zone']['947']==3
 
 ttowers=next(m for m in catalog['story_mappings'] if m['source_area']=='ttowers')
 assert (ttowers['schema_version'],ttowers['revision'],ttowers['coverage'])==(3,1,'complete')

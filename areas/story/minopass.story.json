@@ -1,0 +1,251 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "minopass",
+  "coverage": "complete",
+  "introduction": "Explore the ravine's hidden routes, prove your worth to Oesh'lyn, recover the titan contractor's ring and bring two different relics to the archaic dwarf spirit. Nahasp offers a separate paid grate key, currently unavailable while accounting is active. Discovery is separate. New progress requires active, ready accounting.",
+  "orientation": [
+    "The mountain ravine connects to the surface grasslands, the Underdark and the Eagle Ridge Delta. Hidden passages, doors and stationary portals connect its caverns and titan fortress. Discovery records arrival; it does not open routes, supply keys or create fresh residents.",
+    "ASK OESH about gates, truth or key. Search the fungus-filled caverns for a spore of ascomid fibers; spores are declared in two caverns. He accepts one exact spore for the key of truth, which fits his northern ivory gate. A matching supplied spore also fits. Keep it loose rather than held or nested.",
+    "ENTER the moonwell beyond the ivory gates to reach Borthur's court. ASK IMAGE about Borthur or hello for the warning, then ASK CONTRACTER about quest. Search the collapsed west-wing corridor for the lost titan signet ring. Returning it grants the small marble key and three potions of fiery protection, after which the contractor leaves.",
+    "The contractor's marble key fits the northern door of the East Wing. Borthur's chamber has an engraving and a blazing portal into the fiery caverns. His congratulations are timed dialogue; returning the ring or hearing those words does not record a rescue, escort or completed test of virtue.",
+    "ASK SPIRIT about Berronar, Truesilver, relic, life or death. The archaic dwarf needs both the holy elven relic of life and the unholy relic of life and death together. Zorta in the Underworld carries the holy relic; Kitan in Menden-of-the-deep carries the unholy relic. Two copies of one relic cannot replace the two different offerings; matching supplied relics also fit.",
+    "The spirit accepts those two relics for a spectral holy symbol of Berronar Truesilver and 250,000 experience, then fades away. The accepted return is recorded. His momentary physical appearance and departure do not establish a permanently revived dwarf. The symbol also has other sources and does not prove this local return by itself.",
+    "ASK NAHASP about key to hear his separate ten-platinum price for a small metal key fitting the grate below his cave. This paid access service is currently unavailable while accounting is active. His suggestion about other adventurers is dialogue, without a required player kill. Carrying a key or having money does not record payment or make this service available.",
+    "PUSH the moss-covered rock, rubble and the two piles of rocks along their routes; PULL the obsidian lever. The lever acts on a passage elsewhere in the caverns, which is supported by the shared mechanism. These controls change shared access and do not complete a story exchange. Closed doors, secret exits and falls retain their normal rules.",
+    "The dark portals, moonwells and blazing portals are declared in pairs with return destinations. Read the warnings and signs, but do not assume that the words last chance or no turning back create a tracked choice. Actual traversal, present portals and route conditions still matter.",
+    "The forgotten dwarf shrine and the titan prayer chamber have healing room flags. Their soothing timed messages provide atmosphere; resting and the normal recovery rules determine actual recovery. Entering a shrine or hearing a message does not award a healing quest completion.",
+    "Zorta and Kitan have their own foreign requests involving the same relics, and Berronar's avatar in Alatorin can grant the same spectral symbol for a First Mountain shard. Those receipts belong to those recipients' zones. Choose which exact supplies to spend; another zone's reward does not complete the ravine's paired-relic request.",
+    "Three accepted story returns can each contribute one achievement and one potential daily. Nahasp remains a separate service. Material rows show current loose custody, while accepted history remains after the offering is spent. Ordinary resets, stock caps, giver departure and accounting admission govern availability; the daily clock does not recreate supplies."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 94704,
+      "name": "Oesh'lyn, the sage of truth",
+      "keyword": "oesh",
+      "description": "The sage explains the spore offering and key of truth; the gate is a separate access step.",
+      "topics": [
+        "hi",
+        "hello",
+        "gates",
+        "truth",
+        "key"
+      ]
+    },
+    {
+      "mob_vnum": 94705,
+      "name": "a titan contracter",
+      "keyword": "contracter",
+      "description": "The weary titan explains his lost signet ring and gives an east-wing key with three protective potions before leaving.",
+      "topics": [
+        "hi",
+        "hello",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 94706,
+      "name": "the image of Borthur",
+      "keyword": "image",
+      "description": "Borthur's image warns about the court and moonwell; this conversation is a clue, without a separate accepted request.",
+      "topics": [
+        "hi",
+        "hello",
+        "borthur"
+      ]
+    },
+    {
+      "mob_vnum": 94707,
+      "name": "Borthur the Proud",
+      "keyword": "borthur",
+      "description": "Borthur's timed congratulations point to the engraving and fiery route. They do not record a rescue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 94738,
+      "name": "a spirit of an archaic dwarven cleric",
+      "keyword": "spirit",
+      "description": "The archaic dwarf spirit explains the two foreign relics and fades after the accepted paired return.",
+      "topics": [
+        "hi",
+        "hello",
+        "berronar",
+        "truesilver",
+        "relic",
+        "life",
+        "death",
+        "zorta",
+        "kitan"
+      ]
+    },
+    {
+      "mob_vnum": 94757,
+      "name": "Nahasp, the hermit",
+      "keyword": "nahasp",
+      "description": "The hermit explains the ten-platinum grate key. This separate paid service is currently unavailable while accounting is active.",
+      "topics": [
+        "hi",
+        "hello",
+        "key"
+      ]
+    },
+    {
+      "mob_vnum": 94762,
+      "name": "a titan holyman",
+      "keyword": "holyman",
+      "description": "The titan holyman's prayer-chamber messages accompany a healing room, without a separate healing request.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "oesh-spore-truth",
+      "title": "Oesh'lyn: the test of truth",
+      "category": "story",
+      "summary": "Return one exact ascomid spore for the key of truth. Opening the ivory gates and continuing into the court are separate access steps.",
+      "contracts": [
+        {
+          "giver_vnum": 94704,
+          "completion_key": "give=I:94723;receive=I:94724;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-94723",
+          "text": "Carry a spore of ascomid fibers loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            94723
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Search the two fungus-filled caverns of fiberous growth for this exact spore. Both have hidden ground stock. Matching supplied spores also fit; keep it loose rather than held or nested. Possession does not prove personally finding it."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete Oesh'lyn: the test of truth",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 94704,
+              "completion_key": "give=I:94723;receive=I:94724;disappear=0"
+            }
+          ],
+          "hint": "Completion is recorded when this recipient accepts the exact offering. New credit requires active, ready accounting. Supplied matching items are valid; access, personal recovery and actual rescue or revival are separate outcomes."
+        }
+      ]
+    },
+    {
+      "id": "contractor-signet-ring",
+      "title": "Contractor: the lost signet ring",
+      "category": "story",
+      "summary": "Return the titan's signet ring for the East Wing key and three potions of fiery protection. The contractor leaves after acceptance.",
+      "contracts": [
+        {
+          "giver_vnum": 94705,
+          "completion_key": "give=I:94715;receive=I:94716,I:94727,I:94727,I:94727;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-94715",
+          "text": "Carry a titan's signet ring loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            94715
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Search the collapsed west-wing corridor where the titan contractor is sifting rubble. The signet ring is hidden ground stock there. Matching supplied rings also fit; keep it loose rather than held or nested. The reward key and potions are separate items."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete Contractor: the lost signet ring",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 94705,
+              "completion_key": "give=I:94715;receive=I:94716,I:94727,I:94727,I:94727;disappear=1"
+            }
+          ],
+          "hint": "Completion is recorded when this recipient accepts the exact offering. New credit requires active, ready accounting. Supplied matching items are valid; access, personal recovery and actual rescue or revival are separate outcomes."
+        }
+      ]
+    },
+    {
+      "id": "dwarf-paired-relics",
+      "title": "Dwarf spirit: between life and death",
+      "category": "story",
+      "summary": "Bring both different relics together for a spectral holy symbol and 250,000 experience. The spirit fades after acceptance; no permanent revival is recorded.",
+      "contracts": [
+        {
+          "giver_vnum": 94738,
+          "completion_key": "give=I:4402,I:88807;receive=E:250000,I:94726;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "item-88807",
+          "text": "Carry the unholy relic of life and death loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            88807
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Kitan in Menden-of-the-deep carries this exact unholy relic of life and death. It is different from Zorta's holy elven relic. A matching supplied relic also fits; keep it loose rather than worn, held or nested."
+        },
+        {
+          "id": "item-4402",
+          "text": "Carry the holy elven relic of life loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            4402
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Zorta in the Underworld carries this exact holy elven relic of life. It is different from Kitan's unholy relic. A matching supplied relic also fits; keep it loose rather than worn, held or nested."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete Dwarf spirit: between life and death",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 94738,
+              "completion_key": "give=I:4402,I:88807;receive=E:250000,I:94726;disappear=1"
+            }
+          ],
+          "hint": "Completion is recorded when this recipient accepts the exact offering. New credit requires active, ready accounting. Supplied matching items are valid; access, personal recovery and actual rescue or revival are separate outcomes. Both different relics belong to one simultaneous exchange. The spirit leaves; no replacement living dwarf is established by this receipt."
+        }
+      ]
+    },
+    {
+      "id": "nahasp-grate-key",
+      "title": "Nahasp: the paid grate key",
+      "category": "service",
+      "summary": "Ten platinum buys a small metal grate key in the native exchange. This paid service is currently unavailable while accounting is active; it contributes no story achievement or daily.",
+      "contracts": [
+        {
+          "giver_vnum": 94757,
+          "completion_key": "give=C:10000;receive=I:94729;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "turn-in",
+          "text": "Complete Nahasp: the paid grate key",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 94757,
+              "completion_key": "give=C:10000;receive=I:94729;disappear=0"
+            }
+          ],
+          "hint": "The native exchange requires 10,000 copper (ten platinum). Paid quest settlement is currently unavailable while accounting is active. This service has no wallet-readiness row, story achievement or daily, and a key alone is not an accepted payment receipt."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
