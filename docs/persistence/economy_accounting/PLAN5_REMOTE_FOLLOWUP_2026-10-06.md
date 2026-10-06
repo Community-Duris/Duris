@@ -223,3 +223,21 @@ positive consumption rows and nullable/versioned opening-origin attribution.
 Its independent reader integration and original producer/restore journeys remain
 required. The sealed post-refresh receipt binds the final remote merge/report
 tip to this slice's prior delivery and preserved seven old branch tips.
+
+
+## Independent retained SQL native-mobile value fix
+
+Separate issue `51cfdc7b14fc45649e74b5e67e042c86df80f27f`, based on
+`5207af7f83c9cdcf2bd0494d0f3aeb7b9a2413ef`, adds independent QMNIMG/reference/stock/cash
+format and exact SQL row binding to the existing restore and canonical audit readers.
+The original reader falsely qualifies a damaged image in the pure regression and
+a lifetime-ID disagreement on both fresh canonical61 engines. Original green
+pure26/native full restore/current61 SQL methods pass with zero skips; both
+SELECT-only consumers leave retained rows unchanged.
+
+[Exact ownership, source, commands and limitations](PLAN5_SQL_NATIVE_MOBILE_VALUE_QUALIFICATION_2026-10-06.md)
+provides the curator packet and protected seal. No shared source/schema/interface
+change is requested; `src`03a97173 and migrations2eb9da7b are unchanged. The same
+remote branch is retained, and all old tips remain ancestors. Primary private0062
+allocation, complete native/live-world capture, authentic birth/recovery/producer
+journeys, activation and release qualification remain gates.

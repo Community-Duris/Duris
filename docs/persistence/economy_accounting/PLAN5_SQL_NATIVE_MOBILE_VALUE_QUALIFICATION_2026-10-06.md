@@ -1,4 +1,4 @@
-# Plan 5: independent retained SQL native-mobile value qualification — 2026-10-06
+# Plan 5: independent retained SQL native-mobile value qualification â€” 2026-10-06
 
 ## Delivery and exact source
 
@@ -60,18 +60,18 @@ compare complete live-world custody or supply activation authority.
 
 The issue commit owns exactly:
 
-1. `scripts/economic_restore_evidence.py` — independent image interpretation and
+1. `scripts/economic_restore_evidence.py` â€” independent image interpretation and
    bounded retained-row checks, reused by restore and canonical audit.
-2. `scripts/economic_sql_canonical_audit.py` — source/collection/byte budgets and
+2. `scripts/economic_sql_canonical_audit.py` â€” source/collection/byte budgets and
    the native-mobile count in the existing operator result.
-3. `tests/async/test_economic_sql_canonical_audit.py` — original-reader regression,
+3. `tests/async/test_economic_sql_canonical_audit.py` â€” original-reader regression,
    exact projection types/bindings, controls, stock/topology/depth and budgets.
-4. `tests/async/test_flatfile_restore_economic_authority.py` — native oracle
+4. `tests/async/test_flatfile_restore_economic_authority.py` â€” native oracle
    comparisons added to the original complete restore method.
-5. `tests/async/run_restore_accounting_evidence_mysql.py` — original canonical
+5. `tests/async/run_restore_accounting_evidence_mysql.py` â€” original canonical
    disposable-database method, both SELECT-only consumers, image corruptions,
    full table inventories and two-page checks.
-6. `docs/persistence/economy_accounting/AUDIT_OPERATIONS.md` — operator scope.
+6. `docs/persistence/economy_accounting/AUDIT_OPERATIONS.md` â€” operator scope.
 
 No shared interface or schema change is requested for this fix. Public native
 fields, versions, source providers, flags and original test assertions remain.
@@ -176,12 +176,12 @@ pass; no C/C++ formatting change is present.
 
 Protected evidence root: `D:/CodexEvidence/accounting-plan5/bin/`:
 
-- `sql-native-mobile-red-01-20261006/` — original missing-refusal regression.
-- `sql-native-mobile-green-01-20261006/` — complete fixed method batch and retained
+- `sql-native-mobile-red-01-20261006/` â€” original missing-refusal regression.
+- `sql-native-mobile-green-01-20261006/` â€” complete fixed method batch and retained
   original native SQL/flatfile binaries/corpora/logs.
-- `sql-native-mobile-red-engines-01-20261006/` — frozen-original both-engine
+- `sql-native-mobile-red-engines-01-20261006/` â€” frozen-original both-engine
   reproduction, authentic reused native fixture and exact source composition.
-- `sql-native-mobile-final-seal-01-20261006/evidence.json` — manifest binding all
+- `sql-native-mobile-final-seal-01-20261006/evidence.json` â€” manifest binding all
   3122 code inputs and42 artifacts
   (332,553,994 bytes retained evidence;
   this is evidence storage, not measured workload growth).
