@@ -40,6 +40,7 @@ struct auction_settlement_accounts
 	economic_account_key seller_claim = {};
 	economic_account_key actor_wallet = {};
 	economic_account_key actor_bank = {};
+	uint32_t absent_seller_pid = 0;
 };
 
 struct auction_settlement_authority

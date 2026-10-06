@@ -216,6 +216,27 @@ def reservation_orphan_identity(row: dict) -> dict:
             "identity_kind": kind, "identity_id": identity}
 
 
+def pending_claim_consumptions(native: dict) -> list[dict] | None:
+    """Preserve absent historical coverage; validate a declared allocation cut."""
+    rows = native.get("pending_claim_consumptions")
+    coverage = native.get("pending_claim_consumption_coverage")
+    if rows is None and coverage is None:
+        return None
+    if (not isinstance(rows, list) or len(rows) > MAX_ROWS or
+            not isinstance(coverage, dict) or set(coverage) != {"rows"} or
+            type(coverage["rows"]) is not int or coverage["rows"] != len(rows)):
+        raise SnapshotError("invalid pending claim consumption coverage")
+    for row in rows:
+        if (not isinstance(row, dict) or set(row) != {
+                "spending_operation_id", "source_operation_id", "source_slot", "amount"} or
+                type(row["source_slot"]) is not int or not 0 < row["source_slot"] < 2**16 or
+                type(row["amount"]) is not int or not 0 < row["amount"] < 2**64):
+            raise SnapshotError("invalid pending claim consumption row")
+        require_id(row["spending_operation_id"], "pending claim spending operation ID")
+        require_id(row["source_operation_id"], "pending claim original source operation ID")
+    return rows
+
+
 class Reconciler:
     def __init__(self, limit: int = 50):
         if not 0 <= limit <= MAX_OUTPUT_ROWS:
@@ -355,6 +376,9 @@ class Reconciler:
                 self.emit("unreferenced_uid_event", operation_id=operation_id, uid=uid)
         pending_sources = native.get("pending_claim_sources")
         pending_source_coverage = native.get("pending_claim_source_coverage")
+        partial_amounts = Counter()
+        for row in pending_claim_consumptions(native) or []:
+            partial_amounts[(row["source_operation_id"], row["source_slot"])] += row["amount"]
         if pending_sources is None and snapshot.get("backend") == "sql_partial":
             self.emit("missing_pending_claim_source_coverage", scope="snapshot")
         elif pending_sources is not None or pending_source_coverage is not None:
@@ -382,6 +406,7 @@ class Reconciler:
             invalid_source_roots = 0
             invalid_consumer_roots = 0
             open_claim_amounts = Counter()
+            open_rows = consumed_rows = 0
             for source in pending_sources:
                 source_operation = require_id(source.get("source_operation_id"),
                                               "pending claim source operation ID")
@@ -432,6 +457,9 @@ class Reconciler:
                 if claim_operation is not None:
                     require_id(claim_operation, "pending claim consumer operation ID")
                 source_key = (source_operation, slot)
+                remaining = 0 if claim_operation is not None else amount - partial_amounts[source_key]
+                open_rows += remaining > 0
+                consumed_rows += remaining <= 0
                 if source_key in seen_sources:
                     self.emit("duplicate_pending_claim_source", operation_id=source_operation,
                               source_slot=slot)
@@ -449,7 +477,7 @@ class Reconciler:
                     account is not None and native_id_valid and
                     mapping_native_id == beneficiary and
                     active_id_valid and
-                    (claim_operation is not None or
+                    (remaining <= 0 or
                      mapping_active_native_id == beneficiary))
                 if (type(mapping_valid) is not bool or
                         (account is None and
@@ -469,7 +497,10 @@ class Reconciler:
                     if key[0] != lineage or key[1] != 5:
                         raise SnapshotError("pending claim source maps to another account kind")
                     if mapping_valid and claim_operation is None:
-                        open_claim_amounts[account] += amount
+                        open_claim_amounts[account] += remaining
+            if (open_rows != pending_source_coverage["open_rows"] or
+                    consumed_rows != pending_source_coverage["consumed_rows"]):
+                raise SnapshotError("pending claim source remaining coverage mismatch")
             if invalid_mappings != pending_source_coverage["invalid_account_mappings"]:
                 raise SnapshotError("pending claim source mapping coverage mismatch")
             if invalid_source_roots != pending_source_coverage["invalid_source_roots"]:
@@ -564,7 +595,8 @@ class Reconciler:
         native_items = self.index(items, ("uid",), "duplicate_native_uid")
         self.audit_mapping_creations(snapshot.get("backend"), lineage, native, origins,
                                      operations, effects, epoch)
-        self.audit_pending_claim_consumers(snapshot.get("backend"), lineage, native)
+        self.audit_pending_claim_consumers(snapshot.get("backend"), lineage, native,
+                                           epoch, operations, list(effects.values()))
         self.audit_coin_pile_mappings(snapshot.get("backend"), native,
                                       native_holdings, native_items, lineage)
         self.audit_uid_scope_coverage(snapshot.get("backend"), native,
@@ -1338,7 +1370,12 @@ class Reconciler:
                      if row.get("creating_operation_id") is not None})):
             raise SnapshotError("mapping creation coverage mismatch")
     def audit_pending_claim_consumers(self, backend: object, lineage: str,
-                                      native: dict) -> None:
+                                      native: dict, selected_epoch: str | None = None,
+                                      operations: dict | None = None,
+                                      effects: list[dict] | None = None) -> None:
+        partial_rows = pending_claim_consumptions(native)
+        if partial_rows is None and backend == "sql_partial":
+            self.emit("missing_pending_claim_consumption_coverage", scope="snapshot")
         rows = native.get("pending_claim_consumers")
         coverage = native.get("pending_claim_consumer_coverage")
         source_records = native.get("pending_claim_sources")
@@ -1364,7 +1401,26 @@ class Reconciler:
         seen = set()
         missing = mismatched = 0
         source_totals = defaultdict(lambda: [0, 0])
+        account_totals = Counter()
+        selected_debits = defaultdict(list)
+        for effect in effects or []:
+            key = effect.get("account_key")
+            if account_key(key)[1] == 5:
+                before, after = vector(effect.get("before")), vector(effect.get("after"))
+                if before[0] > after[0]:
+                    selected_debits[effect["operation_id"]].append({"account_key": key,
+                        "amount": before[0]-after[0], "before": list(before), "after": list(after)})
+        sources = {}
         for source in source_records:
+            source_id = require_id(source.get("source_operation_id"), "pending claim original source operation ID")
+            slot = source.get("source_slot")
+            if type(slot) is not int or not 0 < slot < 2**16:
+                raise SnapshotError("invalid pending claim source slot")
+            identity = (source_id, slot)
+            sources[identity] = source if identity not in sources else None
+            source_account = source.get("account_key")
+            if source_account is not None and account_key(source_account)[:2] != (lineage, 5):
+                raise SnapshotError("invalid pending claim source account")
             consumer_id = source.get("claim_operation_id")
             if consumer_id is None:
                 continue
@@ -1374,8 +1430,38 @@ class Reconciler:
                 raise SnapshotError("invalid pending claim source amount")
             source_totals[consumer_id][0] += 1
             source_totals[consumer_id][1] += amount
+            account_totals[(consumer_id, source.get("account_key"))] += amount
             if source_totals[consumer_id][1] >= 2**63:
                 raise SnapshotError("pending claim source amount overflow")
+        seen_consumptions, partial_totals = set(), Counter()
+        for row in partial_rows or []:
+            source_identity = (row["source_operation_id"], row["source_slot"])
+            consumer_id = row["spending_operation_id"]
+            identity = (consumer_id, *source_identity)
+            if identity in seen_consumptions:
+                self.emit("duplicate_pending_claim_consumption", operation_id=consumer_id,
+                          source_operation_id=source_identity[0], source_slot=source_identity[1])
+            seen_consumptions.add(identity)
+            source = sources.get(source_identity)
+            if source is None:
+                self.emit("pending_claim_consumption_source_mismatch", operation_id=consumer_id,
+                          source_operation_id=source_identity[0], source_slot=source_identity[1])
+            else:
+                amount = source.get("amount")
+                if type(amount) is not int or not 0 < amount < 2**63:
+                    raise SnapshotError("invalid pending claim source amount")
+                if source.get("claim_operation_id") is not None:
+                    self.emit("pending_claim_mixed_consumption", operation_id=consumer_id,
+                              source_operation_id=source_identity[0], source_slot=source_identity[1])
+                partial_totals[source_identity] += row["amount"]
+            source_totals[consumer_id][0] += 1
+            source_totals[consumer_id][1] += row["amount"]
+            account_totals[(consumer_id, source.get("account_key") if source else None)] += row["amount"]
+            if source_totals[consumer_id][1] >= 2**63:
+                raise SnapshotError("pending claim source amount overflow")
+        for identity, amount in partial_totals.items():
+            if amount > sources[identity]["amount"]:
+                self.emit("pending_claim_overdrawn_source", source_operation_id=identity[0], source_slot=identity[1])
         for row in rows:
             operation_id = require_id(row.get("operation_id"),
                                       "pending claim consumer operation ID")
@@ -1429,9 +1515,19 @@ class Reconciler:
                         before[0] - after[0] != amount or any(before[1:]) or any(after[1:])):
                     raise SnapshotError("invalid pending claim consumer debit")
                 seen_accounts.add(key)
+                if account_totals.pop((operation_id, key), 0) != amount:
+                    self.emit("pending_claim_consumer_account_mismatch", operation_id=operation_id, account_key=key)
                 total_debit += amount
                 if total_debit >= 2**63:
                     raise SnapshotError("pending claim consumer debit overflow")
+            if operations is not None and (epoch == selected_epoch or (operation_id,) in operations):
+                operation = operations.get((operation_id,))
+                expected = selected_debits.get(operation_id, [])
+                if (operation is None or operation.get("epoch") != epoch or
+                        operation.get("outcome") != "committed" or operation.get("result_code") != 0 or
+                        sorted(expected, key=lambda effect: effect["account_key"]) !=
+                        sorted(effects, key=lambda effect: effect["account_key"])):
+                    self.emit("pending_claim_consumer_projection_mismatch", operation_id=operation_id)
             if source_row_count == 0:
                 missing += 1
                 self.emit("pending_claim_consumer_without_sources", operation_id=operation_id,
@@ -1443,6 +1539,12 @@ class Reconciler:
         for operation_id, (source_count, source_amount) in source_totals.items():
             self.emit("missing_pending_claim_consumer_root", operation_id=operation_id,
                       source_rows=source_count, source_amount=source_amount)
+        for (operation_id, account), amount in account_totals.items():
+            self.emit("pending_claim_consumer_account_mismatch", operation_id=operation_id, account_key=account)
+        for operation_id in set(selected_debits)-seen-set(source_totals):
+            operation = operations.get((operation_id,))
+            if operation is not None and operation.get("outcome") == "committed":
+                self.emit("missing_pending_claim_consumer_root", operation_id=operation_id)
         if (coverage["missing_source_rows"] != missing or
                 coverage["mismatched_source_amounts"] != mismatched):
             raise SnapshotError("pending claim consumer coverage mismatch")
@@ -2495,7 +2597,8 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
                 for row in (snapshot["ownership_events"] +
                             (snapshot["native"].get("uid_history_events") or []) +
                             (snapshot["native"].get("unattributed_uid_events") or []))
-                if row.get("uid") == uid and isinstance(row.get("operation_id"), str)
+                if type(row.get("uid")) is int and row["uid"] == uid
+                and isinstance(row.get("operation_id"), str)
                 and HEX_ID.fullmatch(row["operation_id"]) and type(row.get("event_index")) is int
                 and type(row.get("revision")) is int and type(row.get("root")) is int
                 and (row.get("parent") is None or type(row.get("parent")) is int)

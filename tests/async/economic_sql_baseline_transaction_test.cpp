@@ -83,6 +83,15 @@ int main()
 				 p.witness().opening_account, ident(777003)) == ENOTSUP);
 	assert(owner::apply(nullptr, c, p).error_code == ENOTSUP);
 	assert(owner::reconcile(nullptr, c).error_code == ENOTSUP);
+	uint64_t revision = 999;
+	economic_baseline_batch output;
+	output.actor_id = 999;
+	assert(economic_sql_baseline_verify_retained_in_transaction(nullptr, c, &revision) ==
+	       ENOTSUP);
+	assert(revision == 999);
+	assert(economic_sql_baseline_verify_known_retained_in_transaction(nullptr, c.operation_id,
+									  &output) == ENOTSUP);
+	assert(output.actor_id == 999 && output.holdings.empty() && output.items.empty());
 	std::cout << "client-free baseline owner refusal PASS\n";
 }
 #else
@@ -413,6 +422,7 @@ void corruption(MYSQL *c)
 			root,
 		"UPDATE economic_accounting_operation SET canonical_plan=INSERT(canonical_plan,1,1,CHAR(0)) WHERE " +
 			root,
+		"UPDATE economic_accounting_operation SET realized_price_copper=1 WHERE " + root,
 		"DELETE FROM economic_accounting_source_claim WHERE " + root,
 		"UPDATE economic_baseline_control SET last_operation_id=" + id(ident(777003)) +
 			" WHERE " + lineage
@@ -649,6 +659,115 @@ void reconcile_faults(MYSQL *c)
 	std::cout << total << " replay query faults PASS" << std::endl;
 	clean(c);
 }
+// Borrowed verification retains the caller transaction and publishes only complete evidence.
+void borrowed_retained(MYSQL *c)
+{
+	setup(c);
+	auto p = prepare(batch());
+	auto op = command(p);
+	track(op);
+	successful(owner::apply(c, op, p), 1);
+	const auto scope = " WHERE operation_id=" + id(op.operation_id);
+	const auto unchanged = [](const economic_baseline_batch &b)
+	{ assert(b.actor_id == 999 && b.holdings.empty() && b.items.empty()); };
+	sql(c, "START TRANSACTION");
+	uint64_t revision = 999;
+	assert(!economic_sql_baseline_verify_retained_in_transaction(c, op, &revision));
+	assert(revision == 1 && (c->server_status & SERVER_STATUS_IN_TRANS));
+	auto wrong = op;
+	++wrong.accepted_at_usec;
+	revision = 999;
+	assert(economic_sql_baseline_verify_retained_in_transaction(c, wrong, &revision) == EILSEQ);
+	assert(revision == 999);
+	economic_baseline_batch witness;
+	assert(!economic_sql_baseline_verify_known_retained_in_transaction(c, op.operation_id,
+									   &witness));
+	assert(witness.actor_id == p.witness().actor_id &&
+	       witness.holdings.size() == p.witness().holdings.size() &&
+	       witness.items.size() == p.witness().items.size());
+	sql(c, "UPDATE economic_baseline_witness SET claim_origin_version=NULL" + scope);
+	assert(!economic_sql_baseline_verify_known_retained_in_transaction(c, op.operation_id,
+									   nullptr));
+	// With a real timestamp even an old NULL marker still binds the original header.
+	sql(c, "UPDATE critical_operation_inbox SET command_hash=REPEAT(CHAR(7),32)" + scope);
+	assert(economic_sql_baseline_verify_known_retained_in_transaction(c, op.operation_id,
+									  nullptr) == EILSEQ);
+	sql(c, "ROLLBACK");
+	sql(c, "START TRANSACTION");
+	sql(c,
+	    "UPDATE economic_baseline_witness SET claim_origin_version=NULL,command_accepted_at_usec=NULL" +
+		    scope);
+	assert(!economic_sql_baseline_verify_known_retained_in_transaction(c, op.operation_id,
+									   nullptr));
+	query_seen = query_target = 0;
+	instrument = true;
+	assert(!economic_sql_baseline_verify_known_retained_in_transaction(c, op.operation_id,
+									   nullptr));
+	instrument = false;
+	const auto queries = query_seen;
+	for (size_t target = 1; target <= queries; ++target)
+	{
+		economic_baseline_batch output;
+		output.actor_id = 999;
+		query_seen = 0;
+		query_target = target;
+		after_write = false;
+		instrument = true;
+		const auto error = economic_sql_baseline_verify_known_retained_in_transaction(
+			c, op.operation_id, &output);
+		instrument = false;
+		query_target = 0;
+		faulted = false;
+		assert(error == 2013);
+		unchanged(output);
+		assert(c->server_status & SERVER_STATUS_IN_TRANS);
+	}
+	// Measure the actual successful path, then fault the first and final allocations.
+	// The final faults cover publishing nonempty retained vectors to the caller.
+	economic_baseline_batch measured;
+	allocation_seen = 0;
+	allocation_target = static_cast<size_t>(-1);
+	const auto measured_error = economic_sql_baseline_verify_known_retained_in_transaction(
+		c, op.operation_id, &measured);
+	allocation_target = 0;
+	const auto allocations = allocation_seen;
+	assert(!measured_error && allocations > 2);
+	for (const auto target : { size_t(1), allocations - 1, allocations })
+	{
+		economic_baseline_batch output;
+		output.actor_id = 999;
+		allocation_seen = 0;
+		allocation_target = target;
+		const auto error = economic_sql_baseline_verify_known_retained_in_transaction(
+			c, op.operation_id, &output);
+		allocation_target = 0;
+		assert(error == ENOMEM);
+		unchanged(output);
+		assert(c->server_status & SERVER_STATUS_IN_TRANS);
+	}
+	economic_baseline_batch output;
+	output.actor_id = 999;
+	sql(c, "UPDATE economic_accounting_operation SET realized_price_copper=1" + scope);
+	assert(economic_sql_baseline_verify_known_retained_in_transaction(c, op.operation_id,
+									  &output) == EILSEQ);
+	unchanged(output);
+	sql(c, "ROLLBACK");
+	sql(c, "START TRANSACTION");
+	sql(c, "UPDATE economic_baseline_witness SET command_accepted_at_usec=NULL" + scope);
+	assert(economic_sql_baseline_verify_known_retained_in_transaction(c, op.operation_id,
+									  &output) == EILSEQ);
+	unchanged(output);
+	sql(c, "ROLLBACK");
+	revision = 999;
+	assert(economic_sql_baseline_verify_retained_in_transaction(c, op, &revision) == ENOTCONN);
+	assert(revision == 999);
+	assert(economic_sql_baseline_verify_known_retained_in_transaction(c, op.operation_id,
+									  &output) == ENOTCONN);
+	unchanged(output);
+	clean(c);
+	std::cout << "borrowed original timestamp, historical NULL, corruption and " << queries
+		  << " unchanged-output query faults PASS\n";
+}
 void initialization_and_exhaustion(MYSQL *c)
 {
 	auto p = prepare(batch(0, 1, 0));
@@ -724,6 +843,7 @@ int main()
 	corruption(c);
 	faults(c);
 	reconcile_faults(c);
+	borrowed_retained(c);
 	concurrency(c);
 	allocations(c);
 	initialization_and_exhaustion(c);

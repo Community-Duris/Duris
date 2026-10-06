@@ -31,6 +31,8 @@ struct auction_bid_accounting_accounts
 	economic_account_key bidder_claim = {};
 	economic_account_key previous_claim = {};
 	economic_account_key seller_claim = {};
+	// AEC1 freezes an absent native endpoint by beneficiary, never a guessed mapping.
+	uint32_t absent_bidder_pid = 0, absent_previous_pid = 0, absent_seller_pid = 0;
 };
 
 struct auction_bid_accounting_claim

@@ -14,6 +14,27 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def build_coin_fixture(work, mode):
+    from native_build_artifacts import build_native
+    assert mode in ("sql", "flatfile")
+    sources = ["tests/async/restore_coin_effects_fixture.cpp",
+               "src/economy/economic_accounting_plan.c", "src/economy/economic_source_event.c", "src/economy/economic_accounting_types.c",
+               "src/economy/economic_accounting_intent.c", "src/persistence/critical_command.c",
+               "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/item/craft_pouch_mutation.c",
+               "src/economy/shop_trade_recovery_manifest.c",
+               "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c"]
+    flags = ["-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-O1", "-g",
+             "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-Isrc"]
+    target = work / ("fixture-" + mode)
+    binary = build_native(target, sources,
+                          flags + (["-D__NO_MYSQL__"] if mode == "flatfile" else []),
+                          ["-no-pie", "-lcrypto"], name="plan5-restore-coin-" + mode)
+    if binary.resolve() != target.resolve():
+        shutil.copyfile(binary, target)
+    target.chmod(0o700)
+    return target
+
+
 @unittest.skipUnless(sys.platform == "linux" and
                      os.environ.get("DURIS_RUN_RESTORE_COIN_INTEGRATION") == "1",
                      "requires explicit private Linux native/SQL restore invocation")
@@ -21,32 +42,17 @@ class RestoreCoinEffectsTests(unittest.TestCase):
     def test_native_coin_effects_both_modes_and_canonical_engines(self):
         sys.path.insert(0, str(ROOT / "scripts"))
         import persistence_restore as restore
-        from native_build_artifacts import build_native
         import pymysql
 
         canonical = os.environ.get("DURIS_PLAN5_CANONICAL_EVIDENCE") == "1"
         work = ROOT / ("bin/tests/plan5-retained-namespace-canonical" if canonical else
                        "bin/tests/plan5-retained-namespace-coins")
         work.mkdir(mode=0o700, parents=True, exist_ok=True)
-        sources = ["tests/async/restore_coin_effects_fixture.cpp",
-                   "src/economy/economic_accounting_plan.c", "src/economy/economic_source_event.c", "src/economy/economic_accounting_types.c",
-                   "src/economy/economic_accounting_intent.c", "src/persistence/critical_command.c",
-                   "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/item/craft_pouch_mutation.c",
-                   "src/economy/shop_trade_recovery_manifest.c",
-                   "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c"]
-        flags = ["-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-O1", "-g",
-                 "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-Isrc"]
         environment = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
                            UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
         results = []
         for mode in ("sql", "flatfile"):
-            target = work / ("fixture-" + mode)
-            binary = build_native(target, sources,
-                                  flags + (["-D__NO_MYSQL__"] if mode == "flatfile" else []),
-                                  ["-no-pie", "-lcrypto"], name="plan5-restore-coin-" + mode)
-            if binary.resolve() != target.resolve():
-                shutil.copyfile(binary, target)
-            target.chmod(0o700)
+            target = build_coin_fixture(work, mode)
             output = subprocess.check_output([str(target)], env=environment)
             results.append(output)
             (work / ("native-" + mode + ".bin")).write_bytes(output)
@@ -74,6 +80,29 @@ class RestoreCoinEffectsTests(unittest.TestCase):
             histories.append(history)
             (work / ("history-" + mode + ".bin")).write_bytes(history)
         self.assertEqual(histories[0], histories[1])
+        claim_histories = []
+        for mode in ("sql", "flatfile"):
+            history = subprocess.check_output([str(work / ("fixture-" + mode)), "--claim-history"],
+                                              env=environment, timeout=60)
+            claim_histories.append(history)
+            (work / ("claims-" + mode + ".bin")).write_bytes(history)
+        self.assertEqual(claim_histories[0], claim_histories[1])
+        claim_blocks, claim_offset = [], 0
+        while claim_offset < len(claim_histories[0]):
+            size, = struct.unpack_from("<I", claim_histories[0], claim_offset)
+            claim_offset += 4
+            claim_blocks.append(claim_histories[0][claim_offset:claim_offset+size])
+            claim_offset += size
+        self.assertEqual(claim_offset, len(claim_histories[0]))
+        self.assertEqual(len(claim_blocks), 10)
+        from test_economic_sql_canonical_audit import ClaimProjectionFixture
+        import economic_restore_evidence as evidence
+        claim_pairs = list(zip(claim_blocks[::2], claim_blocks[1::2]))
+        for mode in ("unspent", "partial", "consumed", "whole"):
+            evidence.require_integrity(ClaimProjectionFixture(mode, claim_pairs))
+        print("NATIVE_PENDING_CLAIM_CONTROLS " + json.dumps({"roots": 5, "modes": 2,
+            "allocation_controls": 4, "fixture_sha256": hashlib.sha256(claim_histories[0]).hexdigest(),
+            "producer_journey_qualified": False}, sort_keys=True), flush=True)
         maximum_intent = histories[0][-8192:]
         self.assertEqual(struct.unpack_from("<I", histories[0], len(histories[0]) - 8196)[0], 8192)
         self.assertEqual(maximum_intent[:4], b"EAI1")
@@ -135,6 +164,7 @@ class RestoreCoinEffectsTests(unittest.TestCase):
                         run_environment = dict(private, DB_USER="root", DB_PASSWD="plan5-private-coin-root", MYSQL_PWD="plan5-private-coin-root",
                                                DB_HOST="127.0.0.1", ENVIRONMENT="test", TEST_DB_DISPOSABLE="1",
                                                DURIS_PLAN5_COIN_FIXTURE=str(fixture_path),
+                                               DURIS_PLAN5_CLAIM_FIXTURE=str(work / "claims-sql.bin"),
                                                DURIS_PLAN5_CANONICAL_EVIDENCE=str(int(canonical)),
                                                DURIS_PLAN5_CANONICAL_RED=os.environ.get("DURIS_PLAN5_CANONICAL_RED", "0"))
                         # Preserve output as it arrives, including a timeout or
