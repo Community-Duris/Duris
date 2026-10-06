@@ -283,6 +283,53 @@ def pending_claim_cuts():
             for row in consumption_rows:
                 execute("INSERT INTO economic_pending_claim_consumption VALUES(%s,%s,%s,%s)", row)
             canonical_cut("pending-claim-"+mode, [], [], None, full=True)
+            if mode == "unspent":
+                # Explicitly modeled SQL metadata tests the 64-pair collector
+                # boundary. Copied capsules do NOT authenticate these new IDs;
+                # this is not a qualifying canonical root/history cut.
+                original_batch = captured()
+                batch_ids = [value.to_bytes(16, "big") for value in range(128, 193)]
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT * FROM economic_accounting_operation WHERE operation_id=%s", (source_rows[0][0],))
+                    values = list(cursor.fetchone())
+                    columns = [column[0] for column in cursor.description]
+                try:
+                    for operation in batch_ids:
+                        values[columns.index("operation_id")] = operation
+                        execute("INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,"
+                                "command_type,schema_version,payload_version,status,result_payload,committed_at) "
+                                "VALUES(%s,%s,%s,1,2,1,1,'',CURRENT_TIMESTAMP(6))", (operation, bytes(32), bytes(32)))
+                        execute("INSERT INTO economic_accounting_operation("+",".join(columns)+") VALUES("+
+                                ",".join(["%s"]*len(columns))+")", values)
+                        for table in ("economic_accounting_account_effect", "economic_accounting_coin_posting"):
+                            with connection.cursor() as cursor:
+                                cursor.execute("SELECT * FROM "+table+" WHERE operation_id=%s", (source_rows[0][0],))
+                                copied = cursor.fetchall()
+                            for row in copied:
+                                execute("INSERT INTO "+table+" VALUES("+",".join(["%s"]*len(row))+")", (operation,*row[1:]))
+                        execute("INSERT INTO economic_pending_claim_source VALUES(%s,1,%s,9,42,5,NULL)", (operation,LINEAGE))
+                    probe = pymysql.connect(**(settings | {"database": "duris_restore", "user": READER,
+                        "password": "plan5-disposable-reader", "cursorclass": pymysql.cursors.DictCursor}))
+                    try:
+                        with probe.cursor() as cursor:
+                            cursor.execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
+                            from economic_sql_audit_snapshot import read_native
+                            native, _, _ = read_native(cursor, LINEAGE)
+                        assert native["pending_claim_source_coverage"]["rows"] == 67
+                        assert native["pending_claim_source_coverage"]["invalid_source_roots"] == 0
+                    finally:
+                        probe.rollback()
+                        probe.close()
+                finally:
+                    for operation in batch_ids:
+                        execute("DELETE FROM economic_pending_claim_source WHERE source_operation_id=%s", (operation,))
+                        for table in ("economic_accounting_coin_posting", "economic_accounting_account_effect",
+                                      "economic_accounting_operation", "critical_operation_inbox"):
+                            execute("DELETE FROM "+table+" WHERE operation_id=%s", (operation,))
+                assert captured() == original_batch
+                print("MODELED_CLAIM_METADATA_BATCH "+json.dumps({"source_rows": 67, "pair_batch": 64,
+                    "projection_metadata_only": True, "original_capsule_identity_qualified": False,
+                    "fixture_restored": True},sort_keys=True),flush=True)
 
             def cut(label, changes, repairs, code, broken_fk=False):
                 canonical_cut("pending-claim-"+mode+"-"+label, changes, repairs,

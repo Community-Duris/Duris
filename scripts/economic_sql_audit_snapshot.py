@@ -1329,6 +1329,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     source_root_metadata = {}
     source_root_effects = Counter()
     source_pair_values = {}
+    source_root_postings = {}
     source_pairs = sorted(source_pairs)
     for offset in range(0, len(source_pairs), 64):
         batch = source_pairs[offset:offset + 64]
@@ -1358,7 +1359,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             "SELECT operation_id,COUNT(*) AS posting_rows,COALESCE(SUM(copper_value),0) AS net_copper "
             "FROM economic_accounting_coin_posting "
             f"WHERE operation_id IN ({operation_placeholders}) GROUP BY operation_id", operation_ids)
-        source_root_postings = {row["operation_id"]: row for row in posting_audits}
+        source_root_postings.update({row["operation_id"]: row for row in posting_audits})
         effects = bounded(cursor,
             "SELECT operation_id,account_key,before_copper,before_silver,before_gold,"
             "before_platinum,after_copper,after_silver,after_gold,after_platinum "
