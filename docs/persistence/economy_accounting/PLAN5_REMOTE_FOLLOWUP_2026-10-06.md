@@ -241,3 +241,30 @@ change is requested; `src`03a97173 and migrations2eb9da7b are unchanged. The sam
 remote branch is retained, and all old tips remain ancestors. Primary private0062
 allocation, complete native/live-world capture, authentic birth/recovery/producer
 journeys, activation and release qualification remain gates.
+
+## Canonical 0062 recipe and exact primary follow-up
+
+Separate owned issue `81aad436305d75cacbc3001f0f392105a6912eb9`, based on
+`8e478f0882ce97d0c342b26d7bae97673c6df187`, updates seven stale 0061 literals in
+four maintained Plan 5 SQL recipes. The original full method fails those old
+guards on both private engines; the repaired method reaches the new migration
+and exposes its published non-executable verifier. This is a recorded failure,
+not canonical SQL qualification. [The exact report](PLAN5_CANONICAL_0062_RECIPE_FOLLOWUP_2026-10-06.md)
+seals the attempts, 26 pure passes, two fresh 738-object production build passes
+and all 3,125 current code inputs.
+
+The same remote branch imports primary0062 `8030e71b55286d77b751fe41044d978dd62fa4cc`
+exactly at `8e478f0882ce97d0c342b26d7bae97673c6df187`, then primary restore integration
+`707b9cdd3d2f72307e70f1bd8dbf3e1ab2674d29` at
+`c2ef99f903cc8f64476af5b39c2e2195dfb7db7a`. The two owned-file merge conflicts
+preserve later reader documentation/tests; all incoming implementation is already
+present. All seven previous tips remain ancestors. No independent shared edit is
+made. [The narrow handoff](PLAN5_0062_EXECUTABLE_MODE_HANDOFF_2026-10-06.md) requests
+only primary publication of the new verifier's executable mode. Its immutable
+bytes/checksums remain exact.
+
+This report and seal provide the locally maintained notebook's curator packet.
+The blocked original SQL methods, new allocation/origin authentication, full
+capture/activation/writer/recovery/erasure/managed-retention journeys and
+release-host qualification remain open. Accounting remains inactive and no
+release gate is promoted.
