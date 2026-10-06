@@ -14,17 +14,17 @@ remain open. No complete Plan, R1–R8, coverage, activation or release pass is
 claimed. Owned artifacts are retained, cleanup completed, and unrelated WIP,
 inactive behavior and the declined spell-path boundary are preserved.
 
-## Independent unique supply evidence fix integrated â€” 2026-10-06
+## Independent unique supply evidence fix integrated — 2026-10-06
 
 [Exact primary integration](PLAN5_SUPPLY_EVIDENCE_PRIMARY_INTEGRATION_2026-10-06.md) imports five owned blobs from `62ad380b6`. The new actual CLI regression, AST and normal/matrix/current61 metadata pass. All committed code/test/schema inputs match the qualified peer composition; native source, complete central manifest and unrelated WIP remain. Peer native/both-engine results retain their recorded component scope. No primary native rerun, complete capture or full release qualification is claimed. Original Plans and major native work remain open.
 
 
-## Independent quarantined coin reader fix integrated â€” 2026-10-06
+## Independent quarantined coin reader fix integrated — 2026-10-06
 
 [Exact primary integration](PLAN5_QUARANTINED_COIN_PRIMARY_INTEGRATION_2026-10-06.md) imports five owned blobs from `eadeec0e7`. The new actual CLI regression, AST and normal/matrix/current61 metadata pass. All committed code/test/schema inputs match the qualified peer composition; native source, complete central manifest and unrelated WIP remain. Peer native/both-engine results retain their recorded component scope. No primary native rerun, complete capture or full release qualification is claimed. Original Plans and major native work remain open.
 
 
-## Independent quarantined containment fix integrated â€” 2026-10-06
+## Independent quarantined containment fix integrated — 2026-10-06
 
 [Exact primary integration](PLAN5_QUARANTINED_TOPOLOGY_PRIMARY_INTEGRATION_2026-10-06.md)
 imports five owned blobs from4528dbfd7. Quarantined owner/root disagreements
@@ -36,7 +36,7 @@ its recorded scope. No primary native rerun, complete capture or full release
 qualification is claimed. Original Plans and major native work remain open.
 
 
-## Independent retained flatfile semantics fix integrated â€” 2026-10-06
+## Independent retained flatfile semantics fix integrated — 2026-10-06
 
 [Exact primary integration](PLAN5_FLATFILE_PLAN_SEMANTICS_PRIMARY_INTEGRATION_2026-10-06.md)
 imports the five owned blobs from9e72cd35f. All committed code/test/schema
@@ -48,7 +48,7 @@ structural/component scope. No primary native rerun or private quest/birth
 qualification is claimed. Full Plans, complete capture and release remain open.
 
 
-## Quest terminal pair and actual NBC2 producer composed â€” 2026-10-06
+## Quest terminal pair and actual NBC2 producer composed — 2026-10-06
 
 [The integrated source handoff](NATIVE_QUEST_TERMINAL_PAIR_SOURCE_2026-10-06.md)
 records authentic parent/child receipt plus exact reward ACK cleanup, atomic
@@ -62,7 +62,7 @@ qualification continue in parallel. No maintained native installation, full Plan
 or release gate is claimed; accounting and safety behavior stay unchanged.
 
 
-## Independent item custody-position fix integrated â€” 2026-10-06
+## Independent item custody-position fix integrated — 2026-10-06
 
 [Exact peer import and primary checks](PLAN5_ITEM_CUSTODY_PRIMARY_INTEGRATION_2026-10-06.md)
 integrate the completed impossible-custody finding fix from560f91d9d. Five owned
@@ -74,7 +74,7 @@ retain their recorded scope. No primary native rerun, full capture, Plan or
 release qualification is claimed.
 
 
-## Constructor and quest recovery source composed â€” 2026-10-06
+## Constructor and quest recovery source composed — 2026-10-06
 
 [The owning source handoff](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
 records the reviewed real constructor capsule/classless fix, automatic running-
@@ -88,7 +88,7 @@ latest-child and paired retirement integration, remaining routes and major nativ
 qualification are ongoing. No maintained native installation or full gate passes.
 
 
-## Independent supply outcome fix integrated â€” 2026-10-06
+## Independent supply outcome fix integrated — 2026-10-06
 
 [Exact peer import and primary checks](PLAN5_SUPPLY_OUTCOME_PRIMARY_INTEGRATION_2026-10-06.md)
 integrate the completed supply-view correction: rejected, unknown and duplicate
@@ -100,7 +100,7 @@ recorded modeled/native scope. No new primary native run, private birth proof,
 complete capture, full Plan or release qualification is claimed.
 
 
-## Original birth/native12 replay source composed â€” 2026-10-06
+## Original birth/native12 replay source composed — 2026-10-06
 
 [The source handoff](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
 now records the accepted native12 passive item/quest owner and actual startup
@@ -114,7 +114,7 @@ acknowledged/retired/callback boundaries are ongoing required work. Full Plans,
 coverage, activation and release remain open.
 
 
-## Shared native recovery interfaces source-accepted â€” 2026-10-06
+## Shared native recovery interfaces source-accepted — 2026-10-06
 
 [The owning source handoff](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
 records the reviewed original factory/mutable codec on5773-input private12b,
@@ -127,7 +127,7 @@ domain integration, NPC recipe/time/config/build witness, remaining reset
 mechanics/flat parity and combined major qualification are still unfinished.
 
 
-## Independent equipment cold-restore coverage integrated â€” 2026-10-06
+## Independent equipment cold-restore coverage integrated — 2026-10-06
 
 [Peer qualification and exact source integration](PLAN5_EQUIPMENT_COLD_RESTORE_INTEGRATION_2026-10-06.md)
 are imported from7c0d6cf6c: the original native baseline recipe now checks the
@@ -141,7 +141,7 @@ Python AST and normal/matrix/current61 metadata pass. No primary native rerun,
 complete capture, full Plan or release qualification is claimed.
 
 
-## Independent equipment-custody fix integrated â€” 2026-10-06
+## Independent equipment-custody fix integrated — 2026-10-06
 
 [Exact source import and primary registration](PLAN5_EQUIPMENT_PRIMARY_REGISTRATION_2026-10-06.md)
 integrate peera781ab425's completed equipment-slot drift/history/scalar/provenance
@@ -153,7 +153,7 @@ inventory only. Both-engine/native component results retain the peer's exact
 qualified scope; no primary native rerun or full Plan/release completion is claimed.
 
 
-## Shared birth journal carrier handoff â€” 2026-10-06
+## Shared birth journal carrier handoff — 2026-10-06
 
 [The reviewed three-file private carrier](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
 reuses the original native envelope for birth-v2 admission, exact progress CAS,
@@ -169,7 +169,7 @@ native testing stays deferred until the combined candidate is ready. No native
 installation, full Plan completion, coverage or release readiness is claimed.
 
 
-## Immutable original birth recipe handoff â€” 2026-10-06
+## Immutable original birth recipe handoff — 2026-10-06
 
 [Accepted codec, wrapper and corrected SQL readback](NATIVE_BIRTH_RECIPE_SOURCE_HANDOFF_2026-10-06.md)
 are frozen and composed into5769 exact private source inputs. The birth-v2 wrapper
@@ -183,7 +183,7 @@ The reviewed live subset and its two narrow corrections are now composed with
 that contract on5771-input private4057 source. Original preimages match; cold
 factory/carrier/provider/mechanics and native qualification remain unfinished.
 
-## Birth refusal owner and full-reader evidence â€” 2026-10-06
+## Birth refusal owner and full-reader evidence — 2026-10-06
 
 The [private native handoff](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)
 now records reviewed retention/cancellation of genuine birth admission refusals.
@@ -193,13 +193,13 @@ source only, with actual producer/cleanup and cold qualification still pending.
 The [independent full-reader report](PLAN5_NATIVE_CURRENT61_FULL_AUDIT_QUALIFICATION_2026-10-05.md)
 is imported exactly from peer236d20d9b. Primary verifies native/migration/scripts
 trees match the tested391ef81 source; the sole committed test difference is the
-already published UID minimum9â†’11 registration. Both engines' complete maintained
+already published UID minimum9→11 registration. Both engines' complete maintained
 readers accept the original native cuts and preserve all228 application tables
 and expected missing-authority findings. This qualifies reader compatibility at
 that scope; no primary native rerun, private birth proof or full capture/release
 completion is claimed. Original producer/recovery and all full gates remain open.
 
-## Plan5 coin-payload reader fix integrated â€” 2026-10-06
+## Plan5 coin-payload reader fix integrated — 2026-10-06
 
 [Primary integration and original-case registration](PLAN5_COIN_SOURCE_PRIMARY_INTEGRATION_2026-10-06.md)
 records the exact peerda2153 reader fix: source limits precede payload reads,
@@ -210,7 +210,7 @@ other manifest fields remain unchanged. Peer SQL/component evidence retains its
 scope; full native capture, producer/recovery qualification, Plans and release
 remain open. Accounting stays inactive and unrelated SHOP WIP is preserved.
 
-## Private native quest major qualification â€” 2026-10-05
+## Private native quest major qualification — 2026-10-05
 
 [The frozen private source and actual component evidence](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)
 record a passing production SQL build, both-engine current SQL cut component,
@@ -240,7 +240,7 @@ no execution evidence transfers to that source-only successor.
 Actual boot, physical fault/restart, durable GIVE/branch
 integration and complete native writer qualification remain open.
 These private candidates are not installed on the maintained branch. No Plan,
-R1â€“R8, full capture, release or activation completion is claimed; inactive
+R1–R8, full capture, release or activation completion is claimed; inactive
 behavior and all original safety gates remain.
 
 The separate [lifecycle source provenance repair](CURRENT61_LIFECYCLE_SOURCE_PIN_REPAIR_2026-10-05.md)
@@ -289,7 +289,7 @@ dependency proof. Seeded history, incomplete capture/refusals and managed-restor
 limitations remain; no evidence transfers to private quest/birth producers or
 proves full Plan5/R8/release completion.
 
-## Current combined source qualification â€” 2026-10-05
+## Current combined source qualification — 2026-10-05
 
 [Current source and evidence](PLAN1_CURRENT_COMBINED_QUALIFICATION_2026-10-05.md) supersede earlier installation/build status.
 Reviewed native/schema61 is installed; both production builds and the reviewed54
@@ -299,7 +299,7 @@ passes with ASan/UBSan. All three original flatfile recovery journeys now pass
 on the exact current61 source, including seven cold restarts; the earlier missing
 fixture failure remains recorded. See [scoped inspector qualification](FLAT_DELETION_INSPECTOR_CURRENT61_QUALIFICATION_2026-10-05.md).
 Equipment/schema milestonef899ef486 is pushed. Private quest ownership/root work
-continues; no full plan, R1â€“R8, release or activation
+continues; no full plan, R1–R8, release or activation
 completion is claimed. Original requirements and inactive gates stay.
 
 Date: 2026-09-30. Review branch: `Community-Duris/Duris:experimental-accounting`.
