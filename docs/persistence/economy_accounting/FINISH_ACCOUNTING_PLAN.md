@@ -1,5 +1,15 @@
 # Finish accounting implementation plan
 
+## Immutable original birth recipe handoff — 2026-10-06
+
+[Accepted codec, wrapper and corrected SQL readback](NATIVE_BIRTH_RECIPE_SOURCE_HANDOFF_2026-10-06.md)
+are frozen and composed into5769 exact private source inputs. The birth-v2 wrapper
+retains original stock choices, preserves v1 readability/native image and original
+limits, and canonically binds the recipe. Parsed parameters already survive in
+literal descriptions. This is source acceptance only: actual factory restoration,
+mutable typed continuation, remaining reset mechanics and native qualification
+remain open. No maintained native install or full Plan/release gate is claimed.
+
 ## Birth refusal owner and full-reader evidence — 2026-10-06
 
 The [private native handoff](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)
