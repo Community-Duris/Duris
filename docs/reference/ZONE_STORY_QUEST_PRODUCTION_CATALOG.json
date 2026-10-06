@@ -57079,6 +57079,237 @@
     {
       "contacts": [
         {
+          "description": "The searching projection accepts four different stars and both scrolls for Mournblade and the key of unmaking, then departs.",
+          "keyword": "sodolum",
+          "mob_vnum": 26608,
+          "name": "the negative material planar projection of Sodolum, the necromancer",
+          "topics": [
+            "searching",
+            "something",
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "The vanquished spirit explains the Dark and accepts the orb of unmaking for coins, experience, an orb of destruction and a glowing key, then departs.",
+          "keyword": "spirit",
+          "mob_vnum": 26644,
+          "name": "the vanquished spirit of the once mighty Sodolum",
+          "topics": [
+            "hi",
+            "hello",
+            "force",
+            "dark",
+            "hope"
+          ]
+        },
+        {
+          "description": "Guardian of Dust; carries the dust star. An encounter does not record a personal victory or recovery.",
+          "keyword": "coldearth",
+          "mob_vnum": 26602,
+          "name": "ColdEarth, guardian of the quasi-plane of dust",
+          "topics": []
+        },
+        {
+          "description": "Guardian of Salt and Ice; carries the salt star. The crystal route uses LICK.",
+          "keyword": "crystallyn",
+          "mob_vnum": 26614,
+          "name": "Crystallyn, mother of the salt and ice quasi-elementals",
+          "topics": []
+        },
+        {
+          "description": "Lord of the volcano; carries the ash star. The frozen volcano route uses EXAMINE.",
+          "keyword": "kkargon",
+          "mob_vnum": 26618,
+          "name": "Kkargon, lord of the volcano",
+          "topics": []
+        },
+        {
+          "description": "Lord of Vacuum; carries the vacuum star. The cyclone route uses ENTER.",
+          "keyword": "nameless",
+          "mob_vnum": 26630,
+          "name": "The nameless one, lord of the vacuum",
+          "topics": []
+        },
+        {
+          "description": "Carries the obsidian key for the pitch-black chest containing the second scroll.",
+          "keyword": "shadowdragon",
+          "mob_vnum": 26622,
+          "name": "Kalekyrnix, father of all prime material planar shadow dragons",
+          "topics": []
+        },
+        {
+          "description": "Carries the shadowy key for his room beyond the stalker entry. A stalker carries the earlier ominous key.",
+          "keyword": "zylerian",
+          "mob_vnum": 26621,
+          "name": "Zylerian, the great lord of the dire stalkers",
+          "topics": []
+        },
+        {
+          "description": "The hive mother carries the sigil of entry for the treasure room containing the first scroll.",
+          "keyword": "mother",
+          "mob_vnum": 26635,
+          "name": "the hive mother of the undead beholders",
+          "topics": []
+        },
+        {
+          "description": "Holds the orb of unmaking at the maelstrom. Its custody is separate from your own victory or the spirit\u2019s accepted return.",
+          "keyword": "dark",
+          "mob_vnum": 26642,
+          "name": "the Dark",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Sodolum seeks four elemental stars and two pieces of the word of unmaking. His lost spirit later asks for the orb taken by the Dark. The journal follows these two accepted returns, with travel leads and exact material checks for the larger journey.",
+      "orientation": [
+        "ASK SODOLUM about SEARCHING or SOMETHING to hear the first request. HI and HELLO also work. ASK SPIRIT about HI, HELLO, FORCE, DARK or HOPE for the later story. These questions give leads; they are not separate completed quests. Both figures share the name SODOLUM, while SPIRIT identifies his vanquished form.",
+        "Bring the stars of ash, salt, dust and vacuum, plus the first and second scrolls of unmaking, to Sodolum\u2019s projection. Carry all six different items loose for the accepted return. He grants Mournblade and the key of unmaking, then departs. Six copies of one star cannot replace the full set.",
+        "ENTER the small crevice in the dusty forest plot to reach Dust, and ENTER its chilly dust pool to return. LICK the huge salt crystal to reach Salt and LICK the chilly crystal to return. EXAMINE the charred volcanic boulder for Ash and EXAMINE the frozen ash pile to return. ENTER the cyclone for Vacuum and the pocket of black gas to return. Travel depends on the actual portal and your successful movement.",
+        "ColdEarth carries the dust star, Crystallyn the salt star, Kkargon the ash star and the Nameless One the vacuum star. The first scroll lies in the beholder treasure room; the hive mother carries its sigil of entry. The second scroll is inside Kalekyrnix\u2019s pitch-black chest; he carries its obsidian key. Shared access or supplied items can fit a return without recording your own guardian victory or first recovery.",
+        "The key of unmaking fits the ward beyond the forest caverns. Farther in, ASK SPIRIT about HOPE for the orb request. The spirit accepts the orb even without an earlier return recorded in your journal. The Dark holds the orb of unmaking. The scrolls\u2019 fragments describe the word of unmaking; saying that word is not a required step here.",
+        "Return the orb of unmaking loose to the spirit. The actual reward list grants coins, experience, an orb of destruction and a glowing key before the spirit departs. The glowing key fits the passage behind the Dark\u2019s maelstrom, where an intelligence pool and monolith await. Their rewards follow separate rules. Potions are separate treasure rather than direct rewards of this return.",
+        "Optional material checks show loose supplies now. Worn or nested proof is different evidence; accepted history remains after the materials are spent. These returns are story quests rather than daily offers. A new day cannot promise that their supplies or departed givers have returned. New journal progress requires active, ready accounting."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "negplane",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:26609,I:26611,I:26616,I:26619,I:26638,I:26643;receive=I:26603,I:26644;disappear=1",
+              "giver_vnum": 26608
+            }
+          ],
+          "id": "word-of-unmaking",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks this exact material carried loose now. Another star, scroll, key, worn item or nested item cannot replace it. Supplied proof does not establish your first recovery, guardian victory or successful route.",
+              "id": "proof-26616",
+              "item_vnums": [
+                26616
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the star of ash loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact material carried loose now. Another star, scroll, key, worn item or nested item cannot replace it. Supplied proof does not establish your first recovery, guardian victory or successful route.",
+              "id": "proof-26609",
+              "item_vnums": [
+                26609
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the star of salt loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact material carried loose now. Another star, scroll, key, worn item or nested item cannot replace it. Supplied proof does not establish your first recovery, guardian victory or successful route.",
+              "id": "proof-26611",
+              "item_vnums": [
+                26611
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the star of dust loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact material carried loose now. Another star, scroll, key, worn item or nested item cannot replace it. Supplied proof does not establish your first recovery, guardian victory or successful route.",
+              "id": "proof-26619",
+              "item_vnums": [
+                26619
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the first scroll of unmaking loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact material carried loose now. Another star, scroll, key, worn item or nested item cannot replace it. Supplied proof does not establish your first recovery, guardian victory or successful route.",
+              "id": "proof-26638",
+              "item_vnums": [
+                26638
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the star of vacuum loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact material carried loose now. Another star, scroll, key, worn item or nested item cannot replace it. Supplied proof does not establish your first recovery, guardian victory or successful route.",
+              "id": "proof-26643",
+              "item_vnums": [
+                26643
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the second scroll of unmaking loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:26609,I:26611,I:26616,I:26619,I:26638,I:26643;receive=I:26603,I:26644;disappear=1",
+                  "giver_vnum": 26608
+                }
+              ],
+              "hint": "Records the accepted six-item return for Mournblade and the key of unmaking, retaining it after spending the proof. The projection departs. Learning the word, opening the ward and the spirit\u2019s later return are separate outcomes.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Return the four stars and both scrolls to Sodolum\u2019s projection"
+            }
+          ],
+          "summary": "Explore Dust, Salt, Ash, Vacuum and the caverns for four different stars and both scrolls. Return all six to Sodolum\u2019s projection for Mournblade and the key of unmaking. The accepted receipt records the return, without requiring your own guardian kills.",
+          "title": "Gather the stars and the word of unmaking"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:26614;receive=C:500000,E:750000,I:26662,I:26667;disappear=1",
+              "giver_vnum": 26644
+            }
+          ],
+          "id": "orb-of-unmaking",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks the orb of unmaking carried loose now. The rewarded orb of destruction, a sword, key or learned word cannot replace it. Matching custody does not establish a first recovery or personal victory.",
+              "id": "proof-orb",
+              "item_vnums": [
+                26614
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the orb of unmaking loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:26614;receive=C:500000,E:750000,I:26662,I:26667;disappear=1",
+                  "giver_vnum": 26644
+                }
+              ],
+              "hint": "Records the accepted orb return after its proof is spent. The spirit departs. This native return does not require earlier six-item return history or record every subsequent vault, pool or monolith reward. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Return the orb of unmaking to the spirit"
+            }
+          ],
+          "summary": "Hear the spirit\u2019s account of the Dark, then bring back the orb of unmaking. The accepted reward includes coins, experience, an orb of destruction and the glowing key. Earlier return history and a personal defeat of the Dark are separate evidence.",
+          "title": "Return the orb to Sodolum\u2019s spirit"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Town inn. The room supports the shared rent command; Slagtooth's invitation is not a journal quest or a verified lodging journey.",
           "keyword": "slagtooth",
           "mob_vnum": 27001,

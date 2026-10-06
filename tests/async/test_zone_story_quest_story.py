@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 148 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 149 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -432,6 +432,13 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
  assert 'Accounting currently blocks' in s['summary'] and s['steps'][-1]['contracts']==s['contracts']
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
+
+
+negplane=next(m for m in catalog['story_mappings'] if m['source_area']=='negplane')
+assert (negplane['schema_version'],negplane['revision'],negplane['coverage'])==(3,1,'complete') and not negplane['exclusions']
+assert len(negplane['stories'])==2 and len(negplane['contacts'])==10 and sum(len(c['topics']) for c in negplane['contacts'])==9
+assert [len(s['steps']) for s in negplane['stories']]==[7,2] and sum(t.get('optional',False) for s in negplane['stories'] for t in s['steps'])==7
+assert report['eligible_by_zone']['266']==2
 
 
 voluntown=next(m for m in catalog['story_mappings'] if m['source_area']=='Voluntown')

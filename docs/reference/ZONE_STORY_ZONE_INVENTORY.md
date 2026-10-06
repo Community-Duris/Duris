@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 148 authored journals.
+2668 distinct Q contracts; 149 authored journals.
 
 Regenerate with:
 
@@ -160,7 +160,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | the Mushroom Caverns (`mushroom_caverns`) | 3 | 11 | 2 | Yes | [1 × a half of an ancient amulet; 1 × a half of an ancient amulet → the bronze Zarbonesti seal of Kryz'Kyssik, an adamantium-hafted flail](../../areas/qst/mobs_underdark.qst#L127) | — |
 | Myconid Mushroom Forest (`myconid`) | 1 | 2 | 0 | Fallback | [1 × spores of the giant mushroom → native reward/response](../../areas/qst/myconid.qst#L18) | — |
 | Myrloch Vale (`myrloch_vale`) | 4 | 4 | 0 | Fallback | [1 × an old key → a flaming key](../../areas/qst/myrloch_vale.qst#L33) | inn, item_switch, unblock_on_death |
-| Negative Material Plane (`negplane`) | 2 | 6 | 0 | Fallback | [1 × the star of ash; 1 × the star of salt; 1 × the star of dust; other required items → an elaborate rune covered sword named 'Mournblade', the key of unmaking](../../areas/qst/negplane.qst#L24) | artifact_stone, elvenkind_cloak, neg_orb, neg_pocket, orb_of_destruction, sanguine |
+| Negative Material Plane (`negplane`) | 2 | 6 | 0 | Yes | [1 × the star of ash; 1 × the star of salt; 1 × the star of dust; other required items → an elaborate rune covered sword named 'Mournblade', the key of unmaking](../../areas/qst/negplane.qst#L24) | artifact_stone, elvenkind_cloak, neg_orb, neg_pocket, orb_of_destruction, sanguine |
 | New Cave city (`new_cavecity`) | 1 | 0 | 0 | Fallback | [1 × A mystic runed stone tablet; 1 × the still-beating heart of Bel; 1 × the orb of unmaking → the scroll of Intelligence](../../areas/qst/new_cavecity.qst#L16) | dranum_jurtrem, torment |
 | Ailvio, Duris Newbie Outpost (`newbie`) | 116 | 160 | 4 | Yes | [1 × eyes of a bullfrog; 1 × a green herb; 1 × a few drops of dragons blood; other required items → a ceramic chillum, a hefty bag](../../areas/qst/newbie.qst#L529) | burbul_map_obj, chyron_search_obj, inn, newbie_portal, newbie_spellup_mob, pet_shops |
 | The City of Newhaven (`newhaven`) | 9 | 2 | 0 | Yes | [1 × a frayed cloth collar; 1 × the bloody heart of Mixt → a Veldian collar](../../areas/qst/newhaven.qst#L331) | inn, magic_pool |

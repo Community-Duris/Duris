@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 148 &&
+		require(catalog.story_mappings.size() == 149 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,116 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "negplane"; });
+			const auto &stars = story_for("negplane", "word-of-unmaking");
+			const auto &orb = story_for("negplane", "orb-of-unmaking");
+			require(mapping.stories.size() == 2 && mapping.contacts.size() == 10 &&
+					stars.steps.size() == 7 && orb.steps.size() == 2,
+				"Negative Plane mapping scope failed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 266, 26600, 100, "arrival") ==
+					result::applied,
+				"Negative Plane discovery failed");
+			require(journey.meet_npc(7, 42, 26642, 26859, 102) == result::applied &&
+					journey.meet_npc(7, 42, 26635, 26830, 102) ==
+						result::applied,
+				"Negative Plane context encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 266, 10, 1, 103, false, false);
+			require(journal.find("] " + stars.title + "\r\n") == std::string::npos &&
+					journal.find("] " + orb.title + "\r\n") ==
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 266).completed == 0,
+				"Negative Plane Dark or hive encounter forged Sodolum completion");
+			require(journey.meet_npc(7, 42, 26608, 26600, 104) == result::applied &&
+					journey.meet_npc(7, 42, 26644, 26857, 104) ==
+						result::applied,
+				"Negative Plane Sodolum form encounters failed");
+			const auto status = [&](const auto &story, size_t row, const char *state)
+			{
+				const auto start = journal.find("] " + story.title + "\r\n");
+				require(start != std::string::npos,
+					"Negative Plane visible story missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     story.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			for (int v :
+			     { 26602, 26603, 26623, 26632, 26644, 26645, 26662, 26663, 26667 })
+				supplies.carried[v] = 1;
+			supplies.equipped[18] = 26616;
+			journal = journey.render_journal(7, 42, 266, 10, 1, 106, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 6; ++i)
+				require(status(stars, i, "Missing now"),
+					"Negative Plane held star, keys, note or rewards replaced six proofs");
+			require(status(orb, 0, "Missing now"),
+				"Negative Plane destruction orb replaced unmaking orb");
+			supplies = {};
+			supplies.carried[26616] = 6;
+			for (int v : { 26609, 26611, 26619, 26638 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 266, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(stars, 0, "Ready now") && status(stars, 4, "Ready now") &&
+					status(stars, 5, "Missing now"),
+				"Negative Plane duplicate stars replaced second scroll");
+			supplies.carried[26643] = 1;
+			supplies.carried[26614] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 266, 10, 1, 108, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 6; ++i)
+				require(status(stars, i, "Ready now"),
+					"Negative Plane supplied exact proof not ready");
+			require(status(orb, 0, "Ready now") && status(orb, 1, "Pending") &&
+					status(stars, 6, "Pending") &&
+					journey.serialize_state() == before,
+				"Negative Plane supplies forged route, phase, kills or accepted history");
+			// The spirit receipt is independent of the projection return and does not prove a phase transformation.
+			record(journey, orb.contracts.front(), "negplane-orb", 266, 26857);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 266, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(orb, 1, "Recorded") && status(orb, 0, "Missing now") &&
+					status(stars, 6, "Pending") &&
+					journey.progress_for_zone(7, 42, 266).completed == 1 &&
+					journey.progress_for_zone(7, 42, 266).total == 2,
+				"Negative Plane spirit forced an earlier return gate or spent proof erased receipt");
+			record(journey, stars.contracts.front(), "negplane-stars", 266, 26600);
+			journal = journey.render_journal(7, 42, 266, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(stars, 6, "Recorded") && status(stars, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 266).completed == 2,
+				"Negative Plane accepted first return lost independent history");
+			auto replay = completion(orb.contracts.front(), "negplane-orb", 120);
+			replay.transaction.zone_number = 266;
+			replay.transaction.room_vnum = 26857;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Negative Plane exact replay duplicated return");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 266).completed == 2,
+				"Negative Plane cold recovery lost accepted history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 266, 26600, 100, "arrival") ==
+					result::applied,
+				"Negative Plane raw discovery failed");
+			record(historical, orb.contracts.front(), "negplane-raw", 266, 26857);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 266).completed == 1 &&
+					authored.evidence_for(orb.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Negative Plane raw-to-authored recovery lost native receipt");
 		}
 
 		{
