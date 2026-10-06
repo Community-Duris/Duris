@@ -7,6 +7,11 @@ qualification passes on both engines. Full Plan1 and R1–R8 completion remain u
 
 ## Current source and delivery
 
+- Equipment/schema milestone `f899ef4862f61652e7cce4707bb6f7c137ca39cb` is committed
+  and pushed normally to `Community-Duris/Duris:experimental-accounting`, with exact
+  remote readback. The bounded evidence below supports that milestone; full plan
+  acceptance and world/producer capture remain unfinished.
+
 - Published branch milestone: `3e93d4cb8c805bb042fefc0f88c5b1cbe84f5539`,
   the separate restore-session fixture correction, verified on
   `Community-Duris/Duris:experimental-accounting`.
@@ -99,7 +104,11 @@ flatfile owner21) in756.886 seconds before the final flatfile physical compile
 fails because SQL-only fixture includes bring both real and client-free MYSQL
 definitions into one translation unit. The earlier pointer/value fix is retained.
 A narrow header guard correction is installed; the unchanged74-case qualification
-is running on a fresh declared source/artifact volume. That component is uncommitted. The prior timed-out source-only and host-storage
+was attempted on a fresh declared source/artifact volume. It passes21 SQL-owner
+case executions, then hits the unchanged300-second SQL-physical compile limit;
+523.051688 seconds total, exit1. The final flatfile mode is not reached. Thirty
+regular artifacts export/hash-verify before owned cleanup. The component stays
+uncommitted and unqualified; no unchanged retry is started. The prior timed-out source-only and host-storage
 attempts remain retained; they establish no case coverage.
 
 The private Plan4 quest successor retains the original sequential native decision,
@@ -110,14 +119,58 @@ successor. Review found one remaining missing replay check for stored failure
 stage and durable revision. The frozen narrow receipt successor adds the shared
 check in both paths; independent source review accepts it. Actual corruption
 controls remain queued for the composed major-plan qualification.
-No private quest code is installed or qualified. Actual publication/ACK, durable
+Primary's private four-file borrowed receipt/publication/full-held-body interface
+now passes narrow independent source review after separating publication into
+`player_save_native_quest_publication_owner`. Its original preparation friend
+cannot invoke the private publication or ACK entry. Pins `df0f1a149f20b57a044a5755373709283811ab317f08ac1b180052dd890c76bf`.
+Original consumed-prefix order and completion notification terms are being
+frozen into the still-private v12 command; complete SQL current cut and physical
+publication remain required. No private quest code is installed or qualified. Actual publication/ACK, durable
 cold frame recovery, cash/birth lifecycle and flat parity remain unfinished.
 
 The Plan5 [retention handoff](PLAN5_CURRENT_RETENTION_AND_INSPECTOR_HANDOFF_2026-10-05.md)
 adds a concrete shared inspector recipe gate: retain its original75-source prefix
 and add only the actual baseline adapter/codec providers. Its successful77-source
 private diagnostic and canonical56 journeys remain separate from current61 proof.
-That shared recipe is not yet changed here.
+The shared recipe now appends only those two actual providers (75→77 sources).
+All1,521 recorded production source/migration inputs match the reused maintained
+servers, and both actual binary hashes match. The current61 original inspector passes in470.428998 seconds with unchanged
+ASan/UBSan assertions, including corrupt refusal/repair and all18 erasure journal
+boundaries. Its stderr is empty. Exact inspector SHA256:
+`0b9e6aab52ce7232fd8cece9910a2fefe626e1c2fbf172103d85316789225897`.
+Attempt `bin/tests/flat-delete-inspector-current61-directory-native-linux-20261005-e64a41e90dd7`
+retains ten hash-verified artifacts and completed owned cleanup. The subsequent
+original three-journey runner exits1 after163.599719 seconds before gameplay:
+the isolated source packet lacks `/suite/lib`. Its helper build passes in137.444
+seconds with zero object reuse; that build is not a journey pass.
+
+The corrected successor adds only2,655 exact tracked public HEAD fixture inputs
+from `lib`, `areas_mini` and `areas` (165,241,866 bytes), including two declared
+relative area-help symlinks. Original3,087 code/test/migration inputs and all
+original cases, flags and deadlines are unchanged. It reuses only the verified
+inspector binary from the successful component attempt; it does not repeat or
+claim same-run inspector execution. Source pins:
+`8dfd2bed2360f55eb200b302c5c8372924e40128d625b7124113c5db34108633`.
+Attempt `bin/tests/flat-retention-public-fixture-native-linux-20261005-179374bd82b3`
+exits0 in350.177339 seconds with empty stderr. All three original fresh
+flatfile journeys pass: character deletion, durable-fence failure and uncertain
+publication, including seven cold restarts. Its real helper compiles afresh in
+140.402 seconds with zero object reuse; all5,742 source bytes/modes are unchanged.
+Twenty-one regular artifacts export/hash-verify before the runner and both owned
+volumes are removed. The [scoped milestone report](FLAT_DELETION_INSPECTOR_CURRENT61_QUALIFICATION_2026-10-05.md)
+records original native assertions, exact provenance and inactive seeded-history
+limits. This qualifies the inspector recipe fix, not fullR8/release completion.
+
+The private native quest current-cut SQL reader has also passed narrow independent
+source review after correcting rejected-consumption destruction revision to
+`current >= max(expected, receipt)`. This preserves successful/acceptance checks,
+early-zero receipt bounds and both exact repository carriers. Corrected manifest:
+`ab83a29522759606a4f90850458ea96e17c8178df5cfeba2d36d5b78a36f19c3`;
+SQL source `99b64cef0cb2fab1ffc64f0defce641e3e81077dd3117b106e38e9d2e59cfbb9`.
+Actual database14/15/16 and early-zero boundary cases remain queued for the
+composed major slice. The gameplay driver/runtime projection and original
+consumed-prefix notification compatibility are still private implementation.
+No private quest compiler, database, gameplay, recovery or ACK pass is claimed.
 
 Complete native/world capture, qualified real writers/player journeys, activation
 owner acceptance, applicable R1–R8 and full release qualification remain open.
