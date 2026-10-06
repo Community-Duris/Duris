@@ -1,5 +1,12 @@
 # Double-entry economy: remaining requirements
 
+## Plan2 player-give source classification — 2026-10-05
+
+[The metadata repair](PLAYER_GIVE_SOURCE_CLASSIFICATION_2026-10-05.md) records
+the existing active producer without promoting backend evidence. Original55
+coverage methods and matrix/normal/runtime metadata checks pass. Actual peer/split
+gameplay, publication and restart remain open; no Plan or R1–R8 gate closes.
+
 ## Private native quest major qualification — 2026-10-05
 
 [The frozen private source and actual component evidence](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)

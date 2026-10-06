@@ -1,5 +1,13 @@
 # Accounting review status — 2026-10-04
 
+## Player-give source metadata corrected — 2026-10-05
+
+[The exact metadata repair](PLAYER_GIVE_SOURCE_CLASSIFICATION_2026-10-05.md)
+records the existing active typed wallet producer. Original55 coverage methods,
+matrix, normal contracts, runtime compatibility and whitespace checks pass.
+Native source and inactive behavior are unchanged. Backend gameplay evidence,
+peer/split native journeys, Plans1–5 and release remain open.
+
 ## Original baseline qualification and narrow reader handoff — 2026-10-05
 
 [The retained original-owner evidence](PLAN1_BASELINE_NATIVE_QUALIFICATION_HANDOFF_2026-10-05.md) records both-engine genuineC05
