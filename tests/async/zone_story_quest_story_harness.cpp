@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 167 &&
+		require(catalog.story_mappings.size() == 168 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,170 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "mril"; });
+			require(mapping.stories.size() == 3 && mapping.contacts.size() == 12 &&
+					mapping.revision == 1,
+				"Miaeril journal scope failed");
+			const auto &hooded = story_for("mril", "hooded-heart");
+			const auto &uduku = story_for("mril", "uduku-heart");
+			const auto &fish = story_for("mril", "salmon-feast");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 337)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 3 && dailies == 3,
+				"Miaeril staying returns lost distinct native daily eligibility");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 337, 33764, 100, "arrival") ==
+					result::applied,
+				"Miaeril discovery failed");
+			for (const auto &[v, room] :
+			     { std::pair{ 33720, 33752 }, std::pair{ 33718, 33712 },
+			       std::pair{ 33710, 33711 }, std::pair{ 33704, 33743 },
+			       std::pair{ 33714, 33710 }, std::pair{ 33712, 33761 } })
+				require(journey.meet_npc(7, 42, v, room, 101) == result::applied,
+					"Miaeril contextual encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 337, 10, 1, 102, false, false);
+			for (const auto &s : mapping.stories)
+				require(journal.find("] " + s.title + "\r\n") == std::string::npos,
+					"Miaeril source, pet or service encounter exposed accepting giver card");
+			require(journey.meet_npc(7, 42, 33700, 33718, 103) == result::applied,
+				"Miaeril hooded encounter failed");
+			journal = journey.render_journal(7, 42, 337, 10, 1, 104, false, false);
+			for (const auto &s : mapping.stories)
+				require((journal.find("] " + s.title + "\r\n") !=
+					 std::string::npos) == (s.id == hooded.id),
+					"Miaeril hooded encounter exposed Uduku or fish return");
+			require(journey.meet_npc(7, 42, 33701, 33754, 105) == result::applied &&
+					journey.meet_npc(7, 42, 33711, 33711, 105) ==
+						result::applied,
+				"Miaeril distinct accepting encounters failed");
+			const auto section = [&](const auto &s)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos, "Miaeril card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at,
+						      end == std::string::npos ? end : end - at);
+			};
+			const auto status = [&](const auto &s, size_t row, const char *state)
+			{
+				return section(s).find(std::string("[") + state + "] " +
+						       s.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			const auto before = journey.serialize_state();
+			for (const auto &s : mapping.stories)
+			{
+				supplies = {};
+				supplies.carried[s.steps[0].item_vnums.front()] = s.steps[0].count;
+				journal = journey.render_journal(7, 42, 337, 10, 1, 106, false,
+								 false, &supplies);
+				require(status(s, 0, "Ready now") && status(s, 1, "Pending"),
+					"Miaeril exact supplied proof fabricated accepted history");
+				supplies.carried.clear();
+				supplies.equipped[18] = s.steps[0].item_vnums.front();
+				journal = journey.render_journal(7, 42, 337, 10, 1, 107, false,
+								 false, &supplies);
+				require(status(s, 0, "Missing now"),
+					"Miaeril held proof substituted loose offering");
+			}
+			supplies = {};
+			supplies.carried[33709] = 4;
+			journal = journey.render_journal(7, 42, 337, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(fish, 0, "Missing now") && status(fish, 1, "Pending"),
+				"Miaeril four fish prepared five-instance offering");
+			supplies = {};
+			for (int v : { 33700, 33702, 33703, 33705, 33706, 33707, 33708, 33711,
+				       33712, 33713, 33714, 33715, 33716, 31317, 31315 })
+				supplies.carried[v] = 5;
+			journal = journey.render_journal(7, 42, 337, 10, 1, 109, false, false,
+							 &supplies);
+			for (const auto &s : mapping.stories)
+				require(status(s, 0, "Missing now") && status(s, 1, "Pending"),
+					"Miaeril reward, other food or skull possession forged proof");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 337).completed == 0,
+				"Miaeril preparation fabricated catch, search, feeding or accepted history");
+			supplies = {};
+			supplies.carried[33710] = 1;
+			supplies.carried[33709] = 5;
+			journal = journey.render_journal(7, 42, 337, 10, 1, 110, false, false,
+							 &supplies);
+			require(status(hooded, 0, "Ready now") && status(uduku, 0, "Ready now") &&
+					status(fish, 0, "Ready now"),
+				"Miaeril one shared heart or five fish preparation failed");
+			require(section(hooded).find("cloak of sorrow") != std::string::npos &&
+					section(hooded).find("starts hidden") !=
+						std::string::npos &&
+					section(uduku).find("cloak of jubilation") !=
+						std::string::npos &&
+					section(fish).find("pet feeding") != std::string::npos &&
+					section(fish).find("300 pages") != std::string::npos,
+				"Miaeril Ready now hid distinct reward, hidden proof or feeding/book guidance");
+			require(journal.find("five distinct skulls") != std::string::npos &&
+					journal.find("room listeners") != std::string::npos,
+				"Miaeril outside lead or addressed-alias guidance missing");
+			// Synthetic authoritative receipts verify projection/recovery; no played source, feeding or spell grants are claimed.
+			record(journey, hooded.contracts.front(), "mril-hooded", 337, 33718);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 337, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(hooded, 1, "Recorded") && status(uduku, 0, "Missing now") &&
+					status(uduku, 1, "Pending") && status(fish, 1, "Pending") &&
+					journey.progress_for_zone(7, 42, 337).completed == 1,
+				"Miaeril spent shared heart completed Uduku or fish return");
+			supplies.carried[33710] = 1;
+			journal = journey.render_journal(7, 42, 337, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(uduku, 0, "Ready now") && status(uduku, 1, "Pending") &&
+					status(hooded, 1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 337).completed == 1,
+				"Miaeril reacquired heart altered separate histories");
+			record(journey, uduku.contracts.front(), "mril-uduku", 337, 33754);
+			record(journey, fish.contracts.front(), "mril-fish", 337, 33711);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 337, 10, 1, 122, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 337).completed == 3,
+				"Miaeril three exact receipts classification failed");
+			for (const auto &s : mapping.stories)
+				require(status(s, 0, "Missing now") && status(s, 1, "Recorded"),
+					"Miaeril spent proof restored inventory or lost history");
+			auto replay = completion(hooded.contracts.front(), "mril-hooded", 120);
+			replay.transaction.zone_number = 337;
+			replay.transaction.room_vnum = 33718;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Miaeril replay duplicated return");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 337).completed == 3,
+				"Miaeril cold recovery lost histories");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 337, 33764, 100, "arrival") ==
+					result::applied,
+				"Miaeril raw discovery failed");
+			for (const auto &s : mapping.stories)
+			{
+				const auto tx = "mril-raw-" + s.id;
+				record(raw, s.contracts.front(), tx.c_str(), 337, 33764);
+			}
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 337).completed == 3,
+				"Miaeril raw-to-authored recovery lost independent histories");
 		}
 
 		{

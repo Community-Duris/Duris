@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 167 authored journals.
+2668 distinct Q contracts; 168 authored journals.
 
 Regenerate with:
 
@@ -156,7 +156,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Mosswood (`moss`) | 1 | 1 | 0 | Fallback | [1 × a large beet → native reward/response](../../areas/qst/moss.qst#L9) | — |
 | The Mountain of the Banished (`mount`) | 3 | 4 | 0 | Yes | [1 × the essence of Tolog; 1 × the essence of Pakar; 1 × the essence of Zooox; other required items → the symbol of chaos, the visor of destruction](../../areas/qst/mount.qst#L56) | — |
 | Mountain Tracts of the Untamed (`mountaintracks`) | 4 | 4 | 1 | Yes | [1 × a green dragon scale; 1 × a vampire's tooth → a glowing green potion](../../areas/qst/mountaintracks.qst#L57) | — |
-| Miaeril Village (`mril`) | 3 | 3 | 0 | Fallback | [5 × a freshly killed salmon → the lost book of 'Magic'](../../areas/qst/mril.qst#L48) | — |
+| Miaeril Village (`mril`) | 3 | 3 | 0 | Yes | [5 × a freshly killed salmon → the lost book of 'Magic'](../../areas/qst/mril.qst#L48) | — |
 | the Mushroom Caverns (`mushroom_caverns`) | 3 | 11 | 2 | Yes | [1 × a half of an ancient amulet; 1 × a half of an ancient amulet → the bronze Zarbonesti seal of Kryz'Kyssik, an adamantium-hafted flail](../../areas/qst/mobs_underdark.qst#L127) | — |
 | Myconid Mushroom Forest (`myconid`) | 1 | 2 | 0 | Fallback | [1 × spores of the giant mushroom → native reward/response](../../areas/qst/myconid.qst#L18) | — |
 | Myrloch Vale (`myrloch_vale`) | 4 | 4 | 0 | Yes | [1 × an old key → a flaming key](../../areas/qst/myrloch_vale.qst#L33) | inn, item_switch, unblock_on_death |
