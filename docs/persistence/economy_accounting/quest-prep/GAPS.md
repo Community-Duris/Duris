@@ -54,3 +54,20 @@ New owned captured-state checks cover exact effects, refusal/replay/refund/ACK a
 ordinary later-move invariants for all selected cases. Canonical SQL/native/world
 proof and native batch execution remain separate. Fixture variants and original
 recipient retirement/held checks are being completed independently.
+
+Recovery additions close independently implementable preparation gaps: exact/
+shortage/spare/wrong-kind supplied variants; full-world roots for every case;
+exact original NPC-selected roots, input/reward/currency/XP/source row assertions;
+D residual stock/cash and replacement independence; stable held evidence;
+original-linked refund and replay; historical ACK and later legitimate move.
+Fourteen counterfactual component tests discriminate corrupt/missing evidence;
+no successful unit cut is native authority. The existing maintained pure native
+context test also passed on current providers, with its own limited scope.
+
+The remaining gaps are actual shared admission/publication/runtime/fault/capture
+and original historical ACK/pair capability. In particular current native_publish
+explicitly refuses success with disappear=true, even though observe_give's
+replacement-generation predicate now passes. RECOVERY_BATCH.md records precise
+requests. No additional prep-only birth/receipt/coordinator implementation is
+needed or permitted. Existing native qualification owners must supply their
+genuine authority at the batch boundary.

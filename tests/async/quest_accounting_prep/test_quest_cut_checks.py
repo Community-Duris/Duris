@@ -2,17 +2,25 @@
 """Counterfactual SQL-shaped cuts test the oracle, never native authority."""
 
 import copy
+import hashlib
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import struct
 import unittest
 
 from case_data import ACCOUNTING_PIN, blocks
 import quest_cut_checks as checks
-from test_reconcile_economy_accounting import source_identity
+from test_reconcile_economy_accounting import source_identity, key
+from test_economic_sql_canonical_audit import native_mobile_image, native_mobile_stock
 
 
 def empty_cut(case_id):
     cut = {name: [] for name in ("items", "ownership_events", "currency", "history", "mobiles",
                                 "operations", "inbox", "postings", "source_claims", "item_references",
-                                "obligations", "xp_entitlements", "migrations")}
+                                "obligations", "xp_entitlements", "migrations", "effects")}
     cut["meta"] = dict(case=case_id, pid=42, source_commit=ACCOUNTING_PIN,
                        binary_sha256="ab" * 32, schema_manifest_sha256="cd" * 32,
                        lineage="11" * 16, epoch="22" * 16,
@@ -45,7 +53,8 @@ def root(cut, operation_id, *, reason=33, amounts=()):
 
 def event(cut, uid, operation, event_index, before_owner, after_owner, revision):
     cut["ownership_events"].append(dict(operation_id=operation, event_index=event_index,
-        item_uid=uid, from_owner_type=before_owner, to_owner_type=after_owner, item_revision=revision))
+        item_uid=uid, from_owner_type=before_owner, to_owner_type=after_owner,
+        to_owner_id=42 if after_owner == 1 else 29217 if after_owner == 3 else 0, item_revision=revision))
     cut["item_references"].append(dict(operation_id=operation, legacy_operation_id=operation,
         legacy_event_index=event_index, item_uid=uid, before_revision=revision - 1, after_revision=revision))
 
@@ -81,6 +90,63 @@ def complete_cuts(case_id, reward_vnum):
     return before, after, selected, rewards
 
 
+def unit_mobile(instance, *, retired=False, birth="46", transition="49", source_identity_byte="47"):
+    # Reuse maintained modeled wire fixture solely to test the oracle. This never
+    # supplies a native birth or touches SQL/journals; no runtime authority claimed.
+    image = bytearray(native_mobile_image(state=2 if retired else 1, identity=instance,
+                                         items=bytes(4) if retired else native_mobile_stock()))
+    image[40:56] = bytes.fromhex(birth + "00" * 15)
+    image[60] = int(source_identity_byte, 16)
+    struct.pack_into("<ii", image, 104, 16006, 16077)
+    if retired:
+        struct.pack_into("<QQ", image, 116, 3, 4)
+        struct.pack_into("<Q", image, 180, 5)
+    image[132:164] = hashlib.sha256(image[16:132]).digest()
+    image[164:180] = bytes.fromhex(transition + "00" * 15)
+    if not retired:
+        struct.pack_into("<i", image, 250, 16016)
+    image[-32:] = hashlib.sha256(image[:-32]).digest()
+    return dict(mobile_instance_id=instance, mobile_revision=3 if retired else 2,
+                stock_revision=4 if retired else 3, lifetime_state=2 if retired else 1,
+                canonical_image=image.hex())
+
+
+def d_cuts():
+    before = empty_cut("QP03")
+    before["meta"]["mobile_instance_ids"] = [900, 901]
+    before["mobiles"] = [unit_mobile(900), unit_mobile(901, birth="56", source_identity_byte="57")]
+    # Both modeled forests use UID81; change the replacement's validated UID to82.
+    replacement = bytearray.fromhex(before["mobiles"][1]["canonical_image"])
+    struct.pack_into("<Q", replacement, 234, 82)
+    replacement[-32:] = hashlib.sha256(replacement[:-32]).digest()
+    before["mobiles"][1]["canonical_image"] = replacement.hex()
+    for entry in before["mobiles"]:
+        image = bytes.fromhex(entry["canonical_image"])
+        birth = image[40:56].hex()
+        root(before, birth, reason=38)
+        before["operations"][-1]["source_event"] = image[56:104].hex()
+        before["source_claims"][-1]["source_event"] = image[56:104].hex()
+    before["items"] = [item(81, 16016, owner=12), item(82, 16016, owner=12)]
+    before["items"][0]["owner_id"] = 900
+    before["items"][1]["owner_id"] = 901
+    after = copy.deepcopy(before)
+    after["mobiles"][0] = unit_mobile(900, retired=True, transition="66")
+    operation = "66" + "00" * 15
+    after["items"][0].update(owner_type=8, owner_id=0, state=2, item_revision=2)
+    root(after, operation, reason=34, amounts=(-8765, 8765))
+    event(after, 81, operation, 0, 12, 8, 2)
+    # This key deliberately differs from the NPC UID, as native mapping requires.
+    account = key(1, 7777, 12)
+    account = before["meta"]["lineage"] + account[32:]
+    after["effects"].append(dict(operation_id=operation, account_index=0, account_key=account,
+        before_copper=5, before_silver=6, before_gold=7, before_platinum=8,
+        after_copper=0, after_silver=0, after_gold=0, after_platinum=0,
+        before_revision=4, after_revision=5))
+    after["postings"][0]["account_index"] = 0
+    after["postings"][1]["account_index"] = 1
+    return before, after, account
+
+
 class QuestCutTests(unittest.TestCase):
     def test_static_contracts_require_exact_roots_and_row_links(self):
         for case_id, reward in (("QP01", 44192), ("QP02", 19009), ("QP03", 16075),
@@ -112,6 +178,28 @@ class QuestCutTests(unittest.TestCase):
             checks.static_complete(before, after, "QP01", selected[:-1], rewards, [150], 44192)
         with self.assertRaises(checks.CutError):
             checks.static_complete(before, after, "QP01", selected + [selected[0]], rewards, [150], 44192)
+
+    def test_original_npc_roots_cannot_borrow_replacement_stock(self):
+        before, after, selected, rewards = complete_cuts("QP03", 16075)
+        before["meta"]["mobile_instance_ids"] = after["meta"]["mobile_instance_ids"] = [900, 901]
+        for entry in before["items"][:-1]:
+            entry.update(owner_type=12, owner_id=900)
+        checks.static_complete(before, after, "QP03", selected, rewards, [150], 16075, original_mobile=900)
+        # Same-VNUM independently born reset stock is not a third quest reward.
+        operation = "99" * 16
+        root(after, operation, reason=38)
+        source = source_identity(kind=10, identity="99")
+        after["operations"][-1]["source_event"] = source
+        after["source_claims"][-1]["source_event"] = source
+        reset_stock = item(999, 16015, owner=12)
+        reset_stock["owner_id"] = 901
+        after["items"].append(reset_stock)
+        event(after, 999, operation, 0, 7, 12, 1)
+        after["ownership_events"][-1]["to_owner_id"] = 901
+        checks.static_complete(before, after, "QP03", selected, rewards, [150], 16075, original_mobile=900)
+        before["items"][0]["owner_id"] = 901
+        with self.assertRaises(checks.CutError):
+            checks.static_complete(before, after, "QP03", selected, rewards, [150], 16075, original_mobile=900)
 
     def test_qp02_all_four_costs_are_preserved(self):
         for reward, fee in ((19007, 1000), (19008, 2000), (19009, 0), (19010, 10000)):
@@ -207,6 +295,70 @@ class QuestCutTests(unittest.TestCase):
                 change(invalid)
                 with self.subTest(case=case_id, fee=fee), self.assertRaises(checks.CutError):
                     checks.refunded(before, invalid, fee)
+
+    def test_original_d_requires_stock_cash_birth_and_untouched_replacement(self):
+        before, after, account = d_cuts()
+        checks.retired(before, after, 900, 901, account)
+        mutations = (
+            lambda a: a["mobiles"].pop(0),
+            lambda a: a["mobiles"][0].update(canonical_image=before["mobiles"][0]["canonical_image"]),
+            lambda a: a["mobiles"][1].update(stock_revision=4),
+            lambda a: a["items"][0].update(state=1),
+            lambda a: a["items"][1].update(item_revision=2),
+            lambda a: a["operations"].pop(0),
+            lambda a: a["effects"].clear(),
+            lambda a: a["effects"][0].update(before_copper=4),
+            lambda a: a["postings"][0].update(copper_value=-1),
+            lambda a: a["player"][0].update(exp=1001),
+        )
+        for change in mutations:
+            invalid = copy.deepcopy(after)
+            change(invalid)
+            with self.subTest(change=mutations.index(change)), self.assertRaises((checks.CutError, ValueError)):
+                checks.retired(before, invalid, 900, 901, account)
+        # Historical v1 is explicitly unknown cash, never an inferred zero.
+        invalid = copy.deepcopy(before)
+        old = native_mobile_image(version=1, identity=900)
+        invalid["mobiles"][0]["canonical_image"] = old.hex()
+        with self.assertRaises(checks.CutError):
+            checks.mobile(invalid, 900)
+
+    def test_started_unreturned_holds_original_without_authorizing_replay(self):
+        cut = empty_cut("QP03")
+        operation = "88" * 16
+        root(cut, operation)
+        cut["obligations"].append(dict(offering_operation_id=operation, acknowledged=0, continuation="unit-only"))
+        checks.held(cut, copy.deepcopy(cut), operation)
+        for change in (lambda a: a["obligations"].clear(),
+                       lambda a: a["obligations"][0].update(acknowledged=1),
+                       lambda a: a["player"][0].update(exp=1001),
+                       lambda a: a["inbox"].clear()):
+            invalid = copy.deepcopy(cut)
+            change(invalid)
+            with self.assertRaises(checks.CutError):
+                checks.held(cut, invalid, operation)
+
+    def test_collector_refuses_unsafe_target_before_binary_or_sql_access(self):
+        # Actual CLI refusal only; no mocked successful SQL, epoch or activation.
+        with tempfile.TemporaryDirectory(prefix="quest-prep-guard-") as directory:
+            output = Path(directory) / "must-not-exist.json"
+            command = [sys.executable, str(Path(__file__).with_name("capture_quest_cut.py")),
+                       "--case", "QP03", "--database", "quest_journey_test_" + "a" * 12,
+                       "--pid", "42", "--lineage", "11" * 16, "--epoch", "22" * 16,
+                       "--server", str(Path(directory) / "missing-binary"),
+                       "--server-sha256", "ab" * 32, "--source-commit", ACCOUNTING_PIN,
+                       "--output", str(output)]
+            for disposable, host, database in (("0", "127.0.0.1", command[5]),
+                                                ("1", "remote.invalid", command[5]),
+                                                ("1", "127.0.0.1", "production")):
+                arguments = command.copy()
+                arguments[5] = database
+                result = subprocess.run(arguments, env=dict(os.environ, TEST_DB_DISPOSABLE=disposable,
+                    TEST_DB_HOST=host), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=10)
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("refused", result.stderr)
+                self.assertNotIn("missing-binary", result.stderr)
+                self.assertFalse(output.exists())
 
     def test_historical_ack_never_follows_from_absent_frames_or_actor(self):
         cut = empty_cut("QP06")

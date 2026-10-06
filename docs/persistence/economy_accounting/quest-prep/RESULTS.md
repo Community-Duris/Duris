@@ -1,37 +1,65 @@
-# Continued recovery preparation � first checkpoint
+# Quest prep verification — current recovery bundles
 
-Source `a5a1f4b196496d50a6f46afecfec03aba3e66190`, previous tested source
-`2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a`, merge
-`920a7bb8d7aae5400725fad0c70b505e4d263052` preserves prep history. Current primary
-handoffs confirm both packs consumed and shared QP06/move options installed.
-The selected native/static/dynamic owner and area diff between pins is empty.
+Accounting source: `a5a1f4b196496d50a6f46afecfec03aba3e66190`. Original base:
+`17c033d69316b21da8598791fc95cae79baa8dc2`; previous tested source:
+`2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a`; research PR678:
+`55905eac1906cf59405764407f9d22497cccfff3`. Merge:
+`920a7bb8d7aae5400725fad0c70b505e4d263052`. Schema manifest SHA256:
+`1fddd009cc67bba940efba28c2afc3d16d65ea8a476410034cd77c90a0a9aea2`.
+Selected native/static/dynamic owner and production-area diff from previous pin
+is empty. Shared QP06 fixture/move options are new and exercised through their
+actual interface. Original-to-current owner changes were covered by the retained
+refresh below, including superseded legacy selector/recipient seams.
 
-New `quest_cut_checks.py` protects concrete native-row expectations: exact kinds,
-counts, UID retirement/issuance, untouched spares; each native effect's original
-reference, receipt and source claim; checked copper/balance; frozen admitted XP;
-refusal/replay; original-debit-bound restitution; historical ACK; ordinary reward
-movement and stable second recovery. It does not decode full native commands or
-supply world/constructor/publication/pair authority. Missing rows fail. New
-`capture_quest_cut.py` produces its actual SQL rows in a bounded read-only cut,
-reusing the maintained mobile value grammar. No operational setup or mutation.
+All commands use repository root on WSL Ubuntu22.04, Python3.10.12, g++11.4.0.
+No production source/schema/shared tests/registries/manifests were authored.
+No server, DB, migration, activation, fault or cold native journey ran. The
+existing major-batch gameplay policy is preserved.
 
-| Command | Result/scope |
-| --- | --- |
-| `python3 tests/async/quest_accounting_prep/test_quest_cut_checks.py` | PASS ten unittest methods and their parameterized wrong-kind/quantity/spare/root/refund/XP/ACK/cold controls; constructed cuts, not native execution |
-| `python3 tests/async/quest_accounting_prep/test_production_terms.py --case QP06` | PASS actual shared prepare_quest_fixture API, returned real aliases/VNUMs/C3000, exact production fixture bytes |
-| Collector CLI with `TEST_DB_DISPOSABLE=0` | Expected refusal, exit1, before binary access, connection or output creation |
-| Owned AST/diff checks | PASS; source metadata regenerated with current pin |
+| Exact command | Result and evidence scope |
+|---|---|
+| `python3 tests/async/quest_accounting_prep/test_production_terms.py --variants` | PASS seven source cases; five default static mini fixtures; actual shared QP06 API; thirty static supply variants across nine contracts; seven full-production run-root layouts. Exact Q/prototype bytes, all four QP02 branches, production reset caps retained. Prepared temporary fixtures only. |
+| `python3 tests/async/quest_accounting_prep/test_native_selectors.py` | PASS four actual-owner selection observations QP01/02/05/06; constructed native NPC stock, selection slice only. |
+| `python3 tests/async/quest_accounting_prep/test_recipient_retirement.py --acceptance` | PASS actual observe_give generation/root predicate; original absent/wrong root/replacement same prototype+room refusal. Lookup/census seams isolated, no D/SQL runtime. |
+| `python3 tests/async/quest_accounting_prep/test_bartender_settlement.py` | PASS QP04/07 observations, actual callback/ADD_MONEY slices; hypothetical debit/task controls only. |
+| `python3 tests/async/quest_accounting_prep/test_native_selectors.py --case QP02 --acceptance` | RED exit1, component30: first reversed paid branch refuses before availability and blocks supported backpack. Requirement retained. |
+| `python3 tests/async/quest_accounting_prep/test_bartender_settlement.py --case QP04 --acceptance` | RED exit1, component30: injected active refund credit not submitted; no proof active debit occurred. |
+| `python3 tests/async/quest_accounting_prep/test_bartender_settlement.py --case QP07 --acceptance` | RED exit1, component31: stale map changes replacement B; abandonment observation also touches B. |
+| `python3 tests/async/quest_accounting_prep/test_quest_cut_checks.py` | PASS fourteen unittest methods with parameterized corruptions. Counterfactual row/model value fixtures test oracle only; no native authority or SQL writes. CLI controls refuse non-disposable, remote and production-named targets before binary/SQL/output access. |
+| `python3 tests/async/test_native_quest_recovery_context.py` | PASS actual maintained providers with ASan/UBSan, compile exit0/runtime exit0, unchanged source hashes. Pure value/transport component only; no lifetime/source/SQL/ACK/coordinator/journal/runtime activation authority. |
+| Owned AST, snapshot raw hashes, `git diff --check` | PASS. |
 
-RECOVERY_BATCH.md supplies invocation prerequisites and exact commands. The shared
-QP06 option's native gameplay/fault/two-boot execution remains pending at batch
-readiness. Shared callback/capture hooks must expose actual cuts BEFORE cleanup;
-shared run_sql currently drops its generated schema and run removes temporary
-journals on return. A successful stdout line alone cannot provide retained native
-receipt/obligation/source/pair evidence.
+The native context run retains evidence below
+`bin/tests/native-quest-recovery-context-0vb_ww_n/`: `compile.log`,
+`native-component.log`, `receipt.json`, binary. Binary SHA256:
+`a681ace70d45cbe4a5a94785dd63d09cb35dbbca0e8b13af3bb776d3a5f6d43c`; compile
+81.05s, run0.47s. These local artifacts are ignored/uncommitted. The receipt lists
+all fifteen exact linked source hashes/flags and its limited classification.
 
-The next independent bundle supplies usable static negative/sufficient variants
-and original D/cash/replacement/held recovery checks. Retained historical refresh
-results follow with their original candidate pins.
+The SELECT-only collector remains source-reviewed and guard-tested; actual SQL
+statements have not executed. It bounds row/aggregate BLOB material, validates
+mobile header/image with maintained complete grammar, captures real original
+items/currency/obligations/XP/births/account effects/receipts/source/postings in
+one repeatable-read read-only snapshot, rolls back and writes a private new file.
+The caller supplies the actual integrated source commit; prep base is recorded
+separately. No epoch/birth/UID/receipt/baseline is manufactured.
+
+Case oracles are deliberately separate from canonical native authentication:
+complete exact static roots/rewards/fees/frozen XP; refusal/replay; later room
+move; original-linked restitution; stable accepted-but-unacknowledged held cut;
+historical ACK presence; QP03 D original validated v2 cash/stock/birth/source
+receipt, original mapped cash effect/posting and unchanged replacement. Unknown
+v1 cash and missing actor/obligation/receipt evidence refuse. ACK row presence
+is not the native exact reader or paired retirement return.
+
+RECOVERY_BATCH.md contains complete invocations/prerequisites/evidence cuts and
+minimal shared requests, including supported QP06 legacy offering/xp-ACK and
+later move commands. Native full-world authority, current D guard, paid service
+authority, stale attempt protection, actual capture hooks and original paired
+retirement remain primary-owned. Private NQF2/NFR1/NQR5 documentation and object
+passes are not an executable published successor qualified here.
+
+## Historical consumed refresh results
 
 # Prep verification and integration commands — refreshed 2026-10-06
 

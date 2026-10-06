@@ -11,7 +11,7 @@ from case_data import CASES, ROOT, CATALOG_PIN, blocks, catalog, facts, prototyp
 from prepare_fixture import prepare
 
 
-def check(case_id):
+def check(case_id, variants=False):
     case = CASES[case_id]
     catalog_data = catalog.production_catalog(ROOT)
     assert not catalog.validate_catalog(catalog_data)
@@ -72,11 +72,53 @@ def check(case_id):
             pass
         else:
             raise AssertionError("fixture overwrote existing output")
+    if variants:
+        with tempfile.TemporaryDirectory(prefix=f"quest-prep-{case_id}-native-world-") as directory:
+            generated = prepare(case_id, Path(directory), layout="world")
+            assert generated["fixture_layout"] == "world"
+            assert (Path(directory) / "areas").resolve() == (ROOT / "areas").resolve()
+            assert not (Path(directory) / "areas_mini").exists()
+            assert generated["reset_families"] == evidence["reset_families"]
+            assert generated["commands"] == []
+        for contract in selected:
+            reward = next(number for kind, number in contract["receive"] if kind == "I")
+            required = Counter(number for kind, number in contract["give"] if kind == "I")
+            supplies = ("exact", "shortage", "spares") + (("wrong-kind",) if case_id in ("QP01", "QP05") else ())
+            for supply in supplies:
+                with tempfile.TemporaryDirectory(prefix=f"quest-prep-{case_id}-{supply}-") as directory:
+                    generated = prepare(case_id, Path(directory), reward_vnum=reward, supply=supply)
+                    mini = Path(directory) / "areas_mini"
+                    assert (mini / "mini.qst").read_text() == (f"#{case['giver']}\n" +
+                        "".join(block["text"] for block in selected) + "S\n$~\n")
+                    declarations = [line.split() for line in (mini / "mini.zon").read_text().splitlines() if line.startswith("O ")]
+                    actual = Counter(int(line[2]) for line in declarations)
+                    assert actual == Counter({int(k): v for k, v in generated["fixture_supplied_counts"].items()})
+                    assert all(int(line[3]) == actual[int(line[2])] for line in declarations)
+                    assert generated["selected_contract"]["give"] == contract["give"]
+                    assert generated["reset_families"] == evidence["reset_families"]
+                    if supply == "exact":
+                        assert actual == required
+                    elif supply == "spares":
+                        assert actual == required + Counter({k: 1 for k in required})
+                    else:
+                        assert not actual >= required, "negative supply accidentally satisfies selected contract"
+                    if case_id == "QP02":
+                        assert (mini / "mini.qst").read_text().count("\nQ\n") == 4
+        # Reject invalid recipe selection before creating any output.
+        with tempfile.TemporaryDirectory(prefix="quest-prep-invalid-") as directory:
+            output = Path(directory) / "must-not-exist"
+            try:
+                prepare(case_id, output, reward_vnum=-1, supply="exact")
+            except ValueError:
+                assert not output.exists()
+            else:
+                raise AssertionError("invalid contract accepted")
     return dict(case=case_id, result="production terms and isolated fixture passed; no native journey")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--case", choices=list(CASES))
+    parser.add_argument("--variants", action="store_true", help="check exact, shortage, spares and supported wrong-kind supplies")
     args = parser.parse_args()
-    print(json.dumps([check(k) for k in ([args.case] if args.case else CASES)], indent=2))
+    print(json.dumps([check(k, args.variants) for k in ([args.case] if args.case else CASES)], indent=2))

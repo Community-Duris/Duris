@@ -10,10 +10,12 @@ Use capture_quest_cut.py in the actual isolated journey at the documented cuts.
 import argparse
 from collections import Counter
 import json
+import struct
 from pathlib import Path
 
 from case_data import CASES, ROOT, blocks
-from reconcile_economy_accounting import decode_source_event, source_kind_allowed
+from reconcile_economy_accounting import decode_source_event, source_kind_allowed, account_key
+from economic_restore_evidence import decode_native_mobile
 
 REASONS = {entry["number"]: entry for entry in
            json.loads((ROOT / "docs/persistence/economy_accounting/registry.json").read_text())["reasons"]}
@@ -83,13 +85,13 @@ def bind(before, after, case_id):
     require(rows(before, "migrations") == rows(after, "migrations"), "database migration set changed between cuts")
 
 
-def book(after, events, currency):
+def book(after, events, currency, extra_roots=()):
     """Require row links and balance, leaving canonical-byte authentication to Plan5."""
     operations = index(rows(after, "operations"), ("operation_id",))
     receipts = index(rows(after, "inbox"), ("operation_id",))
     references = rows(after, "item_references")
     claims = rows(after, "source_claims")
-    roots = set()
+    roots = set(extra_roots)
     for event in events:
         matching = [ref for ref in references if
                     ref["legacy_operation_id"] == event["operation_id"] and
@@ -120,6 +122,7 @@ def book(after, events, currency):
             require(sum(claim["operation_id"] == operation_id and claim["source_event"] == source and
                         claim["lineage"] == operation["lineage"] and claim["outcome"] == 1
                         for claim in claims) == 1, "source event lacks its unique original claim")
+        index(rows(after, "postings"), ("operation_id", "line_index"))
         postings = [entry for entry in rows(after, "postings") if entry["operation_id"] == operation_id]
         require(len(postings) == operation["posting_count"], "root posting count disagrees with native rows")
         require(all(value(entry, "delta_") == entry["copper_value"] for entry in postings),
@@ -136,7 +139,7 @@ def money(before, after):
     return entries
 
 
-def static_complete(before, after, case_id, selected_uids, reward_uids, spare_uids, reward_vnum, expected_xp=None):
+def static_complete(before, after, case_id, selected_uids, reward_uids, spare_uids, reward_vnum, expected_xp=None, original_mobile=None):
     require(not CASES[case_id].get("dynamic"), "static completion requires a native Q case")
     choices = [term for term in blocks(case_id) if ("I", reward_vnum) in term["receive"]]
     require(len(choices) == 1, "choose the exact production contract by reward VNUM")
@@ -157,11 +160,12 @@ def static_complete(before, after, case_id, selected_uids, reward_uids, spare_ui
         require(item["state"] == 1 and item["root_item_uid"] == uid and item["parent_item_uid"] is None,
                 "input is not an original loose live root")
         require((item["owner_type"] == 1 and item["owner_id"] == pid) or
-                (item["owner_type"] == 12 and item["owner_id"] in before["meta"]["mobile_instance_ids"]),
+                (item["owner_type"] == 12 and item["owner_id"] == original_mobile and original_mobile in before["meta"]["mobile_instance_ids"]),
                 "input custody does not belong to original player/native recipient")
         tombstone = current.get((uid,))
         require(tombstone is not None and tombstone["state"] == 2 and tombstone["owner_type"] == 8 and
-                tombstone["vnum"] == item["vnum"] and tombstone["item_revision"] > item["item_revision"],
+                tombstone["vnum"] == item["vnum"] and tombstone["root_item_uid"] == uid and
+                tombstone["parent_item_uid"] is None and tombstone["item_revision"] > item["item_revision"],
                 "input not retired with exact UID/kind/revision")
         terminal = [event for event in events if event["item_uid"] == uid and
                     event["to_owner_type"] == 8 and event["item_revision"] == tombstone["item_revision"]]
@@ -182,13 +186,20 @@ def static_complete(before, after, case_id, selected_uids, reward_uids, spare_ui
         require((uid,) not in original, "reward reuses an observed UID lifetime")
         require(item["state"] == 1 and item["owner_type"] == 1 and item["owner_id"] == pid and
                 item["root_item_uid"] == uid and item["parent_item_uid"] is None, "reward not uniquely player-owned")
-        creation = [event for event in events if event["item_uid"] == uid and event["from_owner_type"] == 7]
+        creation = [event for event in events if event["item_uid"] == uid and event["from_owner_type"] == 7 and
+                    event["to_owner_type"] == item["owner_type"] and event["to_owner_id"] == item["owner_id"] and
+                    event["item_revision"] == item["item_revision"]]
         require(len(creation) == 1, "reward lacks one native creation event")
-    fresh = [item for key, item in current.items() if key not in original and item["vnum"] in CASES[case_id]["rewards"]]
+    fresh = [item for key, item in current.items() if key not in original and item["vnum"] in CASES[case_id]["rewards"] and
+             ((item["owner_type"] == 1 and item["owner_id"] == pid) or
+              any(event["item_uid"] == item["item_uid"] and event["from_owner_type"] == 7 and
+                  event["to_owner_type"] == 1 and event["to_owner_id"] == pid for event in events))]
     require({item["item_uid"] for item in fresh} == set(reward_uids), "extra/unobserved reward issuance")
     currency = money(before, after)
     expected_money = (sum(number for kind, number in terms["receive"] if kind == "C") -
                       sum(number for kind, number in terms["give"] if kind == "C"))
+    require([value(entry, "wallet_delta_") for entry in currency] == ([expected_money] if expected_money else []),
+            "quest has extra offsetting fee/reward effects")
     require(value(row(after, "player")) - value(row(before, "player")) == expected_money,
             "wrong quest net fee/reward money")
     nominal_xp = sum(number for kind, number in terms["receive"] if kind == "E")
@@ -218,7 +229,7 @@ def unchanged(before, after):
 
 def replay(before, after):
     unchanged(before, after)
-    for name in ("operations", "item_references", "postings", "source_claims", "inbox"):
+    for name in ("operations", "item_references", "postings", "source_claims", "inbox", "effects"):
         require(rows(before, name) == rows(after, name), f"recovery repeated/changed durable {name}")
 
 
@@ -255,6 +266,98 @@ def refunded(before, after, quoted_fee):
     book(after, [], currency)
 
 
+def mobile(cut, instance):
+    entry = index(rows(cut, "mobiles"), ("mobile_instance_id",)).get((instance,))
+    require(entry is not None, "original native mobile row missing; actor absence supplies no authority")
+    image = bytes.fromhex(entry["canonical_image"])
+    decoded = decode_native_mobile(image)  # maintained complete value grammar, not a copied codec
+    require(tuple(decoded) == tuple(entry[name] for name in
+            ("mobile_instance_id", "mobile_revision", "stock_revision", "lifetime_state")), "native header/image disagreement")
+    require(int.from_bytes(image[8:10], "little") == 2, "historical unknown cash is not zero")
+    cash_revision, *cash = struct.unpack_from("<Q4q", image, 180)
+    return dict(row=entry, image=image, birth=image[40:56].hex(), source=image[56:104].hex(),
+                birth_reference=(image[26], image[32:116]), vnum=struct.unpack_from("<i", image, 104)[0],
+                transition=image[164:180].hex(), cash_revision=cash_revision, cash=tuple(cash))
+
+
+def retired(before, after, original_instance, replacement_instance, native_cash_account):
+    require(before["meta"]["case"] == "QP03", "D check applies to original QP03 contract")
+    require(original_instance != replacement_instance and original_instance in before["meta"]["mobile_instance_ids"] and
+            replacement_instance in before["meta"]["mobile_instance_ids"], "distinct original and replacement IDs required")
+    original, terminal = mobile(before, original_instance), mobile(after, original_instance)
+    replacement, replacement_after = mobile(before, replacement_instance), mobile(after, replacement_instance)
+    require(original["vnum"] == terminal["vnum"] == CASES["QP03"]["giver"] and
+            replacement["vnum"] == CASES["QP03"]["giver"], "wrong native quest recipient prototype")
+    require(original["row"]["lifetime_state"] == 1 and terminal["row"]["lifetime_state"] == 2,
+            "original mobile lacks explicit live-to-retired evidence")
+    require(terminal["birth_reference"] == original["birth_reference"], "retirement rebound original birth/source")
+    require(terminal["row"]["mobile_revision"] > original["row"]["mobile_revision"] and
+            terminal["row"]["stock_revision"] >= original["row"]["stock_revision"], "retirement did not advance original revision")
+    require(replacement["row"] == replacement_after["row"] and replacement["row"]["lifetime_state"] == 1 and
+            replacement["birth"] != original["birth"] and replacement["source"] != original["source"],
+            "replacement birth/stock/cash changed or lent original identity")
+    require(not any(terminal["cash"]), "retired original retained cash")
+    require(terminal["cash_revision"] == original["cash_revision"] + bool(any(original["cash"])), "wrong original cash revision")
+    events = new_rows(before, after, "ownership_events", ("operation_id", "event_index"))
+    current = index(rows(after, "items"), ("item_uid",))
+    stock = [entry for entry in rows(before, "items") if entry["owner_type"] == 12 and entry["owner_id"] == original_instance]
+    require(struct.unpack_from("<I", original["image"], 224)[0] == len(stock),
+            "original native literal forest/current custody count differs")
+    for entry in stock:
+        end = current.get((entry["item_uid"],))
+        require(end is not None and end["vnum"] == entry["vnum"] and end["state"] == 2 and end["owner_type"] == 8 and
+                end["item_revision"] > entry["item_revision"], "original remaining stock not durably destroyed")
+        matching = [event for event in events if event["item_uid"] == entry["item_uid"] and
+                    event["operation_id"] == terminal["transition"] and event["to_owner_type"] == 8 and
+                    event["item_revision"] == end["item_revision"]]
+        require(len(matching) == 1, "remaining original stock lacks exact D transition")
+    require(not any(entry["state"] == 1 and entry["owner_type"] == 12 and entry["owner_id"] == original_instance
+                    for entry in rows(after, "items")), "retired original still owns native stock")
+    if stock:
+        require(terminal["row"]["stock_revision"] > original["row"]["stock_revision"], "stock revision did not advance")
+    for entry in rows(before, "items"):
+        if entry["owner_type"] == 12 and entry["owner_id"] == replacement_instance:
+            require(current.get((entry["item_uid"],)) == entry and
+                    not any(event["item_uid"] == entry["item_uid"] for event in events), "replacement stock affected by original D")
+    require(row(before, "player") == row(after, "player"), "D-only terminal cut repeated reward/money/XP/task")
+    require(rows(before, "history") == rows(after, "history") and rows(before, "obligations") == rows(after, "obligations") and
+            rows(before, "xp_entitlements") == rows(after, "xp_entitlements"), "D-only cut changed original reward evidence")
+    require(not money(before, after), "D paid player money again")
+    for birth in (original, replacement):
+        operation = index(rows(after, "operations"), ("operation_id",)).get((birth["birth"],))
+        require(operation is not None and operation["source_event"] == birth["source"], "actual birth source/receipt absent")
+    lineage, kind, _, context = account_key(native_cash_account)
+    require(lineage == before["meta"]["lineage"] and kind == 1 and context == 12, "original native cash account must be genuine mapped wallet")
+    effects = new_rows(before, after, "effects", ("operation_id", "account_index"))
+    matching = [entry for entry in effects if entry["operation_id"] == terminal["transition"] and
+                entry["account_key"] == native_cash_account]
+    require(len(matching) == 1, "D lacks original mapped native cash effect; never infer mapping from mobile ID")
+    effect = matching[0]
+    require(tuple(effect["before_" + unit] for unit in ("copper", "silver", "gold", "platinum")) == original["cash"] and
+            tuple(effect["after_" + unit] for unit in ("copper", "silver", "gold", "platinum")) == terminal["cash"] and
+            effect["before_revision"] == original["cash_revision"] and effect["after_revision"] == terminal["cash_revision"],
+            "D native cash/economic effect disagreement")
+    book(after, events, [], (original["birth"], replacement["birth"], terminal["transition"]))
+    postings = [entry for entry in rows(after, "postings") if entry["operation_id"] == terminal["transition"] and
+                entry["account_index"] == effect["account_index"]]
+    require(sum(entry["copper_value"] for entry in postings) ==
+            -sum(coin * factor for coin, factor in zip(original["cash"], (1, 10, 100, 1000))),
+            "original cash lacks exact terminal debit posting")
+
+
+def held(before, after, operation_id):
+    # This verifies a stable held cut only, not authority to finish/repeat an effect.
+    replay(before, after)
+    obligation = index(rows(after, "obligations"), ("offering_operation_id",)).get((operation_id,))
+    require(obligation is not None and obligation["acknowledged"] == 0 and obligation["continuation"],
+            "visible original unacknowledged obligation required; absence is not held proof")
+    receipt = index(rows(after, "inbox"), ("operation_id",)).get((operation_id,))
+    require(receipt is not None and receipt["status"] == 1 and receipt["result_code"] == 0 and
+            receipt["committed_at_present"] == 1 and receipt["result_payload"], "held original accepted receipt missing")
+    # Caller must also preserve matching actual parent/child preimages and native
+    # uncertainty disposition from the existing continuation owner.
+
+
 def acknowledged(cut, operation_id):
     obligation = index(rows(cut, "obligations"), ("offering_operation_id",)).get((operation_id,))
     require(obligation is not None and obligation["acknowledged"] == 1 and obligation["continuation"],
@@ -272,7 +375,7 @@ def main():
     parser.add_argument("--case", choices=CASES, required=True)
     parser.add_argument("--before", type=Path, required=True)
     parser.add_argument("--after", type=Path, required=True)
-    parser.add_argument("--check", choices=("complete", "refused", "replay", "later-move", "refunded", "ack"), required=True)
+    parser.add_argument("--check", choices=("complete", "refused", "replay", "later-move", "refunded", "ack", "retired", "held"), required=True)
     parser.add_argument("--selected", type=int, nargs="*", default=[])
     parser.add_argument("--rewards", type=int, nargs="*", default=[])
     parser.add_argument("--spares", type=int, nargs="*", default=[])
@@ -280,12 +383,15 @@ def main():
     parser.add_argument("--expected-xp", type=int, help="original frozen admitted award, not nominal QST XP")
     parser.add_argument("--quoted-fee", type=int)
     parser.add_argument("--offering-operation")
+    parser.add_argument("--original-mobile", type=int)
+    parser.add_argument("--replacement-mobile", type=int)
+    parser.add_argument("--native-cash-account", help="actual mapped wallet key, never inferred from mobile identity")
     args = parser.parse_args()
     try:
         before, after = (json.loads(path.read_text()) for path in (args.before, args.after))
         bind(before, after, args.case)
         if args.check == "complete":
-            static_complete(before, after, args.case, args.selected, args.rewards, args.spares, args.reward_vnum, args.expected_xp)
+            static_complete(before, after, args.case, args.selected, args.rewards, args.spares, args.reward_vnum, args.expected_xp, args.original_mobile)
         elif args.check == "refused":
             unchanged(before, after)
         elif args.check == "replay":
@@ -295,6 +401,10 @@ def main():
             later_move(before, after, args.rewards[0])
         elif args.check == "refunded":
             refunded(before, after, args.quoted_fee)
+        elif args.check == "retired":
+            retired(before, after, args.original_mobile, args.replacement_mobile, args.native_cash_account)
+        elif args.check == "held":
+            held(before, after, args.offering_operation)
         else:
             original = index(rows(before, "obligations"), ("offering_operation_id",)).get((args.offering_operation,))
             current = index(rows(after, "obligations"), ("offering_operation_id",)).get((args.offering_operation,))

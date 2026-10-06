@@ -207,7 +207,7 @@ but no double-entry money posting. Requirements are the original R1–R8 in
 - Research/producer/binding: same Quietus1709 full-world world_quest/shop chain
   as QP04. Runtime task start/target/zone and giver are player state, not QST
   ingredients. No physical ingredient/reward VNUM for map or abandon.
-- Level11 map fee: C110. Abandon fee: default level³ = C1331 at zero elapsed time;
+- Level11 map fee: C110. Abandon fee: default levelÂ³ = C1331 at zero elapsed time;
   elapsed-time modifier is bounded1–100 percent over default24 hours, so freeze
   clock/config and exact quoted charge. Progressed FIND_AND_KILL requires confirm;
   source counts that abandoned task against history/quota. No level assumption
@@ -247,3 +247,39 @@ Source agreement, prepared reduced fixtures, passing observation components and
 completed native journeys are distinct. All seven native journeys remain pending
 on the integrated primary candidate at its major-batch boundary. No case promotes
 writer coverage, accounting activation or release readiness.
+
+## Executable recovery additions on current pin
+
+`prepare_fixture.py --supply exact|shortage|spares --reward-vnum <actual-output>`
+selects supplied input counts while preserving every selected case Q block.
+QP01 and QP05 additionally support --supply wrong-kind. Without these options
+the existing shared QP06 interface and spare default remain compatible.
+`--layout world` prepares a full-production run-root for every case with no
+synthetic stock or relocation. Both layouts record their scope in provenance.
+
+`test_production_terms.py --variants` checks all seven cases, thirty static
+supply variations across nine original contracts, and all full-world layouts.
+These preparations are not proof of ordinary reset availability or SQL birth.
+
+`quest_cut_checks.py` has executable complete/refused/replay/later-move/refunded/
+ack/retired/held modes. `capture_quest_cut.py` supplies actual native SQL-shaped
+inputs at primary-owned quiescent cuts, requiring disposable loopback schema,
+explicit integrated source/binary pin and existing genuine epoch/rows. The
+reader makes no SQL writes. Actual SQL execution remains pending.
+
+QP01/02/05/06 completion checks require exact kinds/distinct roots, fresh reward
+UIDs, untouched spare, one correct net currency effect, row links/receipts/source
+claims/balanced postings and actual frozen QP06 XP. Active NPC-selected inputs
+require --original-mobile; replacement stock cannot lend that identity.
+QP03 retired additionally checks validated v2 original image/birth reference,
+remaining stock tombstones/D events, zero original cash with exact original
+mapped wallet effect/posting, and unchanged independently born replacement.
+Held checks require original accepted receipt and stable unacknowledged
+obligation; they authorize no repeat/completion. They deliberately reject absence.
+QP04/07 refund checks require one genuine debit, one exact original-linked
+refund and unchanged task/history; replay refuses repeated restitution.
+Native codecs, original contexts, runtime adoption and genuine paired return
+remain separate proof supplied by existing primary/Plan5 owners.
+
+Complete invocation examples, external evidence locations, original acquisition
+anchors and exact remaining owner/interface requests are in RECOVERY_BATCH.md.

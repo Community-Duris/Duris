@@ -58,7 +58,7 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta):
                   "item_current_owner", "item_ownership_ledger", "currency_ledger", "quest_reward_obligation",
                   "quest_reward_xp_entitlement", "quest_mobile_native", "economic_accounting_item_reference",
                   "economic_accounting_operation", "critical_operation_inbox", "economic_accounting_coin_posting",
-                  "economic_accounting_source_claim")
+                  "economic_accounting_source_claim", "economic_accounting_account_effect")
         engines = selected(cursor, "SELECT TABLE_NAME AS table_name,ENGINE AS engine FROM information_schema.tables "
                            "WHERE table_schema=DATABASE() AND table_name IN (" + placeholders(tables) + ")",
                            tables)
@@ -103,6 +103,19 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta):
             "wallet_delta_platinum,wallet_after_copper,wallet_after_silver,wallet_after_gold,"
             "wallet_after_platinum,wallet_revision,bank_revision,reason_type,reason_id,source_site "
             "FROM currency_ledger WHERE pid=%s ORDER BY operation_id", (pid,))
+        # Bound aggregate BLOB material before buffered fetch/hex expansion.
+        size = selected(cursor, "SELECT CAST(COALESCE(SUM(OCTET_LENGTH(continuation)),0) AS UNSIGNED) AS size,COUNT(*) AS rows "
+                        "FROM quest_reward_obligation WHERE player_pid=%s", (pid,))[0]
+        blob_bytes = int(size["size"])
+        if int(size["rows"]) > MAX_ROWS or blob_bytes * 2 > MAX_BYTES:
+            raise ValueError("quest obligation BLOB budget exceeded")
+        if mobile_ids:
+            size = selected(cursor, "SELECT CAST(COALESCE(SUM(OCTET_LENGTH(canonical_image)),0) AS UNSIGNED) AS size,COUNT(*) AS rows "
+                            "FROM quest_mobile_native WHERE mobile_instance_id IN (" + placeholders(mobile_ids) + ")",
+                            tuple(mobile_ids))[0]
+            blob_bytes += int(size["size"])
+            if int(size["rows"]) > MAX_ROWS or blob_bytes * 2 > MAX_BYTES:
+                raise ValueError("combined native BLOB budget exceeded")
         result["obligations"] = selected(cursor,
             "SELECT offering_operation_id,player_pid,continuation,xp_applied_mask,"
             "(acknowledged_at IS NOT NULL) AS acknowledged FROM quest_reward_obligation "
@@ -130,7 +143,7 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta):
         native_ids = sorted(native_ids)
         # Source rows remain empty when genuine effects/authority have not appeared.
         # Checks reject their absence; this reader does not manufacture evidence.
-        for name in ("item_references", "operations", "inbox", "postings", "source_claims"):
+        for name in ("item_references", "operations", "inbox", "postings", "source_claims", "effects"):
             result[name] = []
         if native_ids:
             binary_ids = tuple(identity(value) for value in native_ids)
@@ -152,6 +165,11 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta):
                 "result_code,failure_stage,durable_revision,result_payload,(committed_at IS NOT NULL) "
                 "AS committed_at_present FROM critical_operation_inbox WHERE " + clause +
                 " ORDER BY operation_id", binary_ids)
+            result["effects"] = selected(cursor,
+                "SELECT operation_id,account_index,account_key,before_copper,before_silver,before_gold,"
+                "before_platinum,after_copper,after_silver,after_gold,after_platinum,"
+                "before_revision,after_revision FROM economic_accounting_account_effect WHERE " +
+                clause + " ORDER BY operation_id,account_index", binary_ids)
             result["postings"] = selected(cursor,
                 "SELECT operation_id,line_index,event_index,account_index,child_index,delta_copper,delta_silver,"
                 "delta_gold,delta_platinum,copper_value FROM economic_accounting_coin_posting WHERE " +
@@ -180,6 +198,7 @@ def main():
     parser.add_argument("--epoch", required=True)
     parser.add_argument("--server", type=Path, required=True)
     parser.add_argument("--server-sha256", required=True)
+    parser.add_argument("--source-commit", required=True, help="owner-recorded actual integrated binary source commit")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
@@ -194,7 +213,9 @@ def main():
         identity(args.lineage), identity(args.epoch)
         for operation in args.operation:
             identity(operation)
-        meta = dict(source_commit=ACCOUNTING_PIN, binary_sha256=args.server_sha256,
+        if not re.fullmatch(r"[0-9a-f]{40}", args.source_commit) or int(args.source_commit, 16) == 0:
+            raise ValueError("actual integrated source revision required")
+        meta = dict(source_commit=args.source_commit, prep_accounting_pin=ACCOUNTING_PIN, binary_sha256=args.server_sha256,
                     schema_manifest_sha256=digest(ROOT / "migrations/runtime_compatibility_manifest.json"),
                     lineage=args.lineage, epoch=args.epoch)
         import pymysql
