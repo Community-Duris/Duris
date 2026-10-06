@@ -492,7 +492,11 @@ Both original production builds now run at
 `bin/tests/native-quest-const-envelope-archive-major-builds-20261005-34d9341e0e9a`.
 The SQL production build passes in1218.764799 seconds with empty stderr; ELF
 `238270492142e855af0e9e58c8b1027c899f2fe623ca53a4070ca5568c7ded81`.
-The flatfile build is still live; final export/cleanup remain pending.
+Flatfile passes in595.014143 seconds with empty stderr; ELF
+`47f9e296f9bde61587da25d85cd22a9e09bf758298b9329c344464a80a87921b`.
+Both results are terminal. All2918 regular artifacts export with exact hashes;
+owned runner and both source/artifact volumes are removed. The failed7a2 SQL
+diagnostic remains historical failure evidence.
 Original production driver/flags/targets/CPU/memory stay;
 its byte-exact archive preparation takes8.203 seconds. No earlier context or
 production result is relabelled as qualification of this successor.
@@ -572,8 +576,9 @@ sole commit, exact typed outbox/completed inbox, original-session proof and pool
 reconciliation. Failed/uncertain commits carry revision0/empty result; conflicts
 retain journal/stage/fences rather than fabricate durable rejection. Independent
 review found and corrected that new failure-revision defect before freezing.
-All birth packets remain private: no passing compile, SQL, producer/admission,
-native publication/ACK, backend or crash-recovery qualification is yet claimed.
+All birth packets remain private. Production link evidence is recorded below;
+actual SQL transaction journeys, producer/admission, native publication/ACK,
+backend parity and crash-recovery qualification remain unfinished.
 
 The primary composes those exact reviewed packets with const-quest0ef and
 the published bc0d6071f reader/central registrations on one5767-input candidate:
@@ -585,8 +590,64 @@ Its archive is `990429cc11e64cdc54107f726be02a1f7da6bc35081f74ad7959fba522111469
 preparation takes4.953 seconds and the original production driver is unchanged.
 Both original builds start at
 `bin/tests/native-mobile-birth-root-archive-major-builds-20261005-c62d4d3c49cb`;
-results are pending. This shared root candidate does not yet connect the actual
-birth producer. Neither old component results nor Plan5 qualifications transfer.
+both fail at final linkage, with no compiler error. SQL fails in446.821087
+seconds; flatfile fails in352.646720 seconds. Their original diagnostics identify
+missing birth result/SQL transaction providers. All2916 regular artifacts export
+byte-exactly; the owned runner and both volumes are removed. The original failure
+is retained and is not relabelled by a successor result. This shared root candidate
+does not yet connect the actual birth producer. Neither old component results nor
+Plan5 qualifications transfer.
+
+The independently accepted production-provider correction has manifest
+`419b926996f51fcb460102fb97177e382e6ad4592818ed1e616889fd1e706d56`.
+It adds the actual SQL birth transaction, command, accounting compiler and result
+objects exactly once to the existing Makefile. Removing only those four entries
+reproduces the complete16ba Makefile; all original targets/flags/recipes remain.
+Full5767-input successor:
+`f27eda9d9d032a6f5f09d0178f8b22baa5609770ca475579248b49fd2ce60de4`.
+Only `src/Makefile` differs from16ba. Its original production builds run at
+`bin/tests/native-mobile-birth-providers-archive-major-builds-20261005-9a0db727f482`.
+SQL passes in357.951205 seconds with empty stderr; ELF
+`85faac620f0865d67e3f9944c9c890b5d4e332bf0e5e05efe8079d0412c537a9`.
+Flatfile passes in341.862741 seconds with empty stderr; ELF
+`be243d24621c5859b23a651c2278f458f35f7435e0732142e2e6553d539f61c7`.
+The combined original build attempt exits0. All2934 regular artifacts export
+byte-exactly before owned runner and both source/artifact volumes are removed.
+This resolves the four-provider production link failure on the exact privatef27
+source; it does not qualify the later owner-seam successor or native gameplay.
+Its original driver is byte-identical, archive hash is
+`cf4eb5f3a19a89c76b74553ab80e7302c788a616da96b8e5f865e94ade6a592e`
+and archive preparation takes2.672 seconds.
+
+## Original birth admission and guarded acknowledgement source integration
+
+The reviewed owner-only admission slice is frozen at manifest
+`201f28564bdc3b637e26df4f50a3490b157ead743d6309c9e8e637765e0017c0`.
+Only the original birth owner may prepare birth21 from the existing immutable
+regular SQL projection and its original captured v2 image. Flat/wallet-root
+qualification scopes refuse. Replay validates the retained canonical command
+without rebinding to current authority. These values cannot establish provenance.
+
+The guarded acknowledgement slice is frozen at manifest
+`6b1d21ae537b23f0e3514bbad490ca4a446b8791cd952828b09c5f8c43bab422`.
+ID-only birth acknowledgement refuses. Its private owner capability correlates
+the exact canonical command, coordinator generation, complete stored completion
+including diagnostic fields, typed120 result and native UID before the original
+guarded journal checkpoint and fence/cache cleanup. Failure preserves retained
+ownership. The actual birth owner must separately prove original SQL/current
+native/custody evidence and consumed physical publication before calling it.
+No public truth callback, player token, recovery attachment or reset journal is
+introduced. Existing ordinary and guarded acknowledgement bodies remain.
+
+The primary verifies both immutable freeze receipts, actual parent preimages,
+all packet artifact hashes and all5767 original source inputs while composing
+only their five actual files into successor
+`b16d165900afff5c632c63a361f415e32eae2808b5fc568132f84d3ab121edac`.
+The original production driver remains unchanged. This is source integration
+only: neither this successor nor these owner seams have native execution proof.
+The actual constructor/reset producer, reserved lineage, complete stock/cash,
+SQL/current-native publication, boot/pulse recovery and writer registration must
+be connected and qualified before maintained installation or any completion claim.
 
 Original stock preparation must factor the actual constructor rather than use
 an inert recovery image. Source tracing identifies that `proclibObj_add` combines
