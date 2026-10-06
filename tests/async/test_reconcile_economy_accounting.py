@@ -1556,6 +1556,39 @@ class ReconciliationTests(unittest.TestCase):
                           if row["revision"] == 3], [[1, 7, 0], [1, 99, 0]])
         self.assertEqual(view(snapshot, {}, "provenance", 100, uid=82)["count"], 0)
 
+    def test_provenance_uid_lookup_preserves_record_representation(self):
+        cases = ((81, 81, 1), (81.0, 81, 0), (True, 1, 0), (1.0, 1, 0),
+                 (1, 1, 1), (False, 1, 0), ("81", 81, 0), (None, 81, 0))
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "snapshot.json"
+            for recorded_uid, requested_uid, count in cases:
+                snapshot = clean_snapshot()
+                snapshot["ownership_events"][0]["uid"] = recorded_uid
+                original = copy.deepcopy(snapshot)
+                report = Reconciler().audit(snapshot)
+                path.write_text(json.dumps(snapshot), encoding="utf-8")
+                original_bytes = path.read_bytes()
+                for limit in (0, 1, 100):
+                    with self.subTest(recorded_uid=recorded_uid, uid_type=type(recorded_uid),
+                                      requested_uid=requested_uid, limit=limit):
+                        output = view(snapshot, report, "provenance", limit, uid=requested_uid)
+                        self.assertEqual(output["count"], count)
+                        self.assertEqual(len(output["rows"]), min(count, limit))
+                        self.assertEqual(output["truncated"], count > limit)
+                        self.assertEqual(output["coverage"]["exception_count"], report["exception_count"])
+                        for row in output["rows"]:
+                            self.assertIs(type(row["uid"]), int)
+                            self.assertEqual(row["uid"], recorded_uid)
+                        self.assertEqual(snapshot, original)
+                        result = subprocess.run(
+                            [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                             str(path), "--view", "provenance", "--uid", str(requested_uid),
+                             "--limit", str(limit)], capture_output=True, text=True, timeout=30)
+                        self.assertEqual(result.returncode, int(report["exception_count"] != 0), result.stderr)
+                        self.assertEqual(result.stderr, "")
+                        self.assertEqual(json.loads(result.stdout), output)
+                        self.assertEqual(path.read_bytes(), original_bytes)
+
     def test_provenance_discloses_epoch_only_coverage_and_refuses_invalid_uid(self):
         snapshot = clean_snapshot()
         result = view(snapshot, {}, "provenance", 100, uid=81)
