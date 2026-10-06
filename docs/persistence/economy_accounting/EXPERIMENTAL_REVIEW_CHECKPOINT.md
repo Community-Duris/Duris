@@ -1,5 +1,13 @@
 # Experimental accounting review checkpoint
 
+## Read-only census capability fence qualified — 2026-10-06
+
+[Exact fence integration](PLAN5_CENSUS_CAPABILITY_FENCE_PRIMARY_2026-10-06.md)
+provides the missing quest game-thread boundary by aborting any unexpected
+publication. Original native sanitizer methods pass in both configurations:
+29 cases each,262,144 cache rows and zero skips. Formatting passes; SQL-mode
+opens no database. Full R6–R8 and release qualification remain open.
+
 ## Historical child equipment finding retained — 2026-10-06
 
 [Exact expectation repair](PLAN5_CHILD_EQUIPMENT_EXPECTATION_PRIMARY_2026-10-06.md)
