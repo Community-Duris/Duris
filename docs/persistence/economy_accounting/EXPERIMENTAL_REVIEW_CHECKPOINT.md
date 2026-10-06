@@ -4,9 +4,12 @@
 
 [Shared progress](SHARED_PRODUCER_INTEGRATION_PROGRESS_2026-10-06.md) records
 both complete 747-unit builds and genuine first M+G publication on both SQL
-engines, with the genuine event catalog exported and loaded. Source remains
-private; native-wallet cold recovery qualification and authentic cold world
-restoration remain underway. Completed independent Plan 1 acceptance
+engines, with the genuine event catalog exported and loaded. The private
+native-wallet successor now passes both original production builds/contracts
+and [normal cold SQL startup/readback](NATIVE_WALLET_STARTUP_PRIMARY_QUALIFICATION_2026-10-06.md)
+on both engines. Source remains private; authentic cold world restoration,
+pending-journal recovery and complete activation remain unfinished.
+Completed independent Plan 1 acceptance
 remains intact; complete openings, activation and full R1–R8 stay open.
 
 
