@@ -506,3 +506,16 @@ the same remote branch. Complete capture/verifier, actual writer/ACK/recovery,
 typed erasure, full managed/backend retention and release-host budgets remain
 open; no full Plan5 or release completion is claimed. Accounting stays inactive,
 with wallet-root exclusions and declined inactive spell behavior preserved.
+
+
+The final documentation refresh observes primary `a5a1f4b196496d50a6f46afecfec03aba3e66190` and imports it
+exactly at `c4a1275916b9fff392c5d3e3df44e1b71fd640aa`, parents `ad537fedd31b1f453a79100d15e3cc03caa377b4` and `a5a1f4b196496d50a6f46afecfec03aba3e66190`. Its sole incoming
+path is the shared producer integration-progress document, with exact primary
+blob/mode. All native, migration, script, test and public runtime trees remain
+identical to qualified build source `304ecea84d3b009b5b0dfc2963addd07ad100bf9`.
+No runtime result is transferred to the primary's still-private schema0063 or
+fee/held/quest/birth successors described in that document. No new native run
+is needed for this documentation-only refresh. A separate protected receipt
+binds the final same-branch remote tip, exact merge, unchanged qualified inputs,
+all seven older tips and the preceding import/build publication receipt. Shared
+documentation is taken as published; only this owned follow-up is appended.
