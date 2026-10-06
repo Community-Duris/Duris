@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1410
-assert report['mapped_area_count'] == 140 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 141 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,13 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+labyrinth=next(m for m in catalog['story_mappings'] if m['source_area']=='labyrinth')
+assert (labyrinth['schema_version'],labyrinth['revision'],labyrinth['coverage'])==(3,1,'complete')
+assert len(labyrinth['stories'])==3 and len(labyrinth['contacts'])==8 and sum(len(c['topics']) for c in labyrinth['contacts'])==31 and not labyrinth['exclusions']
+assert [s['contracts'][0]['giver_vnum'] for s in labyrinth['stories']]==[5024,5028,5055]
+assert [[t['item_vnums'][0] for t in s['steps'] if t['kind']=='carried_item'] for s in labyrinth['stories']]==[[5014],[5001,5002,5003,5005,5006,5007,5008,5009,5020],[5061,5053,5058]]
+assert sum(len(s['steps']) for s in labyrinth['stories'])==16 and report['eligible_by_zone']['50']==3
 
 highway=next(m for m in catalog['story_mappings'] if m['source_area']=='highway')
 assert (highway['schema_version'],highway['revision'],highway['coverage'])==(3,1,'complete')

@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 140 &&
+		require(catalog.story_mappings.size() == 141 &&
 				tracker.summary_for(7, 42).total == 1528,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7687,6 +7687,168 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "labyrinth"; });
+			const auto &map = story_for("labyrinth", "adventurer-dusty-map");
+			const auto &proofs = story_for("labyrinth", "knight-nine-proofs");
+			const auto &trio = story_for("labyrinth", "vadatorn-minotaur-trio");
+			require(mapping.stories.size() == 3 && mapping.contacts.size() == 8,
+				"Labyrinth authored scope failed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 50, 5000, 100, "arrival") ==
+					result::applied,
+				"Labyrinth arrival failed");
+			std::string journal =
+				journey.render_journal(7, 42, 50, 10, 1, 101, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Labyrinth exposed unseen recipients");
+			for (const auto &[mob, room] :
+			     std::vector<std::pair<int, int>>{ { 5000, 5143 },
+							       { 5006, 5134 },
+							       { 5019, 5189 },
+							       { 5047, 5241 },
+							       { 5048, 5082 } })
+				require(journey.meet_npc(7, 42, mob, room, 102) == result::applied,
+					"Labyrinth context encounter failed");
+			journal = journey.render_journal(7, 42, 50, 10, 1, 103, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Labyrinth source context invented recipient knowledge");
+			require(journey.meet_npc(7, 42, 5028, 5276, 104) == result::applied,
+				"Labyrinth knight encounter failed");
+			journal = journey.render_journal(7, 42, 50, 10, 1, 105, false, false);
+			require(journal.find("] " + proofs.title + "\r\n") != std::string::npos &&
+					journal.find("] " + map.title + "\r\n") ==
+						std::string::npos &&
+					journal.find("] " + trio.title + "\r\n") ==
+						std::string::npos,
+				"Labyrinth recipient visibility failed");
+			require(journey.meet_npc(7, 42, 5024, 5180, 106) == result::applied &&
+					journey.meet_npc(7, 42, 5055, 5294, 106) == result::applied,
+				"Labyrinth remaining recipients failed");
+			const auto status = [&](const auto &story, size_t row, const char *state)
+			{
+				const auto start = journal.find("] " + story.title + "\r\n");
+				require(start != std::string::npos,
+					"Labyrinth visible card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     story.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			for (int v : { 5019, 5045, 5073, 5031, 5069, 5070 })
+				supplies.carried[v] = 1;
+			supplies.equipped[18] = 5014;
+			journal = journey.render_journal(7, 42, 50, 10, 1, 107, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				for (size_t row = 0; row + 1 < story.steps.size(); ++row)
+					require(status(story, row, "Missing now"),
+						"Labyrinth reward/container/similar part/equipped map prepared offerings");
+			supplies = {};
+			supplies.carried[5006] = 9;
+			supplies.carried[5061] = 3;
+			journal = journey.render_journal(7, 42, 50, 10, 1, 108, false, false,
+							 &supplies);
+			for (size_t row = 0; row + 1 < proofs.steps.size(); ++row)
+				require(status(proofs, row, row == 4 ? "Ready now" : "Missing now"),
+					"Labyrinth duplicate red moss replaced another proof");
+			require(status(trio, 0, "Ready now") && status(trio, 1, "Missing now") &&
+					status(trio, 2, "Missing now"),
+				"Labyrinth repeated tails replaced the heart/eye");
+			supplies = {};
+			for (const auto &story : mapping.stories)
+				for (const auto &step : story.steps)
+					if (step.kind == "carried_item")
+						supplies.carried[step.item_vnums.front()] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 50, 10, 1, 109, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+			{
+				for (size_t row = 0; row + 1 < story.steps.size(); ++row)
+					require(status(story, row, "Ready now"),
+						"Labyrinth exact supplied bundle required kills or map history");
+				require(status(story, story.steps.size() - 1, "Pending"),
+					"Labyrinth custody forged accepted history");
+			}
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 50).completed == 0,
+				"Labyrinth projection forged route/clue/cure evidence");
+			record(journey, trio.contracts.front(), "labyrinth-trio-first", 50, 5294);
+			require(journey.progress_for_zone(7, 42, 50).completed == 1 &&
+					journey.evidence_for(map.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Labyrinth curse return required map rescue");
+			record(journey, proofs.contracts.front(), "labyrinth-nine-proofs", 50,
+			       5276);
+			record(journey, map.contracts.front(), "labyrinth-supplied-map", 50, 5180);
+			require(journey.progress_for_zone(7, 42, 50).completed == 3 &&
+					journey.progress_for_zone(7, 42, 50).total == 3,
+				"Labyrinth bundle rows changed three native units");
+			supplies = {};
+			journal = journey.render_journal(7, 42, 50, 10, 1, 120, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+			{
+				for (size_t row = 0; row + 1 < story.steps.size(); ++row)
+					require(status(story, row, "Missing now"),
+						"Labyrinth spent materials remained ready");
+				require(status(story, story.steps.size() - 1, "Recorded"),
+					"Labyrinth spent materials erased accepted history");
+			}
+			const auto foreign =
+				std::find_if(catalog.definitions.begin(), catalog.definitions.end(),
+					     [](const auto &d) { return d.giver_vnum == 9321; });
+			require(foreign != catalog.definitions.end(),
+				"Labyrinth foreign receipt missing");
+			const auto &tower = foreign->definition_id;
+			auto wrong_owner = completion(tower, "labyrinth-wrong-tower-owner", 121);
+			wrong_owner.transaction.zone_number = 50;
+			wrong_owner.transaction.room_vnum = 5003;
+			require(journey.record_completion(wrong_owner) == result::rejected,
+				"Labyrinth claimed foreign ownership");
+			record(journey, tower, "labyrinth-foreign-return", 93, 9340);
+			require(journey.progress_for_zone(7, 42, 50).completed == 3,
+				"Labyrinth foreign return invented a fourth local award");
+			auto replay =
+				completion(trio.contracts.front(), "labyrinth-trio-first", 120);
+			replay.transaction.zone_number = 50;
+			replay.transaction.room_vnum = 5294;
+			require(journey.record_completion(replay) == result::already_applied &&
+					journey.progress_for_zone(7, 42, 50).completed == 3,
+				"Labyrinth replay duplicated trio");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 50) &&
+					recovered.progress_for_zone(7, 42, 50).completed == 3 &&
+					recovered.evidence_for(tower, 2).successful_attempts == 1,
+				"Labyrinth cold recovery lost local/foreign history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 50, 5000, 100, "arrival") ==
+					result::applied,
+				"Labyrinth historical discovery failed");
+			for (const auto &story : mapping.stories)
+			{
+				const auto txid = "labyrinth-old-" + story.id;
+				record(historical, story.contracts.front(), txid.c_str(), 50,
+				       story.id == map.id    ? 5180 :
+				       story.id == proofs.id ? 5276 :
+							       5294);
+			}
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 50).completed == 3,
+				"Labyrinth authored cards lost raw historical receipts");
 		}
 
 		{

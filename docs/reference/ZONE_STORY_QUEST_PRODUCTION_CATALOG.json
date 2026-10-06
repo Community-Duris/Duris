@@ -42617,6 +42617,339 @@
     {
       "contacts": [
         {
+          "description": "Declares the exact heart requested by Vadatorn. Encountering or defeating it does not record his accepted trio.",
+          "keyword": "minotaur",
+          "mob_vnum": 5000,
+          "name": "a gargantuan minotaur",
+          "topics": []
+        },
+        {
+          "description": "Declares a diamondine key for separate doors. Its equipment and ordinary treasure do not substitute for quest proofs.",
+          "keyword": "salamander",
+          "mob_vnum": 5006,
+          "name": "a colorless salamander",
+          "topics": []
+        },
+        {
+          "description": "Declares the dusty map in his equipment and a large flask inside his sack. Recovery, reading and the two recipients\u2019 accepted returns are distinct.",
+          "keyword": "explorer",
+          "mob_vnum": 5019,
+          "name": "a spelunking explorer",
+          "topics": []
+        },
+        {
+          "description": "Accepts the exact dusty map, rewards the player and then departs. His story leads do not impose a gate on the other two requests.",
+          "keyword": "adventurer",
+          "mob_vnum": 5024,
+          "name": "a lost adventurer",
+          "topics": [
+            "lost",
+            "map",
+            "exit",
+            "maze",
+            "minotaurs",
+            "minotaur",
+            "horror",
+            "horrors"
+          ]
+        },
+        {
+          "description": "Accepts nine different exact proofs for the sigil of his order. His public proof list is a clue, not nine keyword achievements.",
+          "keyword": "knight",
+          "mob_vnum": 5028,
+          "name": "a knight of the Golden Flame",
+          "topics": [
+            "evil",
+            "creatures",
+            "monsters",
+            "who",
+            "are",
+            "you",
+            "knight",
+            "golden",
+            "flame",
+            "where",
+            "from",
+            "come",
+            "hi",
+            "hello",
+            "greetings",
+            "proof",
+            "evidence",
+            "list",
+            "destruction"
+          ]
+        },
+        {
+          "description": "Declares the exact eye requested by Vadatorn. Other minotaur equipment cannot replace the requested parts.",
+          "keyword": "minotaur",
+          "mob_vnum": 5047,
+          "name": "a battle scarred minotaur",
+          "topics": []
+        },
+        {
+          "description": "Declares the exact severed tail requested by Vadatorn. A personal kill is separate from accepted custody.",
+          "keyword": "minotaur",
+          "mob_vnum": 5048,
+          "name": "a muscular minotaur",
+          "topics": []
+        },
+        {
+          "description": "Accepts one exact minotaur tail, heart and eye together for two rewards, then departs. A narrated release does not separately persist a cured subject.",
+          "keyword": "vadatorn",
+          "mob_vnum": 5055,
+          "name": "Vadatorn, The Devil Wizard of Despair",
+          "topics": [
+            "minotaur",
+            "minotaurs",
+            "quest",
+            "curse"
+          ]
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Three people offer different ways to help in the Labyrinth of No Return: a lost adventurer needs a map, a knight seeks nine exact proofs, and Vadatorn asks for three minotaur parts. Each accepted return has its own card. Discovery is separate; new progress requires active, ready accounting.",
+      "orientation": [
+        "ASK ADVENTURER about map or exit. A seasoned explorer declares the exact dusty map among his equipment. The adventurer accepts it for a robe, coins and experience, then departs. This records his accepted return; it does not record your escape from the labyrinth.",
+        "ASK KNIGHT about evil or proof. Sir Uthor Whiteheart requests a bat wing, sasquatch hair, beetle shell, poison sac, four different colors of moss and a piece of spider web. Bring all nine exact kinds loose together for his sigil and experience. Repeated copies of one proof cannot replace the others.",
+        "The proof sources lie among bats, a sasquatch, beetles, spiders and the moss creatures. The web piece is nested in a large web container. These are declared sources and danger context. Matching goods supplied by another player fit the native return without proof of personal kills or first recovery.",
+        "ASK VADATORN about curse or minotaur. His requested tail, heart and eye come from three different minotaurs. Return the exact trio loose together for a quiver and tiny crystal ball. His farewell narrates release from the curse; the journal records acceptance without a separately persisted cure or rescue.",
+        "The adventurer suggests speaking to the knight and the Devil after accepting the map. That is a story lead; the three native requests are accepted independently. Hearing a response, carrying a reward or following a conversation order does not complete another return.",
+        "The labyrinth includes remote levers, a stone and strange moss that control different passages, alongside locked and hidden doors. Their world descriptions provide clues. Shared access can change the route you need; key possession does not record an unlock, control activation or arrival. The dusty map describes a route whose reliability still needs builder review.",
+        "Smedgewack in the tower requests three other goods from here: calcite, a large flask and a small diamond tattoo. His accepted exchange belongs to that foreign recipient. The explorer\u2019s flask is inside his sack; a similarly named item or a map reward cannot replace the exact goods. This lead adds no local achievement.",
+        "The rune-like epic node, memory and other treasure have separate purposes. A committed epic claim has its own eligible beneficiaries and authority; humming, touching, gear use or collecting treasure creates no extra local return. Material rows show present loose inventory, while accepted history remains after supplies are spent. Three local returns preserve three achievements and three potential dailies; a daily clock does not guarantee admitted stock."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "labyrinth",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:5014;receive=C:24000,E:24000,I:5073;disappear=1",
+              "giver_vnum": 5024
+            }
+          ],
+          "id": "adventurer-dusty-map",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Declared in the seasoned explorer\u2019s equipment. Matching supplied loose stock fits. Reading the map and learning or traversing its route are separate evidence.",
+              "id": "item-5014",
+              "item_vnums": [
+                5014
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the dusty map loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:5014;receive=C:24000,E:24000,I:5073;disappear=1",
+                  "giver_vnum": 5024
+                }
+              ],
+              "hint": "Records the recipient accepting the complete exact offering. Matching supplied loose goods fit. New credit requires active, ready accounting. Dialogue, first recovery, personal kills, controls and persistent subject outcomes are separate evidence. This recipient departs after acceptance.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete this accepted return"
+            }
+          ],
+          "summary": "Bring the exact dusty map for a tattered robe, coins and experience. The accepted return includes the adventurer\u2019s departure; your own escape remains a separate journey.",
+          "title": "A map for the lost adventurer"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:5001,I:5002,I:5003,I:5005,I:5006,I:5007,I:5008,I:5009,I:5020;receive=E:50000,I:5031;disappear=0",
+              "giver_vnum": 5028
+            }
+          ],
+          "id": "knight-nine-proofs",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Declared on selected bats. One exact wing is needed; an encounter or personal kill is separate.",
+              "id": "item-5001",
+              "item_vnums": [
+                5001
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a bat wing loose"
+            },
+            {
+              "count": 1,
+              "hint": "Declared on a sasquatch. Keep one exact tuft loose with the other proofs.",
+              "id": "item-5002",
+              "item_vnums": [
+                5002
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry sasquatch hair loose"
+            },
+            {
+              "count": 1,
+              "hint": "Declared on selected giant beetles. Repeated shells cannot replace other kinds.",
+              "id": "item-5003",
+              "item_vnums": [
+                5003
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a beetle shell loose"
+            },
+            {
+              "count": 1,
+              "hint": "Declared on selected spiders. This exact sac differs from other spider goods.",
+              "id": "item-5005",
+              "item_vnums": [
+                5005
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a spider poison sac loose"
+            },
+            {
+              "count": 1,
+              "hint": "Declared on a red moss creature in the mossy cavern. Red is a distinct proof.",
+              "id": "item-5006",
+              "item_vnums": [
+                5006
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry red moss loose"
+            },
+            {
+              "count": 1,
+              "hint": "Declared on a blue moss creature in the mossy cavern. Another moss color cannot replace it.",
+              "id": "item-5007",
+              "item_vnums": [
+                5007
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry blue moss loose"
+            },
+            {
+              "count": 1,
+              "hint": "Declared on the green moss creature in the mossy cavern. Keep the exact patch loose.",
+              "id": "item-5008",
+              "item_vnums": [
+                5008
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry green moss loose"
+            },
+            {
+              "count": 1,
+              "hint": "Declared on a black moss creature in the mossy cavern. Four different patches are needed.",
+              "id": "item-5009",
+              "item_vnums": [
+                5009
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry black moss loose"
+            },
+            {
+              "count": 1,
+              "hint": "Declared inside the large web container. The large web itself and a nested piece are not a loose offering.",
+              "id": "item-5020",
+              "item_vnums": [
+                5020
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a piece of spider web loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:5001,I:5002,I:5003,I:5005,I:5006,I:5007,I:5008,I:5009,I:5020;receive=E:50000,I:5031;disappear=0",
+                  "giver_vnum": 5028
+                }
+              ],
+              "hint": "Records the recipient accepting the complete exact offering. Matching supplied loose goods fit. New credit requires active, ready accounting. Dialogue, first recovery, personal kills, controls and persistent subject outcomes are separate evidence.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete this accepted return"
+            }
+          ],
+          "summary": "Prepare one of every requested proof, including four distinct moss colors, then return all nine together for the knight\u2019s sigil and experience. The exact bundle is accepted without a map-rescue or personal-kill prerequisite.",
+          "title": "Nine proofs for the Golden Flame"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:5053,I:5058,I:5061;receive=I:5069,I:5070;disappear=1",
+              "giver_vnum": 5055
+            }
+          ],
+          "id": "vadatorn-minotaur-trio",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Declared on a muscular minotaur. A salamander tail or another minotaur part is not a substitute.",
+              "id": "item-5061",
+              "item_vnums": [
+                5061
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the severed minotaur tail loose"
+            },
+            {
+              "count": 1,
+              "hint": "Declared on a gargantuan minotaur. The tail and eye remain distinct requirements.",
+              "id": "item-5053",
+              "item_vnums": [
+                5053
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody minotaur heart loose"
+            },
+            {
+              "count": 1,
+              "hint": "Declared on a battle-scarred minotaur. Keep the exact trio loose together; matching supplied stock fits.",
+              "id": "item-5058",
+              "item_vnums": [
+                5058
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody minotaur eye loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:5053,I:5058,I:5061;receive=I:5069,I:5070;disappear=1",
+                  "giver_vnum": 5055
+                }
+              ],
+              "hint": "Records the recipient accepting the complete exact offering. Matching supplied loose goods fit. New credit requires active, ready accounting. Dialogue, first recovery, personal kills, controls and persistent subject outcomes are separate evidence. This recipient departs after acceptance.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete this accepted return"
+            }
+          ],
+          "summary": "Bring the exact tail, heart and eye together for a quiver and tiny crystal ball. Acceptance records the native farewell; a persistent cure, changed ward and actual escape require separate evidence.",
+          "title": "Three parts for Vadatorn"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "This person offers local conversation. Try these topics to learn more.",
           "keyword": "druid",
           "mob_vnum": 5317,
