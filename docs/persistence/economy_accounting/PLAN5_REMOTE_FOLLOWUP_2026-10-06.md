@@ -402,3 +402,35 @@ managed flatfile/retention and release-host mixed-workload gates remain open.
 No accounting activation or complete release is claimed. Primary's locally
 maintained notebook remains nonblocking; the report/seal/publication receipt is
 the curator packet. This branch publication is not a separate cross-chat message.
+
+
+## Nonempty claim native retention follow-up
+
+The same remote `codex/accounting-plan5` publishes separate solved coverage issue
+`0a76ce875f4b5b67a16c963f262b553fda0db0d9`, based on `f99fb470cec4dc346ed661ceac3bf3d5836eb20b`. The
+[native retention report](PLAN5_NONEMPTY_CLAIM_NATIVE_RETENTION_QUALIFICATION_2026-10-06.md)
+records the original empty-book failure, exact four-journey native run, both SQL
+engines, original capsule byte comparisons and preserved failed attempts.
+All 22 SELECT-only captures retain complete seeded source/allocation rows across
+actual inactive erasure, 10 cold restarts and safe name reuse. Both engines refuse
+actor corruption and a lost partial allocation after asserted native erasure,
+leaving damaged authority unchanged. Native whole-account/character pickup
+dispositions remain exact. The real financial producer and authenticated opening
+are not qualified by these modeled books.
+
+Only `tests/async/run_plan5_retention_journeys.py` changes implementation. Primary
+`9817f58b57a4a4179c4db5506fce3ccfe166c12b` remains observed; native tree
+`cf8dc0761057de7087a347b8e8c21285968ef4f9` and canonical 0062 migration tree
+`1d041c8bc27cfc2b2bfdc8095b6c1348ac3a15c5` stay exact. Protected seal
+`D:/CodexEvidence/accounting-plan5/bin/claim-retention-final-seal-03-20261006/evidence.json`
+has SHA256 `251b8ba009dfe513016c09fd26c9d8ab51acda53d7d3dda38b5f83a7c09b5d91`. Publication receipt binds the final remote tip and clean
+worktree separately. All seven earlier tips/follow-ups remain here; no branch
+history is rewritten or direct experimental-accounting push made.
+
+No new shared interface request or independent scope blocker remains. Existing
+selector/PID, complete capture/activation verification, actual producer/recovery,
+active erasure, flatfile/nonempty retention and release-host budgets remain gates.
+Selected checks have 0 skips; neither full Plan5 nor release is complete. Primary's
+locally maintained notebook stays nonblocking; this owned report/seal/publication
+receipt is its curator packet. Accounting stays inactive, wallet-root exclusions
+and the declined inactive spell path remain. No cross-chat message is claimed.
