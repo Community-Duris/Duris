@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 136 &&
+		require(catalog.story_mappings.size() == 137 &&
 				tracker.summary_for(7, 42).total == 1528,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7687,6 +7687,152 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "earthp"; });
+			const auto &shards = story_for("earthp", "sunnis-planar-granite");
+			const auto &lash = story_for("earthp", "thulum-golden-lash");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 1312, 131200, 100, "arrival") ==
+					result::applied,
+				"Grumbar actual arrival failed");
+			std::string journal =
+				journey.render_journal(7, 42, 1312, 10, 1, 101, false, false);
+			for (const auto &entry : mapping.stories)
+				require(journal.find(entry.title) == std::string::npos,
+					"Grumbar exposed unseen requests");
+			for (const auto &[mob, room] :
+			     std::vector<std::pair<int, int>>{ { 131200, 131210 },
+							       { 131217, 131376 },
+							       { 131230, 131376 },
+							       { 131235, 131376 } })
+				require(journey.meet_npc(7, 42, mob, room, 102) == result::applied,
+					"Grumbar source/context encounter failed");
+			journal = journey.render_journal(7, 42, 1312, 10, 1, 103, false, false);
+			for (const auto &entry : mapping.stories)
+				require(journal.find(entry.title) == std::string::npos,
+					"Grumbar mining/lash carrier context exposed accepted endpoints");
+			require(journey.progress_for_zone(7, 42, 1312).completed == 0,
+				"Grumbar context invented mining or liberation");
+			require(journey.meet_npc(7, 42, 131214, 131366, 104) == result::applied,
+				"Grumbar Sunnis encounter failed");
+			journal = journey.render_journal(7, 42, 1312, 10, 1, 105, false, false);
+			require(journal.find(shards.title) != std::string::npos &&
+					journal.find(lash.title) == std::string::npos,
+				"Grumbar Sunnis exposed independent lash request");
+			require(journey.meet_npc(7, 42, 131236, 131376, 106) == result::applied,
+				"Grumbar Thulum encounter failed");
+			const auto status =
+				[&](const auto &entry, const auto &step, const char *state)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos, "Grumbar journal card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " + step.text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[131211] = supplies.carried[131232] = 1;
+			supplies.equipped[0] = 400104;
+			supplies.equipped[1] = 131227;
+			journal = journey.render_journal(7, 42, 1312, 10, 1, 107, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				require(status(entry, entry.steps[0], "Missing now"),
+					"Grumbar held/reward custody prepared offerings");
+			supplies = {};
+			supplies.carried[400100] = supplies.carried[400103] = 10;
+			supplies.carried[131218] = supplies.carried[131219] =
+				supplies.carried[131220] = supplies.carried[131221] = 10;
+			supplies.carried[2] = 1;
+			journal = journey.render_journal(7, 42, 1312, 10, 1, 108, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				require(status(entry, entry.steps[0], "Missing now"),
+					"Grumbar other granite,gems or corpse substituted exact offerings");
+			for (int amount = 0; amount < 10; ++amount)
+			{
+				supplies = {};
+				supplies.carried[400104] = amount;
+				supplies.carried[131227] = 1;
+				journal = journey.render_journal(7, 42, 1312, 10, 1, 109, false,
+								 false, &supplies);
+				require(status(shards, shards.steps[0], "Missing now") &&
+						status(lash, lash.steps[0], "Ready now"),
+					"Grumbar partial ten-kind count or independent supplied lash failed");
+			}
+			supplies = {};
+			supplies.carried[400104] = 10;
+			journal = journey.render_journal(7, 42, 1312, 10, 1, 110, false, false,
+							 &supplies);
+			require(status(shards, shards.steps[0], "Ready now") &&
+					status(lash, lash.steps[0], "Missing now"),
+				"Grumbar ten supplied shards required source history or prepared missing lash");
+			supplies.carried[131227] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 1312, 10, 1, 111, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				require(status(entry, entry.steps[0], "Ready now"),
+					"Grumbar exact supplied roots required campaign or personal kills");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 1312).completed == 0,
+				"Grumbar rendering invented acceptance,access,mining or liberation");
+			record(journey, lash.contracts.front(), "earthp-lash", 1312, 131376);
+			require(journey.progress_for_zone(7, 42, 1312).completed == 1 &&
+					journey.evidence_for(shards.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Grumbar lash return completed independent prison request");
+			record(journey, shards.contracts.front(), "earthp-shards", 1312, 131366);
+			require(journey.progress_for_zone(7, 42, 1312).completed == 2 &&
+					journey.progress_for_zone(7, 42, 1312).total == 2,
+				"Grumbar accepted endpoints were counted incorrectly");
+			supplies = {};
+			journal = journey.render_journal(7, 42, 1312, 10, 1, 121, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				require(status(entry, entry.steps[0], "Missing now"),
+					"Grumbar accepted history replaced spent current custody");
+			auto replay = completion(shards.contracts.front(), "earthp-shards", 120);
+			replay.transaction.zone_number = 1312;
+			replay.transaction.room_vnum = 131366;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Grumbar replay duplicated accepted shard return");
+			int local_units = 0, achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 1312)
+				{
+					++local_units;
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(local_units == 2 && achievements == 2 && dailies == 2,
+				"Grumbar material/context rows generated extra quest units");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 1312) &&
+					recovered.progress_for_zone(7, 42, 1312).completed == 2,
+				"Grumbar cold recovery lost accepted history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 1312, 131200, 100, "arrival") ==
+					result::applied,
+				"Grumbar historical arrival failed");
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("earthp-old-" + entry.id).c_str(), 1312,
+				       entry.id == shards.id ? 131366 : 131376);
+			require(historical.progress_for_zone(7, 42, 1312).completed == 2,
+				"Grumbar raw historical recipes missing");
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 1312).completed == 2,
+				"Grumbar authored grouping lost historical receipts");
 		}
 
 		{

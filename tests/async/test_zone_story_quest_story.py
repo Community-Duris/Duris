@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1410
-assert report['mapped_area_count'] == 136 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 137 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,14 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+earthp=next(m for m in catalog['story_mappings'] if m['source_area']=='earthp')
+assert (earthp['schema_version'],earthp['revision'],earthp['coverage'])==(3,1,'complete')
+assert len(earthp['stories'])==2 and len(earthp['contacts'])==6 and sum(len(c['topics']) for c in earthp['contacts'])==28 and not earthp['exclusions']
+assert [s['category'] for s in earthp['stories']]==['story','story'] and all(len(s['contracts'])==1 for s in earthp['stories'])
+assert [[(t['item_vnums'],t['count']) for t in s['steps'][:-1]] for s in earthp['stories']]==[[([400104],10)],[([131227],1)]]
+assert all(t['optional'] for s in earthp['stories'] for t in s['steps'][:-1])
+assert report['eligible_by_zone']['1312']==2
 
 pyramid=next(m for m in catalog['story_mappings'] if m['source_area']=='pyramid')
 assert (pyramid['schema_version'],pyramid['revision'],pyramid['coverage'])==(3,1,'complete')
