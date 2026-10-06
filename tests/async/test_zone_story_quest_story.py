@@ -434,6 +434,14 @@ u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
 
+khildarak=next(m for m in catalog['story_mappings'] if m['source_area']=='khildarak')
+assert (khildarak['schema_version'],khildarak['revision'],khildarak['coverage'])==(3,2,'complete')
+assert len(khildarak['stories'])==2 and len(khildarak['contacts'])==6 and sum(len(c['topics']) for c in khildarak['contacts'])==22 and not khildarak['exclusions']
+assert [s['id'] for s in khildarak['stories']]==['request-17118-e5eeeb25247d','request-17248-effe52f75b66']
+assert [s['contracts'][0]['giver_vnum'] for s in khildarak['stories']]==[17118,17248]
+assert [[t['item_vnums'][0] for t in s['steps'] if t['kind']=='carried_item'] for s in khildarak['stories']]==[[17074],[17022]]
+assert sum(t.get('optional',False) for s in khildarak['stories'] for t in s['steps'])==2 and report['eligible_by_zone']['170']==2
+
 labyrinth=next(m for m in catalog['story_mappings'] if m['source_area']=='labyrinth')
 assert (labyrinth['schema_version'],labyrinth['revision'],labyrinth['coverage'])==(3,1,'complete')
 assert len(labyrinth['stories'])==3 and len(labyrinth['contacts'])==8 and sum(len(c['topics']) for c in labyrinth['contacts'])==31 and not labyrinth['exclusions']

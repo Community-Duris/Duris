@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 125 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 126 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -330,7 +330,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 | 123 | [Caves of Mt. Skelenak](zone-stories/CAVES_OF_MT_SKELENAK.md) (`caves_skelenak`) | Goortok discs/vial→name lead; monk paired tribal proofs, foreign shield, independent eyes, hydra pair and sphere→departure. | Comprehensive schema3/revision1:9 stories/9Q,8 contacts/17 supported aliases/11 materials;raw9M/18 aliases;152 rooms/38 mobiles/31 objects/160 resets/full shared and foreign closure. Fifteen follow-ups;no native repair. |
 | 124 | [Southern Coastal Highway](zone-stories/SOUTHERN_COASTAL_HIGHWAY.md) (`highway`) | Victor trust/ring and four-key continuation→Morlanthra farewell; Magnamus chalice and independent harpy pair; Bastine trophies and custom world context. | Comprehensive schema3/revision1:3 local stories/3Q,10 contacts/8M/25 aliases,4 materials and optional Victor history;539 rooms/64 mobiles/120 objects/296 resets/full shared and foreign closure. Fourteen follow-ups;no native repair. |
 | 125 | [Labyrinth of No Return](zone-stories/LABYRINTH_OF_NO_RETURN.md) (`labyrinth`) | Explorer map→adventurer farewell; nine distinct proofs→Golden Flame sigil; three minotaur parts→Vadatorn farewell; tower component lead and shared maze controls. | Comprehensive schema3/revision1:3 independent stories/3Q,8 contacts/8M/31 aliases/13 materials;296 rooms/70 mobiles/77 objects/282 resets/full shared and selected foreign closure. Fourteen follow-ups;no native repair. |
-| 126 | Khildarak Stronghold (`khildarak`) | [Meet the giver → 1 × a steeders egg sack → native reward/response](../../areas/qst/khildarak.qst#L36) | 2 Q; 8 dialogue; 0 candidate link items |
+| 126 | [Khildarak Stronghold](zone-stories/KHILDARAK_STRONGHOLD.md) (`khildarak`) | Cook egg→coins/mine clue; priest ground tentacle→rib bone; elder lore→shared hammer case expedition. | Comprehensive schema3/revision2:2 independent stories/2Q,6 contacts/8M/22 aliases/2 materials;751 rooms/266 mobiles/98 objects/1621 resets/27 shops/full shared and selected foreign closure. Sixteen follow-ups;no native repair. |
 | 127 | Strathor Valley of the Storm Giants (`stormht`) | [Meet the giver → 1 × a bronze sword → a mighty crown of thunder](../../areas/qst/stormht.qst#L63) | 1 Q; 8 dialogue; 0 candidate link items |
 | 128 | The Gagga'Jobo Cave System (`goblincave`) | [Meet the giver → 4 × a strip of chothe hide → a pair of goblin-made gloves](../../areas/qst/goblincave.qst#L46) | 6 Q; 7 dialogue; 0 candidate link items |
 | 129 | The Tharnadian Ruin (`tharnadian_ruin`) | [Meet the giver → 1 × the remains of Lord Braddistock; 1 × the remains of the master of the house; 1 × the remains of the warrior guildmaster and the remaining ingredients → a shiny key](../../areas/qst/tharnadian_ruin.qst#L71) | 5 Q; 7 dialogue; 0 candidate link items |

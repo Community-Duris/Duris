@@ -53322,51 +53322,92 @@
     {
       "contacts": [
         {
-          "description": "This person offers local conversation. Try these topics to learn more.",
+          "description": "Offers the shared generated-quest service. His requests are separate from the cook\u2019s mine clue and the priest\u2019s proof return.",
+          "keyword": "bartender",
+          "mob_vnum": 17022,
+          "name": "a clansdwarf",
+          "topics": []
+        },
+        {
+          "description": "Discusses Khildarak, the enchantress, lost mines and the bone for the hammer case. These are story leads without another accepted exchange.",
           "keyword": "elder",
           "mob_vnum": 17059,
           "name": "the clan elder",
           "topics": [
-            "khildarak"
+            "khildarak",
+            "hammer",
+            "enchantress",
+            "bone",
+            "mine"
           ]
         },
         {
-          "description": "Start with these conversation topics, then follow the requests below.",
-          "keyword": "cook",
+          "description": "Accepts the exact steeder egg sack for coins and a mine-location clue. Her recipe and hoped-for favor are narrated, without another recorded outcome.",
+          "keyword": "duergar",
           "mob_vnum": 17118,
           "name": "a cook",
           "topics": [
             "mine",
-            "item"
+            "mines",
+            "entrance",
+            "item",
+            "retrieve",
+            "retreive"
           ]
         },
         {
-          "description": "Start with these conversation topics, then follow the requests below.",
+          "description": "A nest female declares nearby danger. Egg recovery and the cook\u2019s accepted return do not require this encounter or a recorded personal kill.",
+          "keyword": "steeder",
+          "mob_vnum": 17199,
+          "name": "a female steeder",
+          "topics": []
+        },
+        {
+          "description": "Guards a cavern descent while able to act at its birth room. The exact proof is declared on the floor beyond; its acceptance differs from a personal kraken kill.",
+          "keyword": "kraken",
+          "mob_vnum": 17247,
+          "name": "a kraken",
+          "topics": []
+        },
+        {
+          "description": "Accepts the exact kraken tentacle for a rib bone. His account of rescue does not separately record the expedition reaching home.",
           "keyword": "priest",
           "mob_vnum": 17248,
           "name": "a kuo-toa priest",
           "topics": [
-            "hello",
             "bones",
+            "bone",
+            "mine",
+            "hello",
+            "hi",
+            "greetings",
             "journey",
+            "trapped",
             "kraken",
+            "krakens",
             "task"
           ]
         }
       ],
       "coverage": "complete",
       "exclusions": [],
-      "introduction": "Explore Khildarak Stronghold and meet its people to uncover local requests.",
+      "introduction": "Khildarak Stronghold holds rumors of lost mines, a cook seeking a steeder egg sack, and a trapped priest offering a bone for kraken proof. Two independent accepted returns have their own cards. Discovery is separate; new journal progress requires active, ready accounting.",
       "orientation": [
-        "Start with look and exits to learn your surroundings.",
-        "Use help home to learn about hometowns and help quest for quest commands."
+        "ASK the clan elder about khildarak, hammer or mine. His tale links the lost mines, an enchantress and a bone that unlocks the hammer case. It is a lead for exploration; hearing it does not complete either return.",
+        "ASK the young cook about mine, entrance, item or retrieve. Bring one exact steeder egg sack loose for her promised coins and mine-location clue. Matching goods supplied by another player fit her request without a personal hunt.",
+        "Egg sacks are declared on the ground in steeder nesting holes. Nest females and other dangers are nearby. Recovering an egg, defeating a creature and the cook accepting an offering are different parts of your journey.",
+        "The cook describes a drunken clansdwarf with a circle-eye tattoo, and the elder mentions Clan Spore Seeder. These clues do not yet identify a confirmed responder with a recorded next answer. Follow the stronghold\u2019s conversations and descriptions; the journal does not mark the entrance learned merely from carrying an egg.",
+        "ASK the Kuo-Tao priest about bone, journey, kraken or task. He accepts the exact kraken tentacle for an ordinary rib bone. The tentacle is declared on the cavern floor beyond a guarded descent. Accepted proof does not establish who killed the krakens.",
+        "The priest\u2019s story describes a route blocked with a rock and the expedition\u2019s hoped-for return home. Shared passage access, moving a guard, your own actions and the party actually reaching home are separate outcomes. His return is accepted independently of the cook\u2019s.",
+        "The rib bone fits the hammer\u2019s display case. Recovering the bone, unlocking and opening the shared case, obtaining the hammer, wearing it and receiving one of its effects are distinct events. Owning a reward does not record an unlock or guarantee protection.",
+        "Hidden controls, clan halls, shops, training, pets, travel gates and later exchanges add world context. They do not create extra local quest returns. Current-material rows show loose supplies now; accepted history remains after they are spent. Two accepted returns preserve two achievements and two potential dailies, with supply still depending on admitted world stock."
       ],
-      "revision": 1,
-      "schema_version": 2,
+      "revision": 2,
+      "schema_version": 3,
       "source_area": "khildarak",
       "stories": [
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:17074;receive=C:5000;disappear=0",
@@ -53377,13 +53418,14 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Declared on the ground in nesting holes. Matching supplied loose goods fit. A held or nested egg, nearby nest female and personal kill are different evidence.",
               "id": "item-1",
               "item_vnums": [
                 17074
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a steeders egg sack"
+              "optional": true,
+              "text": "Carry a steeder egg sack loose"
             },
             {
               "contracts": [
@@ -53392,17 +53434,17 @@
                   "giver_vnum": 17118
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Records the recipient accepting this exact offering. Supplied loose stock fits without a conversation-order gate or personal kill. New credit requires active, ready accounting. Learned clues, recipe success, rescue, shared access and hammer effects remain separate outcomes.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Complete this accepted return"
             }
           ],
-          "summary": "Bring 1 x a steeders egg sack. Reward: 5,000 copper.",
-          "title": "Deliver 1 x a steeders egg sack"
+          "summary": "Bring one exact steeder egg sack for the cook\u2019s coins and her mine-location clue. Acceptance is independent of the priest\u2019s return; a prepared meal, learned entrance and clan favor need separate evidence.",
+          "title": "An egg sack for a mine clue"
         },
         {
-          "category": "request",
+          "category": "story",
           "contracts": [
             {
               "completion_key": "give=I:17022;receive=I:17020;disappear=0",
@@ -53413,13 +53455,14 @@
           "steps": [
             {
               "count": 1,
-              "hint": "Look for clues in the request giver's description and conversation.",
+              "hint": "Declared on the cavern floor beyond a kraken movement guard. Matching supplied loose proof fits. Returning this proof does not record a personal kill, expedition homecoming or ownership of the hammer.",
               "id": "item-1",
               "item_vnums": [
                 17022
               ],
               "kind": "carried_item",
-              "text": "Carry 1 x a piece of kraken tentacle"
+              "optional": true,
+              "text": "Carry a kraken tentacle loose"
             },
             {
               "contracts": [
@@ -53428,14 +53471,14 @@
                   "giver_vnum": 17248
                 }
               ],
-              "hint": "Give the requested items to this request giver.",
+              "hint": "Records the recipient accepting this exact offering. Supplied loose stock fits without a conversation-order gate or personal kill. New credit requires active, ready accounting. Learned clues, recipe success, rescue, shared access and hammer effects remain separate outcomes.",
               "id": "turn-in",
               "kind": "completion",
-              "text": "Complete the requested exchange"
+              "text": "Complete this accepted return"
             }
           ],
-          "summary": "Bring 1 x a piece of kraken tentacle. Reward: 1 x a rib bone.",
-          "title": "Deliver 1 x a piece of kraken tentacle"
+          "summary": "Bring the exact kraken tentacle for the priest\u2019s rib bone. His thanks narrate rescue; accepted proof records the exchange without a personal kill or separately persisted homecoming.",
+          "title": "Kraken proof for a rib bone"
         }
       ]
     },

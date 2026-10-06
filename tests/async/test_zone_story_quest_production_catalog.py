@@ -6759,6 +6759,64 @@ assert all(r['definition']['daily_exclusion']=='Unsupported durable offering' fo
 assert sum(len(s['steps'])-1 for s in mapping['stories'])==8
 
 
+# Khildarak Stronghold: stable schema2 upgrade, ground proof, shared controls and balanced reference gaps.
+khildarak=inventory_module.area_evidence(ROOT,'khildarak')
+mapping=next(m for m in catalog['story_mappings'] if m['source_area']=='khildarak')
+assert (mapping['schema_version'],mapping['revision'],mapping['coverage'])==(3,2,'complete')
+assert len(mapping['stories'])==2 and len(mapping['contacts'])==6 and not mapping['exclusions']
+blocks=inventory_module.native_blocks(ROOT)
+raw=sorted((b for b in blocks if b['source']=='areas/qst/khildarak.qst' and b['kind'] in ('Q','QA')),key=lambda b:b['line'])
+assert [(b['kind'],b['line'],b['giver_vnum'],b['give'],b['receive'],b['disappear']) for b in raw]==[('Q',36,17118,[('I',17074)],[('C',5000)],False),('Q',106,17248,[('I',17022)],[('I',17020)],False)]
+assert [s['id'] for s in mapping['stories']]==['request-17118-e5eeeb25247d','request-17248-effe52f75b66']
+for s,b in zip(mapping['stories'],raw):
+ assert s['category']=='story' and s['contracts']==[b['binding']]
+ assert [(t['id'],t['item_vnums'],t['count'],t['optional']) for t in s['steps'] if t['kind']=='carried_item']==[('item-1',[b['give'][0][1]],1,True)]
+ assert s['steps'][-1]['id']=='turn-in' and s['steps'][-1]['kind']=='completion' and s['steps'][-1]['contracts']==s['contracts'] and not s['steps'][-1].get('optional',False)
+assert sum(len(s['steps']) for s in mapping['stories'])==4
+contacts={c['mob_vnum']:c for c in mapping['contacts']};assert set(contacts)=={17022,17059,17118,17199,17247,17248}
+for v,c in contacts.items():
+ assert c['name']==inventory_mobs[v]['name'] and c['keyword'] in inventory_mobs[v]['keywords']
+ assert c['topics']==[w for m in khildarak['dialogue'] if m['giver_vnum']==v for w in m['body'][0].rstrip('~').split()]
+assert len(khildarak['dialogue'])==8 and sum(len(c['topics']) for c in contacts.values())==22 and 'retreive' in contacts[17118]['topics']
+assert khildarak['zone']['zone_number']==170 and khildarak['zone']['first_vnum']==16961 and khildarak['zone']['last_vnum']==17750 and khildarak['zone']['reset_mode']==2
+rs=khildarak['reset_commands'];assert len(rs)==1621
+assert collections.Counter(r['command'] for r in rs)=={'D':528,'O':61,'P':5,'M':639,'R':27,'E':38,'G':232,'F':91}
+rooms=dawndale_bodies('khildarak','wld');objects=dawndale_bodies('khildarak','obj');mobiles=dawndale_bodies('khildarak','mob')
+assert set(rooms)==set(range(17000,17751)) and set(mobiles)==set(range(17000,17266)) and set(objects)==set(range(17000,17098))
+edges=[(v,int(m[1]),int(m[4]),int(m[5]),int(m[6])) for v,b in rooms.items() for m in re.finditer(r'\bD(\d+)\s+([^~]*)~([^~]*)~\s*(-?\d+)\s+(-?\d+)\s+(-?\d+)',b,re.S)]
+assert len(edges)==1582 and (17537,5,0,0,17637) in edges and (17637,4,0,0,17537) in edges
+assert not any(r['command']=='D' and (r['arguments'][1],r['arguments'][2]) in ((17537,5),(17637,4)) for r in rs)
+assert [(r['arguments'][2],r['arguments'][3]) for r in rs if r['command']=='O' and r['arguments'][1]==17074]==[(2,17344),(2,17348)]
+assert [(r['arguments'][2],r['arguments'][3]) for r in rs if r['command']=='O' and r['arguments'][1]==17022]==[(1,17648)]
+assert [(r['arguments'][2],r['arguments'][3]) for r in rs if r['command']=='M' and r['arguments'][1]==17247]==[(3,17643)]*3
+assert [r['arguments'][3] for r in rs if r['command']=='M' and r['arguments'][1]==17199]==[17343,17345,17347]
+assert not any(r['command'] in ('G','E','O','P') and r['arguments'][1] in (17014,17015) for r in rs)
+for item,cmd,room,direction in ((17004,66,17070,5),(17006,270,17332,5),(17014,274,17537,5),(17015,274,17637,4)):
+ assert objvalues(objects[item])[0]==29 and objvalues(objects[item])[11:14]==[cmd,room,direction]
+ assert any(v==room and d==direction for v,d,f,k,t in edges)
+assert objvalues(objects[17019])[0]==15 and objvalues(objects[17019])[11:15]==[50,29,17020,250] and objvalues(objects[17020])[0]==18
+assert any(r['command']=='O' and r['arguments'][1:5]==[17019,1,17160,100] for r in rs)
+assert any(r['command']=='P' and r['arguments'][1:5]==[17021,1,17019,100] for r in rs)
+assert any(r['command']=='M' and r['arguments'][1:4]==[17271,10,17271] for r in rs) and 17271 not in inventory_mobs
+parent=None;missing_stock=[]
+for r in rs:
+ if r['command'] in ('M','F','R'):parent=r['arguments']
+ if r['command']=='G' and r['arguments'][1] in (6070,6109,6110):missing_stock.append((r['arguments'][1],parent[1],parent[3]))
+assert missing_stock==[(6070,17003,17281),(6109,17003,17281),(6110,17003,17281)]
+assert all(v not in inventory_items for v in (6070,6109,6110))
+assert len(re.findall(r'^#\d+~',(ROOT/'areas/shp/khildarak.shp').read_text(),re.M))==27
+assignments={(a['kind'],a['vnum'],a['function']) for a in khildarak['special_assignments']}
+assert len(assignments)==19 and {('mob',17247,'guild_guard'),('mob',17199,'devour'),('mob',17022,'world_quest'),('obj',17021,'khildarak_warhammer')}<=assignments
+priest_krakens=next(b for b in khildarak['dialogue'] if b['giver_vnum']==17248 and b['body'][0].startswith('kraken '))
+assert 'I cannot be sure' in ' '.join(priest_krakens['body'])
+interp=(ROOT/'src/cmd/interp.c').read_text();assert 'IS_NPC(k) && IS_AWAKE(k)' in interp and '!IS_IMMOBILE(k)' in interp
+h=(ROOT/'src/cmd/interp.h').read_text();assert '#define CMD_REMOVE 66' in h and '#define CMD_SHOVE 274' in h and '#define CMD_PUSH 270' in h
+db=(ROOT/'src/world/db.c').read_text();assert '3; // only grab first two bits' in db and "case 'R': /* last mob loaded with M/F command will mount this */" in db
+service=(ROOT/'src/classes/drannak.c').read_text();assert '#define SHARDS_FOR_ORB 3' in service and 'craft_recipe_discipline::harvester' in service and 'item_movement_transaction_submit_craft' in service
+units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==170]
+assert len(units)==2 and sum(u['achievement'] for u in units)==2 and sum(u['daily_candidate'] for u in units)==2
+
+
 # Labyrinth of No Return: independent exact bundles, follower sources, controls and bounded map discrepancy.
 labyrinth=inventory_module.area_evidence(ROOT,'labyrinth')
 mapping=next(m for m in catalog['story_mappings'] if m['source_area']=='labyrinth')
@@ -8047,7 +8105,7 @@ units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==429]
 assert len(units)==10 and all(u['achievement'] and u['daily_candidate'] for u in units)
 assert 'retires' in mapping['stories'][1]['summary'] and 'together' in mapping['stories'][7]['summary']
 
-for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold", "troll_caves", "centaur_zone", "opalphoenix", "mira", "surfacekeeps", "icecrag", "cloister", "willem", "ixarkon", "mntcastl", "tundra", "fields_between", "goblinht", "ceothia", "brad", "desert", "ceopast", "basin_wa", "crypt", "val", "harrow", "mountaintracks", "shortc", "lavcav", "nomads", "undermountain", "desolateinv", "spshold", "harpyht", "herders", "jotun", "temple", "pods", "citadel", "element", "earth", "githzer", "worms", "ravenloft", "barovia2", "werrun", "newhope", "raxthan", "library", "mistywood", "pharrvly", "oasis", "connectorzones", "battlefi", "mansion", "woodseer", "ruins", "ttowers", "minopass", "pyramid", "earthp", "yuan_ti", "caves_skelenak", "highway", "labyrinth"):
+for area in ("twin_towers_forest", "newbie2", "newbie", "braddistock", "breale", "elvish", "krimman", "bastine", "pineholl", "quietus", "torg", "solonar", "wh", "smokev", "caertannad", "bs", "moria", "clwcvrn", "long", "blackpearl", "ravenloft2", "barovia", "tikitt", "jade", "savannah", "alatorin", "newhaven", "realm", "verspin", "shipy", "cosmic", "surface", "tharnadia", "minizones", "torrhan", "gold_hal", "ashrumite", "hall", "sarmiz", "delwyn", "divhome", "halfcut", "scorchvalley", "court", "snogres", "airshipgrave", "juiblex", "surfacemini", "nexus", "crakkaro", "roguerai", "desolate", "rftjngle", "trnsptow", "airp", "hunt", "tribal", "lornecro", "brass", "lortower", "mushroom_caverns", "smoke", "fishermans_wharf", "nlakes", "kobold", "troll_caves", "centaur_zone", "opalphoenix", "mira", "surfacekeeps", "icecrag", "cloister", "willem", "ixarkon", "mntcastl", "tundra", "fields_between", "goblinht", "ceothia", "brad", "desert", "ceopast", "basin_wa", "crypt", "val", "harrow", "mountaintracks", "shortc", "lavcav", "nomads", "undermountain", "desolateinv", "spshold", "harpyht", "herders", "jotun", "temple", "pods", "citadel", "element", "earth", "githzer", "worms", "ravenloft", "barovia2", "werrun", "newhope", "raxthan", "library", "mistywood", "pharrvly", "oasis", "connectorzones", "battlefi", "mansion", "woodseer", "ruins", "ttowers", "minopass", "pyramid", "earthp", "yuan_ti", "caves_skelenak", "highway", "labyrinth", "khildarak"):
     assert inventory_module.review_index(ROOT, area) == (ROOT / f"docs/reference/zone-story-audits/{area}.md").read_text(encoding="utf-8")
 
 with tempfile.TemporaryDirectory(prefix="duris-zone-story-production-catalog-") as temporary:

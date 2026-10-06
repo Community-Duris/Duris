@@ -7692,6 +7692,142 @@ int main(int argc, char **argv)
 		{
 			const auto &mapping = *std::find_if(
 				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "khildarak"; });
+			const auto &cook = story_for("khildarak", "request-17118-e5eeeb25247d");
+			const auto &priest = story_for("khildarak", "request-17248-effe52f75b66");
+			require(mapping.revision == 2 && mapping.stories.size() == 2 &&
+					mapping.contacts.size() == 6,
+				"Khildarak upgrade scope failed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 170, 17000, 100, "arrival") ==
+					result::applied,
+				"Khildarak arrival failed");
+			std::string journal =
+				journey.render_journal(7, 42, 170, 10, 1, 101, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Khildarak exposed unseen recipients");
+			for (const auto &[mob, room] :
+			     std::vector<std::pair<int, int>>{ { 17059, 17169 },
+							       { 17199, 17343 },
+							       { 17247, 17643 },
+							       { 17022, 17089 } })
+				require(journey.meet_npc(7, 42, mob, room, 102) == result::applied,
+					"Khildarak context encounter failed");
+			journal = journey.render_journal(7, 42, 170, 10, 1, 103, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Khildarak context invented recipient knowledge");
+			require(journey.meet_npc(7, 42, 17248, 17541, 104) == result::applied,
+				"Khildarak priest encounter failed");
+			journal = journey.render_journal(7, 42, 170, 10, 1, 105, false, false);
+			require(journal.find("] " + priest.title + "\r\n") != std::string::npos &&
+					journal.find("] " + cook.title + "\r\n") ==
+						std::string::npos,
+				"Khildarak recipient visibility failed");
+			require(journey.meet_npc(7, 42, 17118, 17114, 106) == result::applied,
+				"Khildarak cook encounter failed");
+			const auto status = [&](const auto &story, size_t row, const char *state)
+			{
+				const auto start = journal.find("] " + story.title + "\r\n");
+				require(start != std::string::npos,
+					"Khildarak visible card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     story.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			for (int v : { 17019, 17020, 17021, 400230, 400231 })
+				supplies.carried[v] = 1;
+			supplies.equipped[18] = 17074;
+			journal = journey.render_journal(7, 42, 170, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(cook, 0, "Missing now") && status(priest, 0, "Missing now"),
+				"Khildarak held egg/container/rewards/service goods prepared offerings");
+			supplies = {};
+			supplies.carried[17022] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 170, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(priest, 0, "Ready now") && status(priest, 1, "Pending") &&
+					status(cook, 0, "Missing now"),
+				"Khildarak supplied proof required cook history or a personal kill");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 170).completed == 0,
+				"Khildarak projection forged clue/guard/case/rescue evidence");
+			record(journey, priest.contracts.front(), "khildarak-priest-first", 170,
+			       17541);
+			require(journey.progress_for_zone(7, 42, 170).completed == 1 &&
+					journey.evidence_for(cook.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Khildarak priest acceptance required cook return");
+			supplies = {};
+			supplies.carried[17074] = 1;
+			journal = journey.render_journal(7, 42, 170, 10, 1, 119, false, false,
+							 &supplies);
+			require(status(cook, 0, "Ready now") && status(cook, 1, "Pending"),
+				"Khildarak exact supplied egg did not prepare its independent return");
+			record(journey, cook.contracts.front(), "khildarak-supplied-egg", 170,
+			       17114);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 170, 10, 1, 120, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(status(story, 0, "Missing now") &&
+						status(story, 1, "Recorded"),
+					"Khildarak spent materials erased accepted history or stayed ready");
+			require(journey.progress_for_zone(7, 42, 170).completed == 2 &&
+					journey.progress_for_zone(7, 42, 170).total == 2,
+				"Khildarak material/context rows created extra units");
+			auto replay =
+				completion(priest.contracts.front(), "khildarak-priest-first", 120);
+			replay.transaction.zone_number = 170;
+			replay.transaction.room_vnum = 17541;
+			require(journey.record_completion(replay) == result::already_applied &&
+					journey.progress_for_zone(7, 42, 170).completed == 2,
+				"Khildarak replay duplicated proof");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 170) &&
+					recovered.progress_for_zone(7, 42, 170).completed == 2,
+				"Khildarak cold recovery lost accepted history");
+			auto previous_catalog = raw_catalog;
+			require(zone_story_quest_story::apply(
+					R"khildarak({"schema_version":2,"revision":1,"source_area":"khildarak","coverage":"complete","introduction":"Explore Khildarak Stronghold and meet its people to uncover local requests.","orientation":["Start with look and exits to learn your surroundings.","Use help home to learn about hometowns and help quest for quest commands."],"contacts":[{"mob_vnum":17059,"name":"the clan elder","keyword":"elder","description":"This person offers local conversation. Try these topics to learn more.","topics":["khildarak"]},{"mob_vnum":17118,"name":"a cook","keyword":"cook","description":"Start with these conversation topics, then follow the requests below.","topics":["mine","item"]},{"mob_vnum":17248,"name":"a kuo-toa priest","keyword":"priest","description":"Start with these conversation topics, then follow the requests below.","topics":["hello","bones","journey","kraken","task"]}],"stories":[{"id":"request-17118-e5eeeb25247d","title":"Deliver 1 x a steeders egg sack","category":"request","summary":"Bring 1 x a steeders egg sack. Reward: 5,000 copper.","contracts":[{"giver_vnum":17118,"completion_key":"give=I:17074;receive=C:5000;disappear=0"}],"steps":[{"id":"item-1","text":"Carry 1 x a steeders egg sack","kind":"carried_item","hint":"Look for clues in the request giver's description and conversation.","item_vnums":[17074],"count":1},{"id":"turn-in","text":"Complete the requested exchange","kind":"completion","hint":"Give the requested items to this request giver.","contracts":[{"giver_vnum":17118,"completion_key":"give=I:17074;receive=C:5000;disappear=0"}]}]},{"id":"request-17248-effe52f75b66","title":"Deliver 1 x a piece of kraken tentacle","category":"request","summary":"Bring 1 x a piece of kraken tentacle. Reward: 1 x a rib bone.","contracts":[{"giver_vnum":17248,"completion_key":"give=I:17022;receive=I:17020;disappear=0"}],"steps":[{"id":"item-1","text":"Carry 1 x a piece of kraken tentacle","kind":"carried_item","hint":"Look for clues in the request giver's description and conversation.","item_vnums":[17022],"count":1},{"id":"turn-in","text":"Complete the requested exchange","kind":"completion","hint":"Give the requested items to this request giver.","contracts":[{"giver_vnum":17248,"completion_key":"give=I:17022;receive=I:17020;disappear=0"}]}]}],"exclusions":[]})khildarak",
+					"khildarak", &previous_catalog, &error),
+				"Khildarak previous schema2 fixture rejected");
+			service previous(previous_catalog);
+			require(previous.discover_zone(7, 42, 170, 17000, 100, "arrival") ==
+					result::applied,
+				"Khildarak previous discovery failed");
+			record(previous, priest.contracts.front(), "khildarak-old-priest", 170,
+			       17541);
+			record(previous, cook.contracts.front(), "khildarak-old-cook", 170, 17114);
+			service upgraded(catalog);
+			require(upgraded.deserialize_state(previous.serialize_state(), &error) &&
+					upgraded.progress_for_zone(7, 42, 170).completed == 2,
+				"Khildarak schema2-to3 upgrade lost history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 170, 17000, 100, "arrival") ==
+					result::applied,
+				"Khildarak raw discovery failed");
+			record(historical, priest.contracts.front(), "khildarak-raw-priest", 170,
+			       17541);
+			record(historical, cook.contracts.front(), "khildarak-raw-cook", 170,
+			       17114);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 170).completed == 2,
+				"Khildarak raw-to-authored history lost receipts");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
 				[](const auto &m) { return m.source_area == "labyrinth"; });
 			const auto &map = story_for("labyrinth", "adventurer-dusty-map");
 			const auto &proofs = story_for("labyrinth", "knight-nine-proofs");
