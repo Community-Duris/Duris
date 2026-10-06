@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 177 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 178 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,14 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+teka2=next(m for m in catalog['story_mappings'] if m['source_area']=='teka2')
+assert (teka2['coverage'],teka2['schema_version'],teka2['revision'])==('complete',3,1) and not teka2['exclusions']
+assert len(teka2['stories'])==1 and len(teka2['contacts'])==12 and sum(len(c['topics']) for c in teka2['contacts'])==6
+s=teka2['stories'][0];assert s['id']=='aerlyn-relic' and len(s['steps'])==2
+assert (s['steps'][0]['item_vnums'],s['steps'][0]['count'],s['steps'][0]['optional'],s['steps'][0]['kind'])==([75559],1,True,'carried_item')
+assert s['steps'][-1]['kind']=='completion' and s['contracts']==s['steps'][-1]['contracts']==[{'giver_vnum':75500,'completion_key':'give=I:75559;receive=I:75560,I:75561;disappear=1'}]
+assert report['eligible_by_zone']['755']==1
 
 mitashi=next(m for m in catalog['story_mappings'] if m['source_area']=='mitashi')
 assert (mitashi['coverage'],mitashi['schema_version'],mitashi['revision'])==('complete',3,1) and not mitashi['exclusions']

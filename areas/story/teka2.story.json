@@ -1,0 +1,155 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "teka2",
+  "coverage": "complete",
+  "introduction": "Follow Aerlyn's lost rhinestone through the tower, with dragon-egg recovery, actual travel commands and separate training, epic-node and scene context.",
+  "orientation": [
+    "Explore the cathedral, Aerlyn's tower, mirror halls, prison, crypt and mines. The selected cathedral approach includes travel objects, locked doors and an underground river. Current stock, visibility, combat and water eligibility matter; a map alone does not guarantee safe passage.",
+    "Four travel objects use native commands: TOUCH the cathedral altar, ENTER the large mirror, STARE at the golden orb above the mirrors, and PULL the loose floor board in the west hall. These are actual object travel routes when the visible target and character are admitted; they do not require a separately assigned special procedure.",
+    "Find Aerlyn in her private study. Ask spell or fail for the lost-relic clue, then relic for her raising-mage story. The two aliases for the first response select the same conversation; ambient chanting does not create personal progress.",
+    "Ilbe directs miners below the tower. Ask lost, relic or aerlyn for one shared response. He asks to be told when you find the relic, but there is no selected implemented report or stop-mining endpoint. Meeting workers or reading their dialogue is separate from Aerlyn's accepted return.",
+    "The silver dragon carries a silver dragon egg when stocked. The small rhinestone is declared inside that closed egg alongside a strange vial of blood. The egg is unlocked: OPEN it, then an eligible successful SEARCH may reveal the hidden stone before GET. Survival, visibility, chance, container access and current stock still matter.",
+    "Carry the exact small rhinestone loose and visible before offering it to Aerlyn. A held, worn or nested stone is outside the native loose-root offering. A supplied exact stone also fits; your own dragon kill, source recovery, conversation and mining report are not required by the recipe. Ready now is a current inventory count and does not guarantee visibility or ownership admission.",
+    "Aerlyn consumes one rhinestone, issues the shiny golden mask of Teka and flaming mace of Ruzdo, then departs. The native receipt remains recorded after the stone is spent. The two rewards belong to one return, one achievement and one potential daily; reward possession alone is not the receipt.",
+    "Iffrak carries the tower's golden key; Abrihim has the ivory key; a holy guardian has the priest's key; Khalil has the prison key; a skeletal guardsman has the old iron key; a crypt guardian has the small key. Exact doors, source stock and eligible alternate access matter. These access choices are guidance, not additional required turn-in items.",
+    "Aerlyn offers chant mastery and Osmirim offers sneaky strike through the normal epic-teacher service. Use the full skill name and the trainer's actual eligibility and price display. Purchases currently refuse while accounting is active, so neither a practice attempt nor a visit is a successful learning stage. Aerlyn's departure also changes trainer availability.",
+    "The rune-covered stone in Lashan's crypt is an epic node with its own touch, participant and reward rules. The tower memory, trapped souls, demons, prison and scene followers do not implement a rescue, mining, resurrection or escort completion through this journal.",
+    "The mirror overlook can trigger a fall; the underground river has currents and water travel requirements. Cold descriptions alone do not impose a special cold prerequisite. Some passages are directed or secret, so reaching a place does not establish a return route or a personal access receipt.",
+    "New discovery, encounter, journal, achievement and daily progress requires active, ready accounting. Daily rollover does not restock the cap-one egg and stone or restore a departed Aerlyn. The mace's generic combat effects are separate from the accepted return and depend on actual trigger and effect resolution."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 75500,
+      "name": "Aerlyn",
+      "keyword": "aerlyn",
+      "description": "Ask spell, fail or relic. Aerlyn accepts the exact loose visible rhinestone for two rewards and departs. Her epic practice purchases currently refuse while accounting is active.",
+      "topics": [
+        "spell",
+        "fail",
+        "relic"
+      ]
+    },
+    {
+      "mob_vnum": 75535,
+      "name": "Ilbe, the mining chief",
+      "keyword": "ilbe",
+      "description": "Ask lost, relic or aerlyn. Ilbe's miners search for the relic; no selected reporting or stop-work endpoint records a separate completion.",
+      "topics": [
+        "lost",
+        "relic",
+        "aerlyn"
+      ]
+    },
+    {
+      "mob_vnum": 75524,
+      "name": "A silver dragon",
+      "keyword": "dragon",
+      "description": "The silver dragon carries the egg containing the hidden rhinestone when stocked. Its encounter, defeat, source recovery and accepted return are separate evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75503,
+      "name": "Iffrak, the tower guardian",
+      "keyword": "iffrak",
+      "description": "Iffrak carries golden key75510 for the tower gate. Current stock and actual door admission matter; the key is access guidance rather than a native offering.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75516,
+      "name": "Abrihim, the high priest",
+      "keyword": "abrihim",
+      "description": "Abrihim carries ivory key75527 for the crypt/altar connection. The two directions have different reset lock states.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75505,
+      "name": "a holy guardian of Teka",
+      "keyword": "guardian",
+      "description": "A holy guardian in the cathedral carries priest key75564 when the parent follower and item stock succeed; it addresses the storage trapdoor.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75518,
+      "name": "Khalil",
+      "keyword": "khalil",
+      "description": "Khalil carries prison key75517. The prison and its inhabitants do not implement a player-owned rescue or escort receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75532,
+      "name": "A skeletal guardsman",
+      "keyword": "skeletal",
+      "description": "The skeletal guardsman carries old iron key75531 for the mine gates. River and other eligible approaches can change which side you reach first.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75539,
+      "name": "A crypt guardian",
+      "keyword": "crypt",
+      "description": "This crypt guardian carries small key75562 for Lashan's crypt. The epic node inside has separate reward authority.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75523,
+      "name": "Osmirim, the dark rogue",
+      "keyword": "osmirim",
+      "description": "Osmirim offers sneaky strike through the epic-teacher handler at normal boot. Eligibility and prices are dynamic; purchases currently refuse while accounting is active.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75510,
+      "name": "Caledan, the trainer",
+      "keyword": "caledan",
+      "description": "Caledan is tower training context. His trainer name and an encounter do not establish an owned skill-learning quest outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 75533,
+      "name": "Itzkar, the old sage",
+      "keyword": "itzkar",
+      "description": "Itzkar provides sage and exploration context. His wandering prose is not a selected rescue or escort endpoint.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "aerlyn-relic",
+      "title": "Return the lost rhinestone to Aerlyn",
+      "category": "request",
+      "summary": "Bring Aerlyn the exact small rhinestone, declared hidden in a silver dragon egg. Her native return consumes one stone, gives a mask and mace, then she departs. Source recovery and current preparation stay separate from the accepted receipt; supplied exact stones fit without personal dragon, mining or dialogue prerequisites.",
+      "contracts": [
+        {
+          "giver_vnum": 75500,
+          "completion_key": "give=I:75559;receive=I:75560,I:75561;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "rhinestone",
+          "text": "Carry the small rhinestone loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            75559
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks the exact loose rhinestone count now. The declared source is the silver dragon egg: OPEN, eligible SEARCH for the hidden stone, then GET. A supplied exact stone fits without personal source history. Ready now is raw inventory presence, not a guarantee of sight or ownership admission; held or nested items do not fill this row."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record Aerlyn's accepted relic return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 75500,
+              "completion_key": "give=I:75559;receive=I:75560,I:75561;disappear=1"
+            }
+          ],
+          "hint": "Records one rhinestone consumed, both mask and mace issued, and Aerlyn's departure. Dialogue, mining, source recovery, trainer practice, reward custody and resurrection prose are separate evidence."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

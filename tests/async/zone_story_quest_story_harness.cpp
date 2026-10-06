@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 177 &&
+		require(catalog.story_mappings.size() == 178 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,124 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "teka2"; });
+			const auto &relic = story_for("teka2", "aerlyn-relic");
+			require(mapping.stories.size() == 1 && mapping.contacts.size() == 12 &&
+					relic.steps.size() == 2 && mapping.revision == 1,
+				"Dark Stone Tower journal scope failed");
+			int achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 755)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 1 && dailies == 1,
+				"Dark Stone Tower two rewards became two quests");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 755, 75546, 100, "arrival") ==
+					result::applied,
+				"Dark Stone Tower discovery failed");
+			require(journey.meet_npc(7, 42, 75524, 75571, 101) == result::applied,
+				"Dark Stone Tower dragon encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 755, 10, 1, 102, false, false);
+			require(journal.find("] " + relic.title + "\r\n") == std::string::npos,
+				"Dark Stone Tower source encounter exposed Aerlyn acceptance card");
+			require(journey.meet_npc(7, 42, 75500, 75500, 103) == result::applied,
+				"Dark Stone Tower Aerlyn encounter failed");
+			const auto status = [&](size_t row, const char *state)
+			{
+				return journal.find(std::string("[") + state + "] " +
+						    relic.steps[row].text) != std::string::npos;
+			};
+			const auto before = journey.serialize_state();
+			supplies = {};
+			journal = journey.render_journal(7, 42, 755, 10, 1, 104, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Pending"),
+				"Dark Stone Tower invented source custody");
+			for (int v : { 75542, 75529, 75560, 75561, 55454, 358 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 755, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Pending"),
+				"Dark Stone Tower egg,blood,rewards or memory substituted stone");
+			supplies = {};
+			supplies.equipped[18] = 75559;
+			journal = journey.render_journal(7, 42, 755, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Pending"),
+				"Dark Stone Tower held stone substituted loose root");
+			supplies = {};
+			supplies.carried[75542] = 1;
+			journal = journey.render_journal(7, 42, 755, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(0, "Missing now"),
+				"Dark Stone Tower nested stone inferred from egg alone");
+			supplies = {};
+			supplies.carried[75559] = 1;
+			journal = journey.render_journal(7, 42, 755, 10, 1, 108, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Pending") &&
+					journey.serialize_state() == before,
+				"Dark Stone Tower supplied preparation created source or completion history");
+			require(journal.find("SEARCH") != std::string::npos &&
+					journal.find("STARE") != std::string::npos &&
+					journal.find(
+						"does not guarantee visibility or ownership admission") !=
+						std::string::npos &&
+					journal.find("ready accounting") != std::string::npos,
+				"Dark Stone Tower guidance lost source,travel,admission or accounting boundaries");
+			const auto &foreign = *std::find_if(catalog.definitions.begin(),
+							    catalog.definitions.end(),
+							    [](const auto &d)
+							    { return d.giver_vnum == 138261; });
+			record(journey, foreign.definition_id, "teka2-foreign", 1382, 138428);
+			journal = journey.render_journal(7, 42, 755, 10, 1, 109, false, false,
+							 &supplies);
+			require(status(1, "Pending") &&
+					journey.progress_for_zone(7, 42, 755).completed == 0,
+				"Dark Stone Tower unrelated return completed Aerlyn");
+			record(journey, relic.contracts.front(), "teka2-relic", 755, 75500);
+			supplies = {};
+			supplies.carried[75560] = 1;
+			supplies.carried[75561] = 1;
+			journal = journey.render_journal(7, 42, 755, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 755).completed == 1,
+				"Dark Stone Tower spent stone lost receipt or both rewards doubled completion");
+			supplies.carried[75559] = 2;
+			journal = journey.render_journal(7, 42, 755, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 755).completed == 1,
+				"Dark Stone Tower reacquisition duplicated acceptance");
+			auto replay = completion(relic.contracts.front(), "teka2-relic", 120);
+			replay.transaction.zone_number = 755;
+			replay.transaction.room_vnum = 75500;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Dark Stone Tower replay duplicated receipt");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 755).completed == 1,
+				"Dark Stone Tower cold recovery lost receipt");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 755, 75546, 100, "arrival") ==
+					result::applied,
+				"Dark Stone Tower raw discovery failed");
+			record(raw, relic.contracts.front(), "teka2-raw", 755, 75500);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 755).completed == 1,
+				"Dark Stone Tower raw-to-authored recovery lost receipt");
 		}
 
 		{
