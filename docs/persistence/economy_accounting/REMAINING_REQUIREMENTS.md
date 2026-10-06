@@ -1,5 +1,15 @@
 # Double-entry economy: remaining requirements
 
+## Actual inactive alchemist reset/literal fixture retained — 2026-10-06
+
+[Scoped native evidence](ALCHEMIST_ACTUAL_RESET_LITERAL_QUALIFICATION_2026-10-06.md)
+and the retained fixture link all 738 original production providers. Both
+real boot/reset worlds pass, including chance/UID/latch retries and moved-vial
+public literal capture without synthetic birth/source reference facts.
+Independent review accepts the exact provider and assertion scope. Accounting
+was inactive; active NBC3 admission, SQL/custody/publication/ACK and authentic
+cold restoration remain pending. No Plan or release gate is marked complete.
+
 ## Native birth writer registry refreshed — 2026-10-06
 
 [Maintained integration evidence](NATIVE_BIRTH_WRITER_REGISTRY_INTEGRATION_2026-10-06.md)
