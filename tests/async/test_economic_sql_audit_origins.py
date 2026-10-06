@@ -223,6 +223,7 @@ class ItemRevisionTests(unittest.TestCase):
         return {"operation_id": OP, "event_index": 0, "item_uid": uid,
                 "root_item_uid": uid, "parent_item_uid": None,
                 "to_owner_type": 1, "to_owner_id": 7, "to_owner_context_id": 0,
+                "from_equipment_slot": 0, "to_equipment_slot": 0,
                 "item_revision": revision, "from_owner_revision": owner_revision,
                 "reason_type": 1, "operation_epoch": EPOCH, "operation_outcome": 1}
 

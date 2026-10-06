@@ -565,6 +565,7 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
         placeholders = ",".join("%s" for _ in batch)
         rows = bounded(cursor,
             "SELECT l.operation_id,l.event_index,l.item_uid,l.root_item_uid,l.parent_item_uid,"
+            "l.from_equipment_slot,l.to_equipment_slot,"
             "l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
             "l.reason_type,o.epoch AS operation_epoch,"
             "o.outcome AS operation_outcome "
@@ -590,6 +591,8 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
                 "root": row["root_item_uid"], "parent": row["parent_item_uid"],
                 "owner": [row["to_owner_type"], row["to_owner_id"],
                           row["to_owner_context_id"]],
+                "from_equipment_slot": row["from_equipment_slot"],
+                "to_equipment_slot": row["to_equipment_slot"],
                 "state": "tombstone" if row["to_owner_type"] == 8 else "live",
                 "action": "create" if reason == 2 else "destroy" if reason == 3 else "move",
                 "operation_epoch": hex_id(row["operation_epoch"]),
@@ -606,6 +609,7 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
         placeholders = ",".join("%s" for _ in batch)
         rows = bounded(cursor,
             "SELECT l.operation_id,l.event_index,l.item_uid,l.root_item_uid,l.parent_item_uid,"
+            "l.from_equipment_slot,l.to_equipment_slot,"
             "l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
             "l.reason_type FROM item_ownership_ledger l "
             "LEFT JOIN economic_accounting_operation o ON o.operation_id=l.operation_id "
@@ -626,6 +630,8 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
                 "root": row["root_item_uid"], "parent": row["parent_item_uid"],
                 "owner": [row["to_owner_type"], row["to_owner_id"],
                           row["to_owner_context_id"]],
+                "from_equipment_slot": row["from_equipment_slot"],
+                "to_equipment_slot": row["to_equipment_slot"],
                 "state": "tombstone" if row["to_owner_type"] == 8 else "live",
                 "action": "create" if reason == 2 else "destroy" if reason == 3 else "move"})
     return (events, unreferenced, {
@@ -650,7 +656,7 @@ def append_committed_item_creation_origin(item_origins: list[dict], known_uids: 
         return False
     item_origins.append({"uid": uid, "origin": "creation", "revision": 0,
                          "root": uid, "parent": None, "owner": [0, 0, 0],
-                         "state": "absent"})
+                         "state": "absent", "equipment_slot": 0})
     known_uids.add(uid)
     return True
 
@@ -1428,7 +1434,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     native["pending_claim_source_coverage"] = claim_source_coverage
     items = bounded(cursor,
         "SELECT item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,"
-        "owner_context_id,item_revision,state,vnum,"
+        "owner_context_id,item_revision,state,equipment_slot,vnum,"
         f"CASE WHEN vnum={COIN_VNUM} THEN coin_payload ELSE NULL END AS coin_payload "
         "FROM item_current_owner ORDER BY item_uid")
     coin_payload_rows = 0
@@ -1441,7 +1447,8 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
                                 "owner": [row["owner_type"], row["owner_id"],
                                           row["owner_context_id"]],
                                 "revision": row["item_revision"],
-                                "state": ITEM_STATES[row["state"]]})
+                                "state": ITEM_STATES[row["state"]],
+                                "equipment_slot": row["equipment_slot"]})
         if row["vnum"] == COIN_VNUM:
             blob = row["coin_payload"]
             if blob is None:
