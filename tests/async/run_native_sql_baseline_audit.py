@@ -718,6 +718,9 @@ try:
           "dump_sha256": hashlib.sha256(dump_path.read_bytes()).hexdigest(), "dump_bytes": dump_path.stat().st_size,
           "books": 2, "tables_unchanged": len(TABLES), "full_qualifier": True, "exact_native_replay": True,
           "active_epoch_null": True, "complete_world_capture": False}, sort_keys=True), flush=True)
+    from _plan5_equipment_restore import run as equipment_restore
+    equipment_restore(ROOT, owner, reader, fixture, native, encoded, settings, engine_name)
+    assert captured() == intact
     print("NATIVE_BASELINE_AUDIT_QUALIFIED " + json.dumps({"baseline_claims": 2, "epochs": 2,
           "cuts": len(cuts), "constraint_refusals": len(constraints),
           "command_binding_cuts": binding_cuts,
