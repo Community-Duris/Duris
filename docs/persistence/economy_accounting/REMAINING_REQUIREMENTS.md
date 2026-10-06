@@ -17,12 +17,16 @@ its 2918 artifacts are exported with exact hashes and its owned runner and
 volumes are removed. Exact-child candidate7a2 passes its original sanitizer
 context component and flatfile production build; SQL stops at two pointer-list
 type errors. The independently reviewed const-pointer correction is composed
-as0ef: its SQL production build passes and flatfile remains live. Original NPC
-birth command, mapped compiler, result, corrected SQL adapter and root integration
-have source review only. The primary composes their exact interfaces with the
-published Plan5 reader fix into shared candidate16ba; original production builds
-are underway. Actual detached stock construction and birth admission/publication
-remain in progress.
+as0ef: both original production builds pass, with2918 artifacts exported
+byte-exactly and owned runner/volumes removed. Original NPC birth interfaces and
+root integration are composed with the published Plan5 reader fix as16ba;
+both builds stop at linkage because four actual provider units are absent from
+the Makefile. The reviewed four-provider correction produces successorf27:
+both original production builds pass, with2934 artifacts exported byte-exactly
+and owned runner/volumes removed. Original driver, flags, targets and limits remain. Reviewed private admission201f and guarded-ACK6b are frozen
+and composed into5767-input owner-seam candidateb16d. Its actual reset producer,
+stock construction, boot/pulse recovery and physical publication remain unfinished;
+no execution evidence transfers to that source-only successor.
 Actual boot, physical fault/restart, durable GIVE/branch
 integration and complete native writer qualification remain open.
 These private candidates are not installed on the maintained branch. No Plan,
@@ -52,6 +56,28 @@ the existing105 manifest rows. All61 focused reader and55 coverage-contract
 methods pass with zero skips; normal/matrix/runtime validation passes. Release
 still refuses missing writer evidence. No native-source change or full plan
 completion follows from this reader milestone.
+
+Plan5's [audit budget and build dependency report](PLAN5_CURRENT61_AUDIT_BUDGET_AND_BUILD_DEPENDENCIES_2026-10-05.md)
+is imported byte-exactly fromcb9d8c2e7. It reports both original near-limit
+methods passing with zero skips, twelve CLI measurements and unchanged original
+native dependency closures. This is peer-reported synthetic/component evidence;
+no local rerun or private native qualification is claimed. At that report's
+seal its current-reader retention and managed restore remained pending. The
+report's central five-method registration request was already completed by
+primarybc0d6071f. Original release-host/mixed native workload and full Plan5/R8
+gates remain open.
+
+The subsequent [original-row registration qualification](PLAN5_COMMAND_PREIMAGE_REGISTRATION_QUALIFICATION_2026-10-05.md)
+and [integrated current61 native retention qualification](PLAN5_INTEGRATED_CURRENT61_RETENTION_QUALIFICATION_2026-10-05.md)
+are imported byte-exactly from7f905a35d. The primary verifies identical native,
+migration, five reader/test files and central manifest bytes before import.
+Both original central rows and55 coverage methods pass with zero skips.
+The integrated-reader SQL account/character journeys pass on both engines with
+ten cold restarts; flatfile character/durable/uncertain journeys pass with seven.
+These are independent peer-executed native results using explicit unchanged-build
+dependency proof. Seeded history, incomplete capture/refusals and managed-restore
+limitations remain; no evidence transfers to private quest/birth producers or
+proves full Plan5/R8/release completion.
 
 ## Current combined source qualification — 2026-10-05
 
