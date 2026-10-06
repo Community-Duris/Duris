@@ -19,6 +19,12 @@ history before that opening and absent stores are not reconstructed. An empty
 result does not prove a UID never existed. Output remains ID-only and bounded;
 `--limit 0` retains the full count and coverage while omitting row details.
 
+Provenance matches only captured integer UIDs. A float, boolean, string or null
+UID does not match an integer query, even when its numeric value compares
+equal. The reader does not convert that representation into a valid UID.
+Omitting such a row preserves the whole audit's exception count and CLI exit
+status; the filtered result does not certify the omitted evidence.
+
 Run `scripts/economic_sql_canonical_audit.py` with explicit SQL connection
 arguments and a SELECT-only account to authenticate original retained EAI1/EAP1
 capsules and their SQL projections. For example:

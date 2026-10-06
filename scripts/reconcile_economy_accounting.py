@@ -2495,7 +2495,8 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
                 for row in (snapshot["ownership_events"] +
                             (snapshot["native"].get("uid_history_events") or []) +
                             (snapshot["native"].get("unattributed_uid_events") or []))
-                if row.get("uid") == uid and isinstance(row.get("operation_id"), str)
+                if type(row.get("uid")) is int and row["uid"] == uid
+                and isinstance(row.get("operation_id"), str)
                 and HEX_ID.fullmatch(row["operation_id"]) and type(row.get("event_index")) is int
                 and type(row.get("revision")) is int and type(row.get("root")) is int
                 and (row.get("parent") is None or type(row.get("parent")) is int)
