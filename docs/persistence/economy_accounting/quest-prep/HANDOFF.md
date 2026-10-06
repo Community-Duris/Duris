@@ -1,4 +1,4 @@
-# Quest accounting prep � continued recovery stream, 2026-10-06
+# Quest accounting prep — continued recovery stream, 2026-10-06
 
 Current source: `a5a1f4b196496d50a6f46afecfec03aba3e66190`; preserved-history
 merge: `920a7bb8d7aae5400725fad0c70b505e4d263052`.
@@ -13,7 +13,9 @@ New owned files: `tests/async/quest_accounting_prep/quest_cut_checks.py`,
 `capture_quest_cut.py`, `test_quest_cut_checks.py`.
 Changed existing files: `case_data.py`, `test_production_terms.py`; owned source
 snapshot and this handoff/results/gaps/cases are refreshed to the new pin.
-The exact bundle SHA is recorded by its following metadata commit.
+Recovery assertions bundle: `6d5ec67a24dd052fd8c9e699c1a89abbf7716d9f`.
+Import this owned-path commit after previously consumed bundles; merge920a7 imports
+upstream history only. Its following metadata commit records this exact SHA.
 
 The new oracle asserts exact production kinds/counts, input retirement and new
 reward UIDs, spares, mixed fees/C3000, native event/accounting reference links,
@@ -56,7 +58,7 @@ See current additions in RESULTS.md and RECOVERY_BATCH.md for complete capture,
 check and shared-hook requests. The historical refresh below retains its exact
 pins/results and import order.
 
-# Quest accounting prep handoff — refreshed 2026-10-06
+# Quest accounting prep handoff â€” refreshed 2026-10-06
 
 The seven-case pack is refreshed for published accounting candidate
 `2c4e17f363ecff0f0d7eb3451ddb229abdd63d9a` and remains on
@@ -143,9 +145,9 @@ pin, exact terms/reset declarations, raw hashes and current runtime owners.
 Primary owns recipe/coin policy; bartender debit/refund/task-attempt authority;
 authentic native birth/source/custody/publication/cold ACK and pair retirement;
 and the shared crash driver's real fixture/VNUM/alias selection. The driver fixes
-synthetic22802–5/C1000; QP06 needs29262/3/4→29237/C3000 and later legitimate reward
+synthetic22802â€“5/C1000; QP06 needs29262/3/4â†’29237/C3000 and later legitimate reward
 custody change. Required changes are detailed in RESULTS.md. Shared production,
 migrations, tests/contracts, manifests, registries and finish plan have no prep
 edits; Plan5 remains independently owned. Primary can fetch/review/import the
 compatible owned bundle and record consumed SHAs in its native handoff before
-integrated qualification. All original R1–R8 and SQL-first release gates remain.
+integrated qualification. All original R1â€“R8 and SQL-first release gates remain.
