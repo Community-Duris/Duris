@@ -32,6 +32,7 @@ class RestoreCoinEffectsTests(unittest.TestCase):
                    "src/economy/economic_accounting_plan.c", "src/economy/economic_source_event.c", "src/economy/economic_accounting_types.c",
                    "src/economy/economic_accounting_intent.c", "src/persistence/critical_command.c",
                    "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/item/craft_pouch_mutation.c",
+                   "src/economy/shop_trade_recovery_manifest.c",
                    "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c"]
         flags = ["-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-O1", "-g",
                  "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-Isrc"]
