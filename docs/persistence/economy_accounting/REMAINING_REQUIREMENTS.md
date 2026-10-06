@@ -1,5 +1,21 @@
 # Double-entry economy: remaining requirements
 
+## Baseline absent-price replay proof qualified — 2026-10-06
+
+[Exact original baseline qualification](BASELINE_NULL_PRICE_PRIMARY_QUALIFICATION_2026-10-06.md)
+repairs an omitted NULL sale-price comparison. The full original native suite
+passes both fresh canonical0062 engines, including faults, concurrency,
+allocation failures and maximum batches; flat refusal and production owner
+objects pass. Broader producer/recovery, complete Plans and release remain open.
+
+## Shared producer integration advancing — 2026-10-06
+
+[Current private integration evidence](SHARED_PRODUCER_INTEGRATION_PROGRESS_2026-10-06.md)
+records completed auction shared wiring, held source/current interfaces and the
+real quest-money receipt dependency. Strict object boundaries pass on both
+backends; combined native/SQL qualification is in progress. These changes are
+private and do not complete a Plan, R1–R8, activation or release gate.
+
 ## Independent SQL NPC value reader integrated — 2026-10-06
 
 [Current primary both-engine qualification](PLAN5_SQL_NATIVE_MOBILE_PRIMARY_QUALIFICATION_2026-10-06.md) adds complete bounded
