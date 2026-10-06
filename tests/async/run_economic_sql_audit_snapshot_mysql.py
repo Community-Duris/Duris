@@ -2,6 +2,7 @@
 """Exercise partial SQL audit export on a disposable, SELECT-only database."""
 
 import hashlib
+import copy
 import json
 import os
 from pathlib import Path
@@ -287,6 +288,107 @@ def item_origin(uid, owner_type, state, owner_id, revision):
     return struct.pack("<QBB6x5Q32s", uid, owner_type, state, owner_id, 0,
                        uid, 0, revision, bytes.fromhex("a5" * 32))
 
+
+def verify_supply_outcome_views(owner, reader):
+    """Retain SQL corruption findings while excluding noncommitted supply."""
+    from _plan5_equipment_restore import Connection, inventory
+
+    output = ROOT / "bin/tests/plan5-supply-outcome-views" / uuid.uuid4().hex
+    output.mkdir(parents=True)
+    initial = inventory(owner)
+    with owner.cursor() as cursor:
+        cursor.execute("SELECT account_key FROM economic_accounting_account_effect "
+                       "WHERE operation_id=%s AND account_index=1", (root,))
+        original_key = cursor.fetchone()["account_key"]
+        cursor.execute("SELECT outcome,result_code FROM economic_accounting_operation "
+                       "WHERE operation_id=%s", (root,))
+        original_root = cursor.fetchone()
+        cursor.execute("SELECT result_code FROM critical_operation_inbox WHERE operation_id=%s", (root,))
+        original_receipt = cursor.fetchone()["result_code"]
+    records = []
+    try:
+        # Explicitly damage only the existing disposable modeled fixture. This
+        # is not an admitted native system root or a correction to live data.
+        with owner.cursor() as cursor:
+            cursor.execute("UPDATE economic_accounting_account_effect SET account_key=%s "
+                           "WHERE operation_id=%s AND account_index=1", (key(8, 9), root))
+        for phase, outcome, result_code in (("committed", 1, 0), ("rejected", 2, 9), ("unknown", 3, 9)):
+            with owner.cursor() as cursor:
+                cursor.execute("UPDATE economic_accounting_operation SET outcome=%s,result_code=%s "
+                               "WHERE operation_id=%s", (outcome, result_code, root))
+                cursor.execute("UPDATE critical_operation_inbox SET result_code=%s WHERE operation_id=%s",
+                               (result_code, root))
+            before = inventory(owner)
+            connection = Connection(reader)
+            snapshot = capture(connection, LINEAGE, EPOCH)
+            assert connection.rollbacks == connection.observer.closes == 1
+            assert inventory(owner) == before
+            probes = [(phase, snapshot)]
+            if phase == "committed":
+                for reversed_rows in (False, True):
+                    altered = copy.deepcopy(snapshot)
+                    selected = next(row for row in altered["operations"] if row["operation_id"] == root.hex())
+                    altered["operations"].append(dict(selected, outcome="rejected", result_code=9))
+                    if reversed_rows:
+                        altered["operations"].reverse()
+                    probes.append(("conflicting-reversed" if reversed_rows else "conflicting", altered))
+            for label, probe in probes:
+                target = output / label
+                target.mkdir()
+                original = json.dumps(probe, sort_keys=True).encode()
+                path = target / "snapshot.json"
+                path.write_bytes(original)
+                path.chmod(0o600)
+                report = Reconciler().audit(probe)
+                assert report["exception_count"] and probe["complete"] is False
+                if label == "rejected":
+                    assert "rejected_operation_has_effects" in report["exception_counts"]
+                if label == "unknown":
+                    assert "unknown_outcome" in report["exception_counts"]
+                if label.startswith("conflicting"):
+                    assert "duplicate_operation" in report["exception_counts"]
+                expected = [{"account_kind": 8, "reason": 3, "net_copper": 3}] if label == "committed" else []
+                commands = []
+                for limit in (0, 1, 100):
+                    bounded_report = Reconciler(limit).audit(probe)
+                    assert bounded_report["exception_counts"] == report["exception_counts"]
+                    expected_output = view(probe, bounded_report, "supply", limit)
+                    assert expected_output["rows"] == expected[:limit]
+                    assert expected_output["count"] == len(expected)
+                    assert expected_output["truncated"] == (len(expected) > limit)
+                    assert expected_output["coverage"]["exception_count"] == report["exception_count"]
+                    command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                               str(path), "--view", "supply", "--limit", str(limit)]
+                    result = subprocess.run(command, capture_output=True, timeout=30)
+                    assert result.returncode == 1 and not result.stderr, result.stderr
+                    assert json.loads(result.stdout) == expected_output
+                    assert path.read_bytes() == original
+                    assert json.dumps(probe, sort_keys=True).encode() == original
+                    (target / ("limit-" + str(limit) + ".json")).write_bytes(result.stdout)
+                    commands.append(dict(command=command, exit=1))
+                (target / "report.json").write_text(json.dumps(report, sort_keys=True) + "\n")
+                records.append(dict(phase=label, exception_counts=report["exception_counts"],
+                                    supply_rows=expected, commands=commands, complete_capture=False))
+            assert inventory(owner) == before
+            (output / (phase + "-authority.json")).write_text(json.dumps(before, sort_keys=True) + "\n")
+            (output / (phase + "-queries.json")).write_text(json.dumps(connection.observer.queries) + "\n")
+    finally:
+        with owner.cursor() as cursor:
+            cursor.execute("UPDATE economic_accounting_account_effect SET account_key=%s "
+                           "WHERE operation_id=%s AND account_index=1", (original_key, root))
+            cursor.execute("UPDATE economic_accounting_operation SET outcome=%s,result_code=%s "
+                           "WHERE operation_id=%s", (original_root["outcome"], original_root["result_code"], root))
+            cursor.execute("UPDATE critical_operation_inbox SET result_code=%s WHERE operation_id=%s",
+                           (original_receipt, root))
+    assert inventory(owner) == initial
+    (output / "authority-initial-final.json").write_text(json.dumps(initial, sort_keys=True) + "\n")
+    result = dict(output=str(output), probes=records, modeled_partial_sql=True,
+                  native_system_root_admission=False, application_tables_unchanged=len(initial),
+                  capture_transactions=3, rollback_calls=3, cursor_close_calls=3,
+                  source_fixture_restored=True, accounting_activated=False, release_complete=False)
+    (output / "results.json").write_text(json.dumps(result, indent=2) + "\n")
+    print("SUPPLY_OUTCOME_SQL_QUALIFIED " + json.dumps(result, sort_keys=True), flush=True)
+
 root = bytes.fromhex("aa" * 16)
 source = bytes.fromhex(source_identity(identity="bb"))
 prior_root = bytes.fromhex("dd" * 16)
@@ -468,6 +570,8 @@ try:
             snapshot = capture(audit, LINEAGE, EPOCH)
             assert snapshot["complete"] is False and snapshot["quiescent"] is True
             verify_coin_payload_source_bounds(setup, audit, snapshot)
+            verify_supply_outcome_views(setup, audit)
+            assert capture(audit, LINEAGE, EPOCH) == snapshot
             with setup.cursor() as cursor:
                 cursor.execute("INSERT INTO guilds VALUES "
                                "(31,1,2,3,4,9),(32,0,0,0,0,10),"

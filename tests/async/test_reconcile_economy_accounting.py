@@ -219,6 +219,18 @@ def rejected_snapshot():
     return snapshot
 
 
+def shop_supply_snapshot():
+    """Clean synthetic expense before damaging its retained root outcome."""
+    snapshot = clean_snapshot()
+    snapshot["operations"][0].update(reason=21, realized_price_copper=3)
+    set_operation_source(snapshot, 12)
+    snapshot["account_origins"] = snapshot["account_origins"][:1]
+    snapshot["native"]["holdings"] = snapshot["native"]["holdings"][:1]
+    snapshot["effects"][1].update(account_key=SINK, before_revision=0, after_revision=0,
+                                   before=[0, 0, 0, 0], after=[0, 0, 0, 0])
+    return bind_original_plans(snapshot)
+
+
 def linked_child_snapshot():
     snapshot = clean_snapshot()
     snapshot["operations"][0]["child_count"] = 1
@@ -1206,6 +1218,73 @@ class ReconciliationTests(unittest.TestCase):
             data = view(snapshot, report, name, 3, uid=81)
             self.assertNotIn("alias", json.dumps(data))
             self.assertLessEqual(len(data["rows"]), 3)
+
+    def test_supply_requires_one_committed_root_and_preserves_findings(self):
+        with tempfile.TemporaryDirectory(prefix="duris-supply-outcome-") as directory:
+            path = Path(directory) / "snapshot.json"
+            for damage in ("clean", "rejected", "unknown", "duplicate", "conflicting", "conflicting-reversed"):
+                snapshot = shop_supply_snapshot()
+                root = snapshot["operations"][0]
+                if damage in ("rejected", "unknown"):
+                    root.update(outcome=damage, result_code=9)
+                    snapshot["receipts"][0]["result_code"] = 9
+                elif damage in ("duplicate", "conflicting", "conflicting-reversed"):
+                    other = copy.deepcopy(root)
+                    if damage != "duplicate":
+                        other.update(outcome="rejected", result_code=9)
+                    snapshot["operations"].append(other)
+                    if damage == "conflicting-reversed":
+                        snapshot["operations"].reverse()
+                root["personal_alias"] = "private-supply-alias"
+                original = json.dumps(snapshot, sort_keys=True).encode()
+                path.write_bytes(original)
+                expected_count = int(damage == "clean")
+                counts = None
+                for limit in (0, 1, 100):
+                    with self.subTest(damage=damage, limit=limit):
+                        report = Reconciler(limit).audit(snapshot)
+                        if counts is None:
+                            counts = report["exception_counts"]
+                        self.assertEqual(report["exception_counts"], counts)
+                        self.assertEqual(bool(report["exception_count"]), damage != "clean")
+                        if damage == "rejected":
+                            self.assertIn("rejected_operation_has_effects", counts)
+                        if damage == "unknown":
+                            self.assertIn("unknown_outcome", counts)
+                        if damage.startswith(("duplicate", "conflicting")):
+                            self.assertIn("duplicate_operation", counts)
+                        output = view(snapshot, report, "supply", limit)
+                        self.assertEqual(output["count"], expected_count)
+                        self.assertEqual(output["rows"],
+                            [{"account_kind": 8, "reason": 21, "net_copper": 3}][:limit]
+                            if expected_count else [])
+                        self.assertEqual(output["truncated"], expected_count > limit)
+                        self.assertEqual(output["coverage"]["exception_count"], report["exception_count"])
+                        command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                   str(path), "--view", "supply", "--limit", str(limit)]
+                        result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                        self.assertEqual(result.returncode, int(damage != "clean"), result.stderr)
+                        self.assertFalse(result.stderr)
+                        self.assertEqual(json.loads(result.stdout), output)
+                        self.assertNotIn("alias", result.stdout)
+                        self.assertNotIn("private-supply", result.stdout)
+                        self.assertEqual(path.read_bytes(), original)
+                        self.assertEqual(json.dumps(snapshot, sort_keys=True).encode(), original)
+
+    def test_supply_outcome_rule_covers_all_system_accounts(self):
+        for kind in (7, 8, 9, 10):
+            for outcome in ("committed", "rejected", "unknown"):
+                snapshot = shop_supply_snapshot()
+                snapshot["effects"][1]["account_key"] = key(kind, 9)
+                snapshot["operations"][0]["outcome"] = outcome
+                # Exercise the view rule for every system kind. Only the sink
+                # control above is a clean complete synthetic policy fixture.
+                report = Reconciler(0).audit(snapshot)
+                with self.subTest(kind=kind, outcome=outcome):
+                    output = view(snapshot, report, "supply", 100)
+                    self.assertEqual(output["rows"], [{"account_kind": kind, "reason": 21, "net_copper": 3}]
+                                     if outcome == "committed" else [])
+                    self.assertEqual(output["coverage"]["exception_count"], report["exception_count"])
 
     def test_provenance_includes_retained_and_unattributed_uid_history(self):
         snapshot = clean_snapshot()
