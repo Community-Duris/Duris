@@ -234,6 +234,17 @@ def item_ledger_action(row: dict) -> str:
     return "move"
 
 
+def item_ledger_state(row: dict) -> str:
+    """Retain the collector's explicit quarantine endpoint contract."""
+    if row["to_owner_type"] == 8:
+        return "tombstone"
+    if (row["reason_type"] == 21 and row.get("from_owner_type") == 10 and
+            row["to_owner_type"] == 7 and row["to_owner_id"] == 0 and
+            row["to_owner_context_id"] == 0):
+        return "quarantined"
+    return "live"
+
+
 def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool) -> dict:
     result = {name: [] for name in TABLES}
     result["operations"], _ = operation_rows(cursor, lineage, epoch, has_realized_price)
@@ -378,7 +389,7 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
             "owner": [row["to_owner_type"], row["to_owner_id"], row["to_owner_context_id"]],
             "from_owner": [row["from_owner_type"], row["from_owner_id"], row["from_owner_context_id"]],
             "from_equipment_slot": row["from_equipment_slot"], "to_equipment_slot": row["to_equipment_slot"],
-            "state": "tombstone" if row["to_owner_type"] == 8 else "live",
+            "state": item_ledger_state(row),
             "action": item_ledger_action(row)})
     return result
 
@@ -478,7 +489,7 @@ def read_lineage_uid_references(cursor, lineage: bytes) -> tuple[list[dict], lis
         action = None
         if row["ledger_uid"] is not None:
             owner = [row["to_owner_type"], row["to_owner_id"], row["to_owner_context_id"]]
-            state = "tombstone" if row["to_owner_type"] == 8 else "live"
+            state = item_ledger_state(row)
             action = item_ledger_action(row)
         result.append({
             "operation_id": hex_id(row["operation_id"]), "event_index": row["event_index"],
@@ -602,7 +613,7 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
                           row["to_owner_context_id"]],
                 "from_equipment_slot": row["from_equipment_slot"],
                 "to_equipment_slot": row["to_equipment_slot"],
-                "state": "tombstone" if row["to_owner_type"] == 8 else "live",
+                "state": item_ledger_state(row),
                 "action": item_ledger_action(row),
                 "operation_epoch": hex_id(row["operation_epoch"]),
                 "operation_outcome": {1: "committed", 2: "rejected"}.get(
@@ -640,7 +651,7 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
                           row["to_owner_context_id"]],
                 "from_equipment_slot": row["from_equipment_slot"],
                 "to_equipment_slot": row["to_equipment_slot"],
-                "state": "tombstone" if row["to_owner_type"] == 8 else "live",
+                "state": item_ledger_state(row),
                 "action": item_ledger_action(row)})
     return (events, unreferenced, {
         "tracked_uids": len(history_uids), "ledger_events": ledger_events,

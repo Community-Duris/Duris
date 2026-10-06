@@ -62,17 +62,20 @@ class UidScopeTests(unittest.TestCase):
         import copy
         import economic_sql_audit_snapshot as exporter
 
-        cases = ((34, 7, 1, 1, "create"), (9, 7, 6, 1, "create"),
-                 (34, 1, 8, 2, "destroy"), (33, 1, 8, 2, "destroy"),
-                 (21, 1, 8, 2, "destroy"), (34, 1, 1, 2, "move"),
-                 (34, 7, 1, 2, "move"), (2, 1, 8, 2, "create"),
-                 (3, 1, 1, 2, "destroy"), (8, 1, 1, 2, "move"))
-        for reason, old_owner, new_owner, revision, expected in cases:
+        cases = ((34, 7, 1, 1, "create", "live", 7, 0), (9, 7, 6, 1, "create", "live", 7, 0),
+                 (34, 1, 8, 2, "destroy", "tombstone", 0, 0), (33, 1, 8, 2, "destroy", "tombstone", 0, 0),
+                 (21, 1, 8, 2, "destroy", "tombstone", 0, 0), (34, 1, 1, 2, "move", "live", 7, 0),
+                 (34, 7, 1, 2, "move", "live", 7, 0), (2, 1, 8, 2, "create", "tombstone", 0, 0),
+                 (3, 1, 1, 2, "destroy", "live", 7, 0), (8, 1, 1, 2, "move", "live", 7, 0),
+                 (21, 10, 7, 2, "move", "quarantined", 0, 0),
+                 (8, 10, 7, 2, "move", "live", 0, 0), (21, 1, 7, 2, "move", "live", 0, 0),
+                 (21, 10, 7, 2, "move", "live", 1, 0), (21, 10, 7, 2, "move", "live", 0, 1))
+        for reason, old_owner, new_owner, revision, expected, expected_state, owner_id, context_id in cases:
             row = dict(operation_id=b"a" * 16, event_index=0, item_uid=81,
                        root_item_uid=81, parent_item_uid=None, from_owner_type=old_owner,
                        from_owner_id=0 if old_owner == 7 else 7, from_owner_context_id=0,
-                       to_owner_type=new_owner, to_owner_id=0 if new_owner == 8 else 7,
-                       to_owner_context_id=0, item_revision=revision, before_revision=revision - 1,
+                       to_owner_type=new_owner, to_owner_id=owner_id,
+                       to_owner_context_id=context_id, item_revision=revision, before_revision=revision - 1,
                        from_equipment_slot=0, to_equipment_slot=0, reason_type=reason,
                        operation_epoch=b"e" * 16, operation_outcome=1, personal_alias="private-compound-action")
 
@@ -103,7 +106,8 @@ class UidScopeTests(unittest.TestCase):
 
             cursor = ActionCursor()
             original = copy.deepcopy(row)
-            with self.subTest(reason=reason, old_owner=old_owner, new_owner=new_owner, revision=revision):
+            with self.subTest(reason=reason, old_owner=old_owner, new_owner=new_owner, revision=revision,
+                              owner_id=owner_id, context_id=context_id):
                 evidence = exporter.read_evidence(cursor, b"l" * 16, b"e" * 16, False)
                 references, _, _ = exporter.read_lineage_uid_references(cursor, b"l" * 16)
                 history = read_uid_event_census(cursor, b"l" * 16, [{"uid": 81, "revision": 0}],
@@ -111,6 +115,9 @@ class UidScopeTests(unittest.TestCase):
                 actions = [evidence["ownership_events"][0]["action"], references[0]["ledger_action"],
                            history[0][0]["action"], history[6][0]["action"]]
                 self.assertEqual(actions, [expected] * 4)
+                states = [evidence["ownership_events"][0]["state"], references[0]["ledger_state"],
+                          history[0][0]["state"], history[6][0]["state"]]
+                self.assertEqual(states, [expected_state] * 4)
                 self.assertEqual(row, original)
                 self.assertNotIn("private-compound", json.dumps([evidence, references, history]))
                 queries = [query for query in cursor.queries
