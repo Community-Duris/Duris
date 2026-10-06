@@ -43,7 +43,7 @@ def integer_aliases(value):
     return aliases
 
 
-def baseline_root(blob, revision=1):
+def baseline_root(blob, revision=1, accepted_at_usec=123456):
     """Synthetic canonical root for unit/sibling fixtures; native tests use C++."""
     lineage, epoch = blob[16:32], blob[32:48]
     operation = hashlib.sha256(blob[48:64] + struct.pack("<I", 0x42415345) + blob[72:80]).digest()[:16]
@@ -92,12 +92,17 @@ def baseline_root(blob, revision=1):
     plan[104:152], plan[152:184], plan[184:216] = source, intent_digest, domain
     struct.pack_into("<6I", plan, 216, *counts)
     plan = bytes(plan) + b"".join(accounts + postings + snapshots + snapshots)
+    original_command = (b"CCM1" + struct.pack("<I", 2) + operation +
+        struct.pack("<HHHBBQIII", 20, 1, 6, 4, 0, accepted_at_usec or 123456, 1, 0, 48) +
+        struct.pack("<B7xQ", 9, 0x45434f4e42415345) + payload + struct.pack("<I", 256) + intent)
     return dict(operation_id=operation, book_revision=revision, holding_count=holdings, item_count=items,
                 witness_digest=hashlib.sha256(blob).digest(), canonical_witness=blob, witness_version=version,
                 reason=38, outcome=1, result_code=0, inbox_status=1, inbox_result=0,
                 inbox_failure_stage=0, inbox_committed_at_present=1, inbox_revision=revision,
                 inbox_type=20, inbox_schema=2, inbox_payload=1, inbox_result_payload=b"",
                 inbox_keys_hash=hashlib.sha256(struct.pack("<BQ", 9, 0x45434f4e42415345)).digest(),
+                command_accepted_at_usec=accepted_at_usec,
+                inbox_command_hash=hashlib.sha256(original_command).digest(),
                 root_lineage=lineage, root_epoch=epoch, original_operation_id=None,
                 accounting_version=1, writer_id=4, policy_version=1, compiler_version=1,
                 actor_kind=2, actor_id=actor, source_event=source, intent_digest=intent_digest,
@@ -152,12 +157,18 @@ class Cursor:
         self.statements = []
         self.index = -1
         self.closed = False
+        self.admission_column_count = 1
+        self.metadata_query = False
 
     def execute(self, statement, params=None):
-        self.index += 1
+        self.metadata_query = 'information_schema.columns' in statement
+        if not self.metadata_query:
+            self.index += 1
         self.statements.append((statement, params))
 
     def fetchone(self):
+        if self.metadata_query:
+            return {"column_count": self.admission_column_count}
         return self.rows[self.index]
 
     def fetchall(self):
@@ -265,6 +276,55 @@ class ItemRevisionTests(unittest.TestCase):
 
 
 class OriginTests(unittest.TestCase):
+    def test_original_admission_time_and_full_command_hash_refuse_read_only(self):
+        intact = witness()
+        cuts = [("command_accepted_at_usec", value) for value in
+                (0, -1, 2**64, True, 123456.0, "123456", 123457)]
+        cuts += [("inbox_command_hash", value) for value in
+                 (None, bytes(32), b"x" * 31, b"x" * 33, bytearray(intact["inbox_command_hash"]),
+                  bytes([intact["inbox_command_hash"][0] ^ 1]) + intact["inbox_command_hash"][1:])]
+        for field, value in cuts:
+            with self.subTest(field=field, representation=type(value).__name__):
+                row = witness()
+                row[field] = value
+                connection = Connection(rows=[row])
+                with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
+                    capture(connection, LINEAGE, EPOCH)
+                self.assertIs(row[field], value)
+                self.assertEqual(connection.rollbacks, 1)
+                self.assertTrue(connection.scan.closed)
+                self.assertTrue(all(sql.startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
+                                    for sql, _ in connection.scan.statements))
+        for field in ("command_accepted_at_usec", "inbox_command_hash"):
+            row = witness()
+            del row[field]
+            with self.assertRaisesRegex(OriginError, "EAB1 committed root mismatch"):
+                origin_exporter.verify_baseline_root(row, LINEAGE, EPOCH)
+
+    def test_historical_null_admission_time_is_preserved_without_inference(self):
+        for column_count in (0, 1):
+            with self.subTest(column_count=column_count):
+                row = baseline_root(witness()["canonical_witness"], accepted_at_usec=None)
+                connection = Connection(rows=[row])
+                connection.scan.admission_column_count = column_count
+                self.assertEqual(capture(connection, LINEAGE, EPOCH)["witness_count"], 1)
+                self.assertIsNone(row["command_accepted_at_usec"])
+                selected = next(sql for sql, _ in connection.scan.statements if 'AS inbox_command_hash' in sql)
+                self.assertIn(('w.command_accepted_at_usec' if column_count else 'NULL') +
+                              ' AS command_accepted_at_usec', selected)
+                self.assertEqual(connection.rollbacks, 1)
+                self.assertTrue(connection.scan.closed)
+
+    def test_admission_column_metadata_requires_exact_bounded_count(self):
+        for value in (-1, 2, True, 1.0, "1", None):
+            with self.subTest(value=value):
+                connection = Connection()
+                connection.scan.admission_column_count = value
+                with self.assertRaisesRegex(OriginError, "invalid SQL baseline admission column metadata"):
+                    capture(connection, LINEAGE, EPOCH)
+                self.assertEqual(connection.rollbacks, 1)
+                self.assertTrue(connection.scan.closed)
+
     def test_baseline_projection_integer_representations_refuse_read_only(self):
         for index in (7, 8, 9):
             for field, value in Connection().scan.rows[index][0].items():
@@ -432,7 +492,7 @@ class OriginTests(unittest.TestCase):
         connection.scan.rows[6]["projection_rows"] = origin_exporter.MAX_ROWS + 1
         with self.assertRaisesRegex(OriginError, "baseline SQL projection source"):
             capture(connection, LINEAGE, EPOCH)
-        self.assertEqual(len(connection.scan.statements), 7)
+        self.assertEqual(len(connection.scan.statements), 8)
         for index in (4, 5, 6):
             with self.subTest(table=index):
                 connection = Connection()
@@ -685,15 +745,15 @@ class OriginTests(unittest.TestCase):
         self.assertIn("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY", statements)
         self.assertTrue(all(sql.startswith(("SET TRANSACTION", "START TRANSACTION", "SELECT"))
                             for sql in statements))
-        self.assertEqual(connection.scan.statements[3][1], (LINEAGE, EPOCH))
-        witness_query = connection.scan.statements[5][0]
+        self.assertEqual(connection.scan.statements[4][1], (LINEAGE, EPOCH))
+        witness_query = connection.scan.statements[6][0]
         self.assertIn("i.failure_stage AS inbox_failure_stage", witness_query)
         self.assertIn("i.committed_at IS NOT NULL", witness_query)
-        reservation_query, reservation_parameters = connection.scan.statements[9]
+        reservation_query, reservation_parameters = connection.scan.statements[10]
         self.assertIn("LEFT JOIN economic_baseline_witness", reservation_query)
         self.assertIn("((p.lineage=%s AND p.epoch=%s) OR (w.lineage=%s AND w.epoch=%s))", reservation_query)
         self.assertEqual(reservation_parameters, (LINEAGE, EPOCH, LINEAGE, EPOCH, origin_exporter.MAX_ROWS - 4 + 1))
-        zero_query, zero_parameters = connection.scan.statements[10]
+        zero_query, zero_parameters = connection.scan.statements[11]
         self.assertEqual(zero_query.count("EXISTS(SELECT 1"), 6)
         self.assertEqual(zero_parameters, (LINEAGE, EPOCH) * 6)
         self.assertNotIn("payload", zero_query)
@@ -1058,7 +1118,8 @@ class NativeSQLOriginTests(unittest.TestCase):
             holdings, items = struct.unpack_from("<II", blob, 184)
             insert("economic_baseline_witness", dict(operation_id=op, lineage=lineage, epoch=epoch,
                    book_revision=revision, witness_version=witness_version, holding_count=holdings, item_count=items,
-                   witness_digest=hashlib.sha256(blob).digest(), canonical_witness=blob))
+                   witness_digest=hashlib.sha256(blob).digest(), canonical_witness=blob,
+                   command_accepted_at_usec=struct.unpack_from("<Q", command, 32)[0]))
             identities = [(1, struct.unpack_from("<Q", blob, 192 + n * 112 + 20)[0]) for n in range(holdings)]
             identities += [(2, struct.unpack_from("<Q", blob, 192 + holdings * 112 + n * item_stride)[0]) for n in range(items)]
             for kind, identity in identities:
@@ -1194,6 +1255,34 @@ class NativeSQLOriginTests(unittest.TestCase):
                     self.assertEqual(reads, {"captures": 7, "refusals": 7, "rollbacks": 14})
                     print("PASS native-origin " + engine + " " + json.dumps(reads, sort_keys=True) +
                           " SELECT-only bytes-unchanged inactive", flush=True)
+                    original_reads = reads.copy()
+                    with owner.cursor() as cursor:
+                        cursor.execute("SELECT w.command_accepted_at_usec,i.command_hash FROM economic_baseline_witness w "
+                                       "JOIN critical_operation_inbox i ON i.operation_id=w.operation_id "
+                                       "WHERE w.operation_id=%s", (op,))
+                        original_command = cursor.fetchone()
+                    observations = []
+                    for table, field, value in (
+                        ("economic_baseline_witness", "command_accepted_at_usec",
+                         original_command["command_accepted_at_usec"] +
+                         (1 if original_command["command_accepted_at_usec"] < 2**64 - 1 else -1)),
+                        ("critical_operation_inbox", "command_hash",
+                         bytes([original_command["command_hash"][0] ^ 1]) + original_command["command_hash"][1:])):
+                        unchanged = database_rows()
+                        with owner.cursor() as cursor:
+                            cursor.execute("UPDATE " + table + " SET " + field + "=%s WHERE operation_id=%s", (value, op))
+                        try:
+                            read(blob[32:48], "EAB1 committed root mismatch")
+                            observations.append(dict(field=field, refused=True, read_only=True, authority_unchanged=True))
+                        finally:
+                            with owner.cursor() as cursor:
+                                cursor.execute("UPDATE " + table + " SET " + field + "=%s WHERE operation_id=%s",
+                                               (original_command[field], op))
+                        self.assertEqual(database_rows(), unchanged)
+                    self.assertEqual({key: reads[key] - original_reads[key] for key in reads},
+                                     {"captures": 0, "refusals": 2, "rollbacks": 2})
+                    (candidate/"command-preimage-refusals.json").write_text(json.dumps(observations,indent=2)+'\n')
+                    print("PASS original-command-preimage " + engine + " 2 native SQL cuts SELECT-only bytes-unchanged", flush=True)
                     # Negative SELECT projections preserve the actual input
                     # version's layout before corrupting v2 positions. These
                     # projections do not establish complete native capture.

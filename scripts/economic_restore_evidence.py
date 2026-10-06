@@ -355,6 +355,13 @@ def require_integrity(executor):
     if executor.sql("SELECT " + zero_effects + ";") != "0":
         mismatch("baseline_zero_effect")
 
+    admission_column_count = executor.sql("SELECT COUNT(*) FROM information_schema.columns "
+        "WHERE table_schema=DATABASE() AND table_name='economic_baseline_witness' "
+        "AND column_name='command_accepted_at_usec';")
+    if admission_column_count not in ("0", "1"):
+        mismatch("baseline_witness")
+    admission_column = "w.command_accepted_at_usec" if admission_column_count == "1" else "NULL"
+
     def baseline_witness(where, meta, original, row, frozen, encoded):
         # The second consumer reuses pure independent EAB1/EAB2 interpretation. The
         # import is local because the origin reader also consumes this decoder.
@@ -363,7 +370,8 @@ def require_integrity(executor):
                    "w.holding_count", "w.item_count", hexadecimal("w.witness_digest"),
                    "OCTET_LENGTH(w.canonical_witness)", hexadecimal("c.opening_account"),
                    "i.durable_revision", "i.command_type", "i.schema_version", "i.payload_version",
-                   hexadecimal("i.result_payload"), hexadecimal("i.keys_hash")]
+                   hexadecimal("i.result_payload"), hexadecimal("i.keys_hash"),
+                   admission_column, hexadecimal("i.command_hash")]
         table = ("economic_baseline_witness w JOIN economic_baseline_control c "
                  "ON c.lineage=w.lineage AND c.epoch=w.epoch "
                  "JOIN critical_operation_inbox i ON i.operation_id=w.operation_id")
@@ -382,7 +390,8 @@ def require_integrity(executor):
                     MAX_WITNESS_BYTES, "baseline_witness", table="economic_baseline_witness", minimum=192),
                 inbox_revision=value[9], inbox_type=value[10], inbox_schema=value[11], inbox_payload=value[12],
                 inbox_result_payload=binary(value[13], 0), canonical_intent=frozen, canonical_plan=encoded,
-                inbox_keys_hash=binary(value[14], 32),
+                inbox_keys_hash=binary(value[14], 32), command_accepted_at_usec=value[15],
+                inbox_command_hash=binary(value[16], 32),
                 intent_digest=binary(row[12], 32), domain_digest=binary(row[13], 32), plan_digest=binary(row[14], 32))
             witness.update(zip(("account_count", "posting_count", "child_count", "before_witness_count",
                                 "after_witness_count", "item_event_count"), row[19:25]))
