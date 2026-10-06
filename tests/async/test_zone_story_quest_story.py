@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 150 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 151 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,12 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+cerebusp=next(m for m in catalog['story_mappings'] if m['source_area']=='cerebusp')
+assert (cerebusp['schema_version'],cerebusp['revision'],cerebusp['coverage'])==(3,1,'complete') and not cerebusp['exclusions']
+assert len(cerebusp['stories'])==9 and len(cerebusp['contacts'])==17 and sum(len(c['topics']) for c in cerebusp['contacts'])==5
+assert [len(s['steps']) for s in cerebusp['stories']]==[4,3,5,2,2,2,4,3,5] and sum(t.get('optional',False) for s in cerebusp['stories'] for t in s['steps'])==21
+assert report['eligible_by_zone']['220']==9
 
 prison=next(m for m in catalog['story_mappings'] if m['source_area']=='prison')
 assert (prison['schema_version'],prison['revision'],prison['coverage'])==(3,1,'complete') and not prison['exclusions']

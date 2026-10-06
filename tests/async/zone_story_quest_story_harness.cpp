@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 150 &&
+		require(catalog.story_mappings.size() == 151 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,140 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "cerebusp"; });
+			require(mapping.stories.size() == 9 && mapping.contacts.size() == 17,
+				"Cerberus scope failed");
+			const auto &shoulder = story_for("cerebusp", "coconut-shoulder-guard");
+			const auto &kilt = story_for("cerebusp", "coconut-kilt");
+			const auto &bone = story_for("cerebusp", "bone-key");
+			const auto &bow = story_for("cerebusp", "roc-bone-longbow");
+			const auto &gauntlets = story_for("cerebusp", "prybar-gauntlets");
+			const auto &brazier = story_for("cerebusp", "prybar-brazier");
+			const auto &scepter = story_for("cerebusp", "prybar-scepter");
+			const auto &badges = story_for("cerebusp", "four-badges-vault-key");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 220, 22005, 100, "arrival") ==
+					result::applied,
+				"Cerberus discovery failed");
+			for (int v : { 22044, 22053, 22026, 22038 })
+				require(journey.meet_npc(7, 42, v, 22005, 102) == result::applied,
+					"Cerberus context encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 220, 10, 1, 103, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Cerberus context forged recipe");
+			for (int v : { 22006, 22007, 22029, 22048 })
+				require(journey.meet_npc(7, 42, v, 22005, 104) == result::applied,
+					"Cerberus giver encounter failed");
+			const auto status = [&](const auto &story, size_t row, const char *state)
+			{
+				const auto start = journal.find("] " + story.title + "\r\n");
+				require(start != std::string::npos,
+					"Cerberus visible card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     story.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			for (int v : { 22009, 22024, 22042, 22048, 22063, 22070 })
+				supplies.carried[v] = 1;
+			supplies.equipped[16] = 22045;
+			journal = journey.render_journal(7, 42, 220, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(scepter, 0, "Missing now") &&
+					status(bone, 0, "Missing now") &&
+					status(badges, 0, "Missing now"),
+				"Cerberus held treasure or reward replaced loose ingredients");
+			supplies = {};
+			supplies.carried[22013] = 1;
+			supplies.carried[22015] = 2;
+			supplies.carried[22017] = 1;
+			supplies.carried[22014] = 3;
+			supplies.carried[22047] = 2;
+			supplies.carried[22038] = 4;
+			journal = journey.render_journal(7, 42, 220, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(shoulder, 0, "Ready now") &&
+					status(shoulder, 1, "Ready now") &&
+					status(shoulder, 2, "Missing now") &&
+					status(kilt, 0, "Missing now"),
+				"Cerberus partial quantities forged complete fruit recipe");
+			require(status(bone, 1, "Missing now") && status(bow, 1, "Ready now"),
+				"Cerberus long leather replaced different short leather");
+			require(status(badges, 0, "Ready now") &&
+					status(badges, 1, "Missing now") &&
+					status(badges, 2, "Missing now") &&
+					status(badges, 3, "Missing now"),
+				"Cerberus repeated badge replaced all four captains");
+			supplies = {};
+			for (const auto &story : mapping.stories)
+				for (const auto &step : story.steps)
+					if (step.kind == "carried_item")
+						supplies.carried[step.item_vnums.front()] = std::max(
+							supplies.carried[step.item_vnums.front()],
+							step.count);
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 220, 10, 1, 107, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+			{
+				for (size_t i = 0; i + 1 < story.steps.size(); ++i)
+					require(status(story, i, "Ready now"),
+						"Cerberus exact supplied quantity missing");
+				require(status(story, story.steps.size() - 1, "Pending"),
+					"Cerberus possession forged accepted history");
+			}
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 220).completed == 0,
+				"Cerberus preparation mutated history or victories");
+			record(journey, scepter.contracts.front(), "cerebusp-scepter", 220, 22059);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 220, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(scepter, 1, "Recorded") &&
+					status(scepter, 0, "Missing now") &&
+					status(gauntlets, 1, "Pending") &&
+					status(brazier, 1, "Pending"),
+				"Cerberus alternative trade forced other treasure receipts or lost spent proof");
+			record(journey, badges.contracts.front(), "cerebusp-badges", 220, 22053);
+			record(journey, bow.contracts.front(), "cerebusp-bow", 220, 22029);
+			journal = journey.render_journal(7, 42, 220, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(badges, 4, "Recorded") && status(bow, 2, "Recorded") &&
+					status(bone, 3, "Pending") &&
+					journey.progress_for_zone(7, 42, 220).completed == 3 &&
+					journey.progress_for_zone(7, 42, 220).total == 9,
+				"Cerberus independent badge/bow recipes invented earlier key or victory gates");
+			auto replay =
+				completion(scepter.contracts.front(), "cerebusp-scepter", 120);
+			replay.transaction.zone_number = 220;
+			replay.transaction.room_vnum = 22059;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Cerberus exact replay duplicated progress");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 220).completed == 3,
+				"Cerberus cold recovery lost accepted recipes");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 220, 22005, 100, "arrival") ==
+					result::applied,
+				"Cerberus raw discovery failed");
+			record(historical, bow.contracts.front(), "cerebusp-raw", 220, 22029);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 220).completed == 1 &&
+					authored.evidence_for(bow.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Cerberus raw-to-authored recovery lost recipe");
 		}
 
 		{

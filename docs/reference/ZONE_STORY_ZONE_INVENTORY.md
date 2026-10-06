@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 150 authored journals.
+2668 distinct Q contracts; 151 authored journals.
 
 Regenerate with:
 
@@ -60,7 +60,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Ceothia (`ceofutur`) | 1 | 1 | 0 | Fallback | [1 × a bluestone vial → a shard of bluestone](../../areas/qst/ceofutur.qst#L27) | — |
 | Ceothia (`ceopast`) | 6 | 8 | 1 | Yes | [1 × a shard of bluestone; 1 × a lock of green hair; 1 × a blood red feather → a bluestone key, a bluestone vial](../../areas/qst/ceopast.qst#L104) | — |
 | Ceothia (`ceothia`) | 9 | 9 | 1 | Yes | [1 × the badge of the jade wyrm thief guild; 1 × the badge of the red shadow thief guild; 1 × the badge of the violet death thief guild → a black leather eyepatch rimmed with platinum, the badge of the Ceothian thief guild](../../areas/qst/ceothia.qst#L20) | crew_shop_proc, inn, ogre_warlords_sword |
-| Pits of Cerberus (`cerebusp`) | 9 | 5 | 0 | Fallback | [1 × a large coconut; 1 × a broken coconut; 2 × a small coconut; other required items → a coconut belt](../../areas/qst/cerebusp.qst#L20) | cerberus_load, master_set, revenant_helm |
+| Pits of Cerberus (`cerebusp`) | 9 | 5 | 0 | Yes | [1 × a large coconut; 1 × a broken coconut; 2 × a small coconut; other required items → a coconut belt](../../areas/qst/cerebusp.qst#L20) | cerberus_load, master_set, revenant_helm |
 | The Church of the Eternal Dusk (`church`) | 2 | 2 | 0 | Fallback | [1 × a badge of holy patronage → native reward/response](../../areas/qst/church.qst#L14) | — |
 | The Citadel (`citadel`) | 3 | 39 | 0 | Yes | [1 × a bluish key → native reward/response](../../areas/qst/citadel.qst#L47) | — |
 | Cloud Giant Kingdom (`cldgt`) | 3 | 4 | 0 | Fallback | [5 × a yeti pelt; 1 × a thick leather strap → a girdle lined with fur](../../areas/qst/cldgt.qst#L7) | — |

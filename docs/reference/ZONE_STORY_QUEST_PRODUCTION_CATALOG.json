@@ -56025,6 +56025,622 @@
     {
       "contacts": [
         {
+          "description": "Crafts three different coconut rewards. Bring the exact fruit ingredients and keep only the intended recipe\u2019s complete set loose before offering them when recipes overlap.",
+          "keyword": "mojo",
+          "mob_vnum": 22006,
+          "name": "Mojo, the monkey",
+          "topics": []
+        },
+        {
+          "description": "Offers three alternative one-treasure exchanges for a prybar. Ask HELLO or TREASURE.",
+          "keyword": "fortune",
+          "mob_vnum": 22007,
+          "name": "a Soldier of Fortune",
+          "topics": [
+            "hello",
+            "treasure"
+          ]
+        },
+        {
+          "description": "Crafts a bone key or a roc bone longbow using different ingredients. Ask HELLO, KEY or GOODS.",
+          "keyword": "crafty",
+          "mob_vnum": 22029,
+          "name": "a crafty imp",
+          "topics": [
+            "hello",
+            "key",
+            "goods"
+          ]
+        },
+        {
+          "description": "Accepts all four distinct badges together for the vault key.",
+          "keyword": "granite",
+          "mob_vnum": 22048,
+          "name": "a granite golem",
+          "topics": []
+        },
+        {
+          "description": "The roaming shop produces bananas and bushels of bananas, but purchases are currently unavailable while accounting is active.",
+          "keyword": "merchant",
+          "mob_vnum": 22026,
+          "name": "a nomadic merchant",
+          "topics": []
+        },
+        {
+          "description": "The demon prince\u2019s chamber contains the flaming brazier offered in one prybar trade.",
+          "keyword": "seik",
+          "mob_vnum": 22034,
+          "name": "Seik Ka'zam",
+          "topics": []
+        },
+        {
+          "description": "Carries the exact gauntlets offered in one prybar trade.",
+          "keyword": "overfiend",
+          "mob_vnum": 22044,
+          "name": "the overfiend",
+          "topics": []
+        },
+        {
+          "description": "Carries the exact scepter offered in one prybar trade.",
+          "keyword": "sultan",
+          "mob_vnum": 22068,
+          "name": "the Sultan",
+          "topics": []
+        },
+        {
+          "description": "Carries two different leather-strand items; the bone key and longbow use different strands.",
+          "keyword": "vampire",
+          "mob_vnum": 22027,
+          "name": "a vampire overseer",
+          "topics": []
+        },
+        {
+          "description": "Carries a prepared remains item used in the longbow recipe. The source does not require carving a corpse for this ingredient.",
+          "keyword": "roc",
+          "mob_vnum": 22061,
+          "name": "a enormous roc",
+          "topics": []
+        },
+        {
+          "description": "Carries the hidden badge of Hate.",
+          "keyword": "spitelan",
+          "mob_vnum": 22052,
+          "name": "Spitelan, the zealot",
+          "topics": []
+        },
+        {
+          "description": "Carries the hidden badge of Pain.",
+          "keyword": "gren",
+          "mob_vnum": 22060,
+          "name": "Gren, the djinn highlord",
+          "topics": []
+        },
+        {
+          "description": "Carries the hidden badge of Fear.",
+          "keyword": "gorgor",
+          "mob_vnum": 22063,
+          "name": "Gorgor, the dreaded",
+          "topics": []
+        },
+        {
+          "description": "Carries the hidden badge of Rage.",
+          "keyword": "scorn",
+          "mob_vnum": 22065,
+          "name": "Scorn, the devil battlemaster",
+          "topics": []
+        },
+        {
+          "description": "Searches near the secret granite passage toward the Great Below. His glow rod is equipment, rather than a required return.",
+          "keyword": "mastiff",
+          "mob_vnum": 22051,
+          "name": "Mastiff",
+          "topics": []
+        },
+        {
+          "description": "Carries the scroll describing an outside airship plot. Reading that lore is distinct from an accepted local recipe.",
+          "keyword": "nansuo",
+          "mob_vnum": 22038,
+          "name": "Nansuo",
+          "topics": []
+        },
+        {
+          "description": "An angel prisoner mentioned in the surrounding story. No accepted local rescue or ransom is defined.",
+          "keyword": "captive",
+          "mob_vnum": 22053,
+          "name": "an angel prisoner",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore the Savannah and the Pits through Mojo\u2019s coconut recipes, the imp\u2019s crafts, three alternative prybar trades and the golem\u2019s four-badge vault key. The journal records accepted exchanges and explains optional preparation without inventing personal victories.",
+      "orientation": [
+        "Mojo at the oasis crafts three separate coconut rewards. Each recipe has its own fruit quantities: large, small and broken coconuts are different ingredients, and a banana is different from a bushel. If you carry enough fruit for several recipes, Mojo can accept a different trade than you intended. Carry only the intended recipe\u2019s complete ingredients loose before offering them; choosing a journal card does not select the trade.",
+        "The roaming nomadic merchant\u2019s shop produces bananas and bushels of bananas, but purchases are currently unavailable while accounting is active. The journal cannot promise a new fruit supply from that shop. Supplied ingredients can fit a recipe without recording your own purchase or recovery.",
+        "SEARCH the appropriate ground, open palm tree, roc nest or anthill when needed to reveal hidden coconut ingredients, then take them out and carry them loose. Searching and finding are separate from the accepted recipe. Follow native container and visibility rules; a new day does not restock the world.",
+        "ASK CRAFTY about HELLO, KEY or GOODS in the imp\u2019s quarters. The bone key uses the shorter leather strands from the vampire overseer, an eggshell among the gargoyle rocks and a femur hidden in the side nest. SEARCH hidden contents when needed. The key fits the secret slab toward the demon prince\u2019s chamber.",
+        "The imp\u2019s longbow uses the roc\u2019s prepared remains and the longer leather strands from the same vampire. These strands look similar but cannot replace the shorter ones used for the key. A carried remains item is not evidence that you carved it or personally defeated the roc.",
+        "ASK FORTUNE about HELLO or TREASURE on the Savannah. Choose a single treasure trade: the flaming brazier in the demon prince\u2019s vault, the overfiend\u2019s gauntlets, or the Sultan of Snakes\u2019 scepter. Each accepted exchange grants a prybar. The dialogue mentions treasure from two pits, but the actual exchanges accept one treasure each.",
+        "The prybar fits the hidden boulders beside the roc nest, opening the descent toward the Great Below. SEARCH hidden entrances, then use the relevant key and native OPEN/UNLOCK commands. The bone key and prybar are separate tools; shared open routes or a supplied tool do not prove who prepared the passage.",
+        "At the Great Below, gather the four different hidden badges: Hate from Spitelan, Pain from Gren, Fear from Gorgor and Rage from Scorn. SEARCH their contents or remains when needed and return all four loose to the granite golem for the vault key. One repeated badge cannot replace a missing different badge. The key fits the hidden vault below; a supplied badge does not prove your own captain victory.",
+        "ENTER the actual pit openings for their native destinations. The fiery portal from the Great Below leads to the Home of the Divine; another actual portal provides the return route. Portal travel, reading Nansuo\u2019s scroll, captive-angel lore and outside trades remain separate outcomes.",
+        "The vault\u2019s runestone follows separate epic rules. Room lore describes a rockworm loot route whose availability needs builder review. The masters cloak and revenant crown have their own equipment effects. Questions, worn gear and passive effects do not complete these recipes.",
+        "Ingredient rows show what you carry loose now; recorded exchanges remain after spending and recovery. Daily offers follow accepted exchanges, including each alternative prybar trade. Supplies follow the world\u2019s reset rules. New discovery, encounters, journal, achievement and daily credit require active, ready accounting; frozen recovery is separate."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "cerebusp",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:22013,I:22015,I:22015,I:22017,I:22017;receive=I:22028;disappear=0",
+              "giver_vnum": 22006
+            }
+          ],
+          "id": "coconut-shoulder-guard",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22013",
+              "item_vnums": [
+                22013
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a large coconut loose"
+            },
+            {
+              "count": 2,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22015",
+              "item_vnums": [
+                22015
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 2 \u00d7 a broken coconut loose"
+            },
+            {
+              "count": 2,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22017",
+              "item_vnums": [
+                22017
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 2 \u00d7 a banana loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:22013,I:22015,I:22015,I:22017,I:22017;receive=I:22028;disappear=0",
+                  "giver_vnum": 22006
+                }
+              ],
+              "hint": "Records the accepted recipe after its ingredients are spent. The other recipes and key use remain distinct. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete this accepted exchange"
+            }
+          ],
+          "summary": "Bring one large coconut, two broken coconuts and two bananas together for the shoulder guard.",
+          "title": "Craft Mojo\u2019s coconut shoulder guard"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:22014,I:22014,I:22014,I:22014,I:22017;receive=I:22061;disappear=0",
+              "giver_vnum": 22006
+            }
+          ],
+          "id": "coconut-kilt",
+          "steps": [
+            {
+              "count": 4,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22014",
+              "item_vnums": [
+                22014
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 4 \u00d7 a small coconut loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22017",
+              "item_vnums": [
+                22017
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a banana loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:22014,I:22014,I:22014,I:22014,I:22017;receive=I:22061;disappear=0",
+                  "giver_vnum": 22006
+                }
+              ],
+              "hint": "Records the accepted recipe after its ingredients are spent. The other recipes and key use remain distinct. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete this accepted exchange"
+            }
+          ],
+          "summary": "Bring four small coconuts and one banana together for the kilt.",
+          "title": "Craft Mojo\u2019s coconut kilt"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:22013,I:22014,I:22014,I:22015,I:22016;receive=I:22062;disappear=0",
+              "giver_vnum": 22006
+            }
+          ],
+          "id": "coconut-belt",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22013",
+              "item_vnums": [
+                22013
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a large coconut loose"
+            },
+            {
+              "count": 2,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22014",
+              "item_vnums": [
+                22014
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 2 \u00d7 a small coconut loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22015",
+              "item_vnums": [
+                22015
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a broken coconut loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22016",
+              "item_vnums": [
+                22016
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a bushel of bananas loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:22013,I:22014,I:22014,I:22015,I:22016;receive=I:22062;disappear=0",
+                  "giver_vnum": 22006
+                }
+              ],
+              "hint": "Records the accepted recipe after its ingredients are spent. The other recipes and key use remain distinct. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete this accepted exchange"
+            }
+          ],
+          "summary": "Bring one large coconut, one broken coconut, two small coconuts and one bushel of bananas together for the belt.",
+          "title": "Craft Mojo\u2019s coconut belt"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:22021;receive=I:22009;disappear=0",
+              "giver_vnum": 22007
+            }
+          ],
+          "id": "prybar-gauntlets",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22021",
+              "item_vnums": [
+                22021
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 the gauntlets of the overfiend loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:22021;receive=I:22009;disappear=0",
+                  "giver_vnum": 22007
+                }
+              ],
+              "hint": "Records the accepted recipe after its ingredients are spent. The other recipes and key use remain distinct. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete this accepted exchange"
+            }
+          ],
+          "summary": "This is one of three alternative treasure trades. Return the gauntlets alone for the prybar; the other two trades are separate choices.",
+          "title": "Trade the overfiend\u2019s gauntlets for a prybar"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:22004;receive=I:22009;disappear=0",
+              "giver_vnum": 22007
+            }
+          ],
+          "id": "prybar-brazier",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22004",
+              "item_vnums": [
+                22004
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a flaming brazier loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:22004;receive=I:22009;disappear=0",
+                  "giver_vnum": 22007
+                }
+              ],
+              "hint": "Records the accepted recipe after its ingredients are spent. The other recipes and key use remain distinct. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete this accepted exchange"
+            }
+          ],
+          "summary": "This is one of three alternative treasure trades. Return the brazier alone for the prybar; two treasures are not required by this exchange.",
+          "title": "Trade the flaming brazier for a prybar"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:22045;receive=I:22009;disappear=0",
+              "giver_vnum": 22007
+            }
+          ],
+          "id": "prybar-scepter",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22045",
+              "item_vnums": [
+                22045
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 the scepter of snakes loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:22045;receive=I:22009;disappear=0",
+                  "giver_vnum": 22007
+                }
+              ],
+              "hint": "Records the accepted recipe after its ingredients are spent. The other recipes and key use remain distinct. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete this accepted exchange"
+            }
+          ],
+          "summary": "This is one of three alternative treasure trades. Return the scepter alone for the prybar. Holding it equipped is different from offering it loose.",
+          "title": "Trade the snake scepter for a prybar"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:22022,I:22023,I:22025;receive=I:22024;disappear=0",
+              "giver_vnum": 22029
+            }
+          ],
+          "id": "bone-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22022",
+              "item_vnums": [
+                22022
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a cracked gargoyle eggshell loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22023",
+              "item_vnums": [
+                22023
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 some leather strands loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22025",
+              "item_vnums": [
+                22025
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 a femur bone loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:22022,I:22023,I:22025;receive=I:22024;disappear=0",
+                  "giver_vnum": 22029
+                }
+              ],
+              "hint": "Records the accepted recipe after its ingredients are spent. The other recipes and key use remain distinct. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete this accepted exchange"
+            }
+          ],
+          "summary": "Bring leather strands, a cracked gargoyle eggshell and a femur bone together. The crafted key fits the hidden slab toward the demon prince.",
+          "title": "Ask the imp to craft a bone key"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:22046,I:22047;receive=I:22048;disappear=0",
+              "giver_vnum": 22029
+            }
+          ],
+          "id": "roc-bone-longbow",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22046",
+              "item_vnums": [
+                22046
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 the remains of an enormous roc loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22047",
+              "item_vnums": [
+                22047
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 some more leather strands loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:22046,I:22047;receive=I:22048;disappear=0",
+                  "giver_vnum": 22029
+                }
+              ],
+              "hint": "Records the accepted recipe after its ingredients are spent. The other recipes and key use remain distinct. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete this accepted exchange"
+            }
+          ],
+          "summary": "Bring the prepared remains of the enormous roc and the longer leather strands together. This is separate from the imp\u2019s bone-key recipe.",
+          "title": "Ask the imp to craft a roc bone longbow"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:22038,I:22039,I:22040,I:22041;receive=I:22042;disappear=0",
+              "giver_vnum": 22048
+            }
+          ],
+          "id": "four-badges-vault-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22038",
+              "item_vnums": [
+                22038
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 the badge of Hate loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22039",
+              "item_vnums": [
+                22039
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 the badge of Pain loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22040",
+              "item_vnums": [
+                22040
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 the badge of Fear loose"
+            },
+            {
+              "count": 1,
+              "hint": "Checks this exact ingredient and quantity carried loose now. Worn or nested items and similarly named ingredients are separate. Supplied material can fit the recipe without proving your first recovery, access or personal victory.",
+              "id": "proof-22041",
+              "item_vnums": [
+                22041
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry 1 \u00d7 the badge of Rage loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:22038,I:22039,I:22040,I:22041;receive=I:22042;disappear=0",
+                  "giver_vnum": 22048
+                }
+              ],
+              "hint": "Records the accepted recipe after its ingredients are spent. The other recipes and key use remain distinct. New credit requires active, ready accounting.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete this accepted exchange"
+            }
+          ],
+          "summary": "Bring the distinct badges of Hate, Pain, Fear and Rage together to the granite golem. The accepted exchange grants the vault key; it does not record your own victories over the four captains.",
+          "title": "Exchange the four badges for a vault key"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Tired halfling starts at the shallow lagoon and accepts the exact ale kind. Tankard filling is an optional earlier service, not an additional required receipt.",
           "keyword": "halfling",
           "mob_vnum": 22225,
