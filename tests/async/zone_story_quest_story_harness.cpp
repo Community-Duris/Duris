@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 153 &&
+		require(catalog.story_mappings.size() == 154 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,119 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "moonshae"; });
+			require(mapping.stories.size() == 2 && mapping.contacts.size() == 12 &&
+					mapping.revision == 1,
+				"Moonshae scope failed");
+			const auto &sword = story_for("moonshae", "return-lost-sword");
+			const auto &robe = story_for("moonshae", "moonwell-proof-for-brigit");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			int achievements = 0, dailies = 0;
+			for (const auto &u : units)
+				if (u.zone_number == 262)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 2 && dailies == 2,
+				"Moonshae changed mode2 departing-giver classification");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 262, 26208, 100, "arrival") ==
+					result::applied,
+				"Moonshae discovery failed");
+			for (int v : { 26204, 26214, 26207, 26225, 26218, 26219, 26220, 26222,
+				       26203, 26233 })
+				require(journey.meet_npc(7, 42, v, 26208, 102) == result::applied,
+					"Moonshae context encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 262, 10, 1, 103, false, false);
+			for (const auto &s : mapping.stories)
+				require(journal.find("] " + s.title + "\r\n") == std::string::npos,
+					"Moonshae shared help/context forged request");
+			for (int v : { 26208, 26221 })
+				require(journey.meet_npc(7, 42, v, 26244, 104) == result::applied,
+					"Moonshae giver encounter failed");
+			const auto status = [&](const auto &s, size_t row, const char *state)
+			{
+				const auto at = journal.find("] " + s.title + "\r\n");
+				require(at != std::string::npos, "Moonshae visible card missing");
+				const auto end = journal.find("\r\n  [", at + 3);
+				return journal.substr(at, end == std::string::npos ? end : end - at)
+					       .find(std::string("[") + state + "] " +
+						     s.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			for (int v : { 26227, 26211, 26215, 26210, 26235 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 262, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(sword, 0, "Missing now") && status(sword, 1, "Pending") &&
+					status(robe, 0, "Missing now") &&
+					status(robe, 1, "Pending") &&
+					status(robe, 2, "Missing now"),
+				"Moonshae similar proof or reward forged return");
+			supplies = {};
+			supplies.equipped[3] = 26212;
+			supplies.carried[26405] = 1;
+			supplies.carried[26209] = 1;
+			journal = journey.render_journal(7, 42, 262, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(robe, 0, "Missing now") && status(robe, 1, "Pending") &&
+					status(robe, 2, "Ready now") &&
+					status(sword, 0, "Missing now"),
+				"Moonshae worn/nested proof or alternate orb forged accepted history");
+			supplies = {};
+			for (int v : { 26233, 26212, 26209 })
+				supplies.carried[v] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 262, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(sword, 0, "Ready now") && status(sword, 1, "Pending") &&
+					status(robe, 0, "Ready now") &&
+					status(robe, 1, "Pending") && status(robe, 2, "Ready now"),
+				"Moonshae supplied proof readiness failed");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 262).completed == 0,
+				"Moonshae readiness manufactured victory/access/purification");
+			record(journey, sword.contracts.front(), "moonshae-direct-sword", 262,
+			       26244);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 262, 10, 1, 120, false, false,
+							 &supplies);
+			require(status(sword, 1, "Recorded") && status(sword, 0, "Missing now") &&
+					status(robe, 1, "Pending") &&
+					journey.progress_for_zone(7, 42, 262).completed == 1,
+				"Moonshae invented Brigit dependency or lost spent sword history");
+			record(journey, robe.contracts.front(), "moonshae-robe", 262, 26244);
+			journal = journey.render_journal(7, 42, 262, 10, 1, 122, false, false,
+							 &supplies);
+			require(status(robe, 1, "Recorded") && status(robe, 0, "Missing now") &&
+					status(robe, 2, "Missing now") &&
+					journey.progress_for_zone(7, 42, 262).completed == 2,
+				"Moonshae missing orb erased independent return");
+			auto replay = completion(robe.contracts.front(), "moonshae-robe", 120);
+			replay.transaction.zone_number = 262;
+			replay.transaction.room_vnum = 26244;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Moonshae exact replay duplicated progress");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 262).completed == 2,
+				"Moonshae cold recovery lost receipts");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 262, 26208, 100, "arrival") ==
+					result::applied,
+				"Moonshae raw discovery failed");
+			record(raw, sword.contracts.front(), "moonshae-raw", 262, 26244);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 262).completed == 1,
+				"Moonshae raw-to-authored recovery lost direct return");
 		}
 
 		{
