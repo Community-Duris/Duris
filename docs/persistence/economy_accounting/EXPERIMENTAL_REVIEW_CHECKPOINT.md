@@ -1,5 +1,15 @@
 # Experimental accounting review checkpoint
 
+## Genuine producer qualification advancing — 2026-10-06
+
+[Shared progress](SHARED_PRODUCER_INTEGRATION_PROGRESS_2026-10-06.md) records
+both complete 747-unit builds and genuine first M+G publication on both SQL
+engines, with the genuine event catalog exported and loaded. Source remains
+private; native-wallet cold recovery qualification and authentic cold world
+restoration remain underway. Completed independent Plan 1 acceptance
+remains intact; complete openings, activation and full R1–R8 stay open.
+
+
 ## Partial claim snapshot readers integrated — 2026-10-06
 
 [Primary qualification](PLAN5_PARTIAL_SNAPSHOT_PRIMARY_QUALIFICATION_2026-10-06.md)

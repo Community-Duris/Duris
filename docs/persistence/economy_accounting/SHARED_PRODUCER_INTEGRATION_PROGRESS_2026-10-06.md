@@ -1,5 +1,77 @@
 # Shared producer integration progress — 2026-10-06
 
+## Combined build and genuine publication boundary
+
+The private final candidate `74b88535fbfa555cb016276591053b16d7a29631d87cc85e9fedf5774c99f916`
+passes both original 747-unit production profiles and all nine original
+contracts. Every object, dependency file, source byte/mode, external dependency
+and original link recipe is authenticated. The build handoff SHA256 is
+`73ab16c9bb6d295ffb6f407eb9c96ebcd902fa44ec2ed8713d95bc3f5d4e78f4`.
+Original failed attempts remain retained. Three bounded private build repairs
+remove an unused birth SQL overload, register the two real quest codec providers
+and correct adjacent custody-query string literals; flags and gates are intact.
+
+The original full-provider ordinary M+G first-publication journey now passes
+on fresh MySQL and MariaDB with registered schema 0063. It exercises genuine
+world publication, NBC2/NMB3/NMR1, SQL root/native/custody binding, typed ACK,
+immutable origin transfer and journal retirement. Both SQL daemons close
+cleanly. The fixture needed the original runtime environment label and real
+runtime exclusion-guard initializer; those bounded private fixture corrections
+and earlier refusals are preserved. Its three-route bootstrap verifier is
+explicitly synthetic and does not qualify complete activation. The original
+event-name catalog recipe now passes: it exports 8,777 text symbols from the
+authenticated genuine ELF and the real loader registers 8,719 callback names
+(58 shared addresses). Both original publication journeys pass again with that
+catalog loaded: MySQL 4.135 seconds and MariaDB 3.883 seconds, with original
+60-second deadlines. The retained terminal attachments are 5,776-byte NMR1
+revision38 images with eight mobile and three item effects. Cold replay has not
+yet run.
+
+The genuine publication receipt SHA256 is
+`a0325104f0aac801b610c70696f555f29e216d3cf98da03a7b19cc3762945df2`;
+the authenticated evidence manifest SHA256 is
+`3ac3c9e761cd196607d05a8d01de460ac95c22680652d6db82c47577d06193d9`.
+The catalog SHA256 is
+`736ce60051c4b402843b313e5f577a2d1c00d1e2fdd167aba2cbb5de5a7e2b58`.
+Private evidence lives under
+`tmp/native-birth-actual-publication-primary-20261006/evidence/major74-actual-4/`.
+Primary rechecked every sealed evidence-file byte count and hash before this
+checkpoint. The real exclusion guard is exercised; complete opening/source
+coverage and the independent production activation verifier remain unproved.
+
+Source review found the next concrete cold boundary: lifecycle mapping recovery
+requires player wallet locator1/context0/baseline creator and consequently
+rejects genuine birth wallets (locator7/native-mobile context/birth creator).
+The private successor authenticates original published birth provenance and
+the bounded current canonical native image before validating this distinct
+namespace. Historical birth epoch stays historical; supported cash/stock may
+progress. It preserves player counts/PID caches and original mapping guards.
+Retirement without an authenticated supported owner continues to refuse.
+The three-file private successor is frozen as
+`5552a71bfd7b401ff9d1400cf1a1f1b8e4a55af195aa9fac9fc9acf268513421`.
+It changes only the original birth SQL provider/header and lifecycle caller.
+Original contracts and production qualification are underway; source remains
+private and no cold success is claimed. Original startup opens SQL and restores
+accounting before world boot and coordinator initialization. Authentic retained
+origin registration/world restoration and the pending-journal handoff therefore
+remain concrete integration work, in addition to the wallet mapping repair.
+
+This recovery repair does not invent a generic full-history startup audit.
+Existing lifecycle player mapping recovery is identity-based; the native SQL
+image owns current cash/stock values. Complete source capture, item openings,
+native value reconciliation and the real independent activation verifier remain
+separate full-R6 requirements. Plan 1's already completed independent acceptance
+is not reopened. The existing original Plan5 origin/stake suites are already
+registered centrally and require no duplicate rows.
+
+The independently qualified saved partial-allocation reader is published as
+`5759a4783`: 173 selected pure methods, both original SQL-origin methods and
+the full both-engine native restore entry point pass within their documented
+scopes. [Primary qualification](PLAN5_PARTIAL_SNAPSHOT_PRIMARY_QUALIFICATION_2026-10-06.md)
+preserves the additional source-batch metadata limit and current release gates.
+All newer producer source remains private pending combined qualification.
+
+
 ## Current integration boundary
 
 The auction/opening shared milestone is published as de3296fd0 on
