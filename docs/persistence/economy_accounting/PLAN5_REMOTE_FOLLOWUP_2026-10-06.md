@@ -212,3 +212,14 @@ receives this owned curator packet. All seven old tips and prior evidence remain
 Birth/source authority, complete capture, actual writers/ACK/recovery, full
 backend/lifecycle/erasure/retention and release-host qualification remain open.
 Accounting stays inactive and no release gate is promoted.
+
+The follow-up imports primary `8dc0f98eb01bee9e40d227debb3e556d2d0fdbcf` exactly at
+`b9ea0e4ff127ddbd25c5a8c968af4eebe5bdd7e3`. Its two shared documentation changes
+publish the reviewed private claim-consumption/source boundary; no private
+0062 migration or money implementation is present in this checkout. All 3,122
+qualified code inputs remain unchanged, so this import adds no runtime result.
+The newly published interface retains immutable source identity/amount, separate
+positive consumption rows and nullable/versioned opening-origin attribution.
+Its independent reader integration and original producer/restore journeys remain
+required. The sealed post-refresh receipt binds the final remote merge/report
+tip to this slice's prior delivery and preserved seven old branch tips.
