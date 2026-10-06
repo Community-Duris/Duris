@@ -1,0 +1,337 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "clfhaven",
+  "coverage": "complete",
+  "introduction": "Aravne’s ancient curse leads from nine different hearts to a throne-room key, then to a separate royal return. Babedo offers a legacy luck-scroll exchange. Sand for Dawndale, guarded information and epic training add other leads. Discovery is separate; new progress requires active, ready accounting.",
+  "orientation": [
+    "ASK ANESENTHE about weep, proof, hi or quest. Her actual name is Anesenthe. She asks for nine different hearts: Enzekail, both alpha weretors, Auruos, Solos, Berbrathus, Grgak, Akethis and Akiniere. Carry one of each loose; nine copies of one HEART cannot replace nine different kinds.",
+    "The first accepted return awards an ornate gold key and experience. The next native recipe accepts the hearts of Cacazar, Elan’Atol and the King for a blade, gauntlets and experience. The suggested route uses the key at the throne room, but the final recipe has no required earlier journal receipt. Matching supplied hearts fit; personal combat, first recovery, door access and lifting the curse are different facts.",
+    "Other access leads include the stargazer lord’s star-marked key, Kotuss’s mansion key, the sun guardian’s key and a sigil-marked key on a kings gate guard. Keys, an already-open shared door and actual successful entry are separate from accepted proof. The reverse stargazer exit declares a different key value; do not assume every direction has the same requirement.",
+    "Babedo’s ambient speech describes a legacy exchange: Bel’s heart, the Dark’s orb and a stone tablet return a luck scroll. The tablet has no declared reset source in the reviewed world, and the scroll has no bound stat-use effect. Babedo is also bound as an epic luck trainer during full boot; that practice purchase is separate and is refused while accounting is active.",
+    "ASK MAROONED about unique, major, ioun or artifacts for the xixchil’s information-service explanation. The native LIST unique/main-or-major/ioun options quote 50/500/175 platinum. Purchases are refused while accounting is active. Questions give leads without charging or creating a keyword achievement; this service is not a local accepted quest return.",
+    "The sand elemental near the city ghetto creates a pile of fine sand through a death handler. The high-elven smith in Dawndale requests that exact sand and 25 platinum for a lens. This is an outside-zone handoff, not a fourth Aravne return. Custom sand creation needs accounting admission; seeing sand, receiving it from another player and first source recovery are separate.",
+    "GRAB the declared vine, or ENTER the pool, lifting portal, chute or underbrush where present, for exploration leads. Prime Tree visions, Tor awakening, an innocence leaf, noble-home columns, dead animals, crafting descriptions and merchant roles do not alone establish an accepted quest or permanent world change. Optional material rows show loose supplies now; accepted history remains after spending them. Stock and possible dailies require separate accounting qualification."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 21514,
+      "name": "Anesenthe",
+      "keyword": "anesenthe",
+      "description": "The greater dryad explains the curse and accepts two independent exact-heart offerings. The first returns a throne-room key; the second returns the royal equipment. Acceptance does not itself record a lifted curse.",
+      "topics": [
+        "weep",
+        "weeping",
+        "proof",
+        "hi",
+        "hello",
+        "quest",
+        "crying"
+      ]
+    },
+    {
+      "mob_vnum": 21535,
+      "name": "Babedo",
+      "keyword": "babedo",
+      "description": "The halfling hero has a legacy three-item luck-scroll return and ambient requests. A full-boot dynamic binding also makes him an epic luck trainer; that guarded practice service is separate from the old scroll.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21549,
+      "name": "a marooned xixchil",
+      "keyword": "marooned",
+      "description": "The marooned xixchil explains artifact-location categories. His paid LIST service is unavailable while accounting is active; no synthetic payment receipt or keyword achievement is added.",
+      "topics": [
+        "unique",
+        "uniques",
+        "major",
+        "main",
+        "ioun",
+        "iouns",
+        "artifact",
+        "artifacts"
+      ]
+    },
+    {
+      "mob_vnum": 21673,
+      "name": "a sand elemental",
+      "keyword": "sand",
+      "description": "The sand elemental’s enabled death handler creates fine sand for a Dawndale smith. Accounting issuance and first-source provenance need qualification; a matching player-supplied item is not proof of a personal kill.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21595,
+      "name": "a stargazer lord",
+      "keyword": "stargazer",
+      "description": "Carries a star-marked key for the guarded route toward Auruos. Possession is a source lead, not a recorded successful unlock or an accepted local quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21645,
+      "name": "Kotuss",
+      "keyword": "kotuss",
+      "description": "Carries the mansion key on the route toward Berbrathus. His request to be freed is narrative context without a selected peaceful key-award exchange.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21650,
+      "name": "a sun guardian",
+      "keyword": "sun",
+      "description": "Carries a key for the route toward Solos. Shared door state, key recovery and personal combat remain separate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 21667,
+      "name": "a kings gate guard",
+      "keyword": "kings",
+      "description": "A kings gate guard declares a sigil-marked key for the royal courtyard. Multiple guards share this target name, so identify the intended carrier rather than treating every guard as a quest giver.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "nine-hearts",
+      "title": "Nine hearts for the throne-room key",
+      "category": "story",
+      "summary": "Bring nine different hearts to Anesenthe for an ornate gold key and experience. The longer curse story explains the journey; accepted proof does not separately verify personal kills, first recovery or a restored city.",
+      "contracts": [
+        {
+          "giver_vnum": 21514,
+          "completion_key": "give=I:21649,I:21650,I:21651,I:21652,I:21653,I:21654,I:21655,I:21656,I:21657;receive=E:250000,I:21663;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "proof-21649",
+          "text": "Carry Enzekail’s heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21649
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it."
+        },
+        {
+          "id": "proof-21650",
+          "text": "Carry the female weretor’s heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21650
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it."
+        },
+        {
+          "id": "proof-21651",
+          "text": "Carry the male weretor’s heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21651
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it."
+        },
+        {
+          "id": "proof-21652",
+          "text": "Carry Auruos’s heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21652
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it."
+        },
+        {
+          "id": "proof-21653",
+          "text": "Carry Solos’s heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21653
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it."
+        },
+        {
+          "id": "proof-21654",
+          "text": "Carry Berbrathus’s heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21654
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it."
+        },
+        {
+          "id": "proof-21655",
+          "text": "Carry Grgak’s heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21655
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it."
+        },
+        {
+          "id": "proof-21656",
+          "text": "Carry Akethis’s heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21656
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it."
+        },
+        {
+          "id": "proof-21657",
+          "text": "Carry Akiniere’s heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21657
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exact accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 21514,
+              "completion_key": "give=I:21649,I:21650,I:21651,I:21652,I:21653,I:21654,I:21655,I:21656,I:21657;receive=E:250000,I:21663;disappear=0"
+            }
+          ],
+          "hint": "Records this native accepted return and retains it after materials are spent. Suggested sequence, shared access, permanent restoration and actual stat effects are separate. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "royal-hearts",
+      "title": "The royal hearts for blade and gauntlets",
+      "category": "story",
+      "summary": "Bring Cacazar’s, Elan’Atol’s and the King’s different hearts to Anesenthe for the blade, gauntlets and experience. This accepted recipe is independent of earlier journal history, although the throne-room route uses the first reward key.",
+      "contracts": [
+        {
+          "giver_vnum": 21514,
+          "completion_key": "give=I:21658,I:21659,I:21660;receive=E:300000,I:21661,I:21662;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "proof-21658",
+          "text": "Carry Cacazar’s heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21658
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it."
+        },
+        {
+          "id": "proof-21659",
+          "text": "Carry Elan’Atol’s heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21659
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it."
+        },
+        {
+          "id": "proof-21660",
+          "text": "Carry the King’s heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            21660
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exact accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 21514,
+              "completion_key": "give=I:21658,I:21659,I:21660;receive=E:300000,I:21661,I:21662;disappear=0"
+            }
+          ],
+          "hint": "Records this native accepted return and retains it after materials are spent. Suggested sequence, shared access, permanent restoration and actual stat effects are separate. New credit requires active, ready accounting."
+        }
+      ]
+    },
+    {
+      "id": "luck-scroll",
+      "title": "Babedo’s legacy luck-scroll exchange",
+      "category": "story",
+      "summary": "The exact heart of Bel, orb of the Dark and stone tablet fit Babedo’s old exchange for a luck scroll. The tablet’s source and the scroll’s intended effect need builder follow-up. Acceptance records the return, not a luck increase or an epic practice purchase.",
+      "contracts": [
+        {
+          "giver_vnum": 21535,
+          "completion_key": "give=I:402,I:26614,I:32490;receive=I:409;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "proof-32490",
+          "text": "Carry Bel’s heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            32490
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it."
+        },
+        {
+          "id": "proof-26614",
+          "text": "Carry the Dark’s orb loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            26614
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it."
+        },
+        {
+          "id": "proof-402",
+          "text": "Carry the stone tablet loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            402
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Checks this exact supplied identity loose now. Worn or nested proof and similar names are different evidence. Availability, personal combat and first source recovery are not established by carrying it."
+        },
+        {
+          "id": "turn-in",
+          "text": "Complete the exact accepted return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 21535,
+              "completion_key": "give=I:402,I:26614,I:32490;receive=I:409;disappear=0"
+            }
+          ],
+          "hint": "Records this native accepted return and retains it after materials are spent. Suggested sequence, shared access, permanent restoration and actual stat effects are separate. New credit requires active, ready accounting."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

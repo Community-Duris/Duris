@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 144 &&
+		require(catalog.story_mappings.size() == 145 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7687,6 +7687,158 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "clfhaven"; });
+			const auto &nine = story_for("clfhaven", "nine-hearts");
+			const auto &royal = story_for("clfhaven", "royal-hearts");
+			const auto &luck = story_for("clfhaven", "luck-scroll");
+			require(mapping.stories.size() == 3 && mapping.contacts.size() == 8 &&
+					nine.steps.size() == 10 && royal.steps.size() == 4 &&
+					luck.steps.size() == 4,
+				"Aravne mapping scope failed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 215, 21500, 100, "arrival") ==
+					result::applied,
+				"Aravne discovery failed");
+			require(journey.meet_npc(7, 42, 21549, 21641, 102) == result::applied &&
+					journey.meet_npc(7, 42, 21673, 21568, 102) ==
+						result::applied,
+				"Aravne context encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 215, 10, 1, 103, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Aravne paid information/sand encounter exposed unmet giver cards");
+			require(journey.progress_for_zone(7, 42, 215).total == 3 &&
+					journey.progress_for_zone(7, 42, 215).completed == 0,
+				"Aravne context forged receipt or service unit");
+			require(journey.meet_npc(7, 42, 21514, 21529, 104) == result::applied,
+				"Aravne Anesenthe encounter failed");
+			journal = journey.render_journal(7, 42, 215, 10, 1, 105, false, false);
+			require(journal.find("] " + nine.title + "\r\n") != std::string::npos &&
+					journal.find("] " + royal.title + "\r\n") !=
+						std::string::npos &&
+					journal.find("] " + luck.title + "\r\n") ==
+						std::string::npos,
+				"Aravne exact giver visibility failed");
+			const auto status = [&](const auto &story, size_t row, const char *state)
+			{
+				const auto start = journal.find("] " + story.title + "\r\n");
+				require(start != std::string::npos, "Aravne visible story missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " +
+						     story.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			for (int v : { 21566, 21509, 21511, 21613, 21620, 21636, 21661, 21662,
+				       21663, 21673 })
+				supplies.carried[v] = 1;
+			supplies.equipped[18] = 21658;
+			journal = journey.render_journal(7, 42, 215, 10, 1, 106, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 9; ++i)
+				require(status(nine, i, "Missing now"),
+					"Aravne decoy heart/keys/animals/sand prepared distinct proof");
+			require(status(royal, 0, "Missing now"),
+				"Aravne held proof counted as loose royal heart");
+			supplies = {};
+			for (int v = 21649; v < 21657; ++v)
+				supplies.carried[v] = 1;
+			supplies.carried[21649] = 9;
+			journal = journey.render_journal(7, 42, 215, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(nine, 0, "Ready now") && status(nine, 7, "Ready now") &&
+					status(nine, 8, "Missing now"),
+				"Aravne duplicate HEART replaced ninth exact kind");
+			supplies.carried[21657] = 1;
+			for (int v = 21658; v <= 21660; ++v)
+				supplies.carried[v] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 215, 10, 1, 108, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 9; ++i)
+				require(status(nine, i, "Ready now"),
+					"Aravne supplied distinct loose heart not ready");
+			for (size_t i = 0; i < 3; ++i)
+				require(status(royal, i, "Ready now"),
+					"Aravne supplied royal heart not ready");
+			require(status(nine, 9, "Pending") && status(royal, 3, "Pending") &&
+					journey.serialize_state() == before,
+				"Aravne proof readiness forged kill/access/cure history");
+			// Receipt projection is separate from actual source combat, keys and accounting settlement.
+			record(journey, royal.contracts.front(), "aravne-royal-first", 215, 21529);
+			require(journey.progress_for_zone(7, 42, 215).completed == 1 &&
+					journey.evidence_for(nine.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Aravne royal receipt required or fabricated nine-heart history");
+			record(journey, nine.contracts.front(), "aravne-nine-later", 215, 21529);
+			require(journey.meet_npc(7, 42, 21535, 21613, 112) == result::applied,
+				"Aravne Babedo encounter failed");
+			supplies = {};
+			supplies.carried[32490] = 1;
+			supplies.carried[26614] = 1;
+			supplies.equipped[18] = 402;
+			journal = journey.render_journal(7, 42, 215, 10, 1, 113, false, false,
+							 &supplies);
+			require(status(luck, 0, "Ready now") && status(luck, 1, "Ready now") &&
+					status(luck, 2, "Missing now") &&
+					status(luck, 3, "Pending"),
+				"Aravne held tablet or partial triple accepted luck");
+			supplies = {};
+			for (int v : { 32490, 26614, 402 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 215, 10, 1, 114, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 3; ++i)
+				require(status(luck, i, "Ready now"),
+					"Aravne supplied legacy triple not ready");
+			require(status(luck, 3, "Pending") &&
+					journey.progress_for_zone(7, 42, 215).completed == 2,
+				"Aravne legacy supplies fabricated scroll/stat purchase");
+			record(journey, luck.contracts.front(), "aravne-luck-receipt", 215, 21613);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 215, 10, 1, 120, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(status(story, story.steps.size() - 1, "Recorded") &&
+						status(story, 0, "Missing now"),
+					"Aravne spent material erased accepted history");
+			require(journey.progress_for_zone(7, 42, 215).completed == 3 &&
+					journey.progress_for_zone(7, 42, 215).total == 3,
+				"Aravne material/service rows inflated units");
+			auto replay =
+				completion(royal.contracts.front(), "aravne-royal-first", 120);
+			replay.transaction.zone_number = 215;
+			replay.transaction.room_vnum = 21529;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Aravne exact replay duplicated receipt");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 215).completed == 3,
+				"Aravne cold recovery lost accepted history");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 215, 21500, 100, "arrival") ==
+					result::applied,
+				"Aravne raw discovery failed");
+			for (const auto &story : mapping.stories)
+				record(historical, story.contracts.front(),
+				       ("aravne-raw-" + story.id).c_str(), 215,
+				       story.id == luck.id ? 21613 : 21529);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 215).completed == 3,
+				"Aravne raw-to-authored recovery lost history");
+			for (const auto &story : mapping.stories)
+				require(authored.evidence_for(story.contracts.front(), 2)
+							.successful_attempts == 1,
+					"Aravne mapping discarded exact native receipt");
 		}
 
 		{
