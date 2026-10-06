@@ -3,7 +3,7 @@
 
 Requires the explicit disposable Linux gate and an existing server binary.
 The existing menu journeys own their behavior. A test observer seeds structurally
-native-compatible zero-effect history and reads it without changing that behavior.
+native-compatible history and partial claim allocations without changing that behavior.
 This does not qualify active typed erasure, writer authority or complete capture.
 """
 from __future__ import annotations
@@ -34,6 +34,7 @@ def native_fixture() -> dict[str, Path]:
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
+#include <string>
 critical_operation_id id(uint8_t value) { critical_operation_id result; result.bytes.fill(value); return result; }
 critical_operation_id op_id(uint8_t value,uint32_t pid) {
     auto result=id(value);
@@ -45,7 +46,7 @@ void output(const std::vector<uint8_t> &bytes) {
     std::cout.write(reinterpret_cast<const char *>(bytes.data()),bytes.size());
 }
 int main(int argc,char **argv) {
-    assert(argc==2);
+    assert(argc==2 || (argc==3 && std::string(argv[2])=="claims"));
     const uint64_t pid=std::strtoull(argv[1],nullptr,10); assert(pid>0 && pid<=UINT32_MAX);
     economic_accounting_plan plan;
     auto &m=plan.metadata;
@@ -53,17 +54,37 @@ int main(int argc,char **argv) {
     m.actor_kind=economic_actor_kind::domain; m.actor_id=pid; m.writer_id=1;
     m.reason=economic_reason::coin_transfer;
     m.source_event={economic_source_kind::lifecycle,id(0x71),id(0x72),pid,0};
-    for (size_t step=0;step<2;++step) {
+    auto emit = [&](economic_accounting_plan &candidate) {
         economic_frozen_intent intent;
-        intent.admission.metadata=m; intent.command_binding.fill(0x21); intent.domain_digest.fill(0x22);
+        intent.admission.metadata=candidate.metadata; intent.command_binding.fill(0x21); intent.domain_digest.fill(0x22);
         std::vector<uint8_t> frozen,encoded;
         assert(economic_intent_encode(intent,&frozen)==economic_accounting_error::ok);
-        assert(economic_intent_digest(intent,&m.intent_digest)==economic_accounting_error::ok);
-        m.domain_digest=intent.domain_digest;
-        assert(economic_plan_encode(plan,&encoded)==economic_accounting_error::ok);
+        assert(economic_intent_digest(intent,&candidate.metadata.intent_digest)==economic_accounting_error::ok);
+        candidate.metadata.domain_digest=intent.domain_digest;
+        assert(economic_plan_encode(candidate,&encoded)==economic_accounting_error::ok);
         economic_accounting_plan decoded;
         assert(economic_plan_decode(encoded,&decoded)==economic_accounting_error::ok);
         output(frozen); output(encoded);
+    };
+    if (argc==3) {
+        const int64_t wallet_before[]={20,15,12},wallet_after[]={15,12,14};
+        const int64_t claim_before[]={0,5,8},claim_after[]={5,8,6};
+        for (size_t step=0;step<3;++step) {
+            auto candidate=plan;
+            candidate.metadata.operation_id=op_id(uint8_t(0x90+step),uint32_t(pid));
+            candidate.metadata.source_event->slot=uint16_t(2+step);
+            candidate.accounts={
+                {{m.lineage,economic_account_kind::wallet,pid,0},{wallet_before[step],0,0,0},{wallet_after[step],0,0,0},step,step+1},
+                {{m.lineage,economic_account_kind::pending_claim,pid,0},{claim_before[step],0,0,0},{claim_after[step],0,0,0},step,step+1}
+            };
+            const auto delta=claim_after[step]-claim_before[step];
+            candidate.postings={{0,0,0,{-delta,0,0,0},-delta},{1,1,0,{delta,0,0,0},delta}};
+            emit(candidate);
+        }
+        return 0;
+    }
+    for (size_t step=0;step<2;++step) {
+        emit(plan);
         m.original_operation_id=m.operation_id; m.operation_id=op_id(0x81,pid); m.source_event->slot=1;
     }
 }
@@ -98,6 +119,7 @@ def run(server: Path) -> None:
     from economic_sql_audit_snapshot import read_evidence
     from reconcile_economy_accounting import Reconciler, view
     import qualify_database_restore as qualifier
+    from economic_restore_evidence import decode_plan
     import run_mysql_account_deletion_journey as account_journey
     import run_mysql_deletion_journey as character_journey
     import test_flatfile_combat_journey as journey
@@ -142,6 +164,7 @@ def run(server: Path) -> None:
                             version = cursor.fetchone()["version"]
                         for name, module in (("account", account_journey), ("character", character_journey)):
                             state = {"seeded": False, "captures": 0, "cold_restarts": 0, "canonical_faults": 0,
+                                     "claim_faults": 0, "claim_roots": [],
                                      "verified": False, "pids": [], "op_ids": []}
                             reader_password = secrets.token_hex(24)
                             reader_name = "retention_" + name
@@ -156,6 +179,11 @@ def run(server: Path) -> None:
                                 cursor.execute("SELECT * FROM " + prefix + "critical_operation_inbox WHERE operation_id IN (" +
                                                ",".join(["%s"] * len(op_ids)) + ") ORDER BY operation_id", op_ids)
                                 rows.append(cursor.fetchall())
+                                for table in ("economic_accounting_account_effect", "economic_accounting_coin_posting",
+                                              "economic_account_mapping", "economic_pending_claim_source",
+                                              "economic_pending_claim_consumption"):
+                                    cursor.execute("SELECT * FROM " + prefix + table + " ORDER BY 1,2")
+                                    rows.append(cursor.fetchall())
                                 return rows
 
                             def retained_cut(label, fixture_append=False):
@@ -195,10 +223,12 @@ def run(server: Path) -> None:
                                             "native": {"holdings": [], "items": []}, **cut}
                                 original = json.dumps(snapshot, sort_keys=True)
                                 report = Reconciler().audit(snapshot)
-                                assert report["exception_counts"] == {"evidence_loss": 1, "unfenced_snapshot": 1}, report
+                                expected_exceptions = {"evidence_loss": 1, "unfenced_snapshot": 1,
+                                                       "unknown_opening": len(state["pids"]) * 2}
+                                assert report["exception_counts"] == expected_exceptions, report
                                 for limit in (0, 1, 100):
                                     output = view(snapshot, report, "operation", limit, operation_id=state["op_ids"][0].hex())
-                                    assert output["coverage"]["exception_count"] == 2 and not output["coverage"]["complete"]
+                                    assert output["coverage"]["exception_count"] == sum(expected_exceptions.values()) and not output["coverage"]["complete"]
                                     assert len(output["rows"]) <= limit
                                 assert json.dumps(snapshot, sort_keys=True) == original
                                 if "retained" in state:
@@ -212,14 +242,17 @@ def run(server: Path) -> None:
                                     else:
                                         assert (cut, rows) == state["retained"], label
                                 state["retained"] = (cut, rows)
-                                assert len(cut["operations"]) == len(state["pids"]) * 2
-                                assert len(cut["source_claims"]) == len(state["pids"])
+                                assert len(cut["operations"]) == len(state["pids"]) * 5
+                                assert len(cut["source_claims"]) == len(state["pids"]) * 4
+                                assert len(rows[-2]) == len(state["pids"]) * 2
+                                assert len(rows[-1]) == len(state["pids"])
                                 state["captures"] += 1
                                 print("RETENTION_CAPTURE " + json.dumps({"engine": engine, "journey": name,
                                       "label": label, "roots": len(cut["operations"]), "claims": len(cut["source_claims"]),
                                       "prior_rows_unchanged": True, "fixture_append": fixture_append,
                                       "select_only": True, "rollback": 1, "cursor_close": 1,
                                       "canonical_economic_integrity": True,
+                                      "pending_claim_sources": len(rows[-2]), "partial_allocations": len(rows[-1]),
                                       "incomplete_refusals": report["exception_counts"]}), flush=True)
 
                             def create_with_history(client, *args, **kwargs):
@@ -296,6 +329,62 @@ def run(server: Path) -> None:
                                             insert("economic_accounting_source_claim", dict(lineage=plan[8:24], source_event=plan[104:152],
                                                    operation_id=op, outcome=1))
                                         state["op_ids"].append(op)
+                                    claims = [real_check_output([str(binary), str(pid), "claims"], env=sanitizer_env)
+                                              for binary in binaries.values()]
+                                    assert claims[0] == claims[1]
+                                    claim_artifact = artifact.with_name(artifact.stem + "-claims.bin")
+                                    claim_artifact.write_bytes(claims[0])
+                                    claim_blocks, offset = [], 0
+                                    while offset < len(claims[0]):
+                                        size, = struct.unpack_from("<I", claims[0], offset)
+                                        offset += 4
+                                        claim_blocks.append(claims[0][offset:offset + size])
+                                        offset += size
+                                    assert offset == len(claims[0]) and len(claim_blocks) == 6
+                                    roots = []
+                                    for frozen, encoded in zip(claim_blocks[::2], claim_blocks[1::2]):
+                                        plan = decode_plan(encoded)
+                                        meta = plan["metadata"]
+                                        op = meta[2]
+                                        assert meta[9] == pid and struct.unpack_from("<Q", meta[11], 36)[0] == pid
+                                        insert("critical_operation_inbox", dict(operation_id=op, command_hash=hashlib.sha256(frozen).digest(),
+                                               keys_hash=b"\x04" * 32, command_type=3, schema_version=2, payload_version=1,
+                                               status=1, result_code=0, result_payload=b""))
+                                        with owner.cursor() as cursor:
+                                            cursor.execute("UPDATE critical_operation_inbox SET committed_at=CURRENT_TIMESTAMP(6) WHERE operation_id=%s", (op,))
+                                        insert("economic_accounting_operation", dict(operation_id=op, lineage=meta[0], epoch=meta[1],
+                                               original_operation_id=None, accounting_version=meta[4], writer_id=meta[5], policy_version=meta[6],
+                                               compiler_version=meta[7], actor_kind=meta[8], actor_id=meta[9], reason=meta[10], source_event=meta[11],
+                                               intent_digest=plan["intent_digest"], domain_digest=plan["domain_digest"], plan_digest=plan["plan_digest"],
+                                               canonical_intent=frozen, canonical_plan=encoded, outcome=1, result_code=0,
+                                               **dict(zip(("account_count", "posting_count", "child_count", "before_witness_count",
+                                                           "after_witness_count", "item_event_count"), plan["counts"]))))
+                                        insert("economic_accounting_source_claim", dict(lineage=meta[0], source_event=meta[11], operation_id=op, outcome=1))
+                                        for index, (key, before, after, old, new) in enumerate(plan["effects"]):
+                                            insert("economic_accounting_account_effect", dict(operation_id=op, account_index=index, account_key=key,
+                                                **dict(zip(("before_copper", "before_silver", "before_gold", "before_platinum",
+                                                            "after_copper", "after_silver", "after_gold", "after_platinum"), (*before, *after))),
+                                                before_revision=old, after_revision=new))
+                                        for index, (event, account, child, delta, amount) in enumerate(plan["postings"]):
+                                            insert("economic_accounting_coin_posting", dict(operation_id=op, line_index=index, event_index=event,
+                                                account_index=account, child_index=child,
+                                                **dict(zip(("delta_copper", "delta_silver", "delta_gold", "delta_platinum"), delta)), copper_value=amount))
+                                        state["op_ids"].append(op)
+                                        roots.append(op)
+                                    insert("economic_account_mapping", dict(mapping_id=pid, lineage=b"\x11" * 16, account_kind=5,
+                                           context_id=0, backend_kind=1, locator_kind=5, native_id=pid, active_native_id=pid,
+                                           creating_operation_id=roots[0]))
+                                    for op, amount in zip(roots[:2], (5, 3)):
+                                        insert("economic_pending_claim_source", dict(source_operation_id=op, source_slot=1, lineage=b"\x11" * 16,
+                                               claim_mapping_id=pid, beneficiary_pid=pid, amount=amount))
+                                    insert("economic_pending_claim_consumption", dict(spending_operation_id=roots[2], source_operation_id=roots[0],
+                                           source_slot=1, amount=2))
+                                    insert("auction_money_pickups", dict(pid=pid, money=6, claim_revision=3))
+                                    state["claim_roots"].append(roots)
+                                    print("RETENTION_NATIVE_CLAIM_CASE " + json.dumps({"engine": engine, "journey": name, "pid": pid,
+                                          "encoded_sha256": hashlib.sha256(claims[0]).hexdigest(), "native_modes_agree": True,
+                                          "sources": 2, "partial_allocations": 1, "residual_copper": 6,
+                                          "original_opening_qualified": False, "financial_producer_qualified": False}), flush=True)
                                 finally:
                                     owner.close()
                                 state["pids"].append(pid)
@@ -330,6 +419,23 @@ def run(server: Path) -> None:
                                     # must refuse and leave the damaged rows unchanged.
                                     prefix = state["schema"] + "."
                                     with admin.cursor() as cursor:
+                                        cursor.execute("SELECT COUNT(*) AS players FROM " + prefix + "player_data WHERE pid IN (" +
+                                                       ",".join(["%s"] * len(state["pids"])) + ")", tuple(state["pids"]))
+                                        assert cursor.fetchone()["players"] == 0
+                                        cursor.execute("SELECT COUNT(*) AS accounts FROM " + prefix + "accounts WHERE account_name=%s", (journey.ACCOUNT,))
+                                        assert cursor.fetchone()["accounts"] == (1 if name == "character" else 0)
+                                        assert state["cold_restarts"] >= 1
+                                        assert len(state["pids"]) == (2 if name == "character" else 1)
+                                        # Preserve the inactive native paths: whole-account
+                                        # cleanup removes the old PID's pickup, while character
+                                        # deletion retains the new PID's nonpersonal claim.
+                                        cursor.execute("SELECT pid,money,claim_revision FROM " + prefix + "auction_money_pickups WHERE pid IN (" +
+                                                       ",".join(["%s"] * len(state["pids"])) + ") ORDER BY pid", tuple(state["pids"]))
+                                        pickups = cursor.fetchall()
+                                        expected = [{"pid": state["pids"][-1], "money": 6, "claim_revision": 3}] if name == "character" else []
+                                        assert list(pickups) == expected, pickups
+                                        print("RETENTION_NATIVE_PICKUP_BOUNDARY " + json.dumps({"engine": engine, "journey": name,
+                                              "native_pickups": list(pickups), "inactive_behavior_preserved": True}), flush=True)
                                         original = captured_history(cursor, prefix)
                                         actor = next(row["actor_id"] for row in original[2]
                                                      if row["operation_id"] == state["op_ids"][0])
@@ -354,15 +460,35 @@ def run(server: Path) -> None:
                                           "journey": name, "field": "actor_id", "boundary": "after-native-erasure-and-cold-restart",
                                           "code": "restore_economic_metadata_mismatch", "authority_unchanged": True,
                                           "fixture_restored": True, "select_only": True, "rollback": 1, "cursor_close": 1}), flush=True)
-                                    retained_cut("after-deletion-and-restart")
                                     with admin.cursor() as cursor:
-                                        cursor.execute("SELECT COUNT(*) AS players FROM " + state["schema"] + ".player_data WHERE pid IN (" +
-                                                       ",".join(["%s"] * len(state["pids"])) + ")", tuple(state["pids"]))
-                                        assert cursor.fetchone()["players"] == 0
-                                        cursor.execute("SELECT COUNT(*) AS accounts FROM " + state["schema"] + ".accounts WHERE account_name=%s", (journey.ACCOUNT,))
-                                        assert cursor.fetchone()["accounts"] == (1 if name == "character" else 0)
-                                    assert state["cold_restarts"] >= 1
-                                    assert len(state["pids"]) == (2 if name == "character" else 1)
+                                        original = captured_history(cursor, prefix)
+                                        source, _, spending = state["claim_roots"][0]
+                                        cursor.execute("DELETE FROM " + prefix + "economic_pending_claim_consumption "
+                                                       "WHERE spending_operation_id=%s AND source_operation_id=%s AND source_slot=1",
+                                                       (spending, source))
+                                        assert cursor.rowcount == 1
+                                        damaged = captured_history(cursor, prefix)
+                                        count = state["captures"]
+                                        try:
+                                            try:
+                                                retained_cut("lost-partial-allocation-after-erasure")
+                                            except RuntimeError as error:
+                                                assert str(error) == "restore_economic_pending_claim_consumption_mismatch", str(error)
+                                            else:
+                                                raise AssertionError("lost retained partial allocation passed qualification")
+                                            assert captured_history(cursor, prefix) == damaged
+                                            assert state["captures"] == count
+                                        finally:
+                                            cursor.execute("INSERT INTO " + prefix + "economic_pending_claim_consumption "
+                                                           "(spending_operation_id,source_operation_id,source_slot,amount) VALUES(%s,%s,1,2)",
+                                                           (spending, source))
+                                        assert captured_history(cursor, prefix) == original
+                                    state["claim_faults"] += 1
+                                    print("RETENTION_CLAIM_FAULT " + json.dumps({"engine": engine, "journey": name,
+                                          "boundary": "after-native-erasure-and-cold-restart",
+                                          "code": "restore_economic_pending_claim_consumption_mismatch",
+                                          "authority_unchanged": True, "fixture_restored": True, "select_only": True}), flush=True)
+                                    retained_cut("after-deletion-and-restart")
                                     state["verified"] = True
                                 return real_check_output(args, *positional, **kwargs)
 
@@ -375,14 +501,19 @@ def run(server: Path) -> None:
                                 module.run(server)
                             assert state["seeded"] and state["verified"]
                             assert state["canonical_faults"] == 1
+                            assert state["claim_faults"] == 1
                             result = {"engine": engine, "version": version, "journey": name,
                                       "captures": state["captures"], "cold_restarts": state["cold_restarts"],
                                       "pids": state["pids"], "retained_roots": len(state["op_ids"]),
-                                      "retained_claims": len(state["pids"]), "inactive": True,
+                                      "retained_claims": len(state["pids"]) * 4,
+                                      "retained_pending_claim_sources": len(state["pids"]) * 2,
+                                      "retained_partial_allocations": len(state["pids"]),
+                                      "claim_allocation_refusals": state["claim_faults"], "inactive": True,
                                       "native_erasure_boundary": True, "seeded_evidence": True,
                                       "canonical_economic_integrity": True,
                                       "canonical_qualified_captures": state["captures"],
                                       "canonical_refusals": state["canonical_faults"],
+                                      "original_opening_qualified": False, "financial_producer_qualified": False,
                                       "typed_active_erasure_qualified": False}
                             completed.append(result)
                             print("RETENTION_JOURNEY " + json.dumps(result, sort_keys=True), flush=True)
