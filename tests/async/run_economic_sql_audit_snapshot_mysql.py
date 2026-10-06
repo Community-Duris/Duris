@@ -289,6 +289,110 @@ def item_origin(uid, owner_type, state, owner_id, revision):
                        uid, 0, revision, bytes.fromhex("a5" * 32))
 
 
+def verify_compound_item_actions(owner, reader, snapshot):
+    """Classify existing supply endpoints without promoting modeled evidence."""
+    from _plan5_equipment_restore import Connection, inventory
+
+    output = ROOT / "bin/tests/plan5-compound-item-actions" / uuid.uuid4().hex
+    output.mkdir(parents=True)
+    initial = inventory(owner)
+    original_counts = Reconciler().audit(snapshot)["exception_counts"]
+    retirement_root = bytes.fromhex("ad" * 16)
+    retirement_source = bytes.fromhex(source_identity(kind=18, identity="c7"))
+    with owner.cursor() as cursor:
+        cursor.execute("SELECT * FROM item_ownership_ledger WHERE operation_id=%s AND event_index=0", (creation_root,))
+        original = cursor.fetchone()
+        for table in ("economic_accounting_operation", "critical_operation_inbox", "item_ownership_ledger"):
+            cursor.execute("SELECT COUNT(*) AS n FROM " + table + " WHERE operation_id=%s", (retirement_root,))
+            assert cursor.fetchone()["n"] == 0
+        for table in ("economic_accounting_operation", "economic_accounting_source_claim"):
+            cursor.execute("SELECT COUNT(*) AS n FROM " + table + " WHERE lineage=%s AND source_event=%s",
+                           (LINEAGE, retirement_source))
+            assert cursor.fetchone()["n"] == 0
+    records = []
+    try:
+        for phase, reason in (("craft-creation", 34), ("craft-retirement", 34),
+                              ("quest-retirement", 33), ("collector-retirement", 21)):
+            with owner.cursor() as cursor:
+                if phase == "craft-creation":
+                    cursor.execute("UPDATE item_ownership_ledger SET reason_type=%s,from_owner_type=7,"
+                                   "from_owner_id=0,from_owner_context_id=0 WHERE operation_id=%s AND event_index=0",
+                                   (reason, creation_root))
+                else:
+                    cursor.execute("UPDATE item_ownership_ledger SET reason_type=%s,from_owner_type=%s,"
+                                   "from_owner_id=%s,from_owner_context_id=%s WHERE operation_id=%s AND event_index=0",
+                                   (original["reason_type"], original["from_owner_type"], original["from_owner_id"],
+                                    original["from_owner_context_id"], creation_root))
+                    if phase == "craft-retirement":
+                        cursor.execute(ROOT_INSERT + "(%s,%s,%s,NULL,34,1,0,%s,0,0,0,1,NULL)",
+                                       (retirement_root, LINEAGE, EPOCH, retirement_source))
+                        cursor.execute("INSERT INTO critical_operation_inbox (operation_id,status,result_code) "
+                                       "VALUES (%s,1,0)", (retirement_root,))
+                        cursor.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
+                                       (LINEAGE, retirement_source, retirement_root))
+                        cursor.execute(REFERENCE_INSERT + "(%s,0,0,84,1,2,%s,0)", (retirement_root, retirement_root))
+                        cursor.execute(LEDGER_INSERT + "(%s,0,84,84,NULL,8,0,0,2,1,%s)", (retirement_root, reason))
+                    cursor.execute("UPDATE item_ownership_ledger SET from_owner_type=1,from_owner_id=7,"
+                                   "from_owner_context_id=0,reason_type=%s WHERE operation_id=%s AND event_index=0",
+                                   (reason, retirement_root))
+                    cursor.execute("UPDATE item_current_owner SET owner_type=8,owner_id=0,item_revision=2,state=2 WHERE item_uid=84")
+            before = inventory(owner)
+            connection = Connection(reader)
+            captured = capture(connection, LINEAGE, EPOCH)
+            assert connection.rollbacks == connection.observer.closes == 1 and inventory(owner) == before
+            report = Reconciler().audit(captured)
+            expected_counts = dict(original_counts)
+            if phase != "craft-creation":
+                expected_counts["missing_original_plan"] += 1
+            assert report["exception_counts"] == expected_counts, report
+            assert captured["complete"] is False and captured["backend"] == "sql_partial"
+            origin = next(row for row in captured["item_origins"] if row["uid"] == 84)
+            assert origin["origin"] == "creation" and origin["revision"] == 0 and origin["state"] == "absent"
+            expected = ["create"] if phase == "craft-creation" else ["create", "destroy"]
+            from reconcile_economy_accounting import view
+            assert [row["action"] for row in view(captured, report, "provenance", 100, uid=84)["rows"]] == expected
+            target = output / phase
+            target.mkdir()
+            encoded = json.dumps(captured, sort_keys=True).encode()
+            path = target / "snapshot.json"
+            path.write_bytes(encoded)
+            commands = []
+            for limit in (0, 1, 100):
+                command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"), str(path),
+                           "--view", "provenance", "--uid", "84", "--limit", str(limit)]
+                result = subprocess.run(command, capture_output=True, timeout=30)
+                assert result.returncode == 1 and not result.stderr, result.stderr
+                value = json.loads(result.stdout)
+                assert value == view(captured, Reconciler(limit).audit(captured), "provenance", limit, uid=84)
+                assert [row["action"] for row in value["rows"]] == expected[:limit] and value["count"] == len(expected)
+                assert value["coverage"]["exception_count"] == sum(expected_counts.values())
+                assert path.read_bytes() == encoded
+                (target / ("limit-" + str(limit) + ".json")).write_bytes(result.stdout)
+                commands.append(dict(command=command, exit=result.returncode))
+            for name in ("before", "after"):
+                (target / ("authority-" + name + ".json")).write_text(json.dumps(before, sort_keys=True) + "\n")
+            (target / "queries.json").write_text(json.dumps(connection.observer.queries) + "\n")
+            records.append(dict(phase=phase, reason=reason, actions=expected, exception_counts=expected_counts,
+                commands=commands, query_count=len(connection.observer.queries), application_tables_unchanged=len(before),
+                rollback_calls=1, cursor_close_calls=1, original_partial_findings_preserved=True,
+                additional_modeled_findings={} if phase == "craft-creation" else {"missing_original_plan": 1}))
+    finally:
+        with owner.cursor() as cursor:
+            for table in ("economic_accounting_item_reference", "item_ownership_ledger",
+                          "economic_accounting_source_claim", "economic_accounting_operation", "critical_operation_inbox"):
+                cursor.execute("DELETE FROM " + table + " WHERE operation_id=%s", (retirement_root,))
+            cursor.execute("UPDATE item_current_owner SET owner_type=1,owner_id=7,item_revision=1,state=1 WHERE item_uid=84")
+            cursor.execute("UPDATE item_ownership_ledger SET reason_type=%s,from_owner_type=%s,from_owner_id=%s,"
+                           "from_owner_context_id=%s WHERE operation_id=%s AND event_index=0",
+                           (original["reason_type"], original["from_owner_type"], original["from_owner_id"],
+                            original["from_owner_context_id"], creation_root))
+    assert inventory(owner) == initial and capture(reader, LINEAGE, EPOCH) == snapshot
+    result = dict(probes=records, modeled_partial_sql=True, source_fixture_restored=True, output=str(output),
+                  accounting_activated=False, release_complete=False, native_compound_gameplay=False)
+    (output / "results.json").write_text(json.dumps(result, indent=2) + "\n")
+    print("COMPOUND_ITEM_ACTION_SQL_QUALIFIED " + json.dumps(result, sort_keys=True), flush=True)
+
+
 def verify_quarantined_coin_views(owner, reader, snapshot, expected_exceptions):
     """Keep quarantined money visible without admitting an active holding."""
     from _plan5_equipment_restore import Connection, inventory
@@ -660,6 +764,7 @@ try:
         try:
             snapshot = capture(audit, LINEAGE, EPOCH)
             assert snapshot["complete"] is False and snapshot["quiescent"] is True
+            verify_compound_item_actions(setup, audit, snapshot)
             verify_coin_payload_source_bounds(setup, audit, snapshot)
             verify_supply_outcome_views(setup, audit)
             assert capture(audit, LINEAGE, EPOCH) == snapshot
