@@ -1,5 +1,27 @@
 # Finish accounting implementation plan
 
+## Original birth shared publication interfaces — 2026-10-05
+
+[The exact source handoff](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)
+records independently reviewed receipt/current-cut publication verification and
+one shared retained budget for the real reset owner. The5767-input private616d
+composition is source-only; native installation and major testing remain deferred.
+The actual producer and original cold/probe/equipment/alchemist effects continue;
+no Plan, coverage, activation or release gate is closed by this source handoff.
+
+## Plan5 current-reader managed restore follow-up — 2026-10-05
+
+[The managed restore report](PLAN5_INTEGRATED_CURRENT61_MANAGED_RESTORE_QUALIFICATION_2026-10-05.md)
+is imported byte-exactly from peer176b612c8 (SHA256a755298ab72a916ee8912d361716d6155fc6210276a6f32ec7848168116fe99a).
+Peer reports both original SQL methods and the original flat lifecycle method
+passing with zero skips. Primary verified the native/migration trees and committed
+reader/fixture/manifest inputs match its tested7e4d source; the only other script
+change is the independent player-give metadata generator. No local native rerun
+is claimed. This closes the pending managed-restore follow-up at that scope;
+modeled flat sources/inactive lifecycle and full capture, active erasure, original
+world/player workloads and release remain open. No evidence transfers to private
+quest/birth source-only candidates or unrelated local SHOP harness edits.
+
 ## Plan2 player-give source classification — 2026-10-05
 
 [The registry correction](PLAYER_GIVE_SOURCE_CLASSIFICATION_2026-10-05.md)
