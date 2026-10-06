@@ -182,8 +182,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 132 &&
-				tracker.summary_for(7, 42).total == 1532,
+		require(catalog.story_mappings.size() == 133 &&
+				tracker.summary_for(7, 42).total == 1531,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -7687,6 +7687,148 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "ruins"; });
+			const auto &craft = story_for("ruins", "anguinel-four-feather-ring");
+			const auto &proof = story_for("ruins", "farmer-beholder-proof");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 986, 98600, 100, "arrival") ==
+					result::applied,
+				"Refugees discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 986, 10, 1, 101, false, false);
+			require(journal.find(craft.title) == std::string::npos &&
+					journal.find(proof.title) == std::string::npos,
+				"Refugees exposed unseen recipes");
+			require(journey.meet_npc(7, 42, 98616, 98628, 102) == result::applied,
+				"Refugees mourning encounter failed");
+			journal = journey.render_journal(7, 42, 986, 10, 1, 103, false, false);
+			require(journal.find(craft.title) == std::string::npos &&
+					journal.find(proof.title) == std::string::npos &&
+					journey.progress_for_zone(7, 42, 986).completed == 0,
+				"Refugees mourning clue unlocked recipes or invented reconciliation");
+			require(journey.meet_npc(7, 42, 98615, 98619, 104) == result::applied &&
+					journey.meet_npc(7, 42, 98624, 98663, 104) ==
+						result::applied,
+				"Refugees recipe encounters failed");
+			const auto status =
+				[&](const auto &entry, const auto &step, const char *state)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Refugees journal card missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start)
+					       .find(std::string("[") + state + "] " + step.text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			for (int v : { 98605, 98643, 98644, 98645, 98610, 98635, 98606, 13221 })
+				supplies.carried[v] = 1;
+			supplies.equipped[0] = 98601;
+			supplies.equipped[1] = 98642;
+			journal = journey.render_journal(7, 42, 986, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				for (const auto &step : entry.steps)
+					if (step.kind == "carried_item")
+						require(status(entry, step, "Missing now"),
+							"Refugees worn/held/reward/key/foreign custody prepared exact offerings");
+			supplies = {};
+			supplies.carried[98601] = 4;
+			journal = journey.render_journal(7, 42, 986, 10, 1, 106, false, false,
+							 &supplies);
+			for (size_t i = 0; i < 4; ++i)
+				require(status(craft, craft.steps[i],
+					       i == 0 ? "Ready now" : "Missing now"),
+					"Refugees duplicate raven feathers replaced distinct components");
+			supplies.carried[98602] = supplies.carried[98603] = 1;
+			journal = journey.render_journal(7, 42, 986, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(craft, craft.steps[3], "Missing now") &&
+					journey.progress_for_zone(7, 42, 986).completed == 0,
+				"Refugees partial feathers fabricated a paid receipt");
+			supplies.carried[98604] = supplies.carried[98642] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 986, 10, 1, 108, false, false,
+							 &supplies);
+			for (const auto &entry : mapping.stories)
+				for (const auto &step : entry.steps)
+					if (step.kind == "carried_item")
+						require(status(entry, step, "Ready now"),
+							"Refugees supplied exact roots required personal hunts or dialogue order");
+			require(journal.find("unavailable while accounting is active") !=
+						std::string::npos &&
+					journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 986).completed == 0,
+				"Refugees ready materials lifted fee refusal or rendering wrote progress");
+			record(journey, proof.contracts.front(), "ruins-farmer", 986, 98663);
+			require(journey.progress_for_zone(7, 42, 986).completed == 1 &&
+					journey.evidence_for(craft.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Refugees eyestalk receipt completed paid craft");
+			supplies = {};
+			journal = journey.render_journal(7, 42, 986, 10, 1, 109, false, false,
+							 &supplies);
+			require(status(proof, proof.steps[0], "Missing now") &&
+					journey.evidence_for(proof.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Refugees spent/nested proof erased history or appeared loose");
+			// Synthetic historical receipt tests projection only; it does not execute the refused fee.
+			record(journey, craft.contracts.front(), "ruins-retained-craft", 986,
+			       98619);
+			auto replay = completion(proof.contracts.front(), "ruins-farmer", 120);
+			replay.transaction.zone_number = 986;
+			replay.transaction.room_vnum = 98663;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Refugees replay duplicated accepted return");
+			const auto units = zone_story_quest_catalog::quest_units(catalog);
+			require(std::count_if(units.begin(), units.end(),
+					      [](const auto &u) {
+						      return u.zone_number == 986 &&
+							     u.achievement && u.daily_candidate;
+					      }) == 1,
+				"Refugees paid craft became a daily or achievement");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.has_discovered(7, 42, 986) &&
+					recovered.evidence_for(proof.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					recovered.evidence_for(craft.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Refugees cold recovery lost independent story/service receipts");
+			service historical(raw_catalog);
+			require(historical.discover_zone(7, 42, 986, 98666, 100, "arrival") ==
+					result::applied,
+				"Refugees historical alternate arrival failed");
+			for (const auto &entry : mapping.stories)
+				record(historical, entry.contracts.front(),
+				       ("ruins-old-" + entry.id).c_str(), 986, 98619);
+			service authored(catalog);
+			require(authored.deserialize_state(historical.serialize_state(), &error) &&
+					authored.has_discovered(7, 42, 986),
+				"Refugees raw-to-authored history failed");
+			for (const auto &entry : mapping.stories)
+				require(authored.evidence_for(entry.contracts.front(), 2)
+							.successful_attempts == 1,
+					"Refugees raw receipt identity changed on service classification");
+			const auto &foreign = story_for("newhaven", "vulgaris-veldian-collar");
+			require(journey.discover_zone(7, 42, 352, 35201, 121, "arrival") ==
+					result::applied,
+				"Refugees foreign collar discovery failed");
+			record(journey, foreign.contracts.front(), "ruins-foreign-collar", 352,
+			       35201);
+			require(journey.evidence_for(proof.contracts.front(), 2)
+							.successful_attempts == 1 &&
+					journey.evidence_for(craft.contracts.front(), 2)
+							.successful_attempts == 1,
+				"Refugees duplicated the foreign collar receipt");
 		}
 
 		{

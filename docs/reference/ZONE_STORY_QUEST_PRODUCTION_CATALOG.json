@@ -64099,7 +64099,7 @@
         "The living sewer grate leads to western mainland forest; its ruined counterpart leads to eastern hills. Fountain and statue signs explain local law and faith without accepted-action objectives. Rent at the ruined inn uses shared inn rules; it is not the living innkeeper's quest.",
         "Current items and an optional earlier Fisherman's Wharf receipt explain preparation. Gifts remain valid inputs; possession does not prove recovery, a kill or harvest. Completion follows an accepted terminal exchange, and active source generation still needs qualification."
       ],
-      "revision": 1,
+      "revision": 2,
       "schema_version": 3,
       "source_area": "newhaven",
       "stories": [
@@ -64435,7 +64435,7 @@
           "steps": [
             {
               "count": 1,
-              "hint": "The mangy snarling bitch in Khomani-Khan's tiny alcove wears the collar. The ordinary approach is blocked, and its table switch starts inside the alcove; that access needs builder review. Supplied collars remain valid.",
+              "hint": "The mangy snarling bitch in Khomani-Khan's tiny alcove wears the collar. PULL TABLE in the ruined shack to unblock the alcove passage, then open it as needed. There is also a table inside the alcove. Supplied collars remain valid; this paid craft still awaits supported accounting settlement.",
               "id": "frayed-collar",
               "item_vnums": [
                 98606
@@ -140087,6 +140087,178 @@
           ],
           "summary": "Offer any one exact Incarnate material plus ten platinum for two potions. Five equivalent choices share one service; this does not require the entire five-material bundle.",
           "title": "Commission cleansing potions"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
+          "description": "The refugee shopkeeper explains his four-feather craft. Paid settlement is currently unavailable; carried feathers do not verify the fee.",
+          "keyword": "anguinel",
+          "mob_vnum": 98615,
+          "name": "The shopkeeper Anguinel",
+          "topics": [
+            "feathers"
+          ]
+        },
+        {
+          "description": "This spirit points toward the cedar chest and the lost wedding. Its two topics are clues, without a separate accepted quest.",
+          "keyword": "ghost",
+          "mob_vnum": 98616,
+          "name": "A mourning spirit",
+          "topics": [
+            "moan",
+            "tragedy"
+          ]
+        },
+        {
+          "description": "Hear the village's tragedy and learn the request for the beholder's eyestalk.",
+          "keyword": "farmer",
+          "mob_vnum": 98624,
+          "name": "An old farmer",
+          "topics": [
+            "tragedy",
+            "know",
+            "tell",
+            "tragic",
+            "trauma",
+            "surprise",
+            "monsters",
+            "give",
+            "venture",
+            "takes",
+            "attract",
+            "hi",
+            "hello",
+            "want"
+          ]
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Learn how the village fell, explore its ruined homes and underground lair, and return the beholder's eyestalk to the farmer. Anguinel also offers a separate paid feather craft, currently unavailable while accounting is active. Discovery is separate. New progress requires active, ready accounting.",
+      "orientation": [
+        "The northern woodland approach leads through ruined homes, the refugee shop and farmland to passages beneath the village. Discovery records arrival; doors, falls, present inhabitants and available supplies still matter.",
+        "ASK the old farmer about tragedy or know, then tell, trauma, surprise, give and takes for his account of the attack and request for proof. He accepts the beholder's eyestalk for a green linen bag, 20,000 copper, a red gem and a dagger of heartbreaking. His conversation does not award a separate completion for each keyword.",
+        "Look for the beholder in the underground chamber with the cages. It carries the eyestalk and rusty cage key. A matching eyestalk supplied by another player also fits the farmer's request. Keep it loose rather than held or nested. Returning it records the accepted proof; freeing prisoners and restoring the village are separate outcomes.",
+        "ASK Anguinel about feathers. His feathered-ring craft needs four different feathers together and a coin fee. This paid craft is currently unavailable while accounting is active. The exchange lists 1 platinum (1,000 copper), while his spoken request asks for 10 platinum; the discrepancy awaits review. Item checks show only carried feathers and do not verify payment or make the service available.",
+        "Look inside the broken gate on the woodland approach for the pitch-black raven feather. The white feather comes from the screech owl, and the red-tailed hawk and black-winged falcon carry the other two feathers. Anguinel calls the white-feather bird a Snowy Owl, but the bird here is a screech owl. Four copies of one feather cannot replace four different feathers; supplied matching feathers also fit.",
+        "In the ruined house with the broken table, PULL TABLE opens the blocked passage. The dry well offers another descent into the underground route with ENTER WELL. These actions change access; they do not complete the farmer's request. Falls and shared doors still follow their normal rules.",
+        "The moaning spirit carries a ghost's key near the hidden wedding chamber. Its small chest holds a veil and note. A different mourning spirit points to a cedar chest holding a cummerbund and faded letter; ASK it about moan or tragedy. These clues explain the lost wedding, without a recorded mourning, reading or rescue completion.",
+        "The beholder's cages and the imprisoned refugee suggest a rescue story, but the eyestalk return alone does not record a prisoner being released, escorted or delivered safely. Treat rescue as an exploration lead until those outcomes can be tracked.",
+        "The frayed cloth collar worn by the dog behind the table passage is also used by Vulgaris in Newhaven with Mixt's heart and a separate fee. That paid collar exchange belongs to Newhaven and remains unavailable while accounting is active. Carrying the collar does not complete either local request.",
+        "The farmer leaves after accepting the eyestalk. Fresh giver and item stock depend on ordinary resets and accounting admission; the daily clock does not create supplies or reopen routes. The farmer's return can contribute one achievement and one potential daily. Anguinel's paid craft remains a separate service."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "ruins",
+      "stories": [
+        {
+          "category": "service",
+          "contracts": [
+            {
+              "completion_key": "give=C:1000,I:98601,I:98602,I:98603,I:98604;receive=I:98605;disappear=0",
+              "giver_vnum": 98615
+            }
+          ],
+          "id": "anguinel-four-feather-ring",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Look inside the broken gate on the woodland approach for this pitch-black raven feather. The raven itself is not listed as carrying it. Keep it unworn and loose. The paid craft remains unavailable while accounting is active.",
+              "id": "item-98601",
+              "item_vnums": [
+                98601
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a pitch-black raven's feather loose"
+            },
+            {
+              "count": 1,
+              "hint": "Look for the screech owl's bright white feather near the woodland approach. Anguinel calls it a Snowy Owl in his request. Keep this exact feather loose; the paid craft remains unavailable while accounting is active.",
+              "id": "item-98602",
+              "item_vnums": [
+                98602
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a bright white feather loose"
+            },
+            {
+              "count": 1,
+              "hint": "Look for the red-tailed hawk's feather near the woodland approach. It is different from the raven, owl and falcon feathers. Keep it loose; the paid craft remains unavailable while accounting is active.",
+              "id": "item-98603",
+              "item_vnums": [
+                98603
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a red-tailed hawk's feather loose"
+            },
+            {
+              "count": 1,
+              "hint": "Look for the black-winged falcon's feather near the woodland approach. Keep this exact feather loose; the paid craft remains unavailable while accounting is active.",
+              "id": "item-98604",
+              "item_vnums": [
+                98604
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a black falcon's feather loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=C:1000,I:98601,I:98602,I:98603,I:98604;receive=I:98605;disappear=0",
+                  "giver_vnum": 98615
+                }
+              ],
+              "hint": "This paid craft is currently unavailable while accounting is active. All four different feathers and the listed 1,000-copper fee belong to one exchange. Item-ready checks do not verify payment or lift the refusal. A retained accepted exchange records service history; it does not award a story achievement or daily.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete Anguinel: four-feather ring"
+            }
+          ],
+          "summary": "Paid craft: four different feathers plus 1,000 copper for a soft feathered ring. Currently unavailable while accounting is active; the spoken 10-platinum fee awaits review.",
+          "title": "Anguinel: four-feather ring"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:98642;receive=C:20000,I:98643,I:98644,I:98645;disappear=1",
+              "giver_vnum": 98624
+            }
+          ],
+          "id": "farmer-beholder-proof",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Look for the beholder's eyestalk in the underground cage chamber. A matching supplied eyestalk also fits. Carry it loose rather than held or nested. Its possession does not record a personal kill, prisoner rescue or accepted return.",
+              "id": "item-98642",
+              "item_vnums": [
+                98642
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a beholder's eyestalk loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:98642;receive=C:20000,I:98643,I:98644,I:98645;disappear=1",
+                  "giver_vnum": 98624
+                }
+              ],
+              "hint": "Give the requested eyestalk to the farmer. Completion is recorded when he accepts the return. He leaves afterward. New credit requires active, ready accounting. The accepted proof does not record freeing prisoners or permanently clearing the village.",
+              "id": "turn-in",
+              "kind": "completion",
+              "text": "Complete Farmer: proof from below"
+            }
+          ],
+          "summary": "Return the beholder's eyestalk for a green linen bag, 20,000 copper, a red gem and a dagger of heartbreaking.",
+          "title": "Farmer: proof from below"
         }
       ]
     },

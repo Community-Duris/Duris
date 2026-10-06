@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "revision": 1,
+  "revision": 2,
   "source_area": "newhaven",
   "coverage": "complete",
   "introduction": "Explore Newhaven's living streets and their corrupted counterpart. The blacksmith's loss connects the rift to a real recovery request; berries and lost tobacco have separate deliveries. Equipment and the mismatched pipe trade remain services. The rift, librarian and prisoner have unfinished lore. Active, ready accounting is required.",
@@ -483,7 +483,7 @@
           "id": "frayed-collar",
           "text": "Carry the frayed cloth collar",
           "kind": "carried_item",
-          "hint": "The mangy snarling bitch in Khomani-Khan's tiny alcove wears the collar. The ordinary approach is blocked, and its table switch starts inside the alcove; that access needs builder review. Supplied collars remain valid.",
+          "hint": "The mangy snarling bitch in Khomani-Khan's tiny alcove wears the collar. PULL TABLE in the ruined shack to unblock the alcove passage, then open it as needed. There is also a table inside the alcove. Supplied collars remain valid; this paid craft still awaits supported accounting settlement.",
           "item_vnums": [
             98606
           ],

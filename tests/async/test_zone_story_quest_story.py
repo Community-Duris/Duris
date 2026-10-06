@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1412
-assert report['mapped_area_count'] == 132 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 133 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,20 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+ruins=next(m for m in catalog['story_mappings'] if m['source_area']=='ruins')
+assert (ruins['schema_version'],ruins['revision'],ruins['coverage'])==(3,1,'complete')
+assert len(ruins['contacts'])==3 and sum(len(c['topics']) for c in ruins['contacts'])==17 and not ruins['exclusions']
+assert [s['category'] for s in ruins['stories']]==['service','story']
+assert [t['item_vnums'] for t in ruins['stories'][0]['steps'][:-1]]==[[98601],[98602],[98603],[98604]]
+assert [t['item_vnums'] for t in ruins['stories'][1]['steps'][:-1]]==[[98642]]
+assert all(t['kind']=='carried_item' and t['optional'] and t['count']==1 for s in ruins['stories'] for t in s['steps'][:-1])
+assert all(s['contracts']==s['steps'][-1]['contracts'] for s in ruins['stories'])
+u=[u for u in module.story_units(catalog) if u['zone_number']==986]
+assert len(u)==2 and sum(x['achievement'] for x in u)==sum(x['daily_candidate'] for x in u)==1
+assert report['eligible_by_zone']['986']==1
+nh=next(m for m in catalog['story_mappings'] if m['source_area']=='newhaven')
+assert nh['revision']==2 and 'PULL TABLE in the ruined shack' in next(s for s in nh['stories'] if s['id']=='vulgaris-veldian-collar')['steps'][0]['hint']
 
 woodseer=next(m for m in catalog['story_mappings'] if m['source_area']=='woodseer')
 assert (woodseer['schema_version'],woodseer['revision'],woodseer['coverage'])==(3,2,'complete')

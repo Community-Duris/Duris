@@ -5,7 +5,7 @@ complete; active-world qualification remains pending. Discovery, encountered
 contacts, journals, achievements and new daily eligibility require active,
 ready economic accounting. This mapping does not activate accounting.
 
-The [revision 1 journal](../../../areas/story/newhaven.story.json) classifies
+The [revision 2 journal](../../../areas/story/newhaven.story.json) classifies
 all nine native exchanges into one story, two requests and six services:
 three achievement/potential daily outcomes and nine displayed rows. Seventeen
 contacts cover both addressed dialogue families, all thirteen native speakers
@@ -81,16 +81,7 @@ visitor 83410 at 83750 has a carried declaration with cap one. These are
 real alternatives, without a claim that every circle must come from combat
 in Shadowclave. All existing proofs can be supplied by another player.
 
-The frayed collar is equipped by mangy bitch 98607 in alcove 98610. Both
-shack 98607 west and alcove 98610 east reset closed/blocked (state nine).
-The broken table 98667 is an `ITEM_SWITCH` using `pull` (340), targeting
-the alcove's east exit. It resets inside that blocked alcove, rather than
-on the shack side suggested by prose. Its handler would clear both blocked
-flags when pulled from inside, but it does not expose the promised ordinary
-outside approach. A builder should review placement, target and remaining
-closed-door behavior; magical access, recovered stock and supplied collars
-can differ. Do not claim the material is impossible or invent an accessible
-switch outside the alcove.
+The frayed collar is equipped by mangy bitch98607 in alcove98610. Shack98607 west and alcove98610 east reset closed/blocked (state9). The maintained world now has table98607 O@98607 and table98667 O@98610, both ITEM_SWITCH/CMD_PULL340 targeting their local side of the passage. PULL TABLE clears reciprocal blocked flags; normal opening still applies. This guidance corrects the older claim that the only table starts inside, following the existing native table repair. No new table,door or access repair ships in this checkpoint. Supplied collars remain valid; actual actor travel/source issuance and paid settlement still require qualification.
 Mixt 13207 carries the heart in northern tower chamber 13228. The `ttowers`
 area is distinct from the `twin_towers_forest` journal; do not attach that
 forest's gardener belt predicate or learning objectives to Mixt's heart.
@@ -194,7 +185,7 @@ achievement. Builders should verify its intent before removing or altering it.
 | Five paid native recipes | Extend supported settlement to exact owned materials plus wallet debit and frozen output obligations. Preflight all roots, amounts, recipient and output support before consumption; retain current refusal. Qualify insufficient funds/materials, rejection, replay, restart, missing recipient and each badge choice without charging or consuming twice. |
 | Fishing-line/pipe disagreement | Builder chooses a deliberate reel contract or corrected pipe prose/retained buyback. A reel change alters native identity and needs revision/receipt compatibility plus both items' competing consumers tested. Retain the present real pipe binding and service classification meanwhile. This is a source mismatch, not a guessed gameplay crash. |
 | Tail/collar success text and hammer-badge ground text | Correct only the mismatched prose after confirming intent; preserve recipe/reward identity and equipment balance. Give the cloak meaningful success prose if desired. Test exact items and distinguish rejected offerings from accepted delivery. |
-| Broken-table collar access and forest dispersal | Review moving the alcove table to the shack with deliberate target/return and closed-door semantics, or retaining a builder-selected alternative approach. Its current inside placement cannot provide the described outside entry. Qualify actual pulling/unblocking/opening/return and the beast's accepted source/wandering into mainland forests. Keep supplied materials valid; record confirmed actor travel only after effects. |
+| Broken-table collar access and forest dispersal | Current two-sided tables follow the previously shipped native repair:98607 in the shack and98667 in the alcove. Qualify PULL clearing blocked flags,normal opening/return,reset and actual actor/source authority; maintain supported supplied materials. This checkpoint synchronizes source guidance only. Forest dispersal/source history remains unqualified. |
 | Tail hazard | Test trap charge/damage against accepted and refused get/put/custody changes, survival and restart. Capture stable item/actor data and decide the intended publication order before adding source history. Do not equate a trap trigger with recovery or remove a deliberate hazard automatically. |
 | Unfinished rift/prisoner arc | Builders choose whether to retain lore or add investigation/erinyes/prisoner endpoints. Define actor/party eligibility, existing open access, episode identity, mercy-versus-rescue policy and full-stage completion before adding adapters. No journal credit can be derived from echoed confession, killed counterpart or unlocked door. |
 | First source versus supplied proof | Project committed item UID/source/custody evidence separately from possession, first receipt, personal recovery and kill credit. Qualify gifts before later personal recovery, borrowed keys, stolen/ground/container items, mixed roots, replay and legacy unknown origin. Delivery accepts supplied proof; optional history must not reject it. |
