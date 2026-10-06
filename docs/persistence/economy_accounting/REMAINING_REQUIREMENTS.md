@@ -1,5 +1,13 @@
 # Double-entry economy: remaining requirements
 
+## Historical child equipment finding retained — 2026-10-06
+
+[Exact expectation repair](PLAN5_CHILD_EQUIPMENT_EXPECTATION_PRIMARY_2026-10-06.md)
+keeps the missing equipment finding beside both child findings and the missing
+original plan. All21 existing independent child methods pass with zero skips;
+the edited native/private-SQL branch retains its older peer qualification.
+The historical cut remains incomplete and current major qualification is pending.
+
 ## Native audit recipe providers repaired — 2026-10-06
 
 [Primary integration](PLAN5_NATIVE_PROVIDER_PRIMARY_INTEGRATION_2026-10-06.md)
