@@ -1,5 +1,46 @@
 # Experimental accounting review checkpoint
 
+## Original birth/native12 replay source composed — 2026-10-06
+
+[The source handoff](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
+now records the accepted native12 passive item/quest owner and actual startup
+dispatch composed with typed birth, its retry fix and shared private interfaces.
+All5775 inputs match private3ee546, including1560 committed current script/test
+inputs froma1a92f4dd; original drivers remain exact and unrelated SHOP WIP is
+excluded. Source review closes flat helper guards, authentic reconnect and
+post-retirement cleanup defects. Native execution and maintained installation
+remain deferred; NPC constructor capsule/build witness and the documented
+acknowledged/retired/callback boundaries are ongoing required work. Full Plans,
+coverage, activation and release remain open.
+
+
+## Shared native recovery interfaces source-accepted — 2026-10-06
+
+[The owning source handoff](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
+records the reviewed original factory/mutable codec on5773-input private12b,
+the typed birth owner and corrected retained-choice retry, and three new shared
+interfaces: actual-player checkpoint rebinding, phase2 genuine SQL receipt-core
+readback and private original-constructor RNG capture/replay. Exact preimages,
+source review, byte inverses and changed-line formatting pass. No new native
+execution or maintained C/C++ installation is claimed. Actual native12 passive
+domain integration, NPC recipe/time/config/build witness, remaining reset
+mechanics/flat parity and combined major qualification are still unfinished.
+
+
+## Independent equipment cold-restore coverage integrated — 2026-10-06
+
+[Peer qualification and exact source integration](PLAN5_EQUIPMENT_COLD_RESTORE_INTEGRATION_2026-10-06.md)
+are imported from7c0d6cf6c: the original native baseline recipe now checks the
+full equipment reader before and after actual private dump/import on both SQL
+engines. Its original native books remain authentic; live equipment placements
+are explicitly modeled. Peer reports the complete recipe passing, zero skips,
+with drift retained after restore and all228 application-table inventories exact.
+Primary verifies all code/test inputs equal the qualified peer composition,
+imports six owned blobs exactly, and preserves every manifest field/deadline.
+Python AST and normal/matrix/current61 metadata pass. No primary native rerun,
+complete capture, full Plan or release qualification is claimed.
+
+
 ## Independent equipment-custody fix integrated — 2026-10-06
 
 [Exact source import and primary registration](PLAN5_EQUIPMENT_PRIMARY_REGISTRATION_2026-10-06.md)

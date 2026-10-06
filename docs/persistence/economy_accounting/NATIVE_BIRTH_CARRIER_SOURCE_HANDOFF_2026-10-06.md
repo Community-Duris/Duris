@@ -94,3 +94,99 @@ are preserved; production activation and data changes remain unauthorized.
 `coverage_complete=False` and `release=BLOCKED` remain unchanged. Existing peer
 reader results and older native candidate results are not transferred to this
 new private source.
+
+## Shared recovery integration progress — 2026-10-06
+
+The original literal cold factory72fc and its actual event-adoption correction
+702ee are source-accepted. Mutable recovery codec7fa fixes actual constructor
+order: context rows retain the original stock UID order, while immutable image
+and recipe rows retain their original complete forest order. Membership is an
+exact UID bijection, avoiding false prefix refusal when carrying prepends items.
+All are composed with the reviewed carrier into5773 exact private inputs at
+`tmp/plan3-native-mobile-birth-recovery-contract-major-source-20261006`, manifest
+`12b94b378c0502935b151c3f8e2be8dd5c0987eb4d1def0cc17110c85d57b2e5`.
+Original copy/build drivers remain unchanged; this is source evidence only.
+
+The six-file typed birth owner d907 and one-file retained-choice correction
+331651 are independently source-accepted. Their original effect intent/return
+writers are preallocated before journal I/O and physical effects. Actual eight
+NPC publication steps preserve callback order and retain scheduling choices.
+The corrected writer clears its choice only after exact checkpoint settlement;
+encode, capacity or CAS refusal retains the original draw. Genuine physical ACK
+retains phase2 until separate retirement. Cold physical construction is pending.
+
+Three primary shared capabilities are source-reviewed and frozen over12b:
+
+| Private packet | Manifest SHA256 |
+| --- | --- |
+| `plan3-native-quest-player-rebind-20261006` | `989c349e8d1c009fc38c8d73ef53ca5ce0eba7f1cea2d9d14d217cf356385cf7` |
+| `plan3-native-quest-phase2-readback-20261006` | `4f96eccfe560b8b1007f6557291f6226dc284c2f5d68b2945b7f07312a024c8c` |
+| `plan3-native-mobile-constructor-random-20261006` | `4114db86ff0afa2b6fad342c6bdf4f1b02aa6406d0eee9747fe051e25fdd3c43` |
+
+The private player seam authenticates the exact restored command/PID/body/
+attachment/revision/hold and actual registered nondegraded PC. It binds only
+fresh local runtime/checkpoint identity, preserving original save/hold evidence.
+Duplicate binding is idempotent; reconnect requires old actor absence and fresh
+domain proof. Copy/CAS and SQL held-body observation support the exact rebound
+shape. The original item owner owes full current SQL/world proof and rollback.
+
+The phase2 readback reuses the original native/save/owner/custody projection
+locks before actual repository receipt readback, then compares the full retained
+economic core and original SQL session before output. No delivery completion,
+attempt, time, correlation, new hold or ACK is manufactured. Current world proof,
+proper parent/child selection and confirmed rollback remain caller obligations.
+
+The stage-only random capability captures actual original xoshiro initial/end
+four-word states and draw count around the synchronous detached constructor.
+Replay uses only that original local substream; it does not advance or reseed
+the process RNG. Count/terminal mismatch, reseeding, overflow and nested scopes
+refuse; exception cleanup clears the private scope. Normal number/engine behavior
+is preserved. This is no NPC stat ledger or constructor authority. Actual birth/
+logon timestamps, consumed template/cache/effective-input and build witnesses,
+null-to-thief/teacher and other original procedure compatibility remain required.
+
+Actual native12 passive owner52de is under narrow successor review for SQL-only
+helper guards, post-retirement child cleanup and fresh-proof reconnect handling.
+Its new startup dispatcher85dd is source-accepted conditional on that owner.
+Those domain slices and typed birth still need one final composed candidate.
+No current native/gameplay/persistence/restart proof or maintained installation
+is claimed for these additions. Testing remains deferred until the coherent
+major candidate. Cold callback uncertainty and missing acknowledged/retired
+record readback remain explicit work; no full Plan or release gate is closed.
+
+## Accepted domain owner and current full composition — 2026-10-06
+
+Native12 passive owner52de is preserved with reviewed successor1eada8:
+`1eada8beb3fcacb7ceef82d0e4d8a6bd3dc8ee4ff3b87f9fcaead3866ae02a56`.
+The item participant retains the exact original phase1 envelope/forests and
+progress, preallocates before restoring the original save hold, and waits for
+genuine execution delivery. Actual current SQL/native/PID/UID/cash proof and
+confirmed rollback precede runtime binding. Phase2 registers original quest/
+reward/child owners under distinct operation identities without a new phase1
+hold, submission or coordinator re-entry. Real ACK return is latched before
+fallible phase2 handoff, retaining original ownership and avoiding repeated ACK.
+
+Source review closes SQL-only anonymous helper guards for strict flat builds,
+absent-runtime reconnect through fresh authentic proof, and allocation-free,
+retryable child-map cleanup after durable retirement. A still-present original
+runtime body stays pinned. Missing retired-child or acknowledged-reward proof
+and missing original post-GIVE program remain explicit unresolved boundaries;
+absence is never substituted for callback/publication authority.
+
+The accepted startup85dd calls the actual native12 observer and retains original
+birth dispatch, pure validators and legacy lifecycle flags. All accepted domain
+and shared slices now compose into
+`tmp/plan3-native-mobile-domain-recovery-major-source-20261006`, manifest
+`3ee546ec2f886e7760dfb09fc1fef0b0425bb7b0fda0dd9717c8393fd5fc20ec`.
+All5775 inputs match. Sixteen native paths are replaced only after exact parent
+or successor preimage proof. All1560 committed script/test inputs are refreshed
+from publisheda1a92f4dd, including the independent audit/cold-restore coverage;
+unrelated working-copy SHOP changes are excluded. Original copy/build drivers
+remain byte-identical. No native execution or maintained C/C++ install occurred.
+
+The real NPC constructor capsule owner is now implementing original clock,
+template/cache/effective-configuration and supported procedure capture/restore
+against the reviewed RNG seam. A proven build-input compatibility provider and
+immutable transport integration remain primary-owned dependencies. This and
+all original reset mechanics/flat/lifecycle and final combined qualification
+remain required; source composition does not close full Plan/release gates.
