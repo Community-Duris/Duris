@@ -1,5 +1,19 @@
 # Double-entry economy: remaining requirements
 
+## Private native quest major qualification — 2026-10-05
+
+[The frozen private source and actual component evidence](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)
+record a passing production SQL build, both-engine current SQL cut component,
+and ASan/UBSan native journal carrier component under their original limits.
+The independent flatfile production build fails on a remaining SQL-only unused
+helper; its declaration correction is being prepared. Failed compiler/link
+and stale-runner-pin attempts remain evidence. Context/admission/coordinator
+source reviews pass after a post-durable allocation correction; actual boot,
+physical stages, continuation and full native writer integration remain open.
+These private candidates are not installed on the maintained branch. No Plan,
+R1–R8, full capture, release or activation completion is claimed; inactive
+behavior and all original safety gates remain.
+
 ## Current combined source qualification — 2026-10-05
 
 [Current source and evidence](PLAN1_CURRENT_COMBINED_QUALIFICATION_2026-10-05.md) supersede earlier installation/build status.
