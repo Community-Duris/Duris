@@ -1,5 +1,18 @@
 # Finish accounting implementation plan
 
+## Shared native recovery interfaces source-accepted — 2026-10-06
+
+[The owning source handoff](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
+records the reviewed original factory/mutable codec on5773-input private12b,
+the typed birth owner and corrected retained-choice retry, and three new shared
+interfaces: actual-player checkpoint rebinding, phase2 genuine SQL receipt-core
+readback and private original-constructor RNG capture/replay. Exact preimages,
+source review, byte inverses and changed-line formatting pass. No new native
+execution or maintained C/C++ installation is claimed. Actual native12 passive
+domain integration, NPC recipe/time/config/build witness, remaining reset
+mechanics/flat parity and combined major qualification are still unfinished.
+
+
 ## Independent equipment cold-restore coverage integrated — 2026-10-06
 
 [Peer qualification and exact source integration](PLAN5_EQUIPMENT_COLD_RESTORE_INTEGRATION_2026-10-06.md)

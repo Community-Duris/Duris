@@ -94,3 +94,62 @@ are preserved; production activation and data changes remain unauthorized.
 `coverage_complete=False` and `release=BLOCKED` remain unchanged. Existing peer
 reader results and older native candidate results are not transferred to this
 new private source.
+
+## Shared recovery integration progress — 2026-10-06
+
+The original literal cold factory72fc and its actual event-adoption correction
+702ee are source-accepted. Mutable recovery codec7fa fixes actual constructor
+order: context rows retain the original stock UID order, while immutable image
+and recipe rows retain their original complete forest order. Membership is an
+exact UID bijection, avoiding false prefix refusal when carrying prepends items.
+All are composed with the reviewed carrier into5773 exact private inputs at
+`tmp/plan3-native-mobile-birth-recovery-contract-major-source-20261006`, manifest
+`12b94b378c0502935b151c3f8e2be8dd5c0987eb4d1def0cc17110c85d57b2e5`.
+Original copy/build drivers remain unchanged; this is source evidence only.
+
+The six-file typed birth owner d907 and one-file retained-choice correction
+331651 are independently source-accepted. Their original effect intent/return
+writers are preallocated before journal I/O and physical effects. Actual eight
+NPC publication steps preserve callback order and retain scheduling choices.
+The corrected writer clears its choice only after exact checkpoint settlement;
+encode, capacity or CAS refusal retains the original draw. Genuine physical ACK
+retains phase2 until separate retirement. Cold physical construction is pending.
+
+Three primary shared capabilities are source-reviewed and frozen over12b:
+
+| Private packet | Manifest SHA256 |
+| --- | --- |
+| `plan3-native-quest-player-rebind-20261006` | `989c349e8d1c009fc38c8d73ef53ca5ce0eba7f1cea2d9d14d217cf356385cf7` |
+| `plan3-native-quest-phase2-readback-20261006` | `4f96eccfe560b8b1007f6557291f6226dc284c2f5d68b2945b7f07312a024c8c` |
+| `plan3-native-mobile-constructor-random-20261006` | `4114db86ff0afa2b6fad342c6bdf4f1b02aa6406d0eee9747fe051e25fdd3c43` |
+
+The private player seam authenticates the exact restored command/PID/body/
+attachment/revision/hold and actual registered nondegraded PC. It binds only
+fresh local runtime/checkpoint identity, preserving original save/hold evidence.
+Duplicate binding is idempotent; reconnect requires old actor absence and fresh
+domain proof. Copy/CAS and SQL held-body observation support the exact rebound
+shape. The original item owner owes full current SQL/world proof and rollback.
+
+The phase2 readback reuses the original native/save/owner/custody projection
+locks before actual repository receipt readback, then compares the full retained
+economic core and original SQL session before output. No delivery completion,
+attempt, time, correlation, new hold or ACK is manufactured. Current world proof,
+proper parent/child selection and confirmed rollback remain caller obligations.
+
+The stage-only random capability captures actual original xoshiro initial/end
+four-word states and draw count around the synchronous detached constructor.
+Replay uses only that original local substream; it does not advance or reseed
+the process RNG. Count/terminal mismatch, reseeding, overflow and nested scopes
+refuse; exception cleanup clears the private scope. Normal number/engine behavior
+is preserved. This is no NPC stat ledger or constructor authority. Actual birth/
+logon timestamps, consumed template/cache/effective-input and build witnesses,
+null-to-thief/teacher and other original procedure compatibility remain required.
+
+Actual native12 passive owner52de is under narrow successor review for SQL-only
+helper guards, post-retirement child cleanup and fresh-proof reconnect handling.
+Its new startup dispatcher85dd is source-accepted conditional on that owner.
+Those domain slices and typed birth still need one final composed candidate.
+No current native/gameplay/persistence/restart proof or maintained installation
+is claimed for these additions. Testing remains deferred until the coherent
+major candidate. Cold callback uncertainty and missing acknowledged/retired
+record readback remain explicit work; no full Plan or release gate is closed.
