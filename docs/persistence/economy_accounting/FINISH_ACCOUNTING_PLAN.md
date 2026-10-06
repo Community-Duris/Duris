@@ -1,5 +1,13 @@
 # Finish accounting implementation plan
 
+## Plan2 player-give source classification — 2026-10-05
+
+[The registry correction](PLAYER_GIVE_SOURCE_CLASSIFICATION_2026-10-05.md)
+records the already connected active wallet root. All55 original coverage methods
+and matrix/normal/runtime metadata checks pass after updating the generator pin.
+Inactive behavior, unverified backend evidence and activation block remain.
+Actual peer/split gameplay qualification and full Plan/R1–R8 completion stay open.
+
 ## Private native quest major qualification — 2026-10-05
 
 [The frozen private source and actual component evidence](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)

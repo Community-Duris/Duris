@@ -637,6 +637,9 @@ def schema_record(route_id: str, disposition: str) -> dict:
     elif route_id == "currency.split":
         current = 1
         mode = "schema_1_when_inactive_schema_2_sequential_coin_children_when_active"
+    elif route_id == "coin.player_give":
+        current = 1
+        mode = "schema_1_when_inactive_schema_2_exact_wallet_transfer_when_active"
     elif route_id in SOURCE_QUALIFIED_SPELL_GRANT_IDS:
         current = None
         mode = "typed_schema_2_for_active_pc_npc_refused_direct_legacy_when_inactive"
@@ -664,6 +667,12 @@ def schema_record(route_id: str, disposition: str) -> dict:
             "src/cmd/actoth.c:do_split and continue_money_split (active wallet-to-wallet schema-2 coin child per eligible recipient)",
             "tests/async/test_currency_completion_retention.py (retained completion and partial split behavior)",
         ])
+    if route_id == "coin.player_give":
+        evidence.extend([
+            "src/cmd/actobj.c:submit_coin_give (exact-denomination player/morph wallet endpoints)",
+            "src/economy/currency_transaction.c:currency_transaction_submit_coin (freeze accounting intent before retained admission)",
+            "src/economy/economic_gameplay_authority.c:prepare_coin_transfer (existing wallet mappings and balanced typed intent)",
+        ])
     if route_id in SCHEMA2_SQL_COIN_COMPONENT_IDS:
         evidence.extend([
             "src/economy/coin_transfer_accounting.c:947-1017 (SQL native coin effects, balanced postings, item references, source claim and receipt)",
@@ -674,7 +683,7 @@ def schema_record(route_id: str, disposition: str) -> dict:
             "src/persistence/economic_sql_shop_trade_transaction.c (typed SQL shop root applies native balances and item custody)",
             "tests/async/test_shop_trade_accounting_context.py (focused contract; not a full player journey)",
         ])
-    schema2_connected = route_id in SCHEMA2_ITEM_TRANSFER_IDS or route_id == "currency.split"
+    schema2_connected = route_id in SCHEMA2_ITEM_TRANSFER_IDS or route_id in {"currency.split", "coin.player_give"}
     if route_id in SCHEMA2_CRAFT_IDS:
         evidence.extend([
             "src/item/item_movement_transaction.c:item_movement_transaction_submit_craft (prepare crafting intent before retained coordinator admission)",
@@ -719,6 +728,8 @@ def schema_record(route_id: str, disposition: str) -> dict:
         interpretation = f"Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction{item_action_coverage} use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported." if schema2_connected else "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected." if current == 1 else "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root." if disposition == "runtime_projection_route" else "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation." if disposition not in {"non_writer_candidate", "dormant_writer_candidate", "offline_operational_writer"} else mode
     if route_id == "currency.split":
         interpretation = "Inactive do_split uses a schema-1 sender debit followed by recipient credits. Active do_split submits one balanced schema-2 wallet-to-wallet coin child per eligible recipient, with exact denomination and retained completion. Completed shares remain transferred if a later child fails; there is no atomic multi-party split root. Full backend gameplay qualification remains pending."
+    elif route_id == "coin.player_give":
+        interpretation = "Inactive player giving retains its schema-1 compound coin path. Active player giving freezes one exact-denomination schema-2 wallet-to-wallet root using the existing player mappings; morph recipients resolve to their original player wallet. Unsupported active NPC and mint routes refuse before native mutation. Complete command-to-native backend, publication and restart qualification remains pending."
     elif route_id in SCHEMA2_SQL_COIN_COMPONENT_IDS:
         interpretation = "The SQL transaction component records typed schema-2 coin effects and balanced postings. Pooled dispatch/reconcile and player-visible publication are separate qualification gates; flat-file coin accounting remains unqualified."
     elif route_id in SCHEMA2_SQL_SHOP_COMPONENT_IDS:
@@ -742,6 +753,15 @@ def schema_record(route_id: str, disposition: str) -> dict:
 
 
 def double_entry(route_id: str, disposition: str, schema: dict) -> dict:
+    if route_id == "coin.player_give":
+        return {
+            "status": "typed_schema2_wallet_transfer_source_without_qualified_gameplay",
+            "unified_operation_postings_observed": False,
+            "legacy_domain_evidence": ["The active producer connects two exact-denomination player wallets to the existing typed coin owner; inactive behavior retains its schema-1 path."],
+            "required_atomic_evidence": ["Actual MySQL, MariaDB and flat-file command-to-native peer journeys", "Exact native wallet vectors/revisions, balanced root and receipt", "Morph identity, endpoint failure, held publication, lost reply and restart"],
+            "global_evidence": ["src/cmd/actobj.c:submit_coin_give", "src/economy/currency_transaction.c:currency_transaction_submit_coin", "src/economy/economic_gameplay_authority.c:prepare_coin_transfer"],
+            "note": "Source connection is reviewed; component evidence does not qualify the complete gameplay route or activation.",
+        }
     if route_id in SCHEMA2_SQL_ROOM_PAYLOAD_COMPONENT_IDS:
         return {"status": "sql_payload_component_without_independent_accounting_root", "unified_operation_postings_observed": False, "legacy_domain_evidence": ["Payload participates in the existing typed item root; no new accounting root or posting."], "required_atomic_evidence": ["Complete native gameplay, ACK and cold-boot qualification under the item owner"], "global_evidence": ["src/persistence/sql_room_item_payload.c:sql_room_item_payload_record", "src/item/item_transfer_repository.c:item_transfer_repository_execute_at_offset"], "note": "Source observed only; backend entries unverified and global activation blocked."}
     if disposition == "non_writer_candidate":
