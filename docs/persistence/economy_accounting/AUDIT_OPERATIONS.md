@@ -571,6 +571,19 @@ and private SQL cuts remain component evidence, not quest producer completion.
 
 ## Qualification budgets
 
+The maintained `test_native_sql_baseline_audit.py` recipe also exercises the
+full independent SQL snapshot reader before and after actual dump/import into
+new private MariaDB and MySQL daemons. Its EAB2 books and commands come from the
+original native fixture; its two current equipment placements are explicit
+modeled inputs. A slot-only discrepancy must remain visible after restore,
+with identical exception totals at detail limits0,1 and100. SELECT-only roles,
+transaction rollback, and all application-table data hashes are checked.
+The retained-evidence qualifier and native replay can pass while the live-state
+reader reports equipment drift; those observations have different scopes.
+This recipe retains its partial-capture findings and cannot qualify a complete
+world backup, managed backup generation, service boot or release. See
+[the exact cold-restore qualification](PLAN5_EQUIPMENT_COLD_RESTORE_QUALIFICATION_2026-10-06.md).
+
 These are release gates to measure on each backend and the final integrated
 commit. They are not claimed as measured results here.
 

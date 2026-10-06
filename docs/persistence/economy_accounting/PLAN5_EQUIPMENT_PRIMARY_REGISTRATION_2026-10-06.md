@@ -62,3 +62,36 @@ native holdings/UID capture, original producer/world journeys, mixed release-hos
 workloads, lifecycle/restart qualification and all full Plan/R1–R8 gates remain
 open. Private birth candidates receive none of this native component evidence.
 Inactive behavior, declined spell-path change and unrelated SHOP work are preserved.
+
+## Cold-restore source integration — 2026-10-06
+
+Primary imports six owned blobs byte-exactly from peer
+`7c0d6cf6cf475e717aa1e68d207bcb376e939980`, including the original baseline
+runner's appended equipment helper and both qualification/integration reports.
+The independently solved qualification gap is reported at
+`8a9b4c844c130b4d28910d6a97f59528cb84f1ec`.
+
+All primary native, migration and script trees equal the qualified peer;
+the only pre-import test differences are the three imported test/helper paths.
+After import every code/test input matches that peer composition, and the
+entire regression manifest remains byte-identical. Its original integration
+owner, case count, markers, provider and900-second central timeout are preserved.
+All three Python sources parse. Normal accounting metadata, the matrix check
+and current61 runtime metadata exit0 on this exact primary composition.
+
+Import receipt `tmp/plan5-equipment-cold-primary-import-20261006.json`:
+SHA256 `cfd3a5adada6b770c2c4960681c9dfe61e111aa86b499d7f630536c93c7ebead`.
+Actual primary metadata output receipt
+`tmp/plan5-equipment-cold-primary-metadata-20261006.json`:
+SHA256 `972333116e66c06d081caa544fea382a06081e6a5f7c5732cc32355204ba0cfd`.
+
+Peer's complete original native recipe passes on both engines, zero skips.
+Its eight SELECT-only captures, four new cold dump/imports and24 bounded CLI
+observations qualify equipment drift preservation at that recorded scope.
+Actual native opening books are retained; current equipment positions are
+modeled inputs and the reader preserves partial-capture findings. Protected
+peer logs/dumps remain peer-held; primary verifies committed source/report
+correspondence and does not claim a new native run or independently reading
+those protected logs. This is no complete world backup, service boot, managed
+backup generation, active producer journey, private birth qualification or
+full Plan/release completion. Existing inactive behavior and gates remain.
