@@ -1,5 +1,17 @@
 # Experimental accounting review checkpoint
 
+## Independent retained flatfile semantics fix integrated — 2026-10-06
+
+[Exact primary integration](PLAN5_FLATFILE_PLAN_SEMANTICS_PRIMARY_INTEGRATION_2026-10-06.md)
+imports the five owned blobs from9e72cd35f. All committed code/test/schema
+inputs match the qualified peer composition; native source, full manifest and
+unrelated WIP are preserved. Primary AST and normal/matrix/current61 metadata
+pass. Peer reports the complete expanded native restore suite, semantic oracle
+comparisons and strict SQL build passing, zero selected skips, at its recorded
+structural/component scope. No primary native rerun or private quest/birth
+qualification is claimed. Full Plans, complete capture and release remain open.
+
+
 ## Quest terminal pair and actual NBC2 producer composed — 2026-10-06
 
 [The integrated source handoff](NATIVE_QUEST_TERMINAL_PAIR_SOURCE_2026-10-06.md)
