@@ -1,5 +1,24 @@
 # Continuing project acceptance — 2026-10-07
 
+Approved finite codec repair **implemented and pushed**:
+0b0075724457511f6a7c6599489958cf45cd828a, base
+b33f39d037b886b3f299b8073274423c2c8cdc34. Authors ONLY
+tests/async/test_shop_trade_command.py, exactly three canonical rel() source
+additions; no other maintained path. [Current implementation/import/execution
+handoff](SHOP_CODEC_CLOSURE_IMPLEMENTATION.md) supersedes the earlier pending
+reservation at its reviewed boundary. Approval is published primarye6c1fa35.
+The standalone patch applies to bare currente6c1fa35fb41674c2a0ce425354e61a629c0e879,
+result tree51aaf7b87c77a375c264372f2bf7e7ce0116d62f, differing only in that test.
+Authenticate all6446 exported file/link bodies/modes and385 compiler dependencies,
+including56 current repository headers. Complete maintained entry point PASS,
+exit0/7.847s; real compile/link0, original46 asserts/harness/flags/controls intact.
+Exact before/after test blobs, package/archive/ELF/source/current-header and private
+receipt hashes are in the implementation handoff. Import code0b alone; no optional
+prep/R0–R10 ancestry required. Coordinator final review and primary adoption pending.
+Original e6 link FAIL and private closure PASS remain sealed with their old pins.
+Current repair container stopped; no DB/player/server operation or broad rerun.
+Actual continuing Goal remains BLOCKED with original native/full-project blockers.
+
 New bounded coordinator assignment: [original shop codec closure investigation
 and one-file ownership reservation](SHOP_CODEC_CLOSURE_INVESTIGATION.md).
 Investigation publication a1e4ade02460652ccf0dc98a66a2c2f6af0de4ec,
