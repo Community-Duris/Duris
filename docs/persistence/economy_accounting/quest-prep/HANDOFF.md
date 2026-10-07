@@ -1,5 +1,28 @@
 # Continuing project acceptance — 2026-10-07
 
+Latest published execution bundle **81df1892dd05ec52cb40cbf8e32ea8087ca1a270**,
+base **4e7580b7928eabf631286936ab9f8330efce8193**, contains only the owned
+run_world_execution.py and CURRENT_BARTENDER_EXECUTION.md,
+CONTINUING_RECONCILIATION.md, HANDOFF.md. Import after reader36bf and current
+Kord helperb635. Its original full-world MariaDB result is PASS, with actual
+mapless refusal and unexercised progressed-kill history; exact evidence below.
+
+Fresh fetch observes **35298aacdf0b55e5026db98103f4e3e7b63094ad** on
+origin/experimental-accounting. History-preserving synchronization merge
+**b31f568c3429702e53df90e923e4f22e7eed2e96** has no conflict or authored
+owner change; it imports primary's qualified SQL room-coin cold-recovery slice.
+This is a synchronization commit, not an independent implementation import unit.
+Source comparisons against275 show no change in quest/world-quest, native
+cost/coin-GIVE, birth-origin reader, migrations or either shared quest driver.
+The new SQL room-coin reader changes the maintained graph753→754 and cold coin
+projection; broader Plan/backend/release work remains open. It does not expose
+the missing genuine quest lifecycle initializer, delayed charge/refund or native
+capture boundaries. The ranked native queue remains applicable. No new build or
+gameplay qualification is claimed for352; completed source36bf/ELFc997 evidence
+retains its exact original pins. Final qualification uses the integrated primary.
+The owned275 runtime container is now stopped after confirming no MariaDB daemon
+remains; its ignored evidence and prior failures are preserved.
+
 Current actual Goal is ACTIVE (createdAt1791384873, no budget) under the continuing
 charter b1ac97c3a9a1d1e50db6657b71862fb65681ce41. Earlier completed finite Goals
 below remain historical checkpoints. The finish line is observable primary

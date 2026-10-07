@@ -35,6 +35,12 @@ unless a concrete owned helper compatibility seam actually fails.
 
 ## Executed current legacy result
 
+Published execution bundle81df1892dd05ec52cb40cbf8e32ea8087ca1a270,
+base4e7580b7928eabf631286936ab9f8330efce8193. All four authored files are owned:
+run_world_execution.py, this document, CONTINUING_RECONCILIATION.md and HANDOFF.md.
+Import the compatible owned bundle after reader36bf and Kord helperb635; the
+upstream synchronization merge is not a production correction to import.
+
 Reservation4e7580b79 followed documentation synchronization
 5108e39319169764cdde83a0391528e39a900dd2; that merge authors no shared changes.
 Maintained `make world` PASS5.178s with original600-second deadline. Source/ELF

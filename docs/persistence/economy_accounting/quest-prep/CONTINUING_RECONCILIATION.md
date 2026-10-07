@@ -1,5 +1,15 @@
 # Continuing quest acceptance — candidate275 / 2026-10-07
 
+Latest reconciliation: upstream35298aacdf0b55e5026db98103f4e3e7b63094ad is
+preserved by synchronization mergeb31f568c3429702e53df90e923e4f22e7eed2e96.
+Its new SQL room-coin cold recovery/754-provider graph is primary-owned. Quest,
+world-quest, native cost/GIVE, origin reader, schema and shared quest drivers are
+unchanged against275. No genuine quest lifecycle/route initializer, delayed
+settlement/refund or native per-command capture hook is newly available. This
+review changes the current source pin, not the actual source36bf/753-provider ELF
+pins of completed legacy runs. Current full-world fee evidence is published as
+81df1892dd05ec52cb40cbf8e32ea8087ca1a270; all native dependencies below remain.
+
 This is a checkpoint under the continuing coordination charter at
 b1ac97c3a9a1d1e50db6657b71862fb65681ce41. Actual Goal ACTIVE, createdAt1791384873,
 no budget. Completion requires observable primary Plans1–5 and applicable original
