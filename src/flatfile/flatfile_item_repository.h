@@ -153,6 +153,13 @@ flatfile_item_repository_result flatfile_item_repository_read_coin_pile_locked(
 flatfile_item_repository_result flatfile_item_repository_list_coin_piles_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	std::vector<flatfile_coin_pile_source> *sources, std::string *error);
+// Verify the original native custody catalog's exact COIN root digest/result.
+// Borrows the authority lock and recovers existing journal only; never applies
+// a command, creates a catalog receipt, mutates custody, or grants an ACK.
+unsigned int flatfile_item_repository_verify_coin_root_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_command &command, std::span<const uint8_t> retained_result,
+	std::string *error);
 // Prepare the pile endpoints of a coin root under the caller's authority lock.
 // The caller stages returned domain images with wallet images and accounting
 // evidence in one journal commit. No image or result is published on error.

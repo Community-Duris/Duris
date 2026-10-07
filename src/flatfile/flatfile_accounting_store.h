@@ -88,6 +88,13 @@ class flatfile_accounting_storage
 	initialize_bucket(const std::string &, const flatfile_authority_lock &,
 			  const critical_operation_id &, size_t bucket,
 			  std::vector<flatfile_authority_operation> *, std::string *);
+	// Structural retained record only; existing typed coin owner must verify the
+	// full domain/source/plan/result/current native proof. No admission capability.
+	static flatfile_accounting_status lookup_retained_locked(const std::string &,
+								 const flatfile_authority_lock &,
+								 const critical_operation_id &,
+								 flatfile_accounting_record *,
+								 std::string *);
 	static flatfile_accounting_status stage(const std::string &,
 						const flatfile_authority_lock &,
 						const flatfile_accounting_record &,
