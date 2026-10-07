@@ -88,9 +88,10 @@ build SQL and flatfile probes afresh; no prior objects/probes are reused.
 
 Fresh MariaDB10.11.14 and MySQL8.0.46 apply all canonical0062 receipts.
 The original canonical native method retains 88 whole checks and 88 page
-observations with unchanged authority. Original four native baseline books,
-including inactive epochs and uint64 endpoints, undergo all 16 full origin
-captures/refusals per engine plus 32 root pages per engine. The full native
+observations with unchanged authority. The original native fixture contains
+four witnesses across two books, including an inactive book and uint64
+endpoints. Its original suite executes all 16 full origin captures/refusals
+per engine plus 32 root pages per engine. The full native
 origin assertions and native fixture source bytes remain intact. Page observations are
 retained in the protected log as `BASELINE_ROOT_PAGES` JSON, after complete
 table-inventory equality. Their temporary JSON files are not cited as retained.
@@ -178,3 +179,14 @@ The primary-local notebook is nonblocking; this owned report/seal/delivery
 packet supplies its curator workflow. No cross-chat message or acknowledgement
 is claimed. No production operation, activation, deployment, merge or push to
 experimental-accounting occurs. Full Plan5/R7/R8/release remain incomplete.
+
+## Native fixture count correction - 2026-10-06
+
+The native fixture has four witnesses across two books per engine: three
+revisions in one book and one revision in the inactive book. The earlier
+delivery receipt's `authentic_native_baseline_books_per_engine=4` used the
+witness count under the wrong label. That protected receipt remains unchanged.
+[Book continuity qualification](PLAN5_SQL_BOOK_CONTINUITY_QUALIFICATION_2026-10-06.md)
+and its new seal/delivery record four witnesses and two books explicitly.
+This documentation correction does not change the earlier executed source,
+test results, preserved failures or release scope.
