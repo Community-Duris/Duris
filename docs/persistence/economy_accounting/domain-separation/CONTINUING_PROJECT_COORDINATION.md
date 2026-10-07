@@ -493,6 +493,28 @@ supported native tooling remain unqualified. No source/test or public quest
 capability advances. Preserve these owner-reported limits and previous failures;
 R14 original proof inputs remain exact.
 
+## Complete shop customer access final checkpoint - 2026-10-07
+
+R14 code652462d8afbc3837ff5dcd6538f918e366269c85 and canonical delivery
+80c107bc59f355e7dcc458edccd36952d3a2e22c are FINAL independently reviewed in
+[R14 review](R14_SHOP_CUSTOMER_ACCESS_REVIEW_2026-10-07.md). Original decision,
+correct refusal/native feedback mapping, types and both frozenpairs authenticate;
+root actual complete committed runner PASSes47/24 baseline/Og, eight exits0.
+Both owned740 ELF/build graphs, standalone bare2920 imports/all6455-6454 bodies,
+four462/456 actual compiler closures, all102 indexed artifacts and four canonical
+documents authenticate. Whole actual owned/bare command bodies are preserved,
+with the old quote provider used only where present. No native authority,
+current754 integration, adoption or full completion is inferred.
+
+Architecture reassesses substantive remaining work across the nine families.
+Keep exact published/private interface boundaries and original failures; avoid
+scalar helpers, repeated passing execution or invented work. Quest native work
+remains honestly BLOCKED on unavailable lifecycle/custody/settlement interfaces;
+its selected repairs stay closed. This turn produced concrete implementation,
+qualification, independent review and remote publication progress, not an
+unchanged blocked audit. Root Goal and heartbeat remain ACTIVE through the
+original primary Plans1-5/applicable R1-R8/native integrated finish line.
+
 ## Recurring monitor
 
 ### Latest reviewed deliveries and next bounded assignments

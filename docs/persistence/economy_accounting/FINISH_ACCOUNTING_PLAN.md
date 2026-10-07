@@ -270,6 +270,34 @@ Production authority/native journeys remain separate. Architecture continues
 R11 qualification; primary continues without an adoption wait. Full continuing
 finish line and native quest/accounting blockers remain unchanged.
 
+## Complete shop customer access independently reviewed - 2026-10-07
+
+[R14 FINAL review](domain-separation/R14_SHOP_CUSTOMER_ACCESS_REVIEW_2026-10-07.md)
+closes exact code652462d8afbc3837ff5dcd6538f918e366269c85 and canonical delivery
+[80c107bc59f355e7dcc458edccd36952d3a2e22c](https://github.com/Community-Duris/Duris/blob/80c107bc59f355e7dcc458edccd36952d3a2e22c/docs/persistence/economy_accounting/domain-separation/R14_SHOP_CUSTOMER_ACCESS_HANDOFF.md).
+Complete customer decision, native synchronous provider/feedback and first
+47-direct/24-real-value runner only. Root committed rule/type/feedback/frozenpair
+and whole-shop restoration audits PASS; complete committed runner PASSes both
+components baseline/Og, all eight exits0. Both owned740-object builds/retained
+ELFs authenticate. Standalone bare2920 full3/prod2 patches apply independently,
+all6455/6454 exported bodies authenticate, four actual462/456 compiler closures
+and complete SQL/flat modules PASS; full runner plus five adjacent checks PASS.
+Actual whole owned/bare value bodies remain exact, with the existing optional
+quote provider included only where present. All102 indexed artifacts and four
+canonical UTF8 documents/every SHA256 reference authenticate. Nine owned adjacent
+checks PASS, paired original/extracted old live-route failure remains; first
+private capture-path failure is retained with zero steps and no changed controls.
+
+This closes a selected optional extraction checkpoint, not native/current754
+integration or adoption. World visibility/trust/lifetime/custody/admission,
+money/effects/publication/ACK, persistence/recovery and private439 boot/genesis/
+tooling prerequisites remain owner work. Architecture reassesses substantive
+remaining operations against actual nine-family source/dependencies, avoiding
+scalar busywork, unchanged reruns or reopening completed scopes. Quest native
+Goal remains BLOCKED on actual unpublished owner interfaces. Root Goal and the
+15-minute monitor remain ACTIVE through the original Plans1-5/applicable original
+R1-R8 and published integrated completion disposition.
+
 ## Complete shop customer access execution approved - 2026-10-07
 
 [R14 exact three-file approval](domain-separation/R14_SHOP_CUSTOMER_ACCESS_REVIEW_2026-10-07.md)

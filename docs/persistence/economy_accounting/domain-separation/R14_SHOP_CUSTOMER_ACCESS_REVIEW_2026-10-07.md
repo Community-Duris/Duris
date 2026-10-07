@@ -1,14 +1,18 @@
 # Complete shop customer access review - 2026-10-07
 
-Disposition: **exact THREE-file implementation boundary approved** after
-independent complete original policy and actual valuation-command review.
+Disposition: **FINAL committed code, component, import and artifact review PASS**
+at `652462d8afbc3837ff5dcd6538f918e366269c85`, with canonical delivery
+`80c107bc59f355e7dcc458edccd36952d3a2e22c` independently authenticated. The THREE-file
+boundary was approved after independent complete original policy and actual
+valuation-command review.
 Published reservation `3067d913c79db815c5a2492ef9324599059593f1`, text SHA256
 `ef8d067bfd994173fb9715fb832fc06d7118a095427b4b26248d18b608df6c65`,
 changes exactly five owned UTF8 documentation files and no source/tests.
 See the [exact reservation](https://github.com/Community-Duris/Duris/blob/3067d913c79db815c5a2492ef9324599059593f1/docs/persistence/economy_accounting/domain-separation/R14_SHOP_CUSTOMER_ACCESS_RESERVATION.md)
 and [nine-family owner disposition](https://github.com/Community-Duris/Duris/blob/3067d913c79db815c5a2492ef9324599059593f1/docs/persistence/economy_accounting/domain-separation/POST_R13_OWNER_DEPENDENCIES_2026-10-07.md).
-R13 and prior reviewed deliveries remain closed. Extracted qualification,
-primary adoption and native/integrated completion are not established yet.
+R13 and prior reviewed deliveries remain closed. The approval-stage obligations
+below retain their original scope; final extracted evidence follows them.
+Primary adoption and native/integrated completion remain unestablished.
 
 ## Exact connected operation and native ownership
 
@@ -137,3 +141,118 @@ fourteen full-server controls. Supported native tooling/cache recovery remains
 open. This documentation-only advance changes no R14 source/test input and
 publishes no new native quest capability; prior failures and owner boundaries
 remain intact. Private primary receipts are owner-reported here.
+
+## Final committed decision, feedback and executable review
+
+Committed code652 changes exactly the THREE approved paths. Root reads the exact
+Git blobs and independently reverses all11 observation substitutions. All182
+original decision-kernel tokens match, with the correct five refusal reasons
+and three TRUE/none returns. The eight native mobsay/snprintf/act statements
+are token-exact and in order. Provider native int/sh_int/byte/ubyte/bool field
+and macro types match. Whole-owned-shop restoration outside the wrapper/include
+is byte-exact. Both frozen compiled PRELUDE/DRIVER pairs remain exact.
+The worker's308-token combined policy/feedback audit uses a different scope;
+both audits preserve original decisions and actual native feedback.
+
+Root independently executes the COMPLETE committed runner from its authenticated
+bare-current full package in a separately owned isolated container. Direct47
+and complete value-command24 each PASS baseline and separate-Og: all EIGHT
+compile/runtime exits0, original120/30-second limits, strict sanitizer flags
+and temporary fixture cleanup. Worker complete original/extracted runs separately
+PASS all eight steps per variant. Native visibility/trust/read order, feedback
+mutation and original value-command behavior remain; world/service endpoints
+are controlled and confer no native custody/settlement/recovery authority.
+
+Nine owned adjacent checks PASS, including the earlier complete item acceptance
+and sale quotation components. The old live-route contract fails identically
+on original and extracted inputs at object->loc.carrying == keeper. Both logs
+remain, without importing the separate prep repair. Changed native-line/new-header
+formatting and whitespace checks PASS. One private supervisor used the wrong
+entrypoint filename and failed before compilation, with zero steps. That attempt
+is retained separately; correction changed no maintained source, fixture,
+assertion, flag or deadline. No R14 production/compiler/runtime repair was needed.
+
+## Standalone imports and actual native caller variants
+
+Full THREE-file and production TWO-file patches independently apply to bare
+primary2920d32dfb0aa78000e8d3b9690c6df2b73ee1b8. Root authenticates actual
+committed patch bytes, cached check and actual apply, resulting trees, archives
+and EVERY6455 full/6454 production export blob body. Optional R0-R13/prep
+ancestry is not required. The include uses common native context; prior optional
+quote/classifier changes are excluded from the exact patch.
+
+| Package | Resulting tree | Patch SHA256 |
+| --- | --- | --- |
+| Full | 720e4bd4b412e08b0520665d2fe26464fe13ad6c | 4761f18ac8b36b082898e3cfb6bedc97ccdaf4320becaf6f268ffb6487ca196d |
+| Production | e66044072c7567547b81532305c15e78cb04e4eb | 76eb0c01fbf4e2d65ba4ecbc0507e924002fdb217d08c0818a6c8f6c0ba05009 |
+
+Full archive SHA256 is
+`20df093545c50a2756ac2881b94432af423956fa045359227df35930603898c3`;
+production archive is
+`39c0735989571d6919f6c5447d22d124def6890d25bb63bb053da6b350379b11`.
+
+Root independently verifies the identical owned/bare is_ok wrapper. Restoring
+the original wrapper and removing its include recovers the ENTIRE bare primary
+shop.c, preserving all other native bodies. The actual complete owned and bare
+shopping_value bodies appear byte-exact in their generated command CPPs. The
+existing quote provider/header appears ONLY in the owned variant; the bare
+variant keeps its whole original native quotation. Nothing rewrites value or
+requires the optional quote header in bare imports. Independent generated
+direct and command CPP hashes match the worker's bare-full proofs:
+`202a2e6b8eb76bd09e4fd8251456fffbbbeb81519a39573bd3edb1c1d856f008`
+and `b3bccbf16a6f68056aaf9290bbb335a3d892d91d3adf3f6a95cbb22a04c5c99d`.
+Owned command CPP intentionally differs and is separately pinned in the seal.
+
+## Compiler closure, maintained builds and final artifact scope
+
+Both separate network-none/read-only bare exports PASS complete shop SQL and
+flat syntax/type checks with strict C++20 flags and pinned image
+74b699976165c15fc29cf92b9c2dbefcdbca35505a08efc84d14bf644cbf6d5b.
+Root rereads/authenticates all462 SQL/456 flat actual compiler inputs PER package,
+including exported source/header bytes. Full export also PASSes the complete
+eight-step runner and five selected adjacent checks; production qualifies the
+complete module without the new test runner. All supervisors/children terminate.
+
+Both strict maintained owned builds PASS. Root authenticates actual copied AND
+container-retained native ELFs and strict log commands: one shop.c compile and
+740 unique linked objects per profile. SQL ELF SHA256 is
+`775b78b6390aff55823f99002ef79d205ba4942326b3c2ec3cdd583af7a2e044`;
+flat ELF is
+`b01babf6a13a933e5a21908421f4df419dd5fee677f65f614512742d50de8d3d`.
+These older owned740 graphs do not establish the primary's current754 full
+composition or genuine native gameplay/backend journeys.
+
+All102 retained indexed artifacts/receipts authenticate by actual byte length
+and SHA256. Index SHA256 is
+`9f700c21ba2d2432691cbe0f15af85f004df99882d805faf3fa621247db67727`.
+Private root customer committed-rule, committed-runner, native-caller-variant,
+import, build-artifact, header and final artifact RESULT records retain the
+independent evidence. No private binary/log/archive/credential is committed.
+
+This closes the selected code/qualification/import/artifact review. Canonical
+documentation is reviewed separately on publication. Native world trust/
+visibility, original lifetime/custody/admission, money/effects, physical
+publication/completion/ACK and persistence/recovery retain their owners. Primary
+adoption, Plans1-5/applicable original R1-R8 and full integrated completion stay
+open. Reassess substantive remaining operations and exact owner interfaces;
+neither another helper nor temporary lack of independent work changes the finish
+line. Root continuing Goal and event monitor remain ACTIVE.
+
+## Canonical delivery closure
+
+Published canonical delivery `80c107bc59f355e7dcc458edccd36952d3a2e22c` changes
+exactly the three owned overviews and
+[R14_SHOP_CUSTOMER_ACCESS_HANDOFF.md](https://github.com/Community-Duris/Duris/blob/80c107bc59f355e7dcc458edccd36952d3a2e22c/docs/persistence/economy_accounting/domain-separation/R14_SHOP_CUSTOMER_ACCESS_HANDOFF.md).
+All four documents are valid UTF8, pass whitespace checks and leave qualified
+code652/source/tests unchanged. Every SHA256 reference in the handoff matches
+independently authenticated code, native bodies, exports, receipts, original
+proofs or image pins. Handoff text SHA256 is
+`990374bc614b6c3577a882257578ab897644e656a1c9842bba1ccb001b55329b`.
+Root customer-delivery-authentication-RESULT.json retains exact document bytes
+and reference checks; the published architecture branch tip matches80c.
+
+This closes the selected R14 canonical handoff review without another execution,
+optional adoption wait or reopening of completed work. The next nine-family
+reassessment must identify substantive feasible work or precise unavailable
+native-owner interfaces. Overall primary completion remains unproved; root Goal
+and recurring monitor retain the full original finish line.
