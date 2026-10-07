@@ -34,7 +34,9 @@ compilation/link; flat build is still running from the immutable export. Those
 results remain separate from owned-branch ELFs and native journey qualification.
 R4 boundary was approved locally during the publication outage, implemented at
 `0a5084db1`, and independently original/extracted regression-reviewed. Both owned
-maintained builds pass. Final R4 evidence review is pending. GitHub recovered and
+maintained builds pass. Final R4 declared-scope evidence review passes independently; its published
+review successor is pending. Current-candidate component/type supplement and
+native journey qualification remain separately scoped. GitHub recovered and
 ordinary push/remote read verifies all preserved successors through `0a5084db1`.
 No source was changed to work around publication. The queue remains continuing,
 and the nine-domain assessment is reranked from actual remaining owner facts.

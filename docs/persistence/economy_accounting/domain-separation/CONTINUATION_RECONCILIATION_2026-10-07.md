@@ -90,7 +90,7 @@ The nine-domain inventory is reassessed against these concrete new interfaces:
    Active refusal stays intentional; no RNG or compound outcome authority changes.
    Source commits `48b7a6d38`, strict compiler local initialization fix `3a722a008`,
    relocated configuration contract `6d544bea7`. See [terminal R3 evidence](R3_ENHANCEMENT_PRICE_HANDOFF.md).
-2. **R4 F3 superior tribute counts**: implemented at `0a5084db1`, reviewed original/extracted component controls and owned maintained builds pass. See [R4 handoff](R4_SUPERIOR_TRIBUTE_HANDOFF.md). Further outcome/material preparation and
+2. **R4 F3 superior tribute counts**: implemented at `0a5084db1`, final independent source/component/owned maintained-build review passes, available for optional import. See [R4 handoff](R4_SUPERIOR_TRIBUTE_HANDOFF.md). Further outcome/material preparation and
    duplicate material aggregation can become owned facts, but template target
    selection/read_object, eligible stat capture and remaining-step catalogue
    require a reviewed capture boundary. Reuse R1 count types where semantics agree;

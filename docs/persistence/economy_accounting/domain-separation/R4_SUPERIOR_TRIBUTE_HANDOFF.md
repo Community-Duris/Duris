@@ -7,8 +7,13 @@ three-file boundary locally while GitHub writes were unavailable, independently
 authenticated the original function pins and then passed the same extended
 original/extracted material controls. No extraction defect was found. The coordinator boundary review is now
 published at accounting `3f6f1fe0cb62906e07dd8a36b4436ebb53e7582f` in
-[R4_SUPERIOR_TRIBUTE_REVIEW_2026-10-07.md](https://github.com/Community-Duris/Duris/blob/3f6f1fe0cb62906e07dd8a36b4436ebb53e7582f/docs/persistence/economy_accounting/domain-separation/R4_SUPERIOR_TRIBUTE_REVIEW_2026-10-07.md). Maintained
-build/evidence final disposition remains pending. GitHub recovered: ordinary push
+[R4_SUPERIOR_TRIBUTE_REVIEW_2026-10-07.md](https://github.com/Community-Duris/Duris/blob/3f6f1fe0cb62906e07dd8a36b4436ebb53e7582f/docs/persistence/economy_accounting/domain-separation/R4_SUPERIOR_TRIBUTE_REVIEW_2026-10-07.md). Coordinator final declared-scope review also passes for source `0a5084db1`
+and published handoff `96090b821`: original/extracted regression, three source
+pins, the initial18 proof hashes, both maintained1-provider/740-object build
+terminals and actual Docker ELF hashes were independently verified. R4-only patch
+application against bare current accounting `3f6f1fe0c` also passes. Disposition:
+reviewed and available for optional primary import. The later frozen-candidate
+component/type supplement is separate from that reviewed18-file checkpoint. GitHub recovered: ordinary push
 and remote read now verify the source commit on `codex/accounting-domain-separation`.
 The continuing Goal remains ACTIVE beyond this checkpoint.
 
@@ -107,3 +112,11 @@ semantics. A thin table wrapper alone needs a concrete architectural benefit;
 no new reservation is implied here. Template/stat/outcome capture and shared
 native admission, receipt, publication and recovery remain their existing owners.
 This handoff supplies neither primary adoption nor the continuing finish line.
+
+## Continuing Goal audit
+
+At this completion/next-reservation checkpoint, `get_goal` returns actual
+`status: active`, createdAt1791384853, with no token budget. Primary Plans1-5
+and applicable original R1-R8 integrated/native/gameplay/recovery qualification
+and owner completion disposition remain required. R4 delivery, optional import
+and the proposed R5 rule do not close the continuing Goal.
