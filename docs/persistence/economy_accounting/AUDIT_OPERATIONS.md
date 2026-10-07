@@ -793,6 +793,24 @@ or negative denominations still refuse. See
 
 ## Retained flatfile intent and plan semantics
 
+The operator command `bin/tools/qualify_flatfile_restore
+--economic-evidence-audit /absolute/private/copy` acquires a nonblocking shared
+lock on the existing native authority lock. A cooperating native writer holds
+that same inode exclusively, so the audit refuses while the writer owns it.
+The reader never initializes storage or recovers a pending transaction journal.
+Unsafe directories/locks, pending journals and replaced authority inodes refuse;
+the final read rechecks the original directory/lock identity before reporting.
+An absent lock is accepted only for an empty legacy observation and is not created.
+
+The operator scan admits at most128 MiB of physical reads,2048 file reads and
+8192 directory visits, including repeated reads and ignored entries. Its
+30-second deadline is cooperative and is checked during decoding and before
+final reporting; it does not establish a hard I/O or release-host latency bound.
+Budget exhaustion refuses rather than reporting clearance. Offline restore
+candidate qualification retains its original bounds and recovery rules. This
+scan has no durable pagination and does not certify complete native holdings,
+producer coverage, activation or release readiness.
+
 The independent flatfile restore reader validates retained generic EAI1/EAP1
 semantics as well as physical checksums and command/intent bindings. A correctly
 checksummed record still refuses when its policy, source kind, account effects,
