@@ -10,6 +10,11 @@ Flat Make, genuine Collector/SHOP journeys and shared flat boot qualification
 remain open. No production fix is imported or gate promoted. Preserve original
 budgets, failed evidence, inactive/spell boundaries and all926 writer policies.
 
+The checkpoint now authenticates one private30 recovery/genesis/shutdown/SHOP
+candidate, its combined startup/boot syntax and exact native transport. Genuine
+snapshot/baseline fixtures are corrected; full runtime qualification remains open.
+Its explicit native lifecycle V2 wire contract enables independent Plan5 work.
+
 ## Flatfile ordinary room-pile reader qualified - 2026-10-07
 
 [Qualified data reader](FLATFILE_COIN_COLD_READER_INTEGRATION_2026-10-07.md)
