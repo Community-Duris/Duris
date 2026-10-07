@@ -354,3 +354,8 @@ The [dossier](../design/zone-stories/FORGOTTEN_FOREST.md) retains four independe
 ## Rice Fields daily qualification
 
 The [dossier](../design/zone-stories/RICE_FIELDS.md) retains one princess accepted-release achievement/potential daily. Three paid/support services remain recorded without achievement/daily credit, reducing projection totals by three achievements and two potential dailies while all2668 native definitions remain intact. Actual source publication, supplied-compatible root consumption, token save/departure/replay, useful living rescue and balanced giver renewal need separate qualification. Mode2 is not a stock guarantee; all13 local O/P/G/E rows are refused before active item creation. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
+
+
+## Bandit Canyons daily qualification
+
+The [dossier](../design/zone-stories/BANDIT_CANYONS.md) retains one Olat accepted-exchange achievement/potential daily without changing totals. Actual source availability, exact supplied-compatible root consumption, reward/save/replay, lasting stat benefit and fair renewal remain separate. Mode2 does not guarantee stock; all85 local O/P/G/E rows are refused before active item creation. Three loose materials do not complete a quest and personal access/boss/clue history is optional. New tracking requires active READY accounting; committed recovery remains separate and daily policy disabled.

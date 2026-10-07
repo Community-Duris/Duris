@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 226 authored journals, accounting-gated player surfaces, starter/town
+**Status: 227 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5462,3 +5462,8 @@ The [dossier](zone-stories/FORGOTTEN_FOREST.md) maps four independent supplied-c
 ## Rice Fields integration extension
 
 The [dossier](zone-stories/RICE_FIELDS.md) maps four native exchanges, three recorded services, one accepted-release quest and nine broader stories with46 owned follow-ups. Separate exact supplied materials, source custody, real coin/item/XP settlement, access keys versus shackle keys, accepted D versus living royal arrival, useful magic/navigation, three-zone treasure and safe sea return. Foreign locally spawned contacts do not discover their home area. Existing schema suffices for journals; typed effects require builder-defined useful saved controllers and beneficiaries. Active READY accounting remains required and daily policy disabled. The prior Jade JUMP wording correction is documentation only in a separate commit.
+
+
+## Bandit Canyons integration extension
+
+The [dossier](zone-stories/BANDIT_CANYONS.md) maps one supplied-compatible native exchange and ten broader stories with46 owned follow-ups. Separate three-material acceptance and scroll UID from lasting strength, negative-key SAY from OPEN/cross, D8 blocked state from PULL/PUSH/no-op, actual waterfall sectors from current prose and loot from useful living help. Bounded tablet-source/reward/clue/topology/level questions require modern builder intent and separate fair fix/news scope. Typed committed work/care/control/stat events depend on concrete useful saved outcomes; schema3 suffices for the journal. Active READY accounting remains required and daily policy disabled.
