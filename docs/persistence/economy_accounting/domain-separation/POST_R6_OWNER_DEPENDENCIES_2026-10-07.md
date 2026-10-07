@@ -1,5 +1,14 @@
 # Post-R6 feasibility and owner dependencies — 2026-10-07
 
+R8 search control is now implemented and qualified at7f/9f; see
+[R8 terminal handoff](R8_ORDINARY_SEARCH_HANDOFF.md). Exact original/extracted
+controls, both maintained740-object builds and current/minimal dependency module
+checks PASS; final review remains pending. Actual continuing Goal is ACTIVE/no
+budget with the full integrated finish line preserved. The earlier empty-feasible
+queue below is historical and does not prohibit substantial existing-producer
+planning through faithful synchronous observations. Reassess nine families after
+this handoff; no artificial extraction cap or capability-only feasibility rule.
+
 Continuing Goal ACTIVE/no budget, createdAt1791384853. This turn delivered R5/R6
 qualification and R6 terminal publication, so it made meaningful progress and
 does not count as an unchanged blocked turn. Overall Plans1-5/applicable original

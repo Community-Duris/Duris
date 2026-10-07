@@ -1,7 +1,9 @@
 # R8 ordinary enhancement cascade reservation — 2026-10-07
 
-Proposed next substantial search-control boundary; production/test edits await
-coordinator review. Owned source c751ce3cac609527b453de2e6c1b6530f602fc41;
+Approved boundary at primaryf5216feff44; implementation7f plus fix9f is
+qualified and delivered in [R8 terminal handoff](R8_ORDINARY_SEARCH_HANDOFF.md).
+Final declared-scope review is pending. The reservation below preserves its original
+preimplementation scope and feasibility evidence. Owned source c751ce3cac609527b453de2e6c1b6530f602fc41;
 latest primary 6b96e9a08ff4cfe3a654417e76b7ca68514e274e includes coin-owner
 fixture4f3ee6550 and final R7 review. Actual continuing Goal ACTIVE/no budget.
 R8 here names a worker bundle, not completion of the original R1-R8 acceptance.

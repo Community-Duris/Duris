@@ -1,10 +1,12 @@
 # Fixed domain-separation operation inventory — 2026-10-07
 
-[R8 ordinary cascade reservation](R8_ORDINARY_SEARCH_RESERVATION.md) selects
-ordered search control with fresh per-probe configuration and unchanged native
-linked lookup/read ownership. Complete original producer plus23 new search cases
-PASS privately; exact three-file boundary awaits review before implementation.
-R7 is finally reviewed; native authority and the full integrated finish line remain.
+R8 ordinary cascade is implemented at `7f0d11b4d` plus compiler fix `9f5119fc3`.
+Actual original/extracted23-scenario controls, adjacent checks and both maintained
+740-object builds PASS; initial SQLwarning/buildfailure remains retained. Current
+f521+R0-R8 and minimal f521+R3/R6/R8 component/module checks PASS; bare-primary
+production module checks PASS. See [R8 terminal handoff](R8_ORDINARY_SEARCH_HANDOFF.md).
+Final declared-scope review is pending. Actual continuing Goal remains ACTIVE/no
+budget; original Plans1-5/applicable R1-R8 finish line and native journeys remain.
 
 R7 approved all-stat planning is implemented at `bf8ffda1d6bae94866c6cb2834d0561d7d914ed9`.
 Identical original/extracted21-scenario ordering/complete-plan controls, adjacent
