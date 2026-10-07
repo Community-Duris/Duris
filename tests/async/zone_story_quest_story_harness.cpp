@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 228 &&
+		require(catalog.story_mappings.size() == 229 &&
 				tracker.summary_for(7, 42).total == 1518,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -26630,6 +26630,84 @@ int main(int argc, char **argv)
 			require(!journey.has_discovered(7, 42, 324) &&
 					!journey.has_discovered(7, 42, 266),
 				"Darkfall receipt forged foreign-source discovery");
+		}
+
+		{
+			const auto &exchange = story_for("elftomb", "old-warrior-king-head");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 20607, 20710, 100) == result::rejected,
+				"Barrow warrior contact ignored undiscovered physical zone");
+			require(journey.discover_zone(7, 42, 206, 20600, 101, "arrival") ==
+					result::applied,
+				"Barrow discovery failed");
+			require(journey.render_journal(7, 42, 206, 50, 1, 102, false, false)
+						.find(exchange.title) == std::string::npos,
+				"Barrow discovery exposed unmet warrior exchange");
+			require(journey.meet_npc(7, 42, 20607, 20710, 103) == result::applied,
+				"Barrow warrior encounter failed");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    exchange.steps[row].text) != std::string::npos;
+			};
+			for (int custody = 0; custody < 7; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[20618] = 1;
+				if (custody == 2)
+					supplies.carried[20620] = 1;
+				if (custody == 3)
+					supplies.equipped[0] = 20619;
+				if (custody == 4)
+					supplies.carried[20615] = 1;
+				if (custody >= 5)
+					supplies.carried[20619] = custody == 5 ? 1 : 4;
+				const auto journal = journey.render_journal(
+					7, 42, 206, 50, 1, 104, false, false, &supplies);
+				require(status(journal, 0,
+					       custody >= 5 ? "Ready now" : "Missing now") &&
+						!status(journal, 1, "Recorded") &&
+						journey.progress_for_zone(7, 42, 206).completed ==
+							0 &&
+						journey.progress_for_zone(7, 42, 206).total == 1 &&
+						journey.serialize_state() == before,
+					"Barrow wrong remains/equipped/reward/loose/surplus custody changed readiness or invented acceptance");
+			}
+			// Synthetic receipts qualify projection/recovery, not live stock, native payment/reward, controls, transformation or care.
+			record(journey, exchange.contracts.front(), "elftomb-native-head", 206,
+			       20710);
+			record(supplied, exchange.contracts.front(), "elftomb-supplied-head", 206,
+			       20710);
+			require(supplied.progress_for_zone(7, 42, 206).completed == 1 &&
+					!supplied.has_met_npc(7, 42, 20609) &&
+					!supplied.has_met_npc(7, 42, 20605) &&
+					!supplied.has_met_npc(7, 42, 20603) &&
+					!supplied.has_met_npc(7, 42, 4038),
+				"Barrow supplied acceptance required crypt/trader/guardian/foreign contact history");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 206).completed == 1 &&
+					raw.progress_for_zone(7, 42, 206).completed == 1,
+				"Barrow cold mapped/raw recovery lost accepted head exchange");
+			supplies = {};
+			const auto journal = recovered.render_journal(7, 42, 206, 50, 1, 122, false,
+								      false, &supplies);
+			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
+				"Barrow spent head erased acceptance or recreated material");
+			auto replay =
+				completion(exchange.contracts.front(), "elftomb-native-head", 120);
+			replay.transaction.zone_number = 206;
+			replay.transaction.room_vnum = 20710;
+			require(journey.record_completion(replay) == result::already_applied &&
+					journey.serialize_state() == saved,
+				"Barrow accepted head replay duplicated history");
+			require(!journey.has_discovered(7, 42, 40),
+				"Barrow receipt forged foreign monk-zone discovery");
 		}
 
 		std::cout

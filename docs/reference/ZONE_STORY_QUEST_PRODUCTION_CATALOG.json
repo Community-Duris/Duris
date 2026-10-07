@@ -60886,6 +60886,172 @@
     {
       "contacts": [
         {
+          "description": "Sightless fish inhabit the dark river. A visit or catch is separate from helping living wildlife.",
+          "keyword": "fish",
+          "mob_vnum": 20600,
+          "name": "a sightless fish",
+          "topics": []
+        },
+        {
+          "description": "Spoon-billed ducks inhabit the lake and shoreline. Recovering meat does not record animal care.",
+          "keyword": "duck",
+          "mob_vnum": 20601,
+          "name": "a spoon-billed duck",
+          "topics": []
+        },
+        {
+          "description": "White swans share the lake. Any protection story needs a living animal and a useful result.",
+          "keyword": "swan",
+          "mob_vnum": 20602,
+          "name": "a large white swan",
+          "topics": []
+        },
+        {
+          "description": "The regal swan carries a feathery token. Its appearance hints at a larger tale about the lake\u2019s guardian.",
+          "keyword": "regal",
+          "mob_vnum": 20603,
+          "name": "the regal swan",
+          "topics": []
+        },
+        {
+          "description": "The swanmay appears in the lake\u2019s guardian lore. Her place in that tale is a lead to investigate.",
+          "keyword": "swanmay",
+          "mob_vnum": 20604,
+          "name": "the swanmay",
+          "topics": []
+        },
+        {
+          "description": "Borrix inhabits the trader\u2019s hut with salvage and a locked chest. The journal does not yet record a salvage commission or trade here.",
+          "keyword": "borrix",
+          "mob_vnum": 20605,
+          "name": "Borrix, the goblin trader",
+          "topics": []
+        },
+        {
+          "description": "Goblin scavengers range across the battlefield. Loot recovery and helping a living traveler are separate stories.",
+          "keyword": "scavenger",
+          "mob_vnum": 20606,
+          "name": "a goblin scavenger",
+          "topics": []
+        },
+        {
+          "description": "The old orcish warrior accepts the exact bloody head of the elven king for a Blood-eye amulet. A recovered or supplied copy fits. His army and loyalty lore suggests further story work.",
+          "keyword": "old",
+          "mob_vnum": 20607,
+          "name": "the old orcish warrior",
+          "topics": []
+        },
+        {
+          "description": "Elven warrior spirits haunt the barrow. Learning their history and helping them find peace require different outcomes.",
+          "keyword": "elf",
+          "mob_vnum": 20608,
+          "name": "the spirit of an elven warrior",
+          "topics": []
+        },
+        {
+          "description": "Guardian spirits defend the crypt. A key carried by one guardian fits its wooden doors; holding the key and passing the doors are separate milestones.",
+          "keyword": "guardian",
+          "mob_vnum": 20609,
+          "name": "a guardian spirit",
+          "topics": []
+        },
+        {
+          "description": "Orcish warrior spirits linger on the battlefield. Their presence does not yet provide a recorded peaceful-release quest.",
+          "keyword": "orc",
+          "mob_vnum": 20610,
+          "name": "the spirit of an orcish warrior",
+          "topics": []
+        },
+        {
+          "description": "Giant maggots inhabit burial chambers. Prepare for their encounters while choosing a safe route.",
+          "keyword": "maggot",
+          "mob_vnum": 20611,
+          "name": "a giant maggot",
+          "topics": []
+        },
+        {
+          "description": "Wild boars inhabit the forest. Their meat can be recovered, while humane care needs a separate useful outcome.",
+          "keyword": "boar",
+          "mob_vnum": 20612,
+          "name": "a wild boar",
+          "topics": []
+        },
+        {
+          "description": "Will-o-the-Wisp carries a sapphire. Recovering it does not by itself establish a restoration or care story.",
+          "keyword": "wisp",
+          "mob_vnum": 20613,
+          "name": "Will-o-the-Wisp",
+          "topics": []
+        },
+        {
+          "description": "Green slimes inhabit the crypt. Their vial can hurt its user before restoring vitality, so it should not be described as a healing or rescue reward.",
+          "keyword": "slime",
+          "mob_vnum": 20614,
+          "name": "a green slime",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore the lake, battlefield, forest and crypt of the Barrow of the Quiosho. Meet the old warrior and prepare his head-for-amulet exchange while following leads about restless spirits, Borrix\u2019s salvage and the swanmay.",
+      "orientation": [
+        "Enter from a current Surface tributary or estuary. Learn the river, lake, battlefield and forest routes and prepare a safe return.",
+        "Seek the old orcish warrior beyond the overgrown battlefield. He exchanges the exact bloody head of the elven king for a Blood-eye amulet.",
+        "Bring the head loose in your inventory. A recovered or supplied copy fits without your own king victory, crypt exploration or earlier questions.",
+        "The crypt\u2019s coffins suggest a recovery route. The head, preserved elven remains and warhorse remains are different items; ordinary remains do not satisfy the warrior\u2019s request.",
+        "Some grate, weeds and drain passages start hidden and closed. Find an actual passage before opening it, and prepare for the water and drain hazards.",
+        "A guardian\u2019s key fits the wooden crypt doors. Borrix\u2019s chest uses a different key. Having a key is separate from finding, unlocking and passing a door.",
+        "Borrix\u2019s hut, the battlefield\u2019s spirits and the burial panels offer leads about salvage and the battlefield\u2019s past. The journal does not yet record a trade or spirit-release task here.",
+        "A glass eye associated with the skull monument has an existing exchange with a blind monk elsewhere. Recovering the eye here and completing his commission are separate milestones.",
+        "The regal swan and swanmay suggest a guardian story. Similar feathery tokens have different uses; the blessing scroll does not itself establish a transformation or rescue.",
+        "The warrior\u2019s accepted exchange stays recorded after the head is spent. His reward, any useful army or loyalty outcome, and care for living animals or spirits remain distinct stories."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "elftomb",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:20619;receive=I:20615;disappear=0",
+              "giver_vnum": 20607
+            }
+          ],
+          "id": "old-warrior-king-head",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Bring one exact head loose in your inventory. A recovered or supplied copy fits; present possession does not claim personal crypt exploration or a king victory.",
+              "id": "prepare-20619",
+              "item_vnums": [
+                20619
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the bloody head of the elven king"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:20619;receive=I:20615;disappear=0",
+                  "giver_vnum": 20607
+                }
+              ],
+              "hint": "The accepted head-for-amulet exchange stays recorded after the head is spent. Any further army or loyalty story needs its own useful outcome.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the old warrior\u2019s accepted exchange"
+            }
+          ],
+          "summary": "Offer the exact bloody head of the elven king for a Blood-eye amulet. A recovered or supplied copy fits without personal crypt or king-victory history. The accepted exchange is recorded separately from the warrior\u2019s larger army and loyalty story.",
+          "title": "The old warrior\u2019s king-head commission"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Starts in21024; seeks faith and accepts the miniature piece, not the large statue.",
           "keyword": "monk",
           "mob_vnum": 20928,

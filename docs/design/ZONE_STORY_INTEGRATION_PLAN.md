@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 228 authored journals, accounting-gated player surfaces, starter/town
+**Status: 229 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5472,3 +5472,8 @@ The [dossier](zone-stories/BANDIT_CANYONS.md) maps one supplied-compatible nativ
 ## Darkfall Forest integration extension
 
 The [dossier](zone-stories/DARKFALL_FOREST.md) maps one supplied-compatible exact trio/Agility-scroll exchange and eight broader stories with46 owned follow-ups. Separate accepted receipt and scroll UID from lasting agility/learning,raw4 bushes from initialized open route,actual music admission/scheduled grouped recipient effect from startup/verse echo,and scenery/loot from useful carriage,camp,pet,plant and traveler benefit. Bounded legacy starter/effect,Halgeous/Grellinar identity,wreck blocking,hidden-route and reserved-room questions need modern builder intent and fair separate fix/news scope. Existing journal schema suffices; concrete positive saved effects define future typed integration. Active READY accounting remains required and daily policy disabled.
+
+
+## Barrow of the Quiosho integration extension
+
+The [dossier](zone-stories/BARROW_OF_THE_QUIOSHO.md) maps one supplied-compatible head/amulet exchange and ten broader stories with40 owned follow-ups. Add typed acknowledged source/root/UID recovery and transfer provenance,actual access and surviving useful travel,logical NPC form/controller/episode transitions,and useful positive saved recipient effects where builders intentionally define them. Preserve independent native exchange ownership and supplied eligibility. Coffin distribution/renewal,trader/holding intent,hut copy,scroll compatibility,spirit release and army outcomes need owned decisions and fair separate fix/news scopes. Existing schema suffices for this working exchange; active READY accounting remains required and daily policy disabled.

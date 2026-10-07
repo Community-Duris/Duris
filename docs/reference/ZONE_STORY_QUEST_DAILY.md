@@ -364,3 +364,8 @@ The [dossier](../design/zone-stories/BANDIT_CANYONS.md) retains one Olat accepte
 ## Darkfall Forest daily qualification
 
 The [dossier](../design/zone-stories/DARKFALL_FOREST.md) retains one accepted Grellinar trio achievement/potential daily without changing totals. Actual supplied-compatible consumption,406 reward/save/replay,lasting agility and source/giver renewal remain separately qualified. Allfive local item reset rows are refused before active creation; mode2/rollover does not publish proof,repair a carriage,grant skills or protect a resident. New tracking requires active READY accounting; committed recovery remains separate and daily policy disabled.
+
+
+## Barrow of the Quiosho daily qualification
+
+The [dossier](../design/zone-stories/BARROW_OF_THE_QUIOSHO.md) retains one accepted warrior head/amulet achievement/potential daily without changing totals. Actual source/giver/reward adoption,UID custody,consumption,save/replay and useful beneficiary renewal remain separately qualified. All78 local item stock rows are refused before active creation;ordinary existing non-takeable O/P does not refill depleted containers. Mode2/rollover does not prove fair renewal. New tracking requires active READY accounting;committed recovery remains separate and daily policy disabled.
