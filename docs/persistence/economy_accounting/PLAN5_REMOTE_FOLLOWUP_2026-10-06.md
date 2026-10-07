@@ -959,3 +959,41 @@ tips. Refreshed primary `01c5ebf3698dff6815a643e39c16b81b6345fcd8` remains a sep
 qualification. Full R7/R8/Plan 5/release and native gameplay/backup/retention/
 growing-history/writer gates remain open. This packet is ready for the primary's
 nonblocking local notebook curator; no application or acknowledgement is claimed.
+
+
+## Completed required baseline control/reference pages — 2026-10-07
+
+[Exact qualification](PLAN5_FLATFILE_BASELINE_CONTROLS_QUALIFICATION_2026-10-07.md)
+on `codex/accounting-plan5`, base `b5fcd8434fffe46f2458f31cb51d0f5d13f58aaa`,
+adds durable catalogue-required control/reference pages. Original native evidence
+establishes missing native/CLI scope and rootless whole-book loss outside the
+retained-root page. The original maximum root fits its existing budget, so those
+limits stay unchanged. New pages select at most two required epoch books and
+check original heads/shards/root/witness membership under the existing independent
+budget and read-only lock. Complete empty-root history remains a separate gate.
+
+All 20/367 original authority results, 131 lifecycle cases, 46 lifecycle pages,
+69 baseline markers and 67 native/source/mobile canonical SQL methods pass with
+zero skips, plus 30 authority / 35 lifecycle baseline-control checks. Fresh
+MariaDB 10.11.14 and MySQL 8.0.46 canonical0062 preserve complete table inventories
+under SELECT-only roles. Both fresh 740-object production builds pass without
+warnings, errors or reused objects. The 55 coverage contracts and normal source
+gates pass; release still refuses missing executable writer evidence. Initial
+format/preparation observations remain preserved with successful explicit owned
+format checks and original prepared build launches.
+
+Final executable archive `a11cec5d30f3897202489a718734fd2d2e6e67f9a887403d2181ce265883f348` retains exact
+native/migration trees and original fixture-producing function bodies. Seal
+`flatfile-baseline-controls-seal-01-20261007/evidence.json` has SHA256
+`0a6241c431a68baa3efa145f05f84ffc4850adf5b110cab1572c9ff506117144`, 20,815 artifacts / 5,324,043,915 bytes.
+Delivery binds result/remote/clean source, nine owned files and seven preserved
+branch tips. No shared interface/schema/producer/coordinator/registry/activation
+or registration change/request is made. Primary remains sole owner of combined
+integration and publication; refreshed primary 66a3deee3 is a distinct candidate.
+
+This is the nonblocking local notebook curator packet, with no claimed application
+or acknowledgement and no cross-chat message. Complete book/orphan/current-native
+reconstruction, R7/R8, genuine gameplay/faults, combined backup/restore/retention,
+private producer/cold cases and release-host growth/memory/latency/writer gates
+remain open. No slice blocker, activation or production change. Wallet-root
+exclusions, inactive behavior and the declined inactive spell change remain.

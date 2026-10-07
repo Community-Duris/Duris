@@ -693,6 +693,228 @@ def check_authority_pages(binary, fixture, environment, build):
     return cases
 
 
+def check_baseline_control_pages(binary, fixture, audit, environment, build, *, lifecycle=False):
+    """Catalogue-required controls and original references, never full book history."""
+    import flatfile_economic_audit as pages
+    import time
+    from unittest import mock
+    from test_flatfile_restore_baseline_markers import retained
+    observations = []
+    destination = ROOT / "bin/tests" / ("baseline-control-pages-lifecycle" if lifecycle else "baseline-control-pages-authority")
+    destination.mkdir(mode=0o700)
+    with tempfile.TemporaryDirectory(prefix="baseline-control-pages-", dir=build) as temporary:
+        parent = Path(temporary)
+        root = parent / "state"
+        root.mkdir(mode=0o700)
+        evidence = root / "economic-evidence"
+
+        def install(files):
+            evidence.mkdir(mode=0o700, exist_ok=True)
+            for path in evidence.iterdir():
+                path.unlink()
+            for name, data in files.items():
+                (evidence / name).write_bytes(data)
+
+        def produce(mode):
+            install({})
+            ran = subprocess.run([str(fixture), str(root), mode], env=environment,
+                capture_output=True, text=True, timeout=600)
+            assert ran.returncode == 0 and not ran.stderr, ran
+            files = inventory(evidence)
+            assert files["authority.eal"][112:128] == bytes(16)
+            saved = destination / ("native-" + mode)
+            saved.mkdir(mode=0o700, exist_ok=True)
+            for name, data in files.items():
+                (saved / name).write_bytes(data)
+            return files
+
+        def raw(label, bucket=50, after="-", ceiling="-", valid=True):
+            before = retained(root)
+            ran = subprocess.run([str(binary), "--economic-baseline-controls-page", str(root), str(bucket), after, ceiling],
+                env=environment, capture_output=True, text=True, timeout=45)
+            assert retained(root) == before, label
+            assert ran.returncode == (0 if valid else 1), (label, ran)
+            assert ran.stderr == ("" if valid else "native_restore_qualification_failed\n"), (label, ran)
+            page = json.loads(ran.stdout) if valid else None
+            if valid:
+                assert page["rows"] <= 2 and page["verified"] + len(page["invalid_books"]) == page["rows"]
+            else:
+                assert not ran.stdout
+            observations.append(dict(label=label, exit=ran.returncode, page=page, native_state_unchanged=True))
+            return page
+
+        modes = ("mixed", "empty", "renamed", "retired", "retained", "maximum", "generic", "maximum-paged") if lifecycle else (
+            "baseline-empty", "baseline", "baseline-rich", "baseline-maximum", "baseline-full-index")
+        for mode in modes:
+            files = produce(mode)
+            page = raw("native " + mode)
+            count = 2 if mode == "maximum-paged" else 1
+            assert page["rows"] == page["verified"] == count and not page["invalid_books"]
+            assert page["range_exhausted"]
+            if mode in ("maximum-paged", "baseline-maximum", "baseline-full-index"):
+                before = retained(root)
+                measured = subprocess.run([str(audit), "baseline-budget", str(root)], env=environment,
+                    capture_output=True, text=True, timeout=45)
+                assert measured.returncode == 0 and not measured.stderr, measured
+                values = list(map(int, measured.stdout.split()))
+                assert values[:3] == [16384, 128*1024*1024, 8192] and values[-2:] == [count, count] and len(values) == 8, values
+                assert 0 < values[3] <= values[0] and 0 < values[4] <= values[1] and values[5] == 0
+                assert retained(root) == before
+                observations.append(dict(label=mode + " default budget", limits=values[:3], actual_physical_reads=values[3],
+                    actual_bytes=values[4], decoder_directory_entries=values[5], native_state_unchanged=True))
+                if mode == "baseline-full-index":
+                    assert max(len(data) for name, data in files.items() if name.endswith(".ebi")) == 88+65536*32
+
+        before = retained(root)
+        for mode in ("baseline-files", "baseline-bytes", "baseline-deadline"):
+            ran = subprocess.run([str(audit), mode, str(root)], env=environment,
+                capture_output=True, text=True, timeout=45)
+            assert ran.returncode == 1 and not ran.stdout and ran.stderr == "native_restore_qualification_failed\n", ran
+            assert retained(root) == before
+            observations.append(dict(label=mode + " refuses", native_state_unchanged=True))
+
+        controls = sorted(name for name in files if name.endswith("head.ebc"))
+        head = controls[0]
+        epoch = head[42:74]
+        for label, names in (("whole head loss", [head]), ("whole reservation loss", [head[:-8]+"0.ebi"]),
+                             ("whole required book loss", [name for name in files if name.startswith(head[:75])])):
+            damaged = dict(files)
+            for name in names:
+                damaged.pop(name)
+            install(damaged)
+            assert epoch in raw(label)["invalid_books"]
+        install(files)
+        for label, offset, value in (("changed opening", 88, struct.pack("<Q", 17)),
+                                     ("changed terminal revision", 120, struct.pack("<Q", 0)),
+                                     ("changed terminal operation", 128, bytes(16))):
+            damaged = dict(files)
+            change(damaged, head, offset, value)
+            install(damaged)
+            assert epoch in raw(label)["invalid_books"]
+        if not lifecycle:
+            # A rehashed member with a valid shard but no original witness membership.
+            shard = next(name for name, data in files.items() if name.startswith(head[:75]) and name.endswith(".ebi") and len(data) > 88)
+            damaged = dict(files)
+            content = bytearray(files[shard])
+            last_id = len(content)-24
+            old_id = struct.unpack_from("<Q", content, last_id)[0]
+            struct.pack_into("<Q", content, last_id, old_id+16)
+            damaged[shard] = rehash(content)
+            change(damaged, head, 144+int(shard[75],16)*32, hashlib.sha256(damaged[shard]).digest())
+            install(damaged)
+            assert epoch in raw("rehashed unbacked reservation member")["invalid_books"]
+        witness = next(name for name in files if name.startswith(head[:75]) and name.endswith(".eab"))
+        damaged = dict(files)
+        damaged.pop(witness)
+        install(damaged)
+        assert epoch in raw("missing original baseline witness")["invalid_books"]
+        install(files)
+        raw("noncanonical bucket refuses", bucket="050", valid=False)
+        raw("cursor without fence refuses", after=epoch, valid=False)
+        raw("foreign cursor refuses", after="32"+"ff"*15, ceiling=epoch, valid=False)
+
+        if lifecycle:
+            short = produce("paged-short")
+            first = raw("seven epoch first page")
+            extended = produce("paged")
+            second = raw("native append preserves fence", after=first["cursor"], ceiling=first["ceiling"])
+            assert second["rows"] == second["verified"] == 2 and second["bucket_rows"] == 9 and not second["range_exhausted"]
+            files = extended
+        else:
+            files = produce("baseline-rich")
+
+        progress = parent / "progress.json"
+        source = pages.source_digest(root, binary)
+        saved = pages.new_progress(source, time.time(), baseline_controls=True)
+        saved["rotation"] = 50
+        pages.progress_io.save(progress, saved, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+        command = [sys.executable, "-B", str(ROOT / "scripts/flatfile_economic_audit.py"), "--state-root", str(root),
+            "--qualifier", str(binary), "--progress", str(progress), "--scope", "baseline-controls"]
+        def load():
+            return pages.validate(pages.progress_io.load(progress, pages.MAX_PROGRESS_BYTES,
+                pages.AuditError, "flatfile audit progress"), source, time.time(), baseline_controls=True)
+        def cli(label, finding=False):
+            before = retained(root)
+            ran = subprocess.run(command, env=environment, capture_output=True, text=True, timeout=60)
+            assert ran.returncode == int(finding) and not ran.stderr, (label, ran)
+            assert retained(root) == before
+            report = json.loads(ran.stdout)
+            assert report["scope"] == "required_baseline_control_reference_page"
+            assert not any(report[key] for key in ("complete", "consistent_entire_sweep", "release_qualified", "baseline_controls_closed",
+                "baseline_books_closed", "lifecycle_receipts_closed", "orphan_namespace_closed", "native_holdings_compared"))
+            observations.append(dict(label=label, exit=ran.returncode, report=report, native_state_unchanged=True))
+            return report
+        assert cli("durable first control page")["consistent_page"] is True
+        anchored = load()
+        if lifecycle:
+            for _ in range(255):
+                report, updated = pages.scan(root, binary, load(), baseline_controls=True)
+                pages.progress_io.save(progress, updated, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+                assert report["examined_books"] == 0 and report["consistent_page"] and report["range_exhausted"]
+            assert load()["buckets"][50] == anchored["buckets"][50]
+            observations.append(dict(label="all 255 siblings rotate before resume", native_state_unchanged=True))
+            assert cli("durable resumed control page")["examined_books"] == 2
+        saved = load()
+        saved["rotation"] = 50
+        if not lifecycle:
+            saved["buckets"][50] = pages.new_progress(source, time.time(), baseline_controls=True)["buckets"][50]
+        pages.progress_io.save(progress, saved, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+        heads = sorted(name for name in files if name.endswith("head.ebc"))
+        target = heads[4] if lifecycle else heads[0]
+        damaged = dict(files)
+        damaged.pop(target)
+        install(damaged)
+        report = cli("missing required head sticky finding", True)
+        assert report["consistent_page"] is False and not report["page_refused"]
+        if lifecycle:
+            assert report["examined_books"] == 2 and report["verified_book_controls"] == 1
+        assert load()["findings"] == [dict(bucket=50, epoch_id=target[42:74], code="flatfile_baseline_control_invalid")]
+        install(files)
+        healthy = cli("healthy sibling preserves earlier finding", True)
+        assert healthy["bucket"] == 51 and healthy["consistent_page"] is True and healthy["total_finding_count"] == 1
+        saved = load()
+        saved["rotation"] = 50
+        pages.progress_io.save(progress, saved, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+        selected = saved["buckets"][50].copy()
+        damaged = dict(files)
+        content = bytearray(files["authority.eal"])
+        content[-1] ^= 1
+        damaged["authority.eal"] = content
+        install(damaged)
+        refused = cli("refusal rotates without cursor advancement", True)
+        assert refused["page_refused"] and not refused["consistent_page"] and not refused["range_exhausted"]
+        assert load()["buckets"][50] == selected and load()["rotation"] == 51
+        install(files)
+        with mock.patch.object(pages.subprocess, "run", side_effect=subprocess.TimeoutExpired("qualifier",45)):
+            report, updated = pages.scan(root, binary, saved, baseline_controls=True)
+        assert report["page_refused"] and not report["consistent_page"] and updated["buckets"][50] == selected
+        observations.append(dict(label="timeout rotates without cursor advancement", native_state_unchanged=True))
+        original = progress.read_bytes()
+        with mock.patch.object(pages.progress_io.os, "replace", side_effect=OSError("interrupted")):
+            try:
+                pages.progress_io.save(progress, updated, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+            except OSError:
+                pass
+            else:
+                raise AssertionError("interrupted control progress was published")
+        assert progress.read_bytes() == original
+        observations.append(dict(label="interrupted checkpoint preserves original", native_state_unchanged=True))
+        for label, altered in (("wrong scope", command[:-2]), ("inside native path", [*command,"--progress",str(root/"forbidden.json")])):
+            ran = subprocess.run(altered, env=environment, capture_output=True, text=True, timeout=60)
+            assert ran.returncode == 1 and not ran.stdout and ran.stderr == "flatfile_economic_audit_refused\n", (label, ran)
+            assert progress.read_bytes() == original
+            observations.append(dict(label=label, native_state_unchanged=True))
+        with pages.progress_io.lock(progress, pages.AuditError, "flatfile audit progress"):
+            ran = subprocess.run(command, env=environment, capture_output=True, text=True, timeout=60)
+            assert ran.returncode == 1 and not ran.stdout and ran.stderr == "flatfile_economic_audit_refused\n", ran
+        assert progress.read_bytes() == original
+        observations.append(dict(label="concurrent checkpoint owner refuses", native_state_unchanged=True))
+    report = dict(cases=len(observations),observations=observations,skips=0,original_native_fixtures=True,
+                  complete_book_history_qualified=False,release_qualified=False)
+    (destination/"evidence.json").write_text(json.dumps(report,indent=2)+"\n")
+    return report
+
+
 def main():
     os.umask(0o077)
     with tempfile.TemporaryDirectory(prefix="duris-restore-authority-build-",
@@ -729,6 +951,22 @@ int main(int argc, char **argv) {
             restore_economic_authority::scoped_audit_budget scope(budget);
             restore_economic_authority::authority_read_lock lock(argv[2]);
             restore_economic_records::checker(argv[2]).page(1, {}, {}, false);
+        } else if (std::string(argv[1]).starts_with("baseline-")) {
+            using namespace restore_economic_authority;
+            audit_budget budget;
+            const auto files = budget.remaining_files, bytes = budget.remaining_bytes, entries = budget.remaining_entries;
+            const auto mode = std::string(argv[1]);
+            if (mode == "baseline-files") budget.remaining_files = 1;
+            else if (mode == "baseline-bytes") budget.remaining_bytes = 1;
+            else if (mode == "baseline-deadline") budget.deadline = std::chrono::steady_clock::now();
+            else need(mode == "baseline-budget");
+            scoped_audit_budget scope(budget);
+            authority_read_lock lock(argv[2]);
+            auto result = restore_economic_records::checker(argv[2]).baseline_controls_page(50, {}, {}, false);
+            lock.finish(); budget.checkpoint();
+            std::cout << files << " " << bytes << " " << entries << " " << files-budget.remaining_files
+                      << " " << bytes-budget.remaining_bytes << " " << entries-budget.remaining_entries
+                      << " " << result.rows << " " << result.verified << "\\n";
         } else if (std::string(argv[1]) == "authority-mapping-budget" ||
                    std::string(argv[1]) == "authority-native-budget") {
             using namespace restore_economic_authority;
@@ -767,6 +1005,7 @@ int main(int argc, char **argv) {
                         "-fno-pie", "-no-pie", "-I" + str(ROOT / "scripts"), str(audit_source),
                         "-lcrypto", "-o", str(audit)], check=True)
         limit_cases = check_audit_limits(audit, binary, fixture, environment, build)
+        baseline_control_pages = check_baseline_control_pages(binary, fixture, audit, environment, build)
         with tempfile.TemporaryDirectory(prefix="duris-root-page-budget-", dir=build) as budget_root:
             budget_root = Path(budget_root)
             produced = subprocess.run([str(fixture), str(budget_root), "source-claims"],
@@ -1813,6 +2052,7 @@ int main(int argc, char **argv) {
                           "audit_limit_cases": limit_cases,
                           "root_page_cases": root_page_cases,
                           "authority_page_cases": authority_page_cases,
+                          "baseline_control_pages": baseline_control_pages,
                           "qualifier_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
                           "fixture_sha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
                           "sanitized_reader_sha256": hashlib.sha256(audit.read_bytes()).hexdigest()}))
