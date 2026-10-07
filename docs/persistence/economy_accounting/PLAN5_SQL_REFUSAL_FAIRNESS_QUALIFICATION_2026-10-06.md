@@ -95,7 +95,7 @@ applies the exact owned authoritative migration chain to sequence 62.
 DURIS_REGRESSION_BUILD_CACHE=off \
 DURIS_PLAN5_CANONICAL_NATIVE=1 DURIS_PLAN5_CANONICAL_SOURCE=1 \
 DURIS_PLAN5_CANONICAL_MOBILE=1 \
-DURIS_PLAN5_CANONICAL_6972=/workspace/bin/tests/sql-refusal-canonical \
+DURIS_PLAN5_CANONICAL_ARTIFACTS=/workspace/bin/tests/sql-refusal-canonical \
 python3 -u -B tests/async/test_economic_sql_canonical_audit.py
 ```
 
@@ -184,3 +184,11 @@ journal and private producer qualification remain separate. Maintained accountin
 stays inactive; wallet-root exclusions and the declined inactive spell-path
 change remain exact. No deployment, PR merge, production mutation, activation
 or audit auto-correction occurs. Full Plan 5 and release are incomplete.
+
+The reproduction command's artifact environment-variable name was corrected in
+a separate documentation follow-up. Its original protected
+`sql-refusal-fairness-green-01-20261006/observed-results.json` already records the
+executed `DURIS_PLAN5_CANONICAL_ARTIFACTS` name and exact artifact path. This text
+correction changes no source, native inputs, recorded results or qualification
+scope. The subsequent lifecycle-budget source and delivery remain independently
+bound to their own commits and archives.

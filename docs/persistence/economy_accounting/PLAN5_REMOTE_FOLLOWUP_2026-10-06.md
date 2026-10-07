@@ -894,3 +894,16 @@ claimed. Missing lifecycle pages are established and remain next; complete
 reconstruction/R7/R8/genuine producer/cold/combined lifecycle/release-host gates
 remain open. No independent slice blocker, maintained activation or production
 change; primary owns combined candidate integration and qualification.
+
+## SQL report reproduction command correction
+
+The prior SQL scheduling qualification report now spells the artifact environment
+variable `DURIS_PLAN5_CANONICAL_ARTIFACTS`, matching its original protected
+execution record and source. An artifact-count placeholder had changed only the
+published command text. The correction follows the lifecycle budget commit
+`8a137a688a6164ab5891a4d68e271a46a4fb0015` as a separate documentation slice;
+native/code inputs and all recorded qualification results remain exact. Its
+protected `sql-report-command-correction-delivery-01-20261006` receipt binds the
+result/remote SHA, unchanged source payloads and seven preserved ancestor tips.
+This is part of the nonblocking local notebook curator packet, with no broader
+runtime, primary-candidate or release claim.
