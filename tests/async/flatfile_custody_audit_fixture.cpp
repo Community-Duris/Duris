@@ -1,5 +1,7 @@
 #include "../../scripts/qualify_flatfile_native_custody.h"
 #include "../../scripts/qualify_flatfile_native_world.h"
+#include "../../scripts/qualify_flatfile_native_locker.h"
+#include "flatfile/flatfile_locker_repository.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_store.h"
 #include "flatfile/flatfile_world_item_repository.h"
@@ -121,6 +123,90 @@ static int world(const std::string &root, const std::vector<uint8_t> &encoded, b
 	return 0;
 }
 
+static int locker(const std::string &root, const std::vector<uint8_t> &encoded, bool expected)
+{
+	std::filesystem::create_directories(root + "/domains");
+	assert(chmod(root.c_str(), 0700) == 0 && chmod((root + "/domains").c_str(), 0700) == 0);
+	std::string error;
+	assert(flatfile_atomic_write(root + "/domains", "locker_catalog", encoded, &error));
+	std::vector<flatfile_locker_record> native;
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(root, &error));
+		const auto result =
+			flatfile_locker_recovery_list_locked(root, lock, &native, &error);
+		assert((result == flatfile_locker_result::ok) == expected);
+	}
+	bool accepted = false;
+	size_t item_count = 0;
+	try
+	{
+		const auto independent = restore_native_locker::decode_locker(encoded);
+		accepted = true;
+		assert(expected && independent.lockers == native.size());
+		std::vector<flatfile_locker_access_record> access;
+		// Original full native API only in this initialized private journal-free fixture.
+		assert(flatfile_locker_list(root, &native, &access, &error) ==
+		       flatfile_locker_result::ok);
+		assert(independent.access == access.size());
+		size_t index = 0;
+		for (const auto &record : native)
+			for (const auto &chest : record.chests)
+			{
+				assert(index < independent.chests.size());
+				const auto &decoded = independent.chests[index++];
+				assert(decoded.location.type == 5 &&
+				       decoded.location.id == record.locker_id &&
+				       decoded.location.context == chest.chest_id &&
+				       decoded.locker_revision == record.revision &&
+				       decoded.revision == chest.revision &&
+				       decoded.items.size() == chest.items.size());
+				for (size_t i = 0; i < decoded.items.size(); ++i)
+				{
+					++item_count;
+					const auto &literal = decoded.items[i];
+					auto item = chest.items[i];
+					assert(item.parent_index == literal.parent &&
+					       item.equipment_slot == literal.equipment);
+					item.parent_index = -1;
+					std::vector<uint8_t> canonical;
+					assert(player_item_snapshot_list_encode({ item },
+										&canonical) ==
+					       player_snapshot_codec_result::ok);
+					assert(restore_economic_authority::same(
+						std::span(canonical).subspan(8),
+						literal.encoded.subspan(4)));
+				}
+			}
+		assert(index == independent.chests.size());
+	}
+	catch (const std::runtime_error &)
+	{
+		assert(!expected);
+	}
+	assert(accepted == expected);
+	if (expected)
+	{
+		restore_economic_authority::audit_budget budget;
+		(void)restore_native_locker::audit(root, budget);
+		budget.remaining_bytes = 0;
+		bool refused = false;
+		try
+		{
+			(void)restore_native_locker::audit(root, budget);
+		}
+		catch (const restore_economic_authority::audit_budget_refused &)
+		{
+			refused = true;
+		}
+		assert(refused);
+	}
+	std::cout << "{\"native_accepted\":" << (expected ? "true" : "false")
+		  << ",\"independent_accepted\":" << (accepted ? "true" : "false")
+		  << ",\"items\":" << item_count << ",\"item_fields_match\":true}\n";
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	assert(argc == 4 || argc == 5);
@@ -130,6 +216,8 @@ int main(int argc, char **argv)
 	const bool expected = std::string(argv[3]) == "1";
 	if (argc == 5)
 	{
+		if (std::string(argv[4]) == "locker")
+			return locker(root, encoded, expected);
 		assert(std::string(argv[4]) == "world");
 		return world(root, encoded, expected);
 	}

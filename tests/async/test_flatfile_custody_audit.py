@@ -21,7 +21,7 @@ import build_restore_qualifier as qualifier
 
 UNITS = ("flatfile_item_repository", "flatfile_authority_transaction", "flatfile_store",
          "player_snapshot_codec", "item_transfer_command", "critical_command", "economic_source_event",
-         "flatfile_world_item_repository")
+         "flatfile_world_item_repository", "flatfile_locker_repository")
 
 
 def build_fixture(destination, native_source=ROOT):
@@ -609,34 +609,314 @@ def check_world_findings(fixture, binary, build):
     return rows
 
 
-def check_boundaries(fixture, binary, build, world=False):
+def locker_model(version=2):
+    return dict(version=version, revision=1, lockers=[
+        dict(id=1, name=b"erased-player-locker", pid=7, association=0, account=None,
+             racewar=-1, race=-128, revision=90, chests=[
+                 dict(id=10, name=b"public", password=b"", public=1, sort=b"", revision=80,
+                      items=[world_item(101, kind=1, vnum=57), world_item(102, parent=0)]),
+                 dict(id=11, name=b"private", password=b"private-test-only", public=0,
+                      sort=b"\x00\xff", revision=81, items=[world_item(103)])])],
+        access=[dict(owner=b"erased-player-locker", visitor=b"erased-visitor", revision=9)])
+
+
+def locker_frame(value):
+    def text(value):
+        return struct.pack("<I", len(value)) + value
+    body = struct.pack("<2I", len(value["lockers"]), len(value["access"]))
+    for row in value["lockers"]:
+        body += struct.pack("<I", row["id"]) + text(row["name"]) + struct.pack("<2i", row["pid"], row["association"])
+        if value["version"] == 2:
+            present = row.get("account_present", int(row["account"] is not None))
+            body += struct.pack("<B", present)
+            if present:
+                account, side = row["account"] or (b"test", 0)
+                body += text(account) + struct.pack("<b", side)
+        body += struct.pack("<bbQI", row["racewar"], row["race"], row["revision"], len(row["chests"]))
+        for chest in row["chests"]:
+            body += struct.pack("<I", chest["id"]) + text(chest["name"]) + text(chest["password"])
+            body += struct.pack("<B", chest["public"]) + text(chest["sort"]) + struct.pack("<Q", chest["revision"])
+            encoded = chest.get("encoded", struct.pack("<I", len(chest["items"])) + b"".join(chest["items"]))
+            body += struct.pack("<I", len(encoded)) + encoded
+    for row in value["access"]:
+        body += text(row["owner"]) + text(row["visitor"]) + struct.pack("<Q", row["revision"])
+    return b"DURLOCK\0" + struct.pack("<IIQ", value["version"], len(body), value["revision"]) + hashlib.sha256(body).digest() + body
+
+
+def locker_custody(value):
+    owners, items = set(), []
+    for locker in value["lockers"]:
+        for chest in locker["chests"]:
+            owner = (5, locker["id"], chest["id"])
+            owners.add((*owner, 0))
+            rows = chest["items"]
+            for i, raw in enumerate(rows):
+                uid, = struct.unpack_from("<Q", raw, 6)
+                parent, = struct.unpack_from("<i", raw)
+                root = i
+                while struct.unpack_from("<i", rows[root])[0] >= 0:
+                    root = struct.unpack_from("<i", rows[root])[0]
+                detached = struct.pack("<Ii", 1, -1) + raw[4:]
+                items.append(dict(uid=uid, root=struct.unpack_from("<Q", rows[root], 6)[0],
+                    parent=0 if parent < 0 else struct.unpack_from("<Q", rows[parent], 6)[0], owner=owner,
+                    revision=1, vnum=struct.unpack_from("<i", raw, 22)[0], state=1, equipment=0,
+                    payload=detached if raw[26] == 20 and len(detached) <= 128 * 1024 else b""))
+    return dict(version=8, revision=1, owners=sorted(owners), items=sorted(items, key=lambda row: row["uid"]), operations=[])
+
+
+def locker_cases():
+    result = []
+    def add(label, value, accepted):
+        result.append((label, locker_frame(value), accepted, value if accepted else None))
+    for version in (1, 2):
+        add("version-"+str(version), locker_model(version), True)
+        value=locker_model(version);value["lockers"]=[];value["access"]=[]
+        add("empty-"+str(version),value,True)
+    value=locker_model();value["lockers"][0].update(pid=0,association=2**31-1)
+    add("association-owner",value,True)
+    for side in (0,4):
+        value=locker_model();row=value["lockers"][0]
+        row.update(pid=0,account=(b"erased-account",side),racewar=side,name=b"account.erased-account."+str(side).encode()+b".locker")
+        value["access"][0]["owner"]=row["name"]
+        add("account-owner-"+str(side),value,True)
+    value=locker_model();row=value["lockers"][0];row.update(id=2**32-1,pid=2**31-1,revision=2**64-1)
+    value["revision"]=2**64-1;row["chests"][0]["id"]=2**32-2;row["chests"][1]["id"]=2**32-1
+    row["chests"][1].update(revision=2**64-1,items=[world_item(2**64-1)])
+    add("full-width-identities-clocks",value,True)
+    value=locker_model();value["lockers"][0]["chests"][1].update(password=bytes(range(64)),sort=b"\x00\xff"*2048)
+    add("binary-private-policy-at-bound",value,True)
+    value=locker_model();value["lockers"][0]["chests"][1]["password"]=b""
+    add("empty-private-password",value,True)
+    value=locker_model();row=value["lockers"][0];row["name"]=b"x"*100;row["chests"][0]["name"]=b"x"*32
+    value["access"][0].update(owner=row["name"],visitor=b"x"*255)
+    add("maximum-names",value,True)
+    value=locker_model();value["lockers"][0]["chests"][1]["items"]=[world_item(103,strings=(b"\x00\xff",b"",b"",b"x"*4096))]
+    add("complete-binary-item-fields",value,True)
+    value=locker_model();value["lockers"][0]["chests"][1]["items"]=[]
+    add("empty-chest-forest",value,True)
+    for label, field, replacement in (
+        ("zero-id","id",0),("zero-clock","revision",0),("no-owner","pid",0),
+        ("negative-pid","pid",-1),("negative-association","association",-1),
+        ("two-owners","association",1),("account-present-bool","account_present",2),
+        ("reserved-account-prefix","name",b"account.test.0.locker"),
+        ("no-chests","chests",[])):
+        value=locker_model();value["lockers"][0][field]=replacement;value["access"]=[]
+        add("locker-"+label,value,False)
+    for scope, maximum in (("locker",100),("chest",32),("visitor",255)):
+        for label,name in (("empty",b""),("uppercase",b"Upper"),("space",b"has space"),
+                           ("control",b"x\x00"),("DEL",b"x\x7f"),("high-byte",b"x\x80"),("over-bound",b"x"*(maximum+1))):
+            value=locker_model()
+            if scope=="locker":value["lockers"][0]["name"]=name;value["access"]=[]
+            elif scope=="chest":value["lockers"][0]["chests"][0]["name"]=name
+            else:value["access"][0]["visitor"]=name
+            add(scope+"-name-"+label,value,False)
+    for label,account,side,racewar,name in (
+        ("uppercase",b"Upper",0,0,b"account.Upper.0.locker"),
+        ("empty",b"",0,0,b"account..0.locker"),
+        ("over-name",b"x"*51,0,0,b"account."+b"x"*51+b".0.locker"),
+        ("negative-side",b"test",-1,-1,b"account.test.-1.locker"),
+        ("over-side",b"test",5,5,b"account.test.5.locker"),
+        ("racewar-mismatch",b"test",0,1,b"account.test.0.locker"),
+        ("name-mismatch",b"test",0,0,b"other")):
+        value=locker_model();value["lockers"][0].update(pid=0,account=(account,side),racewar=racewar,name=name);value["access"]=[]
+        add("account-"+label,value,False)
+    for label,field,replacement in (("zero-id","id",0),("zero-clock","revision",0),
+        ("public-bool","public",2),("public-password","password",b"secret"),
+        ("sort-over-bound","sort",b"x"*4097),("no-encoded-items","encoded",b"")):
+        value=locker_model();value["lockers"][0]["chests"][0][field]=replacement
+        add("chest-"+label,value,False)
+    value=locker_model();value["lockers"][0]["chests"][1]["password"]=b"x"*65
+    add("password-over-bound",value,False)
+    for label,second in (("no-public",0),("two-public",1)):
+        value=locker_model();row=value["lockers"][0]["chests"]
+        row[0]["public"]=0 if label=="no-public" else 1;row[1].update(public=second,password=b"")
+        add(label,value,False)
+    for label,scope,field in (("duplicate-locker-id","locker","id"),("duplicate-locker-name","locker","name"),
+                             ("duplicate-pid-owner","locker","pid"),("duplicate-chest-id","chest","id"),
+                             ("duplicate-chest-name","chest","name")):
+        value=locker_model()
+        if scope=="locker":
+            other=copy.deepcopy(value["lockers"][0]);other.update(id=2,name=b"other",pid=8)
+            other["chests"][0].update(id=12,items=[]);other["chests"][1].update(id=13,items=[])
+            other[field]=value["lockers"][0][field];value["lockers"].append(other)
+        else:value["lockers"][0]["chests"][1][field]=value["lockers"][0]["chests"][0][field]
+        add(label,value,False)
+    value=locker_model();value["lockers"][0]["chests"].reverse();add("unsorted-chests",value,False)
+    value=locker_model();value["lockers"][0]["chests"][1]["items"]=[world_item(102)];add("duplicate-item-uid",value,False)
+    for label,raw in (("zero-uid",world_item(0)),("zero-vnum",world_item(103,vnum=0)),
+                      ("forward-parent",world_item(103,parent=0))):
+        value=locker_model();value["lockers"][0]["chests"][1]["items"]=[raw];add(label,value,False)
+    value=locker_model();raw=bytearray(world_item(103));struct.pack_into("<h",raw,4,0)
+    value["lockers"][0]["chests"][1]["items"]=[bytes(raw)];add("equipped-chest-item",value,False)
+    for label,depth,accepted in (("depth-exact",32,True),("depth-over",33,False)):
+        value=locker_model();value["lockers"][0]["chests"][1]["items"]=[world_item(1000+i,parent=i-1) for i in range(depth)]
+        add(label,value,accepted)
+    for label,field,replacement in (("unknown-access-owner","owner",b"other"),("zero-access-clock","revision",0)):
+        value=locker_model();value["access"][0][field]=replacement;add(label,value,False)
+    value=locker_model();value["access"].append(copy.deepcopy(value["access"][0]));add("duplicate-access",value,False)
+    value=locker_model();value["access"].append(dict(owner=value["access"][0]["owner"],visitor=b"aaa",revision=1));add("unsorted-access",value,False)
+    original=locker_frame(locker_model())
+    def raw(label,encoded):result.append((label,encoded,False,None))
+    def changed(label,offset,value):
+        body=bytearray(original);body[offset:offset+len(value)]=value
+        if offset>=56:body[24:56]=hashlib.sha256(body[56:]).digest()
+        raw(label,bytes(body))
+    for label,offset,data in (("magic",0,b"X"),("version-zero",8,struct.pack("<I",0)),
+        ("version-three",8,struct.pack("<I",3)),("length",12,struct.pack("<I",0)),
+        ("catalog-clock-zero",16,bytes(8)),("checksum",24,b"X"),
+        ("locker-count-over",56,struct.pack("<I",65537)),("access-count-over",60,struct.pack("<I",1048577))):
+        changed(label,offset,data)
+    raw("truncated-header",original[:55]);raw("truncated-body",original[:-1]);raw("trailing-byte",original+b"x")
+    assert len({row[0] for row in result})==len(result)
+    return result
+
+
+def check_locker_catalogs(fixture, binary, build):
+    rows = []
+    for label, encoded, expected, value in locker_cases():
+        directory = build / ("locker-format-" + label);directory.mkdir(mode=0o700)
+        incoming = directory / "locker.bin";incoming.write_bytes(encoded);root = directory / "state"
+        native = subprocess.run([str(fixture), str(root), str(incoming), "1" if expected else "0", "locker"], capture_output=True, text=True, timeout=30)
+        assert native.returncode == 0 and not native.stderr, (label, native.stdout, native.stderr)
+        observed = json.loads(native.stdout)
+        assert observed["native_accepted"] == observed["independent_accepted"] == expected
+        if expected:
+            custody = directory / "custody.bin";custody.write_bytes(frame(locker_custody(value)))
+            result = subprocess.run([str(fixture), str(root), str(custody), "1"], capture_output=True, text=True, timeout=30)
+            assert result.returncode == 0 and not result.stderr, (label, result)
+        before = inventory(root)
+        result = subprocess.run([str(binary), "--economic-locker-custody-audit", str(root)], capture_output=True, text=True, timeout=30)
+        assert inventory(root) == before and incoming.read_bytes() == encoded
+        assert all(secret not in result.stdout for secret in ("erased-player-locker", "erased-visitor", "erased-account", "private-test-only", "private-synthetic-literal"))
+        if expected:
+            report = json.loads(result.stdout)
+            assert result.returncode == 0 and not result.stderr and report["locker_owner_literals_verified"], (label, result)
+            assert report["locker_items"] == observed["items"]
+        else:
+            assert result.returncode == 1 and not result.stdout and result.stderr == "native_restore_qualification_failed\n", (label, result)
+        (directory / "operator.json").write_text(json.dumps(dict(command=result.args, exit=result.returncode, stdout=result.stdout, stderr=result.stderr), indent=2) + "\n")
+        (directory / "authority-before-after.json").write_text(json.dumps(before, sort_keys=True) + "\n")
+        row = dict(case=label, accepted=expected, native=observed, input_sha256=hashlib.sha256(encoded).hexdigest(), authority_unchanged=True)
+        rows.append(row);print("LOCKER_CATALOG " + json.dumps(row, sort_keys=True), flush=True)
+    (build / "locker-observations.json").write_text(json.dumps(rows, indent=2) + "\n")
+    return rows
+
+
+def check_locker_findings(fixture, binary, build):
+    cases = []
+
+    def add(label, locker, custody, counts):
+        cases.append((label, locker, custody, counts))
+
+    base = locker_model();owned = locker_custody(base)
+    add("healthy", base, owned, {})
+    for state in (2, 3):
+        custody = copy.deepcopy(owned);custody["items"][1]["state"] = state
+        add("state-" + str(state), base, custody, {"locker_uid_not_active": 1})
+    for label, location in (("owner", (1, 7, 0)), ("context", (5, 1, 99))):
+        custody = copy.deepcopy(owned);custody["items"][1]["owner"] = location
+        custody["owners"] = sorted({*custody["owners"], (*location, 0)})
+        add(label, base, custody, {"locker_owner_mismatch": 1})
+    for field, replacement in (("root", 999), ("parent", 0)):
+        custody = copy.deepcopy(owned);custody["items"][1][field] = replacement
+        add(field, base, custody, {"locker_item_topology_mismatch": 1})
+    custody = copy.deepcopy(owned);custody["items"][0]["vnum"] += 1
+    add("vnum", base, custody, {"locker_item_vnum_mismatch": 1})
+    custody = copy.deepcopy(owned);custody["items"][2].update(owner=(1, 7, 0), equipment=1)
+    custody["owners"] = sorted({*custody["owners"], (1, 7, 0, 0)})
+    add("equipment", base, custody, {"locker_owner_mismatch": 1, "locker_item_equipment_mismatch": 1})
+    for label, fmt, offset, replacement in (("generated", "q", 14, -55), ("mask", "B", 27, 255),
+            ("coin-value", "i", 44, 9), ("other-value", "i", 72, -9), ("timer", "q", 100, -(1 << 63)),
+            ("flag", "I", 140, (1 << 32) - 1), ("weight", "i", 144, -15), ("material", "b", 148, -128),
+            ("cost", "i", 149, 33), ("condition", "h", 153, -20), ("craftsmanship", "h", 155, 25),
+            ("bitvector", "Q", 189, (1 << 64) - 1), ("affect", "h", 211, -32768), ("type", "B", 26, 1)):
+        locker = copy.deepcopy(base);raw = bytearray(locker["lockers"][0]["chests"][1]["items"][0]);struct.pack_into("<" + fmt, raw, offset, replacement)
+        locker["lockers"][0]["chests"][1]["items"][0] = bytes(raw)
+        add(label, locker, owned, {"locker_coin_literal_mismatch": 1})
+    for index in range(4):
+        locker = copy.deepcopy(base);strings = [b""] * 4;strings[index] = b"private-synthetic-literal"
+        locker["lockers"][0]["chests"][1]["items"] = [world_item(103, strings=strings)]
+        add("string-" + str(index), locker, owned, {"locker_coin_literal_mismatch": 1})
+    for label, kwargs in (("dynamic", dict(dynamic_count=1)), ("description", dict(spell_counts=(1,)))):
+        locker = copy.deepcopy(base);locker["lockers"][0]["chests"][1]["items"] = [world_item(103, **kwargs)]
+        add(label, locker, owned, {"locker_coin_literal_mismatch": 1})
+    locker = copy.deepcopy(base);locker["lockers"][0]["chests"][0]["items"].pop()
+    add("missing-literal", locker, owned, {"locker_uid_missing_literal": 1})
+    locker = copy.deepcopy(base);locker["lockers"][0]["chests"][1]["items"].append(world_item(200))
+    add("unadmitted", locker, owned, {"locker_uid_unadmitted": 1})
+    locker = copy.deepcopy(base);locker["lockers"][0]["chests"][1]["items"].extend(world_item(200 + i) for i in range(101))
+    add("bounded-details", locker, owned, {"locker_uid_unadmitted": 101})
+    locker = copy.deepcopy(base);raw = bytearray(locker["lockers"][0]["chests"][1]["items"][0]);struct.pack_into("<i", raw, 44, -1)
+    locker["lockers"][0]["chests"][1]["items"] = [bytes(raw)]
+    add("negative-native-coin", locker, locker_custody(locker), {"locker_negative_coin_value": 1})
+    custody = copy.deepcopy(owned)
+    for item in custody["items"]:item["payload"] = b""
+    add("legacy-inline-absent", base, custody, {})
+    custody = copy.deepcopy(owned);custody["owners"].insert(0, (1, 7, 0, 0))
+    custody["items"].append(dict(uid=300, root=300, parent=0, owner=(1, 7, 0), revision=1, vnum=57, state=1, payload=b"", equipment=0))
+    add("other-owner-uncompared", base, custody, {})
+    add("locker-absent", None, owned, {"custody_locker_catalog_missing": 1, "locker_uid_missing_literal": 3})
+    add("custody-absent", base, None, {"locker_custody_catalog_missing": 1, "locker_uid_unadmitted": 3})
+    rows = []
+    for label, locker, custody, counts in cases:
+        directory = build / ("locker-finding-" + label);directory.mkdir(mode=0o700);root = directory / "state"
+        if custody is not None:
+            path = directory / "custody.bin";path.write_bytes(frame(custody))
+            result = subprocess.run([str(fixture), str(root), str(path), "1"], capture_output=True, text=True, timeout=30)
+            assert result.returncode == 0 and not result.stderr, (label, result)
+        if locker is not None:
+            path = directory / "locker.bin";path.write_bytes(locker_frame(locker))
+            result = subprocess.run([str(fixture), str(root), str(path), "1", "locker"], capture_output=True, text=True, timeout=30)
+            assert result.returncode == 0 and not result.stderr, (label, result)
+        before = inventory(root);reports = []
+        for limit in (0, 1, 100):
+            command = [str(binary), "--economic-locker-custody-audit", str(root), "--limit", str(limit)]
+            result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+            assert result.returncode == bool(counts) and not result.stderr, (label, limit, result)
+            assert inventory(root) == before
+            report = json.loads(result.stdout)
+            assert report["finding_counts"] == counts and report["finding_count"] == sum(counts.values()), (label, report)
+            assert len(report["findings"]) == min(limit, report["finding_count"])
+            assert report["findings_truncated"] == (report["finding_count"] > limit)
+            assert report["locker_owner_literals_verified"] == (not counts)
+            assert not any(report[name] for name in ("other_owner_literals_compared", "native_holdings_compared", "item_history_verified", "full_R7_qualified", "release_qualified"))
+            assert all(secret not in result.stdout for secret in ("erased-player-locker", "erased-visitor", "erased-account", "private-test-only", "private-synthetic-literal"))
+            reports.append(dict(command=command, exit=result.returncode, report=report))
+        row = dict(case=label, counts=counts, reports=reports, authority_unchanged=True);rows.append(row)
+        (directory / "evidence.json").write_text(json.dumps(row, indent=2) + "\n")
+        (directory / "authority-before-after.json").write_text(json.dumps(before, sort_keys=True) + "\n")
+        print("LOCKER_FINDING " + json.dumps(dict(case=label, counts=counts, cuts=3, authority_unchanged=True)), flush=True)
+    (build / "locker-findings.json").write_text(json.dumps(rows, indent=2) + "\n")
+    return rows
+
+def check_boundaries(fixture, binary, build, world=False, locker=False):
     import fcntl
 
-    prefix = "world-boundary-" if world else "boundary-"
+    prefix = "locker-boundary-" if locker else "world-boundary-" if world else "boundary-"
     golden = build / (prefix + "golden")
     incoming = build / (prefix + "input.bin")
-    incoming.write_bytes(frame(world_custody(world_model())) if world else frame(model()))
+    incoming.write_bytes(frame(locker_custody(locker_model())) if locker else frame(world_custody(world_model())) if world else frame(model()))
     native = subprocess.run([str(fixture), str(golden), str(incoming), "1"],
                             capture_output=True, text=True, timeout=30)
     assert native.returncode == 0 and not native.stderr, native
-    if world:
-        incoming.write_bytes(world_frame(world_model()))
-        native = subprocess.run([str(fixture), str(golden), str(incoming), "1", "world"],
+    if world or locker:
+        incoming.write_bytes(locker_frame(locker_model()) if locker else world_frame(world_model()))
+        native = subprocess.run([str(fixture), str(golden), str(incoming), "1", "locker" if locker else "world"],
                                 capture_output=True, text=True, timeout=30)
         assert native.returncode == 0 and not native.stderr, native
     rows = []
     labels = ("healthy", "empty", "uninitialized", "missing-lock", "held-lock",
                   "critical-journal", "currency-journal", "player-journal", "public-file",
                   "public-root", "symlink", "dangling-symlink", "hardlink")
-    for label in labels + (("zero-file",) if world else ()):
+    for label in labels + (("zero-file",) if world or locker else ()):
         root = build / (prefix + label)
         shutil.copytree(golden, root, copy_function=shutil.copy2)
         domains = root / "domains"
-        catalog = domains / ("world_item_catalog" if world else "item_ownership")
+        catalog = domains / ("locker_catalog" if locker else "world_item_catalog" if world else "item_ownership")
         held = None
         if label in ("empty", "uninitialized"):
             catalog.unlink()
-            if world:
+            if world or locker:
                 (domains / "item_ownership").unlink()
             if label == "uninitialized":
                 shutil.rmtree(domains)
@@ -662,7 +942,7 @@ def check_boundaries(fixture, binary, build, world=False):
         elif label == "zero-file":
             catalog.write_bytes(b"")
         before = inventory(root)
-        option = "--economic-world-custody-audit" if world else "--economic-custody-catalog-audit"
+        option = "--economic-locker-custody-audit" if locker else "--economic-world-custody-audit" if world else "--economic-custody-catalog-audit"
         result = subprocess.run([str(binary), option, str(root)],
                                 capture_output=True, text=True, timeout=30)
         assert inventory(root) == before
@@ -672,14 +952,16 @@ def check_boundaries(fixture, binary, build, world=False):
         if expected:
             assert result.returncode == 0 and not result.stderr, (label, result)
             value = json.loads(result.stdout)
-            if world:
+            if locker:
+                assert value["locker_present"] == value["locker_owner_literals_verified"] == (label == "healthy")
+            elif world:
                 assert value["world_present"] == value["world_owner_literals_verified"] == (label == "healthy")
             else:
                 assert value["catalog_present"] == value["custody_catalog_decoded"] == (label == "healthy")
         else:
             assert result.returncode == 1 and not result.stdout and result.stderr == "native_restore_qualification_failed\n", (label, result)
         rows.append(dict(case=label, exit=result.returncode, authority_unchanged=True))
-    (build / ("world-boundaries.json" if world else "boundaries.json")).write_text(json.dumps(rows, indent=2) + "\n")
+    (build / ("locker-boundaries.json" if locker else "world-boundaries.json" if world else "boundaries.json")).write_text(json.dumps(rows, indent=2) + "\n")
     return rows
 
 
@@ -698,6 +980,10 @@ if __name__ == "__main__":
         world_observations = check_world_catalogs(fixture, binary, build)
         world_findings = check_world_findings(fixture, binary, build)
         world_boundaries = check_boundaries(fixture, binary, build, world=True)
+        locker_observations = check_locker_catalogs(fixture, binary, build)
+        locker_findings = check_locker_findings(fixture, binary, build)
+        locker_boundaries = check_boundaries(fixture, binary, build, locker=True)
+        print("locker custody: " + str(len(locker_observations)) + " format cases, " + str(len(locker_findings)) + " findings, " + str(len(locker_boundaries)) + " boundaries passed")
         print("independent custody catalog: " + str(len(observations)) + " native/operator cases passed")
         print("world custody: " + str(len(world_observations)) + " format cases, " +
               str(len(world_findings)) + " finding cases and " + str(len(world_boundaries)) + " boundaries passed")

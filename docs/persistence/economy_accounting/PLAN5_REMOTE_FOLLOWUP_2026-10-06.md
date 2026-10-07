@@ -1526,3 +1526,24 @@ continues Plan5; local notebook application/acknowledgement and cross-chat
 notification are unclaimed and nonblocking. Remaining native holdings, original
 journeys, current both-backend/migration/build and authentic restore/retention
 R1-R8 gates remain.
+
+## Native locker literal/custody audit - 2026-10-07
+
+Base02ba8688468c6905058d52d6f0fd927add518d3e on the same remote
+codex/accounting-plan5. The containing commit is the result; all seven prior
+tips remain ancestors. [Exact source and disposition](PLAN5_LOCKER_LITERAL_CUSTODY_2026-10-07.md)
+records the new independent DURLOCK V1/V2 command, four before/after cuts,
+87 locker formats (14 accepted/73 refused),37 findings at three limits,14
+read-only controls and preserved original133 custody/59 world suites, zero skips.
+The privacy test correction changed only two locker functions; C++ bodies and
+other test functions remain identical. Tested final tree0c39313e83b98eb20cab538d886a6dd50d0e8af0,
+actual native oracle911e578; latest primaryd98f67e retains its native/migration
+trees. No API/schema fields change; primary-owned runner registration remains
+an additive handoff. Seal SHA256
+5506cd65f0c4924a0932a13247e2aaf31c501b3bbb92d63d1edd07afef56dc44;
+build binding SHA256
+9059f613b1ba60083211b8701ce1811a77650bfdb4caf1603da36c1f6249bde9.
+No shared mutation, source export/application claim, activation or production
+change. Curator-ready evidence continues Plan5; the primary-local notebook
+remains nonblocking. All combined/native V2/both-engine/restore/retention/R1-R8
+gates remain open; isolated literal comparison does not qualify release.

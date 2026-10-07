@@ -33,6 +33,7 @@
 #include "qualify_flatfile_auction_source_consumption.h"
 #include "qualify_flatfile_native_custody.h"
 #include "qualify_flatfile_native_world.h"
+#include "qualify_flatfile_native_locker.h"
 
 // Native parsers may log diagnostics containing identities; this process reports
 // only aggregate success or a fixed failure code.
@@ -554,6 +555,63 @@ int main(int argc, char **argv)
 					  << '"';
 			std::cout << "]}\n";
 			return 0;
+		}
+		if ((argc == 3 || argc == 5) &&
+		    std::string(argv[1]) == "--economic-locker-custody-audit")
+		{
+			size_t limit = 100;
+			if (argc == 5)
+			{
+				restore_economic_authority::need(std::string(argv[3]) == "--limit");
+				limit = restore_wallet_bank::decimal(argv[4], 100);
+			}
+			restore_economic_authority::audit_budget budget;
+			const auto result = restore_native_locker::audit(argv[2], budget, limit);
+			std::cout
+				<< "{\"format\":\"flatfile_locker_custody_audit_v1\","
+				   "\"scope\":\"durable_locker_literals_and_custody\",\"locker_present\":"
+				<< (result.locker_present ? "true" : "false")
+				<< ",\"custody_present\":"
+				<< (result.custody_present ? "true" : "false")
+				<< ",\"locker_version\":" << result.locker_version
+				<< ",\"locker_revision\":" << result.locker_revision
+				<< ",\"lockers\":" << result.lockers
+				<< ",\"chests\":" << result.chests
+				<< ",\"access_grants\":" << result.access
+				<< ",\"locker_items\":" << result.locker_items
+				<< ",\"locker_coin_literals\":" << result.locker_coins
+				<< ",\"compared_items\":" << result.compared_items
+				<< ",\"custody_locker_items\":" << result.custody_locker_items
+				<< ",\"other_custody_items\":" << result.other_custody_items
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"locker_owner_literals_verified\":"
+				<< (result.verified() ? "true" : "false")
+				<< ",\"other_owner_literals_compared\":false,\"native_holdings_compared\":false,"
+				   "\"item_history_verified\":false,\"full_R7_qualified\":false,\"release_qualified\":false,"
+				   "\"finding_counts\":{";
+			bool first = true;
+			for (const auto &[code, count] : result.finding_counts)
+			{
+				if (!first)
+					std::cout << ',';
+				first = false;
+				std::cout << '"' << code << "\":" << count;
+			}
+			std::cout << "},\"findings\":[";
+			first = true;
+			for (const auto &row : result.findings)
+			{
+				if (!first)
+					std::cout << ',';
+				first = false;
+				std::cout << "{\"code\":\"" << row.code << "\",\"uid\":\""
+					  << row.uid << "\"}";
+			}
+			std::cout << "]}\n";
+			return result.valid() ? 0 : 1;
 		}
 		if ((argc == 3 || argc == 5) &&
 		    std::string(argv[1]) == "--economic-world-custody-audit")

@@ -1356,3 +1356,18 @@ The published V2 wire contract and native EAB codec are component evidence;
 the primary's private native V2 encoder/installer and genuine original fixtures
 still require exact-source qualification before a release gate can close.
 See [source and qualification disposition](PLAN5_NATIVE_LIFECYCLE_V2_2026-10-07.md).
+
+`--economic-locker-custody-audit /absolute/private/state-root [--limit 0..100]`
+independently decodes durable DURLOCK V1/V2 catalogs and compares each locker/chest
+item with custody. It reports unadmitted/missing UIDs, non-active state,
+owner/context, root/parent, vnum/equipment disagreement, negative money-item
+denominations and complete retained coin-literal mismatch. Locker/chest/catalog
+revisions remain independent of custody clocks. Names, passwords, policy bytes
+and item text are omitted. All totals are computed at every detail limit.
+
+The existing protected read lock, pending-journal checks and aggregate budget
+apply. Unsafe/corrupt files refuse without partial JSON; missing catalogs remain
+absent and unverified. The command performs no recovery or correction. Scoped
+locker literal verification leaves other owners, holdings, source admission,
+item history and release unqualified. See
+[exact source, native tests and curator handoff](PLAN5_LOCKER_LITERAL_CUSTODY_2026-10-07.md).
