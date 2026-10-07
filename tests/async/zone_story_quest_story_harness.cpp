@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 199 &&
+		require(catalog.story_mappings.size() == 200 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -23779,6 +23779,81 @@ int main(int argc, char **argv)
 					raw.progress_for_zone(7, 42, 213).completed == 1 &&
 					!recovered.has_discovered(7, 42, 7000),
 				"Mazzolin cold/raw recovery lost one return or invented UnderDark discovery");
+		}
+
+		{
+			const auto &spores = story_for("myconid", "alchemist-giant-spores");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 23, 2300, 100, "arrival") ==
+					result::applied,
+				"Myconid discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 23, 10, 1, 101, false, false);
+			require(journal.find(spores.title) == std::string::npos,
+				"Myconid discovery exposed an unmet alchemist");
+			require(journey.meet_npc(7, 42, 2303, 2368, 102) == result::applied,
+				"Myconid king encounter failed");
+			journal = journey.render_journal(7, 42, 23, 10, 1, 103, false, false);
+			require(journal.find(spores.title) == std::string::npos,
+				"Myconid court encounter fabricated the separate alchemist");
+			require(journey.meet_npc(7, 42, 2320, 2384, 104) == result::applied,
+				"Myconid actual alchemist encounter failed");
+			const auto status = [&](size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    spores.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[8] = 1;
+			supplies.carried[2301] = 1;
+			supplies.carried[2304] = 1;
+			supplies.carried[2313] = 1;
+			supplies.carried[29291] = 1;
+			supplies.equipped[18] = 88502;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 23, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(0, "Missing now"),
+				"Myconid generic stock, green key, food, switch, jar or held spores prepared the return");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 23).completed == 0,
+				"Myconid preparation fabricated durable acceptance");
+			supplies = {};
+			supplies.carried[88502] = 1;
+			journal = journey.render_journal(7, 42, 23, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(0, "Ready now") &&
+					journal.find("Next: " + spores.steps.back().text) !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Myconid supplied exact spores required invented dialogue, source combat or cache history");
+			// Synthetic receipt qualifies projection, not native wallet, gills/travel, cache or PULL outcomes.
+			record(journey, spores.contracts.front(), "myconid-spore-return", 23, 2384);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 23, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 23).completed == 1 &&
+					journey.progress_for_zone(7, 42, 23).total == 1,
+				"Myconid spent spores erased or duplicated the accepted return");
+			auto replay =
+				completion(spores.contracts.front(), "myconid-spore-return", 120);
+			replay.transaction.zone_number = 23;
+			replay.transaction.room_vnum = 2384;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Myconid replay duplicated accepted return");
+			service recovered(catalog), raw(raw_catalog);
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 23).completed == 1 &&
+					recovered.progress_for_zone(7, 42, 23).total == 1 &&
+					raw.progress_for_zone(7, 42, 23).completed == 1 &&
+					!recovered.has_discovered(7, 42, 885) &&
+					!recovered.has_discovered(7, 42, 292) &&
+					recovered.progress_for_zone(7, 42, 885).completed == 0 &&
+					recovered.progress_for_zone(7, 42, 292).completed == 0,
+				"Myconid cold/raw recovery lost one return or invented foreign discovery/completion");
 		}
 
 		std::cout

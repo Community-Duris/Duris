@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 199 authored journals, accounting-gated player surfaces, starter/town
+**Status: 200 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5292,3 +5292,10 @@ Twenty-four owned follow-ups cover fair access/sector/dispersal decisions, sourc
 The [Mazzolin dossier](zone-stories/MAZZOLIN.md) adds a concrete builder case for five identical-looking, distinct exact inputs. Reuse five separate source-labelled optional carried-item rows and one accepted completion; a list of alternatives with count5 would wrongly accept duplicates. Current loose preparation, personal first recovery, transferred custody, source combat, party completion and two reward-child settlements need independent evidence. Dialogue aliases describe semantic families rather than separate quests. The larger rescue narrative needs an explicit release/destination outcome before an escort or safety objective.
 
 Builder declarations should map actual protected door/effect admission, one-way descent, hidden-root discovery, selected teleport action and actual arrival/return. Missing EX_ISDOOR or negative keys can coexist with an intentional effect-dependent route; review current actors and policy before repair. Unusual wand equipment flags need actual equipment/use/custody evidence before slot changes. Twenty-eight owned follow-ups cover these capabilities, source generations, native unfinished content, rune-stone claim and mode1 renewal. Any native repair needs a separately named commit and prominent PR/news before/after evidence. All new tracking requires active READY accounting; frozen committed recovery remains separate.
+
+
+## Myconid integration extension
+
+The [Myconid dossier](zone-stories/MYCONID.md) adds an external-source currency request alongside a separate local key/cache progression. Reuse exact loose preparation plus one accepted return; acquisition from original source, player transfer, alternative foreign exchange, current stock and actual wallet settlement need independent ownership. A green key and requested spores may share a narrative noun without sharing identity or prerequisite. Dialogue aliases and alchemy prose do not establish conversation achievements or crafting.
+
+Builder declarations should specify optional key or admitted PICK/KNOCK alternative → UNLOCK/OPEN → each cache child recovery, selected mushroom operation → shared passage/crossing/reset, and gills OPEN → sleep/awakening → actual recovery. The giant root’s reviewed lack of literal supply and isolated ordinary room graph require fair intended-access/return qualification before repair. Scarlet food’s existing regeneration penalty and commented poison path require an explicit builder decision before changing effects. Twenty-eight owned follow-ups cover these cases. All new tracking requires active READY accounting; native repairs need separate named fix/news commits and prominent before/after evidence.

@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 199 authored journals.
+2668 distinct Q contracts; 200 authored journals.
 
 Regenerate with:
 
@@ -158,7 +158,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Mountain Tracts of the Untamed (`mountaintracks`) | 4 | 4 | 1 | Yes | [1 × a green dragon scale; 1 × a vampire's tooth → a glowing green potion](../../areas/qst/mountaintracks.qst#L57) | — |
 | Miaeril Village (`mril`) | 3 | 3 | 0 | Yes | [5 × a freshly killed salmon → the lost book of 'Magic'](../../areas/qst/mril.qst#L48) | — |
 | the Mushroom Caverns (`mushroom_caverns`) | 3 | 11 | 2 | Yes | [1 × a half of an ancient amulet; 1 × a half of an ancient amulet → the bronze Zarbonesti seal of Kryz'Kyssik, an adamantium-hafted flail](../../areas/qst/mobs_underdark.qst#L127) | — |
-| Myconid Mushroom Forest (`myconid`) | 1 | 2 | 0 | Fallback | [1 × spores of the giant mushroom → native reward/response](../../areas/qst/myconid.qst#L18) | — |
+| Myconid Mushroom Forest (`myconid`) | 1 | 2 | 0 | Yes | [1 × spores of the giant mushroom → native reward/response](../../areas/qst/myconid.qst#L18) | — |
 | Myrloch Vale (`myrloch_vale`) | 4 | 4 | 0 | Yes | [1 × an old key → a flaming key](../../areas/qst/myrloch_vale.qst#L33) | inn, item_switch, unblock_on_death |
 | Negative Material Plane (`negplane`) | 2 | 6 | 0 | Yes | [1 × the star of ash; 1 × the star of salt; 1 × the star of dust; other required items → an elaborate rune covered sword named 'Mournblade', the key of unmaking](../../areas/qst/negplane.qst#L24) | artifact_stone, elvenkind_cloak, neg_orb, neg_pocket, orb_of_destruction, sanguine |
 | New Cave city (`new_cavecity`) | 1 | 0 | 0 | Fallback | [1 × A mystic runed stone tablet; 1 × the still-beating heart of Bel; 1 × the orb of unmaking → the scroll of Intelligence](../../areas/qst/new_cavecity.qst#L16) | dranum_jurtrem, torment |

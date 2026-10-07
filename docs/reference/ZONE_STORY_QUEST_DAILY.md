@@ -214,3 +214,8 @@ The [dossier](../design/zone-stories/MAGMA.md) retains one potential candidate w
 ## Mazzolin daily qualification
 
 The [dossier](../design/zone-stories/MAZZOLIN.md) retains one potential candidate with five exact source pieces and a retiring giver. Qualify active READY joint input, frozen eligible party history, actor two-item child settlement/save, actual D retirement, protected entry/return and owned mode1 renewal for the giver and all five sources. Duplicate shards, a rune-stone claim, hidden-root discovery or UTC rollover cannot establish a fresh complete bundle. Policy stays disabled by default.
+
+
+## Myconid daily qualification
+
+The [dossier](../design/zone-stories/MYCONID.md) retains one potential candidate for an exact external spore and 50 platinum, with a moving/no-D giver. Qualify active READY acceptance, frozen eligible party history, actual actor currency settlement/save/recovery, exact external source stock/global cap 1 and completed renewal. Green-key/cache progress, mushroom operation, foreign jar return and UTC rollover do not establish a fresh spore or settle the local reward. Policy stays disabled by default.

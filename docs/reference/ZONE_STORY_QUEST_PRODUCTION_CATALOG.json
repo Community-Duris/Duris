@@ -41410,6 +41410,217 @@
     {
       "contacts": [
         {
+          "description": "The alchemist asks for spores from a giant mushroom. Ask specific, then giant, mushrooms or mushroom. The exact loose spores fit one return for 50 platinum; the green key and edible fungi are different items.",
+          "keyword": "alchemist",
+          "mob_vnum": 2320,
+          "name": "a myconid alchemist",
+          "topics": [
+            "specific",
+            "giant",
+            "mushrooms",
+            "mushroom"
+          ]
+        },
+        {
+          "description": "The king carries a glowing green spore that is a key to the locked red mushroom cache at the Circle of Stones. This cache is separate from the alchemist\u2019s requested spores.",
+          "keyword": "king",
+          "mob_vnum": 2303,
+          "name": "the myconid king",
+          "topics": []
+        },
+        {
+          "description": "Shriekers inhabit the fungal passages. Their encounters do not produce the exact spores requested by the alchemist.",
+          "keyword": "shrieker",
+          "mob_vnum": 2300,
+          "name": "a shrieker",
+          "topics": []
+        },
+        {
+          "description": "Myconids inhabit the forest and waterfall. Their presence is an encounter lead rather than proof of a completed request.",
+          "keyword": "myconid",
+          "mob_vnum": 2301,
+          "name": "a myconid",
+          "topics": []
+        },
+        {
+          "description": "Elder myconids inhabit the forest and court. Their encounters do not establish an accepted council or alchemy quest.",
+          "keyword": "elder",
+          "mob_vnum": 2302,
+          "name": "an elder myconid",
+          "topics": []
+        },
+        {
+          "description": "Gas spores are creatures. Encountering one does not supply the alchemist\u2019s requested item or the king\u2019s green key.",
+          "keyword": "gas",
+          "mob_vnum": 2304,
+          "name": "a gas spore",
+          "topics": []
+        },
+        {
+          "description": "Giant centipedes inhabit the forest. Their battles are separate from the spore return and optional cache.",
+          "keyword": "centipede",
+          "mob_vnum": 2305,
+          "name": "a giant centipede",
+          "topics": []
+        },
+        {
+          "description": "Violet fungi are creatures, distinct from the loose violet mushroom food. Neither substitutes for the requested spores.",
+          "keyword": "violet",
+          "mob_vnum": 2306,
+          "name": "a violet fungi",
+          "topics": []
+        },
+        {
+          "description": "Gray oozes inhabit the southern forest. Their encounters are independent of the alchemist\u2019s return.",
+          "keyword": "gray",
+          "mob_vnum": 2307,
+          "name": "a gray ooze",
+          "topics": []
+        },
+        {
+          "description": "Green slimes inhabit the fungal passages. Their color does not identify the king\u2019s exact green key.",
+          "keyword": "green",
+          "mob_vnum": 2308,
+          "name": "a green slime",
+          "topics": []
+        },
+        {
+          "description": "Brown molds inhabit the forest. Their encounters do not prove gathering or brewing.",
+          "keyword": "brown",
+          "mob_vnum": 2309,
+          "name": "a brown mold",
+          "topics": []
+        },
+        {
+          "description": "Yellow molds are forest encounters. No separate accepted mold request is defined.",
+          "keyword": "yellow",
+          "mob_vnum": 2310,
+          "name": "a yellow mold",
+          "topics": []
+        },
+        {
+          "description": "Ochre jellies inhabit the forest. Their battles do not substitute for the requested giant mushroom spores.",
+          "keyword": "ochre",
+          "mob_vnum": 2311,
+          "name": "an ochre jelly",
+          "topics": []
+        },
+        {
+          "description": "Small black bats inhabit the low passages. Their encounters remain separate from access through a blocked passage.",
+          "keyword": "small",
+          "mob_vnum": 2312,
+          "name": "a small black bat",
+          "topics": []
+        },
+        {
+          "description": "Large spiders inhabit the forest. Their encounters are independent of the selected mushroom switches and accepted spore return.",
+          "keyword": "large",
+          "mob_vnum": 2313,
+          "name": "a large spider",
+          "topics": []
+        },
+        {
+          "description": "The crystal ooze inhabits the ring\u2019s pool chamber. Ring recovery and combat are separate outcomes.",
+          "keyword": "crystal",
+          "mob_vnum": 2314,
+          "name": "a crystal ooze",
+          "topics": []
+        },
+        {
+          "description": "Deep molds inhabit several passages. Their presence does not establish a gathering objective.",
+          "keyword": "deep",
+          "mob_vnum": 2315,
+          "name": "a deep mold",
+          "topics": []
+        },
+        {
+          "description": "Gray molds are distinct from gray oozes. Similar names do not imply shared quest stock or completion.",
+          "keyword": "gray",
+          "mob_vnum": 2316,
+          "name": "a gray mold",
+          "topics": []
+        },
+        {
+          "description": "Phycomids inhabit the forest, including a mushroom passage. Their encounters do not prove that a player operated the passage.",
+          "keyword": "phycomid",
+          "mob_vnum": 2317,
+          "name": "a phycomid",
+          "topics": []
+        },
+        {
+          "description": "The night hunter is a separate forest encounter. Its defeat does not complete the alchemist\u2019s request.",
+          "keyword": "hunter",
+          "mob_vnum": 2318,
+          "name": "a night hunter",
+          "topics": []
+        },
+        {
+          "description": "The dead adventurer\u2019s zombie accompanies the king with separate armor. A future rescue or undead story needs a defined outcome beyond combat.",
+          "keyword": "zombie",
+          "mob_vnum": 2319,
+          "name": "the zombie of a dead adventurer",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Find the alchemist\u2019s exact giant mushroom spores, with the king\u2019s potion cache, mushroom passages and forest encounters as separate progression leads.",
+      "orientation": [
+        "The alchemist is stocked at the Ruddy Cave and may move. Ask specific, then giant, mushrooms or mushroom, to hear one spore request. These words are conversation aliases rather than separate completed quests.",
+        "The requested dark spores come from an external source. They are different from the king\u2019s glowing green key, loose scarlet/violet/crimson food, gas-spore creatures and the local large mushrooms.",
+        "Carry the exact requested spores loose and offer them to the alchemist when present. Supplied exact spores can fit; the native return does not require remembered dialogue, a personal kill or proof of original recovery.",
+        "One accepted return gives 50 platinum. It does not brew a potion or make the alchemist depart. Recording the return and receiving the currency are distinct outcomes.",
+        "The dialogue points toward giant mushrooms elsewhere in the UnderDark. Reviewed sources include spores inside closed gills and a separate mother\u2019s stock. Current giant mushroom access, opening hazards, available stock and a return route need qualification.",
+        "At the Circle of Stones, the king carries a green spore key for a locked small red mushroom containing two potions. Accessing this cache is a separate local progression lead; its key is not the alchemist\u2019s input.",
+        "Pulling the selected large mushroom can unblock the passage between the two dead ends. Operating a mushroom, using a passage already opened by someone else and crossing it are different outcomes.",
+        "The azure waterfall pool, brass ring chamber, food fungi, myconid court, molds, oozes, spiders, bats and zombie are wider exploration leads. A pool inscription, recovery or battle does not create another accepted quest."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "myconid",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:88502;receive=C:50000;disappear=0",
+              "giver_vnum": 2320
+            }
+          ],
+          "id": "alchemist-giant-spores",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The dark spores are an external exact item. The glowing green key, edible fungi and gas-spore creature do not substitute. Supplied exact spores can also fit; held, worn or nested stock does not prepare this offering.",
+              "id": "spores",
+              "item_vnums": [
+                88502
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact giant mushroom spores loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:88502;receive=C:50000;disappear=0",
+                  "giver_vnum": 2320
+                }
+              ],
+              "hint": "Offer the exact loose spores to the alchemist when present for 50 platinum. This is one exchange; earlier dialogue, personal gathering, combat, brewing, the green key and the potion cache are not native prerequisites.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the alchemist\u2019s accepted spore return"
+            }
+          ],
+          "summary": "Bring the exact loose giant mushroom spores to the myconid alchemist for 50 platinum. The accepted return does not prove who originally recovered the spores, defeated a source or opened the king\u2019s separate cache.",
+          "title": "Bring giant mushroom spores to the alchemist"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "In the chief\u2019s office on the second floor; ask hi, hello, quest or revenge about the necklace, and gilman about Povtail. The two exact hand-ins have independent completions.",
           "keyword": "remy",
           "mob_vnum": 2417,
