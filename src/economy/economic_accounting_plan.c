@@ -791,8 +791,13 @@ economic_accounting_error economic_command_binding_digest(const critical_command
 	    (command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
 	     command.accounting_intent.empty()))
 		return economic_accounting_error::invalid_identity;
-	if (command.keys.size() > CRITICAL_COMMAND_MAX_KEYS ||
-	    command.expected_revisions.size() > CRITICAL_COMMAND_MAX_KEYS ||
+	// Only the native auction envelope/preparation projection needs all4096
+	// original UID fences. This keeps the existing binding tag and schema1
+	// preimage; its legacy execution predicate remains closed to auctionv2.
+	const size_t max_keys = critical_command_native_auction_envelope(command) ?
+					CRITICAL_COMMAND_MAX_NATIVE_AUCTION_KEYS :
+					CRITICAL_COMMAND_MAX_KEYS;
+	if (command.keys.size() > max_keys || command.expected_revisions.size() > max_keys ||
 	    command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
 		return economic_accounting_error::capacity;
 	try

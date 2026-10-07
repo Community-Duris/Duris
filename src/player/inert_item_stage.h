@@ -91,6 +91,8 @@ class shop_trade_original_item_stage
 
     private:
 	friend class shop_trade_native_publication_owner;
+	friend class quest_mobile_published_saved_forest;
+	friend class auction_original_item_stage;
 	static bool prepare(const object_template &, const player_item_snapshot &,
 			    shop_trade_original_item_stage &) noexcept;
 	static bool reload_step(P_obj, const object_template &, unsigned int,

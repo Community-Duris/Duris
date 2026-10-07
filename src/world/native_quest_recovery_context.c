@@ -16,6 +16,8 @@ namespace
 constexpr std::array<uint8_t, 4> magic = { 'N', 'Q', 'R', '1' };
 constexpr std::array<uint8_t, 4> child_magic = { 'N', 'Q', 'R', '2' };
 constexpr std::array<uint8_t, 4> latest_magic = { 'N', 'Q', 'R', '3' };
+constexpr std::array<uint8_t, 4> money_magic = { 'N', 'Q', 'R', '4' };
+constexpr std::array<uint8_t, 4> fee_magic = { 'N', 'Q', 'R', '5' };
 constexpr size_t limit = CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES;
 
 // Match the original freeze_program's existing branch/goal/string charges.
@@ -116,6 +118,73 @@ bool stages_valid(std::span<const uint8_t> values)
 	return std::all_of(values.begin(), values.end(), [](uint8_t value) { return value <= 2; });
 }
 
+bool money_receipt_valid(const item_transfer_payload &payload,
+			 const native_quest_recovery_receipt &receipt)
+{
+	if (!receipt.present)
+		return receipt == native_quest_recovery_receipt{};
+	if ((receipt.outcome != critical_apply_outcome::applied &&
+	     receipt.outcome != critical_apply_outcome::already_applied &&
+	     receipt.outcome != critical_apply_outcome::terminal_failure) ||
+	    receipt.failure_stage != critical_failure_stage::none ||
+	    receipt.result_size != ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RESULT_BYTES ||
+	    ((receipt.outcome == critical_apply_outcome::terminal_failure) !=
+	     (receipt.error_code != 0)))
+		return false;
+	item_native_mobile_money_result actual{}, expected{};
+	if (!item_native_mobile_money_result_decode(
+		    { receipt.result_payload.data(), receipt.result_size }, &actual) ||
+	    !item_native_mobile_money_result_build(payload, &expected))
+		return false;
+	if (receipt.outcome == critical_apply_outcome::terminal_failure)
+	{
+		expected.player_wallet_revision =
+			payload.native_money.projection.player_before_revision;
+		expected.mobile_cash_revision =
+			payload.native_money.projection.mobile_before_revision;
+		expected.mobile_revision = payload.native_mobile.reference.mobile_revision;
+	}
+	return actual == expected &&
+	       receipt.durable_revision ==
+		       std::max({ actual.player_wallet_revision, actual.mobile_cash_revision,
+				  actual.mobile_revision, actual.player_custody_revision,
+				  actual.stock_revision }) &&
+	       std::all_of(receipt.result_payload.begin() + receipt.result_size,
+			   receipt.result_payload.end(), [](uint8_t b) { return b == 0; });
+}
+
+bool fee_receipt_valid(const item_transfer_payload &payload,
+		       const native_quest_recovery_receipt &receipt)
+{
+	if (!receipt.present)
+		return receipt == native_quest_recovery_receipt{};
+	if ((receipt.outcome != critical_apply_outcome::applied &&
+	     receipt.outcome != critical_apply_outcome::already_applied &&
+	     receipt.outcome != critical_apply_outcome::terminal_failure) ||
+	    receipt.failure_stage != critical_failure_stage::none ||
+	    receipt.result_size != ITEM_TRANSFER_NATIVE_MOBILE_FEE_RESULT_BYTES ||
+	    ((receipt.outcome == critical_apply_outcome::terminal_failure) !=
+	     (receipt.error_code != 0)))
+		return false;
+	item_native_mobile_fee_result actual{}, expected{};
+	if (!item_native_mobile_fee_result_decode(
+		    { receipt.result_payload.data(), receipt.result_size }, &actual) ||
+	    !item_native_mobile_fee_result_build(payload, &expected))
+		return false;
+	if (receipt.outcome == critical_apply_outcome::terminal_failure)
+	{
+		expected.mobile_cash_revision = payload.native_cost.projection.before_revision;
+		expected.mobile_revision = payload.native_mobile.reference.mobile_revision;
+	}
+	return actual == expected &&
+	       receipt.durable_revision ==
+		       std::max({ actual.mobile_cash_revision, actual.mobile_revision,
+				  actual.stock_revision, actual.native_custody_revision,
+				  actual.player_custody_revision }) &&
+	       std::all_of(receipt.result_payload.begin() + receipt.result_size,
+			   receipt.result_payload.end(), [](uint8_t v) { return v == 0; });
+}
+
 bool receipt_valid(const native_quest_recovery_receipt &receipt)
 {
 	if (!receipt.present)
@@ -141,7 +210,10 @@ bool receipt_valid(const native_quest_recovery_receipt &receipt)
 
 bool context_shape(const item_transfer_payload &payload, const native_quest_recovery_context &value)
 {
-	if (!receipt_valid(value.receipt) || static_cast<uint8_t>(value.publication_stage) > 2 ||
+	if (!(payload.native_money.present ? money_receipt_valid(payload, value.receipt) :
+	      payload.native_cost.fee_only ? fee_receipt_valid(payload, value.receipt) :
+					     receipt_valid(value.receipt)) ||
+	    static_cast<uint8_t>(value.publication_stage) > 2 ||
 	    (value.publication_stage != native_quest_recovery_publication_stage::captured &&
 	     !value.receipt.present) ||
 	    !stages_valid(value.publication_steps) || !stages_valid(value.give_messages) ||
@@ -159,6 +231,47 @@ bool context_shape(const item_transfer_payload &payload, const native_quest_reco
 	    (value.branch_program_frozen &&
 	     !std::all_of(value.give_hooks.begin(), value.give_hooks.end(),
 			  [](uint8_t stage) { return stage == 2; })))
+		return false;
+	if (payload.native_money.present &&
+	    (value.branch_program_frozen || !value.branches.empty() || value.next_branch ||
+	     !critical_operation_id_is_zero(value.parent_acceptance) ||
+	     !critical_operation_id_is_zero(value.next_child_operation) ||
+	     value.child_handoff_stage || !value.next_child_command.empty() ||
+	     value.latest_child_branch || value.latest_child_revision ||
+	     !value.latest_child_command.empty() || !value.latest_child_attachment.empty() ||
+	     !value.consumed_root_steps.empty() ||
+	     std::any_of(value.give_hooks.begin(), value.give_hooks.end(),
+			 [](uint8_t stage) { return stage != 0; }) ||
+	     std::any_of(value.publication_steps.begin() + 1, value.publication_steps.end(),
+			 [](uint8_t stage) { return stage != 0; }) ||
+	     (value.publication_stage == native_quest_recovery_publication_stage::captured &&
+	      value.publication_steps[0] != 0) ||
+	     (value.publication_stage ==
+		      native_quest_recovery_publication_stage::physically_proven &&
+	      value.publication_steps[0] !=
+		      (value.receipt.outcome == critical_apply_outcome::terminal_failure ? 0 : 2))))
+		return false;
+	if (payload.native_cost.fee_only &&
+	    (value.branch_program_frozen || !value.branches.empty() || value.next_branch ||
+	     !critical_operation_id_is_zero(value.parent_acceptance) ||
+	     !critical_operation_id_is_zero(value.next_child_operation) ||
+	     value.child_handoff_stage || !value.next_child_command.empty() ||
+	     value.latest_child_branch || value.latest_child_revision ||
+	     !value.latest_child_command.empty() || !value.latest_child_attachment.empty() ||
+	     !value.consumed_root_steps.empty() ||
+	     std::any_of(value.give_hooks.begin(), value.give_hooks.end(),
+			 [](uint8_t v) { return v != 0; }) ||
+	     std::any_of(value.give_messages.begin(), value.give_messages.end(),
+			 [](uint8_t v) { return v != 0; }) ||
+	     std::any_of(value.publication_steps.begin() + 1, value.publication_steps.begin() + 4,
+			 [](uint8_t v) { return v != 0; }) ||
+	     (value.publication_stage == native_quest_recovery_publication_stage::captured &&
+	      std::any_of(value.publication_steps.begin(), value.publication_steps.end(),
+			  [](uint8_t v) { return v != 0; })) ||
+	     (value.publication_stage ==
+		      native_quest_recovery_publication_stage::physically_proven &&
+	      value.publication_steps[0] !=
+		      (value.receipt.outcome == critical_apply_outcome::terminal_failure ? 0 : 2))))
 		return false;
 	size_t retained_program = sizeof(native_quest_recovery_context);
 	if (!charge(value.next_child_command.size(), &retained_program) ||
@@ -210,6 +323,20 @@ player_snapshot_codec_result original_forests(const item_transfer_payload &paylo
 	result = player_item_snapshot_list_encode(value.player_before, player_bytes);
 	if (result != player_snapshot_codec_result::ok)
 		return result;
+	if (payload.native_money.present || payload.native_cost.fee_only)
+	{
+		// These zero-item actions change neither forest; verify both role-bound player cuts
+		// against the same original literal bytes, never a synthetic root UID.
+		return shop_trade_recovery_forest_verify(
+			       *player_bytes, shop_trade_recovery_forest_role::player_before,
+			       payload.native_recovery.player_before) &&
+				       shop_trade_recovery_forest_verify(
+					       *player_bytes,
+					       shop_trade_recovery_forest_role::player_after,
+					       payload.native_recovery.player_after) ?
+			       player_snapshot_codec_result::ok :
+			       player_snapshot_codec_result::invalid_value;
+	}
 	std::vector<player_item_snapshot> after;
 	result = quest_mobile_native_items_transition(
 		value.native_before, payload.native_mobile.reference, payload, &after);
@@ -251,7 +378,7 @@ bool original_command(const critical_command &command, item_transfer_payload *pa
 	return command.type == critical_command_type::item_transfer &&
 	       command.publication_required &&
 	       command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
-	       command.payload_version == ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION &&
+	       item_transfer_native_mobile_acknowledged_version(command.payload_version) &&
 	       critical_command_encode(command, encoded) == critical_command_codec_result::ok &&
 	       item_transfer_command_decode_payload(command, payload) &&
 	       item_transfer_native_mobile_recovery_shape_valid(*payload);
@@ -304,7 +431,9 @@ bool latest_child_shape(const critical_command &parent, const item_transfer_payl
 		return true;
 	// Check the leaf marker BEFORE decode, so crafted nested NQR3 input cannot recurse.
 	if (value.latest_child_attachment.size() < magic.size() ||
-	    !std::equal(magic.begin(), magic.end(), value.latest_child_attachment.begin()))
+	    (!std::equal(magic.begin(), magic.end(), value.latest_child_attachment.begin()) &&
+	     !std::equal(fee_magic.begin(), fee_magic.end(),
+			 value.latest_child_attachment.begin())))
 		return false;
 	critical_command child;
 	item_transfer_payload child_payload{};
@@ -314,6 +443,9 @@ bool latest_child_shape(const critical_command &parent, const item_transfer_payl
 				    &child) != critical_command_codec_result::ok ||
 	    !item_transfer_command_decode_payload(child, &child_payload) ||
 	    child_payload.continuation.kind != item_transfer_continuation_kind::none ||
+	    (std::equal(fee_magic.begin(), fee_magic.end(),
+			value.latest_child_attachment.begin()) !=
+	     child_payload.native_cost.fee_only) ||
 	    native_quest_recovery_context_decode(child, value.latest_child_attachment,
 						 &child_context) !=
 		    player_snapshot_codec_result::ok ||
@@ -379,9 +511,13 @@ native_quest_recovery_context_encode(const critical_command &command,
 		if (result != player_snapshot_codec_result::ok)
 			return result;
 		writer out;
-		out.raw(!value.latest_child_command.empty() ?
-				latest_magic :
-				(value.next_child_command.empty() ? magic : child_magic));
+		out.raw(payload.native_cost.fee_only ?
+				fee_magic :
+			payload.native_money.present ?
+				money_magic :
+				(!value.latest_child_command.empty() ?
+					 latest_magic :
+					 (value.next_child_command.empty() ? magic : child_magic)));
 		out.blob(encoded_command);
 		out.blob(native_bytes);
 		out.blob(player_bytes);
@@ -466,7 +602,12 @@ native_quest_recovery_context_decode(const critical_command &command,
 			std::equal(value.begin(), value.end(), latest_magic.begin());
 		const bool with_child = with_latest ||
 					std::equal(value.begin(), value.end(), child_magic.begin());
-		if ((!with_child && !std::equal(value.begin(), value.end(), magic.begin())) ||
+		const bool with_money = std::equal(value.begin(), value.end(), money_magic.begin());
+		const bool with_fee = std::equal(value.begin(), value.end(), fee_magic.begin());
+		if (with_fee != payload.native_cost.fee_only ||
+		    with_money != payload.native_money.present ||
+		    (!with_fee && !with_money && !with_child &&
+		     !std::equal(value.begin(), value.end(), magic.begin())) ||
 		    !in.blob(&value) || value.size() != encoded_command.size() ||
 		    !std::equal(value.begin(), value.end(), encoded_command.begin()) ||
 		    !in.blob(&native_bytes) || !in.blob(&player_bytes) ||
@@ -598,6 +739,38 @@ bool native_quest_recovery_publication_context_valid(
 	       context.receipt.result_payload == completion.result_payload;
 }
 
+// Exact fee ACK after the journal transition, while the original hold remains.
+bool native_quest_recovery_fee_ack_context_valid(const critical_native_recovery_envelope &envelope,
+						 const critical_completion &completion) noexcept
+{
+	native_quest_recovery_context context;
+	item_transfer_payload payload{};
+	if (envelope.phase != critical_native_recovery_phase::continuation_pending ||
+	    envelope.command.payload_version !=
+		    ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION ||
+	    !item_transfer_command_decode_payload(envelope.command, &payload) ||
+	    !payload.native_cost.fee_only || !envelope.revision ||
+	    completion.disposition != critical_completion_disposition::execution ||
+	    completion.operation_id.bytes != envelope.command.operation_id.bytes ||
+	    native_quest_recovery_context_decode(envelope.command, envelope.attachment, &context) !=
+		    player_snapshot_codec_result::ok ||
+	    context.publication_stage !=
+		    native_quest_recovery_publication_stage::physically_proven ||
+	    !context.receipt.present)
+		return false;
+	const bool same_outcome =
+		context.receipt.outcome == completion.outcome ||
+		((context.receipt.outcome == critical_apply_outcome::applied ||
+		  context.receipt.outcome == critical_apply_outcome::already_applied) &&
+		 (completion.outcome == critical_apply_outcome::applied ||
+		  completion.outcome == critical_apply_outcome::already_applied));
+	return same_outcome && context.receipt.durable_revision == completion.durable_revision &&
+	       context.receipt.error_code == completion.error_code &&
+	       context.receipt.failure_stage == completion.failure_stage &&
+	       context.receipt.result_size == completion.result_size &&
+	       context.receipt.result_payload == completion.result_payload;
+}
+
 bool native_quest_recovery_pair_context_valid(
 	const critical_native_recovery_envelope &parent,
 	const critical_native_recovery_envelope &child,
@@ -621,7 +794,10 @@ bool native_quest_recovery_pair_context_valid(
 			    critical_command_codec_result::ok ||
 		    context.next_child_command != child_bytes ||
 		    child.attachment.size() < magic.size() ||
-		    !std::equal(magic.begin(), magic.end(), child.attachment.begin()) ||
+		    (!std::equal(magic.begin(), magic.end(), child.attachment.begin()) &&
+		     !(child.command.payload_version ==
+			       ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION &&
+		       std::equal(fee_magic.begin(), fee_magic.end(), child.attachment.begin()))) ||
 		    !item_transfer_command_decode_payload(child.command, &child_payload) ||
 		    native_quest_recovery_context_decode(child.command, child.attachment,
 							 &child_context) !=
@@ -632,6 +808,61 @@ bool native_quest_recovery_pair_context_valid(
 		    (!critical_operation_id_is_zero(child_context.parent_acceptance) &&
 		     child_context.parent_acceptance.bytes != parent.command.operation_id.bytes))
 			return false;
+		if (child_payload.native_cost.fee_only)
+		{
+			item_transfer_payload accepted{};
+			item_transfer_result receipt{};
+			if (parent.command.payload_version !=
+				    ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION ||
+			    !item_transfer_command_decode_payload(parent.command, &accepted) ||
+			    accepted.native_mobile.action !=
+				    item_native_mobile_action::acceptance ||
+			    child_payload.native_cost.completion_slot != context.next_branch ||
+			    !context.receipt.present || context.receipt.error_code ||
+			    (context.receipt.outcome != critical_apply_outcome::applied &&
+			     context.receipt.outcome != critical_apply_outcome::already_applied) ||
+			    context.receipt.result_size != ITEM_TRANSFER_RESULT_BYTES ||
+			    !item_transfer_command_decode_result(
+				    context.receipt.result_payload.data(),
+				    context.receipt.result_size, &receipt) ||
+			    receipt.root_item_uid != item_transfer_result_root(accepted) ||
+			    receipt.item_count != accepted.item_count || receipt.corpse_revision ||
+			    receipt.collector_catalog_changed ||
+			    accepted.expected_from_revision == UINT64_MAX ||
+			    accepted.expected_to_revision == UINT64_MAX ||
+			    receipt.from_owner_revision != accepted.expected_from_revision + 1 ||
+			    receipt.to_owner_revision != accepted.expected_to_revision + 1)
+				return false;
+			uint64_t maximum = 0;
+			for (size_t i = 0; i < accepted.item_count; ++i)
+			{
+				if (accepted.items[i].expected_item_revision == UINT64_MAX)
+					return false;
+				maximum = std::max(maximum,
+						   accepted.items[i].expected_item_revision + 1);
+			}
+			if (receipt.max_item_revision != maximum)
+				return false;
+			if (child_payload.continuation.kind ==
+			    item_transfer_continuation_kind::quest_offering)
+			{
+				quest_reward_continuation terms;
+				if (!quest_reward_continuation_decode(
+					    child_payload.continuation.data.data(),
+					    child_payload.continuation.data.size(), &terms) ||
+				    !quest_fee_reward_trigger_binding_valid(terms,
+									    parent.command) ||
+				    terms.action_operation.bytes !=
+					    child.command.operation_id.bytes ||
+				    !std::equal(terms.original_acceptance_result.begin(),
+						terms.original_acceptance_result.end(),
+						context.receipt.result_payload.begin()))
+					return false;
+			}
+			else if (child_payload.continuation.kind !=
+				 item_transfer_continuation_kind::none)
+				return false;
+		}
 		if (!successor)
 			return child_payload.continuation.kind ==
 				       item_transfer_continuation_kind::quest_offering ||

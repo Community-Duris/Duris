@@ -1,3 +1,5 @@
+#include "item/held_retirement_transport.h"
+#include "item/native_quest_transport.h"
 #include "persistence/critical_command_journal.h"
 
 #include <algorithm>
@@ -21,7 +23,6 @@ constexpr unsigned char JOURNAL_MAGIC[4] = { 'C', 'C', 'J', '1' };
 constexpr uint32_t JOURNAL_VERSION = 1;
 constexpr uint32_t JOURNAL_NATIVE_VERSION = 2;
 constexpr size_t JOURNAL_NATIVE_PREFIX_SIZE = 20;
-constexpr uint16_t JOURNAL_NATIVE_PAYLOAD_VERSION = 12;
 constexpr size_t JOURNAL_HEADER_SIZE = 40;
 constexpr const char *JOURNAL_FILE = "critical-command.journal";
 constexpr const char *JOURNAL_TEMP = "critical-command.journal.tmp";
@@ -148,10 +149,12 @@ bool native_command_valid(const critical_command &command)
 {
 	// Domain/source/body authentication belongs to the typed recovery owner.
 	// No item/SHOP provider dependency or legacy execution predicate is widened.
-	const bool route = (command.type == critical_command_type::item_transfer &&
-			    command.payload_version == JOURNAL_NATIVE_PAYLOAD_VERSION) ||
-			   (command.type == critical_command_type::native_mobile_birth &&
-			    (command.payload_version == 2 || command.payload_version == 3));
+	const bool route =
+		held_retirement_transport_command(command) ||
+		native_quest_transport_command(command) ||
+		(command.type == critical_command_type::native_mobile_birth &&
+		 (command.payload_version == 2 || command.payload_version == 3)) ||
+		(command.type == critical_command_type::auction && command.payload_version == 2);
 	return route && command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
 	       command.publication_required && critical_command_envelope_valid(command);
 }
@@ -169,6 +172,8 @@ uint32_t native_checksum(const uint8_t *data, size_t size)
 bool build_native_frame(const critical_native_recovery_envelope &envelope, journal_frame *frame)
 {
 	if (!frame || !native_command_valid(envelope.command) || !envelope.revision ||
+	    (held_retirement_transport_command(envelope.command) &&
+	     envelope.phase != critical_native_recovery_phase::execution_pending) ||
 	    !native_phase_valid(envelope.phase) || envelope.attachment.empty() ||
 	    envelope.attachment.size() > CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES)
 		return false;
@@ -242,6 +247,9 @@ bool decode_native_payload(const uint8_t *payload, size_t size, journal_frame *f
 	if (critical_command_decode(payload + cursor, command_size, &command) !=
 		    critical_command_codec_result::ok ||
 	    !native_command_valid(command) ||
+	    (held_retirement_transport_command(command) &&
+	     static_cast<critical_native_recovery_phase>(phase) !=
+		     critical_native_recovery_phase::execution_pending) ||
 	    critical_command_encode(command, &canonical) != critical_command_codec_result::ok ||
 	    canonical.size() != command_size ||
 	    !std::equal(canonical.begin(), canonical.end(), payload + cursor))
@@ -570,7 +578,8 @@ critical_command_journal_result append_native_frame(const journal_frame &frame)
 critical_command_journal_result
 transition_native_record(const critical_native_recovery_envelope &expected,
 			 const critical_native_recovery_envelope *successor,
-			 const critical_native_recovery_envelope *retiring_child = nullptr)
+			 const critical_native_recovery_envelope *retiring_child = nullptr,
+			 bool held_execution_retirement = false)
 {
 	std::lock_guard<std::mutex> lock(journal_mutex);
 	if (!health.initialized)
@@ -578,7 +587,11 @@ transition_native_record(const critical_native_recovery_envelope &expected,
 	try
 	{
 		journal_frame old_frame, new_frame, child_frame;
-		if (!build_native_frame(expected, &old_frame) ||
+		if ((held_execution_retirement &&
+		     (successor || retiring_child ||
+		      expected.phase != critical_native_recovery_phase::execution_pending ||
+		      !held_retirement_transport_command(expected.command))) ||
+		    !build_native_frame(expected, &old_frame) ||
 		    (retiring_child &&
 		     (!build_native_frame(*retiring_child, &child_frame) ||
 		      retiring_child->phase !=
@@ -593,7 +606,7 @@ transition_native_record(const critical_native_recovery_envelope &expected,
 		      !critical_command_equal(expected.command, successor->command) ||
 		      (expected.phase == critical_native_recovery_phase::continuation_pending &&
 		       successor->phase != expected.phase))) ||
-		    (!successor &&
+		    (!successor && !held_execution_retirement &&
 		     expected.phase != critical_native_recovery_phase::continuation_pending))
 			return critical_command_journal_result::invalid;
 		if (health.append_uncertain && !native_rewrite_uncertain.active)
@@ -1073,6 +1086,12 @@ critical_command_journal_result
 critical_command_journal_retire_native_recovery(const critical_native_recovery_envelope &expected)
 {
 	return transition_native_record(expected, nullptr);
+}
+
+critical_command_journal_result critical_held_retirement_journal_owner::retire_execution(
+	const critical_native_recovery_envelope &expected)
+{
+	return transition_native_record(expected, nullptr, nullptr, true);
 }
 
 critical_command_journal_result critical_command_journal_transition_native_pair(

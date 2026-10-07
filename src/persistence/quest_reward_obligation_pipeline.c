@@ -5,6 +5,7 @@
 #include "persistence/persistence_mode.h"
 #include "sql/sql_pool.h"
 #include "sql/sql_thread_init.h"
+#include "player/player_sql_transaction_cleanup.h"
 
 #ifndef __NO_MYSQL__
 #include <mysql/errmsg.h>
@@ -53,6 +54,97 @@ void remove_active_request(const ack_request &request)
 		active_requests.erase(found);
 }
 
+#ifndef __NO_MYSQL__
+// Owns only the explicit v6 ACK transaction; original autocommit v1-5 stays below.
+quest_reward_ack_completion execute_native_fee_ack(MYSQL *connection, const ack_request &request,
+						   const std::vector<uint8_t> &original_literal)
+{
+	quest_reward_ack_completion completion;
+	completion.player_pid = request.player_pid;
+	completion.offering_operation = request.offering_operation;
+	completion.result = quest_reward_obligation_result::database_error;
+	player_sql_pool_lease lease(connection);
+	if (!connection || player_sql_idle_error(connection))
+	{
+		completion.error_code = EAGAIN;
+		return completion;
+	}
+	player_sql_cleanup cleanup;
+	player_sql_transaction_cleanup transaction(connection, cleanup);
+	transaction.starting();
+	bool committed = false;
+	try
+	{
+		if (mysql_real_query(connection, "START TRANSACTION", 17))
+			throw mysql_errno(connection);
+		std::vector<uint8_t> literal;
+		quest_reward_continuation terms;
+		quest_reward_read_metrics preflight;
+		unsigned int error = 0;
+		const auto read = quest_reward_obligation_repository_read_ack_terms(
+			connection, request.player_pid, request.offering_operation, &literal,
+			&terms, &error, &preflight);
+		if (read != quest_reward_obligation_result::ok || error || terms.version != 6 ||
+		    literal != original_literal || !transaction.same_session())
+		{
+			completion.result = read == quest_reward_obligation_result::ok ?
+						    quest_reward_obligation_result::corrupt :
+						    read;
+			completion.error_code = error;
+		}
+		else if (!quest_reward_obligation_native_fee_owner::verify_in_transaction(
+				 connection, request.offering_operation, literal) ||
+			 !transaction.same_session())
+		{
+			// Missing retained carrier/proof is pending; raw current rows never substitute.
+			completion.result = quest_reward_obligation_result::pending_effects;
+			completion.error_code = EAGAIN;
+		}
+		else
+		{
+			// All original immutable child/parent/root proofs precede this first ACK DML.
+			completion.result = quest_reward_obligation_repository_acknowledge(
+				connection, request.player_pid, request.offering_operation,
+				&completion.error_code);
+			if (!completion.error_code && transaction.same_session() &&
+			    (completion.result == quest_reward_obligation_result::ok ||
+			     completion.result ==
+				     quest_reward_obligation_result::already_acknowledged))
+			{
+				transaction.committing();
+				if (mysql_real_query(connection, "COMMIT", 6))
+					throw mysql_errno(connection);
+				if (!transaction.committed())
+					throw cleanup.cleanup_error;
+				committed = true;
+			}
+		}
+	}
+	catch (unsigned int error)
+	{
+		completion.result = quest_reward_obligation_result::database_error;
+		completion.error_code = error ? error : EIO;
+	}
+	catch (...)
+	{
+		completion.result = quest_reward_obligation_result::database_error;
+		completion.error_code = ENOMEM;
+	}
+	transaction.finish();
+	if (!transaction.commit_attempted() || committed)
+		lease.reuse(cleanup);
+	if (!transaction.same_session() || cleanup.cleanup_error ||
+	    cleanup.disposition != player_sql_cleanup_disposition::idle_verified ||
+	    (!committed && !cleanup.rollback_confirmed) ||
+	    (transaction.commit_attempted() && !committed))
+	{
+		completion.result = quest_reward_obligation_result::database_error;
+		completion.error_code = cleanup.cleanup_error ? cleanup.cleanup_error : EIO;
+	}
+	return completion;
+}
+#endif
+
 quest_reward_ack_completion execute_ack(const ack_request &request)
 {
 	quest_reward_ack_completion completion;
@@ -94,6 +186,26 @@ quest_reward_ack_completion execute_ack(const ack_request &request)
 	{
 		completion.result = quest_reward_obligation_result::database_error;
 		completion.error_code = EAGAIN;
+		return completion;
+	}
+	// Bounded literal discriminator only, before selecting the original owner.
+	// V6 repeats this exact literal read on its trusted same-session transaction.
+	std::vector<uint8_t> literal;
+	quest_reward_continuation terms;
+	quest_reward_read_metrics preflight;
+	const auto read = quest_reward_obligation_repository_read_ack_terms(
+		connection, request.player_pid, request.offering_operation, &literal, &terms,
+		&completion.error_code, &preflight);
+	if (read == quest_reward_obligation_result::ok && terms.version == 6)
+		return execute_native_fee_ack(connection, request,
+					      literal); // consumes this pool lease
+	if (read != quest_reward_obligation_result::ok &&
+	    read != quest_reward_obligation_result::not_found)
+	{
+		completion.result = read;
+		if (completion.error_code && mysql_errno(connection) >= CR_MIN_ERROR)
+			sql_pool_discard_connection(connection);
+		sql_pool_release(connection);
 		return completion;
 	}
 	completion.result = quest_reward_obligation_repository_acknowledge(

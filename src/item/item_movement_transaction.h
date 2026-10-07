@@ -90,6 +90,12 @@ bool item_movement_transaction_prepare_sql_drop(P_char actor, P_obj root,
 						item_movement_completion_fn completion,
 						const void *context, size_t context_size,
 						item_movement_reject *reject);
+bool item_movement_transaction_prepare_sql_lockpick_retirement(P_char, P_obj,
+							       const item_transfer_continuation &,
+							       item_movement_publication_fn,
+							       item_movement_reject *);
+bool item_movement_transaction_restore_held_retirement_recovery(
+	const critical_native_recovery_envelope &) noexcept;
 void item_movement_transaction_drop_prepare_pulse(void);
 // Lifecycle cancellation of unadmitted preparations only. Their ordinary save
 // bodies remain owned by the pipeline/worker; admitted original holds are untouched.
@@ -301,6 +307,17 @@ class item_native_quest_preparation_owner final
 	static item_native_quest_preparation_state
 	poll_acceptance(const item_native_quest_preparation_token &, P_char actor,
 			P_char native_mobile) noexcept;
+	// Genuine zero-item ordinary coin GIVE. No original quester trigger, source
+	// issuance or synthetic carried root; complete SQL/publication owner follows.
+	static item_native_quest_preparation_state
+	begin_money_acceptance(P_char actor, P_char native_mobile, uint8_t denomination,
+			       int32_t quantity, item_native_quest_preparation_token *) noexcept;
+	static item_native_quest_preparation_state
+	poll_money_acceptance(const item_native_quest_preparation_token &, P_char actor,
+			      P_char native_mobile) noexcept;
+	static critical_submit_result
+	submit_money_acceptance(const item_native_quest_preparation_token &, P_char actor,
+				P_char native_mobile) noexcept;
 	static item_native_quest_preparation_state
 	begin_consumption(P_char actor, P_char native_mobile,
 			  std::shared_ptr<const quest_native_consumption_capture>,
@@ -326,6 +343,17 @@ class item_native_quest_preparation_owner final
 						P_char actor, P_char native_mobile,
 						std::shared_ptr<const critical_command> *,
 						critical_submit_result *failure) noexcept;
+};
+
+// Original coin feedback only, after exact original cash publication. This
+// private owner never debits/credits, executes quester, or grants receipt/ACK.
+class item_native_quest_publication_owner;
+class quest_native_coin_give_notice_owner final
+{
+    private:
+	friend class item_native_quest_publication_owner;
+	static bool publish(P_char actor, P_char native_mobile, uint8_t denomination,
+			    int32_t quantity, int32_t original_room_vnum) noexcept;
 };
 
 // The addressed original quest continuation invokes this only after native

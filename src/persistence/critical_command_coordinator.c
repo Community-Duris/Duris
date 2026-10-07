@@ -1,3 +1,6 @@
+#include "item/held_retirement_recovery.h"
+#include "item/held_retirement_transport.h"
+#include "item/native_quest_transport.h"
 #include "persistence/death_recovery_visibility.h"
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/persistence_diagnostics.h"
@@ -5,6 +8,10 @@
 #include "economy/shop_trade_accounting.h"
 #include "economy/native_mobile_birth_command.h"
 #include "economy/native_mobile_birth_result.h"
+#include "item/item_transfer_command.h"
+#include "world/native_quest_recovery_context.h"
+#include "item/quest_reward_continuation.h"
+#include "economy/auction_native_command_context.h"
 
 #include <algorithm>
 #include <chrono>
@@ -50,11 +57,16 @@ bool guarded_refusal_owner(const critical_command &command) noexcept
 	// Retention/cache decisions must not erase an owner when decode allocation
 	// fails. Conservative shape retains the original; private cancellation still
 	// verifies the full immutable intent and exact canonical refusal receipt.
-	return command.type == critical_command_type::collector ||
+	return held_retirement_transport_command(command) ||
+	       (command.publication_required &&
+		command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+		command.type == critical_command_type::auction &&
+		command.payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION) ||
+	       command.type == critical_command_type::collector ||
 	       (command.publication_required &&
 		command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
 		command.type == critical_command_type::item_transfer &&
-		command.payload_version == 12) ||
+		native_quest_transport_command(command)) ||
 	       (command.publication_required &&
 		command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
 		command.type == critical_command_type::shop_trade &&
@@ -71,6 +83,10 @@ bool retained_admission_refusal_owner(const critical_command &command) noexcept
 			   command.type == critical_command_type::native_mobile_birth &&
 			   native_mobile_birth_payload_version_supported(command.payload_version);
 	return birth ||
+	       (command.publication_required &&
+		command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+		command.type == critical_command_type::auction &&
+		command.payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION) ||
 	       (guarded_refusal_owner(command) &&
 		player_save_execution_guard::publication_operation_held(command.operation_id));
 }
@@ -162,6 +178,7 @@ critical_native_recovery_observer_fn native_replay_observer_callback = nullptr;
 critical_native_recovery_publication_validator_fn native_publication_validator_callback = nullptr;
 critical_native_birth_recovery_validators native_birth_validators;
 critical_native_recovery_pair_validator_fn native_quest_pair_validator = nullptr;
+critical_native_auction_recovery_validators native_auction_validators = {};
 void *apply_context = nullptr;
 critical_drain_observer_fn drain_observer = nullptr;
 critical_coordinator_health health = {};
@@ -285,6 +302,18 @@ bool native_v12_command(const critical_command &command) noexcept
 	       command.payload_version == 12;
 }
 
+bool native_fee_context_command(const critical_command &command) noexcept
+{
+	return command.type == critical_command_type::item_transfer &&
+	       command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+	       command.payload_version == ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION;
+}
+
+bool native_quest_context_command(const critical_command &command) noexcept
+{
+	return native_quest_transport_command(command);
+}
+
 bool native_birth_typed_command(const critical_command &command) noexcept
 {
 	return command.type == critical_command_type::native_mobile_birth &&
@@ -293,9 +322,35 @@ bool native_birth_typed_command(const critical_command &command) noexcept
 		command.payload_version == NATIVE_MOBILE_BIRTH_CONSTRUCTOR_PAYLOAD_VERSION);
 }
 
+bool native_auction_typed_command(const critical_command &command) noexcept
+{
+	return command.type == critical_command_type::auction &&
+	       command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+	       command.payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION;
+}
+
+bool native_auction_background_command(const critical_command &command) noexcept
+{
+	auction_native_command_context image;
+	return native_auction_typed_command(command) &&
+	       auction_native_command_decode(command, &image) == economic_accounting_error::ok &&
+	       !image.payload.actor_pid &&
+	       (image.payload.action == auction_action::finalize ||
+		image.payload.action == auction_action::remove);
+}
+
+bool native_auction_validators_ready() noexcept
+{
+	return native_auction_validators.valid && native_auction_validators.initial &&
+	       native_auction_validators.successor && native_auction_validators.publication &&
+	       native_auction_validators.terminal;
+}
+
 bool native_transport_command(const critical_command &command) noexcept
 {
-	return native_v12_command(command) || native_birth_typed_command(command);
+	return held_retirement_transport_command(command) ||
+	       native_quest_transport_command(command) || native_birth_typed_command(command) ||
+	       native_auction_typed_command(command);
 }
 
 bool native_birth_validators_ready() noexcept
@@ -322,6 +377,8 @@ bool native_receipt_equal(const critical_completion &a, const critical_completio
 bool native_envelope_size(const critical_native_recovery_envelope &envelope, size_t *retained)
 {
 	if (!retained || !native_transport_command(envelope.command) ||
+	    (held_retirement_transport_command(envelope.command) &&
+	     envelope.phase != critical_native_recovery_phase::execution_pending) ||
 	    !envelope.command.publication_required || !envelope.revision ||
 	    (envelope.phase != critical_native_recovery_phase::execution_pending &&
 	     envelope.phase != critical_native_recovery_phase::continuation_pending) ||
@@ -685,7 +742,9 @@ bool enqueue_native_replayed(critical_native_recovery_envelope envelope, void *c
 	if (!replay || !replay->native_observer || !execution_supported(envelope.command) ||
 	    !native_envelope_size(envelope, &retained) ||
 	    (native_birth_typed_command(envelope.command) &&
-	     (!native_birth_validators_ready() || !native_birth_validators.valid(envelope))))
+	     (!native_birth_validators_ready() || !native_birth_validators.valid(envelope))) ||
+	    (native_auction_typed_command(envelope.command) &&
+	     (!native_auction_validators_ready() || !native_auction_validators.valid(envelope))))
 		return false;
 	const std::string identity = operation_key(envelope.command.operation_id);
 	if (operations.find(identity) != operations.end() ||
@@ -694,6 +753,14 @@ bool enqueue_native_replayed(critical_native_recovery_envelope envelope, void *c
 		return false;
 	const bool continuation = envelope.phase ==
 				  critical_native_recovery_phase::continuation_pending;
+	// Constructor births retain advancement fences until their real terminal
+	// carrier has transferred durably to the native lifetime owner. Replay never
+	// re-executes a phase2 birth, including when that transfer was interrupted.
+	const bool holds_fences =
+		!continuation ||
+		(envelope.command.type == critical_command_type::native_mobile_birth &&
+		 envelope.command.payload_version ==
+			 NATIVE_MOBILE_BIRTH_CONSTRUCTOR_PAYLOAD_VERSION);
 	try
 	{
 		auto state = std::make_unique<operation_state>();
@@ -714,15 +781,14 @@ bool enqueue_native_replayed(critical_native_recovery_envelope envelope, void *c
 		state->native_physical_released = continuation;
 		operations.emplace(identity, std::move(state));
 		if (!continuation)
-		{
 			pending.push_back(identity);
+		if (holds_fences)
 			add_fences(identity, operations.at(identity)->command);
-		}
-		// Native phase2 is passive continuation registration, never apply/hold.
+		// Native phase2 is passive continuation registration, never execution.
 		// The original body codec and domain owner must authenticate its contents.
 		if (!replay->native_observer(envelope, replay->context))
 		{
-			if (!continuation)
+			if (holds_fences)
 				remove_fences(identity, operations.at(identity)->command);
 			operations.erase(identity);
 			pending.erase(std::remove(pending.begin(), pending.end(), identity),
@@ -736,7 +802,7 @@ bool enqueue_native_replayed(critical_native_recovery_envelope envelope, void *c
 		auto found = operations.find(identity);
 		if (found != operations.end())
 		{
-			if (!continuation)
+			if (holds_fences)
 				remove_fences(identity, found->second->command);
 			operations.erase(found);
 		}
@@ -1410,12 +1476,13 @@ void worker_main()
 	}
 }
 
-bool cutover_ready_locked()
+bool cutover_ready_locked(bool lifecycle_owner = false)
 {
 	update_depth();
-	if (lifecycle_guard_active || !health.initialized || !health.running || health.accepting ||
-	    stop_requested || guarded_publications_inflight || health.queued || health.inflight ||
-	    health.blocked || health.publication_pending || health.native_continuation_pending ||
+	if ((lifecycle_guard_active && !lifecycle_owner) || !health.initialized ||
+	    !health.running || health.accepting || stop_requested ||
+	    guarded_publications_inflight || health.queued || health.inflight || health.blocked ||
+	    health.publication_pending || health.native_continuation_pending ||
 	    health.awaiting_durability || health.admission_queue_bytes || health.append_inflight ||
 	    health.fenced_keys || !operations.empty() || !pending.empty() ||
 	    !pending_admission.empty() || pending_admission_bytes || admission_inflight_bytes ||
@@ -1436,7 +1503,8 @@ bool critical_command_coordinator_init(
 	critical_native_recovery_observer_fn native_replay_observer,
 	critical_native_recovery_publication_validator_fn native_publication_validator,
 	critical_native_birth_recovery_validators birth_validators,
-	critical_native_recovery_pair_validator_fn quest_pair_validator)
+	critical_native_recovery_pair_validator_fn quest_pair_validator,
+	critical_native_auction_recovery_validators auction_validators)
 {
 	if (!apply || !worker_count || worker_count > CRITICAL_COORDINATOR_DEFAULT_WORKERS * 4)
 		return false;
@@ -1471,6 +1539,7 @@ bool critical_command_coordinator_init(
 	native_publication_validator_callback = native_publication_validator;
 	native_birth_validators = birth_validators;
 	native_quest_pair_validator = quest_pair_validator;
+	native_auction_validators = auction_validators;
 	apply_context = context;
 	stop_requested = false;
 	recovery_requested = false;
@@ -1494,6 +1563,7 @@ bool critical_command_coordinator_init(
 		native_publication_validator_callback = nullptr;
 		native_birth_validators = {};
 		native_quest_pair_validator = nullptr;
+		native_auction_validators = {};
 		critical_command_journal_shutdown();
 		return false;
 	}
@@ -1616,6 +1686,7 @@ bool critical_command_coordinator_shutdown(void)
 	native_publication_validator_callback = nullptr;
 	native_birth_validators = {};
 	native_quest_pair_validator = nullptr;
+	native_auction_validators = {};
 	apply_context = nullptr;
 	recovery_requested = false;
 	uncertain_recovery_not_before_usec = 0;
@@ -1748,7 +1819,9 @@ critical_submit_result native_recovery_submit(critical_native_recovery_envelope 
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
 	if (!execution_supported(envelope.command) ||
 	    (native_birth_typed_command(envelope.command) &&
-	     (!native_birth_validators_ready() || !native_birth_validators.initial(envelope))))
+	     (!native_birth_validators_ready() || !native_birth_validators.initial(envelope))) ||
+	    (native_auction_typed_command(envelope.command) &&
+	     (!native_auction_validators_ready() || !native_auction_validators.initial(envelope))))
 		return critical_submit_result::invalid;
 	if (!health.initialized || !health.accepting || stop_requested ||
 	    !native_replay_observer_callback)
@@ -1841,6 +1914,9 @@ bool native_context_copy(const critical_command &command, critical_native_recove
 			      !found->second->native_physical_released)))
 			return false;
 		auto copy = native_envelope(*found->second);
+		if (native_auction_typed_command(command) &&
+		    (!native_auction_validators_ready() || !native_auction_validators.valid(copy)))
+			return false;
 		*output = std::move(copy);
 		return true;
 	}
@@ -1852,7 +1928,11 @@ bool native_context_copy(const critical_command &command, critical_native_recove
 
 bool native_context_checkpoint(const critical_native_recovery_envelope &expected,
 			       const critical_native_recovery_envelope *successor,
-			       critical_native_recovery_phase phase) noexcept
+			       critical_native_recovery_phase phase,
+			       uint64_t expected_generation = 0,
+			       bool (*durable_transfer)(const critical_native_recovery_envelope &,
+							void *) noexcept = nullptr,
+			       void *transfer_context = nullptr) noexcept
 {
 	std::string identity;
 	uint64_t generation = 0;
@@ -1870,6 +1950,14 @@ bool native_context_checkpoint(const critical_native_recovery_envelope &expected
 				   !native_envelope_size(*successor, &successor_retained))) ||
 		    (!successor && phase != critical_native_recovery_phase::continuation_pending))
 			return false;
+		const bool constructor_retirement =
+			!successor &&
+			expected.command.type == critical_command_type::native_mobile_birth &&
+			expected.command.payload_version ==
+				NATIVE_MOBILE_BIRTH_CONSTRUCTOR_PAYLOAD_VERSION;
+		if ((constructor_retirement && (!expected_generation || !durable_transfer)) ||
+		    (durable_transfer && !constructor_retirement))
+			return false;
 		if (successor)
 			prepared =
 				*successor; // Every allocation precedes reservation and journal mutation.
@@ -1881,6 +1969,7 @@ bool native_context_checkpoint(const critical_native_recovery_envelope &expected
 		    found->second->publication_checkpointing ||
 		    found->second->native_ack_uncertain || !coordinator_generation ||
 		    coordinator_generation_exhausted ||
+		    (expected_generation && coordinator_generation != expected_generation) ||
 		    (lifecycle_guard_active &&
 		     lifecycle_guard_thread != std::this_thread::get_id()) ||
 		    (phase == critical_native_recovery_phase::execution_pending ?
@@ -1893,6 +1982,12 @@ bool native_context_checkpoint(const critical_native_recovery_envelope &expected
 		    (!native_birth_validators_ready() || !native_birth_validators.valid(expected) ||
 		     (successor ? !native_birth_validators.successor(expected, prepared) :
 				  !native_birth_validators.terminal(expected))))
+			return false;
+		if (native_auction_typed_command(expected.command) &&
+		    (!native_auction_validators_ready() ||
+		     !native_auction_validators.valid(expected) ||
+		     (successor ? !native_auction_validators.successor(expected, prepared) :
+				  !native_auction_validators.terminal(expected))))
 			return false;
 		const size_t reserved = std::max(found->second->retained_bytes, successor_retained);
 		if (reserved > CRITICAL_COORDINATOR_MAX_BYTES -
@@ -1914,9 +2009,15 @@ bool native_context_checkpoint(const critical_native_recovery_envelope &expected
 	auto result = critical_command_journal_result::io_failure;
 	try
 	{
-		result = successor ? critical_command_journal_replace_native_recovery(expected,
-										      prepared) :
-				     critical_command_journal_retire_native_recovery(expected);
+		// The exact terminal envelope and generation are pinned across this
+		// owner callback, outside the coordinator mutex. A lost transfer reply
+		// retains both journal and fences; its next exact retry must reconcile
+		// the original durable record before any journal retirement is attempted.
+		if (!durable_transfer || durable_transfer(expected, transfer_context))
+			result = successor ?
+					 critical_command_journal_replace_native_recovery(
+						 expected, prepared) :
+					 critical_command_journal_retire_native_recovery(expected);
 	}
 	catch (...)
 	{
@@ -1956,6 +2057,13 @@ bool native_context_checkpoint(const critical_native_recovery_envelope &expected
 	}
 	else
 	{
+		// Release the birth advancement gate only after confirmed original
+		// transfer AND journal retirement. Existing non-birth phase2 owners have
+		// already released their fences at their own original physical ACK.
+		if (state.command.type == critical_command_type::native_mobile_birth &&
+		    state.command.payload_version ==
+			    NATIVE_MOBILE_BIRTH_CONSTRUCTOR_PAYLOAD_VERSION)
+			remove_fences(identity, state.command);
 		// No command-only completed cache can establish original body identity.
 		operations.erase(found);
 		++health.completed;
@@ -1967,27 +2075,644 @@ bool native_context_checkpoint(const critical_native_recovery_envelope &expected
 } // namespace
 
 critical_submit_result
-critical_native_quest_submission_owner::submit(critical_native_recovery_envelope envelope)
+critical_native_auction_submission_owner::submit(critical_native_recovery_envelope envelope)
 {
-	if (!native_v12_command(envelope.command))
+	if (!native_auction_typed_command(envelope.command))
 		return critical_submit_result::invalid;
 	return native_recovery_submit(std::move(envelope));
+}
+
+bool critical_native_auction_publication_owner::copy_context(
+	const critical_command &command, critical_native_recovery_envelope *output) noexcept
+{
+	if (!output || !native_auction_typed_command(command))
+		return false;
+	try
+	{
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		const auto found = operations.find(operation_key(command.operation_id));
+		if (!health.initialized || stop_requested || !coordinator_generation ||
+		    coordinator_generation_exhausted || found == operations.end() ||
+		    !found->second->native || found->second->publication_checkpointing ||
+		    found->second->native_context_uncertain ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    !critical_command_equal(command, found->second->command) ||
+		    !native_auction_validators_ready())
+			return false;
+		const auto &state = *found->second;
+		// A durable phase2 rewrite can precede exact player-hold consumption.
+		// This is still held physical publication, never notice authority.
+		const bool held_execution =
+			state.native->phase == critical_native_recovery_phase::execution_pending &&
+			operation_is_publication_pending(state) && !state.native_physical_released;
+		const bool held_ack_retry =
+			state.native->phase ==
+				critical_native_recovery_phase::continuation_pending &&
+			state.phase == critical_operation_phase::native_continuation_pending &&
+			!state.native_physical_released;
+		if (!held_execution && !held_ack_retry)
+			return false;
+		auto original = native_envelope(state);
+		if (!native_auction_validators.valid(original) ||
+		    ((held_ack_retry || state.native_ack_uncertain) &&
+		     !native_auction_validators.publication(original,
+							    state.publication_completion)))
+			return false;
+		*output = std::move(original);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool critical_native_auction_publication_owner::checkpoint_context(
+	const critical_native_recovery_envelope &expected,
+	const critical_native_recovery_envelope &successor) noexcept
+{
+	if (!native_auction_typed_command(expected.command))
+		return false;
+	return native_context_checkpoint(expected, &successor,
+					 critical_native_recovery_phase::execution_pending);
+}
+
+bool critical_native_auction_continuation_owner::copy_context(
+	const critical_command &command, critical_native_recovery_envelope *output) noexcept
+{
+	if (!native_auction_typed_command(command))
+		return false;
+	return native_context_copy(command, critical_native_recovery_phase::continuation_pending,
+				   output);
+}
+
+bool critical_native_auction_continuation_owner::checkpoint_context(
+	const critical_native_recovery_envelope &expected,
+	const critical_native_recovery_envelope &successor) noexcept
+{
+	if (!native_auction_typed_command(expected.command))
+		return false;
+	return native_context_checkpoint(expected, &successor,
+					 critical_native_recovery_phase::continuation_pending);
+}
+
+bool critical_native_auction_continuation_owner::retire_continuation(
+	const critical_native_recovery_envelope &expected) noexcept
+{
+	if (!native_auction_typed_command(expected.command))
+		return false;
+	return native_context_checkpoint(expected, nullptr,
+					 critical_native_recovery_phase::continuation_pending);
+}
+
+critical_submit_result critical_native_auction_background_publication_owner::submit(
+	critical_native_recovery_envelope envelope)
+{
+	if (!native_auction_background_command(envelope.command))
+		return critical_submit_result::invalid;
+	return native_recovery_submit(std::move(envelope));
+}
+
+bool critical_native_auction_background_publication_owner::copy_context(
+	const critical_command &command, critical_native_recovery_envelope *output) noexcept
+{
+	if (!native_auction_background_command(command))
+		return false;
+	// Held phase1 includes an authenticated exact uncertain-ACK retry. Phase2
+	// is available only after the real native physical boundary was released.
+	return critical_native_auction_publication_owner::copy_context(command, output) ||
+	       native_context_copy(command, critical_native_recovery_phase::continuation_pending,
+				   output);
+}
+
+bool critical_native_auction_background_publication_owner::checkpoint_context(
+	const critical_native_recovery_envelope &expected,
+	const critical_native_recovery_envelope &successor) noexcept
+{
+	if (!native_auction_background_command(expected.command))
+		return false;
+	return native_context_checkpoint(expected, &successor,
+					 critical_native_recovery_phase::execution_pending);
+}
+
+bool critical_native_auction_background_publication_owner::observe_generation(
+	const critical_native_recovery_envelope &expected, uint64_t *output) noexcept
+{
+	if (!output || !native_auction_background_command(expected.command))
+		return false;
+	try
+	{
+		const auto identity = operation_key(expected.command.operation_id);
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		const auto found = operations.find(identity);
+		if (found == operations.end() || !found->second->retain_until_publication ||
+		    !native_matches(*found->second, expected) || !health.initialized ||
+		    !coordinator_generation || coordinator_generation_exhausted || stop_requested ||
+		    found->second->publication_checkpointing ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()))
+			return false;
+		*output = coordinator_generation;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool critical_native_auction_background_publication_owner::cancel_refusal(
+	const critical_native_recovery_envelope &original, const critical_completion &expected,
+	uint64_t generation,
+	bool (*native_cleanup)(const critical_command &, const critical_completion &,
+			       void *) noexcept,
+	void *context) noexcept
+{
+	if (!native_cleanup || !generation ||
+	    !native_auction_background_command(original.command) ||
+	    expected.operation_id.bytes != original.command.operation_id.bytes ||
+	    !critical_completion_disposition_valid(expected) ||
+	    expected.disposition != critical_completion_disposition::never_admitted)
+		return false;
+	std::string identity;
+	critical_native_recovery_envelope frozen;
+	critical_completion receipt = expected;
+	operation_state *pinned = nullptr;
+	const auto matches = [&](const operation_state &state) noexcept
+	{
+		return operation_is_admission_failed(state) && state.owned_refusal_delivered &&
+		       state.retain_until_publication && state.native &&
+		       state.native->revision == frozen.revision &&
+		       state.native->phase == frozen.phase &&
+		       state.native->attachment == frozen.attachment &&
+		       native_receipt_equal(state.admission_failure_completion, receipt);
+	};
+	try
+	{
+		// Cleanup may destroy the caller's native owner. Copies and canonical
+		// command comparison must finish before pinning and invoking that callback.
+		frozen = original;
+		identity = operation_key(frozen.command.operation_id);
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		auto found = operations.find(identity);
+		if (found == operations.end() || found->second->publication_checkpointing ||
+		    !health.initialized || coordinator_generation != generation ||
+		    coordinator_generation_exhausted || stop_requested ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    !matches(*found->second) || !native_matches(*found->second, frozen) ||
+		    !native_auction_validators_ready() ||
+		    !native_auction_validators.initial(frozen))
+			return false;
+		pinned = found->second.get();
+		pinned->publication_checkpointing = true;
+		++publication_checkpoints_inflight;
+		++guarded_publications_inflight;
+	}
+	catch (...)
+	{
+		return false;
+	}
+	const bool cleaned = native_cleanup(frozen.command, receipt, context);
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	--publication_checkpoints_inflight;
+	--guarded_publications_inflight;
+	publication_checkpoint_finished.notify_all();
+	auto found = operations.find(identity);
+	if (found == operations.end() || coordinator_generation != generation ||
+	    found->second.get() != pinned)
+		return false;
+	const bool same = found->second->publication_checkpointing && matches(*found->second);
+	found->second->publication_checkpointing = false;
+	if (!cleaned || !same || !health.initialized || coordinator_generation_exhausted ||
+	    stop_requested ||
+	    (lifecycle_guard_active && lifecycle_guard_thread != std::this_thread::get_id()))
+		return false;
+	// This exact delivered never-admitted owner has no durable frame to retire.
+	remove_fences(identity, found->second->command);
+	operations.erase(found);
+	update_depth();
+	work_available.notify_all();
+	return true;
+}
+
+bool critical_native_auction_background_publication_owner::acknowledge(
+	const critical_native_recovery_envelope &expected, const critical_completion &receipt,
+	uint64_t generation) noexcept
+{
+	if (!generation || !native_auction_background_command(expected.command) ||
+	    expected.phase != critical_native_recovery_phase::execution_pending ||
+	    expected.revision == UINT64_MAX ||
+	    receipt.operation_id.bytes != expected.command.operation_id.bytes ||
+	    !critical_completion_disposition_valid(receipt) ||
+	    (receipt.outcome != critical_apply_outcome::applied &&
+	     receipt.outcome != critical_apply_outcome::already_applied &&
+	     receipt.outcome != critical_apply_outcome::terminal_failure) ||
+	    receipt.disposition != critical_completion_disposition::execution ||
+	    receipt.result_size != AUCTION_RESULT_PAYLOAD_BYTES)
+		return false;
+	std::string identity;
+	critical_native_recovery_envelope frozen, successor;
+	operation_state *pinned = nullptr;
+	bool prior_uncertain = false;
+	try
+	{
+		// Every fallible copy/encoding precedes the pinned journal CAS.
+		frozen = expected;
+		successor = frozen;
+		++successor.revision;
+		successor.phase = critical_native_recovery_phase::continuation_pending;
+		identity = operation_key(frozen.command.operation_id);
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		auto found = operations.find(identity);
+		if (found == operations.end() || !health.initialized || stop_requested ||
+		    coordinator_generation != generation || coordinator_generation_exhausted ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    !operation_is_publication_pending(*found->second) ||
+		    !found->second->retain_until_publication ||
+		    found->second->publication_checkpointing ||
+		    found->second->native_context_uncertain ||
+		    !native_matches(*found->second, frozen) ||
+		    !native_receipt_equal(found->second->publication_completion, receipt) ||
+		    !native_auction_validators_ready() ||
+		    !native_auction_validators.publication(frozen, receipt) ||
+		    !native_auction_validators.successor(frozen, successor))
+			return false;
+		prior_uncertain = found->second->native_ack_uncertain;
+		pinned = found->second.get();
+		pinned->publication_checkpointing = true;
+		++publication_checkpoints_inflight;
+		++guarded_publications_inflight;
+	}
+	catch (...)
+	{
+		return false;
+	}
+	auto result = critical_command_journal_result::io_failure;
+	try
+	{
+		result = critical_command_journal_replace_native_recovery(frozen, successor);
+	}
+	catch (...)
+	{
+	}
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	--publication_checkpoints_inflight;
+	--guarded_publications_inflight;
+	publication_checkpoint_finished.notify_all();
+	auto found = operations.find(identity);
+	// No allocation, command encoding or owner callback after durable CAS.
+	if (found == operations.end() || coordinator_generation != generation ||
+	    found->second.get() != pinned || !found->second->publication_checkpointing ||
+	    !operation_is_publication_pending(*found->second) || !found->second->native ||
+	    found->second->native->revision != frozen.revision ||
+	    found->second->native->phase != frozen.phase ||
+	    found->second->native->attachment != frozen.attachment)
+		return false;
+	auto &state = *found->second;
+	state.publication_checkpointing = false;
+	if (result != critical_command_journal_result::ok)
+	{
+		state.native_ack_uncertain =
+			prior_uncertain ||
+			result == critical_command_journal_result::append_uncertain;
+		return false;
+	}
+	state.native->revision = successor.revision;
+	state.native->phase = successor.phase;
+	state.phase = critical_operation_phase::native_continuation_pending;
+	state.native_ack_uncertain = false;
+	state.native_physical_released = true;
+	remove_fences(identity, state.command);
+	// Native background auction consumes no PC hold or command-only cache entry.
+	// Preserve the original envelope until genuine after-ACK notice retirement.
+	update_depth();
+	work_available.notify_all();
+	return true;
+}
+
+critical_submit_result
+critical_held_retirement_submission_owner::submit(critical_native_recovery_envelope envelope)
+{
+	held_retirement_recovery original;
+	if (!held_retirement_command_identity(envelope.command) ||
+	    !held_retirement_recovery_decode(envelope.command, envelope.attachment, &original) ||
+	    original.receipt.present || original.physical_stage)
+		return critical_submit_result::invalid;
+	return native_recovery_submit(std::move(envelope));
+}
+
+bool critical_held_retirement_publication_owner::copy_context(
+	const critical_command &command, critical_native_recovery_envelope *output) noexcept
+{
+	if (!held_retirement_command_identity(command))
+		return false;
+	return native_context_copy(command, critical_native_recovery_phase::execution_pending,
+				   output);
+}
+
+bool critical_held_retirement_publication_owner::copy_publication(
+	const critical_command &command, const critical_completion &completion,
+	held_retirement_publication_snapshot *output) noexcept
+try
+{
+	if (!output || !held_retirement_command_identity(command) ||
+	    !critical_completion_disposition_valid(completion))
+		return false;
+	const auto identity = operation_key(command.operation_id);
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	const auto found = operations.find(identity);
+	if (!health.initialized || stop_requested || !coordinator_generation ||
+	    coordinator_generation_exhausted || found == operations.end() ||
+	    (lifecycle_guard_active && lifecycle_guard_thread != std::this_thread::get_id()))
+		return false;
+	const auto &state = *found->second;
+	if (!state.native || state.publication_checkpointing || state.native_context_uncertain ||
+	    state.native->phase != critical_native_recovery_phase::execution_pending ||
+	    !critical_command_equal(state.command, command) || !state.retain_until_publication)
+		return false;
+	held_retirement_publication_snapshot prepared;
+	if (operation_is_admission_failed(state))
+	{
+		if (!state.owned_refusal_delivered || state.native_ack_uncertain ||
+		    !native_receipt_equal(state.admission_failure_completion, completion) ||
+		    completion.disposition != critical_completion_disposition::never_admitted)
+			return false;
+		prepared.mode = held_retirement_publication_mode::original_refusal;
+	}
+	else
+	{
+		if (!operation_is_publication_pending(state) ||
+		    !native_receipt_equal(state.publication_completion, completion) ||
+		    completion.disposition != critical_completion_disposition::execution)
+			return false;
+		prepared.mode = state.native_ack_uncertain ?
+					held_retirement_publication_mode::terminal_ack_retry :
+					held_retirement_publication_mode::execution;
+	}
+	prepared.envelope = native_envelope(state);
+	if (!held_retirement_publication_snapshot_valid(command, completion, prepared))
+		return false;
+	*output = std::move(prepared);
+	return true;
+}
+catch (...)
+{
+	return false;
+}
+
+bool critical_held_retirement_publication_owner::checkpoint_context(
+	const critical_native_recovery_envelope &expected,
+	const critical_native_recovery_envelope &successor) noexcept
+{
+	if (!held_retirement_recovery_transition_valid(expected, successor))
+		return false;
+	return native_context_checkpoint(expected, &successor,
+					 critical_native_recovery_phase::execution_pending);
+}
+
+critical_submit_result
+critical_native_quest_submission_owner::submit(critical_native_recovery_envelope envelope)
+{
+	if (!native_quest_context_command(envelope.command))
+		return critical_submit_result::invalid;
+	return native_recovery_submit(std::move(envelope));
+}
+
+bool critical_native_quest_publication_owner::copy_fee_acceptance_context(
+	const critical_command &actual_fee,
+	critical_native_recovery_envelope *original_parent) noexcept
+{
+	try
+	{
+		item_transfer_payload fee{};
+		std::vector<uint8_t> frame;
+		if (!original_parent || !native_fee_context_command(actual_fee) ||
+		    !item_transfer_command_decode_payload(actual_fee, &fee) ||
+		    !fee.native_cost.fee_only || !fee.native_recovery.present ||
+		    critical_command_encode(actual_fee, &frame) !=
+			    critical_command_codec_result::ok)
+			return false;
+		const auto identity = operation_key(actual_fee.operation_id);
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		const auto found = operations.find(identity);
+		if (!health.initialized || stop_requested || !coordinator_generation ||
+		    coordinator_generation_exhausted ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    found == operations.end())
+			return false;
+		const auto &state = *found->second;
+		if (!state.native || !critical_command_equal(state.command, actual_fee) ||
+		    state.publication_checkpointing || state.native_context_uncertain)
+			return false;
+		const bool executing = state.phase == critical_operation_phase::queued ||
+				       state.phase == critical_operation_phase::executing;
+		const bool publishing = state.phase ==
+					critical_operation_phase::publication_pending;
+		const bool released = state.phase ==
+				      critical_operation_phase::native_continuation_pending;
+		const bool ack_retry = (publishing && state.native_ack_uncertain) ||
+				       (released && !state.native_physical_released);
+		if ((!executing && !publishing && !released) ||
+		    (state.native_ack_uncertain && !publishing) ||
+		    (!released && state.native_physical_released) ||
+		    state.native->phase !=
+			    (released ? critical_native_recovery_phase::continuation_pending :
+					critical_native_recovery_phase::execution_pending))
+			return false;
+		if (publishing || ack_retry)
+		{
+			const auto &receipt = state.publication_completion;
+			item_native_mobile_fee_result result{}, expected{};
+			if (!critical_completion_disposition_valid(receipt) ||
+			    receipt.disposition != critical_completion_disposition::execution ||
+			    receipt.operation_id.bytes != actual_fee.operation_id.bytes ||
+			    receipt.failure_stage != critical_failure_stage::none ||
+			    (receipt.outcome != critical_apply_outcome::applied &&
+			     receipt.outcome != critical_apply_outcome::already_applied &&
+			     receipt.outcome != critical_apply_outcome::terminal_failure) ||
+			    ((receipt.outcome == critical_apply_outcome::terminal_failure) !=
+			     (receipt.error_code != 0)) ||
+			    receipt.result_size != ITEM_TRANSFER_NATIVE_MOBILE_FEE_RESULT_BYTES ||
+			    !item_native_mobile_fee_result_decode({ receipt.result_payload.data(),
+								    receipt.result_size },
+								  &result) ||
+			    !item_native_mobile_fee_result_build(fee, &expected))
+				return false;
+			if (receipt.outcome == critical_apply_outcome::terminal_failure)
+			{
+				expected.mobile_cash_revision =
+					fee.native_cost.projection.before_revision;
+				expected.mobile_revision =
+					fee.native_mobile.reference.mobile_revision;
+			}
+			if (result != expected ||
+			    receipt.durable_revision !=
+				    std::max({ result.mobile_cash_revision, result.mobile_revision,
+					       result.stock_revision,
+					       result.native_custody_revision,
+					       result.player_custody_revision }) ||
+			    !std::all_of(receipt.result_payload.begin() + receipt.result_size,
+					 receipt.result_payload.end(),
+					 [](uint8_t byte) { return byte == 0; }))
+				return false;
+		}
+		auto child = native_envelope(state);
+		if (ack_retry && !(released ? native_quest_recovery_fee_ack_context_valid(
+						      child, state.publication_completion) :
+					      native_quest_recovery_publication_context_valid(
+						      child, state.publication_completion)))
+			return false;
+		size_t child_size = 0;
+		native_quest_recovery_context child_context;
+		if (!native_envelope_size(child, &child_size) ||
+		    native_quest_recovery_context_decode(actual_fee, child.attachment,
+							 &child_context) !=
+			    player_snapshot_codec_result::ok ||
+		    (executing && (child_context.receipt.present ||
+				   child_context.publication_stage !=
+					   native_quest_recovery_publication_stage::captured)) ||
+		    (released &&
+		     child_context.publication_stage !=
+			     native_quest_recovery_publication_stage::physically_proven))
+			return false;
+		critical_native_recovery_envelope selected;
+		bool have_parent = false;
+		for (const auto &[key, entry] : operations)
+		{
+			const auto &candidate = *entry;
+			if (key == identity || !candidate.native ||
+			    !native_v12_command(candidate.command) ||
+			    candidate.phase !=
+				    critical_operation_phase::native_continuation_pending ||
+			    !candidate.native_physical_released ||
+			    candidate.native->phase !=
+				    critical_native_recovery_phase::continuation_pending)
+				continue;
+			auto parent = native_envelope(candidate);
+			native_quest_recovery_context context;
+			size_t parent_size = 0;
+			if (!native_envelope_size(parent, &parent_size) ||
+			    native_quest_recovery_context_decode(parent.command, parent.attachment,
+								 &context) !=
+				    player_snapshot_codec_result::ok)
+				return false;
+			if (context.next_child_operation.bytes != actual_fee.operation_id.bytes ||
+			    context.next_child_command != frame)
+				continue;
+			// Canonical parent decoding proves this exact child's original native
+			// lifetime and giver. Parent handoff1 precedes actual child admission.
+			if (have_parent || candidate.publication_checkpointing ||
+			    candidate.native_ack_uncertain || candidate.native_context_uncertain ||
+			    (context.child_handoff_stage != 1 &&
+			     context.child_handoff_stage != 2) ||
+			    !context.branch_program_frozen ||
+			    context.next_branch >= context.branches.size() ||
+			    fee.native_cost.completion_slot != context.next_branch ||
+			    context.publication_stage !=
+				    native_quest_recovery_publication_stage::physically_proven ||
+			    !context.receipt.present || context.receipt.error_code ||
+			    context.receipt.failure_stage != critical_failure_stage::none ||
+			    (context.receipt.outcome != critical_apply_outcome::applied &&
+			     context.receipt.outcome != critical_apply_outcome::already_applied) ||
+			    context.receipt.result_size != ITEM_TRANSFER_RESULT_BYTES)
+				return false;
+			if (fee.continuation.kind ==
+			    item_transfer_continuation_kind::quest_offering)
+			{
+				quest_reward_continuation terms;
+				if (!quest_reward_continuation_decode(fee.continuation.data.data(),
+								      fee.continuation.data.size(),
+								      &terms) ||
+				    !quest_fee_reward_trigger_binding_valid(terms,
+									    parent.command) ||
+				    terms.action_operation.bytes != actual_fee.operation_id.bytes ||
+				    !std::equal(terms.original_acceptance_result.begin(),
+						terms.original_acceptance_result.end(),
+						context.receipt.result_payload.begin()))
+					return false;
+			}
+			else if (fee.continuation.kind != item_transfer_continuation_kind::none)
+				return false;
+			selected = std::move(parent);
+			have_parent = true;
+		}
+		if (!have_parent)
+			return false;
+		static_assert(
+			noexcept(std::declval<critical_native_recovery_envelope &>() =
+					 std::declval<critical_native_recovery_envelope &&>()));
+		*original_parent = std::move(selected);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool critical_native_quest_publication_owner::copy_fee_ack_context(
+	const critical_command &command, critical_native_recovery_envelope *output) noexcept
+try
+{
+	if (!output || !native_fee_context_command(command))
+		return false;
+	const auto identity = operation_key(command.operation_id);
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	const auto found = operations.find(identity);
+	if (!health.initialized || stop_requested || !coordinator_generation ||
+	    coordinator_generation_exhausted || found == operations.end() ||
+	    (lifecycle_guard_active && lifecycle_guard_thread != std::this_thread::get_id()))
+		return false;
+	const auto &state = *found->second;
+	if (!state.native || !state.retain_until_publication || state.publication_checkpointing ||
+	    state.native_context_uncertain || state.native_physical_released ||
+	    !critical_command_equal(state.command, command))
+		return false;
+	const bool uncertain = state.phase == critical_operation_phase::publication_pending &&
+			       state.native_ack_uncertain &&
+			       state.native->phase ==
+				       critical_native_recovery_phase::execution_pending;
+	const bool transitioned =
+		state.phase == critical_operation_phase::native_continuation_pending &&
+		!state.native_ack_uncertain &&
+		state.native->phase == critical_native_recovery_phase::continuation_pending;
+	if (!uncertain && !transitioned)
+		return false;
+	auto envelope = native_envelope(state);
+	size_t bytes = 0;
+	if (!native_envelope_size(envelope, &bytes) ||
+	    !(transitioned ? native_quest_recovery_fee_ack_context_valid(
+				     envelope, state.publication_completion) :
+			     native_quest_recovery_publication_context_valid(
+				     envelope, state.publication_completion)))
+		return false;
+	*output = std::move(envelope);
+	return true;
+}
+catch (...)
+{
+	return false;
 }
 
 bool critical_native_quest_publication_owner::copy_context(
 	const critical_command &command, critical_native_recovery_envelope *output) noexcept
 {
-	if (!native_v12_command(command))
+	if (!native_quest_context_command(command))
 		return false;
 	return native_context_copy(command, critical_native_recovery_phase::execution_pending,
-				   output);
+				   output) ||
+	       copy_fee_ack_context(command, output);
 }
 
 bool critical_native_quest_publication_owner::checkpoint_context(
 	const critical_native_recovery_envelope &expected,
 	const critical_native_recovery_envelope &successor) noexcept
 {
-	if (!native_v12_command(expected.command))
+	if (!native_quest_context_command(expected.command))
 		return false;
 	return native_context_checkpoint(expected, &successor,
 					 critical_native_recovery_phase::execution_pending);
@@ -1996,7 +2721,7 @@ bool critical_native_quest_publication_owner::checkpoint_context(
 bool critical_native_quest_continuation_owner::copy_context(
 	const critical_command &command, critical_native_recovery_envelope *output) noexcept
 {
-	if (!native_v12_command(command))
+	if (!native_quest_context_command(command))
 		return false;
 	return native_context_copy(command, critical_native_recovery_phase::continuation_pending,
 				   output);
@@ -2009,7 +2734,7 @@ bool critical_native_quest_continuation_owner::copy_parent_context(
 	try
 	{
 		size_t child_size = 0;
-		if (!output || !native_v12_command(child.command) ||
+		if (!output || !native_quest_context_command(child.command) ||
 		    child.phase != critical_native_recovery_phase::continuation_pending ||
 		    !native_envelope_size(child, &child_size))
 			return false;
@@ -2075,11 +2800,91 @@ bool critical_native_quest_continuation_owner::copy_parent_context(
 	}
 }
 
+bool critical_native_quest_continuation_owner::copy_fee_obligation_context(
+	const critical_operation_id &actual_action, std::span<const uint8_t> literal_continuation,
+	critical_native_recovery_envelope *actual_child,
+	critical_native_recovery_envelope *original_parent) noexcept
+{
+	try
+	{
+		if (!actual_child || !original_parent || actual_child == original_parent ||
+		    critical_operation_id_is_zero(actual_action) || literal_continuation.empty() ||
+		    literal_continuation.size() > ITEM_TRANSFER_CONTINUATION_MAX_BYTES)
+			return false;
+		const auto identity = operation_key(actual_action);
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		const auto found = operations.find(identity);
+		if (!health.initialized || stop_requested || !coordinator_generation ||
+		    coordinator_generation_exhausted || !native_quest_pair_validator ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    found == operations.end())
+			return false;
+		const auto &state = *found->second;
+		if (!state.native || !native_fee_context_command(state.command) ||
+		    state.phase != critical_operation_phase::native_continuation_pending ||
+		    !state.native_physical_released || state.publication_checkpointing ||
+		    state.native_ack_uncertain || state.native_context_uncertain)
+			return false;
+		item_transfer_payload payload{};
+		if (!item_transfer_command_decode_payload(state.command, &payload) ||
+		    !payload.native_cost.fee_only || !payload.native_recovery.present ||
+		    payload.continuation.kind != item_transfer_continuation_kind::quest_offering ||
+		    payload.continuation.data.size() != literal_continuation.size() ||
+		    !std::equal(literal_continuation.begin(), literal_continuation.end(),
+				payload.continuation.data.begin()))
+			return false;
+		auto child = native_envelope(state);
+		size_t child_size = 0;
+		if (child.phase != critical_native_recovery_phase::continuation_pending ||
+		    !native_matches(state, child) || !native_envelope_size(child, &child_size))
+			return false;
+		critical_native_recovery_envelope parent;
+		bool selected = false;
+		for (const auto &[key, entry] : operations)
+		{
+			const auto &candidate = *entry;
+			if (key == identity || !candidate.native ||
+			    !native_v12_command(candidate.command) ||
+			    candidate.phase !=
+				    critical_operation_phase::native_continuation_pending ||
+			    !candidate.native_physical_released)
+				continue;
+			auto original = native_envelope(candidate);
+			size_t parent_size = 0;
+			if (original.phase !=
+				    critical_native_recovery_phase::continuation_pending ||
+			    !native_matches(candidate, original) ||
+			    !native_envelope_size(original, &parent_size))
+				return false;
+			if (!native_quest_pair_validator(original, child, nullptr))
+				continue;
+			if (selected || candidate.publication_checkpointing ||
+			    candidate.native_ack_uncertain || candidate.native_context_uncertain)
+				return false;
+			parent = std::move(original);
+			selected = true;
+		}
+		if (!selected)
+			return false;
+		static_assert(
+			noexcept(std::declval<critical_native_recovery_envelope &>() =
+					 std::declval<critical_native_recovery_envelope &&>()));
+		*actual_child = std::move(child);
+		*original_parent = std::move(parent);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
 bool critical_native_quest_continuation_owner::checkpoint_context(
 	const critical_native_recovery_envelope &expected,
 	const critical_native_recovery_envelope &successor) noexcept
 {
-	if (!native_v12_command(expected.command))
+	if (!native_quest_context_command(expected.command))
 		return false;
 	return native_context_checkpoint(expected, &successor,
 					 critical_native_recovery_phase::continuation_pending);
@@ -2088,7 +2893,7 @@ bool critical_native_quest_continuation_owner::checkpoint_context(
 bool critical_native_quest_continuation_owner::retire_continuation(
 	const critical_native_recovery_envelope &expected) noexcept
 {
-	if (!native_v12_command(expected.command))
+	if (!native_quest_context_command(expected.command))
 		return false;
 	return native_context_checkpoint(expected, nullptr,
 					 critical_native_recovery_phase::continuation_pending);
@@ -2108,7 +2913,8 @@ bool critical_native_quest_continuation_owner::transition_pair(
 	critical_native_recovery_envelope prepared;
 	try
 	{
-		if (!native_v12_command(parent.command) || !native_v12_command(child.command) ||
+		if (!native_v12_command(parent.command) ||
+		    !native_quest_context_command(child.command) ||
 		    parent.command.operation_id.bytes == child.command.operation_id.bytes ||
 		    parent.phase != critical_native_recovery_phase::continuation_pending ||
 		    child.phase != critical_native_recovery_phase::continuation_pending ||
@@ -2412,6 +3218,20 @@ bool critical_native_mobile_birth_publication_owner::retire(
 					 critical_native_recovery_phase::continuation_pending);
 }
 
+bool critical_native_mobile_birth_publication_owner::retire(
+	const critical_native_recovery_envelope &expected, uint64_t generation,
+	bool (*durable_transfer)(const critical_native_recovery_envelope &, void *) noexcept,
+	void *context) noexcept
+{
+	if (!native_birth_typed_command(expected.command) ||
+	    expected.command.payload_version != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_PAYLOAD_VERSION ||
+	    !generation || !durable_transfer)
+		return false;
+	return native_context_checkpoint(expected, nullptr,
+					 critical_native_recovery_phase::continuation_pending,
+					 generation, durable_transfer, context);
+}
+
 bool critical_native_mobile_birth_publication_owner::observe_generation(
 	const critical_native_recovery_envelope &expected, uint64_t *output) noexcept
 {
@@ -2598,7 +3418,10 @@ bool critical_native_mobile_birth_publication_owner::acknowledge(
 	state.phase = critical_operation_phase::native_continuation_pending;
 	state.native_ack_uncertain = false;
 	state.native_physical_released = true;
-	remove_fences(identity, state.command);
+	// Original constructor evidence must transfer before this lifetime can
+	// progress. Recipe-only historical births preserve their original ACK.
+	if (state.command.payload_version != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_PAYLOAD_VERSION)
+		remove_fences(identity, state.command);
 	// Birth consumes no player-save hold and creates no command-only cache entry.
 	// The original envelope remains until the birth owner retires its terminal tail.
 	update_depth();
@@ -2859,6 +3682,9 @@ bool critical_command_coordinator_acknowledge_publication(
 	std::string identity;
 	std::unique_ptr<critical_native_recovery_envelope> native_expected, native_successor;
 	bool native_already_transitioned = false;
+	bool held_execution_retirement = false;
+	operation_state *reserved_held_operation = nullptr;
+	critical_completion held_receipt;
 	try
 	{
 		identity = operation_key(owner.completion_.operation_id);
@@ -2909,17 +3735,37 @@ bool critical_command_coordinator_acknowledge_publication(
 			return false;
 		if (state.native)
 		{
-			if (!native_v12_command(state.command) || state.native_context_uncertain ||
-			    !native_publication_validator_callback)
+			held_execution_retirement = held_retirement_command_identity(state.command);
+			if (held_execution_retirement &&
+			    !native_receipt_equal(receipt, owner.completion_))
+				return false;
+			const bool auction = native_auction_typed_command(state.command);
+			if (state.native_context_uncertain ||
+			    (auction ? !native_auction_validators_ready() :
+				       ((!native_quest_context_command(state.command) &&
+					 !held_execution_retirement) ||
+					!native_publication_validator_callback)))
 				return false;
 			native_expected = std::make_unique<critical_native_recovery_envelope>(
 				native_envelope(state));
-			if (!native_publication_validator_callback(*native_expected, receipt))
-				return false;
 			native_already_transitioned =
 				state.phase ==
 				critical_operation_phase::native_continuation_pending;
-			if (!native_already_transitioned)
+			if (!(auction ? native_auction_validators.publication(*native_expected,
+									      receipt) :
+					(native_already_transitioned &&
+							 native_fee_context_command(state.command) ?
+						 native_quest_recovery_fee_ack_context_valid(
+							 *native_expected, receipt) :
+						 native_publication_validator_callback(
+							 *native_expected, receipt))))
+				return false;
+			if (held_execution_retirement &&
+			    (native_already_transitioned ||
+			     state.native->phase !=
+				     critical_native_recovery_phase::execution_pending))
+				return false;
+			if (!native_already_transitioned && !held_execution_retirement)
 			{
 				if (state.native->phase !=
 					    critical_native_recovery_phase::execution_pending ||
@@ -2931,7 +3777,15 @@ bool critical_command_coordinator_acknowledge_publication(
 				++native_successor->revision;
 				native_successor->phase =
 					critical_native_recovery_phase::continuation_pending;
+				if (auction && !native_auction_validators.successor(
+						       *native_expected, *native_successor))
+					return false;
 			}
+		}
+		if (held_execution_retirement)
+		{
+			reserved_held_operation = found->second.get();
+			held_receipt = receipt;
 		}
 		owner.coordinator_generation_ = coordinator_generation;
 		found->second->publication_checkpointing = true;
@@ -2947,7 +3801,10 @@ bool critical_command_coordinator_acknowledge_publication(
 	{
 		checkpoint =
 			native_expected ?
-				(native_already_transitioned ?
+				(held_execution_retirement ?
+					 critical_held_retirement_journal_owner::retire_execution(
+						 *native_expected) :
+				 native_already_transitioned ?
 					 critical_command_journal_result::ok :
 					 critical_command_journal_replace_native_recovery(
 						 *native_expected, *native_successor)) :
@@ -2974,6 +3831,29 @@ bool critical_command_coordinator_acknowledge_publication(
 		return false;
 	}
 	auto &state = *found->second;
+	// HRT has no continuation: bind terminal retirement to the exact reserved
+	// operation, immutable envelope and complete receipt. Command bytes were
+	// compared before the pin; no fallible encoding follows durable retirement.
+	if (held_execution_retirement &&
+	    (found->second.get() != reserved_held_operation || !state.publication_checkpointing ||
+	     !state.native || !native_expected ||
+	     state.native->revision != native_expected->revision ||
+	     state.native->phase != native_expected->phase ||
+	     state.native->attachment != native_expected->attachment ||
+	     !native_receipt_equal(state.publication_completion, held_receipt) ||
+	     !native_receipt_equal(owner.completion_, held_receipt) || !owner.reservation_.valid()))
+	{
+		// Release only this operation's pin. Retain its exact context, fences
+		// and any uncertain retirement; another operation's pin is not ours.
+		if (found->second.get() == reserved_held_operation)
+		{
+			state.publication_checkpointing = false;
+			if (checkpoint == critical_command_journal_result::append_uncertain)
+				state.native_ack_uncertain = true;
+		}
+		finish_guarded();
+		return false;
+	}
 	state.publication_checkpointing = false;
 	auto trace =
 		persistence_command_trace(state.command, persistence_trace_stage::publication_ack);
@@ -2987,7 +3867,7 @@ bool critical_command_coordinator_acknowledge_publication(
 		finish_guarded();
 		return false;
 	}
-	if (native_expected)
+	if (native_expected && !held_execution_retirement)
 	{
 		if (!native_already_transitioned)
 		{
@@ -3180,6 +4060,246 @@ bool critical_command_coordinator_cancel_shop_publication(
 	finish_guarded();
 	work_available.notify_all();
 	return consumed;
+}
+
+bool critical_command_coordinator_cancel_held_retirement_publication(
+	player_save_restored_publication_owner &owner,
+	const critical_native_recovery_envelope &expected,
+	bool (*native_cleanup)(const critical_command &, const critical_completion &,
+			       void *) noexcept,
+	void *context) noexcept
+{
+	if (!native_cleanup || !owner.reservation_.valid() || owner.acknowledged_ ||
+	    !held_retirement_command_identity(owner.command_) ||
+	    !critical_completion_disposition_valid(owner.completion_) ||
+	    owner.completion_.disposition != critical_completion_disposition::never_admitted)
+		return false;
+	held_retirement_publication_snapshot original;
+	try
+	{
+		original.envelope = expected;
+		original.mode = held_retirement_publication_mode::original_refusal;
+		if (!held_retirement_publication_snapshot_valid(owner.command_, owner.completion_,
+								original))
+			return false;
+	}
+	catch (...)
+	{
+		return false;
+	}
+	std::string identity;
+	operation_state *reserved_operation = nullptr;
+	const auto matches_original = [&](const operation_state &state)
+	{
+		std::vector<uint8_t> frozen;
+		return operation_is_admission_failed(state) && state.owned_refusal_delivered &&
+		       state.retain_until_publication && !state.native_context_uncertain &&
+		       !state.native_ack_uncertain && native_matches(state, original.envelope) &&
+		       critical_command_encode(state.command, &frozen) ==
+			       critical_command_codec_result::ok &&
+		       frozen == owner.frozen_ &&
+		       native_receipt_equal(state.admission_failure_completion, owner.completion_);
+	};
+	try
+	{
+		identity = operation_key(owner.completion_.operation_id);
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		auto found = operations.find(identity);
+		if (found == operations.end() || found->second->publication_checkpointing ||
+		    !coordinator_generation || coordinator_generation_exhausted ||
+		    !health.initialized || stop_requested || !owner.reservation_.valid() ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    !matches_original(*found->second))
+			return false;
+		reserved_operation = found->second.get();
+		owner.coordinator_generation_ = coordinator_generation;
+		reserved_operation->publication_checkpointing = true;
+		++publication_checkpoints_inflight;
+		++guarded_publications_inflight;
+	}
+	catch (...)
+	{
+		return false;
+	}
+	// Callback uses the already pinned original envelope; no coordinator recopy,
+	// journal checkpoint or source/native mutation is authorized by refusal.
+	const bool cleaned = native_cleanup(owner.command_, owner.completion_, context);
+	std::unique_lock<std::mutex> lock(coordinator_mutex);
+	const auto finish_guarded = [&]()
+	{
+		--guarded_publications_inflight;
+		--publication_checkpoints_inflight;
+		publication_checkpoint_finished.notify_all();
+	};
+	auto found = operations.find(identity);
+	if (found == operations.end() || found->second.get() != reserved_operation ||
+	    coordinator_generation != owner.coordinator_generation_)
+	{
+		finish_guarded();
+		return false;
+	}
+	bool original_matches = false;
+	try
+	{
+		original_matches = found->second->publication_checkpointing &&
+				   matches_original(*found->second);
+	}
+	catch (...)
+	{
+	}
+	found->second->publication_checkpointing = false;
+	if (!cleaned || !original_matches || !owner.reservation_.valid() || !health.initialized ||
+	    stop_requested || coordinator_generation_exhausted ||
+	    (lifecycle_guard_active && lifecycle_guard_thread != std::this_thread::get_id()))
+	{
+		finish_guarded();
+		return false;
+	}
+	remove_fences(identity, found->second->command);
+	operations.erase(found);
+	owner.acknowledged_ = true;
+	update_depth();
+	lock.unlock();
+	const bool consumed = owner.consume_acknowledged_hold();
+	lock.lock();
+	finish_guarded();
+	work_available.notify_all();
+	return consumed;
+}
+
+bool critical_command_coordinator_cancel_auction_publication(
+	player_save_restored_publication_owner &owner,
+	bool (*native_cleanup)(const critical_command &, const critical_completion &,
+			       void *) noexcept,
+	void *context)
+{
+	if (!native_cleanup || !owner.reservation_.valid() || owner.acknowledged_ ||
+	    !native_auction_typed_command(owner.command_) || !owner.command_.publication_required ||
+	    !critical_completion_disposition_valid(owner.completion_) ||
+	    owner.completion_.disposition != critical_completion_disposition::never_admitted)
+		return false;
+	std::string identity;
+	critical_native_recovery_envelope original_native;
+	operation_state *pinned = nullptr;
+	// Only the retained original refusal authorizes cleanup. In particular,
+	// the callback must not run before its command and full receipt are proved.
+	const auto matches_original = [&](const operation_state &state)
+	{
+		const auto &receipt = state.admission_failure_completion;
+		std::vector<uint8_t> frozen;
+		return native_matches(state, original_native) &&
+		       native_auction_validators_ready() &&
+		       native_auction_validators.initial(original_native) &&
+		       operation_is_admission_failed(state) && state.owned_refusal_delivered &&
+		       state.retain_until_publication &&
+		       critical_command_encode(state.command, &frozen) ==
+			       critical_command_codec_result::ok &&
+		       frozen == owner.frozen_ &&
+		       receipt.operation_id.bytes == owner.completion_.operation_id.bytes &&
+		       critical_completion_disposition_valid(receipt) &&
+		       receipt.disposition == owner.completion_.disposition &&
+		       receipt.outcome == owner.completion_.outcome &&
+		       receipt.error_code == owner.completion_.error_code &&
+		       receipt.attempt == owner.completion_.attempt &&
+		       receipt.queued_at_usec == owner.completion_.queued_at_usec &&
+		       receipt.started_at_usec == owner.completion_.started_at_usec &&
+		       receipt.completed_at_usec == owner.completion_.completed_at_usec &&
+		       receipt.durable_revision == owner.completion_.durable_revision &&
+		       receipt.failure_stage == owner.completion_.failure_stage &&
+		       receipt.result_size == owner.completion_.result_size &&
+		       receipt.result_payload == owner.completion_.result_payload;
+	};
+	try
+	{
+		identity = operation_key(owner.completion_.operation_id);
+		std::lock_guard<std::mutex> lock(coordinator_mutex);
+		auto found = operations.find(identity);
+		if (found == operations.end() || !found->second->native ||
+		    !native_auction_validators_ready())
+			return false;
+		original_native = native_envelope(*found->second);
+		if (found == operations.end() || found->second->publication_checkpointing ||
+		    !coordinator_generation || coordinator_generation_exhausted ||
+		    !health.initialized || stop_requested ||
+		    (lifecycle_guard_active &&
+		     lifecycle_guard_thread != std::this_thread::get_id()) ||
+		    !owner.reservation_.valid() || !matches_original(*found->second))
+			return false;
+		owner.coordinator_generation_ = coordinator_generation;
+		pinned = found->second.get();
+		found->second->publication_checkpointing = true;
+		++publication_checkpoints_inflight;
+		++guarded_publications_inflight;
+	}
+	catch (...)
+	{
+		return false;
+	}
+	// The private owner performs only original refusal cleanup under its held
+	// reservation. No coordinator mutex is held over native handlers or SQL.
+	const bool cleaned = native_cleanup(owner.command_, owner.completion_, context);
+	std::unique_lock<std::mutex> lock(coordinator_mutex);
+	const auto finish_guarded = [&]()
+	{
+		--guarded_publications_inflight;
+		--publication_checkpoints_inflight;
+		publication_checkpoint_finished.notify_all();
+	};
+	auto found = operations.find(identity);
+	if (found == operations.end() || found->second.get() != pinned ||
+	    coordinator_generation != owner.coordinator_generation_)
+	{
+		finish_guarded();
+		return false;
+	}
+	bool original = false;
+	try
+	{
+		original = found->second->publication_checkpointing &&
+			   matches_original(*found->second);
+	}
+	catch (...)
+	{
+	}
+	if (!cleaned || !original || !owner.reservation_.valid() || !health.initialized ||
+	    stop_requested || coordinator_generation_exhausted ||
+	    (lifecycle_guard_active && lifecycle_guard_thread != std::this_thread::get_id()))
+	{
+		// Keep the original command, refusal, native hold and all owner fences.
+		found->second->publication_checkpointing = false;
+		finish_guarded();
+		return false;
+	}
+	// Keep the authentic refusal, original body and fences pinned over exact
+	// player-hold consumption. A failed consumption must remain retryable.
+	owner.acknowledged_ = true;
+	lock.unlock();
+	const bool consumed = owner.consume_acknowledged_hold();
+	lock.lock();
+	found = operations.find(identity);
+	if (found == operations.end() || found->second.get() != pinned ||
+	    coordinator_generation != owner.coordinator_generation_ ||
+	    !found->second->publication_checkpointing)
+	{
+		finish_guarded();
+		return false;
+	}
+	found->second->publication_checkpointing = false;
+	if (!consumed)
+	{
+		owner.acknowledged_ = false;
+		finish_guarded();
+		return false;
+	}
+	remove_fences(identity, found->second->command);
+	operations.erase(found);
+	update_depth();
+	// No journal checkpoint, execution receipt, completed-operation cache or
+	// health.completed increment is created for a never-admitted command.
+	finish_guarded();
+	work_available.notify_all();
+	return true;
 }
 
 void queue_unqueued_admission_failures_locked()
@@ -3389,6 +4509,13 @@ bool critical_command_coordinator_cutover_ready(void)
 {
 	std::lock_guard<std::mutex> lock(coordinator_mutex);
 	return cutover_ready_locked();
+}
+
+bool critical_command_coordinator_owner::boot_recovery_ready()
+{
+	std::lock_guard<std::mutex> lock(coordinator_mutex);
+	return lifecycle_guard_active && lifecycle_guard_thread == std::this_thread::get_id() &&
+	       active_cutover_phase == cutover_owner_phase::none && cutover_ready_locked(true);
 }
 
 bool critical_command_coordinator_owner::acquire_cutover_lease(uint64_t timeout_msec,

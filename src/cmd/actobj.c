@@ -9,6 +9,7 @@
  */
 
 #include "core/prototypes.h"
+#include "world/quest_mobile_native_binding.h"
 #include "world/handler.h"
 #include "core/structs.h"
 #include "net/comm.h"
@@ -6294,10 +6295,17 @@ void do_give(P_char ch, char *argument, int cmd)
 				     ch);
 			return;
 		}
+		quest_mobile_native_cash_reference native_coin_before;
+		const bool native_coin_candidate =
+			economic_gameplay_authority::active_regular_sql() && IS_NPC(vict) &&
+			!IS_MORPH(vict) &&
+			quest_mobile_native_cash_reference_copy(vict, vict->runtime_id,
+								&native_coin_before);
 		if (economic_gameplay_authority::active() &&
 		    (!IS_PC(ch) || GET_PID(ch) <= 0 || GET_LEVEL(ch) >= MAXLVL ||
-		     !(IS_PC(vict) || IS_MORPH(vict)) || !IS_PC(GET_PLYR(vict)) ||
-		     GET_PID(GET_PLYR(vict)) <= 0))
+		     (!native_coin_candidate &&
+		      (!(IS_PC(vict) || IS_MORPH(vict)) || !IS_PC(GET_PLYR(vict)) ||
+		       GET_PID(GET_PLYR(vict)) <= 0))))
 		{
 			send_to_char("That coin transfer is unavailable while active accounting "
 				     "is enabled.\r\n",
@@ -6319,6 +6327,19 @@ void do_give(P_char ch, char *argument, int cmd)
 			return;
 		}
 
+		if (economic_gameplay_authority::active() && native_coin_candidate)
+		{
+			item_native_quest_preparation_token token;
+			const auto prepared =
+				item_native_quest_preparation_owner::begin_money_acceptance(
+					ch, vict, static_cast<uint8_t>(ctype), amount, &token);
+			if (prepared == item_native_quest_preparation_state::refused)
+				send_to_char(
+					"The coin transfer could not start; nothing changed.\r\n",
+					ch);
+			return;
+		}
+		// Original inactive and ordinary player-transfer paths remain below.
 		coin_debit_context context = { {},
 					       vict->runtime_id,
 					       0,
@@ -10849,4 +10870,35 @@ void do_empty(P_char ch, char *argument, int /*cmd*/)
 	}
 
 	start_empty(ch, obj1, obj2);
+}
+
+bool quest_native_coin_give_notice_owner::publish(P_char actor, P_char mobile, uint8_t denomination,
+						  int32_t quantity,
+						  int32_t original_room_vnum) noexcept
+{
+	if (!nevent_is_game_thread() || !actor || !mobile || !IS_PC(actor) || !IS_NPC(mobile) ||
+	    denomination >= CURRENCY_DENOMINATION_COUNT || quantity <= 0 || original_room_vnum < 0)
+		return false;
+	const int room = real_room(original_room_vnum);
+	if (room < 0 || room > top_of_world || !world || world[room].number != original_room_vnum)
+		return false;
+	coin_debit_context original{};
+	original.coin_type = denomination;
+	original.amount[denomination] = quantity;
+	original.room = room;
+	original.action = coin_debit_action::give;
+	const auto value = coin_debit_value(original);
+	if (value <= 0 || value > INT_MAX)
+		return false;
+	const coin_give_credit_context context{ actor->runtime_id, value, quantity, room,
+						denomination,	   1,	  {} };
+	try
+	{
+		announce_coin_give(actor, mobile, context);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	} // Started notice uncertainty must never be replayed.
 }

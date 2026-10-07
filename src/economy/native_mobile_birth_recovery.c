@@ -8,6 +8,7 @@
 #include <cstring>
 #include <limits>
 #include <utility>
+#include <type_traits>
 
 namespace
 {
@@ -151,13 +152,11 @@ bool receipt_core_equal(const critical_completion &a, const critical_completion 
 	       a.disposition == critical_completion_disposition::execution &&
 	       b.disposition == critical_completion_disposition::execution;
 }
-bool receipt_shape(const critical_command &command, bool present,
-		   const critical_completion &receipt) noexcept
+bool receipt_values_shape(bool present, const critical_completion &receipt) noexcept
 {
 	if (!present)
 		return completion_equal(receipt, critical_completion{});
-	if (receipt.operation_id.bytes != command.operation_id.bytes ||
-	    receipt.disposition != critical_completion_disposition::execution ||
+	if (receipt.disposition != critical_completion_disposition::execution ||
 	    receipt.outcome > critical_apply_outcome::terminal_failure ||
 	    !critical_failure_stage_valid(receipt.failure_stage) ||
 	    receipt.result_size > CRITICAL_COMPLETION_RESULT_MAX_BYTES)
@@ -168,6 +167,12 @@ bool receipt_shape(const critical_command &command, bool present,
 	return !successful(receipt) || (receipt.durable_revision == 1 && !receipt.error_code &&
 					receipt.failure_stage == critical_failure_stage::none &&
 					receipt.result_size == NATIVE_MOBILE_BIRTH_RESULT_BYTES);
+}
+bool receipt_shape(const critical_command &command, bool present,
+		   const critical_completion &receipt) noexcept
+{
+	return (!present || receipt.operation_id.bytes == command.operation_id.bytes) &&
+	       receipt_values_shape(present, receipt);
 }
 bool receipt_result_valid(const critical_command &command, bool present,
 			  const critical_completion &receipt)
@@ -402,7 +407,7 @@ struct wire_view
 };
 // Validate every count and byte/retained-memory bound before any allocation,
 // including before the existing bounded command/image/recipe decoders run.
-error preflight(const critical_command &command, std::span<const uint8_t> bytes,
+error preflight(const critical_command *command, std::span<const uint8_t> bytes,
 		wire_view *view) noexcept
 {
 	if (!view || bytes.size() > LIMIT)
@@ -424,7 +429,8 @@ error preflight(const critical_command &command, std::span<const uint8_t> bytes,
 		return error::corrupt_evidence;
 	const auto stored_receipt = read_receipt(body + STATE_BYTES);
 	const auto stored_mobile = mobile(body[4]);
-	if (!receipt_shape(command, body[0] != 0, stored_receipt) ||
+	if (!(command ? receipt_shape(*command, body[0] != 0, stored_receipt) :
+			receipt_values_shape(body[0] != 0, stored_receipt)) ||
 	    !valid_action(action(body[2])) || !valid_action(action(body[3])) ||
 	    (stored_mobile.returned && !stored_mobile.started) ||
 	    (stored_mobile.consumed && !stored_mobile.started))
@@ -677,7 +683,7 @@ native_mobile_birth_recovery_decode(const critical_command &command, std::span<c
 	if (!output)
 		return error::corrupt_evidence;
 	wire_view view;
-	const auto checked = preflight(command, bytes, &view);
+	const auto checked = preflight(&command, bytes, &view);
 	if (checked != error::ok)
 		return checked;
 	try
@@ -730,6 +736,51 @@ native_mobile_birth_recovery_decode(const critical_command &command, std::span<c
 			candidate.items.push_back(std::move(item));
 		}
 		*output = std::move(candidate);
+		return error::ok;
+	}
+	catch (...)
+	{
+		return error::capacity;
+	}
+}
+
+economic_accounting_error
+native_mobile_birth_recovery_original_command_decode(std::span<const uint8_t> bytes,
+						     critical_command *output) noexcept
+{
+	if (!output)
+		return error::corrupt_evidence;
+	wire_view view;
+	// The SAME original parser bounds every header/body/count/effect before
+	// even the command codec can allocate. No caller-invented command identity.
+	const auto checked = preflight(nullptr, bytes, &view);
+	if (checked != error::ok)
+		return checked;
+	try
+	{
+		critical_command original{};
+		const auto decoded = critical_command_decode(view.command.data(),
+							     view.command.size(), &original);
+		if (decoded != critical_command_codec_result::ok)
+			return decoded == critical_command_codec_result::overflow ?
+				       error::capacity :
+			       decoded == critical_command_codec_result::unsupported_version ?
+				       error::invalid_version :
+				       error::corrupt_evidence;
+		// Legacy stock-only commands remain readable through the original API,
+		// but cannot provide unseen NPC constructor recovery inputs.
+		if (original.payload_version != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_PAYLOAD_VERSION)
+			return error::invalid_version;
+		native_mobile_birth_recovery_context context;
+		const auto valid = native_mobile_birth_recovery_decode(original, bytes, &context);
+		if (valid != error::ok)
+			return valid;
+		if (!body_terminal(context))
+			return error::unresolved;
+		// Every original field came from the retained canonical command bytes.
+		// Envelope phase/revision and authenticated lifetime storage are separate.
+		static_assert(std::is_nothrow_move_assignable_v<critical_command>);
+		*output = std::move(original);
 		return error::ok;
 	}
 	catch (...)

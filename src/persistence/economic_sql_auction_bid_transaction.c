@@ -4,6 +4,7 @@
 #include "economy/auction_accounting.h"
 #include "persistence/economic_sql_pending_claim_source.h"
 
+#include "economy/auction_native_command_context.h"
 #include <cerrno>
 
 #ifndef __NO_MYSQL__
@@ -427,6 +428,13 @@ unsigned int economic_sql_auction_bid_lock(MYSQL *connection, const critical_com
 		auction_bid_accounting_accounts accounts;
 		if (!identity(command, &intent, &payload, &listing, &accounts))
 			return EPROTONOSUPPORT;
+		if (command.payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION)
+		{
+			const auto native_error = auction_repository_validate_accounted_native_cut(
+				connection, command);
+			if (native_error)
+				return native_error;
+		}
 		economic_sql_auction_bid_context candidate;
 		if (!mapping_native_hint(connection, accounts.bank.authority_id,
 					 &candidate.bank_id))
@@ -546,8 +554,13 @@ economic_sql_auction_bid_execute_and_record(MYSQL *connection, const critical_co
 						  &expected) != economic_accounting_error::ok ||
 		    expected != command.accounting_intent)
 			return ESTALE;
-		if (!auction_repository_execute_accounted(connection, command, result, result_code,
-							  mutation_applied))
+		const bool native = command.payload_version ==
+				    AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION;
+		if (!(native ? auction_repository_execute_accounted_native(connection, command, {},
+									   result, result_code,
+									   mutation_applied) :
+			       auction_repository_execute_accounted(connection, command, result,
+								    result_code, mutation_applied)))
 			return failure_code();
 		if ((*result_code == 0) != *mutation_applied)
 			return EILSEQ;

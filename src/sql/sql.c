@@ -1523,7 +1523,7 @@ int initialize_mysql()
 		return -1;
 	}
 
-	if (!sql_economic_runtime_start())
+	if (!sql_economic_runtime_start_recovery())
 	{
 		logit(LOG_STATUS,
 		      "FATAL: economic lifecycle authority is unavailable or not ready; aborting boot");
@@ -1737,6 +1737,17 @@ static bool sql_verify_boot_database(void)
 	if (!description_ok)
 	{
 		logit(LOG_STATUS, "FATAL: COMPAT-E009 item-description digest expression mismatch");
+		return false;
+	}
+	result = db_query("%s", RUNTIME_AUCTION_ACTIVE_ITEM_GENERATION_SQL);
+	row = result ? mysql_fetch_row(result) : NULL;
+	bool auction_active_item_ok = row && row[0] && !strcmp(row[0], "1");
+	if (result)
+		mysql_free_result(result);
+	if (!auction_active_item_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: COMPAT-E010 auction current-item generated type/expression mismatch");
 		return false;
 	}
 	if (!sql_verify_metadata_fingerprint())
@@ -2355,13 +2366,13 @@ static bool sql_verify_metadata_fingerprint(void)
 		 "k.ordinal_position=1 AND r.update_rule IN ('NO ACTION','RESTRICT') "
 		 "AND r.delete_rule='CASCADE')";
 	query +=
-		" UNION ALL SELECT CONCAT('X',CHAR(9),table_name,CHAR(9),column_name,CHAR(9),column_type) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation','sql_room_item_payload','shopkeepers','shopkeeper_item_runtime_state','quest_mobile_native','item_owner_revision','item_current_owner','item_ownership_baseline','economic_pending_claim_source','economic_pending_claim_consumption') UNION ALL SELECT CONCAT('K',CHAR(9),t.table_name,CHAR(9),t.constraint_name,CHAR(9),c.check_clause) FROM information_schema.table_constraints t JOIN information_schema.check_constraints c ON c.constraint_schema=t.constraint_schema AND c.constraint_name=t.constraint_name WHERE t.constraint_schema=DATABASE() AND t.constraint_type='CHECK' AND t.table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation','sql_room_item_payload','shopkeepers','shopkeeper_item_runtime_state','quest_mobile_native','item_owner_revision','item_current_owner','item_ownership_baseline','economic_pending_claim_source','economic_pending_claim_consumption')";
+		" UNION ALL SELECT CONCAT('X',CHAR(9),table_name,CHAR(9),column_name,CHAR(9),column_type) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation','sql_room_item_payload','shopkeepers','shopkeeper_item_runtime_state','quest_mobile_native','quest_mobile_native_birth_origin','item_owner_revision','item_current_owner','item_ownership_baseline','economic_pending_claim_source','economic_pending_claim_consumption') UNION ALL SELECT CONCAT('K',CHAR(9),t.table_name,CHAR(9),t.constraint_name,CHAR(9),c.check_clause) FROM information_schema.table_constraints t JOIN information_schema.check_constraints c ON c.constraint_schema=t.constraint_schema AND c.constraint_name=t.constraint_name WHERE t.constraint_schema=DATABASE() AND t.constraint_type='CHECK' AND t.table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation','sql_room_item_payload','shopkeepers','shopkeeper_item_runtime_state','quest_mobile_native','quest_mobile_native_birth_origin','item_owner_revision','item_current_owner','item_ownership_baseline','economic_pending_claim_source','economic_pending_claim_consumption')";
 	const char *server = mysql_get_server_info(DB);
 	if (!server)
 		return false;
 	if (!strstr(server, "MariaDB"))
 		query +=
-			" UNION ALL SELECT CONCAT('E',CHAR(9),table_name,CHAR(9),constraint_name,CHAR(9),enforced) FROM information_schema.table_constraints WHERE constraint_schema=DATABASE() AND constraint_type='CHECK' AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation','sql_room_item_payload','shopkeepers','shopkeeper_item_runtime_state','quest_mobile_native','item_owner_revision','item_current_owner','item_ownership_baseline','economic_pending_claim_source','economic_pending_claim_consumption')";
+			" UNION ALL SELECT CONCAT('E',CHAR(9),table_name,CHAR(9),constraint_name,CHAR(9),enforced) FROM information_schema.table_constraints WHERE constraint_schema=DATABASE() AND constraint_type='CHECK' AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation','sql_room_item_payload','shopkeepers','shopkeeper_item_runtime_state','quest_mobile_native','quest_mobile_native_birth_origin','item_owner_revision','item_current_owner','item_ownership_baseline','economic_pending_claim_source','economic_pending_claim_consumption')";
 	query += " ORDER BY 1";
 	if (mysql_real_query(DB, query.c_str(), query.size()))
 		return false;

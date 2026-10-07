@@ -78,6 +78,7 @@ class economic_sql_lifecycle_guard
 	friend class economic_sql_cutover_transaction_owner;
 	friend class economic_sql_accounting_lifecycle_transaction;
 	friend class economic_sql_currency_writer_guard;
+	friend class economic_sql_runtime_world_writer_guard;
 	// Exact data-only readback needs to prove supplied-handle ownership without
 	// exposing the guard's connection/session through a general accessor.
 	friend unsigned int
@@ -234,6 +235,31 @@ class economic_sql_currency_writer_guard
 	bool writer_lock_ = false;
 	bool acquisition_confirmed_ = false;
 	bool release_attempted_ = false;
+};
+
+// Boot-only whole native-world read/construction exclusion. The actual runtime
+// guard remains unchanged; this separate owner holds the genuine writer named
+// lock and local gate only AFTER accepted journal work has genuinely drained.
+// Only the real boot owner can acquire, validate or release this lease.
+class economic_sql_runtime_world_writer_guard final
+{
+	friend class sql_economic_runtime_boot_owner;
+	economic_sql_runtime_world_writer_guard() noexcept = default;
+	~economic_sql_runtime_world_writer_guard() noexcept;
+	economic_sql_runtime_world_writer_guard(const economic_sql_runtime_world_writer_guard &) =
+		delete;
+	economic_sql_runtime_world_writer_guard &
+	operator=(const economic_sql_runtime_world_writer_guard &) = delete;
+	static unsigned int acquire(MYSQL *, const economic_sql_lifecycle_guard &,
+				    economic_sql_runtime_world_writer_guard *) noexcept;
+	bool valid() const noexcept;
+	bool release() noexcept;
+	MYSQL *connection_ = nullptr;
+	const economic_sql_lifecycle_guard *runtime_ = nullptr;
+	unsigned long session_ = 0;
+	std::thread::id thread_{};
+	std::unique_lock<std::shared_mutex> local_;
+	bool lock_ = false, confirmed_ = false, release_attempted_ = false;
 };
 
 #endif

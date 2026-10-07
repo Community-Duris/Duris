@@ -38,7 +38,7 @@ class quest_native_consumption_capture
 					 uint32_t completion_slot,
 					 std::vector<uint64_t> ordered_consumed_roots,
 					 item_native_quest_publication_terms publication_terms,
-					 economic_source_kind action);
+					 economic_source_kind action, bool fee_only = false);
 	const critical_command original_;
 	const quest_mobile_native_reference reference_;
 	const uint64_t runtime_generation_;

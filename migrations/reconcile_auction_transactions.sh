@@ -18,6 +18,6 @@ SELECT CONCAT('custody_owner_mismatch=',COUNT(*)) FROM auction_item_custody c
 JOIN item_current_owner o ON o.item_uid=c.item_uid
 WHERE c.claimed_at IS NULL AND (o.owner_type<>6 OR o.owner_id<>c.auction_id);
 SELECT CONCAT('custody_revision_mismatch=',COUNT(*)) FROM auction_item_custody c
-JOIN item_current_owner o ON o.item_uid=c.item_uid WHERE o.item_revision<>c.item_revision;
+JOIN item_current_owner o ON o.item_uid=c.item_uid WHERE c.claimed_at IS NULL AND o.item_revision<>c.item_revision;
 SELECT CONCAT('open_quarantine=',COUNT(*)) FROM auction_reconciliation_quarantine WHERE repaired_at IS NULL;
 SQL

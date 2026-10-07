@@ -1,6 +1,8 @@
 #include "economy/auction_transaction.h"
 
 #include "economy/auction_houses.h"
+#include "economy/auction_native_publication.h"
+#include "economy/economic_gameplay_authority.h"
 #include "economy/currency_transaction.h"
 #include "net/gmcp.h"
 #include "item/item_ownership_runtime.h"
@@ -166,12 +168,20 @@ bool submit(P_char character, const auction_command_payload &payload,
 bool auction_transaction_submit(P_char character, const auction_command_payload &payload,
 				auction_completion_fn completion, critical_deadline_class deadline)
 {
+	if (economic_gameplay_authority::active_regular_sql())
+		return auction_native_publication_submit(character, payload, completion,
+							 critical_source_site::command, deadline);
 	return submit(character, payload, completion, critical_source_site::command, deadline);
 }
 
 bool auction_transaction_submit_background(const auction_command_payload &payload,
 					   auction_completion_fn completion)
 {
+	if (economic_gameplay_authority::active_regular_sql())
+		return !payload.actor_pid &&
+		       auction_native_publication_submit(nullptr, payload, completion,
+							 critical_source_site::zone_event,
+							 critical_deadline_class::background);
 	return !payload.actor_pid &&
 	       submit(nullptr, payload, completion, critical_source_site::zone_event,
 		      critical_deadline_class::background);
@@ -181,6 +191,7 @@ void auction_transaction_handle_completions(const critical_completion *completio
 {
 	if (count && !completions)
 		return;
+	auction_native_publication_completions(completions, count);
 	for (size_t index = 0; index < count; ++index)
 	{
 		auto found = pending.find(operation_key(completions[index].operation_id));
@@ -200,6 +211,7 @@ void auction_transaction_player_ready(P_char character)
 {
 	if (!character || IS_NPC(character))
 		return;
+	auction_native_publication_player_ready(character);
 	for (auto found = pending.begin(); found != pending.end();)
 	{
 		auto current = found++;
@@ -213,9 +225,12 @@ bool auction_transaction_player_busy(P_char character)
 {
 	if (!character || IS_NPC(character))
 		return false;
-	return std::any_of(
-		pending.begin(), pending.end(), [&](const auto &entry)
-		{ return entry.second.actor_pid == static_cast<uint32_t>(GET_PID(character)); });
+	return auction_native_publication_player_busy(character) ||
+	       std::any_of(pending.begin(), pending.end(),
+			   [&](const auto &entry) {
+				   return entry.second.actor_pid ==
+					  static_cast<uint32_t>(GET_PID(character));
+			   });
 }
 
 critical_outbox_delivery_result
