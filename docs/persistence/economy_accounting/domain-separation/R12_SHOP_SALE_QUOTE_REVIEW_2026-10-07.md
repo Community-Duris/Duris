@@ -1,11 +1,13 @@
 # Staged shop sale and valuation quotation review - 2026-10-07
 
-Disposition: **exact THREE-file implementation boundary approved.** Reservation
+Disposition: **FINAL three-file quotation extraction review PASS.** Reservation
 `bd3cd628178a89f0491f960de1ee6300006d2fba`, reservation text SHA256
 `1bfc70ac2b44cf0e2821f481231e79480b041313b5c02f2ed50067d2ef0eb558`, selects a
 complete connected two-stage quotation operation with two actual native callers.
-Implementation, extracted compatibility, current import/build/artifact review
-and adoption remain pending. Primary continues without an adoption wait.
+Implementation, extracted compatibility and current import/build/artifact review
+are qualified at the declared controlled calculation/module scope. Optional
+adoption and genuine native journeys remain unknown/open. Primary continues
+without an adoption wait.
 
 ## Exact operation and owned files
 
@@ -108,3 +110,69 @@ native Collector/SHOP/flat boot progress supplies no completed native prerequisi
 or primary adoption proof here. Original Plans1-5/applicable R1-R8, backend/gameplay/
 persistence/recovery and the owner completion disposition remain the finish line.
 Continuing Goal/monitor stay ACTIVE; no deployment or activation occurs.
+
+## Final committed calculation, current imports and artifacts
+
+Code `72f375cbfcc7b8b5c95b7784f245b210d0b163d4` changes EXACTLY the approved
+shop.c/new shop_sale_quote.h/new test_shop_sale_quote.py boundary. The header
+owns complete sale-base, valuation-base and trophy adjustment calculations;
+the synchronous borrowed native provider and both original caller gates/effects
+remain in shop.c. No optional R0-R11 or prep ancestry is required for import.
+
+Root independently reverses native observation substitutions and verifies exact
+original calculation code/literal tokens in both bases and the full adjustment.
+Restoring only those calculations/obsolete locals and removing the new provider/
+include recovers the ENTIRE prior owned shop.c byte-for-byte. The original86
+DRIVER remains exact; PRELUDE differs only by the required header include.
+Native field types, float/double/int literals, macro read multiplicity, property
+evaluation, base-before-sale-gates and valuation-only barter are preserved.
+The original GET_C_CHA(actor)>number(0,125) stays one native expression; C++ does
+not define left-to-right operand order. Compiler mutation controls are evidence
+for the actual baseline/Og profiles, not a newly invented sequencing guarantee.
+
+The coordinator executes the COMPLETE committed runner on its authenticated
+bare-current full import in a separately owned isolated container. Baseline and
+separate-Og sanitizer runs each PASS all86 controls; all four compile/runtime
+exits0, original120/30-second limits, rng mutation15, and temporary fixture cleanup.
+Worker original/extracted baseline/Og proof is retained separately. Controlled
+service endpoints/RNG/trophy observations confer no world/source/custody/DB or
+physical publication/ACK/recovery authority.
+
+Both actual full/production patches independently apply to bare primaryc590fdb9.
+Root authenticates exact committed patch bytes, resulting trees, ZIP archives and
+EVERY6,453 full/6,452 production export blob body. Full tree
+`c70e7e017025f7b6a421ed2d6690a22ec475c682`, production tree
+`031540d4b5da9b082e28e138a573cdb77175183b`; full patch SHA256
+`362a73475aa8092c438918d6ca405978aecdc98a6cc3344a843ef0431f96450c`,
+production patch `a1db130baf1522619b97b0811bd7891ded7056dd72d69dea44f4b935e66586c9`.
+
+Both read-only bare exports PASS complete native shop module syntax/type checks
+under C++20/Wall/Wextra/Werror for SQL and flat profiles. Root independently
+rereads/authenticates all462 SQL/456 flat actual compiler input bytes PER package,
+native header pins, dependency manifests, image and network-none/read-only mounts.
+Full export also PASSes the committed baseline/Og runner and five selected
+adjacent contracts; production-only is qualified at complete module scope.
+
+Both copied and actual retained strict SQL/flat native ELFs authenticate:
+SQL `ca83e80e59edabb0f5791dfecf199ad9af405a88b30fad0095122eebc2113cc7`,
+flat `a69aa4000663193ff1b19a9bea93209e8df1084cc9317b25481bf7b215fc1686`.
+Actual logs show one changed shop.c compilation and740 unique linked objects
+each. These are older owned maintained graphs, not current primary754 full-link
+or native/integrated qualification. Seven owned adjacent checks pass; the
+identical original/extracted live-route failure is preserved. Its separate prep
+repair is already independently reviewed and is not silently imported here.
+
+All75 indexed proof artifacts/receipts authenticate by byte length and SHA256.
+Index SHA256 `4c062e612f5224867a9ba55e3fbdfa59c1f572b901394b81482e69b4d990cfb4`.
+No binary/log/export/credential is committed. Private root sale-rule-review,
+sale-committed, sale-import-authentication, sale-build-artifact-authentication,
+sale-header-authentication and sale-final-artifact-authentication RESULT records
+close the selected code/qualification/artifact review. Exact canonical worker
+documentation delivery is recorded separately after publication.
+
+Native gameplay/persistence/recovery and current754 integration remain owner
+work. The current9-family reassessment must select meaningful feasible work or
+state exact dependencies; completed quotations are not an arbitrary extraction
+cap and not a reason to invent price-only wrappers. Primary Plans1-5/applicable
+original R1-R8, release and optional adoption remain open. Root Goal/heartbeat
+remain ACTIVE throughout the observable finish line.
