@@ -116,10 +116,11 @@ the entire original tradeskill.c byte-for-byte. The original45-control DRIVER
 and controlled PRELUDE remain exact except the required new header include.
 Provider native field types, mask widths and fresh diagnostic reads are reviewed.
 
-The three minimum-circle calls retain the original addition expression/grouping.
-C++ does not impose a universal left-to-right order for its operands. The tested
-GCC traces are scoped observations; do not replace the expression with newly
-sequenced temporary statements or claim a new language-level ordering guarantee.
+The original minimum-circle calls use THREE separate full expressions: assignment
+for spells[0], then += for spells[1], then += for spells[2]. The extraction preserves
+those statements and their defined sequence. The preceding claim of one addition
+expression was a coordinator documentation error, corrected from the actual Git
+body; no production/test change or repeated execution is needed for this correction.
 This draft audit is no new runtime or final committed qualification. Worker reports
 all45 original/extracted controls passing under baseline and separate -Og; builds,
 current bare packages, final committed artifacts and final review remain pending.
