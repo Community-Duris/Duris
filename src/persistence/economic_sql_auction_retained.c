@@ -3424,3 +3424,84 @@ unsigned int economic_sql_auction_capture_native_listing_source(
 {
 	return auction_read_native_listing_source(db, command, &lineage, &epoch, output);
 }
+
+unsigned int
+economic_sql_auction_verify_known_native_creator(MYSQL *db,
+						 const critical_operation_id &operation) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)db;
+	(void)operation;
+	return ENOTSUP;
+#else
+	try
+	{
+		economic_sql_auction_source_claim_detail::session guard{ db };
+		auto error = guard.check(true);
+		if (error)
+			return error;
+		auto verify = [&]() -> unsigned int
+		{
+			if (critical_operation_id_is_zero(operation))
+				return EINVAL;
+			if (!exact_count(
+				    db, "critical_operation_inbox",
+				    "operation_id=" + hex(operation.bytes) +
+					    " AND schema_version=2 AND command_type=" +
+					    std::to_string(static_cast<unsigned>(
+						    critical_command_type::auction)) +
+					    " AND payload_version=2 AND status=1 AND result_code=0 AND failure_stage=0 AND committed_at IS NOT NULL AND OCTET_LENGTH(command_hash)=32 AND OCTET_LENGTH(keys_hash)=32",
+				    1))
+				return errno ? errno : EILSEQ;
+			economic_frozen_intent intent;
+			economic_accounting_plan plan;
+			auction_command_result receipt{};
+			if (!known_terminal_creator(db, operation, &intent, &plan, &receipt))
+				return errno ? errno : EILSEQ;
+			const auto &meta = intent.admission.metadata;
+			if (meta.operation_id.bytes != operation.bytes ||
+			    critical_operation_id_is_zero(meta.original_operation_id) ||
+			    !receipt.auction_id || !receipt.seller_pid)
+				return EILSEQ;
+			std::vector<std::string> source_version;
+			uint64_t schema = 0, version = 0;
+			if (!row(db,
+				 "SELECT schema_version,payload_version FROM critical_operation_inbox WHERE operation_id=" +
+					 hex(meta.original_operation_id.bytes) +
+					 " AND status=1 AND result_code=0 AND failure_stage=0 AND committed_at IS NOT NULL LOCK IN SHARE MODE",
+				 2, &source_version) ||
+			    !u64(source_version[0], &schema) || !u64(source_version[1], &version))
+				return errno ? errno : EILSEQ;
+			// Preserve the existing historical v1 source route. It supplies no
+			// invented ANF2/ACT2 literal authority.
+			if (version == AUCTION_COMMAND_PAYLOAD_VERSION)
+				return schema == CRITICAL_COMMAND_SCHEMA_VERSION ||
+						       schema ==
+							       CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ?
+					       0 :
+					       EILSEQ;
+			if (schema != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+			    version != AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION)
+				return EILSEQ;
+			original_listing_forest_values source;
+			if (!original_listing_forest(db, &meta.lineage, &meta.epoch,
+						     receipt.auction_id, receipt.seller_pid,
+						     meta.original_operation_id, &source))
+				return errno ? errno : EILSEQ;
+			return 0;
+		};
+		errno = 0;
+		error = verify();
+		const auto session_error = guard.check();
+		return session_error ? session_error : error;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EILSEQ;
+	}
+#endif
+}

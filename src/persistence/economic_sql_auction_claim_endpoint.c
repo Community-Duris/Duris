@@ -1,6 +1,8 @@
 #include "persistence/economic_sql_pending_claim_source.h"
 #include "persistence/economic_sql_auction_source_claim.h"
 #include "economy/auction_accounting.h"
+#include "economy/auction_native_command_context.h"
+#include "persistence/economic_sql_auction_retained.h"
 #include "economy/auction_settlement_accounting.h"
 #include "economy/currency_command.h"
 #include <cerrno>
@@ -682,13 +684,22 @@ bool endpoint_root(MYSQL *connection, const critical_operation_id &operation,
 {
 	std::vector<std::string> cells;
 	if (!row(connection,
-		 "SELECT o.canonical_intent,o.canonical_plan,o.plan_digest,i.result_payload,i.durable_revision FROM economic_accounting_operation o JOIN critical_operation_inbox i ON i.operation_id=o.operation_id WHERE o.operation_id=" +
+		 "SELECT o.canonical_intent,o.canonical_plan,o.plan_digest,i.result_payload,i.durable_revision,i.payload_version FROM economic_accounting_operation o JOIN critical_operation_inbox i ON i.operation_id=o.operation_id WHERE o.operation_id=" +
 			 hex(operation.bytes) +
 			 " AND o.outcome=1 AND o.result_code=0 AND i.status=1 AND i.result_code=0 AND i.failure_stage=0 AND i.committed_at IS NOT NULL AND i.command_type=" +
 			 std::to_string(static_cast<uint16_t>(critical_command_type::auction)) +
-			 " AND i.schema_version=2 AND i.payload_version=1 LOCK IN SHARE MODE",
-		 5, &cells))
+			 " AND i.schema_version=2 AND i.payload_version IN (1,2) LOCK IN SHARE MODE",
+		 6, &cells))
 		return false;
+	uint64_t payload_version = 0;
+	if (!u64(cells[5], &payload_version) ||
+	    (payload_version != AUCTION_COMMAND_PAYLOAD_VERSION &&
+	     payload_version != AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION) ||
+	    (original && original->payload_version != payload_version))
+	{
+		errno = EILSEQ;
+		return false;
+	}
 	const auto span = [](const std::string &bytes)
 	{ return std::span(reinterpret_cast<const uint8_t *>(bytes.data()), bytes.size()); };
 	economic_digest digest{};
@@ -771,6 +782,18 @@ bool endpoint_root(MYSQL *connection, const critical_operation_id &operation,
 	{
 		errno = static_cast<int>(source_claim_error);
 		return false;
+	}
+	// Version alone grants no native creator authority. Borrow the complete
+	// known native root and original listing forest proof, without inventing a header.
+	if (payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION)
+	{
+		const auto error =
+			economic_sql_auction_verify_known_native_creator(connection, operation);
+		if (error)
+		{
+			errno = static_cast<int>(error);
+			return false;
+		}
 	}
 	return normalized_financial_rows(connection, operation, *plan) &&
 	       original_sale_result(connection, operation, *intent, *plan, cells[3], cells[4],
@@ -1346,14 +1369,18 @@ unsigned int economic_sql_pending_claim_endpoint_verify_retained_creator(
 					       value.key.lineage.bytes == key.lineage.bytes &&
 					       !value.key.context_id;
 				});
-			if (sink == plan.accounts.end())
+			// The genuine zero-fee producer has no sink account. Its entire
+			// native sale price must still be the exact original seller credit.
+			if (sink == plan.accounts.end() &&
+			    amount != static_cast<uint64_t>(result.final_price))
 				return EILSEQ;
 			const auto sink_index = static_cast<size_t>(sink - plan.accounts.begin());
 			const auto credit_index =
 				static_cast<size_t>(effect - plan.accounts.begin());
 			uint64_t fee = 0, credit = 0;
 			for (const auto &posting : plan.postings)
-				if (posting.account_index == sink_index ||
+				if ((sink != plan.accounts.end() &&
+				     posting.account_index == sink_index) ||
 				    posting.account_index == credit_index)
 				{
 					if (posting.copper < 0 ||
