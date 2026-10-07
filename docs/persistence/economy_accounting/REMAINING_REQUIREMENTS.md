@@ -1,5 +1,15 @@
 # Double-entry economy: remaining requirements
 
+## Collector correspondence source ready - 2026-10-07
+
+[Current source and qualification evidence](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
+records reviewed collector literal/root/death identity correspondence, five
+strict syntax passes and primary authentication of its54-record packet and
+combined38. Original code, budgets and inactive gates remain unchanged; no
+production import or native/release completion is claimed. Auction, provider
+union, source-complete activation and original major-plan qualification continue.
+
+
 ## Exact room boundary controls prepared - 2026-10-07
 
 [Current source-preparation evidence](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
