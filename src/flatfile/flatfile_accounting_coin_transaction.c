@@ -49,6 +49,15 @@ void checked(flatfile_accounting_status status)
 		status == flatfile_accounting_status::io_error ? EIO :
 								 EILSEQ) };
 }
+void checked_retained_claim(flatfile_accounting_status status)
+{
+	// A conflicting immutable claim is unavailable replay proof. New-operation
+	// staging still uses checked(status), preserving duplicate-source refusal.
+	need(status == flatfile_accounting_status::ok,
+	     status == flatfile_accounting_status::io_error ? EIO :
+	     status == flatfile_accounting_status::capacity ? ENOSPC :
+							      EILSEQ);
+}
 void checked(flatfile_player_domain_result status)
 {
 	if (status == flatfile_player_domain_result::ok)
@@ -519,6 +528,9 @@ critical_apply_result flatfile_accounting_coin_transaction::verify_retained_lock
 			return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
 		checked(lookup);
 		verify(root, lock, retained);
+		if (!retained.result_code)
+			checked_retained_claim(flatfile_accounting_storage::verify_source_claim(
+				root, lock, retained, nullptr));
 		return completion(retained, true);
 	}
 	catch (const failure &error)
@@ -553,6 +565,10 @@ critical_apply_result flatfile_accounting_coin_transaction::apply(const std::str
 		if (lookup == flatfile_accounting_status::ok)
 		{
 			verify(root, lock, retained);
+			if (!retained.result_code)
+				checked_retained_claim(
+					flatfile_accounting_storage::verify_source_claim(
+						root, lock, retained, nullptr));
 			return completion(retained, true);
 		}
 		if (lookup != flatfile_accounting_status::not_found)
@@ -708,6 +724,9 @@ critical_apply_result flatfile_accounting_coin_transaction::apply(const std::str
 					&operations, nullptr));
 		checked(flatfile_accounting_storage::stage(root, lock, record, &operations,
 							   nullptr));
+		// Claim the original lifecycle source in the same authority transaction.
+		checked(flatfile_accounting_storage::stage_source_claim(root, lock, record,
+									&operations, nullptr));
 		if (!record.result_code)
 		{
 			economic_accounting_plan expected;
@@ -736,6 +755,9 @@ critical_apply_result flatfile_accounting_coin_transaction::apply(const std::str
 		     EIO);
 		checked(flatfile_accounting_lookup(root, lock, command, &retained, nullptr));
 		verify(root, lock, retained);
+		if (!retained.result_code)
+			checked_retained_claim(flatfile_accounting_storage::verify_source_claim(
+				root, lock, retained, nullptr));
 		need(retained.plan == record.plan && retained.result == record.result &&
 		     retained.result_code == record.result_code &&
 		     retained.durable_revision == record.durable_revision);

@@ -932,6 +932,49 @@ int main(int argc, char **argv)
 		       owned.size() == 1 && owned[0].item_revision == 1);
 	}
 	const auto pile_record = retained(root, drop_command);
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(root, nullptr));
+		assert(access_type::verify_source_claim(root, lock, pile_record, nullptr) ==
+		       flatfile_accounting_status::ok);
+	}
+	// An ACKed root cannot authenticate a lifecycle after its source claim is lost
+	// or damaged. The original writer creates the claim; these copies only fault it.
+	for (const bool corrupt : { false, true })
+	{
+		const auto target = path.parent_path() / (corrupt ? "coin-source-claim-corrupt" :
+								    "coin-source-claim-missing");
+		clone(path, target);
+		std::vector<fs::path> claims;
+		for (const auto &entry : fs::directory_iterator(target / "economic-evidence"))
+			if (entry.is_regular_file() &&
+			    entry.path().filename().string().starts_with("source-claim-"))
+				claims.push_back(entry.path());
+		assert(claims.size() == 1);
+		if (corrupt)
+		{
+			auto damaged = read(claims.front());
+			assert(!damaged.empty());
+			damaged.back() ^= 1;
+			write(claims.front(), damaged);
+		}
+		else
+			assert(fs::remove(claims.front()));
+		const auto before = durable_files(target);
+		const auto replay =
+			flatfile_accounting_coin_transaction::apply(target.string(), drop_command);
+		assert(replay.outcome == outcome::retryable_failure && replay.error_code);
+		assert(durable_files(target) == before);
+		{
+			flatfile_authority_lock lock;
+			assert(lock.acquire(target.string(), nullptr));
+			const auto proof =
+				flatfile_accounting_coin_transaction::verify_retained_locked(
+					target.string(), lock, drop_command);
+			assert(proof.outcome == outcome::retryable_failure && proof.error_code);
+		}
+		assert(durable_files(target) == before);
+	}
 	economic_accounting_plan pile_plan;
 	assert(economic_plan_decode(pile_record.plan, &pile_plan) == economic_accounting_error::ok);
 	assert(pile_plan.accounts.size() == 2 && pile_plan.postings.size() == 2 &&

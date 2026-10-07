@@ -66180,7 +66180,7 @@
       "src/flatfile/flatfile_accounting_authority.h": "cc0d3ac9580c5ec586b1809818160e15725370eeea98c7b7d6abf2d5e53149c7",
       "src/flatfile/flatfile_accounting_baseline.c": "477745c7587704b9c644578b00cfe7dd35f41a1eadeb7c60935543d676213c6b",
       "src/flatfile/flatfile_accounting_baseline.h": "998e8272a511b8299e40035b6432b8c018cd82dd46b5b98ae43d56c3f9c7345a",
-      "src/flatfile/flatfile_accounting_coin_transaction.c": "bb059c451b0d5cae84e30078393d6749c8137ce578ed86115c15bed45e03f894",
+      "src/flatfile/flatfile_accounting_coin_transaction.c": "b383283cf443759bd89b1e938ff53a14258b656504d78b1ce596b899ec93017d",
       "src/flatfile/flatfile_accounting_coin_transaction.h": "92949cacbe51eaa9b6a65536b7f94b32d4a7b80ac264ae0a259085126feaf1f4",
       "src/flatfile/flatfile_accounting_lifecycle_transaction.c": "f5828b2fdb91ab66ba95928a34fefae4182a0b37b204fd9c2d71ba6e41bce098",
       "src/flatfile/flatfile_accounting_lifecycle_transaction.h": "fe491f88ad0fa3bd9f64077345c226d039c1b022c928f8b405c135199b0d273b",
