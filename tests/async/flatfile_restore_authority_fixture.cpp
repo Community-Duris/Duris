@@ -6,6 +6,7 @@
 #include "world/quest_mobile_native.h"
 #include "economy/auction_accounting.h"
 #include "economy/auction_settlement_accounting.h"
+#include "economy/auction_money_claim_accounting.h"
 #include "../../scripts/qualify_flatfile_economic_records.h"
 #include <cassert>
 #include <cstring>
@@ -575,17 +576,286 @@ int main(int argc, char **argv)
 		std::cout << "NATIVE_ENVELOPE_RECORDS " << sequence << '\n';
 		return 0;
 	}
+	if (mode.starts_with("baseline-auction-attribution-consumption-chain-"))
+	{
+		const bool future = mode.ends_with("future");
+		const bool oversize = mode.ends_with("oversize");
+		const bool reverse = mode.ends_with("reverse") || future;
+		const bool partial = mode.find("partial") != std::string::npos || future ||
+				     oversize;
+		const auto consumer_wallet =
+			create(economic_account_kind::wallet, 0, { 1, INT32_MAX, {} });
+		const auto second_escrow =
+			create(economic_account_kind::auction_escrow, 0, { 4, UINT32_MAX - 1, {} });
+		const auto bid_escrow =
+			create(economic_account_kind::auction_escrow, 0, { 4, UINT32_MAX - 2, {} });
+		economic_baseline_batch batch;
+		batch.lineage = id(1);
+		batch.epoch = id(50);
+		batch.preparation_id = id(52);
+		batch.actor_id = 7;
+		batch.opening_account = { id(1), economic_account_kind::opening, 1, 0 };
+		batch.boundary_digest.fill(1);
+		batch.coverage_digest.fill(2);
+		economic_digest digest;
+		digest.fill(3);
+		batch.holdings = { { active_wallet.account, { 100, 0, 0, 0 }, 0, digest },
+				   { consumer_wallet.account, { 0, 0, 1, 0 }, 0, digest },
+				   { escrow.account, { 60, 0, 0, 0 }, 2, digest },
+				   { second_escrow.account, { 40, 0, 0, 0 }, 2, digest },
+				   { bid_escrow.account, {}, 2, digest },
+				   { pending_claim.account, {}, 3, digest } };
+		assert(access::initialize_baseline(root, lock, id(1), id(50), batch.opening_account,
+						   id(53), &operations,
+						   &error) == flatfile_accounting_status::ok);
+		commit();
+		auto bucket = [&](uint8_t value)
+		{
+			if (!(control().evidence_initialized[value / 8] & (1u << (value % 8))))
+			{
+				assert(access::initialize_evidence_bucket(
+					       root, lock, control().revision, value, id(8),
+					       &operations, &error) == 0);
+				commit();
+			}
+		};
+		std::optional<economic_prepared_baseline> prepared;
+		assert(economic_baseline_prepare(batch, &prepared) ==
+		       economic_accounting_error::ok);
+		critical_command baseline;
+		assert(economic_baseline_command_build(*prepared, UINT64_MAX, &baseline) ==
+		       economic_accounting_error::ok);
+		bucket(baseline.operation_id.bytes[0]);
+		assert(access::stage_baseline(root, lock, baseline, *prepared, &operations,
+					      &error) == flatfile_accounting_status::ok);
+		commit();
+		int64_t claim = 0;
+		uint64_t revision = 3, wallet_revision = 0;
+		std::vector<auction_money_claim_source> available;
+		auto stage = [&](flatfile_accounting_record &value, economic_accounting_plan &plan,
+				 const auction_command_result &outcome)
+		{
+			assert(economic_plan_encode(plan, &value.plan) ==
+			       economic_accounting_error::ok);
+			std::array<uint8_t, AUCTION_RESULT_PAYLOAD_BYTES> encoded;
+			assert(auction_command_encode_result(outcome, &encoded));
+			value.result.assign(encoded.begin(), encoded.end());
+			value.durable_revision = 1;
+			bucket(value.command.operation_id.bytes[0]);
+			assert(access::stage(root, lock, value, &operations, &error) ==
+			       flatfile_accounting_status::ok);
+			assert(access::stage_source_claim(root, lock, value, &operations, &error) ==
+			       flatfile_accounting_status::ok);
+			commit();
+		};
+		auto sale = [&](uint8_t operation, const flatfile_economic_mapping &held,
+				uint32_t auction, int64_t amount, uint64_t uid)
+		{
+			flatfile_accounting_record value;
+			auction_command_payload payload = {};
+			payload.action = auction_action::finalize;
+			payload.auction_id = auction;
+			payload.racewar = 1;
+			assert(auction_command_build(&value.command, id(operation), payload,
+						     critical_source_site::command,
+						     critical_deadline_class::interactive));
+			value.command.accepted_at_usec = 1;
+			auction_settlement_authority authority;
+			authority.epoch = id(50);
+			authority.listing = { auction,
+					      INT32_MAX,
+					      22,
+					      1,
+					      1,
+					      1,
+					      amount,
+					      0,
+					      2,
+					      100,
+					      id(auction == UINT32_MAX ? 2 : 12),
+					      id(auction == UINT32_MAX ? 3 : 13),
+					      1,
+					      {} };
+			authority.listing.items[0] = { uid, 3, 0, 10, 0, false };
+			authority.accounts.escrow = held.account;
+			authority.accounts.seller_claim = pending_claim.account;
+			authority.seller_claim_before = claim;
+			authority.seller_claim_after = claim + amount;
+			authority.seller_claim_revision_before = revision;
+			authority.seller_claim_revision_after = revision + 1;
+			authority.items_before = { { uid,
+						     { { item_owner_type::auction, auction, 0 },
+						       uid,
+						       0,
+						       3,
+						       item_custody_state::active,
+						       0 } } };
+			authority.claim_pids_after = { 22 };
+			assert(auction_settlement_accounting_intent(
+				       value.command, id(50), authority.listing, authority.accounts,
+				       &value.command.accounting_intent) ==
+			       economic_accounting_error::ok);
+			value.command.schema_version = 2;
+			economic_frozen_intent intent;
+			assert(economic_intent_decode(value.command.accounting_intent, &intent) ==
+			       economic_accounting_error::ok);
+			auction_command_result outcome = {};
+			outcome.action = payload.action;
+			outcome.event_type = auction_event_type::sold;
+			outcome.auction_id = auction;
+			outcome.seller_pid = INT32_MAX;
+			outcome.winner_pid = 22;
+			outcome.status = 2;
+			outcome.final_price = amount;
+			outcome.auction_revision = 3;
+			economic_accounting_plan plan;
+			assert(auction_settlement_accounting_plan(value.command, intent, authority,
+								  outcome, &plan) ==
+			       economic_accounting_error::ok);
+			stage(value, plan, outcome);
+			claim += amount;
+			++revision;
+			available.push_back({ id(operation), 2, INT32_MAX,
+					      pending_claim.account.authority_id,
+					      uint64_t(amount) });
+			std::sort(available.begin(), available.end(),
+				  [](const auto &a, const auto &b)
+				  { return a.operation.bytes < b.operation.bytes; });
+			assert(access::retire_mapping(root, lock, control().revision, held.account,
+						      held.revision, id(operation), &operations,
+						      &error) == 0);
+			commit();
+		};
+		auto rebid = [&]()
+		{
+			const int64_t amount = (reverse && !future) || oversize ? 40 : 60;
+			flatfile_accounting_record value;
+			auction_command_payload payload = {};
+			payload.action = auction_action::bid;
+			payload.actor_pid = INT32_MAX;
+			payload.auction_id = UINT32_MAX - 2;
+			payload.racewar = 1;
+			strcpy(payload.account_name.data(), "renamed");
+			payload.value = amount;
+			assert(auction_command_build(&value.command, id(8), payload,
+						     critical_source_site::command,
+						     critical_deadline_class::interactive));
+			value.command.accepted_at_usec = 1;
+			auction_bid_accounting_authority authority;
+			authority.epoch = id(50);
+			authority.listing = { UINT32_MAX - 2, 22, 0, 1, 1, 20, 0, 2, id(14), {} };
+			authority.accounts.wallet = consumer_wallet.account;
+			authority.accounts.bank = bank.account;
+			authority.accounts.escrow = bid_escrow.account;
+			authority.accounts.bidder_claim = pending_claim.account;
+			authority.balances_before.wallet.amount = { 0, 0, 1, 0 };
+			authority.bidder_claim_before = { claim, revision };
+			assert(auction_bid_accounting_intent(value.command, id(50),
+							     authority.listing, authority.accounts,
+							     &value.command.accounting_intent) ==
+			       economic_accounting_error::ok);
+			value.command.schema_version = 2;
+			economic_frozen_intent intent;
+			assert(economic_intent_decode(value.command.accounting_intent, &intent) ==
+			       economic_accounting_error::ok);
+			auction_command_result outcome = {};
+			outcome.action = payload.action;
+			outcome.event_type = auction_event_type::bid_placed;
+			outcome.auction_id = payload.auction_id;
+			outcome.status = 1;
+			outcome.seller_pid = 22;
+			outcome.winner_pid = INT32_MAX;
+			outcome.final_price = amount;
+			outcome.claim_credit_used = amount;
+			outcome.wallet.amount = { 0, 0, 1, 0 };
+			outcome.wallet_revision = outcome.bank_revision = 1;
+			outcome.auction_revision = 3;
+			economic_accounting_plan plan;
+			assert(auction_bid_accounting_plan(value.command, intent, authority,
+							   outcome,
+							   &plan) == economic_accounting_error::ok);
+			stage(value, plan, outcome);
+			// The oversize control models a forbidden skip, never native acceptance.
+			const size_t selected = oversize ? 1 : 0;
+			assert(selected < available.size() &&
+			       int64_t(available[selected].amount) == amount);
+			available.erase(available.begin() + selected);
+			claim -= amount;
+			++revision;
+			++wallet_revision;
+		};
+		sale(reverse ? 9 : 6, escrow, UINT32_MAX, 60, 42);
+		if (future)
+			rebid();
+		sale(reverse ? 6 : 9, second_escrow, UINT32_MAX - 1, 40, 43);
+		if (partial && !future)
+			rebid();
+		flatfile_accounting_record pickup;
+		auction_command_payload cash = {};
+		cash.action = auction_action::claim_money;
+		cash.actor_pid = INT32_MAX;
+		cash.racewar = 1;
+		cash.expected_wallet_revision = cash.expected_bank_revision = wallet_revision;
+		strcpy(cash.account_name.data(), "renamed");
+		assert(auction_command_build(&pickup.command, id(10), cash,
+					     critical_source_site::command,
+					     critical_deadline_class::interactive));
+		pickup.command.accepted_at_usec = 1;
+		auction_money_claim_authority before;
+		before.epoch = id(50);
+		before.wallet = consumer_wallet.account;
+		before.bank = bank.account;
+		before.claim_account = pending_claim.account;
+		before.claim = { INT32_MAX, claim, revision, available };
+		before.balances_before.wallet.amount = { 0, 0, 1, 0 };
+		before.balances_before.wallet_revision = before.balances_before.bank_revision =
+			wallet_revision;
+		assert(auction_money_claim_accounting_intent(
+			       pickup.command, before.epoch, before.wallet, before.bank,
+			       before.claim_account, before.claim,
+			       &pickup.command.accounting_intent) == economic_accounting_error::ok);
+		pickup.command.schema_version = 2;
+		economic_frozen_intent frozen;
+		assert(economic_intent_decode(pickup.command.accounting_intent, &frozen) ==
+		       economic_accounting_error::ok);
+		auction_command_result outcome = {};
+		outcome.action = auction_action::claim_money;
+		outcome.event_type = auction_event_type::money_claimed;
+		outcome.wallet_value_delta = claim;
+		outcome.wallet.amount = { 0, claim / 10 % 10, 1 + claim / 100, 0 };
+		outcome.wallet_revision = outcome.bank_revision = outcome.auction_revision =
+			wallet_revision + 1;
+		economic_accounting_plan effects;
+		assert(auction_money_claim_accounting_plan(pickup.command, frozen, before, outcome,
+							   &effects) ==
+		       economic_accounting_error::ok);
+		stage(pickup, effects, outcome);
+		if (!partial)
+		{
+			assert(access::retire_mapping(root, lock, control().revision,
+						      bid_escrow.account, bid_escrow.revision,
+						      id(10), &operations, &error) == 0);
+			commit();
+		}
+		assert(critical_operation_id_is_zero(control().active_epoch));
+		return 0;
+	}
 	if (mode.starts_with("baseline-auction-attribution-"))
 	{
 		const bool bid = mode.find("bid") != std::string::npos;
 		const bool sold = mode.find("sold") != std::string::npos;
 		const bool expired = mode.ends_with("expired"), removed = mode.ends_with("removed");
 		const bool born = mode.find("born") != std::string::npos;
+		const bool consume = mode.find("consumption-money") != std::string::npos;
 		const uint32_t basis = mode.find("zero") != std::string::npos ? 10000 :
 				       mode.find("fee") != std::string::npos  ? 1500 :
 										0;
 		auto seller_claim = pending_claim.account;
 		flatfile_economic_mapping bidder_mapping, seller_mapping;
+		flatfile_economic_mapping consumer_wallet;
+		if (consume)
+			consumer_wallet =
+				create(economic_account_kind::wallet, 0, { 1, INT32_MAX, {} });
 		if (bid)
 		{
 			bidder_mapping =
@@ -620,6 +890,9 @@ int main(int argc, char **argv)
 			{ escrow.account, { expired ? 0 : 60, 0, 0, 0 }, 2, native_digest },
 			{ pending_claim.account, {}, 3, native_digest }
 		};
+		if (consume)
+			batch.holdings.push_back(
+				{ consumer_wallet.account, { 100, 0, 0, 0 }, 0, native_digest });
 		if (bid)
 		{
 			batch.holdings.push_back({ bidder_mapping.account, {}, 1, native_digest });
@@ -773,6 +1046,62 @@ int main(int argc, char **argv)
 		assert(access::stage_source_claim(root, lock, value, &operations, &error) ==
 		       flatfile_accounting_status::ok);
 		commit();
+		if (consume)
+		{
+			flatfile_accounting_record pickup;
+			auction_command_payload cash = {};
+			cash.action = auction_action::claim_money;
+			cash.actor_pid = INT32_MAX;
+			cash.racewar = 1;
+			strcpy(cash.account_name.data(), "renamed");
+			assert(auction_command_build(&pickup.command, id(8), cash,
+						     critical_source_site::command,
+						     critical_deadline_class::interactive));
+			pickup.command.accepted_at_usec = 1;
+			auction_money_claim_authority before;
+			before.epoch = id(50);
+			before.wallet = consumer_wallet.account;
+			before.bank = bank.account;
+			before.claim_account = pending_claim.account;
+			before.claim = { INT32_MAX,
+					 60,
+					 4,
+					 { { id(6), 2, INT32_MAX,
+					     pending_claim.account.authority_id, 60 } } };
+			before.balances_before.wallet.amount[0] = 100;
+			assert(auction_money_claim_accounting_intent(
+				       pickup.command, before.epoch, before.wallet, before.bank,
+				       before.claim_account, before.claim,
+				       &pickup.command.accounting_intent) ==
+			       economic_accounting_error::ok);
+			pickup.command.schema_version = 2;
+			economic_frozen_intent frozen;
+			assert(economic_intent_decode(pickup.command.accounting_intent, &frozen) ==
+			       economic_accounting_error::ok);
+			auction_command_result outcome = {};
+			outcome.action = auction_action::claim_money;
+			outcome.event_type = auction_event_type::money_claimed;
+			outcome.wallet_value_delta = 60;
+			outcome.wallet.amount = { 0, 6, 1, 0 };
+			outcome.wallet_revision = outcome.bank_revision = outcome.auction_revision =
+				1;
+			economic_accounting_plan effects;
+			assert(auction_money_claim_accounting_plan(pickup.command, frozen, before,
+								   outcome, &effects) ==
+			       economic_accounting_error::ok);
+			assert(economic_plan_encode(effects, &pickup.plan) ==
+			       economic_accounting_error::ok);
+			assert(auction_command_encode_result(outcome, &encoded));
+			pickup.result.assign(encoded.begin(), encoded.end());
+			pickup.durable_revision = 1;
+			bucket(8);
+			assert(access::stage(root, lock, pickup, &operations, &error) ==
+			       flatfile_accounting_status::ok);
+			assert(access::stage_source_claim(root, lock, pickup, &operations,
+							  &error) ==
+			       flatfile_accounting_status::ok);
+			commit();
+		}
 		if ((!bid || sold) && !removed)
 		{
 			assert(access::retire_mapping(root, lock, control().revision,

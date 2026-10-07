@@ -384,6 +384,7 @@ def build_native_oracle(native, out):
         matches = list((native / "src").rglob(name + ".c"))
         assert len(matches) == 1
         sources.append(str(matches[0]))
+    sources.append(str(native / "src/economy/auction_money_claim_accounting.c"))
     fixture = out / "native"
     command = ["g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
         "-D__NO_MYSQL__", "-I" + str(native / "src"), "-I" + str(native / "src/no_mysql"),

@@ -46,6 +46,7 @@ def build_fixture(destination, native_source=ROOT):
                "src/economy/economic_baseline_codec.c", "src/economy/economic_baseline_command.c",
                "src/economy/auction_command.c", "src/economy/auction_accounting.c",
                "src/economy/auction_settlement_accounting.c",
+               "src/economy/auction_money_claim_accounting.c",
                *SOURCES[1:]]
     flags = ["-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-O1", "-g",
              "-fsanitize=address,undefined", "-fno-omit-frame-pointer", "-fno-pie", "-no-pie",
@@ -2387,6 +2388,9 @@ int main(int argc, char **argv) {
         from flatfile_auction_attribution_cases import qualify as qualify_auction_credits
         auction_credits = qualify_auction_credits(ROOT, Path(build) / "auction-credits", fixture=fixture,
             operator=binary, native_fixture=Path(build) / "auction-money/native")
+        from flatfile_auction_consumption_cases import run_checks as qualify_auction_consumption
+        auction_consumption = qualify_auction_consumption(ROOT, Path(build) / "auction-consumption",
+            fixture=fixture, operator=binary, native_fixture=Path(build) / "auction-money/native")
         print(json.dumps({"positive_stores": successes, "refused_corruptions": refusals,
                           "money_history_cases": len(money_history["observations"]),
                           "native_domain_cases": len(native_domains["observations"]),
@@ -2394,6 +2398,7 @@ int main(int argc, char **argv) {
                           "auction_money_cases": len(auction_money["observations"]),
                           "auction_source_balance_cases": len(auction_sources["observations"]),
                           "auction_source_credit_cases": len(auction_credits["observations"]),
+                          "auction_source_consumption_cases": len(auction_consumption["observations"]),
                           "native_invocations_per_case": 3, "economic_bytes_unchanged": True,
                           "generic_semantic_corruptions": 50, "native_semantic_decodes": native_semantic_decodes,
                           "native_metadata_comparisons": 1058,

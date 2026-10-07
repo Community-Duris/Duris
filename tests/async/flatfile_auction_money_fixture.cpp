@@ -29,8 +29,9 @@ static std::vector<uint8_t> plan5_read(const fs::path &path)
 }
 // Only this disposable fixture bridges original common-record decoding to the
 // original native receipt codec. The operator never imports this helper.
-static flatfile_accounting_record plan5_creator(const std::string &root)
+static std::vector<flatfile_accounting_record> plan5_records(const std::string &root)
 {
+	std::vector<flatfile_accounting_record> records;
 	for (const auto &entry : fs::directory_iterator(fs::path(root) / "economic-evidence"))
 	{
 		const auto name = entry.path().filename().string();
@@ -53,11 +54,105 @@ static flatfile_accounting_record plan5_creator(const std::string &root)
 				       std::span(bytes).subspan(80 + offset, size), &record) ==
 			       flatfile_accounting_status::ok);
 			if (record.command.type == critical_command_type::auction)
-				return record;
+				records.push_back(std::move(record));
 		}
 	}
-	assert(false);
-	return {};
+	return records;
+}
+static std::vector<std::pair<flatfile_accounting_record, economic_account_effect>>
+plan5_claim_timeline(const std::string &root)
+{
+	std::vector<std::pair<flatfile_accounting_record, economic_account_effect>> timeline;
+	for (const auto &record : plan5_records(root))
+	{
+		economic_accounting_plan plan;
+		assert(economic_plan_decode(record.plan, &plan) == economic_accounting_error::ok);
+		for (const auto &effect : plan.accounts)
+			if (effect.key.kind == economic_account_kind::pending_claim &&
+			    effect.key.authority_id == 5)
+				timeline.emplace_back(record, effect);
+	}
+	std::sort(timeline.begin(), timeline.end(),
+		  [](const auto &a, const auto &b)
+		  { return a.second.before_revision < b.second.before_revision; });
+	return timeline;
+}
+static auction_operation plan5_receipt(const flatfile_accounting_record &record)
+{
+	auction_operation result;
+	result.operation_id = record.command.operation_id;
+	assert(auction_command_decode_result(record.result.data(), record.result.size(),
+					     &result.result));
+	std::vector<uint8_t> encoded;
+	assert(critical_command_encode(record.command, &encoded) ==
+	       critical_command_codec_result::ok);
+	SHA256(encoded.data(), encoded.size(), result.command_digest.data());
+	return result;
+}
+static void plan5_seed_chain(const std::string &root, bool oversize)
+{
+	flatfile_authority_lock lock;
+	std::string error;
+	assert(lock.acquire(root, &error) &&
+	       !fs::exists(fs::path(root) / "domains/auction_catalog"));
+	auction_catalog catalog;
+	catalog.revision = 10;
+	auction_claim_source_catalog sources;
+	int64_t balance = 0;
+	uint64_t revision = 3;
+	for (const auto &[record, effect] : plan5_claim_timeline(root))
+	{
+		assert(record.result_code == 0 && effect.before_revision == revision &&
+		       effect.before[0] == balance);
+		const int64_t delta = effect.after[0] - effect.before[0];
+		if (delta > 0)
+			assert(add_source(&sources, record.command, effect.key, INT32_MAX, 2,
+					  delta));
+		else
+		{
+			const bool accepted = consume_whole_claim_sources(
+				&sources, record.command, effect.key, INT32_MAX, balance, -delta);
+			if (oversize && record.command.operation_id.bytes[0] == 8)
+			{
+				assert(!accepted && sources.rows.size() == 2 &&
+				       sources.rows[1].amount == uint64_t(-delta));
+				sources.rows[1].consumed_by = record.command.operation_id;
+				++sources.revision;
+			}
+			else
+				assert(accepted);
+		}
+		balance = effect.after[0];
+		revision = effect.after_revision;
+		catalog.operations.push_back(plan5_receipt(record));
+		const auto &result = catalog.operations.back().result;
+		if (!result.auction_id)
+			continue;
+		auction_listing listing;
+		listing.id = result.auction_id;
+		listing.seller_pid = result.seller_pid;
+		listing.winner_pid = result.winner_pid;
+		listing.status = result.status;
+		listing.current_price = result.final_price;
+		listing.revision = result.auction_revision;
+		listing.end_time = 100;
+		listing.seller_account = "native-fixture";
+		listing.object_blob = { 11, 22, 33 };
+		listing.items.push_back({ uint64_t(result.auction_id == UINT32_MAX ? 42 : 43), 3,
+					  10, result.winner_pid, false });
+		catalog.listings.push_back(listing);
+	}
+	std::sort(catalog.listings.begin(), catalog.listings.end(),
+		  [](const auto &a, const auto &b) { return a.id < b.id; });
+	std::sort(catalog.operations.begin(), catalog.operations.end(),
+		  [](const auto &a, const auto &b)
+		  { return a.operation_id.bytes < b.operation_id.bytes; });
+	catalog.money.push_back({ INT32_MAX, balance, revision });
+	std::vector<uint8_t> encoded;
+	assert(encode_catalog(catalog, &encoded));
+	assert(flatfile_atomic_write(domains_directory(root), catalog_filename, encoded, &error));
+	assert(encode_sources(sources, &encoded));
+	assert(flatfile_atomic_write(domains_directory(root), source_filename, encoded, &error));
 }
 static void plan5_seed_attribution(const std::string &root, const std::string &mode)
 {
@@ -65,7 +160,12 @@ static void plan5_seed_attribution(const std::string &root, const std::string &m
 	std::string error;
 	assert(lock.acquire(root, &error) &&
 	       !fs::exists(fs::path(root) / "domains/auction_catalog"));
-	const auto retained = plan5_creator(root);
+	const auto records = plan5_records(root);
+	const auto found = std::find_if(records.begin(), records.end(),
+					[](const auto &row)
+					{ return row.command.operation_id.bytes[0] == 6; });
+	assert(found != records.end());
+	const auto &retained = *found;
 	assert(retained.result_code == 0);
 	auction_command_payload payload = {};
 	auction_operation operation;
@@ -131,6 +231,30 @@ static void plan5_seed_attribution(const std::string &root, const std::string &m
 					    born ? 7u : 5u, 0 },
 					  INT32_MAX, 2, proceeds));
 	}
+	if (mode.find("consumption-money") != std::string::npos)
+	{
+		const auto consumer = std::find_if(
+			records.begin(), records.end(),
+			[](const auto &row) { return row.command.operation_id.bytes[0] == 8; });
+		assert(consumer != records.end() && consumer->result_code == 0);
+		assert(consume_whole_claim_sources(&sources, consumer->command,
+						   { lineage, economic_account_kind::pending_claim,
+						     5, 0 },
+						   INT32_MAX, 60, 60));
+		auto *claim = find_money(&catalog, INT32_MAX);
+		assert(claim && claim->amount == 60 && claim->revision == 4);
+		claim->amount = 0;
+		++claim->revision;
+		auction_operation receipt;
+		receipt.operation_id = consumer->command.operation_id;
+		assert(auction_command_decode_result(consumer->result.data(),
+						     consumer->result.size(), &receipt.result));
+		command.clear();
+		assert(critical_command_encode(consumer->command, &command) ==
+		       critical_command_codec_result::ok);
+		SHA256(command.data(), command.size(), receipt.command_digest.data());
+		catalog.operations.push_back(receipt);
+	}
 	std::vector<uint8_t> encoded;
 	assert(encode_catalog(catalog, &encoded));
 	assert(flatfile_atomic_write(domains_directory(root), catalog_filename, encoded, &error));
@@ -172,7 +296,9 @@ int main(int argc, char **argv)
 	const std::string mode = argv[1], root = argv[2];
 	assert(fs::path(root).is_absolute() && fs::is_directory(root));
 	std::string error;
-	if (mode.starts_with("seed-attribution-"))
+	if (mode.starts_with("seed-attribution-consumption-chain-"))
+		plan5_seed_chain(root, mode.ends_with("oversize"));
+	else if (mode.starts_with("seed-attribution-"))
 		plan5_seed_attribution(root, mode);
 	else if (mode == "seed")
 	{
@@ -236,7 +362,8 @@ int main(int argc, char **argv)
 		assert(!fs::exists(fs::path(root) / "economic-evidence"));
 	}
 	else
-		assert(mode == "probe" || mode == "public-query" || mode == "source-balance");
+		assert(mode == "probe" || mode == "public-query" || mode == "source-balance" ||
+		       mode == "consumer-proof");
 	auction_catalog catalog;
 	auction_claim_source_catalog sources;
 	if (mode == "public-query")
@@ -257,7 +384,85 @@ int main(int argc, char **argv)
 		std::cerr << "native_auction_decode_refused\n";
 		return 1;
 	}
-	if (mode == "source-balance")
+	if (mode == "consumer-proof")
+	{
+		const auto records = plan5_records(root);
+		bool frozen_match = true, whole_match = true;
+		size_t cashouts = 0, rows = 0;
+		auction_claim_source_catalog expected_sources;
+		for (const auto &[record, effect] : plan5_claim_timeline(root))
+		{
+			const auto delta = effect.after[0] - effect.before[0];
+			if (delta > 0)
+				whole_match = add_source(&expected_sources, record.command,
+							 effect.key, INT32_MAX, 2, delta) &&
+					      whole_match;
+			else
+				whole_match = consume_whole_claim_sources(
+						      &expected_sources, record.command, effect.key,
+						      INT32_MAX, effect.before[0], -delta) &&
+					      whole_match;
+		}
+		whole_match = whole_match && expected_sources.rows.size() == sources.rows.size();
+		if (whole_match)
+			for (size_t i = 0; i < sources.rows.size(); ++i)
+				whole_match = critical_operation_id_equal(
+						      expected_sources.rows[i].consumed_by,
+						      sources.rows[i].consumed_by) &&
+					      whole_match;
+		for (const auto &record : records)
+		{
+			auction_command_payload payload;
+			assert(auction_command_decode_payload(record.command, &payload));
+			if (payload.action != auction_action::claim_money)
+				continue;
+			++cashouts;
+			const auto *row = &record;
+			economic_frozen_intent intent;
+			assert(economic_intent_decode(row->command.accounting_intent, &intent) ==
+			       economic_accounting_error::ok);
+			const auto &wire = intent.admission.facts;
+			assert(wire.size() == 80);
+			const auto lineage = intent.admission.metadata.lineage;
+			const economic_account_key wallet{ lineage, economic_account_kind::wallet,
+							   plan5_number(wire, 0, 8), 0 };
+			const economic_account_key bank{ lineage, economic_account_kind::bank,
+							 plan5_number(wire, 8, 8), 1 };
+			const economic_account_key claim_account{
+				lineage, economic_account_kind::pending_claim,
+				plan5_number(wire, 16, 8), 0
+			};
+			auction_money_claim_state claim;
+			claim.beneficiary_pid = plan5_number(wire, 24, 4);
+			claim.money = plan5_number(wire, 28, 8);
+			claim.revision = plan5_number(wire, 36, 8);
+			for (const auto &source : sources.rows)
+				if (critical_operation_id_equal(source.consumed_by,
+								row->command.operation_id))
+					claim.sources.push_back({ source.operation, source.slot,
+								  source.beneficiary_pid,
+								  source.claim_mapping_id,
+								  source.amount });
+			critical_command projected = row->command;
+			projected.schema_version = 1;
+			projected.accounting_intent.clear();
+			projected.publication_required = false;
+			std::vector<uint8_t> expected;
+			const auto status = auction_money_claim_accounting_intent(
+				projected, intent.admission.metadata.epoch, wallet, bank,
+				claim_account, claim, &expected);
+			frozen_match = frozen_match && status == economic_accounting_error::ok &&
+				       expected == row->command.accounting_intent;
+			rows += claim.sources.size();
+		}
+		assert(cashouts);
+		std::cout << "{\"native_frozen_consumer_sources_match\":"
+			  << (frozen_match ? "true" : "false")
+			  << ",\"native_whole_consumption_match\":"
+			  << (whole_match ? "true" : "false") << ",\"cashouts\":" << cashouts
+			  << ",\"observed_consumed_rows\":" << rows << "}\n";
+	}
+	else if (mode == "source-balance")
 	{
 		const auto *pickup = find_money(&catalog, INT32_MAX);
 		assert(pickup);

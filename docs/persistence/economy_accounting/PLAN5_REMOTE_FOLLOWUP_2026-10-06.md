@@ -1,6 +1,33 @@
 # Plan5 remote branch follow-up and primary refresh â€” 2026-10-06
 
 
+## Independent native source consumers and frozen sets — 2026-10-07
+
+[Exact qualification](PLAN5_AUCTION_SOURCE_CONSUMPTION_QUALIFICATION_2026-10-07.md)
+continues from `8809f8100f0c67d916cf5efe15c929ce794caf15` on the same remote `codex/accounting-plan5`.
+The balanced/verified-credit unknown-consumer reproduction establishes the gap.
+The new read-only v1 command reconstructs availability by native claim revision,
+verifies whole-row consumption, exact consumers/receipts and frozen cashout sets.
+All 58 focused controls and full native/managed drivers
+pass with zero selected skips. Full native has 20 healthy / 367 refusals; backup 18
+methods; two actual isolated boots/two generations with 30 audit pins. Make
+recompiles 740 unchanged providers. Normal validation, 55 contracts, syntax,
+formatting and whitespace pass; release still refuses missing writer execution.
+Original failed attempts remain retained. All seven alternate tips/follow-ups
+remain preserved on this branch. No native/schema/registry/shared runner edit.
+
+Archive `7da2f65e2e07c3dc877c99969a8c3b6de574b7bf35306443e2b189f8980cfc85`, tree `bb76713163de959f4bf8ef9683418ddbf373f354`;
+seal SHA256 `cdb8db4a73010f34dbacef8f37e39cd1a8269a9e85214bef0c3f6ac1aa4bef86`. Primary `d81e04b490390f797f286dc99a4446b516a167cc` standalone qualifier
+fails missing three existing lockpick/quest providers. The exact in-memory
+three-provider proposal links successfully without changing any shared source;
+the report gives functions, consumers, invariants and tests for primary integration.
+Current combined v2/native/schema, complete holdings/origins/UID/cross-epoch,
+genuine producers, both engines, release-host backup/retention and full R7/R8/
+release gates remain open. Curator report/follow-up/seal/delivery packet is ready;
+primary notebook application/acknowledgement/notification remain unclaimed and
+nonblocking. Inactive, wallet-root and declined spell boundaries are preserved.
+
+
 ## Independent native credit creators qualified — 2026-10-07
 
 [Exact qualification](PLAN5_AUCTION_SOURCE_CREDIT_QUALIFICATION_2026-10-07.md)

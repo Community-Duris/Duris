@@ -84,7 +84,9 @@ class creator
 	void fences(std::span<const uint8_t> account_name)
 	{
 		using fence_key = std::pair<uint64_t, uint64_t>;
-		std::set<fence_key> keys{ { 7, auction } };
+		std::set<fence_key> keys;
+		const auto operation_key = number(root.operation, 0, 8);
+		keys.insert({ 7, auction ? auction : operation_key ? operation_key : 1 });
 		std::map<fence_key, uint64_t> revisions;
 		if (actor)
 		{
@@ -200,13 +202,14 @@ class creator
 		}
 	}
 	void metadata(uint64_t writer, uint64_t reason, uint64_t id, const identity &listing,
-		      const identity &source, uint64_t revision, uint64_t slot = 0)
+		      const identity &source, uint64_t revision, uint64_t slot = 0,
+		      uint64_t source_kind = 13)
 	{
 		const auto intent = root.intent;
 		expect(n(intent, 12, 4) == writer && n(intent, 16, 4) == 1 &&
 		       n(intent, 20, 4) == 1 && n(intent, 24, 2) == reason && intent[26] == 1 &&
 		       intent[27] == 1 && n(intent, 96) == id &&
-		       identity_at(intent, 80) == listing && n(intent, 112, 2) == 13 &&
+		       identity_at(intent, 80) == listing && n(intent, 112, 2) == source_kind &&
 		       n(intent, 114, 2) == 1 && identity_at(intent, 116) == source &&
 		       identity_at(intent, 132) == listing && n(intent, 148) == revision &&
 		       n(intent, 156, 4) == slot);
@@ -398,10 +401,9 @@ class creator
 		, fee_basis(number(payload, 58, 4))
 	{
 	}
-	auto run()
+	void prepare()
 	{
 		expect(root.payload_version == 1 && payload.size() >= 90 && receipt.size() == 320 &&
-		       (payload[0] == 2 || payload[0] == 3 || payload[0] == 6) &&
 		       fee_basis <= 10000);
 		reader in{ payload.subspan(74) };
 		const auto items = in.number(2);
@@ -431,6 +433,11 @@ class creator
 			const auto row = root.plan.subspan(256 + i * 120, 120);
 			expect(accounts.emplace(fixed_account(row.first(40)), row).second);
 		}
+	}
+	auto run()
+	{
+		prepare();
+		expect(payload[0] == 2 || payload[0] == 3 || payload[0] == 6);
 		if (payload[0] == 2)
 			bid();
 		else
@@ -438,8 +445,39 @@ class creator
 		expect(used.size() == accounts.size());
 		return credits;
 	}
+	void validate_cashout()
+	{
+		prepare();
+		expect(payload[0] == 4 && !auction && actor && facts.size() == 80 &&
+		       n(facts, 24, 4) == actor && n(facts, 28) > 0 && n(facts, 28) <= INT32_MAX &&
+		       n(facts, 44, 4) > 0 && n(facts, 44, 4) <= 4096 &&
+		       n(root.intent, 156, 4) > 0 && n(facts, 0) != n(facts, 8) &&
+		       n(facts, 0) != n(facts, 16) && n(facts, 8) != n(facts, 16));
+		const auto original = identity_at(root.intent, 80);
+		metadata(13, 31, actor, original, original, n(facts, 36), n(root.intent, 156, 4),
+			 17);
+		mapped(account_at(lineage, 1, n(facts, 0)), 1, actor);
+		mapped(account_at(lineage, 2, n(facts, 8), race), 2, 0, race);
+		mapped(account_at(lineage, 5, n(facts, 16)), 5, actor);
+		const auto amount = static_cast<int64_t>(n(facts, 28));
+		const auto wallet = take(1, n(facts, 0));
+		const auto before = coin_vector(wallet, 40);
+		const auto value = coin_value(before);
+		expect(value + amount <= INT64_MAX && n(payload, 10) != UINT64_MAX &&
+		       n(payload, 18) != UINT64_MAX && n(receipt, 102) == n(payload, 10) + 1 &&
+		       n(receipt, 110) == n(payload, 18) + 1);
+		const auto after = canonical(static_cast<int64_t>(value) + amount);
+		delta(wallet, before, after, n(payload, 10));
+		expect(coin_vector(receipt, 38) == after);
+		delta(take(5, n(facts, 16)), { amount, 0, 0, 0 }, {}, n(facts, 36));
+		result_header(4, 5, 0, 0, 0, 0, 0, amount, n(payload, 10), 0);
+		expect(used.size() == accounts.size() && n(root.plan, 216, 4) == 2 &&
+		       n(root.plan, 220, 4) == 2 && !n(root.plan, 224, 4) &&
+		       !n(root.plan, 228, 4) && !n(root.plan, 232, 4) && !n(root.plan, 236, 4));
+	}
 };
-inline result audit(const std::filesystem::path &path, audit_budget &budget)
+inline result audit(const std::filesystem::path &path, audit_budget &budget,
+		    const observers &extra = {})
 {
 	result output;
 	std::map<account_key, restore_economic_authority::mapping> mappings;
@@ -456,6 +494,8 @@ inline result audit(const std::filesystem::path &path, audit_budget &budget)
 	observers observe;
 	observe.mapping = [&](const account_key &key, const auto &value)
 	{
+		if (extra.mapping)
+			extra.mapping(key, value);
 		const auto kind = number(key, 18, 2);
 		if (kind != 1 && kind != 2 && kind != 4 && kind != 5)
 			return;
@@ -465,6 +505,8 @@ inline result audit(const std::filesystem::path &path, audit_budget &budget)
 	};
 	observe.record = [&](const auto &root)
 	{
+		if (extra.record)
+			extra.record(root);
 		if (root.result_code || !root.witness.empty())
 			return;
 		const auto writer = number(root.intent, 12, 4);
@@ -508,6 +550,8 @@ inline result audit(const std::filesystem::path &path, audit_budget &budget)
 	};
 	observe.receipt = [&](const auto &row)
 	{
+		if (extra.receipt)
+			extra.receipt(row);
 		if (receipts.size() == maximum_accounts)
 			throw account_budget_refused();
 		need(receipts.emplace(row.operation,
@@ -522,6 +566,8 @@ inline result audit(const std::filesystem::path &path, audit_budget &budget)
 	};
 	observe.source = [&](const auto &row)
 	{
+		if (extra.source)
+			extra.source(row);
 		const auto account = source_account(row);
 		const auto found = expected.find({ row.operation, row.slot });
 		if (found == expected.end())
@@ -538,6 +584,7 @@ inline result audit(const std::filesystem::path &path, audit_budget &budget)
 				++output.compared_credits;
 		}
 	};
+	observe.holding = extra.holding;
 	observe.finish = [&](ledger &locked, restore_auction_money::result &values)
 	{
 		output.expected_credits = expected.size();
@@ -561,6 +608,8 @@ inline result audit(const std::filesystem::path &path, audit_budget &budget)
 		for (const auto &row : findings)
 			locked.issue(row.code, row.account, row.operation, 5, row.native_id);
 		values.finding_count += output.credit_findings - findings.size();
+		if (extra.finish)
+			extra.finish(locked, values);
 	};
 	static_cast<restore_auction_source_balance::result &>(output) =
 		restore_auction_source_balance::audit(path, budget, observe);
