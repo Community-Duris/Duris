@@ -75,15 +75,17 @@ base275 and original research pin, rather than claiming integrated qualification
    direct epoch insert or fabricated birth/reference will unblock this pack.
    Need original immutable parent/child journal receipts and quiescent capture
    boundaries from actual begin/pulse before costs/after publication/after ACK.
-2. **Current schema63/64 capture and supported Kord SQL journey — reserved next.**
+2. **Current schema63/64 capture and supported Kord SQL journey — executed checkpoint.**
    Owned capture_quest_cut.py will include bounded SELECT-only native birth-origin
    rows and their actual operation IDs. Build a new SQL ELF from this published
    prep source; run the existing QP06 XP-ACK/later-move journey with original
    deadlines and authentic Kord prototypes, plus current SQL snapshots. This is
    executable legacy calibration with no epoch; it checks current statements,
    schema/custody/ACK/recovery, not activation or native reset origin. Retain all
-   previous source6db results separately. Owned files: capture_quest_cut.py,
-   run_quest_execution.py only if actual compatible hooks require it, and docs.
+   previous source6db results separately. [Executed current build/capture/cold cuts,
+   retained postprocessing FAIL and repaired offline original predicates PASS](CURRENT_CAPTURE_EXECUTION.md).
+   Native origin rows remain empty; active acceptance is still blocked by item1.
+   Do not rerun this unchanged batch just for a later documentation-only revision.
 3. **QP07 actual bartender stale map/abandon.** Dynamic full-world producer
    shop_keeper→SHOP_FUNC(world_quest)→CMD_ASK; Quietus1709/1734 or maintained
    Woodseer16553/16633. Genuine old attempt and delayed charge, replacement attempt

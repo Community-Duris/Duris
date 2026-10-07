@@ -238,6 +238,12 @@ def static_complete(before, after, case_id, selected_uids, reward_uids, spare_ui
 def unchanged(before, after):
     for name in ("items", "player", "history", "mobiles"):
         require(rows(before, name) == rows(after, name), f"refusal/stale callback changed {name}")
+    # Older pinned captures predate schema63. Whenever either cut includes the
+    # new immutable evidence, both must retain its exact rows and bytes. This is
+    # a replay/refusal transport check, not validation of native origin authority.
+    if "birth_origins" in before or "birth_origins" in after:
+        require(rows(before, "birth_origins") == rows(after, "birth_origins"),
+                "refusal/recovery changed retained birth origins")
     require(not new_rows(before, after, "ownership_events", ("operation_id", "event_index")), "partial item effect")
     require(not new_rows(before, after, "currency", ("operation_id",)), "partial money effect")
     for name in ("obligations", "xp_entitlements"):

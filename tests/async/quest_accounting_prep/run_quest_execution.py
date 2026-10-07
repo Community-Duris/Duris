@@ -38,6 +38,73 @@ def build_quest_inspector():
                         fixture.FLAGS, fixture.LINK_FLAGS, name="quest-prep-player-inspector")
 
 
+def verify_cuts(cuts, case_id, move_reward):
+    """Same post-run predicates for a live run or its retained immutable cuts."""
+    before, crash, recovered = (cuts[name] for name in ("before-offering", "at-crash", "recovered"))
+    selected = [item["item_uid"] for item in before["items"] if
+                item["owner_type"] == 1 and item["vnum"] in (29262, 29263, 29264)]
+    rewards = [item["item_uid"] for item in recovered["items"] if
+               item["owner_type"] == 1 and item["vnum"] == 29237 and item["state"] == 1]
+    operation = checks.row(crash, "obligations")["offering_operation_id"]
+    from legacy_xp import kord
+    xp = kord(recovered, operation)
+    checks.require(checks.row(crash, "obligations")["continuation"] == xp["continuation"],
+                   "original frozen continuation changed during recovery")
+    checks.static_complete(before, recovered, case_id, selected, rewards, [], 29237, xp["effective"], legacy=True)
+    checks.require(checks.row(crash, "obligations")["acknowledged"] == 0, "crash lacks pending obligation")
+    checks.acknowledged(recovered, operation)
+    last = recovered
+    if move_reward:
+        last = cuts["after-move"]
+        checks.later_move(recovered, last, rewards[0], legacy=True)
+    checks.bind(last, cuts["second-restart"], case_id, legacy=True)
+    checks.replay(last, cuts["second-restart"])
+    try:
+        checks.bind(before, recovered, case_id)
+    except checks.CutError as error:
+        native_refusal = str(error)
+    else:
+        raise checks.CutError("legacy cuts accidentally qualified native authority")
+    return dict(selected_uids=selected, reward_uids=rewards, xp_evidence=xp,
+                offering_operation=operation, native_accounting_refusal=native_refusal,
+                captured_assertions="PASS: legacy custody/ledger/XP/ACK/replay" +
+                                    ("/later move" if move_reward else ""))
+
+
+def verify_existing(args):
+    """Do not rewrite the original aggregate result or repeat native gameplay."""
+    original_path = args.evidence_dir / "result.json"
+    original = json.loads(original_path.read_text())
+    checks.require(args.case == "QP06" and args.backend == "mariadb",
+                   "retained verification requires the supported actual SQL Kord cuts")
+    for name in ("source_commit", "backend", "case", "fault_phase", "move_reward"):
+        checks.require(original[name] == getattr(args, name), f"retained run pin differs: {name}")
+    checks.require(original["binary_sha256"] == args.server_sha256 == digest(args.server),
+                   "retained server ELF differs")
+    checks.require(original["schema_manifest_sha256"] == digest(ROOT / "migrations/runtime_compatibility_manifest.json"),
+                   "retained schema pin differs")
+    expected = {"before-offering", "at-crash", "recovered", "second-restart"}
+    if args.move_reward:
+        expected.add("after-move")
+    checks.require(len(original["cuts"]) == len(expected) and set(original["cuts"]) == expected,
+                   "retained run lacks the exact complete cut set")
+    paths = {name: args.evidence_dir / (name + ".json") for name in original["cuts"]}
+    cuts = {name: json.loads(path.read_text()) for name, path in paths.items()}
+    verified = verify_cuts(cuts, args.case, args.move_reward)
+    verified.update(result="PASS: offline original post-run predicates on retained genuine legacy cuts",
+                    original_aggregate_result=original["result"], original_result_sha256=digest(original_path),
+                    source_commit=args.source_commit, binary_sha256=args.server_sha256,
+                    schema_manifest_sha256=original["schema_manifest_sha256"],
+                    cuts_sha256={name: digest(path) for name, path in paths.items()},
+                    helper_sha256={name: digest(ROOT / "tests/async/quest_accounting_prep" / name) for name in
+                        ("run_quest_execution.py", "legacy_xp.py", "read_quest_continuation.cpp", "quest_cut_checks.py")},
+                    command=sys.argv, gameplay_repeated=False, sql_session_opened=False)
+    # A second verification also refuses overwrite; preserve every terminal truth.
+    with (args.evidence_dir / "verified-cuts.json").open("x", encoding="utf-8") as output:
+        output.write(json.dumps(verified, indent=2) + "\n")
+    print(json.dumps(verified, indent=2))
+
+
 def execute(args):
     if not re.fullmatch(r"[0-9a-f]{40}", args.source_commit):
         raise ValueError("actual binary source commit required")
@@ -126,33 +193,7 @@ def execute(args):
             driver.run(binary, True, fault_phase=args.fault_phase, quest_case=args.case,
                        move_reward=args.move_reward, evidence_dir=args.evidence_dir)
         if cuts:
-            before, crash, recovered = (cuts[name] for name in ("before-offering", "at-crash", "recovered"))
-            selected = [item["item_uid"] for item in before["items"] if
-                        item["owner_type"] == 1 and item["vnum"] in (29262, 29263, 29264)]
-            rewards = [item["item_uid"] for item in recovered["items"] if
-                       item["owner_type"] == 1 and item["vnum"] == 29237 and item["state"] == 1]
-            operation = checks.row(crash, "obligations")["offering_operation_id"]
-            from legacy_xp import kord
-            xp = kord(recovered, operation)
-            checks.require(checks.row(crash, "obligations")["continuation"] == xp["continuation"],
-                           "original frozen continuation changed during recovery")
-            checks.static_complete(before, recovered, args.case, selected, rewards, [], 29237, xp["effective"], legacy=True)
-            checks.require(checks.row(crash, "obligations")["acknowledged"] == 0, "crash lacks pending obligation")
-            checks.acknowledged(recovered, operation)
-            last = recovered
-            if args.move_reward:
-                last = cuts["after-move"]
-                checks.later_move(recovered, last, rewards[0], legacy=True)
-            checks.bind(last, cuts["second-restart"], args.case, legacy=True)
-            checks.replay(last, cuts["second-restart"])
-            try:
-                checks.bind(before, recovered, args.case)
-            except checks.CutError as error:
-                summary["native_accounting_refusal"] = str(error)
-            else:
-                raise checks.CutError("legacy cuts accidentally qualified native authority")
-            summary.update(selected_uids=selected, reward_uids=rewards, xp_evidence=xp,
-                           offering_operation=operation, captured_assertions="PASS: legacy custody/ledger/XP/ACK/replay" + ("/later move" if args.move_reward else ""))
+            summary.update(verify_cuts(cuts, args.case, args.move_reward))
         summary["result"] = "PASS: maintained legacy gameplay journey"
     except Exception as error:
         summary.update(result="FAIL", error=f"{type(error).__name__}: {error}")
@@ -180,4 +221,7 @@ if __name__ == "__main__":
     parser.add_argument("--fault-phase", choices=("offering", "xp-ack"), default="offering")
     parser.add_argument("--move-reward", action="store_true")
     parser.add_argument("--evidence-dir", type=Path, required=True)
-    execute(parser.parse_args())
+    parser.add_argument("--verify-existing", action="store_true",
+                        help="run the same post-run predicates on retained cuts; write a separate verification")
+    args = parser.parse_args()
+    (verify_existing if args.verify_existing else execute)(args)

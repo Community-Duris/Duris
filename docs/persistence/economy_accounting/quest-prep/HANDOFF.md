@@ -19,9 +19,11 @@ recipient and QP07 components pass; QP04 durable financial diagnostic stays RED.
 native lifecycle/authority dependencies](CONTINUING_RECONCILIATION.md).
 Owned updates: case_data.py, test_native_selectors.py, SOURCE_FACTS.json, that
 reconciliation and this handoff. No authored new production/shared test changes.
-Next reserved independent execution: current schema63/64 SELECT-only birth-origin
-capture plus genuine supported legacy Kord SQL XP-ACK/later-move against a newly
-built pinned ELF. No current ELF/native journey claimed yet; previous source6db
+Current execution: schema63/64 SELECT-only birth-origin capture and genuine legacy
+Kord SQL XP-ACK/later-move using a newly built source36bf ELF are now recorded.
+Original aggregate FAIL at post-run adapter link; repaired actual-provider adapter
+and exact offline post-run predicates PASS on unchanged actual cuts. Native active
+journey remains unqualified; previous source6db
 ELFs and all mini/full-world evidence retain their old pins. The primary's current
 handoff explicitly keeps genuine activation/major gameplay/full release incomplete.
 
@@ -29,8 +31,19 @@ handoff explicitly keeps genuine activation/major gameplay/full release incomple
 Published reader bundle36bfef3c9e9a97b5dd94fbf620ffe2f21e02a8d1 (base7429e4f21)
 adds bounded SELECT-only retained origin bytes. Current owned inspector now links
 all66 real providers after adding four existing native/codec providers to its
-invocation; the shared provider manifest remains unchanged. Full SQL build and
-reserved current Kord execution are in progress; link details and exact shared
+invocation; the shared provider manifest remains unchanged. Inspector helper bundle
+3cc3867c4b3704e0e1f20e0fa5059ba46b9627ad is pushed after transient GitHub500 failures.
+Full maintained SQL753-provider build PASS565.856s, ELF
+c997fabfb1373f86f84dc8b33e5202f7f8ef2ac4af2646c800f0649c1fb319b6,
+source36bfef3c9e9a97b5dd94fbf620ffe2f21e02a8d1, schema64 manifest41181dc0b2938366bf408e6ad6ec1b11e4c170d18777f84efa5e93dc02374974.
+Current aggregate original FAIL157.397s remains immutable; actual gameplay/cold
+cuts pass the same offline predicates with repaired12-provider adapter7.037s.
+Input UIDs4/6/8, reward820/29237, C3000, XP1→521 once, pending→ACK1, reward drop
+player revision1→room22800 revision2 and exact second-cold replay. All64 migration
+history rows captured, SELECT-only snapshots close, original row/BLOB/missing-player
+controls refuse, native origins/epochs empty, zero disposable schemas remain.
+New seventeen oracle controls and offline wrong-source/ELF/overwrite refusals PASS.
+Original failure, final verification, helper/cut hashes and exact shared
 dependency request are in that execution document.
 
 # Additional full-world cold-room control — 2026-10-07

@@ -289,6 +289,28 @@ class QuestCutTests(unittest.TestCase):
         with self.assertRaises(checks.CutError):
             checks.static_complete(before, after, "QP06", selected, rewards, [150], 29237, expected_xp=100)
 
+    def test_replay_preserves_retained_birth_origin_transport(self):
+        before = empty_cut("QP03")
+        before["birth_origins"] = [dict(mobile_instance_id=900,
+            birth_operation="33" * 16, publication_revision=2,
+            canonical_origin="counterfactual-transport-not-native-authority")]
+        checks.replay(before, copy.deepcopy(before))
+        for field, value in (("birth_operation", "44" * 16),
+                             ("publication_revision", 3),
+                             ("canonical_origin", "changed")):
+            after = copy.deepcopy(before)
+            after["birth_origins"][0][field] = value
+            with self.assertRaisesRegex(checks.CutError, "birth origins"):
+                checks.replay(before, after)
+        for remove_table in (False, True):
+            after = copy.deepcopy(before)
+            if remove_table:
+                del after["birth_origins"]
+            else:
+                after["birth_origins"].clear()
+            with self.assertRaises(checks.CutError):
+                checks.replay(before, after)
+
     def test_later_move_and_second_boot_preserve_original_reward(self):
         _, before, _, rewards = complete_cuts("QP06", 29237)
         after = copy.deepcopy(before)
