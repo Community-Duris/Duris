@@ -1,8 +1,9 @@
 # Coordinator boundary review: enhancement prices - 2026-10-07
 
 Published reservation `c97e97458` is approved for the narrow pricing extraction.
-The implementation and independent payment checks below are published; maintained
-build and adjacent-contract handoff review remain open. This is a delivery checkpoint
+Implementation, independent payment checks and preserved-branch maintained builds
+are reviewed and remotely available; current-candidate build proof is pending.
+This is a delivery checkpoint
 under the [continuing project charter](CONTINUING_PROJECT_COORDINATION.md).
 
 ## Exact boundary and independent source evidence
@@ -102,6 +103,13 @@ and private adoption remain unknown. Continuing worker/coordinator Goals remain
 active beyond this delivery.
 
 ## Final declared-scope review, remote publication pending
+
+**Publication successor:** GitHub writes recovered. Coordinator review/plan
+`3f6f1fe0cb62906e07dd8a36b4436ebb53e7582f` and worker branch
+`96090b821062bc394c960ced4ed5456a7d484e82` are remotely verified. R3 source/test
+`6d544bea7` and its handoff are available for optional primary import at the
+declared reviewed scope. The publication-pending statements below preserve the
+earlier checkpoint; primary adoption and pending 753-provider proof stay separate.
 
 The coordinator reviewed local handoff
 `b18e513bed85cde63d091767289571340687d577` and final source/test revision

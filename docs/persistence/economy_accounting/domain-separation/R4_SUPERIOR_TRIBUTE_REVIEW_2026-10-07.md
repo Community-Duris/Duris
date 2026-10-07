@@ -44,3 +44,38 @@ admission/retirement, debit/refund/receipt/ACK/recovery or active support.
 Approval permits this independent implementation and qualification while current
 builds continue. The nine-domain queue must be reassessed afterward; R4 completion
 cannot satisfy the continuing project finish line.
+
+## Final source/component/maintained-build review
+
+Implementation `0a5084db1f30dd85f2181df6504c36a7540099d6` and handoff
+`96090b821062bc394c960ced4ed5456a7d484e82` are remotely verified on the worker's
+preserved branch. The coordinator reviewed the actual three-file delta and
+independently executed the same extended material regression against original
+parent bodies and extracted bodies: both pass. Its private controller redirects
+only source resolution for `enhance.c`, so the original scaler and complete native
+builder/aggregation run under the same actual new header, assertions,
+ASan/UBSan/float-cast-overflow/no-PIE flags and 30-second deadline. No producer
+eligibility, ordering, aggregation, effects or authority change was found.
+
+All three source/test pins and all 18 retained proof-index hashes match actual
+files. Final SQL/flat build logs each recompile `item/enhance.c` once and complete
+the maintained 740-object link with unchanged strict flags. Controller records
+SQL_EXIT=0 and FLAT_EXIT=0. The coordinator independently hashed both actual owned
+Docker ELFs: SQL
+`e5aa3008a0403137e9449a6f5375807ffd4e277efc28d146d12143e679d088f4`,
+flat `c572ca3785bad63d64afa057e05cbd6071fa209879e47bcd4adc52521600e199`.
+These are the preserved branch including R0-R4, not current 753-provider ELFs.
+
+Independent private-index `git apply --cached --check` of the exact R4-only
+source/test delta passes against bare current accounting
+`3f6f1fe0cb62906e07dd8a36b4436ebb53e7582f`. Patch SHA256:
+`f2947947133f2f624a8cf176403ffbbb047dce3eeba49e89106768ad91ac8701`.
+This import does not require R3. No source was applied to primary.
+
+Disposition: **reviewed and remotely available for optional import at declared
+source/component/740-provider maintained-build scope**. Current-candidate R4
+full-build/native/payment/recovery qualification is unrun; primary adoption is
+unknown. The unchanged R3 current-candidate build remains a separate live job.
+The worker is reassessing the nine-domain queue; a thin wrapper around an already
+shared price table is insufficient without a concrete remaining preparation gap.
+R4 is a delivery checkpoint, and the broader continuing Goal remains active.

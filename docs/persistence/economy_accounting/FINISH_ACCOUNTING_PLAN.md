@@ -120,15 +120,21 @@ primary finish line. R0/R1/R2 patches remain independently applicable to the
 new producer candidate; current changed-dependency proof is separate from older
 ELF evidence. The enhancement-price reservation is published and
 [boundary-reviewed](domain-separation/R3_ENHANCEMENT_RESERVATION_REVIEW_2026-10-07.md);
-implementation and independent original/extracted payment checks are published.
-Final source/test and 740-provider maintained-build handoff passes local review;
-753-provider overlay builds remain separate pending proof. The next
-[superior tribute quote reservation](domain-separation/R4_SUPERIOR_TRIBUTE_REVIEW_2026-10-07.md)
-is boundary-approved. Final remote handoffs/reviews are queued during GitHub
-write errors. Active paid-outcome refusal is kept; exact pins are in the reviews.
-Quest prep retains the newly published native-cost selector owner and updates
-its historical cash/recipe acceptance coverage and native evidence reader.
-Its old blanket paid-refusal patch is superseded by current owner support.
+R3 and [R4 superior tribute quotes](domain-separation/R4_SUPERIOR_TRIBUTE_REVIEW_2026-10-07.md)
+are implemented, independently reviewed and remotely available at declared
+source/component/740-provider maintained-build scope. Separate753-provider
+R3 overlay builds remain pending. GitHub writes recovered and prior handoffs
+are remotely verified. Active paid-outcome refusal stays; primary adoption is unknown.
+Quest prep retains the new native-cost selector owner, independently passing
+current cash/recipe components and bounded origin-reader review. The fresh
+SQL753-provider source36bf Kord driver completed five genuine legacy cuts
+and cleanup; preserve aggregateFAIL at post-run adapter link and separate
+offline original-predicatePASS after real-provider repair, independently
+rebuilt/executed by the coordinator. [Current quest terminal review and next
+approved full-world bartender reservation](quest-prep/CURRENT_CANDIDATE_COORDINATOR_REVIEW_2026-10-07.md)
+record exact pins and scope. Native stale/refund/birth obligations stay open;
+normal legacy payments do not discharge them. The old blanket paid-refusal
+patch remains superseded by current owner support.
 These are checkpoints in the evolving queue, not coordinator completion.
 
 ## Continuing architecture and quest-prep coordination - 2026-10-07
