@@ -12,6 +12,8 @@
 #include "flatfile/flatfile_world_item_repository.h"
 #include "flatfile/flatfile_item_accounting_reference.h"
 #include "player/player_snapshot_codec.h"
+#include "flatfile/flatfile_player_snapshot_file.h"
+#include <climits>
 
 #include <algorithm>
 #include <array>
@@ -2002,4 +2004,291 @@ critical_apply_result flatfile_collector_repository_apply_accounted(const std::s
 								    const critical_command &command)
 {
 	return flatfile_accounting_collector_transaction::apply(root, command, true);
+}
+
+// Read-only native proof. The caller retains the existing authority lock through
+// physical publication and guarded ACK; this reader never submits a command.
+unsigned int flatfile_collector_repository_verify_retained_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_command &command, critical_apply_result *receipt, std::string *error)
+try
+{
+	if (root.empty() || !lock.matches(root) || !receipt)
+		return EINVAL;
+	economic_frozen_intent intent;
+	collector_command_payload payload{};
+	collector::record frozen;
+	economic_account_key wallet, bank;
+	if (!collector_command_decode_payload(command, &payload))
+		return EINVAL;
+	const bool purchase = payload.action == collector_action::purchase;
+	if ((purchase ? collector_purchase_accounting_decode(command, &intent, &payload, &frozen,
+							     &wallet, &bank) :
+			collector_held_accounting_decode(command, &intent, &payload, &frozen)) !=
+	    economic_accounting_error::ok)
+		return EPROTONOSUPPORT;
+	const auto recovered = recover(root, lock, error);
+	if (recovered != flatfile_collector_repository_result::ok)
+		return recovered == flatfile_collector_repository_result::io_error ? EIO : EILSEQ;
+	flatfile_accounting_record record;
+	const auto found = flatfile_accounting_lookup(root, lock, command, &record, error);
+	if (found != flatfile_accounting_status::ok)
+		return found == flatfile_accounting_status::not_found ? ENOENT :
+		       found == flatfile_accounting_status::io_error  ? EIO :
+									EILSEQ;
+	collector_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_collector_repository_result::ok)
+		return loaded == flatfile_collector_repository_result::io_error ? EIO : EILSEQ;
+	const auto native = std::find_if(
+		catalog.operations.begin(), catalog.operations.end(), [&](const operation_state &op)
+		{ return critical_operation_id_equal(op.operation_id, command.operation_id); });
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+	std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> encoded{};
+	if (native == catalog.operations.end() || !command_digest(command, &digest) ||
+	    CRYPTO_memcmp(native->command_digest.data(), digest.data(), digest.size()) ||
+	    !collector_command_encode_result(native->result, &encoded) ||
+	    record.result_code != native->result_code || record.result.size() != encoded.size() ||
+	    !std::equal(record.result.begin(), record.result.end(), encoded.begin()) ||
+	    record.failure_stage != critical_failure_stage::none ||
+	    (record.result_code == 0) != !record.plan.empty() ||
+	    (!record.result_code &&
+	     record.durable_revision !=
+		     durable_revision(native->result, native->result.catalog_revision)) ||
+	    (record.result_code &&
+	     (native->result.record_present ||
+	      record.durable_revision < durable_revision(native->result, 0) ||
+	      record.durable_revision > durable_revision(native->result, catalog.catalog_revision))))
+		return EILSEQ;
+	std::vector<economic_accounting_item_reference> references;
+	if (!record.result_code)
+	{
+		economic_accounting_plan plan, expected;
+		if (economic_plan_decode(record.plan, &plan) != economic_accounting_error::ok ||
+		    plan.item_events.size() != 1 || plan.items_before.size() != 1 ||
+		    !plan.children.empty() || !native->result.catalog_revision)
+			return EILSEQ;
+		economic_accounting_error status;
+		if (purchase)
+		{
+			collector_purchase_accounting_authority before;
+			before.epoch = intent.admission.metadata.epoch;
+			before.wallet_account = wallet;
+			before.bank_account = bank;
+			bool wallet_found = false, bank_found = false;
+			for (const auto &effect : plan.accounts)
+			{
+				if (economic_account_key_equal(effect.key, wallet))
+				{
+					before.balances_before.wallet.amount = effect.before;
+					before.balances_before.wallet_revision =
+						effect.before_revision;
+					wallet_found = true;
+				}
+				if (economic_account_key_equal(effect.key, bank))
+				{
+					before.balances_before.bank.amount = effect.before;
+					before.balances_before.bank_revision =
+						effect.before_revision;
+					bank_found = true;
+				}
+			}
+			if (!wallet_found || !bank_found)
+				return EILSEQ;
+			before.listing_before = frozen;
+			before.item_before = plan.items_before[0];
+			before.catalog_revision_before = native->result.catalog_revision - 1;
+			before.from_owner_revision_before = payload.expected_from_owner_revision;
+			before.to_owner_revision_before = payload.expected_to_owner_revision;
+			status = collector_purchase_accounting_plan(command, intent, before,
+								    native->result, &expected);
+		}
+		else
+		{
+			collector_held_accounting_authority before;
+			before.lineage = intent.admission.metadata.lineage;
+			before.epoch = intent.admission.metadata.epoch;
+			before.listing_before = frozen;
+			before.item_before = plan.items_before[0];
+			before.catalog_revision_before = native->result.catalog_revision - 1;
+			before.from_owner_revision_before = payload.expected_from_owner_revision;
+			before.to_owner_revision_before = payload.expected_to_owner_revision;
+			status = collector_held_accounting_plan(command, intent, before,
+								native->result, &expected);
+		}
+		std::vector<uint8_t> expected_bytes;
+		if (status != economic_accounting_error::ok ||
+		    economic_plan_encode(expected, &expected_bytes) !=
+			    economic_accounting_error::ok ||
+		    expected_bytes != record.plan)
+			return EILSEQ;
+		const auto &event = expected.item_events[0];
+		economic_accounting_item_reference reference{};
+		reference.operation_id = reference.legacy_operation_id = command.operation_id;
+		reference.item_uid = event.uid;
+		reference.before_revision = event.before.revision;
+		reference.after_revision = event.after.revision;
+		references.push_back(reference);
+	}
+	// Rejections require an empty reference set too; absence is not an effect.
+	const auto verified = flatfile_item_accounting_reference_verify_operation(
+		root, command.operation_id, references, error);
+	if (verified != flatfile_item_accounting_status::ok)
+		return verified == flatfile_item_accounting_status::io_error ? EIO : EILSEQ;
+	*receipt = accounted_completion(record);
+	return 0;
+}
+catch (const std::bad_alloc &)
+{
+	return ENOMEM;
+}
+
+unsigned int flatfile_collector_repository_read_purchase_projection_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_command &command, flatfile_collector_purchase_projection *projection,
+	std::string *error)
+try
+{
+	if (!projection || !lock.matches(root))
+		return EINVAL;
+	critical_apply_result receipt;
+	const auto proof = flatfile_collector_repository_verify_retained_locked(root, lock, command,
+										&receipt, error);
+	if (proof)
+		return proof;
+	economic_frozen_intent intent;
+	collector_command_payload payload{};
+	collector::record frozen;
+	economic_account_key wallet, bank;
+	if (collector_purchase_accounting_decode(command, &intent, &payload, &frozen, &wallet,
+						 &bank) != economic_accounting_error::ok)
+		return EPROTONOSUPPORT;
+	std::string account;
+	if (!canonical_account_name(payload.account_name.data(), &account))
+		return EINVAL;
+	flatfile_economic_authority_snapshot authority;
+	const flatfile_economic_mapping_request requests[] = {
+		{ wallet, { 1, payload.actor_pid, {} } },
+		{ bank, { 2, bank.authority_id, account } }
+	};
+	const auto gate = economic_flatfile_lock_authority(root, lock, wallet.lineage,
+							   intent.admission.metadata.epoch,
+							   requests, &authority, error);
+	if (gate)
+		return gate;
+	collector_catalog catalog;
+	if (load_catalog(root, &catalog, error) != flatfile_collector_repository_result::ok)
+		return EILSEQ;
+	const listing_state *listing = find_listing(&catalog, payload.listing);
+	flatfile_player_domain_record domain;
+	const auto domain_status = flatfile_player_domain_load_locked(root, lock, payload.actor_pid,
+								      payload.account_name.data(),
+								      payload.racewar, &domain,
+								      error);
+	if (domain_status != flatfile_player_domain_result::ok || !listing)
+		return domain_status == flatfile_player_domain_result::io_error ? EIO : ESTALE;
+	flatfile_collector_purchase_projection candidate;
+	candidate.receipt = receipt;
+	if (!collector_command_decode_result(receipt.result_payload.data(), receipt.result_size,
+					     &candidate.result))
+		return EILSEQ;
+	const auto original = candidate.result;
+	candidate.result.entry = listing->entry;
+	candidate.result.catalog_revision = catalog.catalog_revision;
+	for (size_t index = 0; index < 4; ++index)
+	{
+		if (domain.domains.wallet[index] > INT_MAX || domain.domains.bank[index] > INT_MAX)
+			return ERANGE;
+		candidate.result.wallet.amount[index] =
+			static_cast<int64_t>(domain.domains.wallet[index]);
+		candidate.result.bank.amount[index] =
+			static_cast<int64_t>(domain.domains.bank[index]);
+	}
+	candidate.result.wallet_revision = domain.domains.wallet_revision;
+	candidate.result.bank_revision = domain.domains.bank_revision;
+	std::vector<flatfile_item_ownership_record> from_items, to_items, all;
+	if (flatfile_item_repository_load_owner_locked(
+		    root, lock, payload.from_owner, &candidate.result.from_owner_revision,
+		    &from_items, error) != flatfile_item_repository_result::ok ||
+	    (!receipt.error_code &&
+	     flatfile_item_repository_load_owner_locked(
+		     root, lock, payload.to_owner, &candidate.result.to_owner_revision, &to_items,
+		     error) != flatfile_item_repository_result::ok) ||
+	    flatfile_item_repository_recovery_catalog_locked(root, lock, &all, error) !=
+		    flatfile_item_repository_result::ok)
+		return ESTALE;
+	const auto owner = receipt.error_code ? payload.from_owner : payload.to_owner;
+	size_t selected_count = 0;
+	for (const auto &item : all)
+		if (item.item_uid == payload.selected_item_uid ||
+		    item.root_item_uid == payload.selected_item_uid ||
+		    item.parent_item_uid == payload.selected_item_uid)
+		{
+			if (++selected_count != 1 || item.item_uid != payload.selected_item_uid ||
+			    item.root_item_uid != item.item_uid || item.parent_item_uid ||
+			    !item_owner_identity_equal(item.owner, owner) ||
+			    item.item_revision != (receipt.error_code ?
+							   listing->entry.item_revision :
+							   original.entry.item_revision) ||
+			    item.vnum != payload.items[0].vnum ||
+			    item.state != item_custody_state::active || item.equipment_slot)
+				return ESTALE;
+		}
+	if (selected_count != 1 || listing->entry.uid != payload.selected_item_uid)
+		return ESTALE;
+	std::array<uint8_t, collector::encoded_record_bytes> actual{}, expected{};
+	if (!receipt.error_code)
+	{
+		if (collector::record_encode(listing->entry, &actual) !=
+			    collector::codec_result::ok ||
+		    collector::record_encode(original.entry, &expected) !=
+			    collector::codec_result::ok ||
+		    actual != expected || catalog.catalog_revision < original.catalog_revision ||
+		    candidate.result.from_owner_revision < original.from_owner_revision ||
+		    candidate.result.to_owner_revision < original.to_owner_revision ||
+		    candidate.result.wallet_revision != original.wallet_revision ||
+		    candidate.result.wallet.amount != original.wallet.amount ||
+		    candidate.result.bank_revision < original.bank_revision ||
+		    (candidate.result.bank_revision == original.bank_revision &&
+		     candidate.result.bank.amount != original.bank.amount) ||
+		    listing->item_blob.size() != payload.item_blob_size ||
+		    !std::equal(listing->item_blob.begin(), listing->item_blob.end(),
+				payload.item_blob.begin()))
+			return ESTALE;
+	}
+	else if (listing->entry.status != collector::state::collected &&
+		 listing->entry.status != collector::state::available)
+		return ESTALE;
+	player_snapshot snapshot{};
+	const auto saved = flatfile_player_snapshot_read(root, payload.actor_pid, &snapshot, error);
+	if (saved != flatfile_player_load_result::ok)
+		return saved == flatfile_player_load_result::io_error ? EIO : ENOENT;
+	candidate.player_save_revision = snapshot.revision;
+	const auto materialized = flatfile_shop_trade_materialization_reconcile(
+		root, lock, payload.actor_pid, to_items, &snapshot, error);
+	if (materialized != flatfile_shop_trade_materialization_result::ok)
+		return materialized == flatfile_shop_trade_materialization_result::io_error ?
+			       EIO :
+			       EILSEQ;
+	std::vector<player_item_snapshot> selected;
+	for (const auto &item : snapshot.items)
+		if (item.object_uid == payload.selected_item_uid)
+			selected.push_back(item);
+	for (const auto &pet : snapshot.pets)
+		for (const auto &item : pet.items)
+			if (item.object_uid == payload.selected_item_uid)
+				return ESTALE;
+	std::vector<uint8_t> bytes;
+	if (receipt.error_code ? !selected.empty() :
+				 (selected.size() != 1 ||
+				  player_item_snapshot_list_encode(selected, &bytes) !=
+					  player_snapshot_codec_result::ok ||
+				  bytes != listing->item_blob))
+		return ESTALE;
+	*projection = std::move(candidate);
+	return 0;
+}
+catch (const std::bad_alloc &)
+{
+	return ENOMEM;
 }

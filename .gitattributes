@@ -130,3 +130,10 @@ src/persistence/sql_room_coin_payload.h text eol=lf
 tests/async/inert_money_literal_harness.cpp text eol=lf
 tests/async/test_inert_money_literal.py text eol=lf
 tests/async/test_economy_writer_coverage_contract.py text eol=lf
+
+# Collector repository proof and regression pins use canonical LF bytes.
+src/flatfile/flatfile_collector_repository.c text eol=lf
+src/flatfile/flatfile_collector_repository.h text eol=lf
+tests/async/flatfile_collector_repository_harness.cpp text eol=lf
+tests/async/test_flatfile_collector_repository.py text eol=lf
+tests/async/flatfile_collector_native_unavailable.cpp text eol=lf

@@ -60,6 +60,19 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-collector-") as temporary:
         rel("critical_command.c"),
         rel("persistence_mode.c"),
         rel("flatfile_ip_activity_repository.c"),
+        'src/economy/native_quest_cost.c',
+        'src/economy/native_quest_coin_give.c',
+        'src/economy/native_mobile_birth_command.c',
+        'src/economy/native_mobile_birth_recovery.c',
+        'src/economy/native_mobile_birth_result.c',
+        'src/economy/native_mobile_birth_recipe.c',
+        'src/economy/native_mobile_birth_constructor_recipe.c',
+        'src/economy/economic_baseline_codec.c',
+        'src/economy/auction_native_command_context.c',
+        'src/item/lockpick_retirement_continuation.c',
+        'src/economy/native_mobile_birth_accounting.c',
+        'src/economy/economic_baseline_adapter.c',
+        'tests/async/flatfile_collector_native_unavailable.cpp',
     ]
     compile_result = subprocess.run(
         [
