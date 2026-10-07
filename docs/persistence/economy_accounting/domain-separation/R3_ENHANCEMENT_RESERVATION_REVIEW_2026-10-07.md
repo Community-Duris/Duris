@@ -100,3 +100,37 @@ Price/payment fixture equivalence does not establish genuine active native
 compound enhancement persistence, recovery or accounting support. Primary import
 and private adoption remain unknown. Continuing worker/coordinator Goals remain
 active beyond this delivery.
+
+## Final declared-scope review, remote publication pending
+
+The coordinator reviewed local handoff
+`b18e513bed85cde63d091767289571340687d577` and final source/test revision
+`6d544bea7d74f8a671f480a95292c2266831292a`. The relocated configuration contract
+checks the actual producer's configured helper arguments and the real wide
+formula/range guard; unrelated assertions remain. The coordinator independently
+executed that final contract: pass. All seven source/test hashes and every retained
+proof-index hash match the actual files.
+
+Both terminal build logs compile `item/enhance.c` once with the maintained strict
+flags and complete the full 740-object link; controller records SQL_EXIT=0 and
+FLAT_EXIT=0. The coordinator independently hashed both actual owned Docker ELFs:
+SQL `951a7d45816510a8d76fe9d16cb95908250bec7592035e4ad8e64fbb9e7aa8e0`,
+flat `e4aeda193f455c34679929e014dfbf088b28748e9df95af32723f8da9658dbd0`.
+These compile production revision `3a722a00`, preserving the qualified R2 objects;
+`6d544bea7` changes only a test. The first uninitialized-price failure is retained.
+The coordinator also independently reproduced the identical module reset-call
+assertion failure on unchanged producer source and extracted source.
+
+Independent private-index application of R0, R1, R2 and the complete R3 source/test
+delta to current accounting `507e4909ee6a570876f274c0787d7a83a987826d` passes.
+No primary checkout or branch source is modified. R3 delta `c97e97458..6d544bea7`
+SHA256 `90f146d34b5337fea7b10ebcf93991b49e675b1225acf7d20bd95af6a8e09734`;
+combined current tree `9f556f8714e22dac84f1b76df9bb655f1143de72`.
+
+Disposition: **reviewed locally at declared source/component/740-provider build
+scope; remote final test/handoff publication pending GitHub write recovery**.
+The already-published production implementation is at `3a722a00`. New maintained
+753-provider overlay builds are now live and constitute additional pending proof,
+not a relabeling of these ELFs. Current native compound gameplay/recovery and
+primary import remain separate and unproven. The next extraction may proceed
+after its own concrete boundary review; the continuing Goal remains active.
