@@ -7,11 +7,13 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shlex
 import shutil
 import struct
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -1138,6 +1140,274 @@ class BaselineVersionTests(unittest.TestCase):
                                        LINEAGE, EPOCH, OPENING)
 
 
+class CapturedItemBindingTests(unittest.TestCase):
+    def packet(self, *, empty=False):
+        # Modeled transport for the existing native DTO, never source authority.
+        specifications = (
+            ('player_data','pid,account_name,racewar,copper,silver,gold,platinum,wallet_revision,save_revision','pid'),
+            ('account_banks','id,account_name,racewar,bank_copper,bank_silver,bank_gold,bank_platinum,bank_revision','id'),
+            ('shopkeepers','id,shop_id,mob_vnum,room_vnum,cash,shop_revision,keeper_roaming','id'),
+            ('ships','id,owner_name,money','id'),
+            ('auctions','id,seller_pid,status,winning_bidder_pid,cur_price,buy_price,quantity,auction_revision,custody_state,listing_operation_id,obj_vnum,obj_blob_str','id'),
+            ('auction_money_pickups','pid,money,claim_revision','pid'),
+            ('auction_item_pickups','id,pid,obj_blob_str,retrieved,quantity','id'),
+            ('auction_item_custody','auction_id,slot,item_uid,item_revision,vnum,obj_blob,claim_pid,claim_operation_id,claimed_at IS NOT NULL','auction_id,slot'),
+            ('collector_catalog_state','state_id,catalog_revision,next_listing','state_id'),
+            ('collector_deaths','death_operation_id,beneficiary_pid,death_time,collection_delay,sale_delay,holding_duration,price_percent,minimum_value,hint_state,hint_revision','death_operation_id'),
+            ('collector_listings','listing_id,death_operation_id,beneficiary_pid,item_uid,status,holding_paused,due_at,listing_revision,item_revision,price_value,record_blob,item_blob','listing_id'),
+            ('item_current_owner','item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,item_revision,vnum,state,coin_payload','item_uid'),
+            ('item_owner_revision','owner_type,owner_id,owner_context_id,revision','owner_type,owner_id,owner_context_id'),
+            ('item_uid_allocator','allocator_id,next_uid','allocator_id'),
+            ('item_ownership_quarantine','quarantine_id,item_uid,source_table,source_row_id,conflict_code,evidence,repaired_at IS NOT NULL','quarantine_id'),
+            ('auction_reconciliation_quarantine','quarantine_id,auction_id,item_uid,conflict_code,evidence,repaired_at IS NOT NULL','quarantine_id'),
+            ('collector_reconciliation_quarantine','quarantine_id,listing_id,item_uid,conflict_code,evidence,repaired_at IS NOT NULL','quarantine_id'),
+            ('critical_operation_inbox','operation_id,command_hash,keys_hash,command_type,schema_version,payload_version,status,result_code,failure_stage,durable_revision,result_payload,committed_at IS NOT NULL','operation_id'),
+            ('critical_outbox','outbox_id,operation_id,event_index,destination,event_type,payload_version,payload,status,attempt_count,last_error_code,delivered_at IS NOT NULL,dead_lettered_at IS NOT NULL','outbox_id'),
+            ('economic_account_mapping','mapping_id,lineage,account_kind,context_id,backend_kind,locator_kind,native_id,active_native_id,creating_operation_id,retiring_operation_id,revision','mapping_id'))
+        physical = (('player_pet_items','id,pet_id,container_id,obj_uid,vnum','id'),
+                    ('shopkeeper_items','id,shopkeeper_id,container_id,obj_uid,vnum,item_condition','id'),
+                    ('siege_items','id,room_vnum,container_id,obj_uid,vnum','id'))
+        equipment = (('item_current_owner','item_uid,equipment_slot','item_uid'),)
+        snapshot = dict(version=2, rows=0, cells=0, cell_bytes=0)
+        for group, specs in (('tables',specifications),('item_sources',physical),('item_equipment_sources',equipment)):
+            snapshot[group] = [dict(name=name, columns=columns.split(','), rows=[], _order=order)
+                               for name,columns,order in specs]
+        if not empty:
+            table = next(table for table in snapshot['tables'] if table['name']=='item_current_owner')
+            table['rows'] = [dict(cells=[value.encode().hex() if value is not None else None for value in
+                ('81','81',None,'1','7','0','2','100','1',None)])]
+            table = next(table for table in snapshot['tables'] if table['name']=='item_owner_revision')
+            table['rows'] = [dict(cells=[value.encode().hex() for value in ('1','7','0','4')])]
+            snapshot['item_equipment_sources'][0]['rows'] = [dict(cells=[b'81'.hex(),b'0'.hex()])]
+        self.reframe(snapshot)
+        blob = bytearray(witness()['canonical_witness'])
+        if empty:
+            blob = blob[:304]
+            struct.pack_into('<I',blob,8,len(blob))
+            struct.pack_into('<I',blob,188,0)
+        else:
+            # Original EAB2 item layout, explicitly modeled from the capture.
+            blob[:4] = b'EAB2'
+            struct.pack_into('<H',blob,4,2)
+            blob = blob[:360]+bytes(8)+blob[360:]
+            struct.pack_into('<I',blob,8,len(blob))
+        legacy, coverage = bytes([0x55])*32, bytes([0x66])*32
+        if not empty:
+            native = next(table for table in snapshot['tables'] if table['name']=='item_current_owner')
+            owner = next(table for table in snapshot['tables'] if table['name']=='item_owner_revision')
+            equip = snapshot['item_equipment_sources'][0]
+            source = hashlib.sha256(b'EBS2'+b''.join(self.frame(bytes.fromhex(table['rows'][0]['digest']))
+                for table in (native,equip,owner))).digest()
+            blob[-32:] = source
+            boundary = hashlib.sha256(b'ESN5'+b''.join(self.frame(value) for value in
+                (legacy,bytes.fromhex(native['content_digest']),bytes.fromhex(owner['content_digest']),
+                 bytes.fromhex(equip['content_digest']),bytes.fromhex(snapshot['item_sources_digest'])))).digest()
+            complete = hashlib.sha256(b'EIC2'+self.frame(coverage)+struct.pack('<QQ',1,81)+self.frame(source)).digest()
+            blob[120:152],blob[152:184] = boundary,complete
+        row = baseline_root(bytes(blob))
+        packet = dict(format='economic_sql_captured_opening_v1',operation_id=row['operation_id'].hex(),
+                      legacy_native_boundary_digest=legacy.hex(),holding_coverage_digest=coverage.hex(),
+                      source_snapshot=snapshot)
+        return row,packet
+
+    @staticmethod
+    def frame(value):
+        return struct.pack('<Q',len(value))+value
+
+    def reframe(self, snapshot):
+        snapshot.update(rows=0,cells=0,cell_bytes=0)
+        for group,tag,digest_name in (('tables',b'ESM1','digest'),('item_sources',b'EIM1','item_sources_digest'),
+                                     ('item_equipment_sources',b'EIE2','item_equipment_sources_digest')):
+            contents = []
+            for table in snapshot[group]:
+                definition = hashlib.sha256(self.frame(b'ESD1')+self.frame(table['name'].encode())+
+                    self.frame(table['_order'].encode())+struct.pack('<Q',len(table['columns']))+
+                    b''.join(self.frame(column.encode()) for column in table['columns'])).digest()
+                table['definition_digest'] = definition.hex()
+                digests = []
+                for row in table['rows']:
+                    cells = [None if value is None else bytes.fromhex(value) for value in row['cells']]
+                    encoded = self.frame(b'ESR1')+definition+b''.join(struct.pack('<Q',int(cell is not None))+
+                        (self.frame(cell) if cell is not None else b'') for cell in cells)
+                    row['digest'] = hashlib.sha256(encoded).hexdigest()
+                    digests.append(bytes.fromhex(row['digest']))
+                    snapshot['rows'] += 1
+                    snapshot['cells'] += len(cells)
+                    snapshot['cell_bytes'] += sum(len(cell) for cell in cells if cell is not None)
+                table['content_digest'] = hashlib.sha256(self.frame(b'EST1')+definition+
+                    struct.pack('<Q',len(digests))+b''.join(digests)).hexdigest()
+                contents.append(bytes.fromhex(table['content_digest']))
+            snapshot[digest_name] = hashlib.sha256(self.frame(tag)+struct.pack('<Q',len(contents))+b''.join(contents)).hexdigest()
+        snapshot['custody_digest'] = hashlib.sha256(self.frame(b'ESC2')+b''.join(bytes.fromhex(snapshot[name])
+            for name in ('digest','item_sources_digest','item_equipment_sources_digest'))).hexdigest()
+
+    def test_captured_item_bindings_exact_preimages_zero_slot_and_empty_compatibility(self):
+        for empty in (False,True):
+            row,packet = self.packet(empty=empty)
+            before = copy.deepcopy((row,packet))
+            report = origin_exporter.verify_captured_item_opening(row,packet)
+            self.assertEqual(report['witness_item_count'],int(not empty))
+            self.assertTrue(report['captured_source_framing_verified'])
+            self.assertTrue(report['item_bindings_verified'])
+            self.assertFalse(report['complete_item_selection_authenticated'])
+            self.assertFalse(report['legacy_digest_authority_authenticated'])
+            self.assertFalse(report['activation_qualified'])
+            self.assertEqual((row,packet),before)
+
+    def test_captured_item_bindings_refuse_changed_or_missing_original_inputs(self):
+        for group,name,column in (('tables','item_current_owner',6),('tables','item_owner_revision',3),
+                                  ('item_equipment_sources','item_current_owner',1)):
+            row,packet = self.packet()
+            table = next(table for table in packet['source_snapshot'][group] if table['name']==name)
+            for change in ('changed','missing'):
+                broken = copy.deepcopy(packet)
+                target = next(table for table in broken['source_snapshot'][group] if table['name']==name)
+                if change == 'changed': target['rows'][0]['cells'][column] = b'3'.hex()
+                else: target['rows'].clear()
+                self.reframe(broken['source_snapshot'])
+                with self.subTest(name=name,group=group,change=change), self.assertRaises(OriginError):
+                    origin_exporter.verify_captured_item_opening(row,broken)
+        row,packet = self.packet()
+        for field in ('legacy_native_boundary_digest','holding_coverage_digest'):
+            for value in (None,'00'*32,'ab'*32):
+                broken = copy.deepcopy(packet); broken[field] = value
+                with self.subTest(field=field,value=value), self.assertRaises(OriginError):
+                    origin_exporter.verify_captured_item_opening(row,broken)
+        broken = copy.deepcopy(packet)
+        broken['source_snapshot']['item_sources'][0]['rows'] = [dict(cells=[b'1'.hex()]*5)]
+        self.reframe(broken['source_snapshot'])
+        with self.assertRaises(OriginError): origin_exporter.verify_captured_item_opening(row,broken)
+
+    def test_captured_source_transport_exact_types_registry_bounds_and_binary_cells(self):
+        row,packet = self.packet()
+        for field in ('version','rows','cells','cell_bytes'):
+            for value in integer_aliases(packet['source_snapshot'][field]):
+                broken = copy.deepcopy(packet); broken['source_snapshot'][field] = value
+                with self.subTest(field=field,value=value), self.assertRaises(OriginError):
+                    origin_exporter.verify_captured_item_opening(row,broken)
+        for group in ('tables','item_sources','item_equipment_sources'):
+            broken = copy.deepcopy(packet); broken['source_snapshot'][group].reverse()
+            if group == 'item_equipment_sources': broken['source_snapshot'][group].clear()
+            with self.subTest(group=group), self.assertRaises(OriginError):
+                origin_exporter.verify_captured_item_opening(row,broken)
+        for field,value in (('rows',262145),('cells',4194305),('cell_bytes',67108865)):
+            broken = copy.deepcopy(packet); broken['source_snapshot'][field] = value
+            with self.subTest(field=field), self.assertRaises(OriginError):
+                origin_exporter.verify_captured_item_opening(row,broken)
+        broken = copy.deepcopy(packet)
+        broken['source_snapshot']['tables'][0]['columns'].reverse()
+        with self.assertRaises(OriginError): origin_exporter.verify_captured_item_opening(row,broken)
+
+
+    def test_captured_opening_operator_read_boundary_and_protected_input(self):
+        row, packet = self.packet()
+        for supplied in (None, packet, dict(packet, operation_id='ab'*16),
+                         dict(packet, holding_coverage_digest='cd'*32)):
+            connection = Connection(rows=[row])
+            with self.subTest(supplied=supplied is not None):
+                if supplied is not None and supplied != packet:
+                    with self.assertRaises(OriginError):
+                        capture(connection, LINEAGE, EPOCH, captured_opening=supplied)
+                else:
+                    result = capture(connection, LINEAGE, EPOCH, captured_opening=supplied)
+                    self.assertEqual('captured_item_bindings' in result, supplied is not None)
+                    if supplied:
+                        self.assertFalse(result['captured_item_bindings']['activation_qualified'])
+                self.assertEqual(connection.rollbacks, 1)
+                self.assertTrue(connection.scan.closed)
+                self.assertTrue(all(sql.startswith(('SELECT ', 'SET TRANSACTION ', 'START TRANSACTION '))
+                                    for sql, _ in connection.scan.statements))
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary)/'capture.json'
+            path.write_text(json.dumps(packet), encoding='utf-8')
+            path.chmod(0o600)
+            self.assertEqual(origin_exporter.load_captured_opening(path), packet)
+            for data in ('{"format":"economic_sql_captured_opening_v1","format":"other"}',
+                         '[]', '{', '['*2000 + ']'*2000):
+                path.write_text(data, encoding='utf-8')
+                with self.assertRaises(OriginError): origin_exporter.load_captured_opening(path)
+            with path.open('wb') as stream: stream.truncate(origin_exporter.MAX_INPUT_BYTES+1)
+            with self.assertRaises(OriginError): origin_exporter.load_captured_opening(path)
+            path.write_text(json.dumps(packet), encoding='utf-8')
+            linked = path.with_name('linked.json')
+            os.link(path, linked)
+            with self.assertRaises(OriginError): origin_exporter.load_captured_opening(path)
+            linked.unlink()
+            if os.name == 'posix':
+                path.chmod(0o644)
+                with self.assertRaises(OriginError): origin_exporter.load_captured_opening(path)
+                path.chmod(0o600)
+                linked.symlink_to(path)
+                with self.assertRaises(OSError): origin_exporter.load_captured_opening(linked)
+                linked.unlink()
+                os.mkfifo(linked, 0o600)
+                with self.assertRaises(OriginError): origin_exporter.load_captured_opening(linked)
+            connection = Connection(rows=[row])
+            connection.close = mock.Mock()
+            client = mock.Mock()
+            client.MySQLError = RuntimeError
+            client.connect.return_value = connection
+            output = path.with_name('origins.json')
+            arguments = ['economic_sql_audit_origins.py', '--host', 'localhost', '--user', 'reader',
+                '--database', 'disposable', '--password-env', 'CAPTURE_TEST_PASSWORD',
+                '--lineage', LINEAGE.hex(), '--epoch', EPOCH.hex(), '--output', str(output),
+                '--captured-opening-evidence', str(path)]
+            with mock.patch.object(sys, 'argv', arguments), mock.patch.dict(sys.modules, pymysql=client), \
+                    mock.patch.dict(os.environ, CAPTURE_TEST_PASSWORD='disposable-test-only'):
+                self.assertEqual(origin_exporter.main(), 0)
+            exported = json.loads(output.read_bytes())
+            self.assertTrue(exported['captured_item_bindings']['item_bindings_verified'])
+            self.assertFalse(exported['captured_item_bindings']['release_qualified'])
+            connection.close.assert_called_once_with()
+            self.assertEqual(connection.rollbacks, 1)
+            self.assertTrue(connection.scan.closed)
+            options = client.connect.call_args.kwargs
+            self.assertTrue(options['autocommit'])
+            self.assertEqual((options['connect_timeout'],options['read_timeout'],options['write_timeout']), (5,30,5))
+            if os.name == 'posix': self.assertEqual(output.stat().st_mode & 0o777, 0o600)
+
+    def test_captured_raw_cells_historical_equipment_and_selection_limits(self):
+        row, packet = self.packet()
+        for raw in (None, b'', b'private\x00\xff'):
+            changed = copy.deepcopy(packet)
+            ships = next(t for t in changed['source_snapshot']['tables'] if t['name']=='ships')
+            ships['rows'] = [dict(cells=[b'1'.hex(), None if raw is None else raw.hex(), b'0'.hex()])]
+            self.reframe(changed['source_snapshot'])
+            decoded = origin_exporter.validate_captured_sources(changed['source_snapshot'])
+            self.assertEqual(next(t for t in decoded['tables'] if t['name']=='ships')['rows'][0]['cells'][1], raw)
+            report = origin_exporter.verify_captured_item_opening(row, changed)
+            self.assertFalse(report['complete_source_capture_authenticated'])
+        for value in ('081', '+81', ' 81', '81\x00', str(2**64)):
+            changed = copy.deepcopy(packet)
+            native = next(t for t in changed['source_snapshot']['tables'] if t['name']=='item_current_owner')
+            native['rows'][0]['cells'][0] = value.encode().hex()
+            changed['source_snapshot']['item_equipment_sources'][0]['rows'][0]['cells'][0] = value.encode().hex()
+            self.reframe(changed['source_snapshot'])
+            with self.subTest(value=value), self.assertRaises(OriginError):
+                origin_exporter.verify_captured_item_opening(row, changed)
+        for label in ('duplicate_owner', 'foreign_equipment', 'null_equipment', 'oversize_cell'):
+            changed = copy.deepcopy(packet)
+            snapshot = changed['source_snapshot']
+            owner = next(t for t in snapshot['tables'] if t['name']=='item_owner_revision')
+            equip = snapshot['item_equipment_sources'][0]
+            if label == 'duplicate_owner': owner['rows'] *= 2
+            if label == 'foreign_equipment': equip['rows'][0]['cells'][0] = b'82'.hex()
+            if label == 'null_equipment': equip['rows'][0]['cells'][1] = None
+            if label == 'oversize_cell': owner['rows'][0]['cells'][3] = '00'*(1024*1024+1)
+            self.reframe(snapshot)
+            with self.subTest(label=label), self.assertRaises(OriginError):
+                origin_exporter.verify_captured_item_opening(row, changed)
+        empty_row, empty_packet = self.packet(empty=True)
+        historical = copy.deepcopy(empty_packet)
+        historical['source_snapshot'].update(version=1, item_equipment_sources=[],
+            item_equipment_sources_digest='00'*32, custody_digest='00'*32)
+        self.assertFalse(origin_exporter.verify_captured_item_opening(empty_row, historical)['witness_equipment_observed'])
+        empty_packet['source_snapshot'] = packet['source_snapshot']
+        report = origin_exporter.verify_captured_item_opening(empty_row, empty_packet)
+        self.assertEqual((report['witness_item_count'], report['captured_native_item_count']), (0, 1))
+        self.assertFalse(report['complete_item_selection_authenticated'])
+
+
 @unittest.skipUnless(os.environ.get("DURIS_RUN_ECONOMIC_ORIGIN_INTEGRATION") == "1",
                      "requires explicit disposable Linux native/SQL integration invocation")
 class NativeSQLOriginTests(unittest.TestCase):
@@ -1323,6 +1593,52 @@ class NativeSQLOriginTests(unittest.TestCase):
                             return rows
 
                     reads = {"captures": 0, "refusals": 0, "rollbacks": 0}
+                    page_observations = []
+
+                    def pages(refusal):
+                        import economic_sql_canonical_audit as audit
+                        book_before = database_rows() if refusal and refusal.startswith('baseline ') else None
+                        progress = audit.new_progress('ab'*32, time.time())
+                        reports = []
+                        # All original fixture roots, including inactive books,
+                        # are checked; a selected epoch cannot hide a witness.
+                        for _ in range(len(self.batches)+1):
+                            connection = mock.Mock(wraps=reader)
+                            cursor = mock.Mock(wraps=reader.cursor())
+                            connection.cursor.return_value = cursor
+                            report, progress = audit.scan_page(connection, progress)
+                            connection.rollback.assert_called_once_with()
+                            cursor.close.assert_called_once_with()
+                            self.assertFalse(report['coverage']['complete'])
+                            self.assertFalse(report['coverage']['baseline_witnesses_authenticated'])
+                            self.assertTrue(all(call.args[0].startswith(('SELECT ', 'SET TRANSACTION ', 'START TRANSACTION '))
+                                                for call in cursor.execute.call_args_list))
+                            reports.append(report)
+                            if report['range_exhausted']:
+                                break
+                        self.assertEqual(progress['completed_sweeps'], 1)
+                        self.assertEqual(progress['total_rows'], len(self.batches))
+                        found = [finding['code'] for report in reports for finding in report['findings']]
+                        expected = (['restore_economic_canonical_account_mismatch',
+                                     'restore_economic_canonical_posting_mismatch',
+                                     'restore_economic_canonical_storage_mismatch']
+                                    if refusal == 'EAB1 SQL projection mismatch' else
+                                    ['restore_economic_baseline_witness_mismatch'])
+                        if book_before is not None:
+                            expected = ['restore_economic_baseline_book_mismatch']
+                            self.assertEqual(database_rows(), book_before)
+                            print('BASELINE_BOOK_PAGE_OBSERVATION ' + json.dumps(dict(engine=engine,
+                                origin_refusal=refusal, reports=reports, authority_unchanged=True,
+                                release_qualified=False), sort_keys=True), flush=True)
+                        if refusal:
+                            self.assertTrue(found)
+                            self.assertTrue(all(code in expected for code in found), found)
+                        else:
+                            self.assertEqual(found, [])
+                            self.assertEqual(sum(report['baseline_roots_authenticated'] for report in reports), len(self.batches))
+                        page_observations.append(dict(origin_refusal=refusal, reports=reports,
+                            read_only=True, native_fixture=True, complete_reconciliation=False))
+                        (candidate/'baseline-page-observations.json').write_text(json.dumps(page_observations,indent=2)+'\n')
 
                     def read(epoch, refusal=None):
                         before = database_rows()
@@ -1341,6 +1657,7 @@ class NativeSQLOriginTests(unittest.TestCase):
                             cursor.close.assert_called_once_with()
                         self.assertTrue(all(call.args[0].upper().startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
                                             for call in cursor.execute.call_args_list))
+                        pages(refusal)
                         self.assertEqual(database_rows(), before)
                         reads["refusals" if refusal else "captures"] += 1
                         reads["rollbacks"] += 1
@@ -1425,6 +1742,37 @@ class NativeSQLOriginTests(unittest.TestCase):
                                      {"captures": 0, "refusals": 2, "rollbacks": 2})
                     (candidate/"command-preimage-refusals.json").write_text(json.dumps(observations,indent=2)+'\n')
                     print("PASS original-command-preimage " + engine + " 2 native SQL cuts SELECT-only bytes-unchanged", flush=True)
+                    print('BASELINE_ROOT_PAGES ' + json.dumps(dict(engine=engine, version=version,
+                        observations=page_observations, authority_unchanged=True, native_producer_or_gameplay=False,
+                        release_qualified=False), sort_keys=True), flush=True)
+                    with owner.cursor() as cursor:
+                        cursor.execute('SELECT revision,last_operation_id FROM economic_baseline_control '
+                                       'WHERE lineage=%s AND epoch=%s', (blob[16:32], blob[32:48]))
+                        book_control = cursor.fetchone()
+                    book_reads = reads.copy()
+                    other_operation = next(row[1] for row in self.batches if row[1] != book_control['last_operation_id'])
+                    for damaged, refusal in (
+                        ({'revision': 0, 'last_operation_id': None}, 'baseline has no committed opening witness'),
+                        ({'revision': book_control['revision']+1}, 'baseline witness revision gap or limit exceeded'),
+                        ({'last_operation_id': other_operation}, 'baseline control terminal witness mismatch')):
+                        unchanged = database_rows()
+                        with owner.cursor() as cursor:
+                            cursor.execute('UPDATE economic_baseline_control SET '+
+                                           ','.join(field+'=%s' for field in damaged)+' WHERE lineage=%s AND epoch=%s',
+                                           (*damaged.values(), blob[16:32], blob[32:48]))
+                        try:
+                            read(blob[32:48], refusal)
+                        finally:
+                            with owner.cursor() as cursor:
+                                cursor.execute('UPDATE economic_baseline_control SET '+
+                                               ','.join(field+'=%s' for field in damaged)+' WHERE lineage=%s AND epoch=%s',
+                                               (*(book_control[field] for field in damaged), blob[16:32], blob[32:48]))
+                        self.assertEqual(database_rows(), unchanged)
+                        read(blob[32:48])
+                    self.assertEqual({key: reads[key]-book_reads[key] for key in reads},
+                                     {'captures': 3, 'refusals': 3, 'rollbacks': 6})
+                    print('PASS baseline-book-control '+engine+' 3 native SQL refusals/3 restored controls '
+                          'SELECT-only bytes-unchanged inactive', flush=True)
                     # Negative SELECT projections preserve the actual input
                     # version's layout before corrupting v2 positions. These
                     # projections do not establish complete native capture.
@@ -1499,6 +1847,216 @@ class NativeSQLOriginTests(unittest.TestCase):
 
     def test_native_origins_mariadb(self):
         self.check_engine("mariadb")
+
+    def test_native_captured_source_bindings_both_engines(self):
+        """Native raw-capture oracle with a modeled opening, never activation."""
+        import pymysql
+        import migration_runner as migrations
+        import persistence_restore as restore
+        from test_persistence_backup_integration import sql
+        source = ROOT/'bin/tests/captured_origin_export.cpp'
+        binary = source.with_suffix('')
+        source.parent.mkdir(parents=True, exist_ok=True)
+        source.write_text(r'''
+#include "persistence/economic_sql_source_snapshot.h"
+#include <iostream>
+#include <string_view>
+static void hex(std::string_view value) {
+    constexpr char digits[] = "0123456789abcdef";
+    std::cout << '"';
+    for (unsigned char byte : value) std::cout << digits[byte >> 4] << digits[byte & 15];
+    std::cout << '"';
+}
+static void digest(const economic_sql_source_digest &value) {
+    hex({reinterpret_cast<const char *>(value.data()), value.size()});
+}
+static void tables(const std::vector<economic_sql_source_table> &values) {
+    std::cout << '[';
+    bool first = true;
+    for (const auto &table : values) {
+        if (!first) std::cout << ',';
+        first = false;
+        std::cout << "{\"name\":\"" << table.name << "\",\"columns\":[";
+        bool column_first = true;
+        for (const auto &column : table.columns) {
+            if (!column_first) std::cout << ',';
+            column_first = false;
+            std::cout << '"' << column << '"';
+        }
+        std::cout << "],\"definition_digest\":"; digest(table.definition_digest);
+        std::cout << ",\"content_digest\":"; digest(table.content_digest);
+        std::cout << ",\"rows\":[";
+        bool row_first = true;
+        for (const auto &row : table.rows) {
+            if (!row_first) std::cout << ',';
+            row_first = false;
+            std::cout << "{\"digest\":"; digest(row.digest);
+            std::cout << ",\"cells\":[";
+            bool cell_first = true;
+            for (const auto &cell : row.cells) {
+                if (!cell_first) std::cout << ',';
+                cell_first = false;
+                if (cell) hex(*cell); else std::cout << "null";
+            }
+            std::cout << "]}";
+        }
+        std::cout << "]}";
+    }
+    std::cout << ']';
+}
+int main(int argc, char **argv) {
+    if (argc != 2) return 2;
+    MYSQL *db = mysql_init(nullptr);
+    if (!db) return 3;
+    bool reconnect = false;
+    unsigned int connect_timeout = 5, read_timeout = 30;
+    if (mysql_options(db, MYSQL_OPT_RECONNECT, &reconnect) ||
+        mysql_options(db, MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout) ||
+        mysql_options(db, MYSQL_OPT_READ_TIMEOUT, &read_timeout) ||
+        !mysql_real_connect(db, "localhost", "captured_reader", "disposable-capture-reader",
+                            "duris_restore", 0, argv[1], 0)) {
+        mysql_close(db); return 4;
+    }
+    economic_sql_source_snapshot result;
+    const unsigned int code = economic_sql_capture_sources(db, {}, &result);
+    mysql_close(db);
+    if (code || economic_sql_validate_sources(result)) return 5;
+    std::cout << "{\"version\":" << result.version << ",\"rows\":" << result.rows
+              << ",\"cells\":" << result.cells << ",\"cell_bytes\":" << result.cell_bytes;
+    std::cout << ",\"digest\":"; digest(result.digest);
+    std::cout << ",\"item_sources_digest\":"; digest(result.item_sources_digest);
+    std::cout << ",\"item_equipment_sources_digest\":"; digest(result.item_equipment_sources_digest);
+    std::cout << ",\"custody_digest\":"; digest(result.custody_digest);
+    std::cout << ",\"tables\":"; tables(result.tables);
+    std::cout << ",\"item_sources\":"; tables(result.item_sources);
+    std::cout << ",\"item_equipment_sources\":"; tables(result.item_equipment_sources);
+    std::cout << "}\n";
+}
+''', encoding='utf-8')
+        command = ['g++', '-std=c++20', '-Wall', '-Wextra', '-Wpedantic', '-Werror', '-O1', '-g',
+                   '-fsanitize=address,undefined', '-fno-omit-frame-pointer', '-fno-pie', '-no-pie', '-Isrc']
+        command += shlex.split(subprocess.check_output(['mysql_config', '--cflags'], text=True))
+        command += [str(source), 'src/persistence/economic_sql_source_snapshot.c']
+        command += shlex.split(subprocess.check_output(['mysql_config', '--libs'], text=True))
+        command += ['-lcrypto', '-o', str(binary)]
+        subprocess.run(command, cwd=ROOT, check=True, timeout=600)
+        artifact = ROOT/'bin/tests/captured-item-bindings'
+        artifact.mkdir(mode=0o700, exist_ok=True)
+        (artifact/'build.json').write_text(json.dumps(dict(command=command,
+            source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+            binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest()), indent=2)+'\n')
+        model = CapturedItemBindingTests()
+        row, modeled_packet = model.packet()
+        blob = row['canonical_witness']
+        payload = b'EBC1'+struct.pack('<HHII',1,48,len(blob),0)+hashlib.sha256(blob).digest()
+        command_bytes = (b'CCM1'+struct.pack('<I',2)+row['operation_id']+
+            struct.pack('<HHHBBQIII',20,1,6,4,0,row['command_accepted_at_usec'],1,0,48)+
+            struct.pack('<B7xQ',9,0x45434f4e42415345)+payload+struct.pack('<I',256)+row['canonical_intent'])
+        for engine in ('mariadb', 'mysql'):
+            with self.subTest(engine=engine):
+                candidate = self.base/('captured-'+engine)
+                candidate.mkdir(mode=0o700)
+                with restore.private_database(candidate, engine) as env:
+                    version = sql(env, 'SELECT VERSION()')
+                    self.assertTrue('MariaDB' in version if engine=='mariadb' else version.startswith('8.0.'))
+                    sql(env, payload=(ROOT/'migrations/bootstrap_multithread_safe.sql').read_bytes())
+                    with mock.patch.dict(os.environ, env, clear=True):
+                        manifest = migrations.load_manifest()
+                        executor = migrations.MysqlExecutor(manifest)
+                        executor.adopt('fresh_bootstrap')
+                        migrations.run_pending(manifest, executor)
+                    terminal = sql(env, 'SELECT sequence_number,migration_id FROM mud_schema_history ORDER BY sequence_number DESC LIMIT 1')
+                    self.assertEqual(terminal, '62\t0062_economic_pending_claim_consumption')
+                    owner = pymysql.connect(unix_socket=env['DB_SOCKET'], user='root', database='duris_restore',
+                                            autocommit=True, cursorclass=pymysql.cursors.DictCursor)
+                    try:
+                        self.batches = [(blob,row['operation_id'],1,command_bytes,row['canonical_plan'],row['canonical_intent'])]
+                        try: self.seed(owner)
+                        finally: del self.batches
+                        with owner.cursor() as cursor:
+                            cursor.execute('INSERT INTO item_current_owner (item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,item_revision,vnum,state,equipment_slot) VALUES (81,81,NULL,1,7,0,2,100,1,0)')
+                            cursor.execute('INSERT INTO item_owner_revision (owner_type,owner_id,owner_context_id,revision) VALUES (1,7,0,4)')
+                            cursor.execute("CREATE USER 'captured_reader'@'localhost' IDENTIFIED BY 'disposable-capture-reader'")
+                            cursor.execute("GRANT SELECT ON duris_restore.* TO 'captured_reader'@'localhost'")
+                        reader = pymysql.connect(unix_socket=env['DB_SOCKET'], user='captured_reader',
+                            password='disposable-capture-reader', database='duris_restore', autocommit=True,
+                            cursorclass=pymysql.cursors.DictCursor, connect_timeout=5, read_timeout=30, write_timeout=5)
+                        observations = []
+                        try:
+                            def inventory():
+                                with owner.cursor() as cursor:
+                                    cursor.execute('SHOW TABLES')
+                                    names = [next(iter(value.values())) for value in cursor.fetchall()]
+                                    values = []
+                                    for name in sorted(names):
+                                        cursor.execute('SELECT * FROM `'+name+'`')
+                                        rows = sorted(json.dumps(value, sort_keys=True,
+                                            default=lambda value: value.hex() if isinstance(value,bytes) else str(value))
+                                            for value in cursor.fetchall())
+                                        values.append((name, rows))
+                                return hashlib.sha256(json.dumps(values).encode()).hexdigest()
+
+                            def native_packet(label):
+                                before = inventory()
+                                completed = subprocess.run([str(binary),env['DB_SOCKET']], cwd=ROOT,
+                                    env=dict(os.environ, ASAN_OPTIONS='detect_leaks=1:halt_on_error=1',
+                                             UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1'),
+                                    capture_output=True, check=True, timeout=600)
+                                self.assertEqual(completed.stderr, b'')
+                                self.assertEqual(inventory(), before)
+                                packet = dict(modeled_packet, source_snapshot=json.loads(completed.stdout))
+                                path = artifact/(engine+'-'+label+'-capture.json')
+                                path.write_text(json.dumps(packet), encoding='utf-8')
+                                path.chmod(0o600)
+                                return origin_exporter.load_captured_opening(path)
+
+                            def read(packet, label, refusal=False):
+                                before = inventory()
+                                connection = mock.Mock(wraps=reader)
+                                cursor = mock.Mock(wraps=reader.cursor())
+                                connection.cursor.return_value = cursor
+                                if refusal:
+                                    with self.assertRaises(OriginError):
+                                        capture(connection, LINEAGE, EPOCH, captured_opening=packet)
+                                    report = None
+                                else:
+                                    report = capture(connection, LINEAGE, EPOCH, captured_opening=packet)
+                                    self.assertFalse(report['captured_item_bindings']['activation_qualified'])
+                                    self.assertFalse(report['captured_item_bindings']['complete_source_capture_authenticated'])
+                                connection.rollback.assert_called_once_with()
+                                cursor.close.assert_called_once_with()
+                                self.assertTrue(all(call.args[0].startswith(('SELECT ', 'SET TRANSACTION ', 'START TRANSACTION '))
+                                                    for call in cursor.execute.call_args_list))
+                                self.assertEqual(inventory(), before)
+                                observations.append(dict(label=label, refused=refusal, read_only=True,
+                                    rollback_calls=1, cursor_closed=True, database_sha256=before, report=report))
+                            with reader.cursor() as cursor:
+                                with self.assertRaises(pymysql.MySQLError) as denied:
+                                    cursor.execute('UPDATE item_current_owner SET item_revision=item_revision')
+                                self.assertEqual(denied.exception.args[0],1142)
+                            original = native_packet('original')
+                            read(original, 'original')
+                            broken = copy.deepcopy(original)
+                            broken['source_snapshot']['digest'] = 'ab'*32
+                            read(broken, 'altered-manifest', True)
+                            for label, mutation, revert in (
+                                ('owner-revision', 'UPDATE item_owner_revision SET revision=5', 'UPDATE item_owner_revision SET revision=4'),
+                                ('equipment', 'UPDATE item_current_owner SET equipment_slot=1', 'UPDATE item_current_owner SET equipment_slot=0'),
+                                ('prototype', 'UPDATE item_current_owner SET vnum=101', 'UPDATE item_current_owner SET vnum=100')):
+                                with owner.cursor() as cursor: cursor.execute(mutation)
+                                read(native_packet(label),label,True)
+                                read(original,label+'-retained-original')
+                                with owner.cursor() as cursor: cursor.execute(revert)
+                            read(native_packet('restored'),'restored')
+                            (artifact/(engine+'-observations.json')).write_text(json.dumps(dict(
+                                engine=engine,version=version,canonical_terminal=terminal,observations=observations,
+                                original_native_capture=True, modeled_opening=True,
+                                private_new_producer_oracle=False, release_qualified=False),indent=2)+'\n')
+                            print('CAPTURED_ITEM_NATIVE '+json.dumps(dict(engine=engine,version=version,
+                                canonical_terminal=terminal,reads=len(observations),refusals=sum(value['refused'] for value in observations),
+                                native_captures=5,modeled_opening=True,activation_qualified=False)),flush=True)
+                        finally: reader.close()
+                    finally: owner.close()
 
 
 if __name__ == "__main__":

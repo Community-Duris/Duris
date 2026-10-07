@@ -11,6 +11,8 @@ import argparse
 import hashlib
 import json
 import os
+import re
+import stat
 from pathlib import Path
 import struct
 import sys
@@ -309,6 +311,231 @@ def verify_baseline_claim_identity(row: dict, holdings: list[dict], mappings: li
     return expected_sources
 
 
+CAPTURE_REGISTRIES = (
+    ('tables', 'ESM1', 'digest', (
+        ('player_data', 'pid,account_name,racewar,copper,silver,gold,platinum,wallet_revision,save_revision', 'pid'),
+        ('account_banks', 'id,account_name,racewar,bank_copper,bank_silver,bank_gold,bank_platinum,bank_revision', 'id'),
+        ('shopkeepers', 'id,shop_id,mob_vnum,room_vnum,cash,shop_revision,keeper_roaming', 'id'),
+        ('ships', 'id,owner_name,money', 'id'),
+        ('auctions', 'id,seller_pid,status,winning_bidder_pid,cur_price,buy_price,quantity,auction_revision,custody_state,listing_operation_id,obj_vnum,obj_blob_str', 'id'),
+        ('auction_money_pickups', 'pid,money,claim_revision', 'pid'),
+        ('auction_item_pickups', 'id,pid,obj_blob_str,retrieved,quantity', 'id'),
+        ('auction_item_custody', 'auction_id,slot,item_uid,item_revision,vnum,obj_blob,claim_pid,claim_operation_id,claimed_at IS NOT NULL', 'auction_id,slot'),
+        ('collector_catalog_state', 'state_id,catalog_revision,next_listing', 'state_id'),
+        ('collector_deaths', 'death_operation_id,beneficiary_pid,death_time,collection_delay,sale_delay,holding_duration,price_percent,minimum_value,hint_state,hint_revision', 'death_operation_id'),
+        ('collector_listings', 'listing_id,death_operation_id,beneficiary_pid,item_uid,status,holding_paused,due_at,listing_revision,item_revision,price_value,record_blob,item_blob', 'listing_id'),
+        ('item_current_owner', 'item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,item_revision,vnum,state,coin_payload', 'item_uid'),
+        ('item_owner_revision', 'owner_type,owner_id,owner_context_id,revision', 'owner_type,owner_id,owner_context_id'),
+        ('item_uid_allocator', 'allocator_id,next_uid', 'allocator_id'),
+        ('item_ownership_quarantine', 'quarantine_id,item_uid,source_table,source_row_id,conflict_code,evidence,repaired_at IS NOT NULL', 'quarantine_id'),
+        ('auction_reconciliation_quarantine', 'quarantine_id,auction_id,item_uid,conflict_code,evidence,repaired_at IS NOT NULL', 'quarantine_id'),
+        ('collector_reconciliation_quarantine', 'quarantine_id,listing_id,item_uid,conflict_code,evidence,repaired_at IS NOT NULL', 'quarantine_id'),
+        ('critical_operation_inbox', 'operation_id,command_hash,keys_hash,command_type,schema_version,payload_version,status,result_code,failure_stage,durable_revision,result_payload,committed_at IS NOT NULL', 'operation_id'),
+        ('critical_outbox', 'outbox_id,operation_id,event_index,destination,event_type,payload_version,payload,status,attempt_count,last_error_code,delivered_at IS NOT NULL,dead_lettered_at IS NOT NULL', 'outbox_id'),
+        ('economic_account_mapping', 'mapping_id,lineage,account_kind,context_id,backend_kind,locator_kind,native_id,active_native_id,creating_operation_id,retiring_operation_id,revision', 'mapping_id'),
+    )),
+    ('item_sources', 'EIM1', 'item_sources_digest', (
+        ('player_pet_items', 'id,pet_id,container_id,obj_uid,vnum', 'id'),
+        ('shopkeeper_items', 'id,shopkeeper_id,container_id,obj_uid,vnum,item_condition', 'id'),
+        ('siege_items', 'id,room_vnum,container_id,obj_uid,vnum', 'id'),
+    )),
+    ('item_equipment_sources', 'EIE2', 'item_equipment_sources_digest', (
+        ('item_current_owner', 'item_uid,equipment_slot', 'item_uid'),
+    )),
+)
+
+
+def capture_frame(value: bytes) -> bytes:
+    return struct.pack("<Q", len(value)) + value
+
+
+def captured_hex(value, size=None):
+    if (type(value) is not str or len(value) % 2 or
+            (size is not None and len(value) != size * 2) or
+            len(value) > 2 * 1024 * 1024 or not re.fullmatch("[0-9a-f]*", value)):
+        raise OriginError("invalid captured source bytes")
+    return bytes.fromhex(value)
+
+
+def validate_captured_sources(snapshot: dict) -> dict:
+    """Independently validate the native DTO's raw framing, never its authority."""
+    try:
+        if type(snapshot) is not dict or type(snapshot["version"]) is not int or snapshot["version"] not in (1, 2):
+            raise OriginError("invalid captured source version")
+        limits = dict(rows=262144, cells=4 * 1024 * 1024, cell_bytes=64 * 1024 * 1024)
+        totals = dict.fromkeys(limits, 0)
+        for name, maximum in limits.items():
+            if type(snapshot[name]) is not int or not 0 <= snapshot[name] <= maximum:
+                raise OriginError("captured source bounds exceeded")
+        decoded = {}
+        for group, tag, field, specifications in CAPTURE_REGISTRIES:
+            tables = snapshot[group]
+            if group == "item_equipment_sources" and snapshot["version"] == 1:
+                if tables != [] or snapshot[field] != "00" * 32 or snapshot["custody_digest"] != "00" * 32:
+                    raise OriginError("invalid historical captured equipment")
+                decoded[group] = []
+                continue
+            if type(tables) is not list or len(tables) != len(specifications):
+                raise OriginError("invalid captured source registry")
+            registry = hashlib.sha256(capture_frame(tag.encode()) + struct.pack("<Q", len(tables)))
+            result = []
+            for table, (name, columns, order) in zip(tables, specifications):
+                expected = columns.split(",")
+                if type(table) is not dict or table["name"] != name or table["columns"] != expected:
+                    raise OriginError("invalid captured source definition")
+                definition = hashlib.sha256(capture_frame(b"ESD1") + capture_frame(name.encode()) +
+                    capture_frame(order.encode()) + struct.pack("<Q", len(expected)) +
+                    b"".join(capture_frame(column.encode()) for column in expected)).digest()
+                if captured_hex(table["definition_digest"], 32) != definition:
+                    raise OriginError("captured source definition mismatch")
+                rows = table["rows"]
+                if type(rows) is not list or len(rows) > limits["rows"] - totals["rows"]:
+                    raise OriginError("captured source bounds exceeded")
+                totals["rows"] += len(rows)
+                totals["cells"] += len(rows) * len(expected)
+                if totals["cells"] > limits["cells"]:
+                    raise OriginError("captured source bounds exceeded")
+                content = hashlib.sha256(capture_frame(b"EST1") + definition + struct.pack("<Q", len(rows)))
+                captured = []
+                for row in rows:
+                    if type(row) is not dict or type(row["cells"]) is not list or len(row["cells"]) != len(expected):
+                        raise OriginError("invalid captured source cells")
+                    hashed = hashlib.sha256(capture_frame(b"ESR1") + definition)
+                    cells = []
+                    for value in row["cells"]:
+                        cell = None if value is None else captured_hex(value)
+                        hashed.update(struct.pack("<Q", int(cell is not None)))
+                        if cell is not None:
+                            totals["cell_bytes"] += len(cell)
+                            if totals["cell_bytes"] > limits["cell_bytes"]:
+                                raise OriginError("captured source bounds exceeded")
+                            hashed.update(capture_frame(cell))
+                        cells.append(cell)
+                    row_digest = hashed.digest()
+                    if captured_hex(row["digest"], 32) != row_digest:
+                        raise OriginError("captured source row mismatch")
+                    content.update(row_digest)
+                    captured.append(dict(cells=cells, digest=row_digest))
+                content_digest = content.digest()
+                if captured_hex(table["content_digest"], 32) != content_digest:
+                    raise OriginError("captured source content mismatch")
+                registry.update(content_digest)
+                result.append(dict(name=name, rows=captured, content_digest=content_digest))
+            if registry.digest() != captured_hex(snapshot[field], 32):
+                raise OriginError("captured source manifest mismatch")
+            decoded[group] = result
+        if totals != {name: snapshot[name] for name in totals}:
+            raise OriginError("captured source count mismatch")
+        if snapshot["version"] == 2:
+            main = next(table for table in decoded["tables"] if table["name"] == "item_current_owner")
+            equipment = decoded["item_equipment_sources"][0]
+            if (len(main["rows"]) != len(equipment["rows"]) or any(left["cells"][0] != right["cells"][0]
+                    for left, right in zip(main["rows"], equipment["rows"]))):
+                raise OriginError("captured equipment correspondence mismatch")
+            custody = hashlib.sha256(capture_frame(b"ESC2") + b"".join(captured_hex(snapshot[field], 32)
+                for field in ("digest", "item_sources_digest", "item_equipment_sources_digest"))).digest()
+            if custody != captured_hex(snapshot["custody_digest"], 32):
+                raise OriginError("captured custody digest mismatch")
+        return decoded
+    except (KeyError, TypeError, ValueError, StopIteration) as error:
+        if isinstance(error, OriginError):
+            raise
+        raise OriginError("invalid captured source evidence") from error
+
+
+def captured_unsigned(value, maximum=2**64-1):
+    if type(value) is not bytes or not re.fullmatch(rb"0|[1-9][0-9]*", value) or len(value) > 20:
+        raise OriginError("invalid captured native integer")
+    number = int(value)
+    if number > maximum:
+        raise OriginError("invalid captured native integer")
+    return number
+
+
+def verify_captured_item_opening(row: dict, packet: dict) -> dict:
+    """Check original item preimages against one retained root.
+
+    Legacy boundary/holding hashes are explicit inputs, not independently
+    authenticated authority. Source provenance and complete item selection
+    remain separate prerequisites; this function cannot attest activation.
+    """
+    try:
+        if type(packet) is not dict or packet["format"] != "economic_sql_captured_opening_v1":
+            raise OriginError("invalid captured opening format")
+        if identity(captured_hex(packet["operation_id"], 16), "captured operation") != row["operation_id"]:
+            raise OriginError("foreign captured opening operation")
+        legacy = digest(captured_hex(packet["legacy_native_boundary_digest"], 32), "legacy native boundary")
+        coverage = digest(captured_hex(packet["holding_coverage_digest"], 32), "holding coverage")
+        snapshot = packet["source_snapshot"]
+        decoded = validate_captured_sources(snapshot)
+        blob = row["canonical_witness"]
+        verify_baseline_root(row, blob[16:32], blob[32:48])
+        holdings, items = decode_witness(row, blob[16:32], blob[32:48], blob[80:120])
+        version, stride = witness_layout(blob)
+        native = next(table for table in decoded["tables"] if table["name"] == "item_current_owner")
+        owners = next(table for table in decoded["tables"] if table["name"] == "item_owner_revision")
+        sources = []
+        if items:
+            if snapshot["version"] != 2:
+                raise OriginError("captured equipment is unobserved")
+            equipment = decoded["item_equipment_sources"][0]
+            by_uid, previous = {}, 0
+            for source, slot in zip(native["rows"], equipment["rows"]):
+                uid = captured_unsigned(source["cells"][0])
+                if uid <= previous:
+                    raise OriginError("invalid captured native item order")
+                previous = uid
+                by_uid[uid] = source, slot
+            by_owner = {}
+            for owner in owners["rows"]:
+                cells = owner["cells"]
+                key = tuple(captured_unsigned(value, 255 if index == 0 else 2**64-1)
+                            for index, value in enumerate(cells[:3]))
+                captured_unsigned(cells[3])
+                if key in by_owner:
+                    raise OriginError("duplicate captured owner revision")
+                by_owner[key] = owner
+            for index, item in enumerate(items):
+                source, slot = by_uid[item["uid"]]
+                cells = source["cells"]
+                owner_key = tuple(captured_unsigned(value, 255 if index == 0 else 2**64-1)
+                                  for index, value in enumerate(cells[3:6]))
+                projected = (captured_unsigned(cells[1]), None if cells[2] is None else captured_unsigned(cells[2]),
+                             owner_key, captured_unsigned(cells[6]), captured_unsigned(cells[8], 255))
+                expected = (item["root"], item["parent"], tuple(item["owner"]), item["revision"],
+                            next(state for state, name in ITEM_STATES.items() if name == item["state"]))
+                observed_slot = captured_unsigned(slot["cells"][1], 65535)
+                if projected != expected or (version == 2 and observed_slot != item["equipment_slot"]):
+                    raise OriginError("captured native item projection mismatch")
+                if not 0 < captured_unsigned(cells[7], 2**31-1):
+                    raise OriginError("invalid captured native item prototype")
+                owner = by_owner[owner_key]
+                source_digest = hashlib.sha256(b"EBS2" + b"".join(capture_frame(value["digest"])
+                    for value in (source, slot, owner))).digest()
+                offset = HEADER_BYTES + len(holdings) * HOLDING_BYTES + index * stride
+                if blob[offset + stride - 32:offset + stride] != source_digest:
+                    raise OriginError("captured item source digest mismatch")
+                sources.append((item["uid"], source_digest))
+            boundary = hashlib.sha256(b"ESN5" + b"".join(capture_frame(value) for value in
+                (legacy, native["content_digest"], owners["content_digest"], equipment["content_digest"],
+                 captured_hex(snapshot["item_sources_digest"], 32)))).digest()
+            complete = hashlib.sha256(b"EIC2" + capture_frame(coverage) + struct.pack("<Q", len(sources)) +
+                b"".join(struct.pack("<Q", uid) + capture_frame(source) for uid, source in sources)).digest()
+        else:
+            boundary, complete = legacy, coverage
+        if blob[120:152] != boundary or blob[152:184] != complete:
+            raise OriginError("captured opening digest mismatch")
+        return dict(format="economic_sql_captured_item_bindings_v1", captured_source_framing_verified=True,
+            item_bindings_verified=True, witness_item_count=len(items), captured_native_item_count=len(native["rows"]),
+            witness_equipment_observed=version == 2, complete_item_selection_authenticated=False,
+            legacy_digest_authority_authenticated=False, original_capture_provenance_authenticated=False,
+            complete_source_capture_authenticated=False, activation_qualified=False, release_qualified=False)
+    except (KeyError, TypeError, ValueError, StopIteration, IndexError, struct.error) as error:
+        if isinstance(error, OriginError):
+            raise
+        raise OriginError("invalid captured opening evidence") from error
+
+
 def verify_baseline_claim_rows(cursor, row: dict, holdings: list[dict]) -> None:
     parents = []
     if any(account_key(holding["account_key"])[1] in (4, 5) for holding in holdings):
@@ -437,7 +664,7 @@ def verify_baseline_projections(cursor, verified: list[tuple[dict, dict]], linea
             raise OriginError("EAB1 SQL projection mismatch") from error
 
 
-def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
+def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes, *, captured_opening=None) -> dict:
     """Read verified origins within a caller-owned consistent read-only cut."""
     identity(lineage, "lineage")
     identity(epoch, "epoch")
@@ -567,13 +794,22 @@ def read_origins_in_transaction(cursor, lineage: bytes, epoch: bytes) -> dict:
               "item_origins": items,
               "baseline_operation_ids": [row["operation_id"].hex() for row in witnesses],
               "baseline_source_events": baseline_sources}
+    if captured_opening is not None:
+        try:
+            operation = identity(captured_hex(captured_opening["operation_id"], 16), "captured operation")
+        except (KeyError, TypeError) as error:
+            raise OriginError("invalid captured opening operation") from error
+        selected = [row for row in witnesses if row["operation_id"] == operation]
+        if len(selected) != 1:
+            raise OriginError("captured opening is outside the selected book")
+        result["captured_item_bindings"] = verify_captured_item_opening(selected[0], captured_opening)
     encoded = json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
     if len(encoded) > MAX_INPUT_BYTES:
         raise OriginError("origin export exceeds audit input limit")
     return result
 
 
-def capture(connection, lineage: bytes, epoch: bytes) -> dict:
+def capture(connection, lineage: bytes, epoch: bytes, *, captured_opening=None) -> dict:
     """Read one bounded, consistent baseline cut; always end it with rollback."""
     identity(lineage, "lineage")
     identity(epoch, "epoch")
@@ -581,12 +817,42 @@ def capture(connection, lineage: bytes, epoch: bytes) -> dict:
     try:
         cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
         cursor.execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
-        return read_origins_in_transaction(cursor, lineage, epoch)
+        return read_origins_in_transaction(cursor, lineage, epoch, captured_opening=captured_opening)
     finally:
         try:
             connection.rollback()
         finally:
             cursor.close()
+
+
+def load_captured_opening(path: Path) -> dict:
+    """Read private original evidence; refuse truncation and ambiguous JSON."""
+    def unique(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise OriginError("duplicate captured opening field")
+            result[key] = value
+        return result
+    descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+    with os.fdopen(descriptor, "rb") as stream:
+        info = os.fstat(stream.fileno())
+        if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_size > MAX_INPUT_BYTES or
+                (os.name == "posix" and info.st_mode & 0o077)):
+            raise OriginError("captured opening input is not protected or exceeds input limit")
+        data = stream.read(MAX_INPUT_BYTES + 1)
+    if len(data) > MAX_INPUT_BYTES:
+        raise OriginError("captured opening input exceeds input limit")
+    try:
+        result = json.loads(data, object_pairs_hook=unique)
+        if type(result) is not dict or result.get("format") != "economic_sql_captured_opening_v1":
+            raise OriginError("invalid captured opening format")
+        return result
+    except (ValueError, UnicodeError, RecursionError) as error:
+        if isinstance(error, OriginError):
+            raise
+        raise OriginError("invalid captured opening JSON") from error
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -598,6 +864,8 @@ def main() -> int:
     parser.add_argument("--lineage", required=True)
     parser.add_argument("--epoch", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--captured-opening-evidence", type=Path,
+                        help="private original capture and legacy digest inputs for one retained opening")
     args = parser.parse_args()
     try:
         lineage, epoch = bytes.fromhex(args.lineage), bytes.fromhex(args.epoch)
@@ -605,6 +873,7 @@ def main() -> int:
         identity(epoch, "epoch")
         if not 1 <= args.port <= 65535:
             raise OriginError("invalid SQL port")
+        captured_opening = load_captured_opening(args.captured_opening_evidence) if args.captured_opening_evidence else None
         password = os.environ[args.password_env]
         import pymysql
         try:
@@ -614,7 +883,7 @@ def main() -> int:
                                          cursorclass=pymysql.cursors.DictCursor,
                                          connect_timeout=5, read_timeout=30, write_timeout=5)
             try:
-                result = capture(connection, lineage, epoch)
+                result = capture(connection, lineage, epoch, captured_opening=captured_opening)
             finally:
                 connection.close()
         except pymysql.MySQLError as error:
