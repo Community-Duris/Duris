@@ -1341,3 +1341,18 @@ The release report must name exact tested commit, backend and image/version,
 commands, sampled workload, route coverage and any intentionally unsupported
 route. Synthetic fixtures and real player journeys are separate lines. Current
 evidence and blockers are in [the release report](RELEASE_REPORT_2026-09-27.md).
+
+
+Native lifecycle receipts use their own DURELR version field. The independent
+receipt reader accepts native V1 wallet/bank history and native V2 retained pile
+witnesses; qualifier catalogue V2/V3 is a separate format. V2 derives sorted
+native UID/context-zero pile keys from the retained EAB and binds exact room,
+native revision, denominations and item/holding source fingerprints into the
+coverage digest. Historical retry never recaptures current physical piles, and
+native revisions are independent of the accounting opening effect 0->1.
+Malformed pairings and unknown native versions refuse. These checks preserve
+all original common-command/plan/receipt/reservation proof requirements.
+The published V2 wire contract and native EAB codec are component evidence;
+the primary's private native V2 encoder/installer and genuine original fixtures
+still require exact-source qualification before a release gate can close.
+See [source and qualification disposition](PLAN5_NATIVE_LIFECYCLE_V2_2026-10-07.md).

@@ -354,21 +354,23 @@ inline bytes file_bytes(const std::filesystem::path &directory, const std::strin
 }
 inline bytes frame(const std::filesystem::path &directory, const std::string &name,
 		   const char *magic, size_t limit = maximum_bytes, const digest &expected = {},
-		   uint32_t *catalog_version = nullptr)
+		   uint32_t *envelope_version = nullptr)
 {
 	auto encoded = file_bytes(directory, name, limit, expected);
 	reader in{ encoded };
 	auto prefix = in.take(8);
 	auto version = in.number(4);
 	need(memcmp(prefix.data(), magic, 8) == 0 &&
-	     (version == 1 || (catalog_version && memcmp(magic, "DURECE1", 8) == 0 &&
-			       (version == 2 || version == 3))) &&
+	     (version == 1 ||
+	      (envelope_version &&
+	       ((memcmp(magic, "DURECE1", 8) == 0 && (version == 2 || version == 3)) ||
+		(memcmp(magic, "DURELR\0", 8) == 0 && version == 2)))) &&
 	     in.number(4) == encoded.size() - 48);
 	auto body_digest = in.fixed<32>();
 	auto body = in.take(encoded.size() - 48);
 	need(body_digest == hash(body));
-	if (catalog_version)
-		*catalog_version = version;
+	if (envelope_version)
+		*envelope_version = version;
 	return { body.begin(), body.end() };
 }
 enum class baseline_initialization : uint8_t

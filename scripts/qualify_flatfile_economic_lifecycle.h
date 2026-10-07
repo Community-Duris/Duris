@@ -27,6 +27,72 @@ inline bytes alias(reader &in)
 		need((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-');
 	return { value.begin(), value.end() };
 }
+// V2 derives the pile census solely from retained EAB rows. It never recaptures
+// current world data, and native revisions remain independent of opening 0->1.
+inline digest coverage_digest(uint32_t version, const identity &lineage, const digest &wallet_bank,
+			      std::span<const uint8_t> witness,
+			      const std::set<account_key> &mapped_accounts)
+{
+	need(version == 1 || version == 2);
+	const auto stride = restore_economic_baseline::item_bytes(witness);
+	need(same(witness.subspan(16, 16), lineage));
+	const auto holding_count = number(witness, 184, 4), item_count = number(witness, 188, 4);
+	need(holding_count == mapped_accounts.size() + item_count);
+	std::map<account_key, std::span<const uint8_t>> holdings;
+	for (size_t i = 0; i < holding_count; ++i)
+	{
+		const auto holding = witness.subspan(192 + i * 112, 112);
+		reader key{ holding };
+		need(holdings.emplace(key.fixed<40>(), holding).second);
+	}
+	for (const auto &key : mapped_accounts)
+		need(holdings.erase(key) == 1);
+	if (version == 1)
+	{
+		need(!item_count && holdings.empty());
+		return wallet_bank;
+	}
+	auto input = text("DURIS-FLATFILE-COVERAGE-V2");
+	append(input, wallet_bank);
+	put(input, item_count, 8);
+	const auto items = witness.subspan(192 + holding_count * 112);
+	restore_economic_baseline::forest(items, stride);
+	for (size_t i = 0; i < item_count; ++i)
+	{
+		const auto item = items.subspan(i * stride, stride);
+		const auto uid = number(item, 0, 8), room = number(item, 16, 8),
+			   revision = number(item, 48, 8);
+		need(item[8] == 3 && item[9] == 1 && room && room <= INT32_MAX &&
+		     !number(item, 24, 8) && number(item, 32, 8) == uid && !number(item, 40, 8) &&
+		     revision && (stride == 88 || !number(item, 56, 2)));
+		account_key key{};
+		std::copy(lineage.begin(), lineage.end(), key.begin());
+		key[16] = 1;
+		key[18] = 3;
+		for (size_t byte = 0; byte < 8; ++byte)
+			key[20 + byte] = static_cast<uint8_t>(uid >> (8 * byte));
+		const auto found = holdings.find(key);
+		need(found != holdings.end());
+		const auto holding = found->second;
+		need(std::get<0>(restore_economic_baseline::account(holding.first(40), lineage)) ==
+			     3 &&
+		     number(holding, 72, 8) == revision &&
+		     same(holding.subspan(80, 32), item.subspan(stride - 32, 32)));
+		put(input, uid, 8);
+		put(input, room, 8);
+		put(input, revision, 8);
+		for (size_t part = 0; part < 4; ++part)
+		{
+			const auto amount = number(holding, 40 + part * 8, 8);
+			need(amount <= INT32_MAX);
+			put(input, amount, 8);
+		}
+		append(input, holding.subspan(80, 32));
+		holdings.erase(found);
+	}
+	need(holdings.empty());
+	return hash(input);
+}
 struct mapping
 {
 	account_key account;
@@ -48,7 +114,8 @@ class checker
 	void receipt(const std::string &name, const identity &operation, const identity &lineage,
 		     const epoch_catalog &catalog, std::span<const uint8_t> control, Mapped mapped)
 	{
-		auto body = frame(directory, name, "DURELR\0", receipt_limit);
+		uint32_t version = 0;
+		auto body = frame(directory, name, "DURELR\0", receipt_limit, {}, &version);
 		reader in{ body };
 		need(in.fixed<16>() == operation && nonzero(operation) &&
 		     in.fixed<16>() == lineage);
@@ -166,7 +233,7 @@ class checker
 			retained.fingerprint = hash(fingerprint_input);
 			sources.push_back(retained);
 		}
-		need(hash(coverage_input) == coverage);
+		const auto wallet_bank_coverage = hash(coverage_input);
 		auto blob = [&](size_t limit)
 		{
 			auto size = in.number(4);
@@ -177,17 +244,17 @@ class checker
 		     witness = blob(restore_economic_baseline::witness_limit),
 		     plan = blob(4 * 1024 * 1024);
 		in.done();
-		(void)restore_economic_baseline::item_bytes(witness);
-		need(witness.size() == 192 + count * 112 &&
-		     same(witness.subspan(16, 16), lineage) &&
+		const auto holding_count = number(witness, 184, 4);
+		need(coverage_digest(version, lineage, wallet_bank_coverage, witness, accounts) ==
+		     coverage);
+		need(same(witness.subspan(16, 16), lineage) &&
 		     same(witness.subspan(32, 16), epoch) &&
 		     same(witness.subspan(48, 16), operation) && number(witness, 64, 8) == actor &&
 		     number(witness, 72, 8) == 0 && same(witness.subspan(80, 40), opening) &&
 		     same(witness.subspan(120, 32), boundary) &&
-		     same(witness.subspan(152, 32), coverage) && number(witness, 184, 4) == count &&
-		     number(witness, 188, 4) == 0);
+		     same(witness.subspan(152, 32), coverage));
 		std::map<account_key, std::span<const uint8_t>> holdings;
-		for (size_t i = 0; i < count; ++i)
+		for (size_t i = 0; i < holding_count; ++i)
 		{
 			auto holding = witness.subspan(192 + i * 112, 112);
 			reader key{ holding };

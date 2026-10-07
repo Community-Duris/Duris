@@ -1505,3 +1505,24 @@ seal `f88fe295aee2fe317ca4f86914a58d5881cdcd84765efad5b5858fe55215ac7d`.
 All work remains on remote codex/accounting-plan5 with the seven previous tips
 preserved. Combined canonical/both-engine/R7/R8 qualification and notebook
 application are unclaimed. Primary notebook maintenance remains nonblocking.
+
+
+## Native lifecycle V2 independent coverage component - 2026-10-07
+
+Base2e02e9ce on the same remote codex/accounting-plan5. The containing commit
+is the result; all seven prior tips remain ancestors. No branch switch/shared
+mutation occurred. [Exact disposition](PLAN5_NATIVE_LIFECYCLE_V2_2026-10-07.md)
+records65 coverage cases (12 real EAB roundtrips),5 framing controls,6 RED/green
+cuts and complete original lifecycle131,authority20/367,baseline69 suites with
+zero skips. Observer-only failures are retained; dependency metadata was
+completed without rerunning passing cases. Tested owned tree
+e368e0ecc654ca9c9112fc7aa15ffb318978e166; native oracle5826195; later primary911e578 has
+unchanged native/migration trees. No private nativeV2 encoder/installer was
+executed, and no combined-release gate closes. Export original private source/
+fixtures and register the new command through the primary-owned runner; no
+API/schema fields change. Seal SHA256 7e561ac5a6159755822b092334e8a5b88155b65a862193f0cdb5c047897621e5;
+build binding SHA256 73db24968bc72e2cac03436e4f06709a40252be689c1f47bfcee0b62ad667414. Curator-ready report/evidence/delivery
+continues Plan5; local notebook application/acknowledgement and cross-chat
+notification are unclaimed and nonblocking. Remaining native holdings, original
+journeys, current both-backend/migration/build and authentic restore/retention
+R1-R8 gates remain.
