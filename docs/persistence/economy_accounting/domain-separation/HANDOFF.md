@@ -21,8 +21,9 @@ review PASS is published at accountinge0b93aa48. See the [R12 terminal handoff](
 canonical delivery is independently closed at accounting973bb6c0. The
 [post-R12 dependency disposition](POST_R12_OWNER_DEPENDENCIES_2026-10-07.md) records
 current owner findings and proposes only [R13 complete item acceptance](R13_SHOP_ITEM_ACCEPTANCE_RESERVATION.md),
-with38 original controls per baseline/Og pending boundary review. No new maintained
-implementation precedes approval. Optional adoption and the primary full finish
+with unchanged controlled38 and separately labeled real-keyword54 original controls
+per baseline/Og pending boundary review. Both source/proof sets are pinned; no new
+maintained implementation precedes approval. Optional adoption and the primary full finish
 remain open.
 
 R10 final declared-scope review PASS remains published at accountingdc1489782,

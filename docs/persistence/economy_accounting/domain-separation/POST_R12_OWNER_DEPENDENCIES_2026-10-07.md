@@ -43,7 +43,7 @@ create another scalar wrapper.
 
 | Family | Current concrete disposition |
 | --- | --- |
-| S shops | Purchase, complete itemvalue and sale/value quotations are qualified at their declared extraction scopes. The actual shared trade_with classifier/get_selling_obj path has a remaining whole business acceptance policy used by sale, value and repair. R13 has38 original actual-body controls per baseline/Og and an exact three-file proposal, pending review. Keeper/actor/stock original custody and lifetime, admission, materialization, physical publication/ACK and warm/cold journeys remain primary owners. |
+| S shops | Purchase, complete itemvalue and sale/value quotations are qualified at their declared extraction scopes. The actual shared trade_with classifier/get_selling_obj path has a remaining whole business acceptance policy used by sale, value and repair. R13 preserves controlled38 original controls and adds a separate real-parser/stack/operator54 supplement, each baseline/Og, under the amended three-file proposal pending review. Keeper/actor/stock original custody and lifetime, admission, materialization, physical publication/ACK and warm/cold journeys remain primary owners. |
 | F crafting/enhancement | R1/R3-R9/R11 preparations remain, with native progression/input/output/material/pouch conservation and active/publication/recovery qualification still owned. Existing plans/metadata helpers are reused. Separately owned enhancement fixture repair does not qualify loader deduplication or gameplay. |
 | I item ownership | Existing transfer/lifecycle/native craft and frozen continuation boundaries remain. No classifier/quote gives UID/birth/retirement, full root/descendant snapshot, original lifetime or native placement authority. No second custody or recovery owner. |
 | C currency/banking | currency_prepare_mutation, existing adapters and R2 vectors already separate calculations. ATM/session/balance capture and flat source-claim/borrowed-lock native integrations remain owners; physical/native guarded ACK, cold history and backend parity stay open. No duplicate arithmetic/accounting plan. |
@@ -59,7 +59,12 @@ to exact boundary and independent original-proof review. The original classifier
 returns OBJECT_OK even when its called keyword evaluator returns false; its
 callback and legacy result must both remain. This connected policy has executable
 original evidence and actual command consumers, not an invented native authority
-or arbitrary extraction cap. No maintained implementation precedes review.
+or arbitrary extraction cap. No maintained implementation precedes review. The
+original controlled19-file proof/index remains exact; the separate real-keyword27-file
+supplement pins all eight canonical functions, actual flags/operator strings, real
+false/diagnostic results and ordered selector/classifier observations. Its private
+wrong assumed HUM flag name failure is retained, then corrected to the canonical
+NOSHOW entry.
 
 If review does not establish a useful independent boundary, retain this precise
 dependency disposition and monitor meaningful published primary/requirement
