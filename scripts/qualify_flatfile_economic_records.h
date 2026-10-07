@@ -829,6 +829,42 @@ class checker
 		need(!name.empty() && name.size() <= 255 && name != "." && name != ".." &&
 		     name.find('/') == std::string::npos && name.find('\0') == std::string::npos);
 		need(context.lineage == lineage);
+		if (name.starts_with("pile-head") || name.ends_with(".eph"))
+		{
+			using namespace restore_economic_baseline;
+			need(name.size() == 30 && name.starts_with("pile-head-") &&
+			     name.ends_with(".eph"));
+			uint64_t uid = 0;
+			for (auto digit : name.substr(10, 16))
+			{
+				const auto found = std::strchr(hex_digits, digit);
+				need(found);
+				uid = (uid << 4) | static_cast<uint64_t>(found - hex_digits);
+			}
+			const auto encoded = file_bytes(directory, name, 133);
+			const std::span<const uint8_t> head = encoded;
+			need(head.size() == 133 &&
+			     same(head.first(4),
+				  { reinterpret_cast<const uint8_t *>("EPH1"), 4 }) &&
+			     same(head.subspan(101), hash(head.first(101))) &&
+			     same(head.subspan(4, 16), lineage) && uid &&
+			     number(head, 36, 8) == uid && number(head, 44, 8) && head[84] <= 1 &&
+			     nonzero(head.subspan(85, 16)));
+			identity epoch;
+			std::copy_n(head.begin() + 20, 16, epoch.begin());
+			need(nonzero(epoch) &&
+			     std::any_of(context.catalog.begin(), context.catalog.end(),
+					 [&](const auto &marker)
+					 { return marker.epoch == epoch; }));
+			for (size_t part = 0; part < 4; ++part)
+			{
+				const auto amount = number(head, 52 + part * 8, 8);
+				need(amount <= INT32_MAX && (!head[84] || !amount));
+			}
+			// A baseline head can name the preparation ID. It does not prove a
+			// retained command root or agreement with current native custody.
+			return "pile_head";
+		}
 		auto original = [&](const identity &operation)
 		{
 			need(nonzero(operation));

@@ -1440,3 +1440,16 @@ primary `e6e058515f5433a1a3028f80d5d7d672d48b2471` codec round trips also pass; 
 See [source, ownership, evidence and gates](PLAN5_SQL_AREA_COIN_RECONCILIATION_2026-10-07.md), seal `4cca6c20dd484cfe325aa75c5b3daeab0d81a775cd0960cd30745d095ba545f0`.
 Full Plan5/current combined/producer/R7/R8/release and notebook application
 remain unclaimed. Keep all work on the same remote codex/accounting-plan5.
+
+## Durable pile-head namespace audit - 2026-10-07
+
+Base `3a80aa8647535f72504c5c232bbe42d520ace563`; separately published result is the containing commit.
+The old reader demonstrably grants false namespace closure to malformed native
+EPH1 heads. Both final complete73-observation namespace methods pass with
+22 new corruptions and two authentic traversals, zero skips. The unchanged
+maintained operator build and actual primary `e6e058515f5433a1a3028f80d5d7d672d48b2471` native API pass;
+Make validates740 unchanged objects,57 contracts pass, and release refuses.
+See [source, evidence and remaining gates](PLAN5_FLATFILE_PILE_HEAD_NAMESPACE_2026-10-07.md), seal `8706cad2a5863e67f16f32778de825db236341556df3ca7413b60ee97a7c74a0`.
+No shared schema/API change. Full native custody/value, combined, real journeys,
+R7/R8/release and notebook application remain unclaimed. All work stays on
+the same remote codex/accounting-plan5 with all seven previous tips preserved.

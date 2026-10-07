@@ -3,6 +3,7 @@
 #include "flatfile/flatfile_accounting_authority.h"
 #include "economy/economic_currency_adapter.h"
 #include "flatfile/flatfile_accounting_baseline.h"
+#include "flatfile/flatfile_accounting_pile_state.h"
 #include "world/quest_mobile_native.h"
 #include "economy/auction_accounting.h"
 #include "economy/auction_settlement_accounting.h"
@@ -170,7 +171,18 @@ static flatfile_accounting_record record(uint32_t sequence, bool large, bool sou
 int main(int argc, char **argv)
 {
 	assert(argc == 3);
-	const std::string root = argv[1], mode = argv[2];
+	const bool pile_heads = std::string(argv[2]) == "pile-heads";
+	const std::string root = argv[1], mode = pile_heads ? "baseline-empty" : argv[2];
+	if (mode == "read-pile-head")
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(root, nullptr));
+		flatfile_accounting_pile_state head;
+		const auto status =
+			flatfile_accounting_pile_state_read(root, lock, 255, &head, nullptr);
+		std::cout << static_cast<unsigned>(status) << '\n';
+		return status == flatfile_accounting_status::ok ? 0 : 1;
+	}
 	if (mode == "paged-append")
 	{
 		flatfile_authority_lock lock;
@@ -1154,7 +1166,50 @@ int main(int argc, char **argv)
 						   &error) == flatfile_accounting_status::ok);
 		commit();
 		if (mode == "baseline-empty")
+		{
+			if (pile_heads)
+			{
+				for (uint64_t uid :
+				     { uint64_t{ 255 }, uint64_t{ 256 }, UINT64_MAX })
+				{
+					flatfile_accounting_pile_state head{
+						{ id(1), economic_account_kind::pile, uid, 0 },
+						batch.epoch,
+						id(9),
+						uid == 256 ?
+							economic_coin_vector{} :
+							economic_coin_vector{ 1, 2, 3, INT32_MAX },
+						uid == 256 ? uint64_t{ 7 } : UINT64_MAX,
+						false
+					};
+					assert(flatfile_accounting_pile_state_stage_baseline(
+						       root, lock, head, &operations, &error) ==
+					       flatfile_accounting_status::ok);
+					commit();
+					if (uid == 256)
+					{
+						economic_account_effect retirement{
+							head.account, {}, {}, 7, 8
+						};
+						assert(flatfile_accounting_pile_state_stage(
+							       root, lock, retirement, batch.epoch,
+							       id(10), true, &operations, &error) ==
+						       flatfile_accounting_status::ok);
+						commit();
+					}
+					flatfile_accounting_pile_state observed;
+					assert(flatfile_accounting_pile_state_read(
+						       root, lock, uid, &observed, nullptr) ==
+						       flatfile_accounting_status::ok &&
+					       observed.balance == head.balance &&
+					       observed.item_revision ==
+						       (uid == 256 ? 8 : UINT64_MAX) &&
+					       observed.retired == (uid == 256));
+				}
+				std::cout << "NATIVE_PILE_HEADS 3\n";
+			}
 			return 0;
+		}
 		auto item = [&](uint64_t uid, item_owner_identity owner, uint64_t root_uid,
 				uint64_t parent, uint64_t revision, item_custody_state state)
 		{

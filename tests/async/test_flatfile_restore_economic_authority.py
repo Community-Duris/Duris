@@ -42,6 +42,7 @@ def change(files, name, offset, data, bind=None):
 
 def build_fixture(destination, native_source=ROOT):
     sources = ["src/flatfile/flatfile_accounting_authority.c",
+               "src/flatfile/flatfile_accounting_pile_state.c",
                "src/flatfile/flatfile_accounting_baseline.c", "src/economy/economic_baseline_adapter.c",
                "src/economy/economic_baseline_codec.c", "src/economy/economic_baseline_command.c",
                "src/economy/auction_command.c", "src/economy/auction_accounting.c",

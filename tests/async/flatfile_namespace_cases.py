@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
@@ -71,12 +72,12 @@ int main(int argc, char **argv) {
             shutil.copytree(evidence, saved, dirs_exist_ok=True)
             return {path.name: path.read_bytes() for path in evidence.iterdir()}
 
-        def fresh():
+        def fresh(*, tool=None):
             nonlocal sequence
             sequence += 1
             path = parent / ("progress-" + str(sequence) + ".json")
             before = retained(root)
-            page, state = namespace.run(root, binary, path)
+            page, state = namespace.run(root, binary if tool is None else tool, path)
             assert page["phase"] == "inventory" and state["phase"] == "files" and not state["total_findings"], page
             assert retained(root) == before
             return path, state
@@ -98,6 +99,69 @@ int main(int argc, char **argv) {
 
         def record(label, page):
             observations.append(dict(label=label, report=page, native_state_unchanged=True))
+
+        if not lifecycle:
+            heads = produce("pile-heads")
+            active = "pile-head-00000000000000ff.eph"
+            retired = "pile-head-0000000000000100.eph"
+            maximum = "pile-head-ffffffffffffffff.eph"
+            assert {name for name in heads if name.endswith(".eph")} == {active, retired, maximum}
+            assert heads[active][:4] == b"EPH1" and len(heads[active]) == 133
+            shutil.copytree(root, destination / "pile-head-fixture")
+
+            def rehash_head(value):
+                result = bytearray(value)
+                result[-32:] = hashlib.sha256(result[:-32]).digest()
+                return bytes(result)
+
+            damaged = []
+            for offset, value, label in (
+                    (0, b"EPH2", "version"), (4, bytes(16), "zero lineage"),
+                    (4, b"\x02" + bytes(15), "foreign lineage"),
+                    (20, bytes(16), "zero epoch"),
+                    (20, b"\xfe" + bytes(15), "unknown epoch"), (36, bytes(8), "zero UID"),
+                    (36, struct.pack("<Q", 256), "filename UID mismatch"),
+                    (44, bytes(8), "zero revision"),
+                    (52, struct.pack("<Q", 2**63), "negative denomination"),
+                    (60, struct.pack("<Q", 2**31), "denomination overflow"),
+                    (84, b"\x02", "retirement flag"),
+                    (84, b"\x01", "retired nonzero balance"),
+                    (85, bytes(16), "zero operation")):
+                value_head = bytearray(heads[active])
+                value_head[offset:offset + len(value)] = value
+                damaged.append(("pile head " + label, active, rehash_head(value_head)))
+            bad_checksum = bytearray(heads[active])
+            bad_checksum[-1] ^= 1
+            damaged.extend((
+                ("pile head checksum", active, bytes(bad_checksum)),
+                ("pile head truncated", active, heads[active][:-1]),
+                ("pile head trailing bytes", active, heads[active] + b"\0"),
+                ("pile head short payload", active, b"EPH1"),
+                ("pile head noncanonical name", "pile-head-ff.eph", heads[active]),
+                ("pile head uppercase name", "pile-head-00000000000000FF.eph", heads[active]),
+                ("pile head zero name", "pile-head-0000000000000000.eph", heads[active]),
+                ("pile head malformed prefix", "pile-head-broken", heads[active]),
+                ("pile head malformed suffix", "unrelated.eph", heads[active])))
+            for label, name, encoded in damaged:
+                produce("pile-heads")
+                (evidence / active).unlink()
+                (evidence / name).write_bytes(encoded)
+                assert (evidence / name).stat().st_mode & 0o077 == 0
+                before = retained(root)
+                native = subprocess.run([str(fixture), str(root), "read-pile-head"], env=environment,
+                                        capture_output=True, text=True, timeout=60)
+                assert native.returncode == (0 if label in ("pile head foreign lineage", "pile head unknown epoch") else 1) and not native.stderr and retained(root) == before, (label, native)
+                path, state = fresh()
+                page, state = sweep(path, state)
+                assert not page["known_physical_economic_namespace_closed"] and state["invalid"] == 1, (label, page)
+                assert any(item["name_sha256"] == hashlib.sha256(os.fsencode(name)).hexdigest() for item in state["findings"])
+                record(label, page)
+            for tool, label in ((binary, "native operator"), (audit, "sanitized dispatcher")):
+                produce("pile-heads")
+                path, state = fresh(tool=tool)
+                page, state = sweep(path, state, tool=tool)
+                assert page["known_physical_economic_namespace_closed"] and state["verified"] >= 5 and not state["ignored"], page
+                record(label + " authentic active/retired/full-width pile heads", page)
 
         modes = ("mixed", "empty", "retained", "generic") if lifecycle else (
             "baseline-empty-history", "baseline-history", "baseline-rich", "source-claims")

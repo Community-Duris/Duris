@@ -1219,6 +1219,16 @@ corruption. An interrupted file checkpoint retries the same entry; partially
 published initial inventory artifacts are preserved and require a fresh path.
 Existing auxiliary files are never silently overwritten.
 
+Durable `pile-head-<16 lowercase hex UID>.eph` files are recognized as
+`pile_head`. Each check authenticates the exact133-byte EPH1 body/checksum,
+filename UID, current lineage and catalogue epoch, nonzero revision/operation,
+native denomination limits and zero retired balance. Malformed pile-head names
+and `.eph` payloads produce the existing namespace-file finding; they cannot
+earn closure as ignored files. These stored-state checks do not compare pile
+values with custody/owner literals or prove original command linkage: a
+baseline head may retain its preparation ID. Current holdings and release
+qualification still require their separate evidence.
+
 This traversal proves reverse associations of the captured files. It does not
 prove forward completeness, all mapping cross-links, consecutive book history,
 complete source history or current holdings. A file changed after its visit may
