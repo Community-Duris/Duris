@@ -29,6 +29,26 @@ duplicate tooling/native-owner fixes or authenticate owner-reported754 proof as
 its owned740 builds. Original budgets, retained failures, inactive/spell boundaries
 and all926 writer policies remain in force.
 
+Fresh published successor439a8fe704b5167171d318f644c3b2b514f8cd22 changes only the
+[shared native progress document](https://github.com/Community-Duris/Duris/blob/439a8fe704b5167171d318f644c3b2b514f8cd22/docs/persistence/economy_accounting/SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md).
+Its private17-file shared boot successor now includes authenticated opening
+baseline piles alongside typed COIN history, native revision7 distinct from the
+accounting opening0->1 effect, complete custody/counters, consumed lifetimes and
+rollback ownership. Primary reports six changed-TU checks and authentication of
+17 files/1313 unchanged fallback inputs; executable boot/publication/ACK remain
+unproved. The old seed lacked a lifecycle-origin receipt. Its replacement uses
+the real lifecycle installer, while fourteen full-server cases remain unexecuted.
+
+The private fresh-genesis reader adds borrowed-lock saved-item and indexed
+physical/custody/literal room-pile capture to Plan3's existing wallet/bank opening
+census. Source review corrected prototype/type confusion and repeated catalogue
+reads. Later recovery must instead authenticate retained current heads because
+its projection can be absent or historical. Lifecycle staging of pile heads,
+EAB, reservations, receipt and epoch selection remains private and unfinished.
+Those owner-reported prerequisites do not expose a new public domain/quest
+interface. Actual src/tests are unchanged from289 to439; frozen customer proof
+inputs remain exact. This chat does not duplicate the shared genesis or boot owner.
+
 Quest-prep's separately reviewed codec, live-route and enhancement fixtures retain
 their own ownership. They do not supply original lifecycle/reset-born/source,
 settlement ACK or held charge/refund interfaces. R13's old paired live-route failure
@@ -61,8 +81,8 @@ owner is warranted by this reassessment.
 | --- | --- |
 | S shops | R10/R12 quotation and R13 full item classification are closed at their declared scopes. Rank1 is complete customer access through existing is_ok, with original47 direct and24 complete value controls and an exact proposed3-file boundary. R14 implementation requires boundary approval. Native keeper/actor/stock lifetime/custody, admission, materialization, physical publication/ACK and backend journeys remain primary owners. |
 | F crafting/enhancement | Existing R1/R3-R9/R11 preparation and typed plans remain reused. Native progression/input/output/material/pouch conservation, active publication/recovery and gameplay qualification remain owner work. Separate enhancement fixture repairs do not supply native loader or progression authority. |
-| I item ownership | Existing transfer/lifecycle/native craft/frozen continuation boundaries remain. No access/quote/classification result proves UID/birth/retirement, complete root/descendant snapshot, original lifetime or placement authority. No parallel custody/recovery owner is selected. |
-| C currency/banking | Existing currency_prepare_mutation, adapters and R2 vectors already own arithmetic preparation. ATM/session/balance capture and native flat source claims/borrowed locks remain integrated owner concerns. Physical publication/guarded ACK/cold history/backend parity stay open; no duplicate calculation plan. |
+| I item ownership | Existing transfer/lifecycle/native craft/frozen continuation boundaries remain. Fresh genesis saved-item/room-pile custody census and lifecycle receipt staging are private shared-owner prerequisites at439. No access/quote/classification result proves UID/birth/retirement, complete root/descendant snapshot, original lifetime or placement authority. No parallel custody/recovery owner is selected. |
+| C currency/banking | Existing currency_prepare_mutation, adapters and R2 vectors already own arithmetic preparation. ATM/session/balance capture and native flat source claims/borrowed locks remain integrated owner concerns. Opening-baseline/current-head distinctions, original lifecycle seed and fourteen genuine boot cases are private shared-owner prerequisites at439. Physical publication/guarded ACK/cold history/backend parity stay open; no duplicate calculation/genesis plan. |
 | K Collector | Existing policy/eligibility/R0 image/purchase/expiry preparation remain. Native shutdown/keeper custody fixes, exact cache recovery and genuine SQL/flat journeys belong to primary. Its reported SQL754 build does not close player/coordinator ACK/cold delivery/restored holds. |
 | A auctions | Existing bid/listing/settlement/money/item adapters and creator/forest controls remain. Whole original native historical/current-cut custody, physical player publication/recovery and flat parity remain. A new price/claim helper would duplicate owned plans. |
 | Q quests | Existing cost/GIVE/frozen continuations and separately reviewed prep repairs remain. Genuine lifecycle/reset-born/original source, settlement/refund/ACK interfaces and native journeys are unavailable prerequisites. This chat does not duplicate quest prep or fabricate capabilities. |
