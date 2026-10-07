@@ -26,6 +26,14 @@ Code **`7e37d1db1244717e4e8107b5313ac9dc706f69bd`**, base
 no optional prep/architecture ancestry or new dependency is required. Helpers,
 production source, schema, authority, registries/manifests and Plan5 are untouched.
 
+Evidence publication **`94276187d88e30756831e79edf7cfe7c4a5f2347`**, base
+**`7e37d1db1244717e4e8107b5313ac9dc706f69bd`**, is pushed to
+origin/codex/accounting-quest-prep. Its three owned files are this implementation
+document, ENHANCE_BOUNDARY_INVESTIGATION.md and HANDOFF.md, all under
+docs/persistence/economy_accounting/quest-prep/. This canonical successor records
+the exact evidence delivery in implementation/handoff only. Import code7e37
+independently, then consume evidence94276187 and this canonical delivery record.
+
 ## Original problem and resulting contract
 
 The original test counted an exact single-line enhancement hook spelling in db.c.
