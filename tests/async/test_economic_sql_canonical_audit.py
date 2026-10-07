@@ -1202,6 +1202,7 @@ class CanonicalSweepTests(unittest.TestCase):
         for options, kind, code in (({'query_limit': 0}, audit.PageBudgetError, 'page budget'),
                                    ({'deadline': 0}, audit.PageBudgetError, 'page budget'),
                                    ({'row_limit': 1}, audit.AuditError, 'input limit'),
+                                   ({'row_limit': 1, 'query_limit': 1}, audit.PageBudgetError, 'page projection budget'),
                                    ({'total_bytes': 3}, audit.PageBudgetError, 'page byte budget')):
             cursor = mock.Mock()
             cursor.fetchmany.side_effect = [[{'value': '123'}, {'value': '456'}], []]
@@ -1375,9 +1376,97 @@ class CompositeSweepTests(unittest.TestCase):
             state = audit.new_all_progress('ab'*32,100)
             state['next_namespace'] = namespace
             before = copy.deepcopy(state)
-            with self.subTest(namespace=namespace), self.assertRaises(audit.PageBudgetError):
-                self.page(namespace,['81'*16+'82'*16+suffix],state,refuse=True)
+            with self.subTest(namespace=namespace):
+                report,advanced,_ = self.page(namespace,['81'*16+'82'*16+suffix],state,refuse=True)
             self.assertEqual(state,before)
+            self.assertEqual(advanced['namespaces'],before['namespaces'])
+            self.assertEqual(advanced['next_namespace'],audit.NAMESPACES[(audit.NAMESPACES.index(namespace)+1)%3])
+            self.assertEqual(advanced['refusals'][namespace],dict(count=1,last_at=101))
+            self.assertTrue(report['page_refused'])
+            self.assertEqual(report['retained_refusal_count'],1)
+            self.assertEqual(report['retained_finding_count'],0)
+            self.assertEqual(report['findings'],[])
+            self.assertIsNone(report['queries'])
+            self.assertIsNone(report['read_bytes'])
+            self.assertIsNone(report['examined_records'])
+            self.assertEqual(report['backlog_lower_bound'],0)
+            self.assertFalse(report['coverage']['consistent_page'])
+            self.assertFalse(report['release_qualified'])
+            with tempfile.TemporaryDirectory() as directory:
+                path = Path(directory)/'progress.json'
+                audit.save_progress(path,advanced)
+                self.assertEqual(audit.load_progress(path,'ab'*32,all_namespaces=True,now=102),advanced)
+
+    def test_refused_roots_rotate_through_successful_siblings_and_remain_sticky(self):
+        state = audit.new_all_progress('ab'*32,100)
+        root = copy.deepcopy(state['namespaces']['roots'])
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'progress.json'
+            order = []
+            for index in range(9):
+                namespace = state['next_namespace']
+                order.append(namespace)
+                if namespace == 'roots' and index < 6:
+                    with mock.patch.object(audit,'scan_page',side_effect=audit.PageBudgetError('test page budget')):
+                        report,state = audit.scan_all_page(mock.Mock(),state,now=101+index)
+                    self.assertEqual(state['namespaces']['roots'],root)
+                elif namespace == 'roots':
+                    with mock.patch.object(audit,'scan_page',return_value=(dict(findings=[],range_exhausted=True),root)):
+                        report,state = audit.scan_all_page(mock.Mock(),state,now=101+index)
+                else:
+                    report,state,_ = self.page(namespace,[],state,now=101+index)
+                self.assertEqual(report['retained_refusal_count'],1 if index < 3 else 2)
+                self.assertEqual(report['retained_finding_count'],0)
+                self.assertEqual(report['page_refused'],index in (0,3))
+                audit.save_progress(path,state)
+                state = audit.load_progress(path,'ab'*32,all_namespaces=True,now=102+index)
+            self.assertEqual(order,list(audit.NAMESPACES)*3)
+            for namespace in ('controls','reservations'):
+                self.assertEqual(state['namespaces'][namespace]['completed_sweeps'],3)
+            self.assertEqual(state['refusals']['roots'],dict(count=2,last_at=104))
+
+    def test_legacy_all_progress_upgrade_preserves_every_namespace(self):
+        state = audit.new_all_progress('ab'*32,100)
+        state.update(format='economic_sql_canonical_progress_v2',next_namespace='reservations')
+        del state['refusals']
+        state['namespaces']['roots'].update(cursor='81'*16,ceiling='82'*16,total_rows=1,
+            sweep_rows=1,sweep_findings=1,total_findings=1,
+            findings=[dict(operation_id='81'*16,code='restore_economic_metadata_mismatch')])
+        state['namespaces']['controls'].update(cursor='81'*32,ceiling='82'*32)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'legacy-progress.json'
+            def write(value):
+                path.write_text(json.dumps(value));path.chmod(0o600)
+            write(state)
+            upgraded = audit.load_progress(path,'ab'*32,all_namespaces=True,now=101)
+            self.assertEqual(upgraded['format'],'economic_sql_canonical_progress_v3')
+            self.assertEqual(upgraded['next_namespace'],state['next_namespace'])
+            self.assertEqual(upgraded['namespaces'],state['namespaces'])
+            self.assertTrue(all(value==dict(count=0,last_at=None) for value in upgraded['refusals'].values()))
+            for mutate in (lambda value: value.update(refusals={}),
+                    lambda value: value['namespaces']['roots'].update(sweep_rows=True),
+                    lambda value: value.update(source_digest='cd'*32)):
+                damaged = copy.deepcopy(state);mutate(damaged);write(damaged)
+                with self.assertRaises(audit.AuditError):
+                    audit.load_progress(path,'ab'*32,all_namespaces=True,now=101)
+
+    def test_cleanup_or_source_refusal_never_rotates_scheduling(self):
+        for failure in ('source','rollback','close'):
+            connection = mock.Mock()
+            state = audit.new_all_progress('ab'*32,100)
+            before = copy.deepcopy(state)
+            if failure == 'source':
+                executor = mock.Mock();executor.sql.return_value = '0'
+            else:
+                executor = mock.Mock();executor.sql.side_effect = audit.PageBudgetError('test page budget')
+                target = connection.rollback if failure == 'rollback' else connection.cursor.return_value.close
+                target.side_effect = OSError('test cleanup refusal')
+            with mock.patch.object(audit,'CursorExecutor',return_value=executor):
+                with self.subTest(failure=failure), self.assertRaises(audit.AuditError if failure=='source' else OSError):
+                    audit.scan_all_page(connection,state,now=101)
+            self.assertEqual(state,before)
+            connection.rollback.assert_called_once_with()
+            connection.cursor.return_value.close.assert_called_once_with()
 
     def test_all_progress_refuses_aliases_foreign_modes_and_invalid_keys(self):
         state = audit.new_all_progress('ab'*32,100)
@@ -1387,7 +1476,16 @@ class CompositeSweepTests(unittest.TestCase):
                 lambda value: value['namespaces']['reservations'].update(cursor='ff'*41,ceiling='00'*41),
                 lambda value: value['namespaces']['controls'].update(cursor='00'*33,ceiling='ff'*32),
                 lambda value: value['namespaces']['controls'].update(findings=[dict(key='ff'*32,
-                    code='restore_economic_baseline_book_mismatch',operation_id='ff'*16)])):
+                    code='restore_economic_baseline_book_mismatch',operation_id='ff'*16)]),
+                lambda value: value['refusals'].pop('roots'),
+                lambda value: value['refusals']['roots'].update(count=True),
+                lambda value: value['refusals']['roots'].update(count=2**63,last_at=100),
+                lambda value: value['refusals']['roots'].update(count=1),
+                lambda value: value['refusals']['roots'].update(last_at=100),
+                lambda value: value['refusals']['roots'].update(count=1,last_at=102),
+                lambda value: value['refusals']['roots'].update(count=1,last_at=float('nan')),
+                lambda value: value['refusals']['roots'].update(count=1,last_at=True),
+                lambda value: value['refusals']['roots'].update(history=[])):
             damaged = copy.deepcopy(state)
             mutate(damaged)
             with self.assertRaises(audit.AuditError):
@@ -1604,21 +1702,31 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                             self.assertNotIn('filesort',indexed[0].get('Extra','').lower())
                             plans.append(dict(namespace=namespace,query=query,plan=plan))
                     refusals = []
-                    for namespace in ('controls','reservations'):
+                    for namespace in audit.NAMESPACES:
                         fresh = audit.new_all_progress('ab'*32,time.time())
                         fresh['next_namespace'] = namespace
                         previous,before = copy.deepcopy(fresh),inventory()
                         wrapped = mock.Mock(wraps=reader)
                         captured = mock.Mock(wraps=reader.cursor())
                         wrapped.cursor.return_value = captured
-                        with mock.patch.object(audit,'MAX_PAGE_QUERIES',2),self.assertRaises(audit.PageBudgetError):
-                            audit.scan_all_page(wrapped,fresh,page_roots=1)
+                        with mock.patch.object(audit,'MAX_PAGE_QUERIES',2):
+                            report,advanced = audit.scan_all_page(wrapped,fresh,page_roots=1)
                         self.assertEqual(fresh,previous)
+                        self.assertEqual(advanced['namespaces'],previous['namespaces'])
+                        self.assertEqual(advanced['next_namespace'],audit.NAMESPACES[(audit.NAMESPACES.index(namespace)+1)%3])
+                        self.assertEqual(advanced['refusals'][namespace]['count'],1)
+                        self.assertEqual(report['retained_refusal_count'],1)
+                        self.assertEqual(report['retained_finding_count'],0)
+                        self.assertTrue(report['page_refused'])
+                        self.assertFalse(report['coverage']['consistent_page'])
+                        refusal_path = work/(engine+'-'+namespace+'-refusal.json')
+                        audit.save_progress(refusal_path,advanced)
+                        self.assertEqual(audit.load_progress(refusal_path,'ab'*32,all_namespaces=True),advanced)
                         self.assertEqual(inventory(),before)
                         wrapped.rollback.assert_called_once_with()
                         captured.close.assert_called_once_with()
-                        refusals.append(dict(namespace=namespace,no_progress_advance=True,queries=2,
-                                             rollback_calls=1,cursor_closed=True,database_sha256=before))
+                        refusals.append(dict(namespace=namespace,no_coverage_advance=True,queries=2,report=report,
+                                             advanced=advanced,rollback_calls=1,cursor_closed=True,database_sha256=before))
                     cli = [sys.executable,str(ROOT/'scripts/economic_sql_canonical_audit.py'),
                         '--host','127.0.0.1','--socket',env['DB_SOCKET'],'--user','composite_reader',
                         '--database','duris_restore','--password-env','PLAN5_COMPOSITE_PASSWORD',
@@ -1634,10 +1742,34 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                         self.assertNotIn(delayed_control[:32],ran.stdout)
                         self.assertEqual(inventory(),before)
                         cli_runs.append(dict(namespace=namespace,exit=ran.returncode,report=report))
+                    refusal_cli = cli[:]
+                    refusal_cli[refusal_cli.index('--progress-path')+1] = str(work/(engine+'-cli-refusal.json'))
+                    capped_cli = [sys.executable,'-c',
+                        "import sys;sys.path.insert(0,'"+str(ROOT/'scripts')+"');"
+                        "import economic_sql_canonical_audit as audit;audit.MAX_PAGE_QUERIES=1;raise SystemExit(audit.main())",
+                        *refusal_cli[2:]]
+                    refusal_cli_runs = []
+                    for index,namespace in enumerate(list(audit.NAMESPACES)*2):
+                        command = capped_cli if index < 3 else refusal_cli
+                        before = inventory()
+                        ran = subprocess.run(command,capture_output=True,text=True,timeout=35,
+                            env=dict(os.environ,PLAN5_COMPOSITE_PASSWORD='private-composite-reader'))
+                        self.assertEqual((ran.returncode,ran.stderr),(1,''),ran.stdout+ran.stderr)
+                        report = json.loads(ran.stdout)
+                        self.assertEqual(report['namespace'],namespace)
+                        self.assertEqual(report['page_refused'],index < 3)
+                        self.assertEqual(report['retained_refusal_count'],min(index+1,3))
+                        if index <= 3:
+                            self.assertEqual(report['retained_finding_count'],0)
+                        self.assertFalse(report['release_qualified'])
+                        self.assertEqual(inventory(),before)
+                        refusal_cli_runs.append(dict(command=command,exit=ran.returncode,report=report,
+                                                     database_sha256=before))
                     self.assertEqual(sql(env,'SELECT COUNT(*) FROM economic_lineage_state WHERE active_epoch IS NOT NULL'),'0')
                     results.append(dict(engine=engine,version=version,canonical_sequence=62,observations=observations,
                         legacy_root_page=legacy,root_only_missed_unattached_namespaces=True,
                         query_plans=plans,budget_refusals=refusals,CLI_command=cli,CLI_runs=cli_runs,
+                        CLI_refusal_runs=refusal_cli_runs,
                         SELECT_only_denial=1142,normal_foreign_key_denial=1452,
                         modeled_capsules=True,imported_reservation_corruption=True,native_producer_or_gameplay=False,
                         complete_database_inventories_unchanged=True,release_qualified=False))

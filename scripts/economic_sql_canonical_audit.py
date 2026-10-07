@@ -103,6 +103,8 @@ class CursorExecutor:
                 if self.total_bytes is not None and self.bytes > self.total_bytes:
                     raise PageBudgetError("canonical audit page byte budget exhausted")
                 if len(rows) >= self.row_limit or size > MAX_INPUT_BYTES:
+                    if self.query_limit is not None:
+                        raise PageBudgetError("canonical audit page projection budget exhausted")
                     raise AuditError("canonical audit projection exceeds input limit")
                 rows.append(text)
         return "\n".join(rows)
@@ -156,8 +158,9 @@ def new_all_progress(source, now):
     namespaces = {name: new_progress(source, now) for name in NAMESPACES}
     for name in COMPOSITE_SOURCES:
         namespaces[name]["format"] = "economic_sql_canonical_" + name + "_progress_v1"
-    return dict(format="economic_sql_canonical_progress_v2", source_digest=source,
-                next_namespace="roots", namespaces=namespaces)
+    return dict(format="economic_sql_canonical_progress_v3", source_digest=source,
+                next_namespace="roots", namespaces=namespaces,
+                refusals={name: dict(count=0, last_at=None) for name in NAMESPACES})
 
 
 def validate_progress(value, source, now, *, namespace="roots"):
@@ -200,13 +203,23 @@ def validate_progress(value, source, now, *, namespace="roots"):
 
 
 def validate_all_progress(value, source, now):
-    if (type(value) is not dict or set(value) != {"format", "source_digest", "next_namespace", "namespaces"} or
-            value["format"] != "economic_sql_canonical_progress_v2" or value["source_digest"] != source or
+    if (type(value) is not dict or set(value) != {"format", "source_digest", "next_namespace", "namespaces", "refusals"} or
+            value["format"] != "economic_sql_canonical_progress_v3" or value["source_digest"] != source or
             value["next_namespace"] not in NAMESPACES or type(value["namespaces"]) is not dict or
-            set(value["namespaces"]) != set(NAMESPACES)):
+            set(value["namespaces"]) != set(NAMESPACES) or type(value["refusals"]) is not dict or
+            set(value["refusals"]) != set(NAMESPACES)):
         raise AuditError("invalid canonical audit all-namespace progress")
     for name in NAMESPACES:
         validate_progress(value["namespaces"][name], source, now, namespace=name)
+        refusal = value["refusals"][name]
+        if (type(refusal) is not dict or set(refusal) != {"count", "last_at"} or
+                type(refusal["count"]) is not int or not 0 <= refusal["count"] < 2**63 or
+                (refusal["count"] == 0) != (refusal["last_at"] is None)):
+            raise AuditError("invalid canonical audit scheduling refusal")
+        if refusal["last_at"] is not None:
+            field = refusal["last_at"]
+            if type(field) not in (int, float) or not math.isfinite(field) or not 0 <= field <= now:
+                raise AuditError("invalid canonical audit scheduling refusal age")
     return value
 
 
@@ -242,12 +255,17 @@ def load_progress(path, source, *, now=None, all_namespaces=False):
             root = validate_progress(value, source, now)
             value = new_all_progress(source, now)
             value["namespaces"]["roots"] = root
+        elif type(value) is dict and value.get("format") == "economic_sql_canonical_progress_v2":
+            if set(value) != {"format", "source_digest", "next_namespace", "namespaces"}:
+                raise AuditError("invalid canonical audit legacy all-namespace progress")
+            value["format"] = "economic_sql_canonical_progress_v3"
+            value["refusals"] = new_all_progress(source, now)["refusals"]
         return validate_all_progress(value, source, now)
     return validate_progress(value, source, now)
 
 
 def save_progress(path, value):
-    validate = validate_all_progress if value.get("format") == "economic_sql_canonical_progress_v2" else validate_progress
+    validate = validate_all_progress if value.get("format") == "economic_sql_canonical_progress_v3" else validate_progress
     validate(value, value["source_digest"], time.time())
     data = (json.dumps(value, allow_nan=False, sort_keys=True, separators=(",", ":")) + "\n").encode()
     if len(data) > MAX_PROGRESS_BYTES:
@@ -625,14 +643,29 @@ def scan_all_page(connection, progress, *, page_roots=MAX_PAGE_ROOTS, now=None):
     """Rotate bounded pages fairly; no operation/key is a commit watermark."""
     now = time.time() if now is None else now
     validate_all_progress(progress, progress["source_digest"], now)
+    if type(page_roots) is not int or not 1 <= page_roots <= MAX_PAGE_ROOTS:
+        raise AuditError("invalid canonical audit page root limit")
     state = copy.deepcopy(progress)
     namespace = state["next_namespace"]
-    if namespace == "roots":
-        report, advanced = scan_page(connection, state["namespaces"][namespace], page_roots=page_roots, now=now)
+    started, refused = time.monotonic(), False
+    try:
+        if namespace == "roots":
+            report, advanced = scan_page(connection, state["namespaces"][namespace], page_roots=page_roots, now=now)
+        else:
+            report, advanced = scan_composite_page(connection, state["namespaces"][namespace], namespace,
+                                                  page_roots=page_roots, now=now)
+    except PageBudgetError:
+        # Leaf cleanup must succeed before rotation. Its discarded private state
+        # authenticates no coverage; keep cursors, fences, findings and counters.
+        refused = True
+        state["refusals"][namespace]["count"] += 1
+        state["refusals"][namespace]["last_at"] = now
+        report = dict(findings=[], range_exhausted=False, queries=None, read_bytes=None,
+                      seconds=time.monotonic()-started, examined_records=None)
+        if namespace == "roots":
+            report["examined_roots"] = None
     else:
-        report, advanced = scan_composite_page(connection, state["namespaces"][namespace], namespace,
-                                              page_roots=page_roots, now=now)
-    state["namespaces"][namespace] = advanced
+        state["namespaces"][namespace] = advanced
     state["next_namespace"] = NAMESPACES[(NAMESPACES.index(namespace)+1) % len(NAMESPACES)]
     summaries = {}
     for name, part in state["namespaces"].items():
@@ -640,14 +673,16 @@ def scan_all_page(connection, progress, *, page_roots=MAX_PAGE_ROOTS, now=None):
         summaries[name].update(sweep_age_seconds=now-part["started_at"],
             seconds_since_last_page=now-part["last_page_at"], seconds_since_completed_sweep=None
             if part["last_completed_at"] is None else now-part["last_completed_at"],
-            retained_finding_count=len(part["findings"]), findings_truncated=part["findings_truncated"])
-    report.update(format="economic_sql_canonical_page_v2", scope="retained_namespaces_page", namespace=namespace,
+            retained_finding_count=len(part["findings"]), findings_truncated=part["findings_truncated"],
+            scheduling_refusals=copy.deepcopy(state["refusals"][name]))
+    report.update(format="economic_sql_canonical_page_v3", scope="retained_namespaces_page", namespace=namespace,
+        page_refused=refused, retained_refusal_count=sum(part["count"] for part in state["refusals"].values()),
         next_namespace=state["next_namespace"], namespaces=summaries,
         completed_sweeps=min(part["completed_sweeps"] for part in state["namespaces"].values()),
         retained_finding_count=sum(len(part["findings"]) for part in state["namespaces"].values()),
         findings_truncated=any(part["findings_truncated"] for part in state["namespaces"].values()),
-        backlog_lower_bound=int(not report["range_exhausted"]), backlog_exact=False,
-        coverage=dict(complete=False, consistent_page=True, consistent_entire_sweep=False,
+        backlog_lower_bound=0 if refused else int(not report["range_exhausted"]), backlog_exact=False,
+        coverage=dict(complete=False, consistent_page=not refused, consistent_entire_sweep=False,
             canonical_root_projections_only=False, native_holdings_authenticated=False,
             baseline_witnesses_authenticated=False, pending_claim_allocations_authenticated=False,
             orphan_evidence_authenticated=False, complete_command_receipts_authenticated=False),
@@ -749,7 +784,7 @@ def main():
     parser.add_argument("--progress-path", type=Path, help="protected local progress file; audit one resumable SQL root page")
     parser.add_argument("--page-roots", type=int, default=MAX_PAGE_ROOTS, help="roots per progress page, 1..2")
     parser.add_argument("--all-namespaces", action="store_true",
-                        help="rotate root/control/reservation pages; requires --progress-path; upgrades v1 progress")
+                        help="rotate root/control/reservation pages; requires --progress-path; upgrades v1/v2 progress")
     args = parser.parse_args()
     try:
         if not 1 <= args.port <= 65535:
@@ -781,7 +816,8 @@ def main():
         except pymysql.MySQLError as error:
             raise AuditError(f"SQL read failed with code {error.args[0]}") from error
         print(json.dumps(report, sort_keys=True, separators=(",", ":")))
-        return 1 if report.get("retained_finding_count", 0) or report.get("findings_truncated") else 0
+        return 1 if (report.get("retained_finding_count", 0) or report.get("findings_truncated") or
+                     report.get("retained_refusal_count", 0)) else 0
     except (AuditError, PageBudgetError, OSError, ValueError, KeyError, TypeError, ImportError) as error:
         print(f"SQL canonical audit refused: {error}", file=sys.stderr)
         return 2
