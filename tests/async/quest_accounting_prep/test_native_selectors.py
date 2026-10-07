@@ -20,14 +20,24 @@ PRELUDE = r'''
 #include <cstddef>
 #include <vector>
 #include <unordered_set>
+#include "economy/native_quest_cost.h"
 struct object { int vnum; uint64_t obj_uid; object *next_content=nullptr; int type=0; };
-struct character { object *carrying=nullptr; };
+struct character { object *carrying=nullptr; uint64_t runtime_id=20; };
 using P_char=character*; using P_obj=object*;
+struct quest_mobile_native_cash_reference { std::array<int64_t,4> denominations{}; uint64_t cash_revision=7; };
+quest_mobile_native_cash_reference cash_fixture{{1000000000,0,0,0},7};
+bool cash_readable=true; int cash_reads=0;
+bool quest_mobile_native_cash_reference_copy(P_char mobile,uint64_t runtime,
+ quest_mobile_native_cash_reference *out) {
+ ++cash_reads; if(!cash_readable || runtime!=mobile->runtime_id) return false;
+ *out=cash_fixture; return true;
+}
 struct goal_data { int goal_type; int number; goal_data *next=nullptr; };
 struct quest_complete_data { goal_data *give=nullptr, *receive=nullptr; };
 constexpr int QUEST_GOAL_ITEM=1, QUEST_GOAL_ITEM_TYPE=2, QUEST_GOAL_COINS=3, QUEST_GOAL_SKILL=4, QUEST_GOAL_EXP=5;
 enum class state { refused, not_matched, ready, prefix };
 std::vector<uint64_t> selected_roots;
+std::vector<native_quest_cost_requirement> selected_costs;
 #define OBJ_VNUM(obj) ((obj)->vnum)
 '''
 POSTLUDE = r'''
@@ -42,7 +52,7 @@ struct recipe {
 character mob;
 void set_inventory(std::vector<object>& inventory) {
  for(size_t i=0;i<inventory.size();++i) inventory[i].next_content=i+1<inventory.size()?&inventory[i+1]:nullptr;
- mob.carrying=inventory.empty()?nullptr:&inventory[0]; selected_roots.clear();
+ mob.carrying=inventory.empty()?nullptr:&inventory[0]; selected_roots.clear(); selected_costs.clear();
 }
 '''
 
@@ -58,11 +68,12 @@ def inventory(vnums):
 
 def current_selection():
     function = extract_function('world/quest.c', 'item_native_quest_preparation_state quest_native_completion_owner::prepare_original(')
-    start = function.index('\t\t// Preserve the original preliminary duplicate/availability checks.')
-    end = function.index('\t\tstd::vector<player_item_snapshot> selected;', start)
+    start = function.index('\t\t// Observe genuine original runtime cash metadata')
+    end = function.index('\t\tconst bool fee_only =', start)
     return ('state select(P_char mob,const quest_complete_data *completion) {\n' +
             function[start:end] +
-            'selected_roots=ordered_roots; return success ? state::ready : state::prefix;\n}\n')
+            'selected_roots=ordered_roots; selected_costs=attempted_costs; '
+            'return success ? state::ready : state::prefix;\n}\n')
 
 
 def main_body(case_id, acceptance):
@@ -80,7 +91,7 @@ def main_body(case_id, acceptance):
         lines.append('assert(first==state::not_matched);')
         lines += ['for(int count:{1,2,4}) {',
                   'std::vector<object> paid; for(int i=0;i<count;++i) paid.push_back({19006,static_cast<uint64_t>(200+i),nullptr,0});',
-                  'set_inventory(paid); const auto expected=count==4?state::refused:state::not_matched; assert(select(&mob,&r3.completion)==expected && selected_roots.empty()); }',
+                  'set_inventory(paid); const auto expected=count==4?state::ready:state::not_matched; assert(select(&mob,&r3.completion)==expected); assert(selected_roots.size()==(count==4?4:0)); }',
                   f'std::vector<object> short_items={inventory([19006] * 2)}; set_inventory(short_items);',
                   'assert(select(&mob,&r2.completion)==state::not_matched && selected_roots.empty());']
     else:
@@ -124,20 +135,35 @@ def main_body(case_id, acceptance):
   assert(exact[0].next_content==&exact[1] && exact[1].next_content==&exact[2]);
   auto prior=selected_roots; assert(select(&mob,&r3.completion)==state::not_matched); assert(selected_roots==prior);
  }
- // Four hides match gloves AND backpack. Original first paid branch must block.
+ // Four hides match gloves AND backpack. Current native cost owner keeps first branch.
  exact.push_back({19006,14,nullptr,0}); set_inventory(exact);
+ assert(choose(order)==state::ready && selected_roots.size()==4);
+ assert(selected_costs.size()==1 && selected_costs[0].copper==10000);
+ // Original cash shortage skips gloves; backpack needs no cash observation.
+ cash_fixture.denominations={9999,0,0,0}; set_inventory(exact);
+ assert(choose(order)==state::ready && selected_roots.size()==3 && selected_costs.empty());
+ cash_fixture.denominations={10000,0,0,0}; set_inventory(exact);
+ assert(choose(order)==state::ready && selected_roots.size()==4);
+ cash_readable=false; set_inventory(exact);
  assert(choose(order)==state::refused && selected_roots.empty());
+ set_inventory(exact); cash_reads=0;
+ assert(select(&mob,&r2.completion)==state::ready && cash_reads==0);
+ cash_readable=true;
+ cash_fixture.denominations={1000000000,0,0,0};
  std::vector<object> absent; set_inventory(absent); assert(choose(order)==state::not_matched);
  recipe coin_only({{QUEST_GOAL_COINS,1000,nullptr}},{});
- assert(select(&mob,&coin_only.completion)==state::refused && selected_roots.empty());
- // Matching paid ITEM or TYPE goals always refuse without prefix selection.
+ assert(select(&mob,&coin_only.completion)==state::ready && selected_roots.empty());
+ assert(selected_costs.size()==1 && selected_costs[0].slot==0);
+ // This bounded slice does not execute the subsequent fee-only receipt gate.
+ // Matching paid ITEM or TYPE goals now select through the actual cost owner.
  recipe paid_type({{QUEST_GOAL_COINS,1000,nullptr},{QUEST_GOAL_ITEM_TYPE,9,nullptr}},{});
  recipe paid_item({{QUEST_GOAL_COINS,1000,nullptr},{QUEST_GOAL_ITEM,19006,nullptr}},{});
  std::vector<object> one={{19006,21,nullptr,9}}; set_inventory(one);
- assert(select(&mob,&paid_type.completion)==state::refused && selected_roots.empty());
- assert(select(&mob,&paid_item.completion)==state::refused && selected_roots.empty());
+ assert(select(&mob,&paid_type.completion)==state::ready && selected_roots.size()==1);
+ assert(select(&mob,&paid_item.completion)==state::ready && selected_roots.size()==1);
  recipe missing_paid({{QUEST_GOAL_COINS,1000,nullptr},{QUEST_GOAL_ITEM,19006,nullptr},
                       {QUEST_GOAL_ITEM,19006,nullptr}},{});
+ set_inventory(one);
  assert(select(&mob,&missing_paid.completion)==state::not_matched && selected_roots.empty());
  // Independent preliminary ITEM/TYPE availability does not erase original
  // destructive ordering: the ITEM selection can exhaust the TYPE match.
@@ -176,7 +202,7 @@ def paid_catalog_body():
         # actual Q/runtime order and overlap prefix have separate production cases.
         lines += ['{', f'recipe r({goals(terms)},{{}});',
                   f'std::vector<object> items={material}; set_inventory(items);',
-                  'assert(select(&mob,&r.completion)==state::refused && selected_roots.empty());',
+                  'assert(select(&mob,&r.completion)==state::ready && selected_roots.size()==items.size());',
                   'items.clear(); set_inventory(items);',
                   'assert(select(&mob,&r.completion)==state::not_matched && selected_roots.empty());', '}']
     lines += ['}']
@@ -201,11 +227,13 @@ def run(case_id, acceptance=False):
         cpp, executable = Path(directory) / 'selector.cpp', Path(directory) / 'selector'
         cpp.write_text(program)
         subprocess.run(['g++', '-std=c++20', '-O0', '-Wall', '-Wextra', '-Werror',
-                        str(cpp), '-o', str(executable)], check=True)
+                        '-I', str(ROOT / 'src'), str(cpp),
+                        str(ROOT / 'src/economy/native_quest_cost.c'),
+                        '-o', str(executable)], check=True)
         result = subprocess.run([str(executable)], check=False)
         if result.returncode:
-            raise AssertionError(f'{case_id}: native selection failed code {result.returncode}; '
-                                 '30=paid first branch refuses before supported backpack')
+            raise AssertionError(f'{case_id}: current availability/selection failed code {result.returncode}; '
+                                 '30=unavailable first branch prevents supported backpack')
     return dict(case=case_id, catalog_paid_item_recipes=catalog_count, mode='acceptance' if acceptance else 'current observation',
                 owner='quest_native_completion_owner::prepare_original availability/selection slice',
                 result='component passed; constructed NPC stock; native custody/SQL/publication untested',

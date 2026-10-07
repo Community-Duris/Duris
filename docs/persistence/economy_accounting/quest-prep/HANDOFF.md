@@ -1,3 +1,27 @@
+# Continuing project acceptance — 2026-10-07
+
+Current actual Goal is ACTIVE (createdAt1791384873, no budget) under the continuing
+charter b1ac97c3a9a1d1e50db6657b71862fb65681ce41. Earlier completed finite Goals
+below remain historical checkpoints. The finish line is observable primary
+Plans1–5/applicable original R1–R8 integrated completion, not this delivery.
+
+Current source candidate275df7f626e12cb396a22da34317a4e7f355e9a1; synchronization
+merge1fe9f048f preserves exact upstream quest.c and the historical QP07 guard.
+QP02's old code patch is superseded/overlapping; do not import its unsupported-coin
+refusal. Current cash-shortage/later-backpack selector and original identity/count
+controls pass. All seven production-term/supply checks,285 paid recipe components,
+recipient and QP07 components pass; QP04 durable financial diagnostic stays RED.
+
+[Exact compatibility, commands/results, ranked acceptance queue and current
+native lifecycle/authority dependencies](CONTINUING_RECONCILIATION.md).
+Owned updates: case_data.py, test_native_selectors.py, SOURCE_FACTS.json, that
+reconciliation and this handoff. No authored new production/shared test changes.
+Next reserved independent execution: current schema63/64 SELECT-only birth-origin
+capture plus genuine supported legacy Kord SQL XP-ACK/later-move against a newly
+built pinned ELF. No current ELF/native journey claimed yet; previous source6db
+ELFs and all mini/full-world evidence retain their old pins. The primary's current
+handoff explicitly keeps genuine activation/major gameplay/full release incomplete.
+
 # Additional full-world cold-room control — 2026-10-07
 
 Additional finite control is now **executed and pushed**, preserving the completed
