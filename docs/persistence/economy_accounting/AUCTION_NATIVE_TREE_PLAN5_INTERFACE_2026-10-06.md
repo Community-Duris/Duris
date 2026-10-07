@@ -1,7 +1,8 @@
 # Auction native tree reader handoff — 2026-10-06
 
 Status: private source interface, compiled in both original753-provider
-production profiles on source4f8332ce; runtime qualification remains open.
+production profiles on final source30837d50; early admission is native-unit
+qualified and runtime qualification remains open.
 See [current qualification](SHARED_PROFILE_BUILD_QUALIFICATION_2026-10-06.md). This describes
 the unpublished auction payload version2 candidate. It does not activate a
 writer, change existing version1 facts, or complete a release gate. Plans1–4
@@ -39,6 +40,11 @@ Original payload version1 facts remain byte-identical.
 Digests are SHA256 of the exact original `player_item_snapshot_list_encode`
 bytes, with no additional hashing domain. Root count is1..9; selected node
 count is root count..4096. PC level is1..255 and save revision is nonzero.
+That is the structural wire/read-only facts bound. Admitted native LIST/CLAIM
+accounting is limited to3,000 selected nodes, one event per node. The private
+308 successor enforces this before SQL mutation; its original native boundary
+and both production builds pass. See [qualification](AUCTION_NATIVE_ADMISSION_CAP_QUALIFICATION_2026-10-07.md).
+A decodable4,096-node observation grants no admission authority.
 Exact length, version, reserved fields, counts and canonical facts are required.
 The extension contains neither the full forest nor the ordered BEFORE UID list.
 

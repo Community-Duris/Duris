@@ -60,8 +60,11 @@ def source_digest(root, qualifier):
     return result.hexdigest()
 
 
-def new_progress(source, now, authority_links=False):
+def new_progress(source, now, authority_links=False, lifecycle_receipts=False, baseline_controls=False):
+    require(sum((authority_links, lifecycle_receipts, baseline_controls)) <= 1)
     return dict(format="flatfile_economic_authority_progress_v1" if authority_links else
+                "flatfile_economic_lifecycle_progress_v1" if lifecycle_receipts else
+                "flatfile_economic_baseline_controls_progress_v1" if baseline_controls else
                 "flatfile_economic_roots_progress_v1", source_digest=source,
                 lineage=None, rotation=0, started_at=now, last_page_at=now,
                 total_rows=0, total_verified=0, total_findings=0,
@@ -70,8 +73,8 @@ def new_progress(source, now, authority_links=False):
                          for _ in range(512 if authority_links else 256)])
 
 
-def validate(value, source, now, authority_links=False):
-    empty = new_progress(source, now, authority_links)
+def validate(value, source, now, authority_links=False, lifecycle_receipts=False, baseline_controls=False):
+    empty = new_progress(source, now, authority_links, lifecycle_receipts, baseline_controls)
     require(type(value) is dict and set(value) == set(empty))
     require(value["format"] == empty["format"] and
             value["source_digest"] == source and digest(source))
@@ -93,10 +96,15 @@ def validate(value, source, now, authority_links=False):
                     (finding["key"] is None or authority_key(finding["key"], finding["bucket"], finding["direction"])) and
                     finding["code"] in ("flatfile_authority_link_invalid", "flatfile_authority_page_refused"))
         else:
-            require(type(finding) is dict and set(finding) == {"bucket", "operation_id", "code"} and
+            key = "epoch_id" if baseline_controls else "operation_id"
+            require(type(finding) is dict and set(finding) == {"bucket", key, "code"} and
                     integer(finding["bucket"], 255) and
-                    (finding["operation_id"] is None or identity(finding["operation_id"], finding["bucket"])) and
-                    finding["code"] in ("flatfile_retained_record_invalid", "flatfile_root_page_refused"))
+                    (finding[key] is None or identity(finding[key], finding["bucket"])) and
+                    finding["code"] in (("flatfile_baseline_control_invalid", "flatfile_baseline_control_page_refused")
+                                        if baseline_controls else
+                                        ("flatfile_lifecycle_receipt_invalid", "flatfile_lifecycle_page_refused")
+                                        if lifecycle_receipts else
+                                        ("flatfile_retained_record_invalid", "flatfile_root_page_refused")))
     require(value["total_findings"] >= len(value["findings"]))
     require(type(value["buckets"]) is list and len(value["buckets"]) == len(empty["buckets"]))
     for slot, state in enumerate(value["buckets"]):
@@ -125,27 +133,40 @@ def checkpoint_path(path, root):
     return resolved
 
 
-def scan(root, qualifier, previous, *, now=None, authority_links=False):
+def scan(root, qualifier, previous, *, now=None, authority_links=False, lifecycle_receipts=False, baseline_controls=False):
     now = time.time() if now is None else now
     source = source_digest(root, qualifier)
-    validate(previous, source, now, authority_links)
+    validate(previous, source, now, authority_links, lifecycle_receipts, baseline_controls)
     state = copy.deepcopy(previous)
     slot = state["rotation"]
     bucket, direction = slot % 256, "mapping" if slot < 256 else "native"
     selected = state["buckets"][slot]
     command = ([str(qualifier), "--economic-authority-page", str(root), direction, str(bucket)] if authority_links else
-               [str(qualifier), "--economic-evidence-page", str(root), str(bucket)]) + [
+               [str(qualifier), "--economic-baseline-controls-page" if baseline_controls else
+                "--economic-lifecycle-page" if lifecycle_receipts else
+                "--economic-evidence-page", str(root), str(bucket)]) + [
                selected["cursor"] or "-", selected["ceiling"] or "-"]
     empty_key = "" if authority_links else ZERO
     valid = (lambda key: authority_key(key, bucket, direction)) if authority_links else (
         lambda key: identity(key, bucket))
-    format_name = "flatfile_economic_authority_page_v1" if authority_links else "flatfile_economic_roots_page_v1"
-    scope = "authority_crosslink_page" if authority_links else "retained_record_page"
-    invalid_field = "invalid_links" if authority_links else "invalid_records"
+    format_name = ("flatfile_economic_authority_page_v1" if authority_links else
+                   "flatfile_economic_lifecycle_page_v1" if lifecycle_receipts else
+                   "flatfile_economic_baseline_controls_page_v1" if baseline_controls else "flatfile_economic_roots_page_v1")
+    scope = ("authority_crosslink_page" if authority_links else
+             "required_lifecycle_receipt_root_page" if lifecycle_receipts else
+             "required_baseline_control_reference_page" if baseline_controls else "retained_record_page")
+    invalid_field = ("invalid_links" if authority_links else "invalid_receipts" if lifecycle_receipts else
+                     "invalid_books" if baseline_controls else "invalid_records")
     def finding(key, refused=False):
         if authority_links:
             return dict(bucket=bucket, direction=direction, key=key,
                         code="flatfile_authority_page_refused" if refused else "flatfile_authority_link_invalid")
+        if lifecycle_receipts:
+            return dict(bucket=bucket, operation_id=key,
+                        code="flatfile_lifecycle_page_refused" if refused else "flatfile_lifecycle_receipt_invalid")
+        if baseline_controls:
+            return dict(bucket=bucket, epoch_id=key,
+                        code="flatfile_baseline_control_page_refused" if refused else "flatfile_baseline_control_invalid")
         return dict(bucket=bucket, operation_id=key,
                     code="flatfile_root_page_refused" if refused else "flatfile_retained_record_invalid")
     refused = False
@@ -214,7 +235,7 @@ def scan(root, qualifier, previous, *, now=None, authority_links=False):
             state["findings_truncated"] = True
         else:
             state["findings"].append(finding)
-    validate(state, source, now, authority_links)
+    validate(state, source, now, authority_links, lifecycle_receipts, baseline_controls)
     report = dict(format=format_name, scope=scope, initialized=initialized,
                   bucket=bucket, next_bucket=state["rotation"], examined_roots=examined,
                   semantically_checked_records=verified, page_refused=refused, range_exhausted=exhausted,
@@ -222,7 +243,7 @@ def scan(root, qualifier, previous, *, now=None, authority_links=False):
                   total_roots_observed=state["total_rows"], total_finding_count=state["total_findings"],
                   retained_finding_count=len(state["findings"]), findings_truncated=state["findings_truncated"],
                   elapsed_seconds=now-state["started_at"], complete=False,
-                  consistent_page=not refused, consistent_entire_sweep=False, release_qualified=False,
+                  consistent_page=not refused and not findings, consistent_entire_sweep=False, release_qualified=False,
                   native_holdings_compared=False, baseline_books_closed=False,
                   lifecycle_receipts_closed=False, orphan_namespace_closed=False)
     if authority_links:
@@ -230,6 +251,14 @@ def scan(root, qualifier, previous, *, now=None, authority_links=False):
                       next_bucket=state["rotation"] % 256, examined_links=report.pop("examined_roots"),
                       verified_crosslinks=report.pop("semantically_checked_records"),
                       total_links_observed=report.pop("total_roots_observed"), authority_crosslinks_closed=False)
+    if lifecycle_receipts:
+        report.update(examined_receipts=report.pop("examined_roots"),
+                      verified_receipt_roots=report.pop("semantically_checked_records"),
+                      total_receipts_observed=report.pop("total_roots_observed"))
+    if baseline_controls:
+        report.update(examined_books=report.pop("examined_roots"),
+                      verified_book_controls=report.pop("semantically_checked_records"),
+                      total_books_observed=report.pop("total_roots_observed"), baseline_controls_closed=False)
     return report, state
 
 
@@ -238,7 +267,7 @@ def main():
     parser.add_argument("--state-root", type=Path, required=True)
     parser.add_argument("--progress", type=Path, required=True)
     parser.add_argument("--qualifier", type=Path, default=ROOT / "bin/tools/qualify_flatfile_restore")
-    parser.add_argument("--scope", choices=("retained-roots", "authority-links"), default="retained-roots")
+    parser.add_argument("--scope", choices=("retained-roots", "authority-links", "lifecycle-receipts", "baseline-controls"), default="retained-roots")
     args = parser.parse_args()
     try:
         require(args.state_root.is_absolute() and args.state_root.is_dir() and args.qualifier.is_file())
@@ -246,13 +275,16 @@ def main():
         path = checkpoint_path(args.progress, root)
         source, now = source_digest(root, qualifier), time.time()
         authority_links = args.scope == "authority-links"
+        lifecycle_receipts = args.scope == "lifecycle-receipts"
+        baseline_controls = args.scope == "baseline-controls"
         with progress_io.lock(path, AuditError, "flatfile audit progress"):
             try:
                 state = validate(progress_io.load(path, MAX_PROGRESS_BYTES, AuditError, "flatfile audit progress"),
-                                 source, now, authority_links)
+                                 source, now, authority_links, lifecycle_receipts, baseline_controls)
             except FileNotFoundError:
-                state = new_progress(source, now, authority_links)
-            report, updated = scan(root, qualifier, state, authority_links=authority_links)
+                state = new_progress(source, now, authority_links, lifecycle_receipts, baseline_controls)
+            report, updated = scan(root, qualifier, state, authority_links=authority_links,
+                                   lifecycle_receipts=lifecycle_receipts, baseline_controls=baseline_controls)
             if updated is not state:
                 progress_io.save(path, updated, MAX_PROGRESS_BYTES, AuditError, "flatfile audit progress")
         print(json.dumps(report, sort_keys=True, separators=(",", ":")))

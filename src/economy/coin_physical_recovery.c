@@ -761,6 +761,15 @@ bool runtime_matches(const shape &value, const native_state &state, bool allow_b
 	       item_ownership_runtime_peek_owner_revision(current.owner, &cache) &&
 	       cache >= current.owner_revision && cache <= revision;
 }
+// Both endpoint counters come from the current locked native rows, including
+// the source owner when its last pile was consumed. A cold cache can have no
+// entry for that owner; publishing only the target item would leave its next
+// command using an obsolete zero revision after this operation was ACKed.
+bool project_owner_revisions(const shape &value, const native_state &state)
+{
+	return item_ownership_runtime_hydrate_owner(value.pile->from_owner, state.from_revision) &&
+	       item_ownership_runtime_hydrate_owner(value.pile->to_owner, state.to_revision);
+}
 bool body_matches(P_char character, const shape &value, const native_state &state, bool exact)
 {
 	if (!IS_PC(character) || !character->only.pc)
@@ -885,7 +894,7 @@ bool exact_runtime_identity(const item_ownership_runtime_entry &a,
 	return a.item_uid == b.item_uid && a.root_item_uid == b.root_item_uid &&
 	       a.parent_item_uid == b.parent_item_uid &&
 	       item_owner_identity_equal(a.owner, b.owner) && a.item_revision == b.item_revision &&
-	       a.vnum == b.vnum && a.state == b.state;
+	       a.owner_revision == b.owner_revision && a.vnum == b.vnum && a.state == b.state;
 }
 bool project(const projection_cut &cut, const shape &value, const native_state &native,
 	     const critical_completion &completion, publication &stage)
@@ -901,7 +910,8 @@ bool project(const projection_cut &cut, const shape &value, const native_state &
 			return false;
 	if (rejected && value.drop)
 	{
-		if (actual.object || native.item_exists || !current_cut(cut))
+		if (actual.object || native.item_exists || !current_cut(cut) ||
+		    !project_owner_revisions(value, native))
 			return false;
 		project_bodies(actual, value, native);
 		for (P_char character : actual.characters)
@@ -975,6 +985,8 @@ bool project(const projection_cut &cut, const shape &value, const native_state &
 		if (!item_ownership_runtime_hydrate_many_atomic(&native.item, 1))
 			return false;
 	}
+	if (!project_owner_revisions(value, native))
+		return false;
 	// These are the locked current rows, including a bank advanced by another
 	// same-bank player. A rejected transfer also repairs stale loaded projection;
 	// it never substitutes its compact/zero/historical result for native balances.
