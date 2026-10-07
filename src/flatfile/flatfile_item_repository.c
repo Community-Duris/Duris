@@ -4217,6 +4217,43 @@ flatfile_item_repository_result flatfile_item_repository_read_coin_pile_locked(
 		       result;
 }
 
+unsigned int flatfile_item_repository_verify_coin_root_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_command &command, std::span<const uint8_t> retained_result,
+	std::string *error)
+try
+{
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	if (root.empty() || !lock.matches(root) ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    command.type != critical_command_type::coin_transfer ||
+	    !critical_command_envelope_valid(command) || !command_digest(command, &digest) ||
+	    retained_result.size() != COIN_TRANSFER_RESULT_BYTES)
+		return EINVAL;
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ? EIO : EILSEQ;
+	ownership_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_item_repository_result::ok)
+		return loaded == flatfile_item_repository_result::io_error ? EIO : EILSEQ;
+	const auto found = std::find_if(
+		catalog.operations.begin(), catalog.operations.end(),
+		[&](const operation_state &value)
+		{ return critical_operation_id_equal(value.operation_id, command.operation_id); });
+	if (found == catalog.operations.end())
+		return ENOENT;
+	if (!found->coin_operation || found->result_code || found->command_digest != digest ||
+	    !std::equal(found->coin_result.begin(), found->coin_result.end(),
+			retained_result.begin(), retained_result.end()))
+		return EILSEQ;
+	return 0;
+}
+catch (const std::bad_alloc &)
+{
+	return ENOMEM;
+}
+
 flatfile_item_repository_result flatfile_item_repository_list_coin_piles_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	std::vector<flatfile_coin_pile_source> *sources, std::string *error)
