@@ -1,5 +1,10 @@
 # Accounting domain separation handoff — 2026-10-07
 
+Latest post-R6 [nine-family owner dependency assessment](POST_R6_OWNER_DEPENDENCIES_2026-10-07.md)
+checks compatibility against primary `daa5c2b5f` without promoting build/journey
+evidence or adding a thin extraction. Current turn made implementation/qualification
+progress; overall continuing Goal remains ACTIVE and final R6 review is pending.
+
 ## Continuing project status — supersedes finite closure
 
 **New continuing Goal ACTIVE, no token budget.** Read superseding charter

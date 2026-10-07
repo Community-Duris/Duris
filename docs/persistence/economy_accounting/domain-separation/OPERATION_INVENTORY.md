@@ -1,5 +1,10 @@
 # Fixed domain-separation operation inventory — 2026-10-07
 
+Latest post-R6 [nine-family owner dependency assessment](POST_R6_OWNER_DEPENDENCIES_2026-10-07.md)
+checks compatibility against primary `daa5c2b5f` without promoting build/journey
+evidence or adding a thin extraction. Current turn made implementation/qualification
+progress; overall continuing Goal remains ACTIVE and final R6 review is pending.
+
 ## Continuing inventory update
 
 The superseding continuing charter at accounting `b1ac97c3` replaces the earlier
