@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 185 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 186 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,15 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+kelek=next(m for m in catalog['story_mappings'] if m['source_area']=='kelek')
+assert (kelek['coverage'],kelek['schema_version'],kelek['revision'])==('complete',3,1) and not kelek['exclusions']
+assert len(kelek['stories'])==3 and len(kelek['contacts'])==13 and sum(len(c['topics']) for c in kelek['contacts'])==2
+assert sum(len(s['steps']) for s in kelek['stories'])==9 and sorted(len(s['steps'])-1 for s in kelek['stories'])==[1,2,3]
+assert all(row['kind']=='carried_item' and row['optional'] and row['count']==1 and len(row['item_vnums'])==1 for s in kelek['stories'] for row in s['steps'][:-1])
+assert all(len(s['contracts'])==1 and s['steps'][-1]['contracts']==s['contracts'] for s in kelek['stories'])
+assert report['eligible_by_zone']['879']==3 and sum(d['daily_eligible'] for d in catalog['definitions'] if d['source_area']=='kelek')==3
+assert {s['id'] for s in kelek['stories']}=={'cardinal-proof','captive-paladin-proof','smithy-materials'}
 
 trakkia=next(m for m in catalog['story_mappings'] if m['source_area']=='trakkia')
 assert (trakkia['coverage'],trakkia['schema_version'],trakkia['revision'])==('complete',3,1) and not trakkia['exclusions']

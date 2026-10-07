@@ -142897,6 +142897,268 @@
     {
       "contacts": [
         {
+          "description": "Ask mithril; carry the exact mithril chunk and smithy hammer loose together for the cloak.",
+          "keyword": "smith",
+          "mob_vnum": 87963,
+          "name": "a duergar smith",
+          "topics": [
+            "mithril"
+          ]
+        },
+        {
+          "description": "In the Church meditation room. Ask initiation; the exact cardinal proof earns coins and experience.",
+          "keyword": "bishop",
+          "mob_vnum": 87860,
+          "name": "the church bishop",
+          "topics": [
+            "initiation"
+          ]
+        },
+        {
+          "description": "In the Church northern cell. Bring all three exact proof pieces for a note; release or escort is separate.",
+          "keyword": "paladin",
+          "mob_vnum": 87869,
+          "name": "a large paladin",
+          "topics": []
+        },
+        {
+          "description": "In the Church study; declared holder of the skull and spine. This evidence does not prove your own kill.",
+          "keyword": "cardinal",
+          "mob_vnum": 87821,
+          "name": "the church cardinal",
+          "topics": []
+        },
+        {
+          "description": "In the Church southern cell; declared holder of the troll ears.",
+          "keyword": "troll",
+          "mob_vnum": 87866,
+          "name": "a furious troll",
+          "topics": []
+        },
+        {
+          "description": "In the Church southern cell; declared holder of the ogre skull.",
+          "keyword": "ogre",
+          "mob_vnum": 87867,
+          "name": "a depressed ogre warrior",
+          "topics": []
+        },
+        {
+          "description": "In the Church southern cell; declared holder of the duergar hand.",
+          "keyword": "duergar",
+          "mob_vnum": 87868,
+          "name": "a squint-eyed duergar",
+          "topics": []
+        },
+        {
+          "description": "In the Church jail work area; declared holder of the dark iron cell key. Its use is separate from a quest return.",
+          "keyword": "jailor",
+          "mob_vnum": 87840,
+          "name": "the church jailor",
+          "topics": []
+        },
+        {
+          "description": "At the Church paladin encampment; the note earns a crystal mask through a separate request.",
+          "keyword": "general",
+          "mob_vnum": 87847,
+          "name": "a grey-haired paladin field general",
+          "topics": []
+        },
+        {
+          "description": "A zombie mountain dwarf soldier is declared wielding the smithy hammer. Recovering it differs from meeting or defeating him.",
+          "keyword": "soldier",
+          "mob_vnum": 87953,
+          "name": "a zombie of a mountain dwarf soldier",
+          "topics": []
+        },
+        {
+          "description": "Guards the passage into Kelek's crypt with a crystalline key. Successful unlock consumes the key.",
+          "keyword": "lich",
+          "mob_vnum": 87958,
+          "name": "the lich of a long dead mage",
+          "topics": []
+        },
+        {
+          "description": "At the surviving dwarven camp; declared wielder of the Deliverer. Its combat effect does not record a cure or rescue.",
+          "keyword": "cleric",
+          "mob_vnum": 87956,
+          "name": "a dwarven cleric",
+          "topics": []
+        },
+        {
+          "description": "In the crypt with the epic node. Defeat, node custody and its committed touch reward remain separate.",
+          "keyword": "kelek",
+          "mob_vnum": 87955,
+          "name": "the Wraith-Lord, Kelek",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow the smith's material request and the linked Church requests. Exact accepted returns, current preparation, actual passage and later rewards each have their own meaning.",
+      "orientation": [
+        "The abandoned mines and undead tomb contain the smith's request, hidden passages, a surviving dwarven camp and Kelek's crypt. This journal also includes two requests from people in the Church of the Eternal Dusk.",
+        "Ask the duergar smith about mithril. Bring one chunk of mithril and one smithy hammer loose together for his jet black cloak with mithril streaks. His reward does not require defeating Kelek or repairing the forge.",
+        "The mithril chunk is declared at the bottom of a mine shaft. A zombie mountain dwarf soldier is declared wielding the smithy hammer. Supplied exact materials also fit the return; possession alone does not prove personal recovery.",
+        "The Church bishop is in his meditation room. Ask bishop initiation. He accepts the cardinal's skull and spine for coins and experience. His promises and threats do not themselves record membership or expulsion.",
+        "A captive paladin in the Church's northern cell accepts troll ears, an ogre skull and a duergar hand together. The sources are declared in the southern cell. The resulting note can go to the field general at the paladin encampment for a separate reward.",
+        "The Church passage above the interrogation area is magically sealed. Saying blasphemy there can reveal and unlock it, but you must still open the door and move through. The jailor's dark iron key serves the cell doors; a successful proof return does not establish a rescue or escort.",
+        "Search and open the hidden routes to the smithy and dwarven camp when your character can. The lich guarding the crypt carries a crystalline key that breaks after unlocking. Actual passage and return differ from current key possession.",
+        "The dwarven cleric carries the Deliverer, whose wielded combat effect targets undead foes. Kelek carries an epic node with its own touch reward process. Neither combat equipment nor a boss death substitutes for one of these item returns.",
+        "Reset declarations are leads rather than guaranteed stock. Daily rollover does not replenish materials. New discovery, encounter, journal, achievement and daily credit requires active, ready accounting."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "kelek",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:87869;receive=C:250000,E:100000;disappear=0",
+              "giver_vnum": 87860
+            }
+          ],
+          "id": "cardinal-proof",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The cardinal is declared holding this proof in his Church study. A supplied exact piece also fits; personal killing, initiation and membership are not encoded prerequisites.",
+              "id": "material-87869",
+              "item_vnums": [
+                87869
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the cardinal's skull and spine loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87869;receive=C:250000,E:100000;disappear=0",
+                  "giver_vnum": 87860
+                }
+              ],
+              "hint": "Only this accepted exact exchange records the card. Carry all its requested inputs loose together. Topics, key use, source encounters, another return and reward possession do not substitute.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the accepted cardinal-proof return"
+            }
+          ],
+          "summary": "The Church bishop accepts the cardinal's skull and spine for coins and experience.",
+          "title": "Bring proof to the bishop"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:87870,I:87871,I:87872;receive=I:87873;disappear=0",
+              "giver_vnum": 87869
+            }
+          ],
+          "id": "captive-paladin-proof",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The furious troll in the Church southern cell is the declared source.",
+              "id": "material-87870",
+              "item_vnums": [
+                87870
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the troll ears loose"
+            },
+            {
+              "count": 1,
+              "hint": "The depressed ogre warrior in the Church southern cell is the declared source.",
+              "id": "material-87871",
+              "item_vnums": [
+                87871
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the ogre skull loose"
+            },
+            {
+              "count": 1,
+              "hint": "The squint-eyed duergar in the Church southern cell is the declared source. Carry all three requested pieces together; one kind cannot replace another.",
+              "id": "material-87872",
+              "item_vnums": [
+                87872
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the duergar hand loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87870,I:87871,I:87872;receive=I:87873;disappear=0",
+                  "giver_vnum": 87869
+                }
+              ],
+              "hint": "Only this accepted exact exchange records the card. Carry all its requested inputs loose together. Topics, key use, source encounters, another return and reward possession do not substitute.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the accepted three-proof return"
+            }
+          ],
+          "summary": "Three distinct proof pieces earn the Church captive paladin's note.",
+          "title": "Bring three proofs to the captive paladin"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:87961,I:87962;receive=I:87963;disappear=0",
+              "giver_vnum": 87963
+            }
+          ],
+          "id": "smithy-materials",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Declared at the bottom of the mine shaft. Current exact material can be supplied; it does not prove your first recovery.",
+              "id": "material-87961",
+              "item_vnums": [
+                87961
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the mithril chunk loose"
+            },
+            {
+              "count": 1,
+              "hint": "Declared wielded by a zombie mountain dwarf soldier. Unequip it before returning both materials together. This does not require a personal kill or repaired forge.",
+              "id": "material-87962",
+              "item_vnums": [
+                87962
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the smithy hammer loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:87961,I:87962;receive=I:87963;disappear=0",
+                  "giver_vnum": 87963
+                }
+              ],
+              "hint": "Only this accepted exact exchange records the card. Carry all its requested inputs loose together. Topics, key use, source encounters, another return and reward possession do not substitute.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the accepted smithy-material return"
+            }
+          ],
+          "summary": "The smith accepts a mithril chunk and smithy hammer for his jet black cloak.",
+          "title": "Bring materials to the duergar smith"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Ask hi, hello or craft for the introduction, create, forge or items for the request, and dragon, dragonscales or dragonscale for the scales.",
           "keyword": "hephaestus",
           "mob_vnum": 88318,
