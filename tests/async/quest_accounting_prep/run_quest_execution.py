@@ -20,7 +20,7 @@ import run_quest_reward_ack_crash as driver
 
 
 def build_quest_inspector():
-    """Add the missing maintained codec link in an owned build invocation.
+    """Add current maintained codec links in an owned build invocation.
 
     The shared inspector manifest remains with its owner. Keep every original
     source/flag/wrapper; no authority or fixture-state logic is replaced.
@@ -28,7 +28,10 @@ def build_quest_inspector():
     import _flatfile_player_fixture as fixture
     from native_build_artifacts import build_native
     sources = list(fixture.SOURCES)
-    for source in ("src/economy/economic_baseline_codec.c", "src/economy/economic_baseline_adapter.c"):
+    for source in ("src/economy/economic_baseline_codec.c", "src/economy/economic_baseline_adapter.c",
+                   "src/economy/native_quest_cost.c", "src/economy/native_quest_coin_give.c",
+                   "src/economy/auction_native_command_context.c",
+                   "src/item/lockpick_retirement_continuation.c"):
         if source not in sources:
             sources.append(source)
     return build_native(ROOT / "bin/tests/quest-prep-player-inspector", sources,

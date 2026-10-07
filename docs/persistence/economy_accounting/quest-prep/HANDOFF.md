@@ -26,6 +26,12 @@ ELFs and all mini/full-world evidence retain their old pins. The primary's curre
 handoff explicitly keeps genuine activation/major gameplay/full release incomplete.
 
 [Next current schema64 capture/legacy Kord execution reservation](CURRENT_CAPTURE_EXECUTION.md).
+Published reader bundle36bfef3c9e9a97b5dd94fbf620ffe2f21e02a8d1 (base7429e4f21)
+adds bounded SELECT-only retained origin bytes. Current owned inspector now links
+all66 real providers after adding four existing native/codec providers to its
+invocation; the shared provider manifest remains unchanged. Full SQL build and
+reserved current Kord execution are in progress; link details and exact shared
+dependency request are in that execution document.
 
 # Additional full-world cold-room control — 2026-10-07
 
