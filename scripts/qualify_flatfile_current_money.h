@@ -109,7 +109,9 @@ class ledger
 	ledger(const std::filesystem::path &path, audit_budget &budget, uint16_t first,
 	       uint16_t second, result &value,
 	       const std::function<void(const account_key &,
-					const restore_economic_authority::mapping &)> &observe = {})
+					const restore_economic_authority::mapping &)> &observe = {},
+	       const std::function<void(const restore_economic_records::record_view &)>
+		       &records = {})
 		: root(path)
 		, scope(budget)
 		, lock(root)
@@ -130,14 +132,14 @@ class ledger
 		authority.for_each_mapping(
 			[&](auto encoded, const auto &row)
 			{
+				const auto key = fixed_account(encoded);
+				if (observe)
+					observe(key, row);
 				if (!selected(number(row.key, 0, 2)))
 					return;
 				if (accounts.size() == maximum_accounts)
 					throw account_budget_refused();
-				const auto key = fixed_account(encoded);
 				need(accounts.emplace(key, account_state{ row.retired }).second);
-				if (observe)
-					observe(key, row);
 				if (!row.retired)
 				{
 					++output.active_accounts;
@@ -146,8 +148,10 @@ class ledger
 			});
 		restore_economic_money_history::checker history;
 		(void)restore_economic_records::checker(
-			root, [&](const auto &epoch, const auto &operation, auto plan, auto witness)
-			{ history.observe(epoch, operation, plan, witness); })
+			root,
+			[&](const auto &epoch, const auto &operation, auto plan, auto witness)
+			{ history.observe(epoch, operation, plan, witness); },
+			records)
 			.run();
 		output.history = history.finish(
 			[&](const terminal &tail)

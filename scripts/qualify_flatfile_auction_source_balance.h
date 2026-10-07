@@ -35,7 +35,8 @@ inline account_key source_account(const restore_native_auction::source_row &row)
 	put(encoded, 0, 4);
 	return fixed_account(encoded);
 }
-inline result audit(const std::filesystem::path &root, audit_budget &budget)
+inline result audit(const std::filesystem::path &root, audit_budget &budget,
+		    const observers &extra = {})
 {
 	result output;
 	std::map<account_key, claim> claims;
@@ -57,6 +58,8 @@ inline result audit(const std::filesystem::path &root, audit_budget &budget)
 	observers observe;
 	observe.mapping = [&](const account_key &account, const auto &mapping)
 	{
+		if (extra.mapping)
+			extra.mapping(account, mapping);
 		if (number(account, 18, 2) != 5)
 			return;
 		const auto pid = number(mapping.key, 12, 8);
@@ -66,6 +69,8 @@ inline result audit(const std::filesystem::path &root, audit_budget &budget)
 	};
 	observe.source = [&](const auto &row)
 	{
+		if (extra.source)
+			extra.source(row);
 		if (output.consumed_rows + output.unconsumed_rows == maximum_accounts)
 			throw account_budget_refused();
 		const bool consumed = nonzero(row.consumed);
@@ -90,6 +95,8 @@ inline result audit(const std::filesystem::path &root, audit_budget &budget)
 	};
 	observe.holding = [&](const auto &holding)
 	{
+		if (extra.holding)
+			extra.holding(holding);
 		if (holding.kind != 5)
 			return;
 		const auto found = active.find(holding.id);
@@ -122,7 +129,11 @@ inline result audit(const std::filesystem::path &root, audit_budget &budget)
 			locked.issue(row.code, row.account, row.operation, 5, row.native_id, {},
 				     row.observed ? &*row.observed : nullptr);
 		values.finding_count += output.source_findings - findings.size();
+		if (extra.finish)
+			extra.finish(locked, values);
 	};
+	observe.record = extra.record;
+	observe.receipt = extra.receipt;
 	static_cast<restore_auction_money::result &>(output) =
 		restore_auction_money::audit(root, budget, observe);
 	return output;

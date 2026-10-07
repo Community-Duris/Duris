@@ -22,12 +22,14 @@ struct observers
 	std::function<void(const restore_native_auction::source_row &)> source;
 	std::function<void(const restore_native_auction::money &)> holding;
 	std::function<void(ledger &, result &)> finish;
+	std::function<void(const restore_economic_records::record_view &)> record;
+	std::function<void(const restore_native_auction::operation_receipt &)> receipt;
 };
 inline result audit(const std::filesystem::path &root, audit_budget &budget,
 		    const observers &observe = {})
 {
 	result output;
-	ledger current(root, budget, 4, 5, output, observe.mapping);
+	ledger current(root, budget, 4, 5, output, observe.mapping, observe.record);
 	const auto domains = root / "domains";
 	std::set<std::string> present;
 	if (std::filesystem::exists(domains))
@@ -52,8 +54,10 @@ inline result audit(const std::filesystem::path &root, audit_budget &budget,
 	if (present.contains("auction_catalog"))
 	{
 		need(current.locked());
-		const auto catalog = restore_native_auction::decode_catalog(file_bytes(
-			domains, "auction_catalog", restore_native_auction::catalog_limit));
+		const auto catalog = restore_native_auction::decode_catalog(
+			file_bytes(domains, "auction_catalog",
+				   restore_native_auction::catalog_limit),
+			observe.receipt);
 		output.catalog_present = true;
 		output.catalog_revision = catalog.revision;
 		output.listings = catalog.listings;

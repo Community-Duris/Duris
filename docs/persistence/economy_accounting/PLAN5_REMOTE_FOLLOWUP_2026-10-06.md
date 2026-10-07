@@ -1,6 +1,34 @@
 # Plan5 remote branch follow-up and primary refresh â€” 2026-10-06
 
 
+## Independent native credit creators qualified — 2026-10-07
+
+[Exact qualification](PLAN5_AUCTION_SOURCE_CREDIT_QUALIFICATION_2026-10-07.md)
+continues from `1252fd0ae18c586f006344c2a2649407e14b176e` on the same remote `codex/accounting-plan5`.
+The native balanced 60-source/60-claim orphan-operation reproduction establishes
+the gap. The new independent read-only command derives v1 bid/settlement credits
+and matches native rows and authenticated creator receipts. All 61 focused
+observations and complete native/managed drivers pass with zero selected skips;
+20 healthy/367 refusals, 38 wallet/bank/116 auction-value/50 source-balance cases,
+18 backup review methods and two actual isolated boots/two generations remain.
+Maintained Make recompiles 740 providers. Normal validator, 55 contracts, ten C++
+format checks, syntax and whitespace pass. Release still refuses missing writer
+execution evidence. Five failed precursors stay retained; all seven earlier
+alternate-branch tips/follow-ups remain preserved here.
+
+Archive `540d2605310daed66fa19c944e39250a58704fd2e7122d9b95bd4e1e475bfb09`, code tree `ff5aa5a688d28aa256e0c640279a5424bf3f9ded`;
+seal SHA256 `a198496e1ac9cb684d4ab5e1235ea3b5ba7f9020ac8a70b8ef61324429c57bfc`. Primary `275df7f626e12cb396a22da34317a4e7f355e9a1` and
+its newer v2/native/schema candidate remain separately attributed. No shared
+interface/schema or source/runner/manifest change is made; delivery binds exact
+result/remote SHA and every tested nonpublication body/mode/link. The
+report/follow-up/seal/delivery curator packet is ready for the primary's local notebook;
+application, acknowledgement and cross-chat notification are not claimed or
+blockers. Consumption/digests, complete origins, born-lifetime and closed-removal
+current-holding findings, actual empty-catalog creation, genuine producer/player
+journeys, combined-backend and R7/R8/release-host gates remain open. Inactive,
+wallet-root and declined spell boundaries are preserved.
+
+
 ## Native claim-source balances and lifetimes qualified — 2026-10-07
 
 [Exact qualification](PLAN5_AUCTION_SOURCE_BALANCE_QUALIFICATION_2026-10-07.md)

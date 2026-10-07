@@ -4,6 +4,8 @@
 #include "economy/economic_currency_adapter.h"
 #include "flatfile/flatfile_accounting_baseline.h"
 #include "world/quest_mobile_native.h"
+#include "economy/auction_accounting.h"
+#include "economy/auction_settlement_accounting.h"
 #include "../../scripts/qualify_flatfile_economic_records.h"
 #include <cassert>
 #include <cstring>
@@ -445,19 +447,22 @@ int main(int argc, char **argv)
 	       mode == "baseline-auction-money-closed" || mode == "baseline-auction-money-epochs" ||
 	       mode == "baseline-auction-money-claim-zero" ||
 	       mode == "baseline-auction-money-claim-retired" ||
-	       mode == "baseline-auction-money-claim-recreated");
+	       mode == "baseline-auction-money-claim-recreated" ||
+	       mode.starts_with("baseline-auction-attribution-"));
 	for (size_t bucket = 0; bucket < 256; ++bucket)
 	{
 		assert(access::initialize_native_bucket(root, lock, control().revision, bucket,
 							id(3), &operations, &error) == 0);
 		commit();
 	}
-	auto create =
-		[&](economic_account_kind kind, uint64_t context, flatfile_economic_locator locator)
+	auto create = [&](economic_account_kind kind, uint64_t context,
+			  flatfile_economic_locator locator,
+			  critical_operation_id operation = id(4))
 	{
 		flatfile_economic_mapping value;
 		assert(access::create_mapping(root, lock, control().revision, kind, context,
-					      locator, id(4), &value, &operations, &error) == 0);
+					      locator, operation, &value, &operations,
+					      &error) == 0);
 		commit();
 		return value;
 	};
@@ -498,7 +503,8 @@ int main(int argc, char **argv)
 	       0);
 	commit();
 	if (!mode.starts_with("baseline-wallet-bank") &&
-	    !mode.starts_with("baseline-auction-money"))
+	    !mode.starts_with("baseline-auction-money") &&
+	    !mode.starts_with("baseline-auction-attribution-"))
 	{
 		epoch.predecessor = epoch.epoch;
 		epoch.epoch = id(51);
@@ -567,6 +573,214 @@ int main(int argc, char **argv)
 		}
 		assert(critical_operation_id_is_zero(control().active_epoch));
 		std::cout << "NATIVE_ENVELOPE_RECORDS " << sequence << '\n';
+		return 0;
+	}
+	if (mode.starts_with("baseline-auction-attribution-"))
+	{
+		const bool bid = mode.find("bid") != std::string::npos;
+		const bool sold = mode.find("sold") != std::string::npos;
+		const bool expired = mode.ends_with("expired"), removed = mode.ends_with("removed");
+		const bool born = mode.find("born") != std::string::npos;
+		const uint32_t basis = mode.find("zero") != std::string::npos ? 10000 :
+				       mode.find("fee") != std::string::npos  ? 1500 :
+										0;
+		auto seller_claim = pending_claim.account;
+		flatfile_economic_mapping bidder_mapping, seller_mapping;
+		if (bid)
+		{
+			bidder_mapping =
+				create(economic_account_kind::pending_claim, 0, { 5, 11, {} });
+			seller_mapping =
+				create(economic_account_kind::pending_claim, 0, { 5, 22, {} });
+			seller_claim = seller_mapping.account;
+		}
+		else if (born)
+		{
+			assert(access::retire_mapping(root, lock, control().revision,
+						      pending_claim.account, pending_claim.revision,
+						      id(57), &operations, &error) == 0);
+			commit();
+			seller_mapping = create(economic_account_kind::pending_claim, 0,
+						{ 5, INT32_MAX, {} },
+						id(mode.ends_with("wrong") ? 7 : 6));
+			seller_claim = seller_mapping.account;
+		}
+		economic_baseline_batch batch;
+		batch.lineage = id(1);
+		batch.epoch = id(50);
+		batch.preparation_id = id(52);
+		batch.actor_id = 7;
+		batch.opening_account = { id(1), economic_account_kind::opening, 1, 0 };
+		batch.boundary_digest.fill(1);
+		batch.coverage_digest.fill(2);
+		economic_digest native_digest;
+		native_digest.fill(3);
+		batch.holdings = {
+			{ active_wallet.account, { 100, 0, 0, 0 }, 0, native_digest },
+			{ escrow.account, { expired ? 0 : 60, 0, 0, 0 }, 2, native_digest },
+			{ pending_claim.account, {}, 3, native_digest }
+		};
+		if (bid)
+		{
+			batch.holdings.push_back({ bidder_mapping.account, {}, 1, native_digest });
+			batch.holdings.push_back({ seller_mapping.account, {}, 1, native_digest });
+		}
+		assert(access::initialize_baseline(root, lock, id(1), id(50), batch.opening_account,
+						   id(53), &operations,
+						   &error) == flatfile_accounting_status::ok);
+		commit();
+		std::optional<economic_prepared_baseline> prepared;
+		assert(economic_baseline_prepare(batch, &prepared) ==
+		       economic_accounting_error::ok);
+		critical_command baseline;
+		assert(economic_baseline_command_build(*prepared, UINT64_MAX, &baseline) ==
+		       economic_accounting_error::ok);
+		auto bucket = [&](uint8_t value)
+		{
+			if (!(control().evidence_initialized[value / 8] & (1u << (value % 8))))
+			{
+				assert(access::initialize_evidence_bucket(
+					       root, lock, control().revision, value, id(8),
+					       &operations, &error) == 0);
+				commit();
+			}
+		};
+		bucket(baseline.operation_id.bytes[0]);
+		assert(access::stage_baseline(root, lock, baseline, *prepared, &operations,
+					      &error) == flatfile_accounting_status::ok);
+		commit();
+		flatfile_accounting_record value;
+		auction_command_payload payload = {};
+		payload.action = bid	 ? auction_action::bid :
+				 removed ? auction_action::remove :
+					   auction_action::finalize;
+		payload.actor_pid = bid ? 11 : 0;
+		payload.auction_id = UINT32_MAX;
+		payload.racewar = 1;
+		strcpy(payload.account_name.data(), "renamed");
+		payload.value = 100;
+		payload.closing_fee_basis_points = basis;
+		assert(auction_command_build(&value.command, id(6), payload,
+					     critical_source_site::command,
+					     critical_deadline_class::interactive));
+		value.command.accepted_at_usec = 1;
+		auction_command_result result = {};
+		result.action = payload.action;
+		result.auction_id = UINT32_MAX;
+		result.seller_pid = bid ? 22 : INT32_MAX;
+		result.winner_pid = expired ? 0 : bid ? 11 : 22;
+		result.final_price = bid ? 80 : expired ? 0 : 60;
+		result.auction_revision = 3;
+		result.event_type = removed	 ? auction_event_type::removed :
+				    expired	 ? auction_event_type::expired :
+				    bid && !sold ? auction_event_type::bid_placed :
+						   auction_event_type::sold;
+		result.status = removed ? 3 : bid && !sold ? 1 : 2;
+		economic_accounting_plan plan;
+		if (bid)
+		{
+			auction_bid_accounting_authority authority;
+			authority.epoch = id(50);
+			authority.listing = { UINT32_MAX,    22, INT32_MAX, 1,	  1, 60,
+					      sold ? 80 : 0, 2,	 id(2),	    id(3) };
+			authority.accounts.wallet = active_wallet.account;
+			authority.accounts.bank = bank.account;
+			authority.accounts.escrow = escrow.account;
+			authority.accounts.bidder_claim = bidder_mapping.account;
+			authority.accounts.previous_claim = pending_claim.account;
+			if (sold)
+				authority.accounts.seller_claim = seller_claim;
+			authority.balances_before.wallet.amount[0] = 100;
+			authority.bidder_claim_before = { 0, 1 };
+			authority.previous_claim_before = { 0, 3 };
+			authority.seller_claim_before = { 0, 1 };
+			assert(auction_bid_accounting_intent(value.command, id(50),
+							     authority.listing, authority.accounts,
+							     &value.command.accounting_intent) ==
+			       economic_accounting_error::ok);
+			value.command.schema_version = 2;
+			economic_frozen_intent intent;
+			assert(economic_intent_decode(value.command.accounting_intent, &intent) ==
+			       economic_accounting_error::ok);
+			result.previous_bidder_pid = INT32_MAX;
+			result.wallet_value_delta = sold ? -80 : -100;
+			result.final_price = sold ? 80 : 100;
+			result.wallet.amount[1] = sold ? 2 : 0;
+			result.wallet_revision = result.bank_revision = 1;
+			assert(auction_bid_accounting_plan(value.command, intent, authority, result,
+							   &plan) == economic_accounting_error::ok);
+		}
+		else
+		{
+			auction_settlement_authority authority;
+			authority.epoch = id(50);
+			authority.listing = { UINT32_MAX,
+					      INT32_MAX,
+					      expired ? 0u : 22u,
+					      1,
+					      1,
+					      1,
+					      expired ? 0 : 60,
+					      0,
+					      2,
+					      100,
+					      id(2),
+					      expired ? critical_operation_id{} : id(3),
+					      1,
+					      {} };
+			authority.listing.items[0] = { 42, 3, 0, 10, 0, false };
+			authority.accounts.escrow = escrow.account;
+			if (!expired && !removed)
+				authority.accounts.seller_claim = seller_claim;
+			if (born)
+				authority.accounts.absent_seller_pid = INT32_MAX;
+			authority.seller_claim_before = 0;
+			authority.seller_claim_revision_before = born ? 0 : 3;
+			authority.seller_claim_after = 60 - 60 * basis / 10000;
+			authority.seller_claim_revision_after = born ? 1 : 4;
+			authority.items_before = { { 42,
+						     { { item_owner_type::auction, UINT32_MAX, 0 },
+						       42,
+						       0,
+						       3,
+						       item_custody_state::active,
+						       0 } } };
+			authority.claim_pids_after = { expired || removed ? uint32_t(INT32_MAX) :
+									    22u };
+			auto frozen = authority.accounts;
+			if (born)
+				frozen.seller_claim = {};
+			assert(auction_settlement_accounting_intent(
+				       value.command, id(50), authority.listing, frozen,
+				       &value.command.accounting_intent) ==
+			       economic_accounting_error::ok);
+			value.command.schema_version = 2;
+			economic_frozen_intent intent;
+			assert(economic_intent_decode(value.command.accounting_intent, &intent) ==
+			       economic_accounting_error::ok);
+			assert(auction_settlement_accounting_plan(value.command, intent, authority,
+								  result, &plan) ==
+			       economic_accounting_error::ok);
+		}
+		assert(economic_plan_encode(plan, &value.plan) == economic_accounting_error::ok);
+		std::array<uint8_t, AUCTION_RESULT_PAYLOAD_BYTES> encoded;
+		assert(auction_command_encode_result(result, &encoded));
+		value.result.assign(encoded.begin(), encoded.end());
+		value.durable_revision = 1;
+		bucket(6);
+		assert(access::stage(root, lock, value, &operations, &error) ==
+		       flatfile_accounting_status::ok);
+		assert(access::stage_source_claim(root, lock, value, &operations, &error) ==
+		       flatfile_accounting_status::ok);
+		commit();
+		if ((!bid || sold) && !removed)
+		{
+			assert(access::retire_mapping(root, lock, control().revision,
+						      escrow.account, escrow.revision, id(6),
+						      &operations, &error) == 0);
+			commit();
+		}
+		assert(critical_operation_id_is_zero(control().active_epoch));
 		return 0;
 	}
 	if (mode.starts_with("baseline"))

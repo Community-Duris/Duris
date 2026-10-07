@@ -402,6 +402,14 @@ struct baseline_history_page
 	root_page page;
 	std::optional<baseline_history_root> baseline;
 };
+// Borrowed authenticated wire views; valid only during the callback. Observers
+// must withhold their result until the complete locked scan and guards finish.
+struct record_view
+{
+	identity epoch = {}, operation = {};
+	uint64_t type = 0, payload_version = 0, result_code = 0;
+	std::span<const uint8_t> command, payload, intent, plan, result, witness;
+};
 class checker
 {
 	std::filesystem::path root, directory;
@@ -414,6 +422,7 @@ class checker
 	std::function<void(const identity &, const identity &, std::span<const uint8_t>,
 			   std::span<const uint8_t>)>
 		accepted_plan;
+	std::function<void(const record_view &)> observe_record;
 
 	void record(std::span<const uint8_t> encoded, const identity &operation)
 	{
@@ -429,7 +438,7 @@ class checker
 		     (result_code || failure_stage == 0) &&
 		     (result_code ? plan_size == 0 : plan_size >= 256));
 		auto command = in.take(command_size), plan = in.take(plan_size);
-		(void)in.take(result_size);
+		auto result = in.take(result_size);
 		in.done();
 		lifecycles.record(operation, command, plan, durable_revision, result_code,
 				  result_size, failure_stage);
@@ -511,7 +520,21 @@ class checker
 		need(same(tagged_hash("DURIS-ECONOMIC-DOMAIN-V1", domain),
 			  intent.subspan(192, 32)));
 		if (result_code)
+		{
+			if (observe_record)
+				observe_record({ epoch,
+						 operation,
+						 type,
+						 payload_version,
+						 result_code,
+						 command,
+						 payload,
+						 intent,
+						 plan,
+						 result,
+						 {} });
 			return;
+		}
 		need(same(plan.first(4), { reinterpret_cast<const uint8_t *>("EAP1"), 4 }) &&
 		     number(plan, 4, 2) == 1 && !nonzero(plan.subspan(6, 2)) &&
 		     same(plan.subspan(8, 64), intent.subspan(32, 64)) && plan[72] == intent[26] &&
@@ -550,6 +573,10 @@ class checker
 							 plan, durable_revision);
 			if (accepted_plan)
 				accepted_plan(epoch, operation, plan, witness);
+			if (observe_record)
+				observe_record({ epoch, operation, type, payload_version,
+						 result_code, command, payload, intent, plan,
+						 result, witness });
 			return;
 		}
 		if (intent[27])
@@ -575,6 +602,18 @@ class checker
 		}
 		if (accepted_plan)
 			accepted_plan(epoch, operation, plan, {});
+		if (observe_record)
+			observe_record({ epoch,
+					 operation,
+					 type,
+					 payload_version,
+					 result_code,
+					 command,
+					 payload,
+					 intent,
+					 plan,
+					 result,
+					 {} });
 	}
 	std::vector<entry> index(size_t bucket, digest *body_digest = nullptr)
 	{
@@ -689,12 +728,14 @@ class checker
 	explicit checker(const std::filesystem::path &path,
 			 std::function<void(const identity &, const identity &,
 					    std::span<const uint8_t>, std::span<const uint8_t>)>
-				 observe = {})
+				 observe = {},
+			 std::function<void(const record_view &)> records = {})
 		: root(path)
 		, directory(path / "economic-evidence")
 		, baselines(path)
 		, lifecycles(path)
 		, accepted_plan(std::move(observe))
+		, observe_record(std::move(records))
 	{
 	}
 	// Bind every history page to the same authenticated control/catalog, original

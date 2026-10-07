@@ -472,6 +472,7 @@ struct mapping
 	uint64_t authority;
 	bytes key;
 	bool retired;
+	identity creating_operation = {};
 };
 struct native_entry
 {
@@ -603,7 +604,8 @@ class checker
 				key.insert(key.end(), name_bytes.begin(), name_bytes.end());
 			else
 				put(key, native, 8);
-			result.push_back({ authority, std::move(key), nonzero(retiring) });
+			result.push_back(
+				{ authority, std::move(key), nonzero(retiring), creating });
 		}
 		in.done();
 		return result;

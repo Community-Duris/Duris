@@ -35,6 +35,14 @@ struct source_row
 	uint32_t pid = 0;
 	uint64_t mapping = 0, amount = 0;
 };
+struct operation_receipt
+{
+	identity operation = {};
+	digest command_digest = {};
+	uint64_t result_code = 0;
+	std::span<const uint8_t> result;
+	bool event_published = false;
+};
 inline int64_t signed_number(reader &in)
 {
 	return std::bit_cast<int64_t>(in.number(8));
@@ -59,7 +67,8 @@ inline void receipt(std::span<const uint8_t> body)
 	need(signed_number(in) >= 0);
 	// The original result codec permits arbitrary trailing padding.
 }
-inline catalog decode_catalog(std::span<const uint8_t> encoded)
+inline catalog decode_catalog(std::span<const uint8_t> encoded,
+			      const std::function<void(const operation_receipt &)> &observe = {})
 {
 	const auto file = unwrap(encoded, "DURAUCT", catalog_limit, 2);
 	reader in{ file.body };
@@ -119,10 +128,20 @@ inline catalog decode_catalog(std::span<const uint8_t> encoded)
 	{
 		const auto operation = in.fixed<16>();
 		need(nonzero(operation) && operations.insert(operation).second);
-		(void)in.take(36); // Digest and native result code.
-		receipt(in.take(320));
+		const auto command_digest = in.fixed<32>();
+		const auto result_code = in.number(4);
+		const auto result_bytes = in.take(320);
+		receipt(result_bytes);
+		bool event_published = false;
 		if (file.version == 2)
-			need(in.number(1) <= 1);
+		{
+			const auto flag = in.number(1);
+			need(flag <= 1);
+			event_published = flag;
+		}
+		if (observe)
+			observe({ operation, command_digest, result_code, result_bytes,
+				  event_published });
 	}
 	in.done();
 	return result;
