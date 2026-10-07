@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 214 &&
+		require(catalog.story_mappings.size() == 215 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -25307,6 +25307,84 @@ int main(int argc, char **argv)
 							   &supplies);
 			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
 				"Halfling Silver Mine missing reward or spent material changed recovered history");
+		}
+
+		{
+			const auto &scroll = story_for("mir", "light-dark-scroll-for-priest");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 41916, 41925, 100) == result::rejected,
+				"Forest of Mir contact ignored undiscovered zone");
+			require(journey.discover_zone(7, 42, 419, 42137, 101, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 419, 10, 1, 102, false, false)
+							.find(scroll.title) == std::string::npos &&
+					journey.meet_npc(7, 42, 41916, 41925, 103) ==
+						result::applied,
+				"Forest of Mir request bypassed priest encounter");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    scroll.steps[row].text) != std::string::npos;
+			};
+			for (unsigned custody = 0; custody < 6; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[41930] = 1;
+				if (custody == 2)
+					supplies.carried[42166] = 1;
+				if (custody == 3)
+					supplies.equipped[18] = 41929;
+				if (custody >= 4)
+					supplies.carried[41929] = custody == 4 ? 1 : 2;
+				const auto journal = journey.render_journal(
+					7, 42, 419, 10, 1, 104, false, false, &supplies);
+				require(status(journal, 0,
+					       custody >= 4 ? "Ready now" : "Missing now") &&
+						!status(journal, 1, "Recorded") &&
+						journey.progress_for_zone(7, 42, 419).completed ==
+							0 &&
+						journey.serialize_state() == before,
+					"Forest of Mir supplied/held scroll, key or token forged history");
+			}
+			// Synthetic receipt qualifies projection, not live scroll recovery, pool/key/hazard travel, experience/token issuance or epic award.
+			record(journey, scroll.contracts.front(), "mir-scroll-offering", 419,
+			       41925);
+			supplies = {};
+			auto journal = journey.render_journal(7, 42, 419, 10, 1, 121, false, false,
+							      &supplies);
+			require(status(journal, 1, "Recorded") &&
+					status(journal, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 419).completed == 1 &&
+					!journey.has_discovered(7, 42, 5000),
+				"Forest of Mir spent scroll erased receipt or invented foreign arrival");
+			require(supplied.discover_zone(7, 42, 419, 42137, 101, "arrival") ==
+					result::applied,
+				"Forest of Mir supplied return setup failed");
+			record(supplied, scroll.contracts.front(), "mir-supplied-offering", 419,
+			       41925);
+			require(supplied.progress_for_zone(7, 42, 419).completed == 1,
+				"Forest of Mir acceptance required remembered source kill, greeting or casket access or epic award");
+			auto replay =
+				completion(scroll.contracts.front(), "mir-scroll-offering", 120);
+			replay.transaction.zone_number = 419;
+			replay.transaction.room_vnum = 41925;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Forest of Mir replay duplicated scroll acceptance");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 419).completed == 1 &&
+					raw.progress_for_zone(7, 42, 419).completed == 1 &&
+					!recovered.has_discovered(7, 42, 5000),
+				"Forest of Mir mapped/raw recovery lost acceptance or invented foreign discovery");
+			journal = recovered.render_journal(7, 42, 419, 10, 1, 122, false, false,
+							   &supplies);
+			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
+				"Forest of Mir missing reward or spent material changed recovered history");
 		}
 
 		std::cout

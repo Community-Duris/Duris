@@ -1,0 +1,252 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "mir",
+  "coverage": "complete",
+  "introduction": "Follow the fallen priest’s scroll exchange and explore Mir’s webbed forest, stranded travelers, river, hidden lairs, wyrms, relics and rune-covered stone.",
+  "orientation": [
+    "Enter the Forest of Mir from the desert road or follow the river into the forest. Arriving discovers the zone; meeting the fallen priest reveals his request.",
+    "Ask the fallen priest about hello or greetings. Both words share his request for a scroll with powers of good and evil gods.",
+    "Bring one light and dark scroll to the priest for experience and a satanic token. The male thorny worm carries the source scroll in a hidden dark hole. An exact supplied scroll also fits; a remembered personal kill, first recovery or greeting is not required.",
+    "Carry the scroll loose before offering it. The optional preparation row shows current loose custody. A held, worn or packed scroll needs different offering preparation; possessing it does not prove its origin or an accepted exchange.",
+    "Offer the exact loose scroll to the priest. One accepted exchange records completion. A spent scroll, a missing token, a creature defeat or a room visit cannot replace or erase that history.",
+    "The light and dark scroll can also be recited for its own spells. Using a scroll and offering it to the priest are different choices. The vellum map carried by Johan is a different item.",
+    "Johan, Mythra, the Xort beast and the orc warband suggest other forest stories. Their equipment, descriptive injuries or a fallen creature do not prove that someone was helped or that a threat was resolved.",
+    "Tall trees offer viewpoints and clues about the forest. A refuge description does not promise safety. Discovering a landmark, finding a way out and safely guiding someone are different outcomes.",
+    "The river can carry travelers along its bends. Traveling against the current, drifting, landing safely and helping another traveler are separate results; the pleasant-current description does not remove the water hazards.",
+    "A crack in the mountain leads toward werewolves and a shining mercury pool. A second pool links the rocky island back to the crack. Finding a pool and successfully arriving through it are separate facts.",
+    "The island opens into steep tunnels and a snake pit. A tiny bone key opens the bone casket; the casket contains a different golden key for the wyrms’ treasure trapdoor. Opening a container does not prove that its contents were recovered.",
+    "The tiny bone key can break when used and cannot be rented. Prepare the return journey before entering dangerous tunnels; acquired keys, surviving a fall and a safe exit are different outcomes.",
+    "The great wyrms can call one another into a fight. Their armor, treasure and defeated bodies have distinct sources. A roar or recovered scale suit does not prove lasting protection for travelers.",
+    "Named relics have different wielding, class, alignment, speech and daily-use conditions. Owning one, activating it successfully and helping a beneficiary with its effect are separate facts. Some relics are stocked outside Mir.",
+    "The rune-covered stone in the wyrms’ vault follows its own touch and group reward rules. A stone visit or accepted epic award does not complete the priest’s scroll request or every wider forest story.",
+    "New tracking requires active READY accounting. Daily replay remains disabled until actual approach, usable source or supplied scroll, accepted experience and token, saved recipient history and legitimate renewed supply are qualified."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 41900,
+      "name": "a large spider",
+      "keyword": "spider",
+      "description": "Large spiders can generate webs while idle. Autonomous web growth and carried poison sacs are distinct from a player’s useful conservation or first-source recovery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41901,
+      "name": "a huge spider",
+      "keyword": "spider",
+      "description": "This contact is stocked around Lost in the Forest of Mir. Actual source recovery, surviving travel and useful lasting forest outcomes need distinct evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41902,
+      "name": "a giant spider",
+      "keyword": "spider",
+      "description": "This contact is stocked around Lost in the Forest of Mir. Actual source recovery, surviving travel and useful lasting forest outcomes need distinct evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41903,
+      "name": "a phase spider",
+      "keyword": "spider",
+      "description": "This contact is stocked around An Extremely Tall Tree, Lost in the Forest of Mir. Actual source recovery, surviving travel and useful lasting forest outcomes need distinct evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41904,
+      "name": "a giant spider",
+      "keyword": "spider",
+      "description": "This contact is stocked around Lost in the Forest of Mir. Actual source recovery, surviving travel and useful lasting forest outcomes need distinct evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41905,
+      "name": "an orc",
+      "keyword": "orc",
+      "description": "This contact is stocked around Lost in the Forest of Mir. Actual source recovery, surviving travel and useful lasting forest outcomes need distinct evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41906,
+      "name": "an orc",
+      "keyword": "orc",
+      "description": "This contact is stocked around Lost in the Forest of Mir. Actual source recovery, surviving travel and useful lasting forest outcomes need distinct evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41907,
+      "name": "an orc leader",
+      "keyword": "orc",
+      "description": "The orc leader has Fade to Black and a reset-defined warband. Native followers are not a player escort or rescued group; define faction choices and actual beneficiary outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41908,
+      "name": "Johan",
+      "keyword": "adventurer",
+      "description": "Johan carries the vellum forest map and an ebony staff. Reading his map, helping him and a surviving escorted arrival need distinct evidence and builder-defined consent.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41909,
+      "name": "a ravenous Xort beast",
+      "keyword": "xort",
+      "description": "The Xort beast carries its own hide and wears a circle of thorns. This is carried stock, not a declared carving recipe. Trophies and useful forest outcomes need separate evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41910,
+      "name": "Mythra the witch",
+      "keyword": "mythra",
+      "description": "Mythra carries the face item and wears a girdle near webs and a descriptive corpse. Native stock does not prove a rescue, a transformation or the source of a living creature’s injury.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41911,
+      "name": "a giant phase spider",
+      "keyword": "spider",
+      "description": "The giant phase spider carries Elfdawn. Equipment recovery, admitted ranger use and lasting protection for travelers are distinct stories.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41912,
+      "name": "a savage werewolf",
+      "keyword": "werewolf",
+      "description": "Male werewolves have a distinct source row for the charcoal staff. Its visibility, acquisition and actual staff effect are separate from the crack route or lasting threat resolution.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41913,
+      "name": "a savage werewolf",
+      "keyword": "werewolf",
+      "description": "Female werewolves are separate prototypes from the male staff source. Define investigation and useful outcomes without granting source recovery from a different creature.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41914,
+      "name": "the gigantic thorny worm",
+      "keyword": "worm",
+      "description": "The male thorny worm carries the exact light and dark scroll in the hidden dark hole. Supplied scrolls also fit the priest’s native exchange without a remembered kill or first-source requirement.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41915,
+      "name": "the gigantic thorny worm",
+      "keyword": "worm",
+      "description": "The female thorny worm shares the lair but has no scroll source row. Her defeat does not certify recovery of the male’s scroll.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 41916,
+      "name": "a fallen priest",
+      "keyword": "priest",
+      "description": "The fallen priest accepts one exact scroll for experience and a satanic token. Hello and greetings share one response. An accepted receipt remains distinct from the item’s origin and later reward custody.",
+      "topics": [
+        "hello",
+        "greetings"
+      ]
+    },
+    {
+      "mob_vnum": 42166,
+      "name": "the amphisbean",
+      "keyword": "amphisbean",
+      "description": "The first stocked amphisbean carries the tiny bone key for the bone casket. Key source, admitted unlocking, key breakage and child recovery are separate outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42167,
+      "name": "the amphisbean",
+      "keyword": "amphisbean",
+      "description": "This separate amphisbean prototype has its own stock and combat spell. It is not the bone-key source; actual safe survival and useful contribution need separate callers.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42168,
+      "name": "a king cobra",
+      "keyword": "cobra",
+      "description": "A particular king-cobra source carries the steaming vial. Its exact identity, trap data, potion use and a useful beneficiary result are distinct.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42169,
+      "name": "a giant python",
+      "keyword": "python",
+      "description": "This contact is stocked around A Dark Pit Filled With Snakes, A Huge Sleeping Lair of Wyrms. Actual source recovery, surviving travel and useful lasting forest outcomes need distinct evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42170,
+      "name": "the red basilisk",
+      "keyword": "basilisk",
+      "description": "This contact is stocked around A Tunnel Carved in Granite. Actual source recovery, surviving travel and useful lasting forest outcomes need distinct evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42171,
+      "name": "a young vampiric drake",
+      "keyword": "drake",
+      "description": "This contact is stocked around A Tight Bend in the Tunnel. Actual source recovery, surviving travel and useful lasting forest outcomes need distinct evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42172,
+      "name": "the Great Hell Wyrm",
+      "keyword": "wyrm",
+      "description": "The Great Hell Wyrm can call the other wyrms and wears the red scale suit. Native equipped armor is not a declared carving recipe; a defeat or roar does not prove lasting restoration.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42173,
+      "name": "the Great Wyrm of Ice",
+      "keyword": "wyrm",
+      "description": "The Great Wyrm of Ice can call the other wyrms and wears the white scale suit. Shared defense, exact source recovery and secure treasure or traveler outcomes remain distinct.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 42174,
+      "name": "the Great Storm Wyrm",
+      "keyword": "wyrm",
+      "description": "The Great Storm Wyrm can call the other wyrms and wears the blue scale suit. Its current combat, helper arrival, defeat and lasting beneficiary effects need their own evidence.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "light-dark-scroll-for-priest",
+      "title": "Bring the fallen priest the light and dark scroll",
+      "category": "request",
+      "summary": "Offer the exact scroll for experience and a satanic token. Source recovery, supplied custody, accepted reward and lasting forest outcomes are distinct.",
+      "contracts": [
+        {
+          "giver_vnum": 41916,
+          "completion_key": "give=I:41929;receive=E:100000,I:41930;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "light-dark-scroll",
+          "text": "Carry the exact light and dark scroll loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            41929
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The male thorny worm carries the source scroll in a hidden dark hole. An exact supplied copy also fits. This optional row shows loose custody without proving a kill, first recovery or survived route."
+        },
+        {
+          "id": "exchange",
+          "text": "Record the priest’s accepted scroll exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 41916,
+              "completion_key": "give=I:41929;receive=E:100000,I:41930;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact loose scroll to the fallen priest for experience and the token. Greetings, another scroll, a source defeat, relic use or token possession cannot create this receipt."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

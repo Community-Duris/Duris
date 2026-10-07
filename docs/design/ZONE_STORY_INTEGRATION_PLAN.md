@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 214 authored journals, accounting-gated player surfaces, starter/town
+**Status: 215 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5386,3 +5386,8 @@ The [dossier](zone-stories/LYLR_MEOP.md) maps one native scalp exchange, optiona
 ## Halfling Silver Mine integration extension
 
 The [dossier](zone-stories/HALFLING_SILVER_MINE.md) maps one exact native whip exchange and nine wider progression stories. Forty-four owned follow-ups cover first-source versus supplied custody, desk-to-trapdoor keys, real shaft/heat admission, historical source ownership, intrusion/vault security, containers/equipment, random-grid accessibility, industrial work, worker welfare and legitimate lasting planar/civic outcomes. Existing schema3 covers Q8; wider prerequisites and endpoints require actual callers and explicit builder policy. Key/pick/secret asymmetries, possible terrain/concealment intent and staff containment require played fair repair diagnosis with separate fix/news commits. Active READY accounting remains required; daily policy stays disabled.
+
+
+## Forest of Mir integration extension
+
+The [dossier](zone-stories/FOREST_OF_MIR.md) maps the native scroll exchange and ten wider progression stories: web/fire conservation, Johan guidance, Mythra/Xort choices, orc faction outcomes, maze/refuge navigation, river travel, pools/key chain, wyrm/vault/property outcomes, useful relic effects and the existing epic node. 61 owned follow-ups preserve exact supplied eligibility and separate actual contribution/beneficiary/controller state from stock and autonomous effects. Inert trap formats, disconnected maze, concealment, fire factor/cleanup and proc guards require fair diagnosis before separate fix/news commits. Existing schema3 covers the native Q; active READY accounting remains required and daily policy stays disabled.

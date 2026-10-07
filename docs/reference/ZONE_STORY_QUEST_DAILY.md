@@ -294,3 +294,8 @@ The [dossier](../design/zone-stories/LYLR_MEOP.md) retains one achievement and o
 ## Halfling Silver Mine daily qualification
 
 The [dossier](../design/zone-stories/HALFLING_SILVER_MINE.md) retains one achievement and one potential daily. Mode2/lifespan20..30, priest/balor/whip cap1 and a nondeparting giver do not prove renewed source availability. Qualify actual approach, exact source or supplied material, input/reward/recipient/save/replay and accountable source/reset renewal. Grid key stock is not guaranteed access. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
+
+
+## Forest of Mir daily qualification
+
+The [dossier](../design/zone-stories/FOREST_OF_MIR.md) retains one native achievement and one potential daily. Mode1/lifespan20..25, cap1 scroll/giver, a nondeparting priest, pool activations and relic calendar cooldowns do not prove usable renewed supply. Qualify actual source or exact supplied copy, experience/token/recipient/save/replay, real movement/source availability and accountable renewal. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
