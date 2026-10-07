@@ -39,6 +39,7 @@ def audit_source_inputs(source_root=None):
         "tests/async/flatfile_native_domain_cases.py",
         "tests/async/flatfile_wallet_bank_cases.py",
         "tests/async/flatfile_auction_money_cases.py",
+        "tests/async/flatfile_auction_source_cases.py",
         "tests/async/test_flatfile_restore_baseline_markers.py",
         "tests/async/native_build_artifacts.py", "tests/async/server_build_artifacts.py")}
     for pattern in ("qualify_flatfile_*.h", "qualify_flatfile_*.cpp", "flatfile_*audit.py"):

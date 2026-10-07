@@ -100,7 +100,7 @@ int main(int argc, char **argv)
 		assert(!fs::exists(fs::path(root) / "economic-evidence"));
 	}
 	else
-		assert(mode == "probe" || mode == "public-query");
+		assert(mode == "probe" || mode == "public-query" || mode == "source-balance");
 	auction_catalog catalog;
 	auction_claim_source_catalog sources;
 	if (mode == "public-query")
@@ -121,5 +121,25 @@ int main(int argc, char **argv)
 		std::cerr << "native_auction_decode_refused\n";
 		return 1;
 	}
-	plan5_output(catalog, sources);
+	if (mode == "source-balance")
+	{
+		const auto *pickup = find_money(&catalog, INT32_MAX);
+		assert(pickup);
+		const economic_account_key account = { []
+						       {
+							       critical_operation_id value = {};
+							       value.bytes[0] = 1;
+							       return value;
+						       }(),
+						       economic_account_kind::pending_claim, 5, 0 };
+		std::cout << "{\"claim_amount\":" << pickup->amount
+			  << ",\"source_balance_matches\":"
+			  << (claim_source_balance_matches(sources, account, INT32_MAX,
+							   pickup->amount) ?
+				      "true" :
+				      "false")
+			  << "}\n";
+	}
+	else
+		plan5_output(catalog, sources);
 }

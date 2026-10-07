@@ -2379,11 +2379,15 @@ int main(int argc, char **argv) {
         from flatfile_auction_money_cases import qualify as qualify_auction_money
         auction_money = qualify_auction_money(ROOT, Path(build) / "auction-money", fixture=fixture,
             operator=binary)
+        from flatfile_auction_source_cases import qualify as qualify_auction_sources
+        auction_sources = qualify_auction_sources(ROOT, Path(build) / "auction-sources", fixture=fixture,
+            operator=binary, native_fixture=Path(build) / "auction-money/native")
         print(json.dumps({"positive_stores": successes, "refused_corruptions": refusals,
                           "money_history_cases": len(money_history["observations"]),
                           "native_domain_cases": len(native_domains["observations"]),
                           "wallet_bank_cases": len(wallet_bank["observations"]),
                           "auction_money_cases": len(auction_money["observations"]),
+                          "auction_source_balance_cases": len(auction_sources["observations"]),
                           "native_invocations_per_case": 3, "economic_bytes_unchanged": True,
                           "generic_semantic_corruptions": 50, "native_semantic_decodes": native_semantic_decodes,
                           "native_metadata_comparisons": 1058,

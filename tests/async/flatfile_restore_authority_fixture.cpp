@@ -442,7 +442,10 @@ int main(int argc, char **argv)
 	       mode == "baseline-wallet-bank-epochs" || mode == "baseline-wallet-bank-retired" ||
 	       mode == "baseline-wallet-bank-unanchored" || mode == "baseline-auction-money" ||
 	       mode == "baseline-auction-money-zero" || mode == "baseline-auction-money-retired" ||
-	       mode == "baseline-auction-money-closed" || mode == "baseline-auction-money-epochs");
+	       mode == "baseline-auction-money-closed" || mode == "baseline-auction-money-epochs" ||
+	       mode == "baseline-auction-money-claim-zero" ||
+	       mode == "baseline-auction-money-claim-retired" ||
+	       mode == "baseline-auction-money-claim-recreated");
 	for (size_t bucket = 0; bucket < 256; ++bucket)
 	{
 		assert(access::initialize_native_bucket(root, lock, control().revision, bucket,
@@ -472,7 +475,8 @@ int main(int argc, char **argv)
 	const auto active_wallet =
 		create(economic_account_kind::wallet, 0, { 1, static_cast<uint64_t>(pid), {} });
 	const auto escrow = create(economic_account_kind::auction_escrow, 0, { 4, UINT32_MAX, {} });
-	create(economic_account_kind::pending_claim, 0, { 5, INT32_MAX, {} });
+	const auto pending_claim =
+		create(economic_account_kind::pending_claim, 0, { 5, INT32_MAX, {} });
 	create(economic_account_kind::treasury, 0, { 6, uint64_t{ UINT32_MAX } + 1, {} });
 	if (mode == "paged-authority")
 	{
@@ -597,7 +601,8 @@ int main(int argc, char **argv)
 				  native_digest });
 			batch.holdings.push_back(
 				{ { id(1), economic_account_kind::pending_claim, 5, 0 },
-				  { 60, 0, 0, 0 },
+				  { mode.starts_with("baseline-auction-money-claim-") ? 0 : 60, 0,
+				    0, 0 },
 				  4,
 				  native_digest });
 		}
@@ -753,6 +758,17 @@ int main(int argc, char **argv)
 						      active_wallet.account, active_wallet.revision,
 						      id(56), &operations, &error) == 0);
 			commit();
+		}
+		if (mode == "baseline-auction-money-claim-retired" ||
+		    mode == "baseline-auction-money-claim-recreated")
+		{
+			assert(access::retire_mapping(root, lock, control().revision,
+						      pending_claim.account, pending_claim.revision,
+						      id(57), &operations, &error) == 0);
+			commit();
+			if (mode == "baseline-auction-money-claim-recreated")
+				create(economic_account_kind::pending_claim, 0,
+				       { 5, INT32_MAX, {} });
 		}
 		if (mode == "baseline-auction-money-retired" ||
 		    mode == "baseline-auction-money-closed")

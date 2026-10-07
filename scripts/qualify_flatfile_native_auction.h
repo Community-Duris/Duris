@@ -4,6 +4,7 @@
 
 #include "qualify_flatfile_native_domains.h"
 #include <bit>
+#include <functional>
 
 namespace restore_native_auction
 {
@@ -26,6 +27,13 @@ struct sources
 {
 	uint64_t revision = 0;
 	size_t rows = 0;
+};
+struct source_row
+{
+	identity operation = {}, lineage = {}, consumed = {};
+	uint16_t slot = 0;
+	uint32_t pid = 0;
+	uint64_t mapping = 0, amount = 0;
 };
 inline int64_t signed_number(reader &in)
 {
@@ -119,7 +127,8 @@ inline catalog decode_catalog(std::span<const uint8_t> encoded)
 	in.done();
 	return result;
 }
-inline sources decode_sources(std::span<const uint8_t> encoded)
+inline sources decode_sources(std::span<const uint8_t> encoded,
+			      const std::function<void(const source_row &)> &observe = {})
 {
 	const auto file = unwrap(encoded, "DURAUSR", source_limit, 1);
 	reader in{ file.body };
@@ -137,6 +146,9 @@ inline sources decode_sources(std::span<const uint8_t> encoded)
 		need(nonzero(operation) && slot && nonzero(lineage) && pid && mapping && amount &&
 		     amount <= INT32_MAX && consumed != operation && key > previous);
 		previous = key;
+		if (observe)
+			observe({ operation, lineage, consumed, static_cast<uint16_t>(slot),
+				  static_cast<uint32_t>(pid), mapping, amount });
 	}
 	in.done();
 	return result;

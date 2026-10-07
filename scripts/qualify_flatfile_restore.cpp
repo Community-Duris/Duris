@@ -28,6 +28,7 @@
 #include "qualify_flatfile_economic_money_history.h"
 #include "qualify_flatfile_wallet_bank.h"
 #include "qualify_flatfile_auction_money.h"
+#include "qualify_flatfile_auction_source_balance.h"
 
 // Native parsers may log diagnostics containing identities; this process reports
 // only aggregate success or a fixed failure code.
@@ -631,6 +632,43 @@ int main(int argc, char **argv)
 				   "\"cross_epoch_continuity_verified\":false,\"other_money_domains_verified\":false,"
 				   "\"native_holdings_compared\":false,\"full_R7_qualified\":false,"
 				   "\"release_qualified\":false,\"findings\":[";
+			current_money_findings(result);
+			return result.valid() ? 0 : 1;
+		}
+		if (argc == 3 && std::string(argv[1]) == "--economic-auction-source-balance-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			const auto result = restore_auction_source_balance::audit(argv[2], budget);
+			std::cout
+				<< "{\"format\":\"flatfile_auction_source_balance_audit_v1\","
+				   "\"scope\":\"remaining_claim_sources_native_claims_and_retained_lifetimes\","
+				   "\"initialized\":"
+				<< (result.initialized ? "true" : "false") << ",\"epoch\":\""
+				<< restore_economic_baseline::hex(result.epoch)
+				<< "\",\"catalog_present\":"
+				<< (result.catalog_present ? "true" : "false")
+				<< ",\"claim_sources_present\":"
+				<< (result.sources_present ? "true" : "false")
+				<< ",\"catalog_revision\":" << result.catalog_revision
+				<< ",\"claim_source_revision\":" << result.source_revision
+				<< ",\"claim_source_rows\":" << result.source_rows
+				<< ",\"consumed_source_rows\":" << result.consumed_rows
+				<< ",\"unconsumed_source_rows\":" << result.unconsumed_rows
+				<< ",\"native_pending_claims\":" << result.native_claims
+				<< ",\"compared_claims\":" << result.compared_claims
+				<< ",\"current_auction_money_values_verified\":"
+				<< (result.current_values_verified ? "true" : "false")
+				<< ",\"remaining_claim_source_balances_verified\":"
+				<< (result.balance_verified() ? "true" : "false")
+				<< ",\"source_finding_count\":" << result.source_findings
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"account_origins_verified\":false,\"claim_source_attribution_verified\":false,"
+				   "\"claim_source_consumption_order_verified\":false,\"cross_epoch_continuity_verified\":false,"
+				   "\"other_money_domains_verified\":false,\"native_holdings_compared\":false,"
+				   "\"full_R7_qualified\":false,\"release_qualified\":false,\"findings\":[";
 			current_money_findings(result);
 			return result.valid() ? 0 : 1;
 		}

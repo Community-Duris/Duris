@@ -1,6 +1,30 @@
 # Plan5 remote branch follow-up and primary refresh â€” 2026-10-06
 
 
+## Native claim-source balances and lifetimes qualified — 2026-10-07
+
+[Exact qualification](PLAN5_AUCTION_SOURCE_BALANCE_QUALIFICATION_2026-10-07.md)
+continues from `af0c8eb229d3627565e6b0da8d3c9753d58388b6` on the same remote `codex/accounting-plan5`.
+Original native61-source/60-claim refusal establishes the gap. The new independent
+read-only command checks remaining totals, missing sources and beneficiary lifetimes
+under one lock; credit attribution and consumption order remain unqualified.
+All50 observations and complete native/managed drivers pass with zero selected
+skips:20 healthy/367 refusals,38 wallet/bank/116 auction-value cases,18 backup review
+methods and two real isolated boots/two retained generations remain. Original Make
+recompiles740 providers. Normal validator,55 contracts, syntax, seven C++ format
+checks and whitespace pass; release still refuses missing writer executable evidence.
+All seven earlier tips/follow-ups remain here. Native/schema/shared files are untouched.
+
+Archive `071d30358a3364e441ba1906f15987e1ea85661d949b354ff40b69554f939114`, tree `5e8265410d171d28063b565b23191d732cad00df`;
+seal SHA256 `ea41957e50ab291c67a8994ccc8b931c9f4756c9ebdb598003316cb506dd7fea`. Primary `65730c44362866a1f86bc268693014716fe21547` and its newer
+753-provider/schema candidate remain separately attributed. No shared interface/schema
+request or experimental-accounting push occurs. Delivery binds exact result/remote SHA.
+Primary applies the report/follow-up/seal curator packet to its local notebook;
+application, acknowledgement and cross-chat notification are not claimed or blockers.
+Full origins/R7, actual producer/player/load/release-host evidence, R8 and release
+remain open; inactive/wallet-root/spell boundaries remain preserved.
+
+
 ## Independent current wallet/bank comparison qualified — 2026-10-07
 
 [Exact qualification](PLAN5_CURRENT_WALLET_BANK_QUALIFICATION_2026-10-07.md)

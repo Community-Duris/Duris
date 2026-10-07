@@ -107,7 +107,9 @@ class ledger
 		}
 	}
 	ledger(const std::filesystem::path &path, audit_budget &budget, uint16_t first,
-	       uint16_t second, result &value)
+	       uint16_t second, result &value,
+	       const std::function<void(const account_key &,
+					const restore_economic_authority::mapping &)> &observe = {})
 		: root(path)
 		, scope(budget)
 		, lock(root)
@@ -134,6 +136,8 @@ class ledger
 					throw account_budget_refused();
 				const auto key = fixed_account(encoded);
 				need(accounts.emplace(key, account_state{ row.retired }).second);
+				if (observe)
+					observe(key, row);
 				if (!row.retired)
 				{
 					++output.active_accounts;
@@ -228,7 +232,7 @@ class ledger
 			issue("native_revision_mismatch", account, state.tail.operation, 0, 0, {},
 			      &observed);
 	}
-	void finish()
+	void finish(const std::function<void(ledger &)> &final_check = {})
 	{
 		for (const auto &[account, state] : accounts)
 			if (!state.retired)
@@ -238,6 +242,8 @@ class ledger
 				if (!state.has_history)
 					issue("economic_history_missing", account);
 			}
+		if (final_check)
+			final_check(*this);
 		if (output.initialized)
 		{
 			authority.begin_page();
