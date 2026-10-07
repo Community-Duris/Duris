@@ -189,8 +189,8 @@ follower, move her to Jade, or prove the player unlocked the cell personally.
 The helm trapdoor is closed/locked with key zero. Neither named key unlocks it.
 There is a declared alternative through water 77242 → 77244–77246 → secret
 cargo porthole 77247 → hold 77249 → stairs 77248 → lower corridor.
-The planks use WALK 264 teleports to sea 77242 or outward-current route 77253;
-walking either is not a direct plank-to-prison teleport. The ordinary grappling
+The planks use JUMP 264 teleports to sea 77242 or outward-current route 77253;
+jumping from either is not a direct plank-to-prison teleport. The ordinary grappling
 line links the battle decks separately. Incoming boarding and actual water/access
 qualification remain foreign-owned. Its deeper sunken-treasure route is separate
 from the princess; no treasure key or treasure completion is added to Jade.
