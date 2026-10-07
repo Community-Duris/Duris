@@ -18,9 +18,12 @@ pass under baseline/Og, as do both strict740-object builds and independent bare
 production/full module/import checks. Actual462SQL/456flat compiler inputs and
 all75 indexed artifacts authenticate. Final declared-scope code/import/artifact
 review PASS is published at accountinge0b93aa48. See the [R12 terminal handoff](R12_SHOP_SALE_QUOTE_HANDOFF.md);
-canonical delivery authentication follows publication. The [post-R11 assessment](POST_R11_OWNER_DEPENDENCIES_2026-10-07.md)
-records current native progress and remaining owner dependencies. Optional adoption
-and primary full completion remain open.
+canonical delivery is independently closed at accounting973bb6c0. The
+[post-R12 dependency disposition](POST_R12_OWNER_DEPENDENCIES_2026-10-07.md) records
+current owner findings and proposes only [R13 complete item acceptance](R13_SHOP_ITEM_ACCEPTANCE_RESERVATION.md),
+with38 original controls per baseline/Og pending boundary review. No new maintained
+implementation precedes approval. Optional adoption and the primary full finish
+remain open.
 
 R10 final declared-scope review PASS remains published at accountingdc1489782,
 authenticating all3 inputs/all94 proof files and complete imports/build artifacts.
