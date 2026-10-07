@@ -551,14 +551,25 @@ missing older literals, malformed descendants, ambiguous custody and tombstones
 remain evidence. No current-row correspondence grants complete forest authority.
 The primary retains provider union, conflicts and activation orchestration.
 
-The new explicit test gap is 4096/4097 roots and 131072/131073 single-item bytes.
-Preparation requires the exact modern-room provider and original fixture inputs,
-including its frozen physical dependencies and aggregate budgets. Those inputs
-remain unpublished. Existing public room-payload limits and aggregate-transfer
-controls do not by themselves qualify this private capture path. Once its real
-inputs become available, inspect overlap and reserve a separate supplement only
-if the original owner has not already supplied those cases. Do not invent a
-replacement provider or add modern admission prerequisites to legacy families.
+The [room boundary successor](https://github.com/Community-Duris/Duris/blob/cb3b949237519fdb915259858ef3eca977ce0ee5/docs/persistence/economy_accounting/SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
+now supplies preparation of 4096/4097 independent singleton roots and canonical
+131072/131073 single-item payloads. The primary reports preserved original cases,
+SQL/flat strict syntax and formatting; the four new cases remain unexecuted and
+outside the frozen source composition. Do not assign duplicate preparation.
+Qualification still requires the exact provider, physical dependencies, original
+fixtures and aggregate budgets; existing public limits do not prove this private
+path. Any later supplement must address a genuinely uncovered operation after
+checking the owner's current cases. No replacement provider or new legacy
+admission prerequisite is authorized.
+
+The same checkpoint reports a reviewed private Collector correspondence pair and
+combined38. Collector listing/death native maxima are dominated by the unchanged
+full-source shared row budget; required catalog/death rows count too. Do not widen
+budgets to manufacture an unreachable positive case. Collector literal controls,
+auction correction, cross-provider union and native live/reset/mobile sources
+remain with their existing owners. Private source/fixture preparation and a
+composition manifest do not establish native execution or publish usable inputs
+for either worker here. The whole-candidate and fixture binding remains required.
 
 The borrowed physical API now permits the existing writable RR cutover transaction:
 it performs SELECTs only and never starts or ends the caller's transaction. The
