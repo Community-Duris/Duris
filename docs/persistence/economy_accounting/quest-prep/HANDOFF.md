@@ -59,10 +59,12 @@ the shared queue harness seam, and authentic native handover/retirement/restitut
 on the integrated primary candidate at its existing major-batch boundary.
 
 Goal evidence: get_goal initially returned null; create_goal plus get_goal verified
-the continuing charter milestone ACTIVE at1791376226. All selected owned work and
-required owner handoffs are now published. Terminal Goal status is recorded after
-the final publication/remote equality check; the completed prior delivery remains
-1a0782f95339252b3c90a73ac102a437933a30c8.
+the continuing charter milestone ACTIVE at1791376226. After publication of terminal
+handoff0ec8bf466b09958919d2119003877645e6dfd15a and exact local/remote SHA equality,
+update_goal returned **COMPLETE**, updatedAt1791377459, elapsed1233s (20m33s),
+no requested token budget. This completes only the finite selected owned follow-up
+and required owner handoffs. The shared fixes/native proof above remain open;
+the prior completed delivery is1a0782f95339252b3c90a73ac102a437933a30c8.
 
 ## Completed implementation/execution delivery
 
