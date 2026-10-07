@@ -90,6 +90,56 @@ Do not edit shared primary production/test drivers merely to unblock a side test
 Owned disposable dev fixtures are permitted; production DB/operational mutations,
 raw private artifacts in commits, activation and deployment are not.
 
+## Current execution checkpoint
+
+Both workers report actual continuing Goals ACTIVE with the primary Plans1-5/
+original R1-R8 finish line. Architecture activation and current reconciliation are
+published at `c97e97458`; its R3 enhancement-price reservation has an
+[independent boundary approval](R3_ENHANCEMENT_RESERVATION_REVIEW_2026-10-07.md).
+R0/R1/R2 patch applicability also independently passes on the coordinator's clean
+current-candidate review checkout. Changed-dependency component results are
+being qualified separately; no old ELF is relabeled as the new candidate.
+
+Quest prep preserves the published `quest.c` owner when refreshing its branch.
+The current owner now supports genuine NPC cash costs: insufficient original
+cash returns not_matched, funded requirements continue, and unreadable genuine
+cash metadata refuses. The historical blanket paid-refusal patch is superseded
+by this current owner behavior; updated cash-shortage/availability/duplicate
+component coverage and native capture-reader reconciliation are underway.
+Native authority and fee-only receipt proof remain distinct from selector stubs.
+The next genuine acceptance case still requires its own source/authority review.
+
+The coordinator independently checked historical production-only patches on the
+clean review checkout at `b1ac97c3a`: QP07 `fd997ee4147ba58d835bf4bd61783b51307bc68c`
+still passes `git apply --check` for `specs.world_quest.c`; QP02
+`a19a67ad021de8e6bbfb31ca9ffea31e41cb6aa7` does not apply to the changed `quest.c`.
+Neither patch was applied. Preserve the published QP07 optional handoff and
+current-owner QP02 behavior; a failed historical patch is not a reason to restore
+its superseded blanket-refusal contract. No current native journey is inferred.
+
+This checkpoint leaves implementation, reviews and the overall Goal active.
+
+## Independent implementation checkpoint
+
+R3 implementation `48b7a6d` and strict-compiler repair `3a722a00` have independent
+original/extracted payment proof recorded in the
+[enhancement review](R3_ENHANCEMENT_RESERVATION_REVIEW_2026-10-07.md).
+Maintained build and adjacent-contract handoff review remain open. Current quest
+prep `36bfef3c` has independent QP01/QP02/QP05/QP06 selector passes and a source
+review of the bounded retained-origin capture change, recorded in the
+[quest checkpoint](../quest-prep/CURRENT_CANDIDATE_COORDINATOR_REVIEW_2026-10-07.md).
+Its fresh SQL Kord XP-ACK/later-move build/run is pending. No component or batch
+completion satisfies the overall Goal.
+
+Local final R3 source/test handoff `b18e513b`/`6d544bea7` has now passed the
+coordinator's declared-scope review, including actual 740-provider SQL/flat ELF
+hashes and combined patch application on current accounting. New 753-provider
+overlay builds remain pending distinct proof. R4 reservation `693d5704` has an
+[independent tribute-quote boundary approval](R4_SUPERIOR_TRIBUTE_REVIEW_2026-10-07.md)
+and may proceed in its existing isolated worktree. Final test/handoff/review
+publication is queued while GitHub rejects normal writes with internal errors;
+local review and implementation can continue without altering primary history.
+
 ## Recurring monitor
 
 The existing thread heartbeat checks every15 minutes, supplemented by active
