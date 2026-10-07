@@ -2371,8 +2371,11 @@ int main(int argc, char **argv) {
         from flatfile_money_history_cases import qualify as qualify_money_history
         money_history = qualify_money_history(ROOT, Path(build) / "money-history",
                                               fixture=fixture, operator=binary)
+        from flatfile_native_domain_cases import qualify as qualify_native_domains
+        native_domains = qualify_native_domains(ROOT, Path(build) / "native-domains")
         print(json.dumps({"positive_stores": successes, "refused_corruptions": refusals,
                           "money_history_cases": len(money_history["observations"]),
+                          "native_domain_cases": len(native_domains["observations"]),
                           "native_invocations_per_case": 3, "economic_bytes_unchanged": True,
                           "generic_semantic_corruptions": 50, "native_semantic_decodes": native_semantic_decodes,
                           "native_metadata_comparisons": 1058,

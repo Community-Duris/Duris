@@ -1228,3 +1228,32 @@ including that failed preflight and the exact later primary checkpoint.
 Delivery explicitly qualifies only these two source metadata differences and
 verifies the canonical result. Runtime inputs match this final qualified archive;
 publication prose is excluded from that comparison. All earlier evidence remains.
+
+
+## Independent native wallet/bank decoder — 2026-10-07
+
+The same remote `codex/accounting-plan5` carries this prerequisite slice, base
+`45666a547e09303f027c539cae56e21c633ad1f7`. Its
+[exact qualification](PLAN5_NATIVE_MONEY_DOMAIN_QUALIFICATION_2026-10-07.md)
+establishes that the original native read creates a missing authority lock,
+while the new complete pure decoder returns exact native money/revisions with
+the retained inventory unchanged.50 differential cases pass with0 skips;
+the registered full driver,18 review methods and complete two-boot/two-generation
+managed method pass on canonical archive `376e196998ea953427468d9b2faf1ee78d26faa2f1d2b4631cb4ee6f51b94d3c`.
+Make recompiles740 objects under original maintained flags;0 warnings/errors,
+exact byte equality and1,290 dependency inputs are verified. Its copied helper's
+reuse label is explicitly superseded by the measured compiler-invocation receipt.
+All55 contracts/normal checks/formatting pass; release still refuses missing
+executable writer evidence. All18 audit-family inputs stay pinned; native/schema62,
+shared manifests/contracts and seven older branch tips stay exact. No shared
+interface request is required. Result/remote SHA is recorded in final delivery.
+
+Seal SHA256 `0b2e66f9188fd88bf1d74c3bac253a32e5037fa6a30319c8a32491b747ea0494` binds4,309 artifacts/1,499,090,981
+bytes and preserves the first fixture setup failure and both superseded passes.
+Latest primary `7dbc472123a729f2fedc345e5309a586ba8a02d8` is refreshed and read;
+its earlier Plan5 integration/domain-separation coordination adds no dependency.
+Native wallet/bank current joins and all other money/UID/origin, gameplay, both SQL
+engines, combined release and activation gates remain open. No operator CLI or
+coherent-current-cut claim follows from this pure decoder. This is a nonblocking
+curator packet; local notebook application/notification/acknowledgement are not
+claimed. Accounting remains inactive; no production action occurs.
