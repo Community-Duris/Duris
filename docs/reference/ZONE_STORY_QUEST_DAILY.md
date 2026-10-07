@@ -219,3 +219,8 @@ The [dossier](../design/zone-stories/MAZZOLIN.md) retains one potential candidat
 ## Myconid daily qualification
 
 The [dossier](../design/zone-stories/MYCONID.md) retains one potential candidate for an exact external spore and 50 platinum, with a moving/no-D giver. Qualify active READY acceptance, frozen eligible party history, actual actor currency settlement/save/recovery, exact external source stock/global cap 1 and completed renewal. Green-key/cache progress, mushroom operation, foreign jar return and UTC rollover do not establish a fresh spore or settle the local reward. Policy stays disabled by default.
+
+
+## Vargan II daily qualification
+
+The [dossier](../design/zone-stories/V2.md) retains one potential candidate with three hidden/NORENT exact pieces, one sword reward and a no-D giver. Qualify active READY joint acceptance, frozen eligible party history, actor reward-child settlement/save/recovery, physical stock policy and completed mode2 giver/source renewal. Key/map discovery, campaign advice, hazards and UTC rollover cannot establish a fresh bundle or settle the reward. Policy stays disabled by default.

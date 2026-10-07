@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 200 authored journals, accounting-gated player surfaces, starter/town
+**Status: 201 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5299,3 +5299,10 @@ Builder declarations should map actual protected door/effect admission, one-way 
 The [Myconid dossier](zone-stories/MYCONID.md) adds an external-source currency request alongside a separate local key/cache progression. Reuse exact loose preparation plus one accepted return; acquisition from original source, player transfer, alternative foreign exchange, current stock and actual wallet settlement need independent ownership. A green key and requested spores may share a narrative noun without sharing identity or prerequisite. Dialogue aliases and alchemy prose do not establish conversation achievements or crafting.
 
 Builder declarations should specify optional key or admitted PICK/KNOCK alternative → UNLOCK/OPEN → each cache child recovery, selected mushroom operation → shared passage/crossing/reset, and gills OPEN → sleep/awakening → actual recovery. The giant root’s reviewed lack of literal supply and isolated ordinary room graph require fair intended-access/return qualification before repair. Scarlet food’s existing regeneration penalty and commented poison path require an explicit builder decision before changing effects. Twenty-eight owned follow-ups cover these cases. All new tracking requires active READY accounting; native repairs need separate named fix/news commits and prominent before/after evidence.
+
+
+## Vargan II integration extension
+
+The [Vargan II dossier](zone-stories/V2.md) adds a concrete hidden-source, three-piece return with later campaign advice. Reuse three exact optional loose-item rows and one joint accepted completion. Source combat, corpse/root lineage, admitted reveal, shared visibility, actual first recovery, transferred custody and persistent physical stock need independent evidence; SECRET/NORENT cannot be inferred from journal state alone. Dialogue and reward prose do not install a skill, rescue or foreign victory.
+
+Builder declarations should separate temple key/current door state, optional court chamber and actual loaded door state, hidden open drawer→map retrieval/reading, underwater admission/breath/survival and upper-level effect/geometry/fall outcomes. The current no-DOWN fallback and conditional unguarded target-DOWN access need a separately named guard/regression repair preserving travel policy, plus fair intended-geometry review. Twenty-eight owned follow-ups retain exact sources, actor/party reward ownership and completed renewal. Builder exit declarations require a separate raw-label → setup_dir construction → reset/current state qualification: raw5/raw9 are masked to ordinary doors, and D0 adds no secret/blocked flags. Requalify prior raw-only access conclusions where applicable before adding a mandatory reveal or proposing an access repair. New tracking requires active READY accounting; repairs need named fix/news commits with prominent before/after evidence.

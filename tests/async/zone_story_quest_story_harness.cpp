@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 200 &&
+		require(catalog.story_mappings.size() == 201 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -23854,6 +23854,88 @@ int main(int argc, char **argv)
 					recovered.progress_for_zone(7, 42, 885).completed == 0 &&
 					recovered.progress_for_zone(7, 42, 292).completed == 0,
 				"Myconid cold/raw recovery lost one return or invented foreign discovery/completion");
+		}
+
+		{
+			const auto &sword = story_for("v2", "vurlok-shattered-sword");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 78, 7800, 100, "arrival") ==
+					result::applied,
+				"Vargan II discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 78, 10, 1, 101, false, false);
+			require(journal.find(sword.title) == std::string::npos,
+				"Vargan II discovery exposed an unmet Vurlok");
+			require(journey.meet_npc(7, 42, 7814, 7887, 102) == result::applied,
+				"Vargan II Sellis encounter failed");
+			journal = journey.render_journal(7, 42, 78, 10, 1, 103, false, false);
+			require(journal.find(sword.title) == std::string::npos,
+				"Vargan II source encounter fabricated the separate giver");
+			require(journey.meet_npc(7, 42, 7822, 7918, 104) == result::applied,
+				"Vargan II actual Vurlok encounter failed");
+			const auto status = [&](size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    sword.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			for (const int vnum : { 8, 7800, 7822, 7847, 7852 })
+				supplies.carried[vnum] = 1;
+			supplies.equipped[18] = 7844;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 78, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now") &&
+					status(2, "Missing now"),
+				"Vargan II generic, key, shattered weapon, reward, map or held piece prepared the bundle");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 78).completed == 0,
+				"Vargan II preparation fabricated durable acceptance");
+			supplies = {};
+			supplies.carried[7844] = 3;
+			journal = journey.render_journal(7, 42, 78, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Missing now") &&
+					status(2, "Missing now") &&
+					journey.serialize_state() == before,
+				"Vargan II duplicate hilts substituted for the distinct cross-piece or blade");
+			supplies = {};
+			for (const int vnum : { 7844, 7845, 7846 })
+				supplies.carried[vnum] = 1;
+			journal = journey.render_journal(7, 42, 78, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Ready now") &&
+					status(2, "Ready now") &&
+					journal.find("Next: " + sword.steps.back().text) !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Vargan II supplied exact bundle required invented dialogue, source combat, key, map or rescue");
+			// Synthetic receipt qualifies projection, not native inputs/reward, SEARCH, hazards or campaign outcomes.
+			record(journey, sword.contracts.front(), "v2-three-piece-return", 78, 7918);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 78, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now") &&
+					status(2, "Missing now") && status(3, "Recorded") &&
+					journey.progress_for_zone(7, 42, 78).completed == 1 &&
+					journey.progress_for_zone(7, 42, 78).total == 1,
+				"Vargan II spent pieces erased or duplicated the joint return");
+			auto replay =
+				completion(sword.contracts.front(), "v2-three-piece-return", 120);
+			replay.transaction.zone_number = 78;
+			replay.transaction.room_vnum = 7918;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Vargan II replay duplicated the accepted bundle");
+			service recovered(catalog), raw(raw_catalog);
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 78).completed == 1 &&
+					recovered.progress_for_zone(7, 42, 78).total == 1 &&
+					raw.progress_for_zone(7, 42, 78).completed == 1 &&
+					!recovered.has_discovered(7, 42, 21) &&
+					recovered.progress_for_zone(7, 42, 21).completed == 0,
+				"Vargan II cold/raw recovery lost one return or fabricated a foreign campaign");
 		}
 
 		std::cout

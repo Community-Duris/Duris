@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 200 authored journals.
+2668 distinct Q contracts; 201 authored journals.
 
 Regenerate with:
 
@@ -234,7 +234,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Twisting Tunnels of the Durian Underdark (`underdark`) | 2 | 3 | 0 | Yes | [1 × the first half of an ancient amulet; 1 × the second half of an ancient amulet → the bronze Zarbonesti seal of Kryz'Kyssik](../../areas/qst/underdark.qst#L35) | purple_worm |
 | The Ruins of Undermountain (`undermountain`) | 2 | 3 | 1 | Yes | [1 × a crude note → a scimitar named 'Convalescence'](../../areas/qst/undermountain.qst#L13) | flame_of_north, flying_dagger, generic_drow_eq, generic_parry_proc, helmed_horror, iron_flindbar |
 | The Underworld (`underworld`) | 1 | 3 | 0 | Yes | [1 × the unholy relic of life and death → native reward/response](../../areas/qst/underworld.qst#L18) | hammer, magic_pool, piercer, purple_worm, underdark_track |
-| Vargan II (`v2`) | 1 | 2 | 0 | Fallback | [1 × an ancient hilt; 1 × an ancient cross-piece; 1 × a broken blade → the sword of Vurlok](../../areas/qst/v2.qst#L13) | — |
+| Vargan II (`v2`) | 1 | 2 | 0 | Yes | [1 × an ancient hilt; 1 × an ancient cross-piece; 1 × a broken blade → the sword of Vurlok](../../areas/qst/v2.qst#L13) | — |
 | The Valoisian Castle (`val`) | 8 | 5 | 1 | Yes | [1 × a battle mace; 1 × a huge polearm; 1 × some steel sleeves; other required items → a pair of leggings of clan crunch head](../../areas/qst/val.qst#L38) | — |
 | Phantasmagoric Caverns (`valdrak`) | 1 | 2 | 0 | Fallback | [1 × a blood soaked longsword; 1 × a blood stained claymore; 1 × a heart of living darkness → native reward/response](../../areas/qst/valdrak.qst#L40) | — |
 | Valley of Crushk (`valley_crushk`) | 1 | 1 | 0 | Fallback | [1 × a bandit shiv → native reward/response](../../areas/qst/valley_crushk.qst#L16) | — |

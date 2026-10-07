@@ -48709,6 +48709,251 @@
     {
       "contacts": [
         {
+          "description": "Vurlok asks about his champion and the three pieces of a shattered sword. Ask hi, then champion. One of each exact loose piece fits a joint return for his sword; his later campaign advice is a separate lead.",
+          "keyword": "vurlok",
+          "mob_vnum": 7822,
+          "name": "Vurlok, rival of Vargan",
+          "topics": [
+            "hi",
+            "champion"
+          ]
+        },
+        {
+          "description": "Sellis, son of Vargan, carries the ancient hilt in the throne room. Recovering that exact hidden piece is separate from combat and the other two sources.",
+          "keyword": "sellis",
+          "mob_vnum": 7814,
+          "name": "Sellis, son of Vargan",
+          "topics": []
+        },
+        {
+          "description": "The white disciple carries the broken blade in the west throne chamber. It is distinct from the conjurer in the southern chamber.",
+          "keyword": "white",
+          "mob_vnum": 7812,
+          "name": "a white disciple of Vargan",
+          "topics": []
+        },
+        {
+          "description": "The black disciple carries the ancient cross-piece in the east throne chamber. Its source and recovery remain separate from the hilt and blade.",
+          "keyword": "black",
+          "mob_vnum": 7813,
+          "name": "a black disciple of Vargan",
+          "topics": []
+        },
+        {
+          "description": "The red abishai inhabits the unfinished passage. Its encounter is independent of the three sword-piece sources.",
+          "keyword": "abishai",
+          "mob_vnum": 7800,
+          "name": "the red abishai",
+          "topics": []
+        },
+        {
+          "description": "The per guardian occupies the desecrated burial chamber. Its equipment and battle are separate from the sword return.",
+          "keyword": "per",
+          "mob_vnum": 7801,
+          "name": "a per guardian",
+          "topics": []
+        },
+        {
+          "description": "The albino minotaur overlord occupies a hall antechamber. It does not carry one of Vurlok\u2019s requested sword pieces.",
+          "keyword": "albino",
+          "mob_vnum": 7802,
+          "name": "an albino minotaur overlord",
+          "topics": []
+        },
+        {
+          "description": "The albino minotaur conjurer occupies the southern throne chamber. Its encounter is separate from the white disciple\u2019s blade.",
+          "keyword": "conjurer",
+          "mob_vnum": 7803,
+          "name": "an albino minotaur conjurer",
+          "topics": []
+        },
+        {
+          "description": "The crazed adventurer inhabits the abandoned lair. A future rescue story needs a defined recovery or safety outcome beyond an encounter.",
+          "keyword": "crazed",
+          "mob_vnum": 7804,
+          "name": "a crazed adventurer",
+          "topics": []
+        },
+        {
+          "description": "Red minotaur warriors inhabit the ancient passages. Their battles do not supply the three requested pieces.",
+          "keyword": "red",
+          "mob_vnum": 7805,
+          "name": "a red minotaur warrior",
+          "topics": []
+        },
+        {
+          "description": "Elite red minotaur warriors defend the passages and halls. Their encounters are independent of Vurlok\u2019s accepted return.",
+          "keyword": "elite",
+          "mob_vnum": 7806,
+          "name": "an elite red minotaur warrior",
+          "topics": []
+        },
+        {
+          "description": "The red minotaur overlord occupies a hall antechamber. Its equipment and encounter are separate from Sellis and the hilt.",
+          "keyword": "overlord",
+          "mob_vnum": 7807,
+          "name": "a red minotaur overlord",
+          "topics": []
+        },
+        {
+          "description": "Black minotaur warriors inhabit the passages. They are distinct from the black disciple carrying the cross-piece.",
+          "keyword": "black",
+          "mob_vnum": 7808,
+          "name": "a black minotaur warrior",
+          "topics": []
+        },
+        {
+          "description": "Elite black minotaur warriors inhabit several halls. A particular instance may have different equipment; none substitutes for the black disciple\u2019s piece.",
+          "keyword": "elite",
+          "mob_vnum": 7809,
+          "name": "an elite black minotaur warrior",
+          "topics": []
+        },
+        {
+          "description": "The black minotaur overlord occupies a hall antechamber. Its encounter is separate from the requested cross-piece.",
+          "keyword": "overlord",
+          "mob_vnum": 7810,
+          "name": "a black minotaur overlord",
+          "topics": []
+        },
+        {
+          "description": "A younger albino minotaur inhabits the passages. It is distinct from the overlord and conjurer.",
+          "keyword": "albino",
+          "mob_vnum": 7811,
+          "name": "an albino minotaur",
+          "topics": []
+        },
+        {
+          "description": "Grimlock warriors inhabit the collapsed corridors. Their battles are independent of the sword return.",
+          "keyword": "grimlock",
+          "mob_vnum": 7815,
+          "name": "a grimlock warrior",
+          "topics": []
+        },
+        {
+          "description": "The grimlock champion inhabits the collapsed corridor. Its name does not identify Vurlok\u2019s lost champion or create another sword-piece source.",
+          "keyword": "champion",
+          "mob_vnum": 7816,
+          "name": "a grimlock champion",
+          "topics": []
+        },
+        {
+          "description": "The grimlock guardian stands near the abandoned lair. Its encounter does not prove passage discovery or a rescue.",
+          "keyword": "guardian",
+          "mob_vnum": 7817,
+          "name": "a grimlock guardian",
+          "topics": []
+        },
+        {
+          "description": "Triton gatherers inhabit the flooded corridor. Their hunger and isolation are narrative leads; no accepted feeding or rescue request is defined.",
+          "keyword": "triton",
+          "mob_vnum": 7818,
+          "name": "a triton gatherer",
+          "topics": []
+        },
+        {
+          "description": "Death tyrants inhabit the upper passage level. Admitted travel and settled hazard outcomes are separate from an encounter.",
+          "keyword": "tyrant",
+          "mob_vnum": 7819,
+          "name": "a death tyrant",
+          "topics": []
+        },
+        {
+          "description": "Red undead minotaurs inhabit the ruined temple. One specific stocked instance carries the ancient key; another of the same kind need not.",
+          "keyword": "red",
+          "mob_vnum": 7820,
+          "name": "an undead minotaur",
+          "topics": []
+        },
+        {
+          "description": "A black undead minotaur inhabits the ruined temple. It is distinct from the particular red undead key carrier.",
+          "keyword": "black",
+          "mob_vnum": 7821,
+          "name": "an undead minotaur",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Recover Vurlok\u2019s three different sword pieces, with the ruined temple, court, hidden map, flooded corridor, upper passages and later campaign as separate progression leads.",
+      "orientation": [
+        "Find Vurlok in the deeper prison cell when present. Ask hi, then champion, to hear one request about three sword pieces. The two words are conversation topics rather than two completed quests.",
+        "The ancient hilt is stocked on Sellis in the throne room, the ancient cross-piece on the black disciple in its east chamber, and the broken blade on the white disciple in its west chamber. The conjurer in the southern chamber is a different encounter.",
+        "Each piece is a different exact item, and the source stock is hidden. Search the appropriate source container or corpse when recovering a piece, subject to actual visibility, source availability and access. Combat and personal recovery are separate outcomes.",
+        "Carry one of each exact piece loose and offer all three together. Supplied exact pieces can fit; the native return does not require remembered dialogue, personal kills, original recovery, the ancient key or the map.",
+        "Vurlok gives his sword and advice about a later campaign against Vargan. This records one accepted return, without making him depart, granting a separate skill achievement or completing the later campaign.",
+        "The ancient passages connect upward to the neighbouring Vargan cavern. Court and temple doors, flooded passages and the upper level need their own access and return planning.",
+        "The map room has a hidden table drawer containing an ancient scroll. Recovering and reading that map is a separate exploration lead; its prose keyhole does not make the currently open drawer locked.",
+        "The temple\u2019s undead and key, minotaur court and overlords, abishai and guardian, tritons, death tyrants, grimlocks and crazed adventurer are wider encounter leads. Future rescue, hazard or campaign stories need defined outcomes beyond battles and narrative advice."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "v2",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:7844,I:7845,I:7846;receive=I:7847;disappear=0",
+              "giver_vnum": 7822
+            }
+          ],
+          "id": "vurlok-shattered-sword",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The exact ancient hilt is stocked on Sellis in the throne room. It is hidden; search the appropriate source container or corpse when recovering it, subject to actual visibility and access. A supplied exact piece also fits; held, worn or nested stock does not prepare this offering.",
+              "id": "material-7844",
+              "item_vnums": [
+                7844
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the ancient hilt loose"
+            },
+            {
+              "count": 1,
+              "hint": "The exact ancient cross-piece is stocked on the black disciple in the east throne chamber. It is hidden; search the appropriate source container or corpse when recovering it, subject to actual visibility and access. A supplied exact piece also fits; held, worn or nested stock does not prepare this offering.",
+              "id": "material-7845",
+              "item_vnums": [
+                7845
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the ancient cross-piece loose"
+            },
+            {
+              "count": 1,
+              "hint": "The exact broken blade is stocked on the white disciple in the west throne chamber. It is hidden; search the appropriate source container or corpse when recovering it, subject to actual visibility and access. A supplied exact piece also fits; held, worn or nested stock does not prepare this offering.",
+              "id": "material-7846",
+              "item_vnums": [
+                7846
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the broken blade loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:7844,I:7845,I:7846;receive=I:7847;disappear=0",
+                  "giver_vnum": 7822
+                }
+              ],
+              "hint": "Offer all three different loose pieces together to Vurlok when present. This is one return for one sword, without departure. Dialogue, a personal kill, original gathering, map recovery, prisoner rescue and the later Vargan campaign are not native prerequisites.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record Vurlok\u2019s accepted three-piece return"
+            }
+          ],
+          "summary": "Bring the ancient hilt, ancient cross-piece and broken blade together for Vurlok\u2019s sword. The accepted return does not prove original recovery, rescue, a learned skill or victory over Vargan.",
+          "title": "Return the three pieces of Vurlok\u2019s sword"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "The kitchen master accepts the exact roper tentacle for his equipment reward and leaves after success. His rock wording differs from the actual reward; restock is separate from daily history.",
           "keyword": "cook",
           "mob_vnum": 8715,
