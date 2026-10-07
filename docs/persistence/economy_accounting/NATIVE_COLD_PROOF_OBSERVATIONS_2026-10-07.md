@@ -1,5 +1,21 @@
 # Native cold recovery proof observations — 2026-10-07
 
+## Latest literal-capacity recovery result — 2026-10-07
+
+[Qualification and integration](LITERAL_POOL_CAPACITY_RECOVERY_QUALIFICATION_2026-10-07.md)
+passes the original warm/full-cold and genuine origin-fault/pending-journal cases
+on both SQL engines. Pending cold now exits0 within the unchanged60-second limit.
+Primary authenticates172 files/2548 native members and owned cleanup. Narrow
+maintained integration now passes both original 740-provider production builds
+and actual pool controls. Root authenticates 1,308 unchanged source files and
+3,001 native artifact bytes/modes, original flags, provider closures and exact
+control markers. The native handoff is
+`bin/tests/mm-maintained-linux-primary-20261007/NATIVE-HANDOFF.json`.
+The earlier bind-filesystem link timeout is preserved; the Linux successor keeps
+the same controls and the 15-second execution limit. Exact owned cleanup passes.
+Whole maintained gameplay and release remain open; older failures below remain
+historical evidence, not the latest outcome.
+
 The pending-journal cold case still times out. The first numeric diagnostic
 establishes that at least one invocation completes the original SQL proof and
 rollback boundary. A subsequent diagnostic identifies refusal of all three
