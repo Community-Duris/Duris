@@ -21,4 +21,15 @@ bool coin_physical_recovery_identity(const critical_command &command, int *walle
 bool coin_physical_recovery_publish(const critical_command &command,
 				    const critical_completion &sealed_completion) noexcept;
 
+#ifndef __NO_MYSQL__
+struct st_mysql;
+// Game-thread SQL boot owner, after an ordinary coin operation's ACK. Reacquire
+// authenticated retained proof/current custody inside the caller's original
+// active transaction. Enroll only the exact current room pile and original UID;
+// no wallet repair, command reconstruction, domain callback or ACK occurs.
+// Caller must confirm original-session rollback/idle cleanup before claiming
+// completion. Refusal retains durable proof and forbids legacy substitution.
+bool coin_physical_recovery_restore_room(st_mysql *connection, uint64_t uid) noexcept;
+#endif
+
 #endif

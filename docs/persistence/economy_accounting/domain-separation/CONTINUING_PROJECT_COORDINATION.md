@@ -140,6 +140,26 @@ and may proceed in its existing isolated worktree. Final test/handoff/review
 publication is queued while GitHub rejects normal writes with internal errors;
 local review and implementation can continue without altering primary history.
 
+## Remotely available checkpoint successor
+
+GitHub writes recovered: coordinator plan/reviews `3f6f1fe0c`, architecture
+source/handoffs through `96090b82`, and quest helpers/handoff through `4e7580b7`
+are remotely verified. R4 `0a5084db` passes final independent original/extracted,
+source/proof/actual ELF/build and bare-current import review at declared scope;
+its source and handoff are available for optional primary import. The unchanged
+R3 753-provider snapshot builds are still pending, distinct from740-provider
+owned-branch binaries.
+
+Current-source Kord SQL legacy calibration completed its genuine five-cut driver
+and cleanup. Preserve original aggregate FAIL at the post-run adapter link and
+separate PASS of repaired real-provider offline predicates on unchanged cuts;
+the coordinator independently rebuilt that decoder and passed the published
+original predicates. See the [quest terminal review and next approved full-world
+bartender case](../quest-prep/CURRENT_CANDIDATE_COORDINATOR_REVIEW_2026-10-07.md).
+That next normal legacy payment case cannot discharge active-native stale/refund
+dependencies. Both actual continuing Goals remain active; these deliveries and
+new reservations are checkpoints in the evolving queue.
+
 ## Recurring monitor
 
 The existing thread heartbeat checks every15 minutes, supplemented by active

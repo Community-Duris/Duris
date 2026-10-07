@@ -595,10 +595,10 @@ posting_fields(const critical_operation_id &root, size_t index,
 	coin_fields(&values, "delta_", posting.delta);
 	return values;
 }
-void verify_plan_rows(MYSQL *connection, const critical_command &root,
+void verify_plan_rows(MYSQL *connection, const critical_operation_id &root_id,
 		      const economic_accounting_plan *plan, bool append)
 {
-	const std::string where = "operation_id=" + id(root.operation_id);
+	const std::string where = "operation_id=" + id(root_id);
 	const bool has_source_claim = plan && plan->metadata.source_event.has_value();
 	if (has_source_claim)
 	{
@@ -607,7 +607,7 @@ void verify_plan_rows(MYSQL *connection, const critical_command &root,
 		const auto claim = std::vector<std::pair<std::string, std::string>>{
 			{ "lineage", id(plan->metadata.lineage) },
 			{ "source_event", hex(encoded) },
-			{ "operation_id", id(root.operation_id) },
+			{ "operation_id", id(root_id) },
 			{ "outcome", "1" }
 		};
 		if (append)
@@ -620,7 +620,7 @@ void verify_plan_rows(MYSQL *connection, const critical_command &root,
 		{
 			const auto &child = plan->children[index];
 			const auto values = std::vector<std::pair<std::string, std::string>>{
-				{ "operation_id", id(root.operation_id) },
+				{ "operation_id", id(root_id) },
 				{ "child_index", std::to_string(index + 1) },
 				{ "child_operation_id", id(child.operation_id) },
 				{ "domain_id", std::to_string(child.domain) },
@@ -635,8 +635,7 @@ void verify_plan_rows(MYSQL *connection, const critical_command &root,
 		}
 		for (size_t index = 0; index < plan->accounts.size(); ++index)
 		{
-			const auto values =
-				effect_fields(root.operation_id, index, plan->accounts[index]);
+			const auto values = effect_fields(root_id, index, plan->accounts[index]);
 			if (append)
 				insert(connection, "economic_accounting_account_effect", values);
 			count(connection, "economic_accounting_account_effect", predicate(values),
@@ -644,8 +643,7 @@ void verify_plan_rows(MYSQL *connection, const critical_command &root,
 		}
 		for (size_t index = 0; index < plan->postings.size(); ++index)
 		{
-			const auto values =
-				posting_fields(root.operation_id, index, plan->postings[index]);
+			const auto values = posting_fields(root_id, index, plan->postings[index]);
 			if (append)
 				insert(connection, "economic_accounting_coin_posting", values);
 			count(connection, "economic_accounting_coin_posting", predicate(values), 1);
@@ -968,6 +966,10 @@ unsigned int coin_transfer_accounting_lock(MYSQL *, const critical_command &,
 {
 	return ENOTSUP;
 }
+unsigned int coin_transfer_accounting_verify_indexed_plan(MYSQL *, const economic_accounting_plan &)
+{
+	return ENOTSUP;
+}
 unsigned int coin_transfer_accounting_record(MYSQL *, const critical_command &,
 					     const coin_transfer_result &, unsigned int,
 					     const coin_transfer_accounting_context &)
@@ -981,6 +983,28 @@ unsigned int coin_transfer_accounting_verify_retained(MYSQL *, const critical_co
 	return ENOTSUP;
 }
 #else
+unsigned int coin_transfer_accounting_verify_indexed_plan(MYSQL *connection,
+							  const economic_accounting_plan &plan)
+{
+	try
+	{
+		require(connection &&
+				plan.metadata.writer_id == ECONOMIC_WRITER_WALLET_COIN_TRANSFER &&
+				plan.metadata.reason == economic_reason::coin_transfer,
+			EINVAL);
+		checked(economic_plan_validate_structure(plan));
+		verify_plan_rows(connection, plan.metadata.operation_id, &plan, false);
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error_code(error);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+}
 unsigned int coin_transfer_accounting_lock(MYSQL *connection, const critical_command &root,
 					   const coin_transfer_payload &payload,
 					   coin_transfer_accounting_context *context)
@@ -1094,10 +1118,10 @@ unsigned int coin_transfer_accounting_record(MYSQL *connection, const critical_c
 		count(connection, "economic_accounting_operation", predicate(operation), 1);
 		if (plan)
 			verify_item_reference_rows(connection, root, value, result, *plan, true);
-		verify_plan_rows(connection, root, plan ? &*plan : nullptr, true);
+		verify_plan_rows(connection, root.operation_id, plan ? &*plan : nullptr, true);
 		if (plan)
 			verify_item_reference_rows(connection, root, value, result, *plan, false);
-		verify_plan_rows(connection, root, plan ? &*plan : nullptr, false);
+		verify_plan_rows(connection, root.operation_id, plan ? &*plan : nullptr, false);
 		require(connection->server_status & SERVER_STATUS_IN_TRANS, ENOTCONN);
 		return 0;
 	}
@@ -1147,7 +1171,7 @@ coin_transfer_accounting_verify_retained(MYSQL *connection, const critical_comma
 		const auto where = "operation_id=" + id(root.operation_id);
 		if (plan)
 			verify_item_reference_rows(connection, root, value, result, *plan, false);
-		verify_plan_rows(connection, root, plan ? &*plan : nullptr, false);
+		verify_plan_rows(connection, root.operation_id, plan ? &*plan : nullptr, false);
 		if (plan)
 		{
 			for (const auto *endpoint :

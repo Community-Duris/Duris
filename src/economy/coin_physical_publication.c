@@ -92,7 +92,7 @@ bool source_matches(P_obj money, const coin_transfer_endpoint &endpoint,
 	if (!money || !std::equal(endpoint.before.begin(), endpoint.before.end(), money->value) ||
 	    player_item_snapshot_tree_capture_literal(money, &actual, nullptr) !=
 		    player_snapshot_capture_result::ok ||
-	    actual.size() != 1)
+	    actual.size() != 1 || actual[0].extra_descriptions.size() > 1)
 		return false;
 	actual[0].equipment_slot = -1;
 	struct rendering
@@ -110,24 +110,27 @@ bool source_matches(P_obj money, const coin_transfer_endpoint &endpoint,
 		}
 	} rendered;
 	rendered.object.type = ITEM_MONEY;
-	rendered.object.ex_description = &rendered.detail;
+	rendered.object.ex_description = actual[0].extra_descriptions.empty() ? nullptr :
+										&rendered.detail;
 	std::copy(endpoint.before.begin(), endpoint.before.end(), rendered.object.value);
 	add_coins(&rendered.object, 0, 0, 0, 0);
 	if (!rendered.object.description || !rendered.object.short_description ||
-	    actual[0].extra_descriptions.size() != 1 || !rendered.detail.description ||
+	    (!actual[0].extra_descriptions.empty() && !rendered.detail.description) ||
 	    actual[0].description != rendered.object.description ||
 	    actual[0].short_description != rendered.object.short_description ||
 	    actual[0].weight != rendered.object.weight ||
-	    actual[0].extra_descriptions[0].description != rendered.detail.description)
+	    (!actual[0].extra_descriptions.empty() &&
+	     actual[0].extra_descriptions[0].description != rendered.detail.description))
 		return false;
 	std::copy(endpoint.after.begin(), endpoint.after.end(), rendered.object.value);
 	add_coins(&rendered.object, 0, 0, 0, 0);
 	if (!rendered.object.description || !rendered.object.short_description ||
-	    !rendered.detail.description)
+	    (!actual[0].extra_descriptions.empty() && !rendered.detail.description))
 		return false;
 	actual[0].description = rendered.object.description;
 	actual[0].short_description = rendered.object.short_description;
-	actual[0].extra_descriptions[0].description = rendered.detail.description;
+	if (!actual[0].extra_descriptions.empty())
+		actual[0].extra_descriptions[0].description = rendered.detail.description;
 	actual[0].weight = rendered.object.weight;
 	std::copy(endpoint.after.begin(), endpoint.after.end(), actual[0].values.begin());
 	std::vector<uint8_t> actual_bytes, expected_bytes;
@@ -237,6 +240,7 @@ bool coin_physical_publication_publish(P_char actor, const critical_operation_id
 	    expected.size() != 1 || expected[0].object_uid != pile.selected_item_uid ||
 	    expected[0].vnum != pile.items[0].vnum || expected[0].type != ITEM_MONEY ||
 	    expected[0].equipment_slot != -1 || !expected[0].dynamic_affects.empty() ||
+	    expected[0].extra_descriptions.size() > 1 ||
 	    IS_SET(expected[0].extra_flags, ITEM_TRANSIENT | ITEM_LIT) ||
 	    expected[0].string_mask != (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3))
 		return false;
