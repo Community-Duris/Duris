@@ -1019,6 +1019,14 @@ bool shop_trade_original_item_stage::prepare(const object_template &prototype,
 				 description.description.find('\0') != std::string::npos)
 				return false;
 		}
+		// Cold SHOP restoration may be the first object allocation after mm_create.
+		// Reserve real native capacity before unpublished literal staging, without
+		// changing the generic inert/money allocator's free-slot-only contract.
+		extern mm_ds *dead_obj_pool;
+		if (!dead_obj_pool || dead_obj_pool->size != sizeof(obj_data) ||
+		    dead_obj_pool->next_off != offsetof(obj_data, next) ||
+		    !mm_try_reserve_free_slot(dead_obj_pool))
+			return false;
 		inert_item_stage raw;
 		if (inert_item_stage::allocate_literal(prototype, decoded, raw) !=
 		    inert_item_stage_result::ok)
@@ -1217,6 +1225,14 @@ bool native_mobile_birth_literal_stage::prepare(const object_template &prototype
 				 description.description.find('\0') != std::string::npos)
 				return false;
 		}
+		// Cold birth replay may be the first object allocation after mm_create.
+		// Reserve native capacity only after complete literal validation; keep
+		// the generic inert/money allocator's free-slot-only contract unchanged.
+		extern mm_ds *dead_obj_pool;
+		if (!dead_obj_pool || dead_obj_pool->size != sizeof(obj_data) ||
+		    dead_obj_pool->next_off != offsetof(obj_data, next) ||
+		    !mm_try_reserve_free_slot(dead_obj_pool))
+			return false;
 		inert_item_stage raw;
 		if (inert_item_stage::allocate_literal(prototype, decoded, raw) !=
 		    inert_item_stage_result::ok)

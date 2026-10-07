@@ -999,6 +999,115 @@ do not silently reuse a checkpoint bound to another source. The checkpoint
 lock, safe atomic update, future-timestamp refusal and original witness/receipt
 checks remain. Native economic evidence is read-only.
 
+For every flatfile page scope, `consistent_page` is true only when the current
+page completed without refusal and every selected record, link or receipt
+verified. A semantic finding makes this field false even when the native page
+returned normally. A later healthy page can report `consistent_page=true` while
+the checkpoint retains earlier findings and the CLI continues to exit 1.
+This field does not assert consistency of the entire sweep.
+
 Pages report partial coverage: complete/consistent-entire-sweep/release and
 holdings/baseline/orphan/lifecycle closure flags remain false. A range count
 or zero findings does not qualify complete accounting or release.
+
+The flatfile operator also supports catalogue-required baseline controls. Use a
+separate external private checkpoint for this scope:
+
+```bash
+python3 scripts/flatfile_economic_audit.py \
+  --state-root /absolute/restored-state \
+  --qualifier /absolute/bin/tools/qualify_flatfile_restore \
+  --progress /absolute/private-operator-directory/baseline-controls-progress.json \
+  --scope baseline-controls
+```
+
+The native command is `--economic-baseline-controls-page ROOT BUCKET AFTER
+CEILING`. It selects at most two initialized epoch IDs from the authenticated
+catalogue in the first-byte bucket, including inactive epochs. Each selected
+book must retain its head and all 16 reservation shards even if it has no roots.
+The original independent decoders check the opening account, initializer for a
+revision-zero book, canonical ordered shard members, shard checksums, terminal
+root/revision and every reservation operation's original root and witness.
+Reconstructed witness membership must exactly match the selected book's shards.
+The reader takes the existing authority read lock, refuses pending journals,
+and never repairs findings or invokes accounting mutation logic.
+
+This scope uses the independent reader's existing 16,384 physical-read,
+128 MiB byte and 8,192 directory-entry ceilings with a cooperative 30-second
+deadline. The Python qualifier subprocess has its existing 45-second timeout.
+The retained-root and authority-link page budgets stay unchanged. Budget or
+timeout refusal rotates to the next bucket without advancing the selected
+cursor. An epoch ceiling fixes each bucket's traversal range; appended epochs
+above that ceiling require a subsequent range. Private checkpoint ownership,
+atomic replacement, source/lineage binding and sticky findings use the same
+operator machinery as the other scopes.
+
+Reports use `flatfile_economic_baseline_controls_page_v1` and scope
+`required_baseline_control_reference_page`, with `examined_books`,
+`verified_book_controls` and `total_books_observed`. Findings identify the epoch
+with `flatfile_baseline_control_invalid` or
+`flatfile_baseline_control_page_refused`. A semantic finding makes the current
+page inconsistent while valid sibling books can still be verified. Later
+healthy pages preserve earlier findings and CLI status 1. These counters record
+observations across traversals, not distinct books certified complete.
+
+Earlier empty roots can have no reservation references. This page does not
+prove consecutive history or the head's total root count, enumerate orphan or
+unknown-initialization namespaces, or compare current native holdings. The
+whole independent reader still checks complete baseline root history within
+its admitted budget. Reports retain `baseline_controls_closed`,
+`baseline_books_closed`, `complete`, `consistent_entire_sweep`,
+`orphan_namespace_closed`, `native_holdings_compared` and `release_qualified`
+as false. This scope supplies bounded control/reference evidence only.
+
+## Independent baseline history and physical namespace
+
+Use fresh, separate private checkpoints for the new scopes:
+
+```bash
+python3 scripts/flatfile_economic_audit.py \
+  --state-root /absolute/restored-state \
+  --qualifier /absolute/bin/tools/qualify_flatfile_restore \
+  --progress /absolute/private-operator-directory/baseline-history.json \
+  --scope baseline-history
+
+python3 scripts/flatfile_economic_audit.py \
+  --state-root /absolute/restored-state \
+  --qualifier /absolute/bin/tools/qualify_flatfile_restore \
+  --progress /absolute/private-operator-directory/physical-namespace.json \
+  --scope physical-namespace
+```
+
+Baseline history first captures the authenticated catalogue/head cut, then checks
+each required book's controls and traverses original roots by bucket. Durable
+revision membership detects missing or duplicate revisions; reservation totals
+and terminal identity must match. A later changed source cut refuses continuation
+and stale closure. The native interfaces are
+`--economic-baseline-history-context ROOT`,
+`--economic-baseline-history-control ROOT EPOCH` and
+`--economic-baseline-history-page ROOT BUCKET AFTER`.
+
+Physical namespace captures a bounded private inventory beside the checkpoint,
+then independently checks its original names, physical economic families and
+reverse references. Its native interfaces are `--economic-namespace-inventory`,
+`--economic-namespace-context` and `--economic-namespace-file`; the Python owner
+supplies their bounded inventory/file arguments. Preserve the checkpoint and
+its auxiliary inventory together. Existing auxiliary files are never silently
+replaced: an interrupted unclaimed capture requires a fresh checkpoint path.
+Auxiliary substitution, changed source families, locks, pending journals and
+invalid economic files refuse or produce retained findings. Economic source
+files are read-only; the operator never repairs them.
+
+Existing native time/byte/file limits, 45-second subprocess bounds, exclusive
+private checkpoint ownership, source binding, atomic publication and sticky
+findings remain. Namespace inventory can admit more than 8,192 entries within
+its explicit bounded family-derived ceiling; that does not remove per-operation
+resource limits. Counts describe the captured historical cut.
+
+`known_initialized_baseline_books_closed` and
+`known_physical_economic_namespace_closed` apply only to those named scopes.
+They do not certify native holdings, general orphan closure, the entire sweep
+or release. `complete`, `consistent_entire_sweep`, `baseline_books_closed`,
+`orphan_namespace_closed`, `native_holdings_compared` and `release_qualified`
+remain false. See [primary qualification](
+PLAN5_HISTORY_NAMESPACE_PRIMARY_INTEGRATION_2026-10-07.md).

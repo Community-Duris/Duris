@@ -1,5 +1,135 @@
 # Finish accounting implementation plan
 
+## Independent history and namespace qualified � 2026-10-07
+
+[Primary integration](PLAN5_HISTORY_NAMESPACE_PRIMARY_INTEGRATION_2026-10-07.md)
+adds catalogue-required consecutive history and captured physical-namespace
+checks. All three complete original native suites pass with zero skips:
+lifecycle69 history/48 namespace controls; authority77 history/49 namespace
+controls; all131 lifecycle,20 healthy/367 damaged and69 marker cases remain.
+Primary authenticates6,377 source inputs and17,098 native regular bodies/modes,
+then imports exactly13 qualified files. Accounting/checkpoint contracts,
+syntax, formatting and whitespace pass. Source archive transport conversion
+is verified separately from Git blob identity. Protected WIP stays exact.
+Named known-range closure does not certify full accounting; native holdings,
+producer/player journeys, full recovery and release remain open.
+
+## Implementation approach for future RAM authority — 2026-10-07
+
+Apply this guidance to remaining accounting implementation so a later RAM-authority
+conversion can reuse domain rules and prepared effects. Current native authority,
+SQL-first delivery, work order, backend requirements, ownership assignments,
+qualification schedule and release gates remain in force. This guidance adds no
+architecture milestone or claim of completed coverage.
+
+**Forward-only scope.** Finish the current coherent slice before adopting this
+guidance. Apply it to new paths and code already being changed for an existing
+accounting requirement. Preserve completed and qualified slices; do not reopen,
+rename, move or rewrite them solely for architectural consistency. Continue
+repairing defects required by the existing plan, retaining their original proof
+obligations. Record larger extraction opportunities in the existing handoff or
+implementation history and proceed with the required accounting work. If a
+separation introduces substantial extra implementation or qualification, defer
+that separation rather than expanding this milestone.
+
+**Domain preparation.** Where a small local separation fits work already needed,
+keep domain validation, calculations and effect preparation independent of SQL
+access and live game pointers. Reuse existing typed commands, before/after
+mutations, accounting plans and domain adapters. Supply owned state and explicit
+facts from the transaction owner; freeze outcome-defining time, randomness,
+recipients and source identities where existing replay requirements demand it.
+The prepared result should describe the native effects and corresponding
+accounting evidence together. Use those same prepared effects for application
+and verify the actual native effects before commit. Preserve existing per-child,
+batch and compound atomicity boundaries; preparation does not combine previously
+separate operations or authorize a new mutation.
+
+**Native execution remains authoritative.** Keep reads, locks, lifetime and
+capability proofs, source claims, native writes, receipt/outbox handling,
+commit/rollback, replay and durability acknowledgements in the existing native
+transaction owner. A pure preparation result, supplied snapshot or structurally
+valid accounting plan is not authority, an applied-effect proof or a durable
+receipt. Preserve the owner-issued proofs and effect verification. Keep live
+publication after the existing durable boundary, with the original IDs,
+revisions, holds and recovery obligations. Independent audit remains independent
+of mutation/preparation logic.
+
+**Reuse and coordination.** The primary retains Plans 1–4 and shared coordinator,
+contracts, producer integration, writer registry/matrix and activation ownership;
+the second coordinated agent retains Plan 5. Separate future architecture work
+must use an isolated worktree and an agreed operation/file boundary. Submit
+shared interface needs through the primary owner with exact fields, invariants,
+consumers and affected checks; do not independently modify the same owner or
+assume a plan edit has been read by another running agent. Integrate completed
+slices against one identified candidate and retain revision-specific evidence.
+
+RAM execution, interchangeable authority strategies, automatic failover,
+authority switching, a second queue/custody catalog, general framework creation,
+new migrations or wire formats solely for future conversion, and new qualification
+gates are outside this guidance. Existing required changes to those areas remain
+owned by their current plan. Preserve inactive behavior, wallet-root exclusions,
+the declined inactive spell-path change and all current acceptance requirements.
+
+## Latest literal-capacity recovery result — 2026-10-07
+
+[Qualification and integration](LITERAL_POOL_CAPACITY_RECOVERY_QUALIFICATION_2026-10-07.md)
+passes the original warm/full-cold and genuine origin-fault/pending-journal cases
+on both SQL engines. Pending cold now exits0 within the unchanged60-second limit.
+Primary authenticates172 files/2548 native members and owned cleanup. Narrow
+maintained integration now passes both original 740-provider production builds
+and actual pool controls. Root authenticates 1,308 unchanged source files and
+3,001 native artifact bytes/modes, original flags, provider closures and exact
+control markers. The native handoff is
+`bin/tests/mm-maintained-linux-primary-20261007/NATIVE-HANDOFF.json`.
+The earlier bind-filesystem link timeout is preserved; the Linux successor keeps
+the same controls and the 15-second execution limit. Exact owned cleanup passes.
+Whole maintained gameplay and release remain open; older failures below remain
+historical evidence, not the latest outcome.
+
+## Ordinary coin recovery counter fix — 2026-10-07
+
+[Focused qualification](COIN_RECOVERY_OWNER_COUNTER_QUALIFICATION_2026-10-07.md)
+repairs both locked endpoint counters and exact item owner_revision. Original
+source fails three regressions; corrected maintained source passes all ten native
+ASan/UBSan cases. Authority/world seams limit this evidence to cache projection.
+Post-ACK SQL room coin boot restoration and full Plan2 qualification remain open.
+
+## Current native auction proof progress — 2026-10-07
+
+[Private component progress](NATIVE_AUCTION_RETAINED_PROOF_PROGRESS_2026-10-07.md)
+passes original native-v2 LIST, settlement, partial pickup and exact durable
+rejected replay. The next original v1 LIST171 returns retryable EAGAIN; its
+original custody INSERT has now been observed failing1062 because a claimed
+row retains the globally unique UID. Additive history-preserving schema64 is
+measured privately on MySQL8 and MariaDB10.11: canonical migration and both
+interrupted-DDL resume routes pass, preserving original application/history rows.
+All 238 commands have their expected outcomes. Runtime fingerprints are now
+measured and the offline contract passes. Both original753-provider production
+links and nine contracts now pass on the measured private source; original
+producer reruns and maintained integration remain open. Earlier strict753-provider
+builds and nine contracts pass on private d2 source; both-engine component completion, physical
+journeys and maintained producer integration remain open. The separately
+reviewed post-SQL-proof recovery diagnostic also passes both original753 builds
+and nine contracts; runtime recovery qualification remains pending. Existing
+inactive behavior, declined spell path and release gates remain preserved.
+
+## Required baseline controls qualified — 2026-10-07
+
+[Primary integration](PLAN5_BASELINE_CONTROLS_PRIMARY_INTEGRATION_2026-10-07.md)
+adds catalogue-required baseline control/reference pages, including rootless
+and inactive initialized books. All three original native reader suites pass
+with zero skips; 65 new baseline controls pass alongside existing cases.
+Missing controls stay visible; full history, holdings, producers, recovery
+and release remain open. Complete/closure/release flags remain false.
+
+## Flatfile page consistency qualified — 2026-10-07
+
+[Primary integration](PLAN5_PAGE_CONSISTENCY_PRIMARY_INTEGRATION_2026-10-07.md)
+corrects `consistent_page` for semantic findings without losing sticky history.
+All three original native reader suites pass on the combined baseline-controls
+candidate with zero skips. Primary authenticates source and native exports;
+producer, recovery and release qualification remain open.
+
 ## Lifecycle receipt paging qualified — 2026-10-07
 
 [Primary integration](PLAN5_LIFECYCLE_PAGES_PRIMARY_INTEGRATION_2026-10-07.md)
@@ -56,8 +186,24 @@ Both actual MySQL and MariaDB warm/full-cold/owned-shutdown journeys now pass
 on the same actual ELF with the genuine production lifecycle teardown guard.
 MySQL's genuine origin-INSERT fault exits 17 as expected and retains one phase-2
 journal record. Its subsequent pending-journal cold case hits the unchanged
-60-second deadline (exit 124, 60.024 seconds); no recovery stage/stack is yet
-observed. MariaDB fault cases remain unrun under original fail-fast order.
+60-second deadline (exit 124, 60.024 seconds). A separate unchanged-ELF
+diagnostic also times out at 60.034 seconds; its single bounded stack reaches
+the retained birth's SQL wallet-mapping count proof after replay initialization.
+A separate unchanged-ELF SELECT-only diagnostic times out at 60.025 seconds.
+Its nine metadata reads complete in 0.441 seconds and show transaction turnover
+without observed wait relations. The sample is non-atomic; instrumentation
+coverage and client ownership are unproven, so it does not establish a global
+absence of waits or the failed recovery predicate. Primary authenticates all
+146 SQL diagnostic files, 1,779 native members and exact cleanup; the separate
+stack packet contains 129 files. Neither diagnostic changes code or deadlines.
+The [numeric source diagnostic](NATIVE_COLD_PROOF_OBSERVATIONS_2026-10-07.md)
+passes both original full 753-provider builds and nine contracts. Its genuine
+new ELF passes both engines' normal warm/cold cases; pending MySQL cold still
+times out at 60.053 seconds. Actual stages 9400/9411 with code zero establish
+at least one complete original SQL-proof/rollback boundary passed. The later
+failed reconstruction/publication check remains unobserved. Primary authenticates
+124 files, 1,779 native members and cleanup. MariaDB fault cases remain unrun
+under original fail-fast order.
 Primary authenticates 123 evidence files, 1,779 native archive members and exact
 owned cleanup. Normal cold success does not establish fault recovery completion.
 

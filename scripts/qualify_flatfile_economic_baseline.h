@@ -140,6 +140,13 @@ struct reservation
 	uint64_t kind, id;
 	identity operation;
 };
+struct book_control
+{
+	std::array<uint8_t, 40> opening;
+	uint64_t revision;
+	identity terminal;
+	std::array<digest, 16> checksums;
+};
 inline bool less(const reservation &first, const reservation &second)
 {
 	return std::tie(first.kind, first.id) < std::tie(second.kind, second.id);
@@ -158,6 +165,92 @@ class checker
 	explicit checker(const std::filesystem::path &path)
 		: directory(path / "economic-evidence")
 	{
+	}
+	book_control control(const identity &lineage, const epoch_marker &marker,
+			     digest *body_digest = nullptr) const
+	{
+		need(marker.initialization != baseline_initialization::never_initialized);
+		auto encoded = frame(directory, prefix(lineage, marker.epoch) + "head.ebc",
+				     "DUREBC1", 656);
+		reader in{ encoded };
+		need(in.fixed<16>() == lineage && in.fixed<16>() == marker.epoch);
+		book_control result;
+		result.opening = in.fixed<40>();
+		need(std::get<0>(account(result.opening, lineage)) == 9);
+		result.revision = in.number(8);
+		result.terminal = in.fixed<16>();
+		need(nonzero(result.terminal) && result.revision <= buckets * bucket_capacity);
+		if (marker.initialization == baseline_initialization::initialized)
+			need(same(result.opening, marker.opening) &&
+			     (result.revision != 0 ||
+			      result.terminal == marker.initializing_operation));
+		for (auto &checksum : result.checksums)
+		{
+			checksum = in.fixed<32>();
+			need(nonzero(checksum));
+		}
+		in.done();
+		if (body_digest)
+			*body_digest = hash(encoded);
+		return result;
+	}
+	std::vector<reservation> reservations(const identity &lineage, const identity &epoch,
+					      size_t slot, const digest &checksum) const
+	{
+		need(slot < 16);
+		auto body = frame(directory, prefix(lineage, epoch) + hex_digits[slot] + ".ebi",
+				  "DUREBI1", reservation_limit, checksum);
+		reader in{ body };
+		need(in.fixed<16>() == lineage && in.fixed<16>() == epoch && in.number(4) == slot);
+		const auto count = in.number(4);
+		need(count <= reservation_capacity);
+		std::vector<reservation> result;
+		for (size_t i = 0; i < count; ++i)
+		{
+			reservation value{ in.number(8), in.number(8), in.fixed<16>() };
+			need((value.kind == 1 || value.kind == 2) && value.id &&
+			     value.id % 16 == slot && nonzero(value.operation) &&
+			     (result.empty() || less(result.back(), value)));
+			result.push_back(value);
+		}
+		in.done();
+		return result;
+	}
+	bytes witness(const identity &lineage, const identity &epoch, const root &entry) const
+	{
+		return file_bytes(directory, prefix(lineage, epoch) + hex(entry.operation) + ".eab",
+				  witness_limit, entry.witness);
+	}
+	const std::vector<root> &observed(const identity &epoch) const
+	{
+		need(books.size() == 1 && books.contains(epoch));
+		return books.at(epoch);
+	}
+	const std::map<identity, std::vector<root>> &observed_books() const { return books; }
+	std::array<std::vector<reservation>, 16>
+	expected_reservations(const identity &lineage, const identity &epoch,
+			      std::span<const uint8_t> opening,
+			      std::span<const root> retained) const
+	{
+		std::array<std::vector<reservation>, 16> result;
+		for (const auto &entry : retained)
+		{
+			auto encoded = witness(lineage, epoch, entry);
+			const auto stride = item_bytes(encoded);
+			need(same(std::span<const uint8_t>(encoded).subspan(80, 40), opening));
+			auto holdings = number(encoded, 184, 4), items = number(encoded, 188, 4);
+			auto reserve = [&](uint64_t kind, uint64_t id)
+			{
+				auto &slot = result[id % 16];
+				need(slot.size() < reservation_capacity);
+				slot.push_back({ kind, id, entry.operation });
+			};
+			for (size_t n = 0; n < holdings; ++n)
+				reserve(1, number(encoded, 192 + n * 112 + 20, 8));
+			for (size_t n = 0; n < items; ++n)
+				reserve(2, number(encoded, 192 + holdings * 112 + n * stride, 8));
+		}
+		return result;
 	}
 	void observe(const identity &lineage, const identity &epoch, const identity &operation,
 		     std::span<const uint8_t> intent, std::span<const uint8_t> payload,
@@ -291,70 +384,32 @@ class checker
 		{
 			const auto &marker = markers.at(epoch);
 			need(marker.initialization != baseline_initialization::never_initialized);
-			auto base = prefix(lineage, epoch);
-			auto head = frame(directory, base + "head.ebc", "DUREBC1", 656);
-			reader in{ head };
-			need(in.fixed<16>() == lineage && in.fixed<16>() == epoch);
-			auto opening = in.take(40);
-			need(std::get<0>(account(opening, lineage)) == 9);
-			auto revision = in.number(8);
-			auto terminal = in.fixed<16>();
-			need(nonzero(terminal) && revision == retained.size());
-			if (marker.initialization == baseline_initialization::initialized)
-				need(same(opening, marker.opening) &&
-				     (revision != 0 || terminal == marker.initializing_operation));
-			std::array<digest, 16> checksums;
-			for (auto &checksum : checksums)
-			{
-				checksum = in.fixed<32>();
-				need(nonzero(checksum));
-			}
-			in.done();
+			const auto book = control(lineage, marker);
+			need(book.revision == retained.size());
 			std::sort(retained.begin(), retained.end(), [](const auto &a, const auto &b)
 				  { return a.revision < b.revision; });
-			std::array<std::vector<reservation>, 16> reservations;
 			for (size_t i = 0; i < retained.size(); ++i)
 			{
 				const auto &entry = retained[i];
-				need(entry.revision == i + 1 &&
-				     (i + 1 != retained.size() || entry.operation == terminal));
-				auto witness = file_bytes(directory,
-							  base + hex(entry.operation) + ".eab",
-							  witness_limit, entry.witness);
-				const auto stride = item_bytes(witness);
-				need(same(std::span<const uint8_t>(witness).subspan(80, 40),
-					  opening));
-				auto holdings = number(witness, 184, 4),
-				     items = number(witness, 188, 4);
-				auto reserve = [&](uint64_t kind, uint64_t id)
-				{
-					auto &slot = reservations[id % 16];
-					need(slot.size() < reservation_capacity);
-					slot.push_back({ kind, id, entry.operation });
-				};
-				for (size_t n = 0; n < holdings; ++n)
-					reserve(1, number(witness, 192 + n * 112 + 20, 8));
-				for (size_t n = 0; n < items; ++n)
-					reserve(2, number(witness,
-							  192 + holdings * 112 + n * stride, 8));
+				need(entry.revision == i + 1 && (i + 1 != retained.size() ||
+								 entry.operation == book.terminal));
 			}
+			auto reservations =
+				expected_reservations(lineage, epoch, book.opening, retained);
 			for (size_t slot = 0; slot < 16; ++slot)
 			{
 				auto &expected = reservations[slot];
 				std::sort(expected.begin(), expected.end(), less);
-				auto body = frame(directory, base + hex_digits[slot] + ".ebi",
-						  "DUREBI1", reservation_limit, checksums[slot]);
-				reader rows{ body };
-				need(rows.fixed<16>() == lineage && rows.fixed<16>() == epoch &&
-				     rows.number(4) == slot && rows.number(4) == expected.size());
+				const auto actual = this->reservations(lineage, epoch, slot,
+								       book.checksums[slot]);
+				need(actual.size() == expected.size());
 				for (size_t i = 0; i < expected.size(); ++i)
 				{
 					need((!i || less(expected[i - 1], expected[i])) &&
-					     rows.number(8) == expected[i].kind &&
-					     rows.number(8) == expected[i].id &&
-					     rows.fixed<16>() == expected[i].operation);
+					     actual[i].kind == expected[i].kind &&
+					     actual[i].id == expected[i].id &&
+					     actual[i].operation == expected[i].operation);
 				}
-				rows.done();
 			}
 			std::sort(retained.begin(), retained.end(), [](const auto &a, const auto &b)
 				  { return a.operation < b.operation; });

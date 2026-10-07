@@ -1,5 +1,17 @@
 # Shared producer integration progress — 2026-10-06
 
+## Current native auction proof progress — 2026-10-07
+
+[Private component progress](NATIVE_AUCTION_RETAINED_PROOF_PROGRESS_2026-10-07.md)
+passes original native-v2 LIST, settlement, partial pickup and exact durable
+rejected replay. The next original v1 LIST171 returns retryable EAGAIN; its
+internal predicate remains unobserved. Both strict753-provider builds and nine
+contracts pass on private d2 source; both-engine component completion, physical
+journeys and maintained producer integration remain open. The separately
+reviewed post-SQL-proof recovery diagnostic also passes both original753 builds
+and nine contracts; runtime recovery qualification remains pending. Existing
+inactive behavior, declined spell path and release gates remain preserved.
+
 ## Lifecycle receipt paging qualified — 2026-10-07
 
 [Primary integration](PLAN5_LIFECYCLE_PAGES_PRIMARY_INTEGRATION_2026-10-07.md)
@@ -26,8 +38,24 @@ Both actual MySQL and MariaDB warm/full-cold/owned-shutdown journeys now pass
 on the same actual ELF with the genuine production lifecycle teardown guard.
 MySQL's genuine origin-INSERT fault exits 17 as expected and retains one phase-2
 journal record. Its subsequent pending-journal cold case hits the unchanged
-60-second deadline (exit 124, 60.024 seconds); no recovery stage/stack is yet
-observed. MariaDB fault cases remain unrun under original fail-fast order.
+60-second deadline (exit 124, 60.024 seconds). A separate unchanged-ELF
+diagnostic also times out at 60.034 seconds; its single bounded stack reaches
+the retained birth's SQL wallet-mapping count proof after replay initialization.
+A separate unchanged-ELF SELECT-only diagnostic times out at 60.025 seconds.
+Its nine metadata reads complete in 0.441 seconds and show transaction turnover
+without observed wait relations. The sample is non-atomic; instrumentation
+coverage and client ownership are unproven, so it does not establish a global
+absence of waits or the failed recovery predicate. Primary authenticates all
+146 SQL diagnostic files, 1,779 native members and exact cleanup; the separate
+stack packet contains 129 files. Neither diagnostic changes code or deadlines.
+The [numeric source diagnostic](NATIVE_COLD_PROOF_OBSERVATIONS_2026-10-07.md)
+passes both original full 753-provider builds and nine contracts. Its genuine
+new ELF passes both engines' normal warm/cold cases; pending MySQL cold still
+times out at 60.053 seconds. Actual stages 9400/9411 with code zero establish
+at least one complete original SQL-proof/rollback boundary passed. The later
+failed reconstruction/publication check remains unobserved. Primary authenticates
+124 files, 1,779 native members and cleanup. MariaDB fault cases remain unrun
+under original fail-fast order.
 Primary authenticates 123 evidence files, 1,779 native archive members and exact
 owned cleanup. Normal cold success does not establish fault recovery completion.
 

@@ -16,8 +16,9 @@ import subprocess
 import sys
 import tempfile
 
-from test_flatfile_restore_economic_authority import ROOT, change, inventory, rehash
-from test_flatfile_restore_baseline_markers import fingerprint
+from test_flatfile_restore_economic_authority import ROOT, change, inventory, rehash, check_baseline_control_pages, check_baseline_history_pages
+from flatfile_namespace_cases import check_namespace_pages
+from test_flatfile_restore_baseline_markers import audit_source_inputs, fingerprint
 from native_build_artifacts import build_native
 from test_flatfile_accounting_store import SOURCES
 import build_restore_qualifier as qualifier
@@ -262,7 +263,8 @@ def check_lifecycle_pages(binary, fixture, audit, artifacts, environment):
             observations.append(dict(label=label, exit=ran.returncode, report=report, native_state_unchanged=True))
             return report
 
-        assert cli("durable first page")["examined_receipts"] == 2
+        first = cli("durable first page")
+        assert first["examined_receipts"] == 2 and first["consistent_page"] is True
         anchored = load()
         native_before = retained(root)
         assert anchored["buckets"][20]["cursor"] and anchored["buckets"][20]["ceiling"]
@@ -280,10 +282,14 @@ def check_lifecycle_pages(binary, fixture, audit, artifacts, environment):
         later_missing = dict(extended)
         later_missing.pop(receipts[4])
         install(later_missing)
-        assert cli("second-page missing receipt sticky finding", True)["verified_receipt_roots"] == 1
+        missing = cli("second-page missing receipt sticky finding", True)
+        assert missing["verified_receipt_roots"] == 1 and not missing["page_refused"]
+        assert missing["consistent_page"] is False
         assert load()["findings"] == [dict(bucket=20, operation_id=receipts[4][10:-4], code="flatfile_lifecycle_receipt_invalid")]
         install(extended)
-        assert cli("healthy sibling after sticky finding", True)["bucket"] == 21
+        subsequent = cli("healthy sibling after sticky finding", True)
+        assert subsequent["bucket"] == 21 and subsequent["consistent_page"] is True
+        assert subsequent["total_finding_count"] == 1
 
         saved = load()
         saved["rotation"] = 20
@@ -294,6 +300,7 @@ def check_lifecycle_pages(binary, fixture, audit, artifacts, environment):
         (evidence / "authority.eal").write_bytes(control)
         refused = cli("refused page rotates without advancing", True)
         assert refused["page_refused"] and not refused["range_exhausted"] and refused["next_bucket"] == 21
+        assert refused["consistent_page"] is False
         assert load()["buckets"][20] == checkpoint
         install(extended)
         assert cli("healthy sibling after refusal", True)["bucket"] == 21
@@ -301,6 +308,7 @@ def check_lifecycle_pages(binary, fixture, audit, artifacts, environment):
         with mock.patch.object(pages.subprocess, "run", side_effect=subprocess.TimeoutExpired("qualifier", 45)):
             refused, updated = pages.scan(root, binary, saved, lifecycle_receipts=True)
         assert refused["page_refused"] and updated["rotation"] == 21 and updated["buckets"][20] == checkpoint
+        assert refused["consistent_page"] is False
         observations.append(dict(label="timeout rotates without advancing", native_state_unchanged=True))
         original_progress = progress.read_bytes()
         with mock.patch.object(pages.progress_io.os, "replace", side_effect=OSError("interrupted")):
@@ -371,22 +379,65 @@ def main():
              "tests/async/test_flatfile_restore_baseline_markers.py",
              "tests/async/native_build_artifacts.py", "tests/async/test_flatfile_accounting_store.py"]
     owned_inputs = {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in names}
+    audit_inputs = audit_source_inputs()
     binary = qualifier.build(artifacts / "qualify")
     fixture = build_fixture(artifacts / "fixture")
     environment = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
                        UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
     audit_source = artifacts / "audit.cpp"
-    audit_source.write_text('''#include "qualify_flatfile_economic_records.h"
+    audit_source.write_text('''#include "qualify_flatfile_economic_namespace.h"
 #include <iostream>
 int main(int argc, char **argv) {
-    if (argc != 2 && argc != 3) return 2;
     try {
+        if (restore_economic_namespace::command(argc, argv)) return 0;
+        if (argc != 2 && argc != 3) return 2;
         if (argc == 3) {
             const auto mode = std::string(argv[1]);
-            if (mode != "maximum-budget" && !mode.starts_with("lifecycle-")) return 2;
+            if (mode.starts_with("history-")) {
+                using namespace restore_economic_authority;
+                authority_read_lock lock(argv[2]);
+                const auto context = restore_economic_records::checker(argv[2]).history_context();
+                audit_budget budget;
+                const auto files = budget.remaining_files, bytes = budget.remaining_bytes, entries = budget.remaining_entries;
+                if (mode == "history-files") budget.remaining_files = 1;
+                else if (mode == "history-bytes") budget.remaining_bytes = 1;
+                else if (mode == "history-deadline") budget.deadline = std::chrono::steady_clock::now();
+                scoped_audit_budget scope(budget);
+                restore_economic_records::checker reader(argv[2]);
+                if (mode == "history-control-budget") reader.history_control(context.books.begin()->first, context.cut);
+                else if (mode == "history-page-budget") {
+                    size_t bucket = 0;
+                    while (bucket < buckets && !std::filesystem::exists(std::filesystem::path(argv[2]) / "economic-evidence" / ("bucket-" + restore_economic_baseline::hex(std::array<uint8_t,1>{static_cast<uint8_t>(bucket)}) + ".eai"))) ++bucket;
+                    need(bucket < buckets);
+                    reader.history_page(bucket, {}, context.cut);
+                } else {
+                    need(mode == "history-context-budget" || mode == "history-files" || mode == "history-bytes" || mode == "history-deadline");
+                    reader.history_context();
+                }
+                lock.finish(); budget.checkpoint();
+                std::cout << files << " " << bytes << " " << entries << " " << files-budget.remaining_files
+                          << " " << bytes-budget.remaining_bytes << " " << entries-budget.remaining_entries << "\\n";
+                return 0;
+            }
+            if (mode != "maximum-budget" && !mode.starts_with("lifecycle-") && !mode.starts_with("baseline-")) return 2;
             restore_economic_authority::audit_budget budget;
             const auto files = budget.remaining_files, bytes = budget.remaining_bytes,
                        entries = budget.remaining_entries;
+            if (mode.starts_with("baseline-")) {
+                if (mode == "baseline-files") budget.remaining_files = 1;
+                else if (mode == "baseline-bytes") budget.remaining_bytes = 1;
+                else if (mode == "baseline-deadline") budget.deadline = std::chrono::steady_clock::now();
+                else if (mode != "baseline-budget") return 2;
+                restore_economic_authority::scoped_audit_budget scope(budget);
+                restore_economic_authority::authority_read_lock lock(argv[2]);
+                auto value = restore_economic_records::checker(argv[2]).baseline_controls_page(50, {}, {}, false);
+                lock.finish(); budget.checkpoint();
+                std::cout << files << " " << bytes << " " << entries << " "
+                          << files-budget.remaining_files << " " << bytes-budget.remaining_bytes
+                          << " " << entries-budget.remaining_entries << " " << value.rows
+                          << " " << value.verified << "\\n";
+                return 0;
+            }
             if (mode.starts_with("lifecycle-")) {
                 if (mode == "lifecycle-files") budget.remaining_files = 1;
                 else if (mode == "lifecycle-bytes") budget.remaining_bytes = 1;
@@ -701,15 +752,23 @@ int main(int argc, char **argv) {
             ("FIFO receipt", lambda d: ((d/receipt).unlink(), os.mkfifo(d/receipt, 0o600)))):
             check(label, mixed, unsafe=unsafe)
     page_report = check_lifecycle_pages(binary, fixture, audit, artifacts, environment)
+    baseline_control_pages = check_baseline_control_pages(binary, fixture, audit, environment, artifacts, lifecycle=True)
+    baseline_history_pages = check_baseline_history_pages(binary, fixture, audit, environment, artifacts, lifecycle=True)
+    namespace_pages = check_namespace_pages(binary, fixture, audit, environment, artifacts, lifecycle=True)
     assert fingerprint(ROOT / "src") == native_inputs, "native source changed during test"
     if args.legacy_artifacts:
         assert fingerprint(args.legacy_artifacts) == legacy_inputs, "legacy fixture artifacts changed"
     for name, checksum in owned_inputs.items():
         assert hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == checksum, name + " changed during test"
+    assert audit_source_inputs() == audit_inputs, "audit reader/operator inputs changed during test"
     report = {"format": 1, "native_raw_inputs": native_inputs, "owned_inputs": owned_inputs,
+              "audit_source_inputs": audit_inputs,
               "cases": results, "case_count": len(results), "refused": sum(not row["accepted"] for row in results),
               "accepted": sum(row["accepted"] for row in results), "skips": 0,
               "lifecycle_pages": page_report,
+              "baseline_control_pages": baseline_control_pages,
+              "baseline_history_pages": baseline_history_pages,
+              "namespace_pages": namespace_pages,
               "previous_reader_compatibility_refusals": red, "legacy_inputs": legacy_inputs,
               "source_capture_executed": False,
               "lifecycle_install_executed": False, "activation_executed": False,
@@ -723,7 +782,7 @@ int main(int argc, char **argv) {
                                              *((args.previous_qualifier,) if args.previous_qualifier else ()))}}
     (artifacts/"evidence.json").write_text(json.dumps(report, indent=2, sort_keys=True)+"\n")
     print(json.dumps({key: value for key, value in report.items()
-                      if key not in ("native_raw_inputs", "owned_inputs", "cases", "legacy_inputs",
+                      if key not in ("native_raw_inputs", "owned_inputs", "audit_source_inputs", "cases", "legacy_inputs",
                                      "previous_reader_compatibility_refusals")}))
 
 
