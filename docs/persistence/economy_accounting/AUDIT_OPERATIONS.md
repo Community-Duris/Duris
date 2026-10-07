@@ -822,6 +822,72 @@ complete equipped opening. Original EAP1 and the retained native boundary still
 provide the required equipment and authority evidence. Native decoder agreement
 and private SQL cuts remain component evidence, not quest producer completion.
 
+## Original captured-item opening bindings
+
+The SQL origin exporter accepts the optional `--captured-opening-evidence PATH`
+input for one retained opening in the selected lineage and epoch. Its normal
+origin export remains unchanged when this input is absent. The input is private
+original evidence, with format `economic_sql_captured_opening_v1` and fields
+`operation_id`, `legacy_native_boundary_digest`, `holding_coverage_digest`, and
+`source_snapshot`. Identity and digest fields use canonical lowercase hex;
+the operation is16 bytes and each digest is32 bytes. SQL NULL cells are JSON
+null; every present raw SQL cell is lowercase hex, including empty strings and
+embedded NUL bytes. Names, amounts, UIDs and payloads belong in protected
+evidence rather than public diagnostics.
+
+`source_snapshot` preserves the original native source DTO: version, exact
+`rows`, `cells` and `cell_bytes` counts, all20 main tables, all3 physical item
+source tables, and the separate version2 equipment table. It includes each
+table's name, columns, definition/content digests and ordered rows with raw
+cells and their digests, plus the ESM1, EIM1, EIE2 and ESC2 digests. The reader
+independently recomputes ESD1, ESR1, EST1 and all manifest framing, including
+the original distinction between NULL and empty bytes. It does not import
+producer or mutation logic. Historical version1 requires empty equipment
+and zero EIE2/ESC2 digests. A nonempty captured-item opening requires observed
+version2 equipment.
+
+The protected input must be a regular file with one link. POSIX permissions
+must exclude group and other access; symlinks are refused where O_NOFOLLOW is
+available. Duplicate JSON fields, malformed JSON and input above32 MiB refuse.
+Native DTO ceilings also apply:262,144 rows,4,194,304 cells,64 MiB of raw cell
+bytes and1 MiB per cell. The encoded operator-input budget can be reached
+before the raw DTO ceiling. No input is truncated or reconstructed.
+
+For each selected witness item, the reader resolves its original native row,
+observed equipment row and matching owner-revision row. It preserves UID order,
+exact ownership and containment fields, item revision/state and observed slot0.
+It then checks EBS2, ESN5 and EIC2 against the retained canonical witness and
+authenticated root. These new tags are raw bytes, and `frame(x)` is an unsigned
+64-bit little-endian length followed by the exact bytes of x:
+
+- EBS2: tag plus framed32-byte native, equipment and resolved owner-revision
+  ESR1 row digests, in that order.
+- ESN5: tag plus framed legacy native boundary digest, native item content
+  digest, owner-revision content digest, equipment content digest and EIM1.
+- EIC2: tag plus framed original holding coverage digest, unsigned64-bit item
+  count, then each unsigned64-bit UID and framed EBS2 digest in witness order.
+
+The equipment input to ESN5 is the table content digest, not the EIE2 manifest.
+An empty witness preserves its original legacy boundary and holding coverage.
+Altered, missing or incompatible original inputs refuse. The optional report
+is `captured_item_bindings`, format `economic_sql_captured_item_bindings_v1`.
+It records verified framing/bindings, witness and captured native item counts,
+and whether the witness observes equipment.
+
+This is a binding check with explicit authority limits. The supplied legacy
+boundary and holding coverage digests still need independent authentication.
+The original capture's provenance, complete item selection (including wallet
+root exclusions), observed owner-revision consistency and complete source
+coverage still need their own evidence. The report always leaves
+`complete_item_selection_authenticated`, `legacy_digest_authority_authenticated`,
+`original_capture_provenance_authenticated`, `complete_source_capture_authenticated`,
+`activation_qualified` and `release_qualified` false. A matching empty witness
+with a nonempty capture cannot authorize exclusions. Retained original evidence
+can match while a later native capture differs; neither observation authorizes
+activation or corrects data. All operator SQL reads remain SELECT-only in the
+existing repeatable-read transaction, ending with rollback and cursor close.
+See [the exact binding qualification](PLAN5_CAPTURED_ITEM_BINDING_QUALIFICATION_2026-10-06.md).
+
 ## Qualification budgets
 
 The isolated native flatfile restore qualifier validates every retained

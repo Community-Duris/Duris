@@ -672,3 +672,29 @@ Composite-key/control/full authority, genuine producer/activation/recovery/
 retention and release budgets remain. No shared edits, private successor
 qualification, cross-chat message or acknowledgement is claimed. This packet
 supports the nonblocking primary-local notebook curator workflow.
+
+## Original captured-item opening bindings - 2026-10-06
+
+Same `codex/accounting-plan5` branch/worktree/remote. Base `82377e05c9e494fb3930d3ffe2dc3b529c891b89`.
+[Exact binding qualification](PLAN5_CAPTURED_ITEM_BINDING_QUALIFICATION_2026-10-06.md)
+implements optional protected raw-capture input in the existing SELECT-only
+origin reader. It independently verifies native DTO framing and EBS2/ESN5/EIC2,
+preserves observed slot0 and empty historical compatibility, and refuses changed
+or missing bound evidence. All109 original/new methods pass, zero Linux skips,
+both fresh canonical0062 engines. Ten original native captures and18 operator
+reads include eight expected refusals and unchanged full table inventories.
+The opening/legacy hashes in the new fixture are modeled; private new-producer,
+capture provenance, legacy digest authority, complete selection/source coverage,
+activation and release remain unqualified. All corresponding flags stay false.
+Source `25cf08fa590eb348a6a4e1d38a68614fafd38141b422131b80c959d312b46621` and seal `140c4465a9917361c217a14d54852a04ad2fcf347f305f5d1e7e61ee9f56e5ac` bind the exact
+scope. The report supplies six exact primary-owned required-case registrations
+and the narrow original evidence consumer/authority handoff. No shared edit or
+schema change is made. Full R6/R7/R8, whole-store/flatfile sweeps, genuine
+producer/recovery/retention and release budgets remain. Primary refresh
+`2ab76dd519223c5557fee1f22e7bdab7e4c85112` adds the shared test-only money fault fixture and
+two primary evidence documents. Native/migration trees match; these new shared
+files are not imported or qualified here. This report/seal/receipt is
+the nonblocking primary-local notebook curator packet, without message,
+acknowledgement or integration claim. All earlier branch work stays preserved;
+maintained accounting stays inactive and original synthetic recovery activation
+is disclosed.
