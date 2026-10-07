@@ -18,6 +18,10 @@ no optional prep/R0–R10 ancestry is needed. Documentation correction
 `595fb4fb9461be1a2c1e12070f3f95e79642b3b3`, basefd4563fab, separately changes
 only SHOP_LIVE_ROUTE_INVESTIGATION.md:503384ca changes one R11 review path, not
 three. Old sealed b22 execution pins are unchanged.
+Evidence publication `ba0c0bbf44d125c93623ffbdc78a70a12e706f39`, base
+`595fb4fb9461be1a2c1e12070f3f95e79642b3b3`, authors only this document,
+investigation's historical disposition and HANDOFF.md. It is pushed; this
+canonical successor adds publication pins in this document and HANDOFF only.
 
 ## Problem, resulting behavior and retained requirements
 

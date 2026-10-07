@@ -10,6 +10,11 @@ reservation below. All original semantic guards and16 current globals retained;
 actual defined owner chain, four non-null hooks, exact custody/snapshots/revisions,
 physical-before-notification, uncertain effects/pending retention and separate
 native owner/receipt ACK remain106 source checks across23 definitions.
+Evidence publicationba0c0bbf44d125c93623ffbdc78a70a12e706f39,
+base595fb4fb9461be1a2c1e12070f3f95e79642b3b3, authors only implementation
+document, investigation historical disposition and this handoff. All code,
+separate count correction and evidence commits are remotely available. This
+canonical successor only pins that exact evidence delivery in owned docs.
 
 Actual one-file patch imports on fresh bare0f466; tree
 4109e3b20ea17ee40c8d0311dd8cabd4aec44464 differs only in the test. Complete
