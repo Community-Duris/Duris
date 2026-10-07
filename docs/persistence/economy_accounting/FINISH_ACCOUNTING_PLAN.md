@@ -218,7 +218,11 @@ final23 search cases plus complete existing payment controls independently PASS
 with unchanged flags/deadline. The original loop matches currentprimary6b96.
 Whole ordered control uses synchronous observations; catalogue/object/source
 ownership, captured facts, live reads and strict search budget remain native.
-Implementation/final qualification/handoff/review are pending. Production delta
+Implementation7f0d11b4d plus initializer9f5119fc3 are published; actual
+original/extracted ordinary controls independently PASS on exact source.
+Production application independently PASS on bareprimaryf521; initial SQL
+warning is retained. Final maintained/current/fulltest/handoff review remains
+pending. Production delta
 must apply to bare latest primary; full tests retain R3/R6 prerequisites only.
 No current full build/native journey/adoption or original R8 accounting acceptance
 is claimed. Primary proceeds without waiting; continuing Goal/monitor stay active.

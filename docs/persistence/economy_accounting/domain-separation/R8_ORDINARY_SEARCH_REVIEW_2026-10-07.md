@@ -6,6 +6,36 @@ is approved at its exact three-file boundary. The architecture worker is
 authorized to implement in its existing isolated worktree. R8 is an optional
 bundle identifier; this approval does not qualify original R8 accounting acceptance.
 
+## Implemented component checkpoint
+
+Implementation7f0d11b4d and initializer repair
+`9f5119fc3b6d0f345f639da9e7d5630fbc9f76a5` are remotely published. The
+coordinator independently ran the actual extended ordinary runner against complete
+original and extracted producers. Both PASS with identical23 search cases and
+all existing assertions/flags/deadline. Committed source/header/test equality is
+verified; private snapshots before and after initialization remain separate:
+
+| Final input | SHA256 |
+|---|---|
+| enhance.c | `ec5de67a5f4e6dadcab09d5a4e998828e466baae2ac22015629562ff08c7ff8e` |
+| search header | `9630b33e1fcbdd813a76341bd458bb6cc297ee49b9f70758e3a5430918c4b805` |
+| actual ordinary test | `2e215e0676f533ac0d169a924b956438e2840582654ed62f750c93096ed90937` |
+| independent original/extracted log | `9c319ca636d5d46679e7d1cddf5f0c89cc5f47b5703051dee1038dced0d7b609` |
+
+The worker's initial maintained SQL build exposed a maybe-uninitialized ordinary
+fee warning. The repair initializes cost to zero while retaining the existing
+quote guard and assignments; independent original/extracted controls still PASS.
+Keep that failed source/build attempt and final rebuild records separate. This
+component checkpoint does not establish successful maintained or current builds.
+
+The coordinator independently checked the full production range5a..9f on bare
+primaryf5216feff44a4620715dafcbec60829cc9e14a9a. Patch SHA256
+`50844d917e467b9d36208dd8970b9cf145d2cb5a49059019bbcd82d98a849506`;
+private tree `f181a0d2fc212aa00933559ef6a85e4755fe732b`. Application PASS;
+execution on that tree is unrun. Full test-prefix qualification, maintained/current
+proof, handoff and final review remain pending. No native journey or adoption is
+inferred. The reservation language below is approved history.
+
 ## Connected operation and ownership
 
 New src/economy/enhancement_original_search.h owns the complete ordered ordinary

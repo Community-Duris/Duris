@@ -319,7 +319,11 @@ existing ordinary controls and unchanged flags/deadline. The original loop also
 matches current primary6b96. Whole ordered search control can use synchronous
 observations while live catalogue/source/object ownership stays native.
 
-Implementation/final qualification/handoff/review remain pending. Production
+Implementation7f0d11b4d and cost initializer9f5119fc3 are published. Actual
+original/extracted ordinary controls independently PASS on exact committed
+source; production-only application independently PASS on bare primaryf521.
+Initial maintained SQL warning is preserved; final maintained/current proof,
+full-test prerequisite qualification, handoff and final review remain pending. Production
 application must be checked on bare current primary; complete tests explicitly
 retain R3/R6 predecessors. No R4/R5/R7 prerequisite is assumed. Native ordering,
 strict budget and config/link/source changes must be preserved; no catalogue
