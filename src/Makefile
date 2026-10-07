@@ -448,6 +448,7 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/held_retirement_sql_observer.o \
 				 persistence/economic_sql_native_mobile_birth_transaction.o \
 				 persistence/sql_room_item_payload.o \
+				 persistence/sql_room_coin_payload.o \
 				 persistence/critical_command_repository.o \
 				 persistence/quest_reward_obligation_repository.o \
 				 persistence/quest_reward_obligation_pipeline.o \
