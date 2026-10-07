@@ -7,11 +7,13 @@ import subprocess
 import tempfile
 
 HARNESS=r'''
+#include "economy/enhancement_price.h"
 #include <cassert>
 #include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdarg>
+#include <string>
 #include <initializer_list>
 constexpr int MAX_STRING_LENGTH=4096,FALSE=0,TO_CHAR=0,VIRTUAL=0;
 constexpr int APPLY_HIT=2,APPLY_HIT_REG=3,APPLY_MOVE_REG=4,ITEM2_ENHANCED=1;
@@ -36,7 +38,8 @@ int SUB_MONEY(P_char ch,int amount,int){
  ++attempts; if(reject_debit || amount<=0 || ch->money<amount)return -1;
  ch->money-=amount;++debits;return 0;
 }
-void send_to_char(const char*,P_char){}
+std::string sent;
+void send_to_char(const char* text,P_char){sent+=text;}
 void act(const char*,int,P_char,P_obj,void*,int){}
 void obj_from_char(P_obj){}
 void extract_obj(P_obj o){if(o==&prototype)++templates_retired;else ++consumed;}
@@ -54,6 +57,18 @@ void assert_unchanged(const character& actor,const object& item,int location,int
  assert(!item.extra2_flags && !debits && !consumed && !descriptions);
 }
 int main(){
+ assert(enhancement_essence_price(INT_MIN)==1000);
+ assert(enhancement_essence_price(20)==1000 && enhancement_essence_price(21)==20000);
+ assert(enhancement_essence_price(30)==20000 && enhancement_essence_price(31)==100000);
+ assert(enhancement_essence_price(INT_MAX)==100000);
+ for (int value : {20,21,30,31}) {
+  reset(); sent.clear(); character actor{0}; object item,material;material.value=value;
+  const char *price=value==20 ? "1" : value==31 ? "100" : "20";
+  modenhance(&actor,&item,&material);
+  assert(sent==std::string("It will require &+W")+price+" platinum&n to &+Benhance&n this item.\r\n");
+  assert(!attempts && !reads && !templates_retired && !consumed && !descriptions);
+ }
+
  prototype_present=false;
  for(int value:{10,21,31}) for(bool same:{false,true}) {
   reset();chosen_loc=1;reject_debit=false;encrusted=false;
@@ -109,6 +124,6 @@ with tempfile.TemporaryDirectory(prefix='duris-essence-payment-') as temporary:
     cpp.write_text(HARNESS.replace('@FUNCTION@',extract_function('enhance.c','void modenhance(')))
     subprocess.run([os.environ.get('CXX','g++'),'-std=c++20','-Wall','-Wextra','-Werror',
                     '-O1','-g','-fsanitize=address,undefined','-fno-sanitize-recover=all',
-                    '-fno-pie','-no-pie',str(cpp),'-o',str(binary)],cwd=ROOT,check=True)
+                    '-fno-pie','-no-pie','-Isrc',str(cpp),'-o',str(binary)],cwd=ROOT,check=True)
     subprocess.run([str(binary)],check=True,timeout=30)
 print('Essence enhancement: missing prototype and payment refusal preserve inputs; probe cleanup, encrusted descriptions and modifier bounds pass')

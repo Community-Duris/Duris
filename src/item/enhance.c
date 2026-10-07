@@ -22,6 +22,7 @@
 #include "core/structs.h"
 #include "core/utils.h"
 #include "item/enhance.h"
+#include "economy/enhancement_price.h"
 #include "economy/tradeskill.h"
 #include "economy/economic_gameplay_authority.h"
 #include "item/objmisc.h"
@@ -151,16 +152,9 @@ void enhance(P_char ch, P_obj source, P_obj material)
 		return;
 	}
 
-	if (sval <= enhance_cost_low_ival_threshold)
-	{
-		cost = enhance_cost_low_amount;
-	}
-	else
-	{
-		cost = enhance_cost_high_amount;
-	}
-
-	if (cost < 0)
+	if (!enhancement_prepare_ordinary_price(sval, enhance_cost_low_ival_threshold,
+						enhance_cost_low_amount, enhance_cost_high_amount,
+						&cost))
 	{
 		send_to_char("The enhancement price is outside the supported range.\r\n", ch);
 		return;
@@ -628,15 +622,13 @@ static bool perform_superior_enhancement(P_char ch, P_obj source, P_obj pouch,
 {
 	char buf[MAX_STRING_LENGTH];
 	int i;
-	const int64_t quoted_cost =
-		static_cast<int64_t>(enhance_stat_platinum_base) +
-		static_cast<int64_t>(itemvalue(source)) * enhance_stat_platinum_per_ival;
-	if (quoted_cost < 0 || quoted_cost > INT_MAX)
+	int cost;
+	if (!enhancement_prepare_superior_price(itemvalue(source), enhance_stat_platinum_base,
+						enhance_stat_platinum_per_ival, &cost))
 	{
 		send_to_char("The enhancement price is outside the supported range.\r\n", ch);
 		return FALSE;
 	}
-	const int cost = static_cast<int>(quoted_cost);
 
 	if (!superior_plan_has_materials(ch, pouch, plan))
 		return FALSE;
@@ -1010,38 +1002,17 @@ void modenhance(P_char ch, P_obj source, P_obj material)
 	// it exists for.  A dead 'minval' local here once implied otherwise.
 	int val = itemvalue(material);
 
-	if (val <= 20)
+	cost = enhancement_essence_price(val);
+	if (GET_MONEY(ch) < cost)
 	{
-		cost = 1000;
-		if (GET_MONEY(ch) < cost)
-		{
-			send_to_char(
-				"It will require &+W1 platinum&n to &+Benhance&n this item.\r\n",
-				ch);
-			return;
-		}
-	}
-	else if (val <= 30)
-	{
-		cost = 20000;
-		if (GET_MONEY(ch) < cost)
-		{
-			send_to_char(
-				"It will require &+W20 platinum&n to &+Benhance&n this item.\r\n",
-				ch);
-			return;
-		}
-	}
-	else
-	{
-		cost = 100000;
-		if (GET_MONEY(ch) < cost)
-		{
-			send_to_char(
-				"It will require &+W100 platinum&n to &+Benhance&n this item.\r\n",
-				ch);
-			return;
-		}
+		const char *message =
+			cost == 1000 ?
+				"It will require &+W1 platinum&n to &+Benhance&n this item.\r\n" :
+			cost == 20000 ?
+				"It will require &+W20 platinum&n to &+Benhance&n this item.\r\n" :
+				"It will require &+W100 platinum&n to &+Benhance&n this item.\r\n";
+		send_to_char(message, ch);
+		return;
 	}
 
 	int modtype = OBJ_VNUM(material);

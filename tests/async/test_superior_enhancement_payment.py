@@ -8,11 +8,13 @@ import tempfile
 
 
 HARNESS = r'''
+#include "economy/enhancement_price.h"
 #include <cassert>
 #include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <initializer_list>
+#include <array>
 constexpr int MAX_STRING_LENGTH = 4096, MAX_SUPERIOR_MATERIALS = 32;
 constexpr bool TRUE = true, FALSE = false;
 constexpr int NOWHERE = -1;
@@ -50,6 +52,19 @@ void send_to_char(const char *, P_char) {}
 void statuslog(int, const char *, ...) {}
 @FUNCTION@
 int main() {
+ int owned_cost=42;
+ assert(enhancement_prepare_superior_price(5,1000,100,&owned_cost) && owned_cost==1500);
+ for (const auto input : {std::array<int,3>{INT_MIN,INT_MIN,INT_MIN},
+                         std::array<int,3>{INT_MAX,INT_MAX,INT_MAX},
+                         std::array<int,3>{INT_MIN,0,INT_MAX}}) {
+  assert(!enhancement_prepare_superior_price(input[0],input[1],input[2],&owned_cost));
+  assert(owned_cost==1500);
+ }
+ assert(enhancement_prepare_superior_price(INT_MIN,0,0,&owned_cost) && owned_cost==0);
+ assert(enhancement_prepare_superior_price(INT_MAX,0,1,&owned_cost) && owned_cost==INT_MAX);
+ assert(enhancement_prepare_superior_price(INT_MIN,INT_MIN,-1,&owned_cost) && owned_cost==0);
+ assert(!enhancement_prepare_superior_price(1,1,1,nullptr));
+
  superior_enhancement_plan plan;
  struct quote { int base, per_value, value; };
  for (bool pouch_mode : {false, true}) {
@@ -98,6 +113,6 @@ with tempfile.TemporaryDirectory(prefix="duris-enhancement-payment-") as tempora
     subprocess.run([os.environ.get("CXX", "g++"), "-std=c++20", "-Wall", "-Wextra",
                     "-Werror", "-O1", "-g", "-fsanitize=address,undefined",
                     "-fno-sanitize-recover=undefined", "-fno-pie", "-no-pie",
-                    str(cpp), "-o", str(binary)], cwd=ROOT, check=True)
+                    "-Isrc", str(cpp), "-o", str(binary)], cwd=ROOT, check=True)
     subprocess.run([str(binary)], check=True, timeout=30)
 print("superior enhancement payment: overflow/negative refusal, exact debit, pouch and physical materials passed")

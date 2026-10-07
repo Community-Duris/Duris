@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 
 HARNESS = r'''
+#include "economy/enhancement_price.h"
 #include <cassert>
 #include <climits>
 #include <cstdint>
@@ -71,6 +72,15 @@ int SUB_MONEY(P_char ch,int amount,int) {
 @FUNCTION@
 void reset_counts() { attempts=debits=published=input_retired=output_retired=reads=0; }
 int main() {
+ int owned_cost=42;
+ assert(enhancement_prepare_ordinary_price(20,20,1000,-1,&owned_cost) && owned_cost==1000);
+ assert(!enhancement_prepare_ordinary_price(21,20,1000,-1,&owned_cost) && owned_cost==1000);
+ assert(enhancement_prepare_ordinary_price(INT_MIN,20,0,INT_MAX,&owned_cost) && owned_cost==0);
+ assert(enhancement_prepare_ordinary_price(INT_MAX,20,-1,INT_MAX,&owned_cost) && owned_cost==INT_MAX);
+ assert(!enhancement_prepare_ordinary_price(20,20,1,2,nullptr));
+ int repeated=0;
+ assert(enhancement_prepare_ordinary_price(INT_MAX,20,-1,INT_MAX,&repeated) && repeated==owned_cost);
+
  character numeric_actor;
  reject_debit=false; pouch_mode=false;
  source_item.value=10; material_item.value=100; entry.ival=11;
@@ -120,6 +130,6 @@ with tempfile.TemporaryDirectory(prefix='duris-ordinary-enhance-payment-') as te
     cpp.write_text(HARNESS.replace('@FUNCTION@',extract_function('enhance.c','void enhance(')))
     subprocess.run([os.environ.get('CXX','g++'),'-std=c++20','-Wall','-Wextra','-Werror',
                     '-O1','-g','-fsanitize=address,undefined','-fno-sanitize-recover=all',
-                    '-fno-pie','-no-pie',str(cpp),'-o',str(binary)],cwd=ROOT,check=True)
+                    '-fno-pie','-no-pie','-Isrc',str(cpp),'-o',str(binary)],cwd=ROOT,check=True)
     subprocess.run([str(binary)],check=True,timeout=30)
 print('Ordinary enhancement: wide material/value/cascade/search bounds, payment refusal cleanup and valid free/paid quotes passed')

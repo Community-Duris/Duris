@@ -20,6 +20,7 @@ assert "ITEM2_QUESTITEM" in crafting
 assert "minval = static_cast<int64_t>(sval) - enhance_material_ival_delta;" in enhance
 assert "if (!pouch_material && itemvalue(material) < minval)" in enhance
 assert "SUB_MONEY(ch, cost, 0) != 0" in enhance  # `cost` must be the same amount gated and reported.
-assert "cost = 20000;" in enhance
-assert "cost = 100000;" in enhance
+prices = (SRC / "economy/enhancement_price.h").read_text()
+assert "cost = enhancement_essence_price(val);" in enhance
+assert "material_value <= 20 ? 1000 : material_value <= 30 ? 20000 : 100000" in prices
 print("crafting and enhancement regression contract passed")
