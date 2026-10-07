@@ -1,5 +1,13 @@
 # Double-entry economy: remaining requirements
 
+## SQL audit refusal fairness qualified — 2026-10-06
+
+[Primary qualification](PLAN5_SQL_FAIRNESS_PRIMARY_INTEGRATION_2026-10-06.md)
+passes67 original methods without errors/skips and18 mandatory tests on both
+private SQL engines. Budget-refused namespaces now rotate while preserving
+coverage and sticky refusal history; cleanup/source failures do not rotate.
+Producer gameplay, full R7/R8, activation and release remain open.
+
 ## Current producer qualification — 2026-10-06
 
 The [current qualification](SHARED_PROFILE_BUILD_QUALIFICATION_2026-10-06.md)

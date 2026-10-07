@@ -1,5 +1,15 @@
 # Finish accounting implementation plan
 
+## SQL audit refusal fairness qualified — 2026-10-06
+
+[Primary qualification](PLAN5_SQL_FAIRNESS_PRIMARY_INTEGRATION_2026-10-06.md)
+passes the unchanged67-method original suite with zero skips and the exact
+18-test mandatory entry on the integrated reader. Both private SQL engines,
+original sanitizer probes and retained refusal rotation pass; raw source and
+native artifacts remain authenticated, with owned cleanup absence verified.
+The first missing-dependency transport error is preserved. This completed
+reader slice does not qualify private producers, player journeys or release.
+
 ## Current producer qualification — 2026-10-06
 
 The [current qualification](SHARED_PROFILE_BUILD_QUALIFICATION_2026-10-06.md)

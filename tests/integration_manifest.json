@@ -2379,10 +2379,20 @@
         "CanonicalAuditTests.test_transaction_start_failure_and_rollback_failure_close_cursor",
         "CanonicalAuditTests.test_success_discloses_database_scope_and_remaining_gates",
         "CanonicalAuditTests.test_source_claim_limit_refuses_before_original_capsule_decoding",
-        "CanonicalAuditTests.test_database_wide_source_claim_disagreement_refuses_before_decoding"
+        "CanonicalAuditTests.test_database_wide_source_claim_disagreement_refuses_before_decoding",
+        "CompositeSweepTests.test_refused_roots_rotate_through_successful_siblings_and_remain_sticky",
+        "CompositeSweepTests.test_legacy_all_progress_upgrade_preserves_every_namespace",
+        "CompositeSweepTests.test_cleanup_or_source_refusal_never_rotates_scheduling",
+        "CompositeSweepTests.test_composite_budget_refusal_does_not_advance_checkpoint",
+        "CanonicalSweepTests.test_page_executor_has_query_byte_row_and_time_bounds"
       ],
       "arguments": [
         "CanonicalAuditTests",
+        "CompositeSweepTests.test_refused_roots_rotate_through_successful_siblings_and_remain_sticky",
+        "CompositeSweepTests.test_legacy_all_progress_upgrade_preserves_every_namespace",
+        "CompositeSweepTests.test_cleanup_or_source_refusal_never_rotates_scheduling",
+        "CompositeSweepTests.test_composite_budget_refusal_does_not_advance_checkpoint",
+        "CanonicalSweepTests.test_page_executor_has_query_byte_row_and_time_bounds",
         "-v"
       ],
       "environment": {},
@@ -2401,7 +2411,8 @@
       ],
       "mode": "unittest",
       "required_cases": [
-        "NativeCanonicalAuditTests.test_original_plans_and_projection_faults_both_engines"
+        "NativeCanonicalAuditTests.test_original_plans_and_projection_faults_both_engines",
+        "NativeCanonicalAuditTests.test_fair_composite_pages_and_unattached_namespaces_both_engines"
       ],
       "arguments": [
         "NativeCanonicalAuditTests",
@@ -2429,7 +2440,8 @@
       ],
       "mode": "unittest",
       "required_cases": [
-        "NativeCanonicalAuditTests.test_original_plans_and_projection_faults_both_engines"
+        "NativeCanonicalAuditTests.test_original_plans_and_projection_faults_both_engines",
+        "NativeCanonicalAuditTests.test_fair_composite_pages_and_unattached_namespaces_both_engines"
       ],
       "arguments": [
         "NativeCanonicalAuditTests",
@@ -2457,7 +2469,8 @@
       ],
       "mode": "unittest",
       "required_cases": [
-        "NativeCanonicalAuditTests.test_original_plans_and_projection_faults_both_engines"
+        "NativeCanonicalAuditTests.test_original_plans_and_projection_faults_both_engines",
+        "NativeCanonicalAuditTests.test_fair_composite_pages_and_unattached_namespaces_both_engines"
       ],
       "arguments": [
         "NativeCanonicalAuditTests",

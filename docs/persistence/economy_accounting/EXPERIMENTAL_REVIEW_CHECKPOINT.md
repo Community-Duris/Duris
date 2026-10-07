@@ -1,5 +1,13 @@
 # Experimental accounting review checkpoint
 
+## Latest independent SQL reader milestone — 2026-10-06
+
+The [integrated fairness slice](PLAN5_SQL_FAIRNESS_PRIMARY_INTEGRATION_2026-10-06.md)
+passes67 original methods with zero errors/skips and the exact18-test mandatory
+entry. Both private engines and original sanitizer probes pass, with source,
+native export and owned cleanup authenticated. This qualification is distinct
+from private producer build/recovery and full release acceptance.
+
 ## Current producer qualification — 2026-10-06
 
 The [current qualification](SHARED_PROFILE_BUILD_QUALIFICATION_2026-10-06.md)
