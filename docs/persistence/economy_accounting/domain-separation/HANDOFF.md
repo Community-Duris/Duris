@@ -2,6 +2,23 @@
 
 ## Current delivery status
 
+**Continuation milestone active.** The completed Collector delivery below is
+preserved. The user-authorized charter at accounting
+`a7b3181edb80bf188f616c39b8e7cb144e11cb18` supersedes its first-delivery-only
+completion boundary. See [the fixed operation inventory](OPERATION_INVENTORY.md)
+for assessed domains, required R1/R2 work and the next Craft/Forge reservation.
+That reservation is proposed, not primary-accepted. No later extraction is yet
+implemented or qualified at this publication.
+
+Actual continuation-tool evidence: `get_goal` first returned no current Goal;
+`create_goal` then `get_goal` returned `status: active`, no budget, for this chat.
+Objective: deliver the charter's bounded milestone by assessing/publishing the
+fixed inventory, implementing/connecting/verifying required feasible extractions,
+and publishing usable commits/handoffs on this existing branch while preserving
+authority and treating required owner-blocked work as unfinished. Verified clean
+checkout and branch at `ce3b631003303ee4fbfb8a0bd527ad8508982250` in the original
+ac24 worktree. The Goal must not complete at the inventory or next-bundle boundary.
+
 **Implemented and qualified at source/component/maintained-build scope**, on
 `origin/codex/accounting-domain-separation`. Both maintained backends have
 terminal successful builds. The bounded first delivery is ready for primary
