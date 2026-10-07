@@ -2,8 +2,9 @@
 """Production coin owner publication ordering with an irreversible ACK boundary.
 
 Native component proof: actual transaction owner, authority, and wire codecs;
-controlled coordinator and physical publisher. No database, journal I/O, Redis,
-or game service is used. Successful simulated ACK erases its held operation.
+controlled coordinator and physical publisher. The two physical replay refusals use a real stopped pipeline and private
+journal; native proof and guarded ACK boundaries abort if reached. No database,
+Redis or game service is used. Successful simulated ACK erases its held operation.
 """
 
 from pathlib import Path
@@ -23,11 +24,17 @@ from _paths import ROOT, rel
 HARNESS = r'''
 
 #include "core/utils.h"
+#include "core/prototypes.h"
 #include "economy/account_bank_balances.h"
 #include "economy/currency_transaction.h"
 #include "economy/economic_gameplay_authority.h"
 #include "player/player_snapshot_codec.h"
 #include "sql/sql_player.h"
+#include "player/player_save_pipeline.h"
+#include "player/player_save_journal.h"
+#include "player/player_save_execution_guard.h"
+#include "player/player_save_worker.h"
+#include "economy/coin_physical_recovery.h"
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -80,6 +87,13 @@ class economic_gameplay_authority_test_access
 [[noreturn]] int panic_corruption_int(const char *, const char *, ...)
 {
 	abort();
+}
+// The actual scheduler bind rejects cross-thread rebinding with corruption.
+// This component never rebinds, and an unexpected corruption is fatal.
+void panic_corruption(const char *, const char *, ...)
+{
+    std::fputs("UNEXPECTED_SCHEDULER_CORRUPTION\n", stderr);
+    std::abort();
 }
 const char *get_account_name_safe(P_char)
 {
@@ -239,9 +253,12 @@ static coin_transfer_payload transfer(P_char actor, bool wallet_only)
 	player_item_snapshot snapshot = {};
 	snapshot.object_uid = pile_uid;
 	snapshot.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+    snapshot.equipment_slot = -1; // Genuine floor representation, not slot zero.
 	snapshot.vnum = 402013;
 	snapshot.type = ITEM_MONEY;
 	snapshot.values[0] = 1;
+    // A canonical literal records all four strings, including actual emptiness.
+    snapshot.string_mask = STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3;
 	std::vector<uint8_t> blob;
 	assert(player_item_snapshot_list_encode({ snapshot }, &blob) ==
 	       player_snapshot_codec_result::ok);
@@ -278,14 +295,63 @@ static critical_completion receipt(const coin_transfer_payload &payload)
 	critical_completion completed = {};
 	completed.operation_id = submitted.operation_id;
 	completed.outcome = critical_apply_outcome::applied;
+    for (const auto &wallet : result.wallets)
+    {
+        completed.durable_revision = std::max({ completed.durable_revision,
+                                               wallet.wallet_revision, wallet.bank_revision });
+    }
+    for (const auto &pile : result.piles)
+    {
+        completed.durable_revision = std::max({ completed.durable_revision,
+                                               pile.max_item_revision,
+                                               pile.from_owner_revision, pile.to_owner_revision });
+    }
 	completed.result_size = bytes.size();
 	std::copy(bytes.begin(), bytes.end(), completed.result_payload.begin());
 	return completed;
 }
 
+// The two restored physical refusal cases register original immutable bytes
+// through the real stopped pipeline. This grants neither an owned runtime epoch
+// nor native SQL/world proof. Shutdown runs after every original assertion.
+class stopped_pipeline_fixture
+{
+    bool prepared = false;
+public:
+    stopped_pipeline_fixture(bool needed, const char *directory)
+    {
+        if (!needed) return;
+        assert(directory && directory[0] == '/');
+        assert(!player_save_execution_guard::current_ownership_epoch());
+        assert(!player_save_pipeline_health_copy().initialized);
+        nevent_bind_game_thread();
+        assert(nevent_is_game_thread());
+        assert(player_save_pipeline_prepare(directory));
+        prepared = true;
+        const auto health = player_save_pipeline_health_copy();
+        const auto journal = player_save_journal_health_copy();
+        const auto worker = player_save_worker_health_copy();
+        assert(health.initialized && !health.accepting && !health.dispatcher_running);
+        assert(journal.initialized && !journal.bytes && !journal.records);
+        assert(!worker.running && !worker.worker_threads);
+        std::puts("COIN_OWNER_REPLAY_SETUP real_stopped_pipeline=1 real_empty_journal=1 owned_epoch=0 workers=0");
+    }
+    ~stopped_pipeline_fixture()
+    {
+        if (!prepared) return;
+        assert(player_save_execution_guard::publication_operation_held(submitted.operation_id));
+        assert(!player_save_execution_guard::current_ownership_epoch());
+        player_save_pipeline_shutdown();
+        assert(!player_save_pipeline_health_copy().initialized);
+        assert(!player_save_journal_health_copy().initialized);
+        assert(!player_save_execution_guard::publication_operation_held(submitted.operation_id));
+        std::puts("COIN_OWNER_REPLAY_CLEANUP real_quiesced_shutdown=1 critical_ack=0");
+    }
+};
+
 int main(int argc, char **argv)
 {
-	assert(argc == 2);
+	assert(argc == 3);
 	const std::string scenario = argv[1];
 	pc_only_data player = {}, recipient_player = {};
 	player.pid = 42;
@@ -306,7 +372,8 @@ int main(int argc, char **argv)
 	physical_required = !wallet_only;
 	const bool replay = scenario == "missing_publisher" || scenario == "absent_actor" ||
 			    scenario == "wallet_only_replay";
-	const auto payload = transfer(&actor, wallet_only);
+	stopped_pipeline_fixture stopped(replay && !wallet_only, argv[2]);
+    const auto payload = transfer(&actor, wallet_only);
 	if (scenario == "missing_admission")
 	{
 		const bool admitted =
@@ -331,7 +398,26 @@ int main(int argc, char **argv)
 		submitted.accepted_at_usec = 1;
 		assert(critical_command_envelope_valid(submitted));
 		held = true;
-		assert(currency_transaction_restore_replayed_command(submitted));
+		if (!wallet_only)
+        {
+            int decoded_pid = 0;
+            uint64_t decoded_uid = 0;
+            assert(coin_physical_recovery_identity(submitted, &decoded_pid, &decoded_uid));
+            assert(decoded_pid == 42 && decoded_uid == pile_uid);
+        }
+        assert(currency_transaction_restore_replayed_command(submitted));
+        if (!wallet_only)
+        {
+            assert(player_save_execution_guard::publication_operation_held(submitted.operation_id));
+            const auto diagnostic = player_save_pipeline_diagnostic_copy(42);
+            assert(diagnostic.available && diagnostic.retained_save && !diagnostic.pid_admission_open);
+            assert(player_save_pipeline_restore_sql_coin_obligation(submitted));
+            auto conflict = submitted;
+            ++conflict.accepted_at_usec;
+            assert(critical_command_envelope_valid(conflict));
+            assert(!player_save_pipeline_restore_sql_coin_obligation(conflict));
+            assert(player_save_execution_guard::publication_operation_held(submitted.operation_id));
+        }
 		if (scenario == "absent_actor")
 			online = nullptr;
 	}
@@ -565,15 +651,7 @@ int main(int argc, char **argv)
 }
 '''
 
-SOURCES = (
-    "currency_transaction.c", "currency_command.c", "critical_command.c",
-    "economic_currency_adapter.c", "economic_accounting_intent.c",
-    "economic_gameplay_authority.c", "economic_command_admission.c",
-    "economic_accounting_plan.c", "economic_source_event.c", "economic_accounting_types.c",
-    "coin_transfer_command.c", "item_transfer_command.c", "quest_mobile_native_reference.c", "craft_pouch_mutation.c",
-    "chaos_pouch_ledger.c", "coin_transfer_accounting.c", "item_transfer_accounting.c",
-    "player_snapshot_codec.c",
-)
+SOURCES = ('currency_transaction.c', 'currency_command.c', 'critical_command.c', 'economic_currency_adapter.c', 'economic_accounting_intent.c', 'economic_gameplay_authority.c', 'economic_command_admission.c', 'economic_accounting_plan.c', 'economic_source_event.c', 'economic_accounting_types.c', 'coin_transfer_command.c', 'item_transfer_command.c', 'quest_mobile_native_reference.c', 'craft_pouch_mutation.c', 'chaos_pouch_ledger.c', 'coin_transfer_accounting.c', 'item_transfer_accounting.c', 'player_snapshot_codec.c', 'native_quest_cost.c', 'native_quest_coin_give.c', 'shop_trade_recovery_manifest.c', 'lockpick_retirement_continuation.c', 'player_save_pipeline.c', 'player_save_journal.c', 'player_save_worker.c', 'player_revision_state.c', 'coin_physical_recovery.c', 'new_events.c', 'auction_repository.c', 'auction_accounting.c', 'auction_command.c', 'auction_listing_accounting.c', 'auction_money_claim_accounting.c', 'auction_item_claim_accounting.c', 'auction_settlement_accounting.c', 'native_mobile_birth_command.c', 'collector_accounting.c', 'collector_command.c', 'collector_codec.c', 'quest_mobile_native.c', 'persistence_observability.c', 'auction_native_command_context.c', 'native_mobile_birth_recipe.c', 'native_mobile_birth_constructor_recipe.c', 'collector_policy.c')
 SCENARIOS = ("physical_retry", "ack_retry", "missing_publisher", "absent_actor",
              "exhaustion", "wallet_only_replay", "missing_admission", "physical_exception",
              "notification_exception", "notification_false", "changed_after_physical", "changed_after_wallet")
@@ -626,6 +704,8 @@ def main():
                        *(["-DDURIS_COIN_SPLIT_PUBLICATION_TEST"] if args.split_publication else []),
                        *(["-D__NO_MYSQL__", "-Isrc/no_mysql"] if args.flatfile else []),
                        "-Isrc", *cflags, str(source), *[rel(name) for name in SOURCES],
+                       "tests/async/coin_owner_unreachable_native_boundary.cpp",
+                       "-Wl,--wrap=_Z30coin_physical_recovery_publishRK16critical_commandRK19critical_completion",
                        "-Wl,--gc-sections", "-lcrypto", *libs, "-o", str(binary)]
             pins = {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
                     for path in sorted((ROOT / "src").rglob("*"))
@@ -649,7 +729,9 @@ def main():
             raise RuntimeError("supplied binary hash mismatch")
         failed = []
         for scenario in SCENARIOS:
-            result = bounded([str(binary), scenario], 30, capture_output=True, text=True)
+            journal = Path(directory) / "journals" / scenario
+            journal.mkdir(mode=0o700, parents=True, exist_ok=False)
+            result = bounded([str(binary), scenario, str(journal.resolve())], 30, capture_output=True, text=True)
             print(f"{scenario}: {'PASS' if result.returncode == 0 else 'FAIL'}\n{result.stdout}{result.stderr}", flush=True)
             if result.returncode:
                 failed.append(scenario)

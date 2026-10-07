@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepared Plan 2 components; native execution is deferred to the plan milestone.
+"""Native coin owner/publisher components with explicit authority boundaries.
 
 Actual coin owner/publisher/capture/codec/custody with explicit world/coordinator
 seams. This does not qualify gameplay, persistence, or callback-free cold replay.
@@ -24,7 +24,9 @@ PHYSICAL_CASES = ("drop", "missing_uid", "duplicate_uid", "conflicting_bytes",
                   "pickup_partial", "pickup_consumed", "pickup_missing",
                   "amount_exception", "extraction_exception", "wrong_actor",
                   "wrong_placement", "stale_item", "masked_blob", "malformed_result",
-                  "literal_conflict", "object_cycle", "reentry", "pickup_opening_weight")
+                  "literal_conflict", "object_cycle", "reentry", "pickup_opening_weight", "zero_descriptions_drop",
+                  "pickup_zero_descriptions", "two_descriptions",
+                  "descriptor_added_conflict", "descriptor_removed_conflict")
 OWNER_SEMANTIC_REVIEW_CASES = ("invalid_wallet_after", "invalid_wallet_revision",
                              "invalid_bank_revision", "invalid_pile_count", "invalid_pile_root",
                              "invalid_pile_revision", "invalid_pile_from_revision",
@@ -46,7 +48,10 @@ PHYSICAL_SOURCES = ("tests/async/coin_physical_publication_harness.cpp",
                     "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/economy/economic_source_event.c", "src/item/item_ownership_runtime.c",
                     "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",
                     "src/player/player_snapshot_capture.c", "src/player/player_snapshot_codec.c",
-                    "src/persistence/critical_command.c")
+                    "src/persistence/critical_command.c",
+                    "src/economy/native_quest_cost.c", "src/economy/native_quest_coin_give.c",
+                    "src/economy/shop_trade_recovery_manifest.c",
+                    "src/item/lockpick_retirement_continuation.c")
 
 
 def bounded(command, seconds, **kwargs):
@@ -69,31 +74,9 @@ def owner_fixture():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     harness = module.HARNESS
-    before = '''check(physical_attempts == CURRENCY_COIN_PUBLICATION_MAX_ATTEMPTS,
-\t\t\t      "physical attempts bounded");'''
-    after = '''check(physical_attempts == CURRENCY_COIN_PUBLICATION_MAX_ATTEMPTS + 3,
-\t\t\t      "one attempt per pulse remains eligible beyond old lifetime cap");'''
-    if harness.count(before) != 1:
-        raise RuntimeError("maintained owner fixture retry anchor changed")
-    harness = harness.replace(before, after)
-    before = '''"exhaustion cannot finalize or abandon committed publication");'''
-    after = before + '''
-            physical_available = true;
-            throw_physical = false;
-            currency_transaction_handle_completions(nullptr, 0);
-            check(acks == 1 && !held && notifications == 1 && !notification_before_ack,
-                  "repaired dependency ACKs original receipt after many transient failures");'''
-    if harness.count(before) != 1:
-        raise RuntimeError("maintained owner fixture recovery anchor changed")
-    harness = harness.replace(before, after)
-    # ACK retry now verifies the completed physical stage before another ACK.
-    before = '''check(physical_successes == 1 && physical_attempts == 1,
-\t\t      "ACK retry cannot repeat physical publication");'''
-    after = '''check(physical_attempts >= 1,
-\t\t      "ACK retry asks publisher to verify the same original operation");'''
-    if harness.count(before) != 1:
-        raise RuntimeError("maintained owner fixture ACK anchor changed")
-    harness = harness.replace(before, after)
+    # The maintained ACK fixture already checks each retry pulse, recovery after
+    # the legacy attempt count, and physical re-verification before every ACK.
+    # Preserve those current assertions instead of rewriting historical bodies.
     before = '''if (scenario == "ack_retry" || scenario == "changed_after_physical")'''
     after = '''if (scenario == "ack_retry" || scenario == "fresh_body" || scenario == "changed_after_physical")'''
     if harness.count(before) != 1:
@@ -288,13 +271,14 @@ def main():
         if args.compile_only:
             directory.mkdir(parents=True, exist_ok=False)
         owner, owner_sources, owner_cases = owner_fixture()
-        owner_cpp = Path(temporary) / "owner.cpp"
+        owner_cpp = directory / "owner.cpp"
         owner_cpp.write_text(owner, encoding="utf-8")
         sources_pin = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
                        for p in sorted((ROOT / "src").rglob("*"))
                        if p.is_file() and p.suffix in (".c", ".h", ".cpp", ".hpp")}
         fixture_paths = (Path(__file__), OWNER_PATH, ROOT / PHYSICAL_SOURCES[0],
-                         Path(__file__).with_name("_paths.py"))
+                         Path(__file__).with_name("_paths.py"),
+                         Path(__file__).with_name("coin_owner_unreachable_native_boundary.cpp"))
         fixture_pins = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
                         for p in fixture_paths}
         failures = []
@@ -312,14 +296,19 @@ def main():
                              "-fno-pie", "-no-pie", "-ffunction-sections", "-fdata-sections",
                              "-Isrc", *defines]
                     if scope == "owner":
-                        flags += ["-DDURIS_ECONOMIC_GAMEPLAY_AUTHORITY_TEST", "-DDURIS_COIN_SPLIT_PUBLICATION_TEST"]
+                        flags += ["-DDURIS_ECONOMIC_GAMEPLAY_AUTHORITY_TEST", "-DDURIS_COIN_SPLIT_PUBLICATION_TEST", "-pthread"]
+                        sources = [*sources, "tests/async/coin_owner_unreachable_native_boundary.cpp"]
                     cflags = shlex.split(subprocess.check_output(["mysql_config", "--cflags"], text=True))
                     libs = shlex.split(subprocess.check_output(["mysql_config", "--libs"], text=True))
                     command = [*shlex.split(os.environ.get("CXX", "g++")), *flags,
                                *cflags, *sources, "-Wl,--gc-sections", "-lcrypto", *libs,
                                "-o", str(binary)]
+                    if scope == "owner":
+                        command += ["-Wl,--wrap=_Z30coin_physical_recovery_publishRK16critical_commandRK19critical_completion"]
                     rc, out = bounded(command, 300, cwd=ROOT, text=True,
                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    (directory / f"{name}-compile-command.json").write_text(json.dumps(command, indent=2) + "\n")
+                    (directory / f"{name}-compile.log").write_text(out)
                     if rc:
                         raise RuntimeError(f"{name} compile failed:\n{out}")
                     receipt = {"binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
@@ -342,7 +331,12 @@ def main():
                 if args.compile_only:
                     continue
                 for case in cases:
-                    rc, out = bounded([str(binary), case], 30, cwd=ROOT, text=True,
+                    case_command = [str(binary), case]
+                    if scope == "owner":
+                        journal = directory / "journals" / name / case
+                        journal.mkdir(mode=0o700, parents=True, exist_ok=False)
+                        case_command.append(str(journal.resolve()))
+                    rc, out = bounded(case_command, 30, cwd=ROOT, text=True,
                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                     print(f"policy={policy} scope={scope} case={case} exit={rc}\n{out}", flush=True)
                     if rc:

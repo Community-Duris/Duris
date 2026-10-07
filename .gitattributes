@@ -137,3 +137,9 @@ src/flatfile/flatfile_collector_repository.h text eol=lf
 tests/async/flatfile_collector_repository_harness.cpp text eol=lf
 tests/async/test_flatfile_collector_repository.py text eol=lf
 tests/async/flatfile_collector_native_unavailable.cpp text eol=lf
+
+# Coin owner component fixture pins use canonical LF bytes.
+tests/async/coin_owner_unreachable_native_boundary.cpp text eol=lf
+tests/async/test_coin_physical_publication.py text eol=lf
+tests/async/test_coin_publication_ack_retention.py text eol=lf
+tests/async/coin_physical_publication_harness.cpp text eol=lf

@@ -151,6 +151,10 @@ int main(int argc, char **argv)
 	if (argc != 2)
 		return 2;
 	scenario = argv[1];
+	const bool zero_descriptions = scenario == "zero_descriptions_drop" ||
+				       scenario == "pickup_zero_descriptions" ||
+				       scenario == "descriptor_added_conflict";
+	extra_descr_data second_detail = {};
 	const bool pickup = scenario.starts_with("pickup") || scenario == "amount_exception" ||
 			    scenario == "extraction_exception";
 	const bool consumed = scenario == "pickup_consumed" || scenario == "extraction_exception";
@@ -167,7 +171,13 @@ int main(int argc, char **argv)
 	money.name = const_cast<char *>("coin fixture");
 	money.action_description = const_cast<char *>("literal action");
 	money.str_mask = 0;
-	money.ex_description = &detail;
+	money.ex_description = zero_descriptions ? nullptr : &detail;
+	if (scenario == "two_descriptions")
+	{
+		second_detail.keyword = const_cast<char *>("coin");
+		second_detail.description = const_cast<char *>("second literal description");
+		detail.next = &second_detail;
+	}
 	detail.keyword = const_cast<char *>("coin");
 	money.value[0] = 4;
 	money.value[4] = 18;
@@ -238,7 +248,8 @@ int main(int argc, char **argv)
 	{
 		target[0].values[0] = 2;
 		target[0].description = target[0].short_description = "fixture coins 2";
-		target[0].extra_descriptions[0].description = "fixture coins 2";
+		if (!target[0].extra_descriptions.empty())
+			target[0].extra_descriptions[0].description = "fixture coins 2";
 	}
 	std::vector<uint8_t> bytes;
 	if (player_item_snapshot_list_encode(target, &bytes) != player_snapshot_codec_result::ok)
@@ -282,6 +293,13 @@ int main(int argc, char **argv)
 	}
 	if (scenario == "malformed_result")
 		result.piles[1].max_item_revision++;
+	if (scenario == "descriptor_added_conflict")
+	{
+		money.ex_description = &detail;
+		appearance(&money);
+	}
+	if (scenario == "descriptor_removed_conflict")
+		money.ex_description = nullptr;
 	if (scenario == "literal_conflict")
 		money.name = const_cast<char *>("changed literal");
 	if (scenario == "pickup_opening_weight")
@@ -328,14 +346,16 @@ int main(int argc, char **argv)
 	const bool uncertain =
 		scenario == "placement_exception" || scenario == "extraction_exception" ||
 		scenario == "amount_exception" || scenario == "materialize_exception";
-	const bool refused = uncertain || scenario == "duplicate_uid" ||
-			     scenario == "conflicting_bytes" || scenario == "conflicting_custody" ||
-			     scenario == "water" || scenario == "falling" ||
-			     scenario == "offline_actor" || scenario == "pickup_missing" ||
-			     scenario == "wrong_actor" || scenario == "wrong_placement" ||
-			     scenario == "stale_item" || scenario == "masked_blob" ||
-			     scenario == "malformed_result" || scenario == "literal_conflict" ||
-			     scenario == "object_cycle" || scenario == "pickup_opening_weight";
+	const bool refused =
+		uncertain || scenario == "duplicate_uid" || scenario == "conflicting_bytes" ||
+		scenario == "conflicting_custody" || scenario == "water" || scenario == "falling" ||
+		scenario == "offline_actor" || scenario == "pickup_missing" ||
+		scenario == "wrong_actor" || scenario == "wrong_placement" ||
+		scenario == "stale_item" || scenario == "masked_blob" ||
+		scenario == "malformed_result" || scenario == "literal_conflict" ||
+		scenario == "object_cycle" || scenario == "pickup_opening_weight" ||
+		scenario == "two_descriptions" || scenario == "descriptor_added_conflict" ||
+		scenario == "descriptor_removed_conflict";
 	bool okay = check(first != refused, "first publication matches required retention");
 	if (scenario == "reentry")
 		okay &= check(
@@ -381,6 +401,9 @@ int main(int argc, char **argv)
 				item_owner_identity_equal(opening.owner, room_owner),
 			"corrupt opening weight refuses before native denomination or custody mutation");
 	}
+	if (zero_descriptions && !refused)
+		okay &= check(!money.ex_description,
+			      "literal descriptor absence survives original publication and retry");
 	coin_physical_publication_release(id);
 	str_free(money.description);
 	str_free(money.short_description);
