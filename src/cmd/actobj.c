@@ -4018,7 +4018,9 @@ static bool prepare_coin_pile(P_obj money, const item_owner_identity &owner, P_o
 		}
 	} rendered;
 	rendered.object.type = ITEM_MONEY;
-	rendered.object.ex_description = &rendered.detail;
+	// Preserve the original money prototype's optional detail; do not add one.
+	rendered.object.ex_description = snapshots[0].extra_descriptions.empty() ? nullptr :
+										   &rendered.detail;
 	if (literal)
 	{
 		// The scoped publisher supports the native canonical money renderer.
@@ -4028,10 +4030,13 @@ static bool prepare_coin_pile(P_obj money, const item_owner_identity &owner, P_o
 		std::copy(opening.begin(), opening.end(), rendered.object.value);
 		add_coins(&rendered.object, 0, 0, 0, 0);
 		if (!rendered.object.description || !rendered.object.short_description ||
-		    !rendered.detail.description || snapshots[0].extra_descriptions.size() != 1 ||
+		    snapshots[0].extra_descriptions.size() > 1 ||
+		    (!snapshots[0].extra_descriptions.empty() && !rendered.detail.description) ||
 		    snapshots[0].description != rendered.object.description ||
 		    snapshots[0].short_description != rendered.object.short_description ||
-		    snapshots[0].extra_descriptions[0].description != rendered.detail.description ||
+		    (!snapshots[0].extra_descriptions.empty() &&
+		     snapshots[0].extra_descriptions[0].description !=
+			     rendered.detail.description) ||
 		    snapshots[0].weight != rendered.object.weight)
 			return false;
 	}

@@ -99,15 +99,15 @@
       "migrations/reconcile_auction_transactions.sh": "59ff14a554c408f63e9c6fddb0502e7f21fc1af3f37737e244093ed7e7819ae9",
       "migrations/runtime_compatibility_manifest.json": "41181dc0b2938366bf408e6ad6ec1b11e4c170d18777f84efa5e93dc02374974",
       "migrations/verify_runtime_compatibility.sh": "1e55d588c4215cc4d7f3ba01b1edb92523e943f08521d0821c1e21365a8ace47",
-      "scripts/generate_economy_writer_coverage.py": "97057dccbeeb4224738270a9cf59e5b61fb7740151048584fb434b87072e70bb",
+      "scripts/generate_economy_writer_coverage.py": "5cbe54e8ae437b2578dc312379784230f3e6d024d74e4be4b27d975f7e16dddc",
       "scripts/validate_data_lifecycle.py": "8373fbbfb0eabdf22dabc42a4f10a857b4191bef1c0e9d11b86526bd24542091",
       "scripts/validate_economy_accounting.py": "90b8811f1d3785cdc26a9590e90a048c078e078e6db45e07be336faccbf43f3b",
       "scripts/validate_runtime_compatibility.py": "9e113fde316d0b9643f33c5a6a724ca0f10fb24680ecbb4a5080498a268d5fcd",
-      "src/Makefile": "16a4a7a2e9a7498f7d4cdb376d9c3520fe34b8405a4b25869b144dfd795c9752",
+      "src/Makefile": "93119f61776d589c24b4e4a1f1d82dc85580c5b60c2ce611ed8a0a4ce94d3347",
       "src/classes/npc_alchemist.c": "86e8d7defaf974e7994252b63d4cb5486dad6e1749a3b06f0e953ca13eee715e",
       "src/classes/npc_alchemist.h": "a9d9b16956c802f1b4f5e5d8d651ffeeb56b5436a4352e1bfbcbe95305a11675",
       "src/cmd/actmove.c": "9d585d0537f702567e0bdb41eb972eda8481f10da43e476d92f889a5d1ff05f6",
-      "src/cmd/actobj.c": "b32300c6cdac3bfc167d1c85c17f793f198f8a94c7f09320e15b2fac46c059c6",
+      "src/cmd/actobj.c": "bfb0043ec8abb0e5526cdb76e458f97d6e5612743b65c7640072bb13d16d62f2",
       "src/cmd/lockpick_retirement.c": "6f0afcea38b39f0bf1e546476e8024a5efb06b9170ceed5d47f186795768f0be",
       "src/cmd/lockpick_retirement.h": "b02fcf35ab481f97bd95c3c23bc8f94a3b6347b15326b668646d49064fac7a4a",
       "src/core/random.c": "8bdeb01e550eea77b95e4f6c289ce2d890c2514baa8b6133d5df3803881c0a6c",
@@ -129,8 +129,11 @@
       "src/economy/auction_repository.c": "894989b8af90de9a246026ac58a83eadc226fee259f47f18acfb4a84f5c8a106",
       "src/economy/auction_repository.h": "c1c4bc8b9eb3a56e0e36072d159ca9a1a5bcb4f4c0f81b74741ee61de57024ab",
       "src/economy/auction_transaction.c": "6f5b8ffbabc4f67460510200f8617093384d0905bcd2f4113d40484e78e89a33",
-      "src/economy/coin_physical_recovery.c": "1625aefef97376fad7990613e2f1887a788289e700fa0761d78d3c5360b93a0a",
-      "src/economy/coin_physical_recovery.h": "c68cc556958cc45b8e71260824f4ac717d060cd7750bd45d57a45b798bccaf9a",
+      "src/economy/coin_physical_publication.c": "a6c282a71d505b386334db1c8917a57fa4b831ac5710a74db79e7c5b6b093b23",
+      "src/economy/coin_physical_recovery.c": "e2b76d2c370eefab5a772bc3a41667f0fb5a9edb1961cea7a896512e9f8d7ae5",
+      "src/economy/coin_physical_recovery.h": "c7d333495fb0ae7157116f7ec27e1c469ec78e8a250d6034dde6c5cc188ea815",
+      "src/economy/coin_transfer_accounting.c": "0888698453d1722db53c7ca217601ad430198f005e23e48cd6b3ab4066ca834c",
+      "src/economy/coin_transfer_accounting.h": "6991025c014c42c65b9e98b7c38446932f58a470615021d1fdf5bafdc83824f0",
       "src/economy/collector_purchase_publication.c": "51478b2dfadb97c5aa910735a0337238e8aee964a3150b97fe80b0f9912ba9d1",
       "src/economy/collector_repository.c": "4a4467a8330a9b25e3d417b147834ed231558acceeafe4736754d0681acf57fd",
       "src/economy/collector_repository.h": "2b5cea486a07731dd3066231d0b8eead7781a5d047d25e6c066ea9b79b791866",
@@ -261,7 +264,9 @@
       "src/persistence/quest_reward_obligation_repository.h": "c5bf00750f33ad2bc2c93e976e27226a9ce0cba795f39de83accee10f7a1c293",
       "src/persistence/shop_item_runtime_payload.c": "7ca2c4f89d265ae18858ca7b0d868301b63ccbd5a839ce06a30a81c587219436",
       "src/persistence/shop_item_runtime_payload.h": "51eba38c026d8f090aab047e040de7e773958bf6f58beb166f55add60e48d376",
-      "src/player/inert_item_stage.c": "fc4f0d2c603f26cc46e15c39cbe66b2858d23b5c26719deedf6bdca080d7779c",
+      "src/persistence/sql_room_coin_payload.c": "0e8a4f52b3d34638b3f7efa81bee3b5787b214e9f1cfce5e8d14fdc46a2bd2da",
+      "src/persistence/sql_room_coin_payload.h": "101d33ebcefae5e196ca9e7b8ccb50b94d85c371791bd51aa70e60f1701d5789",
+      "src/player/inert_item_stage.c": "931b52e9400b0a4b380f93f645cf8ba9f1cab17ec55ae11ff2d2738a9e1ba2cd",
       "src/player/inert_item_stage.h": "1a6c34b77ab4efb0daf50a028c561a2d7a27af314d37f5e65157fdfe5fffa9a9",
       "src/player/player_load_items.c": "12dbe88d38d3e6f2cbf0b7523cf3d3a73260795f6df70dc65ca2eeaaa043703d",
       "src/player/player_load_items.h": "21678f4aade0bea7a26951a6b79a9df73f0d585a943aacb21272ea7ae96713a8",
@@ -282,7 +287,7 @@
       "src/sql/sql.c": "fcb648fea1a64750d097556c4254e338a749c9727cb92e989298598650bf7ee0",
       "src/sql/sql_economic_runtime.c": "ed7fc3213ac1983d59581ce8d6a723113606f5762001d1fed3ec76af39ab0c7d",
       "src/sql/sql_economic_runtime.h": "fe6189d38f7a3c28abfe82f4384ccaef258ab0873f540bf82c41043358188063",
-      "src/sql/sql_player.c": "6b54581d8b92acc5430f9413e42cc1d27b8d6137ec9044e273396abe9d2bc756",
+      "src/sql/sql_player.c": "0c415974fe1e4bc0e56492a5f09ce90c0e70f1a7e68dd79cd76d931af796b2f5",
       "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
       "src/world/db.h": "05ab29035fd5befc33f9d8474ed3d3668fd3108daeebdb09c72e9a228f13131a",
       "src/world/handler.c": "3f046194166dbbfd949f9ec0199e72f6155283edbdac69a7fd186da21333ce07",
@@ -314,24 +319,27 @@
       "src/world/world_activity.c": "6c7443dc54ffb37f33a3d4b9a0d3a24405efd2822a4b4695c299bf21501c6c04",
       "src/world/world_activity.h": "2b581aaee6228e30b2e66a4ab3bb9e78878b3112bfbc38fa95aca4f1f2ab5942",
       "tests/async/economic_sql_lifecycle_owner_mysql_harness.cpp": "3561a0fca268598bec620da0c98b70e7ff6e8d16992238be9688f2bb8b1a3f2e",
+      "tests/async/inert_money_literal_harness.cpp": "c0d2a1c1322a6321fd9f86280b8cd87abcbb41f4c9b578e673711df27c57c3a2",
       "tests/async/test_auction_retained_seller_fee.py": "6229e32f084d90f019af7b187dc82c5fa62262873768e7e335275bcf14e4de16",
+      "tests/async/test_coin_transfer_shared_bank_accounting.py": "f48cd0bf3fcd980a6ee3a41eb94c42898aa3f6deaf60058f56d71e955cd79da8",
       "tests/async/test_economic_sql_lifecycle_activation_contract.py": "10da6a9517092507a6ed6255536fe8b6a09c85383efffe75edb0c1d22d0209c4",
-      "tests/async/test_economy_writer_coverage_contract.py": "45d49b6741717d64a33774468ab45b9e54cd2ea7667b61449e1079beab48b544"
+      "tests/async/test_economy_writer_coverage_contract.py": "089f47d41bf9c0883c1fd3b99ecc150037a0796c81c28f82b32524195c42279c",
+      "tests/async/test_inert_money_literal.py": "92ad092458d7ad5ef4ca15200a53e8532f69d36f3f0831fc723fca82eda0da70"
     },
     "status": "source_integrated_unqualified"
   },
   "counts": {
     "dormant_writer_candidates": 19,
-    "draft_registry_rows": 925,
-    "function_definition_anchors_verified": 917,
-    "matrix_rows": 925,
+    "draft_registry_rows": 926,
+    "function_definition_anchors_verified": 918,
+    "matrix_rows": 926,
     "non_function_candidate_anchors": 8,
     "non_writer_or_out_of_scope_candidates": 115,
     "offline_operational_writer_routes": 4,
     "routes_with_current_schema_1_path": 85,
     "routes_with_schema_2_gameplay_producer": 16,
     "routes_with_unified_double_entry_evidence": 2,
-    "runtime_mutation_and_projection_routes": 787,
+    "runtime_mutation_and_projection_routes": 788,
     "supplemental_candidates_found": 0
   },
   "coverage_complete": false,
@@ -340,7 +348,7 @@
     "non_writer_candidate": 115,
     "offline_operational_writer": 4,
     "runtime_mutation_route": 697,
-    "runtime_projection_route": 90
+    "runtime_projection_route": 91
   },
   "global_schema_and_accounting_evidence": {
     "critical_command_accounting_schema_2": "src/persistence/critical_command.h:10",
@@ -352,7 +360,7 @@
     "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
-    "The matrix reconciles 925 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+    "The matrix reconciles 926 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
     "The lexical census is fully mapped; this does not establish that every reachable economic mutation has passed executable review.",
     "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
@@ -376,7 +384,7 @@
       "ship_coffer_assignment": 6,
       "sql_economy": 58
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 925-row registry maps 2842 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 926-row registry maps 2842 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
     "mapped_sites_still_present": 2842,
     "mapped_unique_sites_from_draft_rows": 2842,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
@@ -6197,7 +6205,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4205
+          4210
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_put",
@@ -6325,7 +6333,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4898
+          4903
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_debit",
@@ -6501,7 +6509,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4474
+          4479
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_get",
@@ -6633,7 +6641,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          798
+          804
         ],
         "file": "src/economy/coin_physical_recovery.c",
         "function": "project_bodies",
@@ -6680,7 +6688,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          188
+          190
         ],
         "file": "src/economy/coin_physical_recovery.c",
         "function": "opening_matches",
@@ -6745,7 +6753,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          899
+          905
         ],
         "file": "src/economy/coin_physical_recovery.c",
         "function": "project",
@@ -6855,7 +6863,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          203
+          206
         ],
         "file": "src/economy/coin_physical_publication.c",
         "function": "coin_physical_publication_publish",
@@ -6919,8 +6927,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          971,
-          1043
+          973,
+          1067
         ],
         "file": "src/economy/coin_transfer_accounting.c",
         "function": "coin_transfer_accounting_record",
@@ -10267,8 +10275,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          499,
-          13365
+          501,
+          13461
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_account_bank_deposit_balances",
@@ -18400,7 +18408,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6736
+          6741
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_drink",
@@ -18462,7 +18470,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10422
+          10427
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_empty_objects",
@@ -19153,7 +19161,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8105
+          8110
         ],
         "file": "src/cmd/actobj.c",
         "function": "remove_item",
@@ -19215,7 +19223,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8039
+          8044
         ],
         "file": "src/cmd/actobj.c",
         "function": "execute_wear",
@@ -19632,7 +19640,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6934
+          6939
         ],
         "file": "src/cmd/actobj.c",
         "function": "apply_eaten_item",
@@ -20661,7 +20669,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4941
+          4946
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_dropalldot",
@@ -20783,7 +20791,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5058
+          5063
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_drop",
@@ -20905,7 +20913,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6228
+          6233
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_give",
@@ -20966,7 +20974,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6223
+          6228
         ],
         "file": "src/cmd/actobj.c",
         "function": "put",
@@ -21148,7 +21156,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10142
+          10147
         ],
         "file": "src/cmd/actobj.c",
         "function": "list_foods",
@@ -22017,7 +22025,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10046
+          10051
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_apply_poison",
@@ -24305,7 +24313,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6565
+          6570
         ],
         "file": "src/cmd/actobj.c",
         "function": "weight_change_object",
@@ -26094,8 +26102,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          324,
-          5601
+          326,
+          5603
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_account",
@@ -26159,8 +26167,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          299,
-          1313
+          301,
+          1315
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_player",
@@ -32414,8 +32422,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          495,
-          13230
+          497,
+          13326
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_account_bank",
@@ -32475,8 +32483,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          264,
-          4243
+          266,
+          4245
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_status",
@@ -35080,8 +35088,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          448,
-          11986
+          450,
+          12060
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -35142,8 +35150,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          444,
-          10146
+          446,
+          10148
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_saved_item",
@@ -35204,8 +35212,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          440,
-          10092
+          442,
+          10094
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_saved_item",
@@ -35331,8 +35339,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          413,
-          8477
+          415,
+          8479
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -35379,8 +35387,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          413,
-          8477
+          415,
+          8479
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_all_corpses",
@@ -35427,7 +35435,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          979
+          981
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_format_item_diff_fields_and_free_proto",
@@ -35489,7 +35497,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          11800
+          11802
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_room_item_publish",
@@ -35551,7 +35559,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          11757
+          11759
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_room_item_place_restored",
@@ -35598,7 +35606,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          11783
+          11785
         ],
         "file": "src/sql/sql_player.c",
         "function": "~sql_room_item_stage_guard",
@@ -35661,7 +35669,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6467
+          6469
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_locker_items_filtered",
@@ -35771,8 +35779,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          282,
-          4708
+          284,
+          4710
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",
@@ -35822,8 +35830,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          282,
-          4708
+          284,
+          4710
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_player_items",
@@ -35886,8 +35894,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          583,
-          7328
+          585,
+          7330
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_private_chest_items",
@@ -35950,8 +35958,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          448,
-          11986
+          450,
+          12060
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -35998,8 +36006,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          448,
-          11986
+          450,
+          12060
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_saved_items",
@@ -36062,7 +36070,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10234
+          10236
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -36124,7 +36132,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10234
+          10236
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_restore_shopkeeper_catalog",
@@ -36171,7 +36179,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10186
+          10188
         ],
         "file": "src/sql/sql_player.c",
         "function": "discard_shopkeeper_restore_stage",
@@ -36218,7 +36226,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          7477
+          7479
         ],
         "file": "src/sql/sql_player.c",
         "function": "free_temp_char",
@@ -38574,8 +38582,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          473,
-          12807
+          475,
+          12903
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_delete_ship",
@@ -38634,8 +38642,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          465,
-          12689
+          467,
+          12785
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_load_ship",
@@ -38695,8 +38703,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          461,
-          12435
+          463,
+          12531
         ],
         "file": "src/sql/sql_player.c",
         "function": "sql_save_ship",
@@ -54906,6 +54914,69 @@
         "original_draft_symbol": "quest_mobile_published_world_owner::materialize"
       },
       "source_classification": "Reconstructs exact originally published native mobile forest and cash from selected locked current authority before current metadata and runtime census proof; no new source, UID or issuance and no inferred publication ACK.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "block_until_projection_proof",
+        "must_block_on_activation": true,
+        "required_policy": "Restores an existing original-UID room coin pile from the original borrowed SQL session after locked current custody, literal, source, indexed plan, retained root/child and ledger proof. It projects locked owner revisions and exact literal bytes without a new issuance, command, posting or ACK. Flatfile support and complete current native/restart qualification remain unverified. Keep complete original native route qualification and activation closed; census or isolated fixtures do not promote backend/world/restart coverage."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root.",
+        "route_mode": "native_result_or_recovery_projection_without_new_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_projection_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "currency_ledger captures native wallet/bank deltas, after-vectors and revisions on applicable SQL paths; no balancing counter-account/source posting is present in this route evidence."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "projection_only_no_new_postings",
+        "unified_operation_postings_observed": false
+      },
+      "id": "coin.cold_room_projection",
+      "native_effects": {
+        "custody_effect": "Hydrates exact existing original UID, retained literal and current room custody, then projects the locked room owner revision into the runtime cache. Duplicate or conflicting live identities refuse.",
+        "holding_effect": "Reconstructs the locked current room pile value without wallet mutation, issuance, a new accounting root or a new posting.",
+        "native_state_targets": [
+          "original-UID P_obj literal/global/room lists and template count",
+          "item_ownership_runtime_entry with exact current item and owner revisions",
+          "item_ownership runtime room owner-counter cache"
+        ]
+      },
+      "projection_rule": "Restores an existing original-UID room coin pile from the original borrowed SQL session after locked current custody, literal, source, indexed plan, retained root/child and ledger proof. It projects locked owner revisions and exact literal bytes without a new issuance, command, posting or ACK. Flatfile support and complete current native/restart qualification remain unverified.",
+      "reachability_evidence": "sql_restore_saved_items calls sql_restore_exact_room_coins, which enumerates retained original UIDs and invokes coin_physical_recovery_restore_room inside an original-session read transaction. That owner reads sql_room_coin_payload proof internally and reuses the bounded original-UID enrollment/cache primitives; scanner inventory alone cannot establish qualification.",
+      "reason": "coin_transfer",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1384
+        ],
+        "file": "src/economy/coin_physical_recovery.c",
+        "function": "coin_physical_recovery_restore_room",
+        "original_draft_symbol": "coin_physical_recovery_restore_room"
+      },
+      "source_classification": "Reconstructs an already committed original-UID ordinary room coin pile after successful original root/child receipts, source/indexed-plan/ledger evidence and locked current custody, literal and owner-counter proof. Its private inert-stage enrollment and cache owner-revision projection have no lexical scanner occurrence. No new issuance, native holding mutation, custody event, command or ACK is inferred.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     }
   ],

@@ -33,6 +33,8 @@
 #include "economy/shop_trade_transaction.h"
 #ifndef __NO_MYSQL__
 #include "player/player_sql_transaction_cleanup.h"
+#include "economy/coin_physical_recovery.h"
+#include "persistence/sql_room_coin_payload.h"
 #include "persistence/shop_item_runtime_payload.h"
 #include "persistence/economic_accounting_repository.h"
 #include <memory>
@@ -11983,6 +11985,78 @@ static bool sql_restore_exact_room_items(std::unordered_set<uint64_t> *published
 	return true;
 }
 
+static bool sql_restore_exact_room_coins(std::unordered_set<uint64_t> *published, bool *available)
+{
+	MYSQL *const original = DB;
+	if (!original || sql_in_transaction() || player_sql_idle_error(original) ||
+	    !sql_room_coin_payload_available(original, available))
+		return false;
+	if (!*available)
+		return true;
+	const auto session = mysql_thread_id(original);
+	bool transaction_clean = false;
+	const auto read_transaction = [&](const auto &read)
+	{
+		transaction_clean = false;
+		if (DB != original || mysql_thread_id(original) != session ||
+		    player_sql_idle_error(original) || sql_in_transaction())
+			return false;
+		player_sql_cleanup proof;
+		bool accepted = false, clean = false;
+		{
+			player_sql_transaction_cleanup cleanup(original, proof);
+			cleanup.starting();
+			try
+			{
+				if (!mysql_real_query(original, "START TRANSACTION", 17) &&
+				    cleanup.same_session() &&
+				    (original->server_status & SERVER_STATUS_IN_TRANS))
+				{
+					in_transaction = true;
+					accepted = read();
+				}
+			}
+			catch (...)
+			{
+				accepted = false;
+			}
+			cleanup.finish();
+			clean = DB == original && cleanup.same_session() &&
+				proof.rollback_confirmed && !proof.cleanup_error &&
+				proof.disposition == player_sql_cleanup_disposition::idle_verified;
+		}
+		// The cleanup owner must unwind before retiring its original handle.
+		if (!clean && DB == original)
+			(void)sql_retire_main_save_connection(original);
+		if (clean || DB != original)
+			in_transaction = false;
+		transaction_clean = clean;
+		return accepted && clean;
+	};
+	std::vector<uint64_t> roots;
+	// Release the enumeration's season lock before each lineage-first read.
+	if (!read_transaction([&]() { return sql_room_coin_payload_roots(original, &roots); }))
+		return false;
+	for (uint64_t uid : roots)
+	{
+		// Complete all fallible bookkeeping allocations before native enrollment.
+		auto next_published = *published;
+		if (!next_published.insert(uid).second)
+			return false;
+		const bool restored = read_transaction(
+			[&]() { return coin_physical_recovery_restore_room(original, uid); });
+		if (!transaction_clean || DB != original || mysql_thread_id(original) != session ||
+		    player_sql_idle_error(original) || sql_in_transaction())
+			return false;
+		if (restored)
+			published->swap(next_published);
+		else
+			logit(LOG_SYS,
+			      "sql_restore_saved_items: exact coin proof refused; retained history fences legacy rows");
+	}
+	return true;
+}
+
 void sql_restore_saved_items(void)
 {
 	if (!DB)
@@ -12001,6 +12075,22 @@ void sql_restore_saved_items(void)
 	{
 		logit(LOG_SYS,
 		      "sql_restore_saved_items: exact payload schema/lifetime unavailable; source rows retained");
+		return;
+	}
+	bool coin_available = false;
+	try
+	{
+		if (!sql_restore_exact_room_coins(&published_uids, &coin_available))
+		{
+			logit(LOG_SYS,
+			      "sql_restore_saved_items: exact coin schema/session unavailable; source rows retained");
+			return;
+		}
+	}
+	catch (...)
+	{
+		logit(LOG_SYS,
+		      "sql_restore_saved_items: exact coin preparation refused; source rows retained");
 		return;
 	}
 
@@ -12029,7 +12119,7 @@ void sql_restore_saved_items(void)
 		int item_id = atoi(row[2]);
 		int vnum = atoi(row[3]);
 		const uint64_t saved_uid = row[28] ? strtoull(row[28], NULL, 10) : 0;
-		if (exact_available)
+		if (exact_available || coin_available)
 		{
 			char *escaped = sql_escape_string(item_key);
 			if (!escaped)
@@ -12057,8 +12147,14 @@ void sql_restore_saved_items(void)
 					break;
 				}
 				bool enrolled = false;
-				if (uid && (!sql_room_item_payload_present(DB, uid, &enrolled) ||
-					    enrolled))
+				if (uid && exact_available &&
+				    (!sql_room_item_payload_present(DB, uid, &enrolled) ||
+				     enrolled))
+					retained_exact = true;
+				bool coin_history = false;
+				if (uid && coin_available &&
+				    (!sql_room_coin_payload_present(DB, uid, &coin_history) ||
+				     coin_history))
 					retained_exact = true;
 			}
 			mysql_free_result(overlap);

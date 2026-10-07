@@ -13,6 +13,8 @@
 #include "world/object_template.h"
 #ifndef __NO_MYSQL__
 #include "persistence/critical_command_repository.h"
+#include "persistence/sql_room_coin_payload.h"
+#include "core/mm.h"
 #include "player/player_sql_transaction_cleanup.h"
 #else
 #include "flatfile/flatfile_accounting_authority.h"
@@ -125,7 +127,7 @@ bool decode_shape(const critical_command &command, shape &out)
 	    items[0].vnum != pile.items[0].vnum || items[0].type != ITEM_MONEY ||
 	    items[0].equipment_slot != -1 || items[0].parent_index != PLAYER_SNAPSHOT_NO_PARENT ||
 	    items[0].string_mask != (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3) ||
-	    !items[0].dynamic_affects.empty() || items[0].extra_descriptions.size() != 1 ||
+	    !items[0].dynamic_affects.empty() || items[0].extra_descriptions.size() > 1 ||
 	    (items[0].extra_flags & (ITEM_LIT | ITEM_TRANSIENT | ITEM_ARTIFACT | ITEM_PROCLIB)))
 		return false;
 	out.literal = std::move(items[0]);
@@ -189,7 +191,7 @@ bool opening_matches(player_item_snapshot actual, const shape &value)
 {
 	const auto &endpoint = value.transfer.source;
 	if (!std::equal(endpoint.before.begin(), endpoint.before.end(), actual.values.begin()) ||
-	    actual.extra_descriptions.size() != 1)
+	    actual.extra_descriptions.size() > 1)
 		return false;
 	if (value.consumed)
 		return snapshot_equal(actual, value.literal);
@@ -208,23 +210,27 @@ bool opening_matches(player_item_snapshot actual, const shape &value)
 		}
 	} rendered;
 	rendered.object.type = ITEM_MONEY;
-	rendered.object.ex_description = &rendered.detail;
+	rendered.object.ex_description = actual.extra_descriptions.empty() ? nullptr :
+									     &rendered.detail;
 	std::copy(endpoint.before.begin(), endpoint.before.end(), rendered.object.value);
 	add_coins(&rendered.object, 0, 0, 0, 0);
 	if (!rendered.object.description || !rendered.object.short_description ||
-	    !rendered.detail.description || actual.weight != rendered.object.weight ||
+	    (!actual.extra_descriptions.empty() && !rendered.detail.description) ||
+	    actual.weight != rendered.object.weight ||
 	    actual.description != rendered.object.description ||
 	    actual.short_description != rendered.object.short_description ||
-	    actual.extra_descriptions[0].description != rendered.detail.description)
+	    (!actual.extra_descriptions.empty() &&
+	     actual.extra_descriptions[0].description != rendered.detail.description))
 		return false;
 	std::copy(endpoint.after.begin(), endpoint.after.end(), rendered.object.value);
 	add_coins(&rendered.object, 0, 0, 0, 0);
 	if (!rendered.object.description || !rendered.object.short_description ||
-	    !rendered.detail.description)
+	    (!actual.extra_descriptions.empty() && !rendered.detail.description))
 		return false;
 	actual.description = rendered.object.description;
 	actual.short_description = rendered.object.short_description;
-	actual.extra_descriptions[0].description = rendered.detail.description;
+	if (!actual.extra_descriptions.empty())
+		actual.extra_descriptions[0].description = rendered.detail.description;
 	actual.weight = rendered.object.weight;
 	std::copy(endpoint.after.begin(), endpoint.after.end(), actual.values.begin());
 	return snapshot_equal(actual, value.literal);
@@ -1373,3 +1379,86 @@ bool coin_physical_recovery_publish(const critical_command &command,
 		return false;
 	}
 }
+
+#ifndef __NO_MYSQL__
+bool coin_physical_recovery_restore_room(MYSQL *connection, uint64_t uid) noexcept
+{
+	if (!nevent_is_game_thread())
+		return false;
+	try
+	{
+		// Read original durable proof internally. A caller-supplied value or a
+		// reconstructed command envelope cannot grant this enrollment capability.
+		sql_room_coin_pile retained;
+		if (!sql_room_coin_payload_read(connection, uid, &retained) ||
+		    !current_session(connection, retained.session_id))
+			return false;
+		const auto &identity = retained.identity;
+		shape value;
+		value.room = identity.owner.id;
+		value.pile = std::make_unique<item_transfer_payload>();
+		value.pile->selected_item_uid = uid;
+		value.pile->item_count = 1;
+		value.pile->from_owner = value.pile->to_owner = identity.owner;
+		value.pile->items[0].vnum = identity.vnum;
+		value.pile->items[0].expected_item_revision = identity.item_revision;
+		// shape is used only by the existing bounded census/cache primitives.
+		// It is neither a command nor an authority or original before-image.
+		native_state native;
+		native.committed = native.item_exists = true;
+		native.item = identity;
+		native.from_revision = native.to_revision = identity.owner_revision;
+		native.literal = retained.item;
+		const projection_cut cut{ connection, retained.session_id };
+		physical before;
+		if (!census(value, before) || !runtime_matches(value, native, false))
+			return false;
+		if (before.object)
+		{
+			if (!capture_equal(before.object, retained.item))
+				return false;
+		}
+		else
+		{
+			inert_item_stage prepared;
+			std::array<int32_t, 4> denominations;
+			std::copy_n(retained.item.values.begin(), 4, denominations.begin());
+			auto staged = prepare_inert_money_stage(retained.item, uid, denominations,
+								prepared);
+			if (staged == inert_item_stage_result::allocation_unavailable &&
+			    recovery_object_templates_ready())
+			{
+				// Full money eligibility was checked by the private preparer.
+				// Generic inert/money staging keeps its free-slot-only contract.
+				extern mm_ds *dead_obj_pool;
+				if (!dead_obj_pool || dead_obj_pool->size != sizeof(obj_data) ||
+				    dead_obj_pool->next_off != offsetof(obj_data, next) ||
+				    !mm_try_reserve_free_slot(dead_obj_pool))
+					return false;
+				staged = prepare_inert_money_stage(retained.item, uid,
+								   denominations, prepared);
+			}
+			if (staged != inert_item_stage_result::ok || !current_cut(cut) ||
+			    !coin_physical_recovery_owner::enroll(value, native, prepared))
+				return false;
+		}
+		if (!current_cut(cut))
+			return false;
+		physical after;
+		if (!census(value, after) || !after.object ||
+		    !capture_equal(after.object, retained.item) ||
+		    !runtime_matches(value, native, false) ||
+		    !item_ownership_runtime_hydrate_many_atomic(&native.item, 1) ||
+		    !project_owner_revisions(value, native))
+			return false;
+		item_ownership_runtime_entry current;
+		return current_cut(cut) && runtime_matches(value, native, false) &&
+		       item_ownership_runtime_lookup(uid, &current) &&
+		       exact_runtime_identity(current, native.item);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+#endif
