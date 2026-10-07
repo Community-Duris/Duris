@@ -30,9 +30,11 @@ R3 boundary review was approved, and connected pricing is implemented at
 successor `6d544bea7`. Original/extracted payment controls and both owned maintained
 builds pass; current-candidate components/type checks are separate from old-base
 ELFs. See [R3 terminal handoff](R3_ENHANCEMENT_PRICE_HANDOFF.md). Coordinator final
-review is pending. Next queue remains continuing, not another completion cap.
+review is pending; local terminal handoff is `b18e513b` while GitHub writes fail
+across workstreams. The next [tribute-count reservation](R4_SUPERIOR_TRIBUTE_RESERVATION.md)
+is locally committed at `693d57042`, awaiting boundary review before code edits. Next queue remains continuing, not another completion cap.
 
-## Current delivery status
+## Historical finite R0/R1/R2 checkpoint status
 
 **Fixed implementation milestone delivered, qualified and reviewed.** All required
 R0/R1/R2 rows of the accepted inventory are discharged at their declared scopes.
