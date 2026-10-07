@@ -34,6 +34,8 @@ struct world_quest_payment_context
 	world_quest_payment_action action;
 	int32_t fee;
 	int32_t giver_vnum;
+	// Saved per-player attempt watermark; reset preserves it and creation advances it.
+	int32_t quest_started;
 };
 
 static_assert(sizeof(world_quest_payment_context) <= CURRENCY_PENDING_CONTEXT_MAX_BYTES);
@@ -96,7 +98,8 @@ static void world_quest_payment_committed(P_char pl, bool committed,
 		return;
 	}
 	memcpy(&payment, raw_context, sizeof(payment));
-	if (payment.fee <= 0 || payment.giver_vnum <= 0 ||
+	if (payment.fee <= 0 || payment.giver_vnum <= 0 || payment.quest_started < 0 ||
+	    (payment.action != world_quest_payment_action::quest && !payment.quest_started) ||
 	    (payment.action != world_quest_payment_action::abandon &&
 	     payment.action != world_quest_payment_action::map &&
 	     payment.action != world_quest_payment_action::quest))
@@ -124,7 +127,8 @@ static void world_quest_payment_committed(P_char pl, bool committed,
 	switch (payment.action)
 	{
 	case world_quest_payment_action::abandon:
-		if (!pl->only.pc->quest_active || pl->only.pc->quest_accomplished)
+		if (!pl->only.pc->quest_active || pl->only.pc->quest_accomplished ||
+		    pl->only.pc->quest_started != payment.quest_started)
 		{
 			send_to_char(
 				"Your quest changed before the payment settled, so the charge is being returned.\r\n",
@@ -144,7 +148,9 @@ static void world_quest_payment_committed(P_char pl, bool committed,
 		return;
 
 	case world_quest_payment_action::map:
-		if (pl->only.pc->quest_active != 1 || pl->only.pc->quest_map_bought == 1)
+		if (pl->only.pc->quest_active != 1 || pl->only.pc->quest_accomplished ||
+		    pl->only.pc->quest_map_bought == 1 ||
+		    pl->only.pc->quest_started != payment.quest_started)
 		{
 			send_to_char(
 				"Your quest changed before the payment settled, so the charge is being returned.\r\n",
@@ -278,7 +284,8 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 			}
 
 			const world_quest_payment_context payment = {
-				world_quest_payment_action::abandon, temp, GET_VNUM(ch)
+				world_quest_payment_action::abandon, temp, GET_VNUM(ch),
+				pl->only.pc->quest_started
 			};
 			if (!currency_transaction_submit_wallet_value(
 				    pl, -static_cast<int64_t>(temp),
@@ -335,7 +342,8 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 			}
 
 			const world_quest_payment_context payment = {
-				world_quest_payment_action::map, temp, GET_VNUM(ch)
+				world_quest_payment_action::map, temp, GET_VNUM(ch),
+				pl->only.pc->quest_started
 			};
 			if (!currency_transaction_submit_wallet_value(
 				    pl, -static_cast<int64_t>(temp),
@@ -421,7 +429,8 @@ int world_quest(P_char ch, P_char pl, int cmd, char *arg)
 		}
 
 		const world_quest_payment_context payment = { world_quest_payment_action::quest,
-							      temp, GET_VNUM(ch) };
+							      temp, GET_VNUM(ch),
+							      pl->only.pc->quest_started };
 		if (!currency_transaction_submit_wallet_value(
 			    pl, -static_cast<int64_t>(temp), currency_reason_type::wallet_spend,
 			    GET_VNUM(ch), critical_source_site::command,

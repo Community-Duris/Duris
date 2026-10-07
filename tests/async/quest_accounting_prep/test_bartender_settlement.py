@@ -39,7 +39,7 @@ using P_char=character*;
 #define GET_SILVER(ch) ((ch)->silver)
 #define GET_COPPER(ch) ((ch)->copper)
 constexpr int MAXLVLMORTAL=50, LOG_WIZ=1,LOG_DEBUG=2,LOG_EXIT=3,FIND_AND_KILL=1,PLAYER_COMPONENT_STATUS=1;
-constexpr size_t CURRENCY_PENDING_CONTEXT_MAX_BYTES=128;
+constexpr size_t CURRENCY_PENDING_CONTEXT_MAX_BYTES=64;
 struct currency_command_result {};
 enum class currency_reason_type { wallet_reward };
 enum class critical_source_site { command };
@@ -89,6 +89,13 @@ def run(case_id, acceptance=False):
     start = source.index("enum class world_quest_payment_action")
     end = source.index("static_assert(sizeof(world_quest_payment_context)", start)
     context = source[start:end]
+    currency = (ROOT / "src/economy/currency_transaction.h").read_text()
+    assert "CURRENCY_PENDING_CONTEXT_MAX_BYTES = 64;" in currency
+    # Check real request-time capture, rather than injecting a different context seam.
+    dispatch = extract_function("specs/specs.world_quest.c", "int world_quest(")
+    for action in ("abandon", "map"):
+        declaration = dispatch[dispatch.index(f"world_quest_payment_action::{action}, temp,"):]
+        assert "pl->only.pc->quest_started" in declaration.split("};", 1)[0]
     functions = "\n".join([
         extract_function("core/utility.c", "void ADD_MONEY("),
         extract_function("specs/specs.world_quest.c", "static void world_quest_report_creation_failure("),
@@ -98,7 +105,7 @@ def run(case_id, acceptance=False):
     common = r'''
 int main() {
  pc_data state; character actor; actor.only.pc=&state;
- world_quest_payment_context payment={world_quest_payment_action::quest,220,1709};
+ world_quest_payment_context payment={world_quest_payment_action::quest,220,1709,100};
  auto settle=[&](bool committed) {
   world_quest_payment_committed(&actor,committed,{},0,
    reinterpret_cast<const uint8_t*>(&payment),sizeof(payment));
@@ -127,22 +134,60 @@ int main() {
 ''')
     else:
         body = r'''
- // Admit conceptually for A(start100,target50), settle after B replaces it.
- // Current context contains no A fields, so identical boolean readiness passes.
- state.quest_active=1; state.quest_started=200; state.quest_mob_vnum=60;
- payment={world_quest_payment_action::map,110,1709}; settle(true);
+ static_assert(sizeof(world_quest_payment_context)<=CURRENCY_PENDING_CONTEXT_MAX_BYTES);
+ // Exercise actual callback for both actions, keeping debit/refund seams explicit.
+ for(auto action:{world_quest_payment_action::map,world_quest_payment_action::abandon}) {
+  payment={action,action==world_quest_payment_action::map?110:1331,1709,100};
+  const auto setup=[&]() {
+   state={}; state.quest_started=100; state.quest_mob_vnum=50;
+   state.quest_type=FIND_AND_KILL; state.quest_kill_how_many=1; state.quest_active=1;
+   map_calls=reset_calls=finished_calls=gmcp_calls=0; credit_requests.clear();
+  };
+  const auto unchanged=[&]() {
+   assert(map_calls==0 && reset_calls==0 && finished_calls==0 && gmcp_calls==0);
+  };
+  setup(); settle(false); unchanged(); assert(credit_requests.empty());
+  setup(); settle(true);
+  if(action==world_quest_payment_action::map) {
+   assert(map_calls==1 && state.quest_map_bought==1 && finished_calls==0 && reset_calls==0);
+  } else {
+   assert(reset_calls==1 && finished_calls==1 && state.quest_active==0 && map_calls==0);
+  }
+  const int mapped=map_calls,reset=reset_calls,finished=finished_calls;
+  settle(true); assert(map_calls==mapped && reset_calls==reset && finished_calls==finished);
+  // Target/type can remain identical; only the persisted attempt advances.
+  setup(); state.quest_started=101; settle(true); unchanged();
+  assert(state.quest_active==1 && state.quest_map_bought==0 && state.quest_mob_vnum==50);
+  // Distinct target and same generation is not a supported replacement creation.
+  // Real replacements advance the watermark, including clock rollback/same-second.
+  setup(); state.quest_started=200; state.quest_mob_vnum=60; settle(true); unchanged();
+  assert(state.quest_active==1 && state.quest_map_bought==0 && state.quest_mob_vnum==60);
+  setup(); state.quest_accomplished=1; settle(true); unchanged();
+  setup(); state.quest_active=0; settle(true); unchanged();
+  setup(); payment.quest_started=0; settle(true); unchanged(); assert(credit_requests.empty());
+  setup(); payment.quest_started=-1; settle(true); unchanged(); assert(credit_requests.empty());
+  payment.quest_started=100;
+  setup(); world_quest_payment_committed(&actor,true,{},0,
+   reinterpret_cast<const uint8_t*>(&payment),sizeof(payment)-1); unchanged();
+  assert(credit_requests.empty());
+  setup(); world_quest_payment_committed(nullptr,true,{},0,
+   reinterpret_cast<const uint8_t*>(&payment),sizeof(payment)); unchanged();
+  assert(credit_requests.empty());
+  for(int invalid:{0,-1}) {
+   setup(); payment.fee=invalid; settle(true); unchanged(); assert(credit_requests.empty());
+   payment.fee=action==world_quest_payment_action::map?110:1331;
+   payment.giver_vnum=invalid; settle(true); unchanged(); assert(credit_requests.empty());
+   payment.giver_vnum=1709;
+  }
+  setup(); actor.only.pc=nullptr; settle(true); unchanged(); assert(credit_requests.empty());
+  actor.only.pc=&state;
+  setup(); payment.action=static_cast<world_quest_payment_action>(255); settle(true); unchanged();
+  assert(credit_requests.empty()); payment.action=action;
+  // Active generic credit still refuses; stale-task protection proves no restitution.
+  setup(); active=true; state.quest_started=101; settle(true); unchanged();
+  assert(credit_requests.empty()); active=false;
+ }
 '''
-        body += ("if(map_calls!=0 || state.quest_map_bought!=0) return 31;\n" if acceptance else r'''
- assert(map_calls==1 && state.quest_map_bought==1 && observed_start==200 && observed_target==60);
- // Repeat of a settled map is refused by map_bought, but that flag does not
- // distinguish a replacement task before the first completion.
- settle(true); assert(map_calls==1 && credit_requests.back()==110);
- payment={world_quest_payment_action::abandon,1331,1709};
- state.quest_map_bought=0; state.quest_active=1;
- state.quest_type=FIND_AND_KILL; state.quest_kill_how_many=1; settle(true);
- assert(reset_calls==1 && finished_calls==1 && state.quest_active==0);
- assert(observed_start==200 && observed_target==60);
-''')
     program = PRELUDE + context + functions + common + body + "}\n"
     build_root = ROOT / "bin/tests"
     build_root.mkdir(parents=True, exist_ok=True)
@@ -166,6 +211,6 @@ int main() {
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--case", choices=("QP04", "QP07"))
-    parser.add_argument("--acceptance", action="store_true", help="local acceptance assertions are RED on prep pin; native proof still required")
+    parser.add_argument("--acceptance", action="store_true", help="QP04 financial acceptance remains separate; QP07 attempt regression must pass")
     args = parser.parse_args()
     print(json.dumps([run(k, args.acceptance) for k in ([args.case] if args.case else ("QP04", "QP07"))], indent=2))

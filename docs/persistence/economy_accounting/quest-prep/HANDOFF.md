@@ -1,3 +1,51 @@
+# Active quest implementation and execution — 2026-10-07
+
+This new goal is ACTIVE. Earlier independent prep is complete, retained below.
+Current accounting base: `aa252cd8134972548a953a0c5e500da2f8d06af7`;
+preserved-history merge: `dd4aefe901d71fc64e3c9fff7d5e1ac3a741bcf6`.
+Previously published prep tip: `f6e009282805d9be5e108fec08f9d923adf97f5c`.
+No shared coordinator/journal/activation/schema/private producer successor is imported.
+
+First production correction is QP07, limited to
+`src/specs/specs.world_quest.c`: capture persisted original quest_started in the
+pointer-free pending payment context, validate before map/abandon/history, and
+refuse completed/reset/replaced tasks. Context grows12→16 within actual64-byte
+limit. Existing reset preserves the watermark, and real creation/share both
+advance it even in the same second or on clock rollback. No schema/wire change.
+Original task callbacks retain behavior; generic refund remains separately
+unqualified/refused for active authority. This does not prove restitution.
+
+First bundle's tests: owned test_bartender_settlement.py and case_data.py.
+The former exercises actual production callback/context/ADD_MONEY with isolated
+financial/runtime seams: original callback, same-target/type replacement,
+distinct replacement, completed/reset, repeated callback, rejected payment,
+invalid fee/giver/generation/action/length/actor and active stale-refund refusal.
+Real request initializers are checked for captured watermark and actual64-byte
+bound. No successful SQL debit/refund is fabricated.
+
+Executed from repository root in WSL Ubuntu22.04/Python3.10/g++11.4:
+
+```bash
+python3 tests/async/quest_accounting_prep/test_bartender_settlement.py --case QP07 --acceptance
+python3 tests/async/test_world_quest_item_completion.py
+python3 tests/async/test_world_quest_failure_feedback.py
+```
+
+All PASS. Before change QP07 --acceptance reproduced component31/exit1 on the
+current published source. Docker Desktop engine29.7.2 is available; WSL's socket
+is absent, so execution uses the Windows desktop-linux context. Tool image pin:
+`sha256:74b699976165c15fc29cf92b9c2dbefcdbca35505a08efc84d14bf644cbf6d5b`.
+Changed-line clang-format plus maintained scripts/format.sh --file ... --check
+passes. Full original strict SQL make -C src is running in an isolated 2CPU/3GiB,
+network-none container; source archive is the merge plus the exact one production
+file. Build outputs/logs live only below bin/tests/quest-implementation-20261007.
+No build/runtime PASS is yet claimed. Final commit/source/binary pins follow
+terminal build evidence. QP02 correction and regressions are being prepared as a
+SEPARATE bundle. Capture SQL execution and native journeys remain outstanding;
+this goal is not complete or redefined as another prep pack.
+
+## Earlier preparation handoff (historical)
+
 # Quest accounting prep handoff — 2026-10-06
 
 The seven-case independent prep pack is reviewable on
