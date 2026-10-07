@@ -676,6 +676,13 @@ limit and4 MiB individual payload limit. It also checks the mapping join's
 aggregate bytes, counting repeated projections. Both projections select `NULL`
 for non-coin payloads. These source limits supplement the encoded snapshot
 limit; an oversized source refuses before fetching its payloads.
+Coin candidates include prototype3 and serialized `ITEM_MONEY` literals for
+area-specific prototypes. The codec's type byte selects a candidate; bounded
+full decoding then requires the exact native UID/prototype, one money item and
+nonnegative denomination values. The same predicate covers source bounds,
+mapping joins and the live-pile census. Noncoin opaque payloads remain excluded.
+Missing literals and complete coin-origin/lifecycle classification remain gaps;
+this diagnostic cut never certifies complete native holdings or release.
 The exporter omits baseline root effects because the
 verified EAB1 witnesses provide their terminal opening origins. It exports
 retained item references and exact ownership-event links across the selected

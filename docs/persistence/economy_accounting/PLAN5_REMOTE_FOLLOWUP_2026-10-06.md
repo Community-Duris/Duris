@@ -1430,3 +1430,13 @@ after adding its missing policy columns and explicit INSERT column names.
 See [qualification](PLAN5_SQL_FIXTURE_POLICY_COLUMNS_2026-10-07.md), seal `8166fe91b99b6a095ef828636646c283f006be6e1d94c8745d329157204a6012`.
 Area-coin reconciliation remains a separately retained follow-up. Full
 combined/producer/R7/R8/release and notebook application remain unclaimed.
+
+## SQL area-coin reconciliation - 2026-10-07
+
+Base `5b1129392dee59ae35a676fd885204f041a00801`; separately published area-coin result is the containing commit.
+Both SQL engines demonstrate the old prototype402013 omission and pass the
+complete fixed reader suite.184 methods pass with zero skips. Exact current
+primary `e6e058515f5433a1a3028f80d5d7d672d48b2471` codec round trips also pass; no shared changes requested.
+See [source, ownership, evidence and gates](PLAN5_SQL_AREA_COIN_RECONCILIATION_2026-10-07.md), seal `4cca6c20dd484cfe325aa75c5b3daeab0d81a775cd0960cd30745d095ba545f0`.
+Full Plan5/current combined/producer/R7/R8/release and notebook application
+remain unclaimed. Keep all work on the same remote codex/accounting-plan5.
