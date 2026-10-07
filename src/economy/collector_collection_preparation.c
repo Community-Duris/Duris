@@ -1,4 +1,5 @@
 #include "economy/collector_collection_preparation.h"
+#include "economy/collector_collection_image.h"
 
 #include "classes/necromancy.h"
 #include "core/prototypes.h"
@@ -142,34 +143,18 @@ bool capture_exact_blob(P_obj selected, std::vector<uint8_t> *blob)
 		    player_snapshot_capture_result::ok ||
 	    snapshots.empty())
 		return false;
-	int64_t children_weight = 0;
-	for (P_obj child = selected->contains; child; child = child->next_content)
-	{
-		if (child->weight < 0 ||
-		    child->weight > std::numeric_limits<int64_t>::max() - children_weight)
-			return false;
-		children_weight += child->weight;
-	}
-	if (selected->weight < children_weight)
-		return false;
-	const int64_t own_weight = static_cast<int64_t>(selected->weight) - children_weight;
-	if (own_weight < 0 || own_weight > std::numeric_limits<int32_t>::max())
-		return false;
-	player_item_snapshot singleton = std::move(snapshots.front());
-	singleton.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
-	singleton.equipment_slot = 0;
-	singleton.weight = static_cast<int32_t>(own_weight);
-	std::vector<player_item_snapshot> exact;
+	std::vector<int64_t> direct_child_weights;
 	try
 	{
-		exact.push_back(std::move(singleton));
+		for (P_obj child = selected->contains; child; child = child->next_content)
+			direct_child_weights.push_back(child->weight);
 	}
 	catch (const std::bad_alloc &)
 	{
 		return false;
 	}
-	return player_item_snapshot_list_encode(exact, blob) == player_snapshot_codec_result::ok &&
-	       !blob->empty() && blob->size() <= COLLECTOR_COMMAND_ITEM_BLOB_MAX_BYTES;
+	return collector_collection_prepare_image(std::move(snapshots.front()),
+						  direct_child_weights, blob);
 }
 
 bool capture_live(const collector_command_payload &payload, P_obj *selected_out,

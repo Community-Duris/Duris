@@ -1,4 +1,5 @@
 #include "economy/collector_collection_preparation.h"
+#include "economy/collector_collection_image.h"
 
 #include "classes/necromancy.h"
 #include "core/prototypes.h"
@@ -175,23 +176,6 @@ player_item_snapshot_tree_capture(P_obj object, std::vector<player_item_snapshot
 	return player_snapshot_capture_result::ok;
 }
 
-player_snapshot_codec_result
-player_item_snapshot_list_encode(const std::vector<player_item_snapshot> &items,
-				 std::vector<uint8_t> *encoded)
-{
-	if (!encoded || items.size() != 1 || items[0].weight < 0)
-		return player_snapshot_codec_result::invalid_value;
-	encoded->resize(32);
-	memcpy(encoded->data(), &items[0].object_uid, sizeof(items[0].object_uid));
-	memcpy(encoded->data() + 8, &items[0].vnum, sizeof(items[0].vnum));
-	memcpy(encoded->data() + 12, &items[0].weight, sizeof(items[0].weight));
-	memcpy(encoded->data() + 16, &items[0].cost, sizeof(items[0].cost));
-	memcpy(encoded->data() + 20, &items[0].condition, sizeof(items[0].condition));
-	memcpy(encoded->data() + 24, &items[0].extra_flags, sizeof(items[0].extra_flags));
-	memcpy(encoded->data() + 28, &items[0].extra2_flags, sizeof(items[0].extra2_flags));
-	return player_snapshot_codec_result::ok;
-}
-
 void obj_from_obj(P_obj object)
 {
 	assert(object && OBJ_INSIDE(object) && object->loc.inside);
@@ -250,6 +234,69 @@ void extract_obj(P_obj object, int)
 
 int main()
 {
+	// Owned-state rules execute with the production codec and no live objects.
+	player_item_snapshot image = {};
+	image.object_uid = 901;
+	image.vnum = 501;
+	image.type = ITEM_CONTAINER;
+	image.parent_index = 7;
+	image.equipment_slot = 3;
+	image.weight = 17;
+	image.cost = 123;
+	image.condition = 83;
+	image.string_mask = STRUNG_KEYS | STRUNG_DESC2;
+	image.name = "collector custom container";
+	image.short_description = "a preserved custom container";
+	image.values[0] = 444;
+	image.timers[0] = 19;
+	image.extra2_flags = ITEM2_ACCOUNT_BOUND;
+	image.dynamic_affects.push_back({ 1, 2, 3 });
+	const std::array<int64_t, 2> weights = { 5, 7 };
+	std::vector<uint8_t> first, second;
+	assert(collector_collection_prepare_image(image, weights, &first));
+	assert(collector_collection_prepare_image(image, weights, &second) && first == second);
+	assert(image.weight == 17 && image.parent_index == 7 && image.equipment_slot == 3);
+	std::vector<player_item_snapshot> roundtrip;
+	assert(player_item_snapshot_list_decode(first.data(), first.size(), &roundtrip) ==
+	       player_snapshot_codec_result::ok);
+	assert(roundtrip.size() == 1 && roundtrip[0].weight == 5 &&
+	       roundtrip[0].object_uid == 901 && roundtrip[0].vnum == 501 &&
+	       roundtrip[0].parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+	       roundtrip[0].equipment_slot == 0 && roundtrip[0].cost == 123 &&
+	       roundtrip[0].condition == 83 && roundtrip[0].name == image.name &&
+	       roundtrip[0].short_description == image.short_description &&
+	       roundtrip[0].values == image.values && roundtrip[0].timers == image.timers &&
+	       roundtrip[0].extra2_flags == image.extra2_flags &&
+	       roundtrip[0].dynamic_affects.size() == 1 &&
+	       roundtrip[0].dynamic_affects[0].data == 2);
+	const std::array<int64_t, 1> negative = { -1 }, excessive = { 18 };
+	const std::array<int64_t, 2> overflow = { INT64_MAX, 1 };
+	assert(!collector_collection_prepare_image(image, negative, &second));
+	assert(!collector_collection_prepare_image(image, excessive, &second));
+	assert(!collector_collection_prepare_image(image, overflow, &second));
+	assert(second == first);
+	assert(!collector_collection_prepare_image(image, weights, nullptr));
+	image.weight = -1;
+	assert(!collector_collection_prepare_image(image, {}, &second));
+	image.weight = INT32_MAX;
+	assert(collector_collection_prepare_image(image, {}, &second));
+	image.weight = 12;
+	assert(collector_collection_prepare_image(image, weights, &second));
+	assert(player_item_snapshot_list_decode(second.data(), second.size(), &roundtrip) ==
+		       player_snapshot_codec_result::ok &&
+	       roundtrip[0].weight == 0);
+	image.name.assign(PLAYER_SNAPSHOT_MAX_STRING_BYTES + 1, 'x');
+	assert(!collector_collection_prepare_image(image, {}, &second));
+	image.name = "collector";
+	image.parent_index = PLAYER_SNAPSHOT_NO_PARENT;
+	image.equipment_slot = 0;
+	image.extra_descriptions.assign(
+		17, { std::string(4096, 'k'), std::string(4096, 'd'), false, {} });
+	assert(player_item_snapshot_list_encode({ image }, &second) ==
+		       player_snapshot_codec_result::ok &&
+	       second.size() > COLLECTOR_COMMAND_ITEM_BLOB_MAX_BYTES);
+	assert(!collector_collection_prepare_image(image, {}, &second));
+
 	seed_room_tree();
 	const collector::record entry = candidate_record();
 	std::unique_ptr<collector_command_payload> payload;
@@ -262,10 +309,28 @@ int main()
 	       payload->expected_to_owner_revision == 0 && payload->item_count == 4 &&
 	       payload->items[0].item_uid == 100 && payload->items[1].item_uid == 101 &&
 	       payload->items[2].item_uid == 102 && payload->items[3].item_uid == 103 &&
-	       payload->item_blob_size == 32);
-	int32_t encoded_weight = 0;
-	memcpy(&encoded_weight, payload->item_blob.data() + 12, sizeof(encoded_weight));
-	assert(encoded_weight == 5);
+	       payload->item_blob_size > 0);
+	std::vector<player_item_snapshot> decoded;
+	assert(player_item_snapshot_list_decode(payload->item_blob.data(), payload->item_blob_size,
+						&decoded) == player_snapshot_codec_result::ok);
+	assert(decoded.size() == 1 && decoded[0].weight == 5 && decoded[0].object_uid == 101 &&
+	       decoded[0].vnum == 501 && decoded[0].cost == 75 && decoded[0].condition == 83 &&
+	       decoded[0].parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+	       decoded[0].equipment_slot == 0);
+	std::unique_ptr<collector_command_payload> repeated;
+	assert(collector_collection_prepare(entry, entry.collect_at, &repeated) ==
+	       collector_collection_prepare_outcome::prepared);
+	assert(repeated->item_blob_size == payload->item_blob_size &&
+	       repeated->item_blob == payload->item_blob &&
+	       repeated->item_count == payload->item_count && selected.contains == &child &&
+	       selected.weight == 7 && !extracted);
+	child.weight = -1;
+	assert(collector_collection_prepare(entry, entry.collect_at, &repeated) ==
+	       collector_collection_prepare_outcome::invalid_topology);
+	child.weight = 8;
+	assert(collector_collection_prepare(entry, entry.collect_at, &repeated) ==
+	       collector_collection_prepare_outcome::invalid_topology);
+	child.weight = 2;
 	P_obj live = nullptr;
 	assert(collector_collection_live_matches(*payload, &live) && live == &selected);
 	selected.cost++;
