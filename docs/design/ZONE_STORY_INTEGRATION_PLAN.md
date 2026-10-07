@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 195 authored journals, accounting-gated player surfaces, starter/town
+**Status: 196 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5258,3 +5258,12 @@ Effective bindings include Bemon's table-driven epic teacher, Vornin's empty sho
 The [Tower dossier](zone-stories/TOWER_OF_HIGH_SORCERY.md) adds independent three-material Labyrinth and two-part kraken bundles with mixed room/carried/equipped/nested origins. Universal source adapters need exact root UID/container lineage, actor/party, first acquisition versus transfer, spending and recovery. Native recipes accept supplied exact materials; anatomical item type8 does not mean ordinary CARVE constructs the requested proof. Zbarnos's three-kraken/curse text exceeds the verified two-item terms, so builders explicitly choose wording reconciliation or separate personal/shared outcome endpoints.
 
 Multi-reward presentation must distinguish accepted receipt from XP/coin/item child settlement and attempted D retirement. Freeze eligible party and effective XP caps while preserving each member's actual source history; qualify partial failure and cold/replay recovery. Instance-specific wandering/source availability can fail independently of UTC rollover, including a possible dispersal sink for a capped craftsman. Effective loader/conversion/default/table roles must precede behavior findings: raw kraken dice do not establish actual HP, rogue keywords do not suffice for CLASS_ROGUE binding, and periodic bulette speech is not a dialogue achievement. Shared PULL/reverse-door state, exact key break/unlock, boat/water admission and actual passage need typed outcomes. Twenty owned follow-ups document fair builder choices; no native repair ships.
+
+
+## Vecna's Tomb integration extension
+
+The [Vecna dossier](zone-stories/VECNAS_TOMB.md) maps two independent exact returns alongside full custom preservation, black-mass, bubble, portal, corpse-control, altar, population, equipment and epic-renewal stories. Schema3 journals can express optional current material preparation and accepted native history. Deeper staged objectives need authoritative typed adapters for actual affected participant/initiator, source/root/container lineage, episode/generation, admitted arrival, settled effect/life/corpse disposition, item form revision and child reward/retirement outcomes. A builder's per-zone journal should declare which reviewed route or outcome is explanatory, optional or required; opaque custom code must not gain inferred prerequisites from keywords or prose.
+
+Expand future builder configuration only with versioned, validated event selectors and explicit personal/shared/party credit. The player journal should progressively reveal known contacts and branches, show current preparation versus recorded history, explain an unmet or unavailable next step, and link accepted returns to pending/recovered reward consequences. A supplied exact item must retain a different acquisition history while fitting native acceptance. Same-UID form change, a distinct replacement reward, command attempt, global relocation and actual successful action must remain separate. New tracking requires active READY accounting; frozen committed recovery is separately recoverable.
+
+Thirty-five owned follow-ups cover effective overwritten control bindings, dormant periodic actor gates, altar safety/vocabulary, unsupported/unplaced traps, disabled missing prototypes, custody iteration, callback contracts and deliberate renewal/balance choices. Builders resolve intended behavior before separately named native repairs, each with prominent PR/news before/after evidence. Source mapping does not activate hazards or certify played behavior. Mode0 with custom rebirth and a secured epic reset request is not guaranteed daily stock.

@@ -194,3 +194,8 @@ The [Clavikord dossier](../design/zone-stories/LIZARDMAN_SWAMPS_OF_CLAVIKORD.md)
 ## Tower of High Sorcery daily qualification
 
 The [Tower dossier](../design/zone-stories/TOWER_OF_HIGH_SORCERY.md) retains two mode1 candidates with independent three-material and two-part recipes. Both recipients depart; Zbarnos wanders from dispersal with a possible no-exit sink. Labyrinth room/G/P-with-equipped-sack sources and Tower E/G parts have independent caps and custody. Qualify active READY exact bundle admission, eligible party/XP terms, XP/coin/item child settlement, actual recipient retirement and owned source renewal across zone boundaries. Discovery/UTC rollover does not supply materials, remove a curse, guarantee three personal kills or return an absent giver. Potential daily classification is not guaranteed availability; policy remains disabled by default.
+
+
+## Vecna's Tomb daily qualification
+
+The [Vecna dossier](../design/zone-stories/VECNAS_TOMB.md) retains two potential candidates with mode0 sources and D recipients. Qualify active READY exact input admission, eligible party credit, individual item reward/save settlement, actual recipient retirement and owned root/giver generation renewal. Custom undead rebirth, committed epic claims, reset requests, SQL percentage/hourly retries and completed resets are different episodes. Discovery or UTC rollover supplies no material, survival history, personal defeat or returning lich. Policy remains disabled by default.

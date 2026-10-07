@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 195 &&
+		require(catalog.story_mappings.size() == 196 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -23445,6 +23445,112 @@ int main(int argc, char **argv)
 					!recovered.has_discovered(7, 42, 50) &&
 					!recovered.has_discovered(7, 42, 55),
 				"Tower cold/raw recovery lost bundle receipts or invented foreign discovery");
+		}
+
+		{
+			const auto &kairvo = story_for("vecna", "kairvo-rotting-brain");
+			const auto &kaervek = story_for("vecna", "kaervek-stolen-trinket");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 1300, 130000, 100, "arrival") ==
+					result::applied,
+				"Vecna discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 1300, 10, 1, 101, false, false);
+			require(journal.find(kairvo.title) == std::string::npos &&
+					journal.find(kaervek.title) == std::string::npos,
+				"Vecna discovery exposed unencountered requests");
+			require(journey.meet_npc(7, 42, 130023, 130067, 102) == result::applied,
+				"Vecna Kairvo encounter failed");
+			journal = journey.render_journal(7, 42, 1300, 10, 1, 103, false, false);
+			require(journal.find(kairvo.title) != std::string::npos &&
+					journal.find(kaervek.title) == std::string::npos,
+				"Vecna Kairvo encounter exposed independent Kaervek request");
+			require(journey.meet_npc(7, 42, 130024, 130068, 104) == result::applied,
+				"Vecna Kaervek encounter failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Vecna journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto status = [&](const auto &entry, size_t row, const char *label)
+			{
+				return section(entry).find(std::string("[") + label + "] " +
+							   entry.steps[row].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[8] = 1;
+			supplies.carried[130023] = 1;
+			supplies.carried[130035] = 1;
+			supplies.carried[130036] = 1;
+			supplies.equipped[18] = 130034;
+			supplies.equipped[2] = 130033;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 1300, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(kairvo, 0, "Missing now") &&
+					status(kaervek, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 1300).completed == 0 &&
+					journey.serialize_state() == before,
+				"Vecna container, generic part, held/equipped item or reward fabricated preparation/history");
+			supplies.carried[130033] = 1;
+			journal = journey.render_journal(7, 42, 1300, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(kaervek, 0, "Ready now") &&
+					status(kairvo, 0, "Missing now") &&
+					section(kaervek).find("Next: " +
+							      kaervek.steps.back().text) !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Vecna exact supplied trinket required an invented prior return/kill/access receipt");
+			// Synthetic receipts qualify journal projection, not native hand-in, spell survival, reward grant or D retirement.
+			record(journey, kaervek.contracts.front(), "vecna-kaervek-first", 1300,
+			       130068);
+			supplies.carried.erase(130033);
+			journal = journey.render_journal(7, 42, 1300, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(kaervek, 0, "Missing now") &&
+					status(kaervek, 1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 1300).completed == 1 &&
+					journey.evidence_for(kairvo.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Vecna Kaervek-first receipt lost spent preparation or invented Kairvo history");
+			supplies.carried[130034] = 1;
+			journal = journey.render_journal(7, 42, 1300, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(kairvo, 0, "Ready now") &&
+					section(kairvo).find("Next: " + kairvo.steps.back().text) !=
+						std::string::npos,
+				"Vecna exact supplied brain required a personal preservation/source history");
+			record(journey, kairvo.contracts.front(), "vecna-kairvo-later", 1300,
+			       130067);
+			supplies.carried.clear();
+			supplies.equipped.clear();
+			journal = journey.render_journal(7, 42, 1300, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(kairvo, 0, "Missing now") && status(kairvo, 1, "Recorded") &&
+					status(kaervek, 1, "Recorded"),
+				"Vecna spending both exact materials erased independent accepted history");
+			auto replay =
+				completion(kaervek.contracts.front(), "vecna-kaervek-first", 120);
+			replay.transaction.zone_number = 1300;
+			replay.transaction.room_vnum = 130068;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Vecna replay duplicated accepted return");
+			service recovered(catalog), raw(raw_catalog);
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 1300).completed == 2 &&
+					recovered.progress_for_zone(7, 42, 1300).total == 2 &&
+					raw.progress_for_zone(7, 42, 1300).completed == 2 &&
+					!recovered.has_discovered(7, 42, 140) &&
+					!recovered.has_discovered(7, 42, 5000),
+				"Vecna cold/raw recovery lost returns or invented foreign approach discovery");
 		}
 
 		std::cout

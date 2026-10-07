@@ -155209,6 +155209,231 @@
     {
       "contacts": [
         {
+          "description": "Kairvo is chained within the tomb. Ask quest, vecna, hello or hi about his request for a rotting brain. His accepted return rewards the breastplate of preservation and makes him depart.",
+          "keyword": "kairvo",
+          "mob_vnum": 130023,
+          "name": "the lich of Kairvo",
+          "topics": [
+            "quest",
+            "vecna",
+            "hello",
+            "hi"
+          ]
+        },
+        {
+          "description": "Kaervek is chained within the tomb. Ask quest, vecna, hello or hi about his stolen trinket. His accepted return gives a brilliantly colored trinket and makes him depart.",
+          "keyword": "kaervek",
+          "mob_vnum": 130024,
+          "name": "Kaervek",
+          "topics": [
+            "quest",
+            "vecna",
+            "hello",
+            "hi"
+          ]
+        },
+        {
+          "description": "The torturer\u2019s apprentice carries Kaervek\u2019s exact stolen trinket. Recovering that item and returning it to Kaervek are separate facts; an exact supplied trinket can also fit.",
+          "keyword": "apprentice",
+          "mob_vnum": 130027,
+          "name": "the torturer's apprentice",
+          "topics": []
+        },
+        {
+          "description": "The half-dissolved corpse is a living native encounter in the embalming room. The requested brain is stocked inside Gerd\u2019s separate corpse-named container, rather than granted by defeating this creature.",
+          "keyword": "corpse",
+          "mob_vnum": 130029,
+          "name": "a half-dissolved corpse",
+          "topics": []
+        },
+        {
+          "description": "Vecna\u2019s combat spell can drag his current opponent to the embalming room. His sanctuary, helpers, equipment and epic-stone claim are separate exploration leads; the accepted brain recipe does not check personal survival of that spell.",
+          "keyword": "vecna",
+          "mob_vnum": 130035,
+          "name": "the arch-lich Vecna",
+          "topics": []
+        },
+        {
+          "description": "The black mass\u2019s native death event moves the room\u2019s occupants to the torture chamber. Actual arrival, participation and trinket recovery are different facts; Kaervek\u2019s hand-in does not require a recorded personal defeat.",
+          "keyword": "mass",
+          "mob_vnum": 130028,
+          "name": "a black mass",
+          "topics": []
+        },
+        {
+          "description": "The dwarf-shaped trophy statue blocks the northward route while present. Its barrier is separate from either accepted return.",
+          "keyword": "statue",
+          "mob_vnum": 130030,
+          "name": "a twisted statue",
+          "topics": []
+        },
+        {
+          "description": "The human-shaped trophy statue blocks the northward route while present. Passing a shared route does not prove a personal defeat.",
+          "keyword": "statue",
+          "mob_vnum": 130031,
+          "name": "a twisted statue",
+          "topics": []
+        },
+        {
+          "description": "The orc-shaped trophy statue blocks the northward route while present. Native movement conditions still govern actual passage.",
+          "keyword": "statue",
+          "mob_vnum": 130032,
+          "name": "a twisted statue",
+          "topics": []
+        },
+        {
+          "description": "The ogre-shaped trophy statue blocks the southward route while present. It is a creature distinct from Kaervek\u2019s requested trinket.",
+          "keyword": "statue",
+          "mob_vnum": 130033,
+          "name": "a twisted statue",
+          "topics": []
+        },
+        {
+          "description": "The dragon-shaped trophy statue blocks north and south while present. It is a creature distinct from the requested rotting brain.",
+          "keyword": "statue",
+          "mob_vnum": 130034,
+          "name": "a twisted statue",
+          "topics": []
+        },
+        {
+          "description": "Ali carries the bone key used between the gorge and the dark tunnel. Recovering a key, unlocking, key breakage, opening and crossing are separate outcomes.",
+          "keyword": "ali",
+          "mob_vnum": 130018,
+          "name": "Ali",
+          "topics": []
+        },
+        {
+          "description": "Chressan can call nearby barrow guardians for help. His encounter and the oaken staff remain optional native leads, with no additional local accepted request.",
+          "keyword": "chressan",
+          "mob_vnum": 130016,
+          "name": "Chressan",
+          "topics": []
+        },
+        {
+          "description": "The barrow guardians answer Chressan\u2019s call. Their combat and treasure do not create another accepted quest receipt.",
+          "keyword": "guardian",
+          "mob_vnum": 130017,
+          "name": "a barrow guardian",
+          "topics": []
+        },
+        {
+          "description": "The avatar of Death belongs to the shrine\u2019s altar sequence. Descriptive altar interaction and an actual summoning are separate from the two item returns.",
+          "keyword": "avatar",
+          "mob_vnum": 130015,
+          "name": "the avatar of Death",
+          "topics": []
+        },
+        {
+          "description": "The death knight is a native sanctuary encounter and a potential helper in Vecna\u2019s fight. Its defeat and equipment are separate exploration leads.",
+          "keyword": "knight",
+          "mob_vnum": 130037,
+          "name": "the death knight",
+          "topics": []
+        },
+        {
+          "description": "The ghast is another native helper in Vecna\u2019s encounter. Combat, effects and survival require their own verified outcomes.",
+          "keyword": "ghast",
+          "mob_vnum": 130039,
+          "name": "a ghast",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow Kairvo\u2019s request for a rotting brain and Kaervek\u2019s stolen trinket as two independent returns, with the tomb\u2019s keys, strange passages and sanctuary as separate exploration leads.",
+      "orientation": [
+        "The surface approach enters the barren gorge. Ali carries the bone key for the dark tunnel, and a charcoal key is stocked farther inside for the sanctuary door. Native keys can break when used; key recovery, unlocking, opening and actual passage are separate events. Supplied keys and already-open routes remain possible.",
+        "Find Kairvo and ask quest, vecna, hello or hi. He describes Vecna\u2019s preservation spell and asks for one exact rotting brain. The brain is stocked inside Gerd\u2019s corpse-named container in the embalming room; the half-dissolved corpse creature is a separate encounter.",
+        "Kairvo\u2019s warning explains a dangerous native route. His accepted offering checks the exact brain, without requiring an earlier conversation, a personal spell-survival record or original recovery. An exact brain supplied by another player can also fit.",
+        "Find Kaervek and ask quest, vecna, hello or hi. The torturer\u2019s apprentice carries the exact stolen trinket. The black mass\u2019s death can move the room\u2019s occupants to the torture chamber, but the accepted trinket return does not require a recorded personal kill or journey.",
+        "Retrieve requested materials from containers and carry them loose before offering. A generic carved part, a corpse-named container, an equipped or held item, and either reward do not replace the requested loose material. Preparation can disappear after the material is spent; the accepted return remains recorded.",
+        "The dark portal leads into the trophy halls through native travel rules. Five statues block particular directions while present, and the bubble in space can move its occupants into the void. A command attempt, a shared opening, actual arrival and personal participation are different outcomes.",
+        "Chressan\u2019s guardians, the altar and avatar of Death, Vecna\u2019s helpers, the oaken staff, the changing device and other treasure are optional native stories. They do not define extra accepted local hand-ins. Lore and scripted effects need their own verified outcomes before becoming achievements.",
+        "Both liches depart after accepted returns. Their item rewards, actual departures and source replenishment remain separate consequences. The zone has no normal periodic reset, but committed epic-stone activity and custom monster rebirth can cause other renewal; a new day alone does not promise a fresh giver or material."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "vecna",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:130034;receive=I:130035;disappear=1",
+              "giver_vnum": 130023
+            }
+          ],
+          "id": "kairvo-rotting-brain",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The embalming room stocks this brain inside Gerd\u2019s corpse-named container. Recover the exact item from that container; owning the container or defeating the half-dissolved corpse does not prepare this offering. A supplied exact brain can also fit.",
+              "id": "material-130034",
+              "item_vnums": [
+                130034
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact rotting brain loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:130034;receive=I:130035;disappear=1",
+                  "giver_vnum": 130023
+                }
+              ],
+              "hint": "Offer the exact item loose to the named lich when present. The accepted receipt records the return; original recovery, reward delivery and the lich\u2019s departure remain separate consequences.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record Kairvo\u2019s accepted brain return"
+            }
+          ],
+          "summary": "The exact rotting brain earns the native breastplate of preservation, followed by Kairvo\u2019s departure. Current preparation is optional; only the accepted return completes this request.",
+          "title": "Bring a rotting brain to Kairvo"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:130033;receive=I:130036;disappear=1",
+              "giver_vnum": 130024
+            }
+          ],
+          "id": "kaervek-stolen-trinket",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The torturer\u2019s apprentice carries the requested trinket. A supplied exact trinket can also fit; the colored reward, another trinket, and nested or equipped custody do not replace the requested loose material.",
+              "id": "material-130033",
+              "item_vnums": [
+                130033
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Kaervek\u2019s exact stolen trinket loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:130033;receive=I:130036;disappear=1",
+                  "giver_vnum": 130024
+                }
+              ],
+              "hint": "Offer the exact item loose to the named lich when present. The accepted receipt records the return; original recovery, reward delivery and the lich\u2019s departure remain separate consequences.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record Kaervek\u2019s accepted trinket return"
+            }
+          ],
+          "summary": "The exact stolen trinket earns a distinct brilliantly colored trinket, followed by Kaervek\u2019s departure. This return is independent of Kairvo\u2019s request and does not establish a personal black-mass defeat or journey.",
+          "title": "Return the stolen trinket to Kaervek"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "A miner supplies the setting through ambient mining actions; there is no accepted request or learned ASK topic.",
           "keyword": "pech",
           "mob_vnum": 131200,
