@@ -25,8 +25,12 @@ ELF/journey evidence below is not relabeled as this753-provider candidate.
 
 See [current reconciliation](CONTINUATION_RECONCILIATION_2026-10-07.md) and
 [proposed R3 enhancement pricing boundary](R3_ENHANCEMENT_PRICE_RESERVATION.md).
-R3 is awaiting coordinator boundary review before code edits. Next queue is
-continuing, not another finite completion cap.
+R3 boundary review was approved, and connected pricing is implemented at
+`48b7a6d38` plus strict compiler follow-up `3a722a008` and configuration-contract
+successor `6d544bea7`. Original/extracted payment controls and both owned maintained
+builds pass; current-candidate components/type checks are separate from old-base
+ELFs. See [R3 terminal handoff](R3_ENHANCEMENT_PRICE_HANDOFF.md). Coordinator final
+review is pending. Next queue remains continuing, not another completion cap.
 
 ## Current delivery status
 

@@ -54,7 +54,25 @@ Task-owned Docker `duris-domain-continuation-ac24-proof`, image
 read-only composed source `/workspace`, separate task-owned output volume
 `duris-domain-continuation-ac24-proof` at `/workspace/bin`. Focused actual
 collection/codec, craft quote/native recipe and currency value checks are running.
-Terminal results and new provider limitations will follow. No current full build,
+Terminal current-candidate results: collection preparation with real codec,
+Collector policy, crafting material bounds, crafting module contract, native
+recipe-craft component and currency owned-value/native-wrapper controls all pass.
+Actual full `currency_transaction.c` also passes SQL and flat C++20 strict warning
+syntax/type checks against the changed candidate headers. These are components
+and type checks, not full753-provider compilation or DB execution.
+
+The original full currency completion runner cannot link on this candidate;
+`currency-completion-original.log` retains all diagnostics. Its source list still
+omits native birth/Collector/recovery providers and both existing coin live
+endpoints; newly reached link requirements include
+`auction_repository_frozen_accounting_valid`, `lockpick_retirement_payload_valid`,
+`native_quest_cost_projection_encode/decode`, and native quest GIVE
+`project/encode/decode`. These match actual new admission/item codec dependencies.
+No shared driver/authority repair or additional endpoint substitute is made.
+The historical84-case private completion result is not current-candidate proof.
+Current import remains compatible at patch, component and type-check scopes;
+primary integrated native authority/journey qualification remains its dependency.
+Private proof logs and pins are copied into this worktree's ignored evidence path. No current full build,
 SQL/gameplay/persistence journey or753-provider ELF qualification is claimed.
 Historical R0/R1/R2 binaries and runtime evidence remain labeled by their exact
 old source revisions. No shared fixture driver is edited to obtain a pass.
@@ -63,11 +81,13 @@ old source revisions. No shared fixture driver is edited to obtain a pass.
 
 The nine-domain inventory is reassessed against these concrete new interfaces:
 
-1. **R3 F3 enhancement prices**, proposed stable numeric seam in unchanged
+1. **R3 F3 enhancement prices**, implemented and qualified at source/component/owned-build scope; coordinator final review pending. Stable numeric seam in unchanged
    `enhance.c`: ordinary configured tier, superior affine price and essence fixed
    tier calculations, three real producer callers and existing payment tests.
    Exact reservation [R3_ENHANCEMENT_PRICE_RESERVATION.md](R3_ENHANCEMENT_PRICE_RESERVATION.md).
    Active refusal stays intentional; no RNG or compound outcome authority changes.
+   Source commits `48b7a6d38`, strict compiler local initialization fix `3a722a008`,
+   relocated configuration contract `6d544bea7`. See [terminal R3 evidence](R3_ENHANCEMENT_PRICE_HANDOFF.md).
 2. **F3 enhancement outcome/material preparation**: superior tribute scaling and
    duplicate material aggregation can become owned facts, but template target
    selection/read_object, eligible stat capture and remaining-step catalogue
