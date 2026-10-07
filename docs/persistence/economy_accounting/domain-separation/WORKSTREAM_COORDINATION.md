@@ -33,6 +33,13 @@ Plans 1-4, shared authorities/contracts, migrations, activation and writer cover
 Plan 5 remains with its independent owner. This charter adds no accounting release
 gate and requires no wait for sidework.
 
+A thread heartbeat checks both streams every 15 minutes, in addition to active
+assignment/completion checks. It stays quiet for unchanged or non-actionable
+state and notifies on meaningful progress, completion, failure or required user
+action. Its saved instructions explicitly include quest-prep oversight as a
+supplement to the coordinator's original architecture Goal; that unfinished Goal
+must not be falsely completed just to replace its displayed objective text.
+
 ## Architecture implementation milestone
 
 Read the current plan, code and handoffs. Establish a fixed operation inventory
@@ -96,6 +103,14 @@ concrete remaining accounting requirements and reported gaps.
 |---|---|---|
 | Architecture | Worker `ce3b631003303ee4fbfb8a0bd527ad8508982250`; implementation `3d2b85b0688684721f8db559cb3ea35b1830a1cc`; completed [review](COORDINATOR_REVIEW_2026-10-07.md) | Pin operation inventory and candidate; select/publish next stable extraction reservation, then implement and qualify it |
 | Quest prep | Worker `1a0782f95339252b3c90a73ac102a437933a30c8`; canonical [handoff](https://github.com/Community-Duris/Duris/blob/codex/accounting-quest-prep/docs/persistence/economy_accounting/quest-prep/HANDOFF.md) | Reconcile current candidate; diagnose flat QP06 stale-authority refusal without shared-owner edits; publish actionable handoff and independent gap queue |
+
+The [quest-prep source/component review](QUEST_PREP_REVIEW_2026-10-07.md) records
+the coordinator's independently executed checks and production-patch preimages.
+Both workers report actual active continuation Goals. The architecture candidate
+is Craft/Forge material quoting, with numeric/refusal behavior preserved and
+transaction/progression owners excluded. Quest prep also has a queued bounded
+question about creation-request watermark reachability; it is not a proven
+production defect or permission for a shared currency-owner rewrite.
 
 The coordinator must not finish merely because both chats were checked once,
 messages were sent, a single bundle was reviewed or one assignment completed.
