@@ -123,7 +123,13 @@ def prepare(case_id, output, *, reward_vnum=None, supply="spares", layout=None):
             metadata["prototype_records"].append(dict(kind=kind, vnum=vnum,
                 path=str(origin.relative_to(ROOT)).replace("\\", "/"), line=line,
                 file_sha256=digest(origin)))
-        path.write_text(text, encoding="utf-8")
+        # The real_mobile/real_object lookup uses a sorted index. The maintained
+        # combat fixture appends mobile22800; a native giver such as19005 must
+        # be inserted before it. Preserve complete native record bytes.
+        markers = list(re.finditer(r"(?m)^#(\d+)\s*$", text))
+        ends = [match.start() for match in markers[1:]] + [text.index("$~")]
+        records = [(int(match[1]), text[match.start():end]) for match, end in zip(markers, ends)]
+        path.write_text("".join(body for _, body in sorted(records)) + "$~\n", encoding="utf-8")
     (mini / "mini.qst").write_text(
         f"#{case['giver']}\n" + "".join(block["text"] for block in selected) + "S\n$~\n",
         encoding="utf-8")

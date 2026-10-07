@@ -25,7 +25,7 @@ TASK_COLUMNS = ("quest_active", "quest_mob_vnum", "quest_type", "quest_accomplis
 
 
 def identity(value):
-    if not re.fullmatch(r"[0-9a-f]{32}", value) or int(value, 16) == 0:
+    if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{32}", value) or int(value, 16) == 0:
         raise ValueError("actual nonzero 16-byte native identity required")
     return bytes.fromhex(value)
 
@@ -46,7 +46,9 @@ def placeholders(values):
     return ",".join(["%s"] * len(values))
 
 
-def capture(connection, case_id, pid, mobile_ids, operations, meta):
+def capture(connection, case_id, pid, mobile_ids, operations, meta, *, legacy_no_epoch=False):
+    if pid <= 0 or any(value <= 0 for value in mobile_ids):
+        raise ValueError("actual positive player/mobile identity required")
     terms = blocks(case_id)
     vnums = sorted({number for term in terms for group in ("give", "receive")
                     for kind, number in term[group] if kind == "I"})
@@ -54,7 +56,8 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta):
     try:
         cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
         cursor.execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
-        tables = ("economic_epoch", "mud_schema_migrations", "player_data", "world_quest_accomplished",
+        tables = ("economic_epoch", "mud_schema_migrations", "mud_schema_history", "mud_schema_migration_state",
+                  "mud_schema_baselines", "player_data", "player_affects", "world_quest_accomplished",
                   "item_current_owner", "item_ownership_ledger", "currency_ledger", "quest_reward_obligation",
                   "quest_reward_xp_entitlement", "quest_mobile_native", "economic_accounting_item_reference",
                   "economic_accounting_operation", "critical_operation_inbox", "economic_accounting_coin_posting",
@@ -64,17 +67,36 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta):
                            tables)
         if len(engines) != len(tables) or any(entry["engine"] != "InnoDB" for entry in engines):
             raise ValueError("quest cut source is missing or not transactional")
-        epochs = selected(cursor, "SELECT lineage,epoch FROM economic_epoch WHERE lineage=%s AND epoch=%s",
-                          (identity(meta["lineage"]), identity(meta["epoch"])))
-        if len(epochs) != 1:
-            raise ValueError("actual isolated accounting epoch missing; do not seed substitute authority")
+        if legacy_no_epoch:
+            if meta.get("lineage") is not None or meta.get("epoch") is not None or mobile_ids:
+                raise ValueError("legacy capture cannot assert active identities or native births")
+            epochs = selected(cursor, "SELECT lineage,epoch FROM economic_epoch")
+            if epochs:
+                raise ValueError("legacy no-epoch capture refuses any installed epoch")
+        else:
+            epochs = selected(cursor, "SELECT lineage,epoch FROM economic_epoch WHERE lineage=%s AND epoch=%s",
+                              (identity(meta["lineage"]), identity(meta["epoch"])))
+            if len(epochs) != 1:
+                raise ValueError("actual isolated accounting epoch missing; do not seed substitute authority")
         result = {"meta": dict(meta, case=case_id, pid=pid, mobile_instance_ids=sorted(mobile_ids),
-                               watched_vnums=vnums)}
-        result["migrations"] = selected(cursor, "SELECT migration_name FROM mud_schema_migrations ORDER BY migration_name")
-        result["player"] = selected(cursor, "SELECT pid,copper,silver,gold,platinum,exp," +
+                               watched_vnums=vnums,
+                               authority="legacy-no-epoch" if legacy_no_epoch else "native"),
+                  "epochs": epochs}
+        result["snapshot"] = selected(cursor,
+            "SELECT @@in_transaction AS in_transaction,@@tx_isolation AS isolation_level")
+        result["legacy_migration_markers"] = selected(cursor, "SELECT migration_name FROM mud_schema_migrations ORDER BY migration_name")
+        result["migrations"] = selected(cursor, "SELECT migration_id,sequence_number,apply_checksum,verify_checksum,"
+            "compatibility,runner_version FROM mud_schema_history ORDER BY sequence_number")
+        result["migration_state"] = selected(cursor,
+            "SELECT state_id,applied_count,history_checksum FROM mud_schema_migration_state ORDER BY state_id")
+        result["baselines"] = selected(cursor, "SELECT baseline_id,baseline_kind,schema_fingerprint,"
+            "manifest_version,runner_version FROM mud_schema_baselines ORDER BY baseline_id")
+        result["player"] = selected(cursor, "SELECT pid,race,level,copper,silver,gold,platinum,exp," +
                                     ",".join(TASK_COLUMNS) + " FROM player_data WHERE pid=%s", (pid,))
         if len(result["player"]) != 1:
             raise ValueError("actual isolated player row missing")
+        result["player_affects"] = selected(cursor, "SELECT type,duration,flags FROM player_affects WHERE pid=%s "
+                                           "ORDER BY type,duration,flags", (pid,))
         result["history"] = selected(cursor, "SELECT id,quest_giver,quest_target,reward_vnum "
                                      "FROM world_quest_accomplished WHERE pid=%s ORDER BY id", (str(pid),))
         item_where, item_params = ["owner_type=1 AND owner_id=%s"], [pid]
@@ -104,17 +126,17 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta):
             "wallet_after_platinum,wallet_revision,bank_revision,reason_type,reason_id,source_site "
             "FROM currency_ledger WHERE pid=%s ORDER BY operation_id", (pid,))
         # Bound aggregate BLOB material before buffered fetch/hex expansion.
-        size = selected(cursor, "SELECT CAST(COALESCE(SUM(OCTET_LENGTH(continuation)),0) AS UNSIGNED) AS size,COUNT(*) AS rows "
+        size = selected(cursor, "SELECT CAST(COALESCE(SUM(OCTET_LENGTH(continuation)),0) AS UNSIGNED) AS size,COUNT(*) AS row_count "
                         "FROM quest_reward_obligation WHERE player_pid=%s", (pid,))[0]
         blob_bytes = int(size["size"])
-        if int(size["rows"]) > MAX_ROWS or blob_bytes * 2 > MAX_BYTES:
+        if int(size["row_count"]) > MAX_ROWS or blob_bytes * 2 > MAX_BYTES:
             raise ValueError("quest obligation BLOB budget exceeded")
         if mobile_ids:
-            size = selected(cursor, "SELECT CAST(COALESCE(SUM(OCTET_LENGTH(canonical_image)),0) AS UNSIGNED) AS size,COUNT(*) AS rows "
+            size = selected(cursor, "SELECT CAST(COALESCE(SUM(OCTET_LENGTH(canonical_image)),0) AS UNSIGNED) AS size,COUNT(*) AS row_count "
                             "FROM quest_mobile_native WHERE mobile_instance_id IN (" + placeholders(mobile_ids) + ")",
                             tuple(mobile_ids))[0]
             blob_bytes += int(size["size"])
-            if int(size["rows"]) > MAX_ROWS or blob_bytes * 2 > MAX_BYTES:
+            if int(size["row_count"]) > MAX_ROWS or blob_bytes * 2 > MAX_BYTES:
                 raise ValueError("combined native BLOB budget exceeded")
         result["obligations"] = selected(cursor,
             "SELECT offering_operation_id,player_pid,continuation,xp_applied_mask,"
@@ -125,8 +147,9 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta):
             "FROM quest_reward_xp_entitlement WHERE recipient_pid=%s ORDER BY offering_operation_id,reward_index", (pid,))
         result["mobiles"] = selected(cursor,
             "SELECT mobile_instance_id,mobile_revision,stock_revision,lifetime_state,canonical_image "
-            "FROM quest_mobile_native WHERE mobile_instance_id IN (" + placeholders(mobile_ids) +
-            ") ORDER BY mobile_instance_id", tuple(mobile_ids)) if mobile_ids else []
+            "FROM quest_mobile_native WHERE " +
+            ("mobile_instance_id IN (" + placeholders(mobile_ids) + ")" if mobile_ids else "1=0") +
+            " ORDER BY mobile_instance_id", tuple(mobile_ids))
         native_ids = set(operations)
         for name in ("ownership_events", "currency"):
             native_ids.update(entry["operation_id"] for entry in result[name])
@@ -183,6 +206,9 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta):
     finally:
         try:
             connection.rollback()
+            cursor.execute("SELECT @@in_transaction AS in_transaction")
+            if cursor.fetchone()["in_transaction"] != 0:
+                raise ValueError("quest capture read-only transaction did not close")
         finally:
             cursor.close()
 
@@ -194,8 +220,10 @@ def main():
     parser.add_argument("--pid", type=int, required=True)
     parser.add_argument("--mobile-instance", type=int, nargs="*", default=[])
     parser.add_argument("--operation", nargs="*", default=[])
-    parser.add_argument("--lineage", required=True)
-    parser.add_argument("--epoch", required=True)
+    parser.add_argument("--lineage")
+    parser.add_argument("--epoch")
+    parser.add_argument("--legacy-no-epoch", action="store_true",
+                        help="capture inactive legacy gameplay only; refuses any epoch or native birth identity")
     parser.add_argument("--server", type=Path, required=True)
     parser.add_argument("--server-sha256", required=True)
     parser.add_argument("--source-commit", required=True, help="owner-recorded actual integrated binary source commit")
@@ -210,7 +238,13 @@ def main():
             raise ValueError("actual positive player/mobile identity required")
         if digest(args.server) != args.server_sha256:
             raise ValueError("integrated binary pin differs")
-        identity(args.lineage), identity(args.epoch)
+        if args.legacy_no_epoch:
+            if args.lineage is not None or args.epoch is not None or args.mobile_instance:
+                raise ValueError("legacy capture requires absent active identities and native births")
+        else:
+            if args.lineage is None or args.epoch is None:
+                raise ValueError("actual lineage and epoch required for native capture")
+            identity(args.lineage), identity(args.epoch)
         for operation in args.operation:
             identity(operation)
         if not re.fullmatch(r"[0-9a-f]{40}", args.source_commit) or int(args.source_commit, 16) == 0:
@@ -225,7 +259,8 @@ def main():
                 charset="utf8mb4", autocommit=True, cursorclass=pymysql.cursors.DictCursor,
                 connect_timeout=5, read_timeout=10, write_timeout=5)
             try:
-                cut = capture(connection, args.case, args.pid, args.mobile_instance, args.operation, meta)
+                cut = capture(connection, args.case, args.pid, args.mobile_instance, args.operation, meta,
+                              legacy_no_epoch=args.legacy_no_epoch)
             finally:
                 connection.close()
         except pymysql.MySQLError as error:

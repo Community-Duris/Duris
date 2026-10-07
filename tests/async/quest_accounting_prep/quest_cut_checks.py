@@ -70,14 +70,22 @@ def new_rows(before, after, name, keys):
     return [current[key] for key in current.keys() - old.keys()]
 
 
-def bind(before, after, case_id):
+def bind(before, after, case_id, *, legacy=False):
     for name in ("case", "pid", "source_commit", "binary_sha256", "schema_manifest_sha256",
                  "lineage", "epoch", "mobile_instance_ids", "watched_vnums"):
         require(before["meta"][name] == after["meta"][name], f"candidate/capture binding changed: {name}")
     require(before["meta"]["case"] == case_id, "wrong case cuts")
     require(before["meta"]["pid"] > 0, "missing actual player identity")
+    if legacy:
+        for cut in (before, after):
+            require(cut["meta"].get("authority") == "legacy-no-epoch" and
+                    cut["meta"]["lineage"] is None and cut["meta"]["epoch"] is None and
+                    rows(cut, "epochs") == [] and cut["meta"]["mobile_instance_ids"] == [],
+                    "legacy assertions require observed absence of active epoch/native birth identities")
     for name, size in (("source_commit", 40), ("binary_sha256", 64),
                        ("schema_manifest_sha256", 64), ("lineage", 32), ("epoch", 32)):
+        if legacy and name in ("lineage", "epoch"):
+            continue
         text = before["meta"][name]
         require(isinstance(text, str) and len(text) == size and
                 all(c in "0123456789abcdef" for c in text) and int(text, 16) != 0,
@@ -139,7 +147,9 @@ def money(before, after):
     return entries
 
 
-def static_complete(before, after, case_id, selected_uids, reward_uids, spare_uids, reward_vnum, expected_xp=None, original_mobile=None):
+def static_complete(before, after, case_id, selected_uids, reward_uids, spare_uids, reward_vnum, expected_xp=None, original_mobile=None, *, legacy=False):
+    if legacy:
+        bind(before, after, case_id, legacy=True)
     require(not CASES[case_id].get("dynamic"), "static completion requires a native Q case")
     choices = [term for term in blocks(case_id) if ("I", reward_vnum) in term["receive"]]
     require(len(choices) == 1, "choose the exact production contract by reward VNUM")
@@ -206,15 +216,22 @@ def static_complete(before, after, case_id, selected_uids, reward_uids, spare_ui
     if nominal_xp:
         require(type(expected_xp) is int and 0 <= expected_xp <= nominal_xp,
                 "original frozen XP award required; nominal XP is not the admitted cap")
-        allocated = [entry for entry in rows(after, "xp_entitlements") if
-                     entry["offering_operation_id"] in retirement_operations and entry["recipient_pid"] == pid]
-        require(all(entry["applied"] == 1 for entry in allocated) and
-                sum(entry["amount"] for entry in allocated) == expected_xp, "wrong/missing original XP entitlement")
+        if legacy:
+            require(case_id == "QP06" and len(retirement_operations) == 1, "supported legacy XP owner required")
+            from legacy_xp import kord
+            proof = kord(after, next(iter(retirement_operations)))
+            require(expected_xp == proof["effective"], "wrong effective legacy XP expectation")
+        else:
+            allocated = [entry for entry in rows(after, "xp_entitlements") if
+                         entry["offering_operation_id"] in retirement_operations and entry["recipient_pid"] == pid]
+            require(all(entry["applied"] == 1 for entry in allocated) and
+                    sum(entry["amount"] for entry in allocated) == expected_xp, "wrong/missing original XP entitlement")
     else:
         expected_xp = 0
     require(row(after, "player")["exp"] - row(before, "player")["exp"] == expected_xp,
             "XP missing or paid twice")
-    book(after, events, currency)
+    if not legacy:
+        book(after, events, currency)
     return terms
 
 
@@ -233,7 +250,9 @@ def replay(before, after):
         require(rows(before, name) == rows(after, name), f"recovery repeated/changed durable {name}")
 
 
-def later_move(before, after, uid):
+def later_move(before, after, uid, *, legacy=False):
+    if legacy:
+        bind(before, after, before["meta"]["case"], legacy=True)
     old = index(rows(before, "items"), ("item_uid",))[(uid,)]
     current = index(rows(after, "items"), ("item_uid",))[(uid,)]
     require(old["owner_type"] == 1 and current["owner_type"] == 3 and current["state"] == 1 and
@@ -246,7 +265,9 @@ def later_move(before, after, uid):
     events = new_rows(before, after, "ownership_events", ("operation_id", "event_index"))
     require(len(events) == 1 and events[0]["item_uid"] == uid and events[0]["to_owner_type"] == 3 and
             events[0]["item_revision"] == current["item_revision"], "move lacks exact native event")
-    book(after, events, money(before, after))
+    currency = money(before, after)
+    if not legacy:
+        book(after, events, currency)
 
 
 def refunded(before, after, quoted_fee):
@@ -386,19 +407,25 @@ def main():
     parser.add_argument("--original-mobile", type=int)
     parser.add_argument("--replacement-mobile", type=int)
     parser.add_argument("--native-cash-account", help="actual mapped wallet key, never inferred from mobile identity")
+    parser.add_argument("--legacy-no-epoch", action="store_true",
+                        help="assert legacy custody/ledger/XP only; never qualifies active economic book or birth")
     args = parser.parse_args()
     try:
         before, after = (json.loads(path.read_text()) for path in (args.before, args.after))
-        bind(before, after, args.case)
+        if args.legacy_no_epoch:
+            require(args.check in ("complete", "refused", "replay", "later-move", "ack"),
+                    "legacy mode cannot qualify native refund, retirement or held obligation")
+        bind(before, after, args.case, legacy=args.legacy_no_epoch)
         if args.check == "complete":
-            static_complete(before, after, args.case, args.selected, args.rewards, args.spares, args.reward_vnum, args.expected_xp, args.original_mobile)
+            static_complete(before, after, args.case, args.selected, args.rewards, args.spares, args.reward_vnum, args.expected_xp, args.original_mobile,
+                            legacy=args.legacy_no_epoch)
         elif args.check == "refused":
             unchanged(before, after)
         elif args.check == "replay":
             replay(before, after)
         elif args.check == "later-move":
             require(len(args.rewards) == 1, "select original reward UID")
-            later_move(before, after, args.rewards[0])
+            later_move(before, after, args.rewards[0], legacy=args.legacy_no_epoch)
         elif args.check == "refunded":
             refunded(before, after, args.quoted_fee)
         elif args.check == "retired":
@@ -412,6 +439,7 @@ def main():
                     current["continuation"] == original["continuation"], "original frozen reward terms changed or missing")
             acknowledged(after, args.offering_operation)
         print(json.dumps(dict(case=args.case, check=args.check, result="captured-state predicates passed",
+                              authority="legacy custody/ledger/XP only" if args.legacy_no_epoch else "native accounting predicates",
                               native_command_context_ack_qualification="separate primary-owned proof required")))
     except (CutError, KeyError, TypeError, ValueError) as error:
         parser.exit(1, f"quest cut refused: {error}\n")

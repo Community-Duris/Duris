@@ -148,6 +148,33 @@ def d_cuts():
 
 
 class QuestCutTests(unittest.TestCase):
+    def test_explicit_legacy_scope_cannot_qualify_native_or_claim_epoch(self):
+        cut = empty_cut("QP06")
+        cut["meta"].update(authority="legacy-no-epoch", lineage=None, epoch=None, mobile_instance_ids=[])
+        cut["epochs"] = []
+        checks.bind(cut, cut, "QP06", legacy=True)
+        with self.assertRaises(checks.CutError):
+            checks.bind(cut, cut, "QP06")
+        cut["epochs"] = [dict(lineage="11" * 16, epoch="22" * 16)]
+        with self.assertRaises(checks.CutError):
+            checks.bind(cut, cut, "QP06", legacy=True)
+
+    def test_legacy_complete_still_requires_exact_custody_and_xp(self):
+        before, after, selected, rewards = complete_cuts("QP01", 44192)
+        for cut in (before, after):
+            cut["meta"].update(authority="legacy-no-epoch", lineage=None, epoch=None, mobile_instance_ids=[])
+            cut["epochs"] = []
+        checks.static_complete(before, after, "QP01", selected, rewards, [150], 44192, legacy=True)
+        after["items"][0]["vnum"] = 43752
+        with self.assertRaises(checks.CutError):
+            checks.static_complete(before, after, "QP01", selected, rewards, [150], 44192, legacy=True)
+        before, after, selected, rewards = complete_cuts("QP06", 29237)
+        for cut in (before, after):
+            cut["meta"].update(authority="legacy-no-epoch", lineage=None, epoch=None, mobile_instance_ids=[])
+            cut["epochs"] = []
+        with self.assertRaisesRegex(checks.CutError, "legacy XP obligation missing"):
+            checks.static_complete(before, after, "QP06", selected, rewards, [150], 29237, 100, legacy=True)
+
     def test_static_contracts_require_exact_roots_and_row_links(self):
         for case_id, reward in (("QP01", 44192), ("QP02", 19009), ("QP03", 16075),
                                 ("QP05", 16048), ("QP05", 16050), ("QP06", 29237)):

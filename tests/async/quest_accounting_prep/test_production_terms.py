@@ -5,6 +5,7 @@ import argparse
 from collections import Counter
 import json
 from pathlib import Path
+import re
 import tempfile
 
 from case_data import CASES, ROOT, CATALOG_PIN, blocks, catalog, facts, prototype
@@ -58,6 +59,7 @@ def check(case_id, variants=False):
             assert terms == dict(offering_vnums=(29262, 29263, 29264),
                                  offering_names=("ear", "scalp", "toe"), giver="kord",
                                  reward_vnum=29237, reward_name="dagger", coin_reward=3000)
+            assert crash.fixture_xp_mask(Path(directory), case_id) == 4
             generated = json.loads((Path(directory) / "quest-prep-provenance.json").read_text())
         else:
             generated = prepare(case_id, Path(directory))
@@ -66,6 +68,9 @@ def check(case_id, variants=False):
         for row in generated["prototype_records"]:
             _, body, _ = prototype(row["kind"], row["vnum"])
             assert body.rstrip() in (mini / f"mini.{row['kind']}").read_text()
+        for kind in ("mob", "obj"):
+            indexed = [int(value) for value in re.findall(r"(?m)^#(\d+)\s*$", (mini / f"mini.{kind}").read_text())]
+            assert indexed == sorted(set(indexed)), "native binary lookup needs ordered unique prototype indices"
         try:
             prepare(case_id, Path(directory))
         except ValueError:

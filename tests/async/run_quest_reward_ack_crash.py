@@ -2,8 +2,10 @@
 """Prove quest items, cash and XP survive offering/XP-ACK crashes and two restarts."""
 
 import argparse
+from contextlib import contextmanager
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -13,6 +15,18 @@ import uuid
 
 import test_flatfile_combat_journey as journey
 import test_static_quest_reward_journey as quest
+
+
+@contextmanager
+def retained_directory(prefix, evidence_dir, label):
+    """Optional private diagnostics survive both failed and successful journeys."""
+    with tempfile.TemporaryDirectory(prefix=prefix) as temporary:
+        try:
+            yield temporary
+        finally:
+            if evidence_dir is not None:
+                evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+                shutil.copytree(temporary, evidence_dir / label, symlinks=True)
 
 
 def prepare_quest_fixture(run_root: Path, case_id: str) -> dict:
@@ -77,11 +91,36 @@ def pending_quest_reward_count(state_root: Path, player_pid: int) -> int:
     return int(output.strip())
 
 
+def get_quest_input(client, name, *, secret=False):
+    """Use genuine search for production secret stock; calibration is unchanged."""
+    for _ in range(64 if secret else 1):
+        if secret:
+            client.send("search")
+        client.send(f"get {name}")
+        matched, _ = client.expect_any(("You get", "You do not see a"), timeout=15)
+        if matched == "You get":
+            return
+    raise AssertionError(f"genuine search/get did not acquire {name}")
+
+
+def fixture_xp_mask(run_root, quest_case):
+    if quest_case == "synthetic":
+        return 1  # Original calibration R E100 is the loader's first reward.
+    evidence = json.loads((run_root / "quest-prep-provenance.json").read_text(encoding="utf-8"))
+    # boot_quests links each native R at the head. Kord's E2500 is runtime
+    # slot2, not the synthetic fixture's slot0. Bind to copied production terms.
+    return sum(1 << index for index, (kind, amount) in
+               enumerate(reversed(evidence["blocks"][0]["receive"])) if kind == "E" and amount > 0)
+
+
 def run(binary: Path, expect_recovered: bool, *, sql=None,
         sql_environment=None, fault_phase: str = "offering",
-        quest_case: str = "synthetic", move_reward: bool = False) -> None:
-    with tempfile.TemporaryDirectory(prefix="duris-quest-crash-state-") as state_tmp, \
-         tempfile.TemporaryDirectory(prefix="duris-quest-crash-run-") as run_tmp:
+        quest_case: str = "synthetic", move_reward: bool = False,
+        observer=None, evidence_dir: Path | None = None) -> None:
+    if evidence_dir is not None:
+        evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with retained_directory("duris-quest-crash-state-", evidence_dir, "state") as state_tmp, \
+         retained_directory("duris-quest-crash-run-", evidence_dir, "run") as run_tmp:
         state_root, run_root = Path(state_tmp), Path(run_tmp)
         state_root.chmod(0o700)
         (state_root / "domains").mkdir(mode=0o700)
@@ -89,6 +128,7 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
             subprocess.run([str(journey.INSPECTOR), str(state_root), "seed-combat"],
                            check=True)
         terms = prepare_quest_fixture(run_root, quest_case)
+        expected_xp_mask = fixture_xp_mask(run_root, quest_case)
         (run_root / "logs/log").mkdir(parents=True)
         (run_root / "logs/log/.gitignore").write_text("*\n!.gitignore\n")
         journey.generate_certificate(run_root)
@@ -152,6 +192,11 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
             return dict(zip(("uid", "vnum", "revision", "owner_type", "state", "root", "parent"),
                             (int(value) for value in values)))
 
+        def observe(label):
+            if observer is not None:
+                observer(label, sql=sql, environment=environment, terms=terms,
+                         run_root=run_root, state_root=state_root)
+
         crash_output = run_root / "ack-crash.out"
         process, output = fault_boot(binary, run_root, environment, port,
                                      crash_output, fault_phase)
@@ -162,8 +207,13 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
             client.send("drop all")
             client.expect("You drop", timeout=20)
             for name in terms["offering_names"]:
-                client.send(f"get {name}")
-                client.expect("You get", timeout=15)
+                if quest_case == "QP06":
+                    # All three native prototypes have ITEM_SECRET. Do not
+                    # clear the flags or inject custody to make O stock visible.
+                    get_quest_input(client, name, secret=True)
+                else:
+                    client.send(f"get {name}")
+                    client.expect("You get", timeout=15)
             client.send("save")
             client.expect(f"Save complete for {journey.CHARACTER}.", timeout=30)
             before = authority()
@@ -174,6 +224,7 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
             journey.require(all(sum(row["vnum"] == vnum for row in before["player_items"]) == 1
                                 for vnum in terms["offering_vnums"]),
                             "offering fixture must hold exactly one original root of each kind")
+            observe("before-offering")
             client.send(f"give {terms['offering_names'][0]} {terms['giver']}")
             client.expect("Your quest offering is being accepted.", timeout=15)
             process.wait(timeout=30)
@@ -191,9 +242,12 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
                                 ") AND owner_type=8 AND state=2"))
                 journey.require(count == 3, "offering crash lacks original UID tombstones")
                 applied = int(sql("SELECT xp_applied_mask FROM quest_reward_obligation WHERE player_pid=1"))
-                journey.require(applied == int(fault_phase == "xp-ack"),
+                journey.require(applied == (expected_xp_mask if fault_phase == "xp-ack" else 0),
                                 "XP crash did not reach the intended durable boundary")
+            observe("at-crash")
         finally:
+            if evidence_dir is not None:
+                (evidence_dir / "initial-client.txt").write_bytes(bytes(client.transcript))
             client.close()
             if process.poll() is None:
                 process.kill()
@@ -244,12 +298,13 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
                                     "lost XP completion paid the reward twice")
                 if sql is not None:
                     journey.require(int(sql("SELECT xp_applied_mask FROM quest_reward_obligation "
-                                            "WHERE player_pid=1")) == 1,
+                                            "WHERE player_pid=1")) == expected_xp_mask,
                                     "quest XP lacks its durable application marker")
             if expect_recovered:
                 journey.require(pending_after_load == 0,
                                 f"recovered reward obligation remains pending: "
                                 f"{pending_after_load}")
+            observe("recovered")
             moved_custody = None
             if expect_recovered and move_reward:
                 original_uid = rewards[0]["uid"]
@@ -270,6 +325,7 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
                                 moved["experience"] == recovered["experience"],
                                 "legitimate reward drop must preserve UID, cash and XP")
                 recovered = moved
+                observe("after-move")
             client.send("quit")
             client.expect("ACCOUNT MENU", timeout=30)
             client.send("0")
@@ -278,6 +334,11 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
             quest.stop(process, output)
         except Exception as error:
             output.flush()
+            if observer is not None:
+                try:
+                    observe("recovery-failure")
+                except Exception as capture_error:
+                    error = AssertionError(f"{error}; failure-cut capture: {capture_error}")
             raise AssertionError(
                 f"recovery: {error}\n--- server ---\n{restart_output.read_text(errors='replace')[-8000:]}"
                 f"\n--- logs ---\n{journey.runtime_logs(run_root)}"
@@ -307,6 +368,7 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
             if moved_custody is not None:
                 journey.require(reward_custody(moved_custody["uid"]) == moved_custody,
                                 "second restart restored or rewrote the already-moved reward")
+            observe("second-restart")
             client.send("quit")
             client.expect("ACCOUNT MENU", timeout=30)
             client.send("0")
@@ -330,7 +392,8 @@ def run(binary: Path, expect_recovered: bool, *, sql=None,
 
 
 def run_sql(binary: Path, fault_phase: str, quest_case: str = "synthetic",
-            move_reward: bool = False) -> None:
+            move_reward: bool = False, *, observer=None,
+            evidence_dir: Path | None = None, journey_callback=None) -> None:
     if os.environ.get("TEST_DB_DISPOSABLE") != "1" or os.environ.get("TEST_DB_HOST") != "127.0.0.1":
         raise RuntimeError("TEST_DB_DISPOSABLE=1 and a loopback disposable database are required")
     database = "quest_journey_test_" + uuid.uuid4().hex[:12]
@@ -357,10 +420,19 @@ def run_sql(binary: Path, fault_phase: str, quest_case: str = "synthetic",
         for command in (["adopt", "--kind", "fresh_bootstrap"], ["run"]):
             subprocess.run(["python3", "scripts/migration_runner.py", *command],
                            cwd=quest.ROOT, env=environment, check=True, timeout=600)
-        run(binary, True, sql=sql, sql_environment=environment, fault_phase=fault_phase,
-            quest_case=quest_case, move_reward=move_reward)
+        (journey_callback or run)(binary, True, sql=sql, sql_environment=environment, fault_phase=fault_phase,
+            quest_case=quest_case, move_reward=move_reward, observer=observer,
+            evidence_dir=evidence_dir)
     finally:
         sql("DROP DATABASE " + database, False)
+        if evidence_dir is not None:
+            evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+            remaining = sql("SELECT COUNT(*) FROM information_schema.schemata "
+                            "WHERE schema_name='" + database + "'", False)
+            (evidence_dir / "schema-cleanup.json").write_text(
+                json.dumps(dict(database=database, remaining_schemata=int(remaining))) + "\n",
+                encoding="utf-8")
+            journey.require(remaining == "0", "disposable quest schema cleanup failed")
 
 
 if __name__ == "__main__":
@@ -374,17 +446,21 @@ if __name__ == "__main__":
                         help="retain original calibration or use production Kord terms/prototypes")
     parser.add_argument("--move-reward", action="store_true",
                         help="after recovery, drop the original reward before the second cold boot")
+    parser.add_argument("--evidence-dir", type=Path,
+                        help="retain private temporary world/state diagnostics in a new directory")
     args = parser.parse_args()
     if args.confirm_loss and (args.quest_case != "synthetic" or args.move_reward):
         parser.error("historical loss calibration requires its original synthetic fixture")
     if args.backend == "mariadb":
         if args.confirm_loss:
             parser.error("--confirm-loss is only a historical flatfile baseline")
-        run_sql(args.server.resolve(strict=True), args.fault_phase, args.quest_case, args.move_reward)
+        run_sql(args.server.resolve(strict=True), args.fault_phase, args.quest_case, args.move_reward,
+                evidence_dir=args.evidence_dir)
     else:
         subprocess.run(["python3", "tests/async/test_flatfile_player_repository.py",
                         "--build-inspector", str(journey.INSPECTOR)],
                        cwd=quest.ROOT, check=True, timeout=180)
         run(args.server.resolve(strict=True), not args.confirm_loss, fault_phase=args.fault_phase,
-            quest_case=args.quest_case, move_reward=args.move_reward)
+            quest_case=args.quest_case, move_reward=args.move_reward,
+            evidence_dir=args.evidence_dir)
     print("post-ack quest reward crash journey passed")

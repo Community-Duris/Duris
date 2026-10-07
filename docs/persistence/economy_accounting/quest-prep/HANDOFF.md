@@ -1,82 +1,124 @@
-# Active quest implementation and execution — 2026-10-07
+# Quest implementation and execution handoff — 2026-10-07
 
-This new goal is ACTIVE. Earlier independent prep is complete, retained below.
-Current accounting base: `aa252cd8134972548a953a0c5e500da2f8d06af7`;
-preserved-history merge: `dd4aefe901d71fc64e3c9fff7d5e1ac3a741bcf6`.
-Previously published prep tip: `f6e009282805d9be5e108fec08f9d923adf97f5c`.
-No shared coordinator/journal/activation/schema/private producer successor is imported.
+Production corrections are published on `origin/codex/accounting-quest-prep`.
+This active implementation goal is distinct from the completed prep pack below.
+Import the following new bundles after the previously consumed prep commits:
 
-First production correction is QP07, limited to
-`src/specs/specs.world_quest.c`: capture persisted original quest_started in the
-pointer-free pending payment context, validate before map/abandon/history, and
-refuse completed/reset/replaced tasks. Context grows12→16 within actual64-byte
-limit. Existing reset preserves the watermark, and real creation/share both
-advance it even in the same second or on clock rollback. No schema/wire change.
-Original task callbacks retain behavior; generic refund remains separately
-unqualified/refused for active authority. This does not prove restitution.
+1. `fd997ee4147ba58d835bf4bd61783b51307bc68c`: QP07 original-attempt callback protection and regressions. Parent `dd4aefe901d71fc64e3c9fff7d5e1ac3a741bcf6`; accounting base `aa252cd8134972548a953a0c5e500da2f8d06af7`. Production file: `src/specs/specs.world_quest.c` only.
+2. `a19a67ad021de8e6bbfb31ca9ffea31e41cb6aa7`: QP02 native recipe reachability and regressions. Parent fd997ee. Production file: `src/world/quest.c`, `quest_native_completion_owner::prepare_original` only.
+3. Execution tooling bundle follows: owned SELECT reader, fixtures, assertions and three local runners; additive shared quest/world driver hooks are listed separately below. No shared production fix is included.
 
-First bundle's tests: owned test_bartender_settlement.py and case_data.py.
-The former exercises actual production callback/context/ADD_MONEY with isolated
-financial/runtime seams: original callback, same-target/type replacement,
-distinct replacement, completed/reset, repeated callback, rejected payment,
-invalid fee/giver/generation/action/length/actor and active stale-refund refusal.
-Real request initializers are checked for captured watermark and actual64-byte
-bound. No successful SQL debit/refund is fabricated.
+Current executed binary source is a19a67a. Latest fetched accounting source is
+`85f9e1b2ee9149bd5033869adf6305b1fc21f5c5`; comparison with aa252cd8 has no quest-owner change. The new shared changes reserve native-load pool capacity and restore locked coin endpoint revisions. Preserve history when importing; qualification of that integrated source follows the current batch.
+Original accounting base `17c033d69316b21da8598791fc95cae79baa8dc2` and research PR678 revision `55905eac1906cf59405764407f9d22497cccfff3` remain pinned.
 
-Executed from repository root in WSL Ubuntu22.04/Python3.10/g++11.4:
+## Meaningfully verified production fixes
 
-```bash
-python3 tests/async/quest_accounting_prep/test_bartender_settlement.py --case QP07 --acceptance
-python3 tests/async/test_world_quest_item_completion.py
-python3 tests/async/test_world_quest_failure_feedback.py
-```
+QP07 captures persisted quest_started at request time in the pointer-free context
+(12 to 16 bytes, actual pending limit64). Existing create/share strictly advance
+the watermark even on same-second replacement/clock rollback; reset preserves it.
+Settlement rejects replaced, completed, reset, invalid or rejected-payment
+contexts before map/abandon/history mutation. Original callbacks and repeated
+application behavior are covered by the actual extracted callback regression.
+Generic stale refund still uses a credit helper that refuses active authority;
+no restitution qualification is claimed. Specs SHA256:
+`4d102b8ec12497bc0ce9c0c8bf170932c99495911f6a12d8871514f88b2563f4`.
 
-All PASS. Before change QP07 --acceptance reproduced component31/exit1 on the
-current published source. Docker Desktop engine29.7.2 is available; WSL's socket
-is absent, so execution uses the Windows desktop-linux context. Tool image pin:
-`sha256:74b699976165c15fc29cf92b9c2dbefcdbca35505a08efc84d14bf644cbf6d5b`.
-Changed-line clang-format plus maintained scripts/format.sh --file ... --check
-passes. Full original strict SQL make -C src is running in an isolated 2CPU/3GiB,
-network-none container; source archive is the merge plus the exact one production
-file. Build outputs/logs live only below bin/tests/quest-implementation-20261007.
-No build/runtime PASS is yet claimed. Final commit/source/binary pins follow
-terminal build evidence. QP02 correction and regressions are being prepared as a
-SEPARATE bundle. Capture SQL execution and native journeys remain outstanding;
-this goal is not complete or redefined as another prep pack.
+QP02 performs original independent ITEM/TYPE availability checks before a paid
+recipe's authority refusal. Unavailable branches return not_matched; genuinely
+available paid branches still refuse before root selection. Original loader,
+recipe, dispatcher and partial-prefix overlap order remain. Actual owner and
+dispatch regressions cover three-hide backpack reachability, four-hide paid gloves
+refusal, coin-only, empty/short/spare/duplicate/wrong-kind stock, overlapping TYPE
+and repeated evaluation without custody mutation. Catalog-wide actual component
+check covers285 paid ITEM/TYPE recipes from production areas/AREA (2668 definitions;
+catalog fingerprint `04d687493b02ed27a3b32d070a0a71e9d10c1643406d5fb95fe6b1538b4bb314`).
+Quest SHA256 `747a43b7f27ff6a3d53cc7776097b9c361d7c6437e6d04bbe5da717895677f8c`.
+These source components do not prove authentic native reset custody.
 
-## Earlier preparation handoff (historical)
+## Builds and executed evidence
 
-## QP02 production bundle — 2026-10-07
+Both complete maintained strict a19a67a builds passed; no compiler/sanitizer
+flags or original journey deadlines were weakened. Docker image
+`sha256:74b699976165c15fc29cf92b9c2dbefcdbca35505a08efc84d14bf644cbf6d5b`, Ubuntu24.04,
+GCC13.3, private network-none runtime, MariaDB10.11.14 on loopback33306.
+Schema manifest `1fddd009cc67bba940efba28c2afc3d16d65ea8a476410034cd77c90a0a9aea2`,
+maintained fresh canonical0062 migration runner, original calibration setup.
+SQL binary SHA256 `6e4962a1fd38118d4f538157f70407293de7ec6840a3b57493fae972caf7e81a`;
+flat binary `aaf8f44b534df5d00a88b49d1c8990affd54505746f6ec485f46bf65842b5bb8`.
+QP07-only full SQL build also passed: fd997ee source, binary
+`c13ad174fa10b6ab0972672411dff65a82abcf9fa083baecbfaf419237a97f3a`.
 
-Import after QP07 `fd997ee4147ba58d835bf4bd61783b51307bc68c` (based on
-merge `dd4aefe901d71fc64e3c9fff7d5e1ac3a741bcf6`). QP02 changes only
-`quest_native_completion_owner::prepare_original` in `src/world/quest.c`.
-Run the original independent duplicate ITEM/TYPE availability checks before
-refusing a coin-bearing recipe. Unavailable paid branches return not_matched;
-available paid branches still refuse before selecting any roots. The original
-ITEM-before-TYPE ordered selection and overlapping partial-prefix semantics
-remain intact. Original dispatcher order/not_matched advance/refused blocking
-are verified by the owned regression. No financial guard is bypassed.
+Private raw evidence is retained under
+`bin/tests/quest-implementation-20261007/` in this worktree, ignored by Git.
+No credentials, generated worlds, player data, logs or binaries are committed.
+Exact commands, evidence directories and diagnoses: [EXECUTED_JOURNEYS.md](EXECUTED_JOURNEYS.md).
 
-Production SHA256: `747a43b7f27ff6a3d53cc7776097b9c361d7c6437e6d04bbe5da717895677f8c`.
-Before fix QP02 --acceptance reproduced component30/exit1. Executed commands:
+Passing actual journeys to date: original synthetic SQL offering calibration;
+flat QP06 genuine secret-input search, offering crash and two cold recoveries;
+flat QP02 explicit durable refusal with three original hide UIDs retained through
+cold load; flat QP05 white-bear reward16048 UID820 through cold load; full-world
+Woodseer quest creation/map/queued abandonment/replacement/final abandon on
+both SQL and flat backends. Woodseer is actual giver16553/room16633/level56,
+not Quietus giver1709/room1734/level11. It exercises the same bartender callback.
+Stale replacement protection is qualified separately by the actual callback component.
 
-```bash
-python3 tests/async/quest_accounting_prep/test_native_selectors.py --case QP02 --acceptance
-python3 tests/async/quest_accounting_prep/test_native_selectors.py --case catalog --acceptance
-```
+Real SELECT-only reader execution captured before/offering-crash/recovered/second
+cold cuts in `sql-qp06-xpslot-offering`, observed read-only transaction1 then0,
+and exercised current custody/ledger/obligation/root/reference/inbox/effect/posting
+queries. Missing native epoch evidence remains a refusal. Its final owned XP
+assertion failed because it used absent native entitlement rows on the legacy path;
+the maintained journey itself passed all original recovery assertions. This is
+an owned oracle defect, not evidence of duplicate XP. The genuine v5 continuation
+freezes200 XP at runtime reward slot2 (mask4), and the real log records one520 XP
+award (200 x well-rested2 x Human1.3); experience1 to521 is stable on second cold.
+The tool now calls the maintained continuation decoder and requires the actual
+player race/level/rested affect and pinned production properties. Native default
+assertions retain their original entitlement requirement. The corrected SQL run `sql-qp06-corrected-xp` passed, exit0,153.865s: actual history metadata (62 applied migrations), missing-player and row/BLOB controls, exact input/reward custody, C3000, effective520 XP, ACK and second-cold replay. Actual read-only snapshot transaction1 then0; cleanup confirms zero remaining schemas. This closes actual reader execution for the supported legacy path; active native authority remains separately required.
 
-Both PASS. Catalog executes the real preliminary selector against all285 paid
-ITEM/TYPE recipes in production areas/AREA: sufficient original-kind modeled
-stock refuses, empty stock does not match. QP02 covers three hides reaching
-backpack, four hides matching earlier paid gloves (still refused), no inputs,
-coin-only matching refusal, duplicate shortage/spares, exact kind, ITEM/TYPE
-overlap and repeated evaluation without mutation. QP01/QP05/QP06 components also
-passed after this production correction. These are actual source component
-checks with constructed inventory, not native birth/custody or SQL journeys.
-Changed-line clang-format and maintained format.sh --file src/world/quest.c
---check PASS. Maintained integrated build and journeys follow in execution
-metadata; no unexecuted runtime PASS is claimed here.
+## Driver changes and boundaries
+
+`run_quest_reward_ack_crash.py`: optional observer/private evidence retention and
+SQL journey callback; original defaults, synthetic slot0 mask1, backend options,
+assertions and deadlines retained. Kord search uses unmodified secret prototypes;
+its XP mask derives from real head-linked production reward order. Exact schema
+cleanup count is retained even on failure. Optional recovery-failure cut does not
+mask the original error.
+
+`run_world_quest_dual_backend.py`: optional retention and actual map request;
+original default journey remains. Owned runners bind server hashes/source commits.
+The flat inspector invocation adds existing baseline codec/adapter link inputs
+locally; the shared inspector manifest is not edited. Fixture mob/object indices
+are sorted for actual binary lookup; complete production records and quest order
+are preserved.
+
+## Retained frontiers with their actual owner
+
+- Flat QP06 XP-ACK recovery passes, but subsequent ordinary `drop dagger` produces
+  `The item remains in your inventory; its drop did not commit.` Original move
+  assertion stays red. `src/cmd/actobj.c:item_drop_completion` and shared movement
+  transaction own the refusal; no successful later move or move-before-lost-ACK
+  is claimed. Preserve pending-journal/shared recovery work with primary.
+- QP02 three-hide mini fixture reaches the real legacy durable dispatcher, whose
+  `submit_durable_quest_offering` stops at an unsupported paid recipe. This is a
+  separate legacy owner from corrected active_regular_sql native completion.
+  Refusal preserves actual UIDs; active native handover requires the genuine
+  integrated epoch/birth/context setup. Do not bypass financial guards.
+- QP01 production secret Orb44164 invokes its real FOUND special and teleports
+  the actor before the mini fixture's get assertion. Exact-success journey needs
+  real producer context; partial three-statue refusal is being executed without
+  clearing flags or suppressing specials.
+- QP03 actual recipient16006 is invisible to the test player. Original success
+  expectation fails `No-one by that name here.` Recipient-unavailable refusal
+  with original inputs/cold load is being executed; authentic disappearing/reset
+  recipient birth, original retirement, whole-stock cash and replacement proof
+  stay primary-owned.
+- Active refund/held obligations, native three-item handover, original D and
+  lost-ACK movement remain dependencies; no seeded epoch, UID, birth, receipt or
+  successful ACK substitutes for authority. Final qualification uses primary's
+  integrated candidate at its major batch boundary.
+
+## Earlier preparation history (superseded status statements)
 
 # Quest accounting prep handoff — 2026-10-06
 

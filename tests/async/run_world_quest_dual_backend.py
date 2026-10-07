@@ -23,6 +23,7 @@ import uuid
 
 from test_flatfile_combat_journey import MudClient
 from quest_character_flow import create_quest_character
+from run_quest_reward_ack_crash import retained_directory
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -269,8 +270,9 @@ def collect_logs(run_root: pathlib.Path) -> str:
 
 
 def perform_quest_journey(binary: pathlib.Path, backend: str, state_root: pathlib.Path,
-                          database_environment: dict[str, str] | None) -> dict:
-    with tempfile.TemporaryDirectory(prefix=f"world-quest-{backend}-run-") as run_tmp:
+                          database_environment: dict[str, str] | None, *,
+                          evidence_dir: pathlib.Path | None = None, buy_map: bool = False) -> dict:
+    with retained_directory(f"world-quest-{backend}-run-", evidence_dir, "run") as run_tmp:
         run_root = pathlib.Path(run_tmp)
         player_journal, critical_journal, output_path = setup_run_root(run_root)
         plain_port, tls_port, websocket_port = available_ports()
@@ -309,6 +311,15 @@ def perform_quest_journey(binary: pathlib.Path, backend: str, state_root: pathli
                     "bartender quest path reported an internal selection failure")
             require("The Great Realm of Duris" not in transcript_after_first,
                     "explicitly denied zone was assigned")
+            map_result = None
+            if buy_map:
+                client.send("ask bartender map")
+                map_result, _ = client.expect_any((
+                    "will now show you additional information",
+                    "don't have any maps to that zone",
+                ), timeout=30)
+                client.send("save")
+                client.expect("Save complete for Taverek.", timeout=120)
 
             # Deliberately type the paid abandon and the next paid quest before
             # either response is read.  This is the real-client version of the
@@ -350,6 +361,7 @@ def perform_quest_journey(binary: pathlib.Path, backend: str, state_root: pathli
                 "pid": process.pid,
                 "quest_first_result": first_result,
                 "quest_second_result": second_result,
+                "map_result": map_result,
                 "catalog_ready_count": final_output.count("World quest catalog ready:"),
                 "player_state": player_state,
                 "server_output_tail": final_output[-4000:],
@@ -365,6 +377,9 @@ def perform_quest_journey(binary: pathlib.Path, backend: str, state_root: pathli
             ) from error
         finally:
             if client is not None:
+                if evidence_dir is not None:
+                    evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+                    (evidence_dir / "client.txt").write_bytes(bytes(client.transcript))
                 client.close()
             if process.poll() is None:
                 process.terminate()
