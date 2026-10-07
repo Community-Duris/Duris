@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 223 authored journals.
+2668 distinct Q contracts; 224 authored journals.
 
 Regenerate with:
 
@@ -237,7 +237,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Vargan II (`v2`) | 1 | 2 | 0 | Yes | [1 × an ancient hilt; 1 × an ancient cross-piece; 1 × a broken blade → the sword of Vurlok](../../areas/qst/v2.qst#L13) | — |
 | The Valoisian Castle (`val`) | 8 | 5 | 1 | Yes | [1 × a battle mace; 1 × a huge polearm; 1 × some steel sleeves; other required items → a pair of leggings of clan crunch head](../../areas/qst/val.qst#L38) | — |
 | Phantasmagoric Caverns (`valdrak`) | 1 | 2 | 0 | Yes | [1 × a blood soaked longsword; 1 × a blood stained claymore; 1 × a heart of living darkness → native reward/response](../../areas/qst/valdrak.qst#L40) | — |
-| Valley of Crushk (`valley_crushk`) | 1 | 1 | 0 | Fallback | [1 × a bandit shiv → native reward/response](../../areas/qst/valley_crushk.qst#L16) | — |
+| Valley of Crushk (`valley_crushk`) | 1 | 1 | 0 | Yes | [1 × a bandit shiv → native reward/response](../../areas/qst/valley_crushk.qst#L16) | — |
 | Vargan (`vargan`) | 1 | 5 | 0 | Yes | [2 × an ancient shoulder plate; 1 × an ancient breast plate → a suit of ancient dwarven plate](../../areas/qst/vargan.qst#L26) | — |
 | Vecna's Tomb (`vecna`) | 2 | 2 | 0 | Yes | [1 × a rotting brain → the breastplate of preservation](../../areas/qst/vecna.qst#L11) | block_dir, chressan_shout, mob_vecna_procs, vecna_black_mass, vecna_boneaxe, vecna_bubble_room |
 | vehicles (`vehicles`) | 255 | 19 | 1 | Fallback | [2 × a gnomish shopkeepers token; 5 × item 400941 → a crystal harp named 'The Vokstron'](../../areas/qst/vehicles.qst#L2545) | — |

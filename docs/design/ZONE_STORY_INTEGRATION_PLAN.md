@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 223 authored journals, accounting-gated player surfaces, starter/town
+**Status: 224 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5447,3 +5447,8 @@ A custom periodic recipe needs captured actor and distinct root material UIDs, e
 ## Turolopolis Zoo integration extension
 
 The [dossier](zone-stories/TUROLZOO.md) maps one exact supplied-compatible two-tooth/helmet/departure card and nine broader stories with46 owned follow-ups. Native ALL pair, hidden controller/search/open/cross, source concealment/custody, history, useful living patient/habitat/keeper/containment outcomes and preserved chase/return require distinct successful identities. Builders define actual causes, tasks, consent/costs, recipients and saved renewal before adapters. Current care-like prose, generic healing/kill/loot, handled commands and keeper aggression flags cannot create synthetic completions. No new runtime schema or native repair is required for this journal; keep active READY authority and daily policy disabled.
+
+
+## Valley of Crushk integration extension
+
+The [dossier](zone-stories/VALLEY_CRUSHK.md) maps the supplied-compatible shiv/currency bounty and nine broader stories with46 owned follow-ups. Separate personal/supplied provenance, current loose material, accepted root consumption, identified wallet payment and recovery. Magic utterance/unlock/open/cross, royal/civic help, privacy, hungry recipient, youth training, exact shop purchase/effect and living habitat outcomes require defined successful identities. Complete source mapping retains inactive legacy graph and unresolved M207 as bounded fair-review findings. Current prose/handled commands/generic transfers do not create completion; preserve active READY authority and disabled daily policy.

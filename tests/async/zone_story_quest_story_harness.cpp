@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 223 &&
+		require(catalog.story_mappings.size() == 224 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -26093,6 +26093,85 @@ int main(int argc, char **argv)
 					status(journal, 0, "Missing now") &&
 					status(journal, 1, "Missing now"),
 				"Zoo missing helmet or spent pair changed recovered accepted history");
+		}
+
+		{
+			const auto &bounty =
+				story_for("valley_crushk", "claim-flazohs-bandit-bounty");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 2038, 2002, 100) == result::rejected,
+				"Crushk contact ignored undiscovered zone");
+			require(journey.discover_zone(7, 42, 20, 2001, 101, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 20, 10, 1, 102, false, false)
+							.find(bounty.title) == std::string::npos &&
+					journey.meet_npc(7, 42, 2038, 2002, 103) == result::applied,
+				"Crushk bounty bypassed Flazoh encounter");
+			require(journey.render_journal(7, 42, 20, 10, 1, 103, false, false)
+						.find(bounty.title) != std::string::npos,
+				"Crushk invented personal kill, foreign discovery, learned topic or courtesy prerequisites");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    bounty.steps[row].text) != std::string::npos;
+			};
+			for (unsigned custody = 0; custody < 5; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[2007] = 1;
+				if (custody == 2)
+					supplies.equipped[16] = 43143;
+				if (custody >= 3)
+					supplies.carried[43143] = custody == 3 ? 1 : 4;
+				const auto journal = journey.render_journal(
+					7, 42, 20, 10, 1, 104, false, false, &supplies);
+				require(status(journal, 0,
+					       custody >= 3 ? "Ready now" : "Missing now") &&
+						!status(journal, 1, "Recorded") &&
+						journey.progress_for_zone(7, 42, 20).completed ==
+							0 &&
+						journey.serialize_state() == before,
+					"Crushk wrong/equipped/current/surplus weapon custody forged loose-material or accepted bounty history");
+			}
+			// Synthetic receipt verifies journal projection, not live shiv consumption, wallet payment, source recovery, gate passage or useful beneficiary effects.
+			record(journey, bounty.contracts.front(), "valley-crushk-bounty-offering",
+			       20, 2002);
+			supplies = {};
+			auto journal = journey.render_journal(7, 42, 20, 10, 1, 121, false, false,
+							      &supplies);
+			require(status(journal, 1, "Recorded") &&
+					status(journal, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 20).completed == 1 &&
+					!journey.has_discovered(7, 42, 431),
+				"Crushk spent shiv erased receipt or invented foreign-source discovery");
+			require(supplied.discover_zone(7, 42, 20, 2001, 101, "arrival") ==
+					result::applied,
+				"Crushk supplied shiv setup failed");
+			record(supplied, bounty.contracts.front(), "valley-crushk-supplied-shiv",
+			       20, 2002);
+			require(supplied.progress_for_zone(7, 42, 20).completed == 1,
+				"Crushk accepted supplied shiv required source, kill, topic, foreign contact or magic gate history");
+			auto replay = completion(bounty.contracts.front(),
+						 "valley-crushk-bounty-offering", 120);
+			replay.transaction.zone_number = 20;
+			replay.transaction.room_vnum = 2002;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Crushk replay duplicated accepted bounty");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 20).completed == 1 &&
+					raw.progress_for_zone(7, 42, 20).completed == 1 &&
+					!recovered.has_discovered(7, 42, 431),
+				"Crushk mapped/raw recovery lost acceptance or invented foreign source history");
+			journal = recovered.render_journal(7, 42, 20, 10, 1, 122, false, false,
+							   &supplies);
+			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
+				"Crushk spent material changed recovered accepted history");
 		}
 
 		std::cout

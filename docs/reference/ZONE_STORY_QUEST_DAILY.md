@@ -339,3 +339,8 @@ The [dossier](../design/zone-stories/SEAKNGDM.md) preserves one achievement/pote
 ## Turolopolis Zoo daily qualification
 
 The [dossier](../design/zone-stories/TUROLZOO.md) retains one achievement/potential daily. Nonzero mode2 makes disappearing native hunter resettable under current classification; it does not guarantee available current giver or fresh teeth. All eight active O/G/E rows are refused before item creation. Qualify durable tiger/gorilla source generations, exact supplied pair, committed root consumption, helmet destination/grant/save/replay and exact departure. Broader care, habitat, controller, knowledge and containment stories are integration plans. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
+
+
+## Valley of Crushk daily qualification
+
+The [dossier](../design/zone-stories/VALLEY_CRUSHK.md) retains one achievement/potential daily for exact43143 ->C4000/no D. Mode2/native repeatability does not guarantee current giver or foreign source supply; all23 local O/G/E rows are refused before active item creation. Qualify admitted source episode/UID, exact supplied-compatible root consumption, independent identified wallet commit/save/replay and frozen completion recovery. Courtesy/court/civic/hunger/training/shop/care stories remain typed integration plans. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
