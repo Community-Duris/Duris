@@ -447,6 +447,35 @@ selecting implementation. No new scope is approved by this queue entry.
 
 ## Recurring monitor
 
+The whole item valuation now has
+[exact R11 execution approval](R11_ITEM_VALUE_QUOTE_REVIEW_2026-10-07.md),
+reservationf0212c9e. Exactly three implementation paths: new owned-observation
+calculation header, existing itemvalue native wrapper and first direct regression
+runner. Coordinator authenticates all32 original proof files/full529-line body and
+independently executes all45 final original controls under unchanged sanitizer
+recipe. Architecture owns implementation/current imports/builds/handoff; final
+review remains pending. All arithmetic/order/native metadata and authority limits
+remain explicit, without another milestone or primary adoption wait.
+
+The quest codec one-file repair0b007572/evidence49c50602/handoff5ec38690 now has
+[final independent review PASS](../quest-prep/SHOP_CODEC_CLOSURE_REVIEW_2026-10-07.md).
+The exact three-line diff restores original bytes on removal; its actual patch
+applies alone to baree6c1fa35, with all6,446 export bodies/modes/links,13 compiler
+sources,56 current repository headers, exact original46-assert harness, actual
+passing ELF and seven sealed receipts authenticated. Maintained original entry
+point exits0; availability does not establish adoption/native quest acceptance.
+
+The separate original live-route source-contract failure supplies the next bounded
+PRIVATE prep investigation: preserve the entire original test/predicates and
+trace current native physical-publication/keeper/player/snapshot/cleanup/authority
+ordering through actual helpers. Determine stale syntax versus a genuine missing
+guarantee, with exact executed failure and source/preimage evidence. No maintained
+test/production repair, weakened oracle, accepting stub or server/DB/player action
+is approved. Return an exact meaningful reservation/original proof if repair is
+legitimate, or an owner dependency if native acceptance is genuinely unavailable.
+This task grants no native quest capability and does not falsely resume the actual
+blocked prep Goal. Preserve completed deliveries; avoid unchanged broad reruns.
+
 The quest codec reservation now has
 [independent one-file approval](../quest-prep/SHOP_CODEC_CLOSURE_REVIEW_2026-10-07.md).
 Coordinator authenticates all2,646 original source inventory entries, seven

@@ -1,5 +1,9 @@
 # Original shop codec canonical-provider closure review - 2026-10-07
 
+Final disposition: **implemented one-file repair independently reviewed PASS.**
+The final section supersedes the historical pending boundary below. Optional
+primary import and native acceptance remain separate.
+
 Disposition: **exact one-file implementation boundary approved.** Investigation
 `a1e4ade02460652ccf0dc98a66a2c2f6af0de4ec` and handoff
 `b33f39d037b886b3f299b8073274423c2c8cdc34` establish the complete original
@@ -82,3 +86,42 @@ not falsely mark it resumed or complete. Native lifecycle/reset-born source,
 custody, command/publication/ACK and held-charge/refund/paired-retirement remain
 unfinished. Root continuing Goal/15-minute monitor retain the full primary finish
 line after this independent fixture checkpoint.
+
+## Final maintained repair and import review
+
+Code `0b0075724457511f6a7c6599489958cf45cd828a`, evidence
+`49c5060239513e63cf12dffe3d74df3e6e8e5e31`, and canonical handoff
+`5ec386905` are published on codex/accounting-quest-prep. The implementation
+handoff is SHOP_CODEC_CLOSURE_IMPLEMENTATION.md. Coordinator verifies the exact
+one-file commit: removing its140-byte three-line insertion restores the original
+test byte-for-byte. All original fixtures,46 assertions, flags and controls remain.
+
+Coordinator independently applies the actual820-byte package to a private index
+at bare primarye6c1fa35fb41674c2a0ce425354e61a629c0e879 and reproduces tree
+`51aaf7b87c77a375c264372f2bf7e7ce0116d62f`. Patch SHA256 is
+`377e69502b9a123f969f2d744eaf0ceb39f1103929b85d1df669347c5683e84f`.
+No optional prep or architecture dependency is needed. Original/repaired blobs
+are51449801c538c412be86671bc4789dbdb81b6602 and
+0a46981af92ec8942d40554736b6fde5eeec192a; repaired script SHA256 is
+`368401f4c651fc3553f1f1336a9e090ed946235f04f57d55547480faf106c2d3`.
+
+Coordinator authenticates every6,446 file/link body, size and mode in the actual
+import export against canonical Git archive members, both archive hashes, all13
+compiler sources,56 current repository headers and seven sealed receipt files.
+The actual compiler observer delegates every requested argument unchanged to real
+/usr/bin/g++; the maintained entry point exits0 in7.847 seconds, compiler/link0
+and unchanged complete runtime succeed. The original full harness hash matches
+the independently executed original proof. No additional current runtime is
+claimed merely from body/header equivalence. The actual passing ELF SHA256 is
+`dffd788d473c457f93ceee34082bfd3880c718586f1e3d52eb83b5569369e6d2`.
+Actual compiler dependency observation retains385 inputs including those56 headers.
+
+This closes the bounded original codec fixture dependency. Preserve the earlier
+original linker FAIL, private closure PASS and current maintained PASS as distinct
+scopes. Root codec-final-authentication-RESULT.json remains private/ignored.
+Code0b007572 can be fetched/imported independently; adoption remains unknown.
+The separate live-route source-contract failure is still open. Quest prep may
+privately investigate its complete original predicates/current native publication
+chain under a separate bounded assignment, without weakening an oracle or editing
+a maintained/shared authority. Native/full-project blockers and honest blocked
+quest Goal remain unchanged; root monitoring continues through the full finish line.

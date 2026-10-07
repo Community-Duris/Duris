@@ -231,6 +231,23 @@ assertions. Quest prep owns isolated implementation/current-primary import proof
 and handoff; final repair/review remain pending. Native quest and full accounting
 qualification remain open; primary continues without an adoption wait.
 
+## Item valuation execution and codec final review - 2026-10-07
+
+[Exact R11 boundary approval](domain-separation/R11_ITEM_VALUE_QUOTE_REVIEW_2026-10-07.md)
+selects the complete529-line valuation, existing native wrapper and first direct
+regression runner. All32 original proof files/full body are authenticated and
+all45 final original controls independently PASS. Architecture owns isolated
+implementation/current imports/builds/handoff; final review remains pending.
+
+[Codec repair final review](quest-prep/SHOP_CODEC_CLOSURE_REVIEW_2026-10-07.md)
+closes one-file0b007572: exact three-line diff, actual bare-current package/all6446
+export entries,13 sources/56 headers, original46-assert harness and passing ELF
+authenticated. Optional import and native qualification remain separate. Quest
+prep next privately investigates the unchanged live-route source-contract failure
+against actual current native helper guarantees; no maintained repair or weakened
+oracle is approved. Primary continues without an adoption wait. Continuing Goals
+and monitor retain the full primary finish line and native blockers.
+
 ## Continuing project coordination supersedes finite closure - 2026-10-07
 
 The user has authorized a new actual continuing coordinator Goal and continuing
