@@ -1,5 +1,17 @@
 # Shared producer integration progress — 2026-10-06
 
+## Current native auction proof progress — 2026-10-07
+
+[Private component progress](NATIVE_AUCTION_RETAINED_PROOF_PROGRESS_2026-10-07.md)
+passes original native-v2 LIST, settlement, partial pickup and exact durable
+rejected replay. The next original v1 LIST171 returns retryable EAGAIN; its
+internal predicate remains unobserved. Both strict753-provider builds and nine
+contracts pass on private d2 source; both-engine component completion, physical
+journeys and maintained producer integration remain open. The separately
+reviewed post-SQL-proof recovery diagnostic also passes both original753 builds
+and nine contracts; runtime recovery qualification remains pending. Existing
+inactive behavior, declined spell path and release gates remain preserved.
+
 ## Lifecycle receipt paging qualified — 2026-10-07
 
 [Primary integration](PLAN5_LIFECYCLE_PAGES_PRIMARY_INTEGRATION_2026-10-07.md)

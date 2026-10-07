@@ -5300,32 +5300,18 @@
         }
       },
       "test_candidates": [
-        "tests/async/test_coin_physical_publication.py"
+        "tests/async/test_coin_physical_publication.py",
+        "tests/async/test_coin_recovery_owner_revisions.py"
       ],
       "sites": [
         [
           "src/economy/coin_physical_recovery.c",
-          798,
-          "coin_assignment"
-        ],
-        [
-          "src/economy/coin_physical_recovery.c",
-          799,
-          "coin_assignment"
-        ],
-        [
-          "src/economy/coin_physical_recovery.c",
-          800,
-          "coin_assignment"
-        ],
-        [
-          "src/economy/coin_physical_recovery.c",
-          801,
-          "coin_assignment"
-        ],
-        [
-          "src/economy/coin_physical_recovery.c",
           807,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/coin_physical_recovery.c",
+          808,
           "coin_assignment"
         ],
         [
@@ -5335,12 +5321,27 @@
         ],
         [
           "src/economy/coin_physical_recovery.c",
-          811,
+          810,
           "coin_assignment"
         ],
         [
           "src/economy/coin_physical_recovery.c",
-          813,
+          816,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/coin_physical_recovery.c",
+          818,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/coin_physical_recovery.c",
+          820,
+          "coin_assignment"
+        ],
+        [
+          "src/economy/coin_physical_recovery.c",
+          822,
           "coin_assignment"
         ]
       ],
@@ -5373,7 +5374,8 @@
         }
       },
       "test_candidates": [
-        "tests/async/test_coin_physical_publication.py"
+        "tests/async/test_coin_physical_publication.py",
+        "tests/async/test_coin_recovery_owner_revisions.py"
       ],
       "sites": [
         [
@@ -5416,17 +5418,18 @@
         }
       },
       "test_candidates": [
-        "tests/async/test_coin_physical_publication.py"
+        "tests/async/test_coin_physical_publication.py",
+        "tests/async/test_coin_recovery_owner_revisions.py"
       ],
       "sites": [
         [
           "src/economy/coin_physical_recovery.c",
-          949,
+          959,
           "item_lifecycle"
         ],
         [
           "src/economy/coin_physical_recovery.c",
-          954,
+          964,
           "coin_bulk_mutation"
         ]
       ],
@@ -53706,49 +53709,49 @@
     },
     {
       "path": "src/economy/coin_physical_recovery.c",
-      "line": 798,
+      "line": 807,
       "family": "coin_assignment",
       "excerpt": "GET_COPPER(character) = static_cast<int>(state.balances.wallet.amount[0]);"
     },
     {
       "path": "src/economy/coin_physical_recovery.c",
-      "line": 799,
+      "line": 808,
       "family": "coin_assignment",
       "excerpt": "GET_SILVER(character) = static_cast<int>(state.balances.wallet.amount[1]);"
     },
     {
       "path": "src/economy/coin_physical_recovery.c",
-      "line": 800,
+      "line": 809,
       "family": "coin_assignment",
       "excerpt": "GET_GOLD(character) = static_cast<int>(state.balances.wallet.amount[2]);"
     },
     {
       "path": "src/economy/coin_physical_recovery.c",
-      "line": 801,
+      "line": 810,
       "family": "coin_assignment",
       "excerpt": "GET_PLATINUM(character) = static_cast<int>(state.balances.wallet.amount[3]);"
     },
     {
       "path": "src/economy/coin_physical_recovery.c",
-      "line": 807,
+      "line": 816,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_COPPER(character) ="
     },
     {
       "path": "src/economy/coin_physical_recovery.c",
-      "line": 809,
+      "line": 818,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_SILVER(character) ="
     },
     {
       "path": "src/economy/coin_physical_recovery.c",
-      "line": 811,
+      "line": 820,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_GOLD(character) ="
     },
     {
       "path": "src/economy/coin_physical_recovery.c",
-      "line": 813,
+      "line": 822,
       "family": "coin_assignment",
       "excerpt": "GET_BALANCE_PLATINUM(character) ="
     },
@@ -53766,13 +53769,13 @@
     },
     {
       "path": "src/economy/coin_physical_recovery.c",
-      "line": 954,
+      "line": 964,
       "family": "coin_bulk_mutation",
       "excerpt": "add_coins(actual.object, 0, 0, 0, 0);"
     },
     {
       "path": "src/economy/coin_physical_recovery.c",
-      "line": 949,
+      "line": 959,
       "family": "item_lifecycle",
       "excerpt": "extract_obj(actual.object, FALSE);"
     },

@@ -6544,7 +6544,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          789
+          798
         ],
         "file": "src/economy/coin_physical_recovery.c",
         "function": "project_bodies",
@@ -6656,7 +6656,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          890
+          899
         ],
         "file": "src/economy/coin_physical_recovery.c",
         "function": "project",

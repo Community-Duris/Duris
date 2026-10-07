@@ -1,5 +1,17 @@
 # Plan 2: money holdings, transfers, issuance, and expenses
 
+## Current native auction proof progress — 2026-10-07
+
+[Private component progress](../NATIVE_AUCTION_RETAINED_PROOF_PROGRESS_2026-10-07.md)
+passes original native-v2 LIST, settlement, partial pickup and exact durable
+rejected replay. The next original v1 LIST171 returns retryable EAGAIN; its
+internal predicate remains unobserved. Both strict753-provider builds and nine
+contracts pass on private d2 source; both-engine component completion, physical
+journeys and maintained producer integration remain open. The separately
+reviewed post-SQL-proof recovery diagnostic also passes both original753 builds
+and nine contracts; runtime recovery qualification remains pending. Existing
+inactive behavior, declined spell path and release gates remain preserved.
+
 ## Current shared producer qualification — 2026-10-06
 
 The [shared integration record](../SHARED_PRODUCER_INTEGRATION_PROGRESS_2026-10-06.md)
@@ -163,3 +175,12 @@ clears only after the original save/coordinator owners close; copyover and refus
 shutdown retain it. Central flat coin admission remains closed. Native v3 format
 compatibility and matching Plan5 reader integration, then this plan's original
 backend/gameplay/recovery batch, remain required.
+
+### October7 ordinary coin endpoint-counter regression qualified
+
+
+[Focused qualification](../COIN_RECOVERY_OWNER_COUNTER_QUALIFICATION_2026-10-07.md)
+repairs both locked endpoint counters and exact item owner_revision. Original
+source fails three regressions; corrected maintained source passes all ten native
+ASan/UBSan cases. Authority/world seams limit this evidence to cache projection.
+Post-ACK SQL room coin boot restoration and full Plan2 qualification remain open.

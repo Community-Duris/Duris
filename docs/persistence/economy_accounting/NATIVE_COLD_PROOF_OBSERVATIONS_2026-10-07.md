@@ -1,9 +1,48 @@
 # Native cold recovery proof observations — 2026-10-07
 
-The pending-journal cold case still times out. A numeric-only diagnostic
+The pending-journal cold case still times out. The first numeric diagnostic
 establishes that at least one invocation completes the original SQL proof and
-rollback boundary. It does not identify the later failed reconstruction or
-publication check. No functional repair or release gate is claimed.
+rollback boundary. A subsequent diagnostic identifies refusal of all three
+original item restoration strategies. Their internal failed prerequisite
+remains unobserved. No functional repair or release gate is claimed.
+
+## Subsequent item-restoration observations
+
+Source archive `02fc37d24c7f98465294a4d88cb26dbc14897de40eb37e1ded048699081aec7a`
+adds numeric observations at the original post-proof return/throw sites while
+preserving compounds, short circuiting, calls, exception codes and cleanup.
+Independent source review authenticates all 6,367 members and modes; only
+the birth C file changes over the first diagnostic. Both original strict
+753-provider builds and nine contracts pass; primary authenticates all source,
+23 artifacts and both complete object/dependency caches. Build handoff:
+`3d7020f71f9e57b22e1fb8c91c9f8e2d0bfb3f2a1ed77cb36bc6be91b98b83e8`.
+
+The actual new runtime ELF is
+`ca35fda98fcc9ab9a19d4f038ff7fbc14b44f4c0ea2b9198d8cbb7ddc1a25557`.
+Both engines' original warm/full-cold/cash/stock/admission/shutdown cases pass.
+The genuine MySQL origin fault still exits17; pending cold exits124 at the
+unchanged 60-second limit (60.045 seconds). MariaDB fault cases remain unrun
+under original fail-fast ordering.
+
+Actual pending-cold observations are proof9400/9411 code0, then projection
+9519/9524/9533/9532 code0. Stage9524 is entered only after `restore`,
+`restore_bound` and `restore_rebind` all return false under the original
+short-circuit AND expression. The original EAGAIN throw reaches the outer
+catch and final-false cleanup boundary. No allocator, literal or recipe cause
+is inferred. Stage9519 separately observes refusal when reconstruction is
+disallowed; missing observations do not prove success or absence of failure.
+
+Private packet: `bin/tests/native-full-cold-projection-diagnostic-primary-20261007/combined-1`.
+Native handoff `a8e9813965d487f8e298fbeb26d4815caa050a46f754afc57a9662b2188457e8`;
+final evidence `a07c9638e0c79449b11b1e32148d58461282842948b5314807856c49317b939f`;
+archive `31fed8a979a4e662206cf43733b78b0003306e6e4af5557e15724dda22d610ca`.
+Primary independently authenticates all 124 files, 1,779 native members,
+actual ELF, original case outcomes and owned cleanup/resource absence.
+Original providers, drivers, schema63, callbacks, assertions and deadlines
+remain; there is no retry, journal rewrite, GDB or SQL metadata observer.
+Timing/stdio perturbation and per-process suppression remain diagnostic limits.
+
+## First SQL-proof diagnostic
 
 The private source changes only observations in `recover_cold` in
 `src/world/quest_mobile_native_birth.c`. It preserves the actual helper call,
