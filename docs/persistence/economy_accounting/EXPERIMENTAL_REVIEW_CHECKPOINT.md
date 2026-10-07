@@ -1,5 +1,16 @@
 # Experimental accounting review checkpoint
 
+## Native auction creator proof qualified - 2026-10-07
+
+[Retained creator and zero-fee fix](AUCTION_NATIVE_CREATOR_PROOF_FIX_2026-10-07.md)
+now passes both maintained original753-provider builds/full links, ten original
+contracts, the real-source sanitizer regression and the unchanged original
+MySQL8/MariaDB10.11 auction SQL component, including BID184/185 and original
+refusal/replay controls. All925 writer policies and evidence states are preserved.
+This closes the retained native creator defect; whole Plan4, physical player
+journeys, flatfile parity, activation and full R1-R8/release qualification remain
+open. The coin restart and fresh SHOP streams continue independently.
+
 ## Maintained producer composition - 2026-10-07
 
 [Current candidate](MAINTAINED_PRODUCER_CANDIDATE_INTEGRATION_2026-10-07.md)

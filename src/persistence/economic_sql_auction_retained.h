@@ -29,4 +29,11 @@ unsigned int economic_sql_auction_capture_native_listing_source(
 	MYSQL *, const critical_command &, const critical_operation_id &lineage,
 	const critical_operation_id &epoch, economic_sql_auction_native_listing_source *) noexcept;
 
+// Borrowed proof for an actual stored native v2 bid/settlement creator.
+// Reuses immutable canonical root/receipt/source and original listing ANF2/ACT2
+// validators. No unseen original envelope, active authority or current balance
+// is reconstructed; no transaction lifecycle or gameplay effects.
+unsigned int
+economic_sql_auction_verify_known_native_creator(MYSQL *, const critical_operation_id &) noexcept;
+
 #endif

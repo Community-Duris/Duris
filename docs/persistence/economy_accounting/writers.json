@@ -66271,8 +66271,8 @@
       "src/persistence/economic_sql_auction_item_claim_transaction.c": "d93346b6bca28b78e763eeb299a114f229f23cc60937e1265b6476a58a5a9a19",
       "src/persistence/economic_sql_auction_listing_transaction.c": "47a873fcbac117132ed37cdbb0be7ba217a6f0846f57a61e31886803320dcddc",
       "src/persistence/economic_sql_auction_money_claim_transaction.c": "703a68032b632b61b134977031ca0a52495cffd324ddae6fc83fff873113df00",
-      "src/persistence/economic_sql_auction_retained.c": "14c2a7f5847666865f434ef76cde2d277b1c95fc31872f70b6b572870c23f47e",
-      "src/persistence/economic_sql_auction_retained.h": "51f5505b87b487d7ebf50b3d460b8996a168396d4aeb340e75874d5928c2d60e",
+      "src/persistence/economic_sql_auction_retained.c": "049c07e82301c84b816f63783146a4b3a5b5073b1f745b6d9ed078be077f2b49",
+      "src/persistence/economic_sql_auction_retained.h": "3a62cbf53be4441d54a138acfaccecef72cacdb8911ecf8f549a9c04d39f114a",
       "src/persistence/economic_sql_auction_settlement_transaction.c": "18b3cf4a830cd43a71607a8e3b77c37e2aff84e871b39e7b42c2ea8a6dff4e50",
       "src/persistence/economic_sql_item_transfer_transaction.c": "704879929d77ec1eeb8a32eff491411da21100e264892672c2f9997edc60dee8",
       "src/persistence/economic_sql_item_transfer_transaction.h": "64d3e9e87f010a1fbc812b95389c419c2c1552555101a89b7e9c3ded715cc764",
@@ -66297,7 +66297,9 @@
       "src/world/quest_mobile_published_saved_forest.c": "6b474034a213c6b5eb3f5be30804403adb59f3e41fb321b8201bfa50f4c066be",
       "src/world/quest_mobile_published_saved_forest.h": "2c1ad2008827be9bb6e78573b3aeb029db2d06d86759565250ebc830aa242b4d",
       "src/world/quest_mobile_published_world_owner.c": "fde41607279ee7c0e7c11b62bffcab40e1c43750cf819096345696a02206b284",
-      "src/world/quest_mobile_published_world_owner.h": "d4d018d6adeea1686b45bdd9822ee34cc67f9a0c76603c7260bcb2ab86cb9aa9"
+      "src/world/quest_mobile_published_world_owner.h": "d4d018d6adeea1686b45bdd9822ee34cc67f9a0c76603c7260bcb2ab86cb9aa9",
+      "src/persistence/economic_sql_auction_claim_endpoint.c": "68574fa4ebfc21833f1921e7ec378b5bfcb7f031ef4549d476eb58b56652740f",
+      "tests/async/test_auction_retained_seller_fee.py": "6229e32f084d90f019af7b187dc82c5fa62262873768e7e335275bcf14e4de16"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
     "native_birth_source_refresh": {
