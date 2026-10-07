@@ -1,4 +1,71 @@
-# Ordinary enhancement cascade boundary review - 2026-10-07
+# Ordinary enhancement cascade boundary and final review - 2026-10-07
+
+## Final declared-scope disposition
+
+Implementation `9f5119fc3b6d0f345f639da9e7d5630fbc9f76a5` and published
+[handoff c01f69d47](https://github.com/Community-Duris/Duris/blob/c01f69d47793651faa49a347443e2c72235fb090/docs/persistence/economy_accounting/domain-separation/R8_ORDINARY_SEARCH_HANDOFF.md)
+PASS final review at their declared component, maintained-build and current
+import/module scope. The three-file optional bundle is available for adoption;
+primary import remains unknown. Its bundle identifier does not qualify original
+R8 accounting acceptance or the continuing project finish line.
+
+The coordinator independently ran the actual final ordinary runner against
+complete original and extracted producers with identical23 search scenarios,
+all existing payment/affect/numeric controls, original sanitizer flags and deadline.
+It authenticated all three committed/tested source pins and all46 proof files,
+including byte counts, generated inputs, component/module results, formatting,
+container configuration, actual copied binaries and initial/final build evidence.
+It independently verified the live retained SQL/flat binaries and one-provider
+recompilation/full740-object links:
+
+| Maintained profile | Actual ELF SHA256 |
+|---|---|
+| SQL | `7a7fa9d729fa6d5587cc79bcbe45a1401c999aed302ffe41e3c59bea08d6e36f` |
+| flatfile | `bb916fc01ad149c6c595558c4ca954df3cca7f52056048239755bda213b9a9da` |
+
+Initial7f SQLexit2 and fail-fast before flat remain preserved. The narrow9f cost
+initialization retains the quote guard/true assignments; final original/extracted
+controls and both builds PASS. Original/extracted module-contract reset-count
+failures remain unchanged and explicitly retained. These maintained740-object
+graphs do not establish current754-provider full qualification.
+
+The coordinator independently authenticated every6,444 minimal R3/R6/R8 export
+body against tree `af9bedf84bbff08ba62efa6a4ea119a404790bd0` and archive SHA256
+`ad2f2e1f734a50eea7103502d01abad6fe5e037a71015911e7bf41a5844bdbef`.
+Reversing/reapplying the exact full patch proves its predecessor differs from
+primaryf521 on only the eight expected R3/R6 paths; R4/R5/R7 are not hidden
+prerequisites. Worker actual ordinary execution and strict full-enhance.c SQL/
+flat module checks PASS on the minimal and all-optional exports; bare production
+export passes both module checks. The other complete exports were not separately
+reauthenticated by the coordinator. No native journey ran.
+
+Full patch SHA256 remains
+`7b4e09e6937bff2f15901d92300d2d1117c3c1dbb7b3ff05316a3e499fe7330a`;
+production-only SHA256 remains
+`50844d917e467b9d36208dd8970b9cf145d2cb5a49059019bbcd82d98a849506`.
+The coordinator independently checked both imports on later primary
+`8e4d77c945ea55b1afe97d0cffd96928d1cb68fb`: minimal-prefix tree
+`f1865f147c004e620886956746ffc3a7ad1b26aa`, bare-production tree
+`6f405b1da5edda7e3ee3504f0d4a93e9650fbc64`. Only three coordinator documents
+differ from the executed prefix; source/test inputs are unchanged. No new
+execution on those later trees is claimed.
+
+All inspected containers use the exact recorded image, read-only source mounts,
+separate bin volumes and network none. No DB/player/game server starts, authority
+import, activation or operational change follows from these checks. Exact root
+review records remain in ignored bin/tests/coordinator-cascade. Native RNG,
+catalogue/source/created-object ownership, fees, effects, receipt/ACK and recovery
+remain with their existing owners. Final handoff review is resolved; continuing
+primary Plans1-5/applicable original R1-R8 requirements are still open.
+
+The next feasibility assessment may inspect complete essence-drop selection from
+its real producer and original numeric controls. A new implementation requires
+an exact useful reservation and proof that native observation/RNG/diagnostic/
+birth ordering can be preserved. No scalar mapping-only extraction or new native
+capability is selected here. Quest has no new prerequisite and remains BLOCKED,
+not complete. Coordinator/architecture Goals and monitor remain active.
+
+## Original approved reservation
 
 Reservation `5a299035f949104551aee942b0640cff839395f0`, text SHA256
 `61e6e377964ccac92f9eb2b989f99252b3a096cefbfbfea80a1ec1153c821800`,
