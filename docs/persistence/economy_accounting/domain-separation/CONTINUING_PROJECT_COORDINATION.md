@@ -447,6 +447,43 @@ selecting implementation. No new scope is approved by this queue entry.
 
 ## Recurring monitor
 
+### Latest reviewed deliveries and next bounded assignments
+
+R11 implementationce7e0bc9/handoff89d79bae now has
+[FINAL independent extraction-scope review PASS](R11_ITEM_VALUE_QUOTE_REVIEW_2026-10-07.md).
+All76 proof files, both actual native ELFs/740-object graphs, both standalone
+patches/trees/all6,449 and6,448 export bodies, and actual437 compiler inputs per
+SQL/flat profile in both bare containers authenticate. Coordinator independently
+runs exact committed baseline/-Og45 controls each; all pass. Current primary754
+native/integrated journeys and optional adoption remain separate.
+
+Quest live-route codefd4563fab/evidenceba0c0bbf4/handoff5090bd4c2 now has
+[FINAL independent maintained source-contract review PASS](../quest-prep/SHOP_LIVE_ROUTE_REVIEW_2026-10-07.md).
+Root authenticates all11 sealed receipts and all6,448/6,448/6,449 archive entries,
+then independently executes both complete committed candidates:106 source checks
+PASS and all27 guarantee removals rejected each. Original failure remains explicit.
+Native quest/gameplay/recovery and actual adoption remain unproved.
+
+Next architecture assignment is reservation/original feasibility only: reassess
+the nine-domain queue and propose one meaningful independent operation. Complete
+shop sale/valuation quotation is a candidate, with caller-specific staging:
+actual sale has no barter and checks keeper cash/NODROP before trophy lookup;
+valuation conditionally draws barter RNG. Do not merge behavior or hoist reads
+across gates. Preserve float/double/int arithmetic, native observations and
+money/custody/publication owners. No new implementation boundary is approved here.
+
+Next prep assignment is a private investigation of the unchanged original
+test_enhance_module_boundary_contract.py failure retained on both sides of R11.
+Freeze current primary, execute the full original test and map every original
+predicate through actual reset G/E, native skipped-item owner, independent recovery,
+death/boot API and fail-closed reload definitions. Preserve original failure and
+distinguish stale whitespace from genuine route/authority gaps. Propose exact
+one-file repair only if sound, with private feasibility/sensitivity and source
+pins for coordinator review. No maintained test/helper/source repair is approved.
+This finite assignment grants no native quest capability and does not falsely
+resume/complete its blocked actual native Goal. Both chats retain isolated work;
+root Goal/heartbeat remain ACTIVE through the observable primary finish line.
+
 Quest prep's investigation4ca40160/handoffbf4a1282 now has
 [exact one-file live-route repair approval](../quest-prep/SHOP_LIVE_ROUTE_REVIEW_2026-10-07.md).
 Coordinator authenticates all21 sealed receipts, both actual exports/every6,447

@@ -260,6 +260,34 @@ Production authority/native journeys remain separate. Architecture continues
 R11 qualification; primary continues without an adoption wait. Full continuing
 finish line and native quest/accounting blockers remain unchanged.
 
+## Reviewed valuation and current shop-route deliveries - 2026-10-07
+
+[R11 final independent review](domain-separation/R11_ITEM_VALUE_QUOTE_REVIEW_2026-10-07.md)
+closes codece7e0bc9/handoff89d79bae at complete calculation/import/artifact scope.
+All76 indexed proofs, both actual740-object native ELFs, actual standalone patches/
+trees/all6,449 and6,448 export bodies, and437 compiler inputs per SQL/flat profile
+in both bare containers authenticate. Exact committed baseline/-Og45 controls
+PASS independently. Native current754/integrated journeys and adoption stay open.
+
+[Live-route final independent review](quest-prep/SHOP_LIVE_ROUTE_REVIEW_2026-10-07.md)
+closes the one-file codefd4563fab/evidenceba0c0bbf4/handoff5090bd4c2 repair.
+Both exact maintained imports PASS106 source checks/reject all27 guarantee
+removals independently; all11 sealed receipts and all6,448/6,448/6,449 archive
+entries authenticate. Original failure is retained. Actual native acceptance
+and primary adoption remain separate; primary continues without an adoption wait.
+
+Architecture next proposes one concrete domain reservation/original feasibility,
+including the possible complete staged shop sale/value quotation boundary.
+Sale has NO barter and reaches trophy reads only after keeper-cash/NODROP gates;
+value has conditional barter RNG. Preserve these differences and native owners.
+Prep next privately investigates the retained original enhancement module-boundary
+contract failure, mapping all original predicates to actual reset/native-skipped/
+recovery/death/boot/reload owners and supplying scoped feasibility/sensitivity.
+Neither assignment authorizes a new maintained implementation. Completed primary
+areas need no rewrite. Isolated worktrees, blocked native quest dependencies and
+full continuing Goals/ACTIVE monitor remain; these deliveries cannot complete
+the required Plans1-5/applicable original R1-R8 primary finish line.
+
 ## Continuing project coordination supersedes finite closure - 2026-10-07
 
 The user has authorized a new actual continuing coordinator Goal and continuing
