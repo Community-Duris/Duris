@@ -1085,3 +1085,32 @@ open. No shared storage/producer interface change is requested. Primary's
 locally maintained notebook is nonblocking; this report and receipts form the
 curator packet, without a claimed notebook application or direct message.
 Accounting remains inactive and the existing scope exclusions are preserved.
+
+## Bounded physical namespace slice — 2026-10-07
+
+[Exact qualification](PLAN5_FLATFILE_NAMESPACE_QUALIFICATION_2026-10-07.md) adds
+independent capture and bounded reverse checks for direct economic filenames.
+The native red demonstrates seven unreferenced/malformed cases missed by correctly
+partial history pages, and the whole-reader directory limit at 8,193 ignored names.
+Final original authority/lifecycle/marker/canonical suites all pass with zero skips;
+49/48 new namespace cases preserve every prior native case. Both fresh engines
+remain at canonical schema 62, SELECT-only and unchanged; both clean 740-unit server builds
+retain their precise preceding-archive attribution and unchanged production inputs.
+
+The base is `6d961fbb1ecc31917be7550493bec341aed17cb8`, frozen final source SHA256 `5e7ee3d524d57b32510edc42056ecbb67d195b123277bd4c1eb3c64cd645f866`. The solved result and
+remote tip are bound by the separate `flatfile-namespace-delivery-01-20261007`
+receipt. Work stays on `codex/accounting-plan5`; all seven earlier tips and their
+follow-ups remain ancestors. Seal SHA256 `1f2fb26225415a7c611ee86bb94144388073b32be0b051c556397a31d91935db` authenticates
+54,182 artifacts/7,176,123,730 bytes, including failed attempts.
+The latest refreshed primary is `36e8f6ad78ef027851c1da809acca7570dcd95d6` with a distinct
+native tree; no combined qualification is inferred. No shared schema, producer,
+coordinator, runner, matrix or activation change is requested. Private CLI fields
+and closure invariants are in the owned operator documentation and report.
+
+Only captured physical reverse associations can close. Broad completeness,
+holdings, full orphan namespace, R7/R8, gameplay, backup/retention and release
+stay open. Inactive behavior, wallet-root exclusions and the declined spell path
+remain exact; no activation, production write, finding correction or independent
+experimental-accounting push occurs. This report and receipts form the locally
+maintained notebook's nonblocking curator packet; application, notification and
+primary acknowledgement are not claimed.

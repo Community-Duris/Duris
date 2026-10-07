@@ -17,6 +17,7 @@ import sys
 import tempfile
 
 from test_flatfile_restore_economic_authority import ROOT, change, inventory, rehash, check_baseline_control_pages, check_baseline_history_pages
+from flatfile_namespace_cases import check_namespace_pages
 from test_flatfile_restore_baseline_markers import fingerprint
 from native_build_artifacts import build_native
 from test_flatfile_accounting_store import SOURCES
@@ -383,11 +384,12 @@ def main():
     environment = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
                        UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
     audit_source = artifacts / "audit.cpp"
-    audit_source.write_text('''#include "qualify_flatfile_economic_records.h"
+    audit_source.write_text('''#include "qualify_flatfile_economic_namespace.h"
 #include <iostream>
 int main(int argc, char **argv) {
-    if (argc != 2 && argc != 3) return 2;
     try {
+        if (restore_economic_namespace::command(argc, argv)) return 0;
+        if (argc != 2 && argc != 3) return 2;
         if (argc == 3) {
             const auto mode = std::string(argv[1]);
             if (mode.starts_with("history-")) {
@@ -751,6 +753,7 @@ int main(int argc, char **argv) {
     page_report = check_lifecycle_pages(binary, fixture, audit, artifacts, environment)
     baseline_control_pages = check_baseline_control_pages(binary, fixture, audit, environment, artifacts, lifecycle=True)
     baseline_history_pages = check_baseline_history_pages(binary, fixture, audit, environment, artifacts, lifecycle=True)
+    namespace_pages = check_namespace_pages(binary, fixture, audit, environment, artifacts, lifecycle=True)
     assert fingerprint(ROOT / "src") == native_inputs, "native source changed during test"
     if args.legacy_artifacts:
         assert fingerprint(args.legacy_artifacts) == legacy_inputs, "legacy fixture artifacts changed"
@@ -762,6 +765,7 @@ int main(int argc, char **argv) {
               "lifecycle_pages": page_report,
               "baseline_control_pages": baseline_control_pages,
               "baseline_history_pages": baseline_history_pages,
+              "namespace_pages": namespace_pages,
               "previous_reader_compatibility_refusals": red, "legacy_inputs": legacy_inputs,
               "source_capture_executed": False,
               "lifecycle_install_executed": False, "activation_executed": False,

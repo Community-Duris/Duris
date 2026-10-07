@@ -746,6 +746,161 @@ class checker
 		}
 		return result;
 	}
+	// Bind physical filename inventories to an unchanged directory as well as
+	// authenticated head/index bodies. Access times do not change this binding.
+	digest namespace_binding(const digest &context) const
+	{
+		struct stat info = {};
+		need(lstat(directory.c_str(), &info) == 0 && S_ISDIR(info.st_mode) &&
+		     info.st_uid == geteuid() && !(info.st_mode & 0077));
+		bytes encoded(context.begin(), context.end());
+		for (auto value :
+		     { uint64_t(info.st_dev), uint64_t(info.st_ino), uint64_t(info.st_size),
+		       uint64_t(info.st_nlink), uint64_t(info.st_mode), uint64_t(info.st_uid),
+		       uint64_t(info.st_mtim.tv_sec), uint64_t(info.st_mtim.tv_nsec),
+		       uint64_t(info.st_ctim.tv_sec), uint64_t(info.st_ctim.tv_nsec) })
+			put(encoded, value, 8);
+		return hash(encoded);
+	}
+	baseline_history_context namespace_context()
+	{
+		auto result = history_context();
+		result.cut = namespace_binding(result.cut);
+		return result;
+	}
+	// One physical file's reverse association. Forward completeness, every
+	// record's semantics, and all mapping cross-links retain their own scans.
+	std::string namespace_file(const std::string &name, const baseline_history_context &context)
+	{
+		need(!name.empty() && name.size() <= 255 && name != "." && name != ".." &&
+		     name.find('/') == std::string::npos && name.find('\0') == std::string::npos);
+		need(context.lineage == lineage);
+		auto original = [&](const identity &operation)
+		{
+			need(nonzero(operation));
+			const auto control = frame(directory, "authority.eal", "DURECA1");
+			need(control[16520 + operation[0] / 8] & (1u << (operation[0] % 8)));
+			const auto entries = index(operation[0]);
+			const auto found = std::lower_bound(entries.begin(), entries.end(),
+							    operation,
+							    [](const auto &row, const auto &id)
+							    { return row.operation < id; });
+			need(found != entries.end() && found->operation == operation);
+			const auto segments = selected_segments(operation[0], entries, { *found });
+			record(std::span<const uint8_t>(segments.at(found->segment))
+				       .subspan(32 + found->offset, found->size),
+			       operation);
+		};
+		if (name == "authority.eal" || name == "epochs.eae" ||
+		    name.starts_with("mapping") || name.starts_with("native") ||
+		    name.ends_with(".eam") || name.ends_with(".ean") || name.ends_with(".eal") ||
+		    name.ends_with(".eae"))
+		{
+			restore_economic_authority::checker(root).namespace_metadata(name);
+			return "authority_metadata";
+		}
+		if (name.starts_with("bucket") || name.ends_with(".eai") || name.ends_with(".eas"))
+		{
+			for (size_t bucket = 0; bucket < buckets; ++bucket)
+			{
+				const auto prefix = filename("bucket-", bucket, "");
+				if (!name.starts_with(prefix))
+					continue;
+				const auto control = frame(directory, "authority.eal", "DURECA1");
+				need(control[16520 + bucket / 8] & (1u << (bucket % 8)));
+				const auto entries = index(bucket);
+				if (name == prefix + ".eai")
+					return "common_index";
+				for (const auto &entry : entries)
+					if (name ==
+					    prefix + "-" + std::to_string(entry.segment) + ".eas")
+					{
+						(void)selected_segments(bucket, entries, { entry });
+						return "common_segment";
+					}
+				need(false);
+			}
+			need(false);
+		}
+		if (name.starts_with("baseline") || name.ends_with(".ebc") ||
+		    name.ends_with(".ebi") || name.ends_with(".eab"))
+		{
+			using namespace restore_economic_baseline;
+			need(name.size() >= 80 && name.starts_with("baseline-") &&
+			     name[41] == '-' && name[74] == '-' &&
+			     unhex(name.substr(9, 32)) == lineage);
+			const auto epoch = unhex(name.substr(42, 32));
+			const auto marker = std::find_if(context.catalog.begin(),
+							 context.catalog.end(),
+							 [&](const auto &entry)
+							 { return entry.epoch == epoch; });
+			need(marker != context.catalog.end());
+			const auto book = baselines.control(lineage, *marker);
+			const auto suffix = name.substr(75);
+			if (suffix == "head.ebc")
+				return "baseline_head";
+			if (suffix.size() == 5 && suffix.ends_with(".ebi") && suffix[0] &&
+			    std::strchr(hex_digits, suffix[0]))
+			{
+				const auto slot = std::strchr(hex_digits, suffix[0]) - hex_digits;
+				const auto members = baselines.reservations(lineage, epoch, slot,
+									    book.checksums[slot]);
+				need(book.revision || members.empty());
+				return "baseline_reservations";
+			}
+			need(suffix.size() == 36 && suffix.ends_with(".eab"));
+			const auto operation = unhex(suffix.substr(0, 32));
+			original(operation);
+			const auto &observed = baselines.observed_books();
+			need(observed.size() == 1 && observed.contains(epoch) &&
+			     observed.at(epoch).size() == 1);
+			const auto &entry = observed.at(epoch).front();
+			need(entry.operation == operation && entry.revision <= book.revision &&
+			     (operation != book.terminal || entry.revision == book.revision));
+			return "baseline_witness";
+		}
+		if (name.starts_with("lifecycle") || name.ends_with(".elr"))
+		{
+			need(name.size() == 46 && name.starts_with("lifecycle-") &&
+			     name.ends_with(".elr"));
+			const auto operation =
+				restore_economic_baseline::unhex(name.substr(10, 32));
+			const auto control = frame(directory, "authority.eal", "DURECA1");
+			digest expected;
+			std::copy_n(control.begin() + 104, 32, expected.begin());
+			const auto catalog =
+				restore_economic_authority::catalog(directory, expected);
+			restore_economic_authority::checker authority(root);
+			authority.begin_page();
+			const auto baseline = lifecycles.load_one(
+				operation, lineage, catalog, control,
+				[&](auto account) { return authority.mapped_account(account); });
+			original(baseline);
+			need(lifecycles.finish() == 1);
+			return "lifecycle_receipt";
+		}
+		if (name.starts_with("source-claim"))
+		{
+			need(name.size() == 81 && name.starts_with("source-claim-") &&
+			     name.ends_with(".bin"));
+			const auto body = frame(directory, name, "DURSCL1", 136);
+			need(body.size() == 88 &&
+			     same(std::span<const uint8_t>(body).first(16), lineage));
+			const auto key = hash(std::span<const uint8_t>(body).first(64));
+			need(name ==
+			     "source-claim-" + restore_economic_baseline::hex(key) + ".bin");
+			identity operation;
+			std::copy_n(body.begin() + 64, 16, operation.begin());
+			original(operation);
+			need(claimed_events.size() == 1 && claimed_events.front() == key);
+			return "source_claim";
+		}
+		// Unrelated filenames still consume the capture budget. They do not
+		// become accounting evidence merely by residing beside native files.
+		struct stat info = {};
+		need(lstat((directory / name).c_str(), &info) == 0);
+		return "ignored";
+	}
 	baseline_history_page history_page(size_t bucket, const identity &after, const digest &cut)
 	{
 		need(bucket < buckets);

@@ -24,6 +24,7 @@
 #include "kingdom/kingdom_restore.h"
 #include "world/quest_mobile_native.h"
 #include "qualify_flatfile_economic_records.h"
+#include "qualify_flatfile_economic_namespace.h"
 
 // Native parsers may log diagnostics containing identities; this process reports
 // only aggregate success or a fixed failure code.
@@ -236,6 +237,8 @@ int main(int argc, char **argv)
 {
 	try
 	{
+		if (restore_economic_namespace::command(argc, argv))
+			return 0;
 		if (argc == 7 && std::string(argv[1]) == "--economic-authority-page")
 		{
 			using namespace restore_economic_authority;

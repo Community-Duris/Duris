@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import build_restore_qualifier as qualifier
 from native_build_artifacts import build_native
 from test_flatfile_accounting_store import SOURCES
+from flatfile_namespace_cases import check_namespace_pages
 
 
 def inventory(directory):
@@ -1237,11 +1238,12 @@ def main():
         # Exercise the independent reader under sanitizers without invoking
         # candidate recovery or any native mutation/storage interface.
         audit_source = Path(build) / "audit.cpp"
-        audit_source.write_text('''#include "qualify_flatfile_economic_records.h"
+        audit_source.write_text('''#include "qualify_flatfile_economic_namespace.h"
 #include <iostream>
 int main(int argc, char **argv) {
-    if (argc != 2 && argc != 3) return 2;
     try {
+        if (restore_economic_namespace::command(argc, argv)) return 0;
+        if (argc != 2 && argc != 3) return 2;
         if (argc == 2) restore_economic_records::checker(argv[1]).run();
         else if (std::string(argv[1]) == "root-page-budget") {
             restore_economic_authority::audit_budget budget;
@@ -1330,6 +1332,7 @@ int main(int argc, char **argv) {
         limit_cases = check_audit_limits(audit, binary, fixture, environment, build)
         baseline_control_pages = check_baseline_control_pages(binary, fixture, audit, environment, build)
         baseline_history_pages = check_baseline_history_pages(binary, fixture, audit, environment, build)
+        namespace_pages = check_namespace_pages(binary, fixture, audit, environment, build)
         with tempfile.TemporaryDirectory(prefix="duris-root-page-budget-", dir=build) as budget_root:
             budget_root = Path(budget_root)
             produced = subprocess.run([str(fixture), str(budget_root), "source-claims"],
@@ -2378,6 +2381,7 @@ int main(int argc, char **argv) {
                           "authority_page_cases": authority_page_cases,
                           "baseline_control_pages": baseline_control_pages,
                           "baseline_history_pages": baseline_history_pages,
+                          "namespace_pages": namespace_pages,
                           "qualifier_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
                           "fixture_sha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
                           "sanitized_reader_sha256": hashlib.sha256(audit.read_bytes()).hexdigest()}))

@@ -1152,6 +1152,78 @@ gameplay and release evidence require separate checks. `complete`,
 `native_holdings_compared` and `release_qualified` remain false. These pages
 grant no activation or repair authority.
 
+The independent physical namespace scope complements the reference-driven
+pages with reverse association of captured direct economic-evidence filenames:
+
+```sh
+python3 scripts/flatfile_economic_audit.py \
+  --state-root /private/restored/state \
+  --progress /private/operator/physical-namespace.json \
+  --scope physical-namespace
+```
+
+The first invocation captures filenames under the existing read-only authority
+lock into `PROGRESS.inventory.bin` and `PROGRESS.inventory.json`, outside the
+authority root. It uses one live directory stream, with at most 2,198,786 names,
+128 MiB of encoded inventory, 16,384 physical reads, 128 MiB of charged input and
+a 30-second cooperative deadline. Names and the initial/final authenticated
+contexts share that input budget. A large image can refuse admission; it cannot
+silently truncate or earn closure. The native reader writes only an explicitly
+passed, empty, private, single-link operator output descriptor, and refuses a
+descriptor within the authority tree. Neither capture nor a subsequent check
+opens mutation storage, recovers a journal or corrects a finding.
+
+Inventory chunks contain at most 128 raw filenames and have individual SHA256
+checksums. The 4 MiB metadata limit binds their offsets, lengths, counts and
+checksums. The private 32 KiB progress file binds the root, native executable,
+operator modules, metadata bytes and inventory inode/size/mode/owner/timestamps.
+Each subsequent invocation authenticates one chunk and checks one filename.
+No persistent directory cookie or directory ordering assumption is used across
+processes. The source cut includes authenticated authority/catalogue, original
+common indexes and initialized book heads plus the economic directory's
+identity, mode, owner, size, link count and modification/change times. Access
+times do not invalidate it. Changes to names or the authority cut refuse and
+require a fresh progress path.
+
+Reverse checks cover original authority metadata, common indexes and segments,
+baseline heads/reservations/witnesses, lifecycle receipts and source claims.
+Reserved malformed names, foreign or unreferenced physical evidence and invalid
+frames produce sticky findings. Other names are counted as ignored rather than
+inventing economic evidence. Physical frame reads retain the
+16,384-read/128 MiB/8,192-entry/30-second budget; file checks perform no directory
+walk. The Python subprocess timeout is 45 seconds. A global native refusal or
+timeout preserves the cursor. An explicitly reported selected-file quota
+refusal advances with an invalid-file finding, allowing later entries to be
+visited, and cannot earn closure. Findings retain at most 32 hashes of names,
+with cumulative exception counts; reports never print raw captured filenames.
+
+Native commands are `--economic-namespace-inventory ROOT OUTPUT_FD`,
+`--economic-namespace-context ROOT CUT` and
+`--economic-namespace-file ROOT CUT NAME_HEX`. Cuts and filename encodings use
+lowercase SHA256 hex and raw-byte hex respectively. The inventory format is
+`flatfile_economic_namespace_inventory_v1`; progress and reports are
+`flatfile_economic_namespace_progress_v1` and
+`flatfile_economic_namespace_page_v1`. Successful closure sets only
+`known_physical_economic_namespace_closed`, with scope
+`captured_physical_economic_namespace`. The next invocation authenticates the
+same cut and starts a fresh traversal, clearing traversal counters while keeping
+findings sticky. It cannot reuse a previous positive result after in-place
+corruption. An interrupted file checkpoint retries the same entry; partially
+published initial inventory artifacts are preserved and require a fresh path.
+Existing auxiliary files are never silently overwritten.
+
+This traversal proves reverse associations of the captured files. It does not
+prove forward completeness, all mapping cross-links, consecutive book history,
+complete source history or current holdings. A file changed after its visit may
+be observed on the next traversal. Use a protected, quiescent restored image for
+a stable snapshot; a cut and a finished traversal are not an atomic live health
+certificate. `complete`, `consistent_entire_sweep`, `orphan_namespace_closed`,
+`baseline_books_closed`, `native_holdings_compared` and `release_qualified`
+remain false. Legacy unknown provenance remains counted and unresolved. This
+scope grants no activation or repair authority. Exact native, checkpoint and
+disposable-database evidence is recorded in
+[the physical namespace qualification](PLAN5_FLATFILE_NAMESPACE_QUALIFICATION_2026-10-07.md).
+
 The isolated native flatfile restore qualifier validates every retained
 `domains/quest-mobile-native-<id>.qmn` image after authority-bundle recovery, in
 both state preflight and final qualification. It requires a canonical nonzero
