@@ -31,9 +31,13 @@ passes original native-v2 LIST, settlement, partial pickup and exact durable
 rejected replay. The next original v1 LIST171 returns retryable EAGAIN; its
 original custody INSERT has now been observed failing1062 because a claimed
 row retains the globally unique UID. Additive history-preserving schema64 is
-prepared privately; both-engine measurements and native producer reruns remain
-open. Both strict753-provider builds and nine
-contracts pass on private d2 source; both-engine component completion, physical
+measured privately on MySQL8 and MariaDB10.11: canonical migration and both
+interrupted-DDL resume routes pass, preserving original application/history rows.
+All 238 commands have their expected outcomes. Runtime fingerprints are now
+measured and the offline contract passes. Both original753-provider production
+links and nine contracts now pass on the measured private source; original
+producer reruns and maintained integration remain open. Earlier strict753-provider
+builds and nine contracts pass on private d2 source; both-engine component completion, physical
 journeys and maintained producer integration remain open. The separately
 reviewed post-SQL-proof recovery diagnostic also passes both original753 builds
 and nine contracts; runtime recovery qualification remains pending. Existing

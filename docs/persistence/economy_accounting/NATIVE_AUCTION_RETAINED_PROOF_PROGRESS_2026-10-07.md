@@ -1,5 +1,23 @@
 # Native auction retained proof: current private progress
 
+## Measured schema64 native builds qualified
+
+The measured runtime-contract successor passes both original 753-provider
+production links and all nine original contracts. Each backend recompiles only
+sql/sql.o and reuses 752 authenticated original objects; original flags and
+link recipes remain. SQL Make takes 10.91 seconds; flatfile takes 8.65 seconds.
+Root independently authenticates all 6,369 source files and 1,508 raw native
+artifacts per backend, including modes, dependency closures and contract logs.
+The build handoff is
+`tmp/auction-relist-schema64-measured-major-production-runner-primary-20261007/evidence/BUILD-HANDOFF.json`,
+SHA `49925afa2a8bbbcd8280533b18151773af4b3c56277eac04759c0c0e17156ff2`.
+Root authentication is `PRIMARY-NATIVE-AUTHENTICATION.json` in that directory,
+SHA `9acf4f49476ae0f30cdd0db601dd4ed96b7ce98b76ba4cad62d992a5ed88b752`.
+Exact owned cleanup and independent resource-absence checks pass. No SQL/game
+services ran in this build batch. Original native auction171/181 component
+reruns, actual gameplay and maintained producer integration remain open.
+
+
 ## Private schema64 measurement qualified
 
 Both MySQL8.0.46 and MariaDB10.11.14 pass canonical64 migration and recovery

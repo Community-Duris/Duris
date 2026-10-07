@@ -14,13 +14,18 @@ The [auction proof record](../NATIVE_AUCTION_RETAINED_PROOF_PROGRESS_2026-10-07.
 now identifies the actual relisting failure: the custody INSERT returns 1062
 because a claimed historical row retains the globally unique item UID. Private
 additive schema64 preserves that history and enforces one unclaimed listing.
-Both-engine schema measurement and original producer reruns remain open.
+Both-engine canonical migration and both interrupted-DDL resume routes pass,
+preserving original application/history rows. Runtime fingerprints are measured
+and the offline contract passes. Both original753-provider production links
+and nine contracts pass on that measured private source. Original producer
+reruns and maintained integration remain open.
 
 Post-ACK coin boot integration is privately source-reviewed, including native
 publication, connection cleanup and legacy-history fencing. Its original strict
-SQL production build passes all 741 providers, including nine freshly compiled
-translation units and a fresh full link. Flatfile, retained proof and genuine
-coin command/ACK/two-cold-boot qualification remain open. Existing inactive
+SQL and flatfile production builds each pass all 741 providers, including nine
+freshly compiled translation units and a fresh full link. Root authenticates
+both exports and exact owned cleanup. Retained proof and genuine coin
+command/ACK/two-cold-boot qualification remain open. Existing inactive
 behavior and activation gates remain closed.
 These results do not complete this plan or the joint R1–R8 release requirements.
 
