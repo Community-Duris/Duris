@@ -1,5 +1,48 @@
 # Shared native qualification progress - 2026-10-07
 
+## Persisted union candidate authenticated - 2026-10-07
+
+[Primary source handoff](PERSISTED_PROVIDER_UNION_PRIMARY_HANDOFF_2026-10-07.md)
+records the room allocation-error fix, corrected original union fixtures and
+frozen40 composition. Source/fixture syntax and complete source authentication
+pass; native runtime/full builds remain pending. Lifecycle consumption and
+mobile/live/world census remain required. No original gate or inactive behavior
+changes, and no complete activation/release claim follows from this source work.
+
+
+## Central lifecycle component registered - 2026-10-07
+
+[Registration evidence](PLAN5_LIFECYCLE_V2_REGISTRATION_2026-10-07.md)
+records the reproduced three-file inventory failure and complete classification.
+All previous rows remain;926 tests/107 integration rows and central selection
+validate. The new offline lifecycle row requires fresh artifacts and zero skips.
+Native execution and original release gates remain pending; none are replaced.
+
+
+## Independent lifecycle V2 reader integrated - 2026-10-07
+
+[Primary evidence](PLAN5_LIFECYCLE_V2_PRIMARY_INTEGRATION_2026-10-07.md)
+records the reviewed retained-pile/envelope reader and exact five peer blobs.
+Formatting, strict fixture syntax and normal contracts pass. Its original native
+component link fails on the retained WSL math-library closure; runtime cases and
+original V2 installer qualification remain open. Full operator dependencies,
+Plans2-4, census/activation and R1-R8 release qualification are unfinished.
+
+Auction correspondence is now primary-authenticated source-only:48 sealed
+records,17 unchanged dependencies, original native bodies/public API preserved,
+source SQL/flat and original fixture SQL syntax pass. The unchanged full fixture
+flat `mysql_query` declaration failure is retained; a separate pure component
+syntax pass does not qualify that fixture. All native/SQL execution is pending.
+
+Independent union-fixture review found a real operational-error defect in the
+frozen room inspector: explicit native codec allocation failure became malformed
+literal/graph findings. A private inspector-only successor is in progress;
+strong fault assertions remain mandatory. The fixtures also add genuine legacy
+physical-plus-modern-room multiple matching and corrected claimed history.
+Combined40 final composition waits for corrected source and fixture seals.
+No current source-complete census/activation or native release is claimed.
+
+
 ## Persisted provider union source ready - 2026-10-07
 
 The root-owned additive private normalizer pair now combines the existing
