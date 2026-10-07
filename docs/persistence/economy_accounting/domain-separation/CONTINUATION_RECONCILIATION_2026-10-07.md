@@ -72,8 +72,10 @@ No shared driver/authority repair or additional endpoint substitute is made.
 The historical84-case private completion result is not current-candidate proof.
 Current import remains compatible at patch, component and type-check scopes;
 primary integrated native authority/journey qualification remains its dependency.
-Private proof logs and pins are copied into this worktree's ignored evidence path. No current full build,
-SQL/gameplay/persistence journey or753-provider ELF qualification is claimed.
+Private proof logs and pins are copied into this worktree's ignored evidence path. The initial six-check checkpoint supplied no full build or journeys. Subsequent
+R3 frozen-candidate SQL fresh753-provider build/link passes; flat is still running.
+See the separately pinned R3 handoff. No current SQL/gameplay/persistence journey
+is claimed.
 Historical R0/R1/R2 binaries and runtime evidence remain labeled by their exact
 old source revisions. No shared fixture driver is edited to obtain a pass.
 
@@ -81,19 +83,19 @@ old source revisions. No shared fixture driver is edited to obtain a pass.
 
 The nine-domain inventory is reassessed against these concrete new interfaces:
 
-1. **R3 F3 enhancement prices**, implemented and qualified at source/component/owned-build scope; coordinator final review pending. Stable numeric seam in unchanged
+1. **R3 F3 enhancement prices**, implemented and qualified at source/component/owned-build scope; coordinator final declared-scope review passes locally, publication pending. Stable numeric seam in unchanged
    `enhance.c`: ordinary configured tier, superior affine price and essence fixed
    tier calculations, three real producer callers and existing payment tests.
    Exact reservation [R3_ENHANCEMENT_PRICE_RESERVATION.md](R3_ENHANCEMENT_PRICE_RESERVATION.md).
    Active refusal stays intentional; no RNG or compound outcome authority changes.
    Source commits `48b7a6d38`, strict compiler local initialization fix `3a722a008`,
    relocated configuration contract `6d544bea7`. See [terminal R3 evidence](R3_ENHANCEMENT_PRICE_HANDOFF.md).
-2. **F3 enhancement outcome/material preparation**: superior tribute scaling and
+2. **R4 F3 superior tribute counts**: implemented at `0a5084db1`, reviewed original/extracted component controls and owned maintained builds pass. See [R4 handoff](R4_SUPERIOR_TRIBUTE_HANDOFF.md). Further outcome/material preparation and
    duplicate material aggregation can become owned facts, but template target
    selection/read_object, eligible stat capture and remaining-step catalogue
    require a reviewed capture boundary. Reuse R1 count types where semantics agree;
    its ceil policy differs from superior's existing0.999999 truncation, so do not
-   silently unify those policies. Reserve only after actual source/proof review.
+   silently unify those policies. R4 preserves the latter; further capture must be reserved after actual source/proof review.
 3. **P2/S1 forge or service quote preparation**: inspect existing ore-price and
    paid service formulas for a genuine remaining stable operation; existing
    `forge_prices`/currency prepared mutation may already cover it. No blanket

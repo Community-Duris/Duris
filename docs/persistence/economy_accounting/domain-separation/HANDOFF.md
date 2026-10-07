@@ -23,16 +23,21 @@ is unknown, not inferred from compatibility. Current changed-dependency executab
 checks are running on the exact exported candidate plus optional overlays; old
 ELF/journey evidence below is not relabeled as this753-provider candidate.
 
-See [current reconciliation](CONTINUATION_RECONCILIATION_2026-10-07.md) and
-[proposed R3 enhancement pricing boundary](R3_ENHANCEMENT_PRICE_RESERVATION.md).
-R3 boundary review was approved, and connected pricing is implemented at
-`48b7a6d38` plus strict compiler follow-up `3a722a008` and configuration-contract
-successor `6d544bea7`. Original/extracted payment controls and both owned maintained
-builds pass; current-candidate components/type checks are separate from old-base
-ELFs. See [R3 terminal handoff](R3_ENHANCEMENT_PRICE_HANDOFF.md). Coordinator final
-review is pending; local terminal handoff is `b18e513b` while GitHub writes fail
-across workstreams. The next [tribute-count reservation](R4_SUPERIOR_TRIBUTE_RESERVATION.md)
-is locally committed at `693d57042`, awaiting boundary review before code edits. Next queue remains continuing, not another completion cap.
+See [current reconciliation](CONTINUATION_RECONCILIATION_2026-10-07.md),
+[R3 price handoff](R3_ENHANCEMENT_PRICE_HANDOFF.md) and
+[R4 tribute-count handoff](R4_SUPERIOR_TRIBUTE_HANDOFF.md).
+R3 is implemented through `6d544bea7`; coordinator final declared-scope review
+passes locally at the terminal handoff, including independent source, component,
+740-object build/ELF and baseline-contract evidence checks. Published review is
+pending. Exact current-candidate R3 SQL build now passes its fresh 753-provider
+compilation/link; flat build is still running from the immutable export. Those
+results remain separate from owned-branch ELFs and native journey qualification.
+R4 boundary was approved locally during the publication outage, implemented at
+`0a5084db1`, and independently original/extracted regression-reviewed. Both owned
+maintained builds pass. Final R4 evidence review is pending. GitHub recovered and
+ordinary push/remote read verifies all preserved successors through `0a5084db1`.
+No source was changed to work around publication. The queue remains continuing,
+and the nine-domain assessment is reranked from actual remaining owner facts.
 
 ## Historical finite R0/R1/R2 checkpoint status
 

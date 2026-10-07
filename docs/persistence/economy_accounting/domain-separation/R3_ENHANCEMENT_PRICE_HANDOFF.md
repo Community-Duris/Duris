@@ -5,7 +5,8 @@ Implemented connected owned pricing. Final source/test result
 `48b7a6d3873dc5dee2c7ea5b02ecce3eba8d9304`, strict-compiler initialization follow-up
 `3a722a00893d4fcd8adeb07d610e387c2191aa93`. Parent reservation
 `c97e97458`; coordinator [boundary approval](https://github.com/Community-Duris/Duris/blob/507e4909ee6a570876f274c0787d7a83a987826d/docs/persistence/economy_accounting/domain-separation/R3_ENHANCEMENT_RESERVATION_REVIEW_2026-10-07.md).
-Final coordinator source/evidence disposition is pending. The continuing Goal
+Final coordinator declared-scope source/evidence review passes locally; its
+published disposition remains pending during publication recovery. The continuing Goal
 remains ACTIVE; this checkpoint does not satisfy the primary Plans1-5/R1-R8 finish line.
 
 ## Implementation and control preservation
@@ -37,8 +38,9 @@ assertions remain. No extra test framework or authority substitute is introduced
 
 All three extended payment tests pass on the retained original complete producer
 functions and final extracted functions under identical assertions/controls.
-The coordinator independently passed all six original/extracted runs at the
-initial source and is checking the one-line initialization follow-up.
+The coordinator independently passed all six original/extracted runs and the
+final superior/config controls, verified actual maintained build terminals/ELF
+hashes and retained baseline-contract failure. No extraction defect was found.
 
 On exact producer candidate `275df7f62` plus optional R0/R1/R2/R3 overlays, all
 three payment tests, crafting/enhancement regression, all-stat enhancement,
@@ -106,10 +108,25 @@ server errors; local commits remain intact and publication is retried normally.
 No force push or workaround changes remote history. Final remote verification
 will supersede this publication checkpoint.
 
-Next evolving queue priority is superior tribute count preparation from captured
+R4 tribute-count preparation is now implemented and independently component-reviewed
+at `0a5084db1`, with both owned maintained builds passing. See
+[R4 handoff](R4_SUPERIOR_TRIBUTE_HANDOFF.md). The continuing queue still includes
+owner-dependent template/outcome capture. The R4 reservation selected captured
 native target value and exact configured multiplier, preserving its distinct
-0.999999 truncation rather than substituting R1's ceil policy. A separate exact
-reservation/review is required before edits. Native template/stat target selection,
+0.999999 truncation rather than substituting R1's ceil policy. Its separate exact
+reservation/review preceded edits. Native template/stat target selection,
 remaining-step catalogue, material aggregation and compound outcome authority
 remain existing owners. Further service/forge quote seams require actual code
 assessment; a finished R3 batch is not continuing-project completion.
+
+## Subsequent immutable current-candidate build
+
+The frozen tree `bcfe7b324cb9fedf2d297ea673f6f8cb83d4f13c` is now being compiled
+with the unchanged maintained commands, separate output volume and pinned image.
+SQL completes exit0 with 753 fresh provider compilations and the full 753-object
+link. SQL ELF SHA256
+`300bfac6299bbf18a45e5e69a7653975e81ef6039218ed1fe48c97a2b3cb4a0b`.
+Flat compilation remains running. This snapshot contains R0/R1/R2/R3 and the
+exact275df7 producer graph; it is not changed by subsequent R4 checkout edits.
+Terminal flat results and copied evidence will be recorded when available. No
+current-candidate native gameplay/persistence/recovery journey is claimed.

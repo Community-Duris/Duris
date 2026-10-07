@@ -6,7 +6,10 @@ The superseding continuing charter at accounting `b1ac97c3` replaces the earlier
 finite overall finish line. R0/R1/R2 remain completed batch checkpoints. New Goal
 ACTIVE/no budget, createdAt1791384853. Current candidate and ranked queue are in
 [CONTINUATION_RECONCILIATION_2026-10-07.md](CONTINUATION_RECONCILIATION_2026-10-07.md);
-R3 pricing is proposed for boundary review. This inventory evolves after meaningful
+R3 pricing is implemented and its declared-scope final review passes locally;
+R4 tribute counts are implemented with independent original/extracted controls
+and both owned maintained builds passing. Final publication/review dependencies
+and current-candidate proof are recorded separately in their handoffs. This inventory evolves after meaningful
 candidate advances and deliveries; no new batch cap closes the continuing Goal.
 
 ## Final fixed-set disposition
