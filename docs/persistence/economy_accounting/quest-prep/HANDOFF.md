@@ -1,5 +1,19 @@
 # Continuing project acceptance — 2026-10-07
 
+Actual Goal now **BLOCKED**, updatedAt1791411827, after three consecutive resumed
+turns revalidated the same unavailable original quest interfaces. Primary remains
+911e5789f8a18186181f78fafef9b4fd0155369d on the second and third fresh fetches;
+no changed source or handoff enables another native case. The first turn published
+substantive dependency reassessment30bd1632/handoff7de62ebc; the next two were
+no-progress blocker checks, not live-process waits. Original lifecycle/reset-born
+custody, supported delayed charge/attempt replacement, durable refund and native
+cost/publication/ACK/pre-ACK movement/paired retirement remain exact owner
+requirements in the reassessment below. This disposition records the actual Goal
+tool result; it does not complete/shrink the objective, promote old evidence,
+pause the coordinator monitor or add a primary-adoption wait. This status record
+authors only the two owned docs, based on7de62ebc611e86ac931a46c240ba050340c2eb22.
+No unchanged tests, native batch or operational action was repeated.
+
 Resumed native-interface audit: actual Goal ACTIVE, updatedAt1791411694;
 reassessment delivery30bd1632ad76591fc24e3dad551ef72cabac3386, base
 2cd06d62e7911ba9dc2ce6ae9df2d3afb31f0ef3, is committed and pushed to
