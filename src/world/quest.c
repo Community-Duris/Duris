@@ -2317,11 +2317,9 @@ item_native_quest_preparation_state quest_native_completion_owner::prepare_origi
 			    player_snapshot_capture_result::ok)
 			return state::refused;
 		// Preserve the original preliminary duplicate/availability checks.
-		// Coin goals and zero-item mutations require their original cash contract.
+		// An unavailable item recipe is not a match, even if its coin goal is first.
 		for (auto *goal = completion->give; goal; goal = goal->next)
 		{
-			if (goal->goal_type == QUEST_GOAL_COINS)
-				return state::refused;
 			int needed = 1;
 			for (auto *later = goal->next; later; later = later->next)
 				if (later->goal_type == goal->goal_type &&
@@ -2339,6 +2337,11 @@ item_native_quest_preparation_state quest_native_completion_owner::prepare_origi
 			    count < needed)
 				return state::not_matched;
 		}
+		// Matching coin goals still require their original coupled cash authority.
+		// Do not select or consume a prefix before that authority is available.
+		for (auto *goal = completion->give; goal; goal = goal->next)
+			if (goal->goal_type == QUEST_GOAL_COINS)
+				return state::refused;
 		std::vector<uint64_t> ordered_roots;
 		std::unordered_set<uint64_t> consumed;
 		bool success = true;

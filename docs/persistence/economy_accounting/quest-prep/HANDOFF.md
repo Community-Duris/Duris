@@ -46,6 +46,38 @@ this goal is not complete or redefined as another prep pack.
 
 ## Earlier preparation handoff (historical)
 
+## QP02 production bundle — 2026-10-07
+
+Import after QP07 `fd997ee4147ba58d835bf4bd61783b51307bc68c` (based on
+merge `dd4aefe901d71fc64e3c9fff7d5e1ac3a741bcf6`). QP02 changes only
+`quest_native_completion_owner::prepare_original` in `src/world/quest.c`.
+Run the original independent duplicate ITEM/TYPE availability checks before
+refusing a coin-bearing recipe. Unavailable paid branches return not_matched;
+available paid branches still refuse before selecting any roots. The original
+ITEM-before-TYPE ordered selection and overlapping partial-prefix semantics
+remain intact. Original dispatcher order/not_matched advance/refused blocking
+are verified by the owned regression. No financial guard is bypassed.
+
+Production SHA256: `747a43b7f27ff6a3d53cc7776097b9c361d7c6437e6d04bbe5da717895677f8c`.
+Before fix QP02 --acceptance reproduced component30/exit1. Executed commands:
+
+```bash
+python3 tests/async/quest_accounting_prep/test_native_selectors.py --case QP02 --acceptance
+python3 tests/async/quest_accounting_prep/test_native_selectors.py --case catalog --acceptance
+```
+
+Both PASS. Catalog executes the real preliminary selector against all285 paid
+ITEM/TYPE recipes in production areas/AREA: sufficient original-kind modeled
+stock refuses, empty stock does not match. QP02 covers three hides reaching
+backpack, four hides matching earlier paid gloves (still refused), no inputs,
+coin-only matching refusal, duplicate shortage/spares, exact kind, ITEM/TYPE
+overlap and repeated evaluation without mutation. QP01/QP05/QP06 components also
+passed after this production correction. These are actual source component
+checks with constructed inventory, not native birth/custody or SQL journeys.
+Changed-line clang-format and maintained format.sh --file src/world/quest.c
+--check PASS. Maintained integrated build and journeys follow in execution
+metadata; no unexecuted runtime PASS is claimed here.
+
 # Quest accounting prep handoff — 2026-10-06
 
 The seven-case independent prep pack is reviewable on
