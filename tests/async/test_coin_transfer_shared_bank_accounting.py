@@ -21,6 +21,8 @@ class CoinTransferSharedBankAccountingTest(unittest.TestCase):
                 "-fno-omit-frame-pointer", "-fno-pie", "-no-pie", "-D__NO_MYSQL__",
                 "-Isrc/no_mysql", "-Isrc", "tests/async/coin_transfer_shared_bank_accounting_test.cpp",
                 "src/economy/coin_transfer_command.c", "src/economy/currency_command.c",
+                "src/economy/native_quest_cost.c", "src/economy/native_quest_coin_give.c",
+                "src/economy/shop_trade_recovery_manifest.c", "src/item/lockpick_retirement_continuation.c",
                 "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/economy/economic_source_event.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c", "src/persistence/critical_command.c",
                 "-lcrypto", "-o", str(binary),
             ], cwd=ROOT, check=True)

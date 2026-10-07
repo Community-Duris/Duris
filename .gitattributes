@@ -117,3 +117,5 @@ src/item/item_transfer_repository.h text eol=lf
 src/mob/mobconv.c text eol=lf
 src/persistence/economic_sql_accounting_lifecycle_transaction.h text eol=lf
 tests/async/test_economic_sql_lifecycle_activation_contract.py text eol=lf
+
+tests/async/test_coin_transfer_shared_bank_accounting.py text eol=lf
