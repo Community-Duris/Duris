@@ -192,13 +192,24 @@ int main(int argc, char **argv)
 				"mapped area did not unlock discovery");
 			const auto unseen = tracker.render_journal(7, 42, zone.zone_number, 10, 1,
 								   101, false, false);
+			// A printed name may belong to several distinct NPC prototypes.
+			// Check the read-only projection before recording any new encounters.
+			for (const auto &contact : mapping.contacts)
+			{
+				const bool named_contact_met = std::any_of(
+					mapping.contacts.begin(), mapping.contacts.end(),
+					[&](const auto &known) {
+						return known.name == contact.name &&
+						       tracker.has_met_npc(7, 42, known.mob_vnum);
+					});
+				require((unseen.find("[Met] " + contact.name + "\r\n") !=
+					 std::string::npos) == named_contact_met,
+					"contact visibility disagreed with retained NPC identities");
+			}
 			for (const auto &contact : mapping.contacts)
 			{
 				const bool already_met =
 					tracker.has_met_npc(7, 42, contact.mob_vnum);
-				require((unseen.find("[Met] " + contact.name) !=
-					 std::string::npos) == already_met,
-					"contact visibility disagreed with a retained cross-zone encounter");
 				require(tracker.meet_npc(7, 42, contact.mob_vnum,
 							 std::max(1, zone.first_vnum), 101) ==
 						(already_met ? result::already_applied :
@@ -211,8 +222,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 225 &&
-				tracker.summary_for(7, 42).total == 1521,
+		require(catalog.story_mappings.size() == 226 &&
+				tracker.summary_for(7, 42).total == 1518,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -26295,6 +26306,150 @@ int main(int argc, char **argv)
 				require(status(journal, i, 1, "Recorded") &&
 						status(journal, i, 0, "Missing now"),
 					"Forgotten Forest recovered spent materials changed acceptance history");
+		}
+
+		{
+			const zone_story_quest_catalog::story_definition *exchanges[] = {
+				&story_for("jademini", "buy-map"),
+				&story_for("jademini", "can-wood-sprite"),
+				&story_for("jademini", "release-princess"),
+				&story_for("jademini", "offer-sea-maps")
+			};
+			const int materials[] = { 0, 76670, 77204, 22622 };
+			const int givers[] = { 77202, 77203, 77214, 77218 };
+			const int rooms[] = { 77213, 77216, 77240, 77224 };
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 38011, 77259, 100) == result::rejected,
+				"Rice Fields foreign contact ignored undiscovered physical zone");
+			require(journey.discover_zone(7, 42, 772, 77218, 101, "arrival") ==
+					result::applied,
+				"Rice Fields discovery failed");
+			for (const auto *entry : exchanges)
+				require(journey.render_journal(7, 42, 772, 50, 1, 102, false, false)
+							.find(entry->title) == std::string::npos,
+					"Rice Fields discovery exposed an unmet exchange");
+			require(journey.meet_npc(7, 42, 38011, 77259, 103) == result::applied &&
+					journey.meet_npc(7, 42, 38026, 77258, 103) ==
+						result::applied &&
+					!journey.has_discovered(7, 42, 380),
+				"Rice Fields locally spawned foreign contacts forged home-zone discovery");
+			for (unsigned i = 0; i < 4; ++i)
+				require(journey.meet_npc(7, 42, givers[i], rooms[i], 103) ==
+						result::applied,
+					"Rice Fields exchange contact failed");
+			const auto before = journey.serialize_state();
+			const auto status = [&](const std::string &journal, unsigned exchange,
+						size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    exchanges[exchange]->steps[row].text) !=
+				       std::string::npos;
+			};
+			for (unsigned i = 1; i < 4; ++i)
+				for (unsigned custody = 0; custody < 5; ++custody)
+				{
+					supplies = {};
+					if (custody == 1)
+						supplies.carried[materials[i % 3 + 1]] = 1;
+					if (custody == 2)
+						supplies.equipped[0] = materials[i];
+					if (custody >= 3)
+						supplies.carried[materials[i]] = custody == 3 ? 1 :
+												5;
+					const auto journal = journey.render_journal(
+						7, 42, 772, 50, 1, 104, false, false, &supplies);
+					require(status(journal, i, 0,
+						       custody >= 3 ? "Ready now" :
+								      "Missing now") &&
+							!status(journal, i, 1, "Recorded") &&
+							journey.progress_for_zone(7, 42, 772)
+									.completed == 0 &&
+							journey.serialize_state() == before,
+						"Rice Fields wrong/equipped/loose/surplus material invented custody or acceptance");
+				}
+			supplies = {};
+			for (unsigned i = 1; i < 4; ++i)
+				supplies.carried[materials[i]] = 1;
+			auto journal = journey.render_journal(7, 42, 772, 50, 1, 105, false, false,
+							      &supplies);
+			require(journal.find("remains guarded") != std::string::npos &&
+					journal.find("[Service] " + exchanges[0]->title) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 772).total == 1 &&
+					journey.serialize_state() == before,
+				"Rice Fields paid service lost guard or inflated quest totals");
+			for (unsigned i = 1; i < 4; ++i)
+				require(status(journal, i, 0, "Ready now") &&
+						!status(journal, i, 1, "Recorded"),
+					"Rice Fields simultaneous material preparation completed exchanges");
+			// Synthetic receipts exercise journal classification/recovery, not live payment, consumption, spell effects, saved rescue, sailing or treasure.
+			for (unsigned i : { 0U, 1U, 3U })
+			{
+				record(journey, exchanges[i]->contracts.front(),
+				       ("jademini-service-" + std::to_string(i)).c_str(), 772,
+				       rooms[i]);
+				supplies = {};
+				journal = journey.render_journal(7, 42, 772, 50, 1, 121, false,
+								 false, &supplies);
+				require(status(journal, i, exchanges[i]->steps.size() - 1,
+					       "Recorded") &&
+						journal.find("[Service used] " +
+							     exchanges[i]->title) !=
+							std::string::npos &&
+						journey.progress_for_zone(7, 42, 772).completed ==
+							0,
+					"Rice Fields recorded support service created achievement credit");
+			}
+			const auto partial = journey.serialize_state();
+			require(recovered.deserialize_state(partial, &error) &&
+					raw.deserialize_state(partial, &error) &&
+					recovered.progress_for_zone(7, 42, 772).completed == 0 &&
+					raw.progress_for_zone(7, 42, 772).completed == 3,
+				"Rice Fields partial mapped/raw recovery lost receipts or credited mapped services");
+			require(!status(journal, 2, 1, "Recorded"),
+				"Rice Fields services forged princess release");
+			record(journey, exchanges[2]->contracts.front(), "jademini-princess", 772,
+			       rooms[2]);
+			record(supplied, exchanges[2]->contracts.front(), "jademini-supplied-keys",
+			       772, rooms[2]);
+			require(supplied.progress_for_zone(7, 42, 772).completed == 1 &&
+					!supplied.has_met_npc(7, 42, 77211) &&
+					!supplied.has_discovered(7, 42, 769),
+				"Rice Fields supplied princess keys required producer history or forged foreign discovery");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 772).completed == 1 &&
+					recovered.progress_for_zone(7, 42, 772).total == 1 &&
+					raw.progress_for_zone(7, 42, 772).completed == 4,
+				"Rice Fields complete mapped/raw recovery changed service/quest boundaries");
+			journal = recovered.render_journal(7, 42, 772, 50, 1, 122, false, false,
+							   &supplies);
+			for (unsigned i = 0; i < 4; ++i)
+			{
+				require(status(journal, i, exchanges[i]->steps.size() - 1,
+					       "Recorded"),
+					"Rice Fields spent material erased recorded exchange");
+				if (i)
+					require(status(journal, i, 0, "Missing now"),
+						"Rice Fields receipt restored spent material");
+				auto replay = completion(
+					exchanges[i]->contracts.front(),
+					(i == 2 ? "jademini-princess" :
+						  "jademini-service-" + std::to_string(i))
+						.c_str(),
+					120);
+				replay.transaction.zone_number = 772;
+				replay.transaction.room_vnum = rooms[i];
+				require(journey.record_completion(replay) ==
+						result::already_applied,
+					"Rice Fields exchange replay duplicated acceptance");
+			}
+			require(!journey.has_discovered(7, 42, 380) &&
+					!journey.has_discovered(7, 42, 226) &&
+					!journey.has_discovered(7, 42, 769),
+				"Rice Fields receipts forged foreign follow-on discovery");
 		}
 
 		std::cout

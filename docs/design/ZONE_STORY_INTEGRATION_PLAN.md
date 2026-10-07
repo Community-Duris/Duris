@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 225 authored journals, accounting-gated player surfaces, starter/town
+**Status: 226 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5457,3 +5457,8 @@ The [dossier](zone-stories/VALLEY_CRUSHK.md) maps the supplied-compatible shiv/c
 ## Forgotten Forest integration extension
 
 The [dossier](zone-stories/FORGOTTEN_FOREST.md) maps four independent supplied-compatible food/XP offerings and nine broader stories with46 owned follow-ups. Separate first source custody, current loose material, accepted consumed roots, actual capped/frozen actor/party XP and useful saved trust/care/liberation outcomes. Preserve hidden forage, rarity/caps, staging/trap intent, actual F admission, restrictive travel and current sector semantics. New typed effects require builder-defined beneficiaries and successful saved controllers. Active READY authority remains required and daily policy remains disabled.
+
+
+## Rice Fields integration extension
+
+The [dossier](zone-stories/RICE_FIELDS.md) maps four native exchanges, three recorded services, one accepted-release quest and nine broader stories with46 owned follow-ups. Separate exact supplied materials, source custody, real coin/item/XP settlement, access keys versus shackle keys, accepted D versus living royal arrival, useful magic/navigation, three-zone treasure and safe sea return. Foreign locally spawned contacts do not discover their home area. Existing schema suffices for journals; typed effects require builder-defined useful saved controllers and beneficiaries. Active READY accounting remains required and daily policy disabled. The prior Jade JUMP wording correction is documentation only in a separate commit.

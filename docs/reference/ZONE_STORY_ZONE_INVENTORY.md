@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 225 authored journals.
+2668 distinct Q contracts; 226 authored journals.
 
 Regenerate with:
 
@@ -114,7 +114,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Ixarkon (`ixarkon`) | 3 | 15 | 1 | Yes | [1 × a red skullcap → a small spider amulet of Lloth](../../areas/qst/ixarkon.qst#L116) | illithid_teleport_veil, inn, money_changer, pet_shops |
 | Ixxillikor (`ixxillikor`) | 2 | 5 | 0 | Yes | [1 × the still-beating heart of Bel; 1 × the orb of unmaking; 1 × A mystic runed stone tablet → the scroll of Power](../../areas/qst/ixxillikor.qst#L10) | — |
 | The Jade Empire (`jade`) | 37 | 3 | 10 | Yes | [5 × a rice harvest → a full harvest bag](../../areas/qst/jade.qst#L71) | crew_shop_proc, ship_shop_proc |
-| The Rice Fields (`jademini`) | 4 | 0 | 0 | Fallback | [native payment/conditions → a map of jade](../../areas/qst/jademini.qst#L2) | archer |
+| The Rice Fields (`jademini`) | 4 | 0 | 0 | Yes | [native payment/conditions → a map of jade](../../areas/qst/jademini.qst#L2) | archer |
 | Jindon the Deathwood Forest (`jin`) | 1 | 1 | 0 | Yes | [1 × arms of a Thri-kreen → an eerie longsword named 'Illithid Bane'](../../areas/qst/jin.qst#L8) | jindo_ticket_master |
 | Jotunheim (`jotun`) | 15 | 34 | 0 | Yes | [1 × an eerily glowing jade bracelet; 1 × a jagged lightning sword; 1 × a barbed whip; other required items → a wooden spear entwined with glowing runes](../../areas/qst/jotun.qst#L39) | deva_cloak, faith, giantbane, icicle_cloak, jotun_balor, jotun_mimer |
 | The 222nd Layer of the Abyss (`juiblex`) | 23 | 25 | 3 | Yes | [1 × the head of the lost wildmage; 1 × the head of the lost wildmage; 1 × the head of the lost great wildmage; other required items → a necklace of wildmage scalps](../../areas/qst/juiblex.qst#L593) | doombringer, flow_amulet, juiblex_grid_mob_generator, juiblex_one, mask_of_wildmagic, slime_lake |

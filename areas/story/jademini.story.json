@@ -1,0 +1,317 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "jademini",
+  "coverage": "complete",
+  "introduction": "Follow the Rice Fields’ map purchase, sprite canning, captive princess and helmsman exchanges, then explore rice work, the Oberon battle, royal reunion, three-zone treasure and safe sea travel.",
+  "orientation": [
+    "Explore the rice fields, worker camp, battle decks and sea routes. Keep a safe way back and prepare for each route’s real travel and combat costs.",
+    "The halfling’s fifty-platinum map purchase is a service. Buying a map and successfully using it are distinct; the paid exchange remains guarded while its accounting support is unavailable.",
+    "The canner accepts one exact wood sprite for a sprite in a jar. The current exchange has no coin fee, despite the canning-price description.",
+    "Marn’s brig key opens the princess’s cell. Miu Pai’s set of keys instead fits the princess’s shackle exchange; the two keys have different jobs.",
+    "Prepare a wood sprite, set of keys or packet of sea maps loose in your inventory for its matching exchange. Equipped or packed-away materials do not satisfy that current preparation.",
+    "Recovered or supplied exact materials fit their native requests. A supplied item does not claim your own first recovery, personal kill or earlier visit to its source.",
+    "The princess’s accepted keys-for-token exchange stays recorded after the keys are spent. Her departure does not yet prove a living arrival at the Palace or complete the Emperor’s separate request.",
+    "The helmsman takes a packet of sea maps without a response or reward. This records use of a service; sailing, navigation and rescue need further integration.",
+    "A selected pirate carries a torn map. Burgadan can exchange it for a spade and another map, while Hordine separately trades a torn map for a treasure key. Preserve each material for the next chosen exchange.",
+    "The spade fits the silt entrance, while the treasure key fits the sunken chest. Opening a route, spending a key and actually receiving treasure are separate events; underwater digging is not this route.",
+    "The fixed planks respond to JUMP and lead into sea routes. Prepare for water, breath, capacity, arrows and one-way travel; a handled command does not guarantee a safe landing.",
+    "Rice work, sprite care, crew protection, royal reunion, useful navigation and safe sea rescue suggest longer stories. Their useful living outcomes need further integration before they can be completed."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 38011,
+      "name": "a jellyfish",
+      "keyword": "jellyfish",
+      "description": "These jellyfish can appear in the Rice Fields’ underwater rooms although their home prototypes belong to Thetis. Meeting one here does not discover Thetis or complete a sea rescue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 38026,
+      "name": "a sea turtle",
+      "keyword": "turtle",
+      "description": "These turtles can appear near the local sea route although their home prototypes belong to Thetis. Current sightings, safe travel and useful care are distinct from merely meeting wildlife.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77200,
+      "name": "a water ox",
+      "keyword": "water",
+      "description": "Water oxen are quite familiar with working in the rice fields.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77201,
+      "name": "a huge olyx",
+      "keyword": "huge",
+      "description": "This huge cow-like beast is renowned for its strength and timidness.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77202,
+      "name": "a halfling adventurer",
+      "keyword": "halfling",
+      "description": "The halfling sells a map of Jade for fifty platinum. Buying information is a service. A recovered or supplied map can also be offered to the lost legionaire in Jade without buying one here first.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77203,
+      "name": "a canner",
+      "keyword": "canner",
+      "description": "The canner accepts a wood sprite and returns a sprite in a jar. This exact craft currently charges no coin fee. The jar is a totem; making it does not yet prove that the sprite was helped or that a spell succeeded.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77204,
+      "name": "a packer",
+      "keyword": "packer",
+      "description": "This poor fellow spends every day in the muck of the rice fields, ploughing and packing up rice.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77205,
+      "name": "a mosquito swarm",
+      "keyword": "mosquitoes",
+      "description": "Mosquitoes love swamps, they spawn in the wet, damp, muck around the rice fields and populate to incredible numbers.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77206,
+      "name": "an oberon crewman",
+      "keyword": "crewman",
+      "description": "One of the sailors of the Oberon, this crewman barely has time to glance up at you as he rushes by, swinging his saber against the oncoming pirates.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77207,
+      "name": "an oberon crewman",
+      "keyword": "crewman",
+      "description": "He swings his blade viciously, forcing the advancing pirates back from along the grappling line, while shouting to his companions.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77208,
+      "name": "the captain of the oberon",
+      "keyword": "captain",
+      "description": "With one eye constantly watching the water outside and his helmsman, the other eye focused with steel-like resolve on the enemy ship just fifteen feet away, the captain leads his men to battle against the pirates with grim determination.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77209,
+      "name": "a pirate",
+      "keyword": "pirate",
+      "description": "This ruthless pirate is in the heat of battle with the Oberon crew, but at this point he barely cares who he attacks.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77210,
+      "name": "an emperor's guardsman",
+      "keyword": "guardsman",
+      "description": ".",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77211,
+      "name": "Miu Pai",
+      "keyword": "miu",
+      "description": "Miu Pai carries the set of keys accepted by the captive princess. These shackle keys are different from Marn’s brig key. Supplying an exact set is eligible without defeating Miu Pai yourself.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77212,
+      "name": "the first mate",
+      "keyword": "first",
+      "description": "The first mate of the Oberon looks up at you hastily when he sees you arrive.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77213,
+      "name": "a reef shark",
+      "keyword": "reef",
+      "description": "This shark has been attracted to the Jade inlet by the fierce fighting going on on the ships above.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77214,
+      "name": "a captive princess of jade",
+      "keyword": "captive",
+      "description": "The princess accepts a set of keys, gives a royal token and departs. That accepted release is recorded. Her actual safe arrival at the Palace and the Emperor’s separate token exchange are further outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77215,
+      "name": "a shady rascal",
+      "keyword": "shady",
+      "description": ".",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77216,
+      "name": "a pirate archer",
+      "keyword": "archer",
+      "description": "The archer attacks travelers in selected neighboring battle rooms. Learn the real route and prepare for danger; surviving arrows or ordinary combat does not yet record a saved ship or protected crew.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77217,
+      "name": "a shady rascal",
+      "keyword": "shady",
+      "description": ".",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77218,
+      "name": "the oberon helmsman",
+      "keyword": "helmsman",
+      "description": "The helmsman accepts a packet of sea maps. This service currently has no response or reward and does not make the ship sail. Hordine has a separate competing use for the same maps.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 77219,
+      "name": "a pirate",
+      "keyword": "pirate",
+      "description": "Only one selected pirate source carries the torn map. It points toward independent dealings with Burgadan and Hordine, then silt and a sunken chest. A supplied torn map remains useful.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "buy-map",
+      "title": "Buy a map of Jade",
+      "category": "service",
+      "summary": "The halfling sells a map for fifty platinum. This paid information service remains guarded while its accounting support is unavailable. Receiving a map does not establish personal travel or complete the legionaire’s separate request.",
+      "contracts": [
+        {
+          "giver_vnum": 77202,
+          "completion_key": "give=C:50000;receive=I:76676;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "accepted-exchange",
+          "kind": "completion",
+          "text": "Record the map purchase",
+          "hint": "The accepted exchange stays recorded after its payment or material is spent. Actual rewards, travel, useful magic, living reunion and ship outcomes have separate evidence. The paid service remains guarded while its accounting support is unavailable.",
+          "contracts": [
+            {
+              "giver_vnum": 77202,
+              "completion_key": "give=C:50000;receive=I:76676;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "can-wood-sprite",
+      "title": "Have a wood sprite canned",
+      "category": "service",
+      "summary": "Offer one recovered or supplied wood sprite for a sprite in a jar. The current craft charges no coins. Canning is a service; beneficial magic use and the living sprite’s welfare are separate outcomes.",
+      "contracts": [
+        {
+          "giver_vnum": 77203,
+          "completion_key": "give=I:76670;receive=I:77201;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-material",
+          "kind": "carried_item",
+          "text": "Carry the wood sprite",
+          "hint": "Bring one exact wood sprite loose in your inventory. Recovered or supplied copies fit. Equipping or packing it does not satisfy this preparation or establish a personal source recovery.",
+          "item_vnums": [
+            76670
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "kind": "completion",
+          "text": "Record the wood sprite exchange",
+          "hint": "The accepted exchange stays recorded after its payment or material is spent. Actual rewards, travel, useful magic, living reunion and ship outcomes have separate evidence.",
+          "contracts": [
+            {
+              "giver_vnum": 77203,
+              "completion_key": "give=I:76670;receive=I:77201;disappear=0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "release-princess",
+      "title": "Release the captive princess’s shackles",
+      "category": "story",
+      "summary": "Offer one exact recovered or supplied set of keys to the princess for her royal token. Record this accepted release without requiring your own kill or cell-unlocking history. Her safe return and the Emperor’s token exchange are separate.",
+      "contracts": [
+        {
+          "giver_vnum": 77214,
+          "completion_key": "give=I:77204;receive=I:77205;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-material",
+          "kind": "carried_item",
+          "text": "Carry the set of keys",
+          "hint": "Bring one exact set of keys loose in your inventory. Recovered or supplied copies fit. Equipping or packing it does not satisfy this preparation or establish a personal source recovery.",
+          "item_vnums": [
+            77204
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "kind": "completion",
+          "text": "Record the set of keys exchange",
+          "hint": "The accepted exchange stays recorded after its payment or material is spent. Actual rewards, travel, useful magic, living reunion and ship outcomes have separate evidence.",
+          "contracts": [
+            {
+              "giver_vnum": 77214,
+              "completion_key": "give=I:77204;receive=I:77205;disappear=1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "offer-sea-maps",
+      "title": "Offer sea maps to the helmsman",
+      "category": "service",
+      "summary": "The helmsman consumes one exact packet of sea maps without a response or reward. Record this service use without claiming sailing or rescue. Hordine’s competing exchange remains independent.",
+      "contracts": [
+        {
+          "giver_vnum": 77218,
+          "completion_key": "give=I:22622;receive=;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-material",
+          "kind": "carried_item",
+          "text": "Carry the packet of sea maps",
+          "hint": "Bring one exact packet of sea maps loose in your inventory. Recovered or supplied copies fit. Equipping or packing it does not satisfy this preparation or establish a personal source recovery.",
+          "item_vnums": [
+            22622
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-exchange",
+          "kind": "completion",
+          "text": "Record the packet of sea maps exchange",
+          "hint": "The accepted exchange stays recorded after its payment or material is spent. Actual rewards, travel, useful magic, living reunion and ship outcomes have separate evidence.",
+          "contracts": [
+            {
+              "giver_vnum": 77218,
+              "completion_key": "give=I:22622;receive=;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

@@ -349,3 +349,8 @@ The [dossier](../design/zone-stories/VALLEY_CRUSHK.md) retains one achievement/p
 ## Forgotten Forest daily qualification
 
 The [dossier](../design/zone-stories/FORGOTTEN_FOREST.md) retains four independent native achievement/potential daily units for exact82703/E17000,82702/E14000,82701/E18100 and82706/E49000, all no D. Mode2/native repeatability does not guarantee current giver or food stock; all10 local O/G/E rows are refused before active item creation. Qualify real source publication/cap/chance/parent/UID and supplied-compatible root consumption, actual frozen actor/party XP save/replay and useful beneficiary renewal separately. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
+
+
+## Rice Fields daily qualification
+
+The [dossier](../design/zone-stories/RICE_FIELDS.md) retains one princess accepted-release achievement/potential daily. Three paid/support services remain recorded without achievement/daily credit, reducing projection totals by three achievements and two potential dailies while all2668 native definitions remain intact. Actual source publication, supplied-compatible root consumption, token save/departure/replay, useful living rescue and balanced giver renewal need separate qualification. Mode2 is not a stock guarantee; all13 local O/P/G/E rows are refused before active item creation. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
