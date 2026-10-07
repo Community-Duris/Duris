@@ -35,6 +35,8 @@
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
 #include "player/player_revision_state.h"
+#include "cmd/lockpick_retirement.h"
+#include "economy/economic_gameplay_authority.h"
 
 /*
  * external variables
@@ -3242,6 +3244,13 @@ void do_pick(P_char ch, char *argument, int /*cmd*/)
 				                */
 			if ((percent > -1) && (number(-1, percent) > 0))
 			{
+				if (economic_gameplay_authority::active())
+				{
+					lockpick_retirement_submit(
+						ch, pick,
+						lockpick_retirement_branch::failed_container);
+					return;
+				}
 				act("Damn!  You broke your $p too!", FALSE, ch, pick, 0, TO_CHAR);
 				act("$n begins cursing under $s breath as $s $p snaps.", FALSE, ch,
 				    pick, 0, TO_ROOM);
@@ -3295,6 +3304,12 @@ void do_pick(P_char ch, char *argument, int /*cmd*/)
 				                */
 			if ((percent > -1) && (number(-1, percent) > 0))
 			{
+				if (economic_gameplay_authority::active())
+				{
+					lockpick_retirement_submit(
+						ch, pick, lockpick_retirement_branch::failed_door);
+					return;
+				}
 				act("Damn!  You broke your $p too!", FALSE, ch, pick, 0, TO_CHAR);
 				act("$n begins cursing under $s breath as $s $p snaps.", FALSE, ch,
 				    pick, 0, TO_ROOM);
@@ -3346,6 +3361,11 @@ void do_pick(P_char ch, char *argument, int /*cmd*/)
 
 	if (pick->value[1] > number(0, 99))
 	{
+		if (economic_gameplay_authority::active())
+		{
+			lockpick_retirement_submit(ch, pick, lockpick_retirement_branch::wear);
+			return;
+		}
 		act("Damn!  But you broke your $p!", FALSE, ch, pick, 0, TO_CHAR);
 		act("$n begins cursing under $s breath as $s $p snaps.", FALSE, ch, pick, 0,
 		    TO_ROOM);

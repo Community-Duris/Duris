@@ -1,4 +1,5 @@
 #include "item/item_transfer_command.h"
+#include "item/lockpick_retirement_continuation.h"
 #include "item/quest_reward_continuation.h"
 #include "item/craft_pouch_mutation.h"
 #include "item/craft_recipe_continuation.h"
@@ -1002,6 +1003,17 @@ bool valid_native_mobile_context(const item_transfer_payload &payload, uint16_t 
 
 bool validate_payload(const item_transfer_payload &payload, uint16_t payload_version)
 {
+	// Every legacy/generic encoder must refuse rather than silently drop money.
+	if (payload.native_money.present || payload.native_money.original_room_vnum ||
+	    payload.native_money.player_wallet_mapping_id ||
+	    payload.native_money.mobile_wallet_mapping_id ||
+	    payload.native_money.projection != native_quest_coin_give_projection{})
+		return false;
+	// Every legacy/generic encoder must refuse rather than silently drop cost.
+	if (payload.native_cost.present || payload.native_cost.fee_only ||
+	    payload.native_cost.completion_slot || payload.native_cost.wallet_mapping_id ||
+	    payload.native_cost.projection != native_quest_cost_projection{})
+		return false;
 	if (!valid_native_mobile_context(payload, payload_version) ||
 	    !valid_native_recovery(payload, payload.native_recovery, payload_version))
 		return false;
@@ -1044,6 +1056,9 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	     !valid_account_reward_duplicate_promotion_continuation(payload, payload_version)) ||
 	    (payload.continuation.kind == item_transfer_continuation_kind::craft_pouch_usage &&
 	     payload_version < ITEM_TRANSFER_PAYLOAD_VERSION) ||
+	    (payload.continuation.kind == item_transfer_continuation_kind::lockpick_retirement &&
+	     (payload_version < ITEM_TRANSFER_CONTINUATION_PAYLOAD_VERSION ||
+	      !lockpick_retirement_payload_valid(payload))) ||
 	    (payload.continuation.kind == item_transfer_continuation_kind::craft_recipe &&
 	     (payload_version < ITEM_TRANSFER_PAYLOAD_VERSION ||
 	      payload.reason != item_transfer_reason::craft)) ||
@@ -1057,7 +1072,8 @@ bool validate_payload(const item_transfer_payload &payload, uint16_t payload_ver
 	     payload.continuation.kind !=
 		     item_transfer_continuation_kind::account_reward_duplicate_promotion &&
 	     payload.continuation.kind != item_transfer_continuation_kind::craft_pouch_usage &&
-	     payload.continuation.kind != item_transfer_continuation_kind::craft_recipe))
+	     payload.continuation.kind != item_transfer_continuation_kind::craft_recipe &&
+	     payload.continuation.kind != item_transfer_continuation_kind::lockpick_retirement))
 		return false;
 	const bool corpse_create = payload.reason == item_transfer_reason::corpse_create;
 	const bool corpse_loot = payload.reason == item_transfer_reason::corpse_loot;
@@ -1513,7 +1529,8 @@ bool populate_command_entities(critical_command *command, const item_transfer_pa
 		command->expected_revisions.push_back({ catalog_key, 0 });
 	}
 	if (payload.native_recovery.present &&
-	    payload.native_mobile.action == item_native_mobile_action::consumption)
+	    payload.native_mobile.action == item_native_mobile_action::consumption &&
+	    !payload.native_cost.fee_only)
 	{
 		const critical_entity_key giver_key = { critical_entity_type::player,
 							payload.native_recovery.player_pid };
@@ -1649,10 +1666,457 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 	return encode_payload(payload, ITEM_TRANSFER_PAYLOAD_VERSION, encoded);
 }
 
+namespace
+{
+bool native_cost_version(uint16_t version) noexcept
+{
+	return version == ITEM_TRANSFER_NATIVE_MOBILE_COST_PAYLOAD_VERSION ||
+	       version == ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION;
+}
+
+bool native_cost_value_valid(const item_transfer_payload &payload) noexcept
+{
+	if (!payload.native_cost.present || !payload.native_cost.wallet_mapping_id ||
+	    payload.native_mobile.action != item_native_mobile_action::consumption ||
+	    payload.native_cost.projection.attempts.empty())
+		return false;
+	std::vector<uint8_t> exact;
+	return native_quest_cost_projection_encode(payload.native_cost.projection, &exact) ==
+	       native_quest_cost_projection_result::ok;
+}
+
+constexpr size_t native_fee_header_bytes = 64;
+bool native_fee_shape(const item_transfer_payload &payload, bool acknowledged)
+{
+	const auto &fee = payload.native_cost;
+	const auto &native = payload.native_mobile;
+	const auto &recovery = payload.native_recovery;
+	if (!fee.fee_only || !native_cost_value_valid(payload) || !native.present ||
+	    native.action != item_native_mobile_action::consumption || !native.final_giver_pid ||
+	    native.final_giver_pid > INT32_MAX || native.reference.mobile_revision == UINT64_MAX ||
+	    payload.from_owner.type != item_owner_type::native_mobile ||
+	    payload.from_owner.id != native.reference.mobile_instance_id ||
+	    payload.from_owner.context_id || payload.to_owner.type != item_owner_type::player ||
+	    payload.to_owner.id != native.final_giver_pid || payload.to_owner.context_id ||
+	    payload.reason != item_transfer_reason::quest_turnin ||
+	    payload.reason_id != native.reference.mobile_vnum || payload.logical_source_id ||
+	    payload.multi_root || payload.item_count || payload.item_blob_size ||
+	    payload.selected_item_uid || payload.target_root_item_uid ||
+	    payload.target_parent_item_uid || payload.expected_target_parent_revision ||
+	    payload.corpse.present || payload.collector.present ||
+	    !valid_collector_context(payload, ITEM_TRANSFER_NATIVE_MOBILE_COST_PAYLOAD_VERSION) ||
+	    payload.native_money.present || payload.native_money.original_room_vnum ||
+	    payload.native_money.player_wallet_mapping_id ||
+	    payload.native_money.mobile_wallet_mapping_id ||
+	    payload.native_money.projection != native_quest_coin_give_projection{} ||
+	    payload.expected_from_revision != native.reference.stock_revision ||
+	    payload.expected_to_revision == UINT64_MAX || !recovery.consumed_root_order.empty())
+		return false;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> reference{};
+	if (quest_mobile_native_reference_encode(native.reference, &reference) !=
+	    player_snapshot_codec_result::ok)
+		return false;
+	if (payload.continuation.kind == item_transfer_continuation_kind::quest_offering)
+	{
+		quest_reward_continuation terms;
+		if (!quest_fee_reward_continuation_decode(payload.continuation.data.data(),
+							  payload.continuation.data.size(),
+							  &terms) ||
+		    terms.player_pid != native.final_giver_pid ||
+		    terms.mobile_vnum != static_cast<uint32_t>(native.reference.mobile_vnum) ||
+		    terms.action_mobile_instance_id != native.reference.mobile_instance_id ||
+		    terms.completion_index != fee.completion_slot ||
+		    terms.action_source.generation.bytes !=
+			    native.reference.birth_source.generation.bytes ||
+		    terms.action_source.sequence != native.reference.mobile_revision)
+			return false;
+	}
+	else if (payload.continuation.kind != item_transfer_continuation_kind::none ||
+		 !payload.continuation.data.empty())
+		return false;
+	if (!acknowledged)
+		return !recovery.present && !recovery.player_pid &&
+		       !recovery.acknowledged_save_revision &&
+		       recovery.player_before == shop_trade_recovery_forest_binding{} &&
+		       recovery.player_after == shop_trade_recovery_forest_binding{} &&
+		       native_publication_terms_empty(recovery.publication_terms);
+	return recovery.present && recovery.player_pid == native.final_giver_pid &&
+	       recovery.acknowledged_save_revision &&
+	       native_publication_terms_valid(recovery.publication_terms) &&
+	       !recovery.publication_terms.disappear &&
+	       recovery.player_before.canonical_bytes == recovery.player_after.canonical_bytes &&
+	       recovery.player_before.ordered_item_uids ==
+		       recovery.player_after.ordered_item_uids &&
+	       shop_trade_recovery_forest_shape_valid(
+		       recovery.player_before, shop_trade_recovery_forest_role::player_before) &&
+	       shop_trade_recovery_forest_shape_valid(
+		       recovery.player_after, shop_trade_recovery_forest_role::player_after);
+}
+bool encode_native_fee(const item_transfer_payload &payload, bool acknowledged,
+		       std::vector<uint8_t> *output)
+{
+	if (!output || !native_fee_shape(payload, acknowledged))
+		return false;
+	std::vector<uint8_t> cost, recovery;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> reference{};
+	if (native_quest_cost_projection_encode(payload.native_cost.projection, &cost) !=
+		    native_quest_cost_projection_result::ok ||
+	    quest_mobile_native_reference_encode(payload.native_mobile.reference, &reference) !=
+		    player_snapshot_codec_result::ok ||
+	    (acknowledged && !encode_native_recovery(payload.native_recovery, &recovery)))
+		return false;
+	const size_t bytes = native_fee_header_bytes + reference.size() + cost.size() +
+			     payload.continuation.data.size() + recovery.size();
+	if (bytes > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return false;
+	std::vector<uint8_t> value(native_fee_header_bytes, 0);
+	value[0] = 'N';
+	value[1] = 'Q';
+	value[2] = 'F';
+	value[3] = '2';
+	put_u16(value.data() + 4, 1);
+	put_u16(value.data() + 6,
+		acknowledged ? ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION :
+			       ITEM_TRANSFER_NATIVE_MOBILE_COST_PAYLOAD_VERSION);
+	put_u32(value.data() + 8, static_cast<uint32_t>(bytes));
+	put_u32(value.data() + 12, static_cast<uint32_t>(cost.size()));
+	put_u32(value.data() + 16, static_cast<uint32_t>(payload.continuation.data.size()));
+	put_u32(value.data() + 20, static_cast<uint32_t>(recovery.size()));
+	put_u32(value.data() + 24, payload.native_mobile.final_giver_pid);
+	put_u32(value.data() + 28, payload.native_cost.completion_slot);
+	put_u64(value.data() + 32, payload.expected_from_revision);
+	put_u64(value.data() + 40, payload.expected_to_revision);
+	put_u64(value.data() + 48, payload.native_cost.wallet_mapping_id);
+	put_u16(value.data() + 56, static_cast<uint16_t>(payload.continuation.kind));
+	value.insert(value.end(), reference.begin(), reference.end());
+	value.insert(value.end(), cost.begin(), cost.end());
+	value.insert(value.end(), payload.continuation.data.begin(),
+		     payload.continuation.data.end());
+	value.insert(value.end(), recovery.begin(), recovery.end());
+	*output = std::move(value);
+	return true;
+}
+bool decode_native_fee(const critical_command &command, item_transfer_payload *output)
+{
+	constexpr size_t fixed = native_fee_header_bytes + QUEST_MOBILE_NATIVE_REFERENCE_BYTES;
+	if (!output || !native_cost_version(command.payload_version) ||
+	    command.type != critical_command_type::item_transfer ||
+	    command.payload.size() < fixed ||
+	    command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return false;
+	const auto *wire = command.payload.data();
+	const bool acknowledged = command.payload_version ==
+				  ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION;
+	if (wire[0] != 'N' || wire[1] != 'Q' || wire[2] != 'F' || wire[3] != '2' ||
+	    get_u16(wire + 4) != 1 || get_u16(wire + 6) != command.payload_version ||
+	    get_u32(wire + 8) != command.payload.size() || get_u16(wire + 58) || get_u32(wire + 60))
+		return false;
+	const size_t cost_size = get_u32(wire + 12), continuation_size = get_u32(wire + 16),
+		     recovery_size = get_u32(wire + 20);
+	size_t remaining = command.payload.size() - fixed;
+	if (cost_size > remaining)
+		return false;
+	remaining -= cost_size;
+	if (continuation_size > remaining ||
+	    continuation_size > ITEM_TRANSFER_CONTINUATION_MAX_BYTES)
+		return false;
+	remaining -= continuation_size;
+	if (recovery_size != remaining || (!acknowledged && recovery_size))
+		return false;
+	item_transfer_payload value{};
+	value.native_mobile.present = true;
+	value.native_mobile.action = item_native_mobile_action::consumption;
+	value.native_mobile.final_giver_pid = get_u32(wire + 24);
+	value.native_cost.present = value.native_cost.fee_only = true;
+	value.native_cost.completion_slot = get_u32(wire + 28);
+	value.native_cost.wallet_mapping_id = get_u64(wire + 48);
+	value.expected_from_revision = get_u64(wire + 32);
+	value.expected_to_revision = get_u64(wire + 40);
+	if (quest_mobile_native_reference_decode(
+		    { wire + native_fee_header_bytes, QUEST_MOBILE_NATIVE_REFERENCE_BYTES },
+		    &value.native_mobile.reference) != player_snapshot_codec_result::ok ||
+	    native_quest_cost_projection_decode({ wire + fixed, cost_size },
+						&value.native_cost.projection) !=
+		    native_quest_cost_projection_result::ok)
+		return false;
+	value.continuation.kind = static_cast<item_transfer_continuation_kind>(get_u16(wire + 56));
+	value.continuation.data.assign(wire + fixed + cost_size,
+				       wire + fixed + cost_size + continuation_size);
+	if (acknowledged &&
+	    !decode_native_recovery({ wire + fixed + cost_size + continuation_size, recovery_size },
+				    &value.native_recovery))
+		return false;
+	value.from_owner = { item_owner_type::native_mobile,
+			     value.native_mobile.reference.mobile_instance_id, 0 };
+	value.to_owner = { item_owner_type::player, value.native_mobile.final_giver_pid, 0 };
+	value.reason = item_transfer_reason::quest_turnin;
+	value.reason_id = value.native_mobile.reference.mobile_vnum;
+	std::vector<uint8_t> canonical;
+	critical_command expected{};
+	if (!encode_native_fee(value, acknowledged, &canonical) || canonical != command.payload ||
+	    !populate_command_entities(&expected, value) ||
+	    command.keys.size() != expected.keys.size() ||
+	    command.expected_revisions.size() != expected.expected_revisions.size() ||
+	    !std::equal(command.keys.begin(), command.keys.end(), expected.keys.begin(),
+			critical_entity_key_equal) ||
+	    !std::equal(command.expected_revisions.begin(), command.expected_revisions.end(),
+			expected.expected_revisions.begin(),
+			[](const auto &a, const auto &b) {
+				return critical_entity_key_equal(a.key, b.key) &&
+				       a.revision == b.revision;
+			}))
+		return false;
+	if (value.continuation.kind == item_transfer_continuation_kind::quest_offering)
+	{
+		quest_reward_continuation terms;
+		if (!quest_fee_reward_continuation_decode(value.continuation.data.data(),
+							  value.continuation.data.size(), &terms) ||
+		    terms.action_operation.bytes != command.operation_id.bytes)
+			return false;
+	}
+	*output = std::move(value);
+	return true;
+}
+
+bool encode_native_cost(const item_transfer_payload &payload, bool recovery,
+			std::vector<uint8_t> *encoded)
+{
+	if (!encoded || !native_cost_value_valid(payload))
+		return false;
+	if (payload.native_cost.fee_only)
+		return encode_native_fee(payload, recovery, encoded);
+	if (payload.native_cost.completion_slot)
+		return false;
+	auto original = payload;
+	original.native_cost = {};
+	std::vector<uint8_t> body, cost;
+	const uint16_t original_version =
+		recovery ? ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION :
+			   ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION;
+	if (!encode_payload(original, original_version, &body) ||
+	    native_quest_cost_projection_encode(payload.native_cost.projection, &cost) !=
+		    native_quest_cost_projection_result::ok ||
+	    body.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES -
+				  ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES ||
+	    cost.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES -
+				  ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES - body.size())
+		return false;
+	std::vector<uint8_t> exact(ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES + body.size() +
+				   cost.size());
+	exact[0] = 'N';
+	exact[1] = 'Q';
+	exact[2] = 'F';
+	exact[3] = '1';
+	put_u16(exact.data() + 4, 1);
+	put_u16(exact.data() + 6, original_version);
+	put_u32(exact.data() + 8, static_cast<uint32_t>(body.size()));
+	put_u32(exact.data() + 12, static_cast<uint32_t>(cost.size()));
+	put_u64(exact.data() + 16, payload.native_cost.wallet_mapping_id);
+	std::copy(body.begin(), body.end(),
+		  exact.begin() + ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES);
+	std::copy(cost.begin(), cost.end(),
+		  exact.begin() + ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES + body.size());
+	*encoded = std::move(exact);
+	return true;
+}
+} // namespace
+
+namespace
+{
+bool native_money_version(uint16_t version) noexcept
+{
+	return version == ITEM_TRANSFER_NATIVE_MOBILE_MONEY_PAYLOAD_VERSION ||
+	       version == ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RECOVERY_PAYLOAD_VERSION;
+}
+bool native_money_shape(const item_transfer_payload &payload, bool acknowledged) noexcept
+{
+	const auto &money = payload.native_money;
+	const auto &native = payload.native_mobile;
+	const auto &recovery = payload.native_recovery;
+	if (!money.present || money.original_room_vnum < 0 || !money.player_wallet_mapping_id ||
+	    !money.mobile_wallet_mapping_id ||
+	    money.player_wallet_mapping_id == money.mobile_wallet_mapping_id ||
+	    payload.native_cost.present || payload.native_cost.fee_only ||
+	    payload.native_cost.completion_slot || payload.native_cost.wallet_mapping_id ||
+	    payload.native_cost.projection != native_quest_cost_projection{} || !native.present ||
+	    native.action != item_native_mobile_action::acceptance || !native.final_giver_pid ||
+	    native.final_giver_pid > INT32_MAX ||
+	    payload.from_owner.type != item_owner_type::player ||
+	    payload.from_owner.id != native.final_giver_pid || payload.from_owner.context_id ||
+	    payload.to_owner.type != item_owner_type::native_mobile ||
+	    payload.to_owner.id != native.reference.mobile_instance_id ||
+	    payload.to_owner.context_id || payload.reason != item_transfer_reason::player_give ||
+	    payload.reason_id != native.reference.mobile_vnum || payload.logical_source_id ||
+	    payload.multi_root || payload.item_count || payload.item_blob_size ||
+	    payload.selected_item_uid || payload.target_root_item_uid ||
+	    payload.target_parent_item_uid || payload.expected_target_parent_revision ||
+	    payload.corpse.present || payload.collector.present ||
+	    !valid_collector_context(payload, ITEM_TRANSFER_NATIVE_MOBILE_MONEY_PAYLOAD_VERSION) ||
+	    payload.continuation.kind != item_transfer_continuation_kind::none ||
+	    !payload.continuation.data.empty() || payload.expected_from_revision == UINT64_MAX ||
+	    payload.expected_to_revision != native.reference.stock_revision ||
+	    !native_publication_terms_empty(recovery.publication_terms) ||
+	    !recovery.consumed_root_order.empty())
+		return false;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> encoded{};
+	native_quest_coin_give_projection projected;
+	if (quest_mobile_native_reference_encode(native.reference, &encoded) !=
+		    player_snapshot_codec_result::ok ||
+	    native.reference.mobile_revision == UINT64_MAX ||
+	    native_quest_coin_give_project(
+		    money.projection.player_before, money.projection.player_before_revision,
+		    money.projection.mobile_before, money.projection.mobile_before_revision,
+		    money.projection.denomination, money.projection.quantity,
+		    &projected) != native_quest_coin_give_result::ok ||
+	    projected != money.projection)
+		return false;
+	if (!acknowledged)
+		return !recovery.present && !recovery.player_pid &&
+		       !recovery.acknowledged_save_revision &&
+		       recovery.player_before == shop_trade_recovery_forest_binding{} &&
+		       recovery.player_after == shop_trade_recovery_forest_binding{};
+	return recovery.present && recovery.player_pid == native.final_giver_pid &&
+	       recovery.acknowledged_save_revision && recovery.player_before.present &&
+	       recovery.player_after.present &&
+	       recovery.player_before.canonical_bytes == recovery.player_after.canonical_bytes &&
+	       recovery.player_before.ordered_item_uids ==
+		       recovery.player_after.ordered_item_uids &&
+	       shop_trade_recovery_forest_shape_valid(
+		       recovery.player_before, shop_trade_recovery_forest_role::player_before) &&
+	       shop_trade_recovery_forest_shape_valid(
+		       recovery.player_after, shop_trade_recovery_forest_role::player_after);
+}
+bool encode_native_money(const item_transfer_payload &payload, bool acknowledged,
+			 std::vector<uint8_t> *output)
+{
+	if (!output || !native_money_shape(payload, acknowledged))
+		return false;
+	std::vector<uint8_t> money, recovery;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> reference{};
+	if (native_quest_coin_give_encode(payload.native_money.projection, &money) !=
+		    native_quest_coin_give_result::ok ||
+	    quest_mobile_native_reference_encode(payload.native_mobile.reference, &reference) !=
+		    player_snapshot_codec_result::ok ||
+	    (acknowledged && !encode_native_recovery(payload.native_recovery, &recovery)))
+		return false;
+	const size_t bytes = ITEM_TRANSFER_NATIVE_MOBILE_MONEY_HEADER_BYTES + reference.size() +
+			     money.size() + recovery.size();
+	if (bytes > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return false;
+	std::vector<uint8_t> result(ITEM_TRANSFER_NATIVE_MOBILE_MONEY_HEADER_BYTES, 0);
+	result[0] = 'N';
+	result[1] = 'Q';
+	result[2] = 'M';
+	result[3] = '1';
+	put_u16(result.data() + 4, 1);
+	put_u16(result.data() + 6,
+		acknowledged ? ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RECOVERY_PAYLOAD_VERSION :
+			       ITEM_TRANSFER_NATIVE_MOBILE_MONEY_PAYLOAD_VERSION);
+	put_u32(result.data() + 8, static_cast<uint32_t>(bytes));
+	put_u32(result.data() + 12, static_cast<uint32_t>(recovery.size()));
+	put_u32(result.data() + 16, payload.native_mobile.final_giver_pid);
+	put_u32(result.data() + 20, static_cast<uint32_t>(payload.native_money.original_room_vnum));
+	put_u64(result.data() + 24, payload.expected_from_revision);
+	put_u64(result.data() + 32, payload.expected_to_revision);
+	put_u64(result.data() + 40, payload.native_money.player_wallet_mapping_id);
+	put_u64(result.data() + 48, payload.native_money.mobile_wallet_mapping_id);
+	result.insert(result.end(), reference.begin(), reference.end());
+	result.insert(result.end(), money.begin(), money.end());
+	result.insert(result.end(), recovery.begin(), recovery.end());
+	*output = std::move(result);
+	return true;
+}
+bool decode_native_money(const critical_command &command, item_transfer_payload *output)
+{
+	constexpr size_t fixed = ITEM_TRANSFER_NATIVE_MOBILE_MONEY_HEADER_BYTES +
+				 QUEST_MOBILE_NATIVE_REFERENCE_BYTES + NATIVE_QUEST_COIN_GIVE_BYTES;
+	if (!output || !native_money_version(command.payload_version) ||
+	    command.type != critical_command_type::item_transfer ||
+	    command.payload.size() < fixed ||
+	    command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return false;
+	const auto *wire = command.payload.data();
+	const bool acknowledged = command.payload_version ==
+				  ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RECOVERY_PAYLOAD_VERSION;
+	if (wire[0] != 'N' || wire[1] != 'Q' || wire[2] != 'M' || wire[3] != '1' ||
+	    get_u16(wire + 4) != 1 || get_u16(wire + 6) != command.payload_version ||
+	    get_u32(wire + 8) != command.payload.size() || get_u32(wire + 20) > INT32_MAX ||
+	    get_u64(wire + 56) || get_u32(wire + 12) != command.payload.size() - fixed ||
+	    (!acknowledged && command.payload.size() != fixed))
+		return false;
+	item_transfer_payload candidate{};
+	candidate.native_mobile.present = true;
+	candidate.native_mobile.action = item_native_mobile_action::acceptance;
+	candidate.native_mobile.final_giver_pid = get_u32(wire + 16);
+	candidate.expected_from_revision = get_u64(wire + 24);
+	candidate.expected_to_revision = get_u64(wire + 32);
+	candidate.native_money.present = true;
+	candidate.native_money.original_room_vnum = static_cast<int32_t>(get_u32(wire + 20));
+	candidate.native_money.player_wallet_mapping_id = get_u64(wire + 40);
+	candidate.native_money.mobile_wallet_mapping_id = get_u64(wire + 48);
+	if (quest_mobile_native_reference_decode(
+		    { wire + ITEM_TRANSFER_NATIVE_MOBILE_MONEY_HEADER_BYTES,
+		      QUEST_MOBILE_NATIVE_REFERENCE_BYTES },
+		    &candidate.native_mobile.reference) != player_snapshot_codec_result::ok ||
+	    native_quest_coin_give_decode({ wire + ITEM_TRANSFER_NATIVE_MOBILE_MONEY_HEADER_BYTES +
+						    QUEST_MOBILE_NATIVE_REFERENCE_BYTES,
+					    NATIVE_QUEST_COIN_GIVE_BYTES },
+					  &candidate.native_money.projection) !=
+		    native_quest_coin_give_result::ok ||
+	    (acknowledged &&
+	     !decode_native_recovery(std::span<const uint8_t>(command.payload).subspan(fixed),
+				     &candidate.native_recovery)))
+		return false;
+	candidate.from_owner = { item_owner_type::player, candidate.native_mobile.final_giver_pid,
+				 0 };
+	candidate.to_owner = { item_owner_type::native_mobile,
+			       candidate.native_mobile.reference.mobile_instance_id, 0 };
+	candidate.reason = item_transfer_reason::player_give;
+	candidate.reason_id = candidate.native_mobile.reference.mobile_vnum;
+	std::vector<uint8_t> canonical;
+	critical_command expected{};
+	if (!encode_native_money(candidate, acknowledged, &canonical) ||
+	    canonical != command.payload || !populate_command_entities(&expected, candidate) ||
+	    command.keys.size() != expected.keys.size() ||
+	    command.expected_revisions.size() != expected.expected_revisions.size() ||
+	    !std::equal(command.keys.begin(), command.keys.end(), expected.keys.begin(),
+			critical_entity_key_equal) ||
+	    !std::equal(command.expected_revisions.begin(), command.expected_revisions.end(),
+			expected.expected_revisions.begin(),
+			[](const auto &left, const auto &right) {
+				return critical_entity_key_equal(left.key, right.key) &&
+				       left.revision == right.revision;
+			}))
+		return false;
+	*output = std::move(candidate);
+	return true;
+}
+} // namespace
+
+bool item_transfer_native_mobile_structural_version(uint16_t version) noexcept
+{
+	return version == ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION ||
+	       version == ITEM_TRANSFER_NATIVE_MOBILE_COST_PAYLOAD_VERSION ||
+	       version == ITEM_TRANSFER_NATIVE_MOBILE_MONEY_PAYLOAD_VERSION;
+}
+bool item_transfer_native_mobile_acknowledged_version(uint16_t version) noexcept
+{
+	return version == ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION ||
+	       version == ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION ||
+	       version == ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RECOVERY_PAYLOAD_VERSION;
+}
+
 bool item_transfer_native_mobile_shape_valid(const item_transfer_payload &payload) noexcept
 {
 	try
 	{
+		if (payload.native_money.present)
+			return native_money_shape(payload, false);
+		if (payload.native_cost.present)
+		{
+			std::vector<uint8_t> exact;
+			return encode_native_cost(payload, false, &exact);
+		}
 		return validate_payload(payload, ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION);
 	}
 	catch (const std::bad_alloc &)
@@ -1669,8 +2133,12 @@ bool item_transfer_command_encode_native_mobile(const item_transfer_payload &pay
 	try
 	{
 		std::vector<uint8_t> candidate;
-		if (!encode_payload(payload, ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION,
-				    &candidate))
+		if (!(payload.native_money.present ?
+			      encode_native_money(payload, false, &candidate) :
+		      payload.native_cost.present ?
+			      encode_native_cost(payload, false, &candidate) :
+			      encode_payload(payload, ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION,
+					     &candidate)))
 			return false;
 		*encoded = std::move(candidate);
 		return true;
@@ -1685,6 +2153,13 @@ bool item_transfer_native_mobile_recovery_shape_valid(const item_transfer_payloa
 {
 	try
 	{
+		if (payload.native_money.present)
+			return native_money_shape(payload, true);
+		if (payload.native_cost.present)
+		{
+			std::vector<uint8_t> exact;
+			return encode_native_cost(payload, true, &exact);
+		}
 		return validate_payload(payload,
 					ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION);
 	}
@@ -1723,6 +2198,65 @@ bool item_transfer_native_mobile_recovery_freeze(
 		return false;
 	try
 	{
+		if (payload->native_money.present)
+		{
+			if (!native_money_shape(*payload, false) || !consumed_root_order.empty() ||
+			    !native_publication_terms_empty(publication_terms))
+				return false;
+			auto candidate = *payload;
+			auto &recovery = candidate.native_recovery;
+			recovery.present = true;
+			recovery.player_pid = player_pid;
+			recovery.acknowledged_save_revision = acknowledged_save_revision;
+			if (!shop_trade_recovery_forest_freeze(
+				    original_player_items,
+				    shop_trade_recovery_forest_role::player_before,
+				    &recovery.player_before) ||
+			    !shop_trade_recovery_forest_freeze(
+				    original_player_items,
+				    shop_trade_recovery_forest_role::player_after,
+				    &recovery.player_after) ||
+			    !native_money_shape(candidate, true))
+				return false;
+			*payload = std::move(candidate);
+			return true;
+		}
+		if (payload->native_cost.fee_only)
+		{
+			if (!native_fee_shape(*payload, false) || !consumed_root_order.empty() ||
+			    !native_publication_terms_valid(publication_terms) ||
+			    publication_terms.disappear)
+				return false;
+			auto candidate = *payload;
+			auto &r = candidate.native_recovery;
+			r.present = true;
+			r.player_pid = player_pid;
+			r.acknowledged_save_revision = acknowledged_save_revision;
+			r.publication_terms = publication_terms;
+			if (!shop_trade_recovery_forest_freeze(
+				    original_player_items,
+				    shop_trade_recovery_forest_role::player_before,
+				    &r.player_before) ||
+			    !shop_trade_recovery_forest_freeze(
+				    original_player_items,
+				    shop_trade_recovery_forest_role::player_after,
+				    &r.player_after) ||
+			    !native_fee_shape(candidate, true))
+				return false;
+			*payload = std::move(candidate);
+			return true;
+		}
+		if (payload->native_money.player_wallet_mapping_id ||
+		    payload->native_money.mobile_wallet_mapping_id ||
+		    payload->native_money.projection != native_quest_coin_give_projection{})
+			return false;
+		if (payload->native_cost.present && !native_cost_value_valid(*payload))
+			return false;
+		if (!payload->native_cost.present &&
+		    (payload->native_cost.fee_only || payload->native_cost.completion_slot ||
+		     payload->native_cost.wallet_mapping_id ||
+		     payload->native_cost.projection != native_quest_cost_projection{}))
+			return false;
 		if (!valid_native_mobile_context(*payload,
 						 ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION))
 			return false;
@@ -1783,8 +2317,13 @@ bool item_transfer_command_encode_native_mobile_recovery(const item_transfer_pay
 	try
 	{
 		std::vector<uint8_t> candidate;
-		if (!encode_payload(payload, ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION,
-				    &candidate))
+		if (!(payload.native_money.present ?
+			      encode_native_money(payload, true, &candidate) :
+		      payload.native_cost.present ?
+			      encode_native_cost(payload, true, &candidate) :
+			      encode_payload(payload,
+					     ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION,
+					     &candidate)))
 			return false;
 		*encoded = std::move(candidate);
 		return true;
@@ -2046,6 +2585,87 @@ static bool decode_payload(const critical_command &command, item_transfer_payloa
 bool item_transfer_command_decode_payload(const critical_command &command,
 					  item_transfer_payload *payload)
 {
+	if (native_money_version(command.payload_version))
+	{
+		try
+		{
+			return decode_native_money(command, payload);
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+	}
+	if (native_cost_version(command.payload_version))
+	{
+		if (command.payload.size() >= 4 && command.payload[0] == 'N' &&
+		    command.payload[1] == 'Q' && command.payload[2] == 'F' &&
+		    command.payload[3] == '2')
+			try
+			{
+				return decode_native_fee(command, payload);
+			}
+			catch (const std::bad_alloc &)
+			{
+				return false;
+			}
+		if (!payload || command.type != critical_command_type::item_transfer ||
+		    command.payload.size() < ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES ||
+		    command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+			return false;
+		try
+		{
+			const auto *wire = command.payload.data();
+			const uint16_t inner_version =
+				command.payload_version ==
+						ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION ?
+					ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION :
+					ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION;
+			if (wire[0] != 'N' || wire[1] != 'Q' || wire[2] != 'F' || wire[3] != '1' ||
+			    get_u16(wire + 4) != 1 || get_u16(wire + 6) != inner_version ||
+			    !get_u64(wire + 16))
+				return false;
+			const size_t body_size = get_u32(wire + 8), cost_size = get_u32(wire + 12);
+			const size_t available = command.payload.size() -
+						 ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES;
+			if (body_size > available || cost_size != available - body_size)
+				return false;
+			auto original = command;
+			original.payload_version = inner_version;
+			original.payload.assign(
+				command.payload.begin() +
+					ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES,
+				command.payload.begin() +
+					ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES + body_size);
+			item_transfer_payload candidate{};
+			if (!item_transfer_command_decode_payload(original, &candidate))
+				return false;
+			candidate.native_cost.present = true;
+			candidate.native_cost.wallet_mapping_id = get_u64(wire + 16);
+			if (native_quest_cost_projection_decode(
+				    { wire + ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES +
+					      body_size,
+				      cost_size },
+				    &candidate.native_cost.projection) !=
+				    native_quest_cost_projection_result::ok ||
+			    !native_cost_value_valid(candidate))
+				return false;
+			std::vector<uint8_t> canonical;
+			if (!encode_native_cost(
+				    candidate,
+				    inner_version ==
+					    ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION,
+				    &canonical) ||
+			    canonical != command.payload)
+				return false;
+			*payload = std::move(candidate);
+			return true;
+		}
+		catch (const std::bad_alloc &)
+		{
+			return false;
+		}
+	}
 	if (!native_mobile_version(command.payload_version))
 		return decode_payload(command, payload);
 	if (!payload)
@@ -2146,17 +2766,23 @@ bool item_transfer_command_build_native_mobile(critical_command *command,
 		std::vector<uint8_t> encoded;
 		if (!item_transfer_command_encode_native_mobile(payload, &encoded))
 			return false;
-		critical_command candidate = { .schema_version = CRITICAL_COMMAND_SCHEMA_VERSION,
-					       .operation_id = operation_id,
-					       .type = critical_command_type::item_transfer,
-					       .payload_version =
-						       ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION,
-					       .source_site = source_site,
-					       .deadline_class = deadline_class,
-					       .accepted_at_usec = 0,
-					       .keys = {},
-					       .expected_revisions = {},
-					       .payload = std::move(encoded) };
+		critical_command candidate = {
+			.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION,
+			.operation_id = operation_id,
+			.type = critical_command_type::item_transfer,
+			.payload_version =
+				payload.native_money.present ?
+					ITEM_TRANSFER_NATIVE_MOBILE_MONEY_PAYLOAD_VERSION :
+				payload.native_cost.present ?
+					ITEM_TRANSFER_NATIVE_MOBILE_COST_PAYLOAD_VERSION :
+					ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION,
+			.source_site = source_site,
+			.deadline_class = deadline_class,
+			.accepted_at_usec = 0,
+			.keys = {},
+			.expected_revisions = {},
+			.payload = std::move(encoded)
+		};
 		if (!populate_command_entities(&candidate, payload))
 			return false;
 		*command = std::move(candidate);
@@ -2184,7 +2810,12 @@ bool item_transfer_command_build_native_mobile_recovery(
 			.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION,
 			.operation_id = operation_id,
 			.type = critical_command_type::item_transfer,
-			.payload_version = ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION,
+			.payload_version =
+				payload.native_money.present ?
+					ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RECOVERY_PAYLOAD_VERSION :
+				payload.native_cost.present ?
+					ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION :
+					ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION,
 			.source_site = source_site,
 			.deadline_class = deadline_class,
 			.accepted_at_usec = 0,
@@ -2201,4 +2832,145 @@ bool item_transfer_command_build_native_mobile_recovery(
 	{
 		return false;
 	}
+}
+
+namespace
+{
+bool native_money_result_valid(const item_native_mobile_money_result &value) noexcept
+{
+	return value.mobile_instance_id && value.mobile_instance_id != UINT64_MAX &&
+	       value.player_pid && value.player_pid <= INT32_MAX && value.mobile_cash_revision &&
+	       value.mobile_revision && value.stock_revision &&
+	       value.player_custody_revision != UINT64_MAX;
+}
+}
+bool item_native_mobile_fee_result_build(const item_transfer_payload &payload,
+					 item_native_mobile_fee_result *output) noexcept
+try
+{
+	if (!output || !native_fee_shape(payload, true))
+		return false;
+	item_native_mobile_fee_result value{};
+	value.mobile_instance_id = payload.native_mobile.reference.mobile_instance_id;
+	value.player_pid = payload.native_mobile.final_giver_pid;
+	value.mobile_cash_revision = payload.native_cost.projection.after_revision;
+	value.mobile_revision = payload.native_mobile.reference.mobile_revision + 1;
+	value.stock_revision = payload.native_mobile.reference.stock_revision;
+	value.native_custody_revision = payload.expected_from_revision;
+	value.player_custody_revision = payload.expected_to_revision;
+	*output = value;
+	return true;
+}
+catch (const std::bad_alloc &)
+{
+	return false;
+}
+bool item_native_mobile_fee_result_encode(
+	const item_native_mobile_fee_result &value,
+	std::array<uint8_t, ITEM_TRANSFER_NATIVE_MOBILE_FEE_RESULT_BYTES> *output) noexcept
+{
+	if (!output || !value.mobile_instance_id || value.mobile_instance_id == UINT64_MAX ||
+	    !value.player_pid || value.player_pid > INT32_MAX || !value.mobile_cash_revision ||
+	    !value.mobile_revision || value.stock_revision != value.native_custody_revision)
+		return false;
+	std::array<uint8_t, ITEM_TRANSFER_NATIVE_MOBILE_FEE_RESULT_BYTES> bytes{};
+	bytes[0] = 'N';
+	bytes[1] = 'F';
+	bytes[2] = 'R';
+	bytes[3] = '1';
+	put_u16(bytes.data() + 4, 1);
+	put_u64(bytes.data() + 8, value.mobile_instance_id);
+	put_u32(bytes.data() + 16, value.player_pid);
+	put_u64(bytes.data() + 24, value.mobile_cash_revision);
+	put_u64(bytes.data() + 32, value.mobile_revision);
+	put_u64(bytes.data() + 40, value.stock_revision);
+	put_u64(bytes.data() + 48, value.native_custody_revision);
+	put_u64(bytes.data() + 56, value.player_custody_revision);
+	*output = bytes;
+	return true;
+}
+bool item_native_mobile_fee_result_decode(std::span<const uint8_t> bytes,
+					  item_native_mobile_fee_result *output) noexcept
+{
+	if (!output || bytes.size() != ITEM_TRANSFER_NATIVE_MOBILE_FEE_RESULT_BYTES ||
+	    bytes[0] != 'N' || bytes[1] != 'F' || bytes[2] != 'R' || bytes[3] != '1' ||
+	    get_u16(bytes.data() + 4) != 1 || get_u16(bytes.data() + 6) ||
+	    get_u32(bytes.data() + 20))
+		return false;
+	item_native_mobile_fee_result value{};
+	value.mobile_instance_id = get_u64(bytes.data() + 8);
+	value.player_pid = get_u32(bytes.data() + 16);
+	value.mobile_cash_revision = get_u64(bytes.data() + 24);
+	value.mobile_revision = get_u64(bytes.data() + 32);
+	value.stock_revision = get_u64(bytes.data() + 40);
+	value.native_custody_revision = get_u64(bytes.data() + 48);
+	value.player_custody_revision = get_u64(bytes.data() + 56);
+	std::array<uint8_t, ITEM_TRANSFER_NATIVE_MOBILE_FEE_RESULT_BYTES> canonical{};
+	if (!item_native_mobile_fee_result_encode(value, &canonical) ||
+	    !std::equal(bytes.begin(), bytes.end(), canonical.begin()))
+		return false;
+	*output = value;
+	return true;
+}
+
+bool item_native_mobile_money_result_build(const item_transfer_payload &payload,
+					   item_native_mobile_money_result *output) noexcept
+{
+	if (!output || !native_money_shape(payload, payload.native_recovery.present))
+		return false;
+	const auto &reference = payload.native_mobile.reference;
+	const auto &projection = payload.native_money.projection;
+	const item_native_mobile_money_result result{
+		reference.mobile_instance_id,	  payload.native_mobile.final_giver_pid,
+		projection.player_after_revision, projection.mobile_after_revision,
+		reference.mobile_revision + 1,	  payload.expected_from_revision,
+		reference.stock_revision
+	};
+	if (!native_money_result_valid(result))
+		return false;
+	*output = result;
+	return true;
+}
+bool item_native_mobile_money_result_encode(
+	const item_native_mobile_money_result &value,
+	std::array<uint8_t, ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RESULT_BYTES> *output) noexcept
+{
+	if (!output || !native_money_result_valid(value))
+		return false;
+	std::array<uint8_t, ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RESULT_BYTES> result{};
+	result[0] = 'N';
+	result[1] = 'Q';
+	result[2] = 'R';
+	result[3] = '1';
+	put_u16(result.data() + 4, 1);
+	put_u16(result.data() + 6, ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RESULT_BYTES);
+	// Existing item decoder always refuses count zero at offset8, preserving
+	// exact legacy result semantics even for small native instance identities.
+	put_u64(result.data() + 16, value.mobile_instance_id);
+	put_u32(result.data() + 24, value.player_pid);
+	put_u64(result.data() + 32, value.player_wallet_revision);
+	put_u64(result.data() + 40, value.mobile_cash_revision);
+	put_u64(result.data() + 48, value.mobile_revision);
+	put_u64(result.data() + 56, value.player_custody_revision);
+	put_u64(result.data() + 64, value.stock_revision);
+	*output = result;
+	return true;
+}
+bool item_native_mobile_money_result_decode(std::span<const uint8_t> bytes,
+					    item_native_mobile_money_result *output) noexcept
+{
+	if (!output || bytes.size() != ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RESULT_BYTES ||
+	    bytes[0] != 'N' || bytes[1] != 'Q' || bytes[2] != 'R' || bytes[3] != '1' ||
+	    get_u16(bytes.data() + 4) != 1 || get_u16(bytes.data() + 6) != bytes.size() ||
+	    get_u64(bytes.data() + 8) || get_u32(bytes.data() + 28))
+		return false;
+	const item_native_mobile_money_result value{
+		get_u64(bytes.data() + 16), get_u32(bytes.data() + 24), get_u64(bytes.data() + 32),
+		get_u64(bytes.data() + 40), get_u64(bytes.data() + 48), get_u64(bytes.data() + 56),
+		get_u64(bytes.data() + 64)
+	};
+	if (!native_money_result_valid(value))
+		return false;
+	*output = value;
+	return true;
 }

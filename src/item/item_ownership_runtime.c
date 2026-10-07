@@ -118,6 +118,60 @@ bool item_ownership_runtime_snapshot_active_root(
 	return snapshot_root(root_item_uid, limit, true, snapshot);
 }
 
+bool item_ownership_runtime_published_native_observer::snapshot_links(
+	std::span<const uint64_t> selected_uids, size_t limit,
+	std::vector<item_ownership_runtime_entry> *output) noexcept
+{
+	if (!output || !limit || limit > ITEM_OWNERSHIP_RUNTIME_MAX ||
+	    selected_uids.size() > PLAYER_SNAPSHOT_MAX_ROWS)
+		return false;
+	uint64_t previous = 0;
+	for (const auto uid : selected_uids)
+	{
+		if (!uid || uid == UINT64_MAX || uid <= previous)
+			return false;
+		previous = uid;
+	}
+	try
+	{
+		const auto selected = [&](uint64_t uid) noexcept
+		{ return std::binary_search(selected_uids.begin(), selected_uids.end(), uid); };
+		const auto matches = [&](const item_ownership_runtime_entry &entry) noexcept
+		{
+			return entry.state == item_custody_state::active &&
+			       (selected(entry.item_uid) || selected(entry.root_item_uid) ||
+				(entry.parent_item_uid && selected(entry.parent_item_uid)));
+		};
+		size_t count = 0;
+		for (const auto &[uid, entry] : entries)
+		{
+			(void)uid;
+			if (matches(entry))
+			{
+				if (count >= limit)
+					return false;
+				++count;
+			}
+		}
+		std::vector<item_ownership_runtime_entry> captured;
+		captured.reserve(count);
+		for (const auto &[uid, entry] : entries)
+		{
+			(void)uid;
+			if (matches(entry))
+				captured.push_back(entry);
+		}
+		std::sort(captured.begin(), captured.end(),
+			  [](const auto &a, const auto &b) { return a.item_uid < b.item_uid; });
+		*output = std::move(captured);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
 bool item_ownership_runtime_hydrate(const item_ownership_runtime_entry &entry)
 {
 	if (!entry.item_uid || !entry.root_item_uid || !item_owner_identity_valid(entry.owner) ||

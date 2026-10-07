@@ -64,6 +64,19 @@
         "scripts/validate_data_lifecycle.py"
       ]
     },
+    "maintained_producer_writer_refresh_primary_20261007": {
+      "base_commit": "27ba5cd565bbbff68feee7cde3e4574c6eaed3ca",
+      "coverage_complete": false,
+      "new_projection_routes": 5,
+      "new_unique_sites_reviewed": 24,
+      "qualification_note": "Private frozen-source evidence is historical and not current maintained-tree route/backend qualification.",
+      "release_safe": false,
+      "runtime_qualified": false,
+      "source_manifest": "tmp/maintained-producer-integration-primary-20261007/IMPORT-MANIFEST.json",
+      "status": "source_reviewed_inventory_location_refresh_unqualified",
+      "unchanged_complete_line_location_moves": 269,
+      "unmapped_current_unique_sites": 0
+    },
     "native_birth_source_refresh": {
       "current_pinned_paths": 149,
       "original_pinned_paths": 107,
@@ -73,19 +86,50 @@
       "source_tree": "4021e7fe0da136ad8fdec04f57d58cc04af4cb2c"
     },
     "scanner_scope": "Conservative lexical inventory only. Explicit retained SHOP preparation/start wrappers are included; no route qualification is inferred.",
-    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending. Reviewed native placement-order conversion is integrated into the read-only world witness; original publication driver remains unfinished and native qualification deferred. Reviewed NPC flat native image reader/exact-before bundle preparer is integrated with no in-tree caller or standalone write/commit; protected namespace lifecycle/Plan5 handling and same-root native parent remain unfinished. Existing corruption-guard declaration header is included in native NPC capture after peer both-backend compiler refusal; copied-source dual-backend probes are peer evidence only, combined maintained build remains deferred. Source provenance now explicitly distinguishes known integrated-unqualified and unpublished candidate shapes; strict contracts bind every integrated component pin and locate the reviewed native callsites by function/excerpt. No route or execution evidence is promoted. Source-reviewed typed keeper sell-store insertion ordering shares the existing player ordering implementation; no private native publication consumer is installed or qualified. Source-reviewed pure active-root custody census shares old root observation and preserves retained historical states; private shop consumer remains unintegrated and unqualified. Source-reviewed bounded canonical shop recovery forest binding codecs are integrated as pure value helpers; the explicit v8 command, producer, original SQL validation, cold replay/publication and final qualification remain private/unfinished. Existing journal limits, inactive shop versions and admission/ACK gates are unchanged. Maintained native reference/source-event codecs are extracted without changing original encoded bytes or image/capture policy; complete production and focused link recipes are updated. Native char_data now has zeroable runtime-only reference storage and a read-only accessor requiring the originally observed runtime generation before pointer access. No birth writer, durable restore record, UID issuance or ACK authority is installed by this slice; major-plan execution remains deferred. Reviewed SHOP v8 producer/checkpoint, literal runtime payload, complete destination weight, original SQL images, exact retained receipt verification and held live publication source are composed with all companion headers and production objects. Current cold image observation grants no startup/rebind/native publication or ACK authority. Central accounted SHOP admission remains closed and canonical schema0056 is unchanged; schema0057, real producer invocation, cold continuation, flat parity and major-plan native/gameplay/recovery qualification remain unfinished. Previously reviewed detached native-mobile loader is source integrated with both legacy overloads/probe kept on their original path. Preparation has no live list/count/runtime/event publication; consumption precedes room/special hooks. Private dormant stage grants no original source, durable UID or ACK, and adds no durable recovery format or NPC state ledger. Original issuer/birth/restore/retirement and major-plan qualification remain open. SHOP owned submission now accepts the original native v7 or recovery v8 command; the v8 builder was previously rejected by a v7-only guard. Decode, exact operation/checkpoint/held-player proof, all other version restrictions and admission/activation gates remain unchanged. Source-only correction; major-plan execution remains deferred. Four SHOP producers and the original retained driver are source integrated; central SHOP availability remains closed. Source review corrected actor-independent uncertain readback ordering and removed an unnecessary live-keeper gate after proven local cancellation. No native/SQL/services or major-plan tests ran; cold recovery, coherent schemas, flat parity and R1-R8 qualification remain open. Native mobile v2 economic images retain exact four-denomination cash and an original owner-supplied cash revision. Historical v1 cash remains unknown/read-only; both native participants enforce known cash and exact cash/mobile revision changes. Source review/pins only; original birth/source/restore/retirement and major-plan native qualification remain open. Private SQL SHOP runtime publication now stages a missing revision cache entry from the original authenticated current projection, preserving newer-cache refusal and final session/census proof. Source-reviewed only; native/cold/major-plan qualification stays open. Explicit native-mobile owner/key and v11 quest item contracts, final-giver reward binding, read-only native custody compatibility and complete extracted-codec recipe closure are source-integrated. Legacy/default payload10 remains unchanged; ordinary schema1 execution and generic admission reject native mutations. Source review/AST/syntax/pins/census only; original native parent, birth/source/restore/producer/publication and major-plan qualification remain open. Pure cold SHOP observation now records exact addressed-body presence, disconnected account availability, complete physical forests and original role bindings without rebind/publication authority. Stale same-template foreign shop bindings refuse rather than masquerading as absence. Source review/format/pins only; original replay/native mutation/guarded ACK and major-plan native qualification remain open. Explicit native quest SQL/flat borrowed item participants, ordered stock transitions and focused recipe closure are source-integrated, with full-player subtree closure, separate forest/event bounds and preserved transient error classification. Generic admission, schema0056 and inactive behavior stay closed/unchanged; native birth/source/root/publication/restore/ACK and major-plan qualification remain open. SHOP preparation reads the decoded frozen epoch through admission.metadata.epoch, preserving exact original mapping equality and all wallet/bank/token/timestamp guards. Source-only compiler-defect repair; combined native qualification remains deferred. SHOP original-refusal cancellation authenticates and pins the exact command/receipt before its private cleanup callback; false cleanup retains fences/hold, and the explicit existing live no-effect continuation remains. Source-only; cold SQL BEFORE integration and native qualification remain open. Explicit absent native-mobile context initializes all three ordinary movement/batch/craft payload aggregates; original semantics and safety gates remain. Peer reproduced both-policy missing-field build diagnostics; local source-only repair, maintained build qualification deferred. Explicit SELECT-only original never-admitted SHOP BEFORE reader retains exact bound revisions/manifests and inbox/root/source/evidence/outbox absence under original session; no execution receipt or rejection synthesized. Source-reviewed interface only; cold caller/native/flat qualification remain open. Recovery prototypes parse after deterministic boot binders before populated native sidecar restoration; allocation-free serialized boot finalizer snapshots final existing procedure bindings before workers. No native index binding writes or runtime reseal. Source-only; lazy binding/restoration staleness and native recovery qualification remain open. Only inner capture_literal_root vector renamed tree_literal for maintained SQL GCC shadow error; exact outer capture and original literal policy retained. Source-only; major-plan executable qualification pending. Reviewed original cold SHOP SQL owner registered/pulsed with exact literal staging, retained callback tails, full original receipt-or-never-admitted refusal proof and confirmed original-session rollback before guarded ACK/cancellation. Eight new native mutation sites classified; current final boot binding seal preserved. Source-only: flat parity, missing lazy bindings and major-plan native/gameplay/recovery qualification remain open. Original cold procedure binding is prepared before fresh original proof and allocation-free retained enrollment; normal native policy stays. Source-only; native link/recovery and flat parity remain unqualified.",
+    "scope": "Coin/collector, retained flat v3 startup and six accounted-shop contract source inputs; source reviewed only. No new native/gameplay qualification or complete census claim. Collector native row comparison now has checked signed/unsigned bounds after peer strictbuild refusal; no new native qualification. Collector SQL publication row equality now explicitly rejects negative native IDs before unsigned comparison; exact peer diagnostic candidate, no new local runtime qualification. Source-reviewed canonical NPC value codecs and pure ordered full stock capture are integrated and registered, without native birth/custody/coordinator/lifecycle/quest activation. Qualification deferred to major-plan readiness; former e018 build/restore evidence is historical for its frozen native inputs. Source-reviewed complete shop world witness is integrated and registered as a pure observation component; no native publication/ACK caller or gameplay activation is enabled. Source-reviewed borrowed NPC SQL image participant is integrated/registered as a dormant definition; parent admitted root, migration0059, lifecycle/custody, flat bundle and native qualification remain pending. Reviewed native placement-order conversion is integrated into the read-only world witness; original publication driver remains unfinished and native qualification deferred. Reviewed NPC flat native image reader/exact-before bundle preparer is integrated with no in-tree caller or standalone write/commit; protected namespace lifecycle/Plan5 handling and same-root native parent remain unfinished. Existing corruption-guard declaration header is included in native NPC capture after peer both-backend compiler refusal; copied-source dual-backend probes are peer evidence only, combined maintained build remains deferred. Source provenance now explicitly distinguishes known integrated-unqualified and unpublished candidate shapes; strict contracts bind every integrated component pin and locate the reviewed native callsites by function/excerpt. No route or execution evidence is promoted. Source-reviewed typed keeper sell-store insertion ordering shares the existing player ordering implementation; no private native publication consumer is installed or qualified. Source-reviewed pure active-root custody census shares old root observation and preserves retained historical states; private shop consumer remains unintegrated and unqualified. Source-reviewed bounded canonical shop recovery forest binding codecs are integrated as pure value helpers; the explicit v8 command, producer, original SQL validation, cold replay/publication and final qualification remain private/unfinished. Existing journal limits, inactive shop versions and admission/ACK gates are unchanged. Maintained native reference/source-event codecs are extracted without changing original encoded bytes or image/capture policy; complete production and focused link recipes are updated. Native char_data now has zeroable runtime-only reference storage and a read-only accessor requiring the originally observed runtime generation before pointer access. No birth writer, durable restore record, UID issuance or ACK authority is installed by this slice; major-plan execution remains deferred. Reviewed SHOP v8 producer/checkpoint, literal runtime payload, complete destination weight, original SQL images, exact retained receipt verification and held live publication source are composed with all companion headers and production objects. Current cold image observation grants no startup/rebind/native publication or ACK authority. Central accounted SHOP admission remains closed and canonical schema0056 is unchanged; schema0057, real producer invocation, cold continuation, flat parity and major-plan native/gameplay/recovery qualification remain unfinished. Previously reviewed detached native-mobile loader is source integrated with both legacy overloads/probe kept on their original path. Preparation has no live list/count/runtime/event publication; consumption precedes room/special hooks. Private dormant stage grants no original source, durable UID or ACK, and adds no durable recovery format or NPC state ledger. Original issuer/birth/restore/retirement and major-plan qualification remain open. SHOP owned submission now accepts the original native v7 or recovery v8 command; the v8 builder was previously rejected by a v7-only guard. Decode, exact operation/checkpoint/held-player proof, all other version restrictions and admission/activation gates remain unchanged. Source-only correction; major-plan execution remains deferred. Four SHOP producers and the original retained driver are source integrated; central SHOP availability remains closed. Source review corrected actor-independent uncertain readback ordering and removed an unnecessary live-keeper gate after proven local cancellation. No native/SQL/services or major-plan tests ran; cold recovery, coherent schemas, flat parity and R1-R8 qualification remain open. Native mobile v2 economic images retain exact four-denomination cash and an original owner-supplied cash revision. Historical v1 cash remains unknown/read-only; both native participants enforce known cash and exact cash/mobile revision changes. Source review/pins only; original birth/source/restore/retirement and major-plan native qualification remain open. Private SQL SHOP runtime publication now stages a missing revision cache entry from the original authenticated current projection, preserving newer-cache refusal and final session/census proof. Source-reviewed only; native/cold/major-plan qualification stays open. Explicit native-mobile owner/key and v11 quest item contracts, final-giver reward binding, read-only native custody compatibility and complete extracted-codec recipe closure are source-integrated. Legacy/default payload10 remains unchanged; ordinary schema1 execution and generic admission reject native mutations. Source review/AST/syntax/pins/census only; original native parent, birth/source/restore/producer/publication and major-plan qualification remain open. Pure cold SHOP observation now records exact addressed-body presence, disconnected account availability, complete physical forests and original role bindings without rebind/publication authority. Stale same-template foreign shop bindings refuse rather than masquerading as absence. Source review/format/pins only; original replay/native mutation/guarded ACK and major-plan native qualification remain open. Explicit native quest SQL/flat borrowed item participants, ordered stock transitions and focused recipe closure are source-integrated, with full-player subtree closure, separate forest/event bounds and preserved transient error classification. Generic admission, schema0056 and inactive behavior stay closed/unchanged; native birth/source/root/publication/restore/ACK and major-plan qualification remain open. SHOP preparation reads the decoded frozen epoch through admission.metadata.epoch, preserving exact original mapping equality and all wallet/bank/token/timestamp guards. Source-only compiler-defect repair; combined native qualification remains deferred. SHOP original-refusal cancellation authenticates and pins the exact command/receipt before its private cleanup callback; false cleanup retains fences/hold, and the explicit existing live no-effect continuation remains. Source-only; cold SQL BEFORE integration and native qualification remain open. Explicit absent native-mobile context initializes all three ordinary movement/batch/craft payload aggregates; original semantics and safety gates remain. Peer reproduced both-policy missing-field build diagnostics; local source-only repair, maintained build qualification deferred. Explicit SELECT-only original never-admitted SHOP BEFORE reader retains exact bound revisions/manifests and inbox/root/source/evidence/outbox absence under original session; no execution receipt or rejection synthesized. Source-reviewed interface only; cold caller/native/flat qualification remain open. Recovery prototypes parse after deterministic boot binders before populated native sidecar restoration; allocation-free serialized boot finalizer snapshots final existing procedure bindings before workers. No native index binding writes or runtime reseal. Source-only; lazy binding/restoration staleness and native recovery qualification remain open. Only inner capture_literal_root vector renamed tree_literal for maintained SQL GCC shadow error; exact outer capture and original literal policy retained. Source-only; major-plan executable qualification pending. Reviewed original cold SHOP SQL owner registered/pulsed with exact literal staging, retained callback tails, full original receipt-or-never-admitted refusal proof and confirmed original-session rollback before guarded ACK/cancellation. Eight new native mutation sites classified; current final boot binding seal preserved. Source-only: flat parity, missing lazy bindings and major-plan native/gameplay/recovery qualification remain open. Original cold procedure binding is prepared before fresh original proof and allocation-free retained enrollment; normal native policy stays. Source-only; native link/recovery and flat parity remain unqualified. Maintained producer closure source census reviewed 2026-10-07: 269 complete unchanged source-line locations moved and 24 new mutation/projection sites assigned to their original owner routes; source integration only, all prior qualification and release limits retained.",
     "source_pins": {
-      "migrations/data_lifecycle_manifest.json": "336e75a754a64d1bcede8f4781b6258102c14b4989b656d600aa18f993ccc8f9",
-      "scripts/generate_economy_writer_coverage.py": "98e9cff667cc3dac39c2eafa578f6c6f6e2031a56fd200a2547df57c7d1dc99e",
-      "scripts/validate_data_lifecycle.py": "53102ca41109d40f217e777a6b230c732d566a2484fc69e2b56a48d71aa81226",
+      "migrations/data_lifecycle_manifest.json": "ddefc295ee83c9b7b119024137de38615ed140dd6aaaddb477c7a0acb502a106",
+      "migrations/immutable/0063_quest_mobile_native_birth_origin.sh": "2baa44b16d4c6eb1a60fce04397a652f58731f4bf5e35fda0e546402ae3318e7",
+      "migrations/immutable/0063_quest_mobile_native_birth_origin.sql": "7ce0983b4c6f8b882d46dda75070f3124fccc8cc6b3f103ba6c05ede094739c4",
+      "migrations/immutable/0064_auction_custody_history.sh": "d93f4e8ed6f956eb16c17692a65cc5816df361945d08399e09d30593b6486b02",
+      "migrations/immutable/0064_auction_custody_history.sql": "83667d872f80621c1cae80ada858d5c03f56f7c468985299c439beae37b15ba4",
+      "migrations/migration_manifest.json": "106204f0a0b7c4bd9ebc756ebfcc8e34840ad75da90cf128bcbef0f236b0eae3",
+      "migrations/migration_manifest.master_0031.json": "1a8c478597abf280ee8cd88520763ef53fcbffb10a19d7905948d0c834809e62",
+      "migrations/migration_manifest.staging_0045.json": "4e49684e6bc75275171affbf43b139621ed8689035e51ddd2c015862832db537",
+      "migrations/reconcile_auction_transactions.sh": "59ff14a554c408f63e9c6fddb0502e7f21fc1af3f37737e244093ed7e7819ae9",
+      "migrations/runtime_compatibility_manifest.json": "41181dc0b2938366bf408e6ad6ec1b11e4c170d18777f84efa5e93dc02374974",
+      "migrations/verify_runtime_compatibility.sh": "1e55d588c4215cc4d7f3ba01b1edb92523e943f08521d0821c1e21365a8ace47",
+      "scripts/generate_economy_writer_coverage.py": "97057dccbeeb4224738270a9cf59e5b61fb7740151048584fb434b87072e70bb",
+      "scripts/validate_data_lifecycle.py": "8373fbbfb0eabdf22dabc42a4f10a857b4191bef1c0e9d11b86526bd24542091",
       "scripts/validate_economy_accounting.py": "90b8811f1d3785cdc26a9590e90a048c078e078e6db45e07be336faccbf43f3b",
-      "src/Makefile": "6077ffd42ef7cbe2a41da421723d027282f7a360ad5cfe67a6ff9f6875e0ee49",
+      "scripts/validate_runtime_compatibility.py": "9e113fde316d0b9643f33c5a6a724ca0f10fb24680ecbb4a5080498a268d5fcd",
+      "src/Makefile": "16a4a7a2e9a7498f7d4cdb376d9c3520fe34b8405a4b25869b144dfd795c9752",
       "src/classes/npc_alchemist.c": "86e8d7defaf974e7994252b63d4cb5486dad6e1749a3b06f0e953ca13eee715e",
       "src/classes/npc_alchemist.h": "a9d9b16956c802f1b4f5e5d8d651ffeeb56b5436a4352e1bfbcbe95305a11675",
+      "src/cmd/actmove.c": "9d585d0537f702567e0bdb41eb972eda8481f10da43e476d92f889a5d1ff05f6",
+      "src/cmd/actobj.c": "b32300c6cdac3bfc167d1c85c17f793f198f8a94c7f09320e15b2fac46c059c6",
+      "src/cmd/lockpick_retirement.c": "6f0afcea38b39f0bf1e546476e8024a5efb06b9170ceed5d47f186795768f0be",
+      "src/cmd/lockpick_retirement.h": "b02fcf35ab481f97bd95c3c23bc8f94a3b6347b15326b668646d49064fac7a4a",
       "src/core/random.c": "8bdeb01e550eea77b95e4f6c289ce2d890c2514baa8b6133d5df3803881c0a6c",
       "src/core/random.h": "4acb3cc5563a6aee76102dedbb4cd4a17198881319c6b6a94d5a5f0c54ca1a5d",
+      "src/core/runtime_compatibility_contract.h": "de8d873954c0fc6ff9f93986690f1b77a159f5eb920b5d46cdbff4844695510d",
       "src/core/structs.h": "e1a9776be892d6a6ec1abccd3487cd5f86d0574f80c072164766a752cb976db9",
-      "src/economy/coin_physical_recovery.c": "0670e71865ebe3543ec18c4142653ed0ea6499cd93cc3bb36f06407f951e8397",
+      "src/economy/auction_command.c": "d749a3635c6a2fb00210a6d0c88d75d96f3a0e22e2cbe7b8ddae838547150117",
+      "src/economy/auction_command.h": "ccbdb5e34de1a5748e1e234eea65c5eb51c6376d1804ee650979c0fce4b246b8",
+      "src/economy/auction_item_claim_accounting.c": "c9442b2bbd50e6edbafed159ed9b008255d1fc8659880937650a96ee5777bae4",
+      "src/economy/auction_item_claim_accounting.h": "6d994d6fe86f238927857b24ea88436b2f261b38e6ef99d18e200a40c45a5b6e",
+      "src/economy/auction_listing_accounting.c": "106319021aa7a5c8fce1dbbca3420c1089330d0aab7617c55b65913cf6e3fdf6",
+      "src/economy/auction_listing_accounting.h": "c9bba6749a9c81b888410cb7d085319c8f98152f34b2dcc0fb20082dbcb190d4",
+      "src/economy/auction_native_command_context.c": "e6531f8c25be35d87c995d1acc6a01b6ab9dbfa6634417afe144bd87b31506cb",
+      "src/economy/auction_native_command_context.h": "5b788b82d8d261c768f6fb78bcadd9f0945fde51530b0f5887983a63a9a10b1b",
+      "src/economy/auction_native_publication.c": "05a795a49e822c3836a1a900c3ce05eb8f82346687ffdf16b930e593791b631e",
+      "src/economy/auction_native_publication.h": "36d11f4cbc3e551985f8dc2c1ad5817eec175706af86602489f97531f5c6f87b",
+      "src/economy/auction_recovery_context.c": "f51081959a15f31721012f5ad604d72dea50b738240aeba43e5398334f978507",
+      "src/economy/auction_recovery_context.h": "bf53a80b683bbd0e5b73a375745101f14415f582c9a831c5280f6afd8d1ae923",
+      "src/economy/auction_repository.c": "894989b8af90de9a246026ac58a83eadc226fee259f47f18acfb4a84f5c8a106",
+      "src/economy/auction_repository.h": "c1c4bc8b9eb3a56e0e36072d159ca9a1a5bcb4f4c0f81b74741ee61de57024ab",
+      "src/economy/auction_transaction.c": "6f5b8ffbabc4f67460510200f8617093384d0905bcd2f4113d40484e78e89a33",
+      "src/economy/coin_physical_recovery.c": "1625aefef97376fad7990613e2f1887a788289e700fa0761d78d3c5360b93a0a",
       "src/economy/coin_physical_recovery.h": "c68cc556958cc45b8e71260824f4ac717d060cd7750bd45d57a45b798bccaf9a",
       "src/economy/collector_purchase_publication.c": "51478b2dfadb97c5aa910735a0337238e8aee964a3150b97fe80b0f9912ba9d1",
       "src/economy/collector_repository.c": "4a4467a8330a9b25e3d417b147834ed231558acceeafe4736754d0681acf57fd",
@@ -96,17 +140,17 @@
       "src/economy/collector_transaction.h": "e079d6188874f2cc05b73a7aaf919fef077d8445070074cbad8ea5f1ce2b44b9",
       "src/economy/currency_transaction.c": "4e505f698b8c266bac8b16f31e31a75e059e93a43fe1b40dbf9d23884f6152c7",
       "src/economy/currency_transaction.h": "fa8fa610b7af6b485575cebb22d3fab61f7adc8abdd480585ce1549795516035",
-      "src/economy/economic_accounting_plan.c": "7376ba1cbda03950d639686eabcd68aa0b78b1dc40863eefbd54332ab07dc9c9",
+      "src/economy/economic_accounting_plan.c": "53a3812a24cf4a3c9cfe36c368c6026f897ff6f38bc5c7aec14c0cbcaa75c4e8",
       "src/economy/economic_accounting_plan.h": "f3a6a57877b440c4772b0d2f6c4173834d683abdb9c37ce2c7f6f68cddad2c5e",
       "src/economy/economic_accounting_types.c": "5c2117874526ba9a1f93b3313eb9c13782e50c9d0f1d55763449089db68b36f1",
-      "src/economy/economic_command_admission.c": "431baf195b7e8249da5f0a28b0b68d794deea385361ccf0b1cbb46c74eecc675",
+      "src/economy/economic_command_admission.c": "e4ea8edc453baef3881382ed3a183cd99ec47aeb9aededb4bb4026d449bee4df",
       "src/economy/economic_command_admission.h": "dc19a944f07fde080afd742b58f0cafeab6eca74fa850c980019391ca912c2ba",
-      "src/economy/economic_gameplay_authority.c": "1442599fa03bc3d47c9219e8d53f7f0b719cec1ea240c230cc81d873230b6aed",
-      "src/economy/economic_gameplay_authority.h": "4dce3d494c9636b1f335a2b24c39f0e15f4ec1ad84423fdfa057fe3b0eff0352",
+      "src/economy/economic_gameplay_authority.c": "fa49c04a044c576222c958ce67e5d3cf9f0bcf25f2aac97c4f21edd10dff6f0a",
+      "src/economy/economic_gameplay_authority.h": "3b532d79a6960164673b91b65098d2689c7ec7ec7a0cc8d87e8a0a5a9c096e4b",
       "src/economy/economic_source_event.c": "acefc0d801998c5bcc28c0841d774e423bb930bfc0992d3b443fec592ff0fd08",
       "src/economy/economic_source_event.h": "66bc66de2b214f0356ff7a585db320bb5300aacb6d88ac17ba53cd47f76cd2f4",
-      "src/economy/item_transfer_accounting.c": "cb58d2254133d397e56c5030c7d368d5cce9b963069b1636d65123478a3effbb",
-      "src/economy/item_transfer_accounting.h": "f39b89553ae344444951af50327f8b828a512b3472b95dd212577aa16431728c",
+      "src/economy/item_transfer_accounting.c": "33c6e90ff34c91a8222609f69e3b113116e0090a1538294b747559797d9b3f85",
+      "src/economy/item_transfer_accounting.h": "dd4e0c9af0a1a294d70c89d8f7507d616128c1e104995cb11a27b020c4d12255",
       "src/economy/native_mobile_birth_accounting.c": "09437f45ed9cad2cde36dff6148cf720f59ecc8213c84bd85d4f111ef3e87055",
       "src/economy/native_mobile_birth_accounting.h": "52b51797a0e5df6d078be0ad4992934b6e2cceba36b330d70c0e55f0b7a1c1db",
       "src/economy/native_mobile_birth_command.c": "481c66e414aaba17659b78c2c6393fbd78b2a1f7c324ec731dc44532b5acabf5",
@@ -115,11 +159,16 @@
       "src/economy/native_mobile_birth_constructor_recipe.h": "3f0cf512c1c1e3388219b4a074e9129e6037acfb1df651128d7c9859f7ac52c9",
       "src/economy/native_mobile_birth_recipe.c": "53b7d693f9ac1a408b0078ed23e0fdf2eb4a8ef4aea5450fdf272ec8343efca8",
       "src/economy/native_mobile_birth_recipe.h": "62d92e521d980d18f1ac8c5a77bd710a2085422cd269017fe8863c8592b51e44",
-      "src/economy/native_mobile_birth_recovery.c": "215c5d48dc37d6a44ae807237cd3f30a17e8becbd284a83bdef8232fb5cdf595",
-      "src/economy/native_mobile_birth_recovery.h": "269541a4635d3c06b45349a0ca2dfda781b9b182d952a0e6177d5ebd539bbfb6",
+      "src/economy/native_mobile_birth_recovery.c": "23de0d2b2cb06910661d834e6ff92017c576073667f63e40d28e8701e84fa023",
+      "src/economy/native_mobile_birth_recovery.h": "131a063c2d7f1b1ce0bde88f62be134ce1a098e1a681b41b1db71d1eb965f2f7",
       "src/economy/native_mobile_birth_result.c": "474a8be7f167bb34bcd635c0731383285183c67b59ac46d05f18ea8040fcc26a",
       "src/economy/native_mobile_birth_result.h": "19f428199b098c023e9e18a9c4457a09f0176c5508b0f6460a2dab2ce5a034ec",
-      "src/economy/native_quest_consumption_capture.h": "51a1e8c5117e1c45b26793f7a6d82feffb775feb86f5197dab7cb625417c810f",
+      "src/economy/native_quest_coin_give.c": "fa804b66a8c2b4b5b544de4a8393a4d3a43cc295b7590c60dcaaf164440a2504",
+      "src/economy/native_quest_coin_give.h": "2dc5f786303d24554c81132fb05aac186921ec9cff6ca98751ff1117420ccddd",
+      "src/economy/native_quest_consumption_capture.h": "7f204f5c8dfa3ae7b5d4568944a48ac34803cabf42e5a09331c27060b1f00852",
+      "src/economy/native_quest_cost.c": "e3da8df9912b9dd0c64927ed6ce44b7c8ff3e99f9569af36676d3a9ecc4eea7e",
+      "src/economy/native_quest_cost.h": "42d919deaa1eb730ad043fc123ec87cdf1eedeeea29a27e4613fd6a5ccf5963c",
+      "src/economy/native_quest_cost_policy.h": "ac070ee049999f06992dea6f7793c0d7f4cd8e4d20c0a945dca1488ca51f0864",
       "src/economy/shop.c": "de8bdbe95cfa626c6ca869495ccc34afc0097af4c964d021ad2d66cb99d34393",
       "src/economy/shop.h": "8fcceb4db03ab4f0db88489ae9aa0b9e8edb8bfc53de092fb03be11460a5a610",
       "src/economy/shop_trade_accounting.c": "e9e428cdb65a30679a04e8ae044410c9fde042d82278045d441d0d66a2dabd5c",
@@ -151,57 +200,91 @@
       "src/flatfile/flatfile_item_repository.c": "26c87c0989a623b486d77edf02eb31ec0de9a2ba4ed19fb10722433d77fc9ddd",
       "src/flatfile/flatfile_item_repository.h": "beb29fede5eff15d864c0b193090b9285ac01342d26b178df2657127dae52d3a",
       "src/flatfile/flatfile_player_repository.c": "efc58eb49106a20d0a533d5a71592b8c257fcbf7b17ced077a4421c409f9c93a",
-      "src/flatfile/quest_mobile_native_flatfile.c": "b1f74d88c7cf5801711743ceb514e42292017a6051f9467270502c1e51e6bee6",
-      "src/flatfile/quest_mobile_native_flatfile.h": "a71b743a23da8e8ae5ed05cdb1e14de6b0f5b814105649e44c22eb10750abe97",
+      "src/flatfile/quest_mobile_native_flatfile.c": "21e1d3704977eceb98210d2866dd2ee8f4a08536a34cfffe83842a71495ce6d2",
+      "src/flatfile/quest_mobile_native_flatfile.h": "0a6896d61a34d1b189a1f63ca549c7049bf93572b59285113e8bd1984a722e3b",
       "src/item/enhance.c": "dc50a3fc114c29d63cba855f1e3c790420724274911693a01bf971717aa60f12",
       "src/item/enhance.h": "64c7a481af537d453c6c2ba745cee0aa1b8526170b81b31b26de3686385f7443",
+      "src/item/held_retirement_recovery.c": "b7532fffaba44c7f2b4ceb16c29d9148e6dc003f71d3c83bb6867ed1f6f59f31",
+      "src/item/held_retirement_recovery.h": "23d8b278345dbba675e2ff892bd4e3ee91433ae18c30dc9282118f856f202ccc",
+      "src/item/held_retirement_transport.h": "2913004e568257a2ea95a43d824363038b10ecb7d6c1795ff0ea2801afc991c0",
       "src/item/item_command_policy.c": "50a3706763988cc5f4b73dd4219607b984a060b912ad07f9d0c47d7b1b88b82b",
-      "src/item/item_movement_transaction.c": "18dfd4dbd07f44674e2feb8ff633b82547bf1f3e796f56da0ab7f98aaf7d5ef1",
-      "src/item/item_movement_transaction.h": "a244934d14fbce28b384b5fe5e40e3dde23b2fd5341d239157ffcea61dc3bff1",
-      "src/item/item_ownership_runtime.c": "b4e87dff4aafe2f360d927efc28700362d11015d7181b763c8a3b4c33bb7c388",
-      "src/item/item_ownership_runtime.h": "8fbc775fa4e6919834e56c1e1059b7abba1842753c59eaadbb42342d3c57871a",
-      "src/item/item_transfer_command.c": "874e2edc890a377cf7afd970102387211acc1740750836de7e968f4b12ebead6",
-      "src/item/item_transfer_command.h": "c6805ab7681946d3de48fd3dd092edee6c9f92153353874ac324ca060b038a22",
-      "src/item/item_transfer_repository.c": "738bc71bb6418badf09a234adb1e08998b37461875c9c0cf25b49f1efa7eb5f6",
-      "src/item/item_transfer_repository.h": "7f3e29d005d6268a5183345595c0060ac281e6b48d89bf9f6d70026d464fc8bb",
+      "src/item/item_movement_transaction.c": "794e0ceacfc25e072f6ce80158c663aa419f203a81d6ecfd182caba5ce0910af",
+      "src/item/item_movement_transaction.h": "31ad7e821058acacee1d66ddb780792c7be788753a8324ae40ffa0d61c0d64e3",
+      "src/item/item_ownership_runtime.c": "1e9e5ae868e78499349efb93beba895708a53a586e553ff334bff0e06686152b",
+      "src/item/item_ownership_runtime.h": "6463635d5ec9a62cebe8fdc267739bde7a9d7034f7b8295b850924a21195325a",
+      "src/item/item_transfer_command.c": "2885f7f912f7d99465e914cedaf15bc70bc269a309b15d59d8ccc35cb1377be7",
+      "src/item/item_transfer_command.h": "bf5338bcf5df8496ea737af025408034f7c1ed5284686964f0e63fbb354d6b25",
+      "src/item/item_transfer_repository.c": "8703be6161f9f0d03879432426d2ac7d8bab4ff3e6dc790968973521d76ba0e9",
+      "src/item/item_transfer_repository.h": "a22d2fc25ca2c9cd12ea12e207702d3c83b3fe4d3798bb3db1214268a49c5d4f",
+      "src/item/lockpick_retirement_continuation.c": "fcf706b98339b2a5266e3ea1897c93d399820c621a85c0aef99dcaf14007e0a3",
+      "src/item/lockpick_retirement_continuation.h": "bd74b154fdcddccc539ebee24cf43442ff859457dc94faa6148491b9a1d96bc2",
+      "src/item/native_quest_transport.h": "38dfcf2343b53adfa71b439f8552b3898000b4ca664b6c9daf68935721e0e6dc",
+      "src/item/quest_reward_continuation.h": "5d00eddbab2b36ff66ffd714b757bf87a88d3f6f7dda85a556eaa6c015ed4ae3",
       "src/mob/mobconv.c": "b79cc8825a40b6c6924c835181ab9bfb1ec96ce051da30ffd9f4922878e3312a",
       "src/mob/studioproclib.c": "299f91e89032d32ae01c492550010bf28d7f84077f4f62e6a5cf417f75bf1d4b",
       "src/mob/studioproclib.h": "515a80db161b60b3d22bb3dc89d66aaa3349709ad4247c825a68639a4f4bb184",
-      "src/net/comm.c": "2c884cfa5ec1644a33f40252af816cd6eccd10dff8dccbd32715eaedc4814303",
-      "src/persistence/critical_command.c": "4efd70c530be71a563f6ff2e492d2522c172b79a6cb5ca986c057d00c8014dc3",
-      "src/persistence/critical_command.h": "e72698c5c84efc0e52b9fb8de13b30c7f1c67b353b2aba2e60dfb4dcff50931f",
-      "src/persistence/critical_command_coordinator.c": "8ae0e75ebb0ddff1025dbcafda7519f66ce8b8c47b33ed31c8ee89f67403d150",
-      "src/persistence/critical_command_coordinator.h": "5a47d9ae897bebf3a0749cd62b6f11a1138e3995ae26c8de476ee01a6471420e",
-      "src/persistence/critical_command_journal.c": "01060cef8853e983994bc1cdb0a8396c9c590a8fd7f6bb02097b5856f789f878",
-      "src/persistence/critical_command_journal.h": "a65af3749c16f17507daa6c407d115b9979c96fd528518839eda4362bd5897ba",
-      "src/persistence/critical_command_repository.c": "eed81b3a31b3a0586cd6e449e11ce7e91e3778e4635c1b61fd2609fed3113188",
-      "src/persistence/critical_command_repository.h": "aff79ae5fe9ed2bbcb11b80a2064da5c2f140da2276f6f9a311048ab7a990176",
-      "src/persistence/economic_sql_accounting_lifecycle_transaction.c": "d1a3564b38008b7afef557666fb236677c701bf49183a4d07c27a0d8c3a7b011",
-      "src/persistence/economic_sql_accounting_lifecycle_transaction.h": "072cab4bb68499082691321def13aed276529a78dba2a5d13312aed0afffa5b2",
+      "src/net/comm.c": "b7c2f1cc4a91cbe30f0a06151e7795635546c6bf833ace42ec7901ba67910b89",
+      "src/persistence/critical_command.c": "e4e998c275831a7594b0abd1cd54e0aeba46b14b57f97d62a68ad479fa5d1f91",
+      "src/persistence/critical_command.h": "e07e2ede08b226b818f8b6b7c57d82c348742b69b618776f4a196ec5542a1bab",
+      "src/persistence/critical_command_coordinator.c": "1b1313b299e4cb16c1be26d0d3b037e3d229ccbf6183bf84ea4461492f0ba936",
+      "src/persistence/critical_command_coordinator.h": "0bd6cc62b7b33200d9a8885efbc77a91e2d721e0397c561fa362fdd8ee1feaa8",
+      "src/persistence/critical_command_journal.c": "5dae1b7fe3f02dbc262648403e40eb31431cbfd79767c8cec57e2c9bc94fc7c2",
+      "src/persistence/critical_command_journal.h": "a905b7a89a680dfeb521a7d8ce1444b5bc9e54bf400d605a17aa30430db6c33e",
+      "src/persistence/critical_command_repository.c": "adcb89e680d43663e8f1f17a1bc2ca6a11752043363f514adbb8771cd33fec31",
+      "src/persistence/critical_command_repository.h": "50f18f44ec31db0f0d087b1401fe59a5481562a1fdeba008dbc6e481678008c6",
+      "src/persistence/economic_sql_accounting_lifecycle_transaction.c": "67fd9bfc6f1aff663c30368cb67bd57aa79ac430b4b9df192d6872c562c34b36",
+      "src/persistence/economic_sql_accounting_lifecycle_transaction.h": "46b6a0a54e28185293c1e253fdcf227a3a3572eb848b7036739edff6766c9c59",
+      "src/persistence/economic_sql_auction_bid_transaction.c": "b49e906bf92d2791b846235f467b7a75586dfbc711354d4005f301503e78144a",
+      "src/persistence/economic_sql_auction_claim_endpoint.c": "68574fa4ebfc21833f1921e7ec378b5bfcb7f031ef4549d476eb58b56652740f",
+      "src/persistence/economic_sql_auction_item_claim_transaction.c": "d93346b6bca28b78e763eeb299a114f229f23cc60937e1265b6476a58a5a9a19",
+      "src/persistence/economic_sql_auction_listing_transaction.c": "47a873fcbac117132ed37cdbb0be7ba217a6f0846f57a61e31886803320dcddc",
+      "src/persistence/economic_sql_auction_money_claim_transaction.c": "703a68032b632b61b134977031ca0a52495cffd324ddae6fc83fff873113df00",
+      "src/persistence/economic_sql_auction_retained.c": "049c07e82301c84b816f63783146a4b3a5b5073b1f745b6d9ed078be077f2b49",
+      "src/persistence/economic_sql_auction_retained.h": "3a62cbf53be4441d54a138acfaccecef72cacdb8911ecf8f549a9c04d39f114a",
+      "src/persistence/economic_sql_auction_settlement_transaction.c": "18b3cf4a830cd43a71607a8e3b77c37e2aff84e871b39e7b42c2ea8a6dff4e50",
+      "src/persistence/economic_sql_item_transfer_transaction.c": "704879929d77ec1eeb8a32eff491411da21100e264892672c2f9997edc60dee8",
+      "src/persistence/economic_sql_item_transfer_transaction.h": "64d3e9e87f010a1fbc812b95389c419c2c1552555101a89b7e9c3ded715cc764",
+      "src/persistence/economic_sql_lifecycle_guard.c": "4c84472c93fd413d0faca08df8fba5560cf86ae1c6ed74ad3bf28228f5968a57",
+      "src/persistence/economic_sql_lifecycle_guard.h": "7daf8e8f55dc5d881da6fb2965cccb5e36994d42b02f260cd65619ffff68a2af",
+      "src/persistence/economic_sql_native_mobile_birth_transaction.c": "37cc4a1fc38aa3e3ca426f85e8f7fd7b4ec122f588e2fc4674cd217edaea99f4",
+      "src/persistence/economic_sql_native_mobile_birth_transaction.h": "e6f19d850ce94ef853416073ec28ed379da6341c8390e9900a0b3a6bff8c60a0",
       "src/persistence/economic_sql_shop_trade_transaction.c": "8b0511748ea8588cd1066364183dcb0531c54fd12436cb1b2c9b97566d4de639",
       "src/persistence/economic_sql_shop_trade_transaction.h": "b85d982ef6559cde4dd34a031ced0e1dfb67013f4585f260caba0da31ea8e361",
+      "src/persistence/held_retirement_sql_observer.c": "9b51e13afcae6279f671967641eedaa4731764fc9074d9fcaf316b8648d7217b",
+      "src/persistence/quest_mobile_native_origin_sql.c": "23e9a58a34f4108263ea29f70fd69053595200ecb6c4fc5d66a26d5e2ae3686b",
+      "src/persistence/quest_mobile_native_origin_sql.h": "5b6bb6041574f99d18b0f57721c5ee071201999cefed44878732662261867f47",
       "src/persistence/quest_mobile_native_sql.c": "c4b8b9b9ac2e4f313ae2c00b75571d96c7185c9b84fd91eb40761b598d390d3b",
       "src/persistence/quest_mobile_native_sql.h": "d1b303bd0e3c89d97e2a99a7426f8e455e761de29970e640f769fe47fd5acab5",
+      "src/persistence/quest_mobile_published_world_sql.c": "eda0d11984460555e9a87f51302f45ed7a9f11983f3b8a8f94ab607f71970f02",
+      "src/persistence/quest_reward_obligation_pipeline.c": "64d8223ad9a45f1a7beebabdf059d9efa5a9ff8ba0d505105ff1f4a59ad582ca",
+      "src/persistence/quest_reward_obligation_repository.c": "6b788d76f257636202c63d468a0ccd7b893151bdd6ee4e7d68f967a8b467cebd",
+      "src/persistence/quest_reward_obligation_repository.h": "c5bf00750f33ad2bc2c93e976e27226a9ce0cba795f39de83accee10f7a1c293",
       "src/persistence/shop_item_runtime_payload.c": "7ca2c4f89d265ae18858ca7b0d868301b63ccbd5a839ce06a30a81c587219436",
       "src/persistence/shop_item_runtime_payload.h": "51eba38c026d8f090aab047e040de7e773958bf6f58beb166f55add60e48d376",
       "src/player/inert_item_stage.c": "fc4f0d2c603f26cc46e15c39cbe66b2858d23b5c26719deedf6bdca080d7779c",
-      "src/player/inert_item_stage.h": "03d9517feef1abaae2b05f45054a229e391e4a88f82fb158f2ca0aae4b726ee6",
-      "src/player/player_load_items.c": "33793deff7b1a4ae6a2f3518c0058357490b555766fca2681ce48ed3b3d5b410",
+      "src/player/inert_item_stage.h": "1a6c34b77ab4efb0daf50a028c561a2d7a27af314d37f5e65157fdfe5fffa9a9",
+      "src/player/player_load_items.c": "12dbe88d38d3e6f2cbf0b7523cf3d3a73260795f6df70dc65ca2eeaaa043703d",
       "src/player/player_load_items.h": "21678f4aade0bea7a26951a6b79a9df73f0d585a943aacb21272ea7ae96713a8",
       "src/player/player_load_repository.c": "d03ddf7e7dc5372daac4cf913f07d288178d2336412e3508c2d93560b69fdb62",
       "src/player/player_save_execution_guard.h": "91e9f23b2e37fd922df47df9e657db5810b34adba080a9dc170e6f417240e2ce",
-      "src/player/player_save_pipeline.c": "ef991d14358d58b062c13565a6872e087a16c42963ccc30b46bb17509a55e5bd",
-      "src/player/player_save_pipeline.h": "99795973f8efd14b97bc362eb0177ae46fba5a7b336895c215c5ad8637ef8354",
+      "src/player/player_save_pipeline.c": "77eb09369ff8bc122ccc6ff7c294ad3c5e631c2db3a14468eb04e57aed820579",
+      "src/player/player_save_pipeline.h": "b163be37492c528bc2b704402c2dd5c1c1b2f07a8bc43713e0b24e75fd21dc2d",
+      "src/player/player_snapshot_capture.c": "70e8dc17384d4969ce9741e09f6cb8b17d39da354afbd7662e6deb9404d6cd66",
+      "src/player/player_snapshot_capture.h": "9718d08c6b5e52a9a63d6fba836949f57dacd518f961d5d63ceb54f3fb8d845c",
       "src/player/player_snapshot_codec.c": "80cadd1a287c76916bd2afd7ed30e4e588ee4a1b9c63a9d085ee2496d665f03c",
-      "src/player/player_snapshot_repository.c": "58d5bbd01c3b48d496369b92b64178d6d5e0ec3ce4c30efca22eed3d09e8eb8f",
+      "src/player/player_snapshot_repository.c": "cde7ec90d5d0ce53a54e2b43bbbfe1167a648644ac066e80077e42c810d03352",
+      "src/player/player_snapshot_repository.h": "eb8de42440daf27d24d0ed7bf08253d5646f204877d87edefccd819a20497f63",
       "src/specs/specs.heavens.c": "8d533fffdd1092c7deac2ae04cae7f6355858f1fe1230289dea3e23de4cb9d73",
       "src/specs/specs.library.c": "5bc33e9cabe77028942a93129567a2f4041900d2f952d5bae35790815341009e",
       "src/specs/specs.vecna.c": "5b1075a75fc61ac5f67d3e3f51731dfe22bd6928d8ee149e58769e3697b24f3e",
       "src/specs/specs.venthix.c": "0f97b77852f353b04c4b662a56bae46be4ac24666df8aeebf705aacf1c4863f8",
       "src/specs/specs.venthix.h": "de25eafa046c414388043cf90e3e45548aef8da15e5a65bf87986f8ebe98d22c",
+      "src/sql/sql.c": "fcb648fea1a64750d097556c4254e338a749c9727cb92e989298598650bf7ee0",
+      "src/sql/sql_economic_runtime.c": "ed7fc3213ac1983d59581ce8d6a723113606f5762001d1fed3ec76af39ab0c7d",
+      "src/sql/sql_economic_runtime.h": "fe6189d38f7a3c28abfe82f4384ccaef258ab0873f540bf82c41043358188063",
       "src/sql/sql_player.c": "6b54581d8b92acc5430f9413e42cc1d27b8d6137ec9044e273396abe9d2bc756",
       "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
-      "src/world/db.h": "dfa14023b207673de9c7583dc9411bfdfef569941f874d7aa3775303c1e650a2",
+      "src/world/db.h": "05ab29035fd5befc33f9d8474ed3d3668fd3108daeebdb09c72e9a228f13131a",
       "src/world/handler.c": "3f046194166dbbfd949f9ec0199e72f6155283edbdac69a7fd186da21333ce07",
       "src/world/handler.h": "69cf721db5b448bd67b76074a5af2cb338d46ef3425dc8cae7bb18bc7803f124",
       "src/world/native_mobile_birth_artifact.c": "b7c368d336c0bdd75e9bb2a6a1a8e4be0ed19f103e9ae42beba357eeb6a4407f",
@@ -211,38 +294,44 @@
       "src/world/native_mobile_birth_reset_tail.c": "3b6683fa752e83c56315d156287ffdda2d1a7d47f6f32ff9648d3fd0cdf83022",
       "src/world/native_mobile_birth_reset_tail.h": "8c07fd000907d4143acec1db202d6f3d4053cc77f06896a3716f3406b9e78e9b",
       "src/world/native_quest_frozen_continuation.h": "e0bc9a6dc15a8f394bcecce87a54b76f264b75f3a6fbed494f101cff2e8e7d1d",
-      "src/world/native_quest_recovery_context.c": "299ef8882e3cc76f1afe9df43984678c609b21d68d4770520114d1caa7ef5a94",
-      "src/world/native_quest_recovery_context.h": "4dd4e1fc44d441e0f0c040276cb8b77dc1831af6d7a7ebb76ae7237b3c932d26",
-      "src/world/object_template.h": "2ea82718045886d4005941ad4e374324e3f3d0023846fe26480236e0becbf4ff",
-      "src/world/quest_mobile_native.c": "7e65a49da35448d5c2e0131851f2cf2b0c169bc1516c2bf0ba94bb0abb8698f2",
-      "src/world/quest_mobile_native.h": "b4d6f9c0f5d8d8dea74cd1519e1b0f29fe36fe8797993f20a8c4316e831d490d",
-      "src/world/quest_mobile_native_binding.c": "1b04901860ca7395000a8cb9a66d02de3177d4c7daa46338775133c6b1c6df37",
-      "src/world/quest_mobile_native_binding.h": "9f5836b9f2b12af192fd70e58a5b15729106080d7820e6ab05b65edf0e527162",
-      "src/world/quest_mobile_native_birth.c": "234a60250d51ba423467c214359a7af590f0fcf3923b5e5fb99ffd6ec9d2db27",
-      "src/world/quest_mobile_native_birth.h": "9515a5367f9d3483bb6b17e56e6097db554ad1631406c4629fca94358165a80c",
+      "src/world/native_quest_recovery_context.c": "7b1856303a9fd074dc1e801fb026e1c7648abbf7b12adb94f2f1d5edc7d3441e",
+      "src/world/native_quest_recovery_context.h": "1f7f35d4df3dd6202aaa8b7a43c92782dad82dd178a944eb61447302002a60f4",
+      "src/world/object_template.h": "ae58cda024d7a568bfddbee9a38d1b494a0f031cbc8a60f13e572d9748eb8454",
+      "src/world/quest.c": "52ff1d3db3aa77a56f78a0167dc487ba6e2ae2d325934421c31bf96c7c124e4b",
+      "src/world/quest_mobile_native.c": "eaf2b922e170eb0a66db041a62b88cbb2f8590b81e47513acdafd8a431914835",
+      "src/world/quest_mobile_native.h": "905d154c990c2b895ba9b67064ed3314e341b678aa6004160f8866c1ae39ae44",
+      "src/world/quest_mobile_native_binding.c": "db68c1dbff434f584c7056d921053b244e9a9be096c1f2c7cd590c4bf1a225c7",
+      "src/world/quest_mobile_native_binding.h": "53b659110ff7ef1d7131ac5ef4ec00d9f6c2fee4a68c4e424a98b8469426132a",
+      "src/world/quest_mobile_native_birth.c": "95cb42c46e9fd0cc54363a2ba8ff6171cec4f7ca232cf41013e0c28b2c4597de",
+      "src/world/quest_mobile_native_birth.h": "cccbd987c0de56c8e1f0507b1fc24395eaa83e03b1194b7a0365037660c3e4c6",
       "src/world/quest_mobile_native_reference.c": "d5273cdee11447dc307c0e14114785d332ccd130bfb59982a811e0f1d68b6d01",
       "src/world/quest_mobile_native_reference.h": "7014af84ee72518d7e8052a6c72b491ab391688b3ca1e0c11f313b2060710426",
+      "src/world/quest_mobile_published_saved_forest.c": "6b474034a213c6b5eb3f5be30804403adb59f3e41fb321b8201bfa50f4c066be",
+      "src/world/quest_mobile_published_saved_forest.h": "2c1ad2008827be9bb6e78573b3aeb029db2d06d86759565250ebc830aa242b4d",
+      "src/world/quest_mobile_published_world_owner.c": "fde41607279ee7c0e7c11b62bffcab40e1c43750cf819096345696a02206b284",
+      "src/world/quest_mobile_published_world_owner.h": "d4d018d6adeea1686b45bdd9822ee34cc67f9a0c76603c7260bcb2ab86cb9aa9",
       "src/world/specs.prototypes.h": "814e7a01ae7f3bd62639226728e1933f05ca467d1472baad3746078dfac5d685",
       "src/world/world_activity.c": "6c7443dc54ffb37f33a3d4b9a0d3a24405efd2822a4b4695c299bf21501c6c04",
       "src/world/world_activity.h": "2b581aaee6228e30b2e66a4ab3bb9e78878b3112bfbc38fa95aca4f1f2ab5942",
       "tests/async/economic_sql_lifecycle_owner_mysql_harness.cpp": "3561a0fca268598bec620da0c98b70e7ff6e8d16992238be9688f2bb8b1a3f2e",
+      "tests/async/test_auction_retained_seller_fee.py": "6229e32f084d90f019af7b187dc82c5fa62262873768e7e335275bcf14e4de16",
       "tests/async/test_economic_sql_lifecycle_activation_contract.py": "10da6a9517092507a6ed6255536fe8b6a09c85383efffe75edb0c1d22d0209c4",
-      "tests/async/test_economy_writer_coverage_contract.py": "aab17ec89061094dbc05ef2267184f4cbb92e613af413cb0228bb1cc3f7d9fbb"
+      "tests/async/test_economy_writer_coverage_contract.py": "45d49b6741717d64a33774468ab45b9e54cd2ea7667b61449e1079beab48b544"
     },
     "status": "source_integrated_unqualified"
   },
   "counts": {
     "dormant_writer_candidates": 19,
-    "draft_registry_rows": 920,
-    "function_definition_anchors_verified": 912,
-    "matrix_rows": 920,
+    "draft_registry_rows": 925,
+    "function_definition_anchors_verified": 917,
+    "matrix_rows": 925,
     "non_function_candidate_anchors": 8,
     "non_writer_or_out_of_scope_candidates": 115,
     "offline_operational_writer_routes": 4,
     "routes_with_current_schema_1_path": 85,
     "routes_with_schema_2_gameplay_producer": 16,
     "routes_with_unified_double_entry_evidence": 2,
-    "runtime_mutation_and_projection_routes": 782,
+    "runtime_mutation_and_projection_routes": 787,
     "supplemental_candidates_found": 0
   },
   "coverage_complete": false,
@@ -251,7 +340,7 @@
     "non_writer_candidate": 115,
     "offline_operational_writer": 4,
     "runtime_mutation_route": 697,
-    "runtime_projection_route": 85
+    "runtime_projection_route": 90
   },
   "global_schema_and_accounting_evidence": {
     "critical_command_accounting_schema_2": "src/persistence/critical_command.h:10",
@@ -263,33 +352,33 @@
     "schema_2_limitation": "Typed schema-2 item custody, typed player/room creation, and sourced spell consumption/item-action retirement are connected on SQL and flat-file; bank/baseline support is partial, while other destruction paths, money-valued item events, broader source bindings, and playable publication/save handoff remain unqualified."
   },
   "known_unknowns": [
-    "The matrix reconciles 920 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
+    "The matrix reconciles 925 registry rows and one dormant legacy auction settlement definition; it does not establish that these are all real writers.",
     "The lexical census is fully mapped; this does not establish that every reachable economic mutation has passed executable review.",
     "No production database or live service was used. Isolated SQL item-transfer tests and a flat-file sanitizer transaction/recovery harness passed; normal gameplay publication/save and remaining writer/backend routes are not qualified.",
     "Per-route source classification is source-level evidence only; transaction atomicity and actual runtime publication remain unverified unless separately qualified by the referenced subsystem tests."
   ],
   "lexical_census": {
-    "current_occurrences": 2876,
-    "current_unique_path_line_family_sites": 2818,
+    "current_occurrences": 2900,
+    "current_unique_path_line_family_sites": 2842,
     "draft_registry_census_complete": false,
     "draft_source_commit": "54fce5545e94c8ec9fced6f96a6bce51fe6f9068",
     "draft_to_current_unique_sites_added": 0,
     "draft_to_current_unique_sites_removed": 0,
-    "draft_unique_sites": 2818,
+    "draft_unique_sites": 2842,
     "family_occurrences": {
-      "coin_assignment": 180,
+      "coin_assignment": 196,
       "coin_bulk_mutation": 23,
       "direct_cash_assignment": 12,
-      "economic_submit": 199,
-      "item_lifecycle": 1166,
-      "item_publication": 1068,
+      "economic_submit": 200,
+      "item_lifecycle": 1168,
+      "item_publication": 1071,
       "money_helper": 166,
       "ship_coffer_assignment": 6,
-      "sql_economy": 56
+      "sql_economy": 58
     },
-    "interpretation": "Lexical occurrences are candidates, not writer routes. The 920-row registry maps 2818 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
-    "mapped_sites_still_present": 2818,
-    "mapped_unique_sites_from_draft_rows": 2818,
+    "interpretation": "Lexical occurrences are candidates, not writer routes. The 925-row registry maps 2842 current unique sites; 0 current unique sites remain unmapped. Complete lexical mapping alone does not prove executable route coverage or release readiness.",
+    "mapped_sites_still_present": 2842,
+    "mapped_unique_sites_from_draft_rows": 2842,
     "scanner": "scripts/validate_economy_accounting.py:scan_sources (comments and strings masked except SQL discovery)",
     "unmapped_current_unique_sites": 0
   },
@@ -3793,7 +3882,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          932
+          1337
         ],
         "file": "src/economy/auction_repository.c",
         "function": "auction_repository_execute",
@@ -3855,7 +3944,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          166
+          168
         ],
         "file": "src/economy/auction_transaction.c",
         "function": "auction_transaction_submit",
@@ -6043,7 +6132,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3696
+          3697
         ],
         "file": "src/cmd/actobj.c",
         "function": "refund_committed_coin_debit",
@@ -6108,7 +6197,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4204
+          4205
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_put",
@@ -6236,7 +6325,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4897
+          4898
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_debit",
@@ -6300,7 +6389,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3870
+          3871
         ],
         "file": "src/cmd/actobj.c",
         "function": "begin_coin_give_credit",
@@ -6347,7 +6436,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3945
+          3946
         ],
         "file": "src/cmd/actobj.c",
         "function": "prepare_coin_pile",
@@ -6412,7 +6501,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4473
+          4474
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_get",
@@ -6479,7 +6568,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3809
+          3810
         ],
         "file": "src/cmd/actobj.c",
         "function": "submit_coin_give",
@@ -10747,7 +10836,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1491
+          1523
         ],
         "file": "src/persistence/critical_command_repository.c",
         "function": "execute_currency_state",
@@ -16865,7 +16954,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2435
+          2436
         ],
         "file": "src/cmd/actobj.c",
         "function": "start_bulk_get",
@@ -16926,7 +17015,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3479
+          3480
         ],
         "file": "src/cmd/actobj.c",
         "function": "drop_transient_object",
@@ -17034,7 +17123,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2111
+          2731
         ],
         "file": "src/item/item_transfer_command.c",
         "function": "item_transfer_command_build",
@@ -17114,7 +17203,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          880
+          881
         ],
         "file": "src/cmd/actobj.c",
         "function": "defer_durable_put",
@@ -17176,7 +17265,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          456
+          457
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_container_get",
@@ -17242,7 +17331,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          852
+          860
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_craft",
@@ -17292,7 +17381,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          902
+          910
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_craft_outputs",
@@ -17380,7 +17469,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3224
+          3525
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit_craft",
@@ -17818,8 +17907,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3569,
-          3581
+          3870,
+          3882
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_submit_to_player_with_completion",
@@ -17881,7 +17970,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1430
+          1438
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_batch_completion",
@@ -17943,7 +18032,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1330
+          1338
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "creation_grant_completion",
@@ -18128,7 +18217,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1211
+          1219
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "discard_creation_queue",
@@ -18311,7 +18400,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6715
+          6736
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_drink",
@@ -18373,7 +18462,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10401
+          10422
         ],
         "file": "src/cmd/actobj.c",
         "function": "publish_empty_objects",
@@ -19064,7 +19153,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8084
+          8105
         ],
         "file": "src/cmd/actobj.c",
         "function": "remove_item",
@@ -19126,7 +19215,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          8018
+          8039
         ],
         "file": "src/cmd/actobj.c",
         "function": "execute_wear",
@@ -19250,7 +19339,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1052
+          1060
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_creation_roots",
@@ -19312,7 +19401,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1059
+          1067
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "extract_displaced_creation_objects",
@@ -19543,7 +19632,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6913
+          6934
         ],
         "file": "src/cmd/actobj.c",
         "function": "apply_eaten_item",
@@ -20385,7 +20474,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3817
+          4118
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_cancel_batch_before_entry",
@@ -20447,7 +20536,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3629
+          3930
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_creation_grant_prepare_pulse",
@@ -20511,7 +20600,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3177
+          3178
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_junk",
@@ -20572,7 +20661,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          4940
+          4941
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_dropalldot",
@@ -20694,7 +20783,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          5057
+          5058
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_drop",
@@ -20755,7 +20844,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1405
+          1406
         ],
         "file": "src/cmd/actobj.c",
         "function": "get",
@@ -20816,7 +20905,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6227
+          6228
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_give",
@@ -20877,7 +20966,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6222
+          6223
         ],
         "file": "src/cmd/actobj.c",
         "function": "put",
@@ -21059,7 +21148,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10121
+          10142
         ],
         "file": "src/cmd/actobj.c",
         "function": "list_foods",
@@ -21433,7 +21522,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2762
+          2781
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_movement_transaction_submit",
@@ -21742,7 +21831,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          780
+          781
         ],
         "file": "src/cmd/actobj.c",
         "function": "pet_give_completion",
@@ -21928,7 +22017,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          10025
+          10046
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_apply_poison",
@@ -22211,7 +22300,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1706
+          1714
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_corpse_batch",
@@ -22273,7 +22362,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1262
+          1270
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "publish_creation_grant",
@@ -22641,7 +22730,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1117
+          1125
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "reconcile_creation_grant_batch",
@@ -23476,7 +23565,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1650
+          1653
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "insert_craft_output_item",
@@ -23541,7 +23630,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2372
+          2375
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_execute_at_offset",
@@ -23602,7 +23691,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3020
+          3047
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_destroy_owners",
@@ -24216,7 +24305,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6544
+          6565
         ],
         "file": "src/cmd/actobj.c",
         "function": "weight_change_object",
@@ -26133,7 +26222,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           737,
-          4950
+          4961
         ],
         "file": "src/sql/sql.c",
         "function": "sql_pwipe",
@@ -26180,7 +26269,7 @@
         "anchor_status": "function_definition_verified",
         "definition_lines": [
           564,
-          2988
+          2999
         ],
         "file": "src/sql/sql.c",
         "function": "sql_soft_delete_character",
@@ -30300,7 +30389,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3567
+          3587
         ],
         "file": "src/cmd/actmove.c",
         "function": "do_drag",
@@ -30359,7 +30448,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2457
+          2459
         ],
         "file": "src/cmd/actmove.c",
         "function": "do_open",
@@ -30406,7 +30495,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2457
+          2459
         ],
         "file": "src/cmd/actmove.c",
         "function": "do_open",
@@ -30465,7 +30554,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2457
+          2459
         ],
         "file": "src/cmd/actmove.c",
         "function": "do_open",
@@ -30524,7 +30613,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2249
+          2251
         ],
         "file": "src/cmd/actmove.c",
         "function": "make_ice",
@@ -30571,7 +30660,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2249
+          2251
         ],
         "file": "src/cmd/actmove.c",
         "function": "make_ice",
@@ -30631,7 +30720,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          81
+          83
         ],
         "file": "src/cmd/actmove.c",
         "function": "publish_key_break",
@@ -30690,7 +30779,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          118
+          120
         ],
         "file": "src/cmd/actmove.c",
         "function": "break_key",
@@ -30749,7 +30838,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3143
+          3145
         ],
         "file": "src/cmd/actmove.c",
         "function": "do_pick",
@@ -31823,7 +31912,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2283
+          2284
         ],
         "file": "src/player/player_snapshot_repository.c",
         "function": "apply_death",
@@ -32507,7 +32596,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1724
+          1885
         ],
         "file": "src/world/quest.c",
         "function": "quester",
@@ -32566,7 +32655,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          155
+          156
         ],
         "file": "src/world/quest.c",
         "function": "quest_completion",
@@ -32626,7 +32715,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          940
+          969
         ],
         "file": "src/world/quest.c",
         "function": "publish_quest_offering",
@@ -32686,7 +32775,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          940
+          969
         ],
         "file": "src/world/quest.c",
         "function": "publish_quest_offering",
@@ -32764,7 +32853,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1493
+          1654
         ],
         "file": "src/world/quest.c",
         "function": "submit_durable_quest_offering",
@@ -32998,8 +33087,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3494,
-          3826
+          3521,
+          3853
         ],
         "file": "src/item/item_transfer_repository.c",
         "function": "item_transfer_repository_execute_native_mobile",
@@ -33059,7 +33148,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          155
+          156
         ],
         "file": "src/world/quest.c",
         "function": "quest_completion",
@@ -33119,7 +33208,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          449
+          450
         ],
         "file": "src/world/quest.c",
         "function": "give_reward",
@@ -33177,7 +33266,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1622
+          1783
         ],
         "file": "src/world/quest.c",
         "function": "tell_quest",
@@ -34695,7 +34784,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          377
+          387
         ],
         "file": "src/player/player_load_items.c",
         "function": "materialize_item_graph",
@@ -34757,7 +34846,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          933
+          943
         ],
         "file": "src/player/player_load_items.c",
         "function": "player_load_items_discard",
@@ -34819,7 +34908,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          36
+          46
         ],
         "file": "src/player/player_load_items.c",
         "function": "staged_item_graph",
@@ -34866,7 +34955,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          542
+          596
         ],
         "file": "src/item/item_ownership_runtime.c",
         "function": "item_ownership_runtime_peek_owner_revision",
@@ -35619,7 +35708,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          3997
+          4355
         ],
         "file": "src/persistence/critical_command_repository.c",
         "function": "critical_command_repository_verify_ordinary_drop_in_transaction",
@@ -47743,7 +47832,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2592
+          2593
         ],
         "file": "src/cmd/actobj.c",
         "function": "do_get",
@@ -53403,8 +53492,8 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          76,
-          732
+          80,
+          770
         ],
         "file": "src/persistence/economic_sql_native_mobile_birth_transaction.c",
         "function": "economic_sql_native_mobile_birth_transaction::apply",
@@ -53451,7 +53540,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          497
+          642
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::prepare_mobile",
@@ -53498,7 +53587,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          794
+          939
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::seal_mobile",
@@ -53555,7 +53644,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2347
+          2788
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::pulse",
@@ -53612,7 +53701,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          2380
+          3186
         ],
         "file": "src/persistence/critical_command_coordinator.c",
         "function": "critical_native_mobile_birth_publication_owner::submit",
@@ -53753,7 +53842,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          581
+          726
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::capture_alchemist_spawn",
@@ -53813,7 +53902,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1328
+          1641
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::recover_cold",
@@ -53873,7 +53962,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1196
+          1341
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::resume_cold_projection",
@@ -53933,7 +54022,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1729
+          2103
         ],
         "file": "src/world/quest_mobile_native_birth.c",
         "function": "quest_mobile_native_birth_owner::publish",
@@ -54507,13 +54596,316 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          6397
+          7668
         ],
         "file": "src/item/item_movement_transaction.c",
         "function": "item_native_quest_publication_owner::native_publish",
         "original_draft_symbol": "item_native_quest_publication_owner::native_publish"
       },
       "source_classification": "Projects the original committed native quest item transition by detach/place or original stock destruction under historical receipt/current SQL/world/full held-player proof. Frozen sequential continuation and guarded ACK stay with original owners.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "allow_projection_only_with_committed_identity",
+        "must_block_on_activation": false,
+        "required_policy": "Projects exact committed lockpick destruction after current runtime destroyed-owner, UID, revision and held-slot proof; absent authentic physical pick is a retry without messages or RNG. Preserve existing UID/root/parent and receipt; emit no new issuance posting. Refuse mismatched/missing identity instead of minting or silently changing owner."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root.",
+        "route_mode": "native_result_or_recovery_projection_without_new_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_projection_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "projection_only_no_new_postings",
+        "unified_operation_postings_observed": false
+      },
+      "id": "movement.pick_break_committed_publication",
+      "native_effects": {
+        "custody_effect": "Unequips and extracts only the already retired exact lockpick UID.",
+        "holding_effect": "No coin balance change.",
+        "native_state_targets": [
+          "live player held lockpick",
+          "committed destruction result and runtime custody"
+        ]
+      },
+      "projection_rule": "Projects exact committed lockpick destruction after current runtime destroyed-owner, UID, revision and held-slot proof; absent authentic physical pick is a retry without messages or RNG.",
+      "reachability_evidence": "Named current source owner and exact lexical sites; original caller proof is retained by the route. Executable backend/current-head native qualification remains outstanding.",
+      "reason": "item_destroy",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          26
+        ],
+        "file": "src/cmd/lockpick_retirement.c",
+        "function": "lockpick_retirement_publish_physical",
+        "original_draft_symbol": "lockpick_retirement_publish_physical"
+      },
+      "source_classification": "Projects exact committed lockpick destruction after current runtime destroyed-owner, UID, revision and held-slot proof; absent authentic physical pick is a retry without messages or RNG.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "allow_projection_only_with_committed_identity",
+        "must_block_on_activation": false,
+        "required_policy": "Original retained list/claim owner publishes the authenticated committed item forest through started/returned native effect steps; list removes live copies and claim places original UIDs, without a second custody root. Preserve existing UID/root/parent and receipt; emit no new issuance posting. Refuse mismatched/missing identity instead of minting or silently changing owner."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root.",
+        "route_mode": "native_result_or_recovery_projection_without_new_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_projection_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [
+          "item_ownership_ledger is custody evidence where the typed item repository runs; it is not a monetary double-entry ledger and does not prove this route is connected.",
+          "Auction state/pickup rows are domain evidence, not a unified root-operation posting set."
+        ],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "projection_only_no_new_postings",
+        "unified_operation_postings_observed": false
+      },
+      "id": "auction.native_item_publication",
+      "native_effects": {
+        "custody_effect": "Physical list retirement or claim delivery under original receipt/current custody proof.",
+        "holding_effect": "No direct coin effect at these lexical sites.",
+        "native_state_targets": [
+          "live player item forests",
+          "original auction custody and native effect journal"
+        ]
+      },
+      "projection_rule": "Original retained list/claim owner publishes the authenticated committed item forest through started/returned native effect steps; list removes live copies and claim places original UIDs, without a second custody root.",
+      "reachability_evidence": "Named current source owner and exact lexical sites; original caller proof is retained by the route. Executable backend/current-head native qualification remains outstanding.",
+      "reason": "auction_settle",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          1939
+        ],
+        "file": "src/economy/auction_native_publication.c",
+        "function": "auction_native_publication_owner::physical",
+        "original_draft_symbol": "auction_native_publication_owner::physical"
+      },
+      "source_classification": "Original retained list/claim owner publishes the authenticated committed item forest through started/returned native effect steps; list removes live copies and claim places original UIDs, without a second custody root.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "allow_projection_only_with_committed_identity",
+        "must_block_on_activation": false,
+        "required_policy": "Projects originally committed native quest cost cash and reference revisions after exact old/new identity, original cash revision, canonical projection and retained action-journal proof; partial unreturned writes grant no replay or ACK. Preserve existing UID/root/parent and receipt; emit no new issuance posting. Refuse mismatched/missing identity instead of minting or silently changing owner."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root.",
+        "route_mode": "native_result_or_recovery_projection_without_new_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_projection_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "projection_only_no_new_postings",
+        "unified_operation_postings_observed": false
+      },
+      "id": "quest.native_cost_cash_publication",
+      "native_effects": {
+        "custody_effect": "Native mobile and stock reference revisions advance; item effects are separately owned.",
+        "holding_effect": "Changes all four native-mobile denominations to the original cost result.",
+        "native_state_targets": [
+          "native mobile cash and cash revision",
+          "native mobile encoded reference"
+        ]
+      },
+      "projection_rule": "Projects originally committed native quest cost cash and reference revisions after exact old/new identity, original cash revision, canonical projection and retained action-journal proof; partial unreturned writes grant no replay or ACK.",
+      "reachability_evidence": "Named current source owner and exact lexical sites; original caller proof is retained by the route. Executable backend/current-head native qualification remains outstanding.",
+      "reason": "quest_cost",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          124
+        ],
+        "file": "src/world/quest_mobile_native_binding.c",
+        "function": "quest_mobile_native_publication_binding::apply_cost",
+        "original_draft_symbol": "quest_mobile_native_publication_binding::apply_cost"
+      },
+      "source_classification": "Projects originally committed native quest cost cash and reference revisions after exact old/new identity, original cash revision, canonical projection and retained action-journal proof; partial unreturned writes grant no replay or ACK.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "allow_projection_only_with_committed_identity",
+        "must_block_on_activation": false,
+        "required_policy": "Projects originally committed player-to-native-mobile coin transfer after exact live player/native identity, canonical transfer, before/result balances and revisions; original action journal owns partial-write uncertainty and guarded completion. Preserve existing UID/root/parent and receipt; emit no new issuance posting. Refuse mismatched/missing identity instead of minting or silently changing owner."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root.",
+        "route_mode": "native_result_or_recovery_projection_without_new_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_projection_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "projection_only_no_new_postings",
+        "unified_operation_postings_observed": false
+      },
+      "id": "quest.native_money_cash_publication",
+      "native_effects": {
+        "custody_effect": "No direct item custody change at these cash assignments.",
+        "holding_effect": "Writes four player and four native-mobile denominations with exact retained after revisions.",
+        "native_state_targets": [
+          "player wallet and revision",
+          "native mobile wallet cash revision and encoded reference"
+        ]
+      },
+      "projection_rule": "Projects originally committed player-to-native-mobile coin transfer after exact live player/native identity, canonical transfer, before/result balances and revisions; original action journal owns partial-write uncertainty and guarded completion.",
+      "reachability_evidence": "Named current source owner and exact lexical sites; original caller proof is retained by the route. Executable backend/current-head native qualification remains outstanding.",
+      "reason": "quest_cost",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          177
+        ],
+        "file": "src/world/quest_mobile_native_binding.c",
+        "function": "quest_mobile_native_publication_binding::apply_money",
+        "original_draft_symbol": "quest_mobile_native_publication_binding::apply_money"
+      },
+      "source_classification": "Projects originally committed player-to-native-mobile coin transfer after exact live player/native identity, canonical transfer, before/result balances and revisions; original action journal owns partial-write uncertainty and guarded completion.",
+      "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
+    },
+    {
+      "blocking_policy_after_activation": {
+        "decision": "allow_projection_only_with_committed_identity",
+        "must_block_on_activation": false,
+        "required_policy": "Reconstructs exact originally published native mobile forest and cash from selected locked current authority before current metadata and runtime census proof; no new source, UID or issuance and no inferred publication ACK. Preserve existing UID/root/parent and receipt; emit no new issuance posting. Refuse mismatched/missing identity instead of minting or silently changing owner."
+      },
+      "counts_as_operational_writer": false,
+      "counts_as_runtime_writer": true,
+      "current_critical_command_schema": {
+        "accounting_intent_attached_by_current_gameplay_route": false,
+        "current_schema": null,
+        "evidence": [
+          "src/persistence/critical_command.h:9-10",
+          "docs/persistence/economy_accounting/INTENT_DESIGN.md:3-6,10-17"
+        ],
+        "interpretation": "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root.",
+        "route_mode": "native_result_or_recovery_projection_without_new_accounting_root",
+        "schema_2_gameplay_producer_connected": false
+      },
+      "disposition": "runtime_projection_route",
+      "double_entry_evidence": {
+        "global_evidence": [
+          "docs/persistence/ECONOMY_ACCOUNTING.md:3-13",
+          "docs/persistence/economy_accounting/DELIVERY_PLAN.md:162-171"
+        ],
+        "legacy_domain_evidence": [],
+        "note": "The accounting tables/codec are draft/partial infrastructure; no complete gameplay writer journey is qualified or activated.",
+        "required_atomic_evidence": [
+          "economic_accounting_operation",
+          "economic_accounting_account_effect",
+          "balanced economic_accounting_coin_posting rows where currency changes",
+          "linked item event references for custody-changing roots"
+        ],
+        "status": "projection_only_no_new_postings",
+        "unified_operation_postings_observed": false
+      },
+      "id": "quest.published_world_cash_reconstruction",
+      "native_effects": {
+        "custody_effect": "Consumes original retained literal forest and rebuilds native object placement under current owner proof.",
+        "holding_effect": "Restores exact saved four-denomination native-mobile cash projection.",
+        "native_state_targets": [
+          "native mobile cash",
+          "retained item forest and native metadata"
+        ]
+      },
+      "projection_rule": "Reconstructs exact originally published native mobile forest and cash from selected locked current authority before current metadata and runtime census proof; no new source, UID or issuance and no inferred publication ACK.",
+      "reachability_evidence": "Named current source owner and exact lexical sites; original caller proof is retained by the route. Executable backend/current-head native qualification remains outstanding.",
+      "reason": "npc_reward",
+      "source": {
+        "anchor_status": "function_definition_verified",
+        "definition_lines": [
+          840
+        ],
+        "file": "src/world/quest_mobile_published_world_owner.c",
+        "function": "quest_mobile_published_world_owner::materialize",
+        "original_draft_symbol": "quest_mobile_published_world_owner::materialize"
+      },
+      "source_classification": "Reconstructs exact originally published native mobile forest and cash from selected locked current authority before current metadata and runtime census proof; no new source, UID or issuance and no inferred publication ACK.",
       "source_review_limit": "Current function/anchor confirmed; this row does not prove all callers, backend parity, or a complete codebase-wide semantic census."
     }
   ],

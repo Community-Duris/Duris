@@ -81,7 +81,9 @@ class shop_trade_original_procedure_binding_stage
 
     private:
 	friend class shop_trade_native_publication_owner;
+	friend class auction_native_publication_owner;
 	friend class quest_mobile_native_birth_owner;
+	friend class quest_mobile_published_saved_forest;
 	friend int proclibObj_add(P_obj, char *, char *);
 	friend P_obj instantiate_object_template(const object_template &);
 	struct binding

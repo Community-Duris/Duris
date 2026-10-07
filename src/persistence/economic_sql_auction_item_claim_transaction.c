@@ -2,6 +2,11 @@
 #include "persistence/economic_sql_auction_source_claim.h"
 
 #include "economy/auction_item_claim_accounting.h"
+#include "economy/auction_native_command_context.h"
+#include "economy/auction_native_publication.h"
+#include "persistence/shop_item_runtime_payload.h"
+#include "player/player_snapshot_repository.h"
+#include <openssl/sha.h>
 #include "item/economic_accounting_item_reference.h"
 
 #include <cerrno>
@@ -16,6 +21,7 @@
 #include <new>
 #include <string>
 #include <strings.h>
+#include <type_traits>
 #include <vector>
 
 namespace
@@ -123,9 +129,9 @@ std::string quoted(MYSQL *connection, const char *text, size_t length)
 	return "'" + escaped + "'";
 }
 
-bool identity(const critical_command &command, economic_frozen_intent *intent,
-	      auction_command_payload *payload, auction_item_claim_state *claim,
-	      economic_account_key *wallet, economic_account_key *bank)
+bool auction_item_claim_identity(const critical_command &command, economic_frozen_intent *intent,
+				 auction_command_payload *payload, auction_item_claim_state *claim,
+				 economic_account_key *wallet, economic_account_key *bank)
 {
 	return auction_item_claim_accounting_decode(command, intent, payload, claim, wallet,
 						    bank) == economic_accounting_error::ok;
@@ -171,8 +177,202 @@ bool owner_revision(MYSQL *connection, item_owner_type type, uint64_t owner, uin
 	return true;
 }
 
+bool native_custody_cut(MYSQL *connection, const critical_command &command,
+			const auction_command_payload &payload)
+{
+	std::string uids, roots;
+	for (const auto &key : command.keys)
+		if (key.type == critical_entity_type::item)
+		{
+			if (!uids.empty())
+				uids += ',';
+			uids += std::to_string(key.id);
+		}
+	for (size_t i = 0; i < payload.item_count; ++i)
+	{
+		if (i)
+			roots += ',';
+		roots += std::to_string(payload.items[i].item_uid);
+	}
+	if (uids.empty() || roots.empty())
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	const std::string sql =
+		"SELECT item_uid FROM item_current_owner WHERE "
+		"(owner_type=1 AND owner_id=" +
+		std::to_string(payload.actor_pid) +
+		" AND owner_context_id=0 AND state=1 AND coin_payload IS NULL) OR item_uid IN(" +
+		uids + ") OR ((root_item_uid IN(" + roots + ") OR parent_item_uid IN(" + uids +
+		")) AND state=1) ORDER BY item_uid FOR UPDATE";
+	if (!execute(connection, sql))
+		return false;
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> locked(
+		mysql_store_result(connection), mysql_free_result);
+	if (!locked || mysql_num_fields(locked.get()) != 1)
+	{
+		errno = mysql_errno(connection) ? mysql_errno(connection) : EILSEQ;
+		return false;
+	}
+	return true;
+}
+
+bool forest_digest(std::span<const player_item_snapshot> forest,
+		   const std::array<uint8_t, 32> &expected)
+{
+	std::vector<uint8_t> bytes;
+	std::array<uint8_t, 32> digest{};
+	const std::vector<player_item_snapshot> values(forest.begin(), forest.end());
+	if (player_item_snapshot_list_encode(values, &bytes) != player_snapshot_codec_result::ok ||
+	    !SHA256(bytes.data(), bytes.size(), digest.data()) || digest != expected)
+	{
+		errno = EILSEQ;
+		return false;
+	}
+	return true;
+}
+
+bool locked_native_claim_player_before(MYSQL *connection,
+				       const auction_native_command_context &accepted,
+				       std::vector<player_item_snapshot> *whole_before)
+{
+	std::vector<std::string> values;
+	uint64_t level = 0, revision = 0;
+	if (!row(connection,
+		 "SELECT level,save_revision FROM player_data WHERE pid=" +
+			 std::to_string(accepted.payload.actor_pid) + " FOR UPDATE",
+		 2, &values) ||
+	    !u64(values[0], &level) || !u64(values[1], &revision))
+	{
+		if (!errno)
+			errno = EILSEQ;
+		return false;
+	}
+	if (level != accepted.original_level || revision != accepted.acknowledged_save_revision)
+	{
+		errno = ESTALE;
+		return false;
+	}
+	shop_item_runtime_image image;
+	if (!shop_item_runtime_lock_player_image(
+		    connection, accepted.payload.actor_pid,
+		    std::span<const uint64_t>(accepted.before_item_uids), &image))
+		return false;
+	std::vector<player_item_snapshot> full;
+	full.reserve(accepted.before_item_uids.size());
+	for (const auto uid : accepted.before_item_uids)
+	{
+		const auto observed = image.find(uid);
+		if (observed == image.end() || !observed->second.payload_present)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		full.push_back(observed->second.item);
+	}
+	if (!forest_digest(full, accepted.before_digest))
+		return false;
+	*whole_before = std::move(full);
+	return true;
+}
+
+bool locked_native_claim_selected(MYSQL *connection, const critical_command &command,
+				  const auction_native_command_context &accepted,
+				  std::vector<player_item_snapshot> selected,
+				  auction_item_claim_accounting_authority *authority,
+				  std::span<const player_item_snapshot> whole_before,
+				  std::vector<player_item_snapshot> *whole_after)
+{
+	if (selected.size() != accepted.selected_node_count ||
+	    accepted.selected_root_count != accepted.payload.item_count ||
+	    !auction_native_selected_forest_valid(accepted.payload, selected) ||
+	    !forest_digest(selected, accepted.selected_digest))
+	{
+		if (!errno)
+			errno = EILSEQ;
+		return false;
+	}
+	std::vector<player_item_snapshot> after;
+	if (!auction_native_expected_player_forest(accepted.payload, whole_before, selected, false,
+						   accepted.original_level, &after) ||
+	    !forest_digest(after, accepted.after_digest))
+	{
+		if (!errno)
+			errno = EILSEQ;
+		return false;
+	}
+	std::vector<economic_item_snapshot> positions;
+	positions.reserve(selected.size());
+	size_t root = 0;
+	for (size_t i = 0; i < selected.size(); ++i)
+	{
+		const auto &item = selected[i];
+		if (item.parent_index == PLAYER_SNAPSHOT_NO_PARENT)
+			root = i;
+		std::vector<std::string> values;
+		if (!row(connection,
+			 "SELECT root_item_uid,COALESCE(parent_item_uid,0),owner_type,owner_id,owner_context_id,"
+			 "item_revision,vnum,state,equipment_slot,coin_payload IS NULL FROM item_current_owner WHERE item_uid=" +
+				 std::to_string(item.object_uid) + " FOR UPDATE",
+			 10, &values))
+			return false;
+		uint64_t observed[10]{};
+		int64_t vnum = 0;
+		for (size_t n = 0; n < 10; ++n)
+			if (n != 6 && !u64(values[n], &observed[n]))
+			{
+				errno = EILSEQ;
+				return false;
+			}
+		const uint64_t parent =
+			item.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+				0 :
+				selected[static_cast<size_t>(item.parent_index)].object_uid;
+		if (!i64(values[6], &vnum) || vnum != item.vnum ||
+		    observed[0] != selected[root].object_uid || observed[1] != parent ||
+		    observed[2] != static_cast<unsigned>(item_owner_type::auction) ||
+		    observed[3] != accepted.payload.auction_id || observed[4] || !observed[5] ||
+		    observed[5] == UINT64_MAX ||
+		    observed[7] != static_cast<unsigned>(item_custody_state::active) ||
+		    observed[8] || observed[9] != 1)
+		{
+			errno = ESTALE;
+			return false;
+		}
+		const critical_entity_key key{ critical_entity_type::item, item.object_uid };
+		const auto keys = std::count_if(command.keys.begin(), command.keys.end(),
+						[&](const auto &value)
+						{ return critical_entity_key_equal(value, key); });
+		const auto fences = std::count_if(
+			command.expected_revisions.begin(), command.expected_revisions.end(),
+			[&](const auto &value) {
+				return critical_entity_key_equal(value.key, key) &&
+				       value.revision == observed[5];
+			});
+		if (keys != 1 || fences != 1)
+		{
+			errno = ESTALE;
+			return false;
+		}
+		positions.push_back(
+			{ item.object_uid,
+			  { { item_owner_type::auction, accepted.payload.auction_id, 0 },
+			    observed[0],
+			    parent,
+			    observed[5],
+			    item_custody_state::active,
+			    0 } });
+	}
+	authority->items_before = std::move(positions);
+	authority->native_selected_literals = std::move(selected);
+	*whole_after = std::move(after);
+	return true;
+}
+
 bool locked_before(MYSQL *connection, const auction_command_payload &payload, uint32_t bank_id,
-		   auction_item_claim_accounting_authority *before)
+		   auction_item_claim_accounting_authority *before,
+		   const critical_command *native_command = nullptr)
 {
 	std::vector<std::string> values;
 	if (!row(connection,
@@ -278,6 +478,13 @@ bool locked_before(MYSQL *connection, const auction_command_payload &payload, ui
 		errno = ESTALE;
 		return false;
 	}
+	if (native_command &&
+	    (!owner_revision(connection, item_owner_type::player, payload.actor_pid,
+			     &before->player_owner_revision_before) ||
+	     !owner_revision(connection, item_owner_type::auction, payload.auction_id,
+			     &before->auction_owner_revision_before) ||
+	     !native_custody_cut(connection, *native_command, payload)))
+		return false;
 	for (size_t index = 0; index < payload.item_count; ++index)
 	{
 		const auto &item = payload.items[index];
@@ -311,10 +518,11 @@ bool locked_before(MYSQL *connection, const auction_command_payload &payload, ui
 			  static_cast<uint32_t>(parsed[2]),
 			  parsed[3] != 0 };
 	}
-	if (!owner_revision(connection, item_owner_type::player, payload.actor_pid,
-			    &before->player_owner_revision_before) ||
-	    !owner_revision(connection, item_owner_type::auction, payload.auction_id,
-			    &before->auction_owner_revision_before))
+	if (!native_command &&
+	    (!owner_revision(connection, item_owner_type::player, payload.actor_pid,
+			     &before->player_owner_revision_before) ||
+	     !owner_revision(connection, item_owner_type::auction, payload.auction_id,
+			     &before->auction_owner_revision_before)))
 		return false;
 	std::array<size_t, AUCTION_COMMAND_MAX_ITEMS> order = {};
 	for (size_t index = 0; index < payload.item_count; ++index)
@@ -355,16 +563,19 @@ bool locked_before(MYSQL *connection, const auction_command_payload &payload, ui
 				      parsed[1],
 				      parsed[5],
 				      static_cast<item_custody_state>(parsed[7]) };
-		if (!row(connection,
-			 "SELECT item_uid FROM item_current_owner WHERE root_item_uid=" +
-				 std::to_string(uid) + " AND item_uid<>" + std::to_string(uid) +
-				 " LIMIT 1 FOR UPDATE",
-			 1, &values, true))
-			return false;
-		if (!values.empty())
+		if (!native_command)
 		{
-			errno = EOPNOTSUPP;
-			return false;
+			if (!row(connection,
+				 "SELECT item_uid FROM item_current_owner WHERE root_item_uid=" +
+					 std::to_string(uid) + " AND item_uid<>" +
+					 std::to_string(uid) + " LIMIT 1 FOR UPDATE",
+				 1, &values, true))
+				return false;
+			if (!values.empty())
+			{
+				errno = EOPNOTSUPP;
+				return false;
+			}
 		}
 	}
 	return true;
@@ -430,13 +641,23 @@ unsigned int economic_sql_auction_item_claim_lock(MYSQL *connection,
 #else
 	if (!connection || !context || !(connection->server_status & SERVER_STATUS_IN_TRANS))
 		return EINVAL;
+	if (command.payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION)
+	{
+		using flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+		flag reconnect = false;
+		if (!mysql_thread_id(connection))
+			return ENOTCONN;
+		if (mysql_get_option(connection, MYSQL_OPT_RECONNECT, &reconnect) || reconnect)
+			return EINVAL;
+	}
 	try
 	{
 		economic_frozen_intent intent;
 		auction_command_payload payload = {};
 		auction_item_claim_state claim;
 		economic_account_key wallet, bank;
-		if (!identity(command, &intent, &payload, &claim, &wallet, &bank))
+		if (!auction_item_claim_identity(command, &intent, &payload, &claim, &wallet,
+						 &bank))
 			return EPROTONOSUPPORT;
 		economic_sql_auction_item_claim_context candidate;
 		if (!mapping_native_hint(connection, bank.authority_id, &candidate.bank_id))
@@ -505,13 +726,22 @@ unsigned int economic_sql_auction_item_claim_execute_and_record(
 		auction_command_payload payload = {};
 		auction_item_claim_state frozen;
 		economic_account_key wallet, bank;
-		if (!identity(command, &intent, &payload, &frozen, &wallet, &bank))
+		if (!auction_item_claim_identity(command, &intent, &payload, &frozen, &wallet,
+						 &bank))
 			return EILSEQ;
+		const bool native = command.payload_version ==
+				    AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION;
+		auction_native_command_context accepted;
+		if (native && auction_native_command_decode(command, &accepted) !=
+				      economic_accounting_error::ok)
+			return EILSEQ;
+		std::vector<player_item_snapshot> whole_before, whole_after;
 		auction_item_claim_accounting_authority before;
 		before.epoch = active.authority.epoch;
 		before.wallet_account = wallet;
 		before.bank_account = bank;
-		if (!locked_before(connection, payload, active.bank_id, &before))
+		if (!locked_before(connection, payload, active.bank_id, &before,
+				   native ? &command : nullptr))
 			return failure_code();
 		critical_command projected = command;
 		projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
@@ -523,8 +753,25 @@ unsigned int economic_sql_auction_item_claim_execute_and_record(
 			    economic_accounting_error::ok ||
 		    expected != command.accounting_intent)
 			return ESTALE;
-		if (!auction_repository_execute_accounted(connection, command, result, result_code,
-							  mutation_applied))
+		if (native)
+		{
+			if (!locked_native_claim_player_before(connection, accepted, &whole_before))
+				return failure_code();
+			std::vector<player_item_snapshot> selected;
+			const auto source_error = auction_repository_read_original_native_selected(
+				connection, command, before.claim.listing_operation, &selected);
+			if (source_error)
+				return source_error;
+			if (!locked_native_claim_selected(connection, command, accepted,
+							  std::move(selected), &before,
+							  whole_before, &whole_after))
+				return failure_code();
+		}
+		if (!(native ? auction_repository_execute_accounted_native(
+				       connection, command, before.native_selected_literals, result,
+				       result_code, mutation_applied) :
+			       auction_repository_execute_accounted(connection, command, result,
+								    result_code, mutation_applied)))
 			return failure_code();
 		if ((*result_code == 0) != *mutation_applied)
 			return EILSEQ;
@@ -539,7 +786,8 @@ unsigned int economic_sql_auction_item_claim_execute_and_record(
 		if (auction_item_claim_accounting_plan(command, intent, before, *result, &plan) !=
 			    economic_accounting_error::ok ||
 		    !plan.accounts.empty() || !plan.postings.empty() || !plan.children.empty() ||
-		    plan.item_events.size() != payload.item_count)
+		    plan.item_events.size() !=
+			    (native ? before.native_selected_literals.size() : payload.item_count))
 			return EILSEQ;
 		if (!insert_operation(connection, command, intent, &plan, 0))
 			return failure_code();
@@ -562,6 +810,18 @@ unsigned int economic_sql_auction_item_claim_execute_and_record(
 			reference.legacy_event_index = static_cast<uint16_t>(index);
 			if (!economic_accounting_item_reference_insert(connection, reference))
 				return failure_code();
+		}
+		if (native)
+		{
+			const auto projection_error =
+				player_snapshot_repository_project_items_in_transaction(
+					connection, payload.actor_pid,
+					accepted.acknowledged_save_revision, whole_after);
+			if (projection_error)
+				return projection_error;
+			if (mysql_thread_id(connection) != context.session_id ||
+			    !(connection->server_status & SERVER_STATUS_IN_TRANS))
+				return ENOTCONN;
 		}
 		return 0;
 	}

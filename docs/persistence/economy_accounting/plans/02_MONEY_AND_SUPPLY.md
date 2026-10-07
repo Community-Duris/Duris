@@ -1,5 +1,16 @@
 # Plan 2: money holdings, transfers, issuance, and expenses
 
+## Maintained producer composition - 2026-10-07
+
+[Current candidate](../MAINTAINED_PRODUCER_CANDIDATE_INTEGRATION_2026-10-07.md)
+applies the reviewed shared/held/quest/native-auction closure with later coin
+and cold-birth safeguards, current Plan5 work and inactive/spell boundaries
+preserved. Both original753-provider production builds and ten Linux contracts
+pass. All108 owned formatting checks and the refreshed925-route writer contracts
+pass, including both original formatted dependency builds and full links. Original Plan1 independent
+acceptance retains its recorded scope; current major-plan, gameplay, activation
+and full R1-R8/release qualification remain open. No coverage gate is promoted.
+
 ## Latest shared implementation evidence — 2026-10-07
 
 The [literal-capacity qualification](../LITERAL_POOL_CAPACITY_RECOVERY_QUALIFICATION_2026-10-07.md)

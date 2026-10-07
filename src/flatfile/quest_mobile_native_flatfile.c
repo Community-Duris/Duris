@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <cerrno>
 #include <new>
+#include <openssl/crypto.h>
+#include <openssl/sha.h>
 #include <type_traits>
 #include <utility>
 
@@ -90,6 +92,157 @@ int read_locked(const std::string &root, const flatfile_authority_lock &lock, ui
 
 static_assert(std::is_nothrow_move_assignable_v<quest_mobile_native_flatfile_row>);
 static_assert(std::is_nothrow_move_assignable_v<flatfile_authority_operation>);
+
+// QNO1 is only storage framing around the unchanged actual NMR1 attachment.
+// The explicit phase is the observed terminal phase supplied at preparation.
+// SHA256 covers every header/body byte, including the actual revision.
+constexpr size_t origin_header_bytes = 16;
+constexpr size_t origin_overhead_bytes = origin_header_bytes + SHA256_DIGEST_LENGTH;
+constexpr size_t origin_maximum_bytes =
+	origin_overhead_bytes + CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES;
+static_assert(origin_maximum_bytes < flatfile_authority_transaction_maximum_bytes);
+
+std::string origin_filename(uint64_t id)
+{
+	return "quest-mobile-native-" + std::to_string(id) + ".qno";
+}
+
+int birth_codec_error(economic_accounting_error error) noexcept
+{
+	if (error == economic_accounting_error::ok)
+		return 0;
+	return error == economic_accounting_error::capacity ? ENOMEM : EBADMSG;
+}
+
+int origin_encode(const critical_native_recovery_envelope &original, std::vector<uint8_t> *output)
+{
+	if (original.attachment.empty() ||
+	    original.attachment.size() > CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES)
+		return E2BIG;
+	critical_command retained_command;
+	int error = birth_codec_error(native_mobile_birth_recovery_original_command_decode(
+		original.attachment, &retained_command));
+	if (error)
+		return error;
+	if (!critical_command_equal(retained_command, original.command) ||
+	    !native_mobile_birth_recovery_terminal(original))
+		return EBADMSG;
+	std::vector<uint8_t> bytes(origin_overhead_bytes + original.attachment.size());
+	bytes[0] = 'Q';
+	bytes[1] = 'N';
+	bytes[2] = 'O';
+	bytes[3] = '1';
+	bytes[4] = 1;
+	bytes[5] = 0;
+	bytes[6] = static_cast<uint8_t>(original.phase);
+	bytes[7] = 0;
+	for (size_t index = 0; index < sizeof(original.revision); ++index)
+		bytes[8 + index] = static_cast<uint8_t>(original.revision >> (8 * index));
+	std::copy(original.attachment.begin(), original.attachment.end(),
+		  bytes.begin() + origin_header_bytes);
+	const size_t checked_size = bytes.size() - SHA256_DIGEST_LENGTH;
+	if (!SHA256(bytes.data(), checked_size, bytes.data() + checked_size))
+		return EIO;
+	*output = std::move(bytes);
+	return 0;
+}
+
+int origin_decode(std::span<const uint8_t> bytes, critical_native_recovery_envelope *output)
+{
+	// Bound the entire actual file and fixed fields before any allocation.
+	if (bytes.size() <= origin_overhead_bytes || bytes.size() > origin_maximum_bytes ||
+	    bytes[0] != 'Q' || bytes[1] != 'N' || bytes[2] != 'O' || bytes[3] != '1' ||
+	    bytes[4] != 1 || bytes[5] != 0 ||
+	    bytes[6] !=
+		    static_cast<uint8_t>(critical_native_recovery_phase::continuation_pending) ||
+	    bytes[7] != 0)
+		return EBADMSG;
+	uint64_t revision = 0;
+	for (size_t index = 0; index < sizeof(revision); ++index)
+		revision |= uint64_t{ bytes[8 + index] } << (8 * index);
+	if (!revision)
+		return EBADMSG;
+	const size_t checked_size = bytes.size() - SHA256_DIGEST_LENGTH;
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+	if (!SHA256(bytes.data(), checked_size, digest.data()))
+		return EIO;
+	if (CRYPTO_memcmp(digest.data(), bytes.data() + checked_size, digest.size()))
+		return EBADMSG;
+	const auto body = bytes.subspan(origin_header_bytes, checked_size - origin_header_bytes);
+	critical_native_recovery_envelope candidate;
+	int error = birth_codec_error(
+		native_mobile_birth_recovery_original_command_decode(body, &candidate.command));
+	if (error)
+		return error;
+	candidate.revision = revision;
+	// This is the actual checked storage field, not an inferred journal state.
+	candidate.phase = static_cast<critical_native_recovery_phase>(bytes[6]);
+	candidate.attachment.assign(body.begin(), body.end());
+	if (!native_mobile_birth_recovery_terminal(candidate))
+		return EBADMSG;
+	*output = std::move(candidate);
+	return 0;
+}
+
+int origin_read_locked(const std::string &root, const flatfile_authority_lock &lock,
+		       const quest_mobile_native_reference &reference,
+		       quest_mobile_native_flatfile_origin_row *output)
+{
+	// Require real current native storage even when historical origin is absent.
+	quest_mobile_native_flatfile_row current;
+	int error = read_locked(root, lock, reference.mobile_instance_id, &current);
+	if (error)
+		return error;
+	if (!current.present)
+		return ENOENT;
+	std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> requested{}, actual{};
+	error = codec_error(quest_mobile_native_reference_encode(reference, &requested));
+	if (!error)
+		error = codec_error(
+			quest_mobile_native_reference_encode(current.image.reference, &actual));
+	if (error)
+		return error;
+	if (requested != actual)
+		return ESTALE;
+	std::vector<uint8_t> bytes;
+	errno = 0;
+	const auto read = flatfile_read(root + "/domains",
+					origin_filename(reference.mobile_instance_id),
+					origin_maximum_bytes, &bytes, nullptr);
+	const int saved_error = errno;
+	quest_mobile_native_flatfile_origin_row candidate;
+	if (read == flatfile_read_result::not_found)
+	{
+		if (!lock.matches(root))
+			return EINVAL;
+		*output = std::move(candidate);
+		return 0;
+	}
+	if (read == flatfile_read_result::invalid)
+		return EBADMSG;
+	if (read != flatfile_read_result::ok)
+		return saved_error ? saved_error : EIO;
+	error = origin_decode(bytes, &candidate.original);
+	if (error)
+		return error;
+	quest_mobile_native_image birth;
+	error = birth_codec_error(
+		native_mobile_birth_command_decode(candidate.original.command, &birth));
+	if (!error)
+		error = stable_birth(reference, birth.reference);
+	if (error)
+		return error;
+	if (candidate.original.command.operation_id.bytes != reference.birth_operation.bytes)
+		return EBADMSG;
+	if (!lock.matches(root))
+		return EINVAL;
+	candidate.present = true;
+	*output = std::move(candidate);
+	return 0;
+}
+
+static_assert(std::is_nothrow_move_assignable_v<critical_native_recovery_envelope>);
+static_assert(std::is_nothrow_move_assignable_v<quest_mobile_native_flatfile_origin_row>);
 } // namespace
 
 int quest_mobile_native_flatfile_read_locked(const std::string &root,
@@ -167,6 +320,86 @@ int quest_mobile_native_flatfile_prepare_locked(const std::string &root,
 		candidate.kind = flatfile_authority_operation_kind::write;
 		candidate.filename = filename(before.mobile_instance_id);
 		candidate.bytes = std::move(after_bytes);
+		if (!lock.matches(root))
+			return EINVAL;
+		*output = std::move(candidate);
+		return 0;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+}
+
+int quest_mobile_native_flatfile_origin_read_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const quest_mobile_native_reference &reference,
+	quest_mobile_native_flatfile_origin_row *output) noexcept
+{
+	if (!output || root.empty() || !reference.mobile_instance_id ||
+	    reference.mobile_instance_id == UINT64_MAX)
+		return EINVAL;
+	try
+	{
+		return origin_read_locked(root, lock, reference, output);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+}
+
+int quest_mobile_native_flatfile_origin_prepare_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_native_recovery_envelope &original,
+	flatfile_authority_operation *output) noexcept
+{
+	if (!output || root.empty() || !lock.matches(root))
+		return EINVAL;
+	try
+	{
+		std::vector<uint8_t> bytes;
+		int error = origin_encode(original, &bytes);
+		if (error)
+			return error;
+		quest_mobile_native_image birth;
+		error = birth_codec_error(
+			native_mobile_birth_command_decode(original.command, &birth));
+		if (error)
+			return error;
+		quest_mobile_native_flatfile_row current;
+		error = read_locked(root, lock, birth.reference.mobile_instance_id, &current);
+		if (error)
+			return error;
+		if (!current.present)
+			return ENOENT;
+		std::vector<uint8_t> born_bytes, current_bytes;
+		error = codec_error(quest_mobile_native_image_encode(birth, &born_bytes));
+		if (!error)
+			error = codec_error(
+				quest_mobile_native_image_encode(current.image, &current_bytes));
+		if (error)
+			return error;
+		if (born_bytes != current_bytes)
+			return ESTALE;
+		quest_mobile_native_flatfile_origin_row retained;
+		error = origin_read_locked(root, lock, birth.reference, &retained);
+		if (error)
+			return error;
+		if (retained.present)
+		{
+			std::vector<uint8_t> prior;
+			error = origin_encode(retained.original, &prior);
+			if (error)
+				return error;
+			if (prior != bytes)
+				return ESTALE;
+		}
+		flatfile_authority_operation candidate;
+		candidate.store = flatfile_authority_store::domains;
+		candidate.kind = flatfile_authority_operation_kind::write;
+		candidate.filename = origin_filename(birth.reference.mobile_instance_id);
+		candidate.bytes = std::move(bytes);
 		if (!lock.matches(root))
 			return EINVAL;
 		*output = std::move(candidate);

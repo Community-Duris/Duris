@@ -259,6 +259,7 @@ class quest_mobile_native_stage
 	// even if a hook extracts the NPC or room insertion fails. Not an ACK.
 	// An exception after consumption must not be treated as a fresh refusal.
 	bool publish(int room_rnum, struct char_data **live_after_hooks);
+	friend class quest_mobile_published_world_owner;
 	friend class quest_mobile_native_birth_owner;
 };
 

@@ -7,6 +7,8 @@
 #include "persistence/critical_command_coordinator.h"
 #include "player/player_save_replay_ownership.h"
 
+#include "item/item_transfer_command.h"
+
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -215,12 +217,93 @@ class player_save_shop_checkpoint_owner final
 				       player_shop_checkpoint_stage *) noexcept;
 };
 
+// Auction readiness owns the original whole persistent player forest. It grants
+// neither SQL mutation nor publication or ACK authority. Root UID stays zero.
+struct player_auction_checkpoint_token
+{
+	int32_t pid = 0;
+	uint64_t actor_runtime_id = 0, root_uid = 0, generation = 0;
+	bool operator==(const player_auction_checkpoint_token &) const = default;
+};
+struct player_auction_checkpoint_stage
+{
+	player_revision_t save_revision = 0;
+	uint32_t level = 0;
+};
+player_literal_inventory_state
+player_save_pipeline_auction_checkpoint_begin(P_char, int room_vnum,
+					      std::span<const uint64_t> selected_roots,
+					      player_auction_checkpoint_token *);
+player_literal_inventory_state
+player_save_pipeline_auction_checkpoint_poll(const player_auction_checkpoint_token &, P_char,
+					     player_auction_checkpoint_stage * = nullptr);
+bool player_save_pipeline_auction_checkpoint_hold(const player_auction_checkpoint_token &,
+						  const critical_operation_id &);
+bool player_save_pipeline_auction_checkpoint_release(const player_auction_checkpoint_token &,
+						     const critical_operation_id &);
+bool player_save_pipeline_auction_checkpoint_cancel(const player_auction_checkpoint_token &);
+class auction_preparation_owner;
+class auction_native_publication_owner;
+class player_save_auction_checkpoint_owner final
+{
+    public:
+	static bool original_held_bodies(const critical_command &,
+					 std::vector<player_item_snapshot> *,
+					 std::vector<player_item_snapshot> *,
+					 player_auction_checkpoint_stage *) noexcept;
+
+    private:
+	friend class auction_preparation_owner;
+	friend class auction_native_publication_owner;
+	static bool observe_held(const player_auction_checkpoint_token &, P_char,
+				 const critical_operation_id &, player_auction_checkpoint_stage *,
+				 std::vector<player_item_snapshot> * = nullptr) noexcept;
+	static critical_submit_result submit_owned(const player_auction_checkpoint_token &,
+						   critical_command,
+						   std::span<const uint8_t> original_native_before,
+						   bool *checkpoint_released) noexcept;
+};
+
+class player_save_auction_publication_owner final
+{
+    private:
+	friend class auction_native_publication_owner;
+	// Passive original phase1 replay only; no actor/publication/ACK authority.
+	static bool restore_recovery_checkpoint(const critical_native_recovery_envelope &) noexcept;
+	// Bind only an exact original restored hold to an actual loaded player.
+	// The native owner must first prove current SQL/world custody and confirmed
+	// rollback. This creates local identity only, never publication authority.
+	static bool rebind_recovery_checkpoint(const critical_native_recovery_envelope &,
+					       uint64_t actual_player_runtime_id) noexcept;
+	static bool copy_recovery_context(const critical_command &,
+					  critical_native_recovery_envelope *) noexcept;
+	static bool
+	checkpoint_recovery_context(const critical_native_recovery_envelope &expected,
+				    const critical_native_recovery_envelope &successor) noexcept;
+	// Exact acknowledged whole-player forests and original level/revision.
+	// No cold/source/ACK authority.
+	static bool publication_held_bodies(const critical_command &,
+					    std::vector<player_item_snapshot> *,
+					    std::vector<player_item_snapshot> *,
+					    player_auction_checkpoint_stage *) noexcept;
+
+	// The real native owner must authenticate historical receipt, current SQL
+	// cut and physical BEFORE/AFTER before this private callback succeeds.
+	// Never-admitted remains closed until exact absence/BEFORE proof exists.
+	static bool publish_auction(const critical_command &, const critical_completion &,
+				    bool (*)(const critical_command &, const critical_completion &,
+					     void *) noexcept,
+				    void *) noexcept;
+};
+
 // Native quest readiness is distinct from SHOP authorization. The actual saved
 // EQ/INV body is acknowledged before the original operation can hold it.
 struct player_native_quest_checkpoint_token
 {
 	int32_t pid = 0;
 	uint64_t actor_runtime_id = 0, root_uid = 0, generation = 0;
+	// Explicit zero-root money checkpoint; ordinary native item tokens stay false.
+	bool money_only = false;
 	bool operator==(const player_native_quest_checkpoint_token &) const = default;
 };
 struct player_native_quest_checkpoint_stage
@@ -229,6 +312,10 @@ struct player_native_quest_checkpoint_stage
 };
 player_literal_inventory_state player_save_pipeline_native_quest_checkpoint_begin(
 	P_char, P_obj optional_carried_root, int room_vnum, player_native_quest_checkpoint_token *);
+// Saves actual STATUS and the full unchanged EQ/INV forest before money admission.
+player_literal_inventory_state
+player_save_pipeline_native_money_checkpoint_begin(P_char, int room_vnum,
+						   player_native_quest_checkpoint_token *);
 player_literal_inventory_state
 player_save_pipeline_native_quest_checkpoint_poll(const player_native_quest_checkpoint_token &,
 						  P_char,
@@ -243,8 +330,11 @@ class item_native_quest_preparation_owner;
 class player_save_native_quest_checkpoint_owner final
 {
     public:
-	// Exact original live or passive restored slot values, callable by the SQL worker
-	// without an actor pointer. Not source, publication or ACK authority.
+	// Read-only genuine retained fee/acceptance correlation, before SQL locks.
+	// No source, transaction, physical publication or ACK authority.
+	static bool original_fee_acceptance(
+		const critical_command &actual_fee_action, critical_command *original_acceptance,
+		std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> *original_typed48) noexcept;
 	static bool original_held_bodies(const critical_command &,
 					 std::vector<player_item_snapshot> *before,
 					 std::vector<player_item_snapshot> *after,
@@ -295,6 +385,76 @@ class player_save_native_quest_publication_owner final
 					 void *) noexcept;
 };
 
+// Actual parentless HOLD source over complete root-zero persisted EQ/INV.
+struct player_held_retirement_checkpoint_token
+{
+	int32_t pid = 0;
+	uint64_t actor_runtime_id = 0, root_uid = 0, generation = 0, selected_uid = 0;
+	bool operator==(const player_held_retirement_checkpoint_token &) const = default;
+};
+struct player_held_retirement_checkpoint_stage
+{
+	player_revision_t save_revision = 0;
+};
+player_literal_inventory_state
+player_save_pipeline_held_retirement_checkpoint_begin(P_char, P_obj actual_held_pick, int room_vnum,
+						      player_held_retirement_checkpoint_token *);
+player_literal_inventory_state player_save_pipeline_held_retirement_checkpoint_poll(
+	const player_held_retirement_checkpoint_token &, P_char,
+	player_held_retirement_checkpoint_stage * = nullptr);
+bool player_save_pipeline_held_retirement_checkpoint_hold(
+	const player_held_retirement_checkpoint_token &, const critical_operation_id &);
+bool player_save_pipeline_held_retirement_checkpoint_release(
+	const player_held_retirement_checkpoint_token &, const critical_operation_id &);
+bool player_save_pipeline_held_retirement_checkpoint_cancel(
+	const player_held_retirement_checkpoint_token &);
+struct held_retirement_publication_snapshot;
+class item_held_retirement_preparation_owner;
+class item_held_retirement_publication_owner;
+class player_save_held_retirement_checkpoint_owner final
+{
+    public:
+	// Original values only, callable by SQL worker. No publication/ACK authority.
+	static bool original_held_bodies(const critical_command &,
+					 std::vector<player_item_snapshot> *,
+					 std::vector<player_item_snapshot> *,
+					 player_held_retirement_checkpoint_stage *) noexcept;
+
+    private:
+	friend class item_held_retirement_preparation_owner;
+	static bool observe_held(const player_held_retirement_checkpoint_token &, P_char,
+				 const critical_operation_id &,
+				 player_held_retirement_checkpoint_stage *,
+				 std::vector<player_item_snapshot> * = nullptr) noexcept;
+	static critical_submit_result submit_owned(const player_held_retirement_checkpoint_token &,
+						   critical_command,
+						   bool *checkpoint_released) noexcept;
+};
+class player_save_held_retirement_publication_owner final
+{
+    private:
+	friend class item_held_retirement_publication_owner;
+	static bool restore_recovery_checkpoint(const critical_native_recovery_envelope &) noexcept;
+	static bool rebind_recovery_checkpoint(const critical_native_recovery_envelope &,
+					       uint64_t actual_runtime_id) noexcept;
+	static bool copy_recovery_context(const critical_command &,
+					  critical_native_recovery_envelope *) noexcept;
+	static bool resume_recovery_context(const critical_command &) noexcept;
+	static bool copy_publication_context(const critical_command &, const critical_completion &,
+					     held_retirement_publication_snapshot *) noexcept;
+	static bool checkpoint_recovery_context(const critical_native_recovery_envelope &,
+						const critical_native_recovery_envelope &) noexcept;
+	static bool publication_held_bodies(const critical_command &,
+					    std::vector<player_item_snapshot> *,
+					    std::vector<player_item_snapshot> *,
+					    player_held_retirement_checkpoint_stage *) noexcept;
+	static bool publish_held_retirement(const critical_command &, const critical_completion &,
+					    const held_retirement_publication_snapshot &,
+					    bool (*)(const critical_command &,
+						     const critical_completion &, void *) noexcept,
+					    void *) noexcept;
+};
+
 // Critical replay restores a SQL ordinary-drop obligation without inventing a
 // live runtime token or checkpoint revision. Identical immutable commands are
 // idempotent; conflicting identity or capacity refuses before admission.
@@ -322,6 +482,12 @@ class player_save_restored_publication_owner final
 
     private:
 	friend class player_save_native_quest_publication_owner;
+	friend class player_save_held_retirement_publication_owner;
+	friend bool critical_command_coordinator_cancel_held_retirement_publication(
+		player_save_restored_publication_owner &, const critical_native_recovery_envelope &,
+		bool (*)(const critical_command &, const critical_completion &, void *) noexcept,
+		void *) noexcept;
+	friend class player_save_auction_publication_owner;
 	friend class collector_purchase_publication_owner;
 	friend class shop_trade_native_publication_owner;
 	static bool publish_shop(const critical_command &, const critical_completion &,
@@ -330,6 +496,10 @@ class player_save_restored_publication_owner final
 							void *) noexcept,
 				 void *) noexcept;
 	friend bool critical_command_coordinator_cancel_shop_publication(
+		player_save_restored_publication_owner &,
+		bool (*)(const critical_command &, const critical_completion &, void *) noexcept,
+		void *);
+	friend bool critical_command_coordinator_cancel_auction_publication(
 		player_save_restored_publication_owner &,
 		bool (*)(const critical_command &, const critical_completion &, void *) noexcept,
 		void *);

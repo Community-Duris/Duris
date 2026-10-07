@@ -1,5 +1,27 @@
 # Finish accounting implementation plan
 
+## Native auction creator proof qualified - 2026-10-07
+
+[Retained creator and zero-fee fix](AUCTION_NATIVE_CREATOR_PROOF_FIX_2026-10-07.md)
+now passes both maintained original753-provider builds/full links, ten original
+contracts, the real-source sanitizer regression and the unchanged original
+MySQL8/MariaDB10.11 auction SQL component, including BID184/185 and original
+refusal/replay controls. All925 writer policies and evidence states are preserved.
+This closes the retained native creator defect; whole Plan4, physical player
+journeys, flatfile parity, activation and full R1-R8/release qualification remain
+open. The coin restart and fresh SHOP streams continue independently.
+
+## Maintained producer composition - 2026-10-07
+
+[Current candidate](MAINTAINED_PRODUCER_CANDIDATE_INTEGRATION_2026-10-07.md)
+applies the reviewed shared/held/quest/native-auction closure with later coin
+and cold-birth safeguards, current Plan5 work and inactive/spell boundaries
+preserved. Both original753-provider production builds and ten Linux contracts
+pass. All108 owned formatting checks and the refreshed925-route writer contracts
+pass, including both original formatted dependency builds and full links. Original Plan1 independent
+acceptance retains its recorded scope; current major-plan, gameplay, activation
+and full R1-R8/release qualification remain open. No coverage gate is promoted.
+
 ## Independent history and namespace qualified — 2026-10-07
 
 [Primary integration](PLAN5_HISTORY_NAMESPACE_PRIMARY_INTEGRATION_2026-10-07.md)
@@ -70,6 +92,27 @@ gates are outside this guidance. Existing required changes to those areas remain
 owned by their current plan. Preserve inactive behavior, wallet-root exclusions,
 the declined inactive spell-path change and all current acceptance requirements.
 
+## Continuing project coordination supersedes finite closure - 2026-10-07
+
+The user has authorized a new actual continuing coordinator Goal and continuing
+Goals for both existing architecture and quest-prep chats. Completed R0/R1/R2
+and quest deliveries remain checkpoints. They do not finish coordination or
+stop monitoring while the primary accounting implementation remains unfinished.
+[Continuing project charter and initial queue](domain-separation/CONTINUING_PROJECT_COORDINATION.md)
+sets the finish line at observable completion of required Plans1-5 implementation
+and integrated qualification, original applicable R1-R8/backend/gameplay/recovery
+requirements, resolved required blockers and a published owner completion
+disposition. No deployment/activation or extra primary release gate is added.
+
+Both isolated workstreams first reconcile their bundles and native prerequisites
+against the new maintained producer candidate, then deliver the next useful
+independent preparation extraction or genuine quest acceptance case. They must
+maintain an evolving queue and exact owner dependencies; current batch completion
+or temporary lack of independent work is not overall completion. The recurring
+monitor stays active until this broader audit passes or the user asks to stop it.
+Preserve completed work, primary ownership, original proof and normal adoption
+boundaries. The prior finite charter/audit below are historical checkpoint records.
+
 ## Continuing architecture and quest-prep coordination - 2026-10-07
 
 The user authorizes the coordinator to keep both **Separate accounting domain
@@ -91,6 +134,34 @@ premature completion, reviews bundles and updates these remote handoff links.
 These are separate sidework milestones. The primary continues its current
 accounting plan without waiting, and consumes compatible reviewed bundles at
 normal integration boundaries. Publication does not establish primary adoption.
+
+### Reviewed sidework available for optional import
+
+The fixed architecture inventory has three reviewed implementations: Collector
+image `3d2b85b0688684721f8db559cb3ea35b1830a1cc`, Craft/Forge quote
+`48cdf9cb0893873651216f7940aae2691d060e58`, and wallet/bank deltas
+`24fa551ae16900b41e509f79fe4685762e0fb2e9`. See
+[exact dispositions and scoped proof](domain-separation/INVENTORY_REVIEW_2026-10-07.md)
+and the worker's canonical handoff on `codex/accounting-domain-separation`.
+Craft/Forge SQL/flat recipe journeys pass; currency has 84 selected completion
+passes, with coin-specific cases explicitly excluded. Shared fixture failures
+are retained. Import independent narrow code bundles at normal boundaries after
+checking current preimages; publication does not establish primary adoption.
+
+Quest-prep reconciliation, mini-mode stale-room refusal diagnosis and conditional
+creation-watermark assessment are published and
+[reviewed](domain-separation/QUEST_PREP_REVIEW_2026-10-07.md). The original mini
+later-drop journey remains RED. A finite ordinary full-world cold-room control
+is implemented at `0ceae3a847f6573ec326bac3f36fb632ef5c2fe9`, executed and
+independently reviewed. Exact UID/custody/revision/conservation, full restoration
+and normal shutdown evidence pass; the original mini journey remains RED.
+Architecture final handoff: `ee5c8a056c15323849290efc962a1a02e75c4037`. Quest final
+handoff: `5e019a44ebb805feadc5101534ce404d4aaa53ad`. Both actual finite worker Goals
+are COMPLETE. See the [requirement-by-requirement completion audit](domain-separation/WORKSTREAM_COMPLETION_AUDIT_2026-10-07.md)
+for scoped closure and primary-owned dependencies. These sidework row names are
+unrelated to the accounting plan's original R1-R8 acceptance gates. No production
+ownership or release gate is added; optional import and integrated qualification
+remain primary.
 
 ## Fourth agent: independent domain separation - 2026-10-07
 

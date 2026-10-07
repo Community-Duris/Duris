@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cstdint>
+#include <span>
 
 constexpr uint16_t AUCTION_COMMAND_PAYLOAD_VERSION = 1;
 constexpr size_t AUCTION_COMMAND_MAX_ITEMS = 9;
@@ -98,6 +99,10 @@ struct auction_command_result
 
 bool auction_command_encode_payload(const auction_command_payload &payload,
 				    std::vector<uint8_t> *encoded);
+// Values-only native base decode preserving original fences plus paired item
+// descendants. It grants no legacy execution, SQL source or publication authority.
+bool auction_command_decode_native_base(const critical_command &, std::span<const uint8_t>,
+					auction_command_payload *);
 bool auction_command_decode_payload(const critical_command &command,
 				    auction_command_payload *payload);
 bool auction_command_encode_result(const auction_command_result &result,

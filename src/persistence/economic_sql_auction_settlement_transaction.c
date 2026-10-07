@@ -4,6 +4,7 @@
 #include "economy/auction_settlement_accounting.h"
 #include "persistence/economic_sql_pending_claim_source.h"
 
+#include "economy/auction_native_command_context.h"
 #include <cerrno>
 
 #ifndef __NO_MYSQL__
@@ -239,7 +240,7 @@ bool actor_before(MYSQL *connection, const auction_command_payload &payload, uin
 }
 
 bool locked_before(MYSQL *connection, const auction_command_payload &payload, uint32_t bank_id,
-		   auction_settlement_authority *before)
+		   auction_settlement_authority *before, bool native_full_forest)
 {
 	if (!actor_before(connection, payload, bank_id, &before->actor_balances_before))
 		return false;
@@ -376,16 +377,19 @@ bool locked_before(MYSQL *connection, const auction_command_payload &payload, ui
 						  item[1],
 						  item[5],
 						  static_cast<item_custody_state>(item[7]) } };
-		if (!row(connection,
-			 "SELECT item_uid FROM item_current_owner WHERE root_item_uid=" +
-				 std::to_string(uid) + " AND item_uid<>" + std::to_string(uid) +
-				 " LIMIT 1 FOR UPDATE",
-			 1, &values, true))
-			return false;
-		if (!values.empty())
+		if (!native_full_forest)
 		{
-			errno = EOPNOTSUPP;
-			return false;
+			if (!row(connection,
+				 "SELECT item_uid FROM item_current_owner WHERE root_item_uid=" +
+					 std::to_string(uid) + " AND item_uid<>" +
+					 std::to_string(uid) + " LIMIT 1 FOR UPDATE",
+				 1, &values, true))
+				return false;
+			if (!values.empty())
+			{
+				errno = EOPNOTSUPP;
+				return false;
+			}
 		}
 	}
 	if (payload.action == auction_action::finalize && listing.winner_pid &&
@@ -546,6 +550,13 @@ unsigned int economic_sql_auction_settlement_lock(MYSQL *connection,
 		auction_settlement_accounts accounts;
 		if (!identity(command, &intent, &payload, &listing, &accounts))
 			return EPROTONOSUPPORT;
+		if (command.payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION)
+		{
+			const auto native_error = auction_repository_validate_accounted_native_cut(
+				connection, command);
+			if (native_error)
+				return native_error;
+		}
 		economic_sql_auction_settlement_context candidate;
 		std::vector<economic_sql_mapping_request> requests = {
 			{ accounts.escrow, AUCTION_LOCATOR, listing.auction_id }
@@ -652,7 +663,9 @@ unsigned int economic_sql_auction_settlement_execute_and_record(
 		auction_settlement_authority before;
 		before.epoch = active.authority.epoch;
 		before.accounts = accounts;
-		if (!locked_before(connection, payload, active.actor_bank_id, &before))
+		if (!locked_before(connection, payload, active.actor_bank_id, &before,
+				   command.payload_version ==
+					   AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION))
 			return failure_code();
 		critical_command projected = command;
 		projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
@@ -664,8 +677,13 @@ unsigned int economic_sql_auction_settlement_execute_and_record(
 			    economic_accounting_error::ok ||
 		    expected != command.accounting_intent)
 			return ESTALE;
-		if (!auction_repository_execute_accounted(connection, command, result, result_code,
-							  mutation_applied))
+		const bool native = command.payload_version ==
+				    AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION;
+		if (!(native ? auction_repository_execute_accounted_native(connection, command, {},
+									   result, result_code,
+									   mutation_applied) :
+			       auction_repository_execute_accounted(connection, command, result,
+								    result_code, mutation_applied)))
 			return failure_code();
 		if ((*result_code == 0) != *mutation_applied)
 			return EILSEQ;

@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <array>
 #include <climits>
+#include <cstdio>
 #include <cstring>
 #include <limits>
 #include <new>
@@ -30,6 +31,15 @@ extern Skill skills[];
 
 namespace
 {
+void report_shop_item_refusal(unsigned int stage, unsigned int code = 0) noexcept
+{
+	static bool reported = false;
+	if (!reported)
+	{
+		reported = true;
+		std::fprintf(stderr, "shop-item-recovery-refusal stage=%u code=%u\n", stage, code);
+	}
+}
 class staged_item_graph
 {
     public:
@@ -620,10 +630,10 @@ bool materialize_item_graph(P_char character, std::vector<P_obj> *detached_roots
 		    (identity.override_mask & (PLAYER_LOAD_ITEM_OVERRIDE_DYNAMIC_AFFECTS |
 					       PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME)))
 		{
-			const auto baseline = std::find_if(
-				item.dynamic_affects.begin(), item.dynamic_affects.end(),
-				[](const auto &affect)
-				{ return affect.type == TAG_ALTERED_EXTRA2; });
+			const auto baseline =
+				std::find_if(item.dynamic_affects.begin(),
+					     item.dynamic_affects.end(), [](const auto &affect)
+					     { return affect.type == TAG_ALTERED_EXTRA2; });
 			if (baseline != item.dynamic_affects.end())
 				object->extra2_flags = static_cast<ulong>(baseline->extra2);
 			for (auto affect = item.dynamic_affects.rbegin();
@@ -977,33 +987,78 @@ bool shop_trade_original_item_stage::prepare(const object_template &prototype,
 {
 	try
 	{
-		if (!literal.object_uid || !std::in_range<unsigned long>(literal.object_uid) ||
-		    !std::in_range<long>(literal.generated_key) || literal.vnum <= 0 ||
-		    literal.type < ITEM_LOWEST || literal.type > ITEM_LAST ||
-		    literal.equipment_slot ||
-		    literal.string_mask !=
-			    (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3) ||
-		    !player_load_item_snapshot_metadata_valid(literal))
+		if (!literal.object_uid)
+		{
+			report_shop_item_refusal(9111);
 			return false;
+		}
+		if (!std::in_range<unsigned long>(literal.object_uid))
+		{
+			report_shop_item_refusal(9112);
+			return false;
+		}
+		if (!std::in_range<long>(literal.generated_key))
+		{
+			report_shop_item_refusal(9113);
+			return false;
+		}
+		if (literal.vnum <= 0)
+		{
+			report_shop_item_refusal(9114);
+			return false;
+		}
+		if (literal.type < ITEM_LOWEST || literal.type > ITEM_LAST)
+		{
+			report_shop_item_refusal(9115);
+			return false;
+		}
+		if (literal.equipment_slot)
+		{
+			report_shop_item_refusal(9116);
+			return false;
+		}
+		if (literal.string_mask !=
+		    (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3))
+		{
+			report_shop_item_refusal(9117);
+			return false;
+		}
+		if (!player_load_item_snapshot_metadata_valid(literal))
+		{
+			report_shop_item_refusal(9118);
+			return false;
+		}
 		// Complete full-literal SHOP capture uses these exact four strings. No
 		// prototype default is substituted for a missing original string.
 		for (const auto *text : { &literal.name, &literal.short_description,
 					  &literal.description, &literal.action_description })
 			if (text->size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
 			    text->find('\0') != std::string::npos)
+			{
+				report_shop_item_refusal(9121);
 				return false;
+			}
 		for (const auto &affect : literal.affects)
 			if (!std::in_range<decltype(std::declval<obj_data &>().affected[0].location)>(
 				    affect[0]) ||
 			    !std::in_range<decltype(std::declval<obj_data &>().affected[0].modifier)>(
 				    affect[1]))
+			{
+				report_shop_item_refusal(9122);
 				return false;
+			}
 		for (auto value : literal.bitvectors)
 			if (!std::in_range<unsigned long>(value))
+			{
+				report_shop_item_refusal(9123);
 				return false;
+			}
 		for (auto timer : literal.timers)
 			if (!std::in_range<time_t>(timer))
+			{
+				report_shop_item_refusal(9124);
 				return false;
+			}
 		player_item_snapshot decoded = literal;
 		for (auto &description : decoded.extra_descriptions)
 		{
@@ -1011,13 +1066,19 @@ bool shop_trade_original_item_stage::prepare(const object_template &prototype,
 			{
 				std::array<char, (MAX_SKILLS + 1) / 8 + 1> bits{};
 				if (!decode_saved_spellbook(description, bits.data()))
+				{
+					report_shop_item_refusal(9125);
 					return false;
+				}
 				description.keyword.assign("\3\1\3", 3);
 				description.description.assign(bits.data(), bits.size());
 			}
 			else if (description.keyword.find('\0') != std::string::npos ||
 				 description.description.find('\0') != std::string::npos)
+			{
+				report_shop_item_refusal(9126);
 				return false;
+			}
 		}
 		// Cold SHOP restoration may be the first object allocation after mm_create.
 		// Reserve real native capacity before unpublished literal staging, without
@@ -1028,9 +1089,14 @@ bool shop_trade_original_item_stage::prepare(const object_template &prototype,
 		    !mm_try_reserve_free_slot(dead_obj_pool))
 			return false;
 		inert_item_stage raw;
-		if (inert_item_stage::allocate_literal(prototype, decoded, raw) !=
-		    inert_item_stage_result::ok)
+		const auto allocation_result =
+			inert_item_stage::allocate_literal(prototype, decoded, raw);
+		if (allocation_result != inert_item_stage_result::ok)
+		{
+			report_shop_item_refusal(9127,
+						 static_cast<unsigned int>(allocation_result));
 			return false;
+		}
 		shop_trade_original_item_stage candidate;
 		candidate.object_ = std::exchange(raw.object_, nullptr);
 		candidate.pool_ = std::exchange(raw.pool_, nullptr);
@@ -1056,7 +1122,10 @@ bool shop_trade_original_item_stage::prepare(const object_template &prototype,
 				auto *node =
 					static_cast<obj_affect *>(mm_get(candidate.affect_pool_));
 				if (!node)
+				{
+					report_shop_item_refusal(9128);
 					return false;
+				}
 				node->type = saved.type;
 				node->data = saved.data;
 				node->extra2 = static_cast<ulong>(saved.extra2);
@@ -1070,6 +1139,7 @@ bool shop_trade_original_item_stage::prepare(const object_template &prototype,
 	}
 	catch (...)
 	{
+		report_shop_item_refusal(9129);
 		return false;
 	}
 }
