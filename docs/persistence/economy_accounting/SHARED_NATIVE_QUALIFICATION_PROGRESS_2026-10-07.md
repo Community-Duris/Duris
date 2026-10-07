@@ -1,5 +1,15 @@
 # Shared native qualification progress - 2026-10-07
 
+## Persisted union candidate authenticated - 2026-10-07
+
+[Primary source handoff](PERSISTED_PROVIDER_UNION_PRIMARY_HANDOFF_2026-10-07.md)
+records the room allocation-error fix, corrected original union fixtures and
+frozen40 composition. Source/fixture syntax and complete source authentication
+pass; native runtime/full builds remain pending. Lifecycle consumption and
+mobile/live/world census remain required. No original gate or inactive behavior
+changes, and no complete activation/release claim follows from this source work.
+
+
 ## Central lifecycle component registered - 2026-10-07
 
 [Registration evidence](PLAN5_LIFECYCLE_V2_REGISTRATION_2026-10-07.md)
