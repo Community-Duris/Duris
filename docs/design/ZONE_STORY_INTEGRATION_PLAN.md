@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 212 authored journals, accounting-gated player surfaces, starter/town
+**Status: 213 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5376,3 +5376,8 @@ The [dossier](zone-stories/JINDON_DEATHWOOD.md) maps one exact arms return with 
 ## Lava Springs integration extension
 
 The [dossier](zone-stories/LAVA_SPRINGS.md) maps one native six-input Cinder commission, two optional quantity/material rows and one accepted item receipt. Forty owned follow-ups distinguish supplied/source materials, actual voucher purchase and variable pricing, atomic repeated-root selection, terrain survival, Qin’s independent foreign return, inn/locker/item effects and lasting town/recipient outcomes. Existing schema3 covers QA14; additional typed endpoints need demonstrated real callers and builder policy. New tracking requires active READY accounting; daily policy stays disabled. Actual repairs use separate named fix/news commits.
+
+
+## Lylr-Meop integration extension
+
+The [dossier](zone-stories/LYLR_MEOP.md) maps one native scalp exchange, optional material and accepted receipt. Forty owned follow-ups cover hidden/source or supplied custody, actual approach/fall, giver retirement, captive agency/restraints/escort, vault dispatch/contents, shop and generated-world-quest services, effects and lasting civic/recipient outcomes. Existing schema3 covers Q11. Typed endpoints require demonstrated actual callers and builder policy; access reciprocity, asymmetric key, unsupported trap, Hylga’s absent drink shop and naming need fair separately reviewable follow-up. Active READY accounting remains required; daily policy stays disabled.

@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 200 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 201 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -405,7 +405,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 | 198 | [Treasure Caves](zone-stories/TREASURE_CAVES.md) (`dungeon`) | Forest/Underdark arrival → vines/control → library → chief/key/chest → exact figurine return; necklace restitution, slave/household agency, sword effects, dragons/ecology, mountain survival and troll escort. | Comprehensive schema3/revision1: one card/36 contacts/five aliases/one optional row/two steps;116 rooms/36 mobiles/24 objects/194 resets. Forty owned source/control/recipient/outcome/accounting/renewal/fair-repair follow-ups. |
 | 199 | [Jindon the Deathwood Forest](zone-stories/JINDON_DEATHWOOD.md) (`jin`) | Surface arrival → paid admission → Faggle/arms → Sirax return and defined agency; games/restitution, exhibits/animal care, Deathwood/cyclops/dragon, whirlpool rescue, altar/temple and cabin restoration. | Comprehensive schema3/revision1: one card/48 contacts/seven aliases/one optional row/two steps;90 rooms/48 mobiles/37 objects/132 resets. Forty-four owned source/access/payment/recipient/outcome/accounting/renewal/fair-repair follow-ups. |
 | 200 | [Lava Springs](zone-stories/LAVA_SPRINGS.md) (`lava`) | Surface arrival → Drembel/voucher and five rocks → Cinder; lookouts/invasion, guards/agency, inn/bank services, heat survival, demonic-host aid, Voinak/realm choices and Qin’s independent five-skull return. | Comprehensive schema3/revision1: one card/20 contacts/eight aliases/two optional rows/three steps;65 rooms/20 mobiles/seven local objects/109 resets. Forty owned source/access/purchase/effect/recipient/outcome/accounting/renewal/fair-repair follow-ups. |
-| 201 | Lylr-Meop (`lylr`) | [Meet the giver → 1 × an ogre's scalp → a pair of drow skin boots](../../areas/qst/lylr.qst#L11) | 1 Q; 1 dialogue; 0 candidate link items |
+| 201 | [Lylr-Meop](zone-stories/LYLR_MEOP.md) (`lylr`) | Qualified approach → Venmar/hidden tree → exact source or supplied scalp → accepted boots/retirement; dragon agency, forest safety, five captive choices, vault/contents, shops/world quests, family care and Meopham civic/bar restoration. | Comprehensive schema3/revision1: one card/36 contacts/two aliases/one optional row/two steps;64 rooms/36 mobiles/31 local objects/144 resets. Forty owned source/access/effect/recipient/outcome/accounting/renewal/fair-repair follow-ups. |
 | 202 | The Halfling Silver Mine (`mining`) | [Meet the giver → 1 × a balor's whip → a badge of purity](../../areas/qst/mining.qst#L8) | 1 Q; 1 dialogue; 0 candidate link items |
 | 203 | Forest of Mir (`mir`) | [Meet the giver → 1 × a light and dark scroll → a satanic token](../../areas/qst/mir.qst#L10) | 1 Q; 1 dialogue; 0 candidate link items |
 | 204 | The Shadow Forest (`mist`) | [Meet the giver → 1 × the bloody head of Darnac → a crown of light](../../areas/qst/mist.qst#L6) | 1 Q; 1 dialogue; 0 candidate link items |

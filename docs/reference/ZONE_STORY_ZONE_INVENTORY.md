@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 212 authored journals.
+2668 distinct Q contracts; 213 authored journals.
 
 Regenerate with:
 
@@ -134,7 +134,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Defense of Longhollow (`long`) | 15 | 59 | 6 | Yes | [1 × the bloody head of a knight; 1 × the bloody head of the necromancer; 1 × the bloody head of the chieftan; other required items → a bracer bearing the Longhollow symbol, an exquisite moonstone](../../areas/qst/long.qst#L333) | — |
 | The Ancient Halls of Ironstar (`lornecro`) | 7 | 15 | 2 | Yes | [1 × the mold of a small mithril parrying dagger; 1 × a scroll of demonhide; 1 × a broken demonic weapon called 'The Fury of Demons' → a blazing dagger called 'The Fury of Demons'](../../areas/qst/lornecro.qst#L124) | — |
 | The Tower of Darkness (`lortower`) | 7 | 11 | 2 | Yes | [5 × a black iron two-handed sword; 1 × a gold locket → a black iron shield of Dubneth](../../areas/qst/lortower.qst#L119) | — |
-| Lylr-Meop (`lylr`) | 1 | 1 | 0 | Fallback | [1 × an ogre's scalp → a pair of drow skin boots](../../areas/qst/lylr.qst#L11) | inn, money_changer, world_quest |
+| Lylr-Meop (`lylr`) | 1 | 1 | 0 | Yes | [1 × an ogre's scalp → a pair of drow skin boots](../../areas/qst/lylr.qst#L11) | inn, money_changer, world_quest |
 | The Para-Elemental Plane of Magma (`magma`) | 1 | 2 | 0 | Yes | [1 × the smoldering heart of an ancient magma drake → a wand of writhing magma, Palenian's pipe of neverending flavors](../../areas/qst/magma.qst#L34) | ship_shop_proc |
 | Malch'Hor Ganl the Goblin City (`malch`) | 3 | 3 | 0 | Yes | [3 × a dark shadowy circle → native reward/response](../../areas/qst/malch.qst#L24) | — |
 | The Forgotten Mansion (`mansion`) | 3 | 12 | 0 | Yes | [1 × the bloody head of Gaultair; 1 × the horn of Tyrlos → a golden key with the Englehardt emblem](../../areas/qst/mansion.qst#L126) | — |

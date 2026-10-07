@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 212 &&
+		require(catalog.story_mappings.size() == 213 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -25154,6 +25154,83 @@ int main(int argc, char **argv)
 					status(journal, 0, "Missing now") &&
 					status(journal, 1, "Missing now"),
 				"Lava Springs absent Cinder or spent materials changed recovered history");
+		}
+
+		{
+			const auto &scalp = story_for("lylr", "venmar-ogre-scalp");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 82201, 82203, 100) == result::rejected,
+				"Lylr-Meop contact ignored undiscovered zone");
+			require(journey.discover_zone(7, 42, 822, 82200, 101, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 822, 10, 1, 102, false, false)
+							.find(scalp.title) == std::string::npos &&
+					journey.meet_npc(7, 42, 82201, 82203, 103) ==
+						result::applied,
+				"Lylr-Meop request bypassed Venmar encounter");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    scalp.steps[row].text) != std::string::npos;
+			};
+			for (unsigned custody = 0; custody < 6; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[82200] = 1;
+				if (custody == 2)
+					supplies.carried[82223] = 1;
+				if (custody == 3)
+					supplies.equipped[18] = 82217;
+				if (custody >= 4)
+					supplies.carried[82217] = custody == 4 ? 1 : 2;
+				const auto journal = journey.render_journal(
+					7, 42, 822, 10, 1, 104, false, false, &supplies);
+				require(status(journal, 0,
+					       custody >= 4 ? "Ready now" : "Missing now") &&
+						!status(journal, 1, "Recorded") &&
+						journey.progress_for_zone(7, 42, 822).completed ==
+							0 &&
+						journey.serialize_state() == before,
+					"Lylr-Meop supplied/held scalp, key or boots forged history");
+			}
+			// Synthetic receipt qualifies projection, not live hidden offering or giver retirement.
+			record(journey, scalp.contracts.front(), "lylr-scalp-offering", 822, 82203);
+			supplies = {};
+			auto journal = journey.render_journal(7, 42, 822, 10, 1, 121, false, false,
+							      &supplies);
+			require(status(journal, 1, "Recorded") &&
+					status(journal, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 822).completed == 1 &&
+					!journey.has_discovered(7, 42, 5000),
+				"Lylr-Meop spent scalp erased receipt or invented surface arrival");
+			require(supplied.discover_zone(7, 42, 822, 82200, 101, "arrival") ==
+					result::applied,
+				"Lylr-Meop supplied return setup failed");
+			record(supplied, scalp.contracts.front(), "lylr-supplied-offering", 822,
+			       82203);
+			require(supplied.progress_for_zone(7, 42, 822).completed == 1,
+				"Lylr-Meop acceptance required remembered source kill, greeting or rescue");
+			auto replay =
+				completion(scalp.contracts.front(), "lylr-scalp-offering", 120);
+			replay.transaction.zone_number = 822;
+			replay.transaction.room_vnum = 82203;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Lylr-Meop replay duplicated scalp acceptance");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 822).completed == 1 &&
+					raw.progress_for_zone(7, 42, 822).completed == 1 &&
+					!recovered.has_discovered(7, 42, 5000),
+				"Lylr-Meop mapped/raw recovery lost acceptance or invented foreign discovery");
+			journal = recovered.render_journal(7, 42, 822, 10, 1, 122, false, false,
+							   &supplies);
+			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
+				"Lylr-Meop missing reward or spent material changed recovered history");
 		}
 
 		std::cout

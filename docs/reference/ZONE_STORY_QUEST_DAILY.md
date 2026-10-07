@@ -284,3 +284,8 @@ The [dossier](../design/zone-stories/JINDON_DEATHWOOD.md) preserves one achievem
 ## Lava Springs daily qualification
 
 The [dossier](../design/zone-stories/LAVA_SPRINGS.md) retains one achievement and one potential daily. Mode1/lifespan20..30, rock/voucher caps and persistent giver do not prove accountable renewal. Qualify six distinct source roots or transfers, actual admitted purchase policy, batch destruction/item issuance, recipient/revisions/save/replay and replenishment. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
+
+
+## Lylr-Meop daily qualification
+
+The [dossier](../design/zone-stories/LYLR_MEOP.md) retains one achievement and one potential daily. Mode2/lifespan40..50, giver cap4/scalp cap1 and D retirement do not prove renewed availability. Qualify actual access, hidden source/transfer, exact input/reward/recipient/save/replay and same-generation retirement/replenishment. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
