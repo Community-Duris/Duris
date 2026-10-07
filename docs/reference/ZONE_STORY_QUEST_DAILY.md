@@ -329,3 +329,8 @@ The [dossier](../design/zone-stories/NYNETH3.md) preserves one native achievemen
 ## Orrak daily qualification
 
 The [dossier](../design/zone-stories/ORRAK.md) preserves one achievement/potential daily: mode1 can renew the disappearing giver, but active accounting refuses all 18 fresh O/G/E rows including staff and keys. Qualify actual source generation, loose durable recovered/supplied staff, atomic consumption, bracelet recipient/save/replay and exact departure/recovery. Accepted exchange, first source, lasting freedom, fall/drink usefulness and committed epic participants have separate evidence. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
+
+
+## Sea Kingdom daily qualification
+
+The [dossier](../design/zone-stories/SEAKNGDM.md) preserves one achievement/potential daily while distinguishing actual soul availability, current supplied/recovered half, atomic consumption, accepted eye recipient/save/replay and exact departure. Mode1 does not supply fresh materials: active reset refusal covers75 item rows. The rare-load room’s M chance is100 and actual wander/availability needs qualification. Custom guarded ship/core sources, assembly and mixed payment/crew outputs must not be advertised as ready daily tasks. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.

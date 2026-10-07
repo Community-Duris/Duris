@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 221 authored journals, accounting-gated player surfaces, starter/town
+**Status: 222 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5433,3 +5433,12 @@ The [dossier](zone-stories/ORRAK.md) covers the exact staff/bracelet/departure e
 ### Successful departure, hazard and liquid outcome adapters
 
 Deeper integrations need durable source/giver generations and exact departed actor, saved living beneficiary/destination, actual learned-response identity, terminal fall survival/relocation and admitted liquid/effect/condition outcomes. Existing encounter callbacks, fall scheduling/landed enums, printed drink messages and generic extraction cannot alone prove useful liberation or refuge. Preserve input-publication barriers and the active durable item-motion/reset guards. Accountable fresh reset stock must cover 18 local item rows and conditional followers. Pool liquid/prose and mount/door intent require separately named fair fix/news work after precise qualification.
+
+
+## Sea Kingdom integration extension
+
+The [dossier](zone-stories/SEAKNGDM.md) maps one supplied-compatible native amulet/eye/departure card and eleven broader stories with 62 owned follow-ups. Hidden command-selected portals, switches, breathing/traps/falls, crew/voyage aid, artifact beneficiaries, epic participants and lawful global vault recovery need explicit successful source/outcome identities.
+
+### Automatic assembly and compound custom reward settlement
+
+A custom periodic recipe needs captured actor and distinct root material UIDs, exact count policy, reserved consumption/output ownership and accepted lineage before publication. A crew reward needs one accepted material/payment/ship entitlement transaction, actual current owner/reputation, acknowledged crew save and idempotent recovery. Sea Kingdom’s moonstone graph supplies concrete callers: partially seeded alternative fragments, guarded Cyric core/key, Xexos transformations, exactly2+1 assembly, Erzul ring or paid crew and a separately owned Winterhaven recipe. Legacy consumed-material/ignored-debit/unchecked-output paths need qualification and named repair work before achievements. Successful addressed recipient/topic, controller mutation, admitted living arrival/terminal survival and useful effect receipts remain separate from handled commands, action completion enums and printed rewards. Keep authority/reset/ship guards and existing native supplied eligibility.
