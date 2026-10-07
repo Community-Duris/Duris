@@ -2,20 +2,73 @@
 
 ## Current producer qualification — 2026-10-06
 
-[Shared evidence](SHARED_PRODUCER_INTEGRATION_PROGRESS_2026-10-06.md) records
-both original750-provider startup builds and all nine contracts passing on the
-exact private4888 successor. The genuine same-ELF MySQL warm publication passes;
-full cold world recovery immediately refuses at its selected recovery step and
-is under source diagnosis. The original journal-fault journey has not yet run.
-The canonical0062 consumption-fault fixture is committed and published as
-`2ab76dd51`. All18 maintained-source native cases, both canonical audits and
-primary175-artifact authentication pass. The [source-claim production fix](
-AUCTION_SOURCE_CLAIM_PRIMARY_QUALIFICATION_2026-10-06.md) is qualified for this
-milestone: both fresh740-provider builds and nine contracts pass; primary
-authentication verifies all25 build artifacts and original compile/link inputs.
-The next three auction routes and distinct whole-player checkpoint are prepared
-privately; complete native/save/publication/replay and per-UID full-literal
-transport remain unfinished. No whole Plan, activation or release gate is promoted.
+The [current qualification](SHARED_PROFILE_BUILD_QUALIFICATION_2026-10-06.md)
+records both original strict753-provider production builds and all nine contracts
+passing on private source4f8332ce (manifest259325cb). Primary authenticates all23
+result artifacts, all6367 source members and both complete1508-member caches.
+This source combines the shared startup owner, native auction integration and
+the narrow cold-SHOP object-pool reservation; it is distinct from maintained HEAD.
+
+The first full-tree SQL component passes its strict original compile/link and
+MySQL0063/runtime checks, then refuses in the original player-row/sidecar setup
+before any auction case. Source review establishes a missing genuine parsed
+recovery-template catalog prerequisite. The precise executed errno was not
+logged. That failure and cleanup evidence are preserved; a faithful fixture
+successor is being prepared. No template stub, SQL backfill or assertion bypass
+is authorized. Both genuine allocator profile units pass with full753-provider links,
+including mmap-failure refusal. Primary authenticates both link/provider
+bindings and26 exported members; owned cleanup absence is verified. The
+original MySQL warm publication passes in0.975 seconds. Cold reaches the
+ready promotion and retained admission guard, then refuses in1.480 seconds
+at the combined save-start/admission-finish condition. Its first failed bool
+is not yet attributed. All47 sealed artifacts and507 native archive members
+are authenticated; cleanup absence is verified. MariaDB and fault cases
+remain unrun under original fail-fast policy. Diagnosis continues.
+
+Canonical published code is `79df6775b`: captured-item bindings, standalone SQL
+audit namespaces, current flatfile envelopes and read-only operator locking/work
+budgets have separate committed primary qualification. Incoming299ee884e and
+unrelated SHOP work are preserved. Existing inactive behavior, safety gates and
+the declined spell path remain unchanged. Complete native auction publication,
+cold recovery, every writer, R1–R8 and release/activation remain unfinished.
+
+## Current flatfile audit envelopes published — 2026-10-06
+
+[Primary qualification](PLAN5_FLATFILE_ENVELOPE_PRIMARY_INTEGRATION_2026-10-06.md)
+is committed and directly pushed as `a455dcb94`, with exact remote readback.
+The complete original native regression passes:1058 metadata and574 envelope
+comparisons,11 native-accepted records, ten malformed-envelope refusals,20 valid
+stores and367 corruption refusals. All2881 selected source bytes/modes and
+economic evidence remain unchanged. The independent reader now accepts current
+collector/native-mobile/accounted-shop envelopes while retaining original
+sentinel, size and binding checks. Current753 producer/cold qualification remains
+separate. The [operator-lock/budget slice](
+PLAN5_FLATFILE_AUDIT_BOUNDARY_PRIMARY_INTEGRATION_2026-10-06.md) is
+published as79df6775b. Its complete original native suite and21 added
+authority/budget controls pass; selected source and economic bytes stay
+unchanged. Current producer/cold qualification remains separate.
+
+## Independent composite SQL sweep published — 2026-10-06
+
+[Primary integration](PLAN5_SQL_COMPOSITE_PRIMARY_INTEGRATION_2026-10-06.md)
+is committed and normally pushed as `8f40b43ec`, with exact remote readback.
+The complete decoder/audit slice checks standalone baseline controls and orphan
+reservations through bounded rotating namespace pages. All35 maintained methods
+survive;34 are AST-exact and the remaining native method gains stronger checks.
+Primary Windows checks pass135 methods with13 explicit platform/native/budget
+skips across four affected suites. Normal validation passes, release false.
+Peer117-method native results remain scoped to its frozen inputs. Current
+producer recovery, full R7/R8, activation and whole Plan completion stay open.
+
+## Independent captured-item reader published — 2026-10-06
+
+[Primary integration](PLAN5_CAPTURED_ITEM_PRIMARY_INTEGRATION_2026-10-06.md) is
+committed and directly pushed as `de42a11c0`, with exact remote readback. All46
+existing method ASTs remain exact; six methods are added. Primary discovers52
+methods:49 pass and three native integration cases require their separate Linux
+database invocation. Normal accounting validation passes, with release false.
+Peer-native109-method/capture results retain their frozen scope. The remaining
+Plan5 audit slices and full current producer/recovery qualification stay open.
 
 ## Captured-item reader interface handed off — 2026-10-06
 
