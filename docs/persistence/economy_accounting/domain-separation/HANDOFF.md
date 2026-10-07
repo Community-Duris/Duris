@@ -31,14 +31,24 @@ The [R13 terminal handoff](R13_SHOP_ITEM_ACCEPTANCE_HANDOFF.md) pins all91 index
 proof files, exact sources/CPP/ELFs/imports/trees/archives and terminal states.
 Independent committed code/import/artifact and canonical delivery review PASS
 is published at accounting2895721ad510ca17588c091edd6b94248763ab19; R13 is closed
-at declared scope, alongside R11/R12. The [post-R13 dependency disposition](POST_R13_OWNER_DEPENDENCIES_2026-10-07.md)
-records current nine-family/native prerequisites and only the proposed next
-[R14 complete customer access boundary](R14_SHOP_CUSTOMER_ACCESS_RESERVATION.md).
-Whole original is_ok direct47 and complete real-value24 controls PASS under both
-profiles; all42 original proof files/313-446 actual compiler inputs authenticate.
-No maintained R14 source/test edit precedes boundary approval. The actual Goal
-was checked ACTIVE/no budget with its full original primary finish line intact.
-Native integration, optional adoption and the primary full finish remain open.
+at declared scope, alongside R11/R12.
+
+R14 complete shop customer access is approved at accounting2920 and implemented
+at652462d8afbc3837ff5dcd6538f918e366269c85. Both frozen direct47/real-value24
+components PASS under baseline/Og on paired original/extracted and bare-full
+actual callers. Both strict740-object builds and independent full6455/prod6454
+imports PASS; complete shop SQL/flat types and all462/456 actual compiler inputs
+authenticate. Nine owned/five bare-full adjacent checks PASS; the old live-route
+failure remains paired. Both frozen fixtures are exact. Owned/bare command CPPs
+are separately pinned for their actual native quote variants, with no optional
+predecessor requirement. All102 indexed files, exact code/CPP/ELF/import/tree/
+archive pins and terminal states are in the [R14 terminal handoff](R14_SHOP_CUSTOMER_ACCESS_HANDOFF.md).
+Independent committed code/import/artifact checks and the complete runner PASS;
+canonical delivery authentication and remote final-review publication follow.
+The [post-R13 owner disposition](POST_R13_OWNER_DEPENDENCIES_2026-10-07.md) now
+includes primary439 private flat boot/genesis/lifecycle prerequisites. Native
+integration, optional adoption and the primary full finish remain open. The
+actual continuing Goal remains ACTIVE/no budget with its full objective intact.
 
 R10 final declared-scope review PASS remains published at accountingdc1489782,
 authenticating all3 inputs/all94 proof files and complete imports/build artifacts.
