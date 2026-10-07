@@ -1,5 +1,14 @@
 # Double-entry economy: remaining requirements
 
+## Central lifecycle component registered - 2026-10-07
+
+[Registration evidence](PLAN5_LIFECYCLE_V2_REGISTRATION_2026-10-07.md)
+records the reproduced three-file inventory failure and complete classification.
+All previous rows remain;926 tests/107 integration rows and central selection
+validate. The new offline lifecycle row requires fresh artifacts and zero skips.
+Native execution and original release gates remain pending; none are replaced.
+
+
 ## Independent lifecycle V2 reader integrated - 2026-10-07
 
 [Primary evidence](PLAN5_LIFECYCLE_V2_PRIMARY_INTEGRATION_2026-10-07.md)
