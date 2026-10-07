@@ -1,6 +1,22 @@
 # Double-entry economy: remaining requirements
 
-## Ordinary coin recovery counter fix � 2026-10-07
+## Latest literal-capacity recovery result — 2026-10-07
+
+[Qualification and integration](LITERAL_POOL_CAPACITY_RECOVERY_QUALIFICATION_2026-10-07.md)
+passes the original warm/full-cold and genuine origin-fault/pending-journal cases
+on both SQL engines. Pending cold now exits0 within the unchanged60-second limit.
+Primary authenticates172 files/2548 native members and owned cleanup. Narrow
+maintained integration now passes both original 740-provider production builds
+and actual pool controls. Root authenticates 1,308 unchanged source files and
+3,001 native artifact bytes/modes, original flags, provider closures and exact
+control markers. The native handoff is
+`bin/tests/mm-maintained-linux-primary-20261007/NATIVE-HANDOFF.json`.
+The earlier bind-filesystem link timeout is preserved; the Linux successor keeps
+the same controls and the 15-second execution limit. Exact owned cleanup passes.
+Whole maintained gameplay and release remain open; older failures below remain
+historical evidence, not the latest outcome.
+
+## Ordinary coin recovery counter fix — 2026-10-07
 
 [Focused qualification](COIN_RECOVERY_OWNER_COUNTER_QUALIFICATION_2026-10-07.md)
 repairs both locked endpoint counters and exact item owner_revision. Original
@@ -13,7 +29,10 @@ Post-ACK SQL room coin boot restoration and full Plan2 qualification remain open
 [Private component progress](NATIVE_AUCTION_RETAINED_PROOF_PROGRESS_2026-10-07.md)
 passes original native-v2 LIST, settlement, partial pickup and exact durable
 rejected replay. The next original v1 LIST171 returns retryable EAGAIN; its
-internal predicate remains unobserved. Both strict753-provider builds and nine
+original custody INSERT has now been observed failing1062 because a claimed
+row retains the globally unique UID. Additive history-preserving schema64 is
+prepared privately; both-engine measurements and native producer reruns remain
+open. Both strict753-provider builds and nine
 contracts pass on private d2 source; both-engine component completion, physical
 journeys and maintained producer integration remain open. The separately
 reviewed post-SQL-proof recovery diagnostic also passes both original753 builds

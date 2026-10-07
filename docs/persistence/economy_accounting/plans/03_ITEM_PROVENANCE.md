@@ -1,5 +1,30 @@
 # Plan 3: item supply, custody, and provenance
 
+## Latest shared implementation evidence — 2026-10-07
+
+The [literal-capacity qualification](../LITERAL_POOL_CAPACITY_RECOVERY_QUALIFICATION_2026-10-07.md)
+passes the original private cold recovery cases on both SQL engines. The narrow
+fix is integrated locally. Both maintained original 740-provider production builds and actual pool
+controls pass. Root authenticates the complete source and native export, with
+exact owned cleanup. The earlier 55-second bind-filesystem link timeout remains
+preserved; the Linux successor changes only its bounded production-link budget,
+keeping original control execution limits and behavior.
+
+The [auction proof record](../NATIVE_AUCTION_RETAINED_PROOF_PROGRESS_2026-10-07.md)
+now identifies the actual relisting failure: the custody INSERT returns 1062
+because a claimed historical row retains the globally unique item UID. Private
+additive schema64 preserves that history and enforces one unclaimed listing.
+Both-engine schema measurement and original producer reruns remain open.
+
+Post-ACK coin boot integration is privately source-reviewed, including native
+publication, connection cleanup and legacy-history fencing. Its original strict
+SQL production build passes all 741 providers, including nine freshly compiled
+translation units and a fresh full link. Flatfile, retained proof and genuine
+coin command/ACK/two-cold-boot qualification remain open. Existing inactive
+behavior and activation gates remain closed.
+These results do not complete this plan or the joint R1–R8 release requirements.
+
+
 ## Current native auction proof progress — 2026-10-07
 
 [Private component progress](../NATIVE_AUCTION_RETAINED_PROOF_PROGRESS_2026-10-07.md)

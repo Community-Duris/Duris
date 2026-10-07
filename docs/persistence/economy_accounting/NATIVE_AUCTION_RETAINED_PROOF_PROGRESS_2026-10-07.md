@@ -1,5 +1,51 @@
 # Native auction retained proof: current private progress
 
+## Private schema64 measurement qualified
+
+Both MySQL8.0.46 and MariaDB10.11.14 pass canonical64 migration and recovery
+from the complete first and final ALTER states. Across 238 commands, 224 pass
+and 14 return the required metadata/integrity refusal; no unexpected failures.
+All six routes preserve original application rows and prior0–63 history bytes,
+including timestamps. Recorded64 reruns preserve history. The exact generated
+key permits retained claimed history and enforces one active row per UID.
+Both owned daemons exit cleanly, and exact containers/volumes are absent.
+
+Root independently verifies the actual raw metadata fingerprints:
+MySQL `35784bb506230cad05a36d6fe01ab67635acefb8375d03c1c45050f5b378d31b`;
+MariaDB `9ec7e9c0c109eaf2a7378fbd94159acc51bf962fcc308f9dcf6fc6fec8dbd32a`.
+Receipt: `tmp/auction-relist-schema64-measurement-lf-launch-primary-20261007/evidence/schema64-canonical/RECEIPT.json`.
+The original capture CRLF failure is preserved; its LF-only successor retains
+the original SQL and controls. Runtime fingerprint integration and original
+native auction171/181 reruns remain open. No maintained migration is published,
+and no producer, gameplay or release qualification is inferred from this test.
+
+## Measured relist failure — 2026-10-07
+
+Original LIST171 now has direct pre-rollback source attribution: custody INSERT
+stage11 captures MySQL1062; executor stage21 retains1062/errno11. Original lock
+and listing INSERT pass. Global UNIQUE(item_uid) conflicts with the existing
+claimed row when the same native UID is listed again. Root authenticates113
+files and542 native members (506 regular), original failed assertions and owned
+cleanup; sealac41ca27e89f931f1ec620ec3ab1d187cc69ade0aa20770cd0b29b5908304187.
+Both observer-guard production builds and nine contracts pass. Earlier flat
+observer compile failure/four SQL-only guard corrections remain preserved.
+
+The reviewed fix is a new additive schema migration preserving all history and
+enforcing uniqueness only for active unclaimed custody. Existing auction-scoped
+historical readers and original UID remain. Private schema64 implementation and
+dual-engine qualification are in progress. The first disposable MySQL8 run
+applies and verifies64, preserves all original application rows and prior63
+history, and reruns64 without rewriting history. All five incompatible-metadata
+controls refuse1644 before table or application changes. The run then stops
+because the private metadata-capture shell script has CRLF line endings;
+`set -o pipefail` cannot parse its trailing carriage return. Raw fingerprints,
+resume routes, MariaDB and native producer reruns are still unqualified.
+The exact first failure and cleanup remain in
+`tmp/auction-relist-schema64-measurement-launch-primary-20261007/LAUNCH-RESULT.json`.
+A line-ending-only capture successor preserves the original SQL and controls.
+No migration is published, and no production data, historical row, UID, old
+immutable migration or authority gate is changed.
+
 The private native-v2 historical/current-cut integration now passes the original
 LIST, settlement, partial item-pickup and rejected-receipt replay assertions.
 The next original legacy LIST control still returns retryable EAGAIN. This is
