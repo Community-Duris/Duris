@@ -84,7 +84,7 @@ void enhance(P_char ch, P_obj source, P_obj material)
 {
 	char buf[MAX_STRING_LENGTH];
 	P_obj robj;
-	int cost, sval, chluck, wearflags;
+	int cost = 0, sval, chluck, wearflags;
 	int64_t maxsearch, newval, minval;
 
 	if (!ch || !source || !material)
