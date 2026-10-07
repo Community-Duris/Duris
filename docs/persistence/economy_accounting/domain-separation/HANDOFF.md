@@ -7,8 +7,12 @@ cases. Both maintained740-object builds and exact bare-primary production/full
 imports, full-module SQL/flat checks and actual purchase runner PASS. Original
 live-route and bare-current adjacent command-codec fixture failures are retained
 and compared with original inputs. No optional prerequisite is needed. See
-[R10 terminal handoff](R10_SHOP_PURCHASE_QUOTE_HANDOFF.md). Final terminal-package
-review remains pending; independent committed-input/import/body review already PASSes.
+[R10 terminal handoff](R10_SHOP_PURCHASE_QUOTE_HANDOFF.md). Final declared-scope
+review PASS is published at accountingdc1489782, authenticating all3 inputs/all94
+proof files and complete imports/build artifacts. The next complete itemvalue
+candidate is separately reserved in [R11](R11_ITEM_VALUE_QUOTE_RESERVATION.md).
+[Post-R10 nine-family assessment](POST_R10_OWNER_DEPENDENCIES_2026-10-07.md)
+accounts for current native flat changes and separate quest codec ownership.
 The continuing Goal remains ACTIVE/no budget with native/current754 journeys and
 primary Plans1-5/applicable original R1-R8 requirements open; adoption is unknown.
 

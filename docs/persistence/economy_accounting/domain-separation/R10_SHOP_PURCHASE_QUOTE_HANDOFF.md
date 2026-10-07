@@ -6,10 +6,15 @@ The exact three-file boundary in reservation304 plus unchanged-scope original-Og
 supplementa977 was approved at accounting
 `e6e058515f5433a1a3028f80d5d7d672d48b2471` in
 [R10_SHOP_PURCHASE_QUOTE_REVIEW_2026-10-07.md](https://github.com/Community-Duris/Duris/blob/e6e058515f5433a1a3028f80d5d7d672d48b2471/docs/persistence/economy_accounting/domain-separation/R10_SHOP_PURCHASE_QUOTE_REVIEW_2026-10-07.md).
-Final declared-scope review of this terminal package remains pending. Independent
-coordinator execution already matches all three committed inputs and the actual
-extracted CPP, reproduces both exact bare imports, and authenticates both complete
-6444-body exports; those observations do not imply adoption or native journeys.
+Final declared-scope review PASS is published and remotely verified at accounting
+`dc1489782eceb38ed51971bd2858db4a4d24b212` in
+[R10_SHOP_PURCHASE_QUOTE_REVIEW_2026-10-07.md](https://github.com/Community-Duris/Duris/blob/dc1489782eceb38ed51971bd2858db4a4d24b212/docs/persistence/economy_accounting/domain-separation/R10_SHOP_PURCHASE_QUOTE_REVIEW_2026-10-07.md).
+The coordinator authenticates all3 committed inputs, all94 indexed proof files,
+actual CPP equivalence, both imports/all6444 exported bodies per package and
+both retained/copied native ELFs with740-object links. Adoption and native
+journeys are not inferred. The complete itemvalue operation is next under a
+separate original-proof/reservation review; no valuation implementation is authorized
+by R10's completed review.
 The unchanged continuing Goal remains ACTIVE/no budget through primary Plans1-5,
 applicable original R1-R8 integrated implementation and supported gameplay,
 persistence and recovery, required blocker resolution, published owner completion
