@@ -9,9 +9,12 @@ completion boundary. See [the fixed operation inventory](OPERATION_INVENTORY.md)
 for assessed domains and the fixed R0/R1/R2 delivery set. The coordinator accepted
 inventory v1 and R1's seam in upstream review `b876f9442040653cf53c15d81d5188166e1cd829`.
 R1 is implemented at `48cdf9cb0893873651216f7940aae2691d060e58`, with successful
-focused components and both maintained builds. Actual Craft/Forge runtime
-qualification is running; its original inspector link failure is retained below.
-R2 remains required and outstanding. The continuation Goal is active.
+focused components, both maintained builds and the real flatfile recipe journey.
+Its SQL journey is ongoing. R2 is implemented at
+`24fa551ae16900b41e509f79fe4685762e0fb2e9`; original/extracted numeric controls and
+both maintained builds pass. Selected production-linked completion qualification
+is ongoing. Retained failures and private fixture adaptations appear below.
+The continuation Goal remains active until terminal evidence and dispositions.
 
 Actual continuation-tool evidence: `get_goal` first returned no current Goal;
 `create_goal` then `get_goal` returned `status: active`, no budget, for this chat.
@@ -86,7 +89,91 @@ failed at link with missing `economic_baseline_decode`; retained
 `economic_baseline_codec.c` provider to the original inspector source list and
 runs the unchanged `run_alchemist_crafting_journey.py` recipe-only assertions.
 No shared manifest repair is made. This attempt is running at this publication;
-no runtime pass, SQL journey or primary import is yet claimed.
+superseded by the terminal flat journey below. SQL journey and primary import
+remain pending at this checkpoint.
+
+## R1 terminal flatfile runtime qualification
+
+The original inspector link failure is retained; the first private attempt added
+`economic_baseline_codec.c` and exposed its required existing
+`economic_baseline_adapter.c`. Both failures remain in `inspector-original.log`
+and `recipe-flat.log`. The final private launcher adds both production providers
+without changing shared runners, gameplay assertions, fixture account, or
+timeouts. `recipe-flat-with-adapter.log` finished `RECIPE_FLAT_EXIT=0` against the
+R1 flat executable `79e385143b87bf6d013f2e9c4a9d8393ee8359bbf71894076ed4370083872843`.
+The unchanged recipe-only journey copies that binary into its own runtime before
+booting, so later R2 builds do not alter it. It passes actual preview/material
+requirements, mortal Craft and Forge exact material/tool retirement, fresh output
+UIDs and XP, retained pouch counters, copyover and two cold restarts.
+
+An SQL recipe-only run uses the retained R1 SQL executable, unique disposable
+schema on a task-owned MariaDB server at container loopback port 33306, canonical
+bootstrap/migration runner and existing cleanup. Container has no external
+network. SQL result is ongoing at this checkpoint. No production database,
+real user account or upstream activation is used.
+
+## R2 implementation and terminal build checkpoint
+
+Reviewed reservation [R2_RESERVATION.md](R2_RESERVATION.md), commit `82ef254e0`;
+source commit `24fa551ae16900b41e509f79fe4685762e0fb2e9`. Only the three local
+helper bodies, new owned header and focused new regression change. The native
+wrappers capture `std::array<int,4>` and call the owned value/payment rules.
+Positive reward decomposition retains its actor-independent path. Spend refusal,
+ascending bank denomination usage, change and success-only outputs are preserved.
+All submission/identity/revision/admission/accounting/publication owners and
+locker receipt/lore paths are unchanged. Coordinator reviewed the exact source
+and independently passed original/extracted numerical controls with no defect.
+
+Current-balance inputs deliberately have the native signed int range. Four such
+counts times 1/10/100/1000 fit in int64_t. The original upper-overflow guard never
+refuses defined native sums; its subtraction has undefined behavior when a
+running total is negative. The extraction sums the bounded counts directly and
+does not add validity policy or change supported nonnegative balance behavior.
+Bank costs exceeding the bounded total refuse before ceil; even signed native
+usage can move remaining by only bounded denomination values, so adding 999
+cannot overflow int64_t. Native mutation still validates actual balances.
+
+`test_currency_value_plan.py` passed under ASan/UBSan against the retained parent
+helper preimage and final production wrapper/header with the same expectations,
+flags and deadlines. An initial fixture type-name compile mistake is retained in
+`value-extracted.log`; corrected/final runs pass. Exact source SHA-256 pins:
+
+- `currency_value_plan.h`: `a043b439dd46a25974268f5a36ca77d553fb561760afe0a3d8af48977afb295f`.
+- `currency_transaction.c`: `075a07dc357c11ea2c8f2fe87c02333c8213c37a3ea7d8424838f4a50dda90d7`.
+- `test_currency_value_plan.py`: `e050407ceb90048bf6ae547e9b41354673664e17e1b5ef9d094a6bc5cbf5544b`.
+
+Both maintained development builds completed with exit 0 in the same task-owned
+runtime container/image and isolated output volume described above, using R1
+qualified objects and full maintained links:
+
+- `make -C src -j2`, SQL SHA-256
+  `fad42d11f52857a6ee79f9af28f4c2ab73f34f84050476576a1bd3b56866f2f5`.
+- `make -C src -j2 PERSISTENCE_BACKEND=flatfile DMS_BINARY=/workspace/bin/server/dms_flat_new`,
+  flat SHA-256 `17aa1f48f932fcfb460817b66d0fffb5164a6c4661df23661bc2cedba2749ccd`.
+
+Full logs retain both successful links. The original terminal script's final
+flat hash command had a trailing CR and failed after the successful flat build;
+`binary-pins.txt` records the corrected direct hash read. No repeated build or
+altered compiler controls are claimed. Format check and `git diff --check` pass.
+Private R2 evidence is under `bin/tests/domain-separation-r2-20261007/`.
+
+Adjacent unchanged `test_locker_identify.py` passes actual lore/service controls.
+`test_currency_transaction_contract.py` has 8 passing tests, 1 stale source-shape
+error in untouched `critical_command_repository.c`, and 1 writer-census failure
+for 12 existing assignments in untouched `coin_physical_recovery.c`.
+`test_economic_currency_adapter.py` cannot link because its shared source list
+omits `shop_trade_recovery_manifest.c`; a private existing-provider-only run is
+ongoing. Neither shared test is changed by this bundle.
+
+The unchanged full `test_currency_completion_retention.py` fails link before
+executing any scenarios: missing existing native-birth/Collector/recovery
+providers and two newly referenced coin live endpoints. `completion-original-manifest.log`
+retains it. A private launcher selects the original wallet/bank/identify scenarios
+(excludes names containing `coin`), adds existing production providers and places
+`abort()` guards on both excluded coin endpoints. Original selected assertions,
+compiler sanitizers and deadlines remain intact. It is running; this is not a
+full-runner pass or shared coin qualification. Terminal names/counts and any
+additional failures will be published before milestone completion.
 
 ## Goal and checkout evidence
 
