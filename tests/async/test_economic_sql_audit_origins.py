@@ -1328,6 +1328,7 @@ class NativeSQLOriginTests(unittest.TestCase):
 
                     def pages(refusal):
                         import economic_sql_canonical_audit as audit
+                        book_before = database_rows() if refusal and refusal.startswith('baseline ') else None
                         progress = audit.new_progress('ab'*32, time.time())
                         reports = []
                         # All original fixture roots, including inactive books,
@@ -1354,6 +1355,12 @@ class NativeSQLOriginTests(unittest.TestCase):
                                      'restore_economic_canonical_storage_mismatch']
                                     if refusal == 'EAB1 SQL projection mismatch' else
                                     ['restore_economic_baseline_witness_mismatch'])
+                        if book_before is not None:
+                            expected = ['restore_economic_baseline_book_mismatch']
+                            self.assertEqual(database_rows(), book_before)
+                            print('BASELINE_BOOK_PAGE_OBSERVATION ' + json.dumps(dict(engine=engine,
+                                origin_refusal=refusal, reports=reports, authority_unchanged=True,
+                                release_qualified=False), sort_keys=True), flush=True)
                         if refusal:
                             self.assertTrue(found)
                             self.assertTrue(all(code in expected for code in found), found)
@@ -1469,6 +1476,34 @@ class NativeSQLOriginTests(unittest.TestCase):
                     print('BASELINE_ROOT_PAGES ' + json.dumps(dict(engine=engine, version=version,
                         observations=page_observations, authority_unchanged=True, native_producer_or_gameplay=False,
                         release_qualified=False), sort_keys=True), flush=True)
+                    with owner.cursor() as cursor:
+                        cursor.execute('SELECT revision,last_operation_id FROM economic_baseline_control '
+                                       'WHERE lineage=%s AND epoch=%s', (blob[16:32], blob[32:48]))
+                        book_control = cursor.fetchone()
+                    book_reads = reads.copy()
+                    other_operation = next(row[1] for row in self.batches if row[1] != book_control['last_operation_id'])
+                    for damaged, refusal in (
+                        ({'revision': 0, 'last_operation_id': None}, 'baseline has no committed opening witness'),
+                        ({'revision': book_control['revision']+1}, 'baseline witness revision gap or limit exceeded'),
+                        ({'last_operation_id': other_operation}, 'baseline control terminal witness mismatch')):
+                        unchanged = database_rows()
+                        with owner.cursor() as cursor:
+                            cursor.execute('UPDATE economic_baseline_control SET '+
+                                           ','.join(field+'=%s' for field in damaged)+' WHERE lineage=%s AND epoch=%s',
+                                           (*damaged.values(), blob[16:32], blob[32:48]))
+                        try:
+                            read(blob[32:48], refusal)
+                        finally:
+                            with owner.cursor() as cursor:
+                                cursor.execute('UPDATE economic_baseline_control SET '+
+                                               ','.join(field+'=%s' for field in damaged)+' WHERE lineage=%s AND epoch=%s',
+                                               (*(book_control[field] for field in damaged), blob[16:32], blob[32:48]))
+                        self.assertEqual(database_rows(), unchanged)
+                        read(blob[32:48])
+                    self.assertEqual({key: reads[key]-book_reads[key] for key in reads},
+                                     {'captures': 3, 'refusals': 3, 'rollbacks': 6})
+                    print('PASS baseline-book-control '+engine+' 3 native SQL refusals/3 restored controls '
+                          'SELECT-only bytes-unchanged inactive', flush=True)
                     # Negative SELECT projections preserve the actual input
                     # version's layout before corrupting v2 positions. These
                     # projections do not establish complete native capture.

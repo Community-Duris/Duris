@@ -634,3 +634,22 @@ is unchanged and private successor qualification is not claimed. Maintained
 accounting stays inactive; original synthetic recovery activation is disclosed.
 The report/seal/receipt is the nonblocking primary-local notebook curator
 packet, without cross-chat message, acknowledgement or integration claim.
+
+## Baseline book control continuity - 2026-10-06
+
+Same branch/worktree/remote. Base `07e81085c9f0c2af2964bd1e06f83cd60067b38b`. The
+[exact qualification](PLAN5_SQL_BOOK_CONTINUITY_QUALIFICATION_2026-10-06.md)
+reproduces the page false accept, then authenticates indexed predecessor,
+successor and terminal rows through the shared independent baseline verifier.
+All 100 methods pass, zero Linux skips, both fresh canonical0062 engines and
+original native probes. Each engine passes three legal control refusals and
+three restored controls. The log retains 186 measured pages; 12 additional
+restored pages pass without retained per-page metrics. Source `c02897b9601836ada3c9d10a613071cd87fb4d800acb95e2126a64a1b3175d39`
+and seal `4fde78aee93359e9b38d045a64db47f6934664b2f9981571ae820a1f3c2efc27` bind the exact scope. The native fixture is four
+witnesses over two books; the earlier report/receipt label is corrected in
+follow-up documentation while the immutable receipt remains preserved.
+Empty/orphan controls, whole-store/current authority, genuine producer/source/
+activation/recovery/retention and release budgets remain. The exact three
+primary-owned pure registrations are in the report. No shared schema/matrix
+changes or private successor qualification is claimed. This is the nonblocking
+primary-local notebook curator packet; no message/acknowledgement is claimed.

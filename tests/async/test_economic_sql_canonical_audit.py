@@ -147,11 +147,17 @@ class RestoreProjectionFixture:
         self.claim_origin_column_count = '1'
         self.claim_parents = self.baseline.get('_claim_parents', []) if baseline else []
         self.claim_mappings = self.baseline.get('_claim_mappings', []) if baseline else []
+        self.baseline_control = [self.baseline['book_revision'], self.operation] if baseline else None
+        self.baseline_book_rows = ([[self.baseline['book_revision'], self.operation, meta[0].hex(),
+                                    meta[1].hex(), 38, 1, 0]] if baseline else [])
 
     def sql(self, query):
         if not query.startswith('SELECT '):
             raise AssertionError(query)
         self.queries.append(query)
+        if query.startswith('SELECT JSON_ARRAY(w.book_revision,'):
+            revisions = {int(value) for value in query.split('w.book_revision IN (')[1].split(')')[0].split(',')}
+            return '\n'.join(json.dumps(row) for row in self.baseline_book_rows if row[0] in revisions)
         for table, values in (('economic_sql_lifecycle_installation', self.claim_parents),
                               ('economic_account_mapping', self.claim_mappings)):
             if query.startswith('SELECT JSON_ARRAY(') and ' FROM ' + table + ' ' in query:
@@ -181,6 +187,8 @@ class RestoreProjectionFixture:
             if 'LEFT JOIN item_ownership_ledger' in query:
                 name = 'custody'
             rows = self.rows[name]
+            if name == 'witness' and 'c.revision,' in query:
+                rows = [row + self.baseline_control for row in rows]
             if name == 'reservations' and ' LIMIT 257' in query:
                 match = re.search(r"\(identity_kind,identity_id,lineage,epoch\)>\((\d+),(\d+),UNHEX\('([0-9a-f]+)'\),UNHEX\('([0-9a-f]+)'\)\)", query)
                 if match:
@@ -823,6 +831,67 @@ class CanonicalSweepTests(unittest.TestCase):
         self.assertFalse(any('SUBSTRING(canonical_' in query for query in fixture.queries))
         with self.assertRaisesRegex(RuntimeError, 'restore_economic_canonical_storage_mismatch'):
             evidence.require_integrity(fixture)
+
+    def test_baseline_page_book_control_revision_and_terminal_are_authenticated(self):
+        for control in ([0, None], [2, '22'*16], [True, '22'*16], [1.0, '22'*16],
+                        [1, None], [1, '00'*16], [1, '22'*16]):
+            fixture = RestoreProjectionFixture(baseline=True)
+            fixture.baseline_control = control
+            before = copy.deepcopy((fixture.baseline_control, fixture.baseline_book_rows))
+            with self.subTest(control=control):
+                report, _ = self.baseline_page(fixture)
+                self.assertEqual(report['findings'], [{'code': 'restore_economic_baseline_book_mismatch'}])
+                self.assertEqual((fixture.baseline_control, fixture.baseline_book_rows), before)
+
+    def test_baseline_page_book_neighbours_require_contiguous_committed_namespace(self):
+        from test_economic_sql_audit_origins import witness
+        value = witness()
+        value.update(book_revision=2, inbox_revision=2)
+        for damage in (None, 'predecessor', 'successor', 'terminal', 'foreign', 'rejected', 'duplicate'):
+            fixture = RestoreProjectionFixture(baseline=value)
+            meta = fixture.rows['metadata'][0]
+            fixture.baseline_control = [4, '44'*16]
+            fixture.baseline_book_rows = [[revision, ('%02x' % revision)*16, meta[0], meta[1], 38, 1, 0]
+                                          for revision in (1, 3, 4)]
+            fixture.baseline_book_rows[-1][1] = '44'*16
+            if damage in ('predecessor', 'successor', 'terminal'):
+                fixture.baseline_book_rows.pop({'predecessor': 0, 'successor': 1, 'terminal': 2}[damage])
+            elif damage == 'foreign':
+                fixture.baseline_book_rows[0][2] = '77'*16
+            elif damage == 'rejected':
+                fixture.baseline_book_rows[1][5] = 2
+            elif damage == 'duplicate':
+                fixture.baseline_book_rows.append(fixture.baseline_book_rows[0].copy())
+            before = copy.deepcopy((fixture.baseline_control, fixture.baseline_book_rows))
+            with self.subTest(damage=damage):
+                report, _ = self.baseline_page(fixture)
+                self.assertEqual(report['findings'], [] if damage is None else
+                                 [{'code': 'restore_economic_baseline_book_mismatch'}])
+                self.assertEqual((fixture.baseline_control, fixture.baseline_book_rows), before)
+
+    def test_baseline_book_budget_refusal_keeps_progress(self):
+        fixture, connection = RestoreProjectionFixture(baseline=True), mock.Mock()
+        original = fixture.sql
+        executor = mock.Mock(queries=0, bytes=0)
+        def read(query):
+            if query.startswith('SELECT JSON_ARRAY(w.book_revision,'):
+                raise audit.PageBudgetError('canonical audit page budget exhausted')
+            if 'information_schema.tables' in query and 'economic_accounting_operation' in query:
+                return str(len(audit.ROOT_SOURCES))
+            if 'FROM economic_accounting_source_claim' in query:
+                row = fixture.rows['metadata'][0]
+                return '1' if query.startswith('SELECT COUNT(*)') else json.dumps([row[0], row[11], row[2], 1])
+            if query.startswith('SELECT EXISTS(SELECT 1 FROM critical_operation_inbox'):
+                return '1'
+            return original(query)
+        executor.sql.side_effect = read
+        state = audit.new_progress('ab'*32, 100)
+        with mock.patch.object(audit, 'CursorExecutor', return_value=executor):
+            with self.assertRaises(audit.PageBudgetError):
+                audit.scan_page(connection, state, now=101)
+        self.assertEqual(state, audit.new_progress('ab'*32, 100))
+        connection.rollback.assert_called_once_with()
+        connection.cursor.return_value.close.assert_called_once_with()
 
     def test_baseline_pages_authenticate_versioned_claim_origins_keep_historical_unknown(self):
         from test_economic_sql_audit_origins import key, witness, money_witness

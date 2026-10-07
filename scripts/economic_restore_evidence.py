@@ -550,7 +550,8 @@ def verify_canonical_baseline(reader, operation, root, *, admission_column, clai
                "OCTET_LENGTH(w.canonical_witness)", hexadecimal("c.opening_account"),
                "i.durable_revision", "i.command_type", "i.schema_version", "i.payload_version",
                hexadecimal("i.result_payload"), hexadecimal("i.keys_hash"),
-               admission_column, hexadecimal("i.command_hash"), claim_origin_column]
+               admission_column, hexadecimal("i.command_hash"), claim_origin_column,
+               "c.revision", hexadecimal("c.last_operation_id")]
     table = ("economic_baseline_witness w JOIN economic_baseline_control c "
              "ON c.lineage=w.lineage AND c.epoch=w.epoch "
              "JOIN critical_operation_inbox i ON i.operation_id=w.operation_id")
@@ -578,6 +579,40 @@ def verify_canonical_baseline(reader, operation, root, *, admission_column, clai
         verify_baseline_root(witness, lineage, epoch)
     except (ValueError, struct.error, TypeError):
         mismatch("baseline_witness")
+    # Check the selected witness's local book continuity in the same read view.
+    # Indexed predecessor/successor/terminal reads are bounded independently of
+    # the book's history size; unattached controls still need the whole-store audit.
+    try:
+        revision, terminal_revision = value[2], value[18]
+        need(type(terminal_revision) is int and revision <= terminal_revision < 2**64)
+        terminal_operation = binary(value[19], 16)
+        need(any(terminal_operation))
+        revisions = {terminal_revision}
+        if revision > 1:
+            revisions.add(revision-1)
+        if revision < terminal_revision:
+            revisions.add(revision+1)
+        revisions = sorted(revisions)
+        columns = ["w.book_revision", hexadecimal("w.operation_id"), hexadecimal("o.lineage"),
+                   hexadecimal("o.epoch"), "o.reason", "o.outcome", "o.result_code"]
+        neighbours = arrays("economic_baseline_witness w FORCE INDEX (uq_economic_baseline_witness_revision) "
+            "LEFT JOIN economic_accounting_operation o ON o.operation_id=w.operation_id", columns,
+            "w.lineage=UNHEX('" + lineage.hex() + "') AND w.epoch=UNHEX('" + epoch.hex() +
+            "') AND w.book_revision IN (" + ",".join(map(str, revisions)) + ")",
+            "w.book_revision LIMIT " + str(len(revisions)+1))
+        need(len(neighbours) == len(revisions))
+        for expected_revision, neighbour in zip(revisions, neighbours):
+            need(type(neighbour) is list and len(neighbour) == len(columns))
+            need(same_projection((neighbour[0], *neighbour[4:]), (expected_revision, 38, 1, 0)))
+            need((binary(neighbour[2], 16), binary(neighbour[3], 16)) == (lineage, epoch))
+            operation_id = binary(neighbour[1], 16)
+            need(any(operation_id))
+            if expected_revision == terminal_revision:
+                need(operation_id == terminal_operation)
+            if expected_revision == revision:
+                need(operation_id == meta[2])
+    except (ValueError, struct.error, TypeError):
+        mismatch("baseline_book")
     expected = [[lineage.hex(), epoch.hex(), 1, account_key(holding["account_key"])[2], meta[2].hex()]
                 for holding in holdings]
     expected += [[lineage.hex(), epoch.hex(), 2, item["uid"], meta[2].hex()] for item in items]

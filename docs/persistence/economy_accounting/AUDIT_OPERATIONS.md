@@ -119,6 +119,14 @@ reads use pages of at most 257 rows, so a valid 9,071-reservation witness fits t
 existing projection bound. Other roots must have no baseline witness or
 reservations; rejected roots must have no details.
 
+Each selected baseline witness also checks its book control revision and terminal
+operation in the same read view. An indexed projection reads at most the
+predecessor, successor and terminal revisions, refusing gaps, foreign or rejected
+neighbour roots and a mismatched terminal as `restore_economic_baseline_book_mismatch`.
+These local checks do not enumerate controls with no retained roots or prove a
+consistent whole-book cut across separate pages. Full quiescent comparison remains
+required; page reports retain incomplete whole-store coverage.
+
 The independent canonical reader checks that observed numeric source columns
 use SQL integer storage before reading JSON projections. MySQL/MariaDB can
 render integral DOUBLE or DECIMAL values as JSON integers; that conversion
