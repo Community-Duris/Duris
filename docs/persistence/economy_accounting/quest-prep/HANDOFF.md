@@ -60,6 +60,22 @@ control is [genuine full-world SQL bartender calibration](CURRENT_BARTENDER_EXEC
 with unchanged existing drivers and current36bf ELF, preserving dynamic fee/task
 truth and original deadlines. No active native or delayed stale settlement claimed.
 
+Current full-world bartender control is now PASS68.148s (outer69.040s), on the same
+SQL36bf/c997 ELF with schema64 and full unchanged AREA. Two actual creationC1120
+and abandonmentC43464 pairs, distinct fee IDs, saved replacement task and final
+inactive task are verified by owned terminal SELECT-only capture. First actual
+task is mapless, so no map charge/purchase claim. Full final63-row UID forest is
+captured with no item event under fee IDs and no reward/XP obligation; no initial
+forest comparison or native source/custody proof is inferred. Normal server and
+owned database termination, zero disposable schemas. Authored owned runner
+run_world_execution.py and CURRENT_BARTENDER_EXECUTION.md/CONTINUING_RECONCILIATION.md/HANDOFF.md; shared
+drivers/commands/deadlines unchanged. Exact command/world/helper/ELF/cut pins and
+source explanation for untouched-kill history0 are in the execution document.
+Actual first task had6 kills left, replacement1 left, creation initializes progress0
+and the unchanged driver performs no kill. Progressed-kill history was unexercised.
+Continuing Goal stays ACTIVE at this publication boundary; exact primary native
+authority, stale/refund and retirement requests remain in the ranked queue.
+
 # Additional full-world cold-room control — 2026-10-07
 
 Additional finite control is now **executed and pushed**, preserving the completed

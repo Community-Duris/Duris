@@ -93,6 +93,10 @@ base275 and original research pin, rather than claiming integrated qualification
    actor replacement while currency busy. Configured positive share-to-inactive
    plus trusted reset is conditional; default shares0 denies it. Need actual
    supported cross-actor scenario from primary, not forced state or callbacks.
+   [Current normal legacy full-world creation/queued-abandon/retirement and exact
+   fee ledger PASS; actual mapless refusal, no map purchase](CURRENT_BARTENDER_EXECUTION.md)
+   is now executed using the same fresh source36bf SQL ELF. It does not close the
+   delayed original-attempt or durable refund/native lifecycle dependencies.
 4. **QP03 actual disappearing/reset recipient.** Pineholl16006/16077,16013/14/80
    inputs,16015+16075 rewards, D flag; original/replacement birth/custody/cash and
    terminal pair required. Published observe_give protects original runtime UID;

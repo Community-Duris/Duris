@@ -11,6 +11,8 @@ from pathlib import Path
 import time
 
 from case_data import ROOT, digest
+import capture_quest_cut as reader
+import quest_cut_checks as checks
 import run_world_quest_dual_backend as world
 import run_quest_reward_ack_crash as crash
 
@@ -39,6 +41,54 @@ def execute(args):
             transcript = (args.evidence_dir / "client.txt").read_text(errors="replace")
             result["actual_fee_quotes"] = [line for line in transcript.splitlines()
                 if "It'll cost you" in line or "toss me" in line]
+            if environment:
+                import pymysql
+                connection = pymysql.connect(host="127.0.0.1", port=int(environment["DB_PORT"]),
+                    user=environment["DB_USER"], password=environment["DB_PASSWD"],
+                    database=environment["DB_NAME"], autocommit=True,
+                    cursorclass=pymysql.cursors.DictCursor, connect_timeout=5,
+                    read_timeout=10, write_timeout=5)
+                try:
+                    with connection.cursor() as cursor:
+                        cursor.execute("SELECT pid FROM player_data WHERE name=%s", ("Taverek",))
+                        players = cursor.fetchall()
+                    checks.require(len(players) == 1, "actual bartender player identity missing")
+                    cut = reader.capture(connection, "QP04", players[0]["pid"], [], [],
+                        dict(source_commit=args.source_commit, binary_sha256=args.server_sha256,
+                             schema_manifest_sha256=result["schema_manifest_sha256"],
+                             lineage=None, epoch=None), legacy_no_epoch=True)
+                finally:
+                    connection.close()
+                (args.evidence_dir / "terminal-cut.json").write_text(json.dumps(cut, indent=2) + "\n")
+                fees = [entry for entry in cut["currency"] if entry["reason_id"] == 16553]
+                amounts = [checks.value(entry, "wallet_delta_") for entry in fees]
+                mapped = result["journey"]["map_result"] == "will now show you additional information"
+                checks.require(len(fees) == 4 + int(mapped), "missing or extra legitimate bartender charge")
+                checks.require(len({entry["operation_id"] for entry in fees}) == len(fees),
+                               "bartender repeated a fee operation")
+                checks.require(all(entry["reason_type"] == 6 and amount < 0
+                                   for entry, amount in zip(fees, amounts)), "unexpected service credit/reason")
+                checks.require(amounts.count(-1120) == 2, "two level56 creation fees must be exact")
+                if mapped:
+                    checks.require(amounts.count(-560) == 1, "level56 map fee must be exact")
+                abandon = list(amounts)
+                for fixed in [-1120, -1120] + ([-560] if mapped else []):
+                    abandon.remove(fixed)
+                checks.require(len(abandon) == 2 and all(0 < -fee <= 43904 for fee in abandon),
+                               "abandon fees exceed original configured level56 quote bound")
+                checks.require(checks.row(cut, "player")["quest_active"] == 0,
+                               "final paid abandonment did not persist retired task")
+                checks.require(cut["obligations"] == [] and cut["xp_entitlements"] == [],
+                               "legitimate service unexpectedly issued item/XP reward obligation")
+                # Full forest is captured. These services should have no item
+                # event under any of their actual committed fee operations.
+                fee_ids = {entry["operation_id"] for entry in fees}
+                checks.require(not any(event["operation_id"] in fee_ids for event in cut["ownership_events"]),
+                               "bartender service changed an item UID")
+                result["terminal_capture"] = dict(pid=players[0]["pid"], fee_copper=amounts,
+                    fee_operations=sorted(fee_ids), map_information_bought=mapped,
+                    player_item_uids=[item["item_uid"] for item in cut["items"]],
+                    final_task_active=0, authority="legacy ledger/task only; no native settlement or refund")
 
     try:
         if args.backend == "mariadb":
