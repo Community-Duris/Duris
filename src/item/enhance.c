@@ -12,6 +12,7 @@
 #include <climits>
 #include <cmath>
 #include <cstdint>
+#include "economy/enhancement_original_search.h"
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
@@ -83,9 +84,8 @@ void enhance(P_char ch, P_obj source, P_obj material)
 {
 	char buf[MAX_STRING_LENGTH];
 	P_obj robj;
-	int cost, sval, chluck, wearflags, cascade_dir;
-	int64_t searchcount, maxsearch, newval, minval, cascade_step, cascade_ival;
-	struct enhance_index_entry *entry;
+	int cost, sval, chluck, wearflags;
+	int64_t maxsearch, newval, minval;
 
 	if (!ch || !source || !material)
 		return;
@@ -109,7 +109,6 @@ void enhance(P_char ch, P_obj source, P_obj material)
 	chluck = (GET_C_LUK(ch));
 	sval = itemvalue(source);
 	minval = static_cast<int64_t>(sval) - enhance_material_ival_delta;
-	searchcount = 0;
 	maxsearch = enhance_search_max_attempts;
 	// Only search matching wear flags unless none matching, then just search source wear flags.
 	//  We skip ITEM_TAKE 'cause it's not really a wear flag.  We skip ITEM_HOLD, ITEM_ATTACH_BELT, and
@@ -201,68 +200,42 @@ void enhance(P_char ch, P_obj source, P_obj material)
 	 * cascade_down_first=0: try higher ival values first, then lower
 	 */
 	robj = NULL;
-	for (cascade_step = 0; cascade_step <= enhance_original_max_roll; cascade_step++)
+	struct native_original_search
 	{
-		for (cascade_dir = 0; cascade_dir < 2; cascade_dir++)
+		P_obj source;
+		int wearflags;
+		P_obj &robj;
+
+		int max_roll() const { return enhance_original_max_roll; }
+
+		bool down_first() const { return enhance_original_cascade_down_first; }
+
+		int64_t value_limit() const
 		{
-			if (cascade_step == 0)
-			{
-				/* Exact match — only one try */
-				if (cascade_dir > 0)
-					continue;
-				cascade_ival = newval;
-			}
-			else if (enhance_original_cascade_down_first)
-			{
-				/* Down first: try -step, then +step */
-				cascade_ival = (cascade_dir == 0) ? (newval - cascade_step) :
-								    (newval + cascade_step);
-			}
-			else
-			{
-				/* Up first: try +step, then -step */
-				cascade_ival = (cascade_dir == 0) ? (newval + cascade_step) :
-								    (newval - cascade_step);
-			}
+			return static_cast<int64_t>(enhance_ival_cap) + enhance_original_max_roll;
+		}
 
-			if (cascade_ival < 1 || cascade_ival > INT_MAX ||
-			    cascade_ival > static_cast<int64_t>(enhance_ival_cap) +
-						   enhance_original_max_roll)
-				continue;
-
-			/* Look up in hash table */
-			for (entry = enhance_ival_table[enhance_hash(
-				     static_cast<int>(cascade_ival))];
+		bool try_value(int value) const
+		{
+			for (struct enhance_index_entry *entry =
+				     enhance_ival_table[enhance_hash(value)];
 			     entry; entry = entry->next)
 			{
-				if (entry->ival != cascade_ival)
+				if (entry->ival != value)
 					continue;
-
-				/* Check wear flags match */
 				if (!(wearflags & entry->wear_flags))
 					continue;
-
-				/* Check not same vnum */
 				if (entry->vnum == OBJ_VNUM(source))
 					continue;
-
-				/* Found a match — read the object */
 				robj = read_object(entry->vnum, VIRTUAL);
 				if (robj)
-				{
-					break;
-				}
+					return true;
 			}
-
-			if (robj)
-				break;
+			return false;
 		}
-		if (robj)
-			break;
-		searchcount++;
-		if (searchcount > maxsearch)
-			break;
-	}
+	};
+	native_original_search observed{ source, wearflags, robj };
+	enhancement_search_original(newval, maxsearch, observed);
 
 	if (!robj)
 	{
