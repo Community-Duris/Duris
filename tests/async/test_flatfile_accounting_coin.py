@@ -33,6 +33,8 @@ def main():
             "src/world/epic_command.c", "src/combat/combat_outcome_command.c",
             "src/economy/coin_transfer_command.c",
             "src/economy/coin_transfer_accounting.c",
+            "src/economy/native_quest_cost.c", "src/economy/native_quest_coin_give.c",
+            "src/item/lockpick_retirement_continuation.c",
             "src/economy/economic_baseline_adapter.c",
             "src/economy/economic_baseline_codec.c",
             "src/economy/economic_baseline_command.c",

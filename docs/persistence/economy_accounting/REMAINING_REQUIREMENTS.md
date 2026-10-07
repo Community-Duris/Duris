@@ -1,5 +1,15 @@
 # Double-entry economy: remaining requirements
 
+## Flatfile COIN source claim fixed - 2026-10-07
+
+[Qualified source-claim fix](FLATFILE_COIN_SOURCE_CLAIM_FIX_2026-10-07.md)
+stages the original lifecycle claim with the native authority commit and checks
+successful retained replay. Missing/corrupt proof remains retryable with durable
+bytes unchanged. The combined sourceclaim/reader candidate passes the complete
+original sanitizer suite and both original754-provider production links.
+All926 writer policies remain unchanged; full flat boot, shared publication/ACK,
+activation, Plans2-4 and R1-R8/release remain open.
+
 ## Coin owner component fixture repaired - 2026-10-07
 
 [Qualified fixture](COIN_OWNER_COMPONENT_FIXTURE_INTEGRATION_2026-10-07.md)
