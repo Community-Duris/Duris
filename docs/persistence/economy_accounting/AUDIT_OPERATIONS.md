@@ -973,3 +973,32 @@ reads, 19,639,289 bytes and 2,675 directory entries. The one-shot read cap is
 Repeated physical reads still count. The two durable page modes keep their
 explicit 64-read/32 MiB limits. Larger history can still refuse and is not release
 qualification; no economic state is corrected by this read-only operator.
+
+## Required lifecycle receipt pages
+
+Use a separate checkpoint outside native authority for each audit scope and
+qualifier/source identity. For required lifecycle receipts, run:
+
+```sh
+python3 scripts/flatfile_economic_audit.py --state-root /absolute/native/root \
+  --qualifier /absolute/qualify_flatfile_restore \
+  --progress /absolute/audit-state/lifecycle.json --scope lifecycle-receipts
+```
+
+Each invocation checks at most two required initializer roots in one rotating
+bucket, including inactive epochs. A missing receipt is reported against its
+initializer operation ID, so absent files cannot disappear from the census.
+Current catalog membership fixes each historical range ceiling; later arrivals
+are visited in later ranges. Invalid receipts remain sticky findings. Budget
+refusal rotates without advancing the affected cursor or earning a range.
+
+Lifecycle pages retain 16,384 physical reads, 128 MiB, 8,192 directory entries
+and 30 seconds; existing root/authority pages retain their explicit smaller
+budgets. Updated qualifier/reader bytes require a fresh separate checkpoint;
+do not silently reuse a checkpoint bound to another source. The checkpoint
+lock, safe atomic update, future-timestamp refusal and original witness/receipt
+checks remain. Native economic evidence is read-only.
+
+Pages report partial coverage: complete/consistent-entire-sweep/release and
+holdings/baseline/orphan/lifecycle closure flags remain false. A range count
+or zero findings does not qualify complete accounting or release.

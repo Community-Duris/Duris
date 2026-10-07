@@ -41,7 +41,8 @@ int main(int argc, char **argv)
 	assert(argc == 3);
 	const std::string root = argv[1], mode = argv[2];
 	assert(mode == "mixed" || mode == "empty" || mode == "renamed" || mode == "retired" ||
-	       mode == "maximum" || mode == "generic" || mode == "retained");
+	       mode == "maximum" || mode == "generic" || mode == "retained" || mode == "paged" ||
+	       mode == "paged-short" || mode == "maximum-paged");
 	for (auto name : { "domains", "economic-evidence" })
 	{
 		auto path = std::filesystem::path(root) / name;
@@ -94,7 +95,8 @@ int main(int argc, char **argv)
 		commit();
 		value.receipt.mappings.push_back(mapping);
 	};
-	if (mode != "empty" && mode != "maximum")
+	if (mode != "empty" && mode != "maximum" && mode != "paged" && mode != "paged-short" &&
+	    mode != "maximum-paged")
 	{
 		flatfile_accounting_lifecycle_wallet_source wallet;
 		wallet.pid = 1;
@@ -108,13 +110,14 @@ int main(int argc, char **argv)
 		value.sources.wallets.push_back(wallet);
 		create(economic_account_kind::wallet, 0, { 1, 1, {} });
 	}
-	const size_t bank_count = mode == "empty"   ? 0 :
-				  mode == "maximum" ? ECONOMIC_BASELINE_MAX_HOLDINGS :
-						      1;
+	const size_t bank_count =
+		mode == "empty" || mode == "paged" || mode == "paged-short" ? 0 :
+		mode == "maximum" || mode == "maximum-paged" ? ECONOMIC_BASELINE_MAX_HOLDINGS :
+							       1;
 	for (size_t index = 0; index < bank_count; ++index)
 	{
 		flatfile_accounting_lifecycle_bank_source bank;
-		bank.name = mode == "maximum" ?
+		bank.name = mode == "maximum" || mode == "maximum-paged" ?
 				    std::string(40, 'a') +
 					    std::string(10 - std::to_string(index).size(), '0') +
 					    std::to_string(index) :
@@ -127,116 +130,143 @@ int main(int argc, char **argv)
 		value.sources.banks.push_back(bank);
 		create(economic_account_kind::bank, bank.racewar, { 2, 0, bank.name });
 	}
-	const auto coverage = compute_coverage_digest(value.sources.wallets, value.sources.banks);
-	if (mode == "retained")
-		request.coverage_digest = coverage;
-	value.epoch.epoch = request.epoch;
-	value.epoch.ordinal = 1;
-	value.epoch.transition_kind = 1;
-	value.epoch.transition_digest = coverage;
-	value.epoch.creating_operation = request.operation_id;
-	assert(access::append_epoch(root, lock, control().revision, value.epoch, &operations,
-				    &error) == 0);
-	commit();
-	const auto initialized =
-		mode == "generic" ?
-			access::initialize(root, lock, request.lineage, request.epoch,
-					   value.opening, request.operation_id, &operations,
-					   &error) :
-			access::initialize_lifecycle(root, lock, request.lineage, request.epoch,
-						     value.opening, request.operation_id,
-						     &operations, &error, nullptr);
-	assert(initialized == flatfile_accounting_status::ok);
-	commit();
-	economic_baseline_batch batch;
-	batch.lineage = request.lineage;
-	batch.epoch = request.epoch;
-	batch.preparation_id = request.operation_id;
-	batch.actor_id = request.actor_id;
-	batch.opening_account = value.opening;
-	batch.boundary_digest = request.boundary_digest;
-	batch.coverage_digest = coverage;
-	for (size_t i = 0; i < value.receipt.mappings.size(); ++i)
+	// Additional page fixtures reuse the original native codecs and participant.
+	// Original modes execute one identical epoch; all fixtures remain inactive.
+	const size_t epoch_count = mode == "paged"	   ? 9 :
+				   mode == "paged-short"   ? 7 :
+				   mode == "maximum-paged" ? 2 :
+							     1;
+	for (size_t step = 0; step < epoch_count; ++step)
 	{
-		const bool wallet = i < value.sources.wallets.size();
-		const auto balance =
-			wallet ? value.sources.wallets[i].balance :
-				 value.sources.banks[i - value.sources.wallets.size()].balance;
-		const auto revision = wallet ? value.sources.wallets[i].native_revision :
-					       value.sources.banks[i - value.sources.wallets.size()]
-						       .native_revision;
-		const auto digest =
-			wallet ?
-				value.sources.wallets[i].source_digest :
-				value.sources.banks[i - value.sources.wallets.size()].source_digest;
-		batch.holdings.push_back(
-			{ value.receipt.mappings[i].account, balance, revision, digest });
+		request.operation_id = fixture_id(20 + 256 * step);
+		request.epoch = fixture_id(50 + 256 * step);
+		value.opening.authority_id = step + 1;
+		value.epoch = {};
+		value.epoch.predecessor = step ? fixture_id(50 + 256 * (step - 1)) : fixture_id(0);
+		const auto coverage =
+			compute_coverage_digest(value.sources.wallets, value.sources.banks);
+		if (mode == "retained")
+			request.coverage_digest = coverage;
+		value.epoch.epoch = request.epoch;
+		value.epoch.ordinal = step + 1;
+		value.epoch.transition_kind = 1;
+		value.epoch.transition_digest = coverage;
+		value.epoch.creating_operation = request.operation_id;
+		assert(access::append_epoch(root, lock, control().revision, value.epoch,
+					    &operations, &error) == 0);
+		commit();
+		const auto initialized =
+			mode == "generic" ?
+				access::initialize(root, lock, request.lineage, request.epoch,
+						   value.opening, request.operation_id, &operations,
+						   &error) :
+				access::initialize_lifecycle(root, lock, request.lineage,
+							     request.epoch, value.opening,
+							     request.operation_id, &operations,
+							     &error, nullptr);
+		assert(initialized == flatfile_accounting_status::ok);
+		commit();
+		economic_baseline_batch batch;
+		batch.lineage = request.lineage;
+		batch.epoch = request.epoch;
+		batch.preparation_id = request.operation_id;
+		batch.actor_id = request.actor_id;
+		batch.opening_account = value.opening;
+		batch.boundary_digest = request.boundary_digest;
+		batch.coverage_digest = coverage;
+		for (size_t i = 0; i < value.receipt.mappings.size(); ++i)
+		{
+			const bool wallet = i < value.sources.wallets.size();
+			const auto balance =
+				wallet ? value.sources.wallets[i].balance :
+					 value.sources.banks[i - value.sources.wallets.size()]
+						 .balance;
+			const auto revision =
+				wallet ? value.sources.wallets[i].native_revision :
+					 value.sources.banks[i - value.sources.wallets.size()]
+						 .native_revision;
+			const auto digest =
+				wallet ? value.sources.wallets[i].source_digest :
+					 value.sources.banks[i - value.sources.wallets.size()]
+						 .source_digest;
+			batch.holdings.push_back(
+				{ value.receipt.mappings[i].account, balance, revision, digest });
+		}
+		std::optional<economic_prepared_baseline> prepared;
+		assert(economic_baseline_prepare(batch, &prepared) ==
+		       economic_accounting_error::ok);
+		critical_command command;
+		assert(economic_baseline_command_build(*prepared, request.accepted_at_usec,
+						       &command) == economic_accounting_error::ok);
+		if (!(control().evidence_initialized[command.operation_id.bytes[0] / 8] &
+		      (1u << (command.operation_id.bytes[0] % 8))))
+		{
+			assert(access::evidence_bucket(root, lock, control().revision,
+						       command.operation_id.bytes[0], fixture_id(8),
+						       &operations, &error) == 0);
+			commit();
+		}
+		assert(access::baseline(root, lock, command, *prepared, &operations, &error) ==
+		       flatfile_accounting_status::ok);
+		commit();
+		if (mode == "generic")
+		{
+			(void)control();
+			return 0; // Coincident original IDs do not turn a generic book into an installer receipt.
+		}
+		flatfile_accounting_record stored;
+		std::vector<uint8_t> stored_witness;
+		assert(flatfile_accounting_baseline_lookup(root, lock, command, &stored,
+							   &stored_witness, &error) ==
+		       flatfile_accounting_status::ok);
+		assert(!stored.result_code &&
+		       stored.failure_stage == critical_failure_stage::none &&
+		       stored.result.empty());
+		assert(flatfile_economic_epoch_read(root, lock, request.lineage, request.epoch,
+						    &value.epoch, &error) == 0);
+		assert(value.epoch.initialization_origin ==
+		       flatfile_baseline_initialization_origin::lifecycle_owner);
+		value.lineage_creating_operation = control().creating_operation;
+		value.selected_control_revision = control().revision;
+		auto &receipt = value.receipt;
+		receipt.operation_id = request.operation_id;
+		receipt.lineage = request.lineage;
+		receipt.epoch = request.epoch;
+		receipt.baseline_operation_id = command.operation_id;
+		receipt.coverage_digest = coverage;
+		receipt.boundary_digest = request.boundary_digest;
+		receipt.baseline_revision = stored.durable_revision;
+		assert(critical_command_encode(command, &value.baseline_command) ==
+		       critical_command_codec_result::ok);
+		assert(economic_baseline_encode(*prepared, &value.baseline_witness) ==
+		       economic_accounting_error::ok);
+		economic_accounting_plan plan;
+		assert(economic_baseline_command_plan(command, *prepared, &plan) ==
+		       economic_accounting_error::ok);
+		assert(economic_plan_encode(plan, &value.baseline_plan) ==
+		       economic_accounting_error::ok);
+		assert(value.baseline_witness == stored_witness &&
+		       value.baseline_plan == stored.plan);
+		auto encoded = encode_lifecycle_receipt(value);
+		assert(encode_lifecycle_receipt(decode_lifecycle_receipt(encoded)) == encoded);
+		const auto path = std::filesystem::path(root) / "economic-evidence" /
+				  lifecycle_receipt_name(request.operation_id);
+		std::ofstream out(path, std::ios::binary);
+		out.write(reinterpret_cast<const char *>(encoded.data()), encoded.size());
+		out.close();
+		assert(out);
+		std::filesystem::permissions(path, std::filesystem::perms::owner_read |
+							   std::filesystem::perms::owner_write);
 	}
-	std::optional<economic_prepared_baseline> prepared;
-	assert(economic_baseline_prepare(batch, &prepared) == economic_accounting_error::ok);
-	critical_command command;
-	assert(economic_baseline_command_build(*prepared, request.accepted_at_usec, &command) ==
-	       economic_accounting_error::ok);
-	assert(access::evidence_bucket(root, lock, control().revision,
-				       command.operation_id.bytes[0], fixture_id(8), &operations,
-				       &error) == 0);
-	commit();
-	assert(access::baseline(root, lock, command, *prepared, &operations, &error) ==
-	       flatfile_accounting_status::ok);
-	commit();
-	if (mode == "generic")
-	{
-		(void)control();
-		return 0; // Coincident original IDs do not turn a generic book into an installer receipt.
-	}
-	flatfile_accounting_record stored;
-	std::vector<uint8_t> stored_witness;
-	assert(flatfile_accounting_baseline_lookup(root, lock, command, &stored, &stored_witness,
-						   &error) == flatfile_accounting_status::ok);
-	assert(!stored.result_code && stored.failure_stage == critical_failure_stage::none &&
-	       stored.result.empty());
-	assert(flatfile_economic_epoch_read(root, lock, request.lineage, request.epoch,
-					    &value.epoch, &error) == 0);
-	assert(value.epoch.initialization_origin ==
-	       flatfile_baseline_initialization_origin::lifecycle_owner);
-	value.lineage_creating_operation = control().creating_operation;
-	value.selected_control_revision = control().revision;
-	auto &receipt = value.receipt;
-	receipt.operation_id = request.operation_id;
-	receipt.lineage = request.lineage;
-	receipt.epoch = request.epoch;
-	receipt.baseline_operation_id = command.operation_id;
-	receipt.coverage_digest = coverage;
-	receipt.boundary_digest = request.boundary_digest;
-	receipt.baseline_revision = stored.durable_revision;
-	assert(critical_command_encode(command, &value.baseline_command) ==
-	       critical_command_codec_result::ok);
-	assert(economic_baseline_encode(*prepared, &value.baseline_witness) ==
-	       economic_accounting_error::ok);
-	economic_accounting_plan plan;
-	assert(economic_baseline_command_plan(command, *prepared, &plan) ==
-	       economic_accounting_error::ok);
-	assert(economic_plan_encode(plan, &value.baseline_plan) == economic_accounting_error::ok);
-	assert(value.baseline_witness == stored_witness && value.baseline_plan == stored.plan);
-	auto encoded = encode_lifecycle_receipt(value);
-	assert(encode_lifecycle_receipt(decode_lifecycle_receipt(encoded)) == encoded);
-	const auto path = std::filesystem::path(root) / "economic-evidence" /
-			  lifecycle_receipt_name(request.operation_id);
-	std::ofstream out(path, std::ios::binary);
-	out.write(reinterpret_cast<const char *>(encoded.data()), encoded.size());
-	out.close();
-	assert(out);
-	std::filesystem::permissions(path, std::filesystem::perms::owner_read |
-						   std::filesystem::perms::owner_write);
 	if (mode == "renamed" || mode == "retired")
 	{
-		const auto &bank = receipt.mappings.back();
+		const auto &bank = value.receipt.mappings.back();
 		assert(access::rename(root, lock, control().revision, bank.account, bank.revision,
 				      "changed", fixture_id(99), &operations, &error) == 0);
 		commit();
 		if (mode == "retired")
 		{
-			const auto &wallet = receipt.mappings.front();
+			const auto &wallet = value.receipt.mappings.front();
 			assert(access::retire(root, lock, control().revision, wallet.account,
 					      wallet.revision, fixture_id(100), &operations,
 					      &error) == 0);

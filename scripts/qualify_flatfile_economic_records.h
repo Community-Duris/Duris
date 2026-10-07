@@ -608,6 +608,44 @@ class checker
 		need(at == entries.size());
 	}
 
+	std::map<uint64_t, bytes> selected_segments(size_t bucket, std::vector<entry> entries,
+						    const std::vector<entry> &selected)
+	{
+		std::sort(
+			entries.begin(), entries.end(), [](const auto &a, const auto &b)
+			{ return std::tie(a.segment, a.offset) < std::tie(b.segment, b.offset); });
+		std::map<uint64_t, bytes> segments;
+		for (const auto &selected_row : selected)
+		{
+			if (!segments.contains(selected_row.segment))
+			{
+				auto content =
+					frame(directory,
+					      filename("bucket-", bucket, "-") +
+						      std::to_string(selected_row.segment) + ".eas",
+					      "DURECS1", segment_limit);
+				reader file{ content };
+				need(file.fixed<16>() == lineage && file.number(4) == bucket &&
+				     file.number(4) == selected_row.segment);
+				const auto count = file.number(4);
+				need(count && file.number(4) == 0);
+				uint64_t offset = 0, observed = 0;
+				for (const auto &row : entries)
+					if (row.segment == selected_row.segment)
+					{
+						need(row.offset == offset &&
+						     hash(file.take(row.size)) == row.checksum);
+						offset += row.size;
+						++observed;
+					}
+				file.done();
+				need(count == observed);
+				segments.emplace(selected_row.segment, std::move(content));
+			}
+		}
+		return segments;
+	}
+
     public:
 	explicit checker(const std::filesystem::path &path)
 		: root(path)
@@ -672,37 +710,9 @@ class checker
 		// Reuse bounded frames and the original semantic decoder. Inspect the
 		// physical geometry and every record hash in each touched segment; only
 		// the selected two records are semantically interpreted on this page.
-		std::sort(
-			entries.begin(), entries.end(), [](const auto &a, const auto &b)
-			{ return std::tie(a.segment, a.offset) < std::tie(b.segment, b.offset); });
-		std::map<uint64_t, bytes> segments;
+		auto segments = selected_segments(bucket, entries, selected);
 		for (const auto &selected_row : selected)
 		{
-			if (!segments.contains(selected_row.segment))
-			{
-				auto content =
-					frame(directory,
-					      filename("bucket-", bucket, "-") +
-						      std::to_string(selected_row.segment) + ".eas",
-					      "DURECS1", segment_limit);
-				reader file{ content };
-				need(file.fixed<16>() == lineage && file.number(4) == bucket &&
-				     file.number(4) == selected_row.segment);
-				const auto count = file.number(4);
-				need(count && file.number(4) == 0);
-				uint64_t offset = 0, observed = 0;
-				for (const auto &row : entries)
-					if (row.segment == selected_row.segment)
-					{
-						need(row.offset == offset &&
-						     hash(file.take(row.size)) == row.checksum);
-						offset += row.size;
-						++observed;
-					}
-				file.done();
-				need(count == observed);
-				segments.emplace(selected_row.segment, std::move(content));
-			}
 			const auto &content = segments.at(selected_row.segment);
 			try
 			{
@@ -722,6 +732,95 @@ class checker
 			result.cursor = selected_row.operation;
 			++result.rows;
 		}
+		result.exhausted = !more;
+		return result;
+	}
+	// Required receipts are discovered from the immutable authority catalogue,
+	// including old inactive epochs. A missing filename is a selected finding.
+	root_page lifecycle_page(size_t bucket, const identity &after, const identity &ceiling,
+				 bool ceiling_known)
+	{
+		need(bucket < buckets && (!nonzero(after) || ceiling_known) &&
+		     (!ceiling_known || after <= ceiling));
+		restore_economic_authority::checker authority(root);
+		authority.begin_page();
+		auto control = frame(directory, "authority.eal", "DURECA1");
+		need(control.size() == 16552);
+		std::copy_n(control.begin(), 16, lineage.begin());
+		digest catalog_digest;
+		std::copy_n(control.begin() + 104, 32, catalog_digest.begin());
+		auto catalog = restore_economic_authority::catalog(directory, catalog_digest);
+		need(catalog.lineage == lineage);
+		std::vector<identity> operations;
+		for (const auto &marker : catalog.entries)
+		{
+			epochs.insert(marker.epoch);
+			if (marker.origin == initialization_origin::lifecycle_owner &&
+			    marker.initializing_operation[0] == bucket)
+				operations.push_back(marker.initializing_operation);
+		}
+		std::sort(operations.begin(), operations.end());
+		auto retained = [&](const identity &operation)
+		{ return std::binary_search(operations.begin(), operations.end(), operation); };
+		need((!nonzero(after) || retained(after)) &&
+		     (!ceiling_known || !nonzero(ceiling) || retained(ceiling)));
+		root_page result;
+		result.lineage = lineage;
+		result.authority_body = hash(control);
+		result.cursor = after;
+		result.bucket_rows = operations.size();
+		result.ceiling = ceiling_known	    ? ceiling :
+				 operations.empty() ? identity{} :
+						      operations.back();
+		bool more = false;
+		for (const auto &operation : operations)
+			if (operation > after && operation <= result.ceiling)
+			{
+				if (result.rows == 2)
+				{
+					more = true;
+					break;
+				}
+				try
+				{
+					// Each receipt gets isolated link/semantic state: one damaged
+					// receipt cannot poison a healthy sibling on the same page.
+					checker selected(root);
+					selected.lineage = lineage;
+					selected.epochs = epochs;
+					auto original = selected.lifecycles.load_one(
+						operation, lineage, catalog, control,
+						[&](auto account)
+						{ return authority.mapped_account(account); });
+					const auto root_bucket = original[0];
+					need(control[16520 + root_bucket / 8] &
+					     (1u << (root_bucket % 8)));
+					auto entries = selected.index(root_bucket);
+					auto found = std::find_if(
+						entries.begin(), entries.end(), [&](const auto &row)
+						{ return row.operation == original; });
+					need(found != entries.end());
+					auto segments = selected.selected_segments(
+						root_bucket, entries, { *found });
+					selected.record(std::span<const uint8_t>(
+								segments.at(found->segment))
+								.subspan(32 + found->offset,
+									 found->size),
+							original);
+					need(selected.lifecycles.finish() == 1);
+					++result.verified;
+				}
+				catch (const audit_budget_refused &)
+				{
+					throw;
+				}
+				catch (const std::runtime_error &)
+				{
+					result.invalid_records.push_back(operation);
+				}
+				result.cursor = operation;
+				++result.rows;
+			}
 		result.exhausted = !more;
 		return result;
 	}

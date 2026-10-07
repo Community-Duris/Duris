@@ -1,5 +1,18 @@
 # Double-entry economy: remaining requirements
 
+## Lifecycle receipt paging qualified — 2026-10-07
+
+[Primary integration](PLAN5_LIFECYCLE_PAGES_PRIMARY_INTEGRATION_2026-10-07.md)
+adds independent durable pages for required lifecycle receipts, including
+inactive epochs. The complete original lifecycle suite passes 131 cases
+(nine accepted, 122 refused) plus 46 page controls, zero skips. The original
+authority suite also passes all 20 positive stores, 367 corruption refusals,
+28 root-page and 29 authority-page controls. Missing receipts remain visible
+through their required initializer roots. Sticky findings, rotating refused
+buckets, explicit partial coverage and existing safety budgets remain.
+Native source/artifacts and formatting-only equivalence are authenticated.
+Full holdings, producers, recovery and release remain open.
+
 ## Lifecycle audit maximum budget qualified — 2026-10-06
 
 [Primary integration](PLAN5_LIFECYCLE_BUDGET_PRIMARY_INTEGRATION_2026-10-06.md)
@@ -26,37 +39,35 @@ private SQL engines. Budget-refused namespaces now rotate while preserving
 coverage and sticky refusal history; cleanup/source failures do not rotate.
 Producer gameplay, full R7/R8, activation and release remain open.
 
-## Current producer qualification — 2026-10-06
+## Current producer qualification — 2026-10-07
 
-The [current qualification](SHARED_PROFILE_BUILD_QUALIFICATION_2026-10-06.md)
-records both original strict753-provider production builds and all nine contracts
-passing on private source4f8332ce (manifest259325cb). Primary authenticates all23
-result artifacts, all6367 source members and both complete1508-member caches.
-This source combines the shared startup owner, native auction integration and
-the narrow cold-SHOP object-pool reservation; it is distinct from maintained HEAD.
+[Final source 30837d50](AUCTION_NATIVE_ADMISSION_CAP_QUALIFICATION_2026-10-07.md)
+passes both strict 753-provider production builds, nine contracts and the
+original native admission-boundary regression. Selected LIST/CLAIM accounting
+nodes above 3,000 refuse before domain effects; structural/read-only capacity
+remains 4,096. The incoming allowlist and inactive/spell boundaries stay exact.
+This source is private; maintained producer integration remains open.
 
-The first full-tree SQL component passes its strict original compile/link and
-MySQL0063/runtime checks, then refuses in the original player-row/sidecar setup
-before any auction case. Source review establishes a missing genuine parsed
-recovery-template catalog prerequisite. The precise executed errno was not
-logged. That failure and cleanup evidence are preserved; a faithful fixture
-successor is being prepared. No template stub, SQL backfill or assertion bypass
-is authorized. Both genuine allocator profile units pass with full753-provider links,
-including mmap-failure refusal. Primary authenticates both link/provider
-bindings and26 exported members; owned cleanup absence is verified. The
-original MySQL warm publication passes in0.975 seconds. Cold reaches the
-ready promotion and retained admission guard, then refuses in1.480 seconds
-at the combined save-start/admission-finish condition. Its first failed bool
-is not yet attributed. All47 sealed artifacts and507 native archive members
-are authenticated; cleanup absence is verified. MariaDB and fault cases
-remain unrun under original fail-fast policy. Diagnosis continues.
+Both actual MySQL and MariaDB warm/full-cold/owned-shutdown journeys now pass
+on the same actual ELF with the genuine production lifecycle teardown guard.
+MySQL's genuine origin-INSERT fault exits 17 as expected and retains one phase-2
+journal record. Its subsequent pending-journal cold case hits the unchanged
+60-second deadline (exit 124, 60.024 seconds); no recovery stage/stack is yet
+observed. MariaDB fault cases remain unrun under original fail-fast order.
+Primary authenticates 123 evidence files, 1,779 native archive members and exact
+owned cleanup. Normal cold success does not establish fault recovery completion.
 
-Canonical published code is `79df6775b`: captured-item bindings, standalone SQL
-audit namespaces, current flatfile envelopes and read-only operator locking/work
-budgets have separate committed primary qualification. Incoming299ee884e and
-unrelated SHOP work are preserved. Existing inactive behavior, safety gates and
-the declined spell path remain unchanged. Complete native auction publication,
-cold recovery, every writer, R1–R8 and release/activation remain unfinished.
+The full-tree auction component now applies LIST operation 151 (outcome 0,
+error 0, 320 result bytes), then fails the original early-finalize rejection
+assertion. The actual early-finalize errno is unobserved. Source review finds
+the legacy descendant refusal and v1-only non-item execution route; complete
+native-v2 historical/current-cut proof integration is in progress. Primary
+authenticates 98 sealed files, 542 native members and cleanup. Neither this
+component model nor native boundary tests establish physical player journeys.
+
+Published reader parent 66a3deee3 contains separately qualified SQL refusal
+fairness, flatfile pages and maximum lifecycle audit budget. Unrelated SHOP
+edits remain. Plans 1–4, complete R1–R8 and release remain unfinished.
 
 ## Current flatfile audit envelopes published — 2026-10-06
 
