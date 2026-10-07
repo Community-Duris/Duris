@@ -22,7 +22,8 @@ import sys
 import tempfile
 import time
 
-from economic_restore_evidence import CanonicalReader, require_integrity, verify_canonical_root
+from economic_restore_evidence import (CanonicalReader, require_integrity, verify_canonical_root,
+                                       verify_canonical_baseline)
 from reconcile_economy_accounting import MAX_INPUT_BYTES, MAX_ROWS, same_projection
 
 
@@ -42,7 +43,10 @@ PAGE_SECONDS = 30
 ROOT_SOURCES = ("economic_accounting_operation", "economic_accounting_account_effect",
                 "economic_accounting_coin_posting", "economic_accounting_child",
                 "economic_accounting_item_reference", "economic_accounting_source_claim",
-                "economic_lineage_state", "economic_epoch", "item_ownership_ledger", "critical_operation_inbox")
+                "economic_lineage_state", "economic_epoch", "item_ownership_ledger", "critical_operation_inbox",
+                "economic_baseline_control", "economic_baseline_witness", "economic_baseline_reservation",
+                "currency_ledger", "critical_outbox", "economic_sql_lifecycle_installation",
+                "economic_account_mapping", "economic_pending_claim_source")
 
 
 class CursorExecutor:
@@ -247,10 +251,12 @@ def scan_page(connection, progress, *, page_roots=MAX_PAGE_ROOTS, now=None):
                 raise AuditError("invalid canonical audit page identities")
             previous = operation
         findings = []
+        baselines, historical_claim_origins = 0, 0
         reader = CanonicalReader(executor)
         for operation in identities[:page_roots]:
             try:
-                meta, row, _, _, plan = verify_canonical_root(reader, operation)
+                root = verify_canonical_root(reader, operation)
+                meta, row, _, _, plan = root
                 where = "o.operation_id=UNHEX('" + operation + "')"
                 if executor.sql("SELECT EXISTS(SELECT 1 FROM economic_accounting_operation o "
                     "LEFT JOIN economic_lineage_state l ON l.lineage=o.lineage "
@@ -267,6 +273,44 @@ def scan_page(connection, progress, *, page_roots=MAX_PAGE_ROOTS, now=None):
                     "WHERE lineage=UNHEX('" + meta[0].hex() + "') AND source_event=UNHEX('" + meta[-1].hex() +
                     "') LIMIT 2) canonical_source_identity;") != "1":
                     reader.mismatch("source_claim")
+                if plan is not None and meta[10] == 38:
+                    columns = []
+                    for name, code in (("command_accepted_at_usec", "baseline_witness"),
+                                       ("claim_origin_version", "baseline_claim_origin")):
+                        count = executor.sql("SELECT COUNT(*) FROM information_schema.columns "
+                            "WHERE table_schema=DATABASE() AND table_name='economic_baseline_witness' "
+                            "AND column_name='" + name + "';")
+                        if count not in ("0", "1"):
+                            reader.mismatch(code)
+                        columns.append("w." + name if count == "1" else "NULL")
+                    if executor.sql("SELECT EXISTS(SELECT 1 FROM critical_operation_inbox WHERE " +
+                        "operation_id=UNHEX('" + operation + "') AND status=1 AND result_code=0 "
+                        "AND failure_stage=0 AND committed_at IS NOT NULL);") != "1":
+                        reader.mismatch("baseline_witness")
+                    version, origins = verify_canonical_baseline(reader, operation, root,
+                        admission_column=columns[0], claim_origin_column=columns[1])
+                    if origins is not None:
+                        expected_sources = [[slot, lineage.hex(), mapping, pid, amount]
+                                            for slot, lineage, mapping, pid, amount in origins]
+                        actual = reader.arrays("economic_pending_claim_source",
+                            ["source_slot", "LOWER(HEX(lineage))", "claim_mapping_id", "beneficiary_pid", "amount"],
+                            "source_operation_id=UNHEX('" + operation + "')", "source_slot LIMIT " + str(len(origins)+1))
+                        if not same_projection(actual, expected_sources):
+                            reader.mismatch("baseline_claim_origin")
+                    effects = (("economic_accounting_child", "operation_id"),
+                               ("economic_accounting_child", "child_operation_id"),
+                               ("economic_accounting_item_reference", "operation_id"),
+                               ("currency_ledger", "operation_id"), ("item_ownership_ledger", "operation_id"),
+                               ("critical_outbox", "operation_id"))
+                    if executor.sql("SELECT " + " OR ".join("EXISTS(SELECT 1 FROM " + table +
+                        " WHERE " + column + "=UNHEX('" + operation + "') LIMIT 1)" for table, column in effects) + ";") != "0":
+                        reader.mismatch("baseline_zero_effect")
+                    baselines += 1
+                    historical_claim_origins += int(version is None)
+                elif executor.sql("SELECT EXISTS(SELECT 1 FROM economic_baseline_witness WHERE " +
+                    "operation_id=UNHEX('" + operation + "') LIMIT 1) OR EXISTS(SELECT 1 FROM " +
+                    "economic_baseline_reservation WHERE operation_id=UNHEX('" + operation + "') LIMIT 1);") != "0":
+                    reader.mismatch("baseline_witness")
                 if plan is None:
                     unwanted = " OR ".join("EXISTS(SELECT 1 FROM " + table +
                         " WHERE operation_id=UNHEX('" + operation + "') LIMIT 1)" for table in ROOT_SOURCES[1:5])
@@ -303,6 +347,7 @@ def scan_page(connection, progress, *, page_roots=MAX_PAGE_ROOTS, now=None):
         validate_progress(state, state["source_digest"], now)
         return dict(format="economic_sql_canonical_page_v1", scope="retained_root_page",
             examined_roots=min(len(identities), page_roots), findings=findings, queries=executor.queries,
+            baseline_roots_authenticated=baselines, historical_claim_origin_roots=historical_claim_origins,
             read_bytes=executor.bytes, seconds=time.monotonic()-started,
             range_exhausted=exhausted, completed_sweeps=state["completed_sweeps"],
             sweep_rows=state["sweep_rows"], sweep_findings=state["sweep_findings"],

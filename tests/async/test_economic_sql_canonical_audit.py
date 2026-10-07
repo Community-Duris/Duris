@@ -180,17 +180,23 @@ class RestoreProjectionFixture:
                 'economic_baseline_witness': 'witness'}[table]
             if 'LEFT JOIN item_ownership_ledger' in query:
                 name = 'custody'
-            return '\n'.join(json.dumps(row) for row in self.rows[name])
+            rows = self.rows[name]
+            if name == 'reservations' and ' LIMIT 257' in query:
+                match = re.search(r"\(identity_kind,identity_id,lineage,epoch\)>\((\d+),(\d+),UNHEX\('([0-9a-f]+)'\),UNHEX\('([0-9a-f]+)'\)\)", query)
+                if match:
+                    previous = (int(match[1]), int(match[2]), match[3], match[4])
+                    rows = [row for row in rows if (row[2], row[3], row[0], row[1]) > previous]
+                rows = rows[:257]
+            return '\n'.join(json.dumps(row) for row in rows)
         if query.startswith('SELECT LOWER(HEX(operation_id))'):
             return self.operation
         if query == 'SELECT COUNT(*) FROM economic_accounting_operation;':
             return '1'
         if query.startswith('SELECT HEX(SUBSTRING('):
-            if 'canonical_intent' in query:
-                return self.frozen.hex()
-            if 'canonical_plan' in query:
-                return self.encoded.hex()
-            return self.baseline['canonical_witness'].hex()
+            field, offset, count = re.search(r'SUBSTRING\((canonical_\w+),(\d+),(\d+)\)', query).groups()
+            value = (self.frozen if field == 'canonical_intent' else self.encoded if field == 'canonical_plan'
+                     else self.baseline['canonical_witness'])
+            return value[int(offset)-1:int(offset)-1+int(count)].hex()
         if 'information_schema.tables' in query:
             if "table_name='quest_mobile_native'" in query:
                 return '1'
@@ -730,11 +736,158 @@ class CanonicalAuditTests(unittest.TestCase):
 
 
 class CanonicalSweepTests(unittest.TestCase):
+    def baseline_page(self, fixture):
+        original = fixture.sql
+        executor = mock.Mock(queries=0, bytes=0)
+        def read(query):
+            self.assertTrue(query.startswith('SELECT '))
+            executor.queries += 1
+            if 'information_schema.tables' in query and 'economic_accounting_operation' in query:
+                result = str(len(audit.ROOT_SOURCES))
+            elif 'FROM economic_accounting_source_claim' in query:
+                row = fixture.rows['metadata'][0]
+                result = ('1' if query.startswith('SELECT COUNT(*)') else
+                          json.dumps([row[0], row[11], row[2], 1])) if row[17] == 1 and row[11] else ''
+            elif query.startswith('SELECT JSON_ARRAY(source_slot,'):
+                result = '\n'.join(json.dumps([row[1], row[2], row[3], row[4], row[5]])
+                                   for row in fixture.pending_sources)
+            elif query.startswith('SELECT EXISTS(SELECT 1 FROM critical_operation_inbox'):
+                result = '0' if getattr(fixture, 'bad_baseline_inbox', False) else '1'
+            elif query.startswith('SELECT EXISTS(') and 'FROM currency_ledger' in query:
+                result = '1' if getattr(fixture, 'extra_baseline_effect', False) else '0'
+            elif query.startswith('SELECT EXISTS(SELECT 1 FROM economic_baseline_witness'):
+                result = '1' if fixture.rows.get('witness') else '0'
+            else:
+                result = original(query)
+            executor.bytes += len(result.encode())
+            return result
+        executor.sql.side_effect = read
+        connection = mock.Mock()
+        before = copy.deepcopy(fixture.rows), fixture.frozen, fixture.encoded
+        state = audit.new_progress('ab'*32, 100)
+        with mock.patch.object(audit, 'CursorExecutor', return_value=executor):
+            report, state = audit.scan_page(connection, state, now=101)
+        self.assertEqual((fixture.rows, fixture.frozen, fixture.encoded), before)
+        connection.rollback.assert_called_once_with()
+        connection.cursor.return_value.close.assert_called_once_with()
+        self.assertFalse(report['coverage']['complete'])
+        self.assertFalse(report['coverage']['baseline_witnesses_authenticated'])
+        return report, state
+
+    def test_baseline_pages_authenticate_original_witness_reservations_and_inbox(self):
+        from test_economic_sql_audit_origins import BaselineVersionTests
+        for value in (True, BaselineVersionTests.row()):
+            with self.subTest(control=value is True):
+                report, _ = self.baseline_page(RestoreProjectionFixture(baseline=value))
+                self.assertEqual(report['findings'], [])
+                self.assertEqual(report['baseline_roots_authenticated'], 1)
+        for collection, index, value, code in (
+                ('witness', 6, '00'*32, 'baseline_witness'),
+                ('witness', 15, 123457, 'baseline_witness'),
+                ('witness', 16, '00'*32, 'baseline_witness'),
+                ('reservations', 3, True, 'baseline_reservation'),
+                ('reservations', 4, '00'*16, 'baseline_reservation')):
+            fixture = RestoreProjectionFixture(baseline=True)
+            fixture.rows[collection][0][index] = value
+            with self.subTest(collection=collection, index=index):
+                report, state = self.baseline_page(fixture)
+                self.assertEqual(report['findings'], [{'code': 'restore_economic_'+code+'_mismatch'}])
+                self.assertEqual(state['findings'][0]['operation_id'], fixture.operation)
+        fixture = RestoreProjectionFixture(baseline=True)
+        fixture.rows['witness'][0][15] = None  # Retained historical admission is explicitly unknown.
+        report, _ = self.baseline_page(fixture)
+        self.assertEqual(report['findings'], [])
+
+    def test_baseline_page_zero_effect_and_foreign_root_attachments(self):
+        for damage, code in (('receipt', 'baseline_witness'), ('zero_effect', 'baseline_zero_effect'),
+                             ('foreign_witness', 'baseline_witness'), ('rejected_witness', 'baseline_witness')):
+            fixture = RestoreProjectionFixture(baseline=damage in ('receipt', 'zero_effect'),
+                                               rejected=damage == 'rejected_witness')
+            if damage == 'receipt':
+                fixture.bad_baseline_inbox = True
+            elif damage == 'zero_effect':
+                fixture.extra_baseline_effect = True
+            else:
+                fixture.rows['witness'] = [[fixture.operation]]
+            with self.subTest(damage=damage):
+                report, _ = self.baseline_page(fixture)
+                self.assertEqual(report['findings'], [{'code': 'restore_economic_'+code+'_mismatch'}])
+
+    def test_baseline_pages_authenticate_versioned_claim_origins_keep_historical_unknown(self):
+        from test_economic_sql_audit_origins import key, witness, money_witness
+        fixture = RestoreProjectionFixture(baseline=witness([key(1, 7), key(5, 9)]))
+        report, _ = self.baseline_page(fixture)
+        self.assertEqual(report['findings'], [])
+        self.assertEqual(report['historical_claim_origin_roots'], 1)
+        for damage in (None, 'missing', 'amount', 'slot', 'extra', 'parent', 'mapping', 'marker'):
+            fixture = RestoreProjectionFixture(baseline=money_witness())
+            fixture.pending_sources = [[fixture.operation, 2, '11'*16, 9, 42, 5, None,
+                                        9, '11'*16, 1, 5, 5, 42, 0]]
+            if damage == 'missing':
+                fixture.pending_sources = []
+            elif damage == 'amount':
+                fixture.pending_sources[0][5] = 4
+            elif damage == 'slot':
+                fixture.pending_sources[0][1] = 1
+            elif damage == 'extra':
+                fixture.pending_sources.append(fixture.pending_sources[0].copy())
+            elif damage == 'parent':
+                fixture.claim_parents = []
+            elif damage == 'mapping':
+                fixture.claim_mappings = []
+            elif damage == 'marker':
+                fixture.rows['witness'][0][17] = None
+            with self.subTest(damage=damage):
+                report, _ = self.baseline_page(fixture)
+                self.assertEqual(report['findings'], [] if damage is None else
+                    [{'code': 'restore_economic_baseline_claim_origin_mismatch'}])
+                self.assertFalse(report['coverage']['pending_claim_allocations_authenticated'])
+
+    def test_baseline_maximum_reservations_use_bounded_pages(self):
+        from test_economic_sql_audit_origins import BaselineVersionTests, key
+        positions = [(uid, (1, 1, 7, 0, uid, 0, 2, 0)) for uid in range(1, 6001)]
+        fixture = RestoreProjectionFixture(baseline=BaselineVersionTests.row(
+            positions=positions, holdings=[key(1, value) for value in range(100, 3171)]))
+        report, _ = self.baseline_page(fixture)
+        self.assertEqual(report['findings'], [])
+        reservation_queries = [query for query in fixture.queries if 'FROM economic_baseline_reservation ' in query
+                               and query.startswith('SELECT JSON_ARRAY(')]
+        self.assertEqual(len(reservation_queries), 36)
+        self.assertTrue(all(query.endswith(' LIMIT 257;') for query in reservation_queries))
+        fixture.rows['reservations'][-1][3] += 1
+        report, _ = self.baseline_page(fixture)
+        self.assertEqual(report['findings'], [{'code': 'restore_economic_baseline_reservation_mismatch'}])
+
+    def test_baseline_witness_budget_refusal_never_advances_progress(self):
+        fixture, connection = RestoreProjectionFixture(baseline=True), mock.Mock()
+        original = fixture.sql
+        budget = audit.CursorExecutor(mock.Mock(), query_limit=0)
+        executor = mock.Mock(queries=0, bytes=0)
+        def read(query):
+            if 'information_schema.tables' in query and 'economic_accounting_operation' in query:
+                return str(len(audit.ROOT_SOURCES))
+            if 'SELECT HEX(SUBSTRING(canonical_witness' in query:
+                return budget.sql(query)
+            if 'FROM economic_accounting_source_claim' in query:
+                row = fixture.rows['metadata'][0]
+                return '1' if query.startswith('SELECT COUNT(*)') else json.dumps([row[0], row[11], row[2], 1])
+            if query.startswith('SELECT EXISTS(SELECT 1 FROM critical_operation_inbox'):
+                return '1'
+            return original(query)
+        executor.sql.side_effect = read
+        state = audit.new_progress('ab'*32, 100)
+        with mock.patch.object(audit, 'CursorExecutor', return_value=executor):
+            with self.assertRaises(audit.PageBudgetError):
+                audit.scan_page(connection, state, now=101)
+        self.assertEqual(state, audit.new_progress('ab'*32, 100))
+        connection.rollback.assert_called_once_with()
+        connection.cursor.return_value.close.assert_called_once_with()
+
     def test_empty_range_and_zero_key_never_claim_complete_coverage(self):
         for key in ('', '00'*16):
             connection = mock.Mock()
             executor = mock.Mock(queries=3, bytes=64)
-            executor.sql.side_effect = ['10', key, key]
+            executor.sql.side_effect = [str(len(audit.ROOT_SOURCES)), key, key]
             with self.subTest(key=key), mock.patch.object(audit, 'CursorExecutor', return_value=executor):
                 report, state = audit.scan_page(connection, audit.new_progress('ab'*32, 100), now=101)
             self.assertTrue(report['range_exhausted'])
@@ -753,7 +906,7 @@ class CanonicalSweepTests(unittest.TestCase):
             def sql(self, query):
                 self.queries += 1
                 if 'information_schema.tables' in query:
-                    return '10'
+                    return str(len(audit.ROOT_SOURCES))
                 if query.startswith('SELECT LOWER(HEX(operation_id))'):
                     if 'DESC' in query:
                         return max(self.roots, default='')
@@ -848,7 +1001,7 @@ class CanonicalSweepTests(unittest.TestCase):
             budget = audit.CursorExecutor(mock.Mock(), query_limit=0)
             def read(query):
                 if 'information_schema.tables' in query:
-                    return '10'
+                    return str(len(audit.ROOT_SOURCES))
                 if query.startswith('SELECT LOWER(HEX(operation_id))'):
                     return fixture.operation
                 if query.startswith('SELECT HEX(SUBSTRING('+field):
@@ -903,6 +1056,79 @@ class CanonicalSweepTests(unittest.TestCase):
 @unittest.skipUnless(os.environ.get('DURIS_PLAN5_CANONICAL_NATIVE') == '1',
                      'requires explicitly selected native and fresh private SQL checks')
 class NativeCanonicalAuditTests(unittest.TestCase):
+    def test_maximum_baseline_page_both_engines(self):
+        import pymysql
+        import migration_runner as migrations
+        import persistence_restore as restore
+        from test_persistence_backup_integration import sql
+        from test_economic_sql_audit_origins import BaselineVersionTests, NativeSQLOriginTests, key
+
+        work = Path(os.environ['DURIS_PLAN5_CANONICAL_ARTIFACTS'] + '-baseline-maximum').resolve()
+        self.assertFalse(work.exists())
+        self.assertTrue(work.is_relative_to((ROOT/'bin').resolve()))
+        work.mkdir(parents=True)
+        positions = [(uid, (1, 1, 7, 0, uid, 0, 2, 0)) for uid in range(1, 6001)]
+        row = BaselineVersionTests.row(positions=positions, holdings=[key(1, value) for value in range(100, 3171)])
+        blob, operation = row['canonical_witness'], row['operation_id']
+        payload = b'EBC1' + struct.pack('<HHII', 1, 48, len(blob), 0) + hashlib.sha256(blob).digest()
+        command = (b'CCM1' + struct.pack('<I', 2) + operation +
+            struct.pack('<HHHBBQIII', 20, 1, 6, 4, 0, row['command_accepted_at_usec'], 1, 0, 48) +
+            struct.pack('<B7xQ', 9, 0x45434f4e42415345) + payload + struct.pack('<I', 256) + row['canonical_intent'])
+        self.assertEqual(hashlib.sha256(command).digest(), row['inbox_command_hash'])
+        fixture = NativeSQLOriginTests()
+        fixture.batches = [(blob, operation, 1, command, row['canonical_plan'], row['canonical_intent'])]
+        results = []
+        for engine in ('mariadb', 'mysql'):
+            with restore.private_database(work/engine, engine) as env:
+                version = sql(env, 'SELECT VERSION()')
+                sql(env, payload=(ROOT/'migrations/bootstrap_multithread_safe.sql').read_bytes())
+                with mock.patch.dict(os.environ, env, clear=True):
+                    manifest = migrations.load_manifest()
+                    executor = migrations.MysqlExecutor(manifest)
+                    executor.adopt('fresh_bootstrap')
+                    migrations.run_pending(manifest, executor)
+                self.assertEqual(sql(env, 'SELECT MAX(sequence_number) FROM mud_schema_history'), '62')
+                owner = pymysql.connect(unix_socket=env['DB_SOCKET'], user='root', database='duris_restore',
+                                        autocommit=True, cursorclass=pymysql.cursors.DictCursor)
+                reader = None
+                try:
+                    fixture.seed(owner)  # Existing SQL projection loader; capsules above are explicitly modeled.
+                    with owner.cursor() as cursor:
+                        cursor.execute("CREATE USER 'maximum_reader'@'localhost' IDENTIFIED BY 'private-maximum-reader'")
+                        cursor.execute("GRANT SELECT ON duris_restore.* TO 'maximum_reader'@'localhost'")
+                    reader = pymysql.connect(unix_socket=env['DB_SOCKET'], user='maximum_reader',
+                        password='private-maximum-reader', database='duris_restore', autocommit=True,
+                        cursorclass=pymysql.cursors.SSDictCursor)
+                    reports = []
+                    for label, finding in (('intact-9071-reservations', []),
+                            ('final-reservation-corrupt', [{'code': 'restore_economic_baseline_reservation_mismatch'}])):
+                        if finding:
+                            with owner.cursor() as cursor:
+                                cursor.execute('UPDATE economic_baseline_reservation SET identity_id=6001 '
+                                               'WHERE operation_id=%s AND identity_kind=2 AND identity_id=6000', (operation,))
+                                self.assertEqual(cursor.rowcount, 1)
+                        report, progress = audit.scan_page(reader, audit.new_progress('ab'*32, time.time()))
+                        self.assertEqual(report['findings'], finding)
+                        self.assertFalse(report['coverage']['complete'])
+                        self.assertFalse(report['release_qualified'])
+                        self.assertLess(report['seconds'], audit.PAGE_SECONDS)
+                        self.assertLessEqual(report['read_bytes'], audit.MAX_INPUT_BYTES)
+                        self.assertLessEqual(report['queries'], audit.MAX_PAGE_QUERIES)
+                        self.assertEqual(progress['completed_sweeps'], 1)
+                        reports.append(dict(label=label, report=report))
+                    with owner.cursor() as cursor:
+                        cursor.execute('UPDATE economic_baseline_reservation SET identity_id=6000 '
+                                       'WHERE operation_id=%s AND identity_kind=2 AND identity_id=6001', (operation,))
+                    self.assertEqual(sql(env, 'SELECT COUNT(*) FROM economic_lineage_state WHERE active_epoch IS NOT NULL'), '0')
+                    results.append(dict(engine=engine, version=version, reports=reports,
+                        witness_bytes=len(blob), reservation_rows=9071, modeled_capsules=True,
+                        native_producer_or_gameplay=False, release_qualified=False))
+                    (work/'results.json').write_text(json.dumps(results,indent=2)+'\n')
+                finally:
+                    if reader is not None:
+                        reader.close()
+                    owner.close()
+
     def test_resumable_pages_delayed_commit_and_growing_tail_both_engines(self):
         import pymysql
         import migration_runner as migrations

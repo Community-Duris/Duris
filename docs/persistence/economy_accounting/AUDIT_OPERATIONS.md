@@ -111,10 +111,20 @@ whole sweep combines different read views and always reports `complete=false`.
 
 This mode reuses the full reader's original EAI1/EAP1 metadata, digest, count,
 effect, posting, child, item-reference and custody checks. It also checks each
-root's lifecycle namespace and exact source claim. Rejected roots must have no
-details. It does not authenticate baseline witnesses, pending-claim allocations,
-orphan evidence, complete command receipts, or current native holdings. These
-coverage fields remain false, including after an empty or completed range.
+root's lifecycle namespace and exact source claim. Selected committed baseline
+roots additionally authenticate their original EAB1/EAB2 witness, exact
+reservations, inbox command/fence binding, successful receipt, versioned
+claim-origin policy/identity, and absence of native mutation effects. Reservation
+reads use pages of at most 257 rows, so a valid 9,071-reservation witness fits the
+existing projection bound. Other roots must have no baseline witness or
+reservations; rejected roots must have no details.
+
+The report counts authenticated baseline roots and retained NULL claim-origin
+markers separately. Historical NULL admission times and claim-origin markers
+stay unknown. This mode does not authenticate the entire baseline book,
+pending-claim consumption allocations, orphan evidence, complete command
+receipts, or current native holdings. Those whole-store coverage fields remain
+false, including after an empty or completed range.
 The existing full-database check remains necessary under release quiescence.
 Flatfile resumable scans and complete reconciliation remain separate gates.
 

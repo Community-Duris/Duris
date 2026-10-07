@@ -12,6 +12,7 @@ import struct
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -1323,6 +1324,44 @@ class NativeSQLOriginTests(unittest.TestCase):
                             return rows
 
                     reads = {"captures": 0, "refusals": 0, "rollbacks": 0}
+                    page_observations = []
+
+                    def pages(refusal):
+                        import economic_sql_canonical_audit as audit
+                        progress = audit.new_progress('ab'*32, time.time())
+                        reports = []
+                        # All original fixture roots, including inactive books,
+                        # are checked; a selected epoch cannot hide a witness.
+                        for _ in range(len(self.batches)+1):
+                            connection = mock.Mock(wraps=reader)
+                            cursor = mock.Mock(wraps=reader.cursor())
+                            connection.cursor.return_value = cursor
+                            report, progress = audit.scan_page(connection, progress)
+                            connection.rollback.assert_called_once_with()
+                            cursor.close.assert_called_once_with()
+                            self.assertFalse(report['coverage']['complete'])
+                            self.assertFalse(report['coverage']['baseline_witnesses_authenticated'])
+                            self.assertTrue(all(call.args[0].startswith(('SELECT ', 'SET TRANSACTION ', 'START TRANSACTION '))
+                                                for call in cursor.execute.call_args_list))
+                            reports.append(report)
+                            if report['range_exhausted']:
+                                break
+                        self.assertEqual(progress['completed_sweeps'], 1)
+                        self.assertEqual(progress['total_rows'], len(self.batches))
+                        found = [finding['code'] for report in reports for finding in report['findings']]
+                        expected = (['restore_economic_canonical_account_mismatch',
+                                     'restore_economic_canonical_posting_mismatch']
+                                    if refusal == 'EAB1 SQL projection mismatch' else
+                                    ['restore_economic_baseline_witness_mismatch'])
+                        if refusal:
+                            self.assertTrue(found)
+                            self.assertTrue(all(code in expected for code in found), found)
+                        else:
+                            self.assertEqual(found, [])
+                            self.assertEqual(sum(report['baseline_roots_authenticated'] for report in reports), len(self.batches))
+                        page_observations.append(dict(origin_refusal=refusal, reports=reports,
+                            read_only=True, native_fixture=True, complete_reconciliation=False))
+                        (candidate/'baseline-page-observations.json').write_text(json.dumps(page_observations,indent=2)+'\n')
 
                     def read(epoch, refusal=None):
                         before = database_rows()
@@ -1341,6 +1380,7 @@ class NativeSQLOriginTests(unittest.TestCase):
                             cursor.close.assert_called_once_with()
                         self.assertTrue(all(call.args[0].upper().startswith(("SELECT", "SET TRANSACTION", "START TRANSACTION"))
                                             for call in cursor.execute.call_args_list))
+                        pages(refusal)
                         self.assertEqual(database_rows(), before)
                         reads["refusals" if refusal else "captures"] += 1
                         reads["rollbacks"] += 1
@@ -1425,6 +1465,9 @@ class NativeSQLOriginTests(unittest.TestCase):
                                      {"captures": 0, "refusals": 2, "rollbacks": 2})
                     (candidate/"command-preimage-refusals.json").write_text(json.dumps(observations,indent=2)+'\n')
                     print("PASS original-command-preimage " + engine + " 2 native SQL cuts SELECT-only bytes-unchanged", flush=True)
+                    print('BASELINE_ROOT_PAGES ' + json.dumps(dict(engine=engine, version=version,
+                        observations=page_observations, authority_unchanged=True, native_producer_or_gameplay=False,
+                        release_qualified=False), sort_keys=True), flush=True)
                     # Negative SELECT projections preserve the actual input
                     # version's layout before corrupting v2 positions. These
                     # projections do not establish complete native capture.

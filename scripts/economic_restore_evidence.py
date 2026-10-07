@@ -487,6 +487,111 @@ def verify_canonical_root(reader, operation):
     return meta, row, frozen, encoded, plan
 
 
+def verify_canonical_baseline(reader, operation, root, *, admission_column, claim_origin_column):
+    """Authenticate one original baseline witness in the caller's read view.
+
+    Return versioned claim origins for the caller's allocation comparison;
+    this root check does not certify whole-book or native coverage.
+    """
+    executor, mismatch, arrays = reader.executor, reader.mismatch, reader.arrays
+    hexadecimal, binary, capsule = reader.hexadecimal, reader.binary, reader.capsule
+    meta, row, frozen, encoded, plan = root
+    where = "operation_id=UNHEX('" + operation + "')"
+    original = binary(row[3], 16, True)
+    if plan is None or meta[10] != 38:
+        mismatch("baseline_witness")
+    # The second consumer reuses pure independent EAB1/EAB2 interpretation. The
+    # import is local because the origin reader also consumes this decoder.
+    from economic_sql_audit_origins import (MAX_WITNESS_BYTES, CLAIM_POLICY_COLUMNS, CLAIM_MAPPING_COLUMNS,
+        decode_witness, verify_baseline_root, verify_baseline_claim_policy, verify_baseline_claim_identity)
+    columns = [hexadecimal("w.lineage"), hexadecimal("w.epoch"), "w.book_revision", "w.witness_version",
+               "w.holding_count", "w.item_count", hexadecimal("w.witness_digest"),
+               "OCTET_LENGTH(w.canonical_witness)", hexadecimal("c.opening_account"),
+               "i.durable_revision", "i.command_type", "i.schema_version", "i.payload_version",
+               hexadecimal("i.result_payload"), hexadecimal("i.keys_hash"),
+               admission_column, hexadecimal("i.command_hash"), claim_origin_column]
+    table = ("economic_baseline_witness w JOIN economic_baseline_control c "
+             "ON c.lineage=w.lineage AND c.epoch=w.epoch "
+             "JOIN critical_operation_inbox i ON i.operation_id=w.operation_id")
+    values = arrays(table, columns, "w." + where, "w.operation_id")
+    if len(values) != 1 or len(values[0]) != len(columns):
+        mismatch("baseline_witness")
+    value = values[0]
+    try:
+        lineage, epoch = binary(value[0], 16), binary(value[1], 16)
+        need((lineage, epoch) == meta[:2])
+        names = ("root_lineage", "root_epoch", "operation_id", "original_operation_id", "accounting_version",
+                 "writer_id", "policy_version", "compiler_version", "actor_kind", "actor_id", "reason", "source_event")
+        witness = dict(zip(names, (*meta[:3], original, *meta[4:])))
+        witness.update(book_revision=value[2], witness_version=value[3], holding_count=value[4], item_count=value[5],
+            witness_digest=binary(value[6], 32), canonical_witness=capsule(where, "canonical_witness", value[7],
+                MAX_WITNESS_BYTES, "baseline_witness", table="economic_baseline_witness", minimum=192),
+            inbox_revision=value[9], inbox_type=value[10], inbox_schema=value[11], inbox_payload=value[12],
+            inbox_result_payload=binary(value[13], 0), canonical_intent=frozen, canonical_plan=encoded,
+            inbox_keys_hash=binary(value[14], 32), command_accepted_at_usec=value[15],
+            inbox_command_hash=binary(value[16], 32), claim_origin_version=value[17],
+            intent_digest=binary(row[12], 32), domain_digest=binary(row[13], 32), plan_digest=binary(row[14], 32))
+        witness.update(zip(("account_count", "posting_count", "child_count", "before_witness_count",
+                            "after_witness_count", "item_event_count"), row[19:25]))
+        holdings, items = decode_witness(witness, lineage, epoch, binary(value[8], 40))
+        verify_baseline_root(witness, lineage, epoch)
+    except (ValueError, struct.error, TypeError):
+        mismatch("baseline_witness")
+    expected = [[lineage.hex(), epoch.hex(), 1, account_key(holding["account_key"])[2], meta[2].hex()]
+                for holding in holdings]
+    expected += [[lineage.hex(), epoch.hex(), 2, item["uid"], meta[2].hex()] for item in items]
+    expected.sort(key=lambda value: (value[2], value[3]))
+    columns = [hexadecimal("lineage"), hexadecimal("epoch"), "identity_kind", "identity_id",
+               hexadecimal("operation_id")]
+    previous = None
+    for start in range(0, max(1, len(expected)), 256):
+        scope = where
+        if previous is not None:
+            scope += (" AND (identity_kind,identity_id,lineage,epoch)>(" + str(previous[2]) + "," +
+                      str(previous[3]) + ",UNHEX('" + previous[0] + "'),UNHEX('" + previous[1] + "'))")
+        page = arrays("economic_baseline_reservation", columns, scope,
+                      "identity_kind,identity_id,lineage,epoch LIMIT 257")
+        if not same_projection(page, expected[start:start+257]):
+            mismatch("baseline_reservation")
+        previous = expected[min(start+255, len(expected)-1)] if expected else None
+    expected_origins = None
+    try:
+        parents = []
+        if any(account_key(holding["account_key"])[1] in (4, 5) for holding in holdings):
+            need(executor.sql("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
+                "AND ENGINE='InnoDB' AND table_name IN ('economic_sql_lifecycle_installation',"
+                "'economic_account_mapping','economic_pending_claim_source');") == "3")
+            binary_columns = {0: 16, 1: 16, 2: 16, 3: 32, 4: 32, 6: 16, 7: 32, 8: 32, 16: 0}
+            columns = [hexadecimal(column) if index in binary_columns else column
+                       for index, column in enumerate(CLAIM_POLICY_COLUMNS)]
+            rows = arrays("economic_sql_lifecycle_installation p LEFT JOIN critical_operation_inbox i "
+                "ON i.operation_id=p.operation_id", columns,
+                "p.operation_id=UNHEX('" + witness["canonical_witness"][48:64].hex() + "')",
+                "p.operation_id LIMIT 2")
+            for parent in rows:
+                need(type(parent) is list and len(parent) == len(columns))
+                parents.append(tuple(binary(field, binary_columns[index], True)
+                    if index in binary_columns else field for index, field in enumerate(parent)))
+        if verify_baseline_claim_policy(witness, holdings, parents):
+            identities = [account_key(holding["account_key"])[2] for holding in holdings
+                          if account_key(holding["account_key"])[1] == 5]
+            mappings = []
+            for start in range(0, len(identities), 256):
+                page = identities[start:start+256]
+                columns = [hexadecimal(column) if column == "lineage" else column
+                           for column in CLAIM_MAPPING_COLUMNS]
+                rows = arrays("economic_account_mapping", columns,
+                    "lineage=UNHEX('" + lineage.hex() + "') AND mapping_id IN (" +
+                    ",".join(map(str, page)) + ")", "mapping_id LIMIT " + str(len(page)+1))
+                for mapping in rows:
+                    need(type(mapping) is list and len(mapping) == len(columns))
+                    mappings.append((mapping[0], binary(mapping[1], 16), *mapping[2:]))
+            expected_origins = verify_baseline_claim_identity(witness, holdings, mappings)
+    except (ValueError, struct.error, TypeError, KeyError):
+        mismatch("baseline_claim_origin")
+    return value[17], expected_origins
+
+
 def require_integrity(executor):
     """Bind every retained root to bounded canonical bytes and SQL projections.
 
@@ -688,97 +793,6 @@ def require_integrity(executor):
         mismatch("baseline_witness")
     admission_column = "w.command_accepted_at_usec" if admission_column_count == "1" else "NULL"
 
-    def baseline_witness(where, meta, original, row, frozen, encoded):
-        # The second consumer reuses pure independent EAB1/EAB2 interpretation. The
-        # import is local because the origin reader also consumes this decoder.
-        from economic_sql_audit_origins import (MAX_WITNESS_BYTES, CLAIM_POLICY_COLUMNS, CLAIM_MAPPING_COLUMNS,
-            decode_witness, verify_baseline_root, verify_baseline_claim_policy, verify_baseline_claim_identity)
-        columns = [hexadecimal("w.lineage"), hexadecimal("w.epoch"), "w.book_revision", "w.witness_version",
-                   "w.holding_count", "w.item_count", hexadecimal("w.witness_digest"),
-                   "OCTET_LENGTH(w.canonical_witness)", hexadecimal("c.opening_account"),
-                   "i.durable_revision", "i.command_type", "i.schema_version", "i.payload_version",
-                   hexadecimal("i.result_payload"), hexadecimal("i.keys_hash"),
-                   admission_column, hexadecimal("i.command_hash"), claim_origin_column]
-        table = ("economic_baseline_witness w JOIN economic_baseline_control c "
-                 "ON c.lineage=w.lineage AND c.epoch=w.epoch "
-                 "JOIN critical_operation_inbox i ON i.operation_id=w.operation_id")
-        values = arrays(table, columns, "w." + where, "w.operation_id")
-        if len(values) != 1 or len(values[0]) != len(columns):
-            mismatch("baseline_witness")
-        value = values[0]
-        try:
-            lineage, epoch = binary(value[0], 16), binary(value[1], 16)
-            need((lineage, epoch) == meta[:2])
-            names = ("root_lineage", "root_epoch", "operation_id", "original_operation_id", "accounting_version",
-                     "writer_id", "policy_version", "compiler_version", "actor_kind", "actor_id", "reason", "source_event")
-            witness = dict(zip(names, (*meta[:3], original, *meta[4:])))
-            witness.update(book_revision=value[2], witness_version=value[3], holding_count=value[4], item_count=value[5],
-                witness_digest=binary(value[6], 32), canonical_witness=capsule(where, "canonical_witness", value[7],
-                    MAX_WITNESS_BYTES, "baseline_witness", table="economic_baseline_witness", minimum=192),
-                inbox_revision=value[9], inbox_type=value[10], inbox_schema=value[11], inbox_payload=value[12],
-                inbox_result_payload=binary(value[13], 0), canonical_intent=frozen, canonical_plan=encoded,
-                inbox_keys_hash=binary(value[14], 32), command_accepted_at_usec=value[15],
-                inbox_command_hash=binary(value[16], 32), claim_origin_version=value[17],
-                intent_digest=binary(row[12], 32), domain_digest=binary(row[13], 32), plan_digest=binary(row[14], 32))
-            witness.update(zip(("account_count", "posting_count", "child_count", "before_witness_count",
-                                "after_witness_count", "item_event_count"), row[19:25]))
-            holdings, items = decode_witness(witness, lineage, epoch, binary(value[8], 40))
-            verify_baseline_root(witness, lineage, epoch)
-        except (ValueError, struct.error, TypeError):
-            mismatch("baseline_witness")
-        expected = [[lineage.hex(), epoch.hex(), 1, account_key(holding["account_key"])[2], meta[2].hex()]
-                    for holding in holdings]
-        expected += [[lineage.hex(), epoch.hex(), 2, item["uid"], meta[2].hex()] for item in items]
-        expected.sort(key=lambda value: (value[2], value[3]))
-        columns = [hexadecimal("lineage"), hexadecimal("epoch"), "identity_kind", "identity_id",
-                   hexadecimal("operation_id")]
-        if not same_projection(arrays("economic_baseline_reservation", columns, where,
-                  "identity_kind,identity_id,lineage,epoch LIMIT " + str(len(expected) + 1)), expected):
-            mismatch("baseline_reservation")
-        try:
-            parents = []
-            if any(account_key(holding["account_key"])[1] in (4, 5) for holding in holdings):
-                need(executor.sql("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
-                    "AND ENGINE='InnoDB' AND table_name IN ('economic_sql_lifecycle_installation',"
-                    "'economic_account_mapping','economic_pending_claim_source');") == "3")
-                binary_columns = {0: 16, 1: 16, 2: 16, 3: 32, 4: 32, 6: 16, 7: 32, 8: 32, 16: 0}
-                columns = [hexadecimal(column) if index in binary_columns else column
-                           for index, column in enumerate(CLAIM_POLICY_COLUMNS)]
-                rows = arrays("economic_sql_lifecycle_installation p LEFT JOIN critical_operation_inbox i "
-                    "ON i.operation_id=p.operation_id", columns,
-                    "p.operation_id=UNHEX('" + witness["canonical_witness"][48:64].hex() + "')",
-                    "p.operation_id LIMIT 2")
-                for parent in rows:
-                    need(type(parent) is list and len(parent) == len(columns))
-                    parents.append(tuple(binary(field, binary_columns[index], True)
-                        if index in binary_columns else field for index, field in enumerate(parent)))
-            if verify_baseline_claim_policy(witness, holdings, parents):
-                identities = [account_key(holding["account_key"])[2] for holding in holdings
-                              if account_key(holding["account_key"])[1] == 5]
-                mappings = []
-                for start in range(0, len(identities), 256):
-                    page = identities[start:start+256]
-                    columns = [hexadecimal(column) if column == "lineage" else column
-                               for column in CLAIM_MAPPING_COLUMNS]
-                    rows = arrays("economic_account_mapping", columns,
-                        "lineage=UNHEX('" + lineage.hex() + "') AND mapping_id IN (" +
-                        ",".join(map(str, page)) + ")", "mapping_id LIMIT " + str(len(page)+1))
-                    for mapping in rows:
-                        need(type(mapping) is list and len(mapping) == len(columns))
-                        mappings.append((mapping[0], binary(mapping[1], 16), *mapping[2:]))
-                expected_origins = verify_baseline_claim_identity(witness, holdings, mappings)
-                if source_counts.get(meta[2], 0) != len(expected_origins):
-                    mismatch("baseline_claim_origin")
-                for slot, mapped_lineage, mapping, pid, amount in expected_origins:
-                    source = sources.get((meta[2], slot))
-                    key = mapped_lineage + struct.pack('<HHQQ4x', 1, 5, mapping, 0)
-                    if source is None or not same_projection((source["key"], source["pid"], source["amount"]),
-                                                            (key, pid, amount)):
-                        mismatch("baseline_claim_origin")
-        except (ValueError, struct.error, TypeError, KeyError):
-            mismatch("baseline_claim_origin")
-        return value[17]
-
     # Ordinary histories may have no baseline book. Their canonical capsules
     # still require the retained lifecycle namespace, including inactive epochs.
     if executor.sql("SELECT COUNT(*) FROM economic_accounting_operation o "
@@ -806,9 +820,18 @@ def require_integrity(executor):
             if plan is not None:
                 origin_version = None
                 if meta[10] == 38:
-                    where = "operation_id=UNHEX('" + operation + "')"
-                    original = binary(row[3], 16, True)
-                    origin_version = baseline_witness(where, meta, original, row, frozen, encoded)
+                    origin_version, expected_origins = verify_canonical_baseline(reader, operation,
+                        (meta, row, frozen, encoded, plan), admission_column=admission_column,
+                        claim_origin_column=claim_origin_column)
+                    if expected_origins is not None:
+                        if source_counts.get(meta[2], 0) != len(expected_origins):
+                            mismatch("baseline_claim_origin")
+                        for slot, mapped_lineage, mapping, pid, amount in expected_origins:
+                            source = sources.get((meta[2], slot))
+                            key = mapped_lineage + struct.pack('<HHQQ4x', 1, 5, mapping, 0)
+                            if source is None or not same_projection((source["key"], source["pid"], source["amount"]),
+                                                                    (key, pid, amount)):
+                                mismatch("baseline_claim_origin")
                 for key, before, after, before_revision, after_revision in plan["effects"]:
                     if account_key(key.hex())[1] != 5:
                         continue
