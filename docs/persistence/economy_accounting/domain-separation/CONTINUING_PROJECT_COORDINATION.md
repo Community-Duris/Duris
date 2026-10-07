@@ -194,6 +194,27 @@ implementation/review and the broader primary finish line remain unfinished.
 Monitoring must distinguish a blocked worker from completion and must not wake
 it repeatedly for unchanged coordinator documentation alone.
 
+## R5 final review and R6 execution boundary
+
+R5 source `d45402ca5` plus successor `b31809a0d` and handoff `9d99bdd94`
+pass [independent final declared-scope review](R5_SUPERIOR_STAT_CAP_REVIEW_2026-10-07.md).
+Original/extracted stat regressions pass; four source and36 proof hashes match;
+actual SQL/flat container ELFs match saved740-provider builds. Source-only
+application passes bare352; full tests retain the explicit R3 predecessor.
+Current352 component/type checks remain separate from full maintained/native
+qualification and unknown adoption.
+
+R6 reservation `fed5dd4a4` has [boundary approval](R6_ENHANCEMENT_AFFECT_POLICY_REVIEW_2026-10-07.md)
+and an authorized isolated implementation assignment. Preserve unsigned-long
+five-word policy and caller ordering; strengthen the existing ordinary-payment
+test with the actual predicate. No native capture, compound outcome or new
+active route is authorized by this extraction.
+
+Published primary remains352 plus5dd coordinator documentation at this review.
+No new native quest prerequisite was published. Quest Goal remains BLOCKED,
+not complete; avoid unchanged wakes. Coordinator/architecture Goals and
+recurring monitor remain active. The broader finish line is unchanged.
+
 ## Recurring monitor
 
 The existing thread heartbeat checks every15 minutes, supplemented by active

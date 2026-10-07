@@ -142,6 +142,15 @@ Quest prep has reviewed Kord and full-world normal bartender evidence at its
 original36bf source pin, then marks its actual Goal BLOCKED, not complete, after
 three unchanged native prerequisite audits. Coordinator Goal and heartbeat stay
 active; resume useful native sidework only when authentic owner interfaces change.
+R5 now passes independent final declared-scope review: original/extracted stat
+regressions, four source and36 proof hashes and actual740-provider SQL/flat
+ELFs agree. Source-only application is independent; full tests retain R3.
+[R6 affect-policy boundary](domain-separation/R6_ENHANCEMENT_AFFECT_POLICY_REVIEW_2026-10-07.md)
+is approved and assigned in the isolated architecture worktree. Current352
+component proof remains distinct from full native/integrated qualification.
+No new quest prerequisite appeared; blocked quest status and active monitor
+remain. Optional adoption stays primary-owned.
+
 Older checkpoint status text below remains historical and is superseded here.
 
 Both existing workers have actual continuing Goals ACTIVE against the broader
