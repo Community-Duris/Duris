@@ -31,6 +31,7 @@
 #include "persistence/persistence_mode.h"
 #include "economy/shop_trade_runtime.h"
 #include "economy/shop_trade_publication.h"
+#include "economy/shop_customer_access.h"
 #include "player/player_snapshot_capture.h"
 #include "player/player_snapshot_codec.h"
 #include "world/handler.h"
@@ -1605,68 +1606,65 @@ int evaluate_expression(P_obj obj, char *expr)
 int is_ok(P_char keeper, P_char ch, int shop_nr)
 {
 	char Gbuf1[MAX_STRING_LENGTH];
-
-	if (shop_index[shop_nr].open1 > time_info.hour)
+	struct customer_observations
 	{
+		P_char keeper;
+		P_char customer;
+		int shop_nr;
+
+		int first_open() { return shop_index[shop_nr].open1; }
+		int first_close() { return shop_index[shop_nr].close1; }
+		int second_open() { return shop_index[shop_nr].open2; }
+		int second_close() { return shop_index[shop_nr].close2; }
+		sh_int hour() { return time_info.hour; }
+		::byte racist() { return shop_index[shop_nr].racist; }
+		bool trusted() { return IS_TRUSTED(customer); }
+		::byte keeper_race() { return shop_index[shop_nr].shopkeeper_race; }
+		ubyte customer_race() { return GET_RACE(customer); }
+		bool visible() { return CAN_SEE(keeper, customer); }
+		int customer_mode() { return shop_index[shop_nr].with_who; }
+	} observations{ keeper, ch, shop_nr };
+	const auto outcome = shop_customer_access::classify(observations);
+	switch (outcome.reason)
+	{
+	case shop_customer_access::refusal::before_open:
 		mobsay(keeper, "Come back later!");
 		return (FALSE);
-	}
-	else if (shop_index[shop_nr].close1 < time_info.hour)
+	case shop_customer_access::refusal::between_sessions:
+		mobsay(keeper, "Sorry, we have closed, but come back later.");
+		return (FALSE);
+	case shop_customer_access::refusal::after_close:
+		mobsay(keeper, "Sorry, come back tomorrow.");
+		return (FALSE);
+	case shop_customer_access::refusal::wrong_race:
 	{
-		if (shop_index[shop_nr].open2 > time_info.hour)
-		{
-			mobsay(keeper, "Sorry, we have closed, but come back later.");
-			return (FALSE);
-		}
-		else if (shop_index[shop_nr].close2 < time_info.hour)
-		{
-			mobsay(keeper, "Sorry, come back tomorrow.");
-			return (FALSE);
-		}
-	}
-	/*
-	 * If shopkeeper is racist, turn customer away. MIAX
-	 */
-	if ((shop_index[shop_nr].racist == 1) && !IS_TRUSTED(ch))
-	{
-		if (shop_index[shop_nr].shopkeeper_race != GET_RACE(ch))
-		{
-			/*
+		/*
 			 * old version gave namelist of keeper, not short descr. - DTS
 			 * snprintf(Gbuf1, MAX_STRING_LENGTH, "%s says to %s, '%s'", GET_NAME(keeper), GET_NAME(ch),
 			 * shop_index[shop_nr].racist_message);
 			 */
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s says to %s, '%s'",
-				 keeper->player.short_descr,
-				 ((IS_PC(ch)) ? GET_NAME(ch) : ch->player.short_descr),
-				 shop_index[shop_nr].racist_message);
-			act(Gbuf1, FALSE, ch, 0, 0, TO_ROOM);
-			/*
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s says to %s, '%s'",
+			 keeper->player.short_descr,
+			 ((IS_PC(ch)) ? GET_NAME(ch) : ch->player.short_descr),
+			 shop_index[shop_nr].racist_message);
+		act(Gbuf1, FALSE, ch, 0, 0, TO_ROOM);
+		/*
 			 * old version gave namelist of keeper, not short descr. - DTS
 			 * snprintf(Gbuf1, MAX_STRING_LENGTH, "%s says to you, '%s'", GET_NAME(keeper),
 			 * shop_index[shop_nr].racist_message);
 			 */
-			snprintf(Gbuf1, MAX_STRING_LENGTH, "%s says to you, '%s'",
-				 keeper->player.short_descr, shop_index[shop_nr].racist_message);
-			act(Gbuf1, FALSE, ch, 0, 0, TO_CHAR);
-			return (FALSE);
-		}
+		snprintf(Gbuf1, MAX_STRING_LENGTH, "%s says to you, '%s'",
+			 keeper->player.short_descr, shop_index[shop_nr].racist_message);
+		act(Gbuf1, FALSE, ch, 0, 0, TO_CHAR);
+		return (FALSE);
 	}
-	if (!(CAN_SEE(keeper, ch)) && !IS_TRUSTED(ch))
-	{
+	case shop_customer_access::refusal::unseen:
 		mobsay(keeper, "I don't trade with someone I can't see!");
 		return (FALSE);
-	};
-
-	switch (shop_index[shop_nr].with_who)
-	{
-	case 0:
-		return (TRUE);
-	case 1:
-		return (TRUE);
-	default:
-		return (TRUE);
-	};
+	case shop_customer_access::refusal::none:
+		return outcome.allowed;
+	}
+	return outcome.allowed;
 }
 
 int same_obj(P_obj obj1, P_obj obj2)
