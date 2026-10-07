@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 217 authored journals, accounting-gated player surfaces, starter/town
+**Status: 218 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5401,3 +5401,8 @@ The [dossier](zone-stories/SHADOW_FOREST.md) maps Palon’s head exchange plus s
 ## Mosswood integration extension
 
 The [dossier](zone-stories/MOSSWOOD.md) maps Ijale’s exact beet/C1000 exchange and nine broader stories: farm work,supply and construction; livestock/pets/horses; village crafts/commerce; wizard household/knowledge; captain/guard investigation; pond/woodland/faerie stewardship; swamp choices; rocky route/hunter guidance; and household/community support.42 owned follow-ups separate source reveal/recovery,supplied eligibility,eating,accepted input and identified wallet payout. Actual shop/gate/door/roaming controls and useful lasting beneficiaries require qualification; descriptive services and dormant stock need explicit builder decisions. Existing schema3 handles the native Q. Active READY accounting remains required and daily policy stays disabled.
+
+
+## Roper Den nexus integration extension
+
+The [dossier](zone-stories/NEXUS_ROPER.md) covers Sebastian’s exact four-tentacle/key exchange and six broader stories: hidden approach/knowledge, useful roper protection, lawful source/supply, intended key access, volcanic guidance/return and lasting nexus control. Forty owned follow-ups require successful typed callers, admitted actors and saved useful outcomes. Mode0 supply, an unconsumed key, raw4 hatch and dynamic SQL/flat nexus placement need builder qualification. Existing schema3 handles the native exchange without imposing source-first, kill, greeting or nexus prerequisites. Active READY accounting remains required; daily policy stays disabled.

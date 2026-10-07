@@ -309,3 +309,8 @@ The [dossier](../design/zone-stories/SHADOW_FOREST.md) retains one native achiev
 ## Mosswood daily qualification
 
 The [dossier](../design/zone-stories/MOSSWOOD.md) retains one native achievement/potential daily. Mode2/lifespan40..80, beet cap2,Ijale cap1 and no departure do not prove renewed available stock or lawful repeated C1000 payouts. Qualify actual source reveal/recovery or supplied input,food choice,accepted consumption,identified wallet recipient/save/replay and fresh generations. Shop production is separate from beet supply. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
+
+
+## Roper Den nexus daily qualification
+
+The [dossier](../design/zone-stories/NEXUS_ROPER.md) retains one native achievement/potential daily. No departure makes the definition repeatable, but mode0, four globally capped tentacles and dynamic reset/controller policy do not prove renewed available input. Qualify actual source/giver generations, distinct loose roots, supplied eligibility, accepted consumption, key issuance/recipient/save/replay and intended use. A nexus touch/turn has different guardians, allegiance, level, timers, rewards and expiry; no nexus condition is added to Sebastian’s exchange. New tracking requires active READY accounting, committed recovery is separate, and daily policy remains disabled.

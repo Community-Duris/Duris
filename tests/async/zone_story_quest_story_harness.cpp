@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 217 &&
+		require(catalog.story_mappings.size() == 218 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -25540,6 +25540,94 @@ int main(int argc, char **argv)
 							   &supplies);
 			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
 				"Mosswood missing reward or spent material changed recovered history");
+		}
+
+		{
+			const auto &tentacles = story_for("nexus_roper", "tentacles-for-sebastian");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 130407, 130424, 100) == result::rejected,
+				"Roper Den nexus contact ignored undiscovered zone");
+			require(journey.discover_zone(7, 42, 1304, 130400, 101, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 1304, 10, 1, 102, false,
+							       false)
+							.find(tentacles.title) ==
+						std::string::npos &&
+					journey.meet_npc(7, 42, 130407, 130424, 103) ==
+						result::applied,
+				"Roper Den nexus request bypassed Sebastian encounter");
+			require(journey.render_journal(7, 42, 1304, 37, 1, 103, false, false)
+						.find(tentacles.title) != std::string::npos,
+				"Roper Den nexus journal invented extra source, level51 or nexus prerequisites");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    tentacles.steps[row].text) != std::string::npos;
+			};
+			for (unsigned custody = 0; custody < 7; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[130401] = 1;
+				if (custody == 2)
+				{
+					supplies.carried[130400] = 3;
+					supplies.equipped[18] = 130400;
+				}
+				if (custody == 3)
+					supplies.carried[130400] = 1;
+				if (custody == 4)
+					supplies.carried[130400] = 3;
+				if (custody >= 5)
+					supplies.carried[130400] = custody == 5 ? 4 : 5;
+				const auto journal = journey.render_journal(
+					7, 42, 1304, 10, 1, 104, false, false, &supplies);
+				require(status(journal, 0,
+					       custody >= 5 ? "Ready now" : "Missing now") &&
+						!status(journal, 1, "Recorded") &&
+						journey.progress_for_zone(7, 42, 1304).completed ==
+							0 &&
+						journey.serialize_state() == before,
+					"Roper Den nexus partial/held/supplied tentacles or key forged history");
+			}
+			// Synthetic receipt qualifies projection, not live four-root consumption, key grant, secret passage or nexus admission.
+			record(journey, tentacles.contracts.front(),
+			       "nexus-roper-tentacles-offering", 1304, 130424);
+			supplies = {};
+			auto journal = journey.render_journal(7, 42, 1304, 10, 1, 121, false, false,
+							      &supplies);
+			require(status(journal, 1, "Recorded") &&
+					status(journal, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 1304).completed == 1 &&
+					!journey.has_discovered(7, 42, 1301),
+				"Roper Den nexus spent tentacles erased receipt or invented foreign arrival");
+			require(supplied.discover_zone(7, 42, 1304, 130400, 101, "arrival") ==
+					result::applied,
+				"Roper Den nexus supplied return setup failed");
+			record(supplied, tentacles.contracts.front(),
+			       "nexus-roper-supplied-offering", 1304, 130424);
+			require(supplied.progress_for_zone(7, 42, 1304).completed == 1,
+				"Roper Den nexus acceptance required remembered source recovery, personal kill, greeting, key use or nexus participation");
+			auto replay = completion(tentacles.contracts.front(),
+						 "nexus-roper-tentacles-offering", 120);
+			replay.transaction.zone_number = 1304;
+			replay.transaction.room_vnum = 130424;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Roper Den nexus replay duplicated tentacles acceptance");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 1304).completed == 1 &&
+					raw.progress_for_zone(7, 42, 1304).completed == 1 &&
+					!recovered.has_discovered(7, 42, 1301),
+				"Roper Den nexus mapped/raw recovery lost acceptance or invented foreign discovery");
+			journal = recovered.render_journal(7, 42, 1304, 10, 1, 122, false, false,
+							   &supplies);
+			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
+				"Roper Den nexus missing key or spent tentacles changed recovered history");
 		}
 
 		std::cout
