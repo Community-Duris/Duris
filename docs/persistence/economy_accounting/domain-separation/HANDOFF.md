@@ -29,12 +29,16 @@ SQL/flat types; all462/456 actual compiler inputs authenticate. Eight owned and
 five bare-full adjacent checks pass; the old live-route failure remains paired.
 The [R13 terminal handoff](R13_SHOP_ITEM_ACCEPTANCE_HANDOFF.md) pins all91 indexed
 proof files, exact sources/CPP/ELFs/imports/trees/archives and terminal states.
-Independent committed code/import/artifact and canonical delivery review follows
-publication. R11/R12 remain closed. The [post-R12 dependency disposition](POST_R12_OWNER_DEPENDENCIES_2026-10-07.md)
-remains the native owner baseline; R13 completes the proposed acceptance policy
-without resolving those integration dependencies. The continuing Goal remains
-ACTIVE/no budget through the original primary finish line. Optional adoption and
-the primary full finish remain open.
+Independent committed code/import/artifact and canonical delivery review PASS
+is published at accounting2895721ad510ca17588c091edd6b94248763ab19; R13 is closed
+at declared scope, alongside R11/R12. The [post-R13 dependency disposition](POST_R13_OWNER_DEPENDENCIES_2026-10-07.md)
+records current nine-family/native prerequisites and only the proposed next
+[R14 complete customer access boundary](R14_SHOP_CUSTOMER_ACCESS_RESERVATION.md).
+Whole original is_ok direct47 and complete real-value24 controls PASS under both
+profiles; all42 original proof files/313-446 actual compiler inputs authenticate.
+No maintained R14 source/test edit precedes boundary approval. The actual Goal
+was checked ACTIVE/no budget with its full original primary finish line intact.
+Native integration, optional adoption and the primary full finish remain open.
 
 R10 final declared-scope review PASS remains published at accountingdc1489782,
 authenticating all3 inputs/all94 proof files and complete imports/build artifacts.
