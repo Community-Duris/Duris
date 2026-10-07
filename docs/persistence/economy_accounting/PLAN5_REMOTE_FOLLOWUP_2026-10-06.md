@@ -1569,3 +1569,39 @@ report/evidence/delivery continues Plan5; primary-local notebook maintenance is
 nonblocking and application/acknowledgement is unclaimed. Combined/private V2,
 all holdings/history owners, original journeys, both-engine migrations/builds,
 authentic restore/retention and fullR1-R8 remain open.
+
+## Published canonical64 production build and managed restore — 2026-10-07
+
+Basea5dac7db92e4e251145f0eb7f2a030f015d8a246, same local/remote
+codex/accounting-plan5; result is the containing commit. All seven earlier
+tips remain ancestors. [Exact source, commands and disposition](PLAN5_PUBLISHED64_BUILD_RESTORE_QUALIFICATION_2026-10-07.md)
+records current published62d0307 native833d308/migrations7e06717 canonical64.
+Both original production profiles clean-build/link all754 units with zero
+warnings/errors/reuse. Full original managed module runs12 cases: eleven pass
+including real MariaDB10.11.14/MySQL8.0.46 dump/restore/service boots; its pending
+online-source lifecycle audit errors. Existing owned4f277dc fixture fix then
+passes that failed class only against the same fresh native source, with two
+boots, cold UID/witness advancement, receipt continuity, retention and original
+refusal controls. Zero native skips; successful original cases are not rerun.
+These separate sources do not constitute a combined suite or release pass.
+
+Original qualifier/restore fixture recipes fail to link; append-only real
+lockpick-retirement/quest-cost/quest-coin providers qualify all executed native
+fixtures. Primary should add the three providers once to both shared SOURCES
+lists (restore qualifier and accounting-store test), inherit them without
+duplicates, integrate the existing owned test fix and run the actual full
+combined candidate. No shared source/API/schema edit or application claim.
+Normal926-route/matrix/runtime checks pass; release still refuses missing writer
+execution evidence. Latestdedad4e5 retains the same native/migration trees.
+
+Seal SHA2568feed72db9055e652c30030ca05d5dcfe41bfe91cd6a7fde8773736b6e28dd6b
+binds9924 entries/4,815,335,745 bytes and47 pre-copy native inventories/6700
+verified regular bodies. Native clients finished before Docker's API became
+unavailable for final state inspection; that metadata gap remains explicit.
+Copied build modes do not establish original RAM object modes. Existing jobs/
+storage stayed in place; new seal helpers use D:/Dev/Temp and future builds use
+task-specific D:/Dev/Builds/.../bin. No activation, correction or production
+change. The curator-ready report/evidence/delivery keeps the primary-local
+notebook nonblocking; application/acknowledgement is unclaimed. Source-complete
+private/combined qualification, all owners/player/fault journeys, both-engine
+upgrade/rerun, complete restore/retention and fullR1-R8 remain open.
