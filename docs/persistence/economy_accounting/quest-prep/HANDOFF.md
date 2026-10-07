@@ -1,3 +1,45 @@
+# Additional full-world cold-room control — 2026-10-07
+
+Additional finite control is now **executed and pushed**, preserving the completed
+diagnostic delivery below. Reservation8be236a150075a9f28de7a9991e4ad40705be779;
+implementation/evidence0ceae3a847f6573ec326bac3f36fb632ef5c2fe9 (base8be236a15).
+Owned implementation files: tests/async/quest_accounting_prep/run_cold_room_control.py
+and docs/persistence/economy_accounting/quest-prep/COLD_ROOM_CONTROL.md; this
+canonical handoff is the only further authored path. No shared production/driver,
+authority, schema, area/reset/special or journal changes.
+
+Two genuine full-world processes using the retained flat ELF/source6db passed in
+75.083s. Original mace677 UID68076 moved to real room22800 revision1, survived
+cold restoration at the same UID/revision, and was subsequently recovered exactly.
+The first post-login item command was explicit `drop 1.sword`: original starter
+inventory sword1108 UID68097 moved player→room, revisions3/1→4/2, with unrelated
+roots, wallet and XP preserved. Genuine stock release then followed the maintained
+full-world fixture's carry-capacity calibration. Both processes saved/camped and
+terminated normally. The different sword283 remains distinct and was not counted
+as the selected1108 move.
+
+[Exact command, full boot/producer/dispatch binding, source/binary/schema hashes,
+native cuts and four retained fixture-seam failures](COLD_ROOM_CONTROL.md).
+Final private result hash5c09a23e11ebbdb45d70c65c22ef9a67d79f3e331b95f91f6c46490cf84f3568;
+executed/published runner3adc0b2647e1cf657d3a3dafccda880fac3c3dac8c6000e3876a717b0968515a.
+Private ignored evidence: bin/tests/quest-implementation-20261007/
+followup-full-cold-room-capacity. The retained earlier failures caught omitted camp
+calibration, wrong literal/kind selection and genuine carry limit; no movement
+defect or relaxed assertion is claimed from them.
+
+This closes the selected **ordinary nonempty full-world cold-room** control.
+Original mini QP06 remains RED with its exact0-versus7 prerequisite request.
+No Kord reward/XP-ACK, active native SQL/live_drop_token, empty-room cold, native
+birth/retirement/refund or integrated primary release qualification is added.
+Import after existing owned prepare_fixture/run_quest_execution and compatible
+unchanged world/client helpers; no worker merge commit or whole branch import is
+required. Original major-batch cadence remains primary-owned.
+
+New Goal: coordinator explicitly requested activation after reservation; get_goal
+returned null, create_goal/get_goal verified ACTIVE at1791377773, no token budget.
+Terminal Goal disposition follows publication/remote equality and owned-runtime
+shutdown. Previous Goal completion below remains historical and unchanged.
+
 # Quest follow-up delivery — 2026-10-07
 
 The finite follow-up is implemented, verified and pushed on
