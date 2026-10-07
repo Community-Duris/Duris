@@ -112,6 +112,14 @@ transaction/progression owners excluded. Quest prep also has a queued bounded
 question about creation-request watermark reachability; it is not a proven
 production defect or permission for a shared currency-owner rewrite.
 
+Architecture inventory v1 is published at worker
+`92871c3dcb9bf90932eb102775ed9547022f4163` and has a
+[coordinator scope assessment](INVENTORY_REVIEW_2026-10-07.md). The fixed feasible
+set is R0 Collector image (delivered), R1 Craft/Forge material quote (outstanding),
+and R2 wallet-value/bank-payment deltas (outstanding). Owner-dependent coupling
+in other domains remains recorded future conversion work; this set does not
+establish full domain separation. R2 requires an exact reservation before edits.
+
 The coordinator must not finish merely because both chats were checked once,
 messages were sent, a single bundle was reviewed or one assignment completed.
 Finish only after the architecture milestone and selected quest-prep follow-up
