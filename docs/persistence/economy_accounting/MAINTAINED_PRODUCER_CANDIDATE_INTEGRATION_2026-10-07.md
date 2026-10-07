@@ -5,10 +5,17 @@ all108 owned formatting checks and the writer refresh pass. The original Plan1
 independent acceptance retains its recorded scope. Current major-plan gameplay,
 activation and full R1-R8/release qualification remain incomplete.
 
+Published milestone: `62446abe6553d896ad1e743701ad4f2dee21c6ee`, normally pushed
+directly to canonical `experimental-accounting` and independently read back.
+The initial normal push raced a documentation-only upstream advance. Its local
+commit `c02a0d63168f4947ae04135e41cdcdb2c4c6266a` remains on its original branch;
+the same qualified production bytes were preserved on the latest base, retaining
+the incoming documents. No merge, rebase, cherry-pick, reset or force push occurred.
+
 ## Candidate and preservation
 
 The candidate starts at canonical `27ba5cd565bbbff68feee7cde3e4574c6eaed3ca`.
-Its documentation advances through `7a3ee6fb71157f355d63c85de34da748fef60fee`
+Its documentation advances through `d3e34519ae8701baa63d97380340760859dcb452`
 were retained with a new local successor branch; no
 histories were merged or rewritten. The optional Collector handoff at
 `bc19aa68294f5e0e1e19a2deecb84566d425ce8b` was fetched and read. That extraction
@@ -136,6 +143,6 @@ Warm/full-cold/MySQL qualification remains open. Primary authenticates both comp
 retained volumes. Automatic approval rejected the first volume deletion for missing
 explicit authorization; no deletion was retried and fresh names allow work.
 
-Commit and normal-push this producer milestone after required combined
-qualification passes. Inventories, private components and source contracts do
-not establish full accounting completion.
+The integration/build milestone is committed and published. Continue the native
+journeys and remaining acceptance work; inventories, private components and source
+contracts do not establish full accounting completion.
