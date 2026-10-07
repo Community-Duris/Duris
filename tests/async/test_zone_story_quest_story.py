@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 180 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 181 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,14 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+underworld=next(m for m in catalog['story_mappings'] if m['source_area']=='underworld')
+assert (underworld['coverage'],underworld['schema_version'],underworld['revision'])==('complete',3,1) and not underworld['exclusions']
+assert len(underworld['stories'])==1 and len(underworld['contacts'])==6 and sum(len(c['topics']) for c in underworld['contacts'])==4
+s=underworld['stories'][0];assert s['id']=='relic-payment' and len(s['steps'])==2
+assert (s['steps'][0]['item_vnums'],s['steps'][0]['count'],s['steps'][0]['optional'],s['steps'][0]['kind'])==([88807],1,True,'carried_item')
+assert s['steps'][-1]['kind']=='completion' and s['contracts']==s['steps'][-1]['contracts']==[{'giver_vnum':4401,'completion_key':'give=I:88807;receive=S:113;disappear=1'}]
+assert report['eligible_by_zone']['44']==1
 
 twstwd=next(m for m in catalog['story_mappings'] if m['source_area']=='twstwd')
 assert (twstwd['coverage'],twstwd['schema_version'],twstwd['revision'])==('complete',3,1) and not twstwd['exclusions']

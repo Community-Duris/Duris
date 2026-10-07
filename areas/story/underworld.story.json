@@ -1,0 +1,110 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "underworld",
+  "coverage": "complete",
+  "introduction": "Return Zorta's stolen relic through the life-and-death pools, choosing between competing relic requests and exploring the shrine and duergar palace as optional branches.",
+  "orientation": [
+    "Explore the underground river caves, kuo-toan shrine and Orcslayer duergar settlement. The shrine keys, palace, concealed treasury and shafts are optional branches. Current sight, enemies and live stock still matter.",
+    "Find Zorta through the magenta pool in the cave of life and death. A matching pool returns from his chamber. The chamber has no ordinary walking exit; check the available return route before entering. The pools can hurt you when used.",
+    "Ask Zorta resurection, payment, relic or kitan. Resurection is the keyword spelling currently recognized. These four aliases explain three topics; hearing a response does not record the relic return.",
+    "Zorta requests the unholy relic of life and death. Kitan carries that exact relic in Menden-on-the-Deep when stocked. The holy elven relic carried by Zorta is a different item. A supplied exact unholy relic also fits this request.",
+    "Carry the unholy relic loose before offering it. A worn or held relic and an item inside a container do not fill this loose preparation row. Ready now checks current counts and does not guarantee that Zorta can see or accept the item.",
+    "The native return consumes the unholy relic, offers Cause Light training when your character is eligible and has not learned it, and makes Zorta depart. His dialogue promises resurrection to a party cleric, but the current return does not encode that reward or recipient. The journal records the accepted exchange, not a new spell learned.",
+    "Choose carefully between the separate relic requests. Kitan accepts the holy relic; a dwarven spirit in the Deep Ravine accepts both holy and unholy relics. The same item cannot be spent in multiple returns. Completing Zorta or Kitan can remove their remaining equipment, so recover any source item you need before their departure.",
+    "In the kuo-toan shrine, one guardian carries a slimy green key and another carries a small green key orb. The orb used as a key differs from the small green light orb in a crate. Each green key breaks after a successful unlock. The priestess and desk gem are exploration leads, not another mapped delivery.",
+    "The duergar war master carries the sapphire palace key when stocked. A note inside the outer palace points to a spare mithril key near the steeder spiders. Eligible lock picking offers another approach to the palace. Opening the palace or defeating its king does not complete Zorta's return.",
+    "A rug-covered trapdoor leads to a treasury, while the small black key opens a locked hatch in the mining caves. Ordinary treasure, nested desk notes, ore, the forge and human slaves are separate scenes. This journal does not invent a mining, forging, liberation or treasure-return completion.",
+    "The shafts and underground lake suggest a deeper journey; a concealed boulder passage needs an eligible successful SEARCH before OPEN. Worms, ropers, elementals and piercers are hazards. Corpse recovery, surviving a hunt or using the king's hammer does not record a rescue or quest return.",
+    "Declared source equipment, keys and pools depend on actual live stock. Daily rollover does not replenish a spent relic or restore a departed quest giver. New discovery, encounter, journal, achievement and daily progress requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 4401,
+      "name": "Zorta the all powerful",
+      "keyword": "zorta",
+      "description": "Ask resurection, payment, relic or kitan about his request. Bring the exact unholy relic loose. The encoded exchange offers conditional Cause Light training and makes him depart.",
+      "topics": [
+        "resurection",
+        "payment",
+        "relic",
+        "kitan"
+      ]
+    },
+    {
+      "mob_vnum": 4610,
+      "name": "the kuo-toan high priestess",
+      "keyword": "priestess",
+      "description": "The kuo-toan high priestess is behind the shrine approach. Its guardian keys and desk gem are optional exploration; she has no additional mapped delivery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4650,
+      "name": "a duergar blacksmith",
+      "keyword": "blacksmith",
+      "description": "The duergar blacksmith and forge suggest crafting stories. Ordinary mithril ore and this scene do not define a mining or forging quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4660,
+      "name": "the duergar war master",
+      "keyword": "master",
+      "description": "The duergar war master carries the sapphire palace key when stocked. The key or an eligible lock-picking approach can help with the outer palace.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4680,
+      "name": "Bregnar the duergar King",
+      "keyword": "bregnar",
+      "description": "The duergar king rules the inner palace and wields the mithril battle hammer. Palace combat and the escape tunnel are optional branches.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 4690,
+      "name": "a human slave",
+      "keyword": "slave",
+      "description": "The human slaves suggest a liberation story, but no rescue contract or saved liberation outcome is encoded here.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "relic-payment",
+      "title": "Return Zorta's stolen relic",
+      "category": "request",
+      "summary": "Bring the exact unholy relic to Zorta for the encoded conditional Cause Light reward. His accepted exchange is distinct from source recovery, a spell newly learned and competing relic returns.",
+      "contracts": [
+        {
+          "giver_vnum": 4401,
+          "completion_key": "give=I:88807;receive=S:113;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "relic",
+          "text": "Carry the unholy relic of life and death loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            88807
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Kitan carries this exact relic when stocked; a supplied exact relic also fits. The holy relic, worn or held gear, nested items and old custody do not fill this current loose count."
+        },
+        {
+          "id": "turn-in",
+          "text": "Record Zorta's accepted relic return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 4401,
+              "completion_key": "give=I:88807;receive=S:113;disappear=1"
+            }
+          ],
+          "hint": "Records the accepted exchange and departure. Conversation, pool travel, holy relic custody, Kitan or ravine returns and learning a new spell remain separate."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
