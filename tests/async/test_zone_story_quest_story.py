@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 190 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 191 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -478,13 +478,20 @@ assert all(s['contracts'][0]['giver_vnum'] in (20003,20024,20045) for s in kreth
 assert {d['zone_number'] for d in catalog['definitions'] if d['giver_vnum']==55205}=={550}
 
 kelek=next(m for m in catalog['story_mappings'] if m['source_area']=='kelek')
-assert (kelek['coverage'],kelek['schema_version'],kelek['revision'])==('complete',3,1) and not kelek['exclusions']
-assert len(kelek['stories'])==3 and len(kelek['contacts'])==13 and sum(len(c['topics']) for c in kelek['contacts'])==2
-assert sum(len(s['steps']) for s in kelek['stories'])==9 and sorted(len(s['steps'])-1 for s in kelek['stories'])==[1,2,3]
+assert (kelek['coverage'],kelek['schema_version'],kelek['revision'])==('complete',3,2) and not kelek['exclusions']
+assert len(kelek['stories'])==1 and len(kelek['contacts'])==5 and sum(len(c['topics']) for c in kelek['contacts'])==1
+assert sum(len(s['steps']) for s in kelek['stories'])==3
 assert all(row['kind']=='carried_item' and row['optional'] and row['count']==1 and len(row['item_vnums'])==1 for s in kelek['stories'] for row in s['steps'][:-1])
 assert all(len(s['contracts'])==1 and s['steps'][-1]['contracts']==s['contracts'] for s in kelek['stories'])
-assert report['eligible_by_zone']['879']==3 and sum(d['daily_eligible'] for d in catalog['definitions'] if d['source_area']=='kelek')==3
-assert {s['id'] for s in kelek['stories']}=={'cardinal-proof','captive-paladin-proof','smithy-materials'}
+assert report['eligible_by_zone']['879']==1 and sum(d['daily_eligible'] for d in catalog['definitions'] if d['source_area']=='kelek')==1
+assert {s['id'] for s in kelek['stories']}=={'smithy-materials'}
+church=next(m for m in catalog['story_mappings'] if m['source_area']=='church')
+assert (church['coverage'],church['schema_version'],church['revision'])==('complete',3,1) and not church['exclusions']
+assert len(church['stories'])==4 and len(church['contacts'])==12 and sum(len(c['topics']) for c in church['contacts'])==5
+assert sum(len(s['steps']) for s in church['stories'])==12 and sum(t.get('optional',False) for s in church['stories'] for t in s['steps'])==8
+assert report['eligible_by_zone']['878']==4 and all(d['zone_number']==878 and d['repeatable'] and d['daily_eligible'] for d in catalog['definitions'] if d['source_area']=='church')
+assert [t['item_vnums'] for s in church['stories'] if s['id']=='captive-paladin-proof' for t in s['steps'] if t['kind']=='carried_item']==[[87870],[87871],[87872]]
+assert {d['giver_vnum'] for d in catalog['definitions'] if d.get('previous_zone_number')==879}=={87860,87869}
 
 trakkia=next(m for m in catalog['story_mappings'] if m['source_area']=='trakkia')
 assert (trakkia['coverage'],trakkia['schema_version'],trakkia['revision'])==('complete',3,1) and not trakkia['exclusions']

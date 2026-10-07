@@ -1,0 +1,309 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "church",
+  "coverage": "complete",
+  "introduction": "Follow the Church and royal paladin stories through exact proof returns, a captive report and the doors between them.",
+  "orientation": [
+    "The royal paladin camp connects west from the frozen highway. Its field general accepts the exact report note, while the canyon leads north to the Church.",
+    "The cardinal requests the badge worn by a young paladin. His accepted return points toward initiation with the bishop, whose separate request seeks the cardinal’s skull and spine. These narrative stages do not force an earlier badge return or exclusive faction choice.",
+    "The bishop’s reward speech mentions blasphemy. Saying that word at the magical passage above the interrogation room can unlock it when speech is admitted; open the door and move through afterwards. Current shared door state does not record your own passage.",
+    "The jailor carries the dark iron key for the three cells. Their locks also allow ordinary PICK attempts when your character can. Neither a personal jailor kill nor a bishop receipt is a universal prerequisite.",
+    "Relxis, the large paladin in the northern cell, accepts three different proof pieces whose holders are declared in the southern cell. Carry one set of troll ears, one ogre skull and one duergar hand loose together.",
+    "Relxis’s exact note can be delivered to the field general for a crystal mask. A supplied note fits; earning, carrying and delivering it are different stages. The native exchange does not move or escort Relxis out of jail.",
+    "The archive scholar carries a separate small key for the locked, PICKPROOF metal case. Its scrolls and the printing press have no selected local hand-in quest; read them as optional exploration leads.",
+    "Potential daily candidates require reviewed enabled policy, accessible telemetry, observed level and faction, known party context and actual availability. A day change does not replenish the sources. New tracking requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 87821,
+      "name": "the church cardinal",
+      "keyword": "cardinal",
+      "description": "In the private study; ask paladin or paladins about his requested badge, and hello or hi for the same greeting. A supplied exact badge fits without a personal battle.",
+      "topics": [
+        "paladin",
+        "paladins",
+        "hello",
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 87860,
+      "name": "the church bishop",
+      "keyword": "bishop",
+      "description": "In the meditation room; ask initiation. He accepts the exact cardinal proof for copper and experience. His threat does not implement membership, succession or expulsion.",
+      "topics": [
+        "initiation"
+      ]
+    },
+    {
+      "mob_vnum": 87869,
+      "name": "a large paladin",
+      "keyword": "paladin",
+      "description": "The large captive paladin in the northern cell is Relxis, author of the report. Bring one each of the troll ears, ogre skull and duergar hand. The note exchange does not move him out of the cell.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87847,
+      "name": "a grey-haired paladin field general",
+      "keyword": "general",
+      "description": "At the royal paladin camp by the public highway; bring the exact report note for the crystal mask. A supplied valid note also fits.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87848,
+      "name": "a young paladin",
+      "keyword": "paladin",
+      "description": "The young paladin at the camp is declared wearing the badge of holy patronage. Equipped or held custody differs from a loose return to the cardinal.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87840,
+      "name": "the church jailor",
+      "keyword": "jailor",
+      "description": "At the jail work area above the interrogation room; declared holder of the dark iron key for the three cells. Key use and successful alternate passage remain separate from proof returns.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87866,
+      "name": "a furious troll",
+      "keyword": "troll",
+      "description": "In the southern cell; declared holder of the exact troll ears. Possession does not record a personal kill or release.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87867,
+      "name": "a depressed ogre warrior",
+      "keyword": "ogre",
+      "description": "In the southern cell; declared holder of the exact ogre skull, a different proof from the cardinal skull and spine.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87868,
+      "name": "a squint-eyed duergar",
+      "keyword": "duergar",
+      "description": "In the southern cell; declared holder of the exact shriveled duergar hand.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87820,
+      "name": "the church head scholar",
+      "keyword": "scholar",
+      "description": "In the scroll archive; declared holder of the small iron key for the PICKPROOF metal case. Scroll access and identification are separate from the four hand-ins.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87862,
+      "name": "the head church interrogater",
+      "keyword": "interrogater",
+      "description": "In the interrogation area below the magically sealed jail passage. Spoken unlock, opening and moving through are different actions.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 87845,
+      "name": "a hired warmage",
+      "keyword": "warmage",
+      "description": "In the canyon leading to the Church. His description speaks of guarding admission; no separate selected custom quest controller was found.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "badge-for-the-cardinal",
+      "title": "Bring the badge of holy patronage to the cardinal",
+      "category": "request",
+      "summary": "The cardinal accepts one exact badge for experience under the native reward rules.",
+      "contracts": [
+        {
+          "giver_vnum": 87821,
+          "completion_key": "give=I:87846;receive=E:100000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87846",
+          "text": "Carry the exact badge loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            87846
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The young paladin at the camp is the declared wearer. Supplied exact badges fit; personal defeat and later initiation are separate."
+        },
+        {
+          "id": "return",
+          "text": "Record the accepted badge return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87821,
+              "completion_key": "give=I:87846;receive=E:100000;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact badge loose to the cardinal. Dialogue, the bishop return, current equipment and reward amounts do not substitute for this receipt."
+        }
+      ]
+    },
+    {
+      "id": "cardinal-proof",
+      "title": "Bring proof to the bishop",
+      "category": "request",
+      "summary": "The bishop accepts the exact cardinal skull and spine for copper and experience; his promises and threats do not implement political changes.",
+      "contracts": [
+        {
+          "giver_vnum": 87860,
+          "completion_key": "give=I:87869;receive=C:250000,E:100000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "optional-introduction",
+          "text": "Earlier introduction: the cardinal accepted your badge",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87821,
+              "completion_key": "give=I:87846;receive=E:100000;disappear=0"
+            }
+          ],
+          "hint": "This explains the narrative introduction to the bishop. It is optional; a supplied exact cardinal proof still fits the native bishop exchange.",
+          "optional": true
+        },
+        {
+          "id": "material-87869",
+          "text": "Carry the cardinal's skull and spine loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            87869
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The cardinal is declared carrying this proof in his study. Current custody, a personal kill, membership and expulsion are different outcomes."
+        },
+        {
+          "id": "return",
+          "text": "Record the accepted cardinal-proof return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87860,
+              "completion_key": "give=I:87869;receive=C:250000,E:100000;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact skull and spine to the bishop. This independent hand-in has no native earlier badge, faction or personal kill requirement."
+        }
+      ]
+    },
+    {
+      "id": "captive-paladin-proof",
+      "title": "Bring three proofs to the captive paladin",
+      "category": "request",
+      "summary": "One each of the troll ears, ogre skull and duergar hand earns Relxis's note. The exchange leaves him in his cell.",
+      "contracts": [
+        {
+          "giver_vnum": 87869,
+          "completion_key": "give=I:87870,I:87871,I:87872;receive=I:87873;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-87870",
+          "text": "Carry the troll ears loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            87870
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The furious troll in the southern cell is the declared holder. One exact copy is needed."
+        },
+        {
+          "id": "material-87871",
+          "text": "Carry the ogre skull loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            87871
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The depressed ogre warrior in the southern cell is the declared holder. A cardinal skull or more troll ears cannot replace it."
+        },
+        {
+          "id": "material-87872",
+          "text": "Carry the duergar hand loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            87872
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The squint-eyed duergar in the southern cell is the declared holder. All three different proofs must be loose together; supplied copies also fit."
+        },
+        {
+          "id": "return",
+          "text": "Record the accepted three-proof return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87869,
+              "completion_key": "give=I:87870,I:87871,I:87872;receive=I:87873;disappear=0"
+            }
+          ],
+          "hint": "Offer all three exact proofs to the large captive paladin in the northern cell. This receipt records the note exchange, with release or escort left for future builder integration."
+        }
+      ]
+    },
+    {
+      "id": "report-to-the-field-general",
+      "title": "Deliver Relxis's report to the field general",
+      "category": "request",
+      "summary": "Take the exact report note to the royal paladin camp for the crystal mask. This is a separate accepted return after the note's production.",
+      "contracts": [
+        {
+          "giver_vnum": 87847,
+          "completion_key": "give=I:87873;receive=I:87874;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "optional-producer",
+          "text": "Earlier stage: the captive paladin accepted your three proofs",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87869,
+              "completion_key": "give=I:87870,I:87871,I:87872;receive=I:87873;disappear=0"
+            }
+          ],
+          "hint": "This optional history explains how a note may have been earned. A supplied valid report still fits the native final exchange; possession alone does not create the earlier receipt.",
+          "optional": true
+        },
+        {
+          "id": "material-87873",
+          "text": "Carry Relxis's report note loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            87873
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The captive paladin grants this exact note. Read its report and take it to the field general outside; the note itself does not prove personal rescue or movement."
+        },
+        {
+          "id": "return",
+          "text": "Record the accepted report delivery",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 87847,
+              "completion_key": "give=I:87873;receive=I:87874;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact note to the field general at the camp. Neither its producer receipt nor possession of the reward mask substitutes for this final return."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

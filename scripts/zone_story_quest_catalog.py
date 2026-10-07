@@ -26,6 +26,7 @@ QUEST_BLOCK_RE = re.compile(r"^#(-?\d+)\s*$")
 GOAL_RE = re.compile(r"^([GR])\s+([ITCSE])\s+(-?\d+)\s*$")
 MAX_DURABLE_ITEM_OFFERINGS = 14
 MAX_STORY_MAPPING_BYTES = 512 * 1024
+MAX_QUEST_OWNER_BYTES = 64 * 1024
 
 
 def active_quest_files(source_root):
@@ -88,6 +89,60 @@ def zone_registry(source_root):
     return zones
 
 
+def quest_owner_rules(source_root, zones, content_revision=2):
+    """Load exact reviewed owner corrections; a present invalid file fails closed."""
+    path = source_root / "areas/quest_owners.json"
+    if not path.exists():
+        return {}
+    if not path.is_file() or path.stat().st_size > MAX_QUEST_OWNER_BYTES:
+        raise ValueError("quest owners: unreadable or oversized file")
+    root = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=unique_fields)
+
+    def fields(obj, keys):
+        if not isinstance(obj, dict) or set(obj) != set(keys):
+            raise ValueError("quest owners: unknown or missing fields")
+
+    def integer(obj, key):
+        value = obj[key]
+        if (isinstance(value, bool) or not isinstance(value, (int, float))
+                or not 1 <= value <= 2**31 - 1 or not math.isfinite(value) or value != int(value)):
+            raise ValueError("quest owners: invalid positive integer")
+        return int(value)
+
+    def text(obj, key):
+        value = obj[key]
+        if (not isinstance(value, str) or not value or len(value.encode("utf-8")) > 1024
+                or any(ord(c) < 32 or ord(c) == 127 or c == "$" for c in value)):
+            raise ValueError("quest owners: invalid text")
+        return value
+
+    fields(root, {"schema_version", "owners"})
+    if integer(root, "schema_version") != 1:
+        raise ValueError("quest owners: unsupported schema")
+    if not isinstance(root["owners"], list) or len(root["owners"]) > 256:
+        raise ValueError("quest owners: invalid owners array")
+    rules = {}
+    for entry in root["owners"]:
+        fields(entry, {"giver_vnum", "completion_key", "previous_zone_number",
+                       "previous_source_area", "zone_number", "source_area", "content_revision"})
+        previous, owner = integer(entry, "previous_zone_number"), integer(entry, "zone_number")
+        if previous == owner or integer(entry, "content_revision") != content_revision:
+            raise ValueError("quest owners: unchanged owner or revision mismatch")
+        for number, area in ((previous, text(entry, "previous_source_area")),
+                             (owner, text(entry, "source_area"))):
+            if not any(z["discoverable"] and z["zone_number"] == number and z["source_area"] == area for z in zones):
+                raise ValueError("quest owners: unknown zone/source pair")
+        giver = integer(entry, "giver_vnum")
+        numeric = next((z for z in zones if z["first_vnum"] <= giver <= z["last_vnum"]), None)
+        if numeric is None or numeric["zone_number"] != previous:
+            raise ValueError("quest owners: previous owner differs from world registry")
+        key = giver, text(entry, "completion_key")
+        if key in rules:
+            raise ValueError("quest owners: duplicate native contract")
+        rules[key] = dict(entry, previous_zone_number=previous)
+    return rules
+
+
 def production_catalog(source_root, content_revision=2):
     """Build the eligible catalog from active legacy static/story qst sources.
 
@@ -96,6 +151,8 @@ def production_catalog(source_root, content_revision=2):
     """
     definitions = []
     zones = zone_registry(source_root)
+    owners = quest_owner_rules(source_root, zones, content_revision)
+    matched_owners = set()
     seen_contracts = set()
     for path in active_quest_files(source_root):
         current_giver = None
@@ -154,6 +211,10 @@ def production_catalog(source_root, content_revision=2):
             encoded_key = key.encode("utf-8").hex()
             owner = next((zone for zone in zones if zone["first_vnum"] <= giver_vnum <= zone["last_vnum"]), None)
             if owner is None or owner["zone_number"] < 0: continue
+            correction = owners.get(base_key)
+            if correction:
+                owner = next(z for z in zones if z["zone_number"] == correction["zone_number"])
+                matched_owners.add(base_key)
             zone_number = owner["zone_number"]
             repeatable = not block["disappear"] or owner["reset_mode"] != 0
             give, receive = sorted(block["give"]), sorted(block["receive"])
@@ -181,7 +242,11 @@ def production_catalog(source_root, content_revision=2):
                     "content_revision": content_revision,
                 }
             )
+            if correction:
+                definitions[-1]["previous_zone_number"] = correction["previous_zone_number"]
 
+    if matched_owners != set(owners):
+        raise ValueError("quest owners: unknown native contract")
     definitions.sort(key=lambda item: (item["zone_number"], item["definition_id"]))
     fingerprint_payload = json.dumps(definitions, sort_keys=True, separators=(",", ":")).encode()
     result = {
@@ -427,6 +492,10 @@ def validate_catalog(catalog):
             diagnostics.append(diagnostic(index, "wrong_source_system", "source_system must be zone_story"))
         if not isinstance(definition["zone_number"], int) or definition["zone_number"] < 0:
             diagnostics.append(diagnostic(index, "invalid_zone_number", "zone_number must be positive"))
+        previous = definition.get("previous_zone_number", -1)
+        if (isinstance(previous, bool) or not isinstance(previous, int)
+                or (previous != -1 and (previous <= 0 or previous == definition["zone_number"]))):
+            diagnostics.append(diagnostic(index, "invalid_previous_zone_number", "previous owner must be a different playable zone"))
         if not isinstance(definition["source_area"], str) or not definition["source_area"]:
             diagnostics.append(diagnostic(index, "invalid_source_area", "source_area must be non-empty"))
         if not isinstance(definition["giver_vnum"], int) or definition["giver_vnum"] <= 0:

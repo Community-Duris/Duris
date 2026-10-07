@@ -31,6 +31,11 @@ bool ready()
 {
 	return true;
 }
+const std::string *definition_id_for(const quest_complete_data *completion)
+{
+	static const std::string id = "daily:alatorin:1";
+	return completion ? &id : nullptr;
+}
 }
 uint64_t sql_season_epoch()
 {
@@ -101,6 +106,8 @@ int main()
 	pc.pid = 42;
 	char_data player = {};
 	player.only.pc = &pc;
+	char player_name[] = "Alice";
+	player.player.name = player_name;
 	player.player.level = 10;
 	player.specials.position = STAT_NORMAL;
 	descriptor_data descriptor = {};
@@ -300,6 +307,126 @@ int main()
 	assert(erase_character(77, &error));
 	assert(restored.deserialize_state(durable) && restored.summary_for(7, 77).completed == 0);
 	assert(service() == nullptr);
+	quest_complete_data legacy_completion = {};
+	const auto disabled_tracking_before = tracker.serialize_state();
+	const int disabled_tracking_writes = writes;
+	assert(!record_legacy_completion(&player, &legacy_completion, 83450, 864002, &error));
+	assert(!record_authoritative_completion(definition.definition_id, 831, 42, { 42 }, 83450,
+						864002, "Alice", 10, 1, true, 1, 10, &error));
+	assert(writes == disabled_tracking_writes &&
+	       tracker.serialize_state() == disabled_tracking_before);
+	// Reviewed ownership corrections retain old receipts and frozen continuation
+	// identity. Historical neighboring discovery must not invent a Church visit.
+	zone_story_quest_catalog::catalog church_catalog;
+	church_catalog.content_revision = 2;
+	church_catalog.zones = { { 878, "Church", "church", 87800, 87852, true },
+				 { 879, "Kelek", "kelek", 87853, 88165, true } };
+	auto bishop = definition;
+	bishop.definition_id = "zone-story:qst:87860:stable-contract";
+	bishop.giver_vnum = 87860;
+	bishop.zone_number = 878;
+	bishop.source_area = "church";
+	bishop.previous_zone_number = 879;
+	church_catalog.definitions.push_back(bishop);
+	auto old_catalog = church_catalog;
+	old_catalog.definitions[0].zone_number = 879;
+	old_catalog.definitions[0].source_area = "kelek";
+	old_catalog.definitions[0].previous_zone_number = -1;
+	zone_story_quest_feature::service old_tracker(old_catalog);
+	assert(old_tracker.discover_zone(7, 42, 879, 87920, 864000, "arrival") ==
+	       zone_story_quest_feature::result::applied);
+	zone_story_quest_feature::completion_event old_event;
+	old_event.transaction = { 2,
+				  "offering:church-old",
+				  bishop.definition_id,
+				  879,
+				  42,
+				  { 42, 77 },
+				  87841,
+				  864001,
+				  7,
+				  2,
+				  1,
+				  { 42 } };
+	old_event.character_name = "Alice";
+	old_event.level = old_event.strongest_party_level = 10;
+	old_event.racewar = 1;
+	old_event.party_context_known = true;
+	old_event.party_size = 2;
+	assert(old_tracker.record_completion(old_event, &error) ==
+	       zone_story_quest_feature::result::applied);
+	const auto immutable_receipt =
+		zone_story_quest_tracking::serialize_transaction(old_event.transaction);
+	tracker = zone_story_quest_feature::service(church_catalog);
+	assert(tracker.deserialize_state(old_tracker.serialize_state(), &error));
+	zone_story_quest_tracking::completion_transaction receipt;
+	assert(tracker.existing_transaction("offering:church-old", &receipt) &&
+	       zone_story_quest_tracking::serialize_transaction(receipt) == immutable_receipt);
+	assert(tracker.progress_for_zone(7, 42, 878).completed == 1 &&
+	       tracker.progress_for_zone(7, 42, 879).completed == 0 &&
+	       tracker.has_discovered(7, 42, 879) && !tracker.has_discovered(7, 42, 878));
+	const int old_replay_writes = writes;
+	const auto old_replay_state = tracker.serialize_state();
+	assert(record_authoritative_completion(bishop.definition_id, 879, 42, { 42, 77 }, 87841,
+					       864001, "Alice", 10, 1, true, 2, 10, &error,
+					       "offering:church-old", &frozen));
+	assert(writes == old_replay_writes && tracker.serialize_state() == old_replay_state);
+	assert(!record_authoritative_completion(bishop.definition_id, 879, 42, { 42 }, 87841,
+						864001, "Alice", 10, 1, true, 1, 10, &error,
+						"offering:church-old", &frozen));
+	auto stale = frozen;
+	stale.catalog_revision = 1;
+	assert(!record_authoritative_completion(bishop.definition_id, 879, 42, { 42, 77 }, 87841,
+						864001, "Alice", 10, 1, true, 2, 10, &error,
+						"offering:church-old", &stale));
+	// A committed offering not yet recorded may recover with its frozen old
+	// owner. New tracking uses the current owner; its economic receipt is external.
+	tracker = zone_story_quest_feature::service(church_catalog);
+	durable_records.clear();
+	const auto pending_before = tracker.serialize_state();
+	assert(!record_authoritative_completion(bishop.definition_id, 900, 42, { 42, 77 }, 87841,
+						864001, "Alice", 10, 1, true, 2, 10, &error,
+						"offering:church-pending", &frozen));
+	assert(!record_authoritative_completion(bishop.definition_id, 879, 42, { 42, 77 }, 87841,
+						864001, "Alice", 10, 1, true, 2, 10, &error, "",
+						&frozen));
+	assert(!record_authoritative_completion(bishop.definition_id, 879, 42, { 42, 77 }, 87841,
+						864001, "Alice", 10, 1, true, 2, 10, &error,
+						"offering:church-pending", nullptr));
+	assert(!record_authoritative_completion(bishop.definition_id, 879, 42, { 42, 77 }, 87841,
+						864001, "Alice", 10, 1, true, 2, 10, &error,
+						"offering:church-pending", &stale));
+	assert(tracker.serialize_state() == pending_before);
+	save_ok = false;
+	assert(!record_authoritative_completion(bishop.definition_id, 879, 42, { 42, 77 }, 87841,
+						864001, "Alice", 10, 1, true, 2, 10, &error,
+						"offering:church-pending", &frozen));
+	assert(tracker.serialize_state() == pending_before && durable_records.empty());
+	save_ok = true;
+	assert(record_authoritative_completion(bishop.definition_id, 879, 42, { 42, 77 }, 87841,
+					       864001, "Alice", 10, 1, true, 2, 10, &error,
+					       "offering:church-pending", &frozen));
+	assert(tracker.existing_transaction("offering:church-pending", &receipt) &&
+	       receipt.zone_number == 878 && receipt.season_id == 7 &&
+	       receipt.content_revision == 2 && receipt.room_vnum == 87841 &&
+	       receipt.completed_at == 864001 &&
+	       receipt.credited_pids == std::vector<uint32_t>({ 42, 77 }) &&
+	       receipt.daily_credited_pids == std::vector<uint32_t>({ 42 }));
+	assert(tracker.summary_for(7, 42).renown == 1 && tracker.summary_for(7, 77).renown == 0 &&
+	       !tracker.has_discovered(7, 42, 878) && !tracker.has_discovered(7, 42, 879));
+	const int pending_writes = writes;
+	tracker = zone_story_quest_feature::service(church_catalog);
+	assert(tracker.deserialize_state(durable, &error));
+	assert(record_authoritative_completion(bishop.definition_id, 879, 42, { 42, 77 }, 87841,
+					       864001, "Alice", 10, 1, true, 2, 10, &error,
+					       "offering:church-pending", &frozen));
+	assert(writes == pending_writes && tracker.summary_for(7, 42).renown == 1);
+	assert(erase_character(77, &error));
+	zone_story_quest_feature::service church_restored(church_catalog);
+	assert(church_restored.deserialize_state(durable, &error) &&
+	       church_restored.summary_for(7, 77).completed == 0 &&
+	       church_restored.summary_for(7, 42).completed == 1 &&
+	       !church_restored.existing_transaction("offering:church-pending", &receipt));
 	std::cout
 		<< "native arrival suppression, failure rollback, empty area, and restart passed\n";
 }

@@ -699,7 +699,7 @@ static bool capture_quest_offering_continuation(P_char mob, P_char actor, int qu
 		return false;
 	const std::string *definition_id =
 		zone_story_quest_production::definition_id_for(completion);
-	const int zone_number = zone_story_quest_production::zone_for_giver_vnum(GET_VNUM(mob));
+	const int zone_number = zone_story_quest_production::zone_for_completion(completion);
 	if (!definition_id || definition_id->empty() ||
 	    definition_id->size() > QUEST_REWARD_MAX_DEFINITION_ID_BYTES || zone_number < 0 ||
 	    !context.credited_count ||

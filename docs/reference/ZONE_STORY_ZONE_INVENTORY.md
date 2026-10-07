@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 190 authored journals.
+2668 distinct Q contracts; 191 authored journals.
 
 Regenerate with:
 
@@ -61,7 +61,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Ceothia (`ceopast`) | 6 | 8 | 1 | Yes | [1 × a shard of bluestone; 1 × a lock of green hair; 1 × a blood red feather → a bluestone key, a bluestone vial](../../areas/qst/ceopast.qst#L104) | — |
 | Ceothia (`ceothia`) | 9 | 9 | 1 | Yes | [1 × the badge of the jade wyrm thief guild; 1 × the badge of the red shadow thief guild; 1 × the badge of the violet death thief guild → a black leather eyepatch rimmed with platinum, the badge of the Ceothian thief guild](../../areas/qst/ceothia.qst#L20) | crew_shop_proc, inn, ogre_warlords_sword |
 | Pits of Cerberus (`cerebusp`) | 9 | 5 | 0 | Yes | [1 × a large coconut; 1 × a broken coconut; 2 × a small coconut; other required items → a coconut belt](../../areas/qst/cerebusp.qst#L20) | cerberus_load, master_set, revenant_helm |
-| The Church of the Eternal Dusk (`church`) | 2 | 2 | 0 | Fallback | [1 × a badge of holy patronage → native reward/response](../../areas/qst/church.qst#L14) | — |
+| The Church of the Eternal Dusk (`church`) | 4 | 3 | 1 | Yes | [1 × the ears of a troll; 1 × the skull of an ogre; 1 × the shriveled hand of a duergar → a hastily scribbled note](../../areas/qst/church.qst#L62) | — |
 | The Citadel (`citadel`) | 3 | 39 | 0 | Yes | [1 × a bluish key → native reward/response](../../areas/qst/citadel.qst#L47) | — |
 | Cloud Giant Kingdom (`cldgt`) | 3 | 4 | 0 | Yes | [5 × a yeti pelt; 1 × a thick leather strap → a girdle lined with fur](../../areas/qst/cldgt.qst#L7) | — |
 | The Forest City of Aravne (`clfhaven`) | 3 | 7 | 0 | Yes | [1 × the heart of Enzekail; 1 × the heart of the female weretor; 1 × the heart of the male weretor; other required items → an ornate gold key](../../areas/qst/clfhaven.qst#L32) | inn, llyren, wh_corpse_to_object |
@@ -119,7 +119,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Jotunheim (`jotun`) | 15 | 34 | 0 | Yes | [1 × an eerily glowing jade bracelet; 1 × a jagged lightning sword; 1 × a barbed whip; other required items → a wooden spear entwined with glowing runes](../../areas/qst/jotun.qst#L39) | deva_cloak, faith, giantbane, icicle_cloak, jotun_balor, jotun_mimer |
 | The 222nd Layer of the Abyss (`juiblex`) | 23 | 25 | 3 | Yes | [1 × the head of the lost wildmage; 1 × the head of the lost wildmage; 1 × the head of the lost great wildmage; other required items → a necklace of wildmage scalps](../../areas/qst/juiblex.qst#L593) | doombringer, flow_amulet, juiblex_grid_mob_generator, juiblex_one, mask_of_wildmagic, slime_lake |
 | Varathorn Keep (`kastle`) | 3 | 3 | 0 | Yes | [2 × a bloody talon of a night crawler → a twisted blood dagger of the night crawler](../../areas/qst/kastle.qst#L24) | nightcrawler_dagger, zarthos_vampire_slayer |
-| The Stone Tomb of Kelek (`kelek`) | 3 | 2 | 0 | Yes | [1 × the ears of a troll; 1 × the skull of an ogre; 1 × the shriveled hand of a duergar → a hastily scribbled note](../../areas/qst/church.qst#L62) | deliverer_hammer, world_quest |
+| The Stone Tomb of Kelek (`kelek`) | 1 | 1 | 0 | Yes | [1 × a chunk of mithril; 1 × a smithy hammer → a jet black cloak with mithril streaks](../../areas/qst/kelek.qst#L11) | deliverer_hammer, world_quest |
 | Khildarak Stronghold (`khildarak`) | 2 | 8 | 0 | Yes | [1 × a steeders egg sack → native reward/response](../../areas/qst/khildarak.qst#L36) | archer, assoc_founder, devour, guild_guard, inn, khildarak_warhammer |
 | Killing Fields (`killing_fields`) | 1 | 2 | 0 | Fallback | [1 × a small note made of fine paper → native reward/response](../../areas/qst/killing_fields.qst#L14) | — |
 | Kimordril (`kimordril`) | 4 | 5 | 0 | Yes | [1 × a potato; 1 × a carrot; 1 × a cutting knife → native reward/response](../../areas/qst/kimordril.qst#L20) | archer, inn, kimordril_shout, money_changer, world_quest |

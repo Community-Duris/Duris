@@ -33,6 +33,8 @@ void require(bool condition, const char *message)
 
 int main(int argc, char **argv)
 {
+	require(argc == 2, "expected isolated fixture directory");
+	std::filesystem::current_path(argv[1]);
 	index_data mobs[1] = {};
 	mob_index = mobs;
 	mobs[0].virtual_number = 17;
@@ -40,7 +42,7 @@ int main(int argc, char **argv)
 	char mob_keywords[] = "archivist";
 	mobs[0].keys = mob_keywords;
 	mobs[0].desc2 = mob_name;
-	zone_data zones[1] = {};
+	zone_data zones[2] = {};
 	char area_name[] = "&+WThe First Heavens&n";
 	zones[0].number = 1;
 	zones[0].top = 1281;
@@ -132,8 +134,6 @@ int main(int argc, char **argv)
 		"oversized native offering contract became a daily");
 	// The isolated working directory exercises real bootstrap loading without
 	// changing the checkout's authored area files.
-	require(argc == 2, "expected isolated fixture directory");
-	std::filesystem::current_path(argv[1]);
 	std::filesystem::create_directories("areas/story");
 	first.give = &give;
 	const char *story_path = "areas/story/runtime-zone.story.json";
@@ -191,6 +191,81 @@ int main(int argc, char **argv)
 	require(zone_story_quest_production::bootstrap(2, &error) &&
 			zone_story_quest_production::runtime_catalog().story_mappings.empty(),
 		"absent optional sidecar broke native fallback");
+	const std::string stable_id = *zone_story_quest_production::definition_id_for(&first);
+	char reviewed_area[] = "reviewed-zone";
+	char reviewed_name[] = "Reviewed Zone";
+	zones[1].number = 2;
+	zones[1].top = 2600;
+	zones[1].filename = reviewed_area;
+	zones[1].name = reviewed_name;
+	zones[1].reset_mode = 2;
+	top_of_zone_table = 1;
+	zones[0].reset_mode = 0;
+	first.disappear = true;
+	duplicate.disappear = true;
+	const std::string valid_owner = R"({"schema_version":1,"owners":[{
+"giver_vnum":17,"completion_key":"give=I:24402;receive=I:24403;disappear=1",
+"previous_zone_number":1,"previous_source_area":"runtime-zone",
+"zone_number":2,"source_area":"reviewed-zone","content_revision":2}]})";
+	auto write_owners = [](const std::string &json)
+	{
+		std::ofstream file("areas/quest_owners.json");
+		file << json;
+	};
+	write_owners(valid_owner);
+	require(zone_story_quest_production::bootstrap(2, &error),
+		"valid exact owner correction failed bootstrap");
+	require(zone_story_quest_production::zone_for_giver_vnum(17) == 1 &&
+			zone_story_quest_production::zone_for_completion(&first) == 2 &&
+			zone_story_quest_production::zone_for_completion(&second) == 1 &&
+			zone_story_quest_production::zone_for_completion(&duplicate) == 2 &&
+			zone_story_quest_production::zone_for_completion(nullptr) == -1,
+		"reviewed ownership did not resolve each exact completion independently");
+	const auto &corrected = zone_story_quest_production::runtime_catalog();
+	const auto &definition = corrected.definitions[0];
+	require(definition.zone_number == 2 && definition.previous_zone_number == 1 &&
+			definition.source_area == "reviewed-zone" &&
+			definition.zone_name == "Reviewed Zone" && definition.repeatable &&
+			definition.daily_eligible,
+		"owner correction did not update metadata or target reset-mode eligibility");
+	const std::string corrected_id = definition.definition_id;
+	for (const auto &replacement :
+	     { std::pair<std::string, std::string>{ "\"schema_version\":1",
+						    "\"schema_version\":1,\"schema_version\":1" },
+	       { "\"schema_version\":1", "\"schema_version\":2" },
+	       { "\"giver_vnum\":17", "\"giver_vnum\":true" },
+	       { "\"giver_vnum\":17", "\"giver_vnum\":17,\"extra\":1" },
+	       { "\"previous_zone_number\":1", "\"previous_zone_number\":2" },
+	       { "\"zone_number\":2", "\"zone_number\":3" },
+	       { "\"previous_source_area\":\"runtime-zone\"",
+		 "\"previous_source_area\":\"wrong\"" },
+	       { "\"source_area\":\"reviewed-zone\"", "\"source_area\":\"wrong\"" },
+	       { "\"content_revision\":2", "\"content_revision\":1" },
+	       { "give=I:24402", "give=I:24499" } })
+	{
+		std::string invalid = valid_owner;
+		invalid.replace(invalid.find(replacement.first), replacement.first.size(),
+				replacement.second);
+		write_owners(invalid);
+		require(!zone_story_quest_production::bootstrap(2, &error) &&
+				!zone_story_quest_production::ready() &&
+				zone_story_quest_production::zone_for_completion(&first) == -1 &&
+				!error.empty(),
+			"invalid owner file silently published a ready catalog");
+	}
+	write_owners(std::string(64 * 1024 + 1, ' '));
+	require(!zone_story_quest_production::bootstrap(2, &error),
+		"oversized owner file was accepted");
+	std::filesystem::remove("areas/quest_owners.json");
+	require(zone_story_quest_production::bootstrap(2, &error) &&
+			*zone_story_quest_production::definition_id_for(&first) == corrected_id &&
+			zone_story_quest_production::zone_for_completion(&first) == 1 &&
+			!zone_story_quest_production::runtime_catalog().definitions[0].repeatable,
+		"fallback changed native identity or retained corrected reset-mode eligibility");
+	first.disappear = duplicate.disappear = false;
+	require(zone_story_quest_production::bootstrap(2, &error) &&
+			*zone_story_quest_production::definition_id_for(&first) == stable_id,
+		"unchanged native contract lost its stable identity");
 	std::cout << "zone-story runtime production catalog regression passed\n";
 	return 0;
 }

@@ -38,6 +38,8 @@ struct quest_definition
 	bool daily_eligible = false;
 	std::string daily_exclusion = {};
 	std::vector<std::string> prerequisites = {};
+	/* Reviewed ownership correction; immutable older receipts keep this owner. */
+	int32_t previous_zone_number = -1;
 };
 
 struct completion_transaction

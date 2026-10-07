@@ -1,5 +1,9 @@
 # The Stone Tomb of Kelek: comprehensive zone story dossier
 
+Priority178 ownership amendment: [revision-two mapping](../../../areas/story/kelek.story.json) now contains only the unchanged smith material story, five local contacts and one achievement/potential daily. The two Church contracts and eight Church contacts moved to the [Church journal](CHURCH_OF_THE_ETERNAL_DUSK.md) through the separately named [ownership repair](../ZONE_STORY_CHURCH_OWNERSHIP_FIX.md). Native IDs, offerings, rewards, world bands and old immutable receipt payloads are preserved; Kelek discovery does not create Church discovery. The original priority173 review below records the revision-one state and the repair obligation that led to this change.
+
+## Priority173 revision-one source review (historical)
+
 Priority173 in the original220-area order. The [builder mapping](../../../areas/story/kelek.story.json) preserves three independent cards, thirteen contacts, two addressed response bodies/two aliases, six optional singleton custody rows and three native receipt steps. Three achievements/three potential dailies remain classified. New tracking requires active READY accounting; frozen committed recovery stays separate. Source mapping does not claim current stock, personal source work, forge repair, captive release, political changes or played completion.
 
 ## Exact returns and linked progression

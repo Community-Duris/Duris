@@ -133,6 +133,10 @@ bool validate_definition(const quest_definition &definition, std::string *error)
 		return fail(error, "source_system must be zone_story");
 	if (definition.zone_number < 0)
 		return fail(error, "zone_number must be nonnegative");
+	if (definition.previous_zone_number != -1 &&
+	    (definition.previous_zone_number <= 0 ||
+	     definition.previous_zone_number == definition.zone_number))
+		return fail(error, "previous quest owner must be a different playable zone");
 	if (definition.source_area.empty())
 		return fail(error, "source_area must be non-empty");
 	if (definition.giver_vnum <= 0)

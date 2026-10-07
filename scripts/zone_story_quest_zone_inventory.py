@@ -94,6 +94,10 @@ def inventory(root):
     definitions = collections.defaultdict(list)
     dialogue = collections.defaultdict(list)
     specials = collections.defaultdict(set)
+    corrected_givers = {d["giver_vnum"] for d in catalog["definitions"] if "previous_zone_number" in d}
+    giver_owners = collections.defaultdict(set)
+    for definition in catalog["definitions"]:
+        giver_owners[definition["giver_vnum"]].add(definition["source_area"])
 
     def owner(vnum):
         return next((z["source_area"] for z in zones if z["first_vnum"] <= vnum <= z["last_vnum"]), None)
@@ -104,7 +108,11 @@ def inventory(root):
         if block["kind"] in {"M", "MA"} and block["body"]:
             aliases = block["body"][0].split("~")[0].lower().split()
             if aliases and all(re.fullmatch(r"[a-z0-9_-]{1,64}", a) for a in aliases) and "qc_action" not in aliases:
-                dialogue[owner(block["giver_vnum"])].append(block)
+                giver = block["giver_vnum"]
+                if giver in corrected_givers and len(giver_owners[giver]) != 1:
+                    raise ValueError(f"quest dialogue: giver {giver} has conflicting reviewed owners")
+                area = next(iter(giver_owners[giver])) if giver in corrected_givers else owner(giver)
+                dialogue[area].append(block)
     assignments = special_assignments((root / "src/specs/specs.assign.c").read_text())
     area_assignments = collections.defaultdict(list)
     for assignment in assignments:

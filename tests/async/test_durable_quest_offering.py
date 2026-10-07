@@ -384,6 +384,7 @@ const std::string *definition_id_for(const quest_complete_data *) {
     return &id;
 }
 int zone_for_giver_vnum(int vnum) { return vnum > 0 ? 1 : 0; }
+int zone_for_completion(const quest_complete_data *completion) { return completion ? 1 : -1; }
 }
 void extract_obj(P_obj object, int = 0) {
     P_obj *link = &object_list;

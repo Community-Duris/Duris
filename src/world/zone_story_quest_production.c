@@ -5,10 +5,16 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cjson/cJSON.h>
+#include <cmath>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
 #include <map>
+#include <memory>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -30,6 +36,111 @@ namespace
 zone_story_quest_catalog::catalog published_catalog;
 std::map<const quest_complete_data *, std::string> completion_bindings;
 bool catalog_ready = false;
+
+struct owner_rule
+{
+	int previous_zone_number;
+	int zone_number;
+	bool matched = false;
+};
+using owner_rules = std::map<std::pair<int, std::string>, owner_rule>;
+
+// Correct individual reviewed contracts without moving world vnum boundaries.
+// A present invalid file disables catalog publication; absence preserves fallback.
+owner_rules load_owner_rules(const zone_story_quest_catalog::catalog &catalog)
+{
+	const std::filesystem::path path("areas/quest_owners.json");
+	if (!std::filesystem::exists(path))
+		return {};
+	if (!std::filesystem::is_regular_file(path) || std::filesystem::file_size(path) > 64 * 1024)
+		throw std::runtime_error("quest owners: unreadable or oversized file");
+	std::ifstream file(path, std::ios::binary);
+	if (!file)
+		throw std::runtime_error("quest owners: unreadable file");
+	const std::string json{ std::istreambuf_iterator<char>(file),
+				std::istreambuf_iterator<char>() };
+	if (file.bad() || json.size() > 64 * 1024 || json.find('\0') != std::string::npos ||
+	    json.find("\\u0000") != std::string::npos)
+		throw std::runtime_error("quest owners: invalid file contents");
+	std::unique_ptr<cJSON, decltype(&cJSON_Delete)> root(
+		cJSON_ParseWithLengthOpts(json.c_str(), json.size() + 1, nullptr, 1), cJSON_Delete);
+	auto fields = [](const cJSON *object, std::initializer_list<std::string_view> keys)
+	{
+		if (!cJSON_IsObject(object))
+			throw std::runtime_error("quest owners: expected object");
+		std::set<std::string_view> found;
+		for (const auto *field = object->child; field; field = field->next)
+		{
+			const std::string_view name = field->string ? field->string : "";
+			if (std::find(keys.begin(), keys.end(), name) == keys.end() ||
+			    !found.insert(name).second)
+				throw std::runtime_error(
+					"quest owners: unknown or duplicate field");
+		}
+		if (found.size() != keys.size())
+			throw std::runtime_error("quest owners: missing field");
+	};
+	auto integer = [](const cJSON *object, const char *key)
+	{
+		const auto *value = cJSON_GetObjectItemCaseSensitive(object, key);
+		if (!cJSON_IsNumber(value) || !std::isfinite(value->valuedouble) ||
+		    value->valuedouble < 1 || value->valuedouble > INT32_MAX ||
+		    std::floor(value->valuedouble) != value->valuedouble)
+			throw std::runtime_error("quest owners: invalid positive integer");
+		return static_cast<int>(value->valuedouble);
+	};
+	auto text = [](const cJSON *object, const char *key)
+	{
+		const auto *value = cJSON_GetObjectItemCaseSensitive(object, key);
+		if (!cJSON_IsString(value) || !value->valuestring)
+			throw std::runtime_error("quest owners: expected string");
+		const std::string result(value->valuestring);
+		if (result.empty() || result.size() > 1024 ||
+		    std::any_of(result.begin(), result.end(),
+				[](unsigned char c) { return c < 32 || c == 127 || c == '$'; }))
+			throw std::runtime_error("quest owners: invalid text");
+		return result;
+	};
+	fields(root.get(), { "schema_version", "owners" });
+	if (integer(root.get(), "schema_version") != 1)
+		throw std::runtime_error("quest owners: unsupported schema");
+	const auto *entries = cJSON_GetObjectItemCaseSensitive(root.get(), "owners");
+	if (!cJSON_IsArray(entries) || cJSON_GetArraySize(entries) > 256)
+		throw std::runtime_error("quest owners: invalid owners array");
+	owner_rules result;
+	for (const auto *entry = entries->child; entry; entry = entry->next)
+	{
+		fields(entry, { "giver_vnum", "completion_key", "previous_zone_number",
+				"previous_source_area", "zone_number", "source_area",
+				"content_revision" });
+		const int previous = integer(entry, "previous_zone_number");
+		const int owner = integer(entry, "zone_number");
+		if (previous == owner ||
+		    static_cast<uint32_t>(integer(entry, "content_revision")) !=
+			    catalog.content_revision)
+			throw std::runtime_error(
+				"quest owners: unchanged owner or revision mismatch");
+		for (const auto &[number, source] :
+		     { std::make_pair(previous, text(entry, "previous_source_area")),
+		       std::make_pair(owner, text(entry, "source_area")) })
+			if (std::none_of(catalog.zones.begin(), catalog.zones.end(),
+					 [&](const auto &zone) {
+						 return zone.discoverable &&
+							zone.zone_number == number &&
+							zone.source_area == source;
+					 }))
+				throw std::runtime_error("quest owners: unknown zone/source pair");
+		const int giver = integer(entry, "giver_vnum");
+		if (zone_for_giver_vnum(giver) != previous)
+			throw std::runtime_error(
+				"quest owners: previous owner differs from world registry");
+		if (!result.emplace(std::make_pair(giver, text(entry, "completion_key")),
+				    owner_rule{ previous, owner })
+			     .second)
+			throw std::runtime_error("quest owners: duplicate native contract");
+	}
+	return result;
+}
 
 char goal_kind(char goal_type)
 {
@@ -273,14 +384,25 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 				  .discoverable = zone.number > 0 });
 		previous_top = zone.top;
 	}
+	owner_rules owners;
+	try
+	{
+		owners = load_owner_rules(result);
+	}
+	catch (const std::exception &exception)
+	{
+		if (error)
+			*error = exception.what();
+		return result;
+	}
 	for (int quest = 0; quest < number_of_quests; ++quest)
 	{
 		const int quester_rnum = quest_index[quest].quester;
 		if (quester_rnum < 0)
 			continue;
 		const int giver_vnum = mob_index[quester_rnum].virtual_number;
-		const int zone_number = zone_for_giver_vnum(giver_vnum);
-		if (zone_number < 0)
+		const int numeric_zone = zone_for_giver_vnum(giver_vnum);
+		if (numeric_zone < 0)
 			continue;
 		for (const quest_complete_data *completion = quest_index[quest].quest_complete;
 		     completion; completion = completion->next)
@@ -289,6 +411,11 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 			const auto occurrence_key = std::make_pair(giver_vnum, key);
 			if (!seen_contracts.emplace(occurrence_key).second)
 				continue;
+			const auto owner = owners.find(occurrence_key);
+			const int zone_number = owner == owners.end() ? numeric_zone :
+									owner->second.zone_number;
+			if (owner != owners.end())
+				owner->second.matched = true;
 			const std::string encoded_key = hex_encode(key);
 			zone_story_quest_tracking::quest_definition definition;
 			definition.definition_id =
@@ -296,6 +423,9 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 			definition.source_system =
 				zone_story_quest_tracking::ZONE_STORY_QUEST_SOURCE_SYSTEM;
 			definition.zone_number = zone_number;
+			if (owner != owners.end())
+				definition.previous_zone_number =
+					owner->second.previous_zone_number;
 			for (const auto &zone : result.zones)
 				if (zone.zone_number == zone_number)
 					definition.source_area = zone.source_area;
@@ -341,6 +471,13 @@ zone_story_quest_catalog::catalog build_runtime_catalog(uint32_t content_revisio
 			definition.content_revision = content_revision;
 			result.definitions.push_back(std::move(definition));
 		}
+	}
+	if (std::any_of(owners.begin(), owners.end(),
+			[](const auto &entry) { return !entry.second.matched; }))
+	{
+		if (error)
+			*error = "quest owners: unknown native contract";
+		return result;
 	}
 	std::sort(result.definitions.begin(), result.definitions.end(),
 		  [](const auto &left, const auto &right)
@@ -455,6 +592,16 @@ const std::string *definition_id_for(const quest_complete_data *completion)
 		return nullptr;
 	const auto found = completion_bindings.find(completion);
 	return found == completion_bindings.end() ? nullptr : &found->second;
+}
+
+int zone_for_completion(const quest_complete_data *completion)
+{
+	const auto *id = catalog_ready ? definition_id_for(completion) : nullptr;
+	if (id)
+		for (const auto &definition : published_catalog.definitions)
+			if (definition.definition_id == *id)
+				return definition.zone_number;
+	return -1;
 }
 
 bool ready()

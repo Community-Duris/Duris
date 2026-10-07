@@ -76,6 +76,8 @@ zone_story_quest_catalog::catalog native_catalog(const char *path)
 		definition.objective = text(entry, "objective");
 		definition.daily_eligible = flag(entry, "daily_eligible");
 		definition.daily_exclusion = text(entry, "daily_exclusion");
+		if (cJSON_GetObjectItemCaseSensitive(entry, "previous_zone_number"))
+			definition.previous_zone_number = number(entry, "previous_zone_number");
 		catalog.definitions.push_back(std::move(definition));
 	}
 	return catalog;
@@ -209,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 190 &&
+		require(catalog.story_mappings.size() == 191 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -8465,176 +8467,213 @@ int main(int argc, char **argv)
 							    catalog.story_mappings.end(),
 							    [](const auto &m)
 							    { return m.source_area == "kelek"; });
-			require(mapping.stories.size() == 3 && mapping.contacts.size() == 13 &&
-					mapping.revision == 1,
-				"Kelek journal scope failed");
-			int achievements = 0, dailies = 0;
-			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
-				if (u.zone_number == 879)
-				{
-					achievements += u.achievement;
-					dailies += u.daily_candidate;
-				}
-			require(achievements == 3 && dailies == 3,
-				"Kelek independent daily units changed");
-			const auto &bishop = story_for("kelek", "cardinal-proof");
-			const auto &captive = story_for("kelek", "captive-paladin-proof");
+			const auto &church = *std::find_if(catalog.story_mappings.begin(),
+							   catalog.story_mappings.end(),
+							   [](const auto &m)
+							   { return m.source_area == "church"; });
+			require(mapping.stories.size() == 1 && mapping.contacts.size() == 5 &&
+					mapping.revision == 2 && church.stories.size() == 4 &&
+					church.contacts.size() == 12,
+				"Church/Kelek corrected journal scope failed");
+			const auto &bishop = story_for("church", "cardinal-proof");
+			const auto &captive = story_for("church", "captive-paladin-proof");
+			const auto &badge = story_for("church", "badge-for-the-cardinal");
+			const auto &report = story_for("church", "report-to-the-field-general");
 			const auto &smith = story_for("kelek", "smithy-materials");
+			int achievements = 0, dailies = 0;
+			for (const auto &unit : zone_story_quest_catalog::quest_units(catalog))
+				if (unit.zone_number == 878)
+				{
+					achievements += unit.achievement;
+					dailies += unit.daily_candidate;
+				}
+			require(achievements == 4 && dailies == 4,
+				"Church four independent units failed");
 			service journey(catalog);
 			require(journey.meet_npc(7, 42, 87860, 87841, 99) == result::rejected,
-				"Kelek Church encounter skipped physical discovery");
-			require(journey.discover_zone(7, 42, 878, 87841, 100, "arrival") ==
+				"Church encounter skipped discovery");
+			require(journey.discover_zone(7, 42, 878, 87847, 100, "arrival") ==
 					result::applied,
-				"Kelek real Church discovery failed");
-			require(journey.meet_npc(7, 42, 87860, 87841, 101) == result::applied &&
-					journey.meet_npc(7, 42, 87869, 87850, 101) ==
+				"Church actual discovery failed");
+			require(journey.render_journal(7, 42, 878, 10, 1, 101, false, false)
+						.find("] " + bishop.title + "\r\n") ==
+					std::string::npos,
+				"Church discovery exposed unseen giver");
+			for (const auto &[giver, room] : { std::pair<int, int>{ 87860, 87841 },
+							   { 87869, 87850 },
+							   { 87821, 87840 },
+							   { 87847, 87847 } })
+				require(journey.meet_npc(7, 42, giver, room, 102) ==
 						result::applied,
-				"Kelek real Church encounters failed");
-			require(journey.render_journal(7, 42, 879, 10, 1, 102, false, false)
+					"Church actual giver encounter failed");
+			require(journey.render_journal(7, 42, 879, 10, 1, 103, false, false)
 						.find("Undiscovered:") != std::string::npos,
-				"Kelek Church encounters fabricated tomb discovery");
-			require(!journey.daily_eligible_for(7, 42, bishop.contracts.front(), 10, 1,
-							    10, 102),
-				"Kelek Church discovery bypassed current catalog-owner daily gate");
-			record(journey, bishop.contracts.front(), "kelek-bishop", 879, 87841);
-			require(journey.progress_for_zone(7, 42, 879).completed == 1 &&
-					!journey.progress_for_zone(7, 42, 879).discovered,
-				"Kelek real Church receipt invented tomb discovery");
-			require(journey.discover_zone(7, 42, 879, 87950, 121, "arrival") ==
-					result::applied,
-				"Kelek tomb discovery failed");
-			std::string journal =
-				journey.render_journal(7, 42, 879, 10, 1, 122, false, false);
-			require(journal.find("[Recorded] " + bishop.steps.back().text) !=
-						std::string::npos &&
-					journal.find("] " + smith.title + "\r\n") ==
-						std::string::npos,
-				"Kelek owner discovery lost Church receipt or exposed unseen smith");
-			require(journey.meet_npc(7, 42, 87958, 88161, 123) == result::applied,
-				"Kelek optional crypt encounter failed");
-			journal = journey.render_journal(7, 42, 879, 10, 1, 124, false, false);
-			require(journal.find("] " + smith.title + "\r\n") == std::string::npos,
-				"Kelek lich encounter exposed smith return");
-			require(journey.meet_npc(7, 42, 87963, 88163, 125) == result::applied,
-				"Kelek smith encounter failed");
+				"Church visit fabricated Kelek discovery");
 			const auto before = journey.serialize_state();
-			supplies = {};
-			for (int v : { 87873, 87874, 87963, 87959, 87868, 87950, 359 })
-				supplies.carried[v] = 3;
-			journal = journey.render_journal(7, 42, 879, 10, 1, 126, false, false,
-							 &supplies);
-			for (const auto &story : mapping.stories)
+			for (const auto &story : church.stories)
+			{
+				supplies = {};
+				supplies.carried[87874] = 3;
+				supplies.carried[87868] = 3;
+				supplies.carried[87824] = 3;
 				for (const auto &step : story.steps)
 					if (step.kind == "carried_item")
+					{
+						const auto journal = journey.render_journal(
+							7, 42, 878, 10, 1, 104, false, false,
+							&supplies);
 						require(journal.find("[Missing now] " +
 								     step.text) !=
 								std::string::npos,
-							"Kelek reward/key/node supplied requested material");
-			supplies = {};
-			supplies.equipped[16] = 87962;
-			supplies.equipped[18] = 87961;
-			supplies.carried[2] = 3;
-			journal = journey.render_journal(7, 42, 879, 10, 1, 127, false, false,
-							 &supplies);
-			for (const auto &step : smith.steps)
-				if (step.kind == "carried_item")
-					require(journal.find("[Missing now] " + step.text) !=
-							std::string::npos,
-						"Kelek held/worn/nested material supplied loose input");
-			for (const auto *story : { &captive, &smith })
-			{
-				for (size_t omitted = 0; omitted + 1 < story->steps.size();
-				     ++omitted)
-				{
-					supplies = {};
-					for (size_t n = 0; n + 1 < story->steps.size(); ++n)
-						if (n != omitted)
-							supplies.carried[story->steps[n]
-										 .item_vnums
-										 .front()] = 3;
-					journal = journey.render_journal(7, 42, 879, 10, 1, 128,
-									 false, false, &supplies);
-					require(journal.find("[Missing now] " +
-							     story->steps[omitted].text) !=
-								std::string::npos &&
-							journal.find("[Pending] " +
-								     story->steps.back().text) !=
+							"Church reward/key replaced exact proof");
+						supplies.equipped[24] = step.item_vnums.front();
+						require(journey.render_journal(7, 42, 878, 10, 1,
+									       105, false, false,
+									       &supplies)
+									.find("[Missing now] " +
+									      step.text) !=
 								std::string::npos,
-						"Kelek repeated one material replaced missing distinct ingredient");
-				}
-			}
-			require(journey.serialize_state() == before &&
-					journey.progress_for_zone(7, 42, 879).completed == 1,
-				"Kelek partial custody mutated receipts");
-			supplies = {};
-			for (const auto &story : mapping.stories)
-				for (const auto &step : story.steps)
-					if (step.kind == "carried_item")
+							"Church held/worn proof counted loose");
 						supplies.carried[step.item_vnums.front()] = 1;
-			journal = journey.render_journal(7, 42, 879, 10, 1, 129, false, false,
-							 &supplies);
-			for (const auto &story : mapping.stories)
+						require(journey.render_journal(7, 42, 878, 10, 1,
+									       106, false, false,
+									       &supplies)
+									.find("[Ready now] " +
+									      step.text) !=
+								std::string::npos,
+							"Church supplied exact proof not ready");
+					}
+			}
+			for (size_t omitted = 0; omitted < 3; ++omitted)
+			{
+				supplies = {};
+				for (size_t n = 0; n < 3; ++n)
+					if (n != omitted)
+						supplies.carried[captive.steps[n]
+									 .item_vnums.front()] = 3;
+				const auto journal = journey.render_journal(
+					7, 42, 878, 10, 1, 107, false, false, &supplies);
+				require(journal.find("[Missing now] " +
+						     captive.steps[omitted].text) !=
+							std::string::npos &&
+						journal.find("[Pending] " +
+							     captive.steps.back().text) !=
+							std::string::npos,
+					"Church duplicate proof replaced missing distinct input");
+			}
+			require(journey.serialize_state() == before,
+				"Church current custody created acquisition or receipt history");
+			// Both narrative links are optional: independent supplied returns fit.
+			record(journey, report.contracts.front(), "church-general-first", 878,
+			       87847);
+			record(journey, bishop.contracts.front(), "church-bishop-first", 878,
+			       87841);
+			require(journey.progress_for_zone(7, 42, 878).completed == 2 &&
+					journey.progress_for_zone(7, 42, 879).completed == 0 &&
+					!journey.has_discovered(7, 42, 879),
+				"Church independent receipt changed tomb history");
+			record(journey, captive.contracts.front(), "church-captive", 878, 87850);
+			record(journey, badge.contracts.front(), "church-badge", 878, 87840);
+			supplies = {};
+			supplies.carried[87874] = 1;
+			const auto consumed = journey.render_journal(7, 42, 878, 10, 1, 130, false,
+								     false, &supplies);
+			for (const auto &story : church.stories)
+			{
+				require(consumed.find("[Recorded] " + story.steps.back().text) !=
+						std::string::npos,
+					"Church exact receipt not recorded");
 				for (const auto &step : story.steps)
 					if (step.kind == "carried_item")
-						require(journal.find("[Ready now] " + step.text) !=
+						require(consumed.find("[Missing now] " +
+								      step.text) !=
 								std::string::npos,
-							"Kelek supplied exact ingredient not ready");
-			require(journey.serialize_state() == before,
-				"Kelek current supplies recorded source history");
-			record(journey, smith.contracts.front(), "kelek-smith", 879, 88163);
-			supplies = {};
-			supplies.carried[87963] = 1;
-			journal = journey.render_journal(7, 42, 879, 10, 1, 130, false, false,
-							 &supplies);
-			require(journey.progress_for_zone(7, 42, 879).completed == 2 &&
-					journal.find("[Recorded] " + smith.steps.back().text) !=
-						std::string::npos &&
-					journal.find("[Pending] " + captive.steps.back().text) !=
-						std::string::npos,
-				"Kelek smith receipt changed captive progress");
-			for (const auto &step : smith.steps)
-				if (step.kind == "carried_item")
-					require(journal.find("[Missing now] " + step.text) !=
-							std::string::npos,
-						"Kelek cloak recreated consumed materials");
-			supplies.carried[87961] = 1;
-			journal = journey.render_journal(7, 42, 879, 10, 1, 131, false, false,
-							 &supplies);
-			require(journal.find("[Ready now] " + smith.steps[0].text) !=
-						std::string::npos &&
-					journal.find("[Missing now] " + smith.steps[1].text) !=
-						std::string::npos &&
-					journey.progress_for_zone(7, 42, 879).completed == 2,
-				"Kelek partial reacquisition replaced both materials");
-			record(journey, captive.contracts.front(), "kelek-captive", 879, 87850);
-			supplies = {};
-			supplies.carried[87873] = 1;
-			journal = journey.render_journal(7, 42, 879, 10, 1, 132, false, false,
-							 &supplies);
-			require(journey.progress_for_zone(7, 42, 879).completed == 3,
-				"Kelek three exact receipts lost identity");
-			require(journey.progress_for_zone(7, 42, 878).completed == 0,
-				"Kelek note custody invented general receipt or rescue");
-			auto replay = completion(captive.contracts.front(), "kelek-captive", 120);
-			replay.transaction.zone_number = 879;
+							"Church reward recreated consumed proof");
+			}
+			require(journey.progress_for_zone(7, 42, 878).completed == 4 &&
+					journey.progress_for_zone(7, 42, 878).total == 4,
+				"Church receipts lost identity");
+			auto replay = completion(captive.contracts.front(), "church-captive", 120);
+			replay.transaction.zone_number = 878;
 			replay.transaction.room_vnum = 87850;
 			require(journey.record_completion(replay) == result::already_applied,
-				"Kelek replay duplicated receipt");
+				"Church replay duplicated receipt");
 			service cold(catalog);
 			require(cold.deserialize_state(journey.serialize_state(), &error) &&
-					cold.progress_for_zone(7, 42, 879).completed == 3 &&
-					cold.progress_for_zone(7, 42, 878).completed == 0,
-				"Kelek cold recovery lost cross-zone identity");
-			service raw(raw_catalog);
-			require(raw.discover_zone(7, 42, 878, 87841, 100, "arrival") ==
+					cold.progress_for_zone(7, 42, 878).completed == 4 &&
+					cold.progress_for_zone(7, 42, 879).completed == 0,
+				"Church cold projection lost ownership");
+			// Kelek's unchanged smith request remains independently visible and exact.
+			require(journey.discover_zone(7, 42, 879, 87950, 131, "arrival") ==
 					result::applied,
-				"Kelek raw Church arrival failed");
-			record(raw, bishop.contracts.front(), "kelek-raw", 879, 87841);
+				"Kelek tomb discovery failed");
+			require(journey.meet_npc(7, 42, 87958, 88161, 132) == result::applied &&
+					journey.render_journal(7, 42, 879, 10, 1, 133, false, false)
+							.find("] " + smith.title + "\r\n") ==
+						std::string::npos,
+				"Kelek lich exposed unseen smith");
+			require(journey.meet_npc(7, 42, 87963, 88163, 134) == result::applied,
+				"Kelek smith encounter failed");
+			for (size_t omitted = 0; omitted < 2; ++omitted)
+			{
+				supplies = {};
+				supplies.carried[smith.steps[1 - omitted].item_vnums.front()] = 3;
+				const auto journal = journey.render_journal(
+					7, 42, 879, 10, 1, 135, false, false, &supplies);
+				require(journal.find("[Missing now] " +
+						     smith.steps[omitted].text) !=
+							std::string::npos &&
+						journal.find("[Pending] " +
+							     smith.steps.back().text) !=
+							std::string::npos,
+					"Kelek duplicated one material replaced the other");
+			}
+			record(journey, smith.contracts.front(), "kelek-smith", 879, 88163);
+			require(journey.progress_for_zone(7, 42, 879).completed == 1 &&
+					journey.progress_for_zone(7, 42, 879).total == 1 &&
+					journey.progress_for_zone(7, 42, 878).completed == 4,
+				"Kelek smith changed Church progress");
+			daily_policy policy;
+			policy.enabled = true;
+			journey.set_daily_policy(policy);
+			require(!journey.daily_eligible_for(7, 42, bishop.contracts.front(), 10, 1,
+							    10, 120 + 86400),
+				"Church rollover bypassed telemetry");
+			for (uint32_t attempt = 0; attempt < policy.minimum_attempts; ++attempt)
+			{
+				telemetry_observation observation;
+				observation.observation_id =
+					"church-observed-" + std::to_string(attempt);
+				observation.quest_definition_id = bishop.contracts.front();
+				observation.content_revision = 2;
+				observation.observed_at = 110;
+				observation.pid = 43 + attempt % policy.minimum_distinct_pids;
+				observation.level = observation.strongest_party_level = 10;
+				observation.racewar = 1;
+				observation.credit_mask =
+					zone_story_quest_tracking::ZONE_STORY_CREDIT_PERSONAL;
+				observation.party_size = 1;
+				observation.duration_seconds = 10;
+				observation.outcome = telemetry_outcome::success;
+				observation.accessible = true;
+				require(journey.record_telemetry(observation) == result::applied,
+					"Church qualifying telemetry failed");
+			}
+			require(journey.daily_eligible_for(7, 42, bishop.contracts.front(), 10, 1,
+							   10, 120 + 86400) &&
+					!journey.daily_eligible_for(7, 42, bishop.contracts.front(),
+								    11, 1, 11, 120 + 86400) &&
+					!journey.daily_eligible_for(7, 42, bishop.contracts.front(),
+								    10, 2, 10, 120 + 86400),
+				"Church eligible level/faction/day checks failed");
+			service raw(raw_catalog);
+			record(raw, bishop.contracts.front(), "church-raw", 878, 87841);
 			service authored(catalog);
 			require(authored.deserialize_state(raw.serialize_state(), &error) &&
-					authored.progress_for_zone(7, 42, 879).completed == 1 &&
-					!authored.progress_for_zone(7, 42, 879).discovered,
-				"Kelek raw-to-authored recovery expanded location or credit");
+					authored.progress_for_zone(7, 42, 878).completed == 1 &&
+					!authored.has_discovered(7, 42, 878) &&
+					authored.progress_for_zone(7, 42, 879).completed == 0,
+				"Church raw recovery invented discovery or tomb credit");
 		}
 
 		{

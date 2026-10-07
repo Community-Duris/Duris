@@ -28,6 +28,8 @@ const std::string *definition_id_for(const quest_complete_data *completion);
 bool ready();
 
 int zone_for_giver_vnum(int giver_vnum);
+/* Exact booted Q binding, including reviewed owner metadata. */
+int zone_for_completion(const quest_complete_data *completion);
 std::string canonical_completion_key(const quest_complete_data &completion);
 } // namespace zone_story_quest_production
 

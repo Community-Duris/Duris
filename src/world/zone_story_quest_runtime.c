@@ -420,6 +420,9 @@ bool record_authoritative_completion(std::string_view definition_id, int32_t zon
 {
 	if (!ready())
 		return fail(error, "zone-story quest runtime is not ready");
+	if (transaction_id.empty() && !economic_gameplay_authority::active())
+		return fail(error,
+			    "new quest completion tracking requires active economic accounting");
 	if (definition_id.empty() || !direct_completer_pid || credited_pids.empty() ||
 	    room_vnum <= 0 || completed_at <= 0)
 		return fail(error, "invalid authoritative zone-story completion context");
@@ -474,8 +477,9 @@ bool record_authoritative_completion(std::string_view definition_id, int32_t zon
 						   std::string(transaction_id);
 	event.transaction.quest_definition_id = definition_id;
 	event.transaction.zone_number = definition->zone_number;
-	if (daily && (daily->catalog_revision != definition->content_revision ||
-		      zone_number != definition->zone_number))
+	if ((daily && daily->catalog_revision != definition->content_revision) ||
+	    (zone_number != definition->zone_number &&
+	     (!daily || transaction_id.empty() || definition->previous_zone_number != zone_number)))
 		return fail(error, "frozen completion catalog revision is unsupported");
 	event.transaction.direct_completer_pid = direct_completer_pid;
 	event.transaction.credited_pids = credited_pids;
@@ -525,6 +529,9 @@ bool record_legacy_completion(struct char_data *player, const quest_complete_dat
 			      int32_t room_vnum, int64_t completed_at, std::string *error,
 			      std::string_view transaction_id)
 {
+	if (transaction_id.empty() && !economic_gameplay_authority::active())
+		return fail(error,
+			    "new quest completion tracking requires active economic accounting");
 	if (!player || IS_NPC(player) || !completion)
 		return fail(error, "legacy zone-story completion requires a player and Q block");
 	if (IS_TRUSTED(player))

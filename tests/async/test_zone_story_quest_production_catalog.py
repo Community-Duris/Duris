@@ -3939,7 +3939,7 @@ for v in (120016,120054):assert 'pink' in objects[v].lower()  # Pending copy rep
 guidance=' '.join(mapping['orientation']+[c['description'] for c in mapping['contacts']]+[t.get('hint','') for s in mapping['stories'] for t in s['steps']])
 for phrase in ('lockpicking','GET','CARVE','rotting','two','nine','supplied','loose'):
     assert phrase.lower() in guidance.lower(),phrase
-assert catalog_module.report_for(catalog)['mapped_area_count']==190
+assert catalog_module.report_for(catalog)['mapped_area_count']==191
 assert catalog_module.report_for(catalog)['daily_unit_count']==1408
 assert sum(catalog_module.report_for(catalog)['eligible_by_zone'].values())==1522
 assert catalog_module.report_for(catalog)['story_unit_count']==2184
@@ -4048,7 +4048,7 @@ for phrase in ('key == -2','EX_LOCKED','isname(word, arg1)','back->to_room == ch
 guidance=' '.join(mapping['orientation']+[c['description'] for c in mapping['contacts']]+[t.get('hint','') for s in mapping['stories'] for t in s['steps']])
 for phrase in ('incomplete','world cap of one','RUB','supplied','three','loose','vapor','currently unavailable'):assert phrase.lower() in guidance.lower()
 report=catalog_module.report_for(catalog)
-assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(190,1522,1408,2184)
+assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(191,1522,1408,2184)
 
 
 # Cloister: complete native classification, refusal semantics and optional source routes.
@@ -4125,7 +4125,7 @@ assert '!IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED)' in search and 'REMOVE_BI
 guidance=' '.join(mapping['orientation']+[c['description'] for c in mapping['contacts']]+[t.get('hint','') for s in mapping['stories'] for t in s['steps']])
 for phrase in ('PUSH','SEARCH','SAY Khildarak','supplied','rejection','world cap of one','trap','ten-minute','active, ready accounting'):assert phrase.lower() in guidance.lower(),phrase
 report=catalog_module.report_for(catalog)
-assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(190,1522,1408,2184)
+assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(191,1522,1408,2184)
 
 
 # Turolopolis: exact ALL colours, retiring source, foreign giver and real portal/access roles.
@@ -4212,7 +4212,7 @@ for phrase in ('RUB','ENTER','SEARCH','five exact colours','white badge','suppli
     assert phrase.lower() in guidance.lower(),phrase
 assert not any(phrase in guidance for phrase in ('tower’s','crumbling stairway','priest’s quarters','Ask about free','Ask about power'))
 report=catalog_module.report_for(catalog)
-assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(190,1522,1408,2184)
+assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(191,1522,1408,2184)
 
 
 # Ixarkon: exact sources, optional guarded preparation and distinct campaign intent.
@@ -4408,7 +4408,7 @@ assert len(re.findall(r'^#\d+~\s*$',(ROOT/'areas/shp/mntcastl.shp').read_text(en
 guidance=' '.join(mapping['orientation']+[s['summary'] for s in mapping['stories']]+[t['hint'] for s in mapping['stories'] for t in s['steps']])
 for phrase in ('three','consumed','supplied','unresolved','no SEARCH','gardener belt','currently unavailable','active, ready accounting'):
     assert phrase.lower() in guidance.lower(),phrase
-assert catalog_module.report_for(catalog)['mapped_area_count']==190
+assert catalog_module.report_for(catalog)['mapped_area_count']==191
 assert catalog_module.report_for(catalog)['daily_unit_count']==1408
 assert sum(catalog_module.report_for(catalog)['eligible_by_zone'].values())==1522
 
@@ -7010,11 +7010,11 @@ assert 'isname(arg, "scroll")' in scroll and 'number(55352, 55360)' in scroll an
 assert 'mob_index[GET_RNUM(k)].qst_func' in (ROOT/'src/cmd/interp.c').read_text()
 
 
-# Kelek: exact mixed-material returns, real Church placement and owned receipt identity.
+# Kelek revision two: retain its exact smith return after the reviewed Church correction.
 kelek=inventory_module.area_evidence(ROOT,'kelek');mapping=next(m for m in catalog['story_mappings'] if m['source_area']=='kelek')
-expected={('areas/qst/church.qst',47):(87860,[87869],[('C',250000),('E',100000)]),('areas/qst/church.qst',62):(87869,[87870,87871,87872],[('I',87873)]),('areas/qst/kelek.qst',11):(87963,[87961,87962],[('I',87963)])}
-assert (mapping['schema_version'],mapping['revision'],mapping['coverage'])==(3,1,'complete') and not mapping['exclusions']
-assert len(kelek['requests'])==len(mapping['stories'])==3
+expected={('areas/qst/kelek.qst',11):(87963,[87961,87962],[('I',87963)])}
+assert (mapping['schema_version'],mapping['revision'],mapping['coverage'])==(3,2,'complete') and not mapping['exclusions']
+assert len(kelek['requests'])==len(mapping['stories'])==1
 bindings={}
 for q in kelek['requests']:
  b=q['block'];giver,inputs,rewards=expected[(b['source'],b['line'])]
@@ -7025,11 +7025,11 @@ for s in mapping['stories']:
  binding=s['contracts'][0];b=bindings[(binding['giver_vnum'],binding['completion_key'])]
  assert len(s['contracts'])==1 and len(s['steps'])==len(b['give'])+1 and s['steps'][-1]['kind']=='completion' and s['steps'][-1]['contracts']==s['contracts']
  assert [(row['kind'],row['optional'],row['item_vnums'],row['count']) for row in s['steps'][:-1]]==[('carried_item',True,[v],1) for kind,v in b['give']]
-assert len(mapping['contacts'])==13 and sum(len(c['topics']) for c in mapping['contacts'])==2
+assert len(mapping['contacts'])==5 and sum(len(c['topics']) for c in mapping['contacts'])==1
 for c in mapping['contacts']:
  assert c['name']==inventory_mobs[c['mob_vnum']]['name'] and c['keyword'] in inventory_mobs[c['mob_vnum']]['keywords']
  assert c['topics']==list(dict.fromkeys(w for d in kelek['dialogue'] if d['giver_vnum']==c['mob_vnum'] for w in d['body'][0].rstrip('~').split()))
-assert [d['body'][0] for d in kelek['dialogue']]==['initiation~','mithril~']
+assert [d['body'][0] for d in kelek['dialogue']]==['mithril~']
 assert (kelek['zone']['zone_number'],kelek['zone']['first_vnum'],kelek['zone']['last_vnum'],kelek['zone']['reset_mode'])==(879,87853,88165,0)
 rooms=dawndale_bodies('kelek','wld');objects=dawndale_bodies('kelek','obj');mobiles=dawndale_bodies('kelek','mob');churchrooms=dawndale_bodies('church','wld')
 assert (len(rooms),len(objects),len(mobiles))==(216,14,16) and set(rooms)==set(range(87950,88166))
@@ -11761,4 +11761,6 @@ with tempfile.TemporaryDirectory(prefix="duris-zone-story-sidecar-boundary-") as
     else:
         raise AssertionError("oversized source sidecar was accepted")
 
+subprocess.run([sys.executable, str(ROOT / "tests/async/test_zone_story_quest_owners.py")], cwd=ROOT, check=True)
+subprocess.run([sys.executable, str(ROOT / "tests/async/test_zone_story_quest_church.py")], cwd=ROOT, check=True)
 print("zone-story production catalog coverage regression passed")
