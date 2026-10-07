@@ -102,3 +102,25 @@ private live-route contract investigation; no duplication is selected. R11 is a
 next useful operation, not a new completion milestone. Continuing Goals and the
 15-minute monitor retain required primary Plans1-5/applicable original R1-R8,
 integrated qualification, resolved blockers and published owner disposition.
+
+## Independent uncommitted implementation audit
+
+The coordinator reviews a stable draft with tradeskill SHA256
+`aa32c6ff25de2bc768652b44bf2f1e579ce3896b69800fc3783e462775682b0a`,
+header `6919bd32a57dfa384d1e4c826e08af08316af018af0299055ada8d38a583c161`
+and runner `d9b59efa1bc8e40677362d5c1fd56c4a4c89fdbfef2dfaf35b198972f82ad279`.
+Reversing only the native observation substitutions recovers all3,154 original
+calculation code tokens in exact order, with actual string literals retained.
+Restoring the original itemvalue body and removing the one new include restores
+the entire original tradeskill.c byte-for-byte. The original45-control DRIVER
+and controlled PRELUDE remain exact except the required new header include.
+Provider native field types, mask widths and fresh diagnostic reads are reviewed.
+
+The three minimum-circle calls retain the original addition expression/grouping.
+C++ does not impose a universal left-to-right order for its operands. The tested
+GCC traces are scoped observations; do not replace the expression with newly
+sequenced temporary statements or claim a new language-level ordering guarantee.
+This draft audit is no new runtime or final committed qualification. Worker reports
+all45 original/extracted controls passing under baseline and separate -Og; builds,
+current bare packages, final committed artifacts and final review remain pending.
+Private itemvalue-rule-review-RESULT.json retains actual draft inputs and limits.
