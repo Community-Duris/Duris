@@ -1,5 +1,11 @@
 # Post-R9 concrete queue and native-owner dependencies — 2026-10-07
 
+This historical assessment led to R10, now approved at accountinge6 and implemented
+at7bb with complete original/extracted and current import qualification. See
+[R10 terminal handoff](R10_SHOP_PURCHASE_QUOTE_HANDOFF.md) for current disposition;
+original fixture failures below remain retained historical evidence. No blanket
+shop capture blocker is inferred. Continuing Goal remains ACTIVE/no budget.
+
 The original maintained fixture failure below remains preserved. A private complete
 current-producer closure now PASSes every original runtime assertion, all original
 Python main assertions and46 added quote scenarios (23 per controlled mode). See

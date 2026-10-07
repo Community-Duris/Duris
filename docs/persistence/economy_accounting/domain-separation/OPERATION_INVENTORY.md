@@ -1,16 +1,20 @@
 # Fixed domain-separation operation inventory — 2026-10-07
 
-[R10 complete shop purchase quote reservation](R10_SHOP_PURCHASE_QUOTE_RESERVATION.md)
-now has executed complete original feasibility: all old runtime/Python assertions
-plus46 quote scenarios PASS in private current fixture closure. Exact three-file
-boundary awaits coordinator review; no maintained shop edits are made. The original
-fixture compile failure and native authority limits remain explicit.
+R10 complete shop purchase quote is approved at accountinge6 and implemented at
+`7bbf942e3b7c12dea22e5bf03a592b48aedd690f`. Complete original/extracted actual-caller
+controls preserve all56 old assertions, all original Python checks and46 added quote
+cases. Both maintained740-object builds and exact bare-primary production/full
+imports, full-module SQL/flat checks and actual purchase runner PASS. Original
+live-route and bare-current adjacent command-codec fixture failures are retained
+and compared with original inputs. No optional prerequisite is needed. See
+[R10 terminal handoff](R10_SHOP_PURCHASE_QUOTE_HANDOFF.md). Final terminal-package
+review remains pending; independent committed-input/import/body review already PASSes.
+The continuing Goal remains ACTIVE/no budget with native/current754 journeys and
+primary Plans1-5/applicable original R1-R8 requirements open; adoption is unknown.
 
-[Post-R9 nine-family assessment](POST_R9_OWNER_DEPENDENCIES_2026-10-07.md)
-identifies complete shop purchase quote as a concrete next candidate and records
-the executed original actual-caller fixture compile failure. No shop scope is
-reserved or implemented; current native/test ownership and all original controls
-remain preserved. R9 final review PASS is published at accounting81de2cbb46.
+[Post-R9 assessment](POST_R9_OWNER_DEPENDENCIES_2026-10-07.md) is historical
+selection/original-fixture evidence, superseded for R10 implementation by this
+handoff. R9 final review PASS remains published at accounting81de2cbb46.
 
 R9 ordered NPC essence selection is implemented at15d plus include fix305.
 Complete original/extracted27-scenario controls and both labeled ordinal-policy
