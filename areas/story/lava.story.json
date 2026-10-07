@@ -1,0 +1,227 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "lava",
+  "coverage": "complete",
+  "introduction": "Explore Lava Springs, gather Drembel’s exact materials and commission Cinder, while following the separate town, tyrant and Qin skull stories.",
+  "orientation": [
+    "Explore Lava Springs from the installed surface approach, meet Drembel and follow his Cinder commission. Discovery records your actual arrival; the request is revealed by meeting the blacksmith.",
+    "Ask Drembel about hi, lava, rock, weapon, forge, need, want or armor. These eight aliases share one room-wide response, rather than eight separate quests.",
+    "Drembel needs five exact lava rocks and one exact flaming-longsword voucher. The para-elemental figures carry the rocks around the crater; Fonlak stocks the voucher in the Depositary Stronghold.",
+    "Drembel recommends buying the voucher. Native purchases are currently unavailable while accounting is active. An exact supplied voucher or supplied rocks also fit the commission; remembered purchase or personal kills are not native requirements.",
+    "Gather all five rocks and the voucher loose in your inventory before offering a requested item to Drembel. The accounting path selects distinct materials and commits the complete set together; an incomplete set stays with you.",
+    "Current materials are preparation, and the accepted exchange is history. Holding Cinder, the crystal skull, an elixir or equipment cannot create the forging receipt. Consuming materials or losing the reward does not erase acceptance.",
+    "The voucher has a nominal cost, but native price policy can vary the actual purchase amount. Payment, voucher issuance, supplied custody and forging completion are separate outcomes.",
+    "The crater and lava tubes use real fire-plane terrain. Entry schedules heat effects; protection can be removed, some actors benefit from fire, and ordinary actors can suffer damage. Entering a room alone does not prove survival or safe return.",
+    "The platform above the lava tube has a different terrain type. Opening a lava-pit, tube or plank door and crossing it are distinct from recovering a rock or forging Cinder.",
+    "Voinak carries a strange crystal skull requested by Qin in Drifting Realm. It is one of five distinct skulls in that separate return; local possession or defeating Voinak does not complete Qin’s quest or Drembel’s commission. The skull is authored as hidden, cannot be dropped and cannot be rented; recovering it and making an accepted foreign return need their actual admission.",
+    "The forgotten inn has a rent handler and the vacant room has a healing control. Neither peaceful wording nor bank safety prose adds a safe-room flag.",
+    "The counter has a locker interaction with account, town, combat and service admission. Paid locker services are currently unavailable under active accounting; the sign’s banking words do not prove a completed deposit or safe storage.",
+    "The mechanized replicas follow selected residents as native guards. Hiring, freeing or restoring a construct needs a defined beneficiary and lasting result; native follower stock is separate from a player’s hire receipt.",
+    "The elixir of lifeforce is configured for an aging spell. Its name does not promise healing or restoration; possession and actual admitted effects are different facts.",
+    "Town defenses, abandoned homes, demonic hosts, vampires and Voinak’s rule suggest wider investigation, aid and restoration stories. Builders must define actual contributions, agency, beneficiaries and lasting outcomes.",
+    "New tracking requires active READY accounting. Daily replay remains disabled until source generations, purchases, the six-item exchange, reward/save/replay and renewed availability are qualified."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 99700,
+      "name": "a valiant archon soldier",
+      "keyword": "soldier",
+      "description": "This contact is stocked around A Cavern Foyer, The Main Cavern Entrance. Meeting this contact is separate from defeat, recovery, assistance or lasting town outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99701,
+      "name": "a valiant archon commander",
+      "keyword": "commander",
+      "description": "This contact is stocked around A Lookout Post. Meeting this contact is separate from defeat, recovery, assistance or lasting town outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99702,
+      "name": "a mechanized construct replica",
+      "keyword": "replica",
+      "description": "These replicas are stocked as guards, including followers of Durka, Drembel and Fonlak. A paid hire, restoration or liberation branch requires actual control, consent, ownership and a lasting beneficiary result.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99703,
+      "name": "Durka, the vampiric innkeeper",
+      "keyword": "durka",
+      "description": "Durka stocks hypnotic fireweed in the forgotten inn. His rumored side hustle is a story lead; the inn rent handler and actual service/effect results are separate from Cinder.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99704,
+      "name": "a villianous duergar creep",
+      "keyword": "creep",
+      "description": "This contact is stocked around A Bend in the Passage, A Cavern Cavity. Meeting this contact is separate from defeat, recovery, assistance or lasting town outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99705,
+      "name": "Drembel, the death knight blacksmith",
+      "keyword": "drembel",
+      "description": "Drembel accepts five exact lava rocks and one exact sword voucher for Cinder. Eight aliases share one room-wide response. Exact supplied materials fit without remembered purchase or personal kills.",
+      "topics": [
+        "hi",
+        "lava",
+        "rock",
+        "weapon",
+        "forge",
+        "need",
+        "want",
+        "armor"
+      ]
+    },
+    {
+      "mob_vnum": 99706,
+      "name": "a thirsty vampire enslaver",
+      "keyword": "enslaver",
+      "description": "This contact is stocked around A Bedrock Passage. Meeting this contact is separate from defeat, recovery, assistance or lasting town outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99707,
+      "name": "a tiny dracolich reptilian",
+      "keyword": "reptilian",
+      "description": "This contact is stocked around A Hellish Throne Room, A Lava-Flow Tube, Crisscrossing Lava-Flow Tubes. Meeting this contact is separate from defeat, recovery, assistance or lasting town outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99708,
+      "name": "a fiendish demonic host",
+      "keyword": "host",
+      "description": "The demonic hosts carry an elixir configured for aging. Investigation, actual effect or host restoration needs a defined contribution and beneficiary; a kill or potion name does not establish a cure.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99709,
+      "name": "a drunk flind vagabond",
+      "keyword": "vagabond",
+      "description": "This contact is stocked around A Cavern Cavity, A Dark Trail. Meeting this contact is separate from defeat, recovery, assistance or lasting town outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99710,
+      "name": "a menacing rakshasa occupant",
+      "keyword": "occupant",
+      "description": "This contact is stocked around A Small Dwelling. Meeting this contact is separate from defeat, recovery, assistance or lasting town outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99711,
+      "name": "Fonlak, the sly wraith banker",
+      "keyword": "fonlak",
+      "description": "Fonlak stocks the exact sword voucher through a native shop. Purchases currently refuse while accounting is active. Supplied voucher custody, bank or locker activity and the forging receipt are different outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99712,
+      "name": "a giant garm companion",
+      "keyword": "companion",
+      "description": "This contact is stocked around A Small Dwelling. Meeting this contact is separate from defeat, recovery, assistance or lasting town outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99713,
+      "name": "Voinak, the efreeti tyrant",
+      "keyword": "voinak",
+      "description": "Voinak carries the foreign crystal skull requested by Qin, alongside his hellfire buckle. Defeat, skull custody, Qin’s accepted five-skull return and lasting changes to this realm are separate facts.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99714,
+      "name": "a humanoid para-elemental figure",
+      "keyword": "figure",
+      "description": "Five declared para-elemental figures carry the exact lava rocks around the crater. Current materials can be supplied; personal first-source recovery needs exact producer and item lineage evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99715,
+      "name": "a fierce hellhound beast",
+      "keyword": "beast",
+      "description": "This contact is stocked around A Lava Spring Crater. Meeting this contact is separate from defeat, recovery, assistance or lasting town outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99716,
+      "name": "a deranged ghoul scoundrel",
+      "keyword": "scoundrel",
+      "description": "This contact is stocked around A Bedrock Passage, A Cavern Cavity. Meeting this contact is separate from defeat, recovery, assistance or lasting town outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99717,
+      "name": "a cruel wight savage",
+      "keyword": "savage",
+      "description": "This contact is stocked around A Cavern Cavity, A Dark Trail. Meeting this contact is separate from defeat, recovery, assistance or lasting town outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99718,
+      "name": "a hulking behemoth invader",
+      "keyword": "invader",
+      "description": "The behemoth invaders suggest a town-defense story. Define actual contribution, protected residents and lasting safety before treating a kill or lookout visit as restoration.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 99719,
+      "name": "a flickering shadow",
+      "keyword": "shadow",
+      "description": "This contact is stocked around A Deep Cavern Cavity, A Vacant Room. Meeting this contact is separate from defeat, recovery, assistance or lasting town outcomes.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "drembel-cinder-commission",
+      "title": "Commission Cinder from Drembel",
+      "category": "request",
+      "summary": "Offer five exact lava rocks and one exact sword voucher for Cinder. Current materials and accepted history are separate; purchase, heat survival and Qin’s skull return have distinct outcomes.",
+      "contracts": [
+        {
+          "giver_vnum": 99705,
+          "completion_key": "give=I:99701,I:99701,I:99701,I:99701,I:99701,I:99706;receive=I:99700;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "lava-rocks",
+          "text": "Carry five exact lava rocks loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            99701
+          ],
+          "count": 5,
+          "optional": true,
+          "hint": "The five para-elemental figures around the crater are declared sources. Exact supplied rocks also fit. This row shows the current quantity without recording personal kills or first-source recovery."
+        },
+        {
+          "id": "sword-voucher",
+          "text": "Carry the exact flaming-longsword voucher loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            99706
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Fonlak stocks the voucher in the Depositary Stronghold, but native purchases currently refuse under active accounting. An exact supplied copy also fits; current custody does not certify a purchase."
+        },
+        {
+          "id": "forging",
+          "text": "Record Drembel’s accepted Cinder commission",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 99705,
+              "completion_key": "give=I:99701,I:99701,I:99701,I:99701,I:99701,I:99706;receive=I:99700;disappear=0"
+            }
+          ],
+          "hint": "Bring all five rocks and the voucher loose, then offer a requested item to Drembel. One accepted six-item exchange records the sword reward. Incomplete materials, reward custody, dialogue, payment or the crystal skull cannot create this receipt."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

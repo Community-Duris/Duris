@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 211 authored journals.
+2668 distinct Q contracts; 212 authored journals.
 
 Regenerate with:
 
@@ -127,7 +127,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Krethik Keep (`krethik`) | 3 | 2 | 0 | Yes | [1 × a small note → native reward/response](../../areas/qst/krethik.qst#L34) | mindbreaker |
 | Lord Krimeneha's Mansion (`krimman`) | 9 | 9 | 4 | Yes | [1 × a boy's signet ring; 1 × a girl's broach; 1 × an elegant silver broach → a heavy iron key, a silver bastard sword](../../areas/qst/krimman.qst#L101) | — |
 | Labyrinth of No Return (`labyrinth`) | 3 | 8 | 0 | Yes | [1 × a bat wing; 1 × a tuft of sasquatch hair; 1 × a beetle shell; other required items → a sigil of the Golden Flame](../../areas/qst/labyrinth.qst#L85) | — |
-| Lava Springs (`lava`) | 1 | 1 | 0 | Fallback | [5 × a chunk of lava rock; 1 × a voucher for 'a flaming longsword' → a flaming longsword emblazoned 'Cinder'](../../areas/qst/lava.qst#L14) | inn |
+| Lava Springs (`lava`) | 1 | 1 | 0 | Yes | [5 × a chunk of lava rock; 1 × a voucher for 'a flaming longsword' → a flaming longsword emblazoned 'Cinder'](../../areas/qst/lava.qst#L14) | inn |
 | The Underground Lava Caves (`lavcav`) | 2 | 4 | 1 | Yes | [1 × a pair of platinum horns → a golden wrist chain](../../areas/qst/lavcav.qst#L43) | — |
 | The Arcaneum of L'srillizzin (`library`) | 6 | 14 | 0 | Yes | [1 × a mystical tome with glowing elemental glyphs; 1 × an illithid-skin spellbook of wyld magick; 1 × a leather-bound book covered in shifting shadows; other required items → a mystical tome of the otherworldly scholars](../../areas/qst/library.qst#L137) | — |
 | The Lizardman Swamps of Clavikord (`lizard`) | 2 | 2 | 0 | Yes | [1 × the severed head of Sslith → a bracelet of lights](../../areas/qst/lizard.qst#L14) | — |

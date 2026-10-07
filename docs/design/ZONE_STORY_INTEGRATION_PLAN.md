@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 211 authored journals, accounting-gated player surfaces, starter/town
+**Status: 212 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5371,3 +5371,8 @@ The [dossier](zone-stories/TREASURE_CAVES.md) maps one exact figurine request wi
 ## Jindon integration extension
 
 The [dossier](zone-stories/JINDON_DEATHWOOD.md) maps one exact arms return with optional custody and one accepted sword receipt. Forty-four owned follow-ups cover source versus supplied material, paid-entry refusal and currency/arrival coupling, GET/ENTER travel, final charges, the unsupported altar trap value, real effects and builder-defined agency/welfare/restitution/restoration. Existing schema3 covers Q8; broader admitted source/control/recipient/lasting-state endpoints need real callers and builder choices. New tracking requires active READY accounting; daily policy stays disabled. Actual repairs use separate named fix/news commits.
+
+
+## Lava Springs integration extension
+
+The [dossier](zone-stories/LAVA_SPRINGS.md) maps one native six-input Cinder commission, two optional quantity/material rows and one accepted item receipt. Forty owned follow-ups distinguish supplied/source materials, actual voucher purchase and variable pricing, atomic repeated-root selection, terrain survival, Qin’s independent foreign return, inn/locker/item effects and lasting town/recipient outcomes. Existing schema3 covers QA14; additional typed endpoints need demonstrated real callers and builder policy. New tracking requires active READY accounting; daily policy stays disabled. Actual repairs use separate named fix/news commits.

@@ -279,3 +279,8 @@ The [dossier](../design/zone-stories/TREASURE_CAVES.md) preserves one achievemen
 ## Jindon daily qualification
 
 The [dossier](../design/zone-stories/JINDON_DEATHWOOD.md) preserves one achievement and one potential daily. Mode2/lifespan40..50/cap1 arms and persistent Sirax do not prove accountable renewal. Active authority guards item resets and legacy paid entry. Qualify actual source generation/transfer/custody, item issuance/recipient/save/replay and replenishment before activation. New tracking requires active READY accounting; committed recovery is separate and daily policy stays disabled.
+
+
+## Lava Springs daily qualification
+
+The [dossier](../design/zone-stories/LAVA_SPRINGS.md) retains one achievement and one potential daily. Mode1/lifespan20..30, rock/voucher caps and persistent giver do not prove accountable renewal. Qualify six distinct source roots or transfers, actual admitted purchase policy, batch destruction/item issuance, recipient/revisions/save/replay and replenishment. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.

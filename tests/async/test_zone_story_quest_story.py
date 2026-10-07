@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 211 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 212 and report['eligible_by_zone']['162'] == 4
 arac_city = next(m for m in catalog['story_mappings'] if m['source_area'] == 'arac-web')
 assert (arac_city['schema_version'], arac_city['revision']) == (3, 2)
 assert len(arac_city['contacts']) == 44 and arac_city['stories'][0]['category'] == 'service'
