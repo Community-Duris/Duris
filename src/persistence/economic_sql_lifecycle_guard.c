@@ -1,6 +1,7 @@
 #include "persistence/economic_sql_lifecycle_guard.h"
 #include "sql/sql_pool.h"
 #include "sql/sql_exclusion_guard.h"
+#include "persistence/critical_command_coordinator.h"
 #include <cerrno>
 #include <charconv>
 #include <cstdint>
@@ -632,4 +633,103 @@ economic_sql_currency_writer_guard::acquire(MYSQL *connection,
 		return EIO;
 	}
 #endif
+}
+
+unsigned int economic_sql_runtime_world_writer_guard::acquire(
+	MYSQL *connection, const economic_sql_lifecycle_guard &runtime,
+	economic_sql_runtime_world_writer_guard *output) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)runtime;
+	(void)output;
+	return ENOTSUP;
+#else
+	try
+	{
+		if (!output || output->connection_ || runtime.connection_ != connection ||
+		    runtime.maintenance_ || !runtime.is_valid_authority() ||
+		    !critical_command_coordinator_lifecycle_guard_held_by_current_thread())
+			return EPERM;
+		std::unique_lock<std::shared_mutex> local(currency_gate(), std::try_to_lock);
+		if (!local.owns_lock())
+			return EBUSY;
+		output->connection_ = connection;
+		output->runtime_ = &runtime;
+		output->session_ = mysql_thread_id(connection);
+		output->thread_ = std::this_thread::get_id();
+		output->local_ = std::move(local);
+		const auto status =
+			lock(connection, output->session_, writer_lock, 0, &output->lock_);
+		if (status || !idle(connection) ||
+		    mysql_thread_id(connection) != output->session_ ||
+		    !owns_named_lock(connection, writer_lock, output->session_))
+			return status ? status : EIO;
+		output->confirmed_ = true;
+		return 0;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+#endif
+}
+
+bool economic_sql_runtime_world_writer_guard::valid() const noexcept
+{
+#ifdef __NO_MYSQL__
+	return false;
+#else
+	try
+	{
+		return confirmed_ && connection_ && runtime_ && session_ && lock_ &&
+		       thread_ == std::this_thread::get_id() && local_.owns_lock() &&
+		       mysql_thread_id(connection_) == session_ && idle(connection_) &&
+		       runtime_->is_valid_authority() &&
+		       critical_command_coordinator_lifecycle_guard_held_by_current_thread() &&
+		       owns_named_lock(connection_, writer_lock, session_);
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool economic_sql_runtime_world_writer_guard::release() noexcept
+{
+	if (thread_ != std::thread::id{} && thread_ != std::this_thread::get_id())
+		return false;
+	confirmed_ = false;
+	try
+	{
+#ifndef __NO_MYSQL__
+		if (lock_ && !economic_sql_lifecycle_guard::release_named_lock(
+				     connection_, session_, writer_lock, &release_attempted_))
+			return false;
+#endif
+		lock_ = false;
+		if (local_.owns_lock())
+			local_.unlock();
+		connection_ = nullptr;
+		runtime_ = nullptr;
+		session_ = 0;
+		thread_ = {};
+		release_attempted_ = false;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+economic_sql_runtime_world_writer_guard::~economic_sql_runtime_world_writer_guard() noexcept
+{
+	if (!release())
+	{
+		duris_sql_exclusion_guard_state_ref().lost = true;
+		if (local_.owns_lock())
+			(void)local_.release();
+	}
 }

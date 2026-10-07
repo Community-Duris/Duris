@@ -1,7 +1,10 @@
 #include "persistence/death_recovery_visibility.h"
 #include "persistence/quest_mobile_native_sql.h"
+#include "persistence/economic_sql_native_mobile_birth_transaction.h"
 #include "persistence/shop_item_runtime_payload.h"
 #include "item/item_transfer_repository.h"
+#include "item/held_retirement_recovery.h"
+#include "item/held_retirement_transport.h"
 #include "item/craft_pouch_mutation.h"
 #include "item/craft_recipe_continuation.h"
 #include "economy/item_transfer_accounting.h"
@@ -2374,7 +2377,8 @@ bool item_transfer_repository_execute_at_offset(
 	item_transfer_result *result, unsigned int *result_code, bool *mutation_applied,
 	item_transfer_failure_stage *failure_stage,
 	const item_transfer_accounting_context *accounting_context,
-	item_transfer_custody_delta *custody_delta)
+	item_transfer_custody_delta *custody_delta,
+	item_transfer_source_custody_hook source_custody_hook, void *original_owner_context)
 {
 	const bool admitted_accounting_item = item_transfer_accounting_command_supported(command) &&
 					      custody_delta;
@@ -2389,6 +2393,16 @@ bool item_transfer_repository_execute_at_offset(
 	    !item_transfer_command_decode_payload(command, &payload))
 	{
 		errno = EINVAL;
+		return false;
+	}
+	const bool held_retirement = held_retirement_transport_command(command);
+	if ((source_custody_hook || original_owner_context || held_retirement) &&
+	    (!source_custody_hook || !original_owner_context || !held_retirement ||
+	     !admitted_accounting_item || accounting_context || event_index_base))
+	{
+		// No generic callback bypass of a quest/drop/legacy source owner. HRT
+		// cannot mutate first and attempt original held proof at record time.
+		errno = held_retirement && !source_custody_hook ? ENODATA : EINVAL;
 		return false;
 	}
 	uint64_t forced_weapon_root_row_id = 0;
@@ -2470,6 +2484,18 @@ bool item_transfer_repository_execute_at_offset(
 		}
 		*result_code = ESTALE;
 		return true;
+	}
+	if (source_custody_hook)
+	{
+		// Original ascending participating owners are now held and matched.
+		// Full HRT UID cut must precede source_roots/selected/physical locks.
+		const auto source_error = source_custody_hook(connection, command, from_revision,
+							      to_revision, original_owner_context);
+		if (source_error)
+		{
+			errno = static_cast<int>(source_error);
+			return false;
+		}
 	}
 	if (payload.reason == item_transfer_reason::craft)
 		return execute_craft(connection, command, payload, event_index_base, from_revision,
@@ -2857,12 +2883,13 @@ bool item_transfer_repository_execute(MYSQL *connection, const critical_command 
 				      bool *mutation_applied,
 				      item_transfer_failure_stage *failure_stage,
 				      const item_transfer_accounting_context *accounting_context,
-				      item_transfer_custody_delta *custody_delta)
+				      item_transfer_custody_delta *custody_delta,
+				      item_transfer_source_custody_hook source_custody_hook,
+				      void *original_owner_context)
 {
-	return item_transfer_repository_execute_at_offset(connection, command, 0, result,
-							  result_code, mutation_applied,
-							  failure_stage, accounting_context,
-							  custody_delta);
+	return item_transfer_repository_execute_at_offset(
+		connection, command, 0, result, result_code, mutation_applied, failure_stage,
+		accounting_context, custody_delta, source_custody_hook, original_owner_context);
 }
 
 bool item_transfer_repository_execute_coin(
@@ -3837,24 +3864,19 @@ bool item_transfer_repository_execute_native_mobile(
 }
 #endif
 
-bool item_transfer_repository_lock_native_publication_custody(
-	MYSQL *connection, const item_transfer_payload &payload,
-	std::span<const player_item_snapshot> native_before,
+#ifndef __NO_MYSQL__
+namespace
+{
+// Complete UID cut only. Public callers retain their distinct original gates;
+// this file-private helper grants no domain/publication/receipt authority.
+bool lock_publication_custody_cut(
+	MYSQL *connection, const item_transfer_payload &payload, uint64_t native_instance_id,
+	uint32_t player_pid, std::span<const player_item_snapshot> native_before,
 	std::span<const player_item_snapshot> player_before,
 	std::span<const player_item_snapshot> player_after,
 	std::vector<item_native_quest_publication_custody> *output) noexcept
 {
-#ifdef __NO_MYSQL__
-	(void)connection;
-	(void)payload;
-	(void)native_before;
-	(void)player_before;
-	(void)player_after;
-	(void)output;
-	errno = ENOTSUP;
-	return false;
-#else
-	if (!connection || !output || !item_transfer_native_mobile_recovery_shape_valid(payload))
+	if (!connection || !output)
 	{
 		errno = EINVAL;
 		return false;
@@ -3900,7 +3922,9 @@ bool item_transfer_repository_lock_native_publication_custody(
 			}
 		for (size_t i = 0; i < payload.item_count; ++i)
 			claimed.insert(payload.items[i].item_uid);
-		if (claimed.empty() || claimed.size() > limit)
+		if ((claimed.empty() && !payload.native_money.present &&
+		     !payload.native_cost.fee_only) ||
+		    claimed.size() > limit)
 		{
 			errno = E2BIG;
 			return false;
@@ -3910,20 +3934,37 @@ bool item_transfer_repository_lock_native_publication_custody(
 			uids += (uids.empty() ? "" : ",") + std::to_string(uid);
 		const std::string active =
 			std::to_string(static_cast<uint8_t>(item_custody_state::active));
+		const std::string native_participant =
+			native_instance_id ?
+				"(owner_type=" +
+					std::to_string(static_cast<uint8_t>(
+						item_owner_type::native_mobile)) +
+					" AND owner_id=" + std::to_string(native_instance_id) +
+					") OR " :
+				"";
 		const std::string sql =
-			"SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),owner_type,owner_id,"
-			"owner_context_id,item_revision,vnum,state,equipment_slot FROM item_current_owner WHERE "
-			"item_uid IN(" +
-			uids + ") OR (state=" + active + " AND ((owner_type=" +
-			std::to_string(static_cast<uint8_t>(item_owner_type::native_mobile)) +
-			" AND owner_id=" +
-			std::to_string(payload.native_mobile.reference.mobile_instance_id) +
-			") OR (owner_type=" +
-			std::to_string(static_cast<uint8_t>(item_owner_type::player)) +
-			" AND owner_id=" + std::to_string(payload.native_recovery.player_pid) +
-			" AND coin_payload IS NULL) OR root_item_uid IN(" + uids +
-			") OR parent_item_uid IN(" + uids + "))) ORDER BY item_uid LIMIT " +
-			std::to_string(limit + 1) + " FOR UPDATE";
+			claimed.empty() ?
+				"SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),owner_type,owner_id,"
+				"owner_context_id,item_revision,vnum,state,equipment_slot FROM item_current_owner WHERE "
+				"state=" +
+					active + " AND (" + native_participant + "(owner_type=" +
+					std::to_string(
+						static_cast<uint8_t>(item_owner_type::player)) +
+					" AND owner_id=" + std::to_string(player_pid) +
+					" AND coin_payload IS NULL)) ORDER BY item_uid LIMIT " +
+					std::to_string(limit + 1) + " FOR UPDATE" :
+				"SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),owner_type,owner_id,"
+				"owner_context_id,item_revision,vnum,state,equipment_slot FROM item_current_owner WHERE "
+				"item_uid IN(" +
+					uids + ") OR (state=" + active + " AND (" +
+					native_participant + "(owner_type=" +
+					std::to_string(
+						static_cast<uint8_t>(item_owner_type::player)) +
+					" AND owner_id=" + std::to_string(player_pid) +
+					" AND coin_payload IS NULL) OR root_item_uid IN(" + uids +
+					") OR parent_item_uid IN(" + uids +
+					"))) ORDER BY item_uid LIMIT " + std::to_string(limit + 1) +
+					" FOR UPDATE";
 		if (!run_sql(connection, sql))
 			return false;
 		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
@@ -4013,6 +4054,607 @@ bool item_transfer_repository_lock_native_publication_custody(
 	catch (const std::bad_alloc &)
 	{
 		errno = ENOMEM;
+		return false;
+	}
+}
+
+} // namespace
+#endif
+
+bool item_transfer_repository_lock_native_publication_custody(
+	MYSQL *connection, const item_transfer_payload &payload,
+	std::span<const player_item_snapshot> native_before,
+	std::span<const player_item_snapshot> player_before,
+	std::span<const player_item_snapshot> player_after,
+	std::vector<item_native_quest_publication_custody> *output) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)payload;
+	(void)native_before;
+	(void)player_before;
+	(void)player_after;
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (!connection || !output || !item_transfer_native_mobile_recovery_shape_valid(payload))
+	{
+		errno = EINVAL;
+		return false;
+	}
+	return lock_publication_custody_cut(connection, payload,
+					    payload.native_mobile.reference.mobile_instance_id,
+					    payload.native_recovery.player_pid, native_before,
+					    player_before, player_after, output);
+#endif
+}
+
+bool item_transfer_repository_lock_held_retirement_publication_custody(
+	MYSQL *connection, const critical_command &original,
+	const held_retirement_recovery &captured,
+	std::vector<item_native_quest_publication_custody> *output) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)original;
+	(void)captured;
+	(void)output;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (!connection || !output || !held_retirement_transport_command(original))
+	{
+		errno = EINVAL;
+		return false;
+	}
+	try
+	{
+		item_transfer_payload payload{};
+		lockpick_retirement_terms source{};
+		std::vector<uint8_t> original_context;
+		// Full canonical original command, selected held literal, complete
+		// BEFORE/AFTER pair and retained HRT1 terms; never a shape-only gate.
+		if (!held_retirement_command_identity(original, &payload, &source) ||
+		    !held_retirement_recovery_encode(original, captured, &original_context))
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		// No native-mobile participant and no scan of destruction history.
+		// Removed pick remains an explicit UID through the complete BEFORE.
+		return lock_publication_custody_cut(connection, payload, 0, source.actor_pid, {},
+						    captured.before, captured.after, output);
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+#endif
+}
+
+bool item_transfer_repository_execute_native_mobile_money(
+	MYSQL *connection, const critical_command &command,
+	std::span<const player_item_snapshot> original_player_items,
+	item_native_mobile_money_result *result, unsigned int *result_code, bool *mutation_applied,
+	quest_mobile_native_image *after) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)original_player_items;
+	(void)result;
+	(void)result_code;
+	(void)mutation_applied;
+	(void)after;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (!connection || !result || !result_code || !mutation_applied || !after ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RECOVERY_PAYLOAD_VERSION ||
+	    !command.accepted_at_usec || !command.publication_required ||
+	    !critical_command_envelope_valid(command) ||
+	    original_player_items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	try
+	{
+		using flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+		const unsigned long session = mysql_thread_id(connection);
+		const auto same_session = [&]()
+		{
+			flag reconnect = true;
+			return session && mysql_thread_id(connection) == session &&
+			       (connection->server_status & SERVER_STATUS_IN_TRANS) &&
+			       !mysql_get_option(connection, MYSQL_OPT_RECONNECT, &reconnect) &&
+			       !reconnect;
+		};
+		if (!same_session())
+		{
+			errno = ENOTCONN;
+			return false;
+		}
+		item_transfer_payload payload{};
+		economic_frozen_intent intent;
+		if (!item_transfer_command_decode_payload(command, &payload) ||
+		    !payload.native_money.present ||
+		    !item_transfer_native_mobile_recovery_shape_valid(payload) ||
+		    economic_intent_decode(command.accounting_intent, &intent) !=
+			    economic_accounting_error::ok ||
+		    economic_intent_verify_binding(command, intent) !=
+			    economic_accounting_error::ok ||
+		    intent.admission.metadata.reason != economic_reason::coin_transfer ||
+		    intent.admission.metadata.source_event)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		const auto &cash = payload.native_money.projection;
+		const std::vector<player_item_snapshot> original_player_before(
+			original_player_items.begin(), original_player_items.end());
+		std::vector<uint8_t> player_bytes;
+		const auto player_codec =
+			player_item_snapshot_list_encode(original_player_before, &player_bytes);
+		if (player_codec != player_snapshot_codec_result::ok ||
+		    !shop_trade_recovery_forest_verify(
+			    player_bytes, shop_trade_recovery_forest_role::player_before,
+			    payload.native_recovery.player_before) ||
+		    !shop_trade_recovery_forest_verify(
+			    player_bytes, shop_trade_recovery_forest_role::player_after,
+			    payload.native_recovery.player_after))
+		{
+			errno = player_codec == player_snapshot_codec_result::allocation_failure ?
+					ENOMEM :
+					EILSEQ;
+			return false;
+		}
+		// Original domain lock order: native lifetime, player save/wallet row,
+		// canonical owner revisions, then globally ascending custody and physical.
+		quest_mobile_native_sql_row native;
+		int code = quest_mobile_native_sql_lock(
+			connection, payload.native_mobile.reference.mobile_instance_id, &native);
+		if (code)
+		{
+			errno = code;
+			return false;
+		}
+		quest_mobile_native_image next;
+		if (!native.present)
+		{
+			errno = ESTALE;
+			return false;
+		}
+		const auto native_codec = quest_mobile_native_money_transition(
+			native.image, payload, command.operation_id, &next);
+		if (native_codec != player_snapshot_codec_result::ok)
+		{
+			errno = native_codec == player_snapshot_codec_result::allocation_failure ?
+					ENOMEM :
+					ESTALE;
+			return false;
+		}
+		native_mobile_wallet_origin origin;
+		code = static_cast<int>(economic_sql_native_mobile_birth_observe_origin(
+			connection, payload.native_mobile.reference, &origin));
+		if (code)
+		{
+			errno = code;
+			return false;
+		}
+		if (origin.wallet_mapping_id != payload.native_money.mobile_wallet_mapping_id ||
+		    origin.lineage.bytes != intent.admission.metadata.lineage.bytes)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		const std::string player_id = std::to_string(payload.native_recovery.player_pid);
+		const std::string wallet_read =
+			"SELECT save_revision,copper,silver,gold,platinum,wallet_revision FROM player_data WHERE pid=" +
+			player_id + " FOR UPDATE";
+		std::vector<uint64_t> wallet;
+		if (!one_row(connection, wallet_read, &wallet))
+			return false;
+		if (wallet.size() != 6 ||
+		    wallet[0] != payload.native_recovery.acknowledged_save_revision ||
+		    wallet[5] != cash.player_before_revision)
+		{
+			errno = ESTALE;
+			return false;
+		}
+		for (size_t i = 0; i < 4; ++i)
+			if (wallet[i + 1] != static_cast<uint64_t>(cash.player_before[i]))
+			{
+				errno = ESTALE;
+				return false;
+			}
+		uint64_t player_owner_revision = 0, native_owner_revision = 0;
+		if (owner_identity_less(payload.from_owner, payload.to_owner))
+		{
+			if (!lock_owner(connection, payload.from_owner, &player_owner_revision) ||
+			    !lock_owner(connection, payload.to_owner, &native_owner_revision))
+				return false;
+		}
+		else if (!lock_owner(connection, payload.to_owner, &native_owner_revision) ||
+			 !lock_owner(connection, payload.from_owner, &player_owner_revision))
+			return false;
+		if (player_owner_revision != payload.expected_from_revision ||
+		    native_owner_revision != payload.expected_to_revision ||
+		    native_owner_revision != native.image.reference.stock_revision)
+		{
+			errno = ESTALE;
+			return false;
+		}
+		std::vector<current_item> custody, native_custody;
+		if (!native_lock_owner_custody(connection, payload.to_owner, payload.from_owner,
+					       2 * PLAYER_SNAPSHOT_MAX_OBJECTS,
+					       original_player_items, &custody))
+			return false;
+		for (const auto &row : custody)
+			if (row.owner_type == static_cast<uint8_t>(item_owner_type::native_mobile))
+				native_custody.push_back(row);
+		if (!native_custody_matches(native.image, native_custody))
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		shop_item_runtime_image physical;
+		if (!shop_item_runtime_lock_player_image(connection,
+							 payload.native_recovery.player_pid,
+							 original_player_items, &physical))
+			return false;
+		item_native_mobile_money_result applied;
+		if (!item_native_mobile_money_result_build(payload, &applied) || !same_session())
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		// From the first DML onward, every false requires original-session rollback;
+		// result/after values are deliberately not published before final readback.
+		quest_mobile_native_sql_row verified;
+		code = quest_mobile_native_sql_apply_locked(connection, command.operation_id,
+							    native, next, &verified);
+		if (code)
+		{
+			errno = code;
+			return false;
+		}
+		const std::string update =
+			"UPDATE player_data SET copper=" + std::to_string(cash.player_after[0]) +
+			",silver=" + std::to_string(cash.player_after[1]) +
+			",gold=" + std::to_string(cash.player_after[2]) +
+			",platinum=" + std::to_string(cash.player_after[3]) +
+			",wallet_revision=" + std::to_string(cash.player_after_revision) +
+			" WHERE pid=" + player_id +
+			" AND wallet_revision=" + std::to_string(cash.player_before_revision) +
+			" AND save_revision=" +
+			std::to_string(payload.native_recovery.acknowledged_save_revision);
+		if (!run_sql(connection, update))
+			return false;
+		if (mysql_affected_rows(connection) != 1)
+		{
+			errno = ESTALE;
+			return false;
+		}
+		if (!one_row(connection, wallet_read, &wallet))
+			return false;
+		if (wallet.size() != 6 ||
+		    wallet[0] != payload.native_recovery.acknowledged_save_revision ||
+		    wallet[5] != cash.player_after_revision)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		for (size_t i = 0; i < 4; ++i)
+			if (wallet[i + 1] != static_cast<uint64_t>(cash.player_after[i]))
+			{
+				errno = EILSEQ;
+				return false;
+			}
+		std::vector<current_item> custody_after, native_after;
+		if (!native_lock_owner_custody(connection, payload.to_owner, payload.from_owner,
+					       2 * PLAYER_SNAPSHOT_MAX_OBJECTS,
+					       original_player_items, &custody_after))
+			return false;
+		for (const auto &row : custody_after)
+			if (row.owner_type == static_cast<uint8_t>(item_owner_type::native_mobile))
+				native_after.push_back(row);
+		if (!native_custody_matches(verified.image, native_after) ||
+		    custody_after.size() != custody.size())
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		for (size_t i = 0; i < custody.size(); ++i)
+		{
+			const auto &a = custody[i];
+			const auto &b = custody_after[i];
+			if (a.item_uid != b.item_uid || a.root_item_uid != b.root_item_uid ||
+			    a.parent_item_uid != b.parent_item_uid ||
+			    a.owner_type != b.owner_type || a.owner_id != b.owner_id ||
+			    a.owner_context_id != b.owner_context_id ||
+			    a.item_revision != b.item_revision || a.vnum != b.vnum ||
+			    a.state != b.state || a.equipment_slot != b.equipment_slot)
+			{
+				errno = EILSEQ;
+				return false;
+			}
+		}
+		shop_item_runtime_image physical_after;
+		if (!shop_item_runtime_lock_player_image(connection,
+							 payload.native_recovery.player_pid,
+							 original_player_items, &physical_after) ||
+		    !same_session())
+			return false;
+		*after = std::move(verified.image);
+		*result = applied;
+		*result_code = 0;
+		*mutation_applied = true;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	catch (...)
+	{
+		errno = EILSEQ;
+		return false;
+	}
+#endif
+}
+
+bool item_transfer_repository_execute_native_mobile_fee(
+	MYSQL *connection, const critical_command &command,
+	std::span<const player_item_snapshot> original_player_items,
+	item_native_mobile_fee_result *result, unsigned int *result_code, bool *mutation_applied,
+	quest_mobile_native_image *after) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)original_player_items;
+	(void)result;
+	(void)result_code;
+	(void)mutation_applied;
+	(void)after;
+	errno = ENOTSUP;
+	return false;
+#else
+	if (!connection || !result || !result_code || !mutation_applied || !after ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION ||
+	    !command.accepted_at_usec || !command.publication_required ||
+	    !critical_command_envelope_valid(command) ||
+	    original_player_items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
+	{
+		errno = EINVAL;
+		return false;
+	}
+	try
+	{
+		using flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+		const unsigned long session = mysql_thread_id(connection);
+		const auto same_session = [&]()
+		{
+			flag reconnect = true;
+			return session && mysql_thread_id(connection) == session &&
+			       (connection->server_status & SERVER_STATUS_IN_TRANS) &&
+			       !mysql_get_option(connection, MYSQL_OPT_RECONNECT, &reconnect) &&
+			       !reconnect;
+		};
+		if (!same_session())
+		{
+			errno = ENOTCONN;
+			return false;
+		}
+		item_transfer_payload payload{};
+		economic_frozen_intent intent;
+		if (!item_transfer_command_decode_payload(command, &payload) ||
+		    !payload.native_cost.fee_only ||
+		    !item_transfer_native_mobile_recovery_shape_valid(payload) ||
+		    economic_intent_decode(command.accounting_intent, &intent) !=
+			    economic_accounting_error::ok ||
+		    economic_intent_verify_binding(command, intent) !=
+			    economic_accounting_error::ok ||
+		    intent.admission.metadata.reason != economic_reason::quest_cost ||
+		    !intent.admission.metadata.source_event ||
+		    intent.admission.metadata.source_event->kind !=
+			    economic_source_kind::quest_action ||
+		    intent.admission.metadata.source_event->source.bytes !=
+			    command.operation_id.bytes ||
+		    intent.admission.metadata.source_event->generation.bytes !=
+			    payload.native_mobile.reference.birth_source.generation.bytes ||
+		    intent.admission.metadata.source_event->sequence !=
+			    payload.native_mobile.reference.mobile_revision ||
+		    intent.admission.metadata.source_event->slot !=
+			    payload.native_cost.completion_slot)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		const std::vector<player_item_snapshot> original_player_before(
+			original_player_items.begin(), original_player_items.end());
+		std::vector<uint8_t> player_bytes;
+		const auto player_codec =
+			player_item_snapshot_list_encode(original_player_before, &player_bytes);
+		if (player_codec != player_snapshot_codec_result::ok ||
+		    !shop_trade_recovery_forest_verify(
+			    player_bytes, shop_trade_recovery_forest_role::player_before,
+			    payload.native_recovery.player_before) ||
+		    !shop_trade_recovery_forest_verify(
+			    player_bytes, shop_trade_recovery_forest_role::player_after,
+			    payload.native_recovery.player_after))
+		{
+			errno = player_codec == player_snapshot_codec_result::allocation_failure ?
+					ENOMEM :
+					EILSEQ;
+			return false;
+		}
+		// Original domain lock order: native lifetime, actual giver save/wallet row,
+		// canonical owner revisions, then globally ascending custody and physical.
+		quest_mobile_native_sql_row native;
+		int code = quest_mobile_native_sql_lock(
+			connection, payload.native_mobile.reference.mobile_instance_id, &native);
+		if (code)
+		{
+			errno = code;
+			return false;
+		}
+		quest_mobile_native_image next;
+		if (!native.present)
+		{
+			errno = ESTALE;
+			return false;
+		}
+		const auto native_codec = quest_mobile_native_fee_transition(
+			native.image, payload, command.operation_id, &next);
+		if (native_codec != player_snapshot_codec_result::ok)
+		{
+			errno = native_codec == player_snapshot_codec_result::allocation_failure ?
+					ENOMEM :
+					ESTALE;
+			return false;
+		}
+		native_mobile_wallet_origin origin;
+		code = static_cast<int>(economic_sql_native_mobile_birth_observe_origin(
+			connection, payload.native_mobile.reference, &origin));
+		if (code)
+		{
+			errno = code;
+			return false;
+		}
+		if (origin.wallet_mapping_id != payload.native_cost.wallet_mapping_id ||
+		    origin.lineage.bytes != intent.admission.metadata.lineage.bytes)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		const std::string player_id = std::to_string(payload.native_recovery.player_pid);
+		const std::string wallet_read =
+			"SELECT save_revision,copper,silver,gold,platinum,wallet_revision FROM player_data WHERE pid=" +
+			player_id + " FOR UPDATE";
+		std::vector<uint64_t> wallet;
+		if (!one_row(connection, wallet_read, &wallet))
+			return false;
+		if (wallet.size() != 6 ||
+		    wallet[0] != payload.native_recovery.acknowledged_save_revision)
+		{
+			errno = ESTALE;
+			return false;
+		}
+		const auto unchanged_wallet = wallet;
+		uint64_t from_owner_revision = 0, to_owner_revision = 0;
+		if (owner_identity_less(payload.from_owner, payload.to_owner))
+		{
+			if (!lock_owner(connection, payload.from_owner, &from_owner_revision) ||
+			    !lock_owner(connection, payload.to_owner, &to_owner_revision))
+				return false;
+		}
+		else if (!lock_owner(connection, payload.to_owner, &to_owner_revision) ||
+			 !lock_owner(connection, payload.from_owner, &from_owner_revision))
+			return false;
+		if (from_owner_revision != payload.expected_from_revision ||
+		    to_owner_revision != payload.expected_to_revision ||
+		    from_owner_revision != native.image.reference.stock_revision)
+		{
+			errno = ESTALE;
+			return false;
+		}
+		std::vector<current_item> custody, native_custody;
+		if (!native_lock_owner_custody(connection, payload.from_owner, payload.to_owner,
+					       2 * PLAYER_SNAPSHOT_MAX_OBJECTS,
+					       original_player_items, &custody))
+			return false;
+		for (const auto &row : custody)
+			if (row.owner_type == static_cast<uint8_t>(item_owner_type::native_mobile))
+				native_custody.push_back(row);
+		if (!native_custody_matches(native.image, native_custody))
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		shop_item_runtime_image physical;
+		if (!shop_item_runtime_lock_player_image(connection,
+							 payload.native_recovery.player_pid,
+							 original_player_items, &physical))
+			return false;
+		item_native_mobile_fee_result applied;
+		if (!item_native_mobile_fee_result_build(payload, &applied) || !same_session())
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		// From the first DML onward, every false requires original-session rollback;
+		// result/after values are deliberately not published before final readback.
+		quest_mobile_native_sql_row verified;
+		code = quest_mobile_native_sql_apply_locked(connection, command.operation_id,
+							    native, next, &verified);
+		if (code)
+		{
+			errno = code;
+			return false;
+		}
+		if (!one_row(connection, wallet_read, &wallet))
+			return false;
+		if (wallet != unchanged_wallet)
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		std::vector<current_item> custody_after, native_after;
+		if (!native_lock_owner_custody(connection, payload.from_owner, payload.to_owner,
+					       2 * PLAYER_SNAPSHOT_MAX_OBJECTS,
+					       original_player_items, &custody_after))
+			return false;
+		for (const auto &row : custody_after)
+			if (row.owner_type == static_cast<uint8_t>(item_owner_type::native_mobile))
+				native_after.push_back(row);
+		if (!native_custody_matches(verified.image, native_after) ||
+		    custody_after.size() != custody.size())
+		{
+			errno = EILSEQ;
+			return false;
+		}
+		for (size_t i = 0; i < custody.size(); ++i)
+		{
+			const auto &a = custody[i];
+			const auto &b = custody_after[i];
+			if (a.item_uid != b.item_uid || a.root_item_uid != b.root_item_uid ||
+			    a.parent_item_uid != b.parent_item_uid ||
+			    a.owner_type != b.owner_type || a.owner_id != b.owner_id ||
+			    a.owner_context_id != b.owner_context_id ||
+			    a.item_revision != b.item_revision || a.vnum != b.vnum ||
+			    a.state != b.state || a.equipment_slot != b.equipment_slot)
+			{
+				errno = EILSEQ;
+				return false;
+			}
+		}
+		shop_item_runtime_image physical_after;
+		if (!shop_item_runtime_lock_player_image(connection,
+							 payload.native_recovery.player_pid,
+							 original_player_items, &physical_after) ||
+		    !same_session())
+			return false;
+		*after = std::move(verified.image);
+		*result = applied;
+		*result_code = 0;
+		*mutation_applied = true;
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		errno = ENOMEM;
+		return false;
+	}
+	catch (...)
+	{
+		errno = EILSEQ;
 		return false;
 	}
 #endif

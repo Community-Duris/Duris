@@ -5,6 +5,7 @@
 #include "core/defines.h"
 #include "item/quest_reward_continuation.h"
 #include "persistence/persistence_observability.h"
+#include "persistence/shop_item_runtime_payload.h"
 #include "player/player_snapshot_codec.h"
 #include "player/player_save_journal.h"
 #include "player/player_quarantine_recovery.h"
@@ -2484,6 +2485,229 @@ player_save_apply_result read_durable_revision(MYSQL *connection, const player_s
 	return { player_save_apply_outcome::already_applied, revision, 0 };
 }
 } // namespace
+
+unsigned int player_snapshot_repository_project_items_in_transaction(
+	MYSQL *connection, uint32_t pid, uint64_t expected_save_revision,
+	std::span<const player_item_snapshot> exact_after) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)pid;
+	(void)expected_save_revision;
+	(void)exact_after;
+	return ENOTSUP;
+#else
+	if (!connection || !pid || pid > INT32_MAX || !expected_save_revision)
+		return EINVAL;
+	const auto session = mysql_thread_id(connection);
+	using flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+	const auto session_error = [&]() noexcept -> unsigned int
+	{
+		if (!session || mysql_thread_id(connection) != session)
+			return ENOTCONN;
+		if (!(connection->server_status & SERVER_STATUS_IN_TRANS))
+			return EBUSY;
+		flag reconnect = false;
+		if (mysql_get_option(connection, MYSQL_OPT_RECONNECT, &reconnect) || reconnect)
+			return EINVAL;
+		return 0;
+	};
+	const auto finish = [&](unsigned int error) noexcept -> unsigned int
+	{
+		const auto fence = session_error();
+		return fence ? fence : error;
+	};
+	if (const auto code = session_error())
+		return code;
+	try
+	{
+		// Prepare complete values/order before destructive projection. This participant
+		// never adopts custody, reconciles topology, advances a save or owns durability.
+		if (exact_after.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
+			return finish(E2BIG);
+		player_snapshot snapshot{};
+		snapshot.pid = static_cast<int32_t>(pid);
+		snapshot.revision = expected_save_revision;
+		snapshot.components = PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY;
+		snapshot.items.assign(exact_after.begin(), exact_after.end());
+		std::vector<uint8_t> expected;
+		const auto encoded = player_item_snapshot_list_encode(snapshot.items, &expected);
+		if (encoded != player_snapshot_codec_result::ok)
+			return finish(encoded == player_snapshot_codec_result::allocation_failure ?
+					      ENOMEM :
+					      EINVAL);
+		std::vector<uint64_t> ordered_uids, roots;
+		std::unordered_map<uint64_t, size_t> indices;
+		ordered_uids.reserve(snapshot.items.size());
+		roots.reserve(snapshot.items.size());
+		indices.reserve(snapshot.items.size());
+		std::vector<player_item_snapshot> observed;
+		observed.reserve(snapshot.items.size());
+		for (size_t i = 0; i < snapshot.items.size(); ++i)
+		{
+			const auto &item = snapshot.items[i];
+			if (!item.object_uid || item.object_uid == UINT64_MAX || item.vnum <= 0 ||
+			    item.parent_index < PLAYER_SNAPSHOT_NO_PARENT ||
+			    item.parent_index >= static_cast<int32_t>(i) ||
+			    item.equipment_slot < 0 || item.equipment_slot > MAX_WEAR ||
+			    (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT &&
+			     item.equipment_slot) ||
+			    !indices.emplace(item.object_uid, i).second)
+				return finish(EINVAL);
+			ordered_uids.push_back(item.object_uid);
+			roots.push_back(item.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+						item.object_uid :
+						roots[static_cast<size_t>(item.parent_index)]);
+			// Preserve original description codec semantics; do not discover a malformed
+			// spellbook or item-properties representation only after deleting player rows.
+			std::string properties;
+			const auto property_code = player_item_properties_encode(
+				item.extra2_flags, item.dynamic_affects, &properties);
+			if (property_code != player_snapshot_codec_result::ok)
+				return finish(property_code == player_snapshot_codec_result::
+								       allocation_failure ?
+						      ENOMEM :
+						      EINVAL);
+			for (const auto &description : item.extra_descriptions)
+			{
+				std::string keyword, text;
+				const auto check = canonicalize_snapshot_extra_description(
+					description, &keyword, &text);
+				if (!check.ok)
+					return finish(check.error_code ? check.error_code : EINVAL);
+			}
+		}
+		const auto lock_revision = [&]() -> unsigned int
+		{
+			const auto result = execute(
+				connection, "SELECT save_revision FROM player_data WHERE pid=" +
+						    std::to_string(pid) + " LIMIT 2 FOR UPDATE");
+			if (!result.ok)
+				return result.error_code ? result.error_code : EIO;
+			std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+				mysql_store_result(connection), mysql_free_result);
+			if (!rows)
+				return mysql_errno(connection) ? mysql_errno(connection) : EIO;
+			MYSQL_ROW row = mysql_fetch_row(rows.get());
+			uint64_t revision = 0;
+			if (!row || mysql_num_rows(rows.get()) != 1 || !row[0])
+				return ESTALE;
+			const auto end = row[0] + std::strlen(row[0]);
+			const auto parsed = std::from_chars(row[0], end, revision);
+			return parsed.ec == std::errc{} && parsed.ptr == end &&
+					       revision == expected_save_revision ?
+				       0 :
+				       ESTALE;
+		};
+		if (const auto code = lock_revision())
+			return finish(code);
+		std::vector<player_item_snapshot> reconciled;
+		bool topology_reconciled = false;
+		auto query = reconcile_player_item_custody(connection, snapshot, &reconciled,
+							   &topology_reconciled);
+		if (!query.ok)
+			return finish(query.error_code ? query.error_code : EIO);
+		if (topology_reconciled)
+			return finish(PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH);
+		// Ordinary save reconciliation allows legacy slot inference. Auction's exact
+		// participant additionally proves every current root/parent/slot before writes;
+		// absence of historic slot evidence cannot authorize a different position.
+		query = execute(
+			connection,
+			"SELECT item_uid,root_item_uid,COALESCE(parent_item_uid,0),vnum,equipment_slot,item_revision FROM item_current_owner WHERE owner_type=" +
+				std::to_string(static_cast<unsigned>(item_owner_type::player)) +
+				" AND owner_id=" + std::to_string(pid) +
+				" AND owner_context_id=0 AND state=" +
+				std::to_string(static_cast<unsigned>(item_custody_state::active)) +
+				" AND coin_payload IS NULL ORDER BY item_uid FOR UPDATE");
+		if (!query.ok)
+			return finish(query.error_code ? query.error_code : EIO);
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> custody(
+			mysql_store_result(connection), mysql_free_result);
+		if (!custody)
+			return finish(mysql_errno(connection) ? mysql_errno(connection) : EIO);
+		if (mysql_num_rows(custody.get()) != snapshot.items.size())
+			return finish(PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH);
+		MYSQL_ROW row;
+		std::unordered_set<uint64_t> seen;
+		seen.reserve(snapshot.items.size());
+		while ((row = mysql_fetch_row(custody.get())))
+		{
+			std::array<uint64_t, 6> values{};
+			for (size_t i = 0; i < values.size(); ++i)
+			{
+				if (!row[i])
+					return finish(PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH);
+				const auto end = row[i] + std::strlen(row[i]);
+				const auto parsed = std::from_chars(row[i], end, values[i]);
+				if (parsed.ec != std::errc{} || parsed.ptr != end)
+					return finish(PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH);
+			}
+			const auto found = indices.find(values[0]);
+			if (found == indices.end() || !seen.insert(values[0]).second)
+				return finish(PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH);
+			const auto i = found->second;
+			const auto &item = snapshot.items[i];
+			const uint64_t parent =
+				item.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+					0 :
+					snapshot.items[static_cast<size_t>(item.parent_index)]
+						.object_uid;
+			if (values[1] != roots[i] || values[2] != parent ||
+			    values[3] != static_cast<uint64_t>(item.vnum) ||
+			    values[4] != static_cast<uint64_t>(item.equipment_slot) || !values[5])
+				return finish(PLAYER_SAVE_ERROR_CUSTODY_PAYLOAD_MISMATCH);
+		}
+		custody.reset();
+		query = reject_orphaned_saved_items(connection, snapshot.pid, false);
+		if (!query.ok)
+			return finish(query.error_code ? query.error_code : EIO);
+		if (const auto code = session_error())
+			return code;
+		query = execute(connection,
+				"DELETE FROM player_items WHERE pid=" + std::to_string(pid));
+		if (!query.ok)
+			return finish(query.error_code ? query.error_code : EIO);
+		query = insert_item_rows(connection, snapshot.items, snapshot.pid, false);
+		if (!query.ok)
+			return finish(query.error_code ? query.error_code : EIO);
+		query = sync_restitution_runtime_state(connection, snapshot.items, snapshot.pid);
+		if (!query.ok)
+			return finish(query.error_code ? query.error_code : EIO);
+		shop_item_runtime_image image;
+		if (!shop_item_runtime_lock_player_image(
+			    connection, pid, std::span<const uint64_t>(ordered_uids), &image))
+			return finish(errno ? static_cast<unsigned int>(errno) : EIO);
+		if (image.size() != snapshot.items.size())
+			return finish(EILSEQ);
+		for (const auto uid : ordered_uids)
+		{
+			const auto actual = image.find(uid);
+			if (actual == image.end() || !actual->second.payload_present)
+				return finish(EILSEQ);
+			observed.push_back(actual->second.item);
+		}
+		std::vector<uint8_t> actual_bytes;
+		const auto readback = player_item_snapshot_list_encode(observed, &actual_bytes);
+		if (readback != player_snapshot_codec_result::ok)
+			return finish(readback == player_snapshot_codec_result::allocation_failure ?
+					      ENOMEM :
+					      EILSEQ);
+		if (actual_bytes != expected)
+			return finish(EILSEQ);
+		// Prove the caller's original save watermark remained unchanged throughout.
+		return finish(lock_revision());
+	}
+	catch (const std::bad_alloc &)
+	{
+		return finish(ENOMEM);
+	}
+	catch (...)
+	{
+		return finish(EIO);
+	}
+#endif
+}
 
 bool player_snapshot_repository_observe_covered_revision(
 	int pid, const player_save_execution_guard::held_publication_reservation &reservation,

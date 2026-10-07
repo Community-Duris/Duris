@@ -93,6 +93,9 @@ class AuctionTransactionalCutoverTests(unittest.TestCase):
                 ["g++", "-std=c++20", "-Wall", "-Wextra", "-Werror", f"-I{SRC}",
                  str(harness), str(SRC / "critical_command.c"),
                  str(SRC / "currency_command.c"), str(SRC / "auction_command.c"),
+                 str(SRC / "auction_native_command_context.c"),
+                 str(SRC / "player_snapshot_codec.c"),
+                 "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
                  "-lcrypto", "-o", str(binary)],
                 check=True,
             )

@@ -2,9 +2,23 @@
 #define DURIS_AUCTION_LISTING_ACCOUNTING_H
 
 #include "economy/auction_command.h"
+#include "player/player_snapshot_codec.h"
 #include "economy/economic_accounting_intent.h"
 
 constexpr uint32_t ECONOMIC_WRITER_AUCTION_LISTING = 12;
+
+// Observations recovered from original EAI facts; no command/header/SQL authority.
+struct auction_accounting_native_facts
+{
+	uint32_t original_level = 0;
+	uint64_t acknowledged_save_revision = 0;
+	std::array<uint8_t, 32> before_digest{}, after_digest{}, selected_digest{};
+	uint32_t selected_node_count = 0;
+	uint16_t selected_root_count = 0;
+};
+economic_accounting_error
+auction_listing_accounting_observe_native_facts(const economic_frozen_intent &,
+						auction_accounting_native_facts *) noexcept;
 
 struct auction_listing_accounting_authority
 {
@@ -15,6 +29,8 @@ struct auction_listing_accounting_authority
 	currency_command_result balances_before = {};
 	uint64_t player_owner_revision_before = 0;
 	std::vector<economic_item_snapshot> items_before;
+	// Genuine caller-owned acknowledged/source literals, never authority alone.
+	std::vector<player_item_snapshot> native_selected_literals;
 };
 
 // Admission freezes the existing money lifetimes. The new auction ID and its

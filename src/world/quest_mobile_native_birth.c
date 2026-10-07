@@ -25,6 +25,7 @@
 #include "world/vnum.obj.h"
 #ifndef __NO_MYSQL__
 #include "persistence/economic_sql_native_mobile_birth_transaction.h"
+#include "persistence/quest_mobile_native_origin_sql.h"
 #include "player/player_sql_transaction_cleanup.h"
 #endif
 #include <algorithm>
@@ -48,6 +49,55 @@ extern void apply_zone_modifier(P_char);
 
 namespace
 {
+
+#ifndef __NO_MYSQL__
+bool retain_published_constructor_origin(const critical_native_recovery_envelope &original,
+					 void *) noexcept
+{
+	try
+	{
+		MYSQL *connection = sql_pool_acquire();
+		player_sql_pool_lease lease(connection);
+		if (!connection || player_sql_idle_error(connection))
+			return false;
+		player_sql_cleanup cleanup;
+		player_sql_transaction_cleanup transaction(connection, cleanup);
+		transaction.starting();
+		bool confirmed = false;
+		try
+		{
+			if (mysql_real_query(connection, "START TRANSACTION", 17) ||
+			    !transaction.same_session() ||
+			    !(connection->server_status & SERVER_STATUS_IN_TRANS) ||
+			    quest_mobile_native_origin_sql_retain_locked(connection, original) ||
+			    !transaction.same_session() ||
+			    !(connection->server_status & SERVER_STATUS_IN_TRANS))
+				throw EAGAIN;
+			transaction.committing();
+			if (mysql_real_query(connection, "COMMIT", 6) || !transaction.committed())
+				throw EAGAIN;
+			confirmed = true;
+		}
+		catch (...)
+		{
+			confirmed = false;
+		}
+		transaction.finish();
+		// Uncertain commits retire their lease even when a later ROLLBACK can
+		// confirm an idle session. Only the exact retained origin can reconcile
+		// that attempt on the next original, still-fenced callback.
+		if (confirmed || !transaction.commit_attempted())
+			lease.reuse(cleanup);
+		return confirmed && transaction.same_session() &&
+		       cleanup.disposition == player_sql_cleanup_disposition::idle_verified &&
+		       !cleanup.cleanup_error;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+#endif
 struct original_item
 {
 	std::unique_ptr<quest_mobile_native_item_stage> stage;
@@ -99,6 +149,9 @@ struct original_birth
 	size_t mobile_bytes = 0;
 	bool sealed = false, submitted = false, cold = false, blocked = false;
 	bool cold_adopted = false, cold_rebuilding = false;
+	// Passive original replay enrollment survives cold reconstruction until retire.
+	// This RAM-only correlation never grants SQL or coordinator authority.
+	bool cold_replay_enrolled = false;
 	bool completed = false, binding_committed = false, mobile_started = false;
 	bool mobile_consumed = false, runtime_applied = false, physically_proven = false;
 	bool retired = false;
@@ -300,6 +353,94 @@ bool same_image(const quest_mobile_native_image &a, const quest_mobile_native_im
 }
 }
 
+bool quest_mobile_native_birth_owner::validate_progressed_origin(
+	const critical_native_recovery_envelope &original_birth,
+	const quest_mobile_native_image &current,
+	const native_mobile_wallet_origin &origin) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)original_birth;
+	(void)current;
+	(void)origin;
+	return false;
+#else
+	try
+	{
+		// The original terminal attachment stays immutable. A current economic
+		// image is not a substitute for the historical constructor or receipt.
+		if (original_birth.command.payload_version !=
+			    NATIVE_MOBILE_BIRTH_CONSTRUCTOR_PAYLOAD_VERSION ||
+		    !native_mobile_birth_recovery_terminal(original_birth) ||
+		    current.state != quest_mobile_lifetime_state::live || !current.cash)
+			return false;
+		quest_mobile_native_image born;
+		std::vector<native_mobile_birth_item_recipe> recipes;
+		quest_mobile_native_constructor_recipe constructor;
+		native_mobile_birth_recovery_context progress;
+		economic_frozen_intent intent;
+		native_mobile_birth_result receipt;
+		std::vector<uint8_t> canonical_current;
+		if (native_mobile_birth_command_decode(original_birth.command, &born, &recipes,
+						       &constructor) !=
+			    economic_accounting_error::ok ||
+		    (constructor.wire_version !=
+			     NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_VERSION &&
+		     constructor.wire_version !=
+			     NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION) ||
+		    native_mobile_birth_recovery_decode(original_birth.command,
+							original_birth.attachment, &progress) !=
+			    economic_accounting_error::ok ||
+		    !progress.receipt_present || !born.cash ||
+		    !native_mobile_birth_result_decode({ progress.receipt.result_payload.data(),
+							 progress.receipt.result_size },
+						       &receipt) ||
+		    economic_intent_decode(original_birth.command.accounting_intent, &intent) !=
+			    economic_accounting_error::ok ||
+		    economic_intent_verify_binding(original_birth.command, intent) !=
+			    economic_accounting_error::ok ||
+		    quest_mobile_native_image_encode(current, &canonical_current) !=
+			    player_snapshot_codec_result::ok)
+			return false;
+		// Compare the complete original lifetime, excluding only its two mutable
+		// revisions. Current stock may include genuinely acquired player items;
+		// equality here neither invents nor authenticates their restore recipes.
+		auto lifetime = current.reference;
+		if (lifetime.mobile_revision < born.reference.mobile_revision ||
+		    lifetime.stock_revision < born.reference.stock_revision ||
+		    current.cash->revision < born.cash->revision)
+			return false;
+		lifetime.mobile_revision = born.reference.mobile_revision;
+		lifetime.stock_revision = born.reference.stock_revision;
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> left{}, right{};
+		if (quest_mobile_native_reference_encode(lifetime, &left) !=
+			    player_snapshot_codec_result::ok ||
+		    quest_mobile_native_reference_encode(born.reference, &right) !=
+			    player_snapshot_codec_result::ok ||
+		    left != right ||
+		    origin.birth_operation.bytes != born.reference.birth_operation.bytes ||
+		    origin.mobile_instance_id != born.reference.mobile_instance_id ||
+		    !origin.wallet_mapping_id ||
+		    origin.lineage.bytes != intent.admission.metadata.lineage.bytes ||
+		    origin.birth_epoch.bytes != intent.admission.metadata.epoch.bytes ||
+		    receipt.wallet_mapping_id != origin.wallet_mapping_id)
+			return false;
+		const economic_account_key wallet{ origin.lineage, economic_account_kind::wallet,
+						   origin.wallet_mapping_id,
+						   ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT };
+		economic_accounting_plan original_plan;
+		return native_mobile_birth_accounting_compile(original_birth.command, wallet,
+							      &original_plan) ==
+			       economic_accounting_error::ok &&
+		       native_mobile_birth_result_matches(original_birth.command, wallet,
+							  original_plan, receipt);
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
 bool quest_mobile_native_birth_owner::charge() noexcept
 {
 	try
@@ -451,11 +592,15 @@ bool quest_mobile_native_birth_owner::begin_reset(int zone, int force) noexcept
 {
 	if (!economic_gameplay_authority::active())
 		return true;
-	if (!economic_gameplay_authority::active_regular_sql() || !nevent_is_game_thread())
+	if (!nevent_is_game_thread() || (!economic_gameplay_authority::active_regular_sql() &&
+					 !economic_gameplay_authority::active_sql_recovery()))
 		return false;
 	try
 	{
-		bool held = !replay_ready || reset_in_progress;
+		// Retain genuine bounded/deduplicated reset requests while selected
+		// recovery keeps accounting policy active and fresh admission closed.
+		bool held = economic_gameplay_authority::active_sql_recovery() || !replay_ready ||
+			    reset_in_progress;
 		for (const auto &b : births)
 			if (b && !b->retired && b->zone == zone)
 				held = true;
@@ -1325,6 +1470,174 @@ bool quest_mobile_native_birth_owner::resume_cold_projection(size_t index) noexc
 	}
 }
 
+bool quest_mobile_native_birth_owner::observe_current_published_identity(
+	P_char actor, uint64_t runtime, bool *present,
+	quest_mobile_native_reference *output) noexcept
+{
+	if (!nevent_is_game_thread() || !actor || !runtime || !present || !output ||
+	    find_character_by_runtime_id(runtime) != actor || actor->runtime_id != runtime)
+		return false;
+	const auto &storage = actor->native_mobile_binding.encoded_reference_;
+	if (std::all_of(std::begin(storage), std::end(storage),
+			[](uint8_t byte) { return byte == 0; }))
+	{
+		const auto &binding = actor->native_mobile_binding;
+		const auto zero = [](const auto &bytes) noexcept
+		{
+			return std::all_of(std::begin(bytes), std::end(bytes),
+					   [](uint8_t value) { return value == 0; });
+		};
+		// A missing reference with nonzero cash metadata is corrupt/mixed
+		// storage, never authority to treat the native lifetime as absent.
+		if (!zero(binding.cash_revision_) || !zero(binding.wallet_mapping_id_) ||
+		    !zero(binding.lineage_) || !zero(binding.birth_epoch_))
+			return false;
+		*present = false;
+		return true;
+	}
+	quest_mobile_native_reference candidate;
+	if (!quest_mobile_native_reference_copy(actor, runtime, &candidate))
+		return false;
+	*output = candidate;
+	*present = true;
+	return true;
+}
+
+bool quest_mobile_native_birth_owner::install_current_published_metadata(
+	P_char actor, uint64_t runtime, const quest_mobile_native_image &image,
+	const native_mobile_wallet_origin &wallet) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)actor;
+	(void)runtime;
+	(void)image;
+	(void)wallet;
+	return false;
+#else
+	if (!nevent_is_game_thread() || !economic_gameplay_authority::active_sql_recovery() ||
+	    !actor || !runtime || actor->runtime_id != runtime || !IS_NPC(actor) ||
+	    !actor->only.npc || image.state != quest_mobile_lifetime_state::live || !image.cash ||
+	    !image.cash->revision || !wallet.wallet_mapping_id ||
+	    wallet.mobile_instance_id != image.reference.mobile_instance_id ||
+	    wallet.birth_operation.bytes != image.reference.birth_operation.bytes ||
+	    critical_operation_id_is_zero(wallet.lineage) ||
+	    critical_operation_id_is_zero(wallet.birth_epoch))
+		return false;
+	P_char indexed = find_character_by_runtime_id(runtime);
+	if (indexed && indexed != actor)
+		return false;
+	try
+	{
+		// This private delegation is called only for the world's genuinely
+		// retained detached stage, or the same indexed body on an exact retry.
+		// Complete CURRENT forest and literal cash precede every metadata write.
+		quest_mobile_native_image observed;
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> reference{};
+		if (quest_mobile_native_reference_encode(image.reference, &reference) !=
+			    player_snapshot_codec_result::ok ||
+		    quest_mobile_native_capture(actor, image.reference, image.state,
+						image.last_transition_operation,
+						image.cash->revision,
+						&observed) != player_snapshot_capture_result::ok ||
+		    !same_image(image, observed))
+			return false;
+		auto &binding = actor->native_mobile_binding;
+		const auto matches_or_zero = [](const auto &stored, const auto &expected) noexcept
+		{
+			return std::equal(std::begin(stored), std::end(stored), expected.begin()) ||
+			       std::all_of(std::begin(stored), std::end(stored),
+					   [](uint8_t value) { return value == 0; });
+		};
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_CASH_BINDING_METADATA_BYTES> exact{},
+			current{};
+		const auto put = [](uint8_t *out, uint64_t value) noexcept
+		{
+			for (size_t i = 0; i < 8; ++i)
+				out[i] = static_cast<uint8_t>(value >> (8 * i));
+		};
+		put(exact.data(), image.cash->revision);
+		put(exact.data() + 8, wallet.wallet_mapping_id);
+		std::copy(wallet.lineage.bytes.begin(), wallet.lineage.bytes.end(),
+			  exact.begin() + 16);
+		std::copy(wallet.birth_epoch.bytes.begin(), wallet.birth_epoch.bytes.end(),
+			  exact.begin() + 32);
+		std::copy(std::begin(binding.cash_revision_), std::end(binding.cash_revision_),
+			  current.begin());
+		std::copy(std::begin(binding.wallet_mapping_id_),
+			  std::end(binding.wallet_mapping_id_), current.begin() + 8);
+		std::copy(std::begin(binding.lineage_), std::end(binding.lineage_),
+			  current.begin() + 16);
+		std::copy(std::begin(binding.birth_epoch_), std::end(binding.birth_epoch_),
+			  current.begin() + 32);
+		if (!matches_or_zero(binding.encoded_reference_, reference) ||
+		    (current != exact && std::any_of(current.begin(), current.end(),
+						     [](uint8_t value) { return value != 0; })))
+			return false;
+		// All fallible observations precede this nonallocating exact install.
+		std::copy(reference.begin(), reference.end(), binding.encoded_reference_);
+		std::copy_n(exact.begin(), 8, binding.cash_revision_);
+		std::copy_n(exact.begin() + 8, 8, binding.wallet_mapping_id_);
+		std::copy_n(exact.begin() + 16, 16, binding.lineage_);
+		std::copy_n(exact.begin() + 32, 16, binding.birth_epoch_);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool quest_mobile_native_birth_owner::restore_current_published_enrollment(P_obj object,
+									   P_char actor) noexcept
+{
+	return nevent_is_game_thread() && economic_gameplay_authority::active_sql_recovery() &&
+	       quest_mobile_native_local_stock::restore_enrollment(object, actor);
+}
+
+bool quest_mobile_native_birth_owner::restore_current_published_constructor_policy(
+	P_char actor, const quest_mobile_native_constructor_recipe &recipe) noexcept
+{
+	if (!nevent_is_game_thread() || !economic_gameplay_authority::active_sql_recovery() ||
+	    !actor || !IS_NPC(actor) || !actor->only.npc || !world || !mob_index ||
+	    !native_mobile_birth_constructor_recipe_valid(recipe) || GET_RNUM(actor) < 0 ||
+	    GET_RNUM(actor) > top_of_mobt ||
+	    mob_index[GET_RNUM(actor)].virtual_number != recipe.mobile_vnum ||
+	    (recipe.wire_version != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_SUCCESSOR_VERSION &&
+	     recipe.wire_version != NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION))
+		return false;
+	try
+	{
+		const int room = real_room(recipe.reset_room_vnum);
+		quest_mobile_native_constructor_digest build{}, procedure{}, tail{};
+		if (room < 0 || room > top_of_world ||
+		    !native_mobile_birth_running_artifact_digest(&build) ||
+		    build != recipe.build_digest ||
+		    !native_mobile_birth_procedure_capture(recipe.mobile_vnum, build, &procedure) ||
+		    procedure != recipe.procedure_after ||
+		    !native_mobile_birth_reset_tail_capture(recipe.mobile_vnum,
+							    recipe.reset_room_vnum,
+							    recipe.reset_shop_index, &tail) ||
+		    tail != recipe.reset_tail || world[room].funct ||
+		    (IS_SET(actor->specials.act, ACT_SPEC) && mob_index[GET_RNUM(actor)].func.mob))
+			return false;
+		GET_BIRTHPLACE(actor) = recipe.reset_room_vnum;
+		apply_zone_modifier(actor);
+		if (recipe.reset_shop_index >= 0)
+			bind_shopkeeper(actor, recipe.reset_shop_index);
+		return alchemist_choice_compatible(actor, recipe) &&
+		       (recipe.wire_version !=
+				NATIVE_MOBILE_BIRTH_CONSTRUCTOR_RECIPE_ALCHEMIST_VERSION ||
+			npc_alchemist_original_birth::restore_latch(
+				actor, static_cast<native_alchemist_vial_choice>(
+					       recipe.alchemist_choice)));
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
 bool quest_mobile_native_birth_owner::recover_cold(size_t index, bool allow_reconstruction) noexcept
 {
 #ifdef __NO_MYSQL__
@@ -1335,6 +1648,61 @@ bool quest_mobile_native_birth_owner::recover_cold(size_t index, bool allow_reco
 	if (index >= births.size() || !births[index] || !nevent_is_game_thread())
 		return false;
 	auto &b = *births[index];
+	const auto install_original_cash_metadata = [&]() noexcept
+	{
+		if (!b.character || !b.image.cash || !b.completed ||
+		    b.completion.disposition != critical_completion_disposition::execution ||
+		    (b.completion.outcome != critical_apply_outcome::applied &&
+		     b.completion.outcome != critical_apply_outcome::already_applied))
+			return false;
+		native_mobile_birth_result result;
+		economic_frozen_intent intent;
+		if (!native_mobile_birth_result_decode({ b.completion.result_payload.data(),
+							 b.completion.result_size },
+						       &result) ||
+		    economic_intent_decode(b.command.accounting_intent, &intent) !=
+			    economic_accounting_error::ok ||
+		    economic_intent_verify_binding(b.command, intent) !=
+			    economic_accounting_error::ok ||
+		    result.mobile_instance_id != b.reference.mobile_instance_id ||
+		    result.cash_revision != b.image.cash->revision || !result.wallet_mapping_id ||
+		    critical_operation_id_is_zero(intent.admission.metadata.lineage) ||
+		    critical_operation_id_is_zero(intent.admission.metadata.epoch))
+			return false;
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_CASH_BINDING_METADATA_BYTES> exact{},
+			current{};
+		const auto put = [](uint8_t *out, uint64_t value) noexcept
+		{
+			for (size_t i = 0; i < 8; ++i)
+				out[i] = static_cast<uint8_t>(value >> (8 * i));
+		};
+		put(exact.data(), result.cash_revision);
+		put(exact.data() + 8, result.wallet_mapping_id);
+		std::copy(intent.admission.metadata.lineage.bytes.begin(),
+			  intent.admission.metadata.lineage.bytes.end(), exact.begin() + 16);
+		std::copy(intent.admission.metadata.epoch.bytes.begin(),
+			  intent.admission.metadata.epoch.bytes.end(), exact.begin() + 32);
+		auto &binding = b.character->native_mobile_binding;
+		std::copy(std::begin(binding.cash_revision_), std::end(binding.cash_revision_),
+			  current.begin());
+		std::copy(std::begin(binding.wallet_mapping_id_),
+			  std::end(binding.wallet_mapping_id_), current.begin() + 8);
+		std::copy(std::begin(binding.lineage_), std::end(binding.lineage_),
+			  current.begin() + 16);
+		std::copy(std::begin(binding.birth_epoch_), std::end(binding.birth_epoch_),
+			  current.begin() + 32);
+		if (current != exact && std::any_of(current.begin(), current.end(),
+						    [](uint8_t byte) { return byte != 0; }))
+			return false;
+		// Invoked only after this original owner's genuine SQL/image/source cut.
+		// Installs observed runtime metadata; never writes a wallet or issues IDs.
+		std::copy_n(exact.begin(), 8, binding.cash_revision_);
+		std::copy_n(exact.begin() + 8, 8, binding.wallet_mapping_id_);
+		std::copy_n(exact.begin() + 16, 16, binding.lineage_);
+		std::copy_n(exact.begin() + 32, 16, binding.birth_epoch_);
+		return true;
+	};
+
 	if (!b.cold)
 		return true;
 	if (!b.constructor_present ||
@@ -1692,8 +2060,12 @@ bool quest_mobile_native_birth_owner::recover_cold(size_t index, bool allow_reco
 				b.bindings.commit_unchecked();
 			}
 			if (b.recovery.reference_install.succeeded)
+			{
 				std::memcpy(b.character->native_mobile_binding.encoded_reference_,
 					    encoded.data(), encoded.size());
+				if (!install_original_cash_metadata())
+					throw EAGAIN;
+			}
 			quest_mobile_native_image observed;
 			if (quest_mobile_native_capture(
 				    b.character, b.reference, quest_mobile_lifetime_state::live,
@@ -1702,6 +2074,8 @@ bool quest_mobile_native_birth_owner::recover_cold(size_t index, bool allow_reco
 			    !same_image(observed, b.image) || !charge())
 				throw EAGAIN;
 		}
+		if (b.recovery.reference_install.succeeded && !install_original_cash_metadata())
+			throw EAGAIN;
 		std::copy(custody.begin(), custody.end(), b.current_custody.begin());
 		b.binding_committed = b.recovery.whole_binding.succeeded;
 		// Cold flags do not certify current runtime projection or physical proof.
@@ -1736,6 +2110,61 @@ bool quest_mobile_native_birth_owner::publish(size_t index, bool allow_reconstru
 	if (index >= births.size() || !births[index] || !nevent_is_game_thread())
 		return false;
 	auto &b = *births[index];
+	const auto install_original_cash_metadata = [&]() noexcept
+	{
+		if (!b.character || !b.image.cash || !b.completed ||
+		    b.completion.disposition != critical_completion_disposition::execution ||
+		    (b.completion.outcome != critical_apply_outcome::applied &&
+		     b.completion.outcome != critical_apply_outcome::already_applied))
+			return false;
+		native_mobile_birth_result result;
+		economic_frozen_intent intent;
+		if (!native_mobile_birth_result_decode({ b.completion.result_payload.data(),
+							 b.completion.result_size },
+						       &result) ||
+		    economic_intent_decode(b.command.accounting_intent, &intent) !=
+			    economic_accounting_error::ok ||
+		    economic_intent_verify_binding(b.command, intent) !=
+			    economic_accounting_error::ok ||
+		    result.mobile_instance_id != b.reference.mobile_instance_id ||
+		    result.cash_revision != b.image.cash->revision || !result.wallet_mapping_id ||
+		    critical_operation_id_is_zero(intent.admission.metadata.lineage) ||
+		    critical_operation_id_is_zero(intent.admission.metadata.epoch))
+			return false;
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_CASH_BINDING_METADATA_BYTES> exact{},
+			current{};
+		const auto put = [](uint8_t *out, uint64_t value) noexcept
+		{
+			for (size_t i = 0; i < 8; ++i)
+				out[i] = static_cast<uint8_t>(value >> (8 * i));
+		};
+		put(exact.data(), result.cash_revision);
+		put(exact.data() + 8, result.wallet_mapping_id);
+		std::copy(intent.admission.metadata.lineage.bytes.begin(),
+			  intent.admission.metadata.lineage.bytes.end(), exact.begin() + 16);
+		std::copy(intent.admission.metadata.epoch.bytes.begin(),
+			  intent.admission.metadata.epoch.bytes.end(), exact.begin() + 32);
+		auto &binding = b.character->native_mobile_binding;
+		std::copy(std::begin(binding.cash_revision_), std::end(binding.cash_revision_),
+			  current.begin());
+		std::copy(std::begin(binding.wallet_mapping_id_),
+			  std::end(binding.wallet_mapping_id_), current.begin() + 8);
+		std::copy(std::begin(binding.lineage_), std::end(binding.lineage_),
+			  current.begin() + 16);
+		std::copy(std::begin(binding.birth_epoch_), std::end(binding.birth_epoch_),
+			  current.begin() + 32);
+		if (current != exact && std::any_of(current.begin(), current.end(),
+						    [](uint8_t byte) { return byte != 0; }))
+			return false;
+		// Invoked only after this original owner's genuine SQL/image/source cut.
+		// Installs observed runtime metadata; never writes a wallet or issues IDs.
+		std::copy_n(exact.begin(), 8, binding.cash_revision_);
+		std::copy_n(exact.begin() + 8, 8, binding.wallet_mapping_id_);
+		std::copy_n(exact.begin() + 16, 16, binding.lineage_);
+		std::copy_n(exact.begin() + 32, 16, binding.birth_epoch_);
+		return true;
+	};
+
 	if (b.completed && b.submitted &&
 	    b.completion.disposition == critical_completion_disposition::never_admitted)
 	{
@@ -1860,9 +2289,13 @@ bool quest_mobile_native_birth_owner::publish(size_t index, bool allow_reconstru
 					std::memcpy(b.character->native_mobile_binding
 							    .encoded_reference_,
 						    encoded.data(), encoded.size());
+					if (!install_original_cash_metadata())
+						throw EAGAIN;
 					if (!finish_action(index, { true, true, true, false }))
 						throw EAGAIN;
 				}
+				if (!install_original_cash_metadata())
+					throw EAGAIN;
 				for (size_t row = 0; row < b.stock.size(); ++row)
 				{
 					auto &item = b.stock[row];
@@ -2109,7 +2542,14 @@ bool quest_mobile_native_birth_owner::publish(size_t index, bool allow_reconstru
 			b.envelope = std::move(*b.ack_successor);
 			b.ack_successor.reset();
 		}
-		if (!critical_native_mobile_birth_publication_owner::retire(b.envelope))
+		if (b.command.payload_version == NATIVE_MOBILE_BIRTH_CONSTRUCTOR_PAYLOAD_VERSION)
+		{
+			if (!critical_native_mobile_birth_publication_owner::retire(
+				    b.envelope, b.coordinator_generation,
+				    retain_published_constructor_origin, nullptr))
+				return false;
+		}
+		else if (!critical_native_mobile_birth_publication_owner::retire(b.envelope))
 			return false;
 		births[index].reset();
 		charge();
@@ -2195,6 +2635,7 @@ bool quest_mobile_native_birth_owner::restore(const critical_command &command) n
 		if (b->rnum < 0 || b->zone < 0 || b->room < 0)
 			return false;
 		b->cold = true;
+		b->cold_replay_enrolled = true;
 		b->sealed = true;
 		b->submitted = true;
 		b->current_custody.resize(b->image.items.size());
@@ -2346,17 +2787,35 @@ void quest_mobile_native_birth_owner::completions(const critical_completion *inc
 }
 void quest_mobile_native_birth_owner::pulse(bool prepare_original_resets) noexcept
 {
+	pulse_policy(prepare_original_resets, false);
+}
+bool quest_mobile_native_birth_owner::recovery_pulse() noexcept
+{
+	if (!nevent_is_game_thread() || !economic_gameplay_authority::active() || !replay_ready ||
+	    reset_in_progress)
+		return false;
+	pulse_policy(false, true);
+	for (const auto &b : births)
+		if (b && b->cold_replay_enrolled)
+			return false;
+	return !deferred_overflow;
+}
+void quest_mobile_native_birth_owner::pulse_policy(bool prepare_original_resets,
+						   bool recovery_only) noexcept
+{
 	if (!nevent_is_game_thread())
 		return;
 	try
 	{
 		for (size_t i = 0; i < births.size(); ++i)
-			if (births[i])
+			if (births[i] && (!recovery_only || births[i]->cold_replay_enrolled))
 			{
 				auto &b = *births[i];
 				if (!b.cold && b.sealed && !b.blocked && !b.submitted)
 				{
-					if (!prepare_original_resets || !replay_ready)
+					if (recovery_only || !prepare_original_resets ||
+					    economic_gameplay_authority::active_sql_recovery() ||
+					    !replay_ready)
 						continue;
 					if (b.canonical.empty())
 					{
@@ -2458,9 +2917,11 @@ void quest_mobile_native_birth_owner::pulse(bool prepare_original_resets) noexce
 				}
 				if (b.completed)
 					quest_mobile_native_birth_owner::publish(
-						i, prepare_original_resets && replay_ready);
+						i, (prepare_original_resets || recovery_only) &&
+							   replay_ready);
 			}
-		if (!prepare_original_resets || !replay_ready || reset_in_progress ||
+		if (recovery_only || !prepare_original_resets || !replay_ready ||
+		    economic_gameplay_authority::active_sql_recovery() || reset_in_progress ||
 		    !deferred.size())
 			return;
 		for (size_t i = 0; i < deferred.size(); ++i)
@@ -2506,4 +2967,8 @@ void quest_mobile_native_birth_completions(const critical_completion *incoming,
 void quest_mobile_native_birth_pulse(bool prepare_original_resets) noexcept
 {
 	quest_mobile_native_birth_owner::pulse(prepare_original_resets);
+}
+bool quest_mobile_native_birth_recovery_pulse() noexcept
+{
+	return quest_mobile_native_birth_owner::recovery_pulse();
 }

@@ -798,6 +798,26 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "da6d5044e860528b14a3bcfcca0f95f1a2e178946303ab5e339d3ea93a46094d",
       "verify_checksum": "6693a797f7d4a259f412f0ac54d2324ac34e9612a5dcdac298aa459afdbf29ed"
+    },
+    {
+      "id": "0063_quest_mobile_native_birth_origin",
+      "sequence": 63,
+      "description": "Retain published native constructor origins across journal retirement without reconstructing history",
+      "apply": "immutable/0063_quest_mobile_native_birth_origin.sql",
+      "verify": "immutable/0063_quest_mobile_native_birth_origin.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "7ce0983b4c6f8b882d46dda75070f3124fccc8cc6b3f103ba6c05ede094739c4",
+      "verify_checksum": "2baa44b16d4c6eb1a60fce04397a652f58731f4bf5e35fda0e546402ae3318e7"
+    },
+    {
+      "id": "0064_auction_custody_history",
+      "sequence": 64,
+      "description": "Retain claimed auction custody history while enforcing unique current item custody",
+      "apply": "immutable/0064_auction_custody_history.sql",
+      "verify": "immutable/0064_auction_custody_history.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "83667d872f80621c1cae80ada858d5c03f56f7c468985299c439beae37b15ba4",
+      "verify_checksum": "d93f4e8ed6f956eb16c17692a65cc5816df361945d08399e09d30593b6486b02"
     }
   ]
 }

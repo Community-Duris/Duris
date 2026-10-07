@@ -1360,9 +1360,11 @@ class SplitEconomyActivationContract(unittest.TestCase):
                     owners.setdefault(tuple(site), set()).add(route["id"])
         self.assertEqual(current, owners.keys(), "review new movement item calls")
         self.assertTrue(all(len(owners[site]) == 1 for site in current))
-        self.assertEqual(owners[(path, 111, "item_lifecycle")],
+        self.assertEqual(owners[self.source_site(path, "static bool publish_key_break(",
+                                                "item_lifecycle", "extract_obj(key, TRUE);")],
                          {"movement.key_break_committed_publication"})
-        self.assertEqual(owners[(path, 128, "item_lifecycle")],
+        self.assertEqual(owners[self.source_site(path, "static bool break_key(",
+                                                "item_lifecycle", "extract_obj(key, TRUE);")],
                          {"movement.key_break_direct"})
         for route_id in ("movement.frost_ice_stage_cleanup",
                          "movement.faerie_reward_candidate_reject"):
@@ -1380,6 +1382,26 @@ class SplitEconomyActivationContract(unittest.TestCase):
                             ["must_block_on_activation"])
         self.assertIn("missing-UID case can include a PC",
                       self.routes["movement.key_break_direct"]["source_classification"])
+
+    def test_lockpick_committed_projection_has_actual_function_try_block_anchor(self) -> None:
+        route = self.routes["movement.pick_break_committed_publication"]
+        path = "src/cmd/lockpick_retirement.c"
+        source = (ROOT / path).read_text(encoding="utf-8")
+        signature = "bool lockpick_retirement_publish_physical("
+        self.assertEqual(source.count(signature), 1)
+        self.assertRegex(source[source.index(signature):], r"noexcept\s+try\s*\{")
+        self.assertEqual(route["source"]["file"], path)
+        self.assertEqual(route["source"]["definition_lines"],
+                         [source[:source.index(signature)].count("\n") + 1])
+        self.assertEqual(route["disposition"], "runtime_projection_route")
+        self.assertEqual(route["blocking_policy_after_activation"]["decision"],
+                         "allow_projection_only_with_committed_identity")
+        registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_bytes())
+        writer = next(row for row in registry["writers"] if row["id"] == route["id"])
+        self.assertTrue(all(backend["status"] == "unverified" and not backend["evidence"]
+                            for backend in writer["backends"].values()))
+        self.assertFalse(self.artifact["coverage_complete"])
+        self.assertEqual(self.artifact["playable_release_status"], "BLOCKED")
 
     def test_locker_item_sites_separate_saved_custody_from_fixture_lifecycle(self) -> None:
         registry = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())

@@ -72,6 +72,32 @@ using economic_sql_activation_verifier = unsigned int (*)(
 	MYSQL *, const economic_sql_lifecycle_request &, const economic_sql_activation_evidence &,
 	const economic_sql_source_snapshot &) noexcept;
 
+// Empty noncopyable owner slot. Only the SQL lifecycle owner populates actual
+// selected identities after its original-session COMMIT; accessors are values,
+// never SQL/world publication authority. Keep the slot until boot terminates.
+class economic_sql_runtime_boot_selection final
+{
+    public:
+	economic_sql_runtime_boot_selection() noexcept = default;
+	economic_sql_runtime_boot_selection(const economic_sql_runtime_boot_selection &) = delete;
+	economic_sql_runtime_boot_selection &
+	operator=(const economic_sql_runtime_boot_selection &) = delete;
+	economic_sql_runtime_boot_selection(economic_sql_runtime_boot_selection &&) = delete;
+	economic_sql_runtime_boot_selection &
+	operator=(economic_sql_runtime_boot_selection &&) = delete;
+	bool selected() const noexcept { return prepared_ && selected_; }
+	bool finished() const noexcept { return prepared_ && finished_; }
+
+    private:
+	friend class economic_sql_accounting_lifecycle_transaction;
+	friend class sql_economic_runtime_boot_owner;
+	const critical_operation_id &lineage() const noexcept { return lineage_; }
+	critical_operation_id lineage_{}, epoch_{}, baseline_{};
+	uint64_t authority_id_ = 0;
+	unsigned long session_ = 0;
+	bool prepared_ = false, selected_ = false, finished_ = false;
+};
+
 // Private SQL lifecycle owner. Requires a live, lock-backed maintenance token
 // obtained from economic_sql_lifecycle_guard::acquire_maintenance(). It captures
 // full native sources, creates durable wallet PID/bank-row lifetimes, persists
@@ -102,6 +128,17 @@ class economic_sql_accounting_lifecycle_transaction
 	// Called at runtime boot while its named lock is held and before gameplay.
 	static unsigned int recover_runtime(MYSQL *, const economic_sql_lifecycle_guard &,
 					    bool *active) noexcept;
+	// Same lifetime runtime guard/control session through both calls. Prepare
+	// authenticates selection/opening but deliberately defers current mappings;
+	// selected policy remains active and fresh readiness closed during recovery.
+	static unsigned int prepare_runtime_boot(MYSQL *, const economic_sql_lifecycle_guard &,
+						 economic_sql_runtime_boot_selection *) noexcept;
+	// Caller retains original boot/admission/save/reset exclusion until genuine
+	// pending recovery and published-world restoration finish. A failed finish
+	// preserves the recovery projection; success promotes its exact incarnation.
+	static unsigned int finish_runtime_boot(MYSQL *, const economic_sql_lifecycle_guard &,
+						economic_sql_runtime_boot_selection &,
+						bool *active) noexcept;
 };
 
 #endif

@@ -1,4 +1,5 @@
 #include "persistence/critical_command_repository.h"
+#include "item/held_retirement_transport.h"
 #include "persistence/economic_sql_bank_transaction.h"
 #include "persistence/economic_sql_native_mobile_birth_transaction.h"
 #include "persistence/economic_sql_collector_transaction.h"
@@ -6,6 +7,7 @@
 #include "persistence/economic_sql_lifecycle_guard.h"
 #include "sql/sql_thread_init.h"
 #include "player/player_sql_transaction_cleanup.h"
+#include "player/player_save_pipeline.h"
 
 #include "economy/currency_command.h"
 #include "economy/currency_repository.h"
@@ -22,6 +24,9 @@
 #include "economy/auction_command.h"
 #include "economy/auction_repository.h"
 #include "persistence/economic_sql_auction_bid_transaction.h"
+#include "persistence/economic_sql_auction_listing_transaction.h"
+#include "persistence/economic_sql_auction_item_claim_transaction.h"
+#include "persistence/economic_sql_auction_money_claim_transaction.h"
 #include "persistence/economic_sql_auction_settlement_transaction.h"
 #include "persistence/economic_sql_auction_retained.h"
 #include "economy/collector_command.h"
@@ -48,6 +53,7 @@
 #include <algorithm>
 #include <array>
 #include <cerrno>
+#include <cstdio>
 #include <climits>
 #include <cstdint>
 #include <cstring>
@@ -64,6 +70,20 @@
 
 namespace
 {
+#ifndef __NO_MYSQL__
+void auction_list171_source_observe(MYSQL *connection, const critical_command &command,
+				    unsigned int stage, unsigned int error) noexcept
+{
+	if (command.operation_id.bytes[0] != 171 || command.payload_version != 1)
+		return;
+	const int saved_errno = errno;
+	const unsigned int saved_mysql_errno = mysql_errno(connection);
+	std::fprintf(stderr, "LIST171_SOURCE stage=%u error=%u mysql_errno=%u errno=%d\n", stage,
+		     error, saved_mysql_errno, saved_errno);
+	errno = saved_errno;
+}
+#endif
+
 static_assert(BOON_REWARD_RESULT_BYTES <= CRITICAL_COMPLETION_RESULT_MAX_BYTES);
 static_assert(NATIVE_MOBILE_BIRTH_RESULT_BYTES <= CRITICAL_COMMAND_RESULT_MAX_BYTES);
 constexpr uint8_t INBOX_COMMITTED = 1;
@@ -102,6 +122,18 @@ struct stored_operation
 	uint64_t durable_revision;
 	std::vector<uint8_t> result_payload;
 };
+
+bool accounted_native_money_envelope(const critical_command &);
+unsigned int verify_native_money_stored_receipt(const stored_operation &);
+unsigned int verify_native_money_root(MYSQL *, const critical_command &, unsigned int,
+				      std::span<const uint8_t>);
+
+bool accounted_native_fee_envelope(const critical_command &);
+unsigned int verify_native_fee_stored_receipt(const stored_operation &);
+unsigned int native_fee_verify_original_acceptance(MYSQL *, const critical_command &);
+unsigned int verify_native_fee_root(MYSQL *, const critical_command &,
+				    const item_transfer_payload &, unsigned int,
+				    std::span<const uint8_t>);
 
 // Route without evaluating current policy or allocating an intent. Original-ID
 // lookup must precede policy and authority checks, including after retirement.
@@ -1842,8 +1874,11 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 	const bool accounted_coin = accounted_coin_envelope(command);
 	const bool accounted_item = item_transfer_accounting_command_supported(command);
 	const bool accounted_native_quest = accounted_native_quest_envelope(command);
+	const bool accounted_native_money = accounted_native_money_envelope(command);
+	const bool accounted_native_fee = accounted_native_fee_envelope(command);
 	const bool accounted_native_birth = accounted_native_birth_envelope(command);
-	const bool accounted_native_root = accounted_native_quest || accounted_native_birth;
+	const bool accounted_native_root = accounted_native_quest || accounted_native_birth ||
+					   accounted_native_fee || accounted_native_money;
 	const bool accounted_collector = accounted_collector_envelope(command);
 	const bool accounted_shop = accounted_shop_trade_envelope(command);
 	const bool accounted_auction = accounted_auction_envelope(command);
@@ -2060,6 +2095,23 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 						connection, command, item_payload,
 						stored.result_code, stored.result_payload.data(),
 						stored.result_payload.size());
+			}
+
+			else if (accounted_native_money)
+			{
+				retained_error = verify_native_money_stored_receipt(stored);
+				if (!retained_error)
+					retained_error = verify_native_money_root(
+						connection, command, stored.result_code,
+						stored.result_payload);
+			}
+			else if (accounted_native_fee)
+			{
+				retained_error = verify_native_fee_stored_receipt(stored);
+				if (!retained_error)
+					retained_error = verify_native_fee_root(
+						connection, command, item_payload,
+						stored.result_code, stored.result_payload);
 			}
 			else if (accounted_native_birth)
 			{
@@ -2643,6 +2695,217 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 		return applied;
 	}
 
+	if (accounted_native_money)
+	{
+		const auto session_error = accounted_session_check(connection, &root_session, true);
+		if (session_error)
+			return root_failure(session_error);
+		economic_sql_native_money_context original;
+		const auto lock_error =
+			economic_sql_native_money_lock(connection, command, &original);
+		if (lock_error)
+			return root_failure(lock_error);
+		if (original.original.session_id != root_session)
+			return root_failure(ENOTCONN);
+		item_native_mobile_money_result result{};
+		if (!item_native_mobile_money_result_build(item_payload, &result))
+			return root_failure(EILSEQ);
+		result.player_wallet_revision =
+			item_payload.native_money.projection.player_before_revision;
+		result.mobile_cash_revision =
+			item_payload.native_money.projection.mobile_before_revision;
+		result.mobile_revision = item_payload.native_mobile.reference.mobile_revision;
+		quest_mobile_native_image after;
+		unsigned int result_code = 0;
+		// Complete unchanged original player forest comes only from the held
+		// money frame. The genuine executor proves both wallets and unchanged custody.
+		// Strong executor outputs do not prove that no DML was attempted on
+		// false. Failed cleanup after invoking it must retain ambiguity.
+		bool money_mutation_applied = false;
+		native_mutation_applied = true;
+		if (!item_transfer_repository_execute_native_mobile_money(
+			    connection, command, original.original.original_player_before, &result,
+			    &result_code, &money_mutation_applied, &after))
+		{
+			const auto database_failure = database_error(connection);
+			return root_failure(database_failure ? database_failure :
+					    errno	     ? errno :
+							       EIO);
+		}
+		native_mutation_applied = money_mutation_applied;
+		if ((result_code == 0) != native_mutation_applied)
+			return root_failure(EILSEQ);
+		const auto after_error = accounted_session_check(connection, &root_session, true);
+		if (after_error)
+			return root_failure(after_error);
+		const auto record_error = economic_sql_native_money_record(
+			connection, command, result_code, native_mutation_applied, original);
+		if (record_error)
+			return root_failure(record_error);
+		std::array<uint8_t, ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RESULT_BYTES> encoded{};
+		const uint64_t durable_revision =
+			std::max({ result.player_wallet_revision, result.mobile_cash_revision,
+				   result.mobile_revision, result.player_custody_revision,
+				   result.stock_revision });
+		if (!item_native_mobile_money_result_encode(result, &encoded) ||
+		    (native_mutation_applied &&
+		     !insert_outbox(connection, command, encoded.data(), encoded.size())) ||
+		    !finish_inbox(connection, command, durable_revision, result_code,
+				  encoded.data(), encoded.size()))
+		{
+			const auto database_failure = database_error(connection);
+			return root_failure(database_failure ? database_failure :
+					    errno	     ? errno :
+							       EIO);
+		}
+		const auto proof_error =
+			verify_native_money_root(connection, command, result_code, encoded);
+		if (proof_error)
+			return root_failure(proof_error);
+		const auto commit_session_error =
+			accounted_session_check(connection, &root_session, true);
+		if (commit_session_error)
+			return root_failure(commit_session_error);
+		native_transaction->committing();
+		if (!execute(connection, "COMMIT"))
+		{
+			const auto error = mysql_errno(connection);
+			rollback_root();
+			return { connection_error(error) ?
+					 critical_apply_outcome::ambiguous_commit :
+				 native_cleanup.disposition != player_sql_cleanup_disposition::
+								       idle_verified ||
+						 native_cleanup.cleanup_error ?
+					 critical_apply_outcome::ambiguous_commit :
+					 failure(error).outcome,
+				 durable_revision, error ? error : EIO };
+		}
+		if (!native_transaction->committed())
+		{
+			rollback_root();
+			return { critical_apply_outcome::ambiguous_commit, durable_revision,
+				 native_cleanup.cleanup_error ? native_cleanup.cleanup_error :
+								ENOTCONN };
+		}
+		critical_apply_result applied = { result_code ?
+							  critical_apply_outcome::terminal_failure :
+							  critical_apply_outcome::applied,
+						  durable_revision, result_code };
+		applied.result_size = encoded.size();
+		std::copy(encoded.begin(), encoded.end(), applied.result_payload.begin());
+		return applied;
+	}
+	if (accounted_native_fee)
+	{
+		const auto session_error = accounted_session_check(connection, &root_session, true);
+		if (session_error)
+			return root_failure(session_error);
+		// Authentic actual parent/child carriers and historical typed48 precede
+		// mapping, native lifetime, owner, current custody and physical locks.
+		const auto parent_error =
+			native_fee_verify_original_acceptance(connection, command);
+		if (parent_error)
+			return root_failure(parent_error);
+		economic_sql_native_fee_context original;
+		const auto lock_error =
+			economic_sql_native_fee_lock(connection, command, &original);
+		if (lock_error)
+			return root_failure(lock_error);
+		if (original.original.session_id != root_session)
+			return root_failure(ENOTCONN);
+		item_native_mobile_fee_result result{};
+		if (!item_native_mobile_fee_result_build(item_payload, &result))
+			return root_failure(EILSEQ);
+		result.mobile_cash_revision = item_payload.native_cost.projection.before_revision;
+		result.mobile_revision = item_payload.native_mobile.reference.mobile_revision;
+		quest_mobile_native_image after;
+		unsigned int result_code = 0;
+		// Complete unchanged original player forest comes only from the held
+		// fee frame. Existing native fee executor proves actual cash/stock/custody.
+		// Strong executor outputs do not prove that no DML was attempted on
+		// false. Failed cleanup after invoking it must retain ambiguity.
+		bool fee_mutation_applied = false;
+		native_mutation_applied = true;
+		if (!item_transfer_repository_execute_native_mobile_fee(
+			    connection, command, original.original.original_player_before, &result,
+			    &result_code, &fee_mutation_applied, &after))
+		{
+			const auto database_failure = database_error(connection);
+			return root_failure(database_failure ? database_failure :
+					    errno	     ? errno :
+							       EIO);
+		}
+		native_mutation_applied = fee_mutation_applied;
+		if ((result_code == 0) != native_mutation_applied)
+			return root_failure(EILSEQ);
+		const auto after_error = accounted_session_check(connection, &root_session, true);
+		if (after_error)
+			return root_failure(after_error);
+		if (native_mutation_applied &&
+		    !insert_quest_reward_obligation(connection, command.operation_id, item_payload))
+		{
+			const auto database_failure = database_error(connection);
+			return root_failure(database_failure ? database_failure :
+					    errno	     ? errno :
+							       EIO);
+		}
+		const auto record_error = economic_sql_native_fee_record(
+			connection, command, result_code, native_mutation_applied, original);
+		if (record_error)
+			return root_failure(record_error);
+		std::array<uint8_t, ITEM_TRANSFER_NATIVE_MOBILE_FEE_RESULT_BYTES> encoded{};
+		const uint64_t durable_revision =
+			std::max({ result.native_custody_revision, result.player_custody_revision,
+				   result.stock_revision, result.mobile_cash_revision,
+				   result.mobile_revision });
+		if (!item_native_mobile_fee_result_encode(result, &encoded) ||
+		    (native_mutation_applied &&
+		     !insert_outbox(connection, command, encoded.data(), encoded.size())) ||
+		    !finish_inbox(connection, command, durable_revision, result_code,
+				  encoded.data(), encoded.size()))
+		{
+			const auto database_failure = database_error(connection);
+			return root_failure(database_failure ? database_failure :
+					    errno	     ? errno :
+							       EIO);
+		}
+		const auto proof_error = verify_native_fee_root(connection, command, item_payload,
+								result_code, encoded);
+		if (proof_error)
+			return root_failure(proof_error);
+		const auto commit_session_error =
+			accounted_session_check(connection, &root_session, true);
+		if (commit_session_error)
+			return root_failure(commit_session_error);
+		native_transaction->committing();
+		if (!execute(connection, "COMMIT"))
+		{
+			const auto error = mysql_errno(connection);
+			rollback_root();
+			return { connection_error(error) ?
+					 critical_apply_outcome::ambiguous_commit :
+				 native_cleanup.disposition != player_sql_cleanup_disposition::
+								       idle_verified ||
+						 native_cleanup.cleanup_error ?
+					 critical_apply_outcome::ambiguous_commit :
+					 failure(error).outcome,
+				 durable_revision, error ? error : EIO };
+		}
+		if (!native_transaction->committed())
+		{
+			rollback_root();
+			return { critical_apply_outcome::ambiguous_commit, durable_revision,
+				 native_cleanup.cleanup_error ? native_cleanup.cleanup_error :
+								ENOTCONN };
+		}
+		critical_apply_result applied = { result_code ?
+							  critical_apply_outcome::terminal_failure :
+							  critical_apply_outcome::applied,
+						  durable_revision, result_code };
+		applied.result_size = encoded.size();
+		std::copy(encoded.begin(), encoded.end(), applied.result_payload.begin());
+		return applied;
+	}
 	if (accounted_native_quest)
 	{
 		const auto session_error = accounted_session_check(connection, &root_session, true);
@@ -2782,7 +3045,13 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 		if (repository_ok && !result_code)
 			repository_ok = item_transfer_repository_execute(
 				connection, command, &item_result, &result_code, &mutation_applied,
-				nullptr, nullptr, accounted_item ? &custody_delta : nullptr);
+				nullptr, nullptr, accounted_item ? &custody_delta : nullptr,
+				accounted_item && item_accounting_context.held_retirement ?
+					economic_sql_held_retirement_source_custody_hook :
+					nullptr,
+				accounted_item && item_accounting_context.held_retirement ?
+					&item_accounting_context :
+					nullptr);
 		if (repository_ok && !result_code && mutation_applied && !boundary.entries.empty())
 		{
 			repository_ok = collector_repository_apply_item_boundary(
@@ -2909,7 +3178,35 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 		if (accounted_auction)
 		{
 			auto error = accounted_session_check(connection, &root_session, true);
-			if (auction_payload.action == auction_action::bid)
+			switch (auction_payload.action)
+			{
+			case auction_action::list:
+			{
+				economic_sql_auction_listing_context context;
+				if (!error)
+				{
+					error = economic_sql_auction_listing_lock(
+						connection, command, &context);
+#ifndef __NO_MYSQL__
+					if (error)
+						auction_list171_source_observe(connection, command,
+									       20, error);
+#endif
+				}
+				if (!error)
+				{
+					error = economic_sql_auction_listing_execute_and_record(
+						connection, command, context, &auction_result,
+						&result_code, &mutation_applied);
+#ifndef __NO_MYSQL__
+					if (error)
+						auction_list171_source_observe(connection, command,
+									       21, error);
+#endif
+				}
+				break;
+			}
+			case auction_action::bid:
 			{
 				economic_sql_auction_bid_context context;
 				if (!error)
@@ -2919,8 +3216,10 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 					error = economic_sql_auction_bid_execute_and_record(
 						connection, command, context, &auction_result,
 						&result_code, &mutation_applied);
+				break;
 			}
-			else
+			case auction_action::finalize:
+			case auction_action::remove:
 			{
 				economic_sql_auction_settlement_context context;
 				if (!error)
@@ -2930,6 +3229,35 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 					error = economic_sql_auction_settlement_execute_and_record(
 						connection, command, context, &auction_result,
 						&result_code, &mutation_applied);
+				break;
+			}
+			case auction_action::claim_item:
+			{
+				economic_sql_auction_item_claim_context context;
+				if (!error)
+					error = economic_sql_auction_item_claim_lock(
+						connection, command, &context);
+				if (!error)
+					error = economic_sql_auction_item_claim_execute_and_record(
+						connection, command, context, &auction_result,
+						&result_code, &mutation_applied);
+				break;
+			}
+			case auction_action::claim_money:
+			{
+				economic_sql_auction_money_claim_context context;
+				if (!error)
+					error = economic_sql_auction_money_claim_lock(
+						connection, command, &context);
+				if (!error)
+					error = economic_sql_auction_money_claim_execute_and_record(
+						connection, command, context, &auction_result,
+						&result_code, &mutation_applied);
+				break;
+			}
+			default:
+				error = error ? error : ENOTSUP;
+				break;
 			}
 			if (error)
 			{
@@ -3558,7 +3886,9 @@ static critical_apply_result apply_with_writer(MYSQL *connection, const critical
 critical_apply_result critical_command_repository_apply(MYSQL *connection,
 							const critical_command &command)
 {
-	if (!accounted_native_quest_envelope(command) && !accounted_native_birth_envelope(command))
+	if (!accounted_native_quest_envelope(command) &&
+	    !accounted_native_birth_envelope(command) && !accounted_native_fee_envelope(command) &&
+	    !accounted_native_money_envelope(command))
 		return apply_with_writer(connection, command, nullptr);
 	if (!connection)
 		return { critical_apply_outcome::terminal_failure, 0, EINVAL };
@@ -3627,6 +3957,8 @@ critical_apply_result critical_command_repository_apply_from_pool(const critical
 				    coin_transfer_accounting_command_supported(command);
 	const bool accounted_item = item_transfer_accounting_command_supported(command);
 	const bool accounted_native_quest = accounted_native_quest_envelope(command);
+	const bool accounted_native_money = accounted_native_money_envelope(command);
+	const bool accounted_native_fee = accounted_native_fee_envelope(command);
 	const bool accounted_native_birth = accounted_native_birth_envelope(command);
 	const bool accounted_collector = accounted_collector_envelope(command);
 	const bool accounted_shop = accounted_shop_trade_envelope(command);
@@ -3634,7 +3966,8 @@ critical_apply_result critical_command_repository_apply_from_pool(const critical
 	if (!critical_command_legacy_execution_supported(command) &&
 	    !accounted_bank_envelope(command) && !accounted_coin && !accounted_item &&
 	    !accounted_collector && !accounted_shop && !accounted_auction &&
-	    !accounted_native_quest && !accounted_native_birth)
+	    !accounted_native_quest && !accounted_native_birth && !accounted_native_fee &&
+	    !accounted_native_money)
 		return { critical_apply_outcome::retryable_failure, 0, EPROTONOSUPPORT };
 
 	(void)context;
@@ -3735,8 +4068,11 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 				    coin_transfer_accounting_command_supported(command);
 	const bool accounted_item = item_transfer_accounting_command_supported(command);
 	const bool accounted_native_quest = accounted_native_quest_envelope(command);
+	const bool accounted_native_money = accounted_native_money_envelope(command);
+	const bool accounted_native_fee = accounted_native_fee_envelope(command);
 	const bool accounted_native_birth = accounted_native_birth_envelope(command);
-	const bool accounted_native_root = accounted_native_quest || accounted_native_birth;
+	const bool accounted_native_root = accounted_native_quest || accounted_native_birth ||
+					   accounted_native_fee || accounted_native_money;
 	const bool accounted_collector = accounted_collector_envelope(command);
 	const bool accounted_shop = accounted_shop_trade_envelope(command);
 	const bool accounted_auction = accounted_auction_envelope(command);
@@ -3881,6 +4217,28 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 						EILSEQ;
 			}
 		}
+		else if (accounted_native_money)
+		{
+			error = verify_native_money_stored_receipt(stored);
+			if (!error)
+				error = verify_native_money_root(connection, command,
+								 stored.result_code,
+								 stored.result_payload);
+		}
+		else if (accounted_native_fee)
+		{
+			error = verify_native_fee_stored_receipt(stored);
+			if (!error)
+			{
+				item_transfer_payload payload{};
+				error = item_transfer_command_decode_payload(command, &payload) ?
+						verify_native_fee_root(connection, command, payload,
+								       stored.result_code,
+								       stored.result_payload) :
+						EILSEQ;
+			}
+		}
+
 		else if (accounted_native_birth)
 		{
 			error = verify_native_birth_stored_receipt(stored);
@@ -4675,4 +5033,820 @@ critical_apply_result critical_command_repository_verify_native_quest_in_transac
 		return { critical_apply_outcome::retryable_failure, 0, EIO };
 	}
 #endif
+}
+
+critical_apply_result critical_command_repository_verify_held_retirement_in_transaction(
+	MYSQL *connection, const critical_command &command) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	return { critical_apply_outcome::retryable_failure, 0, ENOTSUP };
+#else
+	try
+	{
+		last_statement_error = 0;
+		item_transfer_payload payload{};
+		if (!connection || !held_retirement_transport_command(command) ||
+		    !held_retirement_command_identity(command, &payload) ||
+		    !root_transaction_active(connection))
+			return { critical_apply_outcome::retryable_failure, 0, EINVAL };
+		unsigned long session = 0;
+		auto error = accounted_session_check(connection, &session, false);
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		if (error)
+			return { critical_apply_outcome::retryable_failure, 0, error };
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash{}, keys_hash{};
+		stored_operation stored{};
+		bool found = false;
+		if (!command_hashes(command, &command_hash, &keys_hash) ||
+		    !read_operation(connection, command.operation_id, false, &stored, &found))
+			return { critical_apply_outcome::retryable_failure, 0,
+				 database_error(connection) ? database_error(connection) : ENOMEM };
+		if (!found || stored.status != INBOX_COMMITTED)
+			return { critical_apply_outcome::retryable_failure, 0, EAGAIN };
+		if (!identity_matches(stored, command, command_hash, keys_hash))
+			return { critical_apply_outcome::retryable_failure, 0, EEXIST };
+		// Original status alone is not a committed receipt. This nonlocking
+		// read binds the same original inbox row's actual commit marker.
+		char committed_operation[CRITICAL_COMMAND_ID_HEX_SIZE]{};
+		if (!critical_operation_id_to_hex(command.operation_id, committed_operation,
+						  sizeof(committed_operation)))
+			return { critical_apply_outcome::retryable_failure, 0, EILSEQ };
+		const std::string committed_query =
+			"SELECT committed_at IS NOT NULL FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+			std::string(committed_operation) + "') AND status=1 LIMIT 2";
+		if (!execute(connection, committed_query.c_str()))
+			return { critical_apply_outcome::retryable_failure, 0,
+				 database_error(connection) ? database_error(connection) : EIO };
+		{
+			std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+				mysql_store_result(connection), mysql_free_result);
+			MYSQL_ROW row = rows ? mysql_fetch_row(rows.get()) : nullptr;
+			if (!rows || mysql_num_fields(rows.get()) != 1 ||
+			    mysql_num_rows(rows.get()) != 1 || !row || !row[0] ||
+			    std::strcmp(row[0], "1"))
+				return { critical_apply_outcome::retryable_failure, 0, EILSEQ };
+		}
+		item_transfer_result native{};
+		std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> canonical{};
+		if (stored.failure_stage != static_cast<uint16_t>(critical_failure_stage::none) ||
+		    !item_transfer_command_decode_result(stored.result_payload.data(),
+							 stored.result_payload.size(), &native) ||
+		    !item_transfer_command_encode_result(native, &canonical) ||
+		    stored.result_payload.size() != canonical.size() ||
+		    !std::equal(canonical.begin(), canonical.end(),
+				stored.result_payload.begin()) ||
+		    native.corpse_revision || native.collector_catalog_changed ||
+		    stored.durable_revision !=
+			    std::max({ native.from_owner_revision, native.to_owner_revision,
+				       native.max_item_revision }))
+			return { critical_apply_outcome::retryable_failure, 0, EILSEQ };
+		error = economic_sql_item_transfer_verify_retained(connection, command,
+								   stored.result_code,
+								   stored.result_payload.data(),
+								   stored.result_payload.size());
+		if (!error)
+			error = verify_accounted_root_outbox(connection, command,
+							     stored.result_code,
+							     stored.result_payload.data(),
+							     stored.result_payload.size());
+		if (!error)
+		{
+			// Typed held retirement owns no room, financial, collector or quest
+			// obligation effects, including on a genuine stored rejection.
+			char operation[CRITICAL_COMMAND_ID_HEX_SIZE]{};
+			if (!critical_operation_id_to_hex(command.operation_id, operation,
+							  sizeof(operation)))
+				return { critical_apply_outcome::retryable_failure, 0, EILSEQ };
+			const std::string where =
+				" WHERE operation_id=UNHEX('" + std::string(operation) + "')";
+			const std::string offering = " WHERE offering_operation_id=UNHEX('" +
+						     std::string(operation) + "')";
+			const std::string query =
+				"SELECT (SELECT COUNT(*) FROM currency_ledger" + where +
+				")+(SELECT COUNT(*) FROM collector_ledger" + where +
+				")+(SELECT COUNT(*) FROM sql_room_item_payload" + where +
+				")+(SELECT COUNT(*) FROM quest_reward_obligation" + offering +
+				")+(SELECT COUNT(*) FROM quest_reward_xp_entitlement" + offering +
+				")";
+			if (!execute(connection, query.c_str()))
+				error = database_error(connection) ? database_error(connection) :
+								     EIO;
+			else
+			{
+				std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+					mysql_store_result(connection), mysql_free_result);
+				MYSQL_ROW row = rows ? mysql_fetch_row(rows.get()) : nullptr;
+				if (!rows || mysql_num_rows(rows.get()) != 1 ||
+				    mysql_num_fields(rows.get()) != 1 || !row || !row[0] ||
+				    std::strcmp(row[0], "0"))
+					error = EILSEQ;
+			}
+		}
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		if (error)
+			return { critical_apply_outcome::retryable_failure, 0, error };
+		return stored_result(stored.result_code ? critical_apply_outcome::terminal_failure :
+							  critical_apply_outcome::already_applied,
+				     stored);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return { critical_apply_outcome::retryable_failure, 0, ENOMEM };
+	}
+	catch (...)
+	{
+		return { critical_apply_outcome::retryable_failure, 0, EIO };
+	}
+#endif
+}
+
+unsigned int critical_command_repository_verify_held_retirement_refusal_in_transaction(
+	MYSQL *connection, const critical_command &command,
+	const critical_completion &completion) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)completion;
+	return ENOTSUP;
+#else
+	try
+	{
+		last_statement_error = 0;
+		economic_frozen_intent intent;
+		if (!connection || !held_retirement_transport_command(command) ||
+		    !held_retirement_command_identity(command) ||
+		    !critical_completion_disposition_valid(completion) ||
+		    completion.disposition != critical_completion_disposition::never_admitted ||
+		    completion.operation_id.bytes != command.operation_id.bytes ||
+		    !root_transaction_active(connection) ||
+		    economic_intent_decode(command.accounting_intent, &intent) !=
+			    economic_accounting_error::ok ||
+		    !intent.admission.metadata.source_event)
+			return EINVAL;
+		unsigned long session = 0;
+		auto error = accounted_session_check(connection, &session, false);
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		if (error)
+			return error;
+		// This input is actual in-process coordinator refusal authority. Missing
+		// receipt alone is never refusal, and no durable rejection is invented.
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash{}, keys_hash{};
+		stored_operation stored{};
+		bool found = false;
+		if (!command_hashes(command, &command_hash, &keys_hash) ||
+		    !read_operation(connection, command.operation_id, false, &stored, &found))
+			return database_error(connection) ? database_error(connection) : ENOMEM;
+		if (found)
+			return EEXIST;
+		char operation[CRITICAL_COMMAND_ID_HEX_SIZE]{};
+		char lineage[CRITICAL_COMMAND_ID_HEX_SIZE]{};
+		std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> source{};
+		if (!critical_operation_id_to_hex(command.operation_id, operation,
+						  sizeof(operation)) ||
+		    !critical_operation_id_to_hex(intent.admission.metadata.lineage, lineage,
+						  sizeof(lineage)) ||
+		    economic_source_event_encode(*intent.admission.metadata.source_event,
+						 &source) != economic_accounting_error::ok)
+			return EILSEQ;
+		std::string source_hex;
+		static constexpr char digits[] = "0123456789abcdef";
+		for (uint8_t byte : source)
+		{
+			source_hex += digits[byte >> 4];
+			source_hex += digits[byte & 15];
+		}
+		const std::string scope =
+			" WHERE operation_id=UNHEX('" + std::string(operation) + "')";
+		std::string query = "SELECT ";
+		for (const char *table :
+		     { "economic_accounting_operation", "economic_accounting_source_claim",
+		       "economic_accounting_account_effect", "economic_accounting_coin_posting",
+		       "economic_accounting_item_reference", "critical_outbox",
+		       "item_ownership_ledger", "currency_ledger", "collector_ledger",
+		       "sql_room_item_payload" })
+			query += "(SELECT COUNT(*) FROM " + std::string(table) + scope + ")+";
+		const std::string offering =
+			" WHERE offering_operation_id=UNHEX('" + std::string(operation) + "')";
+		query += "(SELECT COUNT(*) FROM quest_reward_obligation" + offering + ")+";
+		query += "(SELECT COUNT(*) FROM quest_reward_xp_entitlement" + offering + ")+";
+		query +=
+			"(SELECT COUNT(*) FROM economic_accounting_source_claim WHERE lineage=UNHEX('" +
+			std::string(lineage) + "') AND source_event=UNHEX('" + source_hex + "'))";
+		if (!execute(connection, query.c_str()))
+			return database_error(connection) ? database_error(connection) : EIO;
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+			mysql_store_result(connection), mysql_free_result);
+		MYSQL_ROW row = rows ? mysql_fetch_row(rows.get()) : nullptr;
+		if (!rows || mysql_num_rows(rows.get()) != 1 || mysql_num_fields(rows.get()) != 1 ||
+		    !row || !row[0] || std::strcmp(row[0], "0"))
+			return EILSEQ;
+		return accounted_session_check(connection, &session, true);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+#endif
+}
+
+// Exact original v16 receipt before current money participant locks. This
+// borrows the caller's original trusted session and grants no publication ACK.
+unsigned int economic_sql_native_money_verify_receipt_in_transaction(
+	MYSQL *connection, const critical_command &command,
+	const critical_completion &completion) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)completion;
+	return ENOTSUP;
+#else
+	try
+	{
+		last_statement_error = 0;
+		item_transfer_payload payload{};
+		if (!connection || !command.publication_required ||
+		    command.type != critical_command_type::item_transfer ||
+		    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+		    command.payload_version != 16 || !critical_command_envelope_valid(command) ||
+		    !item_transfer_command_decode_payload(command, &payload) ||
+		    !payload.native_money.present || !payload.native_recovery.present ||
+		    payload.item_count || payload.item_blob_size ||
+		    !root_transaction_active(connection) ||
+		    !critical_completion_disposition_valid(completion) ||
+		    completion.disposition != critical_completion_disposition::execution ||
+		    completion.operation_id.bytes != command.operation_id.bytes ||
+		    (completion.outcome != critical_apply_outcome::applied &&
+		     completion.outcome != critical_apply_outcome::already_applied &&
+		     completion.outcome != critical_apply_outcome::terminal_failure))
+			return EINVAL;
+		unsigned long session = 0;
+		auto error = accounted_session_check(connection, &session, false);
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		if (error)
+			return error;
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash{}, keys_hash{};
+		stored_operation stored{};
+		bool found = false;
+		if (!command_hashes(command, &command_hash, &keys_hash))
+			return ENOMEM;
+		// Historical read precedes every current participant lock. It never
+		// applies a missing operation or introduces a late inbox lock.
+		if (!read_operation(connection, command.operation_id, false, &stored, &found))
+			return database_error(connection) ? database_error(connection) : EIO;
+		if (!found || stored.status != INBOX_COMMITTED)
+			return EAGAIN;
+		if (!identity_matches(stored, command, command_hash, keys_hash))
+			return EEXIST;
+		char operation_hex[CRITICAL_COMMAND_ID_HEX_SIZE]{};
+		if (!critical_operation_id_to_hex(command.operation_id, operation_hex,
+						  sizeof(operation_hex)))
+			return EINVAL;
+		const auto committed =
+			"SELECT COUNT(*) FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+			std::string(operation_hex) + "') AND status=1 AND committed_at IS NOT NULL";
+		if (!execute(connection, committed.c_str()))
+			return database_error(connection) ? database_error(connection) : EIO;
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+			mysql_store_result(connection), mysql_free_result);
+		if (!rows)
+			return database_error(connection) ? database_error(connection) : EIO;
+		const auto committed_row = mysql_fetch_row(rows.get());
+		if (mysql_num_rows(rows.get()) != 1 || mysql_num_fields(rows.get()) != 1 ||
+		    !committed_row || !committed_row[0] || strcmp(committed_row[0], "1"))
+			return EILSEQ;
+		rows.reset();
+		if (stored.failure_stage ||
+		    stored.result_payload.size() !=
+			    ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RESULT_BYTES ||
+		    stored.result_code != completion.error_code ||
+		    stored.failure_stage != static_cast<unsigned>(completion.failure_stage) ||
+		    stored.durable_revision != completion.durable_revision ||
+		    completion.result_size != stored.result_payload.size() ||
+		    !std::equal(stored.result_payload.begin(), stored.result_payload.end(),
+				completion.result_payload.begin()) ||
+		    std::any_of(completion.result_payload.begin() + completion.result_size,
+				completion.result_payload.end(),
+				[](uint8_t value) { return value != 0; }) ||
+		    (stored.result_code ?
+			     completion.outcome != critical_apply_outcome::terminal_failure :
+			     (completion.outcome != critical_apply_outcome::applied &&
+			      completion.outcome != critical_apply_outcome::already_applied)))
+			return EILSEQ;
+		item_native_mobile_money_result result{};
+		std::array<uint8_t, ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RESULT_BYTES> canonical{};
+		if (!item_native_mobile_money_result_decode(stored.result_payload, &result) ||
+		    !item_native_mobile_money_result_encode(result, &canonical) ||
+		    !std::equal(canonical.begin(), canonical.end(),
+				stored.result_payload.begin()) ||
+		    stored.durable_revision !=
+			    std::max({ result.player_wallet_revision, result.mobile_cash_revision,
+				       result.mobile_revision, result.player_custody_revision,
+				       result.stock_revision }))
+			return EILSEQ;
+		error = economic_sql_native_money_verify_retained(
+			connection, command, stored.result_code, stored.result_payload);
+		if (!error)
+			error = verify_accounted_root_outbox(connection, command,
+							     stored.result_code,
+							     stored.result_payload.data(),
+							     stored.result_payload.size());
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		return error;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+#endif
+}
+
+namespace
+{
+// Classification only, with generic item admission still closed. The original
+// inbox/resource identity and authentic retained parent are proved separately.
+bool accounted_native_fee_envelope(const critical_command &command)
+{
+#ifdef __NO_MYSQL__
+	(void)command;
+	return false;
+#else
+	return command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+	       command.type == critical_command_type::item_transfer &&
+	       command.payload_version ==
+		       ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION &&
+	       command.publication_required && command.accepted_at_usec &&
+	       critical_command_envelope_valid(command);
+#endif
+}
+#ifndef __NO_MYSQL__
+bool native_fee_action_bound(const critical_command &command, item_transfer_payload *payload,
+			     economic_frozen_intent *intent)
+{
+	if (!payload || !intent || !accounted_native_fee_envelope(command) ||
+	    !item_transfer_command_decode_payload(command, payload) ||
+	    !payload->native_cost.fee_only ||
+	    !item_transfer_native_mobile_recovery_shape_valid(*payload) ||
+	    economic_intent_decode(command.accounting_intent, intent) !=
+		    economic_accounting_error::ok ||
+	    economic_intent_verify_binding(command, *intent) != economic_accounting_error::ok)
+		return false;
+	const auto &m = intent->admission.metadata;
+	if (!m.source_event || m.reason != economic_reason::quest_cost ||
+	    m.source_event->kind != economic_source_kind::quest_action ||
+	    m.source_event->source.bytes != command.operation_id.bytes ||
+	    m.source_event->generation.bytes !=
+		    payload->native_mobile.reference.birth_source.generation.bytes ||
+	    m.source_event->sequence != payload->native_mobile.reference.mobile_revision ||
+	    m.source_event->slot != payload->native_cost.completion_slot)
+		return false;
+	auto original = command;
+	original.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
+	original.accounting_intent.clear();
+	original.accepted_at_usec = 0;
+	original.publication_required = false;
+	std::vector<uint8_t> rebuilt;
+	return item_native_mobile_accounting_intent(original, m.lineage, m.epoch,
+						    payload->native_mobile.final_giver_pid,
+						    &*m.source_event,
+						    &rebuilt) == economic_accounting_error::ok &&
+	       rebuilt == command.accounting_intent;
+}
+#endif
+unsigned int verify_native_fee_stored_receipt(const stored_operation &stored)
+{
+	item_native_mobile_fee_result result{};
+	std::array<uint8_t, ITEM_TRANSFER_NATIVE_MOBILE_FEE_RESULT_BYTES> canonical{};
+	if (stored.failure_stage || stored.result_payload.size() != canonical.size() ||
+	    !item_native_mobile_fee_result_decode(stored.result_payload, &result) ||
+	    !item_native_mobile_fee_result_encode(result, &canonical) ||
+	    !std::equal(canonical.begin(), canonical.end(), stored.result_payload.begin()) ||
+	    stored.durable_revision !=
+		    std::max({ result.native_custody_revision, result.player_custody_revision,
+			       result.stock_revision, result.mobile_cash_revision,
+			       result.mobile_revision }))
+		return EILSEQ;
+	return 0;
+}
+unsigned int native_fee_verify_original_acceptance(MYSQL *connection,
+						   const critical_command &command)
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	return ENOTSUP;
+#else
+	critical_command original;
+	std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> typed48{};
+	if (!player_save_native_quest_checkpoint_owner::original_fee_acceptance(command, &original,
+										&typed48))
+		return ENODATA;
+	return economic_sql_native_fee_verify_acceptance_in_transaction(connection, command,
+									original, typed48);
+#endif
+}
+// Historical inbox durability marker only. No current participant lock or write.
+unsigned int native_fee_committed_inbox(MYSQL *connection, const critical_operation_id &operation)
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)operation;
+	return ENOTSUP;
+#else
+	char operation_hex[CRITICAL_COMMAND_ID_HEX_SIZE]{};
+	if (!critical_operation_id_to_hex(operation, operation_hex, sizeof(operation_hex)))
+		return EINVAL;
+	const std::string query =
+		"SELECT COUNT(*) FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+		std::string(operation_hex) + "') AND status=1 AND committed_at IS NOT NULL";
+	if (!execute(connection, query.c_str()))
+		return database_error(connection) ? database_error(connection) : EIO;
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+		mysql_store_result(connection), mysql_free_result);
+	if (!rows)
+		return database_error(connection) ? database_error(connection) : EIO;
+	const auto row = mysql_fetch_row(rows.get());
+	return mysql_num_rows(rows.get()) == 1 && mysql_num_fields(rows.get()) == 1 && row &&
+			       row[0] && !strcmp(row[0], "1") ?
+		       0 :
+		       EILSEQ;
+#endif
+}
+unsigned int verify_native_fee_root(MYSQL *connection, const critical_command &command,
+				    const item_transfer_payload &payload, unsigned int result_code,
+				    std::span<const uint8_t> result_payload)
+{
+	auto error = native_fee_committed_inbox(connection, command.operation_id);
+	if (!error)
+		error = economic_sql_native_fee_verify_retained(connection, command, result_code,
+								result_payload);
+	// A committed child is replayable after its original parent advances or retires.
+	// Its complete own root is durable; parent admission was proved before first-write locks.
+	if (!error)
+		error = verify_native_quest_source_claim(connection, command, result_code);
+	if (!error)
+		error = verify_native_quest_reward_obligation(connection, command, payload,
+							      result_code);
+	if (!error)
+		error = verify_accounted_root_outbox(connection, command, result_code,
+						     result_payload.data(), result_payload.size());
+	return error;
+}
+}
+
+// The actual full original acceptance command comes from the retained parent
+// carrier. Its typed48 is compared to the exact committed v12 inbox and full
+// financial/item/source/reward/outbox proof, before current fee locks.
+unsigned int economic_sql_native_fee_verify_acceptance_in_transaction(
+	MYSQL *connection, const critical_command &actual_fee_action,
+	const critical_command &original_acceptance,
+	std::span<const uint8_t> original_typed48_result) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)actual_fee_action;
+	(void)original_acceptance;
+	(void)original_typed48_result;
+	return ENOTSUP;
+#else
+	try
+	{
+		last_statement_error = 0;
+		item_transfer_payload action{}, acceptance{};
+		economic_frozen_intent intent, accepted_intent;
+		if (!connection || !root_transaction_active(connection) ||
+		    !native_fee_action_bound(actual_fee_action, &action, &intent) ||
+		    !accounted_native_quest_envelope(original_acceptance) ||
+		    !item_transfer_command_decode_payload(original_acceptance, &acceptance) ||
+		    !item_transfer_native_mobile_recovery_shape_valid(acceptance) ||
+		    acceptance.native_mobile.action != item_native_mobile_action::acceptance ||
+		    original_acceptance.operation_id.bytes ==
+			    actual_fee_action.operation_id.bytes ||
+		    acceptance.native_mobile.final_giver_pid !=
+			    action.native_mobile.final_giver_pid ||
+		    acceptance.native_mobile.reference.mobile_instance_id !=
+			    action.native_mobile.reference.mobile_instance_id ||
+		    acceptance.native_mobile.reference.mobile_vnum !=
+			    action.native_mobile.reference.mobile_vnum ||
+		    acceptance.native_mobile.reference.birth_operation.bytes !=
+			    action.native_mobile.reference.birth_operation.bytes ||
+		    acceptance.native_mobile.reference.birth_source.generation.bytes !=
+			    action.native_mobile.reference.birth_source.generation.bytes ||
+		    acceptance.native_mobile.reference.mobile_revision == UINT64_MAX ||
+		    action.native_mobile.reference.mobile_revision <
+			    acceptance.native_mobile.reference.mobile_revision + 1 ||
+		    original_typed48_result.size() != ITEM_TRANSFER_RESULT_BYTES ||
+		    economic_intent_decode(original_acceptance.accounting_intent,
+					   &accepted_intent) != economic_accounting_error::ok ||
+		    economic_intent_verify_binding(original_acceptance, accepted_intent) !=
+			    economic_accounting_error::ok ||
+		    accepted_intent.admission.metadata.lineage.bytes !=
+			    intent.admission.metadata.lineage.bytes)
+			return EINVAL;
+		if (action.continuation.kind == item_transfer_continuation_kind::quest_offering)
+		{
+			quest_reward_continuation terms;
+			if (!quest_reward_terms_for_payload(action, &terms) || terms.version != 6 ||
+			    !quest_fee_reward_trigger_binding_valid(terms, original_acceptance) ||
+			    !std::equal(terms.original_acceptance_result.begin(),
+					terms.original_acceptance_result.end(),
+					original_typed48_result.begin()))
+				return EILSEQ;
+		}
+		unsigned long session = 0;
+		auto error = accounted_session_check(connection, &session, false);
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		if (error)
+			return error;
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash{}, keys_hash{};
+		stored_operation stored{};
+		bool found = false;
+		if (!command_hashes(original_acceptance, &command_hash, &keys_hash))
+			return ENOMEM;
+		if (!read_operation(connection, original_acceptance.operation_id, false, &stored,
+				    &found))
+			return database_error(connection) ? database_error(connection) : EIO;
+		if (!found || stored.status != INBOX_COMMITTED)
+			return EAGAIN;
+		if (!identity_matches(stored, original_acceptance, command_hash, keys_hash))
+			return EEXIST;
+		if (stored.result_code || verify_native_quest_stored_receipt(stored) ||
+		    stored.result_payload.size() != original_typed48_result.size() ||
+		    !std::equal(stored.result_payload.begin(), stored.result_payload.end(),
+				original_typed48_result.begin()))
+			return EILSEQ;
+		// Keep the original complete validator: it proves canonical expected
+		// plan and original item references/revisions, never today's custody.
+		item_transfer_result decoded{};
+		std::array<uint8_t, ITEM_TRANSFER_RESULT_BYTES> canonical{};
+		if (!item_transfer_command_decode_result(stored.result_payload.data(),
+							 stored.result_payload.size(), &decoded) ||
+		    !item_transfer_command_encode_result(decoded, &canonical) ||
+		    !std::equal(canonical.begin(), canonical.end(), stored.result_payload.begin()))
+			return EILSEQ;
+		error = native_fee_committed_inbox(connection, original_acceptance.operation_id);
+		if (!error)
+			error = verify_native_quest_root(connection, original_acceptance,
+							 acceptance, 0,
+							 stored.result_payload.data(),
+							 stored.result_payload.size());
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		return error;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+#endif
+}
+
+unsigned int economic_sql_native_fee_verify_receipt_in_transaction(
+	MYSQL *connection, const critical_command &command,
+	const critical_completion &completion) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)command;
+	(void)completion;
+	return ENOTSUP;
+#else
+	try
+	{
+		last_statement_error = 0;
+		item_transfer_payload payload{};
+		if (!connection || !command.publication_required ||
+		    command.type != critical_command_type::item_transfer ||
+		    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+		    command.payload_version !=
+			    ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION ||
+		    !critical_command_envelope_valid(command) ||
+		    !item_transfer_command_decode_payload(command, &payload) ||
+		    !payload.native_cost.fee_only || !payload.native_recovery.present ||
+		    payload.item_count || payload.item_blob_size ||
+		    !root_transaction_active(connection) ||
+		    !critical_completion_disposition_valid(completion) ||
+		    completion.disposition != critical_completion_disposition::execution ||
+		    completion.operation_id.bytes != command.operation_id.bytes ||
+		    (completion.outcome != critical_apply_outcome::applied &&
+		     completion.outcome != critical_apply_outcome::already_applied &&
+		     completion.outcome != critical_apply_outcome::terminal_failure))
+			return EINVAL;
+		unsigned long session = 0;
+		auto error = accounted_session_check(connection, &session, false);
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		if (error)
+			return error;
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash{}, keys_hash{};
+		stored_operation stored{};
+		bool found = false;
+		if (!command_hashes(command, &command_hash, &keys_hash))
+			return ENOMEM;
+		// Historical read precedes every current participant lock. It never
+		// applies a missing operation or introduces a late inbox lock.
+		if (!read_operation(connection, command.operation_id, false, &stored, &found))
+			return database_error(connection) ? database_error(connection) : EIO;
+		if (!found || stored.status != INBOX_COMMITTED)
+			return EAGAIN;
+		if (!identity_matches(stored, command, command_hash, keys_hash))
+			return EEXIST;
+		char operation_hex[CRITICAL_COMMAND_ID_HEX_SIZE]{};
+		if (!critical_operation_id_to_hex(command.operation_id, operation_hex,
+						  sizeof(operation_hex)))
+			return EINVAL;
+		const auto committed =
+			"SELECT COUNT(*) FROM critical_operation_inbox WHERE operation_id=UNHEX('" +
+			std::string(operation_hex) + "') AND status=1 AND committed_at IS NOT NULL";
+		if (!execute(connection, committed.c_str()))
+			return database_error(connection) ? database_error(connection) : EIO;
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+			mysql_store_result(connection), mysql_free_result);
+		if (!rows)
+			return database_error(connection) ? database_error(connection) : EIO;
+		const auto committed_row = mysql_fetch_row(rows.get());
+		if (mysql_num_rows(rows.get()) != 1 || mysql_num_fields(rows.get()) != 1 ||
+		    !committed_row || !committed_row[0] || strcmp(committed_row[0], "1"))
+			return EILSEQ;
+		rows.reset();
+		if (stored.failure_stage ||
+		    stored.result_payload.size() != ITEM_TRANSFER_NATIVE_MOBILE_FEE_RESULT_BYTES ||
+		    stored.result_code != completion.error_code ||
+		    stored.failure_stage != static_cast<unsigned>(completion.failure_stage) ||
+		    stored.durable_revision != completion.durable_revision ||
+		    completion.result_size != stored.result_payload.size() ||
+		    !std::equal(stored.result_payload.begin(), stored.result_payload.end(),
+				completion.result_payload.begin()) ||
+		    std::any_of(completion.result_payload.begin() + completion.result_size,
+				completion.result_payload.end(),
+				[](uint8_t value) { return value != 0; }) ||
+		    (stored.result_code ?
+			     completion.outcome != critical_apply_outcome::terminal_failure :
+			     (completion.outcome != critical_apply_outcome::applied &&
+			      completion.outcome != critical_apply_outcome::already_applied)))
+			return EILSEQ;
+		item_native_mobile_fee_result result{};
+		std::array<uint8_t, ITEM_TRANSFER_NATIVE_MOBILE_FEE_RESULT_BYTES> canonical{};
+		if (!item_native_mobile_fee_result_decode(stored.result_payload, &result) ||
+		    !item_native_mobile_fee_result_encode(result, &canonical) ||
+		    !std::equal(canonical.begin(), canonical.end(),
+				stored.result_payload.begin()) ||
+		    stored.durable_revision !=
+			    std::max({ result.native_custody_revision, result.mobile_cash_revision,
+				       result.mobile_revision, result.player_custody_revision,
+				       result.stock_revision }))
+			return EILSEQ;
+		// Live physical publication still requires the authentic original acceptance.
+		error = native_fee_verify_original_acceptance(connection, command);
+		if (!error)
+			error = verify_native_fee_root(connection, command, payload,
+						       stored.result_code, stored.result_payload);
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		return error;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+#endif
+}
+
+// Exact literal obligation and the actual child full command. Authentic parent
+// carrier, financial root and canonical NFR1 remain mandatory; no ACK here.
+unsigned int economic_sql_native_fee_verify_obligation_in_transaction(
+	MYSQL *connection, const critical_command &actual_fee_action,
+	std::span<const uint8_t> literal_continuation) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)actual_fee_action;
+	(void)literal_continuation;
+	return ENOTSUP;
+#else
+	try
+	{
+		last_statement_error = 0;
+		item_transfer_payload payload{};
+		economic_frozen_intent intent;
+		quest_reward_continuation terms;
+		if (!connection || !root_transaction_active(connection) ||
+		    !native_fee_action_bound(actual_fee_action, &payload, &intent) ||
+		    payload.continuation.kind != item_transfer_continuation_kind::quest_offering ||
+		    !quest_reward_terms_for_payload(payload, &terms) || terms.version != 6 ||
+		    literal_continuation.size() != payload.continuation.data.size() ||
+		    !std::equal(literal_continuation.begin(), literal_continuation.end(),
+				payload.continuation.data.begin()))
+			return EINVAL;
+		unsigned long session = 0;
+		auto error = accounted_session_check(connection, &session, false);
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		if (error)
+			return error;
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> command_hash{}, keys_hash{};
+		stored_operation stored{};
+		bool found = false;
+		if (!command_hashes(actual_fee_action, &command_hash, &keys_hash))
+			return ENOMEM;
+		if (!read_operation(connection, actual_fee_action.operation_id, false, &stored,
+				    &found))
+			return database_error(connection) ? database_error(connection) : EIO;
+		if (!found || stored.status != INBOX_COMMITTED)
+			return EAGAIN;
+		if (!identity_matches(stored, actual_fee_action, command_hash, keys_hash))
+			return EEXIST;
+		if (stored.result_code || verify_native_fee_stored_receipt(stored))
+			return EILSEQ;
+		error = verify_native_fee_root(connection, actual_fee_action, payload, 0,
+					       stored.result_payload);
+		if (!error)
+			error = accounted_session_check(connection, &session, true);
+		return error;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+#endif
+}
+
+namespace
+{
+// Conservative immutable routing only; source/current authority comes from the
+// original reconnect-disabled money participant after the inbox identity check.
+bool accounted_native_money_envelope(const critical_command &command)
+{
+#ifdef __NO_MYSQL__
+	(void)command;
+	return false;
+#else
+	return command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+	       command.type == critical_command_type::item_transfer &&
+	       command.payload_version ==
+		       ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RECOVERY_PAYLOAD_VERSION &&
+	       command.publication_required && command.accepted_at_usec &&
+	       critical_command_envelope_valid(command);
+#endif
+}
+
+unsigned int verify_native_money_stored_receipt(const stored_operation &stored)
+{
+	item_native_mobile_money_result result{};
+	std::array<uint8_t, ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RESULT_BYTES> canonical{};
+	if (stored.failure_stage || stored.result_payload.size() != canonical.size() ||
+	    !item_native_mobile_money_result_decode(stored.result_payload, &result) ||
+	    !item_native_mobile_money_result_encode(result, &canonical) ||
+	    !std::equal(canonical.begin(), canonical.end(), stored.result_payload.begin()) ||
+	    stored.durable_revision !=
+		    std::max({ result.player_wallet_revision, result.mobile_cash_revision,
+			       result.mobile_revision, result.player_custody_revision,
+			       result.stock_revision }))
+		return EILSEQ;
+	return 0;
+}
+
+unsigned int verify_native_money_root(MYSQL *connection, const critical_command &command,
+				      unsigned int result_code, std::span<const uint8_t> receipt)
+{
+	// Existing helper checks only the actual committed inbox marker; it grants
+	// no fee/parent authority. No current endpoint stands in for retained history.
+	auto error = native_fee_committed_inbox(connection, command.operation_id);
+	if (!error)
+		error = economic_sql_native_money_verify_retained(connection, command, result_code,
+								  receipt);
+	if (!error)
+		error = verify_accounted_root_outbox(connection, command, result_code,
+						     receipt.data(), receipt.size());
+	return error;
+}
 }

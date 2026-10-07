@@ -1,4 +1,6 @@
 #include "persistence/economic_sql_accounting_lifecycle_transaction.h"
+#include "persistence/economic_sql_native_mobile_birth_transaction.h"
+#include "economy/native_mobile_birth_accounting.h"
 #include "economy/economic_baseline_command.h"
 #include "economy/auction_item_claim_accounting.h"
 #include "economy/auction_command.h"
@@ -21,6 +23,7 @@
 #include <set>
 #include <string_view>
 #include <type_traits>
+#include <tuple>
 
 #ifdef __NO_MYSQL__
 unsigned int economic_sql_accounting_lifecycle_transaction::install(
@@ -48,6 +51,18 @@ unsigned int economic_sql_accounting_lifecycle_transaction::pause(
 }
 unsigned int economic_sql_accounting_lifecycle_transaction::recover_runtime(
 	MYSQL *, const economic_sql_lifecycle_guard &, bool *) noexcept
+{
+	return ENOTSUP;
+}
+unsigned int economic_sql_accounting_lifecycle_transaction::prepare_runtime_boot(
+	MYSQL *, const economic_sql_lifecycle_guard &,
+	economic_sql_runtime_boot_selection *) noexcept
+{
+	return ENOTSUP;
+}
+unsigned int economic_sql_accounting_lifecycle_transaction::finish_runtime_boot(
+	MYSQL *, const economic_sql_lifecycle_guard &, economic_sql_runtime_boot_selection &,
+	bool *) noexcept
 {
 	return ENOTSUP;
 }
@@ -152,6 +167,80 @@ economic_sql_source_digest request_digest(const economic_sql_lifecycle_request &
 	number(data, request.accepted_at_usec);
 	return sha(data);
 }
+// Bind only the complete captured native custody forest. This projection is
+// still not authority for physical/world sources missing from the SQL capture.
+std::vector<economic_baseline_item>
+read_opening_items(const economic_sql_source_snapshot &snapshot,
+		   const economic_sql_normalized_sources &normalized)
+{
+	require(normalized.source_digest == snapshot.digest &&
+			normalized.custody_digest == snapshot.custody_digest,
+		EILSEQ);
+	const auto table = std::find_if(snapshot.tables.begin(), snapshot.tables.end(),
+					[](const auto &value)
+					{ return value.name == "item_current_owner"; });
+	require(table != snapshot.tables.end() && table->rows.size() == normalized.items.size(),
+		EILSEQ);
+	require(normalized.items.size() <= ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES, E2BIG);
+	if (normalized.items.empty())
+		return {};
+	// A default slot from a legacy capture is not evidence of carried custody.
+	require(snapshot.version == 2 && snapshot.item_equipment_sources.size() == 1 &&
+			normalized.next_uid,
+		ENODATA);
+	const auto checked_source = [&](const economic_sql_source_reference &source)
+	{
+		require(source.table < snapshot.tables.size() &&
+				source.row < snapshot.tables[source.table].rows.size() &&
+				snapshot.tables[source.table].rows[source.row].digest ==
+					source.digest,
+			EILSEQ);
+		return source.digest;
+	};
+	std::vector<economic_baseline_item> items;
+	std::vector<economic_item_snapshot> forest;
+	items.reserve(normalized.items.size());
+	forest.reserve(normalized.items.size());
+	for (const auto &native : normalized.items)
+	{
+		require(native.source.table ==
+					static_cast<size_t>(table - snapshot.tables.begin()) &&
+				native.observed_equipment_slot && native.equipment_source &&
+				native.owner_revision && native.vnum > 0 &&
+				native.item.uid < *normalized.next_uid &&
+				native.item.position.root_uid < *normalized.next_uid &&
+				native.item.position.parent_uid < *normalized.next_uid &&
+				native.item.position.equipment_slot ==
+					*native.observed_equipment_slot,
+			ENODATA);
+		const auto &equipment = *native.equipment_source;
+		require(equipment.row == native.source.row &&
+				equipment.row < snapshot.item_equipment_sources[0].rows.size() &&
+				snapshot.item_equipment_sources[0].rows[equipment.row].digest ==
+					equipment.digest,
+			EILSEQ);
+		const auto owner =
+			std::find_if(normalized.owners.begin(), normalized.owners.end(),
+				     [&](const auto &value) {
+					     return item_owner_identity_equal(
+						     value.owner, native.item.position.owner);
+				     });
+		require(owner != normalized.owners.end() &&
+				owner->revision == *native.owner_revision,
+			ENODATA);
+		std::vector<uint8_t> evidence{ 'E', 'B', 'S', '2' };
+		frame(evidence, checked_source(native.source));
+		frame(evidence, equipment.digest);
+		frame(evidence, checked_source(owner->source));
+		items.push_back({ native.item, sha(evidence) });
+		forest.push_back(native.item);
+	}
+	const auto valid = economic_item_effects_validate(forest, forest, {}, 0);
+	require(valid == economic_accounting_error::ok,
+		valid == economic_accounting_error::capacity ? ENOMEM : EILSEQ);
+	return items;
+}
+
 economic_sql_source_digest native_digest(const economic_sql_source_snapshot &snapshot,
 					 const std::vector<holding_source> &holdings)
 {
@@ -213,6 +302,31 @@ economic_sql_source_digest native_digest(const economic_sql_source_snapshot &sna
 				number(complete, static_cast<uint64_t>(amount));
 			frame(complete, holding->digest);
 		}
+		data = std::move(complete);
+	}
+	const auto items = std::find_if(snapshot.tables.begin(), snapshot.tables.end(),
+					[](const auto &table)
+					{ return table.name == "item_current_owner"; });
+	require(items != snapshot.tables.end(), EILSEQ);
+	if (!items->rows.empty())
+	{
+		// Preserve every original ESN1/2/3/4 preimage; custody uses an explicit
+		// successor envelope instead of silently changing an old digest.
+		require(snapshot.version == 2, ENODATA);
+		std::vector<uint8_t> complete{ 'E', 'S', 'N', '5' };
+		frame(complete, sha(data));
+		const auto owners = std::find_if(snapshot.tables.begin(), snapshot.tables.end(),
+						 [](const auto &table)
+						 { return table.name == "item_owner_revision"; });
+		require(owners != snapshot.tables.end() &&
+				snapshot.item_equipment_sources.size() == 1,
+			EILSEQ);
+		// ESC2 also contains inbox/outbox/mapping rows changed by this same
+		// installation. Bind the native item evidence without those receipts.
+		frame(complete, items->content_digest);
+		frame(complete, owners->content_digest);
+		frame(complete, snapshot.item_equipment_sources[0].content_digest);
+		frame(complete, snapshot.item_sources_digest);
 		return sha(complete);
 	}
 	return sha(data);
@@ -1039,6 +1153,31 @@ std::vector<uint64_t> verify_current_mappings(MYSQL *connection, const stored_in
 					      const authenticated_opening &opening,
 					      const std::vector<holding_source> &holdings)
 {
+	// Authenticate birth inboxes before mapping/current-native locks. These
+	// wallets form a separate lifetime namespace and never enter PID exports.
+	std::vector<economic_sql_native_mobile_wallet_lifetime> native_wallets;
+	const auto native_error = economic_sql_native_mobile_birth_lock_wallet_lifetimes(
+		connection, stored.lineage, &native_wallets);
+	require(!native_error, native_error);
+	std::map<uint64_t, const economic_sql_native_mobile_wallet_lifetime *> native_lifetimes;
+	for (const auto &wallet : native_wallets)
+	{
+		require(wallet.account.lineage.bytes == stored.lineage.bytes &&
+				wallet.account.kind == economic_account_kind::wallet &&
+				wallet.account.context_id ==
+					ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT &&
+				wallet.account.authority_id && wallet.native_id &&
+				wallet.native_revision &&
+				wallet.native_state == quest_mobile_lifetime_state::live &&
+				!critical_operation_id_is_zero(wallet.creating_operation_id) &&
+				!critical_operation_id_is_zero(wallet.birth_epoch) &&
+				critical_operation_id_is_zero(wallet.retiring_operation_id) &&
+				wallet.active_native_id == wallet.native_id &&
+				wallet.mapping_revision == 0,
+			EILSEQ);
+		require(native_lifetimes.emplace(wallet.account.authority_id, &wallet).second,
+			EEXIST);
+	}
 	const auto rows = query(
 		connection,
 		"SELECT mapping_id,account_kind,context_id,backend_kind,locator_kind,native_id,"
@@ -1046,7 +1185,7 @@ std::vector<uint64_t> verify_current_mappings(MYSQL *connection, const stored_in
 		"FROM economic_account_mapping WHERE lineage=" +
 			id(stored.lineage) + " ORDER BY mapping_id FOR UPDATE",
 		10);
-	using locator_key = std::pair<economic_account_kind, uint64_t>;
+	using locator_key = std::tuple<economic_account_kind, uint16_t, uint64_t, uint64_t>;
 	std::map<locator_key, uint64_t> live;
 	std::map<uint64_t, uint64_t> contexts;
 	for (const auto &record : rows)
@@ -1057,6 +1196,29 @@ std::vector<uint64_t> verify_current_mappings(MYSQL *connection, const stored_in
 		const auto native = integer<uint64_t>(record[5]);
 		const auto creating = parse_id(record[7]);
 		const auto revision = integer<uint64_t>(record[9]);
+		const auto locator = integer<uint16_t>(record[4]);
+		const auto native_found = native_lifetimes.find(mapping);
+		const bool native_namespace = kind == economic_account_kind::wallet &&
+					      (locator == ECONOMIC_NATIVE_MOBILE_WALLET_LOCATOR ||
+					       context == ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT);
+		if (native_namespace || native_found != native_lifetimes.end())
+		{
+			require(native_found != native_lifetimes.end(), EILSEQ);
+			const auto &wallet = *native_found->second;
+			require(kind == economic_account_kind::wallet &&
+					integer<uint16_t>(record[3]) ==
+						ECONOMIC_MAPPING_BACKEND_SQL &&
+					locator == ECONOMIC_NATIVE_MOBILE_WALLET_LOCATOR &&
+					context == wallet.account.context_id &&
+					native == wallet.native_id &&
+					creating.bytes == wallet.creating_operation_id.bytes &&
+					!record[8] && record[6] &&
+					integer<uint64_t>(record[6]) == wallet.active_native_id &&
+					revision == wallet.mapping_revision,
+				EILSEQ);
+			native_lifetimes.erase(native_found);
+			continue;
+		}
 		require(mapping && native &&
 				integer<uint16_t>(record[3]) == ECONOMIC_MAPPING_BACKEND_SQL &&
 				integer<uint16_t>(record[4]) == native_locator(kind) &&
@@ -1176,9 +1338,13 @@ std::vector<uint64_t> verify_current_mappings(MYSQL *connection, const stored_in
 					revision == 0,
 				EILSEQ);
 		}
-		require(live.emplace(locator_key{ kind, native }, mapping).second, EEXIST);
+		require(live.emplace(locator_key{ kind, native_locator(kind), context, native },
+				     mapping)
+				.second,
+			EEXIST);
 		contexts.emplace(mapping, context);
 	}
+	require(native_lifetimes.empty(), EILSEQ);
 	std::vector<uint64_t> ids;
 	ids.reserve(holdings.size());
 	for (const auto &holding : holdings)
@@ -1188,7 +1354,11 @@ std::vector<uint64_t> verify_current_mappings(MYSQL *connection, const stored_in
 			ids.push_back(holding.native_id);
 			continue;
 		}
-		const auto found = live.find({ holding.account_kind, holding.native_id });
+		const auto found = live.find(
+			{ holding.account_kind, native_locator(holding.account_kind),
+			  holding.account_kind == economic_account_kind::bank ? holding.racewar :
+										uint64_t{ 0 },
+			  holding.native_id });
 		require(found != live.end(), EILSEQ);
 		require(contexts.at(found->second) ==
 				(holding.account_kind == economic_account_kind::bank ?
@@ -1223,7 +1393,8 @@ std::vector<uint64_t> verify_current_mappings(MYSQL *connection, const stored_in
 economic_baseline_batch make_batch(const economic_sql_lifecycle_request &request,
 				   const std::vector<holding_source> &holdings,
 				   const std::vector<uint64_t> &account_ids,
-				   const economic_sql_source_digest &native_hash)
+				   const economic_sql_source_digest &native_hash,
+				   const std::vector<economic_baseline_item> &items)
 {
 	require(holdings.size() == account_ids.size());
 	economic_baseline_batch batch;
@@ -1235,6 +1406,19 @@ economic_baseline_batch make_batch(const economic_sql_lifecycle_request &request
 	batch.opening_account = { request.lineage, economic_account_kind::opening, 1, 0 };
 	batch.boundary_digest = native_hash;
 	batch.coverage_digest = coverage_digest(holdings, account_ids);
+	batch.items = items;
+	if (!items.empty())
+	{
+		std::vector<uint8_t> complete{ 'E', 'I', 'C', '2' };
+		frame(complete, batch.coverage_digest);
+		number(complete, items.size());
+		for (const auto &item : items)
+		{
+			number(complete, item.snapshot.uid);
+			frame(complete, item.source_digest);
+		}
+		batch.coverage_digest = sha(complete);
+	}
 	batch.holdings.reserve(holdings.size());
 	for (size_t index = 0; index < holdings.size(); ++index)
 	{
@@ -1480,6 +1664,75 @@ struct transaction
 			(void)mysql_real_query(connection, "ROLLBACK", 8);
 	}
 };
+// Shared original selection/opening proof; transaction and authority publication
+// remain with the lifecycle class owner. No current mapping/native proof here.
+struct verified_runtime_selection
+{
+	critical_operation_id lineage, epoch;
+	stored_installation installation;
+	authenticated_opening opening;
+};
+std::optional<verified_runtime_selection> load_verified_runtime_selection(MYSQL *connection)
+{
+	const auto active_rows =
+		query(connection,
+		      "SELECT HEX(lineage),HEX(active_epoch) FROM economic_lineage_state "
+		      "WHERE active_epoch IS NOT NULL FOR UPDATE",
+		      2);
+	require(active_rows.size() <= 1, EILSEQ);
+	if (active_rows.empty())
+		return std::nullopt;
+	const auto lineage = parse_id(active_rows[0][0]);
+	const auto epoch = parse_id(active_rows[0][1]);
+	auto stored = load_installation(connection, lineage);
+	const auto activation = load_activation(connection, lineage);
+	require(stored.exists && stored.phase == 2 && stored.epoch.bytes == epoch.bytes &&
+			activation.exists && activation.state == 1 &&
+			activation.epoch.bytes == epoch.bytes &&
+			activation.installation.bytes == stored.operation.bytes &&
+			stored.baseline_operation &&
+			activation.baseline.bytes == stored.baseline_operation->bytes &&
+			activation.route_count > 0 &&
+			activation.verified_route_count == activation.route_count &&
+			activation.unclassified_route_count == 0 &&
+			digest_nonzero(activation.manifest_digest) &&
+			digest_nonzero(activation.audit_digest),
+		EILSEQ);
+	verify_baseline_receipt(connection, stored);
+	auto opening = authenticate_opening(connection, stored);
+	return verified_runtime_selection{ lineage, epoch, std::move(stored), std::move(opening) };
+}
+economic_sql_lifecycle_receipt
+load_verified_runtime_projection(MYSQL *connection, const verified_runtime_selection &selected)
+{
+	const auto &lineage = selected.lineage;
+	const auto &epoch = selected.epoch;
+	const auto &stored = selected.installation;
+	const auto &opening = selected.opening;
+	auto [snapshot, holdings] = capture_current_holdings(connection, false);
+	(void)snapshot;
+	require(stored.wallet_count == static_cast<uint64_t>(std::count_if(
+					       holdings.begin(), holdings.end(),
+					       [](const auto &value) {
+						       return value.account_kind ==
+							      economic_account_kind::wallet;
+					       })) &&
+			stored.bank_count == static_cast<uint64_t>(std::count_if(
+						     holdings.begin(), holdings.end(),
+						     [](const auto &value) {
+							     return value.account_kind ==
+								    economic_account_kind::bank;
+						     })),
+		EILSEQ);
+	economic_sql_lifecycle_request request;
+	request.operation_id = stored.operation;
+	request.lineage = lineage;
+	request.epoch = epoch;
+	const auto account_ids = verify_current_mappings(connection, stored, opening, holdings);
+	economic_sql_lifecycle_receipt receipt;
+	fill_export(request, holdings, account_ids, stored, 1, &receipt);
+	return receipt;
+}
 } // namespace
 
 unsigned int economic_sql_accounting_lifecycle_transaction::install(
@@ -1523,6 +1776,7 @@ unsigned int economic_sql_accounting_lifecycle_transaction::install(
 		require(normalized_result == economic_accounting_error::ok,
 			normalized_result == economic_accounting_error::capacity ? ENOMEM : EILSEQ);
 		reject_cutover_defects(normalized);
+		const auto opening_items = read_opening_items(snapshot, normalized);
 		const auto holdings = read_native_holdings(connection, snapshot, normalized);
 		const bool money_opening = std::any_of(
 			holdings.begin(), holdings.end(),
@@ -1581,7 +1835,7 @@ unsigned int economic_sql_accounting_lifecycle_transaction::install(
 		const auto stored = load_installation(connection, request.lineage);
 		require(stored.exists);
 		verify_request(stored, request, expected_request_hash, native_hash, wallets, banks);
-		auto batch = make_batch(request, holdings, account_ids, native_hash);
+		auto batch = make_batch(request, holdings, account_ids, native_hash, opening_items);
 		std::optional<economic_prepared_baseline> prepared;
 		require(economic_baseline_prepare(batch, &prepared) ==
 				economic_accounting_error::ok,
@@ -2023,6 +2277,149 @@ unsigned int economic_sql_accounting_lifecycle_transaction::recover_runtime(
 			lineage, epoch, *stored.baseline_operation, wallets, banks);
 		require(installed == economic_accounting_error::ok,
 			installed == economic_accounting_error::capacity ? ENOMEM : EILSEQ);
+		*active = true;
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code ? error.code : EIO;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+}
+
+unsigned int economic_sql_accounting_lifecycle_transaction::prepare_runtime_boot(
+	MYSQL *connection, const economic_sql_lifecycle_guard &authority,
+	economic_sql_runtime_boot_selection *output) noexcept
+{
+	try
+	{
+		require(connection && output && !output->prepared_ && !output->finished_ &&
+				!output->selected_ && !output->authority_id_ && !output->session_,
+			EPERM);
+		// The original guard validation includes idle/autocommit and named-lock
+		// ownership. It must run before START, never inside this transaction.
+		require(!(connection->server_status & SERVER_STATUS_IN_TRANS) &&
+				(connection->server_status & SERVER_STATUS_AUTOCOMMIT) &&
+				authority.connection_ == connection && !authority.maintenance_ &&
+				authority.is_valid_authority() &&
+				!economic_gameplay_authority::active(),
+			EPERM);
+		execute(connection, "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+		transaction owner{ connection, mysql_thread_id(connection), true };
+		execute(connection, "START TRANSACTION WITH CONSISTENT SNAPSHOT");
+		const auto selected = load_verified_runtime_selection(connection);
+		require(mysql_thread_id(connection) == owner.session &&
+				(connection->server_status & SERVER_STATUS_IN_TRANS),
+			ENOTCONN);
+		execute(connection, "COMMIT");
+		owner.started = false;
+		if (selected)
+		{
+			const auto installed = economic_gameplay_authority::install_sql_recovery(
+				economic_gameplay_authority::sql_runtime_recovery_install_key{},
+				selected->lineage, selected->epoch,
+				*selected->installation.baseline_operation);
+			require(installed == economic_accounting_error::ok,
+				installed == economic_accounting_error::capacity ? ENOMEM : EILSEQ);
+			output->lineage_ = selected->lineage;
+			output->epoch_ = selected->epoch;
+			output->baseline_ = *selected->installation.baseline_operation;
+			output->selected_ = true;
+		}
+		output->authority_id_ = authority.authority_id_;
+		output->session_ = owner.session;
+		output->prepared_ = true;
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code ? error.code : EIO;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+}
+
+unsigned int economic_sql_accounting_lifecycle_transaction::finish_runtime_boot(
+	MYSQL *connection, const economic_sql_lifecycle_guard &authority,
+	economic_sql_runtime_boot_selection &selected_boot, bool *active) noexcept
+{
+	try
+	{
+		require(connection && active && selected_boot.prepared_ &&
+				!selected_boot.finished_ && selected_boot.authority_id_ &&
+				selected_boot.authority_id_ == authority.authority_id_ &&
+				selected_boot.session_ &&
+				selected_boot.session_ == mysql_thread_id(connection) &&
+				authority.connection_ == connection && !authority.maintenance_ &&
+				!(connection->server_status & SERVER_STATUS_IN_TRANS) &&
+				(connection->server_status & SERVER_STATUS_AUTOCOMMIT) &&
+				authority.is_valid_authority(),
+			EPERM);
+		*active = false;
+		require(selected_boot.selected_ ?
+				economic_gameplay_authority::active_sql_recovery() :
+				!economic_gameplay_authority::active(),
+			EPERM);
+		execute(connection, "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+		transaction owner{ connection, mysql_thread_id(connection), true };
+		execute(connection, "START TRANSACTION WITH CONSISTENT SNAPSHOT");
+		const auto selected = load_verified_runtime_selection(connection);
+		require(bool(selected) == selected_boot.selected_, ESTALE);
+		if (!selected)
+		{
+			require(!economic_gameplay_authority::active() &&
+					mysql_thread_id(connection) == owner.session &&
+					(connection->server_status & SERVER_STATUS_IN_TRANS),
+				ENOTCONN);
+			execute(connection, "COMMIT");
+			owner.started = false;
+			selected_boot.finished_ = true;
+			return 0;
+		}
+		const auto &lineage = selected->lineage;
+		const auto &epoch = selected->epoch;
+		const auto &stored = selected->installation;
+		require(lineage.bytes == selected_boot.lineage_.bytes &&
+				epoch.bytes == selected_boot.epoch_.bytes &&
+				stored.baseline_operation->bytes == selected_boot.baseline_.bytes &&
+				economic_gameplay_authority::sql_recovery_selection_matches(
+					economic_gameplay_authority::
+						sql_runtime_recovery_install_key{},
+					lineage, epoch, *stored.baseline_operation),
+			ESTALE);
+		const auto receipt = load_verified_runtime_projection(connection, *selected);
+		require(mysql_thread_id(connection) == owner.session &&
+				(connection->server_status & SERVER_STATUS_IN_TRANS),
+			ENOTCONN);
+		execute(connection, "COMMIT");
+		owner.started = false;
+		std::vector<economic_gameplay_wallet_mapping> wallets;
+		std::vector<economic_gameplay_bank_mapping> banks;
+		wallets.reserve(receipt.wallets.size());
+		banks.reserve(receipt.banks.size());
+		for (const auto &wallet : receipt.wallets)
+			wallets.push_back({ wallet.pid, wallet.account });
+		for (const auto &bank : receipt.banks)
+			banks.push_back({ bank.name, bank.racewar, bank.account });
+		const auto installed = economic_gameplay_authority::finish_sql_recovery(
+			economic_gameplay_authority::sql_runtime_recovery_install_key{}, lineage,
+			epoch, *stored.baseline_operation, wallets, banks);
+		require(installed == economic_accounting_error::ok,
+			installed == economic_accounting_error::capacity ? ENOMEM : EILSEQ);
+		selected_boot.finished_ = true;
 		*active = true;
 		return 0;
 	}

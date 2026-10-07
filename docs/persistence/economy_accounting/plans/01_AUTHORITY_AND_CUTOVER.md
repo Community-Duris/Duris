@@ -1,5 +1,16 @@
 # Plan 1: authority, admission, and cutover
 
+## Maintained producer composition - 2026-10-07
+
+[Current candidate](../MAINTAINED_PRODUCER_CANDIDATE_INTEGRATION_2026-10-07.md)
+applies the reviewed shared/held/quest/native-auction closure with later coin
+and cold-birth safeguards, current Plan5 work and inactive/spell boundaries
+preserved. Both original753-provider production builds and ten Linux contracts
+pass. All108 owned formatting checks and the refreshed925-route writer contracts
+pass, including both original formatted dependency builds and full links. Original Plan1 independent
+acceptance retains its recorded scope; current major-plan, gameplay, activation
+and full R1-R8/release qualification remain open. No coverage gate is promoted.
+
 ## Current native auction proof progress — 2026-10-07
 
 [Private component progress](../NATIVE_AUCTION_RETAINED_PROOF_PROGRESS_2026-10-07.md)

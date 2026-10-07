@@ -10,6 +10,17 @@
 #include <span>
 #include <vector>
 
+// Existing journal-carrier authentication only. The coordinator grants this
+// friend no publication, admission or journal mutation authority.
+class quest_reward_obligation_native_fee_owner final
+{
+    public:
+	static bool verify_in_transaction(MYSQL *, const critical_operation_id &,
+					  std::span<const uint8_t>) noexcept;
+	static bool ready(const critical_operation_id &,
+			  const quest_reward_continuation &) noexcept;
+};
+
 struct quest_reward_obligation_record
 {
 	critical_operation_id offering_operation = {};
@@ -50,6 +61,14 @@ struct quest_reward_read_metrics
 	uint32_t row_count = 0;
 	uint64_t byte_count = 0;
 };
+
+// ACK preflight is a distinct bounded literal read, not fee-success authority.
+// One attempted SELECT per call; v6 rereads once on its trusted transaction.
+constexpr size_t QUEST_REWARD_ACK_PREFLIGHT_QUERY_MAX = 1;
+quest_reward_obligation_result quest_reward_obligation_repository_read_ack_terms(
+	MYSQL *, uint32_t player_pid, const critical_operation_id &, std::vector<uint8_t> *,
+	quest_reward_continuation *, unsigned int *,
+	quest_reward_read_metrics * = nullptr) noexcept;
 
 constexpr size_t QUEST_REWARD_PENDING_MAX = 64;
 constexpr size_t QUEST_REWARD_PENDING_QUERY_MAX = 3;

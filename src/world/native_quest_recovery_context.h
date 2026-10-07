@@ -96,6 +96,10 @@ native_quest_recovery_context_decode(const critical_command &, std::span<const u
 
 // Pure structural receipt/context check for the coordinator. The separate
 // original guarded publication owner still supplies physical/ACK authority.
+// Pure fee-only ACK retry proof for the actual phase2 envelope. No effects or ACK.
+bool native_quest_recovery_fee_ack_context_valid(const critical_native_recovery_envelope &,
+						 const critical_completion &) noexcept;
+
 bool native_quest_recovery_publication_context_valid(const critical_native_recovery_envelope &,
 						     const critical_completion &) noexcept;
 
