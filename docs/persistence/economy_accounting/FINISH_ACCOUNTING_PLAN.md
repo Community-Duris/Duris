@@ -1,5 +1,16 @@
 # Finish accounting implementation plan
 
+## Published lifecycle V2 component execution reviewed - 2026-10-07
+
+[Coordinator review](domain-separation/LIFECYCLE_V2_READER_COMPONENT_REVIEW_2026-10-07.md)
+records the unchanged whole reader command on exact506b54c99:65 coverage cases,
+12 accepted/53 refused, five modeled envelopes, zero skips and original limits.
+Complete source/copied packet/actual ELF authenticate; independent retained
+Linux/system reread is unavailable while the local Docker daemon is absent.
+Original primary WSL failure remains. Native V2 encode/install/current-world,
+combined both-engine/gameplay/recovery and full Plans1-5/R1-R8 remain required.
+No source/test/migration changes, activation or primary adoption wait follows.
+
 ## Persisted union candidate authenticated - 2026-10-07
 
 [Primary source handoff](PERSISTED_PROVIDER_UNION_PRIMARY_HANDOFF_2026-10-07.md)
