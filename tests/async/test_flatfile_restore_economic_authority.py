@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Actual native restore refusal of damaged retained accounting authority."""
 import hashlib
+import fcntl
 import json
 import os
+import select
+import stat
 from pathlib import Path
 import struct
 import subprocess
@@ -63,6 +66,173 @@ def build_fixture(destination, native_source=ROOT):
                         compiler="g++", name="restore-authority-fixture")
 
 
+def check_audit_boundary(binary, fixture, environment, build):
+    """The operator itself must exclude native writers without changing files."""
+    with tempfile.TemporaryDirectory(prefix="duris-audit-boundary-", dir=build) as root:
+        root = Path(root)
+        produced = subprocess.run([str(fixture), str(root), "envelope-records"],
+            env=environment, capture_output=True, text=True, timeout=60)
+        assert produced.returncode == 0 and not produced.stderr, produced
+
+        def whole_inventory():
+            result = {}
+            for path in sorted(root.rglob("*")):
+                info = path.lstat()
+                result[str(path.relative_to(root))] = (
+                    stat.S_IFMT(info.st_mode), stat.S_IMODE(info.st_mode), info.st_nlink,
+                    os.readlink(path) if path.is_symlink() else
+                    path.read_bytes() if path.is_file() else None)
+            return result
+
+        observations = []
+
+        def check(label, valid):
+            before = whole_inventory()
+            observed = subprocess.run([str(binary), "--economic-evidence-audit", str(root)],
+                env=environment, capture_output=True, text=True, timeout=30)
+            assert whole_inventory() == before, label
+            row = {"case": label, "exit": observed.returncode, "expected": 0 if valid else 1,
+                   "stdout": observed.stdout, "stderr": observed.stderr,
+                   "inventory_unchanged": True}
+            observations.append(row)
+            print("AUDIT_BOUNDARY_OBSERVATION " + json.dumps(row), flush=True)
+
+        check("native inactive store", True)
+        holder = subprocess.Popen([str(fixture), str(root), "hold-authority-lock"],
+            env=environment, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, text=True)
+        try:
+            assert select.select([holder.stdout], [], [], 10)[0], "native lock readiness timeout"
+            assert holder.stdout.readline() == "NATIVE_AUTHORITY_LOCK_HELD\n"
+            check("native exclusive authority lock", False)
+        finally:
+            stdout, stderr = holder.communicate("release\n", timeout=10)
+            assert holder.returncode == 0 and not stdout and not stderr, (stdout, stderr)
+        check("native writer released", True)
+
+        native = subprocess.run([str(fixture), str(root), "pending-authority-journal"],
+            env=environment, capture_output=True, text=True, timeout=30)
+        assert native.returncode == 0 and not native.stderr, native
+        assert native.stdout == "NATIVE_PENDING_AUTHORITY_JOURNAL\n"
+        journal = root / "domains/.critical-authority-transaction"
+        print("NATIVE_PENDING_JOURNAL_SHA256 " + hashlib.sha256(journal.read_bytes()).hexdigest(),
+              flush=True)
+        check("native unresolved authority journal", False)
+        # Explicit fixture cleanup, never operator recovery or correction.
+        journal.unlink()
+        (root / "domains/audit-boundary-target").rmdir()
+        check("private journal fixture removed", True)
+
+        lock = root / "domains/.critical-authority.lock"
+        original = lock.read_bytes()
+        original_mode = stat.S_IMODE(lock.stat().st_mode)
+        for mode in ("missing", "symlink", "hardlink", "FIFO", "public", "directory"):
+            lock.unlink()
+            alternate = root / "domains/audit-boundary-alternate"
+            if mode in ("symlink", "hardlink"):
+                alternate.write_bytes(original)
+                if mode == "symlink":
+                    lock.symlink_to(alternate)
+                else:
+                    os.link(alternate, lock)
+            elif mode == "FIFO":
+                os.mkfifo(lock, 0o600)
+            elif mode == "directory":
+                lock.mkdir()
+            elif mode == "public":
+                lock.write_bytes(original)
+                lock.chmod(0o644)
+            check("authority lock " + mode, False)
+            if lock.is_symlink() or (lock.exists() and not lock.is_dir()):
+                lock.unlink()
+            elif lock.is_dir():
+                lock.rmdir()
+            if alternate.exists():
+                alternate.unlink()
+            lock.write_bytes(original)
+            lock.chmod(original_mode)
+        check("native lock restored", True)
+        assert all(row["exit"] == row["expected"] and
+                   (not row["stdout"] and row["stderr"] == "native_restore_qualification_failed\n"
+                    if row["expected"] else not row["stderr"])
+                   for row in observations), observations
+        return len(observations)
+
+
+def check_audit_limits(audit, binary, fixture, environment, build):
+    with tempfile.TemporaryDirectory(prefix="duris-audit-limits-", dir=build) as root:
+        root = Path(root)
+        produced = subprocess.run([str(fixture), str(root), "envelope-records"],
+            env=environment, capture_output=True, text=True, timeout=60)
+        assert produced.returncode == 0 and not produced.stderr, produced
+        evidence = root / "economic-evidence"
+        before, domains_before = inventory(evidence), inventory(root / "domains")
+        cases = 0
+        for mode in ("bounded", "bytes", "files", "entries", "deadline"):
+            observed = subprocess.run([str(audit), mode, str(root)], env=environment,
+                                      capture_output=True, text=True, timeout=30)
+            assert observed.returncode == (0 if mode == "bounded" else 1), (mode, observed)
+            assert not observed.stdout and observed.stderr == (
+                "" if mode == "bounded" else "native_restore_qualification_failed\n"), observed
+            assert inventory(evidence) == before
+            assert inventory(root / "domains") == domains_before
+            with (root / "domains/.critical-authority.lock").open("rb") as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            cases += 1
+        # The default directory budget counts unknown entries even though the
+        # offline format reader deliberately ignores this unrelated namespace.
+        for index in range(1700):
+            (evidence / ("unrelated-" + str(index))).write_bytes(b"")
+        oversized = inventory(evidence)
+        for command, valid in (([str(audit), str(root)], True),
+                               ([str(binary), "--economic-evidence-audit", str(root)], False)):
+            observed = subprocess.run(command, env=environment, capture_output=True,
+                                      text=True, timeout=30)
+            assert observed.returncode == (0 if valid else 1), observed
+            assert not observed.stderr if valid else (
+                not observed.stdout and observed.stderr == "native_restore_qualification_failed\n")
+            assert inventory(evidence) == oversized
+            assert inventory(root / "domains") == domains_before
+            cases += 1
+        for index in range(1700):
+            (evidence / ("unrelated-" + str(index))).unlink()
+        # Shared readers coexist. A native writer cannot enter until every
+        # reader releases; lock-name replacement invalidates a held audit cut.
+        lock_path = root / "domains/.critical-authority.lock"
+        for replace in (False, True):
+            holder = subprocess.Popen([str(audit), "hold-read-lock", str(root)],
+                env=environment, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE, text=True)
+            try:
+                assert select.select([holder.stdout], [], [], 10)[0]
+                assert holder.stdout.readline() == "INDEPENDENT_AUTHORITY_READ_LOCK_HELD\n"
+                with lock_path.open("rb") as lock:
+                    try:
+                        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    except BlockingIOError:
+                        pass
+                    else:
+                        raise AssertionError("writer entered during independent audit")
+                shared = subprocess.run([str(binary), "--economic-evidence-audit", str(root)],
+                    env=environment, capture_output=True, text=True, timeout=30)
+                assert shared.returncode == 0 and not shared.stderr, shared
+                if replace:
+                    lock_path.rename(root / "domains/held-authority-lock")
+                    lock_path.write_bytes(b"")
+            finally:
+                stdout, stderr = holder.communicate("release\n", timeout=10)
+            assert holder.returncode == (1 if replace else 0), (stdout, stderr)
+            assert not stdout and stderr == (
+                "native_restore_qualification_failed\n" if replace else ""), (stdout, stderr)
+            if replace:
+                lock_path.unlink()
+                (root / "domains/held-authority-lock").rename(lock_path)
+            assert inventory(evidence) == before
+            assert inventory(root / "domains") == domains_before
+            cases += 1
+        return cases
+
+
 def main():
     os.umask(0o077)
     with tempfile.TemporaryDirectory(prefix="duris-restore-authority-build-",
@@ -81,14 +251,34 @@ def main():
         assert envelopes.returncode == 0 and not envelopes.stderr, envelopes
         assert envelopes.stdout == "NATIVE_INDEPENDENT_COMMAND_ENVELOPE_COMPARISONS 574\n"
         print(envelopes.stdout, end="", flush=True)
+        boundary_cases = check_audit_boundary(binary, fixture, environment, build)
         # Exercise the independent reader under sanitizers without invoking
         # candidate recovery or any native mutation/storage interface.
         audit_source = Path(build) / "audit.cpp"
         audit_source.write_text('''#include "qualify_flatfile_economic_records.h"
 #include <iostream>
 int main(int argc, char **argv) {
-    if (argc != 2) return 2;
-    try { restore_economic_records::checker(argv[1]).run(); return 0; }
+    if (argc != 2 && argc != 3) return 2;
+    try {
+        if (argc == 2) restore_economic_records::checker(argv[1]).run();
+        else if (std::string(argv[1]) == "hold-read-lock") {
+            restore_economic_authority::authority_read_lock lock(argv[2]);
+            std::cout << "INDEPENDENT_AUTHORITY_READ_LOCK_HELD\\n" << std::flush;
+            std::string release;
+            restore_economic_authority::need(std::getline(std::cin, release) && release == "release");
+            lock.finish();
+        } else {
+            restore_economic_authority::audit_budget budget;
+            const std::string mode = argv[1];
+            if (mode == "bytes") budget.remaining_bytes = 48;
+            else if (mode == "files") budget.remaining_files = 1;
+            else if (mode == "entries") budget.remaining_entries = 1;
+            else if (mode == "deadline") budget.deadline = std::chrono::steady_clock::now();
+            else restore_economic_authority::need(mode == "bounded");
+            restore_economic_records::audit(argv[2], budget);
+        }
+        return 0;
+    }
     catch (...) { std::cerr << "native_restore_qualification_failed\\n"; return 1; }
 }
 ''')
@@ -97,6 +287,7 @@ int main(int argc, char **argv) {
                         "-O1", "-g", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
                         "-fno-pie", "-no-pie", "-I" + str(ROOT / "scripts"), str(audit_source),
                         "-lcrypto", "-o", str(audit)], check=True)
+        limit_cases = check_audit_limits(audit, binary, fixture, environment, build)
         with tempfile.TemporaryDirectory(prefix="duris-envelope-records-",
                                          dir=build) as envelope_root:
             envelope_root = Path(envelope_root)
@@ -1117,6 +1308,8 @@ int main(int argc, char **argv) {
                           "native_command_envelope_comparisons": 574,
                           "native_command_envelope_records": 11,
                           "native_command_envelope_refusals": 10,
+                          "audit_boundary_cases": boundary_cases,
+                          "audit_limit_cases": limit_cases,
                           "qualifier_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
                           "fixture_sha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
                           "sanitized_reader_sha256": hashlib.sha256(audit.read_bytes()).hexdigest()}))

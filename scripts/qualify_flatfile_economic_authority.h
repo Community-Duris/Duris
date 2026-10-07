@@ -6,9 +6,11 @@
 #include <algorithm>
 #include <array>
 #include <cerrno>
+#include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <deque>
+#include <dirent.h>
 #include <filesystem>
 #include <fcntl.h>
 #include <openssl/sha.h>
@@ -16,6 +18,7 @@
 #include <span>
 #include <stdexcept>
 #include <sys/stat.h>
+#include <sys/file.h>
 #include <unistd.h>
 #include <vector>
 
@@ -31,6 +34,178 @@ inline void need(bool valid)
 	if (!valid)
 		throw std::runtime_error("native_restore_qualification_failed");
 }
+// Only the online operator audit installs this cooperative admission budget.
+// Offline candidate qualification keeps the existing format limits. Count
+// repeated physical reads and directory visits, including ignored filenames.
+struct audit_budget
+{
+	size_t remaining_bytes = 128 * 1024 * 1024, remaining_files = 2048;
+	size_t remaining_entries = 8192;
+	std::chrono::steady_clock::time_point deadline =
+		std::chrono::steady_clock::now() + std::chrono::seconds(30);
+	void checkpoint() const { need(std::chrono::steady_clock::now() < deadline); }
+	void file(size_t size)
+	{
+		checkpoint();
+		need(remaining_files && size <= remaining_bytes);
+		--remaining_files;
+		remaining_bytes -= size;
+	}
+	void entry()
+	{
+		checkpoint();
+		need(remaining_entries);
+		--remaining_entries;
+	}
+};
+inline thread_local audit_budget *current_audit_budget = nullptr;
+struct scoped_audit_budget
+{
+	audit_budget *previous;
+	explicit scoped_audit_budget(audit_budget &budget)
+		: previous(current_audit_budget)
+	{
+		current_audit_budget = &budget;
+	}
+	~scoped_audit_budget() { current_audit_budget = previous; }
+	scoped_audit_budget(const scoped_audit_budget &) = delete;
+	scoped_audit_budget &operator=(const scoped_audit_budget &) = delete;
+};
+inline void audit_checkpoint()
+{
+	if (current_audit_budget)
+		current_audit_budget->checkpoint();
+}
+inline void audit_directory_entry()
+{
+	if (current_audit_budget)
+		current_audit_budget->entry();
+}
+
+// Independent SELECT-equivalent lock acquisition. Never creates a lock, opens
+// native storage, or recovers a journal. Cooperating native writers take the
+// same inode exclusively; readers fail immediately if a writer holds it.
+class authority_read_lock
+{
+	struct fd_owner
+	{
+		int value = -1;
+		~fd_owner()
+		{
+			if (value >= 0)
+				close(value);
+		}
+	};
+	std::filesystem::path root;
+	fd_owner root_fd, domains_fd, evidence_fd, lock_fd;
+	static void directory(int fd)
+	{
+		struct stat info = {};
+		need(fstat(fd, &info) == 0 && S_ISDIR(info.st_mode) && info.st_uid == geteuid() &&
+		     !(info.st_mode & 0077));
+	}
+	static void unchanged(int fd, int parent, const char *name)
+	{
+		struct stat held = {}, named = {};
+		need(fstat(fd, &held) == 0 &&
+		     fstatat(parent, name, &named, AT_SYMLINK_NOFOLLOW) == 0 &&
+		     held.st_dev == named.st_dev && held.st_ino == named.st_ino);
+	}
+	bool empty_evidence() const
+	{
+		if (evidence_fd.value < 0)
+			return true;
+		const int duplicate = dup(evidence_fd.value);
+		need(duplicate >= 0);
+		DIR *stream = fdopendir(duplicate);
+		if (!stream)
+			close(duplicate);
+		need(stream);
+		bool empty = true;
+		int error = 0;
+		while (true)
+		{
+			errno = 0;
+			auto entry = readdir(stream);
+			if (!entry)
+			{
+				error = errno;
+				break;
+			}
+			if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
+			{
+				empty = false;
+				break;
+			}
+		}
+		closedir(stream);
+		need(error == 0);
+		return empty;
+	}
+	void no_pending() const
+	{
+		if (domains_fd.value >= 0)
+		{
+			struct stat info = {};
+			need(fstatat(domains_fd.value, ".critical-authority-transaction", &info,
+				     AT_SYMLINK_NOFOLLOW) == -1 &&
+			     errno == ENOENT);
+		}
+	}
+
+    public:
+	explicit authority_read_lock(const std::filesystem::path &path)
+		: root(path)
+	{
+		need(path.is_absolute());
+		root_fd.value = open(path.c_str(), O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW);
+		directory(root_fd.value);
+		for (auto [name, descriptor] : { std::pair{ "domains", &domains_fd },
+						 std::pair{ "economic-evidence", &evidence_fd } })
+		{
+			descriptor->value = openat(root_fd.value, name,
+						   O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW);
+			if (descriptor->value < 0)
+				need(errno == ENOENT);
+			else
+				directory(descriptor->value);
+		}
+		if (domains_fd.value >= 0)
+		{
+			lock_fd.value = openat(domains_fd.value, ".critical-authority.lock",
+					       O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK);
+			if (lock_fd.value < 0)
+				need(errno == ENOENT);
+			else
+			{
+				struct stat info = {};
+				need(fstat(lock_fd.value, &info) == 0 && S_ISREG(info.st_mode) &&
+				     info.st_uid == geteuid() && info.st_nlink == 1 &&
+				     !(info.st_mode & 0077));
+				need(flock(lock_fd.value, LOCK_SH | LOCK_NB) == 0);
+			}
+		}
+		no_pending();
+		// Legacy absent/empty accounting needs no initialization. Return the
+		// empty observation directly; never start an unlocked multi-file scan.
+		need(locked() || empty_evidence());
+		finish();
+	}
+	bool locked() const { return lock_fd.value >= 0; }
+	void finish() const
+	{
+		unchanged(root_fd.value, AT_FDCWD, root.c_str());
+		if (domains_fd.value >= 0)
+			unchanged(domains_fd.value, root_fd.value, "domains");
+		if (evidence_fd.value >= 0)
+			unchanged(evidence_fd.value, root_fd.value, "economic-evidence");
+		if (locked())
+			unchanged(lock_fd.value, domains_fd.value, ".critical-authority.lock");
+		no_pending();
+	}
+	authority_read_lock(const authority_read_lock &) = delete;
+	authority_read_lock &operator=(const authority_read_lock &) = delete;
+};
 inline bool nonzero(std::span<const uint8_t> value)
 {
 	return std::any_of(value.begin(), value.end(), [](auto byte) { return byte != 0; });
@@ -52,6 +227,7 @@ struct reader
 	size_t offset = 0;
 	std::span<const uint8_t> take(size_t count)
 	{
+		audit_checkpoint();
 		need(offset <= value.size() && count <= value.size() - offset);
 		auto part = value.subspan(offset, count);
 		offset += count;
@@ -115,6 +291,7 @@ inline void locator(uint64_t kind, uint64_t context, uint64_t type, uint64_t nat
 inline bytes file_bytes(const std::filesystem::path &directory, const std::string &name,
 			size_t limit, const digest &expected = {})
 {
+	audit_checkpoint();
 	const int fd =
 		open((directory / name).c_str(), O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK);
 	need(fd >= 0);
@@ -127,10 +304,13 @@ inline bytes file_bytes(const std::filesystem::path &directory, const std::strin
 	need(fstat(fd, &info) == 0 && S_ISREG(info.st_mode) && info.st_uid == geteuid() &&
 	     info.st_nlink == 1 && !(info.st_mode & 0077) && info.st_size >= 48 &&
 	     uint64_t(info.st_size) <= limit);
+	if (current_audit_budget)
+		current_audit_budget->file(static_cast<size_t>(info.st_size));
 	bytes encoded(static_cast<size_t>(info.st_size));
 	size_t offset = 0;
 	while (offset < encoded.size())
 	{
+		audit_checkpoint();
 		auto count = read(fd, encoded.data() + offset, encoded.size() - offset);
 		if (count < 0 && errno == EINTR)
 			continue;
@@ -467,6 +647,7 @@ class checker
 		}
 		for (const auto &entry : std::filesystem::directory_iterator(directory))
 		{
+			audit_directory_entry();
 			auto name = entry.path().filename().string();
 			if (name.starts_with("mapping-") || name.starts_with("native-"))
 				need(metadata.contains(name));

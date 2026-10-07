@@ -276,6 +276,7 @@ class checker
 		// reported by the caller and cannot earn complete-book-loss qualification.
 		for (const auto &file : std::filesystem::directory_iterator(directory))
 		{
+			audit_directory_entry();
 			auto name = file.path().filename().string();
 			if (!name.starts_with("baseline"))
 				continue;
@@ -362,6 +363,7 @@ class checker
 		// every long witness filename or all retained payloads.
 		for (const auto &file : std::filesystem::directory_iterator(directory))
 		{
+			audit_directory_entry();
 			auto name = file.path().filename().string();
 			if (!name.starts_with("baseline"))
 				continue;

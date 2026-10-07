@@ -652,6 +652,7 @@ class checker
 		size_t observed_claims = 0;
 		for (const auto &file : std::filesystem::directory_iterator(directory))
 		{
+			audit_directory_entry();
 			const auto name = file.path().filename().string();
 			if (name.starts_with("bucket-"))
 				need(expected_files.contains(name));
@@ -677,5 +678,18 @@ class checker
 		return provenance;
 	}
 };
+inline initialization_provenance audit(const std::filesystem::path &root,
+				       restore_economic_authority::audit_budget &budget)
+{
+	restore_economic_authority::scoped_audit_budget scope(budget);
+	restore_economic_authority::authority_read_lock lock(root);
+	audit_checkpoint();
+	initialization_provenance result;
+	if (lock.locked())
+		result = checker(root).run();
+	lock.finish();
+	audit_checkpoint();
+	return result;
+}
 } // namespace restore_economic_records
 #endif
