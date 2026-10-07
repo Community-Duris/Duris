@@ -314,3 +314,8 @@ The [dossier](../design/zone-stories/MOSSWOOD.md) retains one native achievement
 ## Roper Den nexus daily qualification
 
 The [dossier](../design/zone-stories/NEXUS_ROPER.md) retains one native achievement/potential daily. No departure makes the definition repeatable, but mode0, four globally capped tentacles and dynamic reset/controller policy do not prove renewed available input. Qualify actual source/giver generations, distinct loose roots, supplied eligibility, accepted consumption, key issuance/recipient/save/replay and intended use. A nexus touch/turn has different guardians, allegiance, level, timers, rewards and expiry; no nexus condition is added to Sebastian’s exchange. New tracking requires active READY accounting, committed recovery is separate, and daily policy remains disabled.
+
+
+## Ny’Neth’s Stronghold daily qualification
+
+The [dossier](../design/zone-stories/NYNETH2.md) preserves one native achievement/potential daily. No departure does not prove renewable five-ore supply: mode0 and the active-accounting reset guard require durable source generations before fresh ore, keys, carts, painting or monolith availability. Qualify five exact loose roots, supplied eligibility, atomic consumption, acknowledged mine-key recipient/save/replay and actual renewal. Separate epic claims, key passages, consented rescue and campaign arrival have different success evidence. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.

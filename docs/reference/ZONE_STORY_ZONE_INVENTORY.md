@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 218 authored journals.
+2668 distinct Q contracts; 219 authored journals.
 
 Regenerate with:
 
@@ -169,7 +169,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Reliquary Nexus of the Roper Den (`nexus_roper`) | 1 | 1 | 0 | Yes | [4 × an ancient roper tentacle → a flaming key](../../areas/qst/nexus_roper.qst#L6) | — |
 | Northern Lakes and Settlements (`nlakes`) | 6 | 7 | 2 | Yes | [2 × a green scale; 1 × a jeweled demonic amulet → an inspiring visage of a Dragon](../../areas/qst/nlakes.qst#L44) | — |
 | The Cimmerian Nomad Encampment (`nomads`) | 2 | 3 | 1 | Yes | [1 × the severed head of the half-orc shaman; 1 × the severed head of the half-orc conjurer; 1 × a hallowed Cimmerian ring → the diamond crown of Winduin](../../areas/qst/nomads.qst#L64) | — |
-| Ny'Neth's Stronghold (`nyneth2`) | 1 | 1 | 0 | Fallback | [1 × a chunk of illithite; 1 × a chunk of malicite; 1 × a chunk of evilite; other required items → a mine key](../../areas/qst/nyneth2.qst#L8) | lifereaver |
+| Ny'Neth's Stronghold (`nyneth2`) | 1 | 1 | 0 | Yes | [1 × a chunk of illithite; 1 × a chunk of malicite; 1 × a chunk of evilite; other required items → a mine key](../../areas/qst/nyneth2.qst#L8) | lifereaver |
 | Ny'Neth's Stronghold Continued (`nyneth3`) | 1 | 1 | 0 | Fallback | [1 × an elusive yet immortal soul; 1 × an elusive yet immortal soul; 1 × an elusive yet immortal soul; other required items → a key of utter blackness](../../areas/qst/nyneth3.qst#L6) | generic_shield_block_proc, nyneth, platemail_of_defense, ring_of_regeneration, stormbringer |
 | Tribal Oasis (`oasis`) | 9 | 12 | 0 | Yes | [1 × the still-beating heart of Bel; 1 × the orb of unmaking; 1 × A mystic runed stone tablet → the scroll of Constitution](../../areas/qst/oasis.qst#L11) | — |
 | The Obsidian Citadel (`obcita`) | 5 | 3 | 0 | Yes | [1 × a minuscule shard of shadow → a shadowsteel ring](../../areas/qst/obcita.qst#L37) | obsid_cit_death_knight, obsid_cit_satar_ghulan |

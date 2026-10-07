@@ -63609,6 +63609,361 @@
     {
       "contacts": [
         {
+          "description": "This golem if formed completely of illithite ore, reknown for its evil magical nature, and power to cause sickness and wasting in the life aura of living beings.",
+          "keyword": "illithite",
+          "mob_vnum": 23000,
+          "name": "an illithite golem",
+          "topics": []
+        },
+        {
+          "description": "This golem if formed completely of illithite ore, reknown for its evil magical nature, and power to cause sickness and wasting in the life aura of living beings.",
+          "keyword": "illithite",
+          "mob_vnum": 23001,
+          "name": "an illithite golem",
+          "topics": []
+        },
+        {
+          "description": "The foreman needs one exact sample of illithite, malicite, evilite, perversium and deathalite. Ask about tiloxi; bring the five chunks together for his mine key.",
+          "keyword": "foreman",
+          "mob_vnum": 23002,
+          "name": "the foreman",
+          "topics": [
+            "tiloxi"
+          ]
+        },
+        {
+          "description": "This golem seems to be permanently enraged, pounding at the walls of the tunnel in a fury.",
+          "keyword": "malicite",
+          "mob_vnum": 23003,
+          "name": "a malicite golem",
+          "topics": []
+        },
+        {
+          "description": "This golem has been made of an element so incredibly evil, it grants him the abilities of a dreaded anti-paladin simply by its incorporation into a living form.",
+          "keyword": "evilite",
+          "mob_vnum": 23004,
+          "name": "an evilite golem",
+          "topics": []
+        },
+        {
+          "description": "About the size of an ogre, this huge golem works easily and dilligently mining perversium .",
+          "keyword": "perversium",
+          "mob_vnum": 23005,
+          "name": "a perversium golem",
+          "topics": []
+        },
+        {
+          "description": "Hard to get an exact bead on, this duergar blends almost instantly into any shadow.",
+          "keyword": "deep",
+          "mob_vnum": 23006,
+          "name": "a deep duergar assassin",
+          "topics": []
+        },
+        {
+          "description": "Hard to discern, this massive form radiates pure blackness into the passage.",
+          "keyword": "deathalite",
+          "mob_vnum": 23007,
+          "name": "a deathalite golem",
+          "topics": []
+        },
+        {
+          "description": "Small and stealthy, this gnome has lived its entire life without a single glimplse of sunlight.",
+          "keyword": "deep",
+          "mob_vnum": 23008,
+          "name": "a deep gnome",
+          "topics": []
+        },
+        {
+          "description": "Formed of pure quartz, this large golem has been forged with an extra pair of arms.",
+          "keyword": "sorting",
+          "mob_vnum": 23009,
+          "name": "a sorting golem",
+          "topics": []
+        },
+        {
+          "description": "Toloxi oversees the sorting room and carries a small silver key. The foreman\u2019s sample exchange and meeting Toloxi are separate parts of the stronghold.",
+          "keyword": "toloxi",
+          "mob_vnum": 23010,
+          "name": "Toloxi",
+          "topics": []
+        },
+        {
+          "description": "A gigantic cube of translucent slime, this acidic being makes its living by absorbing the unwary living creatures which wander past this section of tunnel.",
+          "keyword": "deep",
+          "mob_vnum": 23011,
+          "name": "a deep cube",
+          "topics": []
+        },
+        {
+          "description": "Short for a demon, this class of demon is nonetheless fearsome in battle.",
+          "keyword": "morgus",
+          "mob_vnum": 23012,
+          "name": "a morgus demon",
+          "topics": []
+        },
+        {
+          "description": "This demon floats in the air here, its body slowly materializing as it is pulled from one of the 666 planes.",
+          "keyword": "half-materialized",
+          "mob_vnum": 23013,
+          "name": "a half-materialized demon",
+          "topics": []
+        },
+        {
+          "description": "A dark elf of some variety, this apprentice summoner works in unison with her master to conjure and bind demons to service here.",
+          "keyword": "apprentice",
+          "mob_vnum": 23014,
+          "name": "an apprentice summoner",
+          "topics": []
+        },
+        {
+          "description": "As beautiful as she is deadly, this dark elf flexes the power of her arts in an explosion of creation here.",
+          "keyword": "master",
+          "mob_vnum": 23015,
+          "name": "the master summoner",
+          "topics": []
+        },
+        {
+          "description": "One of the most feared classes of demon, the Tzuz are endowed with considerable magical power.",
+          "keyword": "tzuz",
+          "mob_vnum": 23016,
+          "name": "a tzuz demon",
+          "topics": []
+        },
+        {
+          "description": "Reknowned for their natural mental powers, it must have taken very considerable power to bind this pitiful creature and his brethren to their current slavery.",
+          "keyword": "enslaved",
+          "mob_vnum": 23017,
+          "name": "an enslaved deep gnome",
+          "topics": []
+        },
+        {
+          "description": "Reknowned for their natural mental powers, it must have taken very considerable power to bind this pitiful creature and his brethren to their current slavery.",
+          "keyword": "enslaved",
+          "mob_vnum": 23018,
+          "name": "an enslaved deep gnome",
+          "topics": []
+        },
+        {
+          "description": "Summoned from one of the 666 planes, this huge demon is from the Azel class.",
+          "keyword": "azel",
+          "mob_vnum": 23019,
+          "name": "an azel demon",
+          "topics": []
+        },
+        {
+          "description": "Even under direct gaze, this corus demon is nearly undetectable.",
+          "keyword": "corus",
+          "mob_vnum": 23020,
+          "name": "a corus demon",
+          "topics": []
+        },
+        {
+          "description": "Imbued with an absolute command over evil forces, the Xyyn need no godly allegience to weave their magic.",
+          "keyword": "xyyn",
+          "mob_vnum": 23021,
+          "name": "a xyyn demon",
+          "topics": []
+        },
+        {
+          "description": "This gigantic demon's blood red skin ripples with muscles, and its fists are disproportionately large even considering its considerable density.",
+          "keyword": "maluzaan",
+          "mob_vnum": 23022,
+          "name": "Maluzaan",
+          "topics": []
+        },
+        {
+          "description": "Long and thick, this wingless dragon uses its four massive legs to quickly scurry through the cavern.",
+          "keyword": "deep",
+          "mob_vnum": 23023,
+          "name": "a deep wyrm",
+          "topics": []
+        },
+        {
+          "description": "Shadows seem to collect about this demon, who stalks through the crevices Only his eyes, which burn with fiery hatred, are clearly visible in the darkness which envelopes him.",
+          "keyword": "arus",
+          "mob_vnum": 23024,
+          "name": "an arus demon",
+          "topics": []
+        },
+        {
+          "description": "Appearing only as a translucent twisting mass of writhing agony, this soul cries out as though under constant torture.",
+          "keyword": "tortured",
+          "mob_vnum": 23025,
+          "name": "a tortured soul",
+          "topics": []
+        },
+        {
+          "description": "This devil is a fearsome sight as it creeps noiselessly through the caverns here looking for amusement.",
+          "keyword": "taus",
+          "mob_vnum": 23026,
+          "name": "a taus devil",
+          "topics": []
+        },
+        {
+          "description": "A form of beholder, this floating eye roams the underworld seeking out beings on which to cause pain.",
+          "keyword": "beholder",
+          "mob_vnum": 23027,
+          "name": "a painseeker",
+          "topics": []
+        },
+        {
+          "description": "The size of a giant, this devil muscular and well built.",
+          "keyword": "greater",
+          "mob_vnum": 23028,
+          "name": "Nogoz'Tzel, devil of the 308'th plane",
+          "topics": []
+        },
+        {
+          "description": "Short and stocky for a drow, this wizard's great powers quickly transcend his height disadvantages.",
+          "keyword": "slyten",
+          "mob_vnum": 23029,
+          "name": "Slyten",
+          "topics": []
+        },
+        {
+          "description": "His scales are a shimmering mix of blazing white and blue, running the length of his body in semi random patterns.",
+          "keyword": "tuosceck",
+          "mob_vnum": 23030,
+          "name": "Tuosceck the Blizzard King",
+          "topics": []
+        },
+        {
+          "description": "One of the winged devils of Aazaeroth, this horrific being stands nearly twelve feet tall.",
+          "keyword": "gormash",
+          "mob_vnum": 23031,
+          "name": "Gormash the berserker lord",
+          "topics": []
+        },
+        {
+          "description": "Not much differentiates this roper from the other huge ropers which roam the underdark except for its immense size.",
+          "keyword": "ancient",
+          "mob_vnum": 23032,
+          "name": "an ancient roper",
+          "topics": []
+        },
+        {
+          "description": "Words cannot descibe the bone-chilling terror that emanates from this moving blackness as it quickly closes in.",
+          "keyword": "sythuun",
+          "mob_vnum": 23033,
+          "name": "Sythuun the Reaper lord",
+          "topics": []
+        },
+        {
+          "description": "Not a solid mass, this golem is instead made up of huge stone boulders animated together in a humanoid shape.",
+          "keyword": "jugger",
+          "mob_vnum": 23034,
+          "name": "Jugger the golem",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow Ny\u2019Neth\u2019s ore mines, prepare five distinct samples for the foreman, and keep his accepted exchange separate from the stronghold\u2019s longer access and rescue stories.",
+      "orientation": [
+        "Arrive in this part of Ny\u2019Neth\u2019s Stronghold to discover it. Find the foreman in the mines to reveal his sample request.",
+        "The foreman is a golem of elemental energy. Ask him about tiloxi to hear why he needs five pure ore samples. Hearing his answer and completing the exchange are separate events.",
+        "Bring one exact chunk each of illithite, malicite, evilite, perversium and deathalite, together and loose in your inventory. Exact copies supplied by another player also fit.",
+        "The five optional material rows show what you carry now. Extra copies of one ore cannot replace a missing different ore. Golem slivers, liquid, blood and orbs are different items.",
+        "Some chunks are left near the ends of their ore veins. Remaining supplies depend on what is actually present; the mineral descriptions do not provide a new mining or carving command.",
+        "The foreman accepts the five chunks for a mine key. That exchange remains recorded after the samples are spent or the key leaves your inventory.",
+        "The mine key can open the hidden route toward the mining tracks and sorting room. Finding a door, unlocking it and crossing it are separate actions; carrying the key does not record them.",
+        "Toloxi is the faerie in the sorting room. His silver key leads toward the workshop. The foreman\u2019s topic word tiloxi is the word to use with the foreman.",
+        "Mining carts connect otherwise separate passages. Check the destination and actual cart before committing to a ride; returning safely takes its own route.",
+        "The workshop contains summoners, demons and enslaved deep gnomes. Their plight is part of the larger story. Completing the sample exchange does not record a prisoner\u2019s freedom or an interrupted ritual.",
+        "Further keys lead into the inner workshop, upper underworld, portal room and second vault. Some keys break when used. The painting is a shortcut with a limited number of uses.",
+        "The second vault holds the onward third-stage key and a return portal. Ny\u2019Neth\u2019s earlier warning explains why the means to continue should be obtained before committing to the next stage.",
+        "A monolith reward follows its own encounter, participant and reward rules. The foreman\u2019s accepted trade, useful travel, a prisoner\u2019s freedom and a committed monolith claim are different accomplishments."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "nyneth2",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:23016,I:23017,I:23018,I:23019,I:23020;receive=I:23021;disappear=0",
+              "giver_vnum": 23002
+            }
+          ],
+          "id": "five-ores-for-the-foreman",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Keep this exact chunk loose in your inventory. Supplied copies also fit; another ore or a similarly named golem drop cannot replace it.",
+              "id": "prepare-illithite",
+              "item_vnums": [
+                23016
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one chunk of illithite"
+            },
+            {
+              "count": 1,
+              "hint": "Keep this exact chunk loose in your inventory. Supplied copies also fit; another ore or a similarly named golem drop cannot replace it.",
+              "id": "prepare-malicite",
+              "item_vnums": [
+                23017
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one chunk of malicite"
+            },
+            {
+              "count": 1,
+              "hint": "Keep this exact chunk loose in your inventory. Supplied copies also fit; another ore or a similarly named golem drop cannot replace it.",
+              "id": "prepare-evilite",
+              "item_vnums": [
+                23018
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one chunk of evilite"
+            },
+            {
+              "count": 1,
+              "hint": "Keep this exact chunk loose in your inventory. Supplied copies also fit; another ore or a similarly named golem drop cannot replace it.",
+              "id": "prepare-perversium",
+              "item_vnums": [
+                23019
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one chunk of perversium"
+            },
+            {
+              "count": 1,
+              "hint": "Keep this exact chunk loose in your inventory. Supplied copies also fit; another ore or a similarly named golem drop cannot replace it.",
+              "id": "prepare-deathalite",
+              "item_vnums": [
+                23020
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one chunk of deathalite"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:23016,I:23017,I:23018,I:23019,I:23020;receive=I:23021;disappear=0",
+                  "giver_vnum": 23002
+                }
+              ],
+              "hint": "Offer all five exact chunks together when the foreman can accept them. The accepted exchange records history separately from present materials, source recovery or later key ownership.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Complete the foreman\u2019s five-sample exchange"
+            }
+          ],
+          "summary": "The foreman trades a mine key for one exact chunk of each of five ores. Recovered or supplied samples fit; workshop, prisoner and onward campaign outcomes are separate.",
+          "title": "Five ores for the foreman"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "This small animal pecks at the ground here in search of insects and seeds. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
           "keyword": "chicken",
           "mob_vnum": 23400,

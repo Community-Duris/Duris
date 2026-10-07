@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 218 authored journals, accounting-gated player surfaces, starter/town
+**Status: 219 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5406,3 +5406,12 @@ The [dossier](zone-stories/MOSSWOOD.md) maps Ijale’s exact beet/C1000 exchange
 ## Roper Den nexus integration extension
 
 The [dossier](zone-stories/NEXUS_ROPER.md) covers Sebastian’s exact four-tentacle/key exchange and six broader stories: hidden approach/knowledge, useful roper protection, lawful source/supply, intended key access, volcanic guidance/return and lasting nexus control. Forty owned follow-ups require successful typed callers, admitted actors and saved useful outcomes. Mode0 supply, an unconsumed key, raw4 hatch and dynamic SQL/flat nexus placement need builder qualification. Existing schema3 handles the native exchange without imposing source-first, kill, greeting or nexus prerequisites. Active READY accounting remains required; daily policy stays disabled.
+
+
+## Ny’Neth’s Stronghold integration extension
+
+The [dossier](zone-stories/NYNETH2.md) maps the five distinct ore samples and eight broader campaign/source/cart/sorting/workshop/captive/ritual/underworld/vault stories, with 48 owned follow-ups. Reuse schema3 for five optional per-identity rows and one accepted exchange. Active READY accounting remains required; daily policy stays disabled. Native topic tiloxi, supplied eligibility, VNUM-based campaign keys, finite painting and encounter challenge are preserved.
+
+### Accounted reset-generation requirement
+
+The current reset guard refuses item-issuing O/G/E and related commands while accounting is active, before read_object or live placement. Ny’Neth’s 187 item rows, and other zones using those commands, need durable generation/source identities, acknowledged spawn/custody publication, native caps/conditional children and replay/recovery/replacement qualification before dependable fresh supply. Existing authoritative/recovered stock is separate. Do not bypass the guard or infer renewal from no-departure, configured lifetimes or an epic reset request. Follower admission through last_mob_followable remains separate and must be preserved.

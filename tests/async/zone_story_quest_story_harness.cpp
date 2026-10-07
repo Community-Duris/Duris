@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 218 &&
+		require(catalog.story_mappings.size() == 219 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -25628,6 +25628,100 @@ int main(int argc, char **argv)
 							   &supplies);
 			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
 				"Roper Den nexus missing key or spent tentacles changed recovered history");
+		}
+
+		{
+			const auto &ores = story_for("nyneth2", "five-ores-for-the-foreman");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 23002, 23006, 100) == result::rejected,
+				"Ny’Neth Stronghold contact ignored undiscovered zone");
+			require(journey.discover_zone(7, 42, 230, 23000, 101, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 230, 10, 1, 102, false, false)
+							.find(ores.title) == std::string::npos &&
+					journey.meet_npc(7, 42, 23002, 23006, 103) ==
+						result::applied,
+				"Ny’Neth Stronghold request bypassed foreman encounter");
+			require(journey.render_journal(7, 42, 230, 10, 1, 103, false, false)
+						.find(ores.title) != std::string::npos,
+				"Ny’Neth Stronghold journal invented extra source, greeting or campaign prerequisites");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    ores.steps[row].text) != std::string::npos;
+			};
+			for (unsigned custody = 0; custody < 7; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[23021] = 1;
+				if (custody == 2)
+					supplies.carried[23016] = 5;
+				if (custody >= 3)
+					for (long vnum = 23016; vnum < 23020; ++vnum)
+						supplies.carried[vnum] = 1;
+				if (custody == 4)
+					supplies.equipped[18] = 23020;
+				if (custody >= 5)
+					for (long vnum = 23016; vnum <= 23020; ++vnum)
+						supplies.carried[vnum] = custody == 5 ? 1 : 2;
+				const auto journal = journey.render_journal(
+					7, 42, 230, 10, 1, 104, false, false, &supplies);
+				for (size_t row = 0; row < 5; ++row)
+				{
+					const bool ready = custody >= 5 ||
+							   (custody >= 3 && row < 4) ||
+							   (custody == 2 && row == 0);
+					require(status(journal, row,
+						       ready ? "Ready now" : "Missing now"),
+						"Ny’Neth Stronghold substituted a duplicate ore or held sample for a distinct loose chunk");
+				}
+				require(!status(journal, 5, "Recorded") &&
+						journey.progress_for_zone(7, 42, 230).completed ==
+							0 &&
+						journey.serialize_state() == before,
+					"Ny’Neth Stronghold preparation or reward-key possession forged accepted history");
+			}
+			// Synthetic receipt qualifies projection, not live five-root consumption, reward, travel or monolith admission.
+			record(journey, ores.contracts.front(), "nyneth2-ores-offering", 230,
+			       23006);
+			supplies = {};
+			auto journal = journey.render_journal(7, 42, 230, 10, 1, 121, false, false,
+							      &supplies);
+			require(status(journal, 5, "Recorded") &&
+					status(journal, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 230).completed == 1 &&
+					!journey.has_discovered(7, 42, 229) &&
+					!journey.has_discovered(7, 42, 387),
+				"Ny’Neth Stronghold spent ores erased receipt or invented foreign arrival");
+			require(supplied.discover_zone(7, 42, 230, 23000, 101, "arrival") ==
+					result::applied,
+				"Ny’Neth Stronghold supplied return setup failed");
+			record(supplied, ores.contracts.front(), "nyneth2-supplied-offering", 230,
+			       23006);
+			require(supplied.progress_for_zone(7, 42, 230).completed == 1,
+				"Ny’Neth Stronghold acceptance required remembered source recovery, personal kill, greeting, key use or epic participation");
+			auto replay =
+				completion(ores.contracts.front(), "nyneth2-ores-offering", 120);
+			replay.transaction.zone_number = 230;
+			replay.transaction.room_vnum = 23006;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Ny’Neth Stronghold replay duplicated ores acceptance");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 230).completed == 1 &&
+					raw.progress_for_zone(7, 42, 230).completed == 1 &&
+					!recovered.has_discovered(7, 42, 229) &&
+					!recovered.has_discovered(7, 42, 387),
+				"Ny’Neth Stronghold mapped/raw recovery lost acceptance or invented foreign discovery");
+			journal = recovered.render_journal(7, 42, 230, 10, 1, 122, false, false,
+							   &supplies);
+			require(status(journal, 5, "Recorded") && status(journal, 0, "Missing now"),
+				"Ny’Neth Stronghold missing key or spent ores changed recovered history");
 		}
 
 		std::cout
