@@ -2,19 +2,21 @@
 
 ## Recommendation and current status
 
-The bounded Collector collection-image extraction is suitable for primary review
-and candidate integration, subject to the current candidate's compatibility and
-maintained qualification. No actionable source defect was found in implementation
+Recommend importing the bounded Collector collection-image extraction at a normal
+primary integration boundary, after confirming its preimage against the current
+candidate and any unpublished primary work. No actionable source defect was found
+in implementation
 `3d2b85b0688684721f8db559cb3ea35b1830a1cc`. The coordinator independently executed
 the published collection-preparation and policy runners successfully. This is
 not unconditional merge approval, primary adoption, or full accounting release
 qualification.
 
-This review is **in progress**: the worker's maintained SQL build has completed,
-its flatfile build is running, and its final terminal-results handoff is not yet
-published. The coordinator Goal remains active until the final delivered evidence
-and remaining handoff gaps have been assessed. Native database/server/player and
-recovery journeys are unrun for this delivery; component results do not imply them.
+The source/component/build assessment is complete: both maintained backend builds
+passed and their build container exited 0. Native database, server, player and
+recovery journeys are unrun for this delivery; component and build
+results do not imply them. Primary adoption and qualification on its combined
+candidate remain primary-owned work, not prerequisites for finishing this
+independent review.
 
 Primary accounting continues independently. If import or validation would disrupt
 the current accounting slice, defer this optional architecture bundle.
@@ -24,13 +26,16 @@ the current accounting slice, defer this optional architecture bundle.
 - Accounting base: `7dbc472123a729f2fedc345e5309a586ba8a02d8`.
 - Research: `3e9d03db25ea459662b0cd6df8e764f05dd5a0e1`.
 - Production/test bundle: `3d2b85b0688684721f8db559cb3ea35b1830a1cc`.
-- Published worker handoff examined:
-  `bc19aa68294f5e0e1e19a2deecb84566d425ce8b`.
+- Final published worker handoff examined:
+  `ce3b631003303ee4fbfb8a0bd527ad8508982250`. Terminal build metadata is in
+  `728ba623f96a896d9a213c929dead1f81d03c65e`; `bc19aa682` is historical progress.
 - Worker: `origin/codex/accounting-domain-separation`, canonical
   [handoff](https://github.com/Community-Duris/Duris/blob/codex/accounting-domain-separation/docs/persistence/economy_accounting/domain-separation/HANDOFF.md).
 - Independent review checkout:
   `C:\Users\alexa\.codex\worktrees\accounting-domain-review\NewDuris Max`,
-  detached at the examined worker handoff. Builds/tests use its own `bin/`.
+  detached at `bc19aa68294f5e0e1e19a2deecb84566d425ce8b` for independent tests.
+  Its four implementation/test files match the final worker delivery; subsequent
+  worker commits change only the canonical handoff. Tests use its own `bin/`.
 
 The implementation touches exactly two production paths and two test paths:
 `src/economy/collector_collection_image.h`,
@@ -88,6 +93,16 @@ not native database or player journeys. The source diff and actual capture/calle
 implementations were examined directly; this review does not rely solely on the
 worker's narrative.
 
+The coordinator also ran the read-only compatibility check below against the
+accounting-plan checkout at `27ba5cd565bbbff68feee7cde3e4574c6eaed3ca`:
+
+```powershell
+git diff 3e9d03db25ea459662b0cd6df8e764f05dd5a0e1 3d2b85b0688684721f8db559cb3ea35b1830a1cc -- src/economy/collector_collection_image.h src/economy/collector_collection_preparation.c tests/async/collector_collection_preparation_harness.cpp tests/async/test_collector_collection_preparation.py | git apply --check
+```
+
+It exited 0 without applying changes. This proves patch applicability to that
+published candidate, not applicability to unknown primary private edits.
+
 Git blob identities for the independently examined source:
 
 | Input | Git blob |
@@ -102,10 +117,27 @@ Worker-only evidence is recorded separately in its handoff. The coordinator
 observed `SQL_EXIT=0` and final make completion from the worker's isolated
 `duris-domain-separation-ac24` build; its SQL executable SHA256 is
 `6de48baed73542d44bf697ee93f4682b93f30e8c6d816ca940060cbe2c2659c1`.
-The flatfile build has started but has no terminal result at this checkpoint.
-The worker reports original/extracted ASan/UBSan passes and a detected deliberately
-incorrect weight calculation. Those sanitizer runs have not been independently
-repeated by the coordinator.
+The coordinator also observed `FLAT_EXIT=0`, the complete flatfile link, and the
+terminal build-container status `exited 0`. Flatfile executable SHA256:
+`5b710436f11bae2b0691d6a65e1138f9d92a45ebd96128ee2cf863c936d2449a`.
+Both builds use the maintained Makefile, unchanged warnings/flags, separate
+backend object directories, the worker's read-only source, and its isolated
+build volume. The exact commands are:
+
+```bash
+make -C src -j2
+make -C src -j2 PERSISTENCE_BACKEND=flatfile DMS_BINARY=/workspace/bin/server/dms_flat_new
+```
+
+The coordinator inspected the worker's retained execution results: both original
+and extracted sources produced `SANITIZED_PASS`, and the deliberately incorrect
+weight calculation produced `NEGATIVE_CONTROL_REJECTED -6`. Those sanitizer runs
+have not been independently repeated by the coordinator. The original frozen
+source SHA256 is `c57188914083bf4836930e7bd8d869e6e56d48b525a648771102b9d23ba60b35`.
+The coordinator authenticated all four production/test input hashes against the
+published bundle pins and confirmed the container's read-only source mount and
+separate writable build volume. These checks bind the observed evidence to the
+reviewed inputs rather than an alternate checkout.
 
 ## Import prerequisites and remaining evidence
 
@@ -116,8 +148,8 @@ snapshot inputs against the current integrated candidate. Do not blanket-merge
 the worker branch into accounting or overwrite primary private work. Primary may
 adapt the small call site if compatible, or defer it.
 
-Assess the final published terminal-build evidence before claiming maintained
-qualification. Original adjacent purchase/transaction/accounting runners report
+Both terminal build results were inspected before this final recommendation.
+Original adjacent purchase/transaction/accounting runners report
 missing shared link inputs; privately adding an existing recovery-manifest source
 is diagnostic evidence, not a passing unmodified runner. Those shared failures
 remain with their current owner. No competing manifest/transaction repair is
@@ -129,3 +161,18 @@ at the existing qualification boundary. Record imported SHAs and actual results
 in the primary's normal implementation history. Worker build hashes cannot
 qualify a different combined candidate. This review changes neither accounting
 release gates nor actual authority, and does not certify RAM conversion.
+
+## Completion audit for this coordination Goal
+
+| Required review outcome | Inspected evidence and disposition |
+| --- | --- |
+| Verify ownership boundaries | Actual four-file implementation diff and unchanged shared owners; both worker and review checkouts are separate. Complete. |
+| Inspect delivered implementation and executed verification | Before/after source and actual capture/callers examined; independent published collection/policy runners exit 0; worker source hashes, sanitizer execution results and both terminal builds inspected. Complete at the stated component/build scope. |
+| Resolve handoff gaps | Final remote handoff ce3b6310 replaces running-build statements with terminal results, pins, reproducible diagnostic commands and explicit unrun runtime scope. Complete. |
+| Identify compatible bundle and import prerequisites | Production/test commit 3d2b85b06, base/preimage and precise file boundary recorded; read-only patch check passes against published accounting candidate 27ba5cd56. Unpublished primary changes require its own compatibility check. Complete. |
+| Explain preserved behavior, risks and dependencies | Shared authority/atomicity/custody remain unchanged; added allocation refusal, original adjacent test-link failures and unrun runtime/recovery journeys retained. Complete. |
+| Publish recommendation discoverable by primary | This review is linked from the remote finish plan and delivered as a documentation-only update on the accounting branch; no worker production code is imported here. Final remote commit identity is verified by the coordinator before Goal completion. |
+
+The coordinator's deliverable is the reviewed recommendation. Primary adoption,
+combined-candidate qualification and whole-game domain separation remain outside
+this Goal's completion claim; their outstanding status is explicitly preserved.
