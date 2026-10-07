@@ -92,6 +92,27 @@ gates are outside this guidance. Existing required changes to those areas remain
 owned by their current plan. Preserve inactive behavior, wallet-root exclusions,
 the declined inactive spell-path change and all current acceptance requirements.
 
+## Continuing project coordination supersedes finite closure - 2026-10-07
+
+The user has authorized a new actual continuing coordinator Goal and continuing
+Goals for both existing architecture and quest-prep chats. Completed R0/R1/R2
+and quest deliveries remain checkpoints. They do not finish coordination or
+stop monitoring while the primary accounting implementation remains unfinished.
+[Continuing project charter and initial queue](domain-separation/CONTINUING_PROJECT_COORDINATION.md)
+sets the finish line at observable completion of required Plans1-5 implementation
+and integrated qualification, original applicable R1-R8/backend/gameplay/recovery
+requirements, resolved required blockers and a published owner completion
+disposition. No deployment/activation or extra primary release gate is added.
+
+Both isolated workstreams first reconcile their bundles and native prerequisites
+against the new maintained producer candidate, then deliver the next useful
+independent preparation extraction or genuine quest acceptance case. They must
+maintain an evolving queue and exact owner dependencies; current batch completion
+or temporary lack of independent work is not overall completion. The recurring
+monitor stays active until this broader audit passes or the user asks to stop it.
+Preserve completed work, primary ownership, original proof and normal adoption
+boundaries. The prior finite charter/audit below are historical checkpoint records.
+
 ## Continuing architecture and quest-prep coordination - 2026-10-07
 
 The user authorizes the coordinator to keep both **Separate accounting domain

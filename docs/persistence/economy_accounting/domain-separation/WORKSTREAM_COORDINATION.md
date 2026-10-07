@@ -1,5 +1,13 @@
 # Architecture and quest-prep coordination - 2026-10-07
 
+**Current lifecycle supersession:** the user requested continuing coordination
+after the finite checkpoint completed. The actual new coordinator Goal is ACTIVE;
+[Continuing project coordination](CONTINUING_PROJECT_COORDINATION.md) now governs
+both workers, an evolving useful queue and the broader primary accounting finish
+line. Finished batches do not complete coordination or pause the heartbeat. The
+following finite milestone charter and closure rules are historical; completed
+code, reviews and their proof limits remain preserved.
+
 The user authorizes the coordinator in **Estimate RAM-Authoritative GameState**
 to monitor and guide both **Separate accounting domain preparation**
 (`01a11627-5fc2-7960-b5f1-f38e5183a822`) and **Prepare quest accounting fixtures**
