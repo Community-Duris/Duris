@@ -1,5 +1,75 @@
 # Shared producer build and first full-tree component qualification
 
+## Current producer qualification — 2026-10-07
+
+[Final source 30837d50](AUCTION_NATIVE_ADMISSION_CAP_QUALIFICATION_2026-10-07.md)
+passes both strict 753-provider production builds, nine contracts and the
+original native admission-boundary regression. Selected LIST/CLAIM accounting
+nodes above 3,000 refuse before domain effects; structural/read-only capacity
+remains 4,096. The incoming allowlist and inactive/spell boundaries stay exact.
+This source is private; maintained producer integration remains open.
+
+Both actual MySQL and MariaDB warm/full-cold/owned-shutdown journeys now pass
+on the same actual ELF with the genuine production lifecycle teardown guard.
+MySQL's genuine origin-INSERT fault exits 17 as expected and retains one phase-2
+journal record. Its subsequent pending-journal cold case hits the unchanged
+60-second deadline (exit 124, 60.024 seconds); no recovery stage/stack is yet
+observed. MariaDB fault cases remain unrun under original fail-fast order.
+Primary authenticates 123 evidence files, 1,779 native archive members and exact
+owned cleanup. Normal cold success does not establish fault recovery completion.
+
+The full-tree auction component now applies LIST operation 151 (outcome 0,
+error 0, 320 result bytes), then fails the original early-finalize rejection
+assertion. The actual early-finalize errno is unobserved. Source review finds
+the legacy descendant refusal and v1-only non-item execution route; complete
+native-v2 historical/current-cut proof integration is in progress. Primary
+authenticates 98 sealed files, 542 native members and cleanup. Neither this
+component model nor native boundary tests establish physical player journeys.
+
+Published reader parent 66a3deee3 contains separately qualified SQL refusal
+fairness, flatfile pages and maximum lifecycle audit budget. Unrelated SHOP
+edits remain. Plans 1–4, complete R1–R8 and release remain unfinished.
+
+## Latest successors
+
+These results supersede the historical 4f8332ce build and first fixture refusal
+below. Private source 11cfc4a0 passes both strict original 753-provider builds
+and nine contracts after an actual dispatcher-entry acknowledgement fixes the
+startup race. Source 0a8de44d passes both profiles/contracts after retaining the
+original v2 auction command. Corrected source 4e4efd71 preserves the incoming
+allowlist and restores the accepted 3,000-event cap; both profiles/contracts pass.
+
+The 4e4efd71 build handoff SHA256 is
+`6149f877fe4ca1881af1521f73586006f7102a84996cc8020c769ccd26dd6440`;
+source archive is `4e4efd71339adfea0f3e3ee851f6140781139bec189fafb3acb91d392fe0b1e5`,
+manifest `cf1f62a68bdb4ffd4e05e62a78be92dead30fffe44748a11f766f67066279c1d`.
+Original MariaDB Make takes273.30 seconds (216 fresh/537 reused); flatfile takes
+265.49 seconds (214 fresh/539 reused). Header changes invalidate the actual
+recorded dependency closure. Both fresh full753 links, nine contracts, all23
+artifacts, all6367 source members and both1508 caches are authenticated.
+Owned containers/volumes are absent after export/seal. Protected evidence:
+`bin/tests/native-auction-contract-guards-major-production-primary-20261006-v2/`.
+The final308 early-admission successor remains pending; it changes only two C
+providers and preserves the 4,096 structural wire/forest bound.
+
+Actual 11cf cold readback passes world/cash/fullstock/admission before its
+unchanged owned-shutdown guard refuses. Production acquires lifecycle ownership
+before quiescence/drains; the fixture omitted that prerequisite. Primary verifies
+all47 sealed artifacts,507 native archive members and cleanup absence:
+`bin/tests/native-full-cold-dispatcher-readiness-primary-20261006/combined-1/`,
+handoff `9dd1cc9a7960575bdc7279dc736fa6477501585298fe656f0fbb15eb8a84925e`.
+The additive teardown successor is reviewed, not run. Original deadlines and
+assertions remain. This partial cold success does not promote full recovery.
+
+The genuine catalog/journal-prerequisite auction fixture reaches operation151
+with outcome2/EINVAL22 and zero result bytes. The old conversion to v1 retained
+descendant fences rejected by the legacy decoder; the private command-retention
+repair leaves the original v2 command available to the existing native path.
+Full component SQL retry and original publication/recovery cases remain pending.
+Its physical-gameplay and production-route qualification stay zero.
+
+## Historical 4f build and setup failure
+
 Date: 2026-10-06. Maintained parent: `79df6775b92c50d9a423397e477b5e24b9e3c59d`.
 The tested producer source is a separate private candidate, not this maintained
 parent. No production service, player connection or activation is involved.

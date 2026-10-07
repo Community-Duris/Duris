@@ -307,9 +307,11 @@ int main(int argc, char **argv)
 			std::cout << "]}\n";
 			return 0;
 		}
-		if (argc == 6 && std::string(argv[1]) == "--economic-evidence-page")
+		if (argc == 6 && (std::string(argv[1]) == "--economic-evidence-page" ||
+				  std::string(argv[1]) == "--economic-lifecycle-page"))
 		{
 			using namespace restore_economic_authority;
+			const bool lifecycle = std::string(argv[1]) == "--economic-lifecycle-page";
 			const std::string bucket_text = argv[3], after_text = argv[4],
 					  ceiling_text = argv[5];
 			unsigned bucket = 0;
@@ -329,8 +331,11 @@ int main(int argc, char **argv)
 				return value;
 			};
 			audit_budget budget;
-			budget.remaining_bytes = 32 * 1024 * 1024;
-			budget.remaining_files = 64;
+			if (!lifecycle)
+			{
+				budget.remaining_bytes = 32 * 1024 * 1024;
+				budget.remaining_files = 64;
+			}
 			scoped_audit_budget scope(budget);
 			authority_read_lock lock(argv[2]);
 			const auto evidence = std::filesystem::path(argv[2]) / "economic-evidence";
@@ -342,9 +347,13 @@ int main(int argc, char **argv)
 				std::cout << "{\"initialized\":false}\n";
 				return 0;
 			}
-			auto result = restore_economic_records::checker(argv[2]).page(
-				bucket, decode(after_text), decode(ceiling_text),
-				ceiling_text != "-");
+			restore_economic_records::checker reader(argv[2]);
+			auto result = lifecycle ? reader.lifecycle_page(bucket, decode(after_text),
+									decode(ceiling_text),
+									ceiling_text != "-") :
+						  reader.page(bucket, decode(after_text),
+							      decode(ceiling_text),
+							      ceiling_text != "-");
 			lock.finish();
 			audit_checkpoint();
 			auto hex = [](const auto &value)
@@ -358,7 +367,8 @@ int main(int argc, char **argv)
 				<< ",\"verified\":" << result.verified
 				<< ",\"bucket_rows\":" << result.bucket_rows
 				<< ",\"range_exhausted\":" << (result.exhausted ? "true" : "false")
-				<< ",\"invalid_records\":[";
+				<< (lifecycle ? ",\"invalid_receipts\":[" :
+						",\"invalid_records\":[");
 			for (size_t i = 0; i < result.invalid_records.size(); ++i)
 				std::cout << (i ? "," : "") << '"' << hex(result.invalid_records[i])
 					  << '"';
