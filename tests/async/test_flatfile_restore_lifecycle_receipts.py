@@ -16,7 +16,7 @@ import subprocess
 import sys
 import tempfile
 
-from test_flatfile_restore_economic_authority import ROOT, change, inventory, rehash, check_baseline_control_pages
+from test_flatfile_restore_economic_authority import ROOT, change, inventory, rehash, check_baseline_control_pages, check_baseline_history_pages
 from test_flatfile_restore_baseline_markers import fingerprint
 from native_build_artifacts import build_native
 from test_flatfile_accounting_store import SOURCES
@@ -390,6 +390,32 @@ int main(int argc, char **argv) {
     try {
         if (argc == 3) {
             const auto mode = std::string(argv[1]);
+            if (mode.starts_with("history-")) {
+                using namespace restore_economic_authority;
+                authority_read_lock lock(argv[2]);
+                const auto context = restore_economic_records::checker(argv[2]).history_context();
+                audit_budget budget;
+                const auto files = budget.remaining_files, bytes = budget.remaining_bytes, entries = budget.remaining_entries;
+                if (mode == "history-files") budget.remaining_files = 1;
+                else if (mode == "history-bytes") budget.remaining_bytes = 1;
+                else if (mode == "history-deadline") budget.deadline = std::chrono::steady_clock::now();
+                scoped_audit_budget scope(budget);
+                restore_economic_records::checker reader(argv[2]);
+                if (mode == "history-control-budget") reader.history_control(context.books.begin()->first, context.cut);
+                else if (mode == "history-page-budget") {
+                    size_t bucket = 0;
+                    while (bucket < buckets && !std::filesystem::exists(std::filesystem::path(argv[2]) / "economic-evidence" / ("bucket-" + restore_economic_baseline::hex(std::array<uint8_t,1>{static_cast<uint8_t>(bucket)}) + ".eai"))) ++bucket;
+                    need(bucket < buckets);
+                    reader.history_page(bucket, {}, context.cut);
+                } else {
+                    need(mode == "history-context-budget" || mode == "history-files" || mode == "history-bytes" || mode == "history-deadline");
+                    reader.history_context();
+                }
+                lock.finish(); budget.checkpoint();
+                std::cout << files << " " << bytes << " " << entries << " " << files-budget.remaining_files
+                          << " " << bytes-budget.remaining_bytes << " " << entries-budget.remaining_entries << "\\n";
+                return 0;
+            }
             if (mode != "maximum-budget" && !mode.starts_with("lifecycle-") && !mode.starts_with("baseline-")) return 2;
             restore_economic_authority::audit_budget budget;
             const auto files = budget.remaining_files, bytes = budget.remaining_bytes,
@@ -724,6 +750,7 @@ int main(int argc, char **argv) {
             check(label, mixed, unsafe=unsafe)
     page_report = check_lifecycle_pages(binary, fixture, audit, artifacts, environment)
     baseline_control_pages = check_baseline_control_pages(binary, fixture, audit, environment, artifacts, lifecycle=True)
+    baseline_history_pages = check_baseline_history_pages(binary, fixture, audit, environment, artifacts, lifecycle=True)
     assert fingerprint(ROOT / "src") == native_inputs, "native source changed during test"
     if args.legacy_artifacts:
         assert fingerprint(args.legacy_artifacts) == legacy_inputs, "legacy fixture artifacts changed"
@@ -734,6 +761,7 @@ int main(int argc, char **argv) {
               "accepted": sum(row["accepted"] for row in results), "skips": 0,
               "lifecycle_pages": page_report,
               "baseline_control_pages": baseline_control_pages,
+              "baseline_history_pages": baseline_history_pages,
               "previous_reader_compatibility_refusals": red, "legacy_inputs": legacy_inputs,
               "source_capture_executed": False,
               "lifecycle_install_executed": False, "activation_executed": False,

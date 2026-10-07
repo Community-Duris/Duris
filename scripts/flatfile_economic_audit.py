@@ -267,12 +267,17 @@ def main():
     parser.add_argument("--state-root", type=Path, required=True)
     parser.add_argument("--progress", type=Path, required=True)
     parser.add_argument("--qualifier", type=Path, default=ROOT / "bin/tools/qualify_flatfile_restore")
-    parser.add_argument("--scope", choices=("retained-roots", "authority-links", "lifecycle-receipts", "baseline-controls"), default="retained-roots")
+    parser.add_argument("--scope", choices=("retained-roots", "authority-links", "lifecycle-receipts", "baseline-controls", "baseline-history"), default="retained-roots")
     args = parser.parse_args()
     try:
         require(args.state_root.is_absolute() and args.state_root.is_dir() and args.qualifier.is_file())
         root, qualifier = args.state_root.resolve(), args.qualifier.resolve()
         path = checkpoint_path(args.progress, root)
+        if args.scope == "baseline-history":
+            import flatfile_baseline_history_audit as history
+            report, updated = history.run(root, qualifier, path)
+            print(json.dumps(report, sort_keys=True, separators=(",", ":")))
+            return 1 if updated["total_findings"] else 0
         source, now = source_digest(root, qualifier), time.time()
         authority_links = args.scope == "authority-links"
         lifecycle_receipts = args.scope == "lifecycle-receipts"

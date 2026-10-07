@@ -4,6 +4,7 @@
 #include "qualify_flatfile_economic_baseline.h"
 #include "qualify_flatfile_economic_lifecycle.h"
 #include <bit>
+#include <optional>
 #include <tuple>
 
 namespace restore_economic_records
@@ -374,6 +375,31 @@ struct root_page
 	bool exhausted = false;
 	std::vector<identity> invalid_records;
 };
+struct baseline_history_context
+{
+	identity lineage = {};
+	digest cut = {};
+	std::vector<epoch_marker> catalog;
+	std::map<identity, restore_economic_baseline::book_control> books;
+	size_t legacy_unknown_epochs = 0, expected_roots = 0;
+};
+struct baseline_history_control
+{
+	identity lineage = {}, epoch = {}, terminal = {};
+	digest cut = {};
+	uint64_t revision = 0, reservations = 0;
+};
+struct baseline_history_root
+{
+	identity epoch = {}, operation = {};
+	uint64_t revision = 0, reservations = 0, book_reservations = 0;
+	bool terminal = false;
+};
+struct baseline_history_page
+{
+	root_page page;
+	std::optional<baseline_history_root> baseline;
+};
 class checker
 {
 	std::filesystem::path root, directory;
@@ -541,7 +567,7 @@ class checker
 			claimed_events.push_back(key);
 		}
 	}
-	std::vector<entry> index(size_t bucket)
+	std::vector<entry> index(size_t bucket, digest *body_digest = nullptr)
 	{
 		auto name = filename("bucket-", bucket, ".eai");
 		expected_files.insert(name);
@@ -567,6 +593,8 @@ class checker
 		}
 		in.done();
 		need(total == stored_total);
+		if (body_digest)
+			*body_digest = hash(body);
 		return entries;
 	}
 	void bucket(size_t bucket)
@@ -655,6 +683,157 @@ class checker
 		, baselines(path)
 		, lifecycles(path)
 	{
+	}
+	// Bind every history page to the same authenticated control/catalog, original
+	// common indexes and required heads. Segments, witnesses and reservation shards
+	// remain checksum-bound by those original bytes. No directory walk or mutation.
+	baseline_history_context history_context()
+	{
+		restore_economic_authority::checker authority(root);
+		authority.begin_page();
+		auto control = frame(directory, "authority.eal", "DURECA1");
+		need(control.size() == 16552);
+		std::copy_n(control.begin(), 16, lineage.begin());
+		digest catalog_digest;
+		std::copy_n(control.begin() + 104, 32, catalog_digest.begin());
+		auto catalog = restore_economic_authority::catalog(directory, catalog_digest);
+		need(catalog.lineage == lineage);
+		baseline_history_context result;
+		result.lineage = lineage;
+		result.catalog = catalog.entries;
+		bytes cut;
+		restore_economic_baseline::append(cut, lineage);
+		restore_economic_baseline::append(cut, hash(control));
+		for (size_t bucket = 0; bucket < buckets; ++bucket)
+		{
+			put(cut, bucket, 2);
+			digest checksum = {};
+			if (control[16520 + bucket / 8] & (1u << (bucket % 8)))
+				(void)index(bucket, &checksum);
+			restore_economic_baseline::append(cut, checksum);
+		}
+		for (const auto &marker : catalog.entries)
+		{
+			epochs.insert(marker.epoch);
+			if (marker.initialization == baseline_initialization::legacy_unknown)
+				++result.legacy_unknown_epochs;
+			if (marker.initialization != baseline_initialization::initialized)
+				continue;
+			digest checksum;
+			auto book = baselines.control(lineage, marker, &checksum);
+			result.expected_roots += book.revision;
+			need(result.expected_roots <= buckets * bucket_capacity);
+			need(result.books.emplace(marker.epoch, book).second);
+			restore_economic_baseline::append(cut, marker.epoch);
+			restore_economic_baseline::append(cut, checksum);
+		}
+		result.cut = hash(cut);
+		return result;
+	}
+	baseline_history_control history_control(const identity &epoch, const digest &cut)
+	{
+		const auto context = history_context();
+		need(context.cut == cut && context.books.contains(epoch));
+		const auto &book = context.books.at(epoch);
+		baseline_history_control result{ context.lineage, epoch,	 book.terminal,
+						 context.cut,	  book.revision, 0 };
+		for (size_t slot = 0; slot < book.checksums.size(); ++slot)
+		{
+			const auto actual =
+				baselines.reservations(lineage, epoch, slot, book.checksums[slot]);
+			need(book.revision || actual.empty());
+			result.reservations += actual.size();
+		}
+		return result;
+	}
+	baseline_history_page history_page(size_t bucket, const identity &after, const digest &cut)
+	{
+		need(bucket < buckets);
+		const auto context = history_context();
+		need(context.cut == cut);
+		baseline_history_page result;
+		auto &page = result.page;
+		page.lineage = lineage;
+		page.authority_body = context.cut;
+		page.cursor = after;
+		auto control = frame(directory, "authority.eal", "DURECA1");
+		std::vector<entry> entries;
+		if (control[16520 + bucket / 8] & (1u << (bucket % 8)))
+			entries = index(bucket);
+		need(!nonzero(after) ||
+		     std::any_of(entries.begin(), entries.end(),
+				 [&](const auto &row) { return row.operation == after; }));
+		page.bucket_rows = entries.size();
+		page.ceiling = entries.empty() ? identity{} : entries.back().operation;
+		const auto found = std::find_if(entries.begin(), entries.end(),
+						[&](const auto &row)
+						{ return row.operation > after; });
+		if (found == entries.end())
+		{
+			page.exhausted = true;
+			return result;
+		}
+		try
+		{
+			checker selected(root);
+			selected.lineage = lineage;
+			selected.epochs = epochs;
+			auto segments = selected.selected_segments(bucket, entries, { *found });
+			selected.record(std::span<const uint8_t>(segments.at(found->segment))
+						.subspan(32 + found->offset, found->size),
+					found->operation);
+			const auto &observed = selected.baselines.observed_books();
+			if (!observed.empty())
+			{
+				need(observed.size() == 1 && observed.begin()->second.size() == 1);
+				const auto &epoch = observed.begin()->first;
+				const auto &entry = observed.begin()->second.front();
+				need(context.books.contains(epoch));
+				const auto &book = context.books.at(epoch);
+				need(entry.revision <= book.revision &&
+				     (entry.operation != book.terminal ||
+				      entry.revision == book.revision));
+				const auto expected = selected.baselines.expected_reservations(
+					lineage, epoch, book.opening, observed.begin()->second);
+				baseline_history_root original{ epoch,
+								entry.operation,
+								entry.revision,
+								0,
+								0,
+								entry.operation == book.terminal };
+				for (size_t slot = 0; slot < expected.size(); ++slot)
+				{
+					const auto actual = selected.baselines.reservations(
+						lineage, epoch, slot, book.checksums[slot]);
+					original.book_reservations += actual.size();
+					original.reservations += expected[slot].size();
+					for (const auto &member : expected[slot])
+					{
+						const auto saved = std::lower_bound(
+							actual.begin(), actual.end(), member,
+							restore_economic_baseline::less);
+						need(saved != actual.end() &&
+						     saved->kind == member.kind &&
+						     saved->id == member.id &&
+						     saved->operation == entry.operation);
+					}
+				}
+				result.baseline = original;
+			}
+			++page.verified;
+		}
+		catch (const audit_budget_refused &)
+		{
+			throw;
+		}
+		catch (const std::runtime_error &)
+		{
+			page.invalid_records.push_back(found->operation);
+		}
+		page.cursor = found->operation;
+		page.rows = 1;
+		page.exhausted = std::next(found) == entries.end();
+		return result;
 	}
 	root_page page(size_t bucket, const identity &after, const identity &ceiling,
 		       bool ceiling_known)

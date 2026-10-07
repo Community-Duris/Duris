@@ -1076,6 +1076,65 @@ its admitted budget. Reports retain `baseline_controls_closed`,
 `orphan_namespace_closed`, `native_holdings_compared` and `release_qualified`
 as false. This scope supplies bounded control/reference evidence only.
 
+Use `--scope baseline-history` with a separate external private checkpoint to
+verify the complete declared history of catalogue-required initialized books:
+
+```bash
+python3 scripts/flatfile_economic_audit.py \
+  --state-root /absolute/restored-state \
+  --qualifier /absolute/bin/tools/qualify_flatfile_restore \
+  --progress /absolute/private-operator-directory/baseline-history-progress.json \
+  --scope baseline-history
+```
+
+This scope first authenticates the authority/catalogue, every initialized common
+index and every required initialized book head. Their original bodies bind a
+fixed SHA256 evidence cut. Each subsequent page recomputes that cut under the
+existing read-only authority lock and refuses a changed cut or pending journal.
+Heads bind reservation shards; indexes bind original records, which bind the
+original witnesses. The scanner never invokes mutation or corrects findings.
+An operator must use a new checkpoint to inspect a changed source cut.
+
+The `context` phase collects at most 4,096 required books and checks that their
+aggregate declared revisions fit the native 1,048,576-root capacity. The
+`controls` phase checks one book's 16 original reservation shards per invocation,
+including revision-zero books, and records its exact membership count. The
+`roots` phase reads at most one original common record per invocation, rotating
+through 256 buckets. It checks original command/plan semantics, baseline witness
+effects, book opening/terminal constraints and every root's exact membership in
+the saved shards. An exact per-book revision bitmap detects duplicate and missing
+revisions, including lost empty batches with no reservation references. Closure
+requires consecutive revisions 1 through the head revision, exact root count,
+the original terminal root and exact reconstructed reservation coverage.
+
+Native commands are `--economic-baseline-history-context ROOT CUT`,
+`--economic-baseline-history-control ROOT EPOCH CUT` and
+`--economic-baseline-history-page ROOT BUCKET AFTER CUT`. `-` establishes the
+initial context cut or starts a root cursor; other cuts are lowercase 64-digit
+SHA256 hex and identities are lowercase nonzero 32-digit hex. Every command
+retains the 16,384-read/128 MiB/8,192-entry/30-second cooperative budget. The
+Python subprocess timeout remains 45 seconds. A refused root page rotates while
+preserving its cursor. A refused control retains a finding and cannot qualify
+that book. Completed buckets freeze within this immutable cut.
+
+The private `flatfile_economic_baseline_history_progress_v1` checkpoint has a
+2 MiB bound, exclusive owner lock, atomic replacement and source binding to the
+root path, executable, operator modules and progress helper. Findings remain
+sticky and bounded to 32 retained identities, with a cumulative finding count.
+The report is `flatfile_economic_baseline_history_page_v1`, with scope
+`required_initialized_baseline_history`. `historical_range_complete` records
+finished traversal; `known_initialized_baseline_books_closed` additionally
+requires every control, record and history invariant to pass without findings.
+Later invocations reauthenticate even a closed checkpoint's evidence cut.
+
+This positive field covers the known initialized books only. The report counts
+legacy unknown epochs without inferring their provenance. Orphan filenames,
+unknown-initialization books, current native holdings, complete source history,
+gameplay and release evidence require separate checks. `complete`,
+`consistent_entire_sweep`, `baseline_books_closed`, `orphan_namespace_closed`,
+`native_holdings_compared` and `release_qualified` remain false. These pages
+grant no activation or repair authority.
+
 The isolated native flatfile restore qualifier validates every retained
 `domains/quest-mobile-native-<id>.qmn` image after authority-bundle recovery, in
 both state preflight and final qualification. It requires a canonical nonzero

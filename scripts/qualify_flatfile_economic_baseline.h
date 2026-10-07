@@ -166,7 +166,8 @@ class checker
 		: directory(path / "economic-evidence")
 	{
 	}
-	book_control control(const identity &lineage, const epoch_marker &marker) const
+	book_control control(const identity &lineage, const epoch_marker &marker,
+			     digest *body_digest = nullptr) const
 	{
 		need(marker.initialization != baseline_initialization::never_initialized);
 		auto encoded = frame(directory, prefix(lineage, marker.epoch) + "head.ebc",
@@ -189,6 +190,8 @@ class checker
 			need(nonzero(checksum));
 		}
 		in.done();
+		if (body_digest)
+			*body_digest = hash(encoded);
 		return result;
 	}
 	std::vector<reservation> reservations(const identity &lineage, const identity &epoch,
@@ -223,6 +226,7 @@ class checker
 		need(books.size() == 1 && books.contains(epoch));
 		return books.at(epoch);
 	}
+	const std::map<identity, std::vector<root>> &observed_books() const { return books; }
 	std::array<std::vector<reservation>, 16>
 	expected_reservations(const identity &lineage, const identity &epoch,
 			      std::span<const uint8_t> opening,

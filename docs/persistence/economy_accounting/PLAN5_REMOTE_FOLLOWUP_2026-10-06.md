@@ -997,3 +997,45 @@ reconstruction, R7/R8, genuine gameplay/faults, combined backup/restore/retentio
 private producer/cold cases and release-host growth/memory/latency/writer gates
 remain open. No slice blocker, activation or production change. Wallet-root
 exclusions, inactive behavior and the declined inactive spell change remain.
+
+
+## Durable initialized baseline history — 2026-10-07
+
+Continuation stays on remote `codex/accounting-plan5`, base
+`7962dd8ad1cefd55675b46ec34fbc3b693ac3f11`, without losing any of the seven earlier
+branch tips or their follow-ups. Protected delivery binds result/remote/clean
+source; this report and
+`PLAN5_FLATFILE_BASELINE_HISTORY_QUALIFICATION_2026-10-07.md` are the curator packet.
+
+Native evidence establishes the empty-root gap: the whole independent reader
+refuses a lost earlier empty root while the control/reference page still passes.
+The new durable `baseline-history` scope proves dense declared revisions,
+root/terminal count and exact witness-to-shard membership coverage for known
+initialized books. It binds every page to the same authenticated cut and
+reauthenticates closed progress. Earlier findings remain sticky; no audit
+correction, shared contract/schema/coordinator/producer/registry/activation or
+registration change/request is made. The private operator formats are owned.
+The fixture deliberately adds native empty-history modes; server code stays exact.
+
+Final archive `c674e01e957070ca67402fcdf3603fc746585dd83d62f1e4bb536ca903a15983` passes all original 20/367
+native authority results, 131 lifecycle cases, 46 lifecycle pages, 69 markers,
+67 native/source/mobile canonical SQL methods and new 51 authority / 38 lifecycle
+history checks, with zero skips. Both fresh SQL backends preserve complete table
+inventories under SELECT-only roles. Both production builds pass with 740 fresh
+objects, no reused objects and no warnings/errors; the earlier SQL archive differs
+only in test fixture selection/description, with every production input exact.
+Contracts, 55 coverage checks, inventory and four-file formatting pass; release
+still refuses missing executable writer evidence. All failed and superseded
+observations remain preserved with their actual terminal states.
+
+Seal `flatfile-baseline-history-seal-01-20261007/evidence.json` has SHA256
+`de3dce3352f0396384cd866ab702c4fd7ef619496b7dc32650255854fc6dedd9`, 66,130 artifacts / 12,892,787,552 bytes.
+The primary refresh remains aa252cd81, a distinct native candidate. The shared
+notebook is maintained locally by the primary and remains nonblocking; notebook
+application or acknowledgement is not claimed, and no cross-chat message is sent.
+Known initialized history closure is the only new positive scope. Full orphan,
+unknown-initialization/current-native/source closure, genuine gameplay/faults,
+combined backup/restore/retention, private producer/cold cases, release-host
+growth/memory/latency/writer qualification and full R7/R8/release remain open.
+Wallet-root exclusions, inactive behavior and the declined inactive spell change
+remain. No maintained activation or production mutation occurs.
