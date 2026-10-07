@@ -1,5 +1,13 @@
 # Double-entry economy: remaining requirements
 
+## Captured-item reader interface handed off — 2026-10-06
+
+[Exact producer contracts](CAPTURED_ITEM_OPENING_PLAN5_INTERFACE_2026-10-06.md)
+record EBS2/ESN5/EIC2 and unchanged empty-opening behavior. The functions match
+both private candidates byte-for-byte. The auction source-claim fix is queued
+against the maintained branch; full startup and independent digest qualification
+remain open. This handoff does not complete a Plan or release gate.
+
 ## Independent opening-policy reader integrated — 2026-10-06
 
 [Primary integration](PLAN5_OPENING_POLICY_PID_PRIMARY_INTEGRATION_2026-10-06.md)
