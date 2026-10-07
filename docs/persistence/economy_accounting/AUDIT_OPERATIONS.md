@@ -999,6 +999,13 @@ do not silently reuse a checkpoint bound to another source. The checkpoint
 lock, safe atomic update, future-timestamp refusal and original witness/receipt
 checks remain. Native economic evidence is read-only.
 
+For every flatfile page scope, `consistent_page` is true only when the current
+page completed without refusal and every selected record, link or receipt
+verified. A semantic finding makes this field false even when the native page
+returned normally. A later healthy page can report `consistent_page=true` while
+the checkpoint retains earlier findings and the CLI continues to exit 1.
+This field does not assert consistency of the entire sweep.
+
 Pages report partial coverage: complete/consistent-entire-sweep/release and
 holdings/baseline/orphan/lifecycle closure flags remain false. A range count
 or zero findings does not qualify complete accounting or release.

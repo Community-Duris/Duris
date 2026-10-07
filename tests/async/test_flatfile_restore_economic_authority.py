@@ -275,9 +275,11 @@ def check_root_pages(binary, fixture, environment, build):
 
         first = json.loads(cli().stdout)
         assert first["bucket"] == 0 and first["next_bucket"] == 1
+        assert first["consistent_page"] is True
         second = json.loads(cli().stdout)
         state = pages.progress_io.load(progress, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
         assert second["bucket"] == 1 and second["examined_roots"] == 2
+        assert second["consistent_page"] is True
         assert state["buckets"][1]["cursor"].endswith("00000004")
         assert state["buckets"][1]["ceiling"].endswith("00000006")
         assert json.loads(cli().stdout)["bucket"] == 2
@@ -316,11 +318,13 @@ def check_root_pages(binary, fixture, environment, build):
         refused = json.loads(cli(False).stdout)
         stored = pages.progress_io.load(progress, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
         assert refused["bucket"] == 2 and refused["page_refused"] and refused["next_bucket"] == 3
+        assert refused["consistent_page"] is False
         assert stored["buckets"][2] == state["buckets"][2]
         (evidence / "bucket-02.eai").write_bytes(appended_before["bucket-02.eai"])
         subsequent = json.loads(cli(False).stdout)
         assert subsequent["bucket"] == 3 and subsequent["examined_roots"] == 0
         assert subsequent["total_finding_count"] == 1 and not subsequent["page_refused"]
+        assert subsequent["consistent_page"] is True
         assert "operation_id" not in subsequent
         cases += 2
         checkpoint = progress.read_bytes()
@@ -329,6 +333,7 @@ def check_root_pages(binary, fixture, environment, build):
                 pages.AuditError, "flatfile audit progress"), source, time.time())
             report, refused_state = pages.scan(root, binary, state)
         assert report["page_refused"] and refused_state["buckets"] == state["buckets"]
+        assert report["consistent_page"] is False
         assert progress.read_bytes() == checkpoint
         with mock.patch.object(pages.progress_io.os, "replace", side_effect=OSError("private interrupted publication")):
             try:
@@ -404,6 +409,7 @@ def check_root_pages(binary, fixture, environment, build):
         assert json.loads(cli(path=semantic_progress).stdout)["bucket"] == 0
         semantic = json.loads(cli(False, semantic_progress).stdout)
         assert semantic["scope"] == "retained_record_page" and semantic["semantically_checked_records"] == 1
+        assert semantic["consistent_page"] is False and not semantic["page_refused"]
         assert not any(semantic[key] for key in ("complete", "release_qualified", "baseline_books_closed",
             "lifecycle_receipts_closed", "orphan_namespace_closed", "native_holdings_compared"))
         semantic_state = pages.progress_io.load(semantic_progress, pages.MAX_PROGRESS_BYTES,
@@ -557,6 +563,7 @@ def check_authority_pages(binary, fixture, environment, build):
         assert cli()["bucket"] == 0
         persisted = cli()
         assert persisted["direction"] == "mapping" and persisted["examined_links"] == 2
+        assert persisted["consistent_page"] is True
         assert persisted["bucket"] == 1 and not persisted["range_exhausted"]
         cases += 2
 
@@ -622,10 +629,13 @@ def check_authority_pages(binary, fixture, environment, build):
         pages.progress_io.save(progress, saved, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
         retained = cli(False)
         assert retained["total_finding_count"] == 1 and retained["retained_finding_count"] == 1
+        assert retained["consistent_page"] is False and not retained["page_refused"]
         assert load()["findings"][0] == dict(bucket=3, direction="mapping", key=format(3,"016x"), code="flatfile_authority_link_invalid")
         for name, data in before.items():
             (evidence / name).write_bytes(data)
-        assert cli(False)["bucket"] == 4
+        subsequent = cli(False)
+        assert subsequent["bucket"] == 4 and subsequent["consistent_page"] is True
+        assert subsequent["total_finding_count"] == 1
         cases += 4
 
         saved = load();saved["rotation"] = 1
@@ -635,6 +645,7 @@ def check_authority_pages(binary, fixture, environment, build):
         checkpoint = load()["buckets"][1].copy()
         refused = cli(False)
         assert refused["page_refused"] and refused["next_bucket"] == 2
+        assert refused["consistent_page"] is False
         assert load()["buckets"][1] == checkpoint
         (evidence / "mapping-01.eam").write_bytes(before["mapping-01.eam"])
         assert cli(False)["bucket"] == 2
@@ -644,6 +655,7 @@ def check_authority_pages(binary, fixture, environment, build):
         with mock.patch.object(pages.subprocess, "run", side_effect=subprocess.TimeoutExpired("qualifier",45)):
             report, timed_out = pages.scan(root, binary, saved, authority_links=True)
         assert report["page_refused"] and timed_out["rotation"] == 2 and timed_out["buckets"][1] == saved["buckets"][1]
+        assert report["consistent_page"] is False
         original = progress.read_bytes()
         with mock.patch.object(pages.progress_io.os, "replace", side_effect=OSError("interrupted")):
             try:

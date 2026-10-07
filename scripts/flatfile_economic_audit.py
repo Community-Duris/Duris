@@ -232,7 +232,7 @@ def scan(root, qualifier, previous, *, now=None, authority_links=False, lifecycl
                   total_roots_observed=state["total_rows"], total_finding_count=state["total_findings"],
                   retained_finding_count=len(state["findings"]), findings_truncated=state["findings_truncated"],
                   elapsed_seconds=now-state["started_at"], complete=False,
-                  consistent_page=not refused, consistent_entire_sweep=False, release_qualified=False,
+                  consistent_page=not refused and not findings, consistent_entire_sweep=False, release_qualified=False,
                   native_holdings_compared=False, baseline_books_closed=False,
                   lifecycle_receipts_closed=False, orphan_namespace_closed=False)
     if authority_links:
