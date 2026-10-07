@@ -1,4 +1,5 @@
 #include "persistence/economic_sql_auction_retained.h"
+#include "persistence/economic_sql_auction_source_claim.h"
 #include "economy/auction_accounting.h"
 #include "economy/auction_settlement_accounting.h"
 #include "economy/auction_repository.h"
@@ -852,6 +853,10 @@ unsigned int economic_sql_auction_verify_retained(MYSQL *db, const critical_comm
 			root += " AND outcome=2 AND canonical_plan IS NULL AND plan_digest IS NULL AND realized_price_copper IS NULL AND account_count=0 AND posting_count=0 AND child_count=0 AND item_event_count=0 AND before_witness_count=0 AND after_witness_count=0";
 			if (!exact_count(db, "economic_accounting_operation", root, 1))
 				return errno ? errno : EILSEQ;
+			const auto source_claim_error =
+				economic_sql_auction_source_claim_verify(db, intent, code);
+			if (source_claim_error)
+				return source_claim_error;
 			for (const char *table :
 			     { "economic_accounting_account_effect",
 			       "economic_accounting_coin_posting", "economic_accounting_child",
@@ -901,8 +906,10 @@ unsigned int economic_sql_auction_verify_retained(MYSQL *db, const critical_comm
 			if (!exact_count(db, "economic_accounting_operation", root, 1) ||
 			    !normalized_financial_rows(db, cmd.operation_id, plan))
 				return errno ? errno : EILSEQ;
-			if (!exact_count(db, "economic_accounting_source_claim", scope, 0))
-				return errno ? errno : EILSEQ;
+			const auto source_claim_error =
+				economic_sql_auction_source_claim_verify(db, intent, code);
+			if (source_claim_error)
+				return source_claim_error;
 			if (!plan.children.empty() || !plan.item_events.empty())
 				return errno ? errno : EILSEQ;
 			if (!exact_count(db, "economic_accounting_child", scope, 0) ||

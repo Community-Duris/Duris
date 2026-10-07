@@ -1,4 +1,5 @@
 #include "persistence/economic_sql_pending_claim_source.h"
+#include "persistence/economic_sql_auction_source_claim.h"
 #include "economy/auction_accounting.h"
 #include "economy/auction_settlement_accounting.h"
 #include "economy/currency_command.h"
@@ -740,7 +741,10 @@ bool endpoint_root(MYSQL *connection, const critical_operation_id &operation,
 			 " AND actor_kind=" +
 			 std::to_string(static_cast<uint8_t>(expected.actor_kind)) +
 			 " AND actor_id=" + std::to_string(expected.actor_id) +
-			 " AND original_operation_id=" + hex(expected.original_operation_id.bytes) +
+			 (critical_operation_id_is_zero(expected.original_operation_id) ?
+				  " AND original_operation_id IS NULL" :
+				  " AND original_operation_id=" +
+					  hex(expected.original_operation_id.bytes)) +
 			 " AND intent_digest=" + hex(expected.intent_digest) +
 			 " AND domain_digest=" + hex(expected.domain_digest) +
 			 " AND accounting_version=" + std::to_string(expected.version) +
@@ -759,6 +763,13 @@ bool endpoint_root(MYSQL *connection, const critical_operation_id &operation,
 	if (!u64(count_cells[0], &count) || count != 1)
 	{
 		errno = EILSEQ;
+		return false;
+	}
+	const auto source_claim_error =
+		economic_sql_auction_source_claim_verify(connection, *intent, 0);
+	if (source_claim_error)
+	{
+		errno = static_cast<int>(source_claim_error);
 		return false;
 	}
 	return normalized_financial_rows(connection, operation, *plan) &&

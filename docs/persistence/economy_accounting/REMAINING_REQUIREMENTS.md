@@ -1,5 +1,22 @@
 # Double-entry economy: remaining requirements
 
+## Current producer qualification — 2026-10-06
+
+[Shared evidence](SHARED_PRODUCER_INTEGRATION_PROGRESS_2026-10-06.md) records
+both original750-provider startup builds and all nine contracts passing on the
+exact private4888 successor. The genuine same-ELF MySQL warm publication passes;
+full cold world recovery immediately refuses at its selected recovery step and
+is under source diagnosis. The original journal-fault journey has not yet run.
+The canonical0062 consumption-fault fixture is committed and published as
+`2ab76dd51`. All18 maintained-source native cases, both canonical audits and
+primary175-artifact authentication pass. The [source-claim production fix](
+AUCTION_SOURCE_CLAIM_PRIMARY_QUALIFICATION_2026-10-06.md) is qualified for this
+milestone: both fresh740-provider builds and nine contracts pass; primary
+authentication verifies all25 build artifacts and original compile/link inputs.
+The next three auction routes and distinct whole-player checkpoint are prepared
+privately; complete native/save/publication/replay and per-UID full-literal
+transport remain unfinished. No whole Plan, activation or release gate is promoted.
+
 ## Captured-item reader interface handed off — 2026-10-06
 
 [Exact producer contracts](CAPTURED_ITEM_OPENING_PLAN5_INTERFACE_2026-10-06.md)

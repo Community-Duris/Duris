@@ -11,7 +11,24 @@ HEAD `b687b199fd0c9185f87d793b3318f2d4b6d06ee2`: archive
 `743d6aafa75d66d9ff64bf493f06dc638c11c3754949a0e8667a8417677132fe`,
 manifest `6022a35007ae32cc9862f349ea2ef69be525daaeec446d59bc5cd1434879140c`.
 Only nine source paths and the standalone fixture change; original schema0–62
-remains exact. Maintained740 builds/native qualification are pending.
+remains exact. These exact inputs are now applied to the maintained worktree;
+unrelated SHOP fixture/report edits are preserved. The current native batch runs
+each of the original nine cases once per engine, with the additive corruption
+controls included. All18 original cases, all18 SELECT source gates, both full
+canonical audits, both complete0062 migration/runtime verifiers, all seven strict
+profiles and the original flat unit pass. Primary authenticates all175 sealed
+artifacts and the exact inverse of the additive money wrapper. Native handoff:
+`d54cdd19e7938cf4a56eb665082d917bcf03375a80604899645e7598a7e3dd50`.
+The test-only fixture repair is published as `2ab76dd51`. The nine production
+source files now pass [complete source-claim component qualification](
+AUCTION_SOURCE_CLAIM_PRIMARY_QUALIFICATION_2026-10-06.md). Both original740
+production builds pass with740 fresh compiles/link each and zero inherited
+objects: MariaDB666.99 seconds; flatfile541.82 seconds. Nine source contracts
+pass. Primary authenticates all25 artifacts, all6339 source members and both
+1482-file caches with actual compiler/link inputs. Build handoff:
+`a3919d83ae675357458e48cd1ecfe6be96c18f47599cc67245ecabc47faad01d`.
+These component proofs do not qualify native gameplay publication, cold
+restoration or complete activation.
 
 The complete-startup394 SQL build exposed a genuine ambiguous digest-helper
 name; its failure is preserved. The minimal four-identifier successor
@@ -20,12 +37,55 @@ passes all nine original contracts but its SQL build exposes the inline
 private constructor's incomplete entry type. That failure is also retained.
 The two-file successor
 `113824dc58cc7a06c69164a78914e35395470b173c8427cb91b5d356e34a5db7`
-moves the same default noexcept constructor after the complete entry; its
-original750-provider builds are queued. Both-engine full-cold and
-genuine retained-journal fault recipes are prepared and authenticated, with
-no runtime result yet. [The exact item-opening reader interface](CAPTURED_ITEM_OPENING_PLAN5_INTERFACE_2026-10-06.md)
+moves the same default noexcept constructor after the complete entry. Its SQL
+build then exposed the missing declaration for the existing game-thread query.
+The one-include successor imports its real `core/prototypes.h` declaration:
+archive `4888ef8554b35825d2e39a3928471ce1fa02de16576c3181c28100d6b54fbbef`,
+manifest `d674bcfe47009bc8b5707d7bae752b4fa63bbbb06908d2294a9963b75c8efd3a`.
+Both original750-provider production builds and all nine contracts now pass.
+Primary independently verifies all23 sealed artifacts, all6361 source bytes/
+modes, both1502-file build caches, dependency identities, actual compiler argv
+and the fresh original links. Build handoff:
+`e7bf7ea3676eadcc6ab35256e9a4c933bfb7bfb5ae3f6b976d3c38d77eddb292`.
+Private evidence remains in `bin/tests/native-complete-boot-event-production-primary-20261006`;
+the primary receipt is `tmp/native-complete-boot-event-declaration-primary-20261006/PRIMARY-BUILD-AUTHENTICATION.json`.
+Primary reauthenticates the final cold recipe612d seal and all15 files, with
+the authentic drivers, provider graph, flags, assertions and deadlines unchanged.
+The original first launch refuses before execution because a readonly packet
+mount lacked its nested evidence mountpoint; a byte-identical owned mount scaffold
+fixes only that launcher boundary. The actual same-ELF MySQL warm publication
+passes; cold recovery exits2 after1.028 seconds at the genuine selected world
+recovery step. This is an immediate refusal, not a deadline expiry. Original
+logs/SQL/journal/native evidence are retained and source diagnosis continues;
+MariaDB and genuine origin-INSERT journal recovery have not run in this batch.
+[The exact item-opening reader interface](CAPTURED_ITEM_OPENING_PLAN5_INTERFACE_2026-10-06.md)
 lets Plan5 qualify source bindings independently. Full Plans2–4, complete
 source/activation ownership and R1–R8 release qualification remain open.
+
+The next auction slice separately prepares listing, item pickup and money pickup
+capture/original-receipt verification. Primary's private shared dispatch selects
+their existing typed transaction owners explicitly instead of sending every
+non-bid action to settlement. Admission remains closed until the complete native
+publication, save reservation and replay/ACK owner is connected and qualified.
+These private source changes have no new native execution claim. The reviewed
+five-file route slice is composed privately as archive
+`8d346e2ba7a9a3d92b8627e4829af904c7fe33a5fa2d84edc637c5435a482571`.
+The primary has implemented/formatted a distinct auction STATUS/EQ/INV checkpoint
+profile for the entire original player forest, including empty inventory, and a
+private friendship to the established complete literal stage. It is uncompiled;
+original-command submission, passive replay, physical publication and guarded ACK
+remain required. Original gameplay already rejects nonempty listed containers
+and supports1..9 independent roots; no new quantity or container restriction is
+introduced. Review establishes a concrete original per-UID value gap: listing
+copies the first root's legacy object blob into every custody row. Complete native
+pickup must retain each selected root's genuine full literal and transport it
+into custody within the same transaction. The module and persistence interfaces
+are being coordinated; no first-template inference qualifies that requirement.
+
+The Plan5 peer is freshly read at `82377e05c`; its resumable canonical audit,
+integer-storage authentication, baseline continuity and orphan candidate work
+remain peer-owned source awaiting primary narrow integration. Its independent
+component/native evidence retains its original source attribution.
 
 ## Independent opening-policy reader integrated — 2026-10-06
 

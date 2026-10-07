@@ -1,4 +1,5 @@
 #include "persistence/economic_sql_auction_item_claim_transaction.h"
+#include "persistence/economic_sql_auction_source_claim.h"
 
 #include "economy/auction_item_claim_accounting.h"
 #include "item/economic_accounting_item_reference.h"
@@ -528,10 +529,12 @@ unsigned int economic_sql_auction_item_claim_execute_and_record(
 		if ((*result_code == 0) != *mutation_applied)
 			return EILSEQ;
 		if (!*mutation_applied)
-			return insert_operation(connection, command, intent, nullptr,
-						*result_code) ?
-				       0 :
-				       failure_code();
+		{
+			if (!insert_operation(connection, command, intent, nullptr, *result_code))
+				return failure_code();
+			return economic_sql_auction_source_claim_verify(connection, intent,
+									*result_code);
+		}
 		economic_accounting_plan plan;
 		if (auction_item_claim_accounting_plan(command, intent, before, *result, &plan) !=
 			    economic_accounting_error::ok ||
@@ -540,6 +543,10 @@ unsigned int economic_sql_auction_item_claim_execute_and_record(
 			return EILSEQ;
 		if (!insert_operation(connection, command, intent, &plan, 0))
 			return failure_code();
+		const auto source_claim_error =
+			economic_sql_auction_source_claim_record(connection, command, intent);
+		if (source_claim_error)
+			return source_claim_error;
 		for (size_t index = 0; index < plan.item_events.size(); ++index)
 		{
 			const auto &event = plan.item_events[index];
