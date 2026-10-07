@@ -16,6 +16,7 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
+#include "economy/enhancement_essence_reward.h"
 #include "economy/enhancement_stat_rules.h"
 #include "cmd/interp.h"
 #include "core/mm.h"
@@ -1095,87 +1096,22 @@ static void enhance_load_essence_drop(P_char ch, P_char killer)
 		{
 			moblvl *= elite_mult;
 		}
-		if (number(1, primary_roll_max) < moblvl)
+		struct native_essence_observations
 		{
-			debug("enhancematload: mob: '%s' (%d) moblvl %lld%s", J_NAME(ch),
-			      GET_VNUM(ch), static_cast<long long>(moblvl),
-			      IS_ELITE(ch) ? " ELITE." : ".");
-			if (number(1, max_roll_max) < moblvl)
+			P_char mob;
+			int roll(int low, int high) { return number(low, high); }
+			void primary_notice(int64_t level)
 			{
-				switch (number(1, 8))
-				{
-				case 1:
-					reward = 400239;
-					break;
-				case 2:
-					reward = 400241;
-					break;
-				case 3:
-					reward = 400243;
-					break;
-				case 4:
-					reward = 400245;
-					break;
-				case 5:
-					reward = 400247;
-					break;
-				case 6:
-					reward = 400249;
-					break;
-				case 7:
-					reward = 400251;
-					break;
-				case 8:
-					reward = 400253;
-					break;
-				}
+				debug("enhancematload: mob: '%s' (%d) moblvl %lld%s", J_NAME(mob),
+				      GET_VNUM(mob), static_cast<long long>(level),
+				      IS_ELITE(mob) ? " ELITE." : ".");
 			}
-			else
-			{
-				reward = number(1, 13);
-				switch (reward)
-				{
-				case 1:
-					reward = 400238;
-					break;
-				case 2:
-					reward = 400240;
-					break;
-				case 3:
-					reward = 400242;
-					break;
-				case 4:
-					reward = 400244;
-					break;
-				case 5:
-					reward = 400246;
-					break;
-				case 6:
-					reward = 400248;
-					break;
-				case 7:
-					reward = 400250;
-					break;
-				case 8:
-					reward = 400252;
-					break;
-				case 9:
-					reward = 400254;
-					break;
-				case 10:
-					reward = 400255;
-					break;
-				case 11:
-					reward = 400256;
-					break;
-				case 12:
-					reward = 400257;
-					break;
-				case 13:
-					reward = 400258;
-					break;
-				}
-			}
+		} observed{ ch };
+		const auto selected = enhancement_select_essence_reward(moblvl, primary_roll_max,
+									max_roll_max, observed);
+		if (selected.primary_passed)
+		{
+			reward = selected.vnum;
 			if (!reward)
 			{
 				logit(LOG_SYS, "enhance_load_essence_drop selected no reward");

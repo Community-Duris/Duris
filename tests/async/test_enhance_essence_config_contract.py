@@ -7,6 +7,7 @@ from contract_text import contains
 ROOT = Path(__file__).resolve().parents[2]
 enhance = (SRC / "enhance.c").read_text()
 config = (ROOT / "lib/enhance.cfg").read_text()
+reward = (SRC / "economy/enhancement_essence_reward.h").read_text()
 
 for key in (
     "enhance.essence_drop.enabled=1",
@@ -32,8 +33,10 @@ assert contains(enhance, '"enhance.essence_drop.elite_level_multiplier"')
 assert contains(enhance, "if (!enhance_essence_drop_enabled)")
 assert contains(enhance, "int primary_roll_max = enhance_essence_primary_roll_max;")
 assert contains(enhance, "int max_roll_max     = enhance_essence_max_roll_max;")
-assert contains(enhance, "number(1, primary_roll_max) < moblvl")
-assert contains(enhance, "number(1, max_roll_max) < moblvl")
+assert contains(reward, "observed.roll(1, primary_roll_max) < moblvl")
+assert contains(reward, "observed.roll(1, max_roll_max) < moblvl")
+assert contains(enhance, "return number(low, high);")
+assert contains(enhance, "enhancement_select_essence_reward(")
 assert contains(enhance, "int elite_mult       = enhance_essence_elite_level_multiplier;")
 assert contains(enhance, "moblvl *= elite_mult;")
 
