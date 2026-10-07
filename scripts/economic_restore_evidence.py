@@ -15,6 +15,32 @@ MAX_PLAN = 4 * 1024 * 1024
 LIMITS = (3072, 6144, 64, 6000, 6000, 3000)
 WIDTHS = (120, 48, 32, 64, 64, 128)
 SOURCE_REQUIRED = set(range(5, 23)) | set(range(26, 32)) | set(range(33, 37)) | set(range(38, 47))
+INTEGER_STORAGE = {
+    "economic_accounting_operation": ("accounting_version", "writer_id", "policy_version", "compiler_version",
+        "actor_kind", "actor_id", "reason", "outcome", "result_code", "account_count", "posting_count",
+        "child_count", "before_witness_count", "after_witness_count", "item_event_count"),
+    "economic_accounting_account_effect": ("account_index", "before_copper", "before_silver", "before_gold",
+        "before_platinum", "after_copper", "after_silver", "after_gold", "after_platinum", "before_revision", "after_revision"),
+    "economic_accounting_coin_posting": ("line_index", "event_index", "account_index", "child_index", "delta_copper",
+        "delta_silver", "delta_gold", "delta_platinum", "copper_value"),
+    "economic_accounting_child": ("child_index", "domain_id", "discriminator", "parent_index", "relationship"),
+    "economic_accounting_item_reference": ("line_index", "event_index", "child_index", "item_uid",
+        "before_revision", "after_revision", "legacy_event_index"),
+    "item_ownership_ledger": ("event_index", "item_uid", "root_item_uid", "parent_item_uid", "from_owner_type",
+        "from_owner_id", "from_owner_context_id", "to_owner_type", "to_owner_id", "to_owner_context_id",
+        "item_revision", "from_equipment_slot", "to_equipment_slot"),
+    "economic_baseline_witness": ("book_revision", "witness_version", "holding_count", "item_count",
+        "command_accepted_at_usec", "claim_origin_version"),
+    "economic_baseline_control": ("revision",),
+    "economic_baseline_reservation": ("identity_kind", "identity_id"),
+    "critical_operation_inbox": ("command_type", "schema_version", "payload_version", "status", "result_code",
+        "failure_stage", "durable_revision"),
+    "economic_sql_lifecycle_installation": ("phase",),
+    "economic_account_mapping": ("mapping_id", "backend_kind", "account_kind", "locator_kind", "native_id", "context_id"),
+    "economic_pending_claim_source": ("source_slot", "claim_mapping_id", "beneficiary_pid", "amount"),
+    "economic_pending_claim_consumption": ("source_slot", "amount"),
+    "quest_mobile_native": ("mobile_instance_id", "mobile_revision", "stock_revision", "lifetime_state"),
+}
 ORIGINAL_REQUIRED = {19, 20, 40, 45, 46}
 # Independent interpretation of the version-1 reason/account contract.
 ACCOUNT_MASK = {
@@ -339,6 +365,309 @@ def decode_native_mobile(value):
     return identity, mobile_revision, stock_revision, value[10]
 
 
+class CanonicalReader:
+    """Bounded SELECT projections for the independent original-byte checks."""
+
+    def __init__(self, executor):
+        self.executor = executor
+        self.storage_checked = False
+
+    def require_integer_storage(self):
+        # JSON_ARRAY may normalize integral DOUBLE/DECIMAL values to integer
+        # JSON tokens. Authenticate the underlying integer storage before that
+        # conversion; value equality cannot establish representation equality.
+        if not self.storage_checked:
+            scopes = ["(table_name='" + table + "' AND column_name IN (" +
+                      ",".join("'" + column + "'" for column in columns) + "))"
+                      for table, columns in INTEGER_STORAGE.items()]
+            if self.executor.sql("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() "
+                "AND (" + " OR ".join(scopes) + ") AND data_type NOT IN ('tinyint','smallint','mediumint','int','bigint');") != "0":
+                self.mismatch("canonical_storage")
+            self.storage_checked = True
+
+    def mismatch(self, code):
+        raise RuntimeError("restore_economic_" + code + "_mismatch")
+
+    def arrays(self, table, columns, where, order):
+        output = self.executor.sql("SELECT JSON_ARRAY(" + ",".join(columns) + ") FROM " + table +
+                              " WHERE " + where + " ORDER BY " + order + ";")
+        try:
+            return [json.loads(row) for row in output.splitlines()]
+        except ValueError:
+            self.mismatch("canonical_projection")
+
+    def hexadecimal(self, column):
+        return "LOWER(HEX(" + column + "))"
+
+    def binary(self, value, size, nullable=False):
+        if value is None and nullable:
+            return None
+        need(isinstance(value, str) and len(value) == 2 * size)
+        return bytes.fromhex(value)
+
+    def capsule(self, operation, field, size, limit, code, table="economic_accounting_operation", minimum=256):
+        if type(size) is not int or not minimum <= size <= limit:
+            self.mismatch(code)
+        result = bytearray()
+        for offset in range(0, size, 65536):
+            count = min(65536, size - offset)
+            output = self.executor.sql("SELECT HEX(SUBSTRING(" + field + "," + str(offset + 1) + "," +
+                                  str(count) + ")) FROM " + table + " WHERE " + operation + ";")
+            try:
+                part = bytes.fromhex(output)
+            except ValueError:
+                self.mismatch(code)
+            if len(part) != count:
+                self.mismatch(code)
+            result.extend(part)
+        return bytes(result)
+
+
+def verify_canonical_root(reader, operation):
+    """Authenticate one original root and its details in the caller's read view.
+
+    Surrounding openings, allocations, receipts and native authority remain
+    the caller's checks. This is shared by restore and bounded live sweeps.
+    """
+    mismatch = reader.mismatch
+    arrays = reader.arrays
+    hexadecimal = reader.hexadecimal
+    binary = reader.binary
+    capsule = reader.capsule
+
+    if (not isinstance(operation, str) or len(operation) != 32 or
+            any(c not in "0123456789abcdef" for c in operation) or not int(operation, 16)):
+        mismatch("metadata")
+    reader.require_integer_storage()
+    where = "operation_id=UNHEX('" + operation + "')"
+    fields = [hexadecimal(name) for name in ("lineage", "epoch", "operation_id", "original_operation_id")]
+    fields += ["accounting_version", "writer_id", "policy_version", "compiler_version",
+               "actor_kind", "actor_id", "reason", hexadecimal("source_event")]
+    fields += [hexadecimal(name) for name in ("intent_digest", "domain_digest", "plan_digest")]
+    fields += ["OCTET_LENGTH(canonical_intent)", "OCTET_LENGTH(canonical_plan)", "outcome", "result_code",
+               "account_count", "posting_count", "child_count", "before_witness_count",
+               "after_witness_count", "item_event_count"]
+    rows = arrays("economic_accounting_operation", fields, where, "operation_id")
+    if len(rows) != 1 or len(rows[0]) != 25:
+        mismatch("metadata")
+    row = rows[0]
+    try:
+        original = binary(row[3], 16, True)
+        need(original is None or any(original))
+        meta = (*[binary(value, 16) for value in row[:3]], original or bytes(16),
+                *row[4:11], binary(row[11], 48, True))
+        need(meta[2].hex() == operation)
+        frozen = capsule(where, "canonical_intent", row[15], MAX_INTENT, "intent")
+        intent = decode_intent(frozen)
+        if (intent["intent_digest"] != binary(row[12], 32) or
+                intent["domain_digest"] != binary(row[13], 32)):
+            mismatch("intent")
+    except (ValueError, struct.error):
+        mismatch("intent")
+    if not same_projection(meta, intent["metadata"]):
+        mismatch("metadata")
+    counts = tuple(row[19:25])
+    plan = None
+    encoded = None
+    if type(row[17]) is not int or type(row[18]) is not int or not 0 <= row[18] < 2**32:
+        mismatch("plan")
+    if row[17] == 2:
+        if (row[18] == 0 or row[14] is not None or row[16] is not None or
+                not same_projection(counts, (0,) * 6)):
+            mismatch("plan")
+    elif row[17] == 1 and row[18] == 0:
+        try:
+            encoded = capsule(where, "canonical_plan", row[16], MAX_PLAN, "plan")
+            plan = decode_plan(encoded)
+            if (not same_projection(plan["metadata"], meta) or plan["intent_digest"] != intent["intent_digest"] or
+                    plan["domain_digest"] != intent["domain_digest"] or
+                    plan["plan_digest"] != binary(row[14], 32)):
+                mismatch("plan")
+        except (ValueError, struct.error):
+            mismatch("plan")
+        if not same_projection(counts, plan["counts"]):
+            mismatch("canonical_count")
+        coins = ("copper", "silver", "gold", "platinum")
+        fields = ["account_index", hexadecimal("account_key")]
+        fields += [side + "_" + coin for side in ("before", "after") for coin in coins]
+        fields += ["before_revision", "after_revision"]
+        expected = [[i, key.hex(), *before, *after, before_revision, after_revision]
+                    for i, (key, before, after, before_revision, after_revision) in enumerate(plan["effects"])]
+        if not same_projection(arrays("economic_accounting_account_effect", fields, where, "account_index"), expected):
+            mismatch("canonical_account")
+        fields = ["line_index", "event_index", "account_index", "child_index"]
+        fields += ["delta_" + coin for coin in coins] + ["copper_value"]
+        expected = [[i, event, account, child, *delta, amount]
+                    for i, (event, account, child, delta, amount) in enumerate(plan["postings"])]
+        if not same_projection(arrays("economic_accounting_coin_posting", fields, where, "line_index"), expected):
+            mismatch("canonical_posting")
+        fields = ["child_index", hexadecimal("child_operation_id"), "domain_id", "discriminator",
+                  "parent_index", "relationship"]
+        expected = [[i + 1, child.hex(), domain, discriminator, parent, relationship]
+                    for i, (child, domain, discriminator, parent, relationship) in enumerate(plan["children"])]
+        if not same_projection(arrays("economic_accounting_child", fields, where, "child_index"), expected):
+            mismatch("canonical_child")
+        fields = ["line_index", "event_index", "child_index", "item_uid", "before_revision", "after_revision"]
+        expected = [[i, event, child, uid, old[6], new[6]]
+                    for i, (event, child, uid, old, new) in enumerate(plan["events"])]
+        if not same_projection(arrays("economic_accounting_item_reference", fields, where, "line_index"), expected):
+            mismatch("canonical_item")
+        fields = ["r.line_index", "l.item_uid", "l.root_item_uid", "COALESCE(l.parent_item_uid,0)",
+                  "l.from_owner_type", "l.from_owner_id", "l.from_owner_context_id", "l.to_owner_type",
+                  "l.to_owner_id", "l.to_owner_context_id", "l.item_revision",
+                  "l.from_equipment_slot", "l.to_equipment_slot"]
+        table = ("economic_accounting_item_reference r LEFT JOIN item_ownership_ledger l "
+                 "ON l.operation_id=r.legacy_operation_id AND l.event_index=r.legacy_event_index")
+        expected = [[i, uid, new[4], new[5], *( (7, 0, 0) if old[1] == 0 else (old[0], old[2], old[3]) ),
+                     new[0], new[2], new[3], new[6], old[7], new[7]]
+                    for i, (event, child, uid, old, new) in enumerate(plan["events"])]
+        if not same_projection(arrays(table, fields, "r." + where, "r.line_index"), expected):
+            mismatch("canonical_custody")
+    else:
+        mismatch("plan")
+    return meta, row, frozen, encoded, plan
+
+
+def verify_canonical_baseline(reader, operation, root, *, admission_column, claim_origin_column):
+    """Authenticate one original baseline witness in the caller's read view.
+
+    Return versioned claim origins for the caller's allocation comparison;
+    this root check does not certify whole-book or native coverage.
+    """
+    executor, mismatch, arrays = reader.executor, reader.mismatch, reader.arrays
+    hexadecimal, binary, capsule = reader.hexadecimal, reader.binary, reader.capsule
+    meta, row, frozen, encoded, plan = root
+    where = "operation_id=UNHEX('" + operation + "')"
+    original = binary(row[3], 16, True)
+    if plan is None or meta[10] != 38:
+        mismatch("baseline_witness")
+    # The second consumer reuses pure independent EAB1/EAB2 interpretation. The
+    # import is local because the origin reader also consumes this decoder.
+    from economic_sql_audit_origins import (MAX_WITNESS_BYTES, CLAIM_POLICY_COLUMNS, CLAIM_MAPPING_COLUMNS,
+        decode_witness, verify_baseline_root, verify_baseline_claim_policy, verify_baseline_claim_identity)
+    columns = [hexadecimal("w.lineage"), hexadecimal("w.epoch"), "w.book_revision", "w.witness_version",
+               "w.holding_count", "w.item_count", hexadecimal("w.witness_digest"),
+               "OCTET_LENGTH(w.canonical_witness)", hexadecimal("c.opening_account"),
+               "i.durable_revision", "i.command_type", "i.schema_version", "i.payload_version",
+               hexadecimal("i.result_payload"), hexadecimal("i.keys_hash"),
+               admission_column, hexadecimal("i.command_hash"), claim_origin_column,
+               "c.revision", hexadecimal("c.last_operation_id")]
+    table = ("economic_baseline_witness w JOIN economic_baseline_control c "
+             "ON c.lineage=w.lineage AND c.epoch=w.epoch "
+             "JOIN critical_operation_inbox i ON i.operation_id=w.operation_id")
+    values = arrays(table, columns, "w." + where, "w.operation_id")
+    if len(values) != 1 or len(values[0]) != len(columns):
+        mismatch("baseline_witness")
+    value = values[0]
+    try:
+        lineage, epoch = binary(value[0], 16), binary(value[1], 16)
+        need((lineage, epoch) == meta[:2])
+        names = ("root_lineage", "root_epoch", "operation_id", "original_operation_id", "accounting_version",
+                 "writer_id", "policy_version", "compiler_version", "actor_kind", "actor_id", "reason", "source_event")
+        witness = dict(zip(names, (*meta[:3], original, *meta[4:])))
+        witness.update(book_revision=value[2], witness_version=value[3], holding_count=value[4], item_count=value[5],
+            witness_digest=binary(value[6], 32), canonical_witness=capsule(where, "canonical_witness", value[7],
+                MAX_WITNESS_BYTES, "baseline_witness", table="economic_baseline_witness", minimum=192),
+            inbox_revision=value[9], inbox_type=value[10], inbox_schema=value[11], inbox_payload=value[12],
+            inbox_result_payload=binary(value[13], 0), canonical_intent=frozen, canonical_plan=encoded,
+            inbox_keys_hash=binary(value[14], 32), command_accepted_at_usec=value[15],
+            inbox_command_hash=binary(value[16], 32), claim_origin_version=value[17],
+            intent_digest=binary(row[12], 32), domain_digest=binary(row[13], 32), plan_digest=binary(row[14], 32))
+        witness.update(zip(("account_count", "posting_count", "child_count", "before_witness_count",
+                            "after_witness_count", "item_event_count"), row[19:25]))
+        holdings, items = decode_witness(witness, lineage, epoch, binary(value[8], 40))
+        verify_baseline_root(witness, lineage, epoch)
+    except (ValueError, struct.error, TypeError):
+        mismatch("baseline_witness")
+    # Check the selected witness's local book continuity in the same read view.
+    # Indexed predecessor/successor/terminal reads are bounded independently of
+    # the book's history size; unattached controls still need the whole-store audit.
+    try:
+        revision, terminal_revision = value[2], value[18]
+        need(type(terminal_revision) is int and revision <= terminal_revision < 2**64)
+        terminal_operation = binary(value[19], 16)
+        need(any(terminal_operation))
+        revisions = {terminal_revision}
+        if revision > 1:
+            revisions.add(revision-1)
+        if revision < terminal_revision:
+            revisions.add(revision+1)
+        revisions = sorted(revisions)
+        columns = ["w.book_revision", hexadecimal("w.operation_id"), hexadecimal("o.lineage"),
+                   hexadecimal("o.epoch"), "o.reason", "o.outcome", "o.result_code"]
+        neighbours = arrays("economic_baseline_witness w FORCE INDEX (uq_economic_baseline_witness_revision) "
+            "LEFT JOIN economic_accounting_operation o ON o.operation_id=w.operation_id", columns,
+            "w.lineage=UNHEX('" + lineage.hex() + "') AND w.epoch=UNHEX('" + epoch.hex() +
+            "') AND w.book_revision IN (" + ",".join(map(str, revisions)) + ")",
+            "w.book_revision LIMIT " + str(len(revisions)+1))
+        need(len(neighbours) == len(revisions))
+        for expected_revision, neighbour in zip(revisions, neighbours):
+            need(type(neighbour) is list and len(neighbour) == len(columns))
+            need(same_projection((neighbour[0], *neighbour[4:]), (expected_revision, 38, 1, 0)))
+            need((binary(neighbour[2], 16), binary(neighbour[3], 16)) == (lineage, epoch))
+            operation_id = binary(neighbour[1], 16)
+            need(any(operation_id))
+            if expected_revision == terminal_revision:
+                need(operation_id == terminal_operation)
+            if expected_revision == revision:
+                need(operation_id == meta[2])
+    except (ValueError, struct.error, TypeError):
+        mismatch("baseline_book")
+    expected = [[lineage.hex(), epoch.hex(), 1, account_key(holding["account_key"])[2], meta[2].hex()]
+                for holding in holdings]
+    expected += [[lineage.hex(), epoch.hex(), 2, item["uid"], meta[2].hex()] for item in items]
+    expected.sort(key=lambda value: (value[2], value[3]))
+    columns = [hexadecimal("lineage"), hexadecimal("epoch"), "identity_kind", "identity_id",
+               hexadecimal("operation_id")]
+    previous = None
+    for start in range(0, max(1, len(expected)), 256):
+        scope = where
+        if previous is not None:
+            scope += (" AND (identity_kind,identity_id,lineage,epoch)>(" + str(previous[2]) + "," +
+                      str(previous[3]) + ",UNHEX('" + previous[0] + "'),UNHEX('" + previous[1] + "'))")
+        page = arrays("economic_baseline_reservation", columns, scope,
+                      "identity_kind,identity_id,lineage,epoch LIMIT 257")
+        if not same_projection(page, expected[start:start+257]):
+            mismatch("baseline_reservation")
+        previous = expected[min(start+255, len(expected)-1)] if expected else None
+    expected_origins = None
+    try:
+        parents = []
+        if any(account_key(holding["account_key"])[1] in (4, 5) for holding in holdings):
+            need(executor.sql("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() "
+                "AND ENGINE='InnoDB' AND table_name IN ('economic_sql_lifecycle_installation',"
+                "'economic_account_mapping','economic_pending_claim_source');") == "3")
+            binary_columns = {0: 16, 1: 16, 2: 16, 3: 32, 4: 32, 6: 16, 7: 32, 8: 32, 16: 0}
+            columns = [hexadecimal(column) if index in binary_columns else column
+                       for index, column in enumerate(CLAIM_POLICY_COLUMNS)]
+            rows = arrays("economic_sql_lifecycle_installation p LEFT JOIN critical_operation_inbox i "
+                "ON i.operation_id=p.operation_id", columns,
+                "p.operation_id=UNHEX('" + witness["canonical_witness"][48:64].hex() + "')",
+                "p.operation_id LIMIT 2")
+            for parent in rows:
+                need(type(parent) is list and len(parent) == len(columns))
+                parents.append(tuple(binary(field, binary_columns[index], True)
+                    if index in binary_columns else field for index, field in enumerate(parent)))
+        if verify_baseline_claim_policy(witness, holdings, parents):
+            identities = [account_key(holding["account_key"])[2] for holding in holdings
+                          if account_key(holding["account_key"])[1] == 5]
+            mappings = []
+            for start in range(0, len(identities), 256):
+                page = identities[start:start+256]
+                columns = [hexadecimal(column) if column == "lineage" else column
+                           for column in CLAIM_MAPPING_COLUMNS]
+                rows = arrays("economic_account_mapping", columns,
+                    "lineage=UNHEX('" + lineage.hex() + "') AND mapping_id IN (" +
+                    ",".join(map(str, page)) + ")", "mapping_id LIMIT " + str(len(page)+1))
+                for mapping in rows:
+                    need(type(mapping) is list and len(mapping) == len(columns))
+                    mappings.append((mapping[0], binary(mapping[1], 16), *mapping[2:]))
+            expected_origins = verify_baseline_claim_identity(witness, holdings, mappings)
+    except (ValueError, struct.error, TypeError, KeyError):
+        mismatch("baseline_claim_origin")
+    return value[17], expected_origins
+
+
 def require_integrity(executor):
     """Bind every retained root to bounded canonical bytes and SQL projections.
 
@@ -346,42 +675,13 @@ def require_integrity(executor):
     this helper issues SELECT only and never repairs retained evidence. ID
     pagination enumerates the candidate, not a live commit watermark.
     """
-    def mismatch(code):
-        raise RuntimeError("restore_economic_" + code + "_mismatch")
-
-    def arrays(table, columns, where, order):
-        output = executor.sql("SELECT JSON_ARRAY(" + ",".join(columns) + ") FROM " + table +
-                              " WHERE " + where + " ORDER BY " + order + ";")
-        try:
-            return [json.loads(row) for row in output.splitlines()]
-        except ValueError:
-            mismatch("canonical_projection")
-
-    def hexadecimal(column):
-        return "LOWER(HEX(" + column + "))"
-
-    def binary(value, size, nullable=False):
-        if value is None and nullable:
-            return None
-        need(isinstance(value, str) and len(value) == 2 * size)
-        return bytes.fromhex(value)
-
-    def capsule(operation, field, size, limit, code, table="economic_accounting_operation", minimum=256):
-        if type(size) is not int or not minimum <= size <= limit:
-            mismatch(code)
-        result = bytearray()
-        for offset in range(0, size, 65536):
-            count = min(65536, size - offset)
-            output = executor.sql("SELECT HEX(SUBSTRING(" + field + "," + str(offset + 1) + "," +
-                                  str(count) + ")) FROM " + table + " WHERE " + operation + ";")
-            try:
-                part = bytes.fromhex(output)
-            except ValueError:
-                mismatch(code)
-            if len(part) != count:
-                mismatch(code)
-            result.extend(part)
-        return bytes(result)
+    reader = CanonicalReader(executor)
+    reader.require_integer_storage()
+    mismatch = reader.mismatch
+    arrays = reader.arrays
+    hexadecimal = reader.hexadecimal
+    binary = reader.binary
+    capsule = reader.capsule
 
     # Allocation metadata has no authority by itself. Bind its exact identities
     # and amounts below to the independently decoded original root effects.
@@ -441,7 +741,7 @@ def require_integrity(executor):
             account_key(key.hex())
         except (ValueError, TypeError, struct.error):
             mismatch("pending_claim_source")
-        sources[identity] = dict(key=key, amount=row[5], whole=consumer, consumed=0)
+        sources[identity] = dict(key=key, pid=row[4], amount=row[5], whole=consumer, consumed=0)
         add_amount(source_counts, identity[0], 1)
         add_amount(credits, (identity[0], key), row[5])
         if consumer is not None:
@@ -570,71 +870,6 @@ def require_integrity(executor):
         mismatch("baseline_witness")
     admission_column = "w.command_accepted_at_usec" if admission_column_count == "1" else "NULL"
 
-    def baseline_witness(where, meta, original, row, frozen, encoded):
-        # The second consumer reuses pure independent EAB1/EAB2 interpretation. The
-        # import is local because the origin reader also consumes this decoder.
-        from economic_sql_audit_origins import MAX_WITNESS_BYTES, decode_witness, verify_baseline_root
-        columns = [hexadecimal("w.lineage"), hexadecimal("w.epoch"), "w.book_revision", "w.witness_version",
-                   "w.holding_count", "w.item_count", hexadecimal("w.witness_digest"),
-                   "OCTET_LENGTH(w.canonical_witness)", hexadecimal("c.opening_account"),
-                   "i.durable_revision", "i.command_type", "i.schema_version", "i.payload_version",
-                   hexadecimal("i.result_payload"), hexadecimal("i.keys_hash"),
-                   admission_column, hexadecimal("i.command_hash"), claim_origin_column]
-        table = ("economic_baseline_witness w JOIN economic_baseline_control c "
-                 "ON c.lineage=w.lineage AND c.epoch=w.epoch "
-                 "JOIN critical_operation_inbox i ON i.operation_id=w.operation_id")
-        values = arrays(table, columns, "w." + where, "w.operation_id")
-        if len(values) != 1 or len(values[0]) != len(columns):
-            mismatch("baseline_witness")
-        value = values[0]
-        try:
-            lineage, epoch = binary(value[0], 16), binary(value[1], 16)
-            need((lineage, epoch) == meta[:2])
-            names = ("root_lineage", "root_epoch", "operation_id", "original_operation_id", "accounting_version",
-                     "writer_id", "policy_version", "compiler_version", "actor_kind", "actor_id", "reason", "source_event")
-            witness = dict(zip(names, (*meta[:3], original, *meta[4:])))
-            witness.update(book_revision=value[2], witness_version=value[3], holding_count=value[4], item_count=value[5],
-                witness_digest=binary(value[6], 32), canonical_witness=capsule(where, "canonical_witness", value[7],
-                    MAX_WITNESS_BYTES, "baseline_witness", table="economic_baseline_witness", minimum=192),
-                inbox_revision=value[9], inbox_type=value[10], inbox_schema=value[11], inbox_payload=value[12],
-                inbox_result_payload=binary(value[13], 0), canonical_intent=frozen, canonical_plan=encoded,
-                inbox_keys_hash=binary(value[14], 32), command_accepted_at_usec=value[15],
-                inbox_command_hash=binary(value[16], 32),
-                intent_digest=binary(row[12], 32), domain_digest=binary(row[13], 32), plan_digest=binary(row[14], 32))
-            witness.update(zip(("account_count", "posting_count", "child_count", "before_witness_count",
-                                "after_witness_count", "item_event_count"), row[19:25]))
-            holdings, items = decode_witness(witness, lineage, epoch, binary(value[8], 40))
-            verify_baseline_root(witness, lineage, epoch)
-        except (ValueError, struct.error, TypeError):
-            mismatch("baseline_witness")
-        expected = [[lineage.hex(), epoch.hex(), 1, account_key(holding["account_key"])[2], meta[2].hex()]
-                    for holding in holdings]
-        expected += [[lineage.hex(), epoch.hex(), 2, item["uid"], meta[2].hex()] for item in items]
-        expected.sort(key=lambda value: (value[2], value[3]))
-        columns = [hexadecimal("lineage"), hexadecimal("epoch"), "identity_kind", "identity_id",
-                   hexadecimal("operation_id")]
-        if not same_projection(arrays("economic_baseline_reservation", columns, where,
-                  "identity_kind,identity_id,lineage,epoch LIMIT " + str(len(expected) + 1)), expected):
-            mismatch("baseline_reservation")
-        if value[17] is not None:
-            if type(value[17]) is not int or value[17] != 1:
-                mismatch("baseline_claim_origin")
-            expected_origins = {}
-            for index, holding in enumerate(holdings):
-                if account_key(holding["account_key"])[1] == 5:
-                    if any(holding["balance"][1:]):
-                        mismatch("baseline_claim_origin")
-                    if holding["balance"][0]:
-                        expected_origins[(meta[2], index+1)] = (bytes.fromhex(holding["account_key"]),
-                                                               holding["balance"][0])
-            if source_counts.get(meta[2], 0) != len(expected_origins):
-                mismatch("baseline_claim_origin")
-            for identity, expected_origin in expected_origins.items():
-                source = sources.get(identity)
-                if source is None or (source["key"], source["amount"]) != expected_origin:
-                    mismatch("baseline_claim_origin")
-        return value[17]
-
     # Ordinary histories may have no baseline book. Their canonical capsules
     # still require the retained lifecycle namespace, including inactive epochs.
     if executor.sql("SELECT COUNT(*) FROM economic_accounting_operation o "
@@ -658,91 +893,22 @@ def require_integrity(executor):
                     operation <= cursor):
                 mismatch("metadata")
             cursor = operation
-            where = "operation_id=UNHEX('" + operation + "')"
-            fields = [hexadecimal(name) for name in ("lineage", "epoch", "operation_id", "original_operation_id")]
-            fields += ["accounting_version", "writer_id", "policy_version", "compiler_version",
-                       "actor_kind", "actor_id", "reason", hexadecimal("source_event")]
-            fields += [hexadecimal(name) for name in ("intent_digest", "domain_digest", "plan_digest")]
-            fields += ["OCTET_LENGTH(canonical_intent)", "OCTET_LENGTH(canonical_plan)", "outcome", "result_code",
-                       "account_count", "posting_count", "child_count", "before_witness_count",
-                       "after_witness_count", "item_event_count"]
-            rows = arrays("economic_accounting_operation", fields, where, "operation_id")
-            if len(rows) != 1 or len(rows[0]) != 25:
-                mismatch("metadata")
-            row = rows[0]
-            try:
-                original = binary(row[3], 16, True)
-                need(original is None or any(original))
-                meta = (*[binary(value, 16) for value in row[:3]], original or bytes(16),
-                        *row[4:11], binary(row[11], 48, True))
-                need(meta[2].hex() == operation)
-                frozen = capsule(where, "canonical_intent", row[15], MAX_INTENT, "intent")
-                intent = decode_intent(frozen)
-                if (intent["intent_digest"] != binary(row[12], 32) or
-                        intent["domain_digest"] != binary(row[13], 32)):
-                    mismatch("intent")
-            except (ValueError, struct.error):
-                mismatch("intent")
-            if not same_projection(meta, intent["metadata"]):
-                mismatch("metadata")
-            counts = tuple(row[19:25])
-            if type(row[17]) is not int or type(row[18]) is not int or not 0 <= row[18] < 2**32:
-                mismatch("plan")
-            if row[17] == 2:
-                if (row[18] == 0 or row[14] is not None or row[16] is not None or
-                        not same_projection(counts, (0,) * 6)):
-                    mismatch("plan")
-            elif row[17] == 1 and row[18] == 0:
-                try:
-                    encoded = capsule(where, "canonical_plan", row[16], MAX_PLAN, "plan")
-                    plan = decode_plan(encoded)
-                    if (not same_projection(plan["metadata"], meta) or plan["intent_digest"] != intent["intent_digest"] or
-                            plan["domain_digest"] != intent["domain_digest"] or
-                            plan["plan_digest"] != binary(row[14], 32)):
-                        mismatch("plan")
-                except (ValueError, struct.error):
-                    mismatch("plan")
-                if not same_projection(counts, plan["counts"]):
-                    mismatch("canonical_count")
-                coins = ("copper", "silver", "gold", "platinum")
-                fields = ["account_index", hexadecimal("account_key")]
-                fields += [side + "_" + coin for side in ("before", "after") for coin in coins]
-                fields += ["before_revision", "after_revision"]
-                expected = [[i, key.hex(), *before, *after, before_revision, after_revision]
-                            for i, (key, before, after, before_revision, after_revision) in enumerate(plan["effects"])]
-                if not same_projection(arrays("economic_accounting_account_effect", fields, where, "account_index"), expected):
-                    mismatch("canonical_account")
-                fields = ["line_index", "event_index", "account_index", "child_index"]
-                fields += ["delta_" + coin for coin in coins] + ["copper_value"]
-                expected = [[i, event, account, child, *delta, amount]
-                            for i, (event, account, child, delta, amount) in enumerate(plan["postings"])]
-                if not same_projection(arrays("economic_accounting_coin_posting", fields, where, "line_index"), expected):
-                    mismatch("canonical_posting")
-                fields = ["child_index", hexadecimal("child_operation_id"), "domain_id", "discriminator",
-                          "parent_index", "relationship"]
-                expected = [[i + 1, child.hex(), domain, discriminator, parent, relationship]
-                            for i, (child, domain, discriminator, parent, relationship) in enumerate(plan["children"])]
-                if not same_projection(arrays("economic_accounting_child", fields, where, "child_index"), expected):
-                    mismatch("canonical_child")
-                fields = ["line_index", "event_index", "child_index", "item_uid", "before_revision", "after_revision"]
-                expected = [[i, event, child, uid, old[6], new[6]]
-                            for i, (event, child, uid, old, new) in enumerate(plan["events"])]
-                if not same_projection(arrays("economic_accounting_item_reference", fields, where, "line_index"), expected):
-                    mismatch("canonical_item")
-                fields = ["r.line_index", "l.item_uid", "l.root_item_uid", "COALESCE(l.parent_item_uid,0)",
-                          "l.from_owner_type", "l.from_owner_id", "l.from_owner_context_id", "l.to_owner_type",
-                          "l.to_owner_id", "l.to_owner_context_id", "l.item_revision",
-                          "l.from_equipment_slot", "l.to_equipment_slot"]
-                table = ("economic_accounting_item_reference r LEFT JOIN item_ownership_ledger l "
-                         "ON l.operation_id=r.legacy_operation_id AND l.event_index=r.legacy_event_index")
-                expected = [[i, uid, new[4], new[5], *( (7, 0, 0) if old[1] == 0 else (old[0], old[2], old[3]) ),
-                             new[0], new[2], new[3], new[6], old[7], new[7]]
-                            for i, (event, child, uid, old, new) in enumerate(plan["events"])]
-                if not same_projection(arrays(table, fields, "r." + where, "r.line_index"), expected):
-                    mismatch("canonical_custody")
+            meta, row, frozen, encoded, plan = verify_canonical_root(reader, operation)
+            if plan is not None:
                 origin_version = None
                 if meta[10] == 38:
-                    origin_version = baseline_witness(where, meta, original, row, frozen, encoded)
+                    origin_version, expected_origins = verify_canonical_baseline(reader, operation,
+                        (meta, row, frozen, encoded, plan), admission_column=admission_column,
+                        claim_origin_column=claim_origin_column)
+                    if expected_origins is not None:
+                        if source_counts.get(meta[2], 0) != len(expected_origins):
+                            mismatch("baseline_claim_origin")
+                        for slot, mapped_lineage, mapping, pid, amount in expected_origins:
+                            source = sources.get((meta[2], slot))
+                            key = mapped_lineage + struct.pack('<HHQQ4x', 1, 5, mapping, 0)
+                            if source is None or not same_projection((source["key"], source["pid"], source["amount"]),
+                                                                    (key, pid, amount)):
+                                mismatch("baseline_claim_origin")
                 for key, before, after, before_revision, after_revision in plan["effects"]:
                     if account_key(key.hex())[1] != 5:
                         continue
@@ -759,8 +925,6 @@ def require_integrity(executor):
                         mismatch("pending_claim_consumption")
                     if (credit or debit) and before[1:] != after[1:]:
                         mismatch("pending_claim_source" if credit else "pending_claim_consumption")
-            else:
-                mismatch("plan")
             processed += 1
     if processed != root_count:
         mismatch("canonical_root_count")

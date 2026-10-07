@@ -14,7 +14,7 @@ src = strip_comments((SRC / "constant.c").read_text(encoding="utf-8"))
 match = re.search(r"const\s+char\s*\*\s*god_list\[\]\s*=\s*\{(.*?)\};", src, re.S)
 assert match, "god_list definition not found"
 names = re.findall(r'"((?:[^"\\]|\\.)*)"', match.group(1))
-assert "Zusuk" in names, names
+assert "zusuk" not in {name.casefold() for name in names}, names
 assert names[-1] == "\\0", names
 assert "\\0" not in names[:-1], names
 

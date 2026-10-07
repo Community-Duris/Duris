@@ -11,7 +11,19 @@ IMPLEMENTATION = ROOT / "src/economy/economic_gameplay_authority.c"
 
 def function_body(source: str, signature: str) -> str:
     start = source.index(signature)
-    opening = source.index("{", start)
+    # A default argument may contain braces before the actual function body.
+    parameters = source.index("(", start)
+    parameter_depth = 0
+    for offset in range(parameters, len(source)):
+        if source[offset] == "(":
+            parameter_depth += 1
+        elif source[offset] == ")":
+            parameter_depth -= 1
+            if parameter_depth == 0:
+                break
+    else:
+        raise AssertionError(f"unterminated parameters: {signature}")
+    opening = source.index("{", offset + 1)
     depth = 0
     for offset in range(opening, len(source)):
         if source[offset] == "{":
@@ -21,6 +33,18 @@ def function_body(source: str, signature: str) -> str:
             if depth == 0:
                 return source[opening : offset + 1]
     raise AssertionError(f"unterminated function: {signature}")
+
+
+class FunctionBodyParsingContract(unittest.TestCase):
+    def test_default_initializer_precedes_actual_immutable_publication_body(self):
+        body = "{ next->scope_version = 1; current.store(next); }"
+        source = "void publish_projection(std::shared_ptr<const projection> expected = {})\n" + body
+        self.assertEqual(function_body(source, "publish_projection("), body)
+
+    def test_nested_parameter_call_precedes_actual_compare_exchange_body(self):
+        body = "{ if (expected) { current.compare_exchange_strong(expected, next); } }"
+        source = "void publish_projection(int value = choose(1), projection expected = {}) noexcept\n" + body
+        self.assertEqual(function_body(source, "publish_projection("), body)
 
 
 class SqlWalletRootProjectionContract(unittest.TestCase):
@@ -52,6 +76,9 @@ class SqlWalletRootProjectionContract(unittest.TestCase):
                       self.implementation)
         publish = function_body(self.implementation, "publish_projection(")
         self.assertLess(publish.index("next->scope_version ="), publish.index("current.store("))
+        if "current.compare_exchange_strong(" in publish:
+            self.assertLess(publish.index("next->scope_version ="),
+                            publish.index("current.compare_exchange_strong("))
 
     def test_qualification_precedes_all_frozen_schema_two_returns(self):
         currency = function_body(

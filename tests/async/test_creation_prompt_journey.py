@@ -132,7 +132,7 @@ def character_name_retry(client, server, *, policy=False, invalid=False):
         client.expect(NAME_PROMPT)
         # A god_list name makes an OVERLORD of whoever takes it, so creation
         # refuses one whether or not a character already holds it.
-        for god in ("Tyrus", "Zusuk"):
+        for god in ("Tyrus", "Arih"):
             reply(client, god, "Illegal character name, please try another.")
             client.expect(NAME_PROMPT)
     reply(client, "Taverek", "Is this correct?")
@@ -334,6 +334,23 @@ def quit_confirmation(client, server):
         other.close()
 
 
+def zusuk_starts_mortal(client, server):
+    create_account(client, OLD_PASSWORD)
+    start_character(client)
+    reply(client, "Zusuk", "Is this correct?")
+    reply(client, "y", "meet these criteria?")
+    reply(client, "y", RACE_MENU)
+    finish_character_choices(client)
+    reply(client, "y", "PRESS RETURN")
+    reply(client, "", "Your starter kit is ready")
+    client.expect("Pos: standing >")
+    score = reply(client, "score", "Pos: standing >")
+    require("Zusuk" in score, "score did not display the new character")
+    require(re.search(r"\bLevel:\s*1\b", score),
+            "Zusuk did not start as a level-one mortal")
+    reply(client, "save", "Save complete for Zusuk.")
+
+
 def normal_after_hardcore(client, server):
     reach_race(client)
     reply(client, "h", "Male or Female")
@@ -380,6 +397,7 @@ SCENARIOS = (
     ("email correction", email_retry),
     ("password mismatch and account-summary restart", password_and_summary_retry),
     ("invalid character name", lambda c, s: character_name_retry(c, s, invalid=True)),
+    ("Zusuk starts as a mortal without automatic promotion", zusuk_starts_mortal),
     ("character-name rejection", character_name_retry),
     ("name-policy rejection", lambda c, s: character_name_retry(c, s, policy=True)),
     ("creation help and back navigation", creation_help_and_back),

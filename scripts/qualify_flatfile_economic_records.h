@@ -23,6 +23,18 @@ constexpr size_t command_limit = 512 * 1024, plan_limit = 4 * 1024 * 1024;
 constexpr size_t record_limit = 48 + 26 + command_limit + plan_limit + 4096;
 constexpr uint64_t bucket_limit = uint64_t{ 256 } << 20;
 constexpr size_t segment_count_limit = bucket_limit / (segment_limit - record_limit - 80) + 1;
+// Independent schema-2 envelope grammar. Native codecs remain test oracles.
+inline bool command_capability_valid(uint64_t type, uint64_t version, uint64_t publication)
+{
+	return type >= 1 && type <= 21 && version > 0 && version <= UINT16_MAX &&
+	       publication <= 1 &&
+	       (!publication || type == 3 || type == 5 || type == 17 || type == 18 || type == 21 ||
+		(type == 15 && version >= 6 && version <= 8));
+}
+inline bool command_key_valid(uint64_t kind, uint64_t id)
+{
+	return kind >= 1 && kind <= 15 && id && (kind != 15 || id != UINT64_MAX);
+}
 inline std::span<const uint8_t> unwrap(std::span<const uint8_t> value, const char *magic)
 {
 	reader in{ value };
@@ -354,6 +366,14 @@ struct entry
 	digest checksum;
 	uint64_t segment, offset, size;
 };
+struct root_page
+{
+	identity lineage = {}, cursor = {}, ceiling = {};
+	digest authority_body = {};
+	size_t rows = 0, verified = 0, bucket_rows = 0;
+	bool exhausted = false;
+	std::vector<identity> invalid_records;
+};
 class checker
 {
 	std::filesystem::path root, directory;
@@ -389,10 +409,9 @@ class checker
 		auto deadline = cmd.number(1), publication = cmd.number(1),
 		     accepted = cmd.number(8);
 		auto keys = cmd.number(4), revisions = cmd.number(4), payload_size = cmd.number(4);
-		need(type >= 1 && type <= 20 && payload_version && source >= 1 && source <= 6 &&
-		     deadline >= 1 && deadline <= 4 && publication <= 1 &&
-		     (!publication || type == 3 || type == 5 || type == 17) && accepted &&
-		     keys > 0 && keys <= 3003 && revisions <= 3003 && payload_size <= 384 * 1024);
+		need(command_capability_valid(type, payload_version, publication) && source >= 1 &&
+		     source <= 6 && deadline >= 1 && deadline <= 4 && accepted && keys > 0 &&
+		     keys <= 3003 && revisions <= 3003 && payload_size <= 384 * 1024);
 		using key = std::pair<uint64_t, uint64_t>;
 		std::vector<key> identities;
 		auto read_key = [&]
@@ -400,7 +419,7 @@ class checker
 			auto kind = cmd.number(1);
 			need(!nonzero(cmd.take(7)));
 			auto id = cmd.number(8);
-			need(kind >= 1 && kind <= 14 && id);
+			need(command_key_valid(kind, id));
 			return key{ kind, id };
 		};
 		for (size_t i = 0; i < keys; ++i)
@@ -522,7 +541,7 @@ class checker
 			claimed_events.push_back(key);
 		}
 	}
-	void bucket(size_t bucket)
+	std::vector<entry> index(size_t bucket)
 	{
 		auto name = filename("bucket-", bucket, ".eai");
 		expected_files.insert(name);
@@ -533,7 +552,7 @@ class checker
 		need(count <= 4096 && stored_total <= bucket_limit &&
 		     body.size() == 32 + count * 64);
 		std::vector<entry> entries;
-		uint64_t total = 0, last_segment = 0;
+		uint64_t total = 0;
 		for (size_t i = 0; i < count; ++i)
 		{
 			entry row{ in.fixed<16>(), in.fixed<32>(), in.number(4), in.number(4),
@@ -544,11 +563,15 @@ class checker
 			     row.segment < segment_count_limit &&
 			     (entries.empty() || entries.back().operation < row.operation));
 			total += row.size;
-			last_segment = std::max(last_segment, row.segment);
 			entries.push_back(row);
 		}
 		in.done();
 		need(total == stored_total);
+		return entries;
+	}
+	void bucket(size_t bucket)
+	{
+		auto entries = index(bucket);
 		if (entries.empty())
 			return;
 		std::sort(entries.begin(), entries.end(),
@@ -556,6 +579,7 @@ class checker
 				  return std::tie(first.segment, first.offset) <
 					 std::tie(second.segment, second.offset);
 			  });
+		const auto last_segment = entries.back().segment;
 		size_t at = 0;
 		for (size_t segment = 0; segment <= last_segment; ++segment)
 		{
@@ -584,6 +608,44 @@ class checker
 		need(at == entries.size());
 	}
 
+	std::map<uint64_t, bytes> selected_segments(size_t bucket, std::vector<entry> entries,
+						    const std::vector<entry> &selected)
+	{
+		std::sort(
+			entries.begin(), entries.end(), [](const auto &a, const auto &b)
+			{ return std::tie(a.segment, a.offset) < std::tie(b.segment, b.offset); });
+		std::map<uint64_t, bytes> segments;
+		for (const auto &selected_row : selected)
+		{
+			if (!segments.contains(selected_row.segment))
+			{
+				auto content =
+					frame(directory,
+					      filename("bucket-", bucket, "-") +
+						      std::to_string(selected_row.segment) + ".eas",
+					      "DURECS1", segment_limit);
+				reader file{ content };
+				need(file.fixed<16>() == lineage && file.number(4) == bucket &&
+				     file.number(4) == selected_row.segment);
+				const auto count = file.number(4);
+				need(count && file.number(4) == 0);
+				uint64_t offset = 0, observed = 0;
+				for (const auto &row : entries)
+					if (row.segment == selected_row.segment)
+					{
+						need(row.offset == offset &&
+						     hash(file.take(row.size)) == row.checksum);
+						offset += row.size;
+						++observed;
+					}
+				file.done();
+				need(count == observed);
+				segments.emplace(selected_row.segment, std::move(content));
+			}
+		}
+		return segments;
+	}
+
     public:
 	explicit checker(const std::filesystem::path &path)
 		: root(path)
@@ -591,6 +653,176 @@ class checker
 		, baselines(path)
 		, lifecycles(path)
 	{
+	}
+	root_page page(size_t bucket, const identity &after, const identity &ceiling,
+		       bool ceiling_known)
+	{
+		need(bucket < buckets && (!nonzero(after) || ceiling_known) &&
+		     (!ceiling_known || after <= ceiling));
+		restore_economic_authority::checker authority(root);
+		authority.begin_page();
+		auto control = frame(directory, "authority.eal", "DURECA1");
+		need(control.size() == 16552);
+		std::copy_n(control.begin(), 16, lineage.begin());
+		digest catalog_digest;
+		std::copy_n(control.begin() + 104, 32, catalog_digest.begin());
+		auto catalog = restore_economic_authority::catalog(directory, catalog_digest);
+		need(catalog.lineage == lineage);
+		for (const auto &entry : catalog.entries)
+			epochs.insert(entry.epoch);
+		root_page result;
+		result.lineage = lineage;
+		result.authority_body = hash(control);
+		result.cursor = after;
+		std::vector<entry> entries;
+		if (control[16520 + bucket / 8] & (1u << (bucket % 8)))
+			entries = index(bucket);
+		else
+		{
+			struct stat info = {};
+			need(lstat((directory / filename("bucket-", bucket, ".eai")).c_str(),
+				   &info) == -1 &&
+			     errno == ENOENT);
+		}
+		result.bucket_rows = entries.size();
+		auto retained = [&](const identity &operation)
+		{
+			return std::any_of(entries.begin(), entries.end(), [&](const auto &row)
+					   { return row.operation == operation; });
+		};
+		need((!nonzero(after) || retained(after)) &&
+		     (!ceiling_known || !nonzero(ceiling) || retained(ceiling)));
+		result.ceiling = ceiling_known	 ? ceiling :
+				 entries.empty() ? identity{} :
+						   entries.back().operation;
+		std::vector<entry> selected;
+		bool more = false;
+		for (const auto &row : entries)
+			if (row.operation > after && row.operation <= result.ceiling)
+			{
+				if (selected.size() == 2)
+				{
+					more = true;
+					break;
+				}
+				selected.push_back(row);
+			}
+		// Reuse bounded frames and the original semantic decoder. Inspect the
+		// physical geometry and every record hash in each touched segment; only
+		// the selected two records are semantically interpreted on this page.
+		auto segments = selected_segments(bucket, entries, selected);
+		for (const auto &selected_row : selected)
+		{
+			const auto &content = segments.at(selected_row.segment);
+			try
+			{
+				record(std::span<const uint8_t>(content).subspan(
+					       32 + selected_row.offset, selected_row.size),
+				       selected_row.operation);
+				++result.verified;
+			}
+			catch (const audit_budget_refused &)
+			{
+				throw;
+			}
+			catch (const std::runtime_error &)
+			{
+				result.invalid_records.push_back(selected_row.operation);
+			}
+			result.cursor = selected_row.operation;
+			++result.rows;
+		}
+		result.exhausted = !more;
+		return result;
+	}
+	// Required receipts are discovered from the immutable authority catalogue,
+	// including old inactive epochs. A missing filename is a selected finding.
+	root_page lifecycle_page(size_t bucket, const identity &after, const identity &ceiling,
+				 bool ceiling_known)
+	{
+		need(bucket < buckets && (!nonzero(after) || ceiling_known) &&
+		     (!ceiling_known || after <= ceiling));
+		restore_economic_authority::checker authority(root);
+		authority.begin_page();
+		auto control = frame(directory, "authority.eal", "DURECA1");
+		need(control.size() == 16552);
+		std::copy_n(control.begin(), 16, lineage.begin());
+		digest catalog_digest;
+		std::copy_n(control.begin() + 104, 32, catalog_digest.begin());
+		auto catalog = restore_economic_authority::catalog(directory, catalog_digest);
+		need(catalog.lineage == lineage);
+		std::vector<identity> operations;
+		for (const auto &marker : catalog.entries)
+		{
+			epochs.insert(marker.epoch);
+			if (marker.origin == initialization_origin::lifecycle_owner &&
+			    marker.initializing_operation[0] == bucket)
+				operations.push_back(marker.initializing_operation);
+		}
+		std::sort(operations.begin(), operations.end());
+		auto retained = [&](const identity &operation)
+		{ return std::binary_search(operations.begin(), operations.end(), operation); };
+		need((!nonzero(after) || retained(after)) &&
+		     (!ceiling_known || !nonzero(ceiling) || retained(ceiling)));
+		root_page result;
+		result.lineage = lineage;
+		result.authority_body = hash(control);
+		result.cursor = after;
+		result.bucket_rows = operations.size();
+		result.ceiling = ceiling_known	    ? ceiling :
+				 operations.empty() ? identity{} :
+						      operations.back();
+		bool more = false;
+		for (const auto &operation : operations)
+			if (operation > after && operation <= result.ceiling)
+			{
+				if (result.rows == 2)
+				{
+					more = true;
+					break;
+				}
+				try
+				{
+					// Each receipt gets isolated link/semantic state: one damaged
+					// receipt cannot poison a healthy sibling on the same page.
+					checker selected(root);
+					selected.lineage = lineage;
+					selected.epochs = epochs;
+					auto original = selected.lifecycles.load_one(
+						operation, lineage, catalog, control,
+						[&](auto account)
+						{ return authority.mapped_account(account); });
+					const auto root_bucket = original[0];
+					need(control[16520 + root_bucket / 8] &
+					     (1u << (root_bucket % 8)));
+					auto entries = selected.index(root_bucket);
+					auto found = std::find_if(
+						entries.begin(), entries.end(), [&](const auto &row)
+						{ return row.operation == original; });
+					need(found != entries.end());
+					auto segments = selected.selected_segments(
+						root_bucket, entries, { *found });
+					selected.record(std::span<const uint8_t>(
+								segments.at(found->segment))
+								.subspan(32 + found->offset,
+									 found->size),
+							original);
+					need(selected.lifecycles.finish() == 1);
+					++result.verified;
+				}
+				catch (const audit_budget_refused &)
+				{
+					throw;
+				}
+				catch (const std::runtime_error &)
+				{
+					result.invalid_records.push_back(operation);
+				}
+				result.cursor = operation;
+				++result.rows;
+			}
+		result.exhausted = !more;
+		return result;
 	}
 	initialization_provenance run()
 	{
@@ -641,6 +873,7 @@ class checker
 		size_t observed_claims = 0;
 		for (const auto &file : std::filesystem::directory_iterator(directory))
 		{
+			audit_directory_entry();
 			const auto name = file.path().filename().string();
 			if (name.starts_with("bucket-"))
 				need(expected_files.contains(name));
@@ -666,5 +899,18 @@ class checker
 		return provenance;
 	}
 };
+inline initialization_provenance audit(const std::filesystem::path &root,
+				       restore_economic_authority::audit_budget &budget)
+{
+	restore_economic_authority::scoped_audit_budget scope(budget);
+	restore_economic_authority::authority_read_lock lock(root);
+	audit_checkpoint();
+	initialization_provenance result;
+	if (lock.locked())
+		result = checker(root).run();
+	lock.finish();
+	audit_checkpoint();
+	return result;
+}
 } // namespace restore_economic_records
 #endif

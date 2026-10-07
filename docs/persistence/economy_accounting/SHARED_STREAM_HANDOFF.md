@@ -1,5 +1,14 @@
 # Accounting implementation and qualification handoff
 
+## Captured-item digest interface — 2026-10-06
+
+[The narrow Plan 5 handoff](CAPTURED_ITEM_OPENING_PLAN5_INTERFACE_2026-10-06.md)
+records exact EBS2, ESN5 and EIC2 producer preimages and historical compatibility.
+Primary source authentication confirms identical functions across the qualified
+auction/native and pending complete-startup candidates. Plan 5 owns independent
+preimage qualification; the primary owns producer integration and activation.
+Complete source capture, cold recovery, R1–R8 and release remain unfinished.
+
 ## Original baseline qualification and narrow reader handoff — 2026-10-05
 
 [The retained original-owner evidence](PLAN1_BASELINE_NATIVE_QUALIFICATION_HANDOFF_2026-10-05.md) records both-engine genuineC05

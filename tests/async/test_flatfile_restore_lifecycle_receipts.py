@@ -13,6 +13,7 @@ from pathlib import Path
 import stat
 import struct
 import subprocess
+import sys
 import tempfile
 
 from test_flatfile_restore_economic_authority import ROOT, change, inventory, rehash
@@ -74,6 +75,275 @@ def layout(value):
     return mappings, counts, sources, blobs
 
 
+def check_lifecycle_pages(binary, fixture, audit, artifacts, environment):
+    """Original native receipts/root links, durable fences and sticky fair refusals."""
+    import fcntl
+    import flatfile_economic_audit as pages
+    import time
+    from unittest import mock
+    observations = []
+    with tempfile.TemporaryDirectory(prefix="lifecycle-pages-", dir=artifacts) as temporary:
+        parent = Path(temporary)
+        root = parent / "state"
+        root.mkdir(mode=0o700)
+        evidence = root / "economic-evidence"
+
+        def install(files):
+            evidence.mkdir(mode=0o700, exist_ok=True)
+            for path in evidence.iterdir():
+                path.unlink()
+            for name, value in files.items():
+                (evidence / name).write_bytes(value)
+
+        def produce(mode):
+            install({})
+            ran = subprocess.run([str(fixture), str(root), mode], env=environment,
+                                 capture_output=True, text=True, timeout=600)
+            assert ran.returncode == 0 and not ran.stderr, ran
+            files = inventory(evidence)
+            assert files["authority.eal"][112:128] == bytes(16)
+            destination = artifacts / ("page-native-" + mode)
+            destination.mkdir(mode=0o700)
+            for name, value in files.items():
+                (destination / name).write_bytes(value)
+            return files
+
+        def raw(label, bucket=20, after="-", ceiling="-", valid=True):
+            before = retained(root)
+            ran = subprocess.run([str(binary), "--economic-lifecycle-page", str(root),
+                str(bucket), after, ceiling], env=environment, capture_output=True, text=True, timeout=45)
+            assert retained(root) == before, label + ": page changed authority"
+            assert ran.returncode == (0 if valid else 1), (label, ran)
+            assert ran.stderr == ("" if valid else "native_restore_qualification_failed\n"), (label, ran)
+            page = json.loads(ran.stdout) if valid else None
+            if valid:
+                assert page["rows"] <= 2 and page["bucket_rows"] <= 4096
+                assert page["verified"] + len(page["invalid_receipts"]) == page["rows"]
+            else:
+                assert not ran.stdout
+            observations.append(dict(label=label, exit=ran.returncode, page=page, native_state_unchanged=True))
+            return page
+
+        for mode in ("mixed", "empty", "renamed", "retired", "retained", "maximum", "generic"):
+            produce(mode)
+            page = raw("native " + mode)
+            assert page["rows"] == page["verified"] == int(mode != "generic")
+            assert page["range_exhausted"] and not page["invalid_receipts"]
+
+        produce("maximum-paged")
+        page = raw("two maximum native receipts")
+        assert page["rows"] == page["verified"] == 2 and page["range_exhausted"]
+        before = retained(root)
+        measured = subprocess.run([str(audit), "lifecycle-budget", str(root)], env=environment,
+            capture_output=True, text=True, timeout=45)
+        assert measured.returncode == 0 and not measured.stderr, measured
+        fields = list(map(int, measured.stdout.split()))
+        assert len(fields) == 8 and fields[:3] == [16384, 128*1024*1024, 8192] and fields[-2:] == [2, 2], fields
+        assert 0 < fields[3] <= fields[0] and 0 < fields[4] <= fields[1] and 0 <= fields[5] <= fields[2]
+        assert retained(root) == before
+        observations.append(dict(label="two maximum native receipt budget", limits=fields[:3],
+            actual_physical_reads=fields[3], actual_bytes=fields[4], actual_directory_entries=fields[5],
+            rows=2, verified=2, sanitizer_instrumented=True, native_state_unchanged=True))
+        assert fields[5] == 0, "catalogue-derived page unexpectedly enumerated a directory"
+        for mode in ("lifecycle-files", "lifecycle-bytes", "lifecycle-deadline"):
+            ran = subprocess.run([str(audit), mode, str(root)], env=environment,
+                capture_output=True, text=True, timeout=45)
+            assert ran.returncode == 1 and not ran.stdout and ran.stderr == "native_restore_qualification_failed\n", ran
+            assert retained(root) == before
+            observations.append(dict(label=mode + " refuses", exit=1, sanitizer_instrumented=True, native_state_unchanged=True))
+
+        short = produce("paged-short")
+        extended = produce("paged")
+        receipts = sorted(name for name in extended if name.endswith(".elr"))
+        assert len(receipts) == 9 and len([name for name in short if name.endswith(".elr")]) == 7
+        # Earlier original receipts remain byte-exact when the later epochs append.
+        assert all(short[name] == extended[name] for name in receipts[:7])
+        whole = subprocess.run([str(binary), "--economic-evidence-audit", str(root)], env=environment,
+            capture_output=True, text=True, timeout=45)
+        assert whole.returncode == 0 and not whole.stderr and json.loads(whole.stdout)["lifecycle_receipts"] == 9
+        install(short)
+        first = raw("first original page before append")
+        assert first["rows"] == first["verified"] == 2 and first["bucket_rows"] == 7 and not first["range_exhausted"]
+        install(extended)
+        after = first["cursor"]
+        observed = 2
+        while True:
+            page = raw("resumed original fence after append", after=after, ceiling=first["ceiling"])
+            assert not page["invalid_receipts"] and page["verified"] == page["rows"]
+            observed += page["rows"]
+            after = page["cursor"]
+            if page["range_exhausted"]:
+                break
+        assert observed == 7 and page["cursor"] == first["ceiling"]
+        assert raw("later append visible on next range")["ceiling"] != first["ceiling"]
+        raw("missing cursor", after="14" + "ff"*15, ceiling="14" + "ff"*15, valid=False)
+        raw("missing ceiling", after=first["cursor"], ceiling="14" + "ff"*15, valid=False)
+        raw("wrong bucket", bucket=21, after=first["cursor"], ceiling=first["ceiling"], valid=False)
+        raw("noncanonical bucket", bucket="020", valid=False)
+        raw("cursor without fence", after=first["cursor"], valid=False)
+
+        missing = dict(extended)
+        missing.pop(receipts[0])
+        install(missing)
+        invalid = raw("required filename wholly absent")
+        assert invalid["verified"] == 1 and invalid["invalid_receipts"] == [receipts[0][10:-4]]
+        damaged = dict(extended)
+        changed = bytearray(damaged[receipts[0]])
+        changed[-1] ^= 1
+        damaged[receipts[0]] = bytes(changed)
+        install(damaged)
+        invalid = raw("damaged receipt with healthy sibling")
+        assert invalid["verified"] == 1 and invalid["invalid_receipts"] == [receipts[0][10:-4]]
+        install(extended)
+        for label, unsafe in (
+            ("world-readable receipt", lambda p: p.chmod(0o644)),
+            ("hardlinked receipt", lambda p: os.link(p, evidence / "unrecognized-link")),
+            ("symlink receipt", lambda p: (p.rename(evidence / "unrecognized-target"), p.symlink_to("unrecognized-target"))),
+            ("FIFO receipt", lambda p: (p.unlink(), os.mkfifo(p, 0o600)))):
+            unsafe(evidence / receipts[0])
+            assert raw(label)["invalid_receipts"] == [receipts[0][10:-4]]
+            install(extended)
+
+        original = extended[receipts[0]][249:265].hex()
+        root_bucket = original[:2]
+        index_name = "bucket-" + root_bucket + ".eai"
+        damaged = dict(extended)
+        damaged.pop(index_name)
+        install(damaged)
+        invalid = raw("missing original common index")
+        assert receipts[0][10:-4] in invalid["invalid_receipts"]
+        missing_witness = dict(extended)
+        witness_name = next(name for name in extended if name.endswith(original + ".eab"))
+        missing_witness.pop(witness_name)
+        install(missing_witness)
+        assert receipts[0][10:-4] in raw("missing original common witness")["invalid_receipts"]
+        damaged = dict(extended)
+        index = damaged[index_name]
+        count = struct.unpack_from("<I", index, 68)[0]
+        row = next(index[80+i*64:144+i*64] for i in range(count) if index[80+i*64:96+i*64].hex() == original)
+        segment_id, offset, size = struct.unpack_from("<III", row, 48)
+        segment_name = f"bucket-{root_bucket}-{segment_id}.eas"
+        segment = bytearray(damaged[segment_name])
+        # Fully rehashed frame/index with a changed original durable revision.
+        record = bytearray(segment[80+offset:80+offset+size])
+        revision = struct.unpack_from("<Q", record, 64)[0]
+        struct.pack_into("<Q", record, 64, revision+1)
+        record = rehash(record)
+        segment[80+offset:80+offset+size] = record
+        index = bytearray(index)
+        row_at = next(80+i*64 for i in range(count) if index[80+i*64:96+i*64].hex() == original)
+        index[row_at+16:row_at+48] = hashlib.sha256(record).digest()
+        damaged[index_name], damaged[segment_name] = rehash(index), rehash(segment)
+        install(damaged)
+        assert receipts[0][10:-4] in raw("changed original root revision")["invalid_receipts"]
+        install(extended)
+
+        progress = parent / "progress.json"
+        source = pages.source_digest(root, binary)
+        saved = pages.new_progress(source, time.time(), lifecycle_receipts=True)
+        saved["rotation"] = 20
+        pages.progress_io.save(progress, saved, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+        command = [sys.executable, "-B", str(ROOT / "scripts/flatfile_economic_audit.py"), "--state-root", str(root),
+            "--qualifier", str(binary), "--progress", str(progress), "--scope", "lifecycle-receipts"]
+
+        def load():
+            return pages.validate(pages.progress_io.load(progress, pages.MAX_PROGRESS_BYTES,
+                pages.AuditError, "flatfile audit progress"), source, time.time(), lifecycle_receipts=True)
+
+        def cli(label, findings=False):
+            before = retained(root)
+            ran = subprocess.run(command, env=environment, capture_output=True, text=True, timeout=60)
+            assert ran.returncode == int(findings) and not ran.stderr, (label, ran)
+            assert retained(root) == before
+            report = json.loads(ran.stdout)
+            assert report["scope"] == "required_lifecycle_receipt_root_page"
+            assert not any(report[key] for key in ("complete", "consistent_entire_sweep", "release_qualified",
+                "native_holdings_compared", "baseline_books_closed", "lifecycle_receipts_closed", "orphan_namespace_closed"))
+            observations.append(dict(label=label, exit=ran.returncode, report=report, native_state_unchanged=True))
+            return report
+
+        assert cli("durable first page")["examined_receipts"] == 2
+        anchored = load()
+        native_before = retained(root)
+        assert anchored["buckets"][20]["cursor"] and anchored["buckets"][20]["ceiling"]
+        for _ in range(255):
+            report, updated = pages.scan(root, binary, load(), lifecycle_receipts=True)
+            pages.progress_io.save(progress, updated, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+            assert report["examined_receipts"] == 0 and report["range_exhausted"] and not report["page_refused"]
+        assert load()["rotation"] == 20 and load()["buckets"][20] == anchored["buckets"][20]
+        assert retained(root) == native_before
+        observations.append(dict(label="all 255 sibling buckets rotate before resume", native_state_unchanged=True))
+        assert cli("durable resumed page")["examined_receipts"] == 2
+        saved = load()
+        saved["rotation"] = 20
+        pages.progress_io.save(progress, saved, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+        later_missing = dict(extended)
+        later_missing.pop(receipts[4])
+        install(later_missing)
+        assert cli("second-page missing receipt sticky finding", True)["verified_receipt_roots"] == 1
+        assert load()["findings"] == [dict(bucket=20, operation_id=receipts[4][10:-4], code="flatfile_lifecycle_receipt_invalid")]
+        install(extended)
+        assert cli("healthy sibling after sticky finding", True)["bucket"] == 21
+
+        saved = load()
+        saved["rotation"] = 20
+        pages.progress_io.save(progress, saved, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+        checkpoint = load()["buckets"][20].copy()
+        control = bytearray(extended["authority.eal"])
+        control[-1] ^= 1
+        (evidence / "authority.eal").write_bytes(control)
+        refused = cli("refused page rotates without advancing", True)
+        assert refused["page_refused"] and not refused["range_exhausted"] and refused["next_bucket"] == 21
+        assert load()["buckets"][20] == checkpoint
+        install(extended)
+        assert cli("healthy sibling after refusal", True)["bucket"] == 21
+
+        with mock.patch.object(pages.subprocess, "run", side_effect=subprocess.TimeoutExpired("qualifier", 45)):
+            refused, updated = pages.scan(root, binary, saved, lifecycle_receipts=True)
+        assert refused["page_refused"] and updated["rotation"] == 21 and updated["buckets"][20] == checkpoint
+        observations.append(dict(label="timeout rotates without advancing", native_state_unchanged=True))
+        original_progress = progress.read_bytes()
+        with mock.patch.object(pages.progress_io.os, "replace", side_effect=OSError("interrupted")):
+            try:
+                pages.progress_io.save(progress, updated, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+            except OSError:
+                pass
+            else:
+                raise AssertionError("interrupted lifecycle progress replaced checkpoint")
+        assert progress.read_bytes() == original_progress
+        observations.append(dict(label="interrupted checkpoint preserves original", native_state_unchanged=True))
+        for label, wrong in (("wrong scope", command[:-2]), ("checkpoint inside authority",
+            [*command[:], "--progress", str(root / "forbidden.json")])):
+            ran = subprocess.run(wrong, env=environment, capture_output=True, text=True, timeout=60)
+            assert ran.returncode == 1 and not ran.stdout and ran.stderr == "flatfile_economic_audit_refused\n"
+            assert progress.read_bytes() == original_progress
+            observations.append(dict(label=label, exit=1, native_state_unchanged=True))
+        foreign = load()
+        foreign["lineage"] = "02" + "00"*15
+        pages.progress_io.save(progress, foreign, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+        foreign_bytes = progress.read_bytes()
+        ran = subprocess.run(command, env=environment, capture_output=True, text=True, timeout=60)
+        assert ran.returncode == 1 and not ran.stdout and ran.stderr == "flatfile_economic_audit_refused\n"
+        assert progress.read_bytes() == foreign_bytes
+        progress.write_bytes(original_progress)
+        observations.append(dict(label="foreign lineage preserves checkpoint", exit=1, native_state_unchanged=True))
+        with pages.progress_io.lock(progress, pages.AuditError, "flatfile audit progress"):
+            ran = subprocess.run(command, env=environment, capture_output=True, text=True, timeout=60)
+            assert ran.returncode == 1 and not ran.stdout and ran.stderr == "flatfile_economic_audit_refused\n"
+        assert progress.read_bytes() == original_progress
+        observations.append(dict(label="concurrent checkpoint owner refused", native_state_unchanged=True))
+        with (root / "domains/.critical-authority.lock").open("rb") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            raw("native writer lock held", valid=False)
+        journal = root / "domains/.critical-authority-transaction"
+        journal.write_bytes(b"pending")
+        raw("pending native journal", valid=False)
+        journal.unlink()
+        assert inventory(evidence) == extended
+    return dict(cases=len(observations), observations=observations, skips=0, release_qualified=False,
+                source_capture_executed=False, lifecycle_install_executed=False, activation_executed=False)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--artifacts", required=True, type=Path)
@@ -109,8 +379,36 @@ def main():
     audit_source.write_text('''#include "qualify_flatfile_economic_records.h"
 #include <iostream>
 int main(int argc, char **argv) {
-    if (argc != 2) return 2;
+    if (argc != 2 && argc != 3) return 2;
     try {
+        if (argc == 3) {
+            const auto mode = std::string(argv[1]);
+            if (mode != "maximum-budget" && !mode.starts_with("lifecycle-")) return 2;
+            restore_economic_authority::audit_budget budget;
+            const auto files = budget.remaining_files, bytes = budget.remaining_bytes,
+                       entries = budget.remaining_entries;
+            if (mode.starts_with("lifecycle-")) {
+                if (mode == "lifecycle-files") budget.remaining_files = 1;
+                else if (mode == "lifecycle-bytes") budget.remaining_bytes = 1;
+                else if (mode == "lifecycle-deadline") budget.deadline = std::chrono::steady_clock::now();
+                else if (mode != "lifecycle-budget") return 2;
+                restore_economic_authority::scoped_audit_budget scope(budget);
+                restore_economic_authority::authority_read_lock lock(argv[2]);
+                auto value = restore_economic_records::checker(argv[2]).lifecycle_page(20, {}, {}, false);
+                lock.finish(); budget.checkpoint();
+                std::cout << files << " " << bytes << " " << entries << " "
+                          << files-budget.remaining_files << " " << bytes-budget.remaining_bytes
+                          << " " << entries-budget.remaining_entries << " " << value.rows
+                          << " " << value.verified << "\\n";
+                return 0;
+            }
+            auto value = restore_economic_records::audit(argv[2], budget);
+            std::cout << files << " " << bytes << " " << entries << " "
+                      << files-budget.remaining_files << " " << bytes-budget.remaining_bytes
+                      << " " << entries-budget.remaining_entries << " "
+                      << value.lifecycle_receipts << "\\n";
+            return 0;
+        }
         auto result = restore_economic_records::checker(argv[1]).run();
         std::cout << result.legacy_unknown_epochs << " " << result.never_initialized_epochs
                   << " " << result.initialized_epochs << " " << result.complete()
@@ -184,10 +482,24 @@ int main(int argc, char **argv) {
                 else:
                     assert not result.stdout and result.stderr == "native_restore_qualification_failed\n"
                 assert retained(evidence) == economic_before, label + ": restore wrote retained evidence"
+            measured_budget = None
+            if label == "native maximum codec/common-baseline receipt":
+                measured = run(audit, ["maximum-budget", state], True)
+                assert measured.returncode == 0 and not measured.stderr, measured
+                fields = list(map(int, measured.stdout.split()))
+                assert len(fields) == 7, fields
+                file_limit, size, entries, actual_files, actual_bytes, actual_entries, linked = fields
+                assert (file_limit, size, entries, linked) == (16384, 128*1024*1024, 8192, 1), fields
+                assert 2048 < actual_files <= file_limit and 0 < actual_bytes <= size, fields
+                assert 0 < actual_entries <= entries and retained(state) == before
+                measured_budget = dict(maximum_physical_reads=file_limit, maximum_bytes=size,
+                    maximum_directory_entries=entries, actual_physical_reads=actual_files,
+                    actual_bytes=actual_bytes, actual_directory_entries=actual_entries,
+                    lifecycle_receipts=linked, sanitizer_instrumented=True)
             results.append({"label": label, "accepted": valid, "lifecycle_receipts": receipts if valid else None,
                             "lifecycle_provenance_complete": qualified,
                             "files": len(files), "bytes": sum(map(len, files.values())),
-                            "limitation": limitation})
+                            "limitation": limitation, "measured_operator_budget": measured_budget})
             print(("ACCEPTED " if valid else "REFUSED ") + label, flush=True)
 
         def produce(mode):
@@ -388,6 +700,7 @@ int main(int argc, char **argv) {
                                           (d/receipt).symlink_to("unrecognized-target"))),
             ("FIFO receipt", lambda d: ((d/receipt).unlink(), os.mkfifo(d/receipt, 0o600)))):
             check(label, mixed, unsafe=unsafe)
+    page_report = check_lifecycle_pages(binary, fixture, audit, artifacts, environment)
     assert fingerprint(ROOT / "src") == native_inputs, "native source changed during test"
     if args.legacy_artifacts:
         assert fingerprint(args.legacy_artifacts) == legacy_inputs, "legacy fixture artifacts changed"
@@ -396,6 +709,7 @@ int main(int argc, char **argv) {
     report = {"format": 1, "native_raw_inputs": native_inputs, "owned_inputs": owned_inputs,
               "cases": results, "case_count": len(results), "refused": sum(not row["accepted"] for row in results),
               "accepted": sum(row["accepted"] for row in results), "skips": 0,
+              "lifecycle_pages": page_report,
               "previous_reader_compatibility_refusals": red, "legacy_inputs": legacy_inputs,
               "source_capture_executed": False,
               "lifecycle_install_executed": False, "activation_executed": False,

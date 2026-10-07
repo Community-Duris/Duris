@@ -54,8 +54,14 @@ The report's `retained_pending_claim_allocations: verified` covers these
 retained projections. It does not authenticate the origin-policy selector or
 the original PID from a frozen source digest, reconcile current native claim
 balances, or qualify claim producers. The saved snapshot exporter/reconciler
-still needs partial-consumption coverage. Source capture and release remain
-unqualified; a successful check never authorizes correction of a finding.
+now captures bounded partial-consumption rows and reconciles retained remaining
+value against current claim holdings. Missing coverage and malformed, mixed,
+orphan, overdrawn or wrong-account allocations remain findings. Source/posting
+metadata spans every64-pair batch; only exact requested pairs are counted,
+while actual duplicate rows still refuse. See
+[the primary snapshot qualification](PLAN5_PARTIAL_SNAPSHOT_PRIMARY_QUALIFICATION_2026-10-06.md).
+Complete source capture, producer authentication and release remain unqualified;
+a successful check never authorizes correction of a finding.
 
 Status 0 emits a small JSON report with database scope and verified root/byte
 counts. A discrepancy or missing/oversized source emits no report, prints a
@@ -68,6 +74,176 @@ opaque EAI1 intent facts. Its reconciler authenticates projected plan fields
 against those retained plans; the canonical SQL check additionally authenticates
 the retained intent and its SQL binding. Capture the two checks under the release's
 quiescence procedure; independent runs do not constitute one combined cut.
+
+Provenance UID filters require the stored UID to be an exact integer. Float,
+Boolean and string aliases do not identify that UID. Retained/unattributed
+histories, global refusal and output limits retain their original behavior.
+See [the primary UID qualification](PLAN5_UID_PROVENANCE_PRIMARY_QUALIFICATION_2026-10-06.md).
+
+For repeated SQL canonical-root checks, add `--progress-path` pointing to a
+protected local file. Its parent directory must already exist. The maintained
+Linux/POSIX CLI uses an exclusive OS lock and writes a mode-0600 checkpoint by
+fsync, atomic rename, and directory fsync. A killed process releases its lock;
+a page interrupted before checkpoint publication is retried. Malformed,
+oversized, foreign-target, symlinked, or unprotected checkpoints refuse.
+
+```sh
+python3 scripts/economic_sql_canonical_audit.py \
+  --host 127.0.0.1 --user accounting_audit --database duris \
+  --password-env ACCOUNTING_AUDIT_PASSWORD \
+  --progress-path /protected/audit/canonical-progress.json --page-roots 2
+```
+
+Each invocation checks at most two candidate operation IDs in one read-only consistent snapshot
+and rolls back before publishing local progress. It bounds each projection to
+8,192 rows, the page to 1,024 SELECTs and 32 MiB of returned text, and admission
+of additional queries to 30 seconds. The connection retains its 30-second SQL
+read timeout. These are component bounds, not game-loop or release-host budgets.
+The sweep freezes its upper ID at the start, finishes that finite range even
+while higher IDs arrive, then starts again at the lowest ID. IDs schedule
+reads; they never certify commit order. A lower-ID transaction committed behind
+the cursor is eligible on the next sweep. Every page has one read view; the
+whole sweep combines different read views and always reports `complete=false`.
+
+The candidate range merges IDs from the root table, account effects, coin postings,
+children, item references, source claims and baseline witnesses. Each source uses
+its existing operation-ID-leading index and direct single-ID seeks. Repeated
+details for one operation do not consume additional candidate slots; no whole-table
+aggregation is needed. The ceiling covers the same seven sources, so a retained
+detail beyond the largest surviving root, or with no surviving roots, is scheduled.
+A missing nonzero parent root reports `restore_economic_orphan_root_mismatch`;
+the audit leaves the evidence unchanged. `candidate_source_count` records seven
+sources and `unattached_root_ids` counts these missing parents on this page.
+
+Version-1 checkpoints remain readable. An already started range finishes under
+its saved ceiling, and the following sweep captures the expanded range. Existing
+`examined_roots`, `sweep_rows` and `total_rows` fields count scheduled candidate IDs;
+they are not counts of surviving stored roots. Sticky findings and inexact backlog
+retain their existing meanings. Composite-key reservations and controls, native
+holdings and other evidence are outside this candidate enumeration; orphan coverage
+still remains incomplete.
+
+This mode reuses the full reader's original EAI1/EAP1 metadata, digest, count,
+effect, posting, child, item-reference and custody checks. It also checks each
+root's lifecycle namespace and exact source claim. Selected committed baseline
+roots additionally authenticate their original EAB1/EAB2 witness, exact
+reservations, inbox command/fence binding, successful receipt, versioned
+claim-origin policy/identity, and absence of native mutation effects. Reservation
+reads use pages of at most 257 rows, so a valid 9,071-reservation witness fits the
+existing projection bound. Other roots must have no baseline witness or
+reservations; rejected roots must have no details.
+
+Each selected baseline witness also checks its book control revision and terminal
+operation in the same read view. An indexed projection reads at most the
+predecessor, successor and terminal revisions, refusing gaps, foreign or rejected
+neighbour roots and a mismatched terminal as `restore_economic_baseline_book_mismatch`.
+These local checks do not enumerate controls with no retained roots or prove a
+consistent whole-book cut across separate pages. Full quiescent comparison remains
+required; page reports retain incomplete whole-store coverage.
+
+The independent canonical reader checks that observed numeric source columns
+use SQL integer storage before reading JSON projections. MySQL/MariaDB can
+render integral DOUBLE or DECIMAL values as JSON integers; that conversion
+cannot authenticate the original representation. Such altered storage is
+reported as `restore_economic_canonical_storage_mismatch`, even when projected
+values equal the retained plan. This check also applies to the full restore
+reader. It does not replace complete migration/runtime schema qualification.
+
+The report counts authenticated baseline roots and retained NULL claim-origin
+markers separately. Historical NULL admission times and claim-origin markers
+stay unknown. This mode does not authenticate the entire baseline book,
+pending-claim consumption allocations, orphan evidence, complete command
+receipts, or current native holdings. Those whole-store coverage fields remain
+false, including after an empty or completed range.
+The existing full-database check remains necessary under release quiescence.
+Flatfile resumable scans and complete reconciliation remain separate gates.
+
+Routine output has aggregate counts, diagnostic codes, page resource metrics,
+sweep age and time since the last completed range. Backlog is a lower bound
+from the same page's extra key, explicitly inexact; it excludes unseen late
+commits and new higher IDs. The protected checkpoint retains at most 32
+operation-ID/diagnostic observations and a sticky truncation flag. Subsequent
+clean pages do not erase earlier findings or make the CLI report clearance.
+For root-only mode, status 1 means retained findings; status 2 means refusal without advancing the
+checkpoint. Status 0 means this partial page completed without retained
+findings. Local cursor target binding is not a database incarnation or trusted
+capture seal. Checkpoint reuse after restore cannot establish historical
+coverage, native authority, activation or release readiness.
+
+Add `--all-namespaces` with `--progress-path` to rotate through one bounded
+root, baseline-control or baseline-reservation page per invocation. The order
+is roots, controls, reservations, then roots again; even a large root history
+cannot postpone the other two namespaces. `--page-roots 1..2` bounds candidate
+records in the selected namespace. The same read-only transaction, rollback,
+projection/query/byte/time bounds, private lock and atomic checkpoint apply.
+
+```sh
+python3 scripts/economic_sql_canonical_audit.py \
+  --host 127.0.0.1 --user accounting_audit --database duris \
+  --password-env ACCOUNTING_AUDIT_PASSWORD \
+  --progress-path /protected/audit/all-canonical-progress.json \
+  --page-roots 2 --all-namespaces
+```
+
+This mode writes `economic_sql_canonical_progress_v3`. Each namespace keeps
+its own cursor, pinned ceiling, counters, ages and sticky findings. Selecting
+it with an existing valid v1 checkpoint preserves the complete root progress
+and starts the other namespaces from their beginning. A valid v2 checkpoint
+preserves all three namespace states and its next namespace when upgraded.
+Both upgrades initialize separate scheduling-refusal counts to zero; older
+checkpoints contain no refusal history. Root-only mode refuses the aggregate
+file. A checkpoint must not be copied
+between database targets or interpreted as a database incarnation seal.
+
+Query, byte, projection-row and cooperative time budget exhaustion refuses the
+selected page and persists a rotation to the next namespace. The refused
+namespace retains its exact cursor, ceiling, coverage counters and findings;
+its refusal count and last-refusal time are separate, bounded checkpoint fields.
+This lets siblings continue even when one page repeatedly exceeds a budget.
+The page reports `page_refused=true`, no new findings, unknown query/byte/record
+measurements (`null`), and `coverage.consistent_page=false`. A refusal does not
+establish even a one-record backlog lower bound. Transport, schema, source,
+rollback and cursor-close errors still exit 2 without saving a rotation.
+
+In aggregate mode, status 1 means retained findings or scheduling refusals.
+`retained_refusal_count` remains sticky through later successful pages and
+sweeps; those pages cannot clear a refusal or return an all-clear status.
+Status 0 means a successful partial page with neither retained findings nor
+refusals. Creating new progress starts new scheduling history and cannot
+establish coverage for an older checkpoint or qualify a release.
+
+Controls use `(lineage,epoch)` and reservations use
+`(lineage,epoch,identity_kind,identity_id)` from their existing primary indexes.
+Binary identities use fixed lowercase hex; numeric key parts use fixed-width
+unsigned big-endian hex in private progress, preserving SQL key order through
+UINT64_MAX. Incompatible signed/noninteger reservation-key storage refuses
+before range capture. Zero scheduling keys remain enumerable so corrupt rows can produce
+findings. Expanded lexicographic seeks and one extra candidate bound each
+page without whole-table aggregation. Each finite range finishes before its
+namespace starts again, making delayed lower keys eligible on the next pass.
+
+Control pages check lifecycle/creator/opening identity, legitimate empty
+revision0 books, and bounded first/terminal/overrun witness references. A bad
+control reports `restore_economic_baseline_book_mismatch`. Reservation pages
+check identity and retained witness/control/root/lifecycle attachment; an
+orphan reports `restore_economic_baseline_reservation_mismatch`. Exact original
+witness membership and interior book continuity remain the existing root
+reader's checks. The namespace pages do not repeatedly decode whole capsules
+for every reservation, and they never repair an observation.
+
+The v3 page report identifies the selected and next namespace and supplies
+aggregate counters and ages for all three. Its completed-sweep count is the
+minimum of their individual counts; it describes separate historical passes,
+not one consistent authority cut. At most32 findings per namespace are retained
+privately, with sticky truncation. Status1 reflects findings anywhere in the
+checkpoint, including on a later clean page. Budget/refusal failures leave
+the checkpoint and rotation unchanged. Routine output excludes private keys.
+The backlog lower bound belongs only to the selected page. All complete native,
+receipt, allocation, orphan, activation and release authority remains unproven;
+`complete`, `consistent_entire_sweep` and `release_qualified` stay false.
+Other retained/native namespaces, flatfile resumability, full quiescent
+comparison and release-host performance remain separate gates. See
+[the composite namespace qualification](PLAN5_SQL_COMPOSITE_SWEEP_QUALIFICATION_2026-10-06.md).
 
 Every non-exception view includes the whole audited input's `coverage` object:
 `lineage`, `selected_epoch`, `complete`, `quiescent`, and `exception_count`.
@@ -637,6 +813,24 @@ or negative denominations still refuse. See
 
 ## Retained flatfile intent and plan semantics
 
+The operator command `bin/tools/qualify_flatfile_restore
+--economic-evidence-audit /absolute/private/copy` acquires a nonblocking shared
+lock on the existing native authority lock. A cooperating native writer holds
+that same inode exclusively, so the audit refuses while the writer owns it.
+The reader never initializes storage or recovers a pending transaction journal.
+Unsafe directories/locks, pending journals and replaced authority inodes refuse;
+the final read rechecks the original directory/lock identity before reporting.
+An absent lock is accepted only for an empty legacy observation and is not created.
+
+The operator scan admits at most128 MiB of physical reads,16384 file reads and
+8192 directory visits, including repeated reads and ignored entries. Its
+30-second deadline is cooperative and is checked during decoding and before
+final reporting; it does not establish a hard I/O or release-host latency bound.
+Budget exhaustion refuses rather than reporting clearance. Offline restore
+candidate qualification retains its original bounds and recovery rules. This
+whole scan has no durable pagination and does not certify complete native holdings,
+producer coverage, activation or release readiness.
+
 The independent flatfile restore reader validates retained generic EAI1/EAP1
 semantics as well as physical checksums and command/intent bindings. A correctly
 checksummed record still refuses when its policy, source kind, account effects,
@@ -654,6 +848,45 @@ independent interpretation of the versioned wire contract; production mutation
 code supplies qualification oracles only in tests. Every observation leaves
 retained economic bytes unchanged. See
 [the exact semantic qualification](PLAN5_FLATFILE_PLAN_SEMANTICS_QUALIFICATION_2026-10-06.md).
+
+## Durable flatfile root and authority pages
+
+Use an existing absolute private authority copy and an explicit protected
+checkpoint outside that authority. The native qualifier takes a shared lock;
+checkpoint writes and its exclusive lock stay outside native authority.
+
+```sh
+python3 scripts/flatfile_economic_audit.py \
+  --state-root /absolute/private/copy \
+  --qualifier /absolute/bin/qualify_flatfile_restore \
+  --progress /absolute/operator/root-progress.json
+
+python3 scripts/flatfile_economic_audit.py \
+  --state-root /absolute/private/copy \
+  --qualifier /absolute/bin/qualify_flatfile_restore \
+  --progress /absolute/operator/authority-progress.json \
+  --scope authority-links
+```
+
+Each invocation observes one bounded page, then durably persists the next
+bucket and that bucket's cursor/pinned ceiling. Retained-root mode rotates256
+buckets; authority-links mode rotates512 mapping/native directions. Each page
+examines at most two records, with existing byte, read and cooperative-time
+bounds. Repeated historical ranges eventually observe lower late arrivals;
+different pages do not constitute one consistent authority snapshot.
+
+Refused buckets retain their cursor and sticky findings while siblings continue.
+Status1 means retained findings; malformed or unsafe progress refuses before
+publishing an update. Finite nonnegative timestamps must be ordered and no later
+than the current clock; a backward clock can refuse an existing checkpoint.
+Source binding includes root path, qualifier, wrapper and progress helper.
+Checkpoint reuse across restore/source changes does not authenticate a new cut.
+Empty legacy authority remains uninitialized and creates no checkpoint.
+
+Root semantic validity and authority crosslinks are partial observations.
+All page reports keep complete sweep, release and full holding/baseline/lifecycle
+coverage flags false. See [primary integration](
+PLAN5_FLATFILE_PAGES_PRIMARY_INTEGRATION_2026-10-06.md).
 
 ## Native mobile custody grammar
 
@@ -730,3 +963,42 @@ The release report must name exact tested commit, backend and image/version,
 commands, sampled workload, route coverage and any intentionally unsupported
 route. Synthetic fixtures and real player journeys are separate lines. Current
 evidence and blockers are in [the release report](RELEASE_REPORT_2026-09-27.md).
+
+## Maximum lifecycle one-shot workload — 2026-10-06
+
+The [primary maximum-budget qualification](PLAN5_LIFECYCLE_BUDGET_PRIMARY_INTEGRATION_2026-10-06.md)
+measures the unchanged maximum native-codec lifecycle fixture at 9,574 physical
+reads, 19,639,289 bytes and 2,675 directory entries. The one-shot read cap is
+16,384; 128 MiB, 8,192 entries and the cooperative 30-second deadline remain.
+Repeated physical reads still count. The two durable page modes keep their
+explicit 64-read/32 MiB limits. Larger history can still refuse and is not release
+qualification; no economic state is corrected by this read-only operator.
+
+## Required lifecycle receipt pages
+
+Use a separate checkpoint outside native authority for each audit scope and
+qualifier/source identity. For required lifecycle receipts, run:
+
+```sh
+python3 scripts/flatfile_economic_audit.py --state-root /absolute/native/root \
+  --qualifier /absolute/qualify_flatfile_restore \
+  --progress /absolute/audit-state/lifecycle.json --scope lifecycle-receipts
+```
+
+Each invocation checks at most two required initializer roots in one rotating
+bucket, including inactive epochs. A missing receipt is reported against its
+initializer operation ID, so absent files cannot disappear from the census.
+Current catalog membership fixes each historical range ceiling; later arrivals
+are visited in later ranges. Invalid receipts remain sticky findings. Budget
+refusal rotates without advancing the affected cursor or earning a range.
+
+Lifecycle pages retain 16,384 physical reads, 128 MiB, 8,192 directory entries
+and 30 seconds; existing root/authority pages retain their explicit smaller
+budgets. Updated qualifier/reader bytes require a fresh separate checkpoint;
+do not silently reuse a checkpoint bound to another source. The checkpoint
+lock, safe atomic update, future-timestamp refusal and original witness/receipt
+checks remain. Native economic evidence is read-only.
+
+Pages report partial coverage: complete/consistent-entire-sweep/release and
+holdings/baseline/orphan/lifecycle closure flags remain false. A range count
+or zero findings does not qualify complete accounting or release.

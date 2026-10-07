@@ -1,5 +1,165 @@
 # Double-entry economy: remaining requirements
 
+## Lifecycle receipt paging qualified — 2026-10-07
+
+[Primary integration](PLAN5_LIFECYCLE_PAGES_PRIMARY_INTEGRATION_2026-10-07.md)
+adds independent durable pages for required lifecycle receipts, including
+inactive epochs. The complete original lifecycle suite passes 131 cases
+(nine accepted, 122 refused) plus 46 page controls, zero skips. The original
+authority suite also passes all 20 positive stores, 367 corruption refusals,
+28 root-page and 29 authority-page controls. Missing receipts remain visible
+through their required initializer roots. Sticky findings, rotating refused
+buckets, explicit partial coverage and existing safety budgets remain.
+Native source/artifacts and formatting-only equivalence are authenticated.
+Full holdings, producers, recovery and release remain open.
+
+## Lifecycle audit maximum budget qualified — 2026-10-06
+
+[Primary integration](PLAN5_LIFECYCLE_BUDGET_PRIMARY_INTEGRATION_2026-10-06.md)
+passes the full 131-case native lifecycle suite: nine accepted, 122 refused and
+zero skips. Its maximum modeled native-codec fixture needs 9,574 physical reads,
+so the default cap increases from 2,048 to 16,384 while byte/time/directory and
+explicit page budgets remain. Source and economic evidence stay unchanged.
+Complete holdings, genuine producers, growing-history qualification and release
+remain unfinished.
+
+## Durable independent flatfile pages qualified — 2026-10-06
+
+[Primary qualification](PLAN5_FLATFILE_PAGES_PRIMARY_INTEGRATION_2026-10-06.md)
+passes57 new root/authority-page controls and the complete original native suite.
+Sticky refusals and historical-range progress remain partial evidence. The first
+unattributed timestamp refusal is preserved, and the timestamp guard remains
+unchanged. Whole native reconstruction, R7/R8 and release stay unfinished.
+
+## SQL audit refusal fairness qualified — 2026-10-06
+
+[Primary qualification](PLAN5_SQL_FAIRNESS_PRIMARY_INTEGRATION_2026-10-06.md)
+passes67 original methods without errors/skips and18 mandatory tests on both
+private SQL engines. Budget-refused namespaces now rotate while preserving
+coverage and sticky refusal history; cleanup/source failures do not rotate.
+Producer gameplay, full R7/R8, activation and release remain open.
+
+## Current producer qualification — 2026-10-07
+
+[Final source 30837d50](AUCTION_NATIVE_ADMISSION_CAP_QUALIFICATION_2026-10-07.md)
+passes both strict 753-provider production builds, nine contracts and the
+original native admission-boundary regression. Selected LIST/CLAIM accounting
+nodes above 3,000 refuse before domain effects; structural/read-only capacity
+remains 4,096. The incoming allowlist and inactive/spell boundaries stay exact.
+This source is private; maintained producer integration remains open.
+
+Both actual MySQL and MariaDB warm/full-cold/owned-shutdown journeys now pass
+on the same actual ELF with the genuine production lifecycle teardown guard.
+MySQL's genuine origin-INSERT fault exits 17 as expected and retains one phase-2
+journal record. Its subsequent pending-journal cold case hits the unchanged
+60-second deadline (exit 124, 60.024 seconds); no recovery stage/stack is yet
+observed. MariaDB fault cases remain unrun under original fail-fast order.
+Primary authenticates 123 evidence files, 1,779 native archive members and exact
+owned cleanup. Normal cold success does not establish fault recovery completion.
+
+The full-tree auction component now applies LIST operation 151 (outcome 0,
+error 0, 320 result bytes), then fails the original early-finalize rejection
+assertion. The actual early-finalize errno is unobserved. Source review finds
+the legacy descendant refusal and v1-only non-item execution route; complete
+native-v2 historical/current-cut proof integration is in progress. Primary
+authenticates 98 sealed files, 542 native members and cleanup. Neither this
+component model nor native boundary tests establish physical player journeys.
+
+Published reader parent 66a3deee3 contains separately qualified SQL refusal
+fairness, flatfile pages and maximum lifecycle audit budget. Unrelated SHOP
+edits remain. Plans 1–4, complete R1–R8 and release remain unfinished.
+
+## Current flatfile audit envelopes published — 2026-10-06
+
+[Primary qualification](PLAN5_FLATFILE_ENVELOPE_PRIMARY_INTEGRATION_2026-10-06.md)
+is committed and directly pushed as `a455dcb94`, with exact remote readback.
+The complete original native regression passes:1058 metadata and574 envelope
+comparisons,11 native-accepted records, ten malformed-envelope refusals,20 valid
+stores and367 corruption refusals. All2881 selected source bytes/modes and
+economic evidence remain unchanged. The independent reader now accepts current
+collector/native-mobile/accounted-shop envelopes while retaining original
+sentinel, size and binding checks. Current753 producer/cold qualification remains
+separate. The [operator-lock/budget slice](
+PLAN5_FLATFILE_AUDIT_BOUNDARY_PRIMARY_INTEGRATION_2026-10-06.md) is
+published as79df6775b. Its complete original native suite and21 added
+authority/budget controls pass; selected source and economic bytes stay
+unchanged. Current producer/cold qualification remains separate.
+
+## Independent composite SQL sweep published — 2026-10-06
+
+[Primary integration](PLAN5_SQL_COMPOSITE_PRIMARY_INTEGRATION_2026-10-06.md)
+is committed and normally pushed as `8f40b43ec`, with exact remote readback.
+The complete decoder/audit slice checks standalone baseline controls and orphan
+reservations through bounded rotating namespace pages. All35 maintained methods
+survive;34 are AST-exact and the remaining native method gains stronger checks.
+Primary Windows checks pass135 methods with13 explicit platform/native/budget
+skips across four affected suites. Normal validation passes, release false.
+Peer117-method native results remain scoped to its frozen inputs. Current
+producer recovery, full R7/R8, activation and whole Plan completion stay open.
+
+## Independent captured-item reader published — 2026-10-06
+
+[Primary integration](PLAN5_CAPTURED_ITEM_PRIMARY_INTEGRATION_2026-10-06.md) is
+committed and directly pushed as `de42a11c0`, with exact remote readback. All46
+existing method ASTs remain exact; six methods are added. Primary discovers52
+methods:49 pass and three native integration cases require their separate Linux
+database invocation. Normal accounting validation passes, with release false.
+Peer-native109-method/capture results retain their frozen scope. The remaining
+Plan5 audit slices and full current producer/recovery qualification stay open.
+
+## Captured-item reader interface handed off — 2026-10-06
+
+[Exact producer contracts](CAPTURED_ITEM_OPENING_PLAN5_INTERFACE_2026-10-06.md)
+record EBS2/ESN5/EIC2 and unchanged empty-opening behavior. The functions match
+both private candidates byte-for-byte. The auction source-claim fix is queued
+against the maintained branch; full startup and independent digest qualification
+remain open. This handoff does not complete a Plan or release gate.
+
+## Independent opening-policy reader integrated — 2026-10-06
+
+[Primary integration](PLAN5_OPENING_POLICY_PID_PRIMARY_INTEGRATION_2026-10-06.md)
+authenticates original policy/PID facts, including zero and retired claims.
+All 209 selected pure methods pass, zero skips; exact native/migration inputs
+match the separately reported Plan5 qualification. External native artifacts
+remain peer-attributed. Producer claims, complete startup and release stay open.
+
+## Projection contract parser repaired — 2026-10-06
+
+[Primary repair](PROJECTION_DEFAULT_ARGUMENT_PARSER_PRIMARY_REPAIR_2026-10-06.md)
+fixes the default-argument brace parser without changing production policy.
+The original failure reproduces; the same frozen-method check and all seven
+maintained methods pass, zero skips. Complete startup-source builds and cold
+world/journal qualification remain open; no Plan or release gate is promoted.
+
+## Genuine producer qualification advancing — 2026-10-06
+
+[Shared progress](SHARED_PRODUCER_INTEGRATION_PROGRESS_2026-10-06.md) records
+both complete 747-unit builds and genuine first M+G publication on both SQL
+engines, with the genuine event catalog exported and loaded. The private
+native-wallet successor now passes both original production builds/contracts
+and [normal cold SQL startup/readback](NATIVE_WALLET_STARTUP_PRIMARY_QUALIFICATION_2026-10-06.md)
+on both engines. Source remains private; authentic cold world restoration,
+pending-journal recovery and complete activation remain unfinished.
+Completed independent Plan 1 acceptance
+remains intact; complete openings, activation and full R1–R8 stay open.
+
+
+## Partial claim snapshot readers integrated — 2026-10-06
+
+[Primary qualification](PLAN5_PARTIAL_SNAPSHOT_PRIMARY_QUALIFICATION_2026-10-06.md)
+closes saved partial-allocation coverage and source-batch double counting.
+All 173 selected pure methods pass; both original native capture methods and
+the full native restore entry point pass on both fresh canonical 0062 engines,
+each with 109 cuts/90 refusals. Producer/cold/full release gates remain open.
+
+
+## Exact UID provenance integrated — 2026-10-06
+
+[Primary qualification](PLAN5_UID_PROVENANCE_PRIMARY_QUALIFICATION_2026-10-06.md)
+requires an exact integer UID before including retained provenance. Original
+failure and all three maintained provenance/CLI methods pass, zero skips.
+Allocation snapshots, real producer/recovery journeys and full release remain open.
+
 ## Auction/opening shared milestone qualified — 2026-10-06
 
 [Exact maintained qualification](AUCTION_OPENING_RETAINED_PRIMARY_QUALIFICATION_2026-10-06.md) records seven original native

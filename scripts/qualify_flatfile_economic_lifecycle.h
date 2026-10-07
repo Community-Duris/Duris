@@ -231,12 +231,24 @@ class checker
 		: directory(root / "economic-evidence")
 	{
 	}
+	template <typename Mapped>
+	identity load_one(const identity &operation, const identity &lineage,
+			  const epoch_catalog &catalog, std::span<const uint8_t> control,
+			  Mapped mapped)
+	{
+		need(expected.empty());
+		receipt("lifecycle-" + restore_economic_baseline::hex(operation) + ".elr",
+			operation, lineage, catalog, control, mapped);
+		need(expected.size() == 1);
+		return expected.begin()->first;
+	}
 	template <typename Mapped> void load(const identity &lineage, const epoch_catalog &catalog,
 					     std::span<const uint8_t> control, Mapped mapped)
 	{
 		std::set<identity> present;
 		for (const auto &file : std::filesystem::directory_iterator(directory))
 		{
+			audit_directory_entry();
 			auto name = file.path().filename().string();
 			if (!name.starts_with("lifecycle"))
 				continue;

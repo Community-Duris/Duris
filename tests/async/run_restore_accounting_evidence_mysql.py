@@ -72,7 +72,7 @@ TABLES = ("economic_accounting_operation", "economic_accounting_account_effect",
           "epic_balance_baseline", "mud_schema_migrations", "mud_schema_migration_state",
           "quest_mobile_native", "economic_pending_claim_source", "economic_pending_claim_consumption",
           "economic_account_mapping", "economic_baseline_control", "economic_baseline_witness",
-          "economic_baseline_reservation")
+          "economic_baseline_reservation", "auction_money_pickups")
 
 
 def execute(query, params=None):
@@ -201,6 +201,36 @@ def canonical_cut(label, changes, repairs, code, full=False, broken_fk=False):
                     assert code is None and result["read_only"] and not result["release_qualified"]
             finally:
                 audit_reader.close()
+        if label.startswith("pending-claim-"):
+            import economic_sql_audit_snapshot as exporter
+            from reconcile_economy_accounting import Reconciler
+            snapshot_reader = pymysql.connect(**(settings | {"database": "duris_restore", "user": READER,
+                "password": "plan5-disposable-reader", "cursorclass": pymysql.cursors.DictCursor}))
+            try:
+                with snapshot_reader.cursor() as cursor:
+                    cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+                    cursor.execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
+                    native, gaps, coverage = exporter.read_native(cursor, LINEAGE)
+                    native["pending_claim_consumers"], native["pending_claim_consumer_coverage"] = (
+                        exporter.read_pending_claim_consumers(cursor, LINEAGE))
+                report = Reconciler()
+                report.audit_pending_claim_consumers("sql_partial", LINEAGE.hex(), native)
+                from collections import Counter
+                spent, retained = Counter(), Counter()
+                for row in native.get("pending_claim_consumptions", []):
+                    spent[(row["source_operation_id"], row["source_slot"])] += row["amount"]
+                for row in native["pending_claim_sources"]:
+                    if row["account_key"] is not None and row["claim_operation_id"] is None:
+                        retained[row["account_key"]] += row["amount"]-spent[(row["source_operation_id"], row["source_slot"])]
+                live = {row["account_key"]: row["balance"][0] for row in native["holdings"]
+                        if bytes.fromhex(row["account_key"])[18:20] == b"\x05\x00"}
+                invalid = (sum(native["pending_claim_source_coverage"][field] for field in
+                    ("invalid_account_mappings", "invalid_source_roots", "invalid_consumer_roots")) or
+                    sum(report.counts.values()) or any(retained[key] != live.get(key, 0) for key in set(retained)|set(live)))
+                assert bool(invalid) == bool(code), (label, native, dict(report.counts))
+            finally:
+                snapshot_reader.rollback()
+                snapshot_reader.close()
         assert captured() == cut, label + ": audit changed authority"
     finally:
         try:
@@ -225,6 +255,140 @@ def canonical_field(table, field, changed, code, condition="", full=False, opera
     query = "UPDATE " + table + " SET " + field + "=%s WHERE operation_id=%s" + condition
     canonical_cut(table + "." + field, [(query, (changed, operation))],
                   [(query, (original, operation))], code, full)
+
+
+def modeled_claim_two_account_batch(source_operation):
+    """Real SQL query coverage with modeled metadata, never capsule/producer proof."""
+    original = captured()
+    batch_ids = [value.to_bytes(16, "big") for value in range(128, 193)]
+    overlap, follower = batch_ids[-2:]
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT COUNT(*) FROM economic_accounting_operation WHERE operation_id IN ("+
+                       ",".join(["%s"]*len(batch_ids))+")", tuple(batch_ids))
+        assert cursor.fetchone()[0] == 0
+        cursor.execute("SELECT COUNT(*) FROM economic_account_mapping WHERE mapping_id=10")
+        assert cursor.fetchone()[0] == 0
+        cursor.execute("SELECT COUNT(*) FROM auction_money_pickups WHERE pid=43")
+        assert cursor.fetchone()[0] == 0
+        cursor.execute("SELECT money,claim_revision FROM auction_money_pickups WHERE pid=42")
+        original_cash = cursor.fetchone()
+        assert original_cash is not None and original_cash[0] == 8
+        cursor.execute("SELECT * FROM economic_accounting_operation WHERE operation_id=%s", (source_operation,))
+        root_values = list(cursor.fetchone())
+        root_columns = [column[0] for column in cursor.description]
+        templates = {}
+        for table in ("economic_accounting_account_effect", "economic_accounting_coin_posting"):
+            cursor.execute("SELECT * FROM "+table+" WHERE operation_id=%s ORDER BY 2", (source_operation,))
+            templates[table] = ([column[0] for column in cursor.description], cursor.fetchall())
+    effect_columns, effect_rows = templates["economic_accounting_account_effect"]
+    posting_columns, posting_rows = templates["economic_accounting_coin_posting"]
+    assert len(effect_rows) == len(posting_rows) == 2
+    claim_rows = [row for row in effect_rows if row[effect_columns.index("account_key")][18:20] == b"\x05\x00"]
+    wallet_rows = [row for row in effect_rows if row[effect_columns.index("account_key")][18:20] == b"\x01\x00"]
+    assert len(claim_rows) == len(wallet_rows) == 1
+    claim, wallet = claim_rows[0], wallet_rows[0]
+    claim_index = claim[effect_columns.index("account_index")]
+    wallet_index = wallet[effect_columns.index("account_index")]
+    assert claim[effect_columns.index("after_copper")]-claim[effect_columns.index("before_copper")] == 5
+    assert wallet[effect_columns.index("before_copper")]-wallet[effect_columns.index("after_copper")] == 5
+    second_index = max(row[effect_columns.index("account_index")] for row in effect_rows)+1
+    second_key = LINEAGE+struct.pack("<HHQQ4x", 1, 5, 10, 0)
+    assert claim[effect_columns.index("account_key")] < second_key
+    def insert(table, columns, values):
+        execute("INSERT INTO "+table+"("+",".join(columns)+") VALUES("+
+                ",".join(["%s"]*len(values))+")", values)
+    try:
+        for operation in batch_ids:
+            root = root_values.copy()
+            root[root_columns.index("operation_id")] = operation
+            if operation == overlap:
+                assert root[root_columns.index("account_count")] == 2
+                assert root[root_columns.index("posting_count")] == 2
+                root[root_columns.index("account_count")] = 3
+                root[root_columns.index("posting_count")] = 3
+            execute("INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,"
+                    "command_type,schema_version,payload_version,status,result_payload,committed_at) "
+                    "VALUES(%s,%s,%s,1,2,1,1,'',CURRENT_TIMESTAMP(6))", (operation, bytes(32), bytes(32)))
+            insert("economic_accounting_operation", root_columns, root)
+            for row in effect_rows:
+                effect = list(row)
+                effect[effect_columns.index("operation_id")] = operation
+                if operation == overlap and effect[effect_columns.index("account_index")] == wallet_index:
+                    effect[effect_columns.index("after_copper")] -= 5
+                insert("economic_accounting_account_effect", effect_columns, effect)
+            if operation == overlap:
+                effect = list(claim)
+                effect[effect_columns.index("operation_id")] = operation
+                effect[effect_columns.index("account_index")] = second_index
+                effect[effect_columns.index("account_key")] = second_key
+                insert("economic_accounting_account_effect", effect_columns, effect)
+            for row in posting_rows:
+                posting = list(row)
+                posting[posting_columns.index("operation_id")] = operation
+                if operation == overlap and posting[posting_columns.index("account_index")] == wallet_index:
+                    posting[posting_columns.index("delta_copper")] -= 5
+                    posting[posting_columns.index("copper_value")] -= 5
+                insert("economic_accounting_coin_posting", posting_columns, posting)
+            if operation == overlap:
+                matching = [row for row in posting_rows if row[posting_columns.index("account_index")] == claim_index]
+                assert len(matching) == 1
+                posting = list(matching[0])
+                posting[posting_columns.index("operation_id")] = operation
+                next_line = max(row[posting_columns.index("line_index")] for row in posting_rows)+1
+                posting[posting_columns.index("line_index")] = next_line
+                posting[posting_columns.index("event_index")] = next_line
+                posting[posting_columns.index("account_index")] = second_index
+                insert("economic_accounting_coin_posting", posting_columns, posting)
+            execute("INSERT INTO economic_pending_claim_source VALUES(%s,1,%s,9,42,5,NULL)", (operation,LINEAGE))
+        execute("INSERT INTO economic_account_mapping(mapping_id,lineage,account_kind,context_id,backend_kind,"
+                "locator_kind,native_id,active_native_id,creating_operation_id) VALUES(10,%s,5,0,1,5,43,43,%s)",
+                (LINEAGE, overlap))
+        execute("INSERT INTO economic_pending_claim_source VALUES(%s,2,%s,10,43,5,NULL)", (overlap,LINEAGE))
+        execute("UPDATE auction_money_pickups SET money=%s WHERE pid=42", (8+5*len(batch_ids),))
+        execute("INSERT INTO auction_money_pickups(pid,money,claim_revision) VALUES(43,5,1)")
+        cut = captured()
+        probe = pymysql.connect(**(settings | {"database": "duris_restore", "user": READER,
+            "password": "plan5-disposable-reader", "cursorclass": pymysql.cursors.DictCursor}))
+        try:
+            with probe.cursor() as cursor:
+                cursor.execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
+                from economic_sql_audit_snapshot import read_native
+                native, _, _ = read_native(cursor, LINEAGE)
+            assert native["pending_claim_source_coverage"]["rows"] == 68
+            assert native["pending_claim_source_coverage"]["invalid_source_roots"] == 0
+            assert native["pending_claim_source_coverage"]["invalid_account_mappings"] == 0
+            from collections import Counter
+            retained = Counter()
+            for row in native["pending_claim_sources"]:
+                assert row["claim_operation_id"] is None
+                retained[row["account_key"]] += row["amount"]
+            live = {row["account_key"]: row["balance"][0] for row in native["holdings"]
+                    if bytes.fromhex(row["account_key"])[18:20] == b"\x05\x00"}
+            assert retained == Counter(live)
+            assert retained[second_key.hex()] == 5
+            overlap_sources = [row for row in native["pending_claim_sources"]
+                               if row["source_operation_id"] == overlap.hex()]
+            assert len(overlap_sources) == 2 and all(row["source_root_valid"] for row in overlap_sources)
+        finally:
+            probe.rollback()
+            probe.close()
+        assert captured() == cut, "two-account SQL metadata probe changed authority"
+    finally:
+        for operation in batch_ids:
+            execute("DELETE FROM economic_pending_claim_source WHERE source_operation_id=%s", (operation,))
+        execute("DELETE FROM auction_money_pickups WHERE pid=43")
+        execute("UPDATE auction_money_pickups SET money=%s WHERE pid=42", (original_cash[0],))
+        execute("DELETE FROM economic_account_mapping WHERE mapping_id=10")
+        for operation in batch_ids:
+            for table in ("economic_accounting_coin_posting", "economic_accounting_account_effect",
+                          "economic_accounting_operation", "critical_operation_inbox"):
+                execute("DELETE FROM "+table+" WHERE operation_id=%s", (operation,))
+    assert captured() == original, "two-account SQL metadata fixture was not restored"
+    print("MODELED_CLAIM_METADATA_TWO_ACCOUNT_BATCH "+json.dumps({"source_rows": 68,
+        "extra_distinct_pairs": 66, "pair_batch": 64, "accounts_in_overlap_root": 2,
+        "projection_metadata_only": True, "original_capsule_identity_qualified": False,
+        "claim_source_balance_projection_matches": True, "reader_authority_unchanged": True,
+        "fixture_restored": True},sort_keys=True),flush=True)
 
 
 def pending_claim_cuts():
@@ -278,11 +442,66 @@ def pending_claim_cuts():
             execute("INSERT INTO economic_account_mapping(mapping_id,lineage,account_kind,context_id,backend_kind,"
                     "locator_kind,native_id,active_native_id,creating_operation_id) VALUES(9,%s,5,0,1,5,42,42,%s)",
                     (LINEAGE, bytes.fromhex("81"*16)))
+            remaining = {"unspent": 8, "partial": 6, "consumed": 0, "whole": 0}[mode]
+            execute("INSERT INTO auction_money_pickups(pid,money,claim_revision) VALUES(42,%s,1)", (remaining,))
             for row in source_rows:
                 execute("INSERT INTO economic_pending_claim_source VALUES("+",".join(["%s"]*7)+")", row)
             for row in consumption_rows:
                 execute("INSERT INTO economic_pending_claim_consumption VALUES(%s,%s,%s,%s)", row)
             canonical_cut("pending-claim-"+mode, [], [], None, full=True)
+            if mode == "unspent":
+                # Explicitly modeled SQL metadata tests the 64-pair collector
+                # boundary. Copied capsules do NOT authenticate these new IDs;
+                # this is not a qualifying canonical root/history cut.
+                original_batch = captured()
+                batch_ids = [value.to_bytes(16, "big") for value in range(128, 193)]
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT * FROM economic_accounting_operation WHERE operation_id=%s", (source_rows[0][0],))
+                    values = list(cursor.fetchone())
+                    columns = [column[0] for column in cursor.description]
+                try:
+                    for operation in batch_ids:
+                        values[columns.index("operation_id")] = operation
+                        execute("INSERT INTO critical_operation_inbox(operation_id,command_hash,keys_hash,"
+                                "command_type,schema_version,payload_version,status,result_payload,committed_at) "
+                                "VALUES(%s,%s,%s,1,2,1,1,'',CURRENT_TIMESTAMP(6))", (operation, bytes(32), bytes(32)))
+                        execute("INSERT INTO economic_accounting_operation("+",".join(columns)+") VALUES("+
+                                ",".join(["%s"]*len(columns))+")", values)
+                        for table in ("economic_accounting_account_effect", "economic_accounting_coin_posting"):
+                            with connection.cursor() as cursor:
+                                cursor.execute("SELECT * FROM "+table+" WHERE operation_id=%s", (source_rows[0][0],))
+                                copied = cursor.fetchall()
+                            for row in copied:
+                                execute("INSERT INTO "+table+" VALUES("+",".join(["%s"]*len(row))+")", (operation,*row[1:]))
+                        execute("INSERT INTO economic_pending_claim_source VALUES(%s,1,%s,9,42,5,NULL)", (operation,LINEAGE))
+                    probe = pymysql.connect(**(settings | {"database": "duris_restore", "user": READER,
+                        "password": "plan5-disposable-reader", "cursorclass": pymysql.cursors.DictCursor}))
+                    try:
+                        with probe.cursor() as cursor:
+                            cursor.execute("START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY")
+                            from economic_sql_audit_snapshot import read_native
+                            native, _, _ = read_native(cursor, LINEAGE)
+                        assert native["pending_claim_source_coverage"]["rows"] == 67
+                        assert native["pending_claim_source_coverage"]["invalid_source_roots"] == 0
+                    finally:
+                        probe.rollback()
+                        probe.close()
+                finally:
+                    for operation in batch_ids:
+                        execute("DELETE FROM economic_pending_claim_source WHERE source_operation_id=%s", (operation,))
+                        for table in ("economic_accounting_coin_posting", "economic_accounting_account_effect",
+                                      "economic_accounting_operation", "critical_operation_inbox"):
+                            execute("DELETE FROM "+table+" WHERE operation_id=%s", (operation,))
+                assert captured() == original_batch
+                print("MODELED_CLAIM_METADATA_BATCH "+json.dumps({"source_rows": 67, "pair_batch": 64,
+                    "projection_metadata_only": True, "original_capsule_identity_qualified": False,
+                    "fixture_restored": True},sort_keys=True),flush=True)
+                modeled_claim_two_account_batch(source_rows[0][0])
+            if mode in ("consumed", "whole"):
+                retiring = bytes.fromhex(("84" if mode == "consumed" else "85")*16)
+                canonical_cut("pending-claim-"+mode+"-retired-mapping",
+                    [("UPDATE economic_account_mapping SET active_native_id=NULL,retiring_operation_id=%s WHERE mapping_id=9", (retiring,))],
+                    [("UPDATE economic_account_mapping SET active_native_id=42,retiring_operation_id=NULL WHERE mapping_id=9", None)], None, full=True)
 
             def cut(label, changes, repairs, code, broken_fk=False):
                 canonical_cut("pending-claim-"+mode+"-"+label, changes, repairs,
@@ -304,6 +523,11 @@ def pending_claim_cuts():
                       (LINEAGE, source))], "source", broken_fk=True)
             if mode == "partial":
                 spending = bytes.fromhex("83"*16)
+                canonical_cut("pending-claim-partial-split-original-credit",
+                    [("UPDATE economic_pending_claim_source SET amount=2 WHERE source_operation_id=%s", (source,)),
+                     ("INSERT INTO economic_pending_claim_source VALUES(%s,2,%s,9,42,3,NULL)", (source, LINEAGE))],
+                    [("DELETE FROM economic_pending_claim_source WHERE source_operation_id=%s AND source_slot=2", (source,)),
+                     ("UPDATE economic_pending_claim_source SET amount=5 WHERE source_operation_id=%s", (source,))], None, full=True)
                 for amount in (1, 3, 6):
                     query = "UPDATE economic_pending_claim_consumption SET amount=%s WHERE spending_operation_id=%s"
                     cut("amount-"+str(amount), [(query, (amount, spending))], [(query, (2, spending))], "consumption")
@@ -315,6 +539,8 @@ def pending_claim_cuts():
                     [("DELETE FROM economic_pending_claim_consumption WHERE spending_operation_id=%s", (OP,))], "consumption")
                 cut("orphan-consumption", [("UPDATE economic_pending_claim_consumption SET source_operation_id=%s WHERE spending_operation_id=%s", (ORPHAN, spending))],
                     [("UPDATE economic_pending_claim_consumption SET source_operation_id=%s WHERE spending_operation_id=%s", (source, spending))], "consumption", broken_fk=True)
+                cut("unattributed-consumption", [("UPDATE economic_pending_claim_consumption SET source_operation_id=%s,spending_operation_id=%s", (ORPHAN, ORPHAN))],
+                    [("UPDATE economic_pending_claim_consumption SET source_operation_id=%s,spending_operation_id=%s", (source, spending))], "consumption", broken_fk=True)
                 cut("rejected-consumer", [("UPDATE economic_pending_claim_consumption SET spending_operation_id=%s", (REJECTED,))],
                     [("UPDATE economic_pending_claim_consumption SET spending_operation_id=%s", (spending,))], "consumption")
                 # Both retained-allocation cursors must traverse a second PK page
@@ -334,6 +560,7 @@ def pending_claim_cuts():
                 cut("wrong-whole-consumer", [("UPDATE economic_pending_claim_source SET claim_operation_id=%s WHERE source_operation_id=%s", (OP, source))],
                     [("UPDATE economic_pending_claim_source SET claim_operation_id=%s WHERE source_operation_id=%s", (bytes.fromhex("85"*16), source))], "consumption")
         finally:
+            execute("DELETE FROM auction_money_pickups WHERE pid=42")
             execute("DELETE FROM economic_pending_claim_consumption")
             execute("DELETE FROM economic_pending_claim_source")
             execute("DELETE FROM economic_account_mapping WHERE mapping_id=9")
@@ -342,10 +569,11 @@ def pending_claim_cuts():
                               "economic_accounting_operation", "critical_operation_inbox"):
                     execute("DELETE FROM "+table+" WHERE operation_id=%s", (operation,))
         assert captured() == initial, mode
-    print("PENDING_CLAIM_RESTORE_CUTS "+json.dumps({"controls": 4, "cuts": len(canonical_cuts)-first_cut,
+    print("PENDING_CLAIM_RESTORE_CUTS "+json.dumps({"controls": 7, "cuts": len(canonical_cuts)-first_cut,
           "original_readers": 2, "native_roots": 5, "native_fixture_sha256": hashlib.sha256(raw).hexdigest(),
           "allocation_pagination_rows": {"sources": 258, "consumptions": 257},
           "schema_head": "0062_economic_pending_claim_consumption", "authority_unchanged": True,
+          "snapshot_allocation_reader": True,
           "producer_journey_qualified": False}, sort_keys=True), flush=True)
 
 
