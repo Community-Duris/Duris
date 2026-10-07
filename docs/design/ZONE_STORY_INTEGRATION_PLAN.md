@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 190 authored journals, accounting-gated player surfaces, starter/town
+**Status: 191 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5187,3 +5187,34 @@ The [complete Castle dossier](zone-stories/CASTLE.md) maps two independent Remy 
 | 18 | Builder/reserved content | Decide seven private/editorial rooms and three unstocked altars with missing targets/legacy commands; complete or retire deliberately, never auto-connect or activate. |
 | 19 | Builder/editorial | Review clipped/spacing/lore discrepancies, unused claw and non-takeable kitchen props fairly; distinguish intentional atmosphere from verified incomplete quest mechanics and publish actual repairs separately. |
 | 20 | Integration/testing | Run played active READY discovery, source/gift custody, both returns, gates/containers, sky encounter, stone group award and external economy/teaching journeys before promotion. Keep capability gaps and native repair plans explicit. |
+
+
+## Church: exact ownership, linked reports and shared admission
+
+The [complete Church dossier](zone-stories/CHURCH_OF_THE_ETERNAL_DUSK.md) maps four exact independent hand-ins: badge→cardinal XP; cardinal proof→bishop copper/XP; three distinct captive proofs→Relxis note; note→field general mask. Twelve contacts, three addressed responses/five aliases and twelve steps preserve optional narrative links and supplied-material paths. Full selected closure covers33 rooms/69 exits,55 mobiles/55 objects,161 resets/full250 ZON/71 QST. Shared spoken-door unlock leaves opening/arrival separate, cell keys have eligible PICK alternatives, the archive case is PICKPROOF, and the report exchange implements no prisoner escort. The separate ownership repair assigns bishop/paladin contracts to Church, retains Kelek smith revision2 and preserves frozen history. Twenty owned source/acquisition/dialogue/access/release/political/reward/reset/builder follow-ups remain; no played outcome is claimed.
+
+## Owned follow-ups
+
+1. Quest/catalog runtime: shared exact owner metadata and revision-two Kelek transfer are implemented in the separate repair. Extend reviewed ownership auditing to other out-of-band prototypes while preserving native identities.
+2. Persistence/accounting: focused adapter regressions cover immutable old879 receipts and pending frozen recovery, rollback/replay/conflict/deletion. Qualify the real READY economic journey and once-only reward publication; preserve frozen season/time/actor/group/daily masks.
+3. Discovery/encounter: Church room admission and current owner must agree for hints/dailies; do not backfill fictitious visits from historical neighboring ownership.
+4. Builder metadata: schema-one owner metadata now fails closed on invalid pairs/fields/contracts/revisions. Review successive ownership transitions and multi-owner dialogue before expanding this single-predecessor capability.
+5. Native hand-ins: keep all four independent exchanges, mixed exact roots and both supplied-material report/initiation paths; no implied exclusivity or preceding personal kill.
+6. Source facts: capture source UID/parent/reset generation and transfer cause so first personal recovery differs from gift/trade/theft/reacquisition.
+7. Dialogue facts: distinguish addressed response, aliases, room listeners, learned word and successful spoken-door dispatch; do not award one achievement per synonym.
+8. Magic passage: record actor, speech admission, matching edges, changed lock/secret state, subsequent OPEN and actual arrival separately, with denial and shared-state tests.
+9. Jail admission: qualify the nonbreaking key and eligible PICK alternative; custody does not establish unlocked cell, jailor defeat or passage history.
+10. Rescue episode: decide a real release/follow/escort destination and failure/death/group rules before counting Relxis as rescued; current note exchange leaves him in his cell.
+11. Political episode: decide membership, bishop succession/expulsion, opposing routes and durable world state before adding these narrative outcomes.
+12. Report continuity: link the committed note reward UID and later General exchange while allowing supplied exact notes; preserve separate native receipts and actor credit.
+13. Rewards: qualify capped XP recipient snapshots, exact250000 copper, mask issuance, partial publication/refusal/recovery and double-credit guards under READY accounting.
+14. Archive access: retain scholar key/case mask29/P117 scroll source and PICK/KNOCK refusal; define actual scroll identification/reading predicates only if intended.
+15. Reset generation: implement admitted durable mode-two issuance and causal availability; don't promise one-cap source replenishment after discovery/day rollover.
+16. Background stories: decide whether printing press, propaganda, visitor tome, choir and kidnapped nonquest prisoners should gain authored objectives; existing descriptions alone do not implement them.
+17. Source quality: review spelling, case/window keyword clarity and mismatched narrative claims in separately named editorial changes with builder intent and balance preserved.
+18. Header/prototype bands: audit other local mobile/object IDs beyond room tops without changing global area boundaries or activation merely to make ownership fit.
+19. Prior-map compatibility: the Kelek dossier preserves revision-one provenance, the smith story is unchanged, only two cards/eight contacts transfer, and both journeys/audits are updated. Keep these guarantees in future revisions.
+20. Played qualification/news: play active READY source/gift, four exact hand-ins, all access paths and recovery; actual native repairs need separate fix/news commits and prominently stated before/after evidence.
+
+
+The final code review also closes an accounting gate defect: ordinary legacy completions with no committed transaction ID could reach tracking while accounting was off. Both new-completion adapters now require active accounting; unchanged native rewards continue and stable committed recovery remains separate. Focused regressions reject both entry points without persistence writes and retain inactive-accounting committed recovery.

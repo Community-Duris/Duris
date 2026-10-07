@@ -173,3 +173,6 @@ accepted base, run focused build/gameplay/recovery validation, then apply the
 new migration to the intended development installation. Production migration
 and activation are separate owner-authorized operations. Once v6 receipts or
 version-3 flat-file state exist, older binaries must not be used to read them.
+
+
+Church ownership correction: four native candidates now belong to Church878, while Kelek879 keeps its smith candidate. Stable IDs are unchanged; prior879 receipt payloads and frozen daily recipient masks remain history. Pending committed recovery accepts only the reviewed predecessor/current revision with frozen context and a stable ID. Discovery never backfills from the owner correction. Policy remains disabled by default; enabled reviewed policy still requires accessible telemetry, observed level/faction, known party context and actual source availability. Rollover does not replenish one-cap mode-two sources.
