@@ -1,5 +1,14 @@
 # Finish accounting implementation plan
 
+## Persisted provider union source ready - 2026-10-07
+
+[Current evidence](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md) records
+the reviewed additive provider union, two strict SQL/flat syntax passes and
+final collector boundary preparation. All raw reports/history and original
+code/budgets remain. Original union fixtures, auction sealing, whole-candidate
+native qualification, remaining census and activation are still required.
+
+
 ## Collector correspondence source ready - 2026-10-07
 
 [Current source and qualification evidence](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)

@@ -1,5 +1,49 @@
 # Shared native qualification progress - 2026-10-07
 
+## Persisted provider union source ready - 2026-10-07
+
+The root-owned additive private normalizer pair now combines the existing
+eight persisted sources with room, auction and collector correspondence. It
+retains all four complete reports, provider findings and historical evidence,
+and records exact current counterpart indices for every normalized custody row.
+Unmatched and multiply matched active rows stay explicit. Claimed auction rows,
+terminal collector listings and tombstones do not add current occupancy. Valid
+individual room graphs do not erase the original whole-root-count refusal.
+No raw capture is copied/recaptured, no SQL or writable authority is added, and
+the caller's source-cut/provenance responsibilities remain unchanged.
+
+The formatted pair is source-reviewed with all eight dependency hashes bound.
+Original physical4 normalizer source bytes and public declarations remain
+exact. Strict SQL/flat syntax passes in5.219/4.984 seconds within original60-second
+ceilings; changed-range formatting passes. Header/source SHA256 values are
+`62690f08950d99b344f40bf98896e9855621450914444f6af85ec3871344a3fc` and
+`9230ac20e50202efdc03592baaab75024c6a342fc51a6878fb76b78197aa9840`.
+Actual receipt: `bin/tests/physical-provider-union-primary-20261007/SOURCE-REVIEW.json`;
+`tmp/physical-provider-union-primary-20261007/SOURCE-READY.json` retains exact
+compiler arguments/results. Original room-driver union fixture preparation is
+underway separately. This pair is outside combined38, unimported and native-unrun.
+
+The separate collector canonical131072/131073 literal controls now have final
+formatted source review and primary authentication of22 sealed records, six
+files and11 dependencies. Original fixture tokens/four helpers are preserved.
+Two strict fixture syntax checks pass in2.953/2.859 seconds; no native execution
+is claimed. Receipts: `bin/tests/collector-item-boundary-fixtures-primary-20261007/`.
+Its seal is `54c40e50e045e79667de3b61ab9639f6c5c376c90e508267e1e4cc96d29fa967`.
+Both the room and collector boundary successors remain required external inputs.
+
+Auction source review now closes numeric/evidence/root/codec-bound/orphan/parent
+receipt-binding defects. Strict production syntax passes in both profiles and
+the extended original SQL fixture passes. The original fixture's flatfile syntax
+fails at its unchanged mysql_query declaration boundary; separate additive pure
+component flat syntax passes. Neither proves native execution. The failure is
+retained without changing stubs, providers, budgets or required acceptance.
+Final auction packet sealing/authentication remains with its owner/primary.
+Native links/journeys, remaining live/reset/mobile census, activation and complete
+Plans2-4/R1-R8 qualification remain open. New independent Plan5 lifecycleV2 and
+locker-audit publications are under read-only integration assessment; no source
+import or evidence transfer is presumed.
+
+
 ## Collector correspondence and combined38 source ready - 2026-10-07
 
 The private collector repository pair now consumes the existing immutable EPH1
