@@ -37,6 +37,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <new>
+#include "economy/shop_item_acceptance.h"
 #include <unordered_map>
 #include <string>
 #include <limits>
@@ -1797,32 +1798,22 @@ P_obj get_purchase_obj(P_char ch, char *arg, P_char keeper, int shop_nr, int msg
 
 int trade_with(P_obj item, int shop_nr, char repairing)
 {
-	int counter;
-
-	if (item->cost < 1)
-		return (OBJECT_NOTOK);
-
-	if ((IS_OBJ_STAT(item, ITEM_NOSELL) && !repairing) || IS_OBJ_STAT(item, ITEM_TRANSIENT))
-		return (OBJECT_NOTOK);
-
-	for (counter = 0; SHOP_BUYTYPE(shop_nr, counter) != 0; counter++)
+	struct item_observations
 	{
-		if (SHOP_BUYTYPE(shop_nr, counter) == (item)->type)
+		P_obj item;
+		int shop_nr;
+
+		int object_cost() { return item->cost; }
+		bool extra_flag(unsigned long flag) { return IS_OBJ_STAT(item, flag); }
+		::byte object_type() { return item->type; }
+		int charges() { return item->value[2]; }
+		int configured_type(int index) { return SHOP_BUYTYPE(shop_nr, index); }
+		int evaluate_keywords(int index)
 		{
-			if (((item->value[2] == 0) &&
-			     (((item)->type == ITEM_WAND) ||
-			      ((item)->type == ITEM_STAFF)))) /*         (item->condition < 10))*/
-				return (OBJECT_DEAD);
-			else if (evaluate_expression(item, SHOP_BUYWORD(shop_nr, counter)))
-				return (OBJECT_OK);
-			return (OBJECT_OK);
+			return evaluate_expression(item, SHOP_BUYWORD(shop_nr, index));
 		}
-		else if (SHOP_BUYTYPE(shop_nr, counter) == ITEM_ARMOR && item->type == ITEM_WORN)
-			/*        if (item->condition > 25)*/
-			return (OBJECT_OK);
-		/*        else return (OBJECT_DEAD);*/
-	}
-	return (OBJECT_NOTOK);
+	} observations{ item, shop_nr };
+	return shop_item_acceptance::classify(observations, repairing);
 }
 
 int shop_producing(P_obj item, int shop_nr)
