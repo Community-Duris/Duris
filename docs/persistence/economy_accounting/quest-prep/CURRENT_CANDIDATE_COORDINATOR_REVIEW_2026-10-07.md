@@ -104,3 +104,54 @@ completion is claimed only if the runtime offers and delivers one. No shared
 driver/production edit, invented epoch/birth/callback/receipt, delayed stale
 charge or active native refund proof is part of this reservation. Its new run
 remains pending and the continuing Goal stays active.
+
+## Full-world bartender terminal successor and dependency status
+
+Owned bundle `81df1892dd05ec52cb40cbf8e32ea8087ca1a270`, handoff
+`51692e610bce89bd0dc9c0842f2a621298ccc9d0` and blocked audit
+`cbdd5f8837db868796587d41f2153748fd71bdc1` are published. The source36bf SQL
+ELF is reused unchanged; this completed run predates the new primary352 coin
+restoration code and is not its qualification.
+
+The existing full-world driver and original commands/deadlines complete in
+68.148 seconds with normal termination and zero remaining disposable schemas.
+The coordinator reviewed its owned terminal SELECT-only capture and independently
+checked four distinct giver16553 service debits: C1120 twice for creation and
+C43464 twice for abandonment. The saved replacement task is active at
+target9139/zone91/level56, and final capture is inactive with the same attempt
+watermark. Runtime denies a map for the first zone, so no map debit or delivery
+is claimed. No item/XP obligation or fee-linked ownership event is present in
+the bounded terminal current-forest capture; no per-command forest comparison
+or enumeration of every removed UID is claimed.
+
+Both response branches are kill tasks; the saved replacement and source
+initializer have kill_how_many0. The original driver kills no target before
+either abandonment. The history callback writes only for positive kill progress,
+so the empty history capture is consistent and does not exercise progressed-kill
+history qualification. Numeric PID binding agrees with the maintained SQL writer.
+
+The coordinator independently authenticated all 2246 recorded AREA/source-world
+input hashes and all 14 source/helper pins by read-only tar streaming from the
+stopped actual container; it was not restarted. This proves those recorded bytes,
+not that every ancillary input was loaded. Actual owned runner SHA256
+`8f9723b2121b446cc8394f6c7d5b7b6668acc97c5454ce1fbc646ecaf44b18f8`;
+result `9e0f686d399ae3ff2152df79be9116de4010210f50868197cf97cce9c293bf7c`;
+terminal cut `cbab7f776300b66749e1202129dbc95f1ca080d286ba05f0c7d6fd3d68e0c69f`.
+Retained private evidence and exact shared driver/capture-reader/source pins are
+recorded in the worker's CURRENT_BARTENDER_EXECUTION.md.
+
+Disposition: **reviewed and remotely available current-source legacy full-world
+creation/serialized-abandonment/mapless-refusal calibration**. This adds no
+active native settlement, delayed stale/refund, successful current map issuance,
+original per-command/lost-reply or paired native retirement proof.
+
+The worker's actual continuing Goal is **BLOCKED, not complete**, updatedAt
+1791387688, after three unchanged reassessments of the exact native prerequisites.
+No owned test process remains live. New primary352 room-coin enumeration/current
+pile/retained-history APIs grant neither quest lifecycle admission nor original
+quest birth/source/custody or settlement evidence; production still registers no
+independent lifecycle verifier. Preserve its full objective and delivered results.
+The coordinator Goal and heartbeat continue, watching meaningful lifecycle/world/
+verifier, before-cost/publication/ACK, delayed settlement and held-charge/refund/
+pre-ACK movement/retirement changes. Do not manufacture another ordinary case or
+close the project merely because this current independent queue is exhausted.

@@ -132,6 +132,18 @@ boundaries. The prior finite charter/audit below are historical checkpoint recor
 
 ### Continuing workstream execution checkpoint
 
+Latest coordination successor: published primary35298aac adds acknowledged room-coin
+cold restore and a754th provider; preserve its owner-defined remaining parity,
+fixture and full Plans/R1-R8 obligations. Composed275-plus-R0-R3 SQL/flat753 builds
+now have independent terminal review, distinct from latest352. R4 is reviewed;
+[R5 stat-cap boundary](domain-separation/R5_SUPERIOR_STAT_CAP_REVIEW_2026-10-07.md)
+is approved and under qualification with explicit config-test import dependency.
+Quest prep has reviewed Kord and full-world normal bartender evidence at its
+original36bf source pin, then marks its actual Goal BLOCKED, not complete, after
+three unchanged native prerequisite audits. Coordinator Goal and heartbeat stay
+active; resume useful native sidework only when authentic owner interfaces change.
+Older checkpoint status text below remains historical and is superseded here.
+
 Both existing workers have actual continuing Goals ACTIVE against the broader
 primary finish line. R0/R1/R2 patches remain independently applicable to the
 new producer candidate; current changed-dependency proof is separate from older

@@ -160,6 +160,40 @@ That next normal legacy payment case cannot discharge active-native stale/refund
 dependencies. Both actual continuing Goals remain active; these deliveries and
 new reservations are checkpoints in the evolving queue.
 
+## Primary room-coin advance and current workstream status
+
+Primary `35298aacdf0b55e5026db98103f4e3e7b63094ad` adds acknowledged SQL room-coin
+cold restoration and the 754th provider. Its owner handoff reports qualified
+SQL room-route/renderer results on both engines and explicitly retains flatfile
+parity, owner35 fixture, SHOP/Collector/other compound paths and full Plans/R1-R8
+requirements; coverage remains incomplete and release blocked. The coordinator
+preserves this new source. Its private primary receipts are not independently
+accessible here. No overall completion or sidework adoption is inferred.
+
+Fresh composed producer275-plus-R0-R3 builds now pass both753-provider profiles
+and have independent actual ELF/log/proof review. Those exact old source pins
+remain distinct from latest352. R4 has bare-candidate component/type checks and
+reviewed740-provider builds. R5's independently authenticated
+[stat-cap reservation](R5_SUPERIOR_STAT_CAP_REVIEW_2026-10-07.md) is approved and
+implemented under qualification. Source-only R5 application passes on bare352;
+its full configuration-test patch still needs explicit R3 contract dependency
+or a checked standalone adaptation. No completed rule or primary source is
+rewritten to hide that import distinction.
+
+The completed current-source Woodseer case has final independent source/world/
+fee/task/cleanup review. The quest worker's actual Goal is **BLOCKED, not complete**
+after three unchanged native prerequisite audits, published at `cbdd5f883`.
+Its delivered server remains source36bf/ELFc997. No owned process is live.
+Primary352's genuine room-pile reader grants no original quest source/lifecycle/
+settlement authority and production still registers no independent lifecycle
+verifier. Preserve the full quest objective and exact owner dependencies; watch
+meaningful prerequisite publications rather than repeat ordinary cases.
+
+The coordinator Goal and recurring monitor remain active while architecture
+implementation/review and the broader primary finish line remain unfinished.
+Monitoring must distinguish a blocked worker from completion and must not wake
+it repeatedly for unchanged coordinator documentation alone.
+
 ## Recurring monitor
 
 The existing thread heartbeat checks every15 minutes, supplemented by active
