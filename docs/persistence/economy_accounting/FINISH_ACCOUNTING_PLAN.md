@@ -1,5 +1,15 @@
 # Finish accounting implementation plan
 
+## Flatfile ordinary room-pile reader qualified - 2026-10-07
+
+[Qualified data reader](FLATFILE_COIN_COLD_READER_INTEGRATION_2026-10-07.md)
+authenticates indexed original command, claim, plan, native receipt/reference,
+current head/custody/full literal and live epoch under a borrowed authority lock.
+All original sanitizer cases and30 new reader groups pass; both754-provider
+production links and shared contracts pass. This is a recovery prerequisite;
+shared flat boot/history fences, physical publication/ACK, complete Plans2-4
+and R1-R8/release remain open. All926 writer policies remain unchanged.
+
 ## Flatfile COIN source claim fixed - 2026-10-07
 
 [Qualified source-claim fix](FLATFILE_COIN_SOURCE_CLAIM_FIX_2026-10-07.md)

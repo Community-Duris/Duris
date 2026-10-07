@@ -6,6 +6,8 @@
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_player_domain_repository.h"
 #include "flatfile/flatfile_store.h"
+#include "player/player_snapshot_codec.h"
+#include "core/defines.h"
 #include "economy/coin_transfer_accounting.h"
 #include "economy/economic_accounting_intent.h"
 #include "economy/economic_accounting_plan.h"
@@ -545,6 +547,207 @@ critical_apply_result flatfile_accounting_coin_transaction::verify_retained_lock
 	catch (...)
 	{
 		return { critical_apply_outcome::retryable_failure, 0, EFAULT };
+	}
+}
+
+unsigned int flatfile_accounting_coin_transaction::read_room_pile_locked(
+	const std::string &root, const flatfile_authority_lock &lock, uint64_t uid,
+	flatfile_room_coin_pile *output, std::string *error) noexcept
+{
+	try
+	{
+		need(!root.empty() && lock.matches(root) && output && uid && uid != UINT64_MAX,
+		     EINVAL);
+		flatfile_accounting_pile_state head;
+		const auto head_status =
+			flatfile_accounting_pile_state_read(root, lock, uid, &head, error);
+		need(head_status != flatfile_accounting_status::not_found, ENOENT);
+		checked(head_status);
+		need(!head.retired && head.account.kind == economic_account_kind::pile &&
+			     head.account.authority_id == uid && !head.account.context_id,
+		     ESTALE);
+
+		// The existing current head selects the original immutable indexed record;
+		// no player journal envelope is needed or constructed after ACK retirement.
+		flatfile_accounting_record record;
+		const auto found = flatfile_accounting_storage::lookup_retained_locked(
+			root, lock, head.operation_id, &record, error);
+		need(found != flatfile_accounting_status::not_found, ENOENT);
+		checked(found);
+		const auto value = decode(record.command);
+		need(record.command.publication_required &&
+			     coin_transfer_accounting_command_supported(record.command) &&
+			     !record.result_code &&
+			     record.failure_stage == critical_failure_stage::none,
+		     EILSEQ);
+		verify(root, lock, record);
+		checked_retained_claim(flatfile_accounting_storage::verify_source_claim(
+			root, lock, record, error));
+		// Full native catalog receipt and command digest are independent of the
+		// evidence record. Neither path manufactures or applies a successful root.
+		checked(flatfile_item_repository_verify_coin_root_locked(root, lock, record.command,
+									 record.result, error));
+
+		const bool drop = value.accounts[0].kind == economic_account_kind::wallet &&
+				  value.accounts[1].kind == economic_account_kind::pile;
+		const bool pickup = value.accounts[0].kind == economic_account_kind::pile &&
+				    value.accounts[1].kind == economic_account_kind::wallet;
+		need(drop || pickup, EOPNOTSUPP);
+		const size_t pile_index = drop ? 1 : 0;
+		const auto &endpoint = drop ? value.payload.destination : value.payload.source;
+		need(economic_account_key_equal(head.account, value.accounts[pile_index]) &&
+			     head.epoch.bytes == value.intent.admission.metadata.epoch.bytes &&
+			     head.operation_id.bytes == record.command.operation_id.bytes,
+		     ESTALE);
+		item_transfer_payload pile;
+		need(item_transfer_command_decode_payload(endpoint.change, &pile) &&
+			     pile.item_count == 1 && !pile.multi_root &&
+			     pile.selected_item_uid == uid && pile.items[0].item_uid == uid &&
+			     pile.items[0].root_item_uid == uid && !pile.items[0].parent_item_uid &&
+			     pile.target_root_item_uid == uid && !pile.target_parent_item_uid &&
+			     !pile.expected_target_parent_revision && !pile.from_owner.context_id &&
+			     !pile.to_owner.context_id &&
+			     pile.continuation.kind == item_transfer_continuation_kind::none &&
+			     pile.continuation.data.empty(),
+		     EOPNOTSUPP);
+		const auto room = drop ? pile.to_owner : pile.from_owner;
+		need(room.type == item_owner_type::room && room.id && room.id <= INT_MAX &&
+			     !room.context_id && item_owner_identity_equal(pile.to_owner, room),
+		     EOPNOTSUPP);
+		if (drop)
+			need(pile.from_owner.type == item_owner_type::system &&
+				     !pile.from_owner.id &&
+				     pile.reason == item_transfer_reason::creation &&
+				     pile.items[0].expected_item_revision ==
+					     ITEM_TRANSFER_ABSENT_REVISION &&
+				     pile.items[0].expected_state == item_custody_state::absent,
+			     EOPNOTSUPP);
+		else
+			need(pile.reason == item_transfer_reason::player_put &&
+				     pile.items[0].expected_state == item_custody_state::active &&
+				     pile.items[0].expected_item_revision &&
+				     pile.items[0].expected_item_revision != UINT64_MAX,
+			     EOPNOTSUPP);
+
+		// Current lineage and selected epoch only. Historical wallet identities and
+		// their receipt values do not have to remain current after this transfer.
+		flatfile_economic_authority_snapshot authority;
+		checked(economic_flatfile_lock_authority(root, lock, head.account.lineage,
+							 head.epoch, {}, &authority, error));
+		economic_accounting_plan retained_plan;
+		checked(economic_plan_decode(record.plan, &retained_plan));
+		need(retained_plan.accounts.size() == 2 && retained_plan.postings.size() == 2 &&
+		     retained_plan.children.empty() && retained_plan.item_events.size() == 1 &&
+		     retained_plan.items_before.size() == 1 &&
+		     retained_plan.items_after.size() == 1);
+		const auto effect = std::find_if(
+			retained_plan.accounts.begin(), retained_plan.accounts.end(),
+			[&](const economic_account_effect &entry)
+			{ return economic_account_key_equal(entry.key, head.account); });
+		need(effect != retained_plan.accounts.end() &&
+		     effect->after_revision == head.item_revision && effect->after == head.balance);
+		const auto &event = retained_plan.item_events[0];
+		need(event.uid == uid && !event.child_index && event.after.root_uid == uid &&
+		     !event.after.parent_uid && !event.after.equipment_slot &&
+		     event.after.state == item_custody_state::active &&
+		     event.after.revision == head.item_revision &&
+		     item_owner_identity_equal(event.after.owner, room));
+
+		coin_transfer_result result;
+		need(coin_transfer_command_decode_result(value.payload, record.result.data(),
+							 record.result.size(), &result));
+		const auto &receipt = result.piles[pile_index];
+		need(pile.expected_from_revision != UINT64_MAX &&
+		     pile.expected_to_revision != UINT64_MAX && receipt.item_count == 1 &&
+		     receipt.root_item_uid == uid &&
+		     receipt.max_item_revision == head.item_revision &&
+		     receipt.from_owner_revision == pile.expected_from_revision + 1 &&
+		     receipt.to_owner_revision == pile.expected_to_revision + 1 &&
+		     !receipt.corpse_revision && !receipt.collector_catalog_changed);
+
+		// Complete current catalog rejects every ambiguous UID/root/descendant.
+		std::vector<flatfile_item_ownership_record> catalog;
+		checked(flatfile_item_repository_recovery_catalog_locked(root, lock, &catalog,
+									 error));
+		const flatfile_item_ownership_record *selected = nullptr;
+		for (const auto &entry : catalog)
+			if (entry.item_uid == uid || entry.root_item_uid == uid ||
+			    entry.parent_item_uid == uid)
+			{
+				need(!selected && entry.item_uid == uid &&
+				     entry.root_item_uid == uid && !entry.parent_item_uid &&
+				     !entry.equipment_slot &&
+				     entry.state == item_custody_state::active &&
+				     entry.item_revision == head.item_revision &&
+				     entry.vnum == pile.items[0].vnum &&
+				     item_owner_identity_equal(entry.owner, room));
+				selected = &entry;
+			}
+		need(selected && !selected->coin_payload.empty(), ENODATA);
+		std::vector<flatfile_item_ownership_record> owned;
+		uint64_t owner_revision = 0;
+		checked(flatfile_item_repository_load_owner_locked(root, lock, room,
+								   &owner_revision, &owned, error));
+		need(owner_revision && owner_revision >= receipt.to_owner_revision);
+		flatfile_coin_pile_source native;
+		checked(flatfile_item_repository_read_coin_pile_locked(root, lock, uid, &native,
+								       error));
+		const auto &literal = native.item;
+		need(literal.object_uid == uid && literal.vnum == selected->vnum &&
+		     literal.type == ITEM_MONEY &&
+		     literal.parent_index == PLAYER_SNAPSHOT_NO_PARENT &&
+		     literal.equipment_slot == -1 &&
+		     literal.string_mask ==
+			     (STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3) &&
+		     literal.dynamic_affects.empty() && literal.extra_descriptions.size() <= 1 &&
+		     !(literal.extra_flags &
+		       (ITEM_LIT | ITEM_TRANSIENT | ITEM_ARTIFACT | ITEM_PROCLIB)));
+		bool nonempty = false;
+		for (size_t index = 0; index < 4; ++index)
+		{
+			need(literal.values[index] >= 0 &&
+			     literal.values[index] == head.balance[index] &&
+			     literal.values[index] == endpoint.after[index]);
+			nonempty = nonempty || literal.values[index] != 0;
+		}
+		need(nonempty);
+		std::vector<uint8_t> canonical;
+		need(player_item_snapshot_list_encode({ literal }, &canonical) ==
+			     player_snapshot_codec_result::ok &&
+		     canonical == selected->coin_payload &&
+		     canonical.size() == pile.item_blob_size &&
+		     std::equal(canonical.begin(), canonical.end(), pile.item_blob.begin()));
+		flatfile_room_coin_pile candidate;
+		candidate.lineage = authority.lineage;
+		candidate.epoch = authority.epoch;
+		candidate.lineage_revision = authority.lineage_revision;
+		candidate.root_operation = record.command.operation_id;
+		candidate.pile_endpoint_operation = endpoint.change.operation_id;
+		candidate.retained_root_revision = record.durable_revision;
+		candidate.retained_pile_result = receipt;
+		candidate.identity = { uid,
+				       uid,
+				       0,
+				       room,
+				       head.item_revision,
+				       owner_revision,
+				       selected->vnum,
+				       item_custody_state::active };
+		candidate.item = std::move(native.item);
+		*output = std::move(candidate);
+		return 0;
+	}
+	catch (const failure &failure)
+	{
+		return failure.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EFAULT;
 	}
 }
 
