@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 189 &&
+		require(catalog.story_mappings.size() == 190 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,208 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "castle"; });
+			require(mapping.stories.size() == 2 && mapping.contacts.size() == 13 &&
+					mapping.revision == 1,
+				"Castle journal scope failed");
+			int achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 24)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 2 && dailies == 2,
+				"Castle independent native achievement/daily classification changed");
+			const auto &necklace =
+				story_for("castle", "return-the-quintaragon-heirloom");
+			const auto &bone = story_for("castle", "povtails-diamond-bone");
+			service journey(catalog);
+			require(journey.meet_npc(7, 42, 2417, 2443, 99) == result::rejected,
+				"Castle encounter skipped discovery");
+			require(journey.discover_zone(7, 42, 24, 2401, 100, "arrival") ==
+					result::applied,
+				"Castle discovery failed");
+			for (const auto &location :
+			     std::vector<std::pair<int, int>>{ { 2401, 2401 },
+							       { 2406, 2427 },
+							       { 2415, 2439 },
+							       { 2418, 2452 },
+							       { 2419, 2456 },
+							       { 2420, 2477 },
+							       { 2421, 2477 },
+							       { 2433, 2481 },
+							       { 2428, 2493 },
+							       { 2435, 2511 },
+							       { 2408, 2425 },
+							       { 2423, 2485 } })
+				require(journey.meet_npc(7, 42, location.first, location.second,
+							 101) == result::applied,
+					"Castle source encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 24, 10, 1, 102, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Castle source encounter exposed unseen Remy");
+			require(journey.meet_npc(7, 42, 2417, 2443, 103) == result::applied,
+				"Castle Remy encounter failed");
+			const auto before = journey.serialize_state();
+			supplies = {};
+			for (int v : { 2402, 2405, 2418, 2422, 2425, 2434, 2436, 2437, 2438, 2440,
+				       2447, 2448, 359, 55417 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 24, 10, 1, 104, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(journal.find("[Missing now] " + story.steps.front().text) !=
+							std::string::npos &&
+						journal.find("[Pending] " +
+							     story.steps.back().text) !=
+							std::string::npos,
+					"Castle keys/rewards/memory/stone supplied exact hand-in or receipt");
+			supplies = {};
+			supplies.equipped[3] = 2441;
+			supplies.equipped[18] = 2435;
+			journal = journey.render_journal(7, 42, 24, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(journal.find("[Missing now] " + story.steps.front().text) !=
+						std::string::npos,
+					"Castle worn necklace or held bone counted as loose");
+			supplies = {};
+			supplies.carried[2441] = 1;
+			journal = journey.render_journal(7, 42, 24, 10, 1, 106, false, false,
+							 &supplies);
+			require(journal.find("[Ready now] " + necklace.steps.front().text) !=
+						std::string::npos &&
+					journal.find("[Missing now] " + bone.steps.front().text) !=
+						std::string::npos,
+				"Castle necklace custody supplied unrelated bone");
+			supplies.carried[2435] = 1;
+			journal = journey.render_journal(7, 42, 24, 10, 1, 107, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(journal.find("[Ready now] " + story.steps.front().text) !=
+							std::string::npos &&
+						journal.find("[Pending] " +
+							     story.steps.back().text) !=
+							std::string::npos,
+					"Castle supplied exact material failed readiness or minted completion");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 24).completed == 0,
+				"Castle custody invented battle/key/dialogue/teacher/stone/completion history");
+			record(journey, bone.contracts.front(), "castle-bone-first", 24, 2443);
+			supplies = {};
+			supplies.carried[2448] = 1;
+			journal = journey.render_journal(7, 42, 24, 10, 1, 121, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 24).completed == 1 &&
+					journal.find("[Recorded] " + bone.steps.back().text) !=
+						std::string::npos &&
+					journal.find("[Pending] " + necklace.steps.back().text) !=
+						std::string::npos &&
+					journal.find("[Missing now] " + bone.steps.front().text) !=
+						std::string::npos,
+				"Castle bone-first reward expanded necklace credit or recreated offering");
+			record(journey, necklace.contracts.front(), "castle-necklace-second", 24,
+			       2443);
+			require(journey.progress_for_zone(7, 42, 24).completed == 2,
+				"Castle independent receipts did not complete two requests");
+			for (const auto &story : mapping.stories)
+				require(!journey.daily_eligible_for(7, 42, story.contracts.front(),
+								    10, 1, 10, 121),
+					"Castle accepted exchange stayed eligible on same day");
+			supplies = {};
+			supplies.carried[2441] = 1;
+			supplies.carried[2435] = 1;
+			constexpr int64_t next_day = 120 + 86400;
+			journal = journey.render_journal(7, 42, 24, 10, 1, next_day, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(journal.find("[Recorded] " + story.steps.back().text) !=
+							std::string::npos &&
+						!journey.daily_eligible_for(7, 42,
+									    story.contracts.front(),
+									    10, 1, 10, next_day),
+					"Castle rollover erased history or bypassed disabled daily policy");
+			daily_policy castle_policy;
+			castle_policy.enabled = true;
+			journey.set_daily_policy(castle_policy);
+			for (const auto &story : mapping.stories)
+			{
+				require(!journey.daily_eligible_for(7, 42, story.contracts.front(),
+								    10, 1, 10, next_day),
+					"Castle enabled policy bypassed required telemetry");
+				for (uint32_t attempt = 0; attempt < castle_policy.minimum_attempts;
+				     ++attempt)
+				{
+					telemetry_observation evidence;
+					evidence.observation_id =
+						story.id + ":qualified:" + std::to_string(attempt);
+					evidence.quest_definition_id = story.contracts.front();
+					evidence.content_revision = 2;
+					evidence.observed_at = 130 + attempt;
+					evidence.pid =
+						43 + attempt % castle_policy.minimum_distinct_pids;
+					evidence.level = evidence.strongest_party_level = 10;
+					evidence.racewar = 1;
+					evidence.credit_mask =
+						zone_story_quest_tracking::ZONE_STORY_CREDIT_PERSONAL;
+					evidence.party_size = 1;
+					evidence.outcome = telemetry_outcome::success;
+					evidence.accessible = true;
+					require(journey.record_telemetry(evidence) ==
+							result::applied,
+						"Castle qualified telemetry was rejected");
+				}
+				require(!journey.daily_eligible_for(7, 42, story.contracts.front(),
+								    10, 1, 10, 160) &&
+						journey.daily_eligible_for(7, 42,
+									   story.contracts.front(),
+									   10, 1, 10, next_day) &&
+						!journey.daily_eligible_for(7, 42,
+									    story.contracts.front(),
+									    11, 1, 11, next_day) &&
+						!journey.daily_eligible_for(7, 42,
+									    story.contracts.front(),
+									    10, 2, 10, next_day),
+					"Castle daily qualification lost day, observed level or faction guards");
+			}
+			require(journey.progress_for_zone(7, 42, 24).completed == 2,
+				"Castle reacquisition duplicated achievements");
+			auto replay = completion(bone.contracts.front(), "castle-bone-first", 120);
+			replay.transaction.zone_number = 24;
+			replay.transaction.room_vnum = 2443;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Castle accepted receipt replay duplicated credit");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 24).completed == 2,
+				"Castle cold recovery lost independent receipts");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 24, 2401, 100, "arrival") ==
+					result::applied,
+				"Castle raw discovery failed");
+			require(raw.meet_npc(7, 42, 2417, 2443, 103) == result::applied,
+				"Castle raw source encounter failed");
+			record(raw, bone.contracts.front(), "castle-raw-bone", 24, 2443);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 24).completed == 1 &&
+					!authored.daily_eligible_for(7, 42, bone.contracts.front(),
+								     10, 1, 10, next_day) &&
+					authored.render_journal(7, 42, 24, 10, 1, next_day, false,
+								false, &supplies)
+							.find("[Recorded] " +
+							      bone.steps.back().text) !=
+						std::string::npos,
+				"Castle raw recovery expanded credit or bypassed daily policy/telemetry");
 		}
 
 		{

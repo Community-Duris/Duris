@@ -41408,6 +41408,205 @@
     {
       "contacts": [
         {
+          "description": "In the chief\u2019s office on the second floor; ask hi, hello, quest or revenge about the necklace, and gilman about Povtail. The two exact hand-ins have independent completions.",
+          "keyword": "remy",
+          "mob_vnum": 2417,
+          "name": "Remy Swyhart",
+          "topics": [
+            "hi",
+            "hello",
+            "quest",
+            "revenge",
+            "gilman"
+          ]
+        },
+        {
+          "description": "At the castle entrance; declared holding the castle key, which matches the north gate and the early bookcases.",
+          "keyword": "tev",
+          "mob_vnum": 2401,
+          "name": "Tev",
+          "topics": []
+        },
+        {
+          "description": "In the first-floor library; declared holding the basement key for the trapdoor outside the stairwell.",
+          "keyword": "juku",
+          "mob_vnum": 2406,
+          "name": "Juku",
+          "topics": []
+        },
+        {
+          "description": "In the basement study; declared carrying the second-floor key for the library stairwell.",
+          "keyword": "giauque",
+          "mob_vnum": 2415,
+          "name": "the ghost of Giauque Quintaragon, Necromancer",
+          "topics": []
+        },
+        {
+          "description": "The LARGE rat in the second-floor storage area is declared carrying the holy key for the door into the holy rooms.",
+          "keyword": "rat",
+          "mob_vnum": 2418,
+          "name": "a LARGE rat",
+          "topics": []
+        },
+        {
+          "description": "In the holy rooms; declared holding the third-floor key for the upper stairwell.",
+          "keyword": "cetyla",
+          "mob_vnum": 2419,
+          "name": "Cetyla",
+          "topics": []
+        },
+        {
+          "description": "In the madam\u2019s study; declared wearing the fourth-floor key at her neck, leading to Gilman\u2019s practice area.",
+          "keyword": "glynn",
+          "mob_vnum": 2420,
+          "name": "the ghost of Glynn Quintaragon, Sorceress",
+          "topics": []
+        },
+        {
+          "description": "Following Glynn; declared carrying the small bookcase key. The bookcase route is a separate optional branch.",
+          "keyword": "hildebrand",
+          "mob_vnum": 2421,
+          "name": "Hildebrand",
+          "topics": []
+        },
+        {
+          "description": "In the third-floor dog house with several following guards; declared holding the exact diamond-studded bone and carrying a separate secret-closet key.",
+          "keyword": "povtail",
+          "mob_vnum": 2433,
+          "name": "Povtail",
+          "topics": []
+        },
+        {
+          "description": "In the fourth-floor study; declared holding the key to the sky route. His separate epic-teacher service does not complete either Remy request.",
+          "keyword": "gilman",
+          "mob_vnum": 2428,
+          "name": "the ghost of Gilman Quintaragon, Conjurer",
+          "topics": []
+        },
+        {
+          "description": "In the sky above the castle; declared wearing the family necklace at his neck. The rune stone and castle memory on this source belong to separate journeys.",
+          "keyword": "llamanby",
+          "mob_vnum": 2435,
+          "name": "Llamanby, the Red Megadragon",
+          "topics": []
+        },
+        {
+          "description": "In a first-floor closet; his writings provide clues about the family\u2019s loss and the ghosts. No separate local request is declared.",
+          "keyword": "renardien",
+          "mob_vnum": 2408,
+          "name": "Renardien",
+          "topics": []
+        },
+        {
+          "description": "In the third-floor kitchen among cracked dragon eggs. The selected source declares no egg hand-in request.",
+          "keyword": "cook",
+          "mob_vnum": 2423,
+          "name": "the cook",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow the Quintaragon family\u2019s loss through their haunted castle, recover the necklace and Povtail\u2019s diamond-studded bone, and return each to Remy.",
+      "orientation": [
+        "A barely visible path in the Darkmore Forest leads north to the castle entrance. Tev is declared holding the castle key for the north gate; the forward gate also permits ordinary PICK attempts.",
+        "The foyer\u2019s maps and portraits describe the family. In the first-floor library, Juku holds the key for the basement trapdoor. Giauque\u2019s ghost in the basement study carries the key for the library\u2019s upper stairwell.",
+        "Remy waits in the chief\u2019s office on the second floor. Ask hi, hello, quest or revenge about the stolen necklace. Ask gilman for the separate lead about Povtail.",
+        "The LARGE rat in the second-floor storage area carries the holy key. Beyond the holy-room door, Cetyla holds the key for the stairwell to the third floor.",
+        "Povtail\u2019s dog house is off the sorcerer\u2019s practice rooms on the third floor. Povtail holds the exact diamond-studded bone accepted by Remy. The bone hand-in can be completed independently of the necklace.",
+        "Glynn\u2019s ghost in the madam\u2019s study wears the fourth-floor key at her neck. It opens the route to Gilman\u2019s practice area; Gilman holds the separate key to the sky route.",
+        "Llamanby, the Red Megadragon, is declared wearing the Quintaragon family necklace in the sky. Those sky rooms have no ground; prepare suitable support and check current conditions before following the route.",
+        "Bring the exact family necklace loose to Remy for the blue sword of revenge. Bring the exact diamond-studded bone loose for the flaming orb of revenge. Supplied exact items also fit either request.",
+        "The castle key has no break roll. The basement, second-floor, holy-room, third-floor, fourth-floor, sky and secret-closet keys each have a 100 percent break roll after a successful keyed unlock. Check current doors before returning.",
+        "Povtail\u2019s other key opens the secret closet north of a sorcerer\u2019s practice room. The bookcase inside uses the small key declared on Hildebrand, Glynn\u2019s follower; this is an optional branch outside Remy\u2019s hand-ins.",
+        "The early bookcases use the castle key. The cracked eggs in the kitchen are props, and the selected cook has no egg request. Room clues can explain the setting without creating another quest completion.",
+        "The rune stone and castle memory declared on Llamanby have separate uses. Recovering them, using a stone, visiting a teacher or completing an exchange elsewhere does not complete either Remy hand-in.",
+        "Remy stays after either exchange. Both requests are potential daily candidates after discovery, subject to reviewed policy, accessible telemetry, level and faction qualification, party context and native stock, reset and reward availability; a new day does not replenish the castle by itself.",
+        "New discovery, encounter, journal, achievement and daily credit requires active, ready accounting. Current loose materials show preparation; accepted hand-ins remain recorded after the items are gone."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "castle",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:2441;receive=I:2447;disappear=0",
+              "giver_vnum": 2417
+            }
+          ],
+          "id": "return-the-quintaragon-heirloom",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Llamanby is declared wearing the necklace in the sky. A supplied exact necklace also fits; keys, a castle memory or a reward sword do not supply it.",
+              "id": "material-2441",
+              "item_vnums": [
+                2441
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact family necklace loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2441;receive=I:2447;disappear=0",
+                  "giver_vnum": 2417
+                }
+              ],
+              "hint": "Remove this item from equipment or a container and offer it to Remy. This accepted exchange is independent of the other hand-in and of personal key, battle or dialogue history.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Return the Quintaragon family necklace"
+            }
+          ],
+          "summary": "Bring the exact family necklace to Remy for the blue sword of revenge.",
+          "title": "Return the Quintaragon family necklace"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:2435;receive=I:2448;disappear=0",
+              "giver_vnum": 2417
+            }
+          ],
+          "id": "povtails-diamond-bone",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Povtail is declared holding the bone in his dog house. A supplied exact bone also fits; another bone, a key or the reward orb does not supply it.",
+              "id": "material-2435",
+              "item_vnums": [
+                2435
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact diamond-studded bone loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2435;receive=I:2448;disappear=0",
+                  "giver_vnum": 2417
+                }
+              ],
+              "hint": "Remove this item from equipment or a container and offer it to Remy. This accepted exchange is independent of the other hand-in and of personal key, battle or dialogue history.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Bring Povtail\u2019s diamond-studded bone to Remy"
+            }
+          ],
+          "summary": "Bring the exact diamond-studded bone to Remy for the flaming orb of revenge.",
+          "title": "Bring Povtail\u2019s diamond-studded bone to Remy"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Her greeting introduces the Triad and the Passage of Clarity. Her fennel exchange points you toward Abigail.",
           "keyword": "esmerelda",
           "mob_vnum": 2600,

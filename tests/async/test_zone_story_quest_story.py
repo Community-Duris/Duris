@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 189 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 190 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,15 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+castle=next(m for m in catalog['story_mappings'] if m['source_area']=='castle')
+assert (castle['coverage'],castle['schema_version'],castle['revision'])==('complete',3,1) and not castle['exclusions']
+assert len(castle['stories'])==2 and len(castle['contacts'])==13 and sum(len(c['topics']) for c in castle['contacts'])==5
+assert sum(len(s['steps']) for s in castle['stories'])==4 and sum(t.get('optional',False) for s in castle['stories'] for t in s['steps'])==2
+assert [s['steps'][0]['item_vnums'] for s in castle['stories']]==[[2441],[2435]]
+assert all(s['category']=='request' and s['steps'][0]['count']==1 and len(s['contracts'])==1 and s['steps'][-1]['contracts']==s['contracts'] for s in castle['stories'])
+assert report['eligible_by_zone']['24']==2 and all(d['repeatable'] and d['daily_eligible'] and not d['prerequisites'] for d in catalog['definitions'] if d['source_area']=='castle')
+assert {s['id'] for s in castle['stories']}=={'return-the-quintaragon-heirloom','povtails-diamond-bone'}
 
 azhural=next(m for m in catalog['story_mappings'] if m['source_area']=='azhural')
 assert (azhural['coverage'],azhural['schema_version'],azhural['revision'])==('complete',3,1) and not azhural['exclusions']

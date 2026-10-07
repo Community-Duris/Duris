@@ -4225,3 +4225,32 @@ The [complete Azhural dossier](../design/zone-stories/AZHURAL.md) maps two indep
 | 18 | Story/dialogue runtime | Add learned-response facts for the two MA blocks with content revision, actor and successful response; nine aliases remain two conversations, and bystander echo is separate. |
 | 19 | Builder/editorial | Review blank rooms, clipped Ynndakaneil response and unused invasion/guardian prototypes fairly. Choose authored completion or honest retirement; publish actual repairs in clearly named fix/news commits. |
 | 20 | Integration/testing | Run played active READY discovery, batch custody/denial, source/gift, departure, gates, portal arrival, consort/queen and reward persistence journeys before promotion; keep blockers and source qualification visible. |
+
+## Castle: exact hand-ins, native access and reserved content
+
+The [complete Castle dossier](../design/zone-stories/CASTLE.md) maps two independent Remy returns: exact family necklace for the blue sword and Povtail’s exact diamond-studded bone for the flaming orb. Thirteen contacts, two MA responses/five aliases, two optional loose material rows and two receipts provide four steps. Native retained-giver policy preserves two achievements and two potential dailies. Full selected closure covers 130 rooms/392 exits,39 mobiles,51 objects and283 commands/full414 ZON/38 QST. The keyed public route, optional containers, actual follower slots, no-ground sky, dynamically assigned Gilman epic teacher, secured imported rune stone and externally owned WH memory exchange remain separate outcomes. Supplied exact materials fit without personal kill/key/dialogue prerequisites. Expand effective table/loader discovery, source/gift, admitted doors/containers/flight, actor-owned response/receipt and group/teacher/stone/external economic facts under active READY accounting. Gilman purchases are currently blocked while accounting is active. Review suppressed F25, seven private/editorial rooms, three unstocked altars/two absent destinations, key-description mismatches and unused kitchen/claw context fairly; any selected repair requires a named fix/news commit. No native repair ships here.
+
+## Owned follow-ups and required capability
+
+| # | Owner | Follow-up and acceptance evidence |
+| --- | --- | --- |
+| 1 | Accounting/source runtime | Qualify native mode-one empty-zone resets, global caps and durable item-generation issuance; discovery/midnight must not create stock. Test refusal and cold recovery. |
+| 2 | Story/source runtime | Record first exact necklace/bone recovery with actor, UID, source mobile/slot, generation and transfer reason; supplied gifts remain distinct from personal source acquisition. |
+| 3 | Quest/receipt runtime | Preserve the two actor-owned Remy receipts in either order through replay, cold/raw recovery and daily rollover; source possession, the other receipt and room echo must not add credit. |
+| 4 | Quest/UI runtime | Show loose-item readiness and independent return instructions; test held/worn/nested/wrong/reward/spent/reacquired items, denials and original ownership. |
+| 5 | Story/dialogue runtime | Record two successful learned responses with content revision; five aliases remain two conversations and bystanders receive no automatic personal credit. |
+| 6 | Story/investigation runtime | Record successful reading of the exact map/note/sign/extra rather than any LOOK attempt; separate narrative clues from new rewards. |
+| 7 | Builder/access runtime | Map all seven main key sources and real gate sides; preserve forward entrance PICKABLE/reverse PICKPROOF and ordinary attempt denial without a guaranteed bypass. |
+| 8 | Accounting/door runtime | Coordinate actual unlock, reciprocal state and key destruction/refusal/recovery for zero/10/100-percent break rolls; possession is not a consumed-key success. |
+| 9 | Builder/container runtime | Qualify secret closet, tiny-key source, exact bookcase/contents and admitted container recovery. Preserve ordinary PICK attempts for masks13/15; bit16 PICKPROOF is absent and legacy HARDPICK does not guarantee denial or success. Review failure/pick-break behavior separately before any repair. |
+| 10 | Builder/editorial | Review key2425 floor text and key2436 dog-house text against actual doors. If corrections are warranted, use named editorial fix/news commits. |
+| 11 | Story/combat runtime | Design Povtail/Llamanby personal and group defeat credit explicitly; source slots, follower counts and supplied items do not prove personal kills. Preserve native encounter balance. |
+| 12 | Story/movement runtime | Record admitted sky arrival, active support and actual fall/survival outcomes, including dispel/mount/climb/denial/recovery; no-ground route is not qualified by a flight item alone. |
+| 13 | Builder/world runtime | Decide whether suppressed F25 hazard2463 is intentional or unfinished; verify intended DOWN target and safety/balance before changing topology. |
+| 14 | Accounting/teaching runtime | Make Gilman’s existing epic purchase compatible with active accounting before a teaching objective; qualify eligibility, costs, mutation, refund/denial and committed skill acquisition. |
+| 15 | Story/loader tooling | Discover teacher-table and initialization bindings alongside ordinary assignments; expose effective handler/property state rather than concluding there is no special from one file. |
+| 16 | Story/zone-touch runtime | Reuse secured rune-stone participant/zone outcomes; distinguish loot/drop/touch/pending/denied/recovered/group award and avoid duplicate zone completion. |
+| 17 | Story/external ownership | Present the WH memory exchange as a separate externally owned service; retain its exact memory, scroll, native coin value/token, caps and economic authority. |
+| 18 | Builder/reserved content | Decide seven private/editorial rooms and three unstocked altars with missing targets/legacy commands; complete or retire deliberately, never auto-connect or activate. |
+| 19 | Builder/editorial | Review clipped/spacing/lore discrepancies, unused claw and non-takeable kitchen props fairly; distinguish intentional atmosphere from verified incomplete quest mechanics and publish actual repairs separately. |
+| 20 | Integration/testing | Run played active READY discovery, source/gift custody, both returns, gates/containers, sky encounter, stone group award and external economy/teaching journeys before promotion. Keep capability gaps and native repair plans explicit. |
