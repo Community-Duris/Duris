@@ -209,3 +209,8 @@ The [dossier](../design/zone-stories/KILLING_FIELDS.md) retains one potential ca
 ## Magma daily qualification
 
 The [dossier](../design/zone-stories/MAGMA.md) retains one potential candidate with a rare moving giver/source and mode0 renewal. Qualify active READY exact input, frozen eligible party history, actor three-item child settlement/save, D retirement, actual admitted entry/return and owned heart/giver renewal. Neither a control-room percentage name nor UTC rollover proves fresh stock. Public route and played qualification remain pending; policy stays disabled by default.
+
+
+## Mazzolin daily qualification
+
+The [dossier](../design/zone-stories/MAZZOLIN.md) retains one potential candidate with five exact source pieces and a retiring giver. Qualify active READY joint input, frozen eligible party history, actor two-item child settlement/save, actual D retirement, protected entry/return and owned mode1 renewal for the giver and all five sources. Duplicate shards, a rune-stone claim, hidden-root discovery or UTC rollover cannot establish a fresh complete bundle. Policy stays disabled by default.

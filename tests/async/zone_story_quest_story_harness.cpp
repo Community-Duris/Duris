@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 198 &&
+		require(catalog.story_mappings.size() == 199 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -23690,6 +23690,95 @@ int main(int argc, char **argv)
 					!recovered.has_discovered(7, 42, 1398) &&
 					!recovered.has_discovered(7, 42, 1400),
 				"Magma cold/raw recovery lost one return or invented another zone discovery");
+		}
+
+		{
+			const auto &star = story_for("mazzolin", "aeirayne-hematite-star");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 213, 21300, 100, "arrival") ==
+					result::applied,
+				"Mazzolin discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 213, 10, 1, 101, false, false);
+			require(journal.find(star.title) == std::string::npos,
+				"Mazzolin discovery exposed an unmet giver");
+			require(journey.meet_npc(7, 42, 21328, 21422, 102) == result::applied,
+				"Mazzolin sludge dragon encounter failed");
+			journal = journey.render_journal(7, 42, 213, 10, 1, 103, false, false);
+			require(journal.find(star.title) == std::string::npos,
+				"Mazzolin source encounter fabricated Aeirayne");
+			require(journey.meet_npc(7, 42, 21323, 21411, 104) == result::applied,
+				"Mazzolin actual Aeirayne encounter failed");
+			const auto status = [&](size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    star.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[8] = 1;
+			supplies.carried[358] = 1;
+			supplies.carried[21308] = 1;
+			supplies.carried[21319] = 1;
+			supplies.carried[21316] = 1;
+			supplies.carried[21320] = 1;
+			supplies.equipped[18] = 21311;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 213, 10, 1, 105, false, false,
+							 &supplies);
+			for (size_t row = 0; row < 5; ++row)
+				require(status(row, "Missing now"),
+					"Mazzolin generic stock, portal, stone, reward or held piece prepared the bundle");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 213).completed == 0,
+				"Mazzolin preparation fabricated durable acceptance");
+			supplies = {};
+			supplies.carried[21309] = 5;
+			journal = journey.render_journal(7, 42, 213, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(0, "Ready now"),
+				"Mazzolin exact first piece did not prepare its row");
+			for (size_t row = 1; row < 5; ++row)
+				require(status(row, "Missing now"),
+					"Mazzolin duplicate piece substituted for another prototype");
+			supplies = {};
+			for (int vnum = 21309; vnum <= 21313; ++vnum)
+				supplies.carried[vnum] = 1;
+			journal = journey.render_journal(7, 42, 213, 10, 1, 107, false, false,
+							 &supplies);
+			for (size_t row = 0; row < 5; ++row)
+				require(status(row, "Ready now"),
+					"Mazzolin supplied exact bundle required invented source history");
+			require(journal.find("Next: " + star.steps.back().text) !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Mazzolin exact bundle did not project one return without durable mutation");
+			// Synthetic receipt qualifies projection, not native five-input/two-reward/D or access/epic outcomes.
+			record(journey, star.contracts.front(), "mazzolin-star-return", 213, 21411);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 213, 10, 1, 121, false, false,
+							 &supplies);
+			for (size_t row = 0; row < 5; ++row)
+				require(status(row, "Missing now"),
+					"Mazzolin spent pieces remained falsely present");
+			require(status(5, "Recorded") &&
+					journey.progress_for_zone(7, 42, 213).completed == 1 &&
+					journey.progress_for_zone(7, 42, 213).total == 1,
+				"Mazzolin spent preparation erased or duplicated one accepted return");
+			auto replay =
+				completion(star.contracts.front(), "mazzolin-star-return", 120);
+			replay.transaction.zone_number = 213;
+			replay.transaction.room_vnum = 21411;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Mazzolin replay duplicated accepted return");
+			service recovered(catalog), raw(raw_catalog);
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 213).completed == 1 &&
+					recovered.progress_for_zone(7, 42, 213).total == 1 &&
+					raw.progress_for_zone(7, 42, 213).completed == 1 &&
+					!recovered.has_discovered(7, 42, 7000),
+				"Mazzolin cold/raw recovery lost one return or invented UnderDark discovery");
 		}
 
 		std::cout

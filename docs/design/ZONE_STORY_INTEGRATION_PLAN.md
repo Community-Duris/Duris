@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 198 authored journals, accounting-gated player surfaces, starter/town
+**Status: 199 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5285,3 +5285,10 @@ The [Magma dossier](zone-stories/MAGMA.md) maps one exact-heart request with thr
 One accepted exchange can produce several separately settled item children. The journal should retain one clear Next step while exposing present exact preparation, accepted history and actual output/retirement status independently. Supplied exact material stays compatible with native acceptance. Optional courts, emissaries, patrols, slavers and future citadels should reveal only verified current contacts and authored leads, without transforming descriptive or unplaced content into mandatory progress. All new tracking requires active READY accounting; frozen committed recovery remains separate.
 
 Twenty-four owned follow-ups cover fair access/sector/dispersal decisions, source ownership, original-versus-transferred acquisition, exact reward-child recovery, mode0 renewal and deliberate completion of unfinished native content. Any real alias/prose, source, route or balance repair needs a separate named commit and prominent PR/news before/after evidence.
+
+
+## Mazzolin integration extension
+
+The [Mazzolin dossier](zone-stories/MAZZOLIN.md) adds a concrete builder case for five identical-looking, distinct exact inputs. Reuse five separate source-labelled optional carried-item rows and one accepted completion; a list of alternatives with count5 would wrongly accept duplicates. Current loose preparation, personal first recovery, transferred custody, source combat, party completion and two reward-child settlements need independent evidence. Dialogue aliases describe semantic families rather than separate quests. The larger rescue narrative needs an explicit release/destination outcome before an escort or safety objective.
+
+Builder declarations should map actual protected door/effect admission, one-way descent, hidden-root discovery, selected teleport action and actual arrival/return. Missing EX_ISDOOR or negative keys can coexist with an intentional effect-dependent route; review current actors and policy before repair. Unusual wand equipment flags need actual equipment/use/custody evidence before slot changes. Twenty-eight owned follow-ups cover these capabilities, source generations, native unfinished content, rune-stone claim and mode1 renewal. Any native repair needs a separately named commit and prominent PR/news before/after evidence. All new tracking requires active READY accounting; frozen committed recovery remains separate.
