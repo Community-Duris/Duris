@@ -92,8 +92,7 @@ still qualify authentic active accounting/native birth/recovery/restitution.
 ## Current source/component batch
 
 Merged source `6db65f624836f150ed3dfe33508e1f1719145fdb`, latest accounting
-`f04317d9d72aa5594448809baad6041936b09801`. Full SQL/flat maintained builds are
-running from `current-source.tar`; no build/runtime PASS yet. `current-components.log`
+`f04317d9d72aa5594448809baad6041936b09801`. Full SQL/flat maintained builds from `current-source.tar` both PASS (740 original providers each). Terminal current runtime results follow below. `current-components.log`
 passes all seven source cases/30 variants, native selectors QP01/02/05/06,
 285 catalog recipes, QP03 actual generation/root guard, QP07 actual settlement,
 16 oracle methods and three existing world regressions. Separate
@@ -114,3 +113,73 @@ revision8 and room revision7. Critical log reports error116/stale_authority_revi
 Private `authority-after-failure.json` retains the complete original inspection.
 No owner-counter change or journal rewrite was performed; the precise failed
 shared movement predicate is not inferred solely from the errno.
+
+
+## Terminal current compatibility batch
+
+Source6db65f624836f150ed3dfe33508e1f1719145fdb; accountingf04317d9d72aa5594448809baad6041936b09801.
+Tool metadata/literal fix88fc052630932492ffff148b474f075f72423fb9;
+optional actual successful fee transcript429acc4a695db65997e0f2dcfcb4727b3dc407a8.
+SQL ELF0d6514c7222dca25cb30e9e5875036cf2088461ebb07731a66153be07683907b;
+flat ELF8aedc856f2ff9cfee15ce694b16d28540daba1a5f41dedd40d59de91ad1b1ea5.
+Original maintained commands actually executed:
+
+```bash
+make -C src -j2 BIN_ROOT=/evidence/current-sql
+make -C src -j2 BIN_ROOT=/evidence/current-flat PERSISTENCE_BACKEND=flatfile
+make world
+```
+
+Both full builds exit0,740 providers each; source archive SHA256
+9f95168377ec1fe39bec1dad0ad972555e6a3625a6ed2721e58a750c8c375d85.
+The existing strict development flags are in current-*-build.log; no overrides
+weaken warning/sanitizer settings. Two CPU/3GiB per build; artifacts stay ignored.
+The source Git commit names the production binary; later eight Python tool lines
+are separately pinned and do not relabel an ELF.
+
+| Evidence directory | Exit/result | Seconds | Exact scope |
+|---|---|---|---|
+| current-sql-qp06-xp-move | 0/PASS |152.032| Original XP-ACK crash, captured exact roots/reward820/C3000/XP200→520/mask4/ACK, later room22800 reward drop revision2 and second-cold exact custody/replay |
+| current-flat-qp06-xp-move |1/RED|135.663| Original XP-ACK/recovery assertions pass; later drop errno116/stale_authority_revision. Existing inspector confirms821 root821/parent0/VNUM29237 still player-owned,XP521,wallet[0,0,0,3],player owner revision8/room7 |
+| current-flat-QP01-refusal |0/PASS|51.784| Actual shortage response and original UIDs through cold load |
+| current-flat-QP02-refusal |0/PASS|68.361| Actual legacy durable-safe refusal and original hide UIDs through cold load |
+| current-flat-QP03-refusal |0/PASS|67.786| Actual invisible-recipient response and all original input UIDs through cold load |
+| current-sql-qp05-white |0/PASS|113.173| Three original white-bear skins, actual give/save/cold,16048 reward UID819; captured exact custody/ledger/replay |
+| current-sql-world |0/PASS|90.523| Full production world Woodseer creation/abandon/replacement/final abandon/SQL task readback/normal shutdown; mapless refusal |
+| current-flat-world |0/PASS|35.597| Same actual command path/normal shutdown on flat backend; mapless refusal |
+
+Both world transcripts quote creation1platinum+1gold+2silver=1120 copper and
+abandon43platinum+4gold+6silver+4copper=43464 copper. These are actual legacy
+quotes, not active-native debit/restitution proof. Earlier a19a67a world runs
+qualified successful map issuance; current selections were mapless, so no map
+fee was charged here. Source map fee is10*level=560 when actually offered.
+
+Exact current journey invocations (inside the private network-none runtime):
+
+```bash
+cd /current
+SOURCE=6db65f624836f150ed3dfe33508e1f1719145fdb
+SQL=/evidence/current-sql/server/dms_new
+SQL_SHA=0d6514c7222dca25cb30e9e5875036cf2088461ebb07731a66153be07683907b
+FLAT=/evidence/current-flat/server/dms_new
+FLAT_SHA=8aedc856f2ff9cfee15ce694b16d28540daba1a5f41dedd40d59de91ad1b1ea5
+export TEST_DB_DISPOSABLE=1 TEST_DB_HOST=127.0.0.1 TEST_DB_PORT=33306 TEST_DB_USER=prep_runner
+export TEST_DB_PASSWORD=$(cat /tmp/quest-prep-password)
+python3 -B tests/async/quest_accounting_prep/run_quest_execution.py --server "$SQL" --server-sha256 "$SQL_SHA" --source-commit "$SOURCE" --backend mariadb --case QP06 --fault-phase xp-ack --move-reward --evidence-dir /evidence/current-sql-qp06-xp-move
+python3 -B tests/async/quest_accounting_prep/run_quest_execution.py --server "$FLAT" --server-sha256 "$FLAT_SHA" --source-commit "$SOURCE" --backend flatfile --case QP06 --fault-phase xp-ack --move-reward --evidence-dir /evidence/current-flat-qp06-xp-move
+python3 -B tests/async/quest_accounting_prep/run_static_execution.py --server "$FLAT" --server-sha256 "$FLAT_SHA" --source-commit "$SOURCE" --backend flatfile --case QP01 --reward-vnum 44192 --supply shortage --expect-refused --evidence-dir /evidence/current-flat-QP01-refusal
+python3 -B tests/async/quest_accounting_prep/run_static_execution.py --server "$FLAT" --server-sha256 "$FLAT_SHA" --source-commit "$SOURCE" --backend flatfile --case QP02 --reward-vnum 19009 --supply exact --expect-refused --evidence-dir /evidence/current-flat-QP02-refusal
+python3 -B tests/async/quest_accounting_prep/run_static_execution.py --server "$FLAT" --server-sha256 "$FLAT_SHA" --source-commit "$SOURCE" --backend flatfile --case QP03 --reward-vnum 16015 --supply exact --expect-refused --evidence-dir /evidence/current-flat-QP03-refusal
+python3 -B tests/async/quest_accounting_prep/run_static_execution.py --server "$SQL" --server-sha256 "$SQL_SHA" --source-commit "$SOURCE" --backend mariadb --case QP05 --reward-vnum 16048 --evidence-dir /evidence/current-sql-qp05-white
+python3 -B tests/async/quest_accounting_prep/run_world_execution.py --server "$SQL" --server-sha256 "$SQL_SHA" --source-commit "$SOURCE" --backend mariadb --evidence-dir /evidence/current-sql-world
+python3 -B tests/async/quest_accounting_prep/run_world_execution.py --server "$FLAT" --server-sha256 "$FLAT_SHA" --source-commit "$SOURCE" --backend flatfile --evidence-dir /evidence/current-flat-world
+```
+
+Current SQL cleanup files confirm schema quest_journey_test_c02d1bc90c93,
+quest_journey_test_49f955dfd3a2 and quest_journey_test_fb8e09da0af6 each absent.
+Final actual SELECT census of the owned server confirms0 matching schemas
+(`owned-schema-cleanup.json`). An initial extra CLI census failed shell quoting;
+the read-only Python parameterized successor passed; all original individual
+schema-cleanup assertions had already passed. No migrations/writes were run
+against any external server. The owned runtime is stopped after inspection;
+raw failures, logs, player data and generated worlds remain private/uncommitted.

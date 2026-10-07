@@ -23,8 +23,7 @@ Flat Kord offering, QP05 reward UID, QP02 definite refusal, QP01 shortage refusa
 and actual full-world Woodseer bartender on both backends pass. Retained flat
 XP-ACK later drop remains red: critical-command error116/stale_authority_revision.
 That is shared movement/recovery, not a stale callback or XP double-pay finding.
-Current integrated full builds and bounded compatibility journeys are recorded
-when terminal; no native reset/activation/refund/retirement release gate is promoted.
+Current integrated full builds PASS with740 original providers on each backend. SQL Kord XP-ACK/later drop/second cold and QP05 reward journeys PASS; all three flat refusal calibrations and both full-world bartender journeys PASS. Current flat later drop reproduces errno116. Exact terminal evidence is in the linked execution log; no native reset/activation/refund/retirement release gate is promoted.
 
 ## Historical prep-only results
 
