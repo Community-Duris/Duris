@@ -1,5 +1,16 @@
 # Double-entry economy: remaining requirements
 
+## Persisted physical correspondence source ready - 2026-10-07
+
+[Current qualification checkpoint](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
+records the frozen four-file physical validator/normalizer. Primary authenticates
+all 43 records, original interfaces and six strict SQL/flat syntax receipts. It
+preserves all raw observations and unresolved custody; full native qualification
+and source-complete activation remain open. Borrowed RR capture can use the
+existing writable cutover without changing owning READ ONLY capture. Modern
+room capture proceeds independently; private 34 source composition authenticates. No
+private native source is imported and no original gate or writer policy changes.
+
 ## Independent coin exporter integrated - 2026-10-07
 
 [Primary integration](PLAN5_COIN_EXPORT_PRIMARY_INTEGRATION_2026-10-07.md)

@@ -4,6 +4,85 @@ Disposition: implementation and qualification remain open. This checkpoint
 records established failures, private candidates and an environment blocker;
 it does not import production changes or close an accounting/release gate.
 
+## Persisted physical correspondence source ready - 2026-10-07
+
+The private four-file successor now implements pure EPH1 validation and an
+evidence-preserving correspondence report for all eight persisted item sources.
+It retains each original raw observation and resolves native owner lifetimes,
+duplicate UIDs, parent/root scopes and equipment against the original source2
+report. NULL, ambiguous mappings, malformed topology and unmatched active
+custody remain explicit evidence; tombstone history does not require a live
+physical counterpart. Exact row correspondence does not certify the complete
+native forest or source-complete activation. The original opening reader still
+owns forest validation at its existing bound.
+
+Independent source review corrected signed-invalid native equipment/public
+flags, ambiguous lifetime mappings and duplicate-UID topology. The final
+formatted four files are frozen; primary authenticates all 43 sealed records,
+all maintained/predecessor preimages, nine unchanged inputs, original source2
+interfaces and original normalizer bodies. Six strict syntax receipts pass:
+snapshot, normalizer and additive fixture in SQL and flatfile profiles, each
+within its original 60-second ceiling. Formatting passes. No compiler/native
+check was repeated for primary authentication. The original linked fixtures,
+both complete production builds and genuine database/recovery journeys remain
+required and unexecuted for this successor.
+
+The borrowed physical API can use the existing writable RR cutover transaction:
+its implementation performs SELECTs only and never starts or ends that caller's
+transaction. The former READ ONLY wording on the new API was an unnecessary
+restriction; original owning source2 READ ONLY capture is unchanged. Caller
+still owns the same-session consistent cut and quiescence. EPH1 binds one cut
+and still cannot replace ESN5 or an unchanged before/after installation digest.
+Sealed capture2/combined32 bytes are preserved as predecessor evidence.
+
+| Frozen four-file artifact | SHA256 |
+| --- | --- |
+| TERMINAL-SEAL.json | `ba4503035a8d2ff36578b7f58fb783c12fa7904ab0b25cf2852fd9ff6b7497b4` |
+| SOURCE-PINS.json | `84354e30db93ce55bf646188523cf9e82f6142587cdc44ded5b942eb78226600` |
+| proposal.patch | `836c16925a9d6c6fc6409467f5c78eb5f208f738dc72b0c683471714ac51c84c` |
+
+Actual primary receipt:
+`bin/tests/activation-physical-capture-primary-20261007/physical4-primary/RESULT.json`.
+Frozen source, additive fixture and original native recipe:
+`tmp/activation-physical-normalize-primary-20261007/`.
+The snapshot pair follows sealed capture2, while the normalizer pair follows
+maintained source; the incremental patch cannot directly replace maintained
+snapshot files. Primary now authenticates a frozen 34-file composition:
+the final physical four files plus all 30 earlier recovery/genesis/shutdown/SHOP
+files. All 48 composition records, 1,300 unchanged production inputs and every
+one of the original 6,434 source archive bodies/modes authenticate. Exactly four
+paths differ from combined32; the earlier thirty candidates remain byte-exact.
+The original 754-provider profile graphs and original build/runtime budgets stay.
+No compiler or native test was repeated. No native source is imported and no
+writer/activation/release gate is promoted.
+
+| Frozen combined34 artifact | SHA256 |
+| --- | --- |
+| TERMINAL-SEAL.json | `78d84671b85a32bc0a08902e7a8d9ded74975603003f996756c8be4df3c867e5` |
+| SOURCE-PINS.json | `e34c2f04088bad5270d332e3755732b30117459e5b0a18698395fb7d51557d5e` |
+| transport/source.tar | `4d06eca21fd41eec015f338fcdf5f475e393d579d047171bf51ddf62e0a24326` |
+| transport/source-pins.json | `625eb07922026f1dde4c0ccee3308a1ad0b0cb8409a32a881d63700dc82281c9` |
+
+Actual primary receipt:
+`bin/tests/activation-physical-capture-primary-20261007/combined34-primary/RESULT.json`.
+The new transport deliberately excludes the maintained Python coin-export fix
+and unfinished modern-room pair. Existing v9 controls still bind combined32;
+a separate successor binding to combined34 is being prepared. All 18 genuine
+native controls, full production links and combined qualification remain open.
+This source archive is not the current whole checkout or a complete census.
+
+Modern room payload capture proceeds in a separate two-file owner stream. Its
+source must retain all historical UID/revision payloads and successful drops
+with missing literal payloads, using five extra consistent raw projections and
+the same remaining aggregate budget. Existing locking producer/recovery reads
+remain unchanged. Native live/reset/mobile objects, auction/collector sources,
+complete activation and joint Plan5 qualification remain open.
+
+Current read-only Docker availability inspection reports that Docker Desktop
+cannot start, with an empty server version despite command exit0. That is not
+engine recovery. No restart, service repair, failed link retry, altered budget
+or acceptance waiver occurred. Unaffected source work continues.
+
 ## Current physical-capture and full-server control successor
 
 Primary authenticated the sealed two-file persisted physical capture prerequisite
@@ -52,7 +131,8 @@ and expose unmatched custody as requiring other providers. Modern room payloads,
 native live/reset/mobile objects and other omitted domains remain separate.
 Nonzero pet/shop equipment cannot silently become zero or widen item authority.
 
-Two concrete composition constraints remain explicit: the physical provider's
+Historical combined32 contract constraints (superseded by the four-file
+borrowed-mode clarification above): the physical provider's
 caller contract is RR consistent READ ONLY, while current cutover is writable
 and room reads use FOR UPDATE. Also EPH1 binds receipt/mapping rows changed by
 installation, so it cannot replace the durable ESN5 native-boundary digest or
