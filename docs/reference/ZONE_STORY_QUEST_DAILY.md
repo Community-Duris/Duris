@@ -204,3 +204,8 @@ The [Vecna dossier](../design/zone-stories/VECNAS_TOMB.md) retains two potential
 ## Killing Fields daily qualification
 
 The [dossier](../design/zone-stories/KILLING_FIELDS.md) retains one potential candidate with a container-stocked note and departing, moving giver. Qualify active READY exact input, frozen eligible party completion credit, actor currency child/save settlement, actual D retirement and owned note/container/giver renewal. Mode1 age/emptiness, reset caps and completed source construction remain separate from daily rollover. Discovery supplies no note, decoding, personal recovery, rescue or guaranteed shop. Policy remains disabled by default.
+
+
+## Magma daily qualification
+
+The [dossier](../design/zone-stories/MAGMA.md) retains one potential candidate with a rare moving giver/source and mode0 renewal. Qualify active READY exact input, frozen eligible party history, actor three-item child settlement/save, D retirement, actual admitted entry/return and owned heart/giver renewal. Neither a control-room percentage name nor UTC rollover proves fresh stock. Public route and played qualification remain pending; policy stays disabled by default.

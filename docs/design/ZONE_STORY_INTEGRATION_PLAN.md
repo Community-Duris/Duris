@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 197 authored journals, accounting-gated player surfaces, starter/town
+**Status: 198 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5276,3 +5276,12 @@ The [Killing Fields dossier](zone-stories/KILLING_FIELDS.md) demonstrates a sing
 Progressive journals should reveal contacts and their reviewed leads, keep one clear Next step for the accepted request, and explain current preparation without promising optional narrative outcomes already happened. A service can be shown beside a quest with its own current availability; purchases do not imply quest completion. Route names, warning signs and reset placements do not guarantee safe passage or permanent NPC location. Add versioned validated selectors and explicit personal/shared/party credit before deeper objectives. New tracking requires active READY accounting; frozen committed recovery remains separate.
 
 Twenty-four owned follow-ups include a shared shop count-index safety repair plan, deliberate outward-only/prose/road-flag decisions, semantic code/friend mapping and settled currency/commerce/source renewal. Separate any actual native repair into a named commit with prominent PR/news before/after behavior. Preserve existing combat, shop, road and reset balance during source mapping.
+
+
+## Magma integration extension
+
+The [Magma dossier](zone-stories/MAGMA.md) maps one exact-heart request with three item outputs amid rare dispersal controls, placeholder encounters and planned citadel lore. Builder configuration needs actual source-footprint ownership, intended public entry/return, validated planar sector/travel policy and NPC generation/availability before adding prerequisites or promising routes. Numeric registry intervals can include unrelated inactive leaves; a room-name percentage is not a scheduler probability. Declare semantic conversation families and typed admitted source/combat/rescue/traversal/effect outcomes with personal/shared/party credit when their adapters exist.
+
+One accepted exchange can produce several separately settled item children. The journal should retain one clear Next step while exposing present exact preparation, accepted history and actual output/retirement status independently. Supplied exact material stays compatible with native acceptance. Optional courts, emissaries, patrols, slavers and future citadels should reveal only verified current contacts and authored leads, without transforming descriptive or unplaced content into mandatory progress. All new tracking requires active READY accounting; frozen committed recovery remains separate.
+
+Twenty-four owned follow-ups cover fair access/sector/dispersal decisions, source ownership, original-versus-transferred acquisition, exact reward-child recovery, mode0 renewal and deliberate completion of unfinished native content. Any real alias/prose, source, route or balance repair needs a separate named commit and prominent PR/news before/after evidence.

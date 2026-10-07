@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 197 &&
+		require(catalog.story_mappings.size() == 198 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -23621,6 +23621,75 @@ int main(int argc, char **argv)
 					!recovered.has_discovered(7, 42, 335) &&
 					!recovered.has_discovered(7, 42, 5000),
 				"Killing Fields cold/raw recovery lost return or invented foreign discovery");
+		}
+
+		{
+			const auto &heart = story_for("magma", "palenian-drake-heart");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 1420, 142001, 100, "arrival") ==
+					result::applied,
+				"Magma discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 1420, 10, 1, 101, false, false);
+			require(journal.find(heart.title) == std::string::npos,
+				"Magma discovery exposed an unmet recipient");
+			require(journey.meet_npc(7, 42, 142018, 142021, 102) == result::applied,
+				"Magma Cypheral encounter failed");
+			journal = journey.render_journal(7, 42, 1420, 10, 1, 103, false, false);
+			require(journal.find(heart.title) == std::string::npos,
+				"Magma source encounter fabricated an independent recipient");
+			require(journey.meet_npc(7, 42, 142014, 142021, 104) == result::applied,
+				"Magma actual Palenian encounter failed");
+			const auto status = [&](size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    heart.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[8] = 1;
+			supplies.carried[142001] = 1;
+			supplies.carried[142002] = 1;
+			supplies.equipped[18] = 142000;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 1420, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 1420).completed == 0 &&
+					journey.serialize_state() == before,
+				"Magma generic part, shard, reward or held heart fabricated preparation/history");
+			supplies.carried[142000] = 1;
+			journal = journey.render_journal(7, 42, 1420, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(0, "Ready now") &&
+					journal.find("Next: " + heart.steps.back().text) !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Magma supplied exact heart required invented dialogue/kill/source history");
+			// Synthetic receipt qualifies projection, not native recovery, three-item reward settlement or D.
+			record(journey, heart.contracts.front(), "magma-heart-return", 1420,
+			       142021);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 1420, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 1420).completed == 1,
+				"Magma spent preparation erased one accepted three-output return");
+			auto replay =
+				completion(heart.contracts.front(), "magma-heart-return", 120);
+			replay.transaction.zone_number = 1420;
+			replay.transaction.room_vnum = 142021;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Magma replay duplicated accepted return");
+			service recovered(catalog), raw(raw_catalog);
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 1420).completed == 1 &&
+					recovered.progress_for_zone(7, 42, 1420).total == 1 &&
+					raw.progress_for_zone(7, 42, 1420).completed == 1 &&
+					!recovered.has_discovered(7, 42, 1398) &&
+					!recovered.has_discovered(7, 42, 1400),
+				"Magma cold/raw recovery lost one return or invented another zone discovery");
 		}
 
 		std::cout
