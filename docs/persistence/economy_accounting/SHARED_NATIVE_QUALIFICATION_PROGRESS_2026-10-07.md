@@ -1,5 +1,69 @@
 # Shared native qualification progress - 2026-10-07
 
+## Collector correspondence and combined38 source ready - 2026-10-07
+
+The private collector repository pair now consumes the existing immutable EPH1
+capture without SQL, recapture or a new store. It validates every retained
+record/scalar/death projection and native held singleton literal/custody fields.
+All collector-owned rows and all rows sharing a held root remain evidence,
+including foreign/malformed descendants. Native death-operation/item-UID
+uniqueness is enforced while historical UID reuse across different deaths stays
+valid. Candidate/terminal records remain history rather than held occupancy;
+prototype NULL strings remain permitted. Original command provenance stays
+unknown independently of current correspondence.
+
+Review closed CPR1 (complete root relationship evidence, including a sole foreign
+row with wrong own root) and CPR2 (same-death duplicate item identities). Final
+formatted hashes are review-bound. Five strict source/original-fixture syntax
+calls pass in SQL/flat, each under three seconds within original60-second bounds;
+formatting passes. Primary authenticates54 sealed records, all9 private source/
+fixture files,23 unchanged maintained inputs, frozen physical4 dependencies and
+token-identical original native functions, public declarations and fixture bodies.
+No compiler rerun, native link/runtime, database or production import occurred.
+
+| Frozen collector artifact | SHA256 |
+| --- | --- |
+| SOURCE-PINS.json | `b1edac800e30be770d418e9ada18183473583ab9804c06bfbd46b1c5fe184069` |
+| TERMINAL-SEAL.json | `dde3f79268a0fca21f03fee993565cf8e9995c980d1ec30fffcc5de2cbe856a6` |
+
+Actual primary receipts are under
+`bin/tests/collector-physical-correspondence-primary-20261007/`: `RESULT.json`,
+`FINAL-REVIEW.json` and `BOUNDARY-SCOPE-ERRATUM.json`. Native262144 listing/death
+acceptance is unreachable in the original262144-row full-source census: required
+catalog/death rows raise the minimum to262146/262145. Those standalone native-max
+cases are dominated for this provider, not a reason to widen budgets. Original
+guards and actual shared-cap refusal/strong-output qualification remain. Separate
+canonical131072/131073 literal controls are being prepared in the original codec
+fixture; native links, both profiles/engines, schema and recovery remain open.
+
+Primary also authenticates the actual combined38 composition: all36 earlier
+candidate bytes, the collector pair,55 sealed records,1296 unchanged production
+fallbacks and all6434 original archive bodies/modes. Actual compose retry passes
+in15.672 seconds; its initial CRLF textual-readback failure and correction remain
+recorded. No native work was retried. Original754-provider profiles, flags and
+budgets remain. V10 still binds combined34 only; no new controls version is
+created merely for source composition. All private fixture additions and the
+maintained Python coin-export fix remain external to this archive.
+
+| Frozen combined38 artifact | SHA256 |
+| --- | --- |
+| SOURCE-PINS.json | `e39dc50f3f3a09ed715c5aff724474eaa1c3a2766f8c6287c044644691ca4234` |
+| TERMINAL-SEAL.json | `2b3fd87f17a5c49ff9324e77ed5e50e21939faf1a561187a732e5db015642fd9` |
+| transport/source-pins.json | `a4411142b0ccca33bec816cfa05fdfea620d8196337d1dbda803fa8485bf22f9` |
+| transport/source.tar | `5ef66bb6e26738fa3cd5bace55e289015a0534df70e80b2895befc39f0f523c4` |
+
+Actual primary receipt:
+`bin/tests/collector-physical-correspondence-primary-20261007/combined38-primary/RESULT.json`.
+This is private source composition, not whole-checkout or full census proof.
+Auction source corrections and its original fixture extension continue with
+their owner. Root now implements an additive private normalizer union that
+retains all provider reports plus current custody match/conflict indices; it
+is under review, uncompiled and outside combined38. Live/reset/mobile providers,
+activation and Plans2-4/joint Plan5/R1-R8 qualification remain unfinished.
+Current Docker read-only status still reports unable to start (empty version
+despite CLI exit0); no service repair or failed native link retry was attempted.
+
+
 ## Exact room boundary controls prepared - 2026-10-07
 
 The missing explicit 4096/4097-root and 131072/131073-item-byte cases are now
