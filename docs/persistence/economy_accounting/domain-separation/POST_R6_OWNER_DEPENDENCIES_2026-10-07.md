@@ -1,5 +1,12 @@
 # Post-R6 feasibility and owner dependencies — 2026-10-07
 
+[R9 terminal handoff](R9_ESSENCE_REWARD_HANDOFF.md) delivers ordered essence
+selection after the published current nine-family reassessment. All component,
+maintained build and bare import/module obligations at its declared scope PASS;
+final review remains pending. No optional predecessor or native authority is added.
+Current turn made concrete implementation/qualification/publication progress.
+Full continuing Plans1-5/applicable original R1-R8 finish line remains open.
+
 R8 search control is now implemented and qualified at7f/9f; see
 [R8 terminal handoff](R8_ORDINARY_SEARCH_HANDOFF.md). Exact original/extracted
 controls, both maintained740-object builds and current/minimal dependency module

@@ -1,5 +1,10 @@
 # R9 ordered NPC essence reward selection reservation — 2026-10-07
 
+Exact four-file boundary approved at accountinge49d83a3df. Implementation15d plus
+include fix305 is qualified and delivered in [R9 handoff](R9_ESSENCE_REWARD_HANDOFF.md).
+Final declared-scope review is pending; original reservation/feasibility below are
+preserved as historical scope. Actual continuing Goal remains ACTIVE/no budget.
+
 R8 implementation7f/9f and terminal handoffc01f69d47793651faa49a347443e2c72235fb090
 are published; final R8 review PASS is published at accounting74b25fc9b. This proposal selects a new
 substantial existing-producer reward decision, not another fee/cap/table wrapper.

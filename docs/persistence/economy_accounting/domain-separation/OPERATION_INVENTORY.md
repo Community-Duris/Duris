@@ -1,9 +1,12 @@
 # Fixed domain-separation operation inventory — 2026-10-07
 
-[R9 ordered NPC essence reward reservation](R9_ESSENCE_REWARD_RESERVATION.md)
-records the current nine-family reassessment and complete original27-scenario
-trace feasibility PASS. Exact four-file boundary awaits coordinator review; no
-maintained implementation is made. R8 final declared-scope review PASS is published at accounting74b25fc9b.
+R9 ordered NPC essence selection is implemented at15d plus include fix305.
+Complete original/extracted27-scenario controls and both labeled ordinal-policy
+cases PASS, as do adjacent checks, both maintained740-object builds and bare-primary
+full-package component/SQL-flat module checks. Full and production patches require
+no optional predecessor. See [R9 terminal handoff](R9_ESSENCE_REWARD_HANDOFF.md).
+Final R9 declared-scope review is pending; the continuing Goal remains ACTIVE/no
+budget. R8 final review PASS remains published at accounting74b25fc9b.
 
 R8 ordinary cascade is implemented at `7f0d11b4d` plus compiler fix `9f5119fc3`.
 Actual original/extracted23-scenario controls, adjacent checks and both maintained
