@@ -26,6 +26,7 @@
 #include "economy/tradeskill.h"
 #include "economy/economic_gameplay_authority.h"
 #include "item/objmisc.h"
+#include "economy/enhancement_material_quote.h"
 #include "combat/chaos_materials.h"
 
 /* Forward declarations for hash functions used in enhance() and do_enhance() */
@@ -469,19 +470,6 @@ static bool is_superior_stat_apply(int apply_loc)
 	return FALSE;
 }
 
-/* Validate the whole tribute quote before narrowing or consuming materials. */
-static bool scale_superior_material_count(int count, int *scaled)
-{
-	if (count < 0 || !std::isfinite(enhance_stat_material_quantity_multiplier) ||
-	    enhance_stat_material_quantity_multiplier <= 0.0)
-		return FALSE;
-	const double quote = count * enhance_stat_material_quantity_multiplier + 0.999999;
-	if (!std::isfinite(quote) || quote >= static_cast<double>(INT_MAX) + 1.0)
-		return FALSE;
-	*scaled = static_cast<int>(quote);
-	return TRUE;
-}
-
 static bool superior_plan_add_material(struct superior_enhancement_plan *plan, int vnum, int count)
 {
 	int i;
@@ -534,8 +522,6 @@ static bool build_superior_enhancement_plan(P_obj item, struct superior_enhancem
 		int remaining;
 		int low_vnum;
 		int high_vnum;
-		int high_count;
-		int low_count;
 		struct enhance_index_entry *target;
 		P_obj target_obj;
 
@@ -554,16 +540,12 @@ static bool build_superior_enhancement_plan(P_obj item, struct superior_enhancem
 		low_vnum = get_matstart(target_obj);
 		extract_obj(target_obj);
 		high_vnum = low_vnum + 4;
-		if (target->ival < 0)
+		enhancement_material_quote quote;
+		if (!enhancement_prepare_material_quote(
+			    target->ival, enhance_stat_material_quantity_multiplier, &quote))
 			return FALSE;
-		const int64_t material_value = static_cast<int64_t>(target->ival) + 4;
-		high_count = static_cast<int>(material_value / 5);
-		low_count = static_cast<int>(material_value % 5);
-		if (!scale_superior_material_count(low_count, &low_count) ||
-		    !scale_superior_material_count(high_count, &high_count))
-			return FALSE;
-		if (!superior_plan_add_material(plan, low_vnum, low_count) ||
-		    !superior_plan_add_material(plan, high_vnum, high_count))
+		if (!superior_plan_add_material(plan, low_vnum, quote.low_count) ||
+		    !superior_plan_add_material(plan, high_vnum, quote.high_count))
 			return FALSE;
 
 		plan->slots[plan->slot_count++] = i;

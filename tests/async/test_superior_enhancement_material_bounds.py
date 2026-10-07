@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 
 HARNESS = r'''
+#include "economy/enhancement_material_quote.h"
 #include <cassert>
 #include <climits>
 #include <cmath>
@@ -36,8 +37,35 @@ void extract_obj(P_obj) {}
 int superior_stat_remaining_steps(P_obj,int,int,int) { return 1; }
 @FUNCTIONS@
 int main() {
+ enhancement_material_quote owned{7,8};
+ assert(enhancement_prepare_material_quote(0,1.0,&owned) && owned.low_count==4 && owned.high_count==0);
+ assert(enhancement_prepare_material_quote(INT_MAX,1.0,&owned) && owned.low_count==1 && owned.high_count==429496730);
+ const enhancement_material_quote sentinel=owned;
+ for (int value : {3,6}) {
+  assert(!enhancement_prepare_material_quote(value,static_cast<double>(INT_MAX),&owned));
+  assert(owned.low_count==sentinel.low_count && owned.high_count==sentinel.high_count);
+ }
+ assert(!enhancement_prepare_material_quote(-1,1.0,&owned));
+ assert(!enhancement_prepare_material_quote(INT_MIN,1.0,&owned));
+ assert(!enhancement_prepare_material_quote(1,1.0,nullptr));
+ for (double multiplier : {static_cast<double>(INFINITY),static_cast<double>(NAN),1e300,-1.0,0.0}) {
+  assert(!enhancement_prepare_material_quote(1,multiplier,&owned));
+  assert(owned.low_count==sentinel.low_count && owned.high_count==sentinel.high_count);
+ }
+ assert(enhancement_prepare_material_quote(1,0.0000005,&owned) && owned.low_count==0 && owned.high_count==0);
+ enhancement_material_quote repeated;
+ assert(enhancement_prepare_material_quote(1,0.0000005,&repeated));
+ assert(repeated.low_count==owned.low_count && repeated.high_count==owned.high_count);
+ int scaled=42;
+ assert(!enhancement_scale_material_count(-1,1.0,&scaled) && scaled==42);
+ assert(!enhancement_scale_material_count(1,1.0,nullptr));
+ assert(enhancement_scale_material_count(0,1.0,&scaled) && scaled==0);
+
  object item; item.affected[0].location=1; item.affected[0].modifier=10;
  superior_enhancement_plan plan;
+ target.ival=0;
+ assert(build_superior_enhancement_plan(&item,&plan));
+ assert(plan.material_count==1 && plan.materials[0].vnum==400045 && plan.materials[0].count==4);
  target.ival=INT_MAX;
  assert(build_superior_enhancement_plan(&item,&plan));
  assert(plan.material_count==2 && plan.materials[0].count==1 && plan.materials[1].count==429496730);
@@ -51,6 +79,9 @@ int main() {
  target.ival=2;
  assert(build_superior_enhancement_plan(&item,&plan));
  assert(plan.materials[0].count==2 && plan.materials[1].count==2);
+ enhance_stat_material_quantity_multiplier=0.0000005; target.ival=1;
+ assert(build_superior_enhancement_plan(&item,&plan));
+ assert(plan.material_count==0 && plan.slot_count==1 && item.affected[0].modifier==10);
  target.ival=-1;
  assert(!build_superior_enhancement_plan(&item,&plan));
  enhance_stat_material_quantity_multiplier=1.0;
@@ -72,6 +103,6 @@ with tempfile.TemporaryDirectory(prefix='duris-superior-material-') as temporary
     cpp.write_text(HARNESS.replace('@FUNCTIONS@','\n'.join(functions)))
     subprocess.run([os.environ.get('CXX','g++'),'-std=c++20','-Wall','-Wextra','-Werror',
                     '-O1','-g','-fsanitize=address,undefined,float-cast-overflow',
-                    '-fno-sanitize-recover=all','-fno-pie','-no-pie',str(cpp),'-o',str(binary)],cwd=ROOT,check=True)
+                    '-fno-sanitize-recover=all','-fno-pie','-no-pie','-Isrc',str(cpp),'-o',str(binary)],cwd=ROOT,check=True)
     subprocess.run([str(binary)],check=True,timeout=30)
 print('superior material planning: wide quotes, invalid scaling refusal, aggregation bounds passed')
