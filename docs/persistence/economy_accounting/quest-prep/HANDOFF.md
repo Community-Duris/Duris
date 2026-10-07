@@ -1,5 +1,57 @@
 # Continuing project acceptance — 2026-10-07
 
+New finite assignment: **private live-route investigation complete; maintained
+repair unimplemented**. Base5ec386905c141fd3dade1b74e15d7a8c5157c0e7. Authored
+paths only this HANDOFF.md and [SHOP_LIVE_ROUTE_INVESTIGATION.md](SHOP_LIVE_ROUTE_INVESTIGATION.md).
+No production, maintained test, driver, helper, manifest, registry or schema edit.
+Actual continuing Goal remains BLOCKED (createdAt1791384873,
+updatedAt1791387688), neither resumed nor complete by this finite assignment.
+
+Analyzed immutable primaryb22d731bc66bd95f09e6cbc2180c99578c7f7205 and that bare
+tree plus actual R10 code7bbf942e3b7c12dea22e5bf03a592b48aedd690f, composed tree
+17840a134df38936d198d8923f56c26e76588035. Fetch observes
+503384ca3c7b6bd913010ae3f0922623d503aa40, documentation-only advance;
+analyzed source unchanged. Complete unchanged maintained command
+`python3 -B tests/async/test_shop_trade_live_route.py` executed once per export:
+original FAIL exit1/0.039063524s bare, FAIL exit1/0.037240812s +R10, both missing
+`object->loc.carrying == keeper`. Original script blob95803d00847f74c16e1647c80e67dd7c433656a5.
+Full original predicate census retained, including unavailable old API indices.
+
+Private current_chain_probe.py PASS106 source predicates/23 actual definitions
+on both exports; mutation_controls.py rejects27 in-memory source corruptions on
+each. Initial controls' three improperly scoped accepts and both stopped failed
+design runs retained separately. This is source-oracle feasibility, not a
+maintained PASS, native gameplay, fault recovery or release proof. All original
+semantic requirements/order/authority/cleanup/trusted/negative-put/parent guards
+remain. Trace concrete four non-null caller hooks, typed keeper/player custody,
+exact source/final literals, revision projection, physical publication before
+notification, retained pending uncertainty and separate native owner/guarded ACK.
+No production defect demonstrated at this source-contract scope; no tail-completion
+or refund guarantee inferred. R10 changes only buy among23 traced definitions.
+
+Exact prospective reservation **tests/async/test_shop_trade_live_route.py ONLY**
+awaits coordinator boundary review/authorization. Reuse existing extract_function
+and contract_text; adapt obsolete syntax/slicing to real owner definitions without
+dropping original guarantees. No maintained repair has been authored. Root retains
+final review/publication; primary and Plan5 retain authority; no R11 duplication.
+No optional ancestry/import dependency for this docs-only investigation.
+
+Proofs sealed under ignored `bin/tests/shop-live-route-b22-20261007/`.
+COMPARISON.json authenticates all6447 bare/6448 +R10 file/link bodies/sizes/modes
+before/after, unchanged. SEALED.json SHA256
+76922aaf4218f6588950bc9a98fa1d42b06736aeb9a04d47c5661c2ef26c95d4.
+The investigation lists exact commands/source/archive/receipt hashes and full
+predicate mapping. Only Python/source inspection; no DB/player/server/compiler
+operation or new binary/schema/backend qualification. Owned sleep-only container
+quest-prep-shop-live-b22 is stopped; evidence preserved. git diff --check PASS.
+
+Codec code0b0075724457511f6a7c6599489958cf45cd828a has now received final
+independent coordinator PASS in primaryb22; its bounded original fixture dependency
+is closed, primary adoption unknown. No unchanged codec rerun. Original native
+lifecycle/reset-born source/custody, cost/publication/ACK capture, delayed bartender,
+held-charge/refund and pre-ACK move/paired retirement blockers remain. Historical
+quest results/pins below are preserved; full primary Plans1–5/R1–R8 finish stays open.
+
 Approved finite codec repair **implemented and pushed**:
 0b0075724457511f6a7c6599489958cf45cd828a, base
 b33f39d037b886b3f299b8073274423c2c8cdc34. Authors ONLY
@@ -7,6 +59,8 @@ tests/async/test_shop_trade_command.py, exactly three canonical rel() source
 additions; no other maintained path. [Current implementation/import/execution
 handoff](SHOP_CODEC_CLOSURE_IMPLEMENTATION.md) supersedes the earlier pending
 reservation at its reviewed boundary. Approval is published primarye6c1fa35.
+The following execution paragraph is the historical pre-final-review checkpoint;
+the b22 final coordinator disposition is recorded above.
 Owned evidence publication49c5060239513e63cf12dffe3d74df3e6e8e5e31,
 base0b0075724457511f6a7c6599489958cf45cd828a, authors only that implementation
 document and HANDOFF.md. Both code and evidence are remotely available.
