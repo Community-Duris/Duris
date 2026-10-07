@@ -622,7 +622,7 @@ static bool perform_superior_enhancement(P_char ch, P_obj source, P_obj pouch,
 {
 	char buf[MAX_STRING_LENGTH];
 	int i;
-	int cost;
+	int cost = 0;
 	if (!enhancement_prepare_superior_price(itemvalue(source), enhance_stat_platinum_base,
 						enhance_stat_platinum_per_ival, &cost))
 	{
