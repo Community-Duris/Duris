@@ -1,5 +1,16 @@
 # Experimental accounting review checkpoint
 
+## Exact room boundary controls prepared - 2026-10-07
+
+[Current source-preparation evidence](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
+records the four previously missing root-count/item-byte boundary controls.
+Independent source review and strict SQL/flat fixture syntax pass; original
+cases and frozen providers remain unchanged. Native execution stays pending
+with original major-plan qualification. Auction/collector and complete census,
+activation, Plans2-4 and joint release work remain open; no gate is waived.
+
+
+
 ## Modern room source and original boot controls - 2026-10-07
 
 [Current checkpoint](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md) records

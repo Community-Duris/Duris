@@ -1,5 +1,36 @@
 # Shared native qualification progress - 2026-10-07
 
+## Exact room boundary controls prepared - 2026-10-07
+
+The missing explicit 4096/4097-root and 131072/131073-item-byte cases are now
+prepared in a separate successor fixture packet. They extend the original
+room codec driver without changing its prior cases, the frozen room provider,
+or combined36. Read-only review verifies that all roots are independent
+singletons and both item payloads are canonical codec values; other native
+limits cannot cause the intended refusals. The over-limit root inventory
+retains every individually valid graph with an explicit inventory finding.
+The over-limit literal retains its raw witness with a malformed-literal finding.
+
+The changed original fixture passes strict C++20/Werror syntax in SQL and
+flatfile profiles (3.515/3.672 seconds, original60-second limits); new-case
+clang-format18 passes. All predecessor fixture bytes remain exact after
+removing only the new include/call. Original native providers, flags, budgets
+and recovery checks stay required. These manufactured cases have not executed;
+no native provenance, full build, census or activation completion is claimed.
+
+Private packet: `tmp/modern-room-boundary-fixtures-primary-20261007`.
+New cases SHA256: `e2bbb28b2f417ca23eb13075097cb6feb33d0fe75dc5b5fb8c8792dbd85e4d8e`.
+Actual receipt: `bin/tests/modern-room-boundary-fixtures-primary-20261007/RESULT.json`.
+Frozen room NATIVE-RECIPE/REVIEW-BOUNDARY still truthfully record their earlier
+unprepared scope; this successor supplies the missing preparation only and
+remains outside combined36. Final whole-candidate native binding is deferred
+to major readiness. Collector source review closes its full-root evidence
+and death/UID uniqueness gaps; formatted checks remain with its owner. Auction
+source review identified five defects, now being corrected by its separate
+owner. Neither private inspector pair is imported or qualified yet.
+
+
+
 Disposition: implementation and qualification remain open. This checkpoint
 records established failures, private candidates and an environment blocker;
 it does not import production changes or close an accounting/release gate.
