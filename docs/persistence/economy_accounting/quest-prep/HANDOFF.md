@@ -1,5 +1,19 @@
 # Continuing project acceptance — 2026-10-07
 
+Resumed native-interface audit: actual Goal ACTIVE, updatedAt1791411694;
+fresh primary911e5789f8a18186181f78fafef9b4fd0155369d, prep base
+2cd06d62e7911ba9dc2ce6ae9df2d3afb31f0ef3. [Current source/owner delta and ranked
+unblock queue](OWNER_INTERFACE_REASSESSMENT_2026-10-07.md) assesses the newly
+integrated Plan5 coin row-budget/prototype reader and private combined32 physical
+capture. The actual quest capture/assertion imports do not use the changed coin
+exporter; original mobile/source decoders, native source, migrations and quest
+drivers remain exact againstc590. Private physical capture is deliberately unwired
+and supplies no genuine quest initializer/settlement/ACK fixture. No duplicate
+Plan5 test or unchanged journey rerun is justified. Historical BLOCKED states below
+remain historical; this is the first fresh resumed audit of the same interface
+impasse. Full objective stays unfinished. Owned additions are this handoff and the
+reassessment doc only; no maintained source/test change or operational action.
+
 Enhancement evidence publication **`94276187d88e30756831e79edf7cfe7c4a5f2347`**,
 base **`7e37d1db1244717e4e8107b5313ac9dc706f69bd`**, is pushed to
 origin/codex/accounting-quest-prep. It authors only ENHANCE_BOUNDARY_IMPLEMENTATION.md,
