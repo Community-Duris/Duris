@@ -4,6 +4,91 @@ Disposition: implementation and qualification remain open. This checkpoint
 records established failures, private candidates and an environment blocker;
 it does not import production changes or close an accounting/release gate.
 
+## Modern room source and original boot controls - 2026-10-07
+
+The separate two-file modern-room provider is frozen and independently source
+reviewed. It captures all rows from the five additional native projections:
+room literal payloads, season state, ownership ledger, accounting item references
+and accounting operation outcomes. These share the remaining base-capture
+aggregate budget; no source2/physical rows are copied or recaptured. All 39 native
+table dependencies retain existing session, metadata-lock and InnoDB checks.
+The caller supplies the still-open consistent RR cut; provider SELECTs only,
+including in a writable transaction. Schema 0055 remains mandatory and unchanged.
+
+Historical UID/revision/operation identities remain evidence even after season
+turnover or movement. Successful typed drops with no literal payloads remain
+missing; a newer literal cannot conceal a missing older revision. A malformed
+descendant cannot disappear from a current graph. Source review found and verified
+those two corrections and the session-default/next-transaction isolation fix.
+Original native producer, recovery, locking and retained-receipt bodies and
+their declarations remain token-exact; no legacy family gains a fabricated
+modern admission prerequisite. Current graph correspondence does not confer
+complete census, command replay, baseline or activation authority.
+
+The five changed-TU strict syntax checks pass within original 60-second ceilings:
+provider and extended original codec fixture in SQL/flat, plus the extended
+original real-pool SQL fixture. Touched-range formatting and final production
+dry-run checks pass. Primary authenticates all 47 sealed records, eight candidate
+files (two production and six private fixture extensions), 19 unchanged inputs,
+frozen physical4 dependencies and original source/API tokens. Final formatted
+production hashes are independently review-bound. No compiler/native check was
+repeated during primary authentication. Original native links, real database
+execution, retained/partial-save/recovery journeys and full builds remain open.
+
+| Frozen room artifact | SHA256 |
+| --- | --- |
+| TERMINAL-SEAL.json | `e7c3cb80b2c445060b15bd215a3dc655b3b3921f7f5e03c6db6067089f5e7990` |
+| SOURCE-PINS.json | `4d801f354e5ce7ed5f6b5764e484c882643034eede7bb3b9364b1f9be6086c6b` |
+| NATIVE-RECIPE.json | `f85e14a07d89ccaa38e783437797ac0c1cae2a762db655929890c909d925a37a` |
+
+Actual primary receipt and review scope:
+`bin/tests/modern-room-physical-capture-primary-20261007/RESULT.json` and
+`REVIEW-BOUNDARY.json`. Explicit 4096/4097-root and 131072/131073-single-item-byte
+boundary fixture cases are not yet prepared; the frozen recipe's named-ceiling
+summary is not complete case coverage. Native limits remain enforced in source
+and retain original owners; no gate is waived. Primary now authenticates the
+frozen36-file candidate: all 34 earlier candidates remain byte-exact, and only
+the room-provider pair is added. All 51 composition records, 1,298 unchanged
+production inputs and all 6,434 original archive bodies/modes authenticate.
+The original 754-provider profiles and budgets remain; no compiler or native
+check was repeated and no production source is imported.
+
+| Frozen combined36 artifact | SHA256 |
+| --- | --- |
+| TERMINAL-SEAL.json | `ed091e11c191efbb9fd92b9a521f27b8ac104a0479046e742fb317bac183f884` |
+| SOURCE-PINS.json | `95817b02b0485d4650a7422ee5733c16fc4ee9c1fdc5b282f16536fc9fbcd839` |
+| transport/source.tar | `d7d5501564835cc066c0cc70d7bfb27520aa866f827648532553a6609977cd08` |
+| transport/source-pins.json | `1eb289ac976d97d252c1ea24e1ea78d2119eef7b0af648f2c6daf13ed7c13942` |
+
+Actual primary receipt:
+`bin/tests/modern-room-physical-capture-primary-20261007/combined36-primary/RESULT.json`.
+Extended room fixtures remain external, required and unexecuted; the source
+archive excludes their additions and the maintained Python coin-export fix.
+It is an exact private candidate, not the current whole checkout or complete
+physical census. Final whole-candidate runtime binding is deferred to readiness.
+
+The original eighteen full-server controls now have a valid sibling v10 binding
+to frozen combined34. All control bodies, source23 syntax receipts, original
+helper paths, genuine public-creation/six-repair setup and budgets are unchanged.
+Primary read-only authentication passes all 67 sealed records and the exact
+34-file source/archive binding. This runs no native control and cannot transfer
+source23 syntax or earlier native7 builds into combined34 qualification.
+Actual receipt:
+`bin/tests/activation-physical-capture-primary-20261007/controls-v10-primary/RESULT.json`.
+V10 FINAL-PINS SHA256 is
+`8f84ce0bdcf5e3f27a257e79e0bb3a8b9fffa396473f8a8821994d24b9967b90`;
+seal is `641e1bcb898172035066f77103c547bdb1f83a57a5e9dde4d13a8c57d298504e`.
+It binds combined34 only; future whole-candidate runtime binding remains required.
+No new control version or unchanged test rerun is scheduled merely for another
+source-only composition. Auction/collector correspondence and native live/reset/
+mobile providers remain open alongside genuine gameplay and Plan5 qualification.
+Source review establishes that separate pure auction/collector inspectors can
+consume already captured raw projections, without new SQL tables or repeated
+capture. Independent owners now implement their existing repository pairs;
+complete current correspondence and unknown original provenance stay distinct.
+Original locked replay/entitlement verifiers keep their existing ownership.
+Root retains cross-provider union, conflicts and activation orchestration.
+
 ## Persisted physical correspondence source ready - 2026-10-07
 
 The private four-file successor now implements pure EPH1 validation and an

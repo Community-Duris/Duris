@@ -1,5 +1,15 @@
 # Finish accounting implementation plan
 
+## Modern room source and original boot controls - 2026-10-07
+
+[Current checkpoint](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md) records
+the reviewed room-provider pair: five native projections, shared capture budgets,
+complete raw history and explicit missing/incomplete evidence. Five strict syntax
+checks pass; primary authenticates 47 records and unchanged old native functions.
+V10 binds all eighteen original boot controls to private34, with source-only
+authentication. Native controls, full builds, remaining census providers and
+activation stay open; private36 source composition authenticates, with no import.
+
 ## Persisted physical correspondence source ready - 2026-10-07
 
 [Current qualification checkpoint](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
