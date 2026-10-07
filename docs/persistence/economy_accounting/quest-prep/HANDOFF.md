@@ -1,15 +1,68 @@
-# Active quest follow-up — 2026-10-07
+# Quest follow-up delivery — 2026-10-07
 
-Persistent Goal verified active via get_goal → create_goal → get_goal, after
-get_goal reported no prior Goal. Charter sourcea7b3181edb80bf188f616c39b8e7cb144e11cb18;
-preserved-history merge8d7f4395cc228f024029781260e51ff04948a3fd. Prior completed
-implementation/execution delivery1a0782f95339252b3c90a73ac102a437933a30c8 remains complete.
+The finite follow-up is implemented, verified and pushed on
+`origin/codex/accounting-quest-prep`. The original flat QP06 later-drop remains
+**RED**; the new diagnostic proves exactly why. The queued creation-watermark
+review has passing component evidence with conditional native reachability
+explicitly unqualified. Shared-owner implementation and integrated gameplay
+qualification remain outstanding; this delivery does not close them.
 
-[Current reconciliation and finite selected queue](FOLLOWUP_RECONCILIATION.md)
-records observable imports, unchanged qualification inputs and architecture scope.
-Exact flat QP06 prerequisite diagnostic is in progress; creation-watermark review
-is queued. This continuing milestone is unfinished until selected owned work and
-its executable owner handoff are verified and published. No shared authority edits.
+| Published bundle | Exact result SHA / base | Authored owned files |
+|---|---|---|
+| Current-source reconciliation | 435a929a611aeda1719cfa2454eedafb9b93bea7 / 8d7f4395cc228f024029781260e51ff04948a3fd | quest-prep/FOLLOWUP_RECONCILIATION.md, quest-prep/HANDOFF.md |
+| Exact flat-provider/admission/room trace | 3a7571afa96b5c4c632e0a3658cbeb17788b9851 / 48643f3a8df18ae0da590acec896f7ea2ef349dd | tests/async/quest_accounting_prep/diagnose_flat_reward_drop.py; quest-prep/FLAT_DROP_DIAGNOSIS.md |
+| Creation callback/reachability review | 9ef7b5f096ad06d22405c4191b836a39c67e4d90 / 3a7571afa96b5c4c632e0a3658cbeb17788b9851 | tests/async/quest_accounting_prep/diagnose_creation_watermark.py, test_creation_input_gate.py; quest-prep/CREATION_WATERMARK_REVIEW.md |
+
+Documentation paths in this table are under docs/persistence/economy_accounting/.
+No new production, shared test-driver, schema, journal, counter, authority or
+manifest edits. History-preserving merges8d7f4395 and48643f3a import published
+upstream documentation only; they are synchronization commits, not implementation
+units. Both new executable bundles can be reviewed/imported independently after
+the applicable owned pack/driver prerequisites described below.
+
+Latest accounting pin **d91f59af06239a5736d10498b89091699c5e05c6**, compared with
+a7b3181edb80bf188f616c39b8e7cb144e11cb18 and original accounting base
+17c033d69316b21da8598791fc95cae79baa8dc2. d91/f043 qualification inputs are identical.
+The existing ELF remains source6db65f624836f150ed3dfe33508e1f1719145fdb, flat SHA256
+8aedc856f2ff9cfee15ce694b16d28540daba1a5f41dedd40d59de91ad1b1ea5, maintained schema
+1fddd009cc67bba940efba28c2afc3d16d65ea8a476410034cd77c90a0a9aea2.
+
+The final read-only actual-provider run exits0 in87.885s **as a diagnostic**:
+player owner expected8/observed8; room22800 expected0/observed7; reward UID821,
+VNUM29237/root821/parent0/revision1/active all match. Actual admission records
+live_drop_token=false/accounting_active=false. Earlier genuine starter drop and
+three secret ingredient adoption/get pairs advance the durable room0→7; before
+offering, at crash and after recovery it still contains19 starter roots at7.
+Mini cold boot skips room restoration; ordinary runtime revision lookup defaults
+an uncached owner to0. The empty-room restore path is source-verified only.
+[Exact command, evidence pins and shared boot/movement request](FLAT_DROP_DIAGNOSIS.md).
+
+`python3 -B tests/async/quest_accounting_prep/diagnose_creation_watermark.py` and
+`python3 -B tests/async/quest_accounting_prep/test_creation_input_gate.py` both PASS:
+actual callback/reset observation and actual queue-gate component, respectively.
+Debit/history/creation producer remain stubbed; no native race or refund proof.
+The unmodified shared `tests/async/test_currency_input_queue.py` FAILS compilation
+on newer unrelated coin/publication dependencies; no shared file was repaired.
+[Commands, source hashes, default shares0 and conditional cross-actor owner request](CREATION_WATERMARK_REVIEW.md).
+
+Private evidence remains in ignored bin/tests/quest-implementation-20261007,
+principally followup-flat-drop-chain/diagnostic.json and the two creation-current
+outputs. Initial observer/extraction failures remain retained. Own runtime is
+stopped after completion; no database was started for this follow-up. Original
+assertions, fault injection and deadlines are preserved; no unchanged major batch
+was rerun. Raw logs/state/accounts/player files/binaries are uncommitted.
+
+[Reconciliation, import order, consumed/applicable disposition and finite remaining queue](FOLLOWUP_RECONCILIATION.md)
+distinguishes published primary adoption from unknown private work. Shared next
+steps are mini cold-room authority, configured creation reachability/held debit,
+the shared queue harness seam, and authentic native handover/retirement/restitution
+on the integrated primary candidate at its existing major-batch boundary.
+
+Goal evidence: get_goal initially returned null; create_goal plus get_goal verified
+the continuing charter milestone ACTIVE at1791376226. All selected owned work and
+required owner handoffs are now published. Terminal Goal status is recorded after
+the final publication/remote equality check; the completed prior delivery remains
+1a0782f95339252b3c90a73ac102a437933a30c8.
 
 ## Completed implementation/execution delivery
 
