@@ -393,6 +393,25 @@ Primary continues without an adoption wait. Quest lacks its native prerequisites
 and remains BLOCKED, not complete; avoid unchanged wakes. Both continuing project
 finish lines and the monitor remain in force after this review checkpoint.
 
+## Complete shop purchase quote execution boundary
+
+Reservation30478078f6552fb4b7cd3dc25a98b6f45d02d2ac has
+[independent three-file approval](R10_SHOP_PURCHASE_QUOTE_REVIEW_2026-10-07.md).
+The coordinator authenticates all26 feasibility files, exact original preimages
+and preserved failures, independently executes the complete original CPP with all56
+original assertions/23 new scenarios per controlled profile, and separately runs
+the original Python help/listing/ordering checks. Native expression sequencing and
+later carry observations are preserved; no original oracle is weakened.
+
+The worker may implement the complete ordered quote and necessary current callback
+fixture closure in its existing isolated worktree. Implementation/final proof/import/
+handoff/review remain pending. Native preparation, effects, authority and recovery
+keep their owners; controlled unavailable accounted endpoints cannot fabricate
+success. Production and full package must apply independently to bare primary.
+Primary continues without an adoption wait. Quest still lacks native prerequisites
+and remains BLOCKED, not complete. Continuing Goals/monitor retain the broader
+primary finish line after this new execution checkpoint.
+
 ## Recurring monitor
 
 The existing thread heartbeat checks every15 minutes, supplemented by active
