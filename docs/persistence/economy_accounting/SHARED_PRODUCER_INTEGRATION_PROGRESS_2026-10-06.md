@@ -1,5 +1,32 @@
 # Shared producer integration progress — 2026-10-06
 
+## Current auction and startup boundaries
+
+Primary authentication now covers the original 18 native cases, both complete
+canonical0063 migration chains, all39 sealed native artifacts and19 preserved
+predecessor results. Both genuine money-recovery fixtures pass the unchanged
+independent canonical source-claim audit. The source-claim slice and standalone
+money-consumption fault regression are frozen separately against maintained
+HEAD `b687b199fd0c9185f87d793b3318f2d4b6d06ee2`: archive
+`743d6aafa75d66d9ff64bf493f06dc638c11c3754949a0e8667a8417677132fe`,
+manifest `6022a35007ae32cc9862f349ea2ef69be525daaeec446d59bc5cd1434879140c`.
+Only nine source paths and the standalone fixture change; original schema0–62
+remains exact. Maintained740 builds/native qualification are pending.
+
+The complete-startup394 SQL build exposed a genuine ambiguous digest-helper
+name; its failure is preserved. The minimal four-identifier successor
+`3c7e646bcddd4b9e05c5e7ce9aab4940d3fe84e9c6f23cf2191b457ae2dead4b`
+passes all nine original contracts but its SQL build exposes the inline
+private constructor's incomplete entry type. That failure is also retained.
+The two-file successor
+`113824dc58cc7a06c69164a78914e35395470b173c8427cb91b5d356e34a5db7`
+moves the same default noexcept constructor after the complete entry; its
+original750-provider builds are queued. Both-engine full-cold and
+genuine retained-journal fault recipes are prepared and authenticated, with
+no runtime result yet. [The exact item-opening reader interface](CAPTURED_ITEM_OPENING_PLAN5_INTERFACE_2026-10-06.md)
+lets Plan5 qualify source bindings independently. Full Plans2–4, complete
+source/activation ownership and R1–R8 release qualification remain open.
+
 ## Independent opening-policy reader integrated — 2026-10-06
 
 [Primary integration](PLAN5_OPENING_POLICY_PID_PRIMARY_INTEGRATION_2026-10-06.md)
