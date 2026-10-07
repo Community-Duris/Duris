@@ -177,6 +177,11 @@ NON_WRITERS = {
     "special.flying_citadel_unreachable_move": "flying_citadel returns FALSE unconditionally before the room-to-room object movement; the two calls cannot execute in this build.",
 }
 PROJECTION_ROUTES = {
+    "auction.native_item_publication": "Original retained list/claim owner publishes the authenticated committed item forest through started/returned native effect steps; list removes live copies and claim places original UIDs, without a second custody root.",
+    "movement.pick_break_committed_publication": "Projects exact committed lockpick destruction after current runtime destroyed-owner, UID, revision and held-slot proof; absent authentic physical pick is a retry without messages or RNG.",
+    "quest.native_cost_cash_publication": "Projects originally committed native quest cost cash and reference revisions after exact old/new identity, original cash revision, canonical projection and retained action-journal proof; partial unreturned writes grant no replay or ACK.",
+    "quest.native_money_cash_publication": "Projects originally committed player-to-native-mobile coin transfer after exact live player/native identity, canonical transfer, before/result balances and revisions; original action journal owns partial-write uncertainty and guarded completion.",
+    "quest.published_world_cash_reconstruction": "Reconstructs exact originally published native mobile forest and cash from selected locked current authority before current metadata and runtime census proof; no new source, UID or issuance and no inferred publication ACK.",
     "quest.native_birth_cold_reconstruction": "After historical receipt/current locked native/source/cash/custody and complete world proof plus rollback, reconstructs or adopts original NPC/full stock without new source/UID/global RNG or repeated historical callbacks.",
     "quest.native_birth_cold_resume": "Resumes actual consumed partial callback-free cold enrollment; historical started/unreturned remains held and projection allocation refusal remains retryable.",
     "quest.native_birth_publication": "Proves original committed birth/current native values and custody, persists once-only effects, consumes actual stages and uses original guarded ACK/phase2 retirement; no second issuance.",
@@ -500,7 +505,7 @@ def source_definition_lines(path: Path, function: str | None) -> list[int]:
         while tail < len(code) and code[tail].isspace():
             tail += 1
         while tail < len(code):
-            qualifier = re.match(r"(?:const\b|noexcept(?:\s*\([^)]*\))?|override\b|final\b|&|&&)\s*", code[tail:])
+            qualifier = re.match(r"(?:try\b|const\b|noexcept(?:\s*\([^)]*\))?|override\b|final\b|&|&&)\s*", code[tail:])
             if not qualifier:
                 break
             tail += qualifier.end()

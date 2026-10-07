@@ -22,7 +22,7 @@ FIELDS = {
     "runtime_table_sql_list", "normalized_metadata_fingerprints", "migration_head",
     "connection", "lookup", "staging_0045_migration_head", "master_0031_migration_head",
     "migration_history_sql",
-    "extra_description_generation_sql",
+    "extra_description_generation_sql", "auction_active_item_generation_sql",
 }
 HEAD_FIELDS = {"id", "sequence", "apply_checksum", "verify_checksum",
                "history_checksum"}
@@ -55,6 +55,8 @@ EXTRA_DESCRIPTION_GENERATION_SQL = (
     "'_utf8mb4',''))='unhex(sha2(coalesce(description,''''),256))'"
 )
 
+
+AUCTION_ACTIVE_ITEM_GENERATION_SQL = "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='auction_item_custody' AND column_name='active_item_uid' AND ordinal_position=11 AND data_type='bigint' AND LOWER(column_type) IN ('bigint unsigned','bigint(20) unsigned') AND is_nullable='YES' AND numeric_precision=20 AND numeric_scale=0 AND LOWER(extra)='stored generated' AND LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(generation_expression,CHAR(96),''),' ',''),CHAR(9),''),CHAR(10),''),CHAR(13),''),'(',''),')',''))='casewhenclaimed_atisnullthenitem_uidelsenullend'"
 
 # Explicit offline contract for the post-baseline death schema. This supplements
 # engine-measured fingerprints; changing a migration checksum cannot bless a
@@ -152,7 +154,7 @@ def load() -> dict:
             "runtime compatibility manifest fields differ"
         )
     if value["manifest_version"] != 1 or value["baseline_table_count"] != 170 or \
-            value["current_table_count"] != 229:
+            value["current_table_count"] != 230:
         raise migration_runner.MigrationContractError("runtime manifest version/count drift")
     if not isinstance(value["runtime_table_sql_list"], str) or not re.fullmatch(
             r"'[A-Za-z0-9_]+'(?:,'[A-Za-z0-9_]+')*",
@@ -168,7 +170,7 @@ def load() -> dict:
             "mysql8", "mariadb10_11"} and any(
                 item is None for item in fingerprints.values()):
         raise migration_runner.MigrationContractError(
-            "0062 runtime metadata fingerprints await actual engine measurement")
+            "0064 runtime metadata fingerprints await actual engine measurement")
     if not isinstance(fingerprints, dict) or set(fingerprints) != {
             "mysql8", "mariadb10_11"} or any(
                 not isinstance(item, str) or not re.fullmatch(r"[0-9a-f]{64}", item)
@@ -208,7 +210,7 @@ def validate() -> dict:
         raise migration_runner.MigrationContractError("runtime and migration baseline drift")
     staging = migration_runner.load_manifest(
         ROOT / "migrations/migration_manifest.staging_0045.json")
-    if len(migration.migrations) != 62 or len(staging.migrations) != 62 or \
+    if len(migration.migrations) != 64 or len(staging.migrations) != 64 or \
             staging.baseline_id != migration.baseline_id or \
             staging.required_tables != migration.required_tables or \
             staging.migrations[:44] != migration.migrations[:44] or \
@@ -225,7 +227,7 @@ def validate() -> dict:
         ROOT / "migrations/migration_manifest.master_0031.json")
     # Receipt IDs are immutable names; sequence is the declared application order.
     # Reuse 0051's identical SQL/verifier bytes without renaming master's receipt.
-    if len(master.migrations) != 62 or master.baseline_id != migration.baseline_id or \
+    if len(master.migrations) != 64 or master.baseline_id != migration.baseline_id or \
             master.required_tables != migration.required_tables or \
             master.migrations[:30] != migration.migrations[:30] or \
             master.migrations[30] != replace(migration.migrations[50], sequence=31,
@@ -291,7 +293,9 @@ def validate() -> dict:
             ("migration_history_sql", "RUNTIME_MIGRATION_HISTORY_SQL",
              migration_runner.runtime_history_sql(len(migration.migrations) + 1)),
             ("extra_description_generation_sql", "RUNTIME_EXTRA_DESCRIPTION_GENERATION_SQL",
-             EXTRA_DESCRIPTION_GENERATION_SQL)):
+             EXTRA_DESCRIPTION_GENERATION_SQL),
+            ("auction_active_item_generation_sql", "RUNTIME_AUCTION_ACTIVE_ITEM_GENERATION_SQL",
+             AUCTION_ACTIVE_ITEM_GENERATION_SQL)):
         match = re.search(rf"{constant}\s*=\s*((?:\"[^\"]*\"\s*)+);", header)
         compiled = "".join(json.loads(literal) for literal in
                            re.findall(r'"[^\"]*"', match.group(1))) if match else None

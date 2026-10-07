@@ -29,12 +29,23 @@ struct item_transfer_custody_delta
 	std::vector<economic_item_event> events;
 };
 
+// Typed admitted HRT execution only: called after participating owner locks
+// and revision checks, before selected custody/physical reads or mutation.
+// The callback returns an errno value; nonzero follows existing SQL rollback.
+// Values/opaque context alone grant no admission/publication/ACK authority.
+using item_transfer_source_custody_hook = unsigned int (*)(MYSQL *, const critical_command &,
+							   uint64_t locked_from_revision,
+							   uint64_t locked_to_revision,
+							   void *original_owner_context) noexcept;
+
 bool item_transfer_repository_execute(
 	MYSQL *connection, const critical_command &command, item_transfer_result *result,
 	unsigned int *result_code, bool *mutation_applied,
 	item_transfer_failure_stage *failure_stage = nullptr,
 	const item_transfer_accounting_context *accounting_context = nullptr,
-	item_transfer_custody_delta *custody_delta = nullptr);
+	item_transfer_custody_delta *custody_delta = nullptr,
+	item_transfer_source_custody_hook source_custody_hook = nullptr,
+	void *original_owner_context = nullptr);
 // Compound commands may use one inbox operation for consecutive transfer
 // segments. The offset keeps their item-ledger event indexes disjoint.
 bool item_transfer_repository_execute_at_offset(
@@ -42,7 +53,9 @@ bool item_transfer_repository_execute_at_offset(
 	item_transfer_result *result, unsigned int *result_code, bool *mutation_applied,
 	item_transfer_failure_stage *failure_stage = nullptr,
 	const item_transfer_accounting_context *accounting_context = nullptr,
-	item_transfer_custody_delta *custody_delta = nullptr);
+	item_transfer_custody_delta *custody_delta = nullptr,
+	item_transfer_source_custody_hook source_custody_hook = nullptr,
+	void *original_owner_context = nullptr);
 // Called only inside the enclosing coin transaction; never commits independently.
 bool item_transfer_repository_execute_coin(
 	MYSQL *connection, const critical_command &command, const std::array<int32_t, 4> &before,
@@ -80,6 +93,33 @@ bool item_transfer_repository_execute_native_mobile(
 	unsigned int *result_code, bool *mutation_applied, item_transfer_custody_delta *,
 	quest_mobile_native_image *after);
 
+// Separate explicit v16 zero-item participant, inside the SAME original root.
+// The parent locks/authenticates both economic mapping lifetimes and admission,
+// records the two finite-wallet effects/postings, inbox/outbox and result together.
+// This participant proves the original historical native origin, current native
+// image, player save/wallet and complete unchanged forests before any DML. It
+// changes only the real player wallet and native cash/image, never custody.
+// Any false (including after a DML attempt) REQUIRES rollback of the original
+// transaction; unchanged outputs never imply no write was attempted. All output
+// values stay unchanged on false. True supplies authenticated applied AFTER only.
+bool item_transfer_repository_execute_native_mobile_money(
+	MYSQL *, const critical_command &,
+	std::span<const player_item_snapshot> original_player_items,
+	item_native_mobile_money_result *, unsigned int *result_code, bool *mutation_applied,
+	quest_mobile_native_image *after) noexcept;
+
+// Separate authentic v14 NQF2 fee participant. Original caller first proves
+// actual action/acceptance carriers and source, locks native economic mapping,
+// and owns financial sink44 postings/root/result/outbox in this transaction.
+// Only native cash/mobile revision mutates. Giver wallet/stock/custody/full
+// forests stay unchanged. Any false requires original-session rollback; strong
+// outputs do not establish that no DML was attempted. No commit/retry/ACK.
+bool item_transfer_repository_execute_native_mobile_fee(
+	MYSQL *, const critical_command &,
+	std::span<const player_item_snapshot> original_player_items,
+	item_native_mobile_fee_result *, unsigned int *result_code, bool *mutation_applied,
+	quest_mobile_native_image *after) noexcept;
+
 // Read-only complete globally sorted publication cut. Caller already owns the
 // original native lifetime, final-giver save fence and sorted revision locks.
 // Explicit immutable UIDs ignore current owner/state/coin policy; active foreign
@@ -95,6 +135,23 @@ bool item_transfer_repository_lock_native_publication_custody(
 	std::span<const player_item_snapshot> original_native_before,
 	std::span<const player_item_snapshot> original_player_before,
 	std::span<const player_item_snapshot> original_player_after,
+	std::vector<item_native_quest_publication_custody> *) noexcept;
+
+struct held_retirement_recovery;
+// HRT-only complete custody observation. Caller must authenticate the exact
+// original root/receipt/source and guarded pipeline capture, lock the selected
+// native lifetime/save fences and every participating owner in canonical order,
+// then call this BEFORE selected custody/physical locks or any mutation.
+// Original ordinary v9/10 kind8 command + complete guarded HRT1 BEFORE/AFTER
+// forest binds the single ITEM_PICK/HOLD source. Selected tombstone/other owner
+// and active foreign root/parent links join the same ascending global UID cut.
+// No public generic shape bypass, source write, transaction, adoption or ACK
+// capability; output is unchanged on failure. Caller owns rollback and current
+// receipt/literal/hold qualification after inspecting this read-only cut.
+// Malformed player contexts remain visible for exact-forest refusal. This value
+// has no coin-sidecar field; the root must prove actual physical sidecar shape.
+bool item_transfer_repository_lock_held_retirement_publication_custody(
+	MYSQL *, const critical_command &original, const held_retirement_recovery &captured,
 	std::vector<item_native_quest_publication_custody> *) noexcept;
 
 #endif

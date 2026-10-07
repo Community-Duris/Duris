@@ -2,9 +2,14 @@
 #define DURIS_AUCTION_ITEM_CLAIM_ACCOUNTING_H
 
 #include "economy/auction_command.h"
+#include "economy/auction_listing_accounting.h"
+#include "player/player_snapshot_codec.h"
 #include "economy/economic_accounting_intent.h"
 
 constexpr uint32_t ECONOMIC_WRITER_AUCTION_ITEM_CLAIM = 10;
+economic_accounting_error
+auction_item_claim_accounting_observe_native_facts(const economic_frozen_intent &,
+						   auction_accounting_native_facts *) noexcept;
 
 struct auction_item_claim_row
 {
@@ -41,6 +46,8 @@ struct auction_item_claim_accounting_authority
 	uint64_t player_owner_revision_before = 0;
 	uint64_t auction_owner_revision_before = 0;
 	std::vector<economic_item_snapshot> items_before;
+	// Genuine caller-owned acknowledged/source literals, never authority alone.
+	std::vector<player_item_snapshot> native_selected_literals;
 };
 
 // Freeze the exact staged claim, original UIDs, and money-lifetime identities.

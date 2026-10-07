@@ -101,4 +101,20 @@ player_snapshot_codec_result quest_mobile_native_item_transition(
 	const quest_mobile_native_image &before, const item_transfer_payload &payload,
 	const critical_operation_id &operation, quest_mobile_native_image *after) noexcept;
 
+// Explicit15/16 finite cash acceptance preserves the complete original stock,
+// stock/custody revision and native lifetime. Only mobile/cash revisions advance.
+// Original root proves both actual wallets and the before image independently;
+// this pure projection supplies no source, SQL or publication authority.
+// Pure no-item original fee action: actual NPC cash/mobile revision changes,
+// full stock and custody are unchanged. Caller owes source/root/SQL publication.
+player_snapshot_codec_result
+quest_mobile_native_fee_transition(const quest_mobile_native_image &, const item_transfer_payload &,
+				   const critical_operation_id &,
+				   quest_mobile_native_image *) noexcept;
+
+player_snapshot_codec_result
+quest_mobile_native_money_transition(const quest_mobile_native_image &,
+				     const item_transfer_payload &, const critical_operation_id &,
+				     quest_mobile_native_image *) noexcept;
+
 #endif

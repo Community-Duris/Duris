@@ -1,6 +1,10 @@
 #include "persistence/economic_sql_native_mobile_birth_transaction.h"
 #include "persistence/economic_accounting_repository.h"
 #include "persistence/quest_mobile_native_sql.h"
+#include "persistence/quest_mobile_native_origin_sql.h"
+#ifndef __NO_MYSQL__
+#include "persistence/economic_sql_source_snapshot.h"
+#endif
 #include "item/economic_accounting_item_reference.h"
 #include <algorithm>
 #include <array>
@@ -99,9 +103,21 @@ unsigned int economic_sql_native_mobile_birth_verify_retained(MYSQL *, const cri
 {
 	return ENOTSUP;
 }
+unsigned int economic_sql_native_mobile_birth_observe_origin(MYSQL *,
+							     const quest_mobile_native_reference &,
+							     native_mobile_wallet_origin *) noexcept
+{
+	return ENOTSUP;
+}
 unsigned int economic_sql_native_mobile_birth_lock_publication(
 	MYSQL *, const critical_command &, const critical_completion &, quest_mobile_native_image *,
 	std::vector<item_ownership_runtime_entry> *) noexcept
+{
+	return ENOTSUP;
+}
+unsigned int economic_sql_native_mobile_birth_lock_wallet_lifetimes(
+	MYSQL *, const critical_operation_id &,
+	std::vector<economic_sql_native_mobile_wallet_lifetime> *) noexcept
 {
 	return ENOTSUP;
 }
@@ -405,9 +421,10 @@ fields item_row(const economic_item_event &event, int32_t vnum)
 		 { "equipment_slot", std::to_string(after.equipment_slot) },
 		 { "coin_payload", "NULL" } };
 }
-fields ledger(const critical_command &command, const economic_item_event &event)
+fields ledger(const critical_operation_id &root, critical_source_site source_site,
+	      const economic_item_event &event)
 {
-	return { { "operation_id", id(command.operation_id) },
+	return { { "operation_id", id(root) },
 		 { "event_index", std::to_string(event.event_index) },
 		 { "item_uid", std::to_string(event.uid) },
 		 { "root_item_uid", std::to_string(event.after.root_uid) },
@@ -425,10 +442,15 @@ fields ledger(const critical_command &command, const economic_item_event &event)
 		 { "reason_type",
 		   std::to_string(static_cast<uint16_t>(item_transfer_reason::creation)) },
 		 { "reason_id", "0" },
-		 { "source_site", std::to_string(static_cast<uint16_t>(command.source_site)) },
+		 { "source_site", std::to_string(static_cast<uint16_t>(source_site)) },
 		 { "from_equipment_slot", "0" },
 		 { "to_equipment_slot", std::to_string(event.after.equipment_slot) } };
 }
+fields ledger(const critical_command &command, const economic_item_event &event)
+{
+	return ledger(command.operation_id, command.source_site, event);
+}
+
 void verify_current(MYSQL *connection, const critical_command &command,
 		    const birth_identity &identity, const economic_account_key &wallet,
 		    const economic_accounting_plan &plan, std::span<const uint64_t> values)
@@ -494,12 +516,13 @@ void verify_current(MYSQL *connection, const critical_command &command,
 		      1);
 	physical_absence(connection, values);
 }
-fields operation(const critical_command &command, const economic_accounting_plan &plan)
+fields operation(const critical_operation_id &root, const economic_accounting_plan &plan,
+		 std::span<const uint8_t> canonical_intent)
 {
 	const auto &meta = plan.metadata;
 	std::vector<uint8_t> encoded;
 	checked(economic_plan_encode(plan, &encoded));
-	return { { "operation_id", id(command.operation_id) },
+	return { { "operation_id", id(root) },
 		 { "lineage", id(meta.lineage) },
 		 { "epoch", id(meta.epoch) },
 		 { "original_operation_id", "NULL" },
@@ -514,7 +537,7 @@ fields operation(const critical_command &command, const economic_accounting_plan
 		 { "intent_digest", hex(meta.intent_digest) },
 		 { "domain_digest", hex(meta.domain_digest) },
 		 { "plan_digest", hex(hash(encoded)) },
-		 { "canonical_intent", hex(command.accounting_intent) },
+		 { "canonical_intent", hex(canonical_intent) },
 		 { "canonical_plan", hex(encoded) },
 		 { "outcome", "1" },
 		 { "result_code", "0" },
@@ -550,39 +573,41 @@ fields posting(const critical_operation_id &root, size_t index, const economic_c
 	coins(result, "delta_", value.delta);
 	return result;
 }
-void evidence(MYSQL *connection, const critical_command &command,
-	      const economic_accounting_plan &plan, bool append)
+void evidence(MYSQL *connection, const critical_operation_id &operation_id,
+	      critical_source_site source_site, const economic_accounting_plan &plan,
+	      std::span<const uint8_t> canonical_intent, bool append)
 {
-	const auto root = operation(command, plan);
+	const auto root = operation(operation_id, plan, canonical_intent);
 	if (append)
 		insert(connection, "economic_accounting_operation", root);
 	count(connection, "economic_accounting_operation", predicate(root), 1);
 	for (size_t index = 0; index < plan.accounts.size(); ++index)
 	{
-		const auto row = effect(command.operation_id, index, plan.accounts[index]);
+		const auto row = effect(operation_id, index, plan.accounts[index]);
 		if (append)
 			insert(connection, "economic_accounting_account_effect", row);
 		count(connection, "economic_accounting_account_effect", predicate(row), 1);
 	}
 	for (size_t index = 0; index < plan.postings.size(); ++index)
 	{
-		const auto row = posting(command.operation_id, index, plan.postings[index]);
+		const auto row = posting(operation_id, index, plan.postings[index]);
 		if (append)
 			insert(connection, "economic_accounting_coin_posting", row);
 		count(connection, "economic_accounting_coin_posting", predicate(row), 1);
 	}
 	for (const auto &event : plan.item_events)
 	{
-		count(connection, "item_ownership_ledger", predicate(ledger(command, event)), 1);
+		count(connection, "item_ownership_ledger",
+		      predicate(ledger(operation_id, source_site, event)), 1);
 		economic_accounting_item_reference ref{};
-		ref.operation_id = command.operation_id;
+		ref.operation_id = operation_id;
 		ref.line_index = static_cast<uint16_t>(event.event_index);
 		ref.event_index = event.event_index;
 		ref.child_index = 0;
 		ref.item_uid = event.uid;
 		ref.before_revision = 0;
 		ref.after_revision = 1;
-		ref.legacy_operation_id = command.operation_id;
+		ref.legacy_operation_id = operation_id;
 		ref.legacy_event_index = static_cast<uint16_t>(event.event_index);
 		if (append && !economic_accounting_item_reference_insert(connection, ref))
 		{
@@ -591,25 +616,25 @@ void evidence(MYSQL *connection, const critical_command &command,
 		}
 		count(connection, "economic_accounting_item_reference",
 		      predicate(
-			      { { "operation_id", id(command.operation_id) },
+			      { { "operation_id", id(operation_id) },
 				{ "line_index", std::to_string(ref.line_index) },
 				{ "event_index", std::to_string(ref.event_index) },
 				{ "child_index", "0" },
 				{ "item_uid", std::to_string(ref.item_uid) },
 				{ "before_revision", "0" },
 				{ "after_revision", "1" },
-				{ "legacy_operation_id", id(command.operation_id) },
+				{ "legacy_operation_id", id(operation_id) },
 				{ "legacy_event_index", std::to_string(ref.legacy_event_index) } }),
 		      1);
 	}
 	const fields claim = { { "lineage", id(plan.metadata.lineage) },
 			       { "source_event", source(plan.metadata) },
-			       { "operation_id", id(command.operation_id) },
+			       { "operation_id", id(operation_id) },
 			       { "outcome", "1" } };
 	if (append)
 		insert(connection, "economic_accounting_source_claim", claim);
 	count(connection, "economic_accounting_source_claim", predicate(claim), 1);
-	const auto where = "operation_id=" + id(command.operation_id);
+	const auto where = "operation_id=" + id(operation_id);
 	count(connection, "economic_accounting_account_effect", where, plan.accounts.size());
 	count(connection, "economic_accounting_coin_posting", where, plan.postings.size());
 	count(connection, "economic_accounting_item_reference", where, plan.item_events.size());
@@ -617,11 +642,18 @@ void evidence(MYSQL *connection, const critical_command &command,
 	count(connection, "economic_accounting_source_claim", where, 1);
 	count(connection, "economic_accounting_child", where, 0);
 }
-void outbox(MYSQL *connection, const critical_command &command, std::span<const uint8_t> payload,
-	    bool pending)
+void evidence(MYSQL *connection, const critical_command &command,
+	      const economic_accounting_plan &plan, bool append)
+{
+	evidence(connection, command.operation_id, command.source_site, plan,
+		 command.accounting_intent, append);
+}
+
+void outbox(MYSQL *connection, const critical_operation_id &operation_id,
+	    std::span<const uint8_t> payload, bool pending)
 {
 	fields expected = {
-		{ "operation_id", id(command.operation_id) },
+		{ "operation_id", id(operation_id) },
 		{ "event_index", "0" },
 		{ "destination", std::to_string(NATIVE_MOBILE_BIRTH_OUTBOX_DESTINATION) },
 		{ "event_type", std::to_string(NATIVE_MOBILE_BIRTH_OUTBOX_EVENT) },
@@ -636,11 +668,17 @@ void outbox(MYSQL *connection, const critical_command &command, std::span<const 
 		expected.emplace_back("delivered_at", "NULL");
 		expected.emplace_back("dead_lettered_at", "NULL");
 	}
-	count(connection, "critical_outbox", "operation_id=" + id(command.operation_id), 1);
+	count(connection, "critical_outbox", "operation_id=" + id(operation_id), 1);
 	count(connection, "critical_outbox",
 	      predicate(expected) + (pending ? " AND next_attempt_at<=CURRENT_TIMESTAMP(6)" : ""),
 	      1);
 }
+void outbox(MYSQL *connection, const critical_command &command, std::span<const uint8_t> payload,
+	    bool pending)
+{
+	outbox(connection, command.operation_id, payload, pending);
+}
+
 }
 struct economic_sql_native_mobile_birth_transaction::implementation
 {
@@ -1001,6 +1039,176 @@ economic_sql_native_mobile_birth_verify_retained(MYSQL *connection, const critic
 		return EINVAL;
 	}
 }
+unsigned int
+economic_sql_native_mobile_birth_observe_origin(MYSQL *connection,
+						const quest_mobile_native_reference &reference,
+						native_mobile_wallet_origin *output) noexcept
+{
+	try
+	{
+		require(connection && output && quest_mobile_native_reference_valid(reference),
+			EINVAL);
+		const auto session = mysql_thread_id(connection);
+		active(connection, session);
+		const auto root = reference.birth_operation;
+		const auto stored = read(
+			connection,
+			"SELECT canonical_plan,canonical_intent FROM economic_accounting_operation WHERE operation_id=" +
+				id(root),
+			2);
+		require(stored[0].has_value() && stored[1].has_value());
+		const auto bytes = [](const std::string &value) {
+			return std::span<const uint8_t>(
+				reinterpret_cast<const uint8_t *>(value.data()), value.size());
+		};
+		economic_accounting_plan plan;
+		economic_frozen_intent intent;
+		checked(economic_plan_decode(bytes(*stored[0]), &plan));
+		checked(economic_intent_decode(bytes(*stored[1]), &intent));
+		std::vector<uint8_t> canonical_plan, canonical_intent;
+		checked(economic_plan_encode(plan, &canonical_plan));
+		checked(economic_intent_encode(intent, &canonical_intent));
+		require(std::equal(canonical_plan.begin(), canonical_plan.end(),
+				   bytes(*stored[0]).begin(), bytes(*stored[0]).end()) &&
+			std::equal(canonical_intent.begin(), canonical_intent.end(),
+				   bytes(*stored[1]).begin(), bytes(*stored[1]).end()));
+		const auto &meta = plan.metadata;
+		const auto &admission = intent.admission.metadata;
+		std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> plan_source{}, reference_source{},
+			intent_source{};
+		require(meta.source_event.has_value() && admission.source_event.has_value());
+		checked(economic_source_event_encode(*meta.source_event, &plan_source));
+		checked(economic_source_event_encode(reference.birth_source, &reference_source));
+		checked(economic_source_event_encode(*admission.source_event, &intent_source));
+		economic_digest intent_digest{};
+		checked(economic_intent_digest(intent, &intent_digest));
+		require(meta.operation_id.bytes == root.bytes &&
+			critical_operation_id_is_zero(meta.original_operation_id) &&
+			meta.actor_kind == economic_actor_kind::domain &&
+			meta.actor_id == reference.mobile_instance_id &&
+			meta.writer_id == ECONOMIC_WRITER_NATIVE_MOBILE_BIRTH &&
+			meta.reason == economic_reason::npc_reward && meta.policy_version == 1 &&
+			meta.compiler_version == 1 && plan_source == reference_source &&
+			plan_source == intent_source && meta.intent_digest == intent_digest &&
+			meta.domain_digest == intent.domain_digest &&
+			intent.admission.facts_version == 1 && intent.admission.facts.empty() &&
+			meta.version == admission.version &&
+			meta.lineage.bytes == admission.lineage.bytes &&
+			meta.epoch.bytes == admission.epoch.bytes &&
+			meta.operation_id.bytes == admission.operation_id.bytes &&
+			meta.original_operation_id.bytes == admission.original_operation_id.bytes &&
+			meta.actor_kind == admission.actor_kind &&
+			meta.actor_id == admission.actor_id &&
+			meta.writer_id == admission.writer_id &&
+			meta.policy_version == admission.policy_version &&
+			meta.compiler_version == admission.compiler_version &&
+			meta.reason == admission.reason);
+		const auto receipt = read(
+			connection,
+			"SELECT result_payload FROM critical_operation_inbox WHERE operation_id=" +
+				id(root) +
+				" AND status=1 AND result_code=0 AND failure_stage=0 AND durable_revision=1 AND committed_at IS NOT NULL AND command_type=" +
+				std::to_string(static_cast<uint16_t>(
+					critical_command_type::native_mobile_birth)) +
+				" AND schema_version=2 AND payload_version IN (1,2,3)",
+			1);
+		require(receipt[0].has_value());
+		native_mobile_birth_result result;
+		require(native_mobile_birth_result_decode(bytes(*receipt[0]), &result) &&
+			result.mobile_instance_id == reference.mobile_instance_id &&
+			result.plan_digest == hash(canonical_plan));
+		const economic_account_key wallet{ meta.lineage, economic_account_kind::wallet,
+						   result.wallet_mapping_id,
+						   ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT };
+		require(plan.children.empty() && !plan.accounts.empty() &&
+			plan.accounts.size() <= 2 &&
+			economic_account_key_equal(plan.accounts[0].key, wallet) &&
+			plan.accounts[0].before == economic_coin_vector{} &&
+			plan.accounts[0].before_revision == 0 &&
+			plan.accounts[0].after_revision == result.cash_revision);
+		const auto &cash = plan.accounts[0].after;
+		const bool nonzero = std::any_of(cash.begin(), cash.end(),
+						 [](int64_t amount) { return amount != 0; });
+		require(plan.accounts.size() == (nonzero ? 2U : 1U) &&
+			plan.postings.size() == (nonzero ? 2U : 0U));
+		if (nonzero)
+		{
+			const economic_account_key issuance{ meta.lineage,
+							     economic_account_kind::issuance, 1,
+							     0 };
+			require(economic_account_key_equal(plan.accounts[1].key, issuance) &&
+				plan.accounts[1].before == economic_coin_vector{} &&
+				plan.accounts[1].after == economic_coin_vector{} &&
+				!plan.accounts[1].before_revision &&
+				!plan.accounts[1].after_revision);
+			economic_coin_vector opposite{};
+			checked(economic_coin_delta(cash, {}, &opposite));
+			int64_t value = 0;
+			checked(economic_coin_value(cash, &value));
+			require(plan.postings[0].event_index == 0 &&
+				!plan.postings[0].account_index && !plan.postings[0].child_index &&
+				plan.postings[0].delta == cash &&
+				plan.postings[0].copper == value &&
+				plan.postings[1].event_index == 1 &&
+				plan.postings[1].account_index == 1 &&
+				!plan.postings[1].child_index &&
+				plan.postings[1].delta == opposite &&
+				plan.postings[1].copper == -value);
+		}
+		require(plan.items_before.size() == plan.item_events.size() &&
+			plan.items_after.size() == plan.item_events.size());
+		for (size_t index = 0; index < plan.item_events.size(); ++index)
+		{
+			const auto &event = plan.item_events[index];
+			require(event.event_index == index && !event.child_index &&
+				economic_item_position_equal(event.before,
+							     economic_item_position{}) &&
+				event.after.owner.type == item_owner_type::native_mobile &&
+				event.after.owner.id == reference.mobile_instance_id &&
+				!event.after.owner.context_id && event.after.revision == 1 &&
+				event.after.state == item_custody_state::active);
+		}
+		const fields mapping_row{
+			{ "mapping_id", std::to_string(result.wallet_mapping_id) },
+			{ "lineage", id(meta.lineage) },
+			{ "account_kind", "1" },
+			{ "context_id", std::to_string(ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT) },
+			{ "backend_kind", "1" },
+			{ "locator_kind", std::to_string(ECONOMIC_NATIVE_MOBILE_WALLET_LOCATOR) },
+			{ "native_id", std::to_string(reference.mobile_instance_id) },
+			{ "creating_operation_id", id(root) }
+		};
+		count(connection, "economic_account_mapping", predicate(mapping_row), 1);
+		count(connection, "economic_account_mapping",
+		      "backend_kind=1 AND locator_kind=" +
+			      std::to_string(ECONOMIC_NATIVE_MOBILE_WALLET_LOCATOR) +
+			      " AND native_id=" + std::to_string(reference.mobile_instance_id),
+		      1);
+		count(connection, "economic_account_mapping", "creating_operation_id=" + id(root),
+		      1);
+		// The actual original reset/alchemist factory freezes zone_event. No
+		// missing command is reconstructed from these historical observations.
+		evidence(connection, root, critical_source_site::zone_event, plan, canonical_intent,
+			 false);
+		outbox(connection, root, bytes(*receipt[0]), false);
+		active(connection, session);
+		*output = { root, meta.lineage, meta.epoch, reference.mobile_instance_id,
+			    result.wallet_mapping_id };
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EINVAL;
+	}
+}
 unsigned int economic_sql_native_mobile_birth_lock_publication(
 	MYSQL *connection, const critical_command &command, const critical_completion &completion,
 	quest_mobile_native_image *image,
@@ -1073,6 +1281,222 @@ unsigned int economic_sql_native_mobile_birth_lock_publication(
 		active(connection, session);
 		*image = std::move(identity.image);
 		*custody = std::move(verified);
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EINVAL;
+	}
+}
+
+namespace
+{
+std::vector<cells> native_wallet_mapping_rows(MYSQL *connection,
+					      const critical_operation_id &lineage, bool lock)
+{
+	const economic_sql_source_limits limits{};
+	execute(connection,
+		"SELECT mapping_id,account_kind,context_id,backend_kind,locator_kind,native_id,"
+		"active_native_id,creating_operation_id,retiring_operation_id,revision "
+		"FROM economic_account_mapping WHERE lineage=" +
+			id(lineage) + " AND (locator_kind=" +
+			std::to_string(ECONOMIC_NATIVE_MOBILE_WALLET_LOCATOR) +
+			" OR (account_kind=1 AND context_id=" +
+			std::to_string(ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT) +
+			")) ORDER BY native_id,mapping_id LIMIT " +
+			std::to_string(limits.maximum_rows + 1) + (lock ? " FOR UPDATE" : ""));
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> result(
+		mysql_store_result(connection), mysql_free_result);
+	require(bool(result), mysql_errno(connection) ? mysql_errno(connection) : EIO);
+	require(mysql_num_fields(result.get()) == 10);
+	require(mysql_num_rows(result.get()) <= limits.maximum_rows, E2BIG);
+	std::vector<cells> rows;
+	rows.reserve(static_cast<size_t>(mysql_num_rows(result.get())));
+	uint64_t total_bytes = 0;
+	while (auto row = mysql_fetch_row(result.get()))
+	{
+		const auto lengths = mysql_fetch_lengths(result.get());
+		require(lengths != nullptr);
+		cells value;
+		value.reserve(10);
+		for (size_t index = 0; index < 10; ++index)
+		{
+			const bool operation = index == 7 || index == 8;
+			require(lengths[index] <= (operation ? CRITICAL_COMMAND_ID_BYTES : 20),
+				E2BIG);
+			require(total_bytes <= limits.maximum_cell_bytes - lengths[index], E2BIG);
+			total_bytes += lengths[index];
+			value.push_back(row[index] ? std::optional<std::string>(std::string(
+							     row[index], lengths[index])) :
+						     std::nullopt);
+		}
+		rows.push_back(std::move(value));
+	}
+	require(!mysql_errno(connection), mysql_errno(connection) ? mysql_errno(connection) : EIO);
+	return rows;
+}
+critical_operation_id native_wallet_operation(const std::optional<std::string> &value)
+{
+	require(value && value->size() == CRITICAL_COMMAND_ID_BYTES);
+	critical_operation_id result{};
+	std::copy(value->begin(), value->end(), result.bytes.begin());
+	require(!critical_operation_id_is_zero(result));
+	return result;
+}
+critical_native_recovery_envelope native_wallet_origin_peek(MYSQL *connection, uint64_t native_id,
+							    const critical_operation_id &creator)
+{
+	// This is a bounded observation only. The original retained verifier below
+	// takes the birth inbox before mapping/native locks; the original 0063
+	// reader later locks and re-authenticates these exact origin bytes.
+	execute(connection,
+		"SELECT birth_operation,publication_revision,OCTET_LENGTH(canonical_origin),"
+		"SUBSTRING(canonical_origin,1," +
+			std::to_string(CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES + 1) +
+			") FROM quest_mobile_native_birth_origin WHERE mobile_instance_id=" +
+			std::to_string(native_id) + " LIMIT 2");
+	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> result(
+		mysql_store_result(connection), mysql_free_result);
+	require(bool(result), mysql_errno(connection) ? mysql_errno(connection) : EIO);
+	require(mysql_num_rows(result.get()) == 1 && mysql_num_fields(result.get()) == 4);
+	const auto row = mysql_fetch_row(result.get());
+	const auto lengths = mysql_fetch_lengths(result.get());
+	require(row && lengths && row[0] && row[1] && row[2] && row[3]);
+	require(lengths[0] == CRITICAL_COMMAND_ID_BYTES && lengths[1] <= 20 && lengths[2] <= 20);
+	require(std::equal(creator.bytes.begin(), creator.bytes.end(),
+			   reinterpret_cast<const uint8_t *>(row[0])));
+	const auto size = integer<uint64_t>(std::string(row[2], lengths[2]));
+	require(size && size <= CRITICAL_NATIVE_RECOVERY_MAX_ATTACHMENT_BYTES && lengths[3] == size,
+		E2BIG);
+	critical_native_recovery_envelope envelope;
+	envelope.phase = critical_native_recovery_phase::continuation_pending;
+	envelope.revision = integer<uint64_t>(std::string(row[1], lengths[1]));
+	envelope.attachment.assign(reinterpret_cast<const uint8_t *>(row[3]),
+				   reinterpret_cast<const uint8_t *>(row[3]) + lengths[3]);
+	checked(native_mobile_birth_recovery_original_command_decode(envelope.attachment,
+								     &envelope.command));
+	require(envelope.command.operation_id.bytes == creator.bytes &&
+		native_mobile_birth_recovery_terminal(envelope));
+	return envelope;
+}
+}
+unsigned int economic_sql_native_mobile_birth_lock_wallet_lifetimes(
+	MYSQL *connection, const critical_operation_id &lineage,
+	std::vector<economic_sql_native_mobile_wallet_lifetime> *output) noexcept
+{
+	try
+	{
+		require(connection && output && !critical_operation_id_is_zero(lineage), EINVAL);
+		const auto session = mysql_thread_id(connection);
+		active(connection, session);
+		const auto seeds = native_wallet_mapping_rows(connection, lineage, false);
+		std::vector<economic_sql_native_mobile_wallet_lifetime> candidate;
+		candidate.reserve(seeds.size());
+		std::vector<economic_digest> origin_hashes;
+		std::vector<uint64_t> origin_revisions;
+		origin_hashes.reserve(seeds.size());
+		origin_revisions.reserve(seeds.size());
+		uint64_t previous_native = 0;
+		// Authenticate/lock ALL original birth inboxes before mapping/native locks.
+		// Large attachments are discarded per lifetime; only small DTOs survive.
+		for (const auto &seed : seeds)
+		{
+			const auto mapping_id = integer<uint64_t>(seed[0]);
+			const auto native_id = integer<uint64_t>(seed[5]);
+			const auto creator = native_wallet_operation(seed[7]);
+			require(mapping_id && native_id && native_id != UINT64_MAX &&
+				native_id > previous_native);
+			previous_native = native_id;
+			const auto envelope =
+				native_wallet_origin_peek(connection, native_id, creator);
+			native_mobile_birth_recovery_context recovery;
+			checked(native_mobile_birth_recovery_decode(
+				envelope.command, envelope.attachment, &recovery));
+			const auto retained = economic_sql_native_mobile_birth_verify_retained(
+				connection, envelope.command, recovery.receipt.error_code,
+				std::span<const uint8_t>(recovery.receipt.result_payload.data(),
+							 recovery.receipt.result_size));
+			require(!retained, retained);
+			quest_mobile_native_image born;
+			checked(native_mobile_birth_command_decode(envelope.command, &born));
+			require(born.reference.mobile_instance_id == native_id &&
+				born.reference.birth_operation.bytes == creator.bytes);
+			native_mobile_wallet_origin historical;
+			const auto observed = economic_sql_native_mobile_birth_observe_origin(
+				connection, born.reference, &historical);
+			require(!observed, observed);
+			require(historical.lineage.bytes == lineage.bytes &&
+				historical.wallet_mapping_id == mapping_id &&
+				historical.mobile_instance_id == native_id &&
+				historical.birth_operation.bytes == creator.bytes);
+			economic_sql_native_mobile_wallet_lifetime value;
+			value.account = { lineage, economic_account_kind::wallet, mapping_id,
+					  ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT };
+			value.native_id = native_id;
+			value.creating_operation_id = creator;
+			value.birth_epoch = historical.birth_epoch;
+			candidate.push_back(value);
+			origin_hashes.push_back(hash(envelope.attachment));
+			origin_revisions.push_back(envelope.revision);
+			active(connection, session);
+		}
+		// Under global lifecycle exclusion the complete selected set must remain
+		// exact. Damaged native context/locator rows cannot silently disappear.
+		const auto locked = native_wallet_mapping_rows(connection, lineage, true);
+		require(locked == seeds);
+		for (size_t index = 0; index < candidate.size(); ++index)
+		{
+			auto &value = candidate[index];
+			const auto &row = locked[index];
+			require(integer<uint16_t>(row[1]) ==
+					static_cast<uint16_t>(economic_account_kind::wallet) &&
+				integer<uint64_t>(row[2]) ==
+					ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT &&
+				integer<uint16_t>(row[3]) == ECONOMIC_MAPPING_BACKEND_SQL &&
+				integer<uint16_t>(row[4]) ==
+					ECONOMIC_NATIVE_MOBILE_WALLET_LOCATOR &&
+				row[6] && integer<uint64_t>(row[6]) == value.native_id && !row[8] &&
+				integer<uint64_t>(row[9]) == 0);
+			value.active_native_id = value.native_id;
+			quest_mobile_native_sql_row current;
+			const auto native_error =
+				quest_mobile_native_sql_lock(connection, value.native_id, &current);
+			require(!native_error, native_error);
+			require(current.present && current.original_session == session &&
+					current.image.state == quest_mobile_lifetime_state::live &&
+					current.image.cash.has_value(),
+				ESTALE);
+			quest_mobile_native_published_origin published;
+			const auto origin_error = quest_mobile_native_origin_sql_lock(
+				connection, current.image.reference, &published);
+			require(!origin_error, origin_error);
+			require(published.present &&
+					published.original.command.operation_id.bytes ==
+						value.creating_operation_id.bytes &&
+					published.original.revision == origin_revisions[index] &&
+					hash(published.original.attachment) == origin_hashes[index],
+				EILSEQ);
+			value.balance = current.image.cash->denominations.amount;
+			value.native_revision = current.image.cash->revision;
+			value.native_state = current.image.state;
+			require(value.native_revision);
+			int64_t copper = 0;
+			checked(economic_coin_value(value.balance, &copper));
+			require(std::all_of(value.balance.begin(), value.balance.end(),
+					    [](int64_t amount) { return amount >= 0; }));
+			active(connection, session);
+		}
+		active(connection, session);
+		static_assert(std::is_nothrow_move_assignable_v<decltype(candidate)>);
+		*output = std::move(candidate);
 		return 0;
 	}
 	catch (const failure &error)

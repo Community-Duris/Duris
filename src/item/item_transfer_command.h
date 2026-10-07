@@ -4,6 +4,8 @@
 #include "persistence/critical_command.h"
 #include "economy/shop_trade_recovery_manifest.h"
 #include "world/quest_mobile_native_reference.h"
+#include "economy/native_quest_cost.h"
+#include "economy/native_quest_coin_give.h"
 
 #include <array>
 #include <cstdint>
@@ -13,6 +15,16 @@
 constexpr uint16_t ITEM_TRANSFER_PAYLOAD_VERSION = 10;
 constexpr uint16_t ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION = 11;
 constexpr uint16_t ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION = 12;
+// Explicit value-only cash successors. The old v11/v12 body is length-bound
+// unchanged inside the wrapper; execution remains original owner-authorized.
+constexpr uint16_t ITEM_TRANSFER_NATIVE_MOBILE_COST_PAYLOAD_VERSION = 13;
+constexpr uint16_t ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION = 14;
+// Explicit genuine zero-item coin acceptance. Neither value version admits an
+// execution, source, checkpoint or physical publication.
+constexpr uint16_t ITEM_TRANSFER_NATIVE_MOBILE_MONEY_PAYLOAD_VERSION = 15;
+constexpr uint16_t ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RECOVERY_PAYLOAD_VERSION = 16;
+constexpr size_t ITEM_TRANSFER_NATIVE_MOBILE_MONEY_HEADER_BYTES = 64;
+constexpr size_t ITEM_TRANSFER_NATIVE_MOBILE_COST_HEADER_BYTES = 24;
 constexpr uint16_t ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_VERSION = 2;
 constexpr size_t ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_HEADER_BYTES = 24;
 constexpr size_t ITEM_TRANSFER_NATIVE_MOBILE_PUBLICATION_HEADER_BYTES = 12;
@@ -198,6 +210,7 @@ enum class item_transfer_continuation_kind : uint32_t
 	account_reward_duplicate_promotion = 5,
 	craft_pouch_usage = 6,
 	craft_recipe = 7,
+	lockpick_retirement = 8,
 };
 
 enum class item_spell_component_effect : uint32_t
@@ -250,6 +263,24 @@ struct item_native_quest_publication_terms
 	bool disappear = false;
 };
 
+struct item_native_mobile_cost_context
+{
+	bool present = false;
+	bool fee_only = false;
+	uint32_t completion_slot = 0;
+	uint64_t wallet_mapping_id = 0;
+	native_quest_cost_projection projection;
+};
+
+struct item_native_mobile_money_context
+{
+	bool present = false;
+	int32_t original_room_vnum = 0;
+	uint64_t player_wallet_mapping_id = 0;
+	uint64_t mobile_wallet_mapping_id = 0;
+	native_quest_coin_give_projection projection;
+};
+
 struct item_native_mobile_recovery_context
 {
 	bool present = false;
@@ -287,7 +318,47 @@ struct item_transfer_payload
 	item_transfer_continuation continuation;
 	item_native_mobile_context native_mobile;
 	item_native_mobile_recovery_context native_recovery;
+	item_native_mobile_cost_context native_cost = {};
+	item_native_mobile_money_context native_money = {};
 };
+
+// Distinct zero-item fee result. Scope identities do not transfer any item.
+struct item_native_mobile_fee_result
+{
+	uint64_t mobile_instance_id = 0;
+	uint32_t player_pid = 0;
+	uint64_t mobile_cash_revision = 0, mobile_revision = 0, stock_revision = 0;
+	uint64_t native_custody_revision = 0, player_custody_revision = 0;
+	bool operator==(const item_native_mobile_fee_result &) const = default;
+};
+constexpr size_t ITEM_TRANSFER_NATIVE_MOBILE_FEE_RESULT_BYTES = 64;
+bool item_native_mobile_fee_result_build(const item_transfer_payload &,
+					 item_native_mobile_fee_result *) noexcept;
+bool item_native_mobile_fee_result_encode(
+	const item_native_mobile_fee_result &,
+	std::array<uint8_t, ITEM_TRANSFER_NATIVE_MOBILE_FEE_RESULT_BYTES> *) noexcept;
+bool item_native_mobile_fee_result_decode(std::span<const uint8_t>,
+					  item_native_mobile_fee_result *) noexcept;
+
+// Dedicated zero-item money result; legacy item-result framing stays strict.
+struct item_native_mobile_money_result
+{
+	uint64_t mobile_instance_id = 0;
+	uint32_t player_pid = 0;
+	uint64_t player_wallet_revision = 0, mobile_cash_revision = 0;
+	uint64_t mobile_revision = 0, player_custody_revision = 0, stock_revision = 0;
+	bool operator==(const item_native_mobile_money_result &) const = default;
+};
+constexpr size_t ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RESULT_BYTES = 72;
+// Pure expected result and canonical value transport only; the original durable
+// root must authenticate real applied revisions and bind this exact result.
+bool item_native_mobile_money_result_build(const item_transfer_payload &,
+					   item_native_mobile_money_result *) noexcept;
+bool item_native_mobile_money_result_encode(
+	const item_native_mobile_money_result &,
+	std::array<uint8_t, ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RESULT_BYTES> *) noexcept;
+bool item_native_mobile_money_result_decode(std::span<const uint8_t>,
+					    item_native_mobile_money_result *) noexcept;
 
 struct item_transfer_result
 {
@@ -337,6 +408,10 @@ bool item_transfer_command_encode_payload(const item_transfer_payload &payload,
 // Pure value shape is not source/epoch/admission/backend execution authority.
 // The fixed tail follows continuation: LE version16/action8/flags8=0/length32,
 // final_giver32/zero32, original 148-byte reference, then four zero padding bytes.
+// Wire classification only. Original source/epoch/native mapping/root/held
+// receipt/publication proof remains mandatory; these do not grant admission.
+bool item_transfer_native_mobile_structural_version(uint16_t) noexcept;
+bool item_transfer_native_mobile_acknowledged_version(uint16_t) noexcept;
 bool item_transfer_native_mobile_shape_valid(const item_transfer_payload &) noexcept;
 bool item_transfer_command_encode_native_mobile(const item_transfer_payload &,
 						std::vector<uint8_t> *encoded) noexcept;

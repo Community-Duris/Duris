@@ -657,6 +657,23 @@ player_snapshot_codec_result quest_mobile_native_item_transition(
 							    &candidate.items);
 		if (code != player_snapshot_codec_result::ok)
 			return code;
+		if (payload.native_cost.present)
+		{
+			std::vector<uint8_t> exact_cost;
+			if (payload.native_mobile.action !=
+				    item_native_mobile_action::consumption ||
+			    !payload.native_cost.wallet_mapping_id ||
+			    native_quest_cost_projection_encode(payload.native_cost.projection,
+								&exact_cost) !=
+				    native_quest_cost_projection_result::ok ||
+			    payload.native_cost.projection.before_revision !=
+				    before.cash->revision ||
+			    payload.native_cost.projection.before !=
+				    before.cash->denominations.amount)
+				return player_snapshot_codec_result::invalid_value;
+			candidate.cash->revision = payload.native_cost.projection.after_revision;
+			candidate.cash->denominations.amount = payload.native_cost.projection.after;
+		}
 		++candidate.reference.mobile_revision;
 		++candidate.reference.stock_revision;
 		candidate.last_transition_operation = operation;
@@ -671,5 +688,99 @@ player_snapshot_codec_result quest_mobile_native_item_transition(
 	catch (const std::bad_alloc &)
 	{
 		return player_snapshot_codec_result::allocation_failure;
+	}
+}
+
+player_snapshot_codec_result quest_mobile_native_fee_transition(
+	const quest_mobile_native_image &before, const item_transfer_payload &payload,
+	const critical_operation_id &operation, quest_mobile_native_image *output) noexcept
+{
+	using result = player_snapshot_codec_result;
+	if (!output || !payload.native_cost.fee_only || !nonzero(operation) ||
+	    before.state != quest_mobile_lifetime_state::live || !before.cash ||
+	    before.reference.mobile_revision == UINT64_MAX ||
+	    !(payload.native_recovery.present ?
+		      item_transfer_native_mobile_recovery_shape_valid(payload) :
+		      item_transfer_native_mobile_shape_valid(payload)))
+		return result::invalid_value;
+	try
+	{
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> original{}, bound{};
+		if (quest_mobile_native_reference_encode(before.reference, &original) !=
+			    result::ok ||
+		    quest_mobile_native_reference_encode(payload.native_mobile.reference, &bound) !=
+			    result::ok ||
+		    original != bound ||
+		    before.cash->revision != payload.native_cost.projection.before_revision ||
+		    before.cash->denominations.amount != payload.native_cost.projection.before)
+			return result::invalid_value;
+		std::vector<uint8_t> canonical;
+		auto status = quest_mobile_native_image_encode(before, &canonical);
+		if (status != result::ok)
+			return status;
+		auto candidate = before;
+		candidate.cash->revision = payload.native_cost.projection.after_revision;
+		candidate.cash->denominations.amount = payload.native_cost.projection.after;
+		++candidate.reference.mobile_revision;
+		candidate.last_transition_operation = operation;
+		if (!quest_mobile_native_cash_transition_valid(&before, candidate))
+			return result::invalid_value;
+		status = quest_mobile_native_image_encode(candidate, &canonical);
+		if (status != result::ok)
+			return status;
+		*output = std::move(candidate);
+		return result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return result::allocation_failure;
+	}
+}
+
+player_snapshot_codec_result quest_mobile_native_money_transition(
+	const quest_mobile_native_image &before, const item_transfer_payload &payload,
+	const critical_operation_id &operation, quest_mobile_native_image *output) noexcept
+{
+	using result = player_snapshot_codec_result;
+	if (!output || !payload.native_money.present || !nonzero(operation) ||
+	    before.state != quest_mobile_lifetime_state::live || !before.cash ||
+	    before.reference.mobile_revision == UINT64_MAX ||
+	    !(payload.native_recovery.present ?
+		      item_transfer_native_mobile_recovery_shape_valid(payload) :
+		      item_transfer_native_mobile_shape_valid(payload)))
+		return result::invalid_value;
+	try
+	{
+		std::array<uint8_t, QUEST_MOBILE_NATIVE_REFERENCE_BYTES> original{}, bound{};
+		if (quest_mobile_native_reference_encode(before.reference, &original) !=
+			    result::ok ||
+		    quest_mobile_native_reference_encode(payload.native_mobile.reference, &bound) !=
+			    result::ok ||
+		    original != bound ||
+		    before.cash->revision !=
+			    payload.native_money.projection.mobile_before_revision ||
+		    before.cash->denominations.amount !=
+			    payload.native_money.projection.mobile_before)
+			return result::invalid_value;
+		std::vector<uint8_t> canonical;
+		auto status = quest_mobile_native_image_encode(before, &canonical);
+		if (status != result::ok)
+			return status;
+		auto candidate = before;
+		candidate.cash->revision = payload.native_money.projection.mobile_after_revision;
+		candidate.cash->denominations.amount = payload.native_money.projection.mobile_after;
+		++candidate.reference.mobile_revision;
+		candidate.last_transition_operation = operation;
+		if (!quest_mobile_native_cash_transition_valid(&before, candidate))
+			return result::invalid_value;
+		status = quest_mobile_native_image_encode(candidate, &canonical);
+		if (status != result::ok)
+			return status;
+		*output = std::move(candidate);
+		return result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return result::allocation_failure;
 	}
 }

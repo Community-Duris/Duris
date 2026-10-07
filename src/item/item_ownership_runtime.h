@@ -108,4 +108,14 @@ void item_ownership_runtime_forget_player_domain(uint32_t player_pid);
 void item_ownership_runtime_reset(void);
 size_t item_ownership_runtime_size(void);
 
+// Private complete boot-world cache observation, on the serialized game thread.
+// Strict ascending UID values are evidence only. Current active UID/root/parent
+// links all count, including foreign owners/contexts; no hydrate or authority.
+class item_ownership_runtime_published_native_observer final
+{
+	friend class quest_mobile_published_world_owner;
+	static bool snapshot_links(std::span<const uint64_t> selected_uids, size_t limit,
+				   std::vector<item_ownership_runtime_entry> *output) noexcept;
+};
+
 #endif

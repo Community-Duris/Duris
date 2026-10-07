@@ -80,6 +80,16 @@ critical_command_journal_result critical_command_journal_replace_native_recovery
 // Exact existing continuation_pending record only; absence is not retirement proof.
 critical_command_journal_result
 critical_command_journal_retire_native_recovery(const critical_native_recovery_envelope &expected);
+// Only the guarded save-owner ACK can retire an original held execution frame.
+// Public generic/native continuation retirement remains unchanged.
+class player_save_restored_publication_owner;
+class critical_held_retirement_journal_owner final
+{
+	friend bool critical_command_coordinator_acknowledge_publication(
+		player_save_restored_publication_owner &);
+	static critical_command_journal_result
+	retire_execution(const critical_native_recovery_envelope &);
+};
 // Full scan/validation precedes callbacks. The legacy callback never sees an envelope.
 // Exact two-record continuation transition in the original atomic rewrite:
 // replace parent (or delete it for terminal completion) and delete child together.

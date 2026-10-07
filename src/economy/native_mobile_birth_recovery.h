@@ -112,6 +112,18 @@ economic_accounting_error
 native_mobile_birth_recovery_decode(const critical_command &, std::span<const uint8_t>,
 				    native_mobile_birth_recovery_context *) noexcept;
 
+// Read only the full original command actually retained inside a canonical
+// recovery attachment, through the existing bounded recovery/command codecs.
+// Requires actual payload v3 constructor inputs and the successful physically
+// proven terminal BODY. Historical v2 remains readable through the original API.
+// The attachment contains no envelope phase/revision: callers must separately
+// validate those ACTUAL envelope fields and authenticate current lifetime storage.
+// No unseen metadata, prototype reconstruction, admission, SQL/world or ACK
+// authority follows. Every refusal leaves the output unchanged.
+economic_accounting_error
+native_mobile_birth_recovery_original_command_decode(std::span<const uint8_t>,
+						     critical_command *) noexcept;
+
 bool native_mobile_birth_recovery_valid(const critical_native_recovery_envelope &) noexcept;
 bool native_mobile_birth_recovery_initial(const critical_native_recovery_envelope &) noexcept;
 bool native_mobile_birth_recovery_successor(

@@ -85,4 +85,17 @@ critical_apply_result
 critical_command_repository_verify_native_quest_in_transaction(MYSQL *,
 							       const critical_command &) noexcept;
 
+// Exact original typed HRT committed receipt/root/source/native/outbox proof.
+// Nonlocking inbox snapshot before current participant locks; caller owns one
+// reconnect-disabled transaction and cleanup. Missing receipt is retryable.
+// No current epoch, execution, source recapture, publication or ACK authority.
+critical_apply_result critical_command_repository_verify_held_retirement_in_transaction(
+	MYSQL *, const critical_command &) noexcept;
+// Distinct original in-process never_admitted completion only. Caller holds
+// its exact original coordinator refusal/body/reservation pin. Requires no
+// inbox or operation effects/obligations and absent exact source tuple; never
+// infers admission refusal from missing rows or manufactures a SQL receipt.
+unsigned int critical_command_repository_verify_held_retirement_refusal_in_transaction(
+	MYSQL *, const critical_command &, const critical_completion &) noexcept;
+
 #endif

@@ -1,4 +1,5 @@
 #include "economy/auction_command.h"
+#include "economy/auction_native_command_context.h"
 
 #include <algorithm>
 #include <cstring>
@@ -159,8 +160,60 @@ bool auction_command_encode_payload(const auction_command_payload &payload,
 	return encoded->size() <= CRITICAL_COMMAND_MAX_PAYLOAD_BYTES;
 }
 
-bool auction_command_decode_payload(const critical_command &command,
-				    auction_command_payload *payload)
+// Structural native projection only. Every original root/player/account fence
+// remains exact; additional keys must be paired item fences. SQL authenticates
+// their selected-node identity and revisions before admission/execution.
+static bool matching_native_item_fences(const critical_command &expected,
+					const critical_command &actual)
+{
+	if (actual.keys.size() < expected.keys.size() ||
+	    !std::is_sorted(actual.keys.begin(), actual.keys.end(), critical_entity_key_less) ||
+	    std::adjacent_find(actual.keys.begin(), actual.keys.end(), critical_entity_key_equal) !=
+		    actual.keys.end() ||
+	    actual.expected_revisions.size() !=
+		    expected.expected_revisions.size() + actual.keys.size() - expected.keys.size())
+		return false;
+	for (const auto &key : expected.keys)
+		if (!std::binary_search(actual.keys.begin(), actual.keys.end(), key,
+					critical_entity_key_less))
+			return false;
+	for (const auto &key : actual.keys)
+	{
+		const auto known = std::binary_search(expected.keys.begin(), expected.keys.end(),
+						      key, critical_entity_key_less);
+		if (!known &&
+		    (key.type != critical_entity_type::item || !key.id || key.id == UINT64_MAX))
+			return false;
+		const auto original = std::find_if(
+			expected.expected_revisions.begin(), expected.expected_revisions.end(),
+			[&](const auto &r) { return critical_entity_key_equal(r.key, key); });
+		const auto count = std::count_if(actual.expected_revisions.begin(),
+						 actual.expected_revisions.end(), [&](const auto &r)
+						 { return critical_entity_key_equal(r.key, key); });
+		if (original == expected.expected_revisions.end())
+		{
+			if (known ? count != 0 : count != 1)
+				return false;
+		}
+		else if (count != 1)
+			return false;
+		if (count)
+		{
+			const auto found =
+				std::find_if(actual.expected_revisions.begin(),
+					     actual.expected_revisions.end(), [&](const auto &r)
+					     { return critical_entity_key_equal(r.key, key); });
+			if (original != expected.expected_revisions.end() ?
+				    found->revision != original->revision :
+				    (!found->revision || found->revision == UINT64_MAX))
+				return false;
+		}
+	}
+	return true;
+}
+
+static bool decode_original_payload(const critical_command &command,
+				    auction_command_payload *payload, bool native_item_fences)
 {
 	if (!payload || command.type != critical_command_type::auction ||
 	    command.payload_version != AUCTION_COMMAND_PAYLOAD_VERSION)
@@ -205,8 +258,56 @@ bool auction_command_decode_payload(const critical_command &command,
 	critical_command expected = {};
 	if (!auction_command_build(&expected, command.operation_id, *payload, command.source_site,
 				   command.deadline_class) ||
-	    !matching_fences(expected, command))
+	    !(native_item_fences ? matching_native_item_fences(expected, command) :
+				   matching_fences(expected, command)))
 		return false;
+	return true;
+}
+
+bool auction_command_decode_payload(const critical_command &command,
+				    auction_command_payload *payload)
+{
+	// Structural native decode grants no legacy execution or publication authority.
+	if (payload && command.type == critical_command_type::auction &&
+	    command.payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION)
+	{
+		auction_native_command_context context;
+		if (auction_native_command_decode(command, &context) !=
+		    economic_accounting_error::ok)
+			return false;
+		*payload = context.payload;
+		return true;
+	}
+	return decode_original_payload(command, payload, false);
+}
+
+bool auction_command_decode_native_base(const critical_command &command,
+					std::span<const uint8_t> base,
+					auction_command_payload *payload)
+{
+	if (!payload || command.type != critical_command_type::auction ||
+	    command.payload_version != AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION ||
+	    (command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION &&
+	     command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION))
+		return false;
+	critical_command original = command;
+	original.payload_version = AUCTION_COMMAND_PAYLOAD_VERSION;
+	original.payload.assign(base.begin(), base.end());
+	auction_command_payload parsed{};
+	if (!decode_original_payload(original, &parsed, true))
+		return false;
+	if (parsed.action == auction_action::claim_money &&
+	    !matching_fences(original,
+			     [&]()
+			     {
+				     critical_command expected{};
+				     auction_command_build(&expected, command.operation_id, parsed,
+							   command.source_site,
+							   command.deadline_class);
+				     return expected;
+			     }()))
+		return false;
+	*payload = parsed;
 	return true;
 }
 

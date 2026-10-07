@@ -6,6 +6,8 @@
 #include "item/item_ownership_runtime.h"
 #include "item/item_actions.h"
 #include "item/ordinary_drop_recovery.h"
+#include "item/held_retirement_recovery.h"
+#include "cmd/lockpick_retirement.h"
 #include "economy/economic_gameplay_authority.h"
 #include "economy/item_transfer_accounting.h"
 #include "economy/native_quest_consumption_capture.h"
@@ -33,6 +35,7 @@
 #include "player/player_sql_transaction_cleanup.h"
 #endif
 #include "core/prototypes.h"
+#include "core/files.h"
 #include "core/utils.h"
 #include "account/account_reward.h"
 #include "magic/spell_item_lifecycle.h"
@@ -46,6 +49,7 @@
 #include <new>
 #include <memory>
 #include <string>
+#include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -102,6 +106,8 @@ struct pending_movement
 	bool live_drop_acknowledged = false;
 	bool live_drop_admission_refused = false;
 	bool publication_inflight = false;
+	std::shared_ptr<const critical_command> held_command = {};
+	player_held_retirement_checkpoint_token held_token = {};
 	bool craft_publication_ready = false;
 	bool collector_invalidated;
 	critical_completion completed;
@@ -115,6 +121,8 @@ item_movement_health health = {};
 
 struct pending_drop_preparation
 {
+	bool held_retirement = false;
+	player_held_retirement_checkpoint_token held_token = {};
 	bool active = false;
 	player_literal_inventory_token token = {};
 	int32_t room = 0;
@@ -1954,6 +1962,8 @@ void publish_live_drop(std::unordered_map<std::string, pending_movement>::iterat
 	}
 }
 
+void publish_held_retirement_entry(std::unordered_map<std::string, pending_movement>::iterator);
+
 void publish(std::unordered_map<std::string, pending_movement>::iterator found, P_char actor)
 {
 	pending_movement &entry = found->second;
@@ -1997,6 +2007,12 @@ void publish(std::unordered_map<std::string, pending_movement>::iterator found, 
 		// Keep both the movement record and coordinator fence for repair; never
 		// reinterpret it as a rejection and release ownership authority.
 		retain_publication_failure(entry, "invalid_result");
+		account_health();
+		return;
+	}
+	if (entry.held_command)
+	{
+		publish_held_retirement_entry(found);
 		account_health();
 		return;
 	}
@@ -2462,6 +2478,9 @@ static bool submit_movement(P_char actor, P_obj root, P_obj target_container,
 	if (!reject)
 		reject = &discarded;
 	*reject = item_movement_reject::none;
+	// Only the typed held-retirement owner may admit kind8.
+	if (continuation.kind == static_cast<item_transfer_continuation_kind>(8))
+		return reject_with(reject, item_movement_reject::active_accounting_unsupported);
 	const bool corpse_transfer = reason == item_transfer_reason::corpse_create ||
 				     reason == item_transfer_reason::corpse_loot;
 	const bool player_actor = actor && IS_PC(actor) && GET_PID(actor) > 0;
@@ -2773,6 +2792,279 @@ bool item_movement_transaction_submit(
 			       nullptr);
 }
 
+class item_held_retirement_preparation_owner final
+{
+    public:
+	static void pulse(pending_drop_preparation &request) noexcept
+	{
+#ifndef __NO_MYSQL__
+		P_char actor = find_character_by_runtime_id(request.held_token.actor_runtime_id);
+		P_obj pick = actor ? actor->equipment[HOLD] : nullptr;
+		bool retained = false, refused = true;
+		critical_operation_id operation{};
+		bool held = false;
+		std::string pending_key;
+		try
+		{
+			if (actor && IS_PC(actor) && actor->only.pc &&
+			    GET_PID(actor) == request.held_token.pid &&
+			    actor->runtime_id == request.held_token.actor_runtime_id && pick &&
+			    pick->obj_uid == request.held_token.selected_uid &&
+			    pick->type == ITEM_PICK && OBJ_WORN_BY(pick, actor) &&
+			    !pick->contains && economic_gameplay_authority::active_regular_sql())
+			{
+				player_held_retirement_checkpoint_stage stage;
+				const auto readiness =
+					player_save_pipeline_held_retirement_checkpoint_poll(
+						request.held_token, actor, &stage);
+				if (readiness == player_literal_inventory_state::pending)
+					return;
+				if (readiness ==
+				    player_literal_inventory_state::database_acknowledged)
+				{
+					if (pending.size() + native_quest_pending_count() >=
+					    ITEM_MOVEMENT_PENDING_MAX)
+						return;
+					if (!critical_operation_id_generate(&operation) ||
+					    !player_save_pipeline_held_retirement_checkpoint_hold(
+						    request.held_token, operation))
+						return;
+					held = true;
+					std::vector<player_item_snapshot> before, selected,
+						remaining;
+					if (!player_save_held_retirement_checkpoint_owner::
+						    observe_held(request.held_token, actor,
+								 operation, &stage, &before) ||
+					    player_item_snapshot_extract_subtree(
+						    before, pick->obj_uid, &selected, &remaining) !=
+						    player_snapshot_codec_result::ok ||
+					    selected.size() != 1 ||
+					    selected.front().equipment_slot != HOLD + 1)
+						throw std::runtime_error(
+							"original held source changed");
+					item_ownership_runtime_entry original{};
+					std::vector<item_ownership_runtime_entry> source_rows;
+					const item_owner_identity source = {
+						item_owner_type::player,
+						static_cast<uint64_t>(request.held_token.pid), 0
+					};
+					const item_owner_identity destruction = {
+						item_owner_type::destruction, 0, 0
+					};
+					if (!item_ownership_runtime_lookup(pick->obj_uid,
+									   &original) ||
+					    !item_ownership_runtime_snapshot_active_root(
+						    pick->obj_uid, ITEM_TRANSFER_MAX_ITEMS,
+						    &source_rows) ||
+					    source_rows.size() != 1 ||
+					    original.state != item_custody_state::active ||
+					    original.root_item_uid != pick->obj_uid ||
+					    original.parent_item_uid ||
+					    !item_owner_identity_equal(original.owner, source) ||
+					    original.vnum != OBJ_VNUM(pick) ||
+					    !original.item_revision ||
+					    original.item_revision == UINT64_MAX)
+						throw std::runtime_error(
+							"original custody changed");
+					item_transfer_payload payload{};
+					payload.from_owner = source;
+					payload.to_owner = destruction;
+					payload.reason = item_transfer_reason::destruction;
+					payload.reason_id = original.vnum;
+					payload.selected_item_uid = original.item_uid;
+					if (!item_ownership_runtime_peek_owner_revision(
+						    source, &payload.expected_from_revision))
+						throw std::runtime_error(
+							"original owner revision unavailable");
+					(void)item_ownership_runtime_peek_owner_revision(
+						destruction, &payload.expected_to_revision);
+					payload.item_count = 1;
+					payload.items[0] = { original.item_uid,
+							     original.root_item_uid,
+							     0,
+							     original.item_revision,
+							     original.vnum,
+							     item_custody_state::active };
+					payload.continuation.kind =
+						static_cast<item_transfer_continuation_kind>(8);
+					payload.continuation.data.assign(
+						request.context.begin(),
+						request.context.begin() + request.context_size);
+					std::vector<uint8_t> literal;
+					if (player_item_snapshot_list_encode(selected, &literal) !=
+						    player_snapshot_codec_result::ok ||
+					    literal.size() > payload.item_blob.size())
+						throw std::runtime_error(
+							"original source encoding failed");
+					payload.item_blob_size =
+						static_cast<uint32_t>(literal.size());
+					std::copy(literal.begin(), literal.end(),
+						  payload.item_blob.begin());
+					critical_command command;
+					if (!lockpick_retirement_payload_valid(payload) ||
+					    !item_transfer_command_build(
+						    &command, operation, payload,
+						    critical_source_site::command,
+						    critical_deadline_class::interactive) ||
+					    economic_gameplay_authority::prepare_item_transfer(
+						    &command, request.held_token.pid,
+						    economic_source_kind::intentional_destruction) !=
+						    economic_accounting_error::ok)
+						throw std::runtime_error(
+							"typed original command unsupported");
+					command.publication_required = true;
+					command.accepted_at_usec =
+						std::chrono::duration_cast<std::chrono::microseconds>(
+							std::chrono::system_clock::now()
+								.time_since_epoch())
+							.count();
+					if (!held_retirement_command_identity(command))
+						throw std::runtime_error(
+							"original identity invalid");
+					pending_movement entry{};
+					entry.actor_pid = request.held_token.pid;
+					entry.actor_runtime_id = actor->runtime_id;
+					entry.payload = payload;
+					entry.requested_to_owner = destruction;
+					entry.requested_reason = payload.reason;
+					entry.requested_reason_id = payload.reason_id;
+					entry.publication = lockpick_retirement_publication;
+					entry.context = request.context;
+					entry.context_size = request.context_size;
+					entry.publication_status = publication_state::ready;
+					entry.held_command =
+						std::make_shared<const critical_command>(command);
+					entry.held_token = request.held_token;
+					pending_key = operation_key(operation);
+					const auto inserted =
+						pending.emplace(pending_key, std::move(entry));
+					if (!inserted.second)
+						throw std::runtime_error(
+							"original pending identity conflict");
+					bool released = false;
+					const auto admitted =
+						player_save_held_retirement_checkpoint_owner::
+							submit_owned(request.held_token,
+								     std::move(command), &released);
+					retained = critical_submit_result_keeps_operation(admitted);
+					if (retained)
+					{
+						++health.submitted;
+						refused = false;
+					}
+					else
+						pending.erase(inserted.first);
+				}
+			}
+		}
+		catch (...)
+		{
+			// If pending owns the original after admission uncertainty, do not
+			// cancel its held checkpoint or mint a replacement operation.
+			auto original = pending.find(pending_key);
+			if (original != pending.end() && original->second.held_command)
+			{
+				retained = true;
+				refused = false;
+			}
+		}
+		if (!retained)
+		{
+			if (held)
+				(void)player_save_pipeline_held_retirement_checkpoint_release(
+					request.held_token, operation);
+			else
+				(void)player_save_pipeline_held_retirement_checkpoint_cancel(
+					request.held_token);
+		}
+		request = {};
+		account_health();
+		if (refused && actor && IS_PC(actor) && actor->only.pc &&
+		    find_character_by_runtime_id(actor->runtime_id) == actor)
+		{
+			try
+			{
+				send_to_char("Your lockpick cracks, but remains intact.\r\n",
+					     actor);
+			}
+			catch (...)
+			{
+			}
+		}
+#else
+		(void)request;
+#endif
+	}
+};
+
+bool item_movement_transaction_prepare_sql_lockpick_retirement(
+	P_char actor, P_obj pick, const item_transfer_continuation &continuation,
+	item_movement_publication_fn publication, item_movement_reject *reject)
+{
+	item_movement_reject ignored{};
+	if (!reject)
+		reject = &ignored;
+	*reject = item_movement_reject::none;
+#ifdef __NO_MYSQL__
+	(void)actor;
+	(void)pick;
+	(void)continuation;
+	(void)publication;
+	return reject_with(reject, item_movement_reject::active_accounting_unsupported);
+#else
+	lockpick_retirement_terms terms;
+	if (!economic_gameplay_authority::active_regular_sql())
+		return reject_with(reject, item_movement_reject::active_accounting_unsupported);
+	if (!actor || !IS_PC(actor) || !actor->only.pc || GET_PID(actor) <= 0 ||
+	    !actor->runtime_id || find_character_by_runtime_id(actor->runtime_id) != actor ||
+	    !pick || actor->equipment[HOLD] != pick || !OBJ_WORN_BY(pick, actor) ||
+	    pick->contains || pick->type != ITEM_PICK ||
+	    continuation.kind != static_cast<item_transfer_continuation_kind>(8) ||
+	    !lockpick_retirement_decode(continuation.data, &terms) ||
+	    terms.item_uid != pick->obj_uid ||
+	    terms.actor_pid != static_cast<uint32_t>(GET_PID(actor)) ||
+	    terms.item_vnum != OBJ_VNUM(pick) || publication != lockpick_retirement_publication ||
+	    actor->in_room < 0 || actor->in_room > top_of_world)
+		return reject_with(reject, item_movement_reject::invalid_request);
+	if (item_movement_transaction_player_busy(actor) ||
+	    currency_transaction_player_busy(actor) ||
+	    player_save_pipeline_sealed_save_pending(GET_PID(actor)) ||
+	    coordinator_item_fenced(pick) ||
+	    critical_command_coordinator_is_fenced(
+		    { critical_entity_type::player, terms.actor_pid }, nullptr))
+		return reject_with(reject, item_movement_reject::pending_conflict);
+	size_t actual_uid_count = 0;
+	for (P_obj object = object_list; object; object = object->next)
+		if (object->obj_uid == pick->obj_uid)
+		{
+			if (object != pick)
+				return reject_with(reject, item_movement_reject::topology_mismatch);
+			++actual_uid_count;
+		}
+	if (actual_uid_count != 1)
+		return reject_with(reject, item_movement_reject::topology_mismatch);
+	auto available = std::find_if(drop_preparations.begin(), drop_preparations.end(),
+				      [](const auto &entry) { return !entry.active; });
+	if (available == drop_preparations.end())
+		return reject_with(reject, item_movement_reject::queue_saturated);
+	pending_drop_preparation request;
+	request.held_retirement = true;
+	request.room = actor->in_room;
+	request.room_vnum = world[actor->in_room].number;
+	request.context_size = continuation.data.size();
+	std::copy(continuation.data.begin(), continuation.data.end(), request.context.begin());
+	const auto started = player_save_pipeline_held_retirement_checkpoint_begin(
+		actor, pick, request.room_vnum, &request.held_token);
+	if (started == player_literal_inventory_state::refused)
+		return reject_with(reject, item_movement_reject::snapshot_failure);
+	request.token = { request.held_token.pid, request.held_token.actor_runtime_id, 0,
+			  request.held_token.generation };
+	request.active = true;
+	*available = std::move(request);
+	return true;
+#endif
+}
+
 bool item_movement_transaction_prepare_sql_drop(P_char actor, P_obj root,
 						item_movement_completion_fn completion,
 						const void *context, size_t context_size,
@@ -2855,7 +3147,11 @@ void item_movement_transaction_cancel_drop_preparations(void)
 			// Admission transfers the token into pending before clearing this
 			// preparation. Cancellation cannot release an admitted or uncertain
 			// original: literal_inventory_cancel explicitly refuses held tokens.
-			(void)player_save_pipeline_literal_inventory_cancel(request.token);
+			if (request.held_retirement)
+				(void)player_save_pipeline_held_retirement_checkpoint_cancel(
+					request.held_token);
+			else
+				(void)player_save_pipeline_literal_inventory_cancel(request.token);
 			request = {};
 		}
 }
@@ -2867,6 +3163,11 @@ void item_movement_transaction_drop_prepare_pulse(void)
 	{
 		if (!request.active)
 			continue;
+		if (request.held_retirement)
+		{
+			item_held_retirement_preparation_owner::pulse(request);
+			continue;
+		}
 		P_char actor = find_character_by_runtime_id(request.token.actor_runtime_id);
 		P_obj root = find_item(request.token.root_uid);
 		if (!economic_gameplay_authority::active() || !actor || !IS_PC(actor) ||
@@ -3922,7 +4223,8 @@ void retry_publications(void)
 			publish(found, nullptr);
 			continue;
 		}
-		if (found->second.restored_sql_drop || found->second.live_drop_command)
+		if (found->second.held_command || found->second.restored_sql_drop ||
+		    found->second.live_drop_command)
 		{
 			publish(found, nullptr);
 			continue;
@@ -4016,7 +4318,8 @@ void item_movement_transaction_handle_completions(const critical_completion *com
 			collector_catalog_cache_invalidate();
 			found->second.collector_invalidated = true;
 		}
-		if (found->second.restored_sql_drop || found->second.live_drop_command)
+		if (found->second.held_command || found->second.restored_sql_drop ||
+		    found->second.live_drop_command)
 			publish(found, nullptr);
 		else if ((found->second.publication ||
 			  found->second.payload.reason == item_transfer_reason::craft) &&
@@ -4060,6 +4363,8 @@ bool item_movement_transaction_restore_replayed_command(const critical_command &
 	    payload.from_owner.type != item_owner_type::player || !payload.from_owner.id ||
 	    payload.from_owner.id > UINT32_MAX)
 		return false;
+	if (payload.continuation.kind == static_cast<item_transfer_continuation_kind>(8))
+		return false; // Requires the original HRT1 envelope and typed hold.
 #ifndef __NO_MYSQL__
 	const bool ordinary_sql_drop = command.schema_version ==
 					       CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
@@ -4208,6 +4513,8 @@ bool item_movement_transaction_restore_replayed_publication(
 	    payload.from_owner.type != item_owner_type::player || !payload.from_owner.id ||
 	    payload.from_owner.id > UINT32_MAX)
 		return false;
+	if (payload.continuation.kind == static_cast<item_transfer_continuation_kind>(8))
+		return false; // Requires the original HRT1 envelope and typed hold.
 	const item_owner_identity to_owner = payload.to_owner;
 	const uint64_t target_parent_uid = payload.target_parent_item_uid;
 	const item_transfer_reason reason = payload.reason;
@@ -4392,8 +4699,16 @@ class item_native_quest_publication_owner final
 	friend class item_native_quest_gameplay_publication_owner;
 	static bool native_publish(const critical_command &, const critical_completion &,
 				   void *) noexcept;
+	static bool fee_publish(const critical_command &, const critical_completion &,
+				void *) noexcept;
+	static bool money_publish(const critical_command &, const critical_completion &,
+				  void *) noexcept;
 	static bool recovery_initialize(native_quest_publication_state &) noexcept;
 	static bool rebind(native_quest_publication_state &) noexcept;
+#ifndef __NO_MYSQL__
+	static bool rebind_money(native_quest_publication_state &) noexcept;
+	static bool rebind_fee(native_quest_publication_state &) noexcept;
+#endif
 	static bool recovery_checkpoint(native_quest_publication_state &) noexcept;
 	static bool recovery_prepare(native_quest_publication_state &, uint16_t) noexcept;
 	static bool recovery_begin(native_quest_publication_state &, uint16_t) noexcept;
@@ -4415,6 +4730,8 @@ struct native_quest_publication_state
 	critical_completion sealed{};
 	item_transfer_payload payload{};
 	item_transfer_result result{};
+	item_native_mobile_money_result money_result{};
+	item_native_mobile_fee_result fee_result{};
 	std::vector<player_item_snapshot> native_before, native_after, player_before, player_after,
 		selected;
 	std::vector<uint8_t> root_stages;
@@ -4447,6 +4764,12 @@ struct native_quest_acceptance_preparation
 	std::vector<uint8_t> native_before;
 	std::shared_ptr<const critical_command> command;
 	std::shared_ptr<const quest_native_consumption_capture> consumption;
+	bool money_only = false, money_preparation_blocked = false;
+	quest_mobile_native_cash_reference money_native_before;
+	quest_mobile_native_cash_reference cost_native_before;
+	native_quest_coin_give_projection money_projection;
+	uint64_t money_player_wallet_mapping_id = 0;
+	int32_t money_original_room_vnum = 0;
 	bool player_held = false, submission_started = false, gameplay_retained = false;
 	std::unique_ptr<critical_native_recovery_envelope> restored_original;
 	size_t publication_bytes = 0;
@@ -4593,6 +4916,110 @@ item_native_quest_preparation_state item_native_quest_preparation_owner::begin_a
 #endif
 }
 
+item_native_quest_preparation_state item_native_quest_preparation_owner::begin_money_acceptance(
+	P_char actor, P_char mobile, uint8_t denomination, int32_t quantity,
+	item_native_quest_preparation_token *output) noexcept
+{
+	using state = item_native_quest_preparation_state;
+#ifdef __NO_MYSQL__
+	(void)actor;
+	(void)mobile;
+	(void)denomination;
+	(void)quantity;
+	(void)output;
+	return state::refused;
+#else
+	if (!output || !nevent_is_game_thread() ||
+	    !economic_gameplay_authority::active_regular_sql() || !actor || !mobile ||
+	    !IS_PC(actor) || !actor->only.pc || GET_PID(actor) <= 0 || !world ||
+	    actor->in_room < 0 || actor->in_room > top_of_world ||
+	    mobile->in_room != actor->in_room || world[actor->in_room].number < 0 ||
+	    native_quest_acceptances.size() + pending.size() >= ITEM_MOVEMENT_PENDING_MAX ||
+	    native_quest_preparation_generation == UINT64_MAX)
+		return state::refused;
+	try
+	{
+		for (const auto &[key, existing] : native_quest_acceptances)
+			if (existing.player.pid == GET_PID(actor) ||
+			    existing.native_runtime_id == mobile->runtime_id)
+				return state::refused;
+		native_quest_acceptance_preparation entry;
+		entry.money_only = true;
+		entry.money_original_room_vnum = world[actor->in_room].number;
+		entry.native_runtime_id = mobile->runtime_id;
+		economic_native_money_checkpoint_projection admission;
+		const std::array<int64_t, 4> player_cash{ GET_COPPER(actor), GET_SILVER(actor),
+							  GET_GOLD(actor), GET_PLATINUM(actor) };
+		if (!native_quest_mobile_before(actor, mobile, entry.native_runtime_id,
+						&entry.reference, &entry.native_before) ||
+		    !quest_mobile_native_cash_reference_copy(mobile, entry.native_runtime_id,
+							     &entry.money_native_before) ||
+		    !economic_gameplay_authority::observe_native_money_checkpoint(
+			    GET_PID(actor), entry.money_native_before, &admission) ||
+		    native_quest_coin_give_project(
+			    player_cash, actor->only.pc->wallet_revision,
+			    entry.money_native_before.denominations,
+			    entry.money_native_before.cash_revision, denomination, quantity,
+			    &entry.money_projection) != native_quest_coin_give_result::ok ||
+		    !native_quest_preparation_capacity(entry.native_before.size() +
+						       2 * CRITICAL_COMMAND_MAX_ENCODED_BYTES))
+			return state::refused;
+		entry.money_player_wallet_mapping_id = admission.player_wallet.authority_id;
+		critical_operation_id operation{};
+		if (!critical_operation_id_generate(&operation))
+			return state::refused;
+		entry.generation = ++native_quest_preparation_generation;
+		const auto inserted = native_quest_acceptances.emplace(operation_key(operation),
+								       std::move(entry));
+		if (!inserted.second)
+			return state::refused;
+		auto &owned = inserted.first->second;
+		const auto saved = player_save_pipeline_native_money_checkpoint_begin(
+			actor, world[actor->in_room].number, &owned.player);
+		if (saved == player_literal_inventory_state::refused)
+		{
+			native_quest_acceptances.erase(inserted.first);
+			return state::refused;
+		}
+		output->operation_ = operation;
+		output->generation_ = owned.generation;
+		return state::pending;
+	}
+	catch (...)
+	{
+		return state::refused;
+	}
+#endif
+}
+
+item_native_quest_preparation_state item_native_quest_preparation_owner::poll_money_acceptance(
+	const item_native_quest_preparation_token &token, P_char actor, P_char mobile) noexcept
+{
+	using state = item_native_quest_preparation_state;
+#ifdef __NO_MYSQL__
+	(void)token;
+	(void)actor;
+	(void)mobile;
+	return state::refused;
+#else
+	if (!nevent_is_game_thread())
+		return state::refused;
+	try
+	{
+		const auto found = native_quest_acceptances.find(operation_key(token.operation_));
+		if (found == native_quest_acceptances.end() ||
+		    found->second.generation != token.generation_ || !found->second.money_only ||
+		    !found->second.player.money_only || found->second.root_uid)
+			return state::refused;
+		return poll_acceptance(token, actor, mobile);
+	}
+	catch (...)
+	{
+		return state::refused;
+	}
+#endif
+}
+
 item_native_quest_preparation_state item_native_quest_preparation_owner::poll_acceptance(
 	const item_native_quest_preparation_token &token, P_char actor, P_char mobile) noexcept
 {
@@ -4639,6 +5066,52 @@ item_native_quest_preparation_state item_native_quest_preparation_owner::poll_ac
 			    player_snapshot_codec_result::ok ||
 		    original_ref != current_ref)
 			return state::refused;
+		if (entry.money_only)
+		{
+			quest_mobile_native_cash_reference cash;
+			economic_native_money_checkpoint_projection admission;
+			const std::array<int64_t, 4> player_cash{ GET_COPPER(actor),
+								  GET_SILVER(actor),
+								  GET_GOLD(actor),
+								  GET_PLATINUM(actor) };
+			if (!entry.player.money_only || entry.root_uid || entry.consumption ||
+			    player_cash != entry.money_projection.player_before ||
+			    actor->only.pc->wallet_revision !=
+				    entry.money_projection.player_before_revision ||
+			    !quest_mobile_native_cash_reference_copy(
+				    mobile, entry.native_runtime_id, &cash) ||
+			    cash.lineage.bytes != entry.money_native_before.lineage.bytes ||
+			    cash.birth_epoch.bytes != entry.money_native_before.birth_epoch.bytes ||
+			    cash.wallet_mapping_id != entry.money_native_before.wallet_mapping_id ||
+			    cash.cash_revision != entry.money_native_before.cash_revision ||
+			    cash.denominations != entry.money_native_before.denominations ||
+			    !economic_gameplay_authority::observe_native_money_checkpoint(
+				    entry.player.pid, cash, &admission) ||
+			    admission.player_wallet.authority_id !=
+				    entry.money_player_wallet_mapping_id)
+				return state::refused;
+		}
+		if (entry.consumption)
+		{
+			item_transfer_payload captured_cost{};
+			if (!item_transfer_command_decode_payload(
+				    entry.consumption->original_command(), &captured_cost))
+				return state::refused;
+			if (captured_cost.native_cost.present)
+			{
+				quest_mobile_native_cash_reference cash;
+				if (!quest_mobile_native_cash_reference_copy(
+					    mobile, entry.native_runtime_id, &cash) ||
+				    cash.lineage.bytes != entry.cost_native_before.lineage.bytes ||
+				    cash.birth_epoch.bytes !=
+					    entry.cost_native_before.birth_epoch.bytes ||
+				    cash.wallet_mapping_id !=
+					    entry.cost_native_before.wallet_mapping_id ||
+				    cash.cash_revision != entry.cost_native_before.cash_revision ||
+				    cash.denominations != entry.cost_native_before.denominations)
+					return state::refused;
+			}
+		}
 		player_native_quest_checkpoint_stage stage;
 		if (entry.player_held)
 			return player_save_native_quest_checkpoint_owner::observe_held(
@@ -4678,7 +5151,8 @@ critical_submit_result item_native_quest_preparation_owner::submit_acceptance(
 	{
 		auto found = native_quest_acceptances.find(operation_key(token.operation_));
 		if (found == native_quest_acceptances.end() ||
-		    found->second.generation != token.generation_ || found->second.consumption)
+		    found->second.generation != token.generation_ || found->second.consumption ||
+		    found->second.money_only)
 			return critical_submit_result::identity_conflict;
 		auto &entry = found->second;
 		if (!entry.command)
@@ -4788,6 +5262,110 @@ critical_submit_result item_native_quest_preparation_owner::submit_acceptance(
 #endif
 }
 
+critical_submit_result item_native_quest_preparation_owner::submit_money_acceptance(
+	const item_native_quest_preparation_token &token, P_char actor, P_char mobile) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)token;
+	(void)actor;
+	(void)mobile;
+	return critical_submit_result::unavailable;
+#else
+	if (poll_money_acceptance(token, actor, mobile) !=
+	    item_native_quest_preparation_state::ready)
+		return critical_submit_result::unavailable;
+	try
+	{
+		auto found = native_quest_acceptances.find(operation_key(token.operation_));
+		if (found == native_quest_acceptances.end() ||
+		    found->second.generation != token.generation_ || !found->second.money_only ||
+		    !found->second.player.money_only || found->second.root_uid ||
+		    found->second.consumption)
+			return critical_submit_result::identity_conflict;
+		auto &entry = found->second;
+		if (!entry.command)
+		{
+			player_native_quest_checkpoint_stage stage;
+			std::vector<player_item_snapshot> original;
+			std::vector<uint8_t> original_bytes;
+			uint64_t player_revision = 0, native_revision = 0;
+			const item_owner_identity player{ item_owner_type::player,
+							  static_cast<uint64_t>(entry.player.pid),
+							  0 };
+			const item_owner_identity native{ item_owner_type::native_mobile,
+							  entry.reference.mobile_instance_id, 0 };
+			if (!player_save_native_quest_checkpoint_owner::observe_held(
+				    entry.player, actor, token.operation_, &stage, &original) ||
+			    !item_ownership_runtime_peek_owner_revision(player, &player_revision) ||
+			    !item_ownership_runtime_peek_owner_revision(native, &native_revision) ||
+			    native_revision != entry.reference.stock_revision ||
+			    player_item_snapshot_list_encode(original, &original_bytes) !=
+				    player_snapshot_codec_result::ok)
+				return critical_submit_result::unavailable;
+			item_transfer_payload payload{};
+			payload.from_owner = player;
+			payload.to_owner = native;
+			payload.reason = item_transfer_reason::player_give;
+			payload.reason_id = entry.reference.mobile_vnum;
+			payload.expected_from_revision = player_revision;
+			payload.expected_to_revision = native_revision;
+			payload.native_mobile.present = true;
+			payload.native_mobile.action = item_native_mobile_action::acceptance;
+			payload.native_mobile.reference = entry.reference;
+			payload.native_mobile.final_giver_pid =
+				static_cast<uint32_t>(entry.player.pid);
+			payload.native_money.present = true;
+			payload.native_money.original_room_vnum = entry.money_original_room_vnum;
+			payload.native_money.player_wallet_mapping_id =
+				entry.money_player_wallet_mapping_id;
+			payload.native_money.mobile_wallet_mapping_id =
+				entry.money_native_before.wallet_mapping_id;
+			payload.native_money.projection = entry.money_projection;
+			if (!item_transfer_native_mobile_recovery_freeze(&payload, entry.player.pid,
+									 stage.save_revision,
+									 original_bytes))
+				return critical_submit_result::invalid;
+			critical_command command;
+			if (!item_transfer_command_build_native_mobile_recovery(
+				    &command, token.operation_, payload,
+				    critical_source_site::command,
+				    critical_deadline_class::interactive) ||
+			    economic_gameplay_authority::prepare_native_money_transfer(
+				    &command, static_cast<uint32_t>(entry.player.pid),
+				    &entry.money_native_before) != economic_accounting_error::ok)
+				return critical_submit_result::unavailable;
+			command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+			const auto now =
+				std::chrono::duration_cast<std::chrono::microseconds>(
+					std::chrono::system_clock::now().time_since_epoch())
+					.count();
+			if (now <= 0)
+				return critical_submit_result::invalid;
+			command.accepted_at_usec = static_cast<uint64_t>(now);
+			command.publication_required = true;
+			if (!critical_command_envelope_valid(command))
+				return critical_submit_result::invalid;
+			entry.command =
+				std::make_shared<const critical_command>(std::move(command));
+		}
+		bool released = false;
+		const auto result = player_save_native_quest_checkpoint_owner::submit_owned(
+			entry.player, *entry.command, entry.native_before, &released);
+		if (critical_submit_result_keeps_operation(result))
+			entry.submission_started = true;
+		if (released)
+			native_quest_acceptances.erase(found);
+		// Admission still requires the original shared SQL/root/publication owner.
+		// Successful submission never grants world cash mutation or acknowledgment.
+		return result;
+	}
+	catch (...)
+	{
+		return critical_submit_result::journal_uncertain;
+	}
+#endif
+}
+
 bool item_native_quest_preparation_owner::cancel(
 	const item_native_quest_preparation_token &token) noexcept
 {
@@ -4845,7 +5423,9 @@ item_native_quest_preparation_state item_native_quest_preparation_owner::begin_c
 		if (structural.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
 		    structural.accepted_at_usec || structural.publication_required ||
 		    !structural.accounting_intent.empty() ||
-		    structural.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION ||
+		    (structural.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION &&
+		     structural.payload_version !=
+			     ITEM_TRANSFER_NATIVE_MOBILE_COST_PAYLOAD_VERSION) ||
 		    !item_transfer_command_decode_payload(structural, &payload) ||
 		    !item_transfer_native_mobile_shape_valid(payload) ||
 		    payload.native_mobile.action != item_native_mobile_action::consumption)
@@ -4866,6 +5446,16 @@ item_native_quest_preparation_state item_native_quest_preparation_owner::begin_c
 		    observed != captured ||
 		    !native_quest_preparation_capacity(entry.native_before.size() +
 						       2 * CRITICAL_COMMAND_MAX_ENCODED_BYTES))
+			return state::refused;
+		if (payload.native_cost.present &&
+		    (!quest_mobile_native_cash_reference_copy(mobile, entry.native_runtime_id,
+							      &entry.cost_native_before) ||
+		     entry.cost_native_before.wallet_mapping_id !=
+			     payload.native_cost.wallet_mapping_id ||
+		     entry.cost_native_before.cash_revision !=
+			     payload.native_cost.projection.before_revision ||
+		     entry.cost_native_before.denominations !=
+			     payload.native_cost.projection.before))
 			return state::refused;
 		entry.generation = ++native_quest_preparation_generation;
 		entry.consumption = std::move(original);
@@ -4942,14 +5532,19 @@ bool item_native_quest_preparation_owner::prepare_consumption_command(
 		if (!entry.command)
 		{
 			player_native_quest_checkpoint_stage stage;
+			std::vector<player_item_snapshot> held_player;
+			std::vector<uint8_t> held_player_bytes;
 			item_transfer_payload payload{};
 			if (!player_save_native_quest_checkpoint_owner::observe_held(
-				    entry.player, actor, token.operation_, &stage) ||
+				    entry.player, actor, token.operation_, &stage, &held_player) ||
 			    !item_transfer_command_decode_payload(
 				    entry.consumption->original_command(), &payload) ||
+			    (payload.native_cost.fee_only &&
+			     player_item_snapshot_list_encode(held_player, &held_player_bytes) !=
+				     player_snapshot_codec_result::ok) ||
 			    !item_transfer_native_mobile_recovery_freeze(
 				    &payload, static_cast<uint32_t>(entry.player.pid),
-				    stage.save_revision, {},
+				    stage.save_revision, held_player_bytes,
 				    entry.consumption->consumed_root_order(),
 				    entry.consumption->publication_terms()))
 			{
@@ -5518,6 +6113,138 @@ native_quest_world_observe(native_quest_publication_state &state,
 }
 
 #ifndef __NO_MYSQL__
+// Complete original global census plus literal money state. Current SQL values
+// authenticate source/cut separately; this observer never publishes or ACKs.
+[[maybe_unused]] bool native_money_world_observe(
+	native_quest_publication_state &state, const economic_sql_native_money_publication &current,
+	bool after, native_quest_world::census *output, P_char *actor_out, P_char *mobile_out,
+	bool rediscover_absent = false, bool require_metadata = true)
+{
+	if (!state.payload.native_money.present || !current.original.native.cash || !output ||
+	    !actor_out || !mobile_out || actor_out == mobile_out)
+		return false;
+	const auto &money = state.payload.native_money.projection;
+	auto reference = state.payload.native_mobile.reference;
+	if (after)
+		++reference.mobile_revision;
+	quest_mobile_native_cash cash;
+	cash.revision = after ? money.mobile_after_revision : money.mobile_before_revision;
+	cash.denominations.amount = after ? money.mobile_after : money.mobile_before;
+	native_quest_world::census seen;
+	P_char actor = nullptr, mobile = nullptr;
+	if (!native_quest_world_observe(state, state.player_before, state.native_before, {},
+					reference, cash, &seen, &actor, &mobile, rediscover_absent))
+		return false;
+	const std::array<int64_t, 4> player_cash{ GET_COPPER(actor), GET_SILVER(actor),
+						  GET_GOLD(actor), GET_PLATINUM(actor) };
+	quest_mobile_native_cash_reference observed;
+	if (player_cash != (after ? money.player_after : money.player_before) ||
+	    actor->only.pc->wallet_revision !=
+		    (after ? money.player_after_revision : money.player_before_revision) ||
+	    (require_metadata &&
+	     (!quest_mobile_native_cash_reference_copy(mobile, mobile->runtime_id, &observed) ||
+	      observed.wallet_mapping_id != state.payload.native_money.mobile_wallet_mapping_id ||
+	      observed.wallet_mapping_id != current.origin.wallet_mapping_id ||
+	      observed.lineage.bytes != current.origin.lineage.bytes ||
+	      observed.birth_epoch.bytes != current.origin.birth_epoch.bytes ||
+	      observed.cash_revision != cash.revision ||
+	      observed.denominations != cash.denominations.amount ||
+	      !native_quest_reference_equal(observed.reference, reference))))
+		return false;
+	const item_owner_identity player{ item_owner_type::player, state.player_pid, 0 };
+	const item_owner_identity native{ item_owner_type::native_mobile,
+					  reference.mobile_instance_id, 0 };
+	uint64_t player_revision = 0, native_revision = 0;
+	if (!item_ownership_runtime_peek_owner_revision(player, &player_revision) ||
+	    !item_ownership_runtime_peek_owner_revision(native, &native_revision) ||
+	    player_revision != current.original.player_owner_revision ||
+	    player_revision != state.payload.expected_from_revision ||
+	    native_revision != current.original.to_owner_revision ||
+	    native_revision != state.payload.expected_to_revision)
+		return false;
+	for (const auto &row : current.original.custody)
+	{
+		item_ownership_runtime_entry actual;
+		if (!item_ownership_runtime_lookup(row.item_uid, &actual) ||
+		    !item_owner_identity_equal(actual.owner, row.owner) ||
+		    actual.root_item_uid != row.root_item_uid ||
+		    actual.parent_item_uid != row.parent_item_uid ||
+		    actual.item_revision != row.item_revision ||
+		    actual.owner_revision != row.owner_revision || actual.vnum != row.vnum ||
+		    actual.state != row.state)
+			return false;
+	}
+	*output = std::move(seen);
+	*actor_out = actor;
+	*mobile_out = mobile;
+	return true;
+}
+
+[[maybe_unused]] bool native_fee_world_observe(native_quest_publication_state &state,
+					       const economic_sql_native_fee_publication &current,
+					       bool after, native_quest_world::census *output,
+					       P_char *actor_out, P_char *mobile_out,
+					       bool rediscover_absent = false,
+					       bool require_metadata = true)
+{
+	if (!state.payload.native_cost.fee_only || !current.original.native.cash || !output ||
+	    !actor_out || !mobile_out || actor_out == mobile_out)
+		return false;
+	const auto &fee = state.payload.native_cost.projection;
+	auto reference = state.payload.native_mobile.reference;
+	if (after)
+		++reference.mobile_revision;
+	quest_mobile_native_cash cash;
+	cash.revision = after ? fee.after_revision : fee.before_revision;
+	cash.denominations.amount = after ? fee.after : fee.before;
+	native_quest_world::census seen;
+	P_char actor = nullptr, mobile = nullptr;
+	if (!native_quest_world_observe(state, state.player_before, state.native_before, {},
+					reference, cash, &seen, &actor, &mobile, rediscover_absent))
+		return false;
+	quest_mobile_native_cash_reference observed;
+	if ((require_metadata &&
+	     (!quest_mobile_native_cash_reference_copy(mobile, mobile->runtime_id, &observed) ||
+	      observed.wallet_mapping_id != state.payload.native_cost.wallet_mapping_id ||
+	      observed.wallet_mapping_id != current.origin.wallet_mapping_id ||
+	      observed.lineage.bytes != current.origin.lineage.bytes ||
+	      observed.birth_epoch.bytes != current.origin.birth_epoch.bytes ||
+	      observed.cash_revision != cash.revision ||
+	      observed.denominations != cash.denominations.amount ||
+	      !native_quest_reference_equal(observed.reference, reference))))
+		return false;
+	const item_owner_identity player{ item_owner_type::player, state.player_pid, 0 };
+	const item_owner_identity native{ item_owner_type::native_mobile,
+					  reference.mobile_instance_id, 0 };
+	uint64_t player_revision = 0, native_revision = 0;
+	if (!item_ownership_runtime_peek_owner_revision(player, &player_revision) ||
+	    !item_ownership_runtime_peek_owner_revision(native, &native_revision) ||
+	    player_revision != current.original.player_owner_revision ||
+	    player_revision != state.payload.expected_to_revision ||
+	    native_revision != current.original.from_owner_revision ||
+	    native_revision != state.payload.expected_from_revision)
+		return false;
+
+	for (const auto &row : current.original.custody)
+	{
+		item_ownership_runtime_entry actual;
+		if (!item_ownership_runtime_lookup(row.item_uid, &actual) ||
+		    !item_owner_identity_equal(actual.owner, row.owner) ||
+		    actual.root_item_uid != row.root_item_uid ||
+		    actual.parent_item_uid != row.parent_item_uid ||
+		    actual.item_revision != row.item_revision ||
+		    actual.owner_revision != row.owner_revision || actual.vnum != row.vnum ||
+		    actual.state != row.state)
+			return false;
+	}
+	*output = std::move(seen);
+	*actor_out = actor;
+	*mobile_out = mobile;
+	return true;
+}
+#endif
+
+#ifndef __NO_MYSQL__
 bool native_quest_runtime_observe(const native_quest_publication_state &state,
 				  const economic_sql_native_quest_publication &current,
 				  bool projected)
@@ -5950,17 +6677,24 @@ bool native_quest_restore_values(native_quest_publication_state &state,
 	    !item_transfer_native_mobile_recovery_shape_valid(state.payload) ||
 	    native_quest_recovery_context_decode(envelope.command, envelope.attachment, &context) !=
 		    player_snapshot_codec_result::ok ||
-	    player_item_snapshot_list_decode(state.payload.item_blob.data(),
-					     state.payload.item_blob_size,
-					     &state.selected) != player_snapshot_codec_result::ok)
+	    (!state.payload.native_money.present && !state.payload.native_cost.fee_only &&
+	     player_item_snapshot_list_decode(state.payload.item_blob.data(),
+					      state.payload.item_blob_size,
+					      &state.selected) != player_snapshot_codec_result::ok))
 		return false;
 	state.native_before = context.native_before;
 	state.player_before = context.player_before;
-	if (quest_mobile_native_items_transition(
-		    state.native_before, state.payload.native_mobile.reference, state.payload,
-		    &state.native_after) != player_snapshot_codec_result::ok)
+	if (state.payload.native_money.present || state.payload.native_cost.fee_only)
+	{
+		state.native_after = state.native_before;
+		state.player_after = state.player_before;
+	}
+	else if (quest_mobile_native_items_transition(
+			 state.native_before, state.payload.native_mobile.reference, state.payload,
+			 &state.native_after) != player_snapshot_codec_result::ok)
 		return false;
-	if (state.payload.native_mobile.action == item_native_mobile_action::acceptance)
+	if (!state.payload.native_money.present && !state.payload.native_cost.fee_only &&
+	    state.payload.native_mobile.action == item_native_mobile_action::acceptance)
 	{
 		std::vector<player_item_snapshot> selected;
 		if (player_item_snapshot_extract_subtree(
@@ -6079,6 +6813,16 @@ bool item_native_quest_publication_owner::restore(
 		entry.generation = native_quest_preparation_generation + 1;
 		state->generation = entry.generation;
 		entry.player.pid = static_cast<int32_t>(state->player_pid);
+		entry.money_only = state->payload.native_money.present;
+		entry.player.money_only = entry.money_only;
+		if (entry.money_only)
+		{
+			entry.money_projection = state->payload.native_money.projection;
+			entry.money_original_room_vnum =
+				state->payload.native_money.original_room_vnum;
+			entry.money_player_wallet_mapping_id =
+				state->payload.native_money.player_wallet_mapping_id;
+		}
 		entry.root_uid = item_transfer_result_root(state->payload);
 		entry.reference = state->payload.native_mobile.reference;
 		entry.command = state->command;
@@ -6185,6 +6929,190 @@ bool native_quest_restored_cut(native_quest_publication_state &state,
 }
 #endif
 
+#ifndef __NO_MYSQL__
+bool item_native_quest_publication_owner::rebind_money(
+	native_quest_publication_state &state) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)state;
+	return false;
+#else
+	if (!nevent_is_game_thread() || !state.restored || !state.completion_ready ||
+	    !state.recovery || !state.payload.native_money.present ||
+	    (state.detach_started && !state.detach_returned) ||
+	    std::any_of(state.give_messages.begin(), state.give_messages.end(),
+			[](uint8_t v) { return v == 1; }))
+		return false;
+	try
+	{
+		MYSQL *connection = sql_pool_acquire();
+		player_sql_pool_lease lease(connection);
+		if (!connection || player_sql_idle_error(connection))
+			return false;
+		player_sql_cleanup cleanup;
+		player_sql_transaction_cleanup transaction(connection, cleanup);
+		transaction.starting();
+		bool proven = false;
+		economic_sql_native_money_publication current;
+		native_quest_world::census seen;
+		P_char actor = nullptr, mobile = nullptr;
+		const bool success = state.sealed.outcome == critical_apply_outcome::applied ||
+				     state.sealed.outcome ==
+					     critical_apply_outcome::already_applied;
+		const bool after = success && state.detach_returned;
+		try
+		{
+			if (!mysql_real_query(connection, "START TRANSACTION", 17))
+				proven = economic_sql_native_money_lock_publication(
+						 connection, *state.command, state.sealed,
+						 state.native_before, state.player_before,
+						 state.player_after,
+						 state.payload.native_recovery
+							 .acknowledged_save_revision,
+						 &current) == 0 &&
+					 native_money_world_observe(state, current, after, &seen,
+								    &actor, &mobile, true, false) &&
+					 transaction.same_session();
+		}
+		catch (...)
+		{
+			proven = false;
+		}
+		transaction.finish();
+		lease.reuse(cleanup);
+		if (!proven || !cleanup.rollback_confirmed || cleanup.cleanup_error ||
+		    cleanup.disposition != player_sql_cleanup_disposition::idle_verified ||
+		    !transaction.same_session() || !actor || !mobile)
+			return false;
+		// Installer only accepts the actual current SQL/native literal image after
+		// confirmed original read-only rollback. It cannot manufacture BEFORE from
+		// command facts when SQL is AFTER, or repair a missing/mixed lifetime.
+		quest_mobile_native_cash_reference original;
+		const bool known = quest_mobile_native_cash_reference_copy(
+			mobile, mobile->runtime_id, &original);
+		if (!known &&
+		    !quest_mobile_native_publication_binding::restore_money_metadata(
+			    mobile, mobile->runtime_id, current.original.native, current.origin))
+			return false;
+		if (!native_money_world_observe(state, current, after, &seen, &actor, &mobile,
+						true))
+			return false;
+		auto found = native_quest_acceptances.find(state.recovery_key);
+		if (found == native_quest_acceptances.end() ||
+		    found->second.publication.get() != &state ||
+		    found->second.generation != state.generation ||
+		    !found->second.restored_original ||
+		    (!state.acknowledged &&
+		     !player_save_native_quest_publication_owner::rebind_recovery_checkpoint(
+			     *found->second.restored_original, actor->runtime_id)))
+			return false;
+		state.player_runtime_id = actor->runtime_id;
+		state.native_runtime_id = mobile->runtime_id;
+		found->second.player.actor_runtime_id = actor->runtime_id;
+		found->second.native_runtime_id = mobile->runtime_id;
+		if (!quest_mobile_native_cash_reference_copy(mobile, mobile->runtime_id,
+							     &found->second.money_native_before))
+			return false;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool item_native_quest_publication_owner::rebind_fee(native_quest_publication_state &state) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)state;
+	return false;
+#else
+	if (!nevent_is_game_thread() || !state.restored || !state.completion_ready ||
+	    !state.recovery || !state.payload.native_cost.fee_only ||
+	    (state.detach_started && !state.detach_returned) ||
+	    (state.message_started && !state.message_returned))
+		return false;
+	try
+	{
+		MYSQL *connection = sql_pool_acquire();
+		player_sql_pool_lease lease(connection);
+		if (!connection || player_sql_idle_error(connection))
+			return false;
+		player_sql_cleanup cleanup;
+		player_sql_transaction_cleanup transaction(connection, cleanup);
+		transaction.starting();
+		bool proven = false;
+		economic_sql_native_fee_publication current;
+		native_quest_world::census seen;
+		P_char actor = nullptr, mobile = nullptr;
+		const bool success = state.sealed.outcome == critical_apply_outcome::applied ||
+				     state.sealed.outcome ==
+					     critical_apply_outcome::already_applied;
+		const bool after = success && state.detach_returned;
+		try
+		{
+			if (!mysql_real_query(connection, "START TRANSACTION", 17))
+				proven = economic_sql_native_fee_lock_publication(
+						 connection, *state.command, state.sealed,
+						 state.native_before, state.player_before,
+						 state.player_after,
+						 state.payload.native_recovery
+							 .acknowledged_save_revision,
+						 &current) == 0 &&
+					 native_fee_world_observe(state, current, after, &seen,
+								  &actor, &mobile, true, false) &&
+					 transaction.same_session();
+		}
+		catch (...)
+		{
+			proven = false;
+		}
+		transaction.finish();
+		lease.reuse(cleanup);
+		if (!proven || !cleanup.rollback_confirmed || cleanup.cleanup_error ||
+		    cleanup.disposition != player_sql_cleanup_disposition::idle_verified ||
+		    !transaction.same_session() || !actor || !mobile)
+			return false;
+		// Installer only accepts the actual current SQL/native literal image after
+		// confirmed original read-only rollback. It cannot manufacture BEFORE from
+		// command facts when SQL is AFTER, or repair a missing/mixed lifetime.
+		quest_mobile_native_cash_reference original;
+		const bool known = quest_mobile_native_cash_reference_copy(
+			mobile, mobile->runtime_id, &original);
+		if (!known &&
+		    !quest_mobile_native_publication_binding::restore_money_metadata(
+			    mobile, mobile->runtime_id, current.original.native, current.origin))
+			return false;
+		if (!native_fee_world_observe(state, current, after, &seen, &actor, &mobile, true))
+			return false;
+		auto found = native_quest_acceptances.find(state.recovery_key);
+		if (found == native_quest_acceptances.end() ||
+		    found->second.publication.get() != &state ||
+		    found->second.generation != state.generation ||
+		    !found->second.restored_original ||
+		    (!state.acknowledged &&
+		     !player_save_native_quest_publication_owner::rebind_recovery_checkpoint(
+			     *found->second.restored_original, actor->runtime_id)))
+			return false;
+		state.player_runtime_id = actor->runtime_id;
+		state.native_runtime_id = mobile->runtime_id;
+		found->second.player.actor_runtime_id = actor->runtime_id;
+		found->second.native_runtime_id = mobile->runtime_id;
+		if (!quest_mobile_native_cash_reference_copy(mobile, mobile->runtime_id,
+							     &found->second.cost_native_before))
+			return false;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+#endif
+
 bool item_native_quest_publication_owner::rebind(native_quest_publication_state &state) noexcept
 {
 #ifdef __NO_MYSQL__
@@ -6194,6 +7122,10 @@ bool item_native_quest_publication_owner::rebind(native_quest_publication_state 
 	if (!state.restored || !state.completion_ready || !state.recovery ||
 	    !nevent_is_game_thread())
 		return false;
+	if (state.payload.native_cost.fee_only)
+		return rebind_fee(state);
+	if (state.payload.native_money.present)
+		return rebind_money(state);
 	try
 	{
 		MYSQL *connection = sql_pool_acquire();
@@ -6394,6 +7326,345 @@ bool item_native_quest_gameplay_publication_owner::restored_readback(
 #endif
 }
 
+bool item_native_quest_publication_owner::money_publish(const critical_command &command,
+							const critical_completion &completion,
+							void *opaque) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)command;
+	(void)completion;
+	(void)opaque;
+	return false;
+#else
+	if (!opaque || !nevent_is_game_thread())
+		return false;
+	auto &state = *static_cast<native_quest_publication_state *>(opaque);
+	if (!state.command || !state.payload.native_money.present ||
+	    !critical_command_equal(command, *state.command) ||
+	    !same_item_publication_receipt(state.sealed, completion))
+		return false;
+	const bool success = completion.outcome == critical_apply_outcome::applied ||
+			     completion.outcome == critical_apply_outcome::already_applied;
+	if (!success && completion.outcome != critical_apply_outcome::terminal_failure)
+		return false;
+	try
+	{
+		const auto key = operation_key(command.operation_id);
+		const auto owner_current = [&]()
+		{
+			const auto found = native_quest_acceptances.find(key);
+			return !state.blocked && state.inflight &&
+			       found != native_quest_acceptances.end() &&
+			       found->second.publication.get() == &state &&
+			       found->second.generation == state.generation &&
+			       same_item_publication_receipt(state.sealed, completion);
+		};
+		if (!recovery_initialize(state) ||
+		    (state.recovery_pending_ready && !recovery_checkpoint(state)) ||
+		    !owner_current())
+			return false;
+		// A cold started/unreturned action is uncertain even when endpoints look
+		// AFTER. Never restart or independently repair one wallet endpoint.
+		if (state.detach_started && !state.detach_returned && !state.recovery_not_attempted)
+			return false;
+		MYSQL *connection = sql_pool_acquire();
+		player_sql_pool_lease lease(connection);
+		if (!connection || player_sql_idle_error(connection))
+			return false;
+		player_sql_cleanup cleanup;
+		player_sql_transaction_cleanup transaction(connection, cleanup);
+		transaction.starting();
+		bool proven = false;
+		try
+		{
+			if (mysql_real_query(connection, "START TRANSACTION", 17))
+				throw EIO;
+			player_native_quest_checkpoint_stage held;
+			std::vector<player_item_snapshot> before, after;
+			if (!player_save_native_quest_publication_owner::publication_held_bodies(
+				    command, &before, &after, &held) ||
+			    !native_quest_world::same_items(before, state.player_before) ||
+			    !native_quest_world::same_items(after, state.player_after))
+				throw EAGAIN;
+			economic_sql_native_money_publication current;
+			const auto authenticate = [&](economic_sql_native_money_publication *out)
+			{
+				return economic_sql_native_money_lock_publication(
+					       connection, command, completion, state.native_before,
+					       before, after, held.save_revision, out) == 0 &&
+				       out->original.session_id == mysql_thread_id(connection) &&
+				       owner_current();
+			};
+			if (!authenticate(&current))
+				throw EAGAIN;
+			state.prepared = true;
+			if (!state.recovery_receipt_durable &&
+			    !recovery_prepare(state, NATIVE_RECOVERY_PUBLISHING))
+				throw EAGAIN;
+			native_quest_world::census seen;
+			P_char actor = nullptr, mobile = nullptr;
+			const auto observe = [&]()
+			{
+				return owner_current() &&
+				       native_money_world_observe(state, current,
+								  success && state.detach_returned,
+								  &seen, &actor, &mobile);
+			};
+			if (!observe())
+				throw EAGAIN;
+			if (success && !state.detach_returned)
+			{
+				if (!recovery_begin(state, 1) || !observe())
+					throw EAGAIN;
+				quest_mobile_native_cash_reference original;
+				if (!quest_mobile_native_cash_reference_copy(
+					    mobile, state.native_runtime_id, &original) ||
+				    original.cash_revision != state.payload.native_money.projection
+								      .mobile_before_revision ||
+				    original.denominations !=
+					    state.payload.native_money.projection.mobile_before)
+					throw EAGAIN;
+				state.detach_started = true;
+				state.recovery_not_attempted = false;
+				const bool applied =
+					quest_mobile_native_publication_binding::apply_money(
+						actor, state.player_runtime_id, state.player_pid,
+						mobile, state.native_runtime_id, original,
+						state.payload.native_money.projection,
+						current.original.native.reference);
+				if (!applied)
+				{
+					state.blocked = true;
+					throw EAGAIN;
+				}
+				state.detach_returned = true;
+				if (!recovery_returned(state) || !observe())
+					throw EAGAIN;
+			}
+			economic_sql_native_money_publication final;
+			if (!authenticate(&final) ||
+			    final.original.session_id != current.original.session_id || !observe())
+				throw EAGAIN;
+			if (success && state.give_messages[0] != 2)
+			{
+				if (state.give_messages[0] == 1)
+					throw EAGAIN;
+				const int room =
+					real_room(state.payload.native_money.original_room_vnum);
+				if (!world || room < 0 || room > top_of_world ||
+				    world[room].number !=
+					    state.payload.native_money.original_room_vnum)
+					throw EAGAIN;
+				if (!recovery_begin(state, 6) || !observe())
+					throw EAGAIN;
+				state.give_messages[0] = 1;
+				state.recovery_not_attempted = false;
+				const bool announced = quest_native_coin_give_notice_owner::publish(
+					actor, mobile,
+					state.payload.native_money.projection.denomination,
+					state.payload.native_money.projection.quantity,
+					state.payload.native_money.original_room_vnum);
+				if (!announced)
+				{
+					state.blocked = true;
+					throw EAGAIN;
+				}
+				state.give_messages[0] = 2;
+				if (!recovery_returned(state) || !observe())
+					throw EAGAIN;
+			}
+			// Original coin feedback only; no quester, item/registry hooks, child
+			// continuation or source issuance occurs here.
+			if (!state.recovery_physically_proven &&
+			    !(state.recovery_pending &&
+			      state.recovery_effect == NATIVE_RECOVERY_PROVEN) &&
+			    !recovery_prepare(state, NATIVE_RECOVERY_PROVEN))
+				throw EAGAIN;
+			proven = true;
+		}
+		catch (...)
+		{
+			proven = false;
+		}
+		transaction.finish();
+		lease.reuse(cleanup);
+		if (!proven || !transaction.same_session() || !cleanup.rollback_confirmed ||
+		    cleanup.disposition != player_sql_cleanup_disposition::idle_verified)
+			return false;
+		state.recovery_pending_ready = true;
+		return recovery_checkpoint(state) && state.recovery_physically_proven;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool item_native_quest_publication_owner::fee_publish(const critical_command &command,
+						      const critical_completion &completion,
+						      void *opaque) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)command;
+	(void)completion;
+	(void)opaque;
+	return false;
+#else
+	if (!opaque || !nevent_is_game_thread())
+		return false;
+	auto &state = *static_cast<native_quest_publication_state *>(opaque);
+	if (!state.command || !state.payload.native_cost.fee_only ||
+	    !critical_command_equal(command, *state.command) ||
+	    !same_item_publication_receipt(state.sealed, completion))
+		return false;
+	const bool success = completion.outcome == critical_apply_outcome::applied ||
+			     completion.outcome == critical_apply_outcome::already_applied;
+	if (!success && completion.outcome != critical_apply_outcome::terminal_failure)
+		return false;
+	try
+	{
+		const auto key = operation_key(command.operation_id);
+		const auto owner_current = [&]()
+		{
+			const auto found = native_quest_acceptances.find(key);
+			return !state.blocked && state.inflight &&
+			       found != native_quest_acceptances.end() &&
+			       found->second.publication.get() == &state &&
+			       found->second.generation == state.generation &&
+			       same_item_publication_receipt(state.sealed, completion);
+		};
+		if (!recovery_initialize(state) ||
+		    (state.recovery_pending_ready && !recovery_checkpoint(state)) ||
+		    !owner_current())
+			return false;
+		// A cold started/unreturned action is uncertain even when endpoints look
+		// AFTER. Never restart or independently repair one wallet endpoint.
+		if (state.detach_started && !state.detach_returned && !state.recovery_not_attempted)
+			return false;
+		MYSQL *connection = sql_pool_acquire();
+		player_sql_pool_lease lease(connection);
+		if (!connection || player_sql_idle_error(connection))
+			return false;
+		player_sql_cleanup cleanup;
+		player_sql_transaction_cleanup transaction(connection, cleanup);
+		transaction.starting();
+		bool proven = false;
+		try
+		{
+			if (mysql_real_query(connection, "START TRANSACTION", 17))
+				throw EIO;
+			player_native_quest_checkpoint_stage held;
+			std::vector<player_item_snapshot> before, after;
+			if (!player_save_native_quest_publication_owner::publication_held_bodies(
+				    command, &before, &after, &held) ||
+			    !native_quest_world::same_items(before, state.player_before) ||
+			    !native_quest_world::same_items(after, state.player_after))
+				throw EAGAIN;
+			economic_sql_native_fee_publication current;
+			const auto authenticate = [&](economic_sql_native_fee_publication *out)
+			{
+				return economic_sql_native_fee_lock_publication(
+					       connection, command, completion, state.native_before,
+					       before, after, held.save_revision, out) == 0 &&
+				       out->original.session_id == mysql_thread_id(connection) &&
+				       owner_current();
+			};
+			if (!authenticate(&current))
+				throw EAGAIN;
+			state.prepared = true;
+			if (!state.recovery_receipt_durable &&
+			    !recovery_prepare(state, NATIVE_RECOVERY_PUBLISHING))
+				throw EAGAIN;
+			native_quest_world::census seen;
+			P_char actor = nullptr, mobile = nullptr;
+			const auto observe = [&]()
+			{
+				return owner_current() &&
+				       native_fee_world_observe(state, current,
+								success && state.detach_returned,
+								&seen, &actor, &mobile);
+			};
+			if (!observe())
+				throw EAGAIN;
+			// Original preliminary quest message precedes the first SUB_MONEY.
+			// Started/unreturned is uncertain and is never repeated on a cold replay.
+			if (success && !state.message_returned)
+			{
+				if (state.message_started && !state.recovery_not_attempted)
+					throw EAGAIN;
+				const auto &terms = state.payload.native_recovery.publication_terms;
+				if (!recovery_begin(state, 5) || !observe())
+					throw EAGAIN;
+				state.message_started = true;
+				state.recovery_not_attempted = false;
+				if (!terms.message.empty())
+					act(terms.message.c_str(), FALSE, mobile, nullptr, actor,
+					    terms.echo_all ? TO_ROOM : TO_VICT);
+				state.message_returned = true;
+				if (!recovery_returned(state) || !observe())
+					throw EAGAIN;
+			}
+			if (success && !state.detach_returned)
+			{
+				if (!recovery_begin(state, 1) || !observe())
+					throw EAGAIN;
+				quest_mobile_native_cash_reference original;
+				if (!quest_mobile_native_cash_reference_copy(
+					    mobile, state.native_runtime_id, &original) ||
+				    original.cash_revision !=
+					    state.payload.native_cost.projection.before_revision ||
+				    original.denominations !=
+					    state.payload.native_cost.projection.before)
+					throw EAGAIN;
+				state.detach_started = true;
+				state.recovery_not_attempted = false;
+				const bool applied =
+					quest_mobile_native_publication_binding::apply_cost(
+						mobile, state.native_runtime_id, original,
+						state.payload.native_cost.projection,
+						current.original.native.reference);
+				if (!applied)
+				{
+					state.blocked = true;
+					throw EAGAIN;
+				}
+				state.detach_returned = true;
+				if (!recovery_returned(state) || !observe())
+					throw EAGAIN;
+			}
+			economic_sql_native_fee_publication final;
+			if (!authenticate(&final) ||
+			    final.original.session_id != current.original.session_id || !observe())
+				throw EAGAIN;
+			// No item/custody/GIVE hooks; the genuine v6 reward owner continues
+			// separately after actual fee cash and preliminary message proof.
+			if (!state.recovery_physically_proven &&
+			    !(state.recovery_pending &&
+			      state.recovery_effect == NATIVE_RECOVERY_PROVEN) &&
+			    !recovery_prepare(state, NATIVE_RECOVERY_PROVEN))
+				throw EAGAIN;
+			proven = true;
+		}
+		catch (...)
+		{
+			proven = false;
+		}
+		transaction.finish();
+		lease.reuse(cleanup);
+		if (!proven || !transaction.same_session() || !cleanup.rollback_confirmed ||
+		    cleanup.disposition != player_sql_cleanup_disposition::idle_verified)
+			return false;
+		state.recovery_pending_ready = true;
+		return recovery_checkpoint(state) && state.recovery_physically_proven;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
 bool item_native_quest_publication_owner::native_publish(const critical_command &command,
 							 const critical_completion &completion,
 							 void *opaque) noexcept
@@ -6411,6 +7682,10 @@ bool item_native_quest_publication_owner::native_publish(const critical_command 
 	    completion.disposition != critical_completion_disposition::execution ||
 	    command.operation_id.bytes != state.command->operation_id.bytes)
 		return false;
+	if (state.payload.native_money.present)
+		return money_publish(command, completion, opaque);
+	if (state.payload.native_cost.fee_only)
+		return fee_publish(command, completion, opaque);
 	const bool success = completion.outcome == critical_apply_outcome::applied ||
 			     completion.outcome == critical_apply_outcome::already_applied;
 	if ((!success && completion.outcome != critical_apply_outcome::terminal_failure) ||
@@ -6734,6 +8009,51 @@ void item_native_quest_publication_owner::completions(const critical_completion 
 #ifndef __NO_MYSQL__
 	try
 	{
+		// Existing movement completion ticks own bounded original money
+		// preparation; no quest trigger or new unrelated event stream.
+		std::vector<std::string> money_preparations;
+		for (const auto &[key, entry] : native_quest_acceptances)
+			if (entry.money_only && !entry.submission_started &&
+			    !entry.money_preparation_blocked)
+				money_preparations.push_back(key);
+		for (const auto &key : money_preparations)
+		{
+			auto found = native_quest_acceptances.find(key);
+			if (found == native_quest_acceptances.end() || !found->second.money_only ||
+			    found->second.submission_started ||
+			    found->second.money_preparation_blocked)
+				continue;
+			item_native_quest_preparation_token token;
+			if (key.size() != token.operation_.bytes.size())
+				continue;
+			std::copy(key.begin(), key.end(), token.operation_.bytes.begin());
+			token.generation_ = found->second.generation;
+			P_char actor =
+				find_character_by_runtime_id(found->second.player.actor_runtime_id);
+			P_char mobile =
+				find_character_by_runtime_id(found->second.native_runtime_id);
+			const auto state =
+				item_native_quest_preparation_owner::poll_money_acceptance(
+					token, actor, mobile);
+			if (state == item_native_quest_preparation_state::pending)
+				continue;
+			if (state != item_native_quest_preparation_state::ready)
+			{
+				(void)item_native_quest_preparation_owner::cancel(token);
+				continue;
+			}
+			const auto submitted =
+				item_native_quest_preparation_owner::submit_money_acceptance(
+					token, actor, mobile);
+			found = native_quest_acceptances.find(key);
+			if (found != native_quest_acceptances.end() &&
+			    found->second.generation == token.generation_ &&
+			    (submitted == critical_submit_result::invalid ||
+			     submitted == critical_submit_result::identity_conflict))
+				found->second.money_preparation_blocked = true;
+			// Original uncertain admission retains its token/immutable command;
+			// only known unavailability retries, through the original owner.
+		}
 		// Validate the entire delivered batch before the first native effect.
 		for (size_t i = 0; i < count; ++i)
 		{
@@ -6759,15 +8079,20 @@ void item_native_quest_publication_owner::completions(const critical_completion 
 								     entry.native_before.size(),
 								     &state->native_before) !=
 					    player_snapshot_codec_result::ok ||
-				    player_item_snapshot_list_decode(
-					    state->payload.item_blob.data(),
-					    state->payload.item_blob_size,
-					    &state->selected) != player_snapshot_codec_result::ok ||
-				    quest_mobile_native_items_transition(
-					    state->native_before, entry.reference, state->payload,
-					    &state->native_after) !=
-					    player_snapshot_codec_result::ok)
+				    (!state->payload.native_money.present &&
+				     !state->payload.native_cost.fee_only &&
+				     (player_item_snapshot_list_decode(
+					      state->payload.item_blob.data(),
+					      state->payload.item_blob_size, &state->selected) !=
+					      player_snapshot_codec_result::ok ||
+				      quest_mobile_native_items_transition(
+					      state->native_before, entry.reference, state->payload,
+					      &state->native_after) !=
+					      player_snapshot_codec_result::ok)))
 					continue;
+				if (state->payload.native_money.present ||
+				    state->payload.native_cost.fee_only)
+					state->native_after = state->native_before;
 				state->root_stages.resize(
 					state->payload.native_recovery.consumed_root_order.size(),
 					0);
@@ -6878,9 +8203,19 @@ void item_native_quest_publication_owner::completions(const critical_completion 
 				state->completion_ready = true;
 				if (state->sealed.disposition !=
 					    critical_completion_disposition::execution ||
-				    !item_transfer_command_decode_result(
-					    state->sealed.result_payload.data(),
-					    state->sealed.result_size, &state->result))
+				    !(state->payload.native_money.present ?
+					      item_native_mobile_money_result_decode(
+						      { state->sealed.result_payload.data(),
+							state->sealed.result_size },
+						      &state->money_result) :
+				      state->payload.native_cost.fee_only ?
+					      item_native_mobile_fee_result_decode(
+						      { state->sealed.result_payload.data(),
+							state->sealed.result_size },
+						      &state->fee_result) :
+					      item_transfer_command_decode_result(
+						      state->sealed.result_payload.data(),
+						      state->sealed.result_size, &state->result)))
 					state->blocked = true;
 			}
 		}
@@ -6921,6 +8256,11 @@ void item_native_quest_publication_owner::completions(const critical_completion 
 					continue;
 				state->acknowledged =
 					true; // Only the private guard consumed its hold.
+			}
+			if (state->payload.native_money.present)
+			{
+				state->restoration_handed_off = true;
+				state->continuation_returned = true;
 			}
 			if (state->restored && !state->restoration_handed_off)
 			{
@@ -7106,4 +8446,416 @@ bool item_native_quest_gameplay_publication_owner::retained_budget(
 		return false;
 	native_quest_gameplay_retained_bytes = actual_driver_bytes;
 	return true;
+}
+
+// Original held-retirement native publication and passive restore owner.
+
+class item_held_retirement_publication_owner final
+{
+	struct publication_attempt
+	{
+		pending_movement *entry = nullptr;
+		held_retirement_publication_snapshot snapshot;
+	};
+	static bool same_items(const std::vector<player_item_snapshot> &left,
+			       const std::vector<player_item_snapshot> &right)
+	{
+		std::vector<uint8_t> a, b;
+		return player_item_snapshot_list_encode(left, &a) ==
+			       player_snapshot_codec_result::ok &&
+		       player_item_snapshot_list_encode(right, &b) ==
+			       player_snapshot_codec_result::ok &&
+		       a == b;
+	}
+	static P_char actor_for(uint32_t pid) noexcept
+	{
+		P_char actor = nullptr;
+		for (P_char candidate = character_list; candidate; candidate = candidate->next)
+			if (IS_PC(candidate) && candidate->only.pc &&
+			    GET_PID(candidate) == static_cast<int>(pid) && candidate->runtime_id &&
+			    find_character_by_runtime_id(candidate->runtime_id) == candidate)
+			{
+				if (actor && actor != candidate)
+					return nullptr;
+				actor = candidate;
+			}
+		return actor;
+	}
+	static bool native_body(P_char actor, std::vector<player_item_snapshot> *items)
+	{
+		player_snapshot captured;
+		if (!items || player_snapshot_capture_literal_inventory(
+				      actor, 1,
+				      PLAYER_COMPONENT_STATUS | PLAYER_COMPONENT_EQUIPMENT |
+					      PLAYER_COMPONENT_INVENTORY,
+				      RENT_CRASH, NOWHERE, 0,
+				      &captured) != player_snapshot_capture_result::ok)
+			return false;
+		*items = std::move(captured.items);
+		return true;
+	}
+	static bool checkpoint(critical_native_recovery_envelope *original,
+			       const held_retirement_recovery &context)
+	{
+		if (!original || original->revision == UINT64_MAX)
+			return false;
+		critical_native_recovery_envelope successor = *original;
+		++successor.revision;
+		if (!held_retirement_recovery_encode(original->command, context,
+						     &successor.attachment) ||
+		    !player_save_held_retirement_publication_owner::checkpoint_recovery_context(
+			    *original, successor))
+			return false;
+		*original = std::move(successor);
+		return true;
+	}
+	static bool native_publish(const critical_command &command,
+				   const critical_completion &completion, void *opaque) noexcept
+	{
+#ifdef __NO_MYSQL__
+		(void)command;
+		(void)completion;
+		(void)opaque;
+		return false;
+#else
+		try
+		{
+			auto *attempt = static_cast<publication_attempt *>(opaque);
+			auto *entry = attempt ? attempt->entry : nullptr;
+			lockpick_retirement_terms terms;
+			item_transfer_payload payload;
+			critical_native_recovery_envelope envelope =
+				attempt ? attempt->snapshot.envelope :
+					  critical_native_recovery_envelope{};
+			held_retirement_recovery context;
+			if (!entry || !entry->held_command ||
+			    !held_retirement_command_identity(command, &payload, &terms) ||
+			    !held_retirement_publication_snapshot_valid(command, completion,
+									attempt->snapshot) ||
+			    !held_retirement_recovery_decode(command, envelope.attachment,
+							     &context) ||
+			    (context.receipt.present && !held_retirement_recovery_receipt_matches(
+								context.receipt, completion)))
+				return false;
+			P_char actor = actor_for(terms.actor_pid);
+			if (!actor || IS_SET(actor->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
+				return false;
+			if (attempt->snapshot.mode ==
+				    held_retirement_publication_mode::terminal_ack_retry &&
+			    context.physical_stage != 2)
+				return false;
+			const bool never_admitted = completion.disposition ==
+						    critical_completion_disposition::never_admitted;
+			item_transfer_result result{};
+			const bool committed =
+				!never_admitted &&
+				(completion.outcome == critical_apply_outcome::applied ||
+				 completion.outcome == critical_apply_outcome::already_applied);
+			if (committed &&
+			    (!item_transfer_command_decode_result(completion.result_payload.data(),
+								  completion.result_size,
+								  &result) ||
+			     result.root_item_uid != terms.item_uid || result.item_count != 1 ||
+			     !result.max_item_revision || result.max_item_revision == UINT64_MAX))
+				return false;
+			result.operation_id = command.operation_id;
+			held_retirement_current_observation current;
+			// No runtime cache or absent physical UID can substitute for the real
+			// repository's exact original receipt/current-cut/rollback observation.
+			if (!held_retirement_repository_observe_current(command, completion,
+									context, &current) ||
+			    !current.rollback_confirmed ||
+			    current.save_revision != context.save_revision ||
+			    !same_items(current.items,
+					committed ? context.after : context.before) ||
+			    current.selected.item_uid != terms.item_uid ||
+			    current.selected.root_item_uid != terms.item_uid ||
+			    current.selected.parent_item_uid ||
+			    current.selected.vnum != terms.item_vnum)
+				return false;
+			if (committed)
+			{
+				if (current.selected.state != item_custody_state::destroyed ||
+				    current.selected.owner.type != item_owner_type::destruction ||
+				    current.selected.owner.id ||
+				    current.selected.owner.context_id ||
+				    current.selected.item_revision != result.max_item_revision ||
+				    current.from_owner_revision != result.from_owner_revision ||
+				    current.to_owner_revision < result.to_owner_revision)
+					return false;
+			}
+			else if (current.selected.state != item_custody_state::active ||
+				 !item_owner_identity_equal(current.selected.owner,
+							    payload.from_owner) ||
+				 current.selected.item_revision !=
+					 payload.items[0].expected_item_revision ||
+				 current.from_owner_revision != payload.expected_from_revision ||
+				 current.to_owner_revision < payload.expected_to_revision)
+				return false;
+			std::vector<player_item_snapshot> actual;
+			if (!native_body(actor, &actual))
+				return false;
+			const bool native_before = same_items(actual, context.before),
+				   native_after = same_items(actual, context.after);
+			if (committed ? (!native_before && !native_after) : !native_before)
+				return false;
+			size_t selected_count = 0;
+			P_obj selected = nullptr;
+			for (P_obj object = object_list; object; object = object->next)
+				if (object->obj_uid == terms.item_uid)
+				{
+					selected = object;
+					++selected_count;
+				}
+			if (selected_count > 1 ||
+			    (native_before &&
+			     (!selected || actor->equipment[HOLD] != selected ||
+			      !OBJ_WORN_BY(selected, actor) || selected->type != ITEM_PICK ||
+			      selected->contains || OBJ_VNUM(selected) != terms.item_vnum)) ||
+			    (committed && native_after && selected_count))
+				return false;
+			if (!player_save_held_retirement_publication_owner::
+				    rebind_recovery_checkpoint(envelope, actor->runtime_id))
+				return false;
+			entry->actor_runtime_id = actor->runtime_id;
+			if (never_admitted)
+				return native_before && !context.receipt.present &&
+				       !context.physical_stage;
+			if (!context.receipt.present)
+			{
+				context.receipt.present = true;
+				context.receipt.outcome = completion.outcome;
+				context.receipt.durable_revision = completion.durable_revision;
+				context.receipt.error_code = completion.error_code;
+				context.receipt.failure_stage = completion.failure_stage;
+				context.receipt.result_size = completion.result_size;
+				context.receipt.result = completion.result_payload;
+				if (!checkpoint(&envelope, context))
+					return false;
+			}
+			if (context.physical_stage == 2)
+			{
+				if (committed ? !native_after : !native_before)
+					return false;
+			}
+			else
+			{
+				const bool notify = context.physical_stage == 0 && native_before;
+				if (context.physical_stage == 0)
+				{
+					context.physical_stage = 1;
+					if (!checkpoint(&envelope, context))
+						return false;
+				}
+				if (!item_ownership_runtime_hydrate_owner(
+					    payload.from_owner, current.from_owner_revision) ||
+				    !item_ownership_runtime_hydrate_owner(
+					    payload.to_owner, current.to_owner_revision) ||
+				    !item_ownership_runtime_hydrate_many_atomic(&current.selected,
+										1) ||
+				    !lockpick_retirement_publish_physical(command.operation_id,
+									  actor, committed, result,
+									  terms, notify))
+					return false;
+				std::vector<player_item_snapshot> after_native;
+				if (!native_body(actor, &after_native) ||
+				    !same_items(after_native,
+						committed ? context.after : context.before))
+					return false;
+				context.physical_stage = 2;
+				if (!checkpoint(&envelope, context))
+					return false;
+			}
+			// Reobserve current SQL after physical return and immediately before ACK.
+			held_retirement_current_observation final_cut;
+			if (!held_retirement_repository_observe_current(command, completion,
+									context, &final_cut) ||
+			    !final_cut.rollback_confirmed ||
+			    final_cut.save_revision != current.save_revision ||
+			    !same_items(final_cut.items, current.items) ||
+			    final_cut.selected.item_uid != current.selected.item_uid ||
+			    final_cut.selected.root_item_uid != current.selected.root_item_uid ||
+			    final_cut.selected.parent_item_uid !=
+				    current.selected.parent_item_uid ||
+			    final_cut.selected.vnum != current.selected.vnum ||
+			    final_cut.selected.state != current.selected.state ||
+			    !item_owner_identity_equal(final_cut.selected.owner,
+						       current.selected.owner) ||
+			    final_cut.selected.item_revision != current.selected.item_revision ||
+			    final_cut.selected.owner_revision != current.selected.owner_revision ||
+			    final_cut.from_owner_revision != current.from_owner_revision ||
+			    final_cut.to_owner_revision != current.to_owner_revision)
+				return false;
+			entry->registry_applied = true;
+			entry->ordinary_publication_ready = true;
+			return true;
+		}
+		catch (...)
+		{
+			return false;
+		}
+#endif
+	}
+
+    public:
+	static bool publish(pending_movement &entry) noexcept
+	{
+		if (!entry.held_command)
+			return false;
+		publication_attempt attempt;
+		attempt.entry = &entry;
+#ifndef __NO_MYSQL__
+		try
+		{
+			lockpick_retirement_terms terms;
+			if (!player_save_held_retirement_publication_owner::copy_publication_context(
+				    *entry.held_command, entry.completed, &attempt.snapshot))
+				return false;
+			const auto &envelope = attempt.snapshot.envelope;
+			held_retirement_recovery context;
+			if (!held_retirement_command_identity(*entry.held_command, nullptr,
+							      &terms) ||
+			    !held_retirement_recovery_decode(*entry.held_command,
+							     envelope.attachment, &context) ||
+			    (context.receipt.present && !held_retirement_recovery_receipt_matches(
+								context.receipt, entry.completed)))
+				return false;
+			held_retirement_current_observation current;
+			const bool committed =
+				entry.completed.disposition ==
+					critical_completion_disposition::execution &&
+				(entry.completed.outcome == critical_apply_outcome::applied ||
+				 entry.completed.outcome ==
+					 critical_apply_outcome::already_applied);
+			if (!held_retirement_repository_observe_current(
+				    *entry.held_command, entry.completed, context, &current) ||
+			    !current.rollback_confirmed ||
+			    current.save_revision != context.save_revision ||
+			    !same_items(current.items, committed ? context.after : context.before))
+				return false;
+			P_char actor = actor_for(terms.actor_pid);
+			std::vector<player_item_snapshot> native;
+			if (!actor || !native_body(actor, &native) ||
+			    (committed ? (!same_items(native, context.before) &&
+					  !same_items(native, context.after)) :
+					 !same_items(native, context.before)) ||
+			    !player_save_held_retirement_publication_owner::
+				    rebind_recovery_checkpoint(envelope, actor->runtime_id))
+				return false;
+			entry.actor_runtime_id = actor->runtime_id;
+		}
+		catch (...)
+		{
+			return false;
+		}
+#endif
+		return player_save_held_retirement_publication_owner::publish_held_retirement(
+			*entry.held_command, entry.completed, attempt.snapshot, native_publish,
+			&attempt);
+	}
+	static bool restore(const critical_native_recovery_envelope &envelope) noexcept
+	{
+		try
+		{
+			lockpick_retirement_terms terms;
+			item_transfer_payload payload;
+			held_retirement_recovery context;
+			if (!envelope.revision ||
+			    envelope.phase != critical_native_recovery_phase::execution_pending ||
+			    !held_retirement_command_identity(envelope.command, &payload, &terms) ||
+			    !held_retirement_recovery_decode(envelope.command, envelope.attachment,
+							     &context))
+				return false;
+			const auto key = operation_key(envelope.command.operation_id);
+			auto existing = pending.find(key);
+			if (existing != pending.end())
+			{
+				std::vector<uint8_t> before, after;
+				if (!existing->second.held_command ||
+				    critical_command_encode(*existing->second.held_command,
+							    &before) !=
+					    critical_command_codec_result::ok ||
+				    critical_command_encode(envelope.command, &after) !=
+					    critical_command_codec_result::ok ||
+				    before != after)
+					return false;
+				return player_save_held_retirement_publication_owner::
+					restore_recovery_checkpoint(envelope);
+			}
+			if (pending.size() + native_quest_pending_count() >=
+			    ITEM_MOVEMENT_PENDING_MAX)
+				return false;
+			pending_movement entry{};
+			entry.actor_pid = terms.actor_pid;
+			entry.payload = payload;
+			entry.requested_to_owner = payload.to_owner;
+			entry.requested_reason = payload.reason;
+			entry.requested_reason_id = payload.reason_id;
+			entry.publication = lockpick_retirement_publication;
+			entry.context_size = payload.continuation.data.size();
+			std::copy(payload.continuation.data.begin(),
+				  payload.continuation.data.end(), entry.context.begin());
+			entry.publication_status = publication_state::ready;
+			entry.recovered_publication = true;
+			entry.held_command =
+				std::make_shared<const critical_command>(envelope.command);
+			// Allocate/map admission before the original guard is installed.
+			const auto inserted = pending.emplace(key, std::move(entry));
+			if (!inserted.second)
+				return false;
+			if (!player_save_held_retirement_publication_owner::
+				    restore_recovery_checkpoint(envelope))
+			{
+				pending.erase(inserted.first);
+				return false;
+			}
+			account_health();
+			return true;
+		}
+		catch (...)
+		{
+			return false;
+		}
+	}
+};
+
+namespace
+{
+void publish_held_retirement_entry(std::unordered_map<std::string, pending_movement>::iterator found)
+{
+	auto &entry = found->second;
+	const auto original = entry.held_command;
+	const auto terms_bytes = entry.context;
+	const auto terms_size = entry.context_size;
+	entry.publication_inflight = true;
+	const bool acknowledged = item_held_retirement_publication_owner::publish(entry);
+	entry.publication_inflight = false;
+	if (!acknowledged)
+	{
+		entry.publication_status = publication_state::owner_waiting;
+		return;
+	}
+	const auto completion = entry.completed;
+	const auto runtime_id = entry.actor_runtime_id;
+	pending.erase(found);
+	const bool committed = completion.outcome == critical_apply_outcome::applied ||
+			       completion.outcome == critical_apply_outcome::already_applied;
+	if (committed)
+		++health.committed;
+	else
+		++health.rejected;
+	// Proven no-admission cleanup is complete; notification carries no ACK authority.
+	if (completion.disposition == critical_completion_disposition::never_admitted)
+	{
+		P_char actor = find_character_by_runtime_id(runtime_id);
+		(void)lockpick_retirement_publication(original->operation_id, actor, false, {},
+						      completion.error_code, terms_bytes.data(),
+						      terms_size);
+	}
+}
+}
+bool item_movement_transaction_restore_held_retirement_recovery(
+	const critical_native_recovery_envelope &envelope) noexcept
+{
+	return item_held_retirement_publication_owner::restore(envelope);
 }

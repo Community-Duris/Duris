@@ -10,6 +10,8 @@
 class quest_native_consumption_capture;
 
 struct quest_mobile_native_image;
+struct quest_mobile_native_cash_reference;
+class item_native_quest_preparation_owner;
 struct native_mobile_birth_item_recipe;
 struct quest_mobile_native_constructor_recipe;
 
@@ -28,6 +30,14 @@ struct economic_gameplay_bank_mapping
 
 // Original read-only facts for the native shop checkpoint. These values grant
 // no storage or mutation authority; the writer locks their native mappings.
+// Pure original finite-wallet mapping values; SQL locks/authenticates the actual
+// PID/native mapping lifetimes. No mint, source claim or publication capability.
+struct economic_native_money_checkpoint_projection
+{
+	critical_operation_id lineage{}, epoch{};
+	economic_account_key player_wallet;
+};
+
 struct economic_shop_checkpoint_projection
 {
 	critical_operation_id lineage, epoch;
@@ -69,11 +79,22 @@ class economic_gameplay_authority
 	// Existing native SQL scope only; excludes wallet-root qualification and flat.
 	// This observes admission state and does not grant native mutation authority.
 	static bool active_regular_sql();
+	// Selected SQL boot policy keeps legacy writers closed while genuine replay
+	// and published lifetimes recover. It is not fresh admission/readiness.
+	static bool active_sql_recovery();
 	static bool observe_shop_checkpoint(uint32_t pid, std::string_view account_name,
 					    uint8_t racewar,
 					    economic_shop_checkpoint_projection *output) noexcept;
 
     private:
+	friend class item_native_quest_preparation_owner;
+	static bool
+	observe_native_money_checkpoint(uint32_t final_giver_pid,
+					const quest_mobile_native_cash_reference &,
+					economic_native_money_checkpoint_projection *) noexcept;
+	static economic_accounting_error prepare_native_money_transfer(
+		critical_command *, uint32_t final_giver_pid,
+		const quest_mobile_native_cash_reference *original_before) noexcept;
 	// Only the actual original birth owner may freeze fresh native birth facts.
 	// The installed regular SQL projection supplies lineage/epoch, not provenance.
 	// This does not reserve identities, admit a command or authorize publication.
@@ -123,6 +144,27 @@ class economic_gameplay_authority
 		const critical_operation_id &epoch, const critical_operation_id &receipt,
 		std::span<const economic_gameplay_wallet_mapping> wallets,
 		std::span<const economic_gameplay_bank_mapping> banks);
+	// Only the authentic SQL lifecycle caller can issue this private key after
+	// installation/activation/baseline/opening and original-session proof.
+	class sql_runtime_recovery_install_key
+	{
+		sql_runtime_recovery_install_key() = default;
+		friend class economic_sql_accounting_lifecycle_transaction;
+	};
+	static economic_accounting_error install_sql_recovery(sql_runtime_recovery_install_key,
+							      const critical_operation_id &lineage,
+							      const critical_operation_id &epoch,
+							      const critical_operation_id &receipt);
+	static bool sql_recovery_selection_matches(sql_runtime_recovery_install_key,
+						   const critical_operation_id &lineage,
+						   const critical_operation_id &epoch,
+						   const critical_operation_id &receipt) noexcept;
+	static economic_accounting_error
+	finish_sql_recovery(sql_runtime_recovery_install_key, const critical_operation_id &lineage,
+			    const critical_operation_id &epoch,
+			    const critical_operation_id &receipt,
+			    std::span<const economic_gameplay_wallet_mapping> wallets,
+			    std::span<const economic_gameplay_bank_mapping> banks);
 	static void clear_sql_runtime() noexcept;
 	// Trusted flat runtime shutdown only; never clears the SQL qualification scope.
 	static void clear_flat_runtime() noexcept;

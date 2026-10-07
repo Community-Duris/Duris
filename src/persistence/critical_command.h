@@ -12,9 +12,21 @@ constexpr size_t CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES = 8192;
 constexpr size_t CRITICAL_COMMAND_ID_BYTES = 16;
 constexpr size_t CRITICAL_COMMAND_ID_HEX_SIZE = 33;
 constexpr size_t CRITICAL_COMMAND_MAX_KEYS = 3003;
+// Only native-auction v2 accounted publication or pure schema1 preparation/
+// binding projections may exceed the generic ceiling. Actual wire bytes remain
+// bounded; schema1 auctionv2 never grants legacy execution or journal admission.
+constexpr size_t CRITICAL_COMMAND_MAX_NATIVE_AUCTION_KEYS = 4099;
+constexpr size_t CRITICAL_COMMAND_HEADER_BYTES = 52;
+constexpr size_t CRITICAL_COMMAND_ENTITY_KEY_BYTES = 16;
+constexpr size_t CRITICAL_COMMAND_EXPECTED_REVISION_BYTES = 24;
+constexpr size_t CRITICAL_COMMAND_ACCOUNTING_PREFIX_BYTES = 4;
 constexpr size_t CRITICAL_COMMAND_MAX_PAYLOAD_BYTES = 384 * 1024;
 constexpr size_t CRITICAL_COMMAND_MAX_ENCODED_BYTES = 512 * 1024;
-static_assert(52 + CRITICAL_COMMAND_MAX_KEYS * 40 + CRITICAL_COMMAND_MAX_PAYLOAD_BYTES + 4 +
+static_assert(CRITICAL_COMMAND_HEADER_BYTES +
+		      CRITICAL_COMMAND_MAX_KEYS * (CRITICAL_COMMAND_ENTITY_KEY_BYTES +
+						   CRITICAL_COMMAND_EXPECTED_REVISION_BYTES) +
+		      CRITICAL_COMMAND_MAX_PAYLOAD_BYTES +
+		      CRITICAL_COMMAND_ACCOUNTING_PREFIX_BYTES +
 		      CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES <=
 	      CRITICAL_COMMAND_MAX_ENCODED_BYTES);
 
@@ -174,6 +186,9 @@ bool critical_operation_id_from_hex(const char *input, critical_operation_id *op
 bool critical_entity_key_less(const critical_entity_key &left, const critical_entity_key &right);
 bool critical_entity_key_equal(const critical_entity_key &left, const critical_entity_key &right);
 bool critical_command_normalize(critical_command *command);
+// Exact native-auction v2 structural scope for transport/preparation/binding.
+// This grants no legacy execution, journal admission or typed owner authority.
+bool critical_command_native_auction_envelope(const critical_command &) noexcept;
 // Wire validity is distinct from support by the legacy mutation entrypoints.
 bool critical_command_envelope_valid(const critical_command &command);
 bool critical_command_legacy_execution_supported(const critical_command &command);
