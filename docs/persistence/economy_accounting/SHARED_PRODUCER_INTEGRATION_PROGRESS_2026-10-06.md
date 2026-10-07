@@ -1,5 +1,37 @@
 # Shared producer integration progress — 2026-10-06
 
+## Current producer qualification — 2026-10-06
+
+The [current qualification](SHARED_PROFILE_BUILD_QUALIFICATION_2026-10-06.md)
+records both original strict753-provider production builds and all nine contracts
+passing on private source4f8332ce (manifest259325cb). Primary authenticates all23
+result artifacts, all6367 source members and both complete1508-member caches.
+This source combines the shared startup owner, native auction integration and
+the narrow cold-SHOP object-pool reservation; it is distinct from maintained HEAD.
+
+The first full-tree SQL component passes its strict original compile/link and
+MySQL0063/runtime checks, then refuses in the original player-row/sidecar setup
+before any auction case. Source review establishes a missing genuine parsed
+recovery-template catalog prerequisite. The precise executed errno was not
+logged. That failure and cleanup evidence are preserved; a faithful fixture
+successor is being prepared. No template stub, SQL backfill or assertion bypass
+is authorized. Both genuine allocator profile units pass with full753-provider links,
+including mmap-failure refusal. Primary authenticates both link/provider
+bindings and26 exported members; owned cleanup absence is verified. The
+original MySQL warm publication passes in0.975 seconds. Cold reaches the
+ready promotion and retained admission guard, then refuses in1.480 seconds
+at the combined save-start/admission-finish condition. Its first failed bool
+is not yet attributed. All47 sealed artifacts and507 native archive members
+are authenticated; cleanup absence is verified. MariaDB and fault cases
+remain unrun under original fail-fast policy. Diagnosis continues.
+
+Canonical published code is `79df6775b`: captured-item bindings, standalone SQL
+audit namespaces, current flatfile envelopes and read-only operator locking/work
+budgets have separate committed primary qualification. Incoming299ee884e and
+unrelated SHOP work are preserved. Existing inactive behavior, safety gates and
+the declined spell path remain unchanged. Complete native auction publication,
+cold recovery, every writer, R1–R8 and release/activation remain unfinished.
+
 ## Current auction and startup boundaries
 
 Primary authentication now covers the original 18 native cases, both complete
@@ -74,18 +106,123 @@ The primary has implemented/formatted a distinct auction STATUS/EQ/INV checkpoin
 profile for the entire original player forest, including empty inventory, and a
 private friendship to the established complete literal stage. It is uncompiled;
 original-command submission, passive replay, physical publication and guarded ACK
-remain required. Original gameplay already rejects nonempty listed containers
-and supports1..9 independent roots; no new quantity or container restriction is
-introduced. Review establishes a concrete original per-UID value gap: listing
+remain required. Original gameplay supports1..9 selected roots and checks for
+contents only on the first root. Later selected same-vnum roots can have contents;
+the new path must retain their complete trees. No new quantity or container
+restriction is introduced. Review establishes a concrete original per-UID value gap: listing
 copies the first root's legacy object blob into every custody row. Complete native
 pickup must retain each selected root's genuine full literal and transport it
 into custody within the same transaction. The module and persistence interfaces
 are being coordinated; no first-template inference qualifies that requirement.
+The private selected-root capture now freezes complete literals for every selected
+tree while preserving unrelated ordinary capture, and the auction checkpoint keeps
+that exact selection through request, acknowledgement, poll and held observation.
+The native codec and shared version/envelope adapters are formatted but uncompiled.
+Full selected trees can exceed the original384KiB command payload limit, so their
+accepted transport is being changed to canonical forest hashes/counts bound to the
+original retained body and actual SQL source. Command and journal bounds stay intact;
+full custody/projection and physical/save/ACK integration remain unfinished.
+
+The private one-file cold-refusal diagnostic successor preserves the original
+predicates, effects and transaction cleanup, reports numeric failure stages, and
+retains the actual read-locked error. Both original750 builds and nine contracts
+pass, with primary23-artifact/source/cache authentication. Its genuine MySQL warm
+publication passes; cold exits2 after0.973 seconds with observed `stage=212 code=0`,
+meaning the actual world owner's advance refused. Primary authenticates all59
+retained native artifacts and exact unchanged recipe. Cleanup passes; MariaDB and
+the genuine origin/journal-fault journey remain skipped in this diagnostic batch.
+No deeper cause, deadline expiry, cold completion or activation is inferred.
+
+The next one-file world-owner diagnostic, archive
+`9892d7bf54c98ba2e6a2f77e9e39fa303e092c664d23386ace5192a50f3581ce`,
+adds numeric stages at the actual constructor/materialization/restore/effect
+guards with their original order and once-only behavior preserved. Both750
+production builds and all9 original contracts pass. Primary verifies all23 build
+artifacts, all6361 source members, both1502-file caches and each749 unchanged
+object/dependency pair against the authenticated predecessor. Matching unchanged
+warm/cold/fault recipe36bb55d6 is authenticated. The genuine same-ELF MySQL
+warm publication passes in1.938 seconds. Cold recovery exits2 after1.437 seconds
+at `world-recovery-refusal stage=8011` and `boot-recovery-refusal stage=212 code=0`:
+`quest_mobile_published_saved_forest::prepare` returned false. Primary authenticates
+all59 native artifacts, original deadlines and disposable cleanup. MariaDB/fault
+cases remain skipped. The exact failing subcondition is unproven. The next
+one-file saved-forest diagnostic, archive `ec4a850e`, preserves all original
+predicate order/effects and is under both750-provider build qualification;
+no new native journey is authorized until primary build authentication.
+Source remains private and cold recovery/activation remain unqualified.
+
+Private auction integration now includes the actual whole-player save reservation,
+passive replay/rebinding and guarded publication participant, plus a complete
+borrowed EQ/INV projection using original row/sidecar writers and full canonical
+readback without advancing the save watermark. The command carries ordered BEFORE
+UIDs as well as complete forest digests; no4MiB literal body is inlined into the
+original384KiB payload. NAR validates that exact order and permits notice progress
+only after physical ACK. The root's private coordinator adds required domain
+validators, original journal admission/CAS, held phase2 ACK retry, exact uncertain
+ACK settlement and separate notice retirement. Never-admitted cancellation retains
+the original refusal/NAR/fences until real hold consumption succeeds. Background
+finalize/removal has a separate actor-zero native capability and consumes no fake
+player checkpoint. These sources are formatted but uncompiled and unqualified.
+Full-tree native custody and per-node ledger transport, every-node typed plans
+and fences are now prepared privately. ACT2 stores each original full root tree
+with its genuine listing-after revisions; ANF2 adds a compact124-byte v2-only
+original EAI digest/count anchor so retired commands can still be authenticated.
+V1 facts stay unchanged; neither ACT2 self-hashes nor current player capture
+authorize original history. The genuine listing SQL leaf is source-complete and
+formatted. Authenticated original-tree reads and claim integration remain active.
+
+Primary composed22 shared source files against the complete9892 startup image.
+Seven overlapping edits were resolved explicitly: preserve HOLD execution/receipt
+retirement, quest fee ACK, constructor transfer, all retained-body byte accounting
+and existing money/HOLD component policy while adding the separate auction
+domain checks and STATUS/EQ/INV profile. All22 initial shared files passed changed-line
+formatting and token checks. The private composition now contains35 source files:
+real native preparation/admission, full-tree SQL leaves and their actual original
+source reader, ANF2 planners and complete startup dispatch are brought together.
+The claim leaf's incorrect runtime-header path is corrected in this derivative.
+Source ancestry and combined compilation/runtime qualification remain pending.
+Complete native callback wiring and central registration remain required before
+coherent auction qualification and maintained admission.
+
+Private native decoding now preserves authentic supplementary descendant item
+keys/revisions while retaining original root/player/account fences. Accepted
+LIST/item pickup requires the exact selected-node count; native bid/finalization/
+removal can retain the complete auction item cut. Original version1 execution
+and money root matching stay exact. The new real native-base parser is defined
+and declared, not a placeholder. Its combined qualification remains pending.
+
+Normal cold player loading needs a distinct proof from old callback returns.
+The private NAR stage `restored_after_proven` retains every original effect state
+unchanged. Only an actual passive replay save slot rebound to the registered,
+nondegraded original player can checkpoint it, after the native owner proves
+original SQL/current AFTER and the complete world census. Warm slots cannot
+select this proof. Phase2/notice progression stays separate; unknown notice
+execution does not become a successful callback. Actual native implementation
+and full-v2 retained receipt verification remain underway.
+
+The privateec4a saved-forest diagnostic passes both original750 builds and all9
+contracts; primary authenticates23 build artifacts,6361 source members, both1502
+cache members and749 unchanged object/dependency pairs per backend against9892.
+Matching recipee7b3 retains all14 original files/deadlines/assertions. Genuine
+MySQL warm passes0.973 seconds; cold exits2 after0.672 seconds with forest9023,
+world8011 and boot212/code0. Original SHOP item preparation returned false;
+its exact internal failed guard/allocation remains unproven. All59 retained
+artifacts and cleanup pass primary authentication, handoffd2fc39dc. MariaDB/fault
+cases remain skipped. The next d0dc2b9d one-file original item-preparation
+diagnostic preserves all original guards/effects/allocator invocation and is
+being built. No cold restoration or complete activation is claimed.
 
 The Plan5 peer is freshly read at `82377e05c`; its resumable canonical audit,
 integer-storage authentication, baseline continuity and orphan candidate work
 remain peer-owned source awaiting primary narrow integration. Its independent
 component/native evidence retains its original source attribution.
+Primary's read-only four-file review finds shared reader contracts compatible.
+One concrete audit deadline gap remains: the bounded-page check runs before a
+query but not after execution/fetch or before accepting the final page. A narrow
+post-query deadline refusal and controlled-clock regression are needed before
+claiming that bound. Cross-book baseline reservation query cost also needs genuine
+mixed-workload evidence; a bounded returned row count does not bound server work.
+No peer source is imported or runtime-qualified by that review.
 
 ## Independent opening-policy reader integrated — 2026-10-06
 
@@ -293,3 +430,162 @@ Plan5 published retained-allocation qualification and a narrow selector/PID inte
 Local immutable/source evidence lives under tmp/sql-money-opening-primary-composed-20261006, tmp/held-retirement-custody-cut-handoff-20261006, tmp/held-retirement-sql-source-proof-20261006, tmp/held-retirement-executor-hook-20261006 and tmp/quest-shared-receipt-primary-20261006. Compiled primary evidence is under bin/tests/auction-borrowed-provider-primary-20261006 and bin/tests/quest-shared-money-receipt-primary-20261006; binaries/logs remain uncommitted. Peer/private object evidence remains labeled by its owning packet.
 
 Next integration must meet on one tested candidate: original auction/opening/lifecycle native SQL batch; HRT source/current/publication/recovery batch; genuine quest coin GIVE, ordered fees, rewards and cold ACK; both production builds and applicable gameplay/persistence/independent Plan5 gates. Writer registry/matrix, activation and complete release qualification remain open. The two unrelated shop harness edits and untracked Plan5 restore-session report remain preserved. No production data, deployment, force push or merge occurred.
+
+## Complete native auction source boundary and cold allocation evidence
+
+The full native retained verifier is integrated as `a7095440`, after exact sealed
+artifact/source-overlay authentication. It regenerates real ANF2/ACT2 full-node
+listing and pickup evidence, including legitimate root subsets and canonical
+UID-sorted witnesses. Historical original proof is independent of today's
+claimed flags/owners. Bid and settlement authenticate original complete listing
+closure while preserving their genuine root-only entitlement witnesses and zero
+item-transfer events. Version1 remains exact; no original header is reconstructed
+from a stored hash. Current SQL/world authorization stays with the native owner.
+
+The actual native owner `8bfdb2ca` now implements every declared entry point:
+acknowledged player checkpoints, original-ID submission, complete physical
+trees, immutable/current SQL proof, typed refusal cancellation, guarded ACK,
+passive cold AFTER adoption and released notice continuation. Every native effect
+is checkpointed before invocation; cold adoption retains unknown callback states.
+The separate ownership effect records bid/settlement runtime custody publication
+without inventing transfers or allowing actorless player-balance publication.
+These are source claims awaiting the combined execution checks.
+
+Primary connects three genuine Make providers and the production validator,
+replay, submit, completion, pulse, readiness and busy hooks. Inactive and flat
+submission routes retain their original path. Exact39-path composition over the
+authenticated d0dc source freezes6367 members as archive `e79b3152` and manifest
+`4f31b171`, with753 real production providers. The original first-failure rule
+stops the first batch at the fifth contract: the bounded v1 codec test's old link
+recipe omits the genuine native decoder. Four preceding contracts and the real
+753 graph/original750 compile arguments plus3/new link pass. Production compile
+and flatfile execution have not started. The failed packet is preserved under
+`bin/tests/native-auction-major-production-primary-20261006`; this is a test
+dependency repair, with all original assertions preserved.
+
+The d0dc diagnostic passes both original750 production builds and all9 contracts.
+Primary verifies all6361 source bytes/modes,23 build artifacts,both1502 caches,
+749 unchanged object/dependency pairs per backend and the unchanged14-file cold
+recipe. Genuine MySQL warm publication passes0.974 seconds; cold exits2 after
+0.622 seconds at SHOP9127/code3, forest9023, world8011 and boot212/code0. The
+actual source enum is `inert_item_stage_result::allocation_unavailable`. Primary
+authenticates all62 artifacts and independently rechecks the owned container and
+both exact volumes are absent. Native handoff `ec2fa851`; six dependent MariaDB/
+fault cases remain skipped. Original cold pool growth/preparation is being
+diagnosed from actual source; no specific inner allocation or full restoration
+is inferred from code3. No Plan, activation or release gate is promoted.
+
+## Combined auction/pool successor after actual production failure
+
+The codec-link successor9ff passes all nine original contracts, including all
+six original codec assertions. Primary verifies their actual logs and hashes.
+The original strict753-provider MariaDB Make then fails at the listing helper's
+ambiguous `identity` lookup after native includes expose C++20 `std::identity`.
+The failure packet `fe09ee69` retains actual Make/controller exit2 and partial
+successful inputs; no full production pass is claimed. Flatfile was not started.
+
+Primary renames the listing and pickup helper definitions and their two calls
+each; inverse token checks prove unchanged predicates and behavior, and touched
+lines receive clang-format18 formatting. The failed9ff source stays frozen.
+
+The cold source trace establishes genuine empty object-pool capacity before
+original SHOP stock restoration. Training-dummy boot uses the mobile pool and
+does not create item capacity; held reset/events have not supplied an object.
+Primary authenticates all6361 members/modes of both d0dc and the three-file
+reserve successorc2c4b010. Only mm.c, mm.h and the original SHOP preparation
+change. The helper nonfatally reserves the original configured mmap chunk when
+empty, leaves metadata unchanged on failure, and acquires no object or UID.
+Existing free slots, generic inert/money allocation and original fatal pool
+growth remain unchanged. Actual-mm regression controls and genuine cold
+recovery are pending; static review does not prove runtime completion.
+
+The combined43-path overlay freezes6367 members/753 real providers as archive
+`4c81071bd4b1cbe50dc64b18140213d56fb87611d61a5b10597e3257bb8d03c8`,
+manifest `f646c79412eb622e5c141122900e6f07bcbe817fc6e938aabddc9085123e8653`.
+The next build uses authenticated successful inputs from the failed9ff batch;
+no process is restarted solely on an observation timeout. Later maintained
+source-claim fixes are compared against actual archive bytes before final
+publication. Unrelated dirty harnesses and the restore report remain preserved.
+
+Canonical experimental-accounting remains299ee884e; the independent Plan5 branch
+is nowece7a6280. Its four completed audit slices are fetched and being reviewed,
+with peer-native qualification kept separate from the combined producer
+candidate. No whole Plan, activation or release gate is promoted.
+
+## SQL753 build passes; captured-item audit milestone published
+
+Actual original strict MariaDB Make on4c81071b exits0 in238.73 seconds:336
+fresh compile units and417 authenticated successful earlier object/dependency
+pairs, followed by the fresh753-object link. All three new native providers
+were genuinely compiled in the prior9ff batch and their unchanged dependencies
+qualify current reuse. Actual log SHA2566d01eeb4; ELF247eab079c91365581d361bf3da49a5906a3c4ae3ab4c316ab6011f83f8c2506.
+The full source bytes/modes are retained; flatfile is running on the same frozen
+source. Neither the native pool controls nor full-tree SQL/component/world/cold
+journeys have executed on this candidate yet.
+
+Primary integrates Plan5 captured-item source9328c5c3f, preserves all46 original
+method ASTs and adds six methods. Maintained Windows execution discovers52:
+49 pass/three explicit native skips; normal validation0/14fixtures/920routes/
+2,876 sites, releasefalse. Executable source hashes match the independently
+qualified slice; external Linux/native artifacts remain peer-attributed.
+Separate milestonede42a11c0 is directly pushed and exact remote readback passes.
+The same owning worktree uses linear branchcodex/accounting-review-fixes-linear-
+20261006 from canonical299ee884e, preserving its allowlist fix and all unrelated
+WIP without a Git merge or history rewrite. Full R1–R8/release remain open.
+
+## Flat profile guard successor; independent composite audit published
+
+The actual4c flatfile build exits2 after294.74 seconds at unused SQL-only
+stage_claim under original Werror. Original failed log73c0adbe and combined
+failure seal978186d5 remain preserved. The genuine partial flat cache retains
+457 successful ELF/object/dependency pairs, excluding the failed target and
+296 stale/unproduced dependency entries. MariaDB full753 authority88595703
+and flat partial2c05c448 are separately scoped; neither proves cold recovery.
+
+Primary exact inverse review integrates only nativepubC05a795a4 privately,
+preserving the complete real SQL body and every other byte. New archive
+e92333303bbf434ecd359e9c03ccf8b4570cf7cb8523be85b48e0037728f96cc,
+manifest038fa572191fd0b05a3ad9f921e9d635d69544067ff192e0770055a398104a80
+retains43-path composition,6367 members and753 genuine providers. Root verifies
+all26 parent artifacts and unchanged operational build recipes before launch.
+All nine original contracts and the original SQL753 fresh link pass on this
+source; the flat profile remains pending. Prepared actual-mm, genuine cold and
+fulltree SQL component consumers preserve original drivers, flags, budgets and
+migration63 contract; none is yet runtime-qualified on this successor.
+
+Independent composite audit integration is published as8f40b43ec on canonical
+experimental-accounting, with exact remote readback. All35 maintained methods
+survive; necessary decoder included. Canonical59+5skip, origin49+3skip, mobile
+grammar6+3skip and child identity21+2skip are primary Windows results. Normal
+validation passes. The117-method peer Linux qualification remains attributed
+to its own frozen native source. Release, complete native coverage and full
+Plan completion remain unproved. No inactive spell-path, production activation,
+production data, deployment or Git merge was performed.
+
+## Current envelope milestone published; second profile guard enters full build
+
+Published a455dcb94 directly to canonical experimental-accounting, exact readback.
+Primary complete original flatfile authority suite passes in301.629 seconds:
+1058 metadata and574 command-envelope comparisons,11 native-accepted records,
+ten malformed-envelope refusals,20 positive stores and367 refused corruptions.
+Frozen maintained-parent-plus-three-file archive4755be48 contains2881 selected
+source files whose bytes/modes remain unchanged; log898b0cb7. Original sanitizer,
+baseline-book, source-claim and cross-epoch cases remain. Normal validation and
+changed-line clang-format18 pass. This reader qualification is separate from
+private producer/world/activation proof. The next independent operator boundary
+slice is imported as seven exact peer files and runs its original native suite
+on frozen archivee4b89d0d; no outcome is yet claimed.
+
+Actual e923 SQL753/all nine contracts pass, but flatfile fails at the unused
+SQL-only auction_actor_matches helper. Preserved failureb847e51b; genuine flat
+partial authoritya7f8a614 retains526 successful pairs. Primary exact inverse
+review adds only the helper-definition conditional, preserving its complete SQL
+body and every other byte. Original strict flat same-TU diagnostic passes7.28
+seconds. New43-path/6367-member/753-provider archive
+4f8332ce8e7b1eab670ee59ef38e40dade3608d489124381300913860eb20658,
+manifest259325cb2211214d461991694d6ead67edbb2bdf22843120bf776e41ce936933
+enters the original strict builds after primary26-artifact/recipe authentication.
+No suppressed warning, weaker gate, generic inactive allocation change, production
+activation or data operation. Actual-mm, genuine cold and fulltree SQL recipes
+are rebound by source pins only and await matching terminal full-build evidence.
+Whole Plan and fullR1–R8 completion remain unproved.
