@@ -26,6 +26,7 @@
 #include "economy/economic_gameplay_authority.h"
 #include <math.h>
 #include <stdio.h>
+#include "economy/item_value_quote.h"
 #include <string.h>
 #include "world/achievements.h"
 #include "combat/arena.h"
@@ -1765,532 +1766,55 @@ int learn_tradeskill(P_char ch, P_char pl, int cmd, char *arg)
 
 int itemvalue(P_obj obj)
 {
-	double workingvalue = 0;
-	double multiplier = 1;
-	double mod;
-
-	if (!obj)
+	struct value_observations
 	{
-		return 0;
-	}
-
-	if (IS_SET(obj->wear_flags, ITEM_WEAR_EYES))
-		multiplier *= 1.3;
-
-	if (IS_SET(obj->wear_flags, ITEM_WEAR_EARRING))
-		multiplier *= 1.2;
-
-	if (IS_SET(obj->wear_flags, ITEM_WEAR_FACE))
-		multiplier *= 1.3;
-
-	if (IS_SET(obj->wear_flags, ITEM_WEAR_QUIVER))
-		multiplier *= 1.1;
-
-	if (IS_SET(obj->wear_flags, ITEM_WEAR_FINGER))
-		multiplier *= 1.2;
-
-	if (IS_SET(obj->wear_flags, ITEM_GUILD_INSIGNIA))
-		multiplier *= 1.5;
-
-	if (IS_SET(obj->wear_flags, ITEM_WEAR_NECK))
-		multiplier *= 1.2;
-
-	if (IS_SET(obj->wear_flags, ITEM_WEAR_WAIST))
-		multiplier *= 1.1;
-
-	if (IS_SET(obj->wear_flags, ITEM_WEAR_WRIST))
-		multiplier *= 1.1;
-
-	// Aff's add to the base value.
-	if (IS_SET(obj->bitvector, AFF_STONE_SKIN))
-		workingvalue += 125;
-
-	if (IS_SET(obj->bitvector, AFF_BIOFEEDBACK))
-		workingvalue += 110;
-
-	if (IS_SET(obj->bitvector, AFF_FARSEE))
-		workingvalue += 45;
-
-	if (IS_SET(obj->bitvector, AFF_DETECT_INVISIBLE))
-		workingvalue += 90;
-
-	if (IS_SET(obj->bitvector, AFF_HASTE))
-		workingvalue += 75;
-
-	if (IS_SET(obj->bitvector, AFF_INVISIBLE))
-		workingvalue += 35;
-
-	if (IS_SET(obj->bitvector, AFF_SENSE_LIFE))
-		workingvalue += 45;
-
-	if (IS_SET(obj->bitvector, AFF_MINOR_GLOBE))
-		workingvalue += 28;
-
-	if (IS_SET(obj->bitvector, AFF_UD_VISION))
-		workingvalue += 40;
-
-	if (IS_SET(obj->bitvector, AFF_WATERBREATH))
-		workingvalue += 45;
-
-	if (IS_SET(obj->bitvector, AFF_PROTECT_EVIL))
-		workingvalue += 35;
-
-	if (IS_SET(obj->bitvector, AFF_PROTECT_GOOD))
-		workingvalue += 35;
-
-	if (IS_SET(obj->bitvector, AFF_SLOW_POISON))
-		workingvalue += 20;
-
-	if (IS_SET(obj->bitvector, AFF_SNEAK))
-		workingvalue += 125;
-
-	if (IS_SET(obj->bitvector, AFF_BARKSKIN))
-		workingvalue += 25;
-
-	if (IS_SET(obj->bitvector, AFF_INFRAVISION))
-		workingvalue += 7;
-
-	if (IS_SET(obj->bitvector, AFF_LEVITATE))
-		workingvalue += 13;
-
-	if (IS_SET(obj->bitvector, AFF_HIDE))
-		workingvalue += 85;
-
-	if (IS_SET(obj->bitvector, AFF_FLY))
-		workingvalue += 75;
-
-	if (IS_SET(obj->bitvector, AFF_AWARE))
-		workingvalue += 75;
-
-	if (IS_SET(obj->bitvector, AFF_PROT_FIRE))
-		workingvalue += 20;
-
-	if (IS_SET(obj->bitvector2, AFF2_FIRESHIELD))
-		workingvalue += 45;
-
-	if (IS_SET(obj->bitvector2, AFF2_ULTRAVISION))
-		workingvalue += 80;
-
-	if (IS_SET(obj->bitvector2, AFF2_DETECT_EVIL))
-		workingvalue += 5;
-
-	if (IS_SET(obj->bitvector2, AFF2_DETECT_GOOD))
-		workingvalue += 5;
-
-	if (IS_SET(obj->bitvector2, AFF2_DETECT_MAGIC))
-		workingvalue += 10;
-
-	if (IS_SET(obj->bitvector2, AFF2_PROT_COLD))
-		workingvalue += 20;
-
-	if (IS_SET(obj->bitvector2, AFF2_PROT_LIGHTNING))
-		workingvalue += 30;
-
-	if (IS_SET(obj->bitvector2, AFF2_GLOBE))
-		workingvalue += 80;
-
-	if (IS_SET(obj->bitvector2, AFF2_PROT_GAS))
-		workingvalue += 30;
-
-	if (IS_SET(obj->bitvector2, AFF2_PROT_ACID))
-		workingvalue += 30;
-
-	if (IS_SET(obj->bitvector2, AFF2_SOULSHIELD))
-		workingvalue += 45;
-
-	if (IS_SET(obj->bitvector2, AFF2_CONCEALMENT))
-		workingvalue += 15;
-
-	if (IS_SET(obj->bitvector2, AFF2_VAMPIRIC_TOUCH))
-		workingvalue += 65;
-
-	if (IS_SET(obj->bitvector2, AFF2_EARTH_AURA))
-		workingvalue += 110;
-
-	if (IS_SET(obj->bitvector2, AFF2_WATER_AURA))
-		workingvalue += 115;
-
-	if (IS_SET(obj->bitvector2, AFF2_FIRE_AURA))
-		workingvalue += 120;
-
-	if (IS_SET(obj->bitvector2, AFF2_AIR_AURA))
-		workingvalue += 130;
-
-	if (IS_SET(obj->bitvector2, AFF2_PASSDOOR))
-		workingvalue += 80;
-
-	if (IS_SET(obj->bitvector2, AFF2_FLURRY))
-		workingvalue += 150;
-
-	if (IS_SET(obj->bitvector3, AFF3_PROT_ANIMAL))
-		workingvalue += 20;
-
-	if (IS_SET(obj->bitvector3, AFF3_SPIRIT_WARD))
-		workingvalue += 35;
-
-	if (IS_SET(obj->bitvector3, AFF3_GR_SPIRIT_WARD))
-	{
-		workingvalue += 25;
-		multiplier += 1.20;
-	}
-
-	if (IS_SET(obj->bitvector3, AFF3_ENLARGE))
-		workingvalue += 120;
-
-	if (IS_SET(obj->bitvector3, AFF3_REDUCE))
-		workingvalue += 120;
-
-	if (IS_SET(obj->bitvector3, AFF3_INERTIAL_BARRIER))
-		workingvalue += 135;
-
-	if (IS_SET(obj->bitvector3, AFF3_COLDSHIELD))
-		workingvalue += 45;
-
-	if (IS_SET(obj->bitvector3, AFF3_TOWER_IRON_WILL))
-		workingvalue += 45;
-
-	if (IS_SET(obj->bitvector3, AFF3_BLUR))
-		workingvalue += 65;
-
-	if (IS_SET(obj->bitvector3, AFF3_PASS_WITHOUT_TRACE))
-		workingvalue += 45;
-
-	if (IS_SET(obj->bitvector4, AFF4_VAMPIRE_FORM))
-		workingvalue += 90;
-
-	if (IS_SET(obj->bitvector4, AFF4_HOLY_SACRIFICE))
-		workingvalue += 105;
-
-	if (IS_SET(obj->bitvector4, AFF4_BATTLE_ECSTASY))
-		workingvalue += 105;
-
-	if (IS_SET(obj->bitvector4, AFF4_DAZZLER))
-		workingvalue += 45;
-
-	if (IS_SET(obj->bitvector4, AFF4_PHANTASMAL_FORM))
-		workingvalue += 105;
-
-	if (IS_SET(obj->bitvector4, AFF4_NOFEAR))
-		workingvalue += 40;
-
-	if (IS_SET(obj->bitvector4, AFF4_REGENERATION))
-		workingvalue += 60;
-
-	if (IS_SET(obj->bitvector4, AFF4_GLOBE_OF_DARKNESS))
-		workingvalue += 15;
-
-	if (IS_SET(obj->bitvector4, AFF4_HAWKVISION))
-		workingvalue += 20;
-
-	if (IS_SET(obj->bitvector4, AFF4_SANCTUARY))
-		workingvalue += 105;
-
-	if (IS_SET(obj->bitvector4, AFF4_HELLFIRE))
-		workingvalue += 110;
-
-	if (IS_SET(obj->bitvector4, AFF4_SENSE_HOLINESS))
-		workingvalue += 15;
-
-	if (IS_SET(obj->bitvector4, AFF4_PROT_LIVING))
-		workingvalue += 45;
-
-	if (IS_SET(obj->bitvector4, AFF4_DETECT_ILLUSION))
-		workingvalue += 40;
-
-	if (IS_SET(obj->bitvector4, AFF4_ICE_AURA))
-		workingvalue += 90;
-
-	if (IS_SET(obj->bitvector4, AFF4_NEG_SHIELD))
-		workingvalue += 45;
-
-	if (IS_SET(obj->bitvector4, AFF4_WILDMAGIC))
-		workingvalue += 240;
-
-	// Has a old school proc (Up to three spells).
-	// Can un-comment the debug stuff if you want to modify this.
-	if (IS_SET(obj->wear_flags, ITEM_WIELD) && (obj->value[5] > 0))
-	{
-		int spells[3];
-		int spellcirclesum, numspells;
-
-		// val5 : 3 spells + all or one.
-		spells[0] = obj->value[5] % 1000;
-		spells[1] = obj->value[5] % 1000000 / 1000;
-		spells[2] = obj->value[5] % 1000000000 / 1000000;
-		//    debug( "Spells0: %d, Spells1: %d, Spells2: %d.", spells[0], spells[1], spells[2] );
-
-		// val6 = level * val7 = chance -> 1/30 chance = 1, 1/60 chance = .5, 1/15 chance = 2, etc.
-		mod = ((obj->value[6] > 19) ? obj->value[6] / 10.0 : 1) * (30.0 / obj->value[7]);
-		//    debug( "mod: %f, objval6/10: %f, 30/objval7: %f", mod, (obj->value[6] > 19) ? obj->value[6] / 10.0 : 1, (30.0 / obj->value[7]) );
-
-		spellcirclesum = get_mincircle(spells[0]);
-		spellcirclesum += get_mincircle(spells[1]);
-		spellcirclesum += get_mincircle(spells[2]);
-		//    debug( "spellcirclesum: %d, circle0: %d, circle1: %d, circle2: %d.", spellcirclesum, get_mincircle(spells[0]), get_mincircle(spells[1]), get_mincircle(spells[2]) );
-
-		// 1 lvl 10 spell  2nd circle 1/60 chance = 1*1* 2*.5 =  1
-		// 1 lvl 60 spell  1st circle 1/30 chance = 1*6* 1*1  =  6
-		// 1 lvl 40 spell  3rd circle 1/30 chance = 1*4* 3*1  = 12
-		// 1 lvl 60 spell 12th circle 1/30 chance = 1*6*12*1  = 72 etc.
-		// val5 / 1000000000 -> 1, otherwise casts all.
-		if (obj->value[5] / 1000000000)
+		P_obj object;
+
+		bool present() { return object != nullptr; }
+		bool wear_flag(unsigned int flag) { return IS_SET(object->wear_flags, flag); }
+		bool extra_flag(unsigned int flag) { return IS_SET(object->extra_flags, flag); }
+		bool affect_flag1(unsigned long flag) { return IS_SET(object->bitvector, flag); }
+		bool affect_flag2(unsigned long flag) { return IS_SET(object->bitvector2, flag); }
+		bool affect_flag3(unsigned long flag) { return IS_SET(object->bitvector3, flag); }
+		bool affect_flag4(unsigned long flag) { return IS_SET(object->bitvector4, flag); }
+		int value(int index) { return object->value[index]; }
+		::byte item_type() { return object->type; }
+		::byte affect_location(int index) { return object->affected[index].location; }
+		sbyte affect_modifier(int index) { return object->affected[index].modifier; }
+		int minimum_circle(int spell) { return get_mincircle(spell); }
+		bool prototype_has_proc() { return obj_index[object->R_num].func.obj != nullptr; }
+		int prototype_proc_value()
 		{
-			// Add up number of spells
-			numspells = ((spells[0]) ? 1 : 0) + ((spells[1]) ? 1 : 0) +
-				    ((spells[2]) ? 1 : 0);
-			// If there are none?!, set to 1 anyway.
-			numspells = numspells ? numspells : 1;
-			// Compute average circle.
-			//      debug( "mod * spellcirclesum / numspells: %d.",(int) (mod * (spellcirclesum / numspells)) );
-			workingvalue += (int)(mod * (spellcirclesum / numspells));
+			return get_ival_from_proc(obj_index[object->R_num].func.obj);
 		}
-		else
+		sh_int race_agility(int race) { return stat_factor[race].Agi; }
+		sh_int race_strength(int race) { return stat_factor[race].Str; }
+		sh_int race_constitution(int race) { return stat_factor[race].Con; }
+		sh_int race_intelligence(int race) { return stat_factor[race].Int; }
+		sh_int race_wisdom(int race) { return stat_factor[race].Wis; }
+		sh_int race_charisma(int race) { return stat_factor[race].Cha; }
+		sh_int race_dexterity(int race) { return stat_factor[race].Dex; }
+		bool backstabber() { return IS_BACKSTABBER(object); }
+		bool can_take() { return CAN_WEAR(object, ITEM_TAKE); }
+		void invalid_race_notice(int index, double mod)
 		{
-			//      debug( "spellcirclesum * mod: %d.", (int) (spellcirclesum * mod) );
-			workingvalue += mod * spellcirclesum;
+			debug("itemvalue: obj '%s' %d has APPLY_..._RACE %d and bad modifier %g.",
+			      object->short_description, OBJ_VNUM(object),
+			      object->affected[index].location, mod);
 		}
-	}
-
-	// Real Obj procs
-	if (obj_index[obj->R_num].func.obj)
-	{
-		workingvalue += get_ival_from_proc(obj_index[obj->R_num].func.obj);
-	}
-
-	//------- A0/A1/A2 -------------
-	int i = 0;
-	while (i < MAX_OBJ_AFFECT)
-	{
-		mod = obj->affected[i].modifier;
-		// dam/hitroll are normal values
-		if ((obj->affected[i].location == APPLY_DAMROLL) ||
-		    (obj->affected[i].location == APPLY_HITROLL))
+		void bad_race_location_notice(int index, double mod)
 		{
-			if (obj->type == ITEM_WEAPON)
-			{
-				// 1:1, 2:2, 3:6, 4:12, 5:20, 6:30, 7:42, 8:56, 9:72, 10:90, 11: 110..
-				workingvalue += (mod <= 2) ? mod : mod * (mod - 1);
-			}
-			else
-			{
-				// 1:2, 2:5, 3:30, 4:51, 5:78, 6:111
-				// 1:2, 2:6, 3:37, 4:63, 5:97 after multiplier (note: wear flag will raise 5 over 100).
-				workingvalue += (mod <= 2) ? (3 * mod - 1) : 3 * mod * mod + 3;
-			}
-			// Translates to 1:1, 2:2, 3:7, 4:15, 5:25, 6:37, 7:52, 8:70, 9:90, 10:112
-			multiplier *= 1.25;
-			// So a 5/5 weapon is essentially 40 * 1.25 * 1.25 = 62.5 (before adding other stats).
-			// A 6/6 item (no other stats) is 93, a 2d2 6/6 sword would be 62 * 1.25^2 = 96, and 5d5 6/6 = 112.
+			debug("itemvalue: obj '%s' %d has 'bad' APPLY_..._RACE %d, modifier %g.",
+			      object->short_description, OBJ_VNUM(object),
+			      object->affected[index].location, mod);
 		}
-
-		// Regular stats can be high numbers - half them
-		if ((obj->affected[i].location == APPLY_STR) ||
-		    (obj->affected[i].location == APPLY_DEX) ||
-		    (obj->affected[i].location == APPLY_INT) ||
-		    (obj->affected[i].location == APPLY_WIS) ||
-		    (obj->affected[i].location == APPLY_CON) ||
-		    (obj->affected[i].location == APPLY_AGI))
-		{
-			// 1:2, 2:4, 3:6, 4:9, 5:16, 6:25, 7:36, 8:49, 9:64, 10:81, 11:100
-			workingvalue += (mod <= 3) ? 2 * mod : (mod - 1) * (mod - 1);
-		}
-
-		// These are used a little less
-		if ((obj->affected[i].location == APPLY_POW) ||
-		    (obj->affected[i].location == APPLY_CHA) ||
-		    (obj->affected[i].location == APPLY_LUCK))
-		{
-			// 1:2, 2:4, 3:6, 4:8, 5:10, 6:12, 7:15, 8:26, 9:39, 10:54, 11:71, 12:90, 13: 111
-			workingvalue += (mod <= 6) ? 2 * mod : (mod - 2) * (mod - 2) - 10;
-		}
-
-		// Hitpoints.
-		if (obj->affected[i].location == APPLY_HIT)
-		{
-			// 1 : 2, 4 : 8, 5 : 11, 10 : 29, 20 : 65, 30 : 101 (can't be crafted), 32 : 108 (can't be enhanced).
-			workingvalue += (mod <= 4) ? 2 * mod : (18 * mod) / 5 - 7;
-		}
-
-		// Moves and mana are generally large #'s
-		if ((obj->affected[i].location == APPLY_MOVE) ||
-		    (obj->affected[i].location == APPLY_MANA))
-		{
-			// Right now, 25 : 25, 35 : 65, 44 : 101, 45 : 105 - not enhanceable.
-			workingvalue += (mod <= 25) ? mod : 4 * mod - 75;
-		}
-
-		// Hit, move, mana, regen are generally large #'s, but we don't want above 9.
-		if ((obj->affected[i].location == APPLY_HIT_REG) ||
-		    (obj->affected[i].location == APPLY_MOVE_REG) ||
-		    (obj->affected[i].location == APPLY_MANA_REG))
-		{
-			// 1:1, 2:2, 3:3, 4:5, 5:8, 6:12, 7:16, 8:21, 9:27, 10:33
-			// 11:40, 12:48, 13:56, 14:65, 15:75, 16:85, 17:96, 18:108
-			workingvalue += (mod < 4) ? mod : (mod * mod) / 3;
-		}
-
-		// Racial attributes #'s - Do we still have these?
-		if ((obj->affected[i].location == APPLY_AGI_RACE) ||
-		    (obj->affected[i].location == APPLY_STR_RACE) ||
-		    (obj->affected[i].location == APPLY_CON_RACE) ||
-		    (obj->affected[i].location == APPLY_INT_RACE) ||
-		    (obj->affected[i].location == APPLY_WIS_RACE) ||
-		    (obj->affected[i].location == APPLY_CHA_RACE) ||
-		    (obj->affected[i].location == APPLY_DEX_RACE))
-		{
-			if (mod < 1 || mod > LAST_RACE)
-			{
-				debug("itemvalue: obj '%s' %d has APPLY_..._RACE %d and bad modifier %g.",
-				      obj->short_description, OBJ_VNUM(obj),
-				      obj->affected[i].location, mod);
-				workingvalue += 100;
-			}
-			else
-			{
-				switch (obj->affected[i].location)
-				{
-				// We're looking for the stat vs 100. 75->0pts, 100->50pts, 150->150pts, 200->250pts
-				case APPLY_AGI_RACE:
-					workingvalue += 2 * stat_factor[(int)mod].Agi - 150;
-					break;
-				case APPLY_STR_RACE:
-					workingvalue += 2 * stat_factor[(int)mod].Str - 150;
-					break;
-				case APPLY_CON_RACE:
-					workingvalue += 2 * stat_factor[(int)mod].Con - 150;
-					break;
-				case APPLY_INT_RACE:
-					workingvalue += 2 * stat_factor[(int)mod].Int - 150;
-					break;
-				case APPLY_WIS_RACE:
-					workingvalue += 2 * stat_factor[(int)mod].Wis - 150;
-					break;
-				case APPLY_CHA_RACE:
-					workingvalue += 2 * stat_factor[(int)mod].Cha - 150;
-					break;
-				case APPLY_DEX_RACE:
-					workingvalue += 2 * stat_factor[(int)mod].Dex - 150;
-					break;
-				// Should never be the case but..
-				default:
-					debug("itemvalue: obj '%s' %d has 'bad' APPLY_..._RACE %d, modifier %g.",
-					      obj->short_description, OBJ_VNUM(obj),
-					      obj->affected[i].location, mod);
-					workingvalue += 100;
-					break;
-				}
-			}
-		}
-
-		// AC negative is good, not reducing itemvalue for items that make ac worse.
-		if ((obj->affected[i].location == APPLY_AC) && mod != 0)
-		{
-			// 1.5 points for each point of armor class.
-			// 1 : 1, 2 : 3, 3 : 4, 5 : 7, ... 50 : 75, 67 : 100, 68 : 102 (!craft), 70 : 105 (!enhance).
-			if (mod < 0)
-			{
-				mod *= -1;
-			}
-			workingvalue += (3 * mod) / 2;
-			// +10% at 50ac.
-			multiplier += mod / 500.;
-		}
-
-		// saving throw values (good) are negative
-		if ((obj->affected[i].location == APPLY_SAVING_PARA) ||
-		    (obj->affected[i].location == APPLY_SAVING_ROD) ||
-		    (obj->affected[i].location == APPLY_SAVING_FEAR) ||
-		    (obj->affected[i].location == APPLY_SAVING_BREATH) ||
-		    (obj->affected[i].location == APPLY_SAVING_SPELL))
-		{
-			// -1:2, -2:8, -3:18, -4:32, -5:50, -6:72, -7:98, -8:128
-			workingvalue += mod * mod * ((mod <= 0) ? 2 : -2);
-		}
-
-		// pulse is quite valuable and negative is good
-		if ((obj->affected[i].location == APPLY_COMBAT_PULSE) ||
-		    (obj->affected[i].location == APPLY_SPELL_PULSE))
-		{
-			multiplier *= 2;
-			workingvalue += mod * -75;
-		}
-
-		// Max_stats double points
-		if ((obj->affected[i].location == APPLY_STR_MAX) ||
-		    (obj->affected[i].location == APPLY_DEX_MAX) ||
-		    (obj->affected[i].location == APPLY_INT_MAX) ||
-		    (obj->affected[i].location == APPLY_WIS_MAX) ||
-		    (obj->affected[i].location == APPLY_CON_MAX) ||
-		    (obj->affected[i].location == APPLY_CHA_MAX) ||
-		    (obj->affected[i].location == APPLY_AGI_MAX) ||
-		    (obj->affected[i].location == APPLY_POW_MAX) ||
-		    (obj->affected[i].location == APPLY_LUCK_MAX))
-		{
-			// 1:3, 2:13, 3:24, 4:36, 5:51, 6:66, 7:83, 8:100
-			workingvalue += (mod < 2) ? 3.0 * mod : 3.52 * mod * sqrt(mod) + mod;
-			multiplier += .15;
-		}
-		i++;
-	}
-
-	if (obj->type == ITEM_WEAPON)
-	{
-		// Add avg damage.
-		workingvalue += (obj->value[1] * obj->value[2]);
-		// 1d1 = .7%, 5d5 = 17.5%, 10d10 = 70%.
-		multiplier += obj->value[1] * obj->value[2] * .005;
-		// Backstabbing weapons get a big ival for big dice.
-		if (IS_BACKSTABBER(obj))
-		{
-			mod = obj->value[2];
-			// workingvalue increases quadratic for every die roll and cubic for dice size.
-			// For number of dice: 1:1, 2:1.15, 3:1.4, 4:1.75, 5:2.2, 6:2.75, 7:3.4, 8:4.15, 9:5, 10:5.95
-			// For number of die sides: 1:0, 2:1, 3:5, 4:12, 5:25, 6:43, 7: 68, 8:102, 9:145, 10: 200
-			// So, 1d8 / 3d7 stabber is !forge and !enhance (115 ival when combined with above).
-			workingvalue += ((obj->value[1] * obj->value[1] + 19.) / 20.) *
-					(mod * mod * mod) / 5.;
-		}
-	}
-	if (obj->type == ITEM_ARMOR)
-	{
-		mod = obj->value[0];
-		// Same as APPLY_AC.  1.5 points for each point of armor class.
-		if (mod < 0)
-		{
-			mod *= -1;
-		}
-		workingvalue += (3 * mod) / 2;
-		// +10% at 50ac.
-		multiplier += mod / 500.;
-	}
-
-	// Two handed items have less ival.
-	if (IS_SET(obj->extra_flags, ITEM_TWOHANDS))
-	{
-		multiplier *= .80;
-	}
-
-	workingvalue *= multiplier;
-
-	if (workingvalue < 1)
-	{
-		workingvalue = 1;
-	}
-
-	if ((!CAN_WEAR(obj, ITEM_TAKE) && obj->type == ITEM_TELEPORT) || obj->type == ITEM_KEY ||
-	    obj->type == ITEM_SWITCH || obj->type == ITEM_VEHICLE || obj->type == ITEM_SHIP ||
-	    obj->type == ITEM_STORAGE)
-	{
-		if (workingvalue != 1)
+		void forced_value_notice(double workingvalue)
 		{
 			debug("Always load obj '%s' %d has stats giving ival %.3lf.",
-			      OBJ_SHORT(obj), OBJ_VNUM(obj), workingvalue);
+			      OBJ_SHORT(object), OBJ_VNUM(object), workingvalue);
 		}
-		return 1;
-	}
-
-	// debug("&+YItem value is: &n%d", workingvalue);
-	return workingvalue;
+	} observations{ obj };
+	return item_prepare_value(observations);
 }
 
 void do_salvation(P_char ch, char * /*arg*/, int /*cmd*/)
