@@ -138,3 +138,9 @@ fix mini boot, execute Kord reward/XP-ACK/native birth/retirement/refund, exerci
 active native SQL/live_drop_token, qualify an empty-room cold variant or prove a
 third cold boot after the final drop. Integrated primary qualification stays at
 its existing major-batch boundary. No unrequested framework or batch expansion.
+
+Published executable/evidence bundle0ceae3a847f6573ec326bac3f36fb632ef5c2fe9,
+base8be236a150075a9f28de7a9991e4ad40705be779; canonical handoff
+6a36396da24db53d823ec39e515382b8b45b88cb. After remote/local equality and clean
+worktree verification, owned runtime stopped, update_goal returned COMPLETE at
+1791378551, elapsed778s/no token budget. Selected finite control is discharged.

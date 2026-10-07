@@ -37,8 +37,11 @@ required. Original major-batch cadence remains primary-owned.
 
 New Goal: coordinator explicitly requested activation after reservation; get_goal
 returned null, create_goal/get_goal verified ACTIVE at1791377773, no token budget.
-Terminal Goal disposition follows publication/remote equality and owned-runtime
-shutdown. Previous Goal completion below remains historical and unchanged.
+After terminal publication6a36396da24db53d823ec39e515382b8b45b88cb, exact local/remote
+SHA equality, clean worktree and owned-runtime shutdown, update_goal returned
+**COMPLETE**, updatedAt1791378551, elapsed778s (12m58s). Previous Goal completion
+below remains historical and unchanged. No selected owned control remains pending;
+the primary's integrated qualification and shared requests above stay open.
 
 # Quest follow-up delivery — 2026-10-07
 
