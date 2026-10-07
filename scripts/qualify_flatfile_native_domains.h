@@ -21,13 +21,14 @@ struct envelope
 	uint64_t revision;
 	uint32_t version;
 };
-inline envelope unwrap(std::span<const uint8_t> encoded, const char *magic)
+inline envelope unwrap(std::span<const uint8_t> encoded, const char *magic,
+		       size_t limit = domain_limit, uint32_t maximum_version = 4)
 {
-	need(encoded.size() >= 56 && encoded.size() <= domain_limit &&
+	need(encoded.size() >= 56 && encoded.size() <= limit &&
 	     same(encoded.first(8), { reinterpret_cast<const uint8_t *>(magic), 8 }));
 	const auto version = number(encoded, 8, 4), size = number(encoded, 12, 4),
 		   revision = number(encoded, 16, 8);
-	need(version >= 1 && version <= 4 && revision && size == encoded.size() - 56);
+	need(version >= 1 && version <= maximum_version && revision && size == encoded.size() - 56);
 	auto body = encoded.subspan(56);
 	need(same(encoded.subspan(24, 32), hash(body)));
 	return { body, revision, static_cast<uint32_t>(version) };

@@ -27,6 +27,7 @@
 #include "qualify_flatfile_economic_namespace.h"
 #include "qualify_flatfile_economic_money_history.h"
 #include "qualify_flatfile_wallet_bank.h"
+#include "qualify_flatfile_auction_money.h"
 
 // Native parsers may log diagnostics containing identities; this process reports
 // only aggregate success or a fixed failure code.
@@ -66,6 +67,42 @@ static void require(bool valid)
 template <typename Result> static bool readable(Result result)
 {
 	return result == Result::ok || result == Result::not_found;
+}
+
+static void current_money_findings(const restore_current_money::result &result)
+{
+	bool comma = false;
+	for (const auto &finding : result.findings)
+	{
+		if (comma)
+			std::cout << ',';
+		comma = true;
+		std::cout << "{\"epoch\":\"" << restore_economic_baseline::hex(finding.epoch)
+			  << "\",\"operation\":\""
+			  << restore_economic_baseline::hex(finding.operation)
+			  << "\",\"account\":\"" << restore_economic_baseline::hex(finding.account)
+			  << "\",\"code\":\"" << finding.code
+			  << "\",\"native_kind\":" << finding.native_kind
+			  << ",\"native_id\":" << finding.native_id;
+		if (finding.observed)
+		{
+			const auto &value = *finding.observed;
+			std::cout << ",\"observed\":{\"native_revision\":" << value.native_revision
+				  << ",\"expected_revision\":" << value.expected_revision
+				  << ",\"native\":[";
+			for (size_t i = 0; i < 4; ++i)
+			{
+				std::cout << (i ? "," : "");
+				restore_current_money::native_decimal(std::cout, value.native[i]);
+			}
+			std::cout << "],\"expected\":[";
+			for (size_t i = 0; i < 4; ++i)
+				std::cout << (i ? "," : "") << value.expected[i];
+			std::cout << "]}";
+		}
+		std::cout << '}';
+	}
+	std::cout << "]}\n";
 }
 
 static std::string account_name(const std::string &stem)
@@ -547,38 +584,54 @@ int main(int argc, char **argv)
 				<< ",\"account_origins_verified\":false,\"cross_epoch_continuity_verified\":false,"
 				   "\"other_money_domains_verified\":false,\"native_holdings_compared\":false,"
 				   "\"full_R7_qualified\":false,\"release_qualified\":false,\"findings\":[";
-			bool comma = false;
-			for (const auto &finding : result.findings)
-			{
-				if (comma)
-					std::cout << ',';
-				comma = true;
-				std::cout << "{\"epoch\":\""
-					  << restore_economic_baseline::hex(finding.epoch)
-					  << "\",\"operation\":\""
-					  << restore_economic_baseline::hex(finding.operation)
-					  << "\",\"account\":\""
-					  << restore_economic_baseline::hex(finding.account)
-					  << "\",\"code\":\"" << finding.code
-					  << "\",\"native_kind\":" << finding.native_kind
-					  << ",\"native_id\":" << finding.native_id;
-				if (finding.observed)
-				{
-					const auto &value = *finding.observed;
-					std::cout << ",\"observed\":{\"native_revision\":"
-						  << value.native_revision
-						  << ",\"expected_revision\":"
-						  << value.expected_revision << ",\"native\":[";
-					for (size_t i = 0; i < 4; ++i)
-						std::cout << (i ? "," : "") << value.native[i];
-					std::cout << "],\"expected\":[";
-					for (size_t i = 0; i < 4; ++i)
-						std::cout << (i ? "," : "") << value.expected[i];
-					std::cout << "]}";
-				}
-				std::cout << '}';
-			}
-			std::cout << "]}\n";
+			current_money_findings(result);
+			return result.valid() ? 0 : 1;
+		}
+
+		if (argc == 3 && std::string(argv[1]) == "--economic-auction-money-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			auto result = restore_auction_money::audit(argv[2], budget);
+			std::cout
+				<< "{\"format\":\"flatfile_auction_money_audit_v1\","
+				   "\"scope\":\"current_auction_escrow_claim_values_and_revisions\",\"initialized\":"
+				<< (result.initialized ? "true" : "false") << ",\"epoch\":\""
+				<< restore_economic_baseline::hex(result.epoch)
+				<< "\",\"active_auction_money_accounts\":" << result.active_accounts
+				<< ",\"retired_current_epoch_accounts\":"
+				<< result.retired_epoch_accounts
+				<< ",\"prior_epoch_auction_money_accounts\":"
+				<< result.prior_epoch_accounts << ",\"catalog_present\":"
+				<< (result.catalog_present ? "true" : "false")
+				<< ",\"claim_sources_present\":"
+				<< (result.sources_present ? "true" : "false")
+				<< ",\"catalog_revision\":" << result.catalog_revision
+				<< ",\"claim_source_revision\":" << result.source_revision
+				<< ",\"catalog_listings\":" << result.listings
+				<< ",\"catalog_operations\":" << result.operations
+				<< ",\"claim_source_rows\":" << result.source_rows
+				<< ",\"native_open_escrows\":" << result.native_escrows
+				<< ",\"native_pending_claims\":" << result.native_claims
+				<< ",\"compared_accounts\":" << result.compared_accounts
+				<< ",\"unanchored_current_accounts\":"
+				<< result.unanchored_current_accounts
+				<< ",\"accepted_roots\":" << result.history.accepted_roots
+				<< ",\"ordinary_account_edges\":" << result.history.edges
+				<< ",\"history_invalid_accounts\":"
+				<< result.history.invalid_accounts
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"auction_money_holdings_compared\":"
+				<< (result.compared_accounts ? "true" : "false")
+				<< ",\"current_auction_money_values_verified\":"
+				<< (result.verified() ? "true" : "false")
+				<< ",\"account_origins_verified\":false,\"claim_source_attribution_verified\":false,"
+				   "\"cross_epoch_continuity_verified\":false,\"other_money_domains_verified\":false,"
+				   "\"native_holdings_compared\":false,\"full_R7_qualified\":false,"
+				   "\"release_qualified\":false,\"findings\":[";
+			current_money_findings(result);
 			return result.valid() ? 0 : 1;
 		}
 		if (argc == 3 && std::string(argv[1]) == "--economic-money-history-audit")

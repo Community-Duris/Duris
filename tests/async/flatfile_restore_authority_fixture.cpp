@@ -440,7 +440,9 @@ int main(int argc, char **argv)
 	       mode == "baseline-history" || mode == "baseline-money-history" ||
 	       mode == "baseline-wallet-bank" || mode == "baseline-wallet-bank-transfer" ||
 	       mode == "baseline-wallet-bank-epochs" || mode == "baseline-wallet-bank-retired" ||
-	       mode == "baseline-wallet-bank-unanchored");
+	       mode == "baseline-wallet-bank-unanchored" || mode == "baseline-auction-money" ||
+	       mode == "baseline-auction-money-zero" || mode == "baseline-auction-money-retired" ||
+	       mode == "baseline-auction-money-closed" || mode == "baseline-auction-money-epochs");
 	for (size_t bucket = 0; bucket < 256; ++bucket)
 	{
 		assert(access::initialize_native_bucket(root, lock, control().revision, bucket,
@@ -469,7 +471,7 @@ int main(int argc, char **argv)
 	// A recreated native identity gets a new lifetime; the retired one remains.
 	const auto active_wallet =
 		create(economic_account_kind::wallet, 0, { 1, static_cast<uint64_t>(pid), {} });
-	create(economic_account_kind::auction_escrow, 0, { 4, UINT32_MAX, {} });
+	const auto escrow = create(economic_account_kind::auction_escrow, 0, { 4, UINT32_MAX, {} });
 	create(economic_account_kind::pending_claim, 0, { 5, INT32_MAX, {} });
 	create(economic_account_kind::treasury, 0, { 6, uint64_t{ UINT32_MAX } + 1, {} });
 	if (mode == "paged-authority")
@@ -491,7 +493,8 @@ int main(int argc, char **argv)
 	assert(access::append_epoch(root, lock, control().revision, epoch, &operations, &error) ==
 	       0);
 	commit();
-	if (!mode.starts_with("baseline-wallet-bank"))
+	if (!mode.starts_with("baseline-wallet-bank") &&
+	    !mode.starts_with("baseline-auction-money"))
 	{
 		epoch.predecessor = epoch.epoch;
 		epoch.epoch = id(51);
@@ -581,6 +584,23 @@ int main(int argc, char **argv)
 		if (mode.starts_with("baseline-wallet-bank"))
 			batch.holdings.push_back(
 				{ bank.account, { 50, 0, 0, 0 }, 1, native_digest });
+		if (mode.starts_with("baseline-auction-money"))
+		{
+			batch.holdings.push_back(
+				{ { id(1), economic_account_kind::auction_escrow, 4, 0 },
+				  { mode == "baseline-auction-money-zero" ||
+						    mode == "baseline-auction-money-closed" ?
+					    0 :
+					    70,
+				    0, 0, 0 },
+				  3,
+				  native_digest });
+			batch.holdings.push_back(
+				{ { id(1), economic_account_kind::pending_claim, 5, 0 },
+				  { 60, 0, 0, 0 },
+				  4,
+				  native_digest });
+		}
 		assert(access::initialize_baseline(root, lock, id(1), batch.epoch,
 						   batch.opening_account, id(53), &operations,
 						   &error) == flatfile_accounting_status::ok);
@@ -734,7 +754,16 @@ int main(int argc, char **argv)
 						      id(56), &operations, &error) == 0);
 			commit();
 		}
-		if (mode == "baseline-wallet-bank-epochs")
+		if (mode == "baseline-auction-money-retired" ||
+		    mode == "baseline-auction-money-closed")
+		{
+			assert(access::retire_mapping(root, lock, control().revision,
+						      escrow.account, escrow.revision, id(56),
+						      &operations, &error) == 0);
+			commit();
+		}
+		if (mode == "baseline-wallet-bank-epochs" ||
+		    mode == "baseline-auction-money-epochs")
 		{
 			// Catalog order selects the current epoch even when its ID sorts first.
 			epoch.predecessor = epoch.epoch;
@@ -746,8 +775,16 @@ int main(int argc, char **argv)
 			commit();
 			batch.epoch = id(25);
 			batch.preparation_id = id(54);
-			batch.holdings[0].balance[0] = 200;
-			batch.holdings[1].balance[0] = 70;
+			if (mode == "baseline-wallet-bank-epochs")
+			{
+				batch.holdings[0].balance[0] = 200;
+				batch.holdings[1].balance[0] = 70;
+			}
+			else
+			{
+				batch.holdings[1].balance[0] = 90;
+				batch.holdings[2].balance[0] = 80;
+			}
 			assert(access::initialize_baseline(root, lock, id(1), batch.epoch,
 							   batch.opening_account, id(55),
 							   &operations, &error) ==

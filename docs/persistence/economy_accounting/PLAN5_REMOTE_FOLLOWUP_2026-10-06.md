@@ -1282,3 +1282,37 @@ engines, combined release and activation gates remain open. No operator CLI or
 coherent-current-cut claim follows from this pure decoder. This is a nonblocking
 curator packet; local notebook application/notification/acknowledgement are not
 claimed. Accounting remains inactive; no production action occurs.
+
+
+## Current native escrow/claim values and revisions — 2026-10-07
+
+The same remote `codex/accounting-plan5` carries the completed
+[independent current auction comparison](PLAN5_CURRENT_AUCTION_MONEY_QUALIFICATION_2026-10-07.md),
+base `537b04d10f93e285d5de47617d44ac6fb7a95d46`. The original native catalog can hold900 while retained
+economic history verifies70; the new read-only command detects the discrepancy
+without recovery or writes. Full catalog/receipt/source decoding matches original
+native acceptance/refusal. Final116 scoped sanitizer/operator controls pass;
+the complete authority driver retains20/367 stores,28 money-history,50 native
+decoder and38 wallet/bank controls and runs all116 auction cases.18 backup
+reviews and the complete two-boot/two-generation managed method pass with0 skips.
+Make recompiles740 objects under original production flatfile flags;0 warnings/
+errors,1290 dependencies and byte-identical objects/server are authenticated.
+All55 contracts, normal validation, formatting and whitespace pass; release still
+refuses absent executable writer evidence.
+
+Canonical source `386f9d8f5fe5e7af88575b4f3ca6640e3395c14c9a06ee6e929b37f67950c789` pins24 independent audit-family
+and1304 native inputs. Seal SHA256 `d85fbc0784dfa9e8614cc575c7945b1b26bd8d3b12a180b01a53d4488d081c9f` binds5948 artifacts/
+1387855945 bytes. The first108-case green is preserved; the final focused
+reader rebuilds sanitizer code and binds three unchanged native executables, while
+the full driver rebuilds them. No failed process or selected skip is suppressed.
+Native/schema62/shared contracts/manifests remain exact; no interface request.
+Primary refresh `d3e34519ae8701baa63d97380340760859dcb452` retains equal auction interfaces
+but is a distinct combined source requiring its own qualification.
+
+Current matching values do not establish source attribution or origins. The new
+command keeps source-attribution, other money, all native, fullR7/R8 and release
+flags false. Piles/treasury/UID/reference/source-consumption, native gameplay,
+both SQL engines and combined release gates remain open. This is the nonblocking
+locally maintained notebook's curator packet; application, notification and
+acknowledgement are not claimed. Accounting and existing exclusions remain exact.
+Result/remote SHA and all seven earlier ancestral tips are verified in delivery.
