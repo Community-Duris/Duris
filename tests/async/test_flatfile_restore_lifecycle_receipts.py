@@ -109,8 +109,20 @@ def main():
     audit_source.write_text('''#include "qualify_flatfile_economic_records.h"
 #include <iostream>
 int main(int argc, char **argv) {
-    if (argc != 2) return 2;
+    if (argc != 2 && argc != 3) return 2;
     try {
+        if (argc == 3) {
+            if (std::string(argv[1]) != "maximum-budget") return 2;
+            restore_economic_authority::audit_budget budget;
+            const auto files = budget.remaining_files, bytes = budget.remaining_bytes,
+                       entries = budget.remaining_entries;
+            auto value = restore_economic_records::audit(argv[2], budget);
+            std::cout << files << " " << bytes << " " << entries << " "
+                      << files-budget.remaining_files << " " << bytes-budget.remaining_bytes
+                      << " " << entries-budget.remaining_entries << " "
+                      << value.lifecycle_receipts << "\\n";
+            return 0;
+        }
         auto result = restore_economic_records::checker(argv[1]).run();
         std::cout << result.legacy_unknown_epochs << " " << result.never_initialized_epochs
                   << " " << result.initialized_epochs << " " << result.complete()
@@ -184,10 +196,24 @@ int main(int argc, char **argv) {
                 else:
                     assert not result.stdout and result.stderr == "native_restore_qualification_failed\n"
                 assert retained(evidence) == economic_before, label + ": restore wrote retained evidence"
+            measured_budget = None
+            if label == "native maximum codec/common-baseline receipt":
+                measured = run(audit, ["maximum-budget", state], True)
+                assert measured.returncode == 0 and not measured.stderr, measured
+                fields = list(map(int, measured.stdout.split()))
+                assert len(fields) == 7, fields
+                file_limit, size, entries, actual_files, actual_bytes, actual_entries, linked = fields
+                assert (file_limit, size, entries, linked) == (16384, 128*1024*1024, 8192, 1), fields
+                assert 2048 < actual_files <= file_limit and 0 < actual_bytes <= size, fields
+                assert 0 < actual_entries <= entries and retained(state) == before
+                measured_budget = dict(maximum_physical_reads=file_limit, maximum_bytes=size,
+                    maximum_directory_entries=entries, actual_physical_reads=actual_files,
+                    actual_bytes=actual_bytes, actual_directory_entries=actual_entries,
+                    lifecycle_receipts=linked, sanitizer_instrumented=True)
             results.append({"label": label, "accepted": valid, "lifecycle_receipts": receipts if valid else None,
                             "lifecycle_provenance_complete": qualified,
                             "files": len(files), "bytes": sum(map(len, files.values())),
-                            "limitation": limitation})
+                            "limitation": limitation, "measured_operator_budget": measured_budget})
             print(("ACCEPTED " if valid else "REFUSED ") + label, flush=True)
 
         def produce(mode):

@@ -1,5 +1,15 @@
 # Experimental accounting review checkpoint
 
+## Lifecycle audit maximum budget qualified — 2026-10-06
+
+[Primary integration](PLAN5_LIFECYCLE_BUDGET_PRIMARY_INTEGRATION_2026-10-06.md)
+passes the full 131-case native lifecycle suite: nine accepted, 122 refused and
+zero skips. Its maximum modeled native-codec fixture needs 9,574 physical reads,
+so the default cap increases from 2,048 to 16,384 while byte/time/directory and
+explicit page budgets remain. Source and economic evidence stay unchanged.
+Complete holdings, genuine producers, growing-history qualification and release
+remain unfinished.
+
 ## Latest independent flatfile reader milestone — 2026-10-06
 
 The [complete paging slice](PLAN5_FLATFILE_PAGES_PRIMARY_INTEGRATION_2026-10-06.md)
