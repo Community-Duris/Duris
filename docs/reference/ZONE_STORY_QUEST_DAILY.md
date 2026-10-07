@@ -264,3 +264,8 @@ The [dossier](../design/zone-stories/ARAC-WEB.md) preserves the existing coin-on
 ## Arcium daily qualification
 
 The [dossier](../design/zone-stories/ARCIUM.md) preserves one native achievement and one potential daily. Mode2/lifespan25..35, six cap1 heart sources and periodic timing do not qualify fresh accountable stock. Active authority guards native O/P/G/E construction. Exact six-root custody, hidden reveal/recovery, supplied transfer, Joji generation, joint reward/save/retirement/replay and completed renewal need played qualification. Keys and dream access remain separate from the offering; source-complete mapping cannot enable guarded stock or paid epic learning. New tracking requires active READY accounting; daily policy remains disabled.
+
+
+## Future Ceothia daily qualification
+
+The [dossier](../design/zone-stories/FUTURE_CEOTHIA.md) preserves one achievement and one potential daily. Empty-only mode1/lifespan40..50 and cap1 keys/devices do not prove renewed accountable sources. The requested vial has no explicit selected-source producer, and active authority guards native O/P/G/E construction. Qualify exact source/transfer/custody, giver generation, mixed key/currency/save/retirement/replay and completed renewal before activation. New tracking requires active READY accounting; frozen committed recovery is separate and daily policy remains disabled.

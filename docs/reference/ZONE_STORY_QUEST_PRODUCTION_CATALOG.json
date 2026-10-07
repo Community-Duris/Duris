@@ -126340,6 +126340,473 @@
     {
       "contacts": [
         {
+          "description": "This contact is stocked around The Lair of the Dragon of Past and Future. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "drow",
+          "mob_vnum": 81400,
+          "name": "a drow assassin",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Camp Fire on Scorched Earth. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "ogre",
+          "mob_vnum": 81401,
+          "name": "a massive ogre warrior",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Camp Fire on Scorched Earth. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "ogre",
+          "mob_vnum": 81402,
+          "name": "an ogre shaman",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Camp Fire on Scorched Earth. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "ogre",
+          "mob_vnum": 81403,
+          "name": "a massive ogre warrior",
+          "topics": []
+        },
+        {
+          "description": "The thief leader requests the exact bluestone vial in the Blackened Bazaar. He rewards a shard and coins, then leaves. His three greeting aliases share one response; his departure does not prove a safe rescue or a restored timeline.",
+          "keyword": "leader",
+          "mob_vnum": 81404,
+          "name": "the leader of the Ceothian thieves",
+          "topics": [
+            "hello",
+            "hi",
+            "howdy"
+          ]
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, The Blackened Remains of a Bluestone Street, The Burned Out Remains of a Building. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "ogre",
+          "mob_vnum": 81405,
+          "name": "an ogre soldier",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, A Camp Fire on Scorched Earth, The Blackened Remains of a Bluestone Street. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "troll",
+          "mob_vnum": 81406,
+          "name": "a troll mercenary",
+          "topics": []
+        },
+        {
+          "description": "This orc soldier has a local prototype but no local stock declaration. Its number is separate from the bluestone vial\u2019s item identity; encountering it does not establish a vial source.",
+          "keyword": "orc",
+          "mob_vnum": 81407,
+          "name": "an orc soldier",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, The Burned Out Remains of a Building. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "drow",
+          "mob_vnum": 81408,
+          "name": "a drow mage",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, The Blackened Remains of a Bluestone Street, The Burned Out Remains of a Building. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "ogre",
+          "mob_vnum": 81409,
+          "name": "an ogre captain",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, The Burned Out Remains of a Building. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "goblin",
+          "mob_vnum": 81410,
+          "name": "a goblin shaman",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Camp Fire on Scorched Earth. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "drow",
+          "mob_vnum": 81411,
+          "name": "a drow priestess",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Camp Fire on Scorched Earth. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "pit",
+          "mob_vnum": 81412,
+          "name": "a pit fiend",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Camp Fire on Scorched Earth. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "troll",
+          "mob_vnum": 81413,
+          "name": "a troll warrior",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Camp Fire on Scorched Earth. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "orc",
+          "mob_vnum": 81414,
+          "name": "an orc sentry",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Camp Fire on Scorched Earth. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "drow",
+          "mob_vnum": 81415,
+          "name": "a sinister drow",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Camp Fire on Scorched Earth. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "giant",
+          "mob_vnum": 81416,
+          "name": "a large fire giant",
+          "topics": []
+        },
+        {
+          "description": "The fire giant shaman carries a bluestone shard for the hidden street route to the tunnel. This alternate key source is separate from the leader\u2019s accepted exchange.",
+          "keyword": "giant",
+          "mob_vnum": 81417,
+          "name": "a large fire giant shaman",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Camp Fire on Scorched Earth. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "duergar",
+          "mob_vnum": 81418,
+          "name": "a duergar mercenary",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, A Camp Fire on Scorched Earth, The Burned Out Remains of a Building. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "orc",
+          "mob_vnum": 81419,
+          "name": "an orc sergeant",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Camp Fire on Scorched Earth. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "illithid",
+          "mob_vnum": 81420,
+          "name": "a cloaked illithid",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Camp Fire on Scorched Earth. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "earth",
+          "mob_vnum": 81421,
+          "name": "a huge earth elemental",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Dark Cavernous Tunnel. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "stone",
+          "mob_vnum": 81422,
+          "name": "a large stone golem",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Dark Cavernous Tunnel. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "ogre",
+          "mob_vnum": 81423,
+          "name": "a large ogre sentinel",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, A Camp Fire on Scorched Earth, The Blackened Remains of a Bluestone Street, The Burned Out Remains of a Building. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "troll",
+          "mob_vnum": 81424,
+          "name": "a large troll warrior",
+          "topics": []
+        },
+        {
+          "description": "The paladin stands at the grassy arrival clearing. His mission and the city\u2019s survivors need defined assistance and lasting outcomes before a rescue or city restoration can be recorded.",
+          "keyword": "paladin",
+          "mob_vnum": 81425,
+          "name": "a holy paladin warrior",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Camp Fire on Scorched Earth. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "ettin",
+          "mob_vnum": 81426,
+          "name": "a large ettin",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Camp Fire on Scorched Earth. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "drow",
+          "mob_vnum": 81427,
+          "name": "a drow mage",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, A Camp Fire on Scorched Earth, The Burned Out Remains of a Building. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "fire",
+          "mob_vnum": 81428,
+          "name": "a fire elemental",
+          "topics": []
+        },
+        {
+          "description": "The beholder carries the flickering dragon horn for Lenbrea\u2019s separate Present Ceothia request. Its rare load-room access and intended chance still need builder review.",
+          "keyword": "beholder",
+          "mob_vnum": 81429,
+          "name": "a huge beholder",
+          "topics": []
+        },
+        {
+          "description": "The dragon of past follows the dragon of future in the lair. Its class specialization and equipment are separate from a custom quest handler or the leader\u2019s vial request.",
+          "keyword": "dragon",
+          "mob_vnum": 81430,
+          "name": "the dragon of past",
+          "topics": []
+        },
+        {
+          "description": "The dragon of future carries the mist key in the lair. The three dragons and their guardians form a separate encounter; the key opens the eastern vault.",
+          "keyword": "dragon",
+          "mob_vnum": 81431,
+          "name": "the dragon of future",
+          "topics": []
+        },
+        {
+          "description": "The dragon of present follows the dragon of future. Defeating the encounter, recovering equipment, reaching the vault and completing another quest are separate facts.",
+          "keyword": "dragon",
+          "mob_vnum": 81432,
+          "name": "the dragon of present",
+          "topics": []
+        },
+        {
+          "description": "The baatezu carries the shattered bone key in the cavernous tunnel, with additional followers. The key fits the locked eastern approach into the dragon lair.",
+          "keyword": "demon",
+          "mob_vnum": 81433,
+          "name": "a large baatezu demon",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Dark Cavernous Tunnel. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "demonic",
+          "mob_vnum": 81434,
+          "name": "a demonic cleric",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Lair of the Dragon of Past and Future. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "elite",
+          "mob_vnum": 81435,
+          "name": "an elite sentry guard",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Lair of the Dragon of Past and Future. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "elite",
+          "mob_vnum": 81436,
+          "name": "an elite sentry guard",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Lair of the Dragon of Past and Future. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "elite",
+          "mob_vnum": 81437,
+          "name": "an elite sentry guard",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, A Camp Fire on Scorched Earth, The Blackened Remains of a Bazaar, The Blackened Remains of a Bluestone Street, The Burned Out Remains of a Building. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "orc",
+          "mob_vnum": 81438,
+          "name": "an orcish rogue",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, The Blackened Remains of a Bluestone Street. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "giant",
+          "mob_vnum": 81439,
+          "name": "a frost giant",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, A Camp Fire on Scorched Earth, The Blackened Remains of a Bluestone Street. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "giant",
+          "mob_vnum": 81440,
+          "name": "a frost giant shaman",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Camp Fire on Scorched Earth, The Burned Out Remains of a Building. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "giant",
+          "mob_vnum": 81441,
+          "name": "a large fire giant",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, The Blackened Remains of a Bluestone Street. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "giant",
+          "mob_vnum": 81442,
+          "name": "a large fire giant shaman",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "orc",
+          "mob_vnum": 81443,
+          "name": "an orc raider",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, A Camp Fire on Scorched Earth, The Blackened Remains of a Bazaar, The Burned Out Remains of a Building. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "goblin",
+          "mob_vnum": 81444,
+          "name": "a goblin warrior",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, The Blackened Remains of a Bazaar, The Burned Out Remains of a Building. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "duergar",
+          "mob_vnum": 81445,
+          "name": "a duergar cleric",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, A Camp Fire on Scorched Earth, The Burned Out Remains of a Building. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "flind",
+          "mob_vnum": 81446,
+          "name": "a flind conjurer",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, A Camp Fire on Scorched Earth. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "death",
+          "mob_vnum": 81447,
+          "name": "a hideous death knight",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, The Blackened Remains of a Bluestone Street. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "rakshasa",
+          "mob_vnum": 81448,
+          "name": "a rakshasa captain",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, The Blackened Remains of a Bluestone Street, The Burned Out Remains of a Building. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "rakshasa",
+          "mob_vnum": 81449,
+          "name": "a rakshasa soldier",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, A Camp Fire on Scorched Earth, The Blackened Remains of a Bluestone Street, The Burned Out Remains of a Building. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "orog",
+          "mob_vnum": 81450,
+          "name": "an orog lieutenant",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Barren and Scarred Piece of Earth, A Camp Fire on Scorched Earth, The Blackened Remains of a Bluestone Street. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "hell",
+          "mob_vnum": 81451,
+          "name": "a hell hound",
+          "topics": []
+        },
+        {
+          "description": "The white dragon is declared in an internal load room. The named equipment chance and ordinary access are not yet qualified; its loot is separate from the bluestone vial request.",
+          "keyword": "dragon",
+          "mob_vnum": 81452,
+          "name": "an ancient white dragon",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Lair of the Dragon of Past and Future. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "guardian",
+          "mob_vnum": 81453,
+          "name": "a looming guardian",
+          "topics": []
+        },
+        {
+          "description": "The Chronomancer carries a thread of time and independent equipment in the Vortex. The thread belongs to Lenbrea\u2019s Present Ceothia request. Defeat or loot alone does not prove a lasting correction of the timeline.",
+          "keyword": "chronomancer",
+          "mob_vnum": 81454,
+          "name": "The Chronomancer",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Blackened Remains of a Bluestone Street. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+          "keyword": "guardian",
+          "mob_vnum": 81455,
+          "name": "a monstrous guardian",
+          "topics": []
+        },
+        {
+          "description": "Jerome carries the Lyrical Instrument of Time. Its admitted singing and equipment effects are separate from the thief leader\u2019s request and from a defined aid or restoration story.",
+          "keyword": "dejected",
+          "mob_vnum": 81456,
+          "name": "a dejected, rejected bard named \"Jerome\"",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore Future Ceothia\u2019s ruined city, follow the thief leader\u2019s request and understand the separate cavern, dragon and time routes.",
+      "orientation": [
+        "The ruined city belongs to Future Ceothia. The portal in Past Ceothia\u2019s bluestone vault arrives here. Discovery follows your actual arrival in each time period.",
+        "Meet the Ceothian thief leader in the Blackened Bazaar and ask hello, hi or howdy. These aliases share one response that explains his request.",
+        "Bring the leader the exact bluestone vial, loose in your inventory. He accepts it for a bluestone shard and coins, then leaves. The request also accepts an exact vial supplied by another player; it does not require a remembered greeting or a personal kill.",
+        "A reliable source for the requested vial is not yet documented. The black vial in the dragon vault is a different item. Holding the shard or receiving coins does not record the leader\u2019s accepted exchange.",
+        "The vial\u2019s listed magic provides armor, healing and stone skin. The leader\u2019s departure text describes an escape, but the accepted exchange does not establish a safe destination or that the city has been restored.",
+        "The fire giant shaman carries another bluestone shard. That key opens the hidden downward street route into the cavernous tunnel. Key custody, unlocking, opening and crossing are separate from the leader\u2019s request.",
+        "The baatezu demon carries the shattered bone key for the locked eastern approach to the dragon lair. The dragon of future carries the mist key for the hidden eastern vault. These keys differ, and they may break after an unlock.",
+        "ENTER the shimmering portal in the dragon vault to reach the Vortex of Time. The portal in the northern bubble returns to Present Ceothia. The dragon vault portal and the return portal have different destinations.",
+        "The beholder\u2019s flickering dragon horn and the Chronomancer\u2019s thread of time belong to Lenbrea\u2019s separate requests in Present Ceothia. They do not replace the bluestone vial or complete the thief leader\u2019s request.",
+        "The monolith in the Vortex has its own admitted TOUCH reward. Arrival, a successful stone claim, defeating the Chronomancer, recovering his equipment and returning his thread are different outcomes.",
+        "Jerome\u2019s instrument has singing effects. The paladin, survivors and clerics suggest further stories, but meeting, defeating, healing or equipping someone does not by itself record a rescue or a cure.",
+        "The white dragon and beholder load-room descriptions suggest rare encounters. Ordinary access and the intended chance need builder review before these are offered as reliable progression routes.",
+        "New journal tracking requires active READY accounting. Daily replay remains disabled until accountable item sources, the accepted reward and renewed giver availability are qualified."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "ceofutur",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:81407;receive=C:500000,I:81406;disappear=1",
+              "giver_vnum": 81404
+            }
+          ],
+          "id": "thief-leader-bluestone-vial",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "A reliable source is not yet documented. A supplied exact vial fits the native request; the black vault vial is different. This row shows current materials and does not record first recovery or a personal kill.",
+              "id": "vial",
+              "item_vnums": [
+                81407
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact bluestone vial loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:81407;receive=C:500000,I:81406;disappear=1",
+                  "giver_vnum": 81404
+                }
+              ],
+              "hint": "Offer the loose exact vial to the leader in the Blackened Bazaar. The accepted receipt records the shard, coin reward and giver retirement. Key possession, coin balance, quaffing or a departure message cannot create this receipt.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the leader\u2019s accepted vial exchange"
+            }
+          ],
+          "summary": "Offer the exact bluestone vial for a shard and coin reward. Current materials and the accepted exchange are separate; the leader\u2019s departure does not establish rescue or timeline restoration.",
+          "title": "Bring the thief leader a bluestone vial"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Ask key, temple or lock at the forest gateway. One pine heart and one bear mind together earn the vine key; its receipt is separate from unlocking and entering.",
           "keyword": "trentloss",
           "mob_vnum": 82400,

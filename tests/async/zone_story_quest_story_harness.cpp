@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 208 &&
+		require(catalog.story_mappings.size() == 209 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -24765,6 +24765,100 @@ int main(int argc, char **argv)
 							   &supplies);
 			require(status(journal, 6, "Recorded") && status(journal, 0, "Missing now"),
 				"Arcium reward absence or consumed materials changed recovered acceptance");
+		}
+
+		{
+			const auto &vial = story_for("ceofutur", "thief-leader-bluestone-vial");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 81404, 81572, 100) == result::rejected,
+				"Future Ceothia contact ignored undiscovered physical zone");
+			require(journey.discover_zone(7, 42, 814, 81400, 101, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 814, 10, 1, 102, false, false)
+							.find(vial.title) == std::string::npos &&
+					journey.meet_npc(7, 42, 81404, 81572, 103) ==
+						result::applied,
+				"Future Ceothia discovery exposed request before leader encounter");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    vial.steps[row].text) != std::string::npos;
+			};
+			for (unsigned custody = 0; custody < 5; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[81406] = 1;
+				if (custody == 2)
+					supplies.carried[81416] = 1;
+				if (custody == 3)
+					supplies.equipped[18] = 81407;
+				if (custody == 4)
+					supplies.carried[81423] = 1;
+				const auto journal = journey.render_journal(
+					7, 42, 814, 10, 1, 104, false, false, &supplies);
+				require(status(journal, 0, "Missing now") &&
+						!status(journal, 1, "Recorded") &&
+						journey.progress_for_zone(7, 42, 814).completed ==
+							0 &&
+						journey.serialize_state() == before,
+					"Future Ceothia shard, wrong vial, held input or thread forged preparation or acceptance");
+			}
+			supplies = {};
+			supplies.carried[81407] = 1;
+			auto journal = journey.render_journal(7, 42, 814, 10, 1, 105, false, false,
+							      &supplies);
+			require(status(journal, 0, "Ready now") &&
+					!status(journal, 1, "Recorded") &&
+					journal.find("Next: " + vial.steps.back().text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 814).completed == 0 &&
+					journey.serialize_state() == before,
+				"Future Ceothia supplied exact vial required source history or forged accepted exchange");
+			// Synthetic committed receipt qualifies projection, not live source or reward settlement.
+			record(journey, vial.contracts.front(), "ceofutur-vial-offering", 814,
+			       81572);
+			supplies = {};
+			supplies.carried[81406] = 1;
+			journal = journey.render_journal(7, 42, 814, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(journal, 1, "Recorded") &&
+					status(journal, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 814).completed == 1 &&
+					journey.progress_for_zone(7, 42, 808).completed == 0 &&
+					!journey.has_discovered(7, 42, 808) &&
+					journey.progress_for_zone(7, 42, 811).completed == 0 &&
+					!journey.has_discovered(7, 42, 811),
+				"Future Ceothia spent vial erased receipt or invented Present/Past arrival and foreign acceptance");
+			require(supplied.discover_zone(7, 42, 814, 81400, 101, "arrival") ==
+					result::applied,
+				"Future Ceothia supplied-return setup failed");
+			record(supplied, vial.contracts.front(), "ceofutur-supplied-offering", 814,
+			       81572);
+			require(supplied.progress_for_zone(7, 42, 814).completed == 1,
+				"Future Ceothia acceptance required remembered greeting, hunt or earlier-era receipt");
+			auto replay =
+				completion(vial.contracts.front(), "ceofutur-vial-offering", 120);
+			replay.transaction.zone_number = 814;
+			replay.transaction.room_vnum = 81572;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Future Ceothia replay duplicated the accepted exchange");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 814).completed == 1 &&
+					raw.progress_for_zone(7, 42, 814).completed == 1 &&
+					!recovered.has_discovered(7, 42, 808) &&
+					!recovered.has_discovered(7, 42, 811),
+				"Future Ceothia mapped/raw recovery lost acceptance or invented other time-period discovery");
+			supplies = {};
+			journal = recovered.render_journal(7, 42, 814, 10, 1, 122, false, false,
+							   &supplies);
+			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
+				"Future Ceothia absent reward or consumed input changed recovered acceptance");
 		}
 
 		std::cout
