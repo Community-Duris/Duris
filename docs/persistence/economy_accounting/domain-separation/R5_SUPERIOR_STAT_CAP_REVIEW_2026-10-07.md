@@ -57,3 +57,38 @@ contract's R3-relocated fee context. Declare that test prerequisite or provide
 a separately checked minimal cap-contract adaptation preserving the primary's
 original fee expectations. Source independence is not whole-bundle independence.
 No primary source or completed R3 rule is changed to resolve this packaging issue.
+
+## Final independent declared-scope review
+
+Implementation `d45402ca508b2f984e612e6dd6699d4355bbe22e`, include-context
+successor `b31809a0d7f15c9318861d66677a3717c0d9b838` and terminal handoff
+`9d99bdd940e94b8971d465a9fac4ff509273e3d1` pass the coordinator's review at
+their declared component/build/import scope. Only the header, native wrapper
+and two existing regressions change. Numeric law and native call order remain.
+
+On isolated review source b318, the coordinator exported complete original
+enhance.c from d454's parent and ran the actual extended stat-bounds runner
+twice. A private controller redirects only `_paths.source('enhance.c')` for
+the original run, then restores it for the extracted run. Both pass with
+unchanged C++20 warnings, ASan/UBSan/float-cast-overflow, no-PIE and 30-second
+deadline. No assertion or modeled replacement is substituted.
+
+All four source pins and all36 evidence-index hashes independently match.
+Both saved maintained logs contain one fresh compilation, full740-object link
+and normal make exit; corrected terminal records exit0. Actual task-owned
+container ELFs match copied artifacts:
+SQL `c78ce0f1d4ff382b76213c525e8ec6314d1439fbf63f4d1a69a44a28fc3fd839`,
+flat `56283a29b2c5e9b572a804aade65bca7fd254319669fbfaf22cead99ae7a70d1`.
+This qualifies preserved b318's graph, not current352's754 providers. Retain
+the initial launcher failure and successful compiler results separately.
+
+Independently checked production application passes on bare352. Full four-file
+tests retain R3's configuration-test predecessor, now explicitly declared in
+the handoff alongside the failed bare application. Immutable352-plus-R0-R5
+component/module results are separately indexed. No full current754-provider
+build, genuine native enhancement journey, active paid-outcome support or
+primary adoption is inferred. Integrated qualification remains primary-owned.
+
+R5 is reviewed and available at this scope. The next reviewed boundary is the
+five-word affect policy; neither component closure nor the next reservation
+closes the continuing project Goal.
