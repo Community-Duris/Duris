@@ -1547,3 +1547,25 @@ No shared mutation, source export/application claim, activation or production
 change. Curator-ready evidence continues Plan5; the primary-local notebook
 remains nonblocking. All combined/native V2/both-engine/restore/retention/R1-R8
 gates remain open; isolated literal comparison does not qualify release.
+
+## Native shopkeeper literal/custody audit - 2026-10-07
+
+Base018cb09f2c5850641d18ed8bcaf2c0c9b0befa16, same local/remote
+codex/accounting-plan5. The containing commit is the result; all seven earlier
+tips remain ancestors. [Exact source and disposition](PLAN5_SHOPKEEPER_LITERAL_CUSTODY_2026-10-07.md)
+records57 formats (17 accepted/40 refused),38 findings at three limits,14
+read-only controls and four before/after cuts, preserving all original
+custody/world/locker cases, zero skips. Tested tree4b1c2df15419494942fcbcdc464e221c1dd3fcb3;
+actual primaryd98f67e; laterd0cc767 retains native/migration trees. Two original
+shared recipes fail to link; qualified narrow proposals add three real providers
+to repository and four to ownership, preserving original flags/assertions/stub.
+Shared application and expanded driver registration remain primary-owned; no
+API/schema fields change. Seal SHA256
+59c86c27527a93d8e7a2713d65151d24d15335aee866655b7ddf4f894aef0364;
+build binding SHA256
+ac6576483dc072c1bfe09a68febfdd547becf35c9d5da65d47655df0240f33e0.
+No shared mutation, activation, correction or production change. Curator-ready
+report/evidence/delivery continues Plan5; primary-local notebook maintenance is
+nonblocking and application/acknowledgement is unclaimed. Combined/private V2,
+all holdings/history owners, original journeys, both-engine migrations/builds,
+authentic restore/retention and fullR1-R8 remain open.

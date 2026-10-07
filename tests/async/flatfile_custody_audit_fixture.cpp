@@ -1,7 +1,9 @@
 #include "../../scripts/qualify_flatfile_native_custody.h"
 #include "../../scripts/qualify_flatfile_native_world.h"
 #include "../../scripts/qualify_flatfile_native_locker.h"
+#include "../../scripts/qualify_flatfile_native_shopkeeper.h"
 #include "flatfile/flatfile_locker_repository.h"
+#include "flatfile/flatfile_shopkeeper_repository.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_store.h"
 #include "flatfile/flatfile_world_item_repository.h"
@@ -207,6 +209,98 @@ static int locker(const std::string &root, const std::vector<uint8_t> &encoded, 
 	return 0;
 }
 
+static int shopkeeper(const std::string &root, const std::vector<uint8_t> &encoded, bool expected)
+{
+	std::filesystem::create_directories(root + "/domains");
+	assert(chmod(root.c_str(), 0700) == 0 && chmod((root + "/domains").c_str(), 0700) == 0);
+	std::string error;
+	assert(flatfile_atomic_write(root + "/domains", "shopkeeper_catalog", encoded, &error));
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(root, &error));
+	}
+	std::vector<flatfile_shopkeeper_record> native;
+	// The full native API is only used in this initialized private journal-free fixture.
+	assert((flatfile_shopkeeper_list(root, &native, &error) ==
+		flatfile_shopkeeper_result::ok) == expected);
+	bool accepted = false;
+	size_t item_count = 0;
+	try
+	{
+		const auto independent = restore_native_shopkeeper::decode_shopkeeper(encoded);
+		accepted = true;
+		assert(expected && independent.records.size() == native.size());
+		for (size_t index = 0; index < native.size(); ++index)
+		{
+			const auto &record = native[index];
+			const auto &decoded = independent.records[index];
+			assert(decoded.location.type == 9 &&
+			       decoded.location.id == item_shopkeeper_owner_id(record.shop_id) &&
+			       decoded.location.context == 0 && decoded.mobile == record.mob_vnum &&
+			       decoded.room == record.room_vnum &&
+			       decoded.saved_at == record.saved_at &&
+			       decoded.revision == record.revision && decoded.cash == record.cash &&
+			       decoded.roaming == record.roaming &&
+			       decoded.affects.size() == record.affects.size() * 56 &&
+			       decoded.items.size() == record.items.size());
+			restore_economic_authority::reader affects{ decoded.affects };
+			for (const auto &affect : record.affects)
+			{
+				assert(restore_native_custody::signed32(affects) == affect.type &&
+				       restore_native_custody::signed32(affects) ==
+					       affect.duration &&
+				       restore_native_custody::signed32(affects) ==
+					       affect.modifier &&
+				       restore_native_custody::signed32(affects) ==
+					       affect.location);
+				for (auto bits : affect.bitvectors)
+					assert(affects.number(8) == bits);
+			}
+			affects.done();
+			for (size_t i = 0; i < decoded.items.size(); ++i)
+			{
+				++item_count;
+				const auto &literal = decoded.items[i];
+				auto item = record.items[i];
+				assert(item.parent_index == literal.parent &&
+				       item.equipment_slot == literal.equipment);
+				item.parent_index = -1;
+				std::vector<uint8_t> canonical;
+				assert(player_item_snapshot_list_encode({ item }, &canonical) ==
+				       player_snapshot_codec_result::ok);
+				assert(restore_economic_authority::same(
+					std::span(canonical).subspan(8),
+					literal.encoded.subspan(4)));
+			}
+		}
+	}
+	catch (const std::runtime_error &)
+	{
+		assert(!expected);
+	}
+	assert(accepted == expected);
+	if (expected)
+	{
+		restore_economic_authority::audit_budget budget;
+		(void)restore_native_shopkeeper::audit(root, budget);
+		budget.remaining_bytes = 0;
+		bool refused = false;
+		try
+		{
+			(void)restore_native_shopkeeper::audit(root, budget);
+		}
+		catch (const restore_economic_authority::audit_budget_refused &)
+		{
+			refused = true;
+		}
+		assert(refused);
+	}
+	std::cout << "{\"native_accepted\":" << (expected ? "true" : "false")
+		  << ",\"independent_accepted\":" << (accepted ? "true" : "false")
+		  << ",\"items\":" << item_count << ",\"item_fields_match\":true}\n";
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	assert(argc == 4 || argc == 5);
@@ -216,6 +310,8 @@ int main(int argc, char **argv)
 	const bool expected = std::string(argv[3]) == "1";
 	if (argc == 5)
 	{
+		if (std::string(argv[4]) == "shopkeeper")
+			return shopkeeper(root, encoded, expected);
 		if (std::string(argv[4]) == "locker")
 			return locker(root, encoded, expected);
 		assert(std::string(argv[4]) == "world");

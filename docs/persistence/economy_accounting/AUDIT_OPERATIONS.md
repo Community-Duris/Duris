@@ -1371,3 +1371,17 @@ absent and unverified. The command performs no recovery or correction. Scoped
 locker literal verification leaves other owners, holdings, source admission,
 item history and release unqualified. See
 [exact source, native tests and curator handoff](PLAN5_LOCKER_LITERAL_CUSTODY_2026-10-07.md).
+
+`--economic-shopkeeper-custody-audit /absolute/private/state-root [--limit 0..100]`
+independently decodes DURSHOP V1/V2 and compares durable keeper items with custody.
+It checks UID, state, owner/context, topology, vnum, the custody slot policy and
+complete available coin literals. Native keeper slots remain distinct from the
+custody field. Shop ID zero maps to owner ID one. Cash observations distinguish
+V1/legacy unknown values from known V2 values; retained totals do not establish
+ledger or source agreement. Keeper/catalog/custody clocks remain independent.
+
+Protected read locks, journal checks and the aggregate audit budget apply. The
+command performs no recovery or correction and omits private item strings. All
+finding totals remain complete at every detail limit; other owners, holdings,
+source admission, history and release remain unqualified. See
+[exact native proof and shared recipe requests](PLAN5_SHOPKEEPER_LITERAL_CUSTODY_2026-10-07.md).

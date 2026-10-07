@@ -21,7 +21,7 @@ import build_restore_qualifier as qualifier
 
 UNITS = ("flatfile_item_repository", "flatfile_authority_transaction", "flatfile_store",
          "player_snapshot_codec", "item_transfer_command", "critical_command", "economic_source_event",
-         "flatfile_world_item_repository", "flatfile_locker_repository")
+         "flatfile_world_item_repository", "flatfile_locker_repository", "flatfile_shopkeeper_repository")
 
 
 def build_fixture(destination, native_source=ROOT):
@@ -889,34 +889,244 @@ def check_locker_findings(fixture, binary, build):
     (build / "locker-findings.json").write_text(json.dumps(rows, indent=2) + "\n")
     return rows
 
-def check_boundaries(fixture, binary, build, world=False, locker=False):
+def shop_item(uid, *, equipment=0, **kwargs):
+    raw = bytearray(world_item(uid, **kwargs))
+    struct.pack_into("<h", raw, 4, equipment)
+    return bytes(raw)
+
+
+def shop_model(version=2):
+    return dict(version=version, revision=1, keepers=[dict(id=0, mobile=5, room=10,
+        saved_at=0, revision=90, cash=123, roaming=1,
+        affects=[(1, -2, -3, -4, (0, 1, 2, 3, 2**64-1))],
+        items=[shop_item(101, kind=1, vnum=57, equipment=255),
+               shop_item(102, parent=0), shop_item(103, equipment=1)])])
+
+
+def shop_frame(value):
+    body = struct.pack("<I", len(value["keepers"]))
+    for row in value["keepers"]:
+        body += struct.pack("<IiiqQ", row["id"], row["mobile"], row["room"], row["saved_at"], row["revision"])
+        if value["version"] == 2:
+            body += struct.pack("<qB", row["cash"], row["roaming"])
+        body += struct.pack("<I", len(row["affects"]))
+        for type_, duration, modifier, location, bits in row["affects"]:
+            body += struct.pack("<4i5Q", type_, duration, modifier, location, *bits)
+        encoded = row.get("encoded", struct.pack("<I", len(row["items"])) + b"".join(row["items"]))
+        body += struct.pack("<I", len(encoded)) + encoded
+    return b"DURSHOP\0" + struct.pack("<IIQ", value["version"], len(body), value["revision"]) + hashlib.sha256(body).digest() + body
+
+
+def shop_custody(value):
+    # Reuse the established complete custody model, preserving native keeper slots
+    # in detached coin literals and keeping the separate custody slot zero.
+    proxy = dict(lockers=[dict(id=row["id"]+1, chests=[dict(id=1, items=row["items"])]) for row in value["keepers"]])
+    result = locker_custody(proxy)
+    result["owners"] = [(9, row[1], 0, row[3]) for row in result["owners"]]
+    for row in result["items"]:
+        row["owner"] = (9, row["owner"][1], 0)
+    return result
+
+
+def shop_cases():
+    rows = []
+    def add(label, value, accepted):
+        rows.append((label, shop_frame(value), accepted, value if accepted else None))
+    for version in (1, 2):
+        add("version-"+str(version), shop_model(version), True)
+        value=shop_model(version);value["keepers"]=[]
+        add("empty-"+str(version), value, True)
+    value=shop_model();row=value["keepers"][0]
+    row.update(id=2**32-1,mobile=2**31-1,room=2**31-1,saved_at=2**63-1,revision=2**64-1,cash=2**31-1)
+    value["revision"]=2**64-1;row["items"]=[shop_item(2**64-1)]
+    add("full-width-identities-clocks",value,True)
+    for cash in (-1,0,2**31-1):
+        value=shop_model();value["keepers"][0]["cash"]=cash
+        add("cash-"+str(cash),value,True)
+    for label, affects in (("empty-affects",[]),("duplicate-affects",[(0,0,0,0,(0,)*5)]*2),
+            ("maximum-affects",[(0,0,0,0,(0,)*5)]*4096),
+            ("signed-affect-order",[(-2**31,2**31-1,-2**31,2**31-1,(2**64-1,)*5),(2**31-1,-2**31,2**31-1,-2**31,(0,)*5)])):
+        value=shop_model();value["keepers"][0]["affects"]=affects;add(label,value,True)
+    for label, items in (("empty-items",[]),("inventory",[shop_item(101)]),
+            ("complete-binary-item",[shop_item(101,strings=(b"private-synthetic-literal",b"\x00\xff",b"",b"x"*4096))]),
+            ("maximum-items",[shop_item(1000+i,kind=1,vnum=57) for i in range(4096)])):
+        value=shop_model();value["keepers"][0]["items"]=items;add(label,value,True)
+    value=shop_model();second=copy.deepcopy(value["keepers"][0]);second.update(id=1,items=[shop_item(200,equipment=255)])
+    value["keepers"].append(second);add("slots-per-keeper",value,True)
+    for label, field, replacement in (("zero-mobile","mobile",0),("negative-mobile","mobile",-1),
+            ("zero-room","room",0),("negative-room","room",-1),("negative-time","saved_at",-1),
+            ("zero-clock","revision",0),("cash-negative","cash",-2),("cash-overflow","cash",2**31),
+            ("roaming-bool","roaming",2),("affect-overflow","affects",[(0,0,0,0,(0,)*5)]*4097),
+            ("affect-order","affects",[(1,0,0,0,(0,)*5),(0,0,0,0,(0,)*5)])):
+        value=shop_model();value["keepers"][0][field]=replacement;add(label,value,False)
+    for label, items in (("zero-uid",[shop_item(0)]),("duplicate-uid",[shop_item(101),shop_item(101)]),
+            ("zero-vnum",[shop_item(101,vnum=0)]),("negative-slot",[world_item(101)]),
+            ("slot-overflow",[shop_item(101,equipment=256)]),
+            ("duplicate-slot",[shop_item(101,equipment=1),shop_item(102,equipment=1)]),
+            ("child-slot",[shop_item(101),shop_item(102,parent=0,equipment=1)]),
+            ("bad-parent",[shop_item(101,parent=0)]),
+            ("depth-overflow",[shop_item(101+i,parent=i-1) for i in range(33)]),
+            ("string-overflow",[shop_item(101,strings=(b"x"*4097,b"",b"",b""))]),
+            ("row-budget",[shop_item(101,dynamic_count=8192)])):
+        value=shop_model();value["keepers"][0]["items"]=items;add(label,value,False)
+    for label, ids, duplicate in (("duplicate-shop",[0,0],False),("shop-order",[1,0],False),("global-uid",[0,1],True)):
+        value=shop_model();second=copy.deepcopy(value["keepers"][0]);value["keepers"][0]["id"]=ids[0]
+        second.update(id=ids[1],items=[shop_item(101 if duplicate else 200)]);value["keepers"].append(second);add(label,value,False)
+    for label, encoded in (("zero-list",b""),("item-count-overflow",struct.pack("<I",4097)),
+            ("item-truncation",struct.pack("<I",1)+shop_item(101)[:-1]),
+            ("item-trailing",struct.pack("<I",0)+b"x")):
+        value=shop_model();value["keepers"][0]["encoded"]=encoded;add(label,value,False)
+    good=shop_frame(shop_model())
+    for label, offset, fmt, replacement in (("unknown-zero",8,"I",0),("unknown-version",8,"I",3),
+            ("zero-catalog-clock",16,"Q",0),("body-size",12,"I",1),("checksum",24,"B",good[24]^1),("magic",0,"B",0)):
+        raw=bytearray(good);struct.pack_into("<"+fmt,raw,offset,replacement);rows.append((label,bytes(raw),False,None))
+    for label, encoded in (("truncated",good[:-1]),("trailing",good+b"x"),("header-only",good[:55])):
+        rows.append((label,encoded,False,None))
+    for label, body in (("catalog-count-overflow",struct.pack("<I",262145)),("empty-trailing",struct.pack("<I",0)+b"x")):
+        rows.append((label,b"DURSHOP\0"+struct.pack("<IIQ",2,len(body),1)+hashlib.sha256(body).digest()+body,False,None))
+    return rows
+
+
+def check_shop_catalogs(fixture, binary, build):
+    rows=[]
+    for label, encoded, expected, value in shop_cases():
+        directory=build/("shop-format-"+label);directory.mkdir(mode=0o700);root=directory/"state"
+        incoming=directory/"shop.bin";incoming.write_bytes(encoded)
+        result=subprocess.run([str(fixture),str(root),str(incoming),"1" if expected else "0","shopkeeper"],capture_output=True,text=True,timeout=30)
+        assert result.returncode==0 and not result.stderr,(label,result)
+        native=json.loads(result.stdout);assert native["native_accepted"]==native["independent_accepted"]==expected
+        if expected:
+            path=directory/"custody.bin";path.write_bytes(frame(shop_custody(value)))
+            result=subprocess.run([str(fixture),str(root),str(path),"1"],capture_output=True,text=True,timeout=30)
+            assert result.returncode==0 and not result.stderr,(label,result)
+        before=inventory(root)
+        result=subprocess.run([str(binary),"--economic-shopkeeper-custody-audit",str(root)],capture_output=True,text=True,timeout=30)
+        assert inventory(root)==before and incoming.read_bytes()==encoded
+        if expected:
+            report=json.loads(result.stdout)
+            assert result.returncode==0 and not result.stderr and report["shop_owner_literals_verified"],(label,result)
+            known=[row["cash"] for row in value["keepers"] if row["cash"]>=0] if value["version"]==2 else []
+            assert report["shop_items"]==native["items"] and report["cash_known"]==len(known)
+            assert report["cash_legacy"]==len(value["keepers"])-len(known) and report["retained_cash_copper"]==str(sum(known))
+            assert not report["native_holdings_compared"] and not report["release_qualified"]
+        else:
+            assert result.returncode==1 and not result.stdout and result.stderr=="native_restore_qualification_failed\n",(label,result)
+        assert "private-synthetic-literal" not in result.stdout
+        (directory/"operator.json").write_text(json.dumps(dict(command=result.args,exit=result.returncode,stdout=result.stdout,stderr=result.stderr),indent=2)+"\n")
+        (directory/"authority-before-after.json").write_text(json.dumps(before,sort_keys=True)+"\n")
+        row=dict(case=label,accepted=expected,native=native,input_sha256=hashlib.sha256(encoded).hexdigest(),authority_unchanged=True)
+        rows.append(row);print("SHOP_CATALOG "+json.dumps(row,sort_keys=True),flush=True)
+    (build/"shop-observations.json").write_text(json.dumps(rows,indent=2)+"\n")
+    return rows
+
+
+def check_shop_findings(fixture, binary, build):
+    base=shop_model();owned=shop_custody(base);cases=[("healthy",base,owned,{})]
+    def add(label,value,custody,counts):cases.append((label,value,custody,counts))
+    for state in (2,3):
+        custody=copy.deepcopy(owned);custody["items"][1]["state"]=state
+        add("state-"+str(state),base,custody,{"shop_uid_not_active":1})
+    for label, owner in (("owner",(1,7,0)),("context",(9,1,99))):
+        custody=copy.deepcopy(owned);custody["items"][1]["owner"]=owner
+        custody["owners"]=sorted({*custody["owners"],(*owner,0)})
+        add(label,base,custody,{"shop_owner_mismatch":1})
+    for field,replacement in (("root",999),("parent",0)):
+        custody=copy.deepcopy(owned);custody["items"][1][field]=replacement
+        add(field,base,custody,{"shop_item_topology_mismatch":1})
+    custody=copy.deepcopy(owned);custody["items"][0]["vnum"]+=1
+    add("vnum",base,custody,{"shop_item_vnum_mismatch":1})
+    custody=copy.deepcopy(owned);custody["items"][0].update(owner=(1,7,0),equipment=1)
+    custody["owners"]=sorted({*custody["owners"],(1,7,0,0)})
+    add("equipment",base,custody,{"shop_owner_mismatch":1,"shop_item_equipment_mismatch":1})
+    for label, fmt, offset, replacement in (("generated","q",14,-55),("mask","B",27,255),
+            ("coin-value","i",44,9),("other-value","i",72,-9),("timer","q",100,-2**63),
+            ("flag","I",140,2**32-1),("weight","i",144,-15),("material","b",148,-128),
+            ("cost","i",149,33),("condition","h",153,-20),("craftsmanship","h",155,25),
+            ("bitvector","Q",189,2**64-1),("affect","h",211,-32768),("type","B",26,1),
+            ("native-equipment","h",4,2)):
+        value=copy.deepcopy(base);raw=bytearray(value["keepers"][0]["items"][2]);struct.pack_into("<"+fmt,raw,offset,replacement)
+        value["keepers"][0]["items"][2]=bytes(raw);add(label,value,owned,{"shop_coin_literal_mismatch":1})
+    for index in range(4):
+        value=copy.deepcopy(base);strings=[b""]*4;strings[index]=b"private-synthetic-literal"
+        value["keepers"][0]["items"][2]=shop_item(103,equipment=1,strings=strings)
+        add("string-"+str(index),value,owned,{"shop_coin_literal_mismatch":1})
+    for label,kwargs in (("dynamic",dict(dynamic_count=1)),("description",dict(spell_counts=(1,)))):
+        value=copy.deepcopy(base);value["keepers"][0]["items"][2]=shop_item(103,equipment=1,**kwargs)
+        add(label,value,owned,{"shop_coin_literal_mismatch":1})
+    value=copy.deepcopy(base);value["keepers"][0]["items"].pop()
+    add("missing-literal",value,owned,{"shop_uid_missing_literal":1})
+    value=copy.deepcopy(base);value["keepers"][0]["items"].append(shop_item(200))
+    add("unadmitted",value,owned,{"shop_uid_unadmitted":1})
+    value=copy.deepcopy(base);value["keepers"][0]["items"].extend(shop_item(200+i) for i in range(101))
+    add("bounded-details",value,owned,{"shop_uid_unadmitted":101})
+    value=copy.deepcopy(base);raw=bytearray(value["keepers"][0]["items"][2]);struct.pack_into("<i",raw,44,-1)
+    value["keepers"][0]["items"][2]=bytes(raw)
+    add("negative-native-coin",value,shop_custody(value),{"shop_negative_coin_value":1})
+    custody=copy.deepcopy(owned)
+    for row in custody["items"]:row["payload"]=b""
+    add("legacy-inline-absent",base,custody,{})
+    custody=copy.deepcopy(owned);custody["owners"].insert(0,(1,7,0,0))
+    custody["items"].append(dict(uid=300,root=300,parent=0,owner=(1,7,0),revision=1,vnum=57,state=1,payload=b"",equipment=0))
+    add("other-owner-uncompared",base,custody,{})
+    add("shop-absent",None,owned,{"custody_shop_catalog_missing":1,"shop_uid_missing_literal":3})
+    add("custody-absent",base,None,{"shop_custody_catalog_missing":1,"shop_uid_unadmitted":3})
+    rows=[]
+    for label,value,custody,counts in cases:
+        directory=build/("shop-finding-"+label);directory.mkdir(mode=0o700);root=directory/"state"
+        for data,family,encoder in ((custody,None,frame),(value,"shopkeeper",shop_frame)):
+            if data is None:continue
+            path=directory/("shop.bin" if family else "custody.bin");path.write_bytes(encoder(data))
+            command=[str(fixture),str(root),str(path),"1"]+([family] if family else [])
+            result=subprocess.run(command,capture_output=True,text=True,timeout=30)
+            assert result.returncode==0 and not result.stderr,(label,result)
+        before=inventory(root);reports=[]
+        for limit in (0,1,100):
+            command=[str(binary),"--economic-shopkeeper-custody-audit",str(root),"--limit",str(limit)]
+            result=subprocess.run(command,capture_output=True,text=True,timeout=30)
+            assert result.returncode==bool(counts) and not result.stderr and inventory(root)==before,(label,limit,result)
+            report=json.loads(result.stdout)
+            assert report["finding_counts"]==counts and report["finding_count"]==sum(counts.values()),(label,report)
+            assert len(report["findings"])==min(limit,report["finding_count"])
+            assert report["findings_truncated"]==(report["finding_count"]>limit) and report["shop_owner_literals_verified"]==(not counts)
+            assert not any(report[name] for name in ("other_owner_literals_compared","native_holdings_compared","item_history_verified","full_R7_qualified","release_qualified"))
+            assert "private-synthetic-literal" not in result.stdout
+            reports.append(dict(command=command,exit=result.returncode,report=report))
+        row=dict(case=label,counts=counts,reports=reports,authority_unchanged=True);rows.append(row)
+        (directory/"evidence.json").write_text(json.dumps(row,indent=2)+"\n")
+        (directory/"authority-before-after.json").write_text(json.dumps(before,sort_keys=True)+"\n")
+        print("SHOP_FINDING "+json.dumps(dict(case=label,counts=counts,cuts=3,authority_unchanged=True)),flush=True)
+    (build/"shop-findings.json").write_text(json.dumps(rows,indent=2)+"\n")
+    return rows
+
+
+def check_boundaries(fixture, binary, build, world=False, locker=False, shop=False):
     import fcntl
 
-    prefix = "locker-boundary-" if locker else "world-boundary-" if world else "boundary-"
+    prefix = "shop-boundary-" if shop else "locker-boundary-" if locker else "world-boundary-" if world else "boundary-"
     golden = build / (prefix + "golden")
     incoming = build / (prefix + "input.bin")
-    incoming.write_bytes(frame(locker_custody(locker_model())) if locker else frame(world_custody(world_model())) if world else frame(model()))
+    incoming.write_bytes(frame(shop_custody(shop_model())) if shop else frame(locker_custody(locker_model())) if locker else frame(world_custody(world_model())) if world else frame(model()))
     native = subprocess.run([str(fixture), str(golden), str(incoming), "1"],
                             capture_output=True, text=True, timeout=30)
     assert native.returncode == 0 and not native.stderr, native
-    if world or locker:
-        incoming.write_bytes(locker_frame(locker_model()) if locker else world_frame(world_model()))
-        native = subprocess.run([str(fixture), str(golden), str(incoming), "1", "locker" if locker else "world"],
+    if world or locker or shop:
+        incoming.write_bytes(shop_frame(shop_model()) if shop else locker_frame(locker_model()) if locker else world_frame(world_model()))
+        native = subprocess.run([str(fixture), str(golden), str(incoming), "1", "shopkeeper" if shop else "locker" if locker else "world"],
                                 capture_output=True, text=True, timeout=30)
         assert native.returncode == 0 and not native.stderr, native
     rows = []
     labels = ("healthy", "empty", "uninitialized", "missing-lock", "held-lock",
                   "critical-journal", "currency-journal", "player-journal", "public-file",
                   "public-root", "symlink", "dangling-symlink", "hardlink")
-    for label in labels + (("zero-file",) if world or locker else ()):
+    for label in labels + (("zero-file",) if world or locker or shop else ()):
         root = build / (prefix + label)
         shutil.copytree(golden, root, copy_function=shutil.copy2)
         domains = root / "domains"
-        catalog = domains / ("locker_catalog" if locker else "world_item_catalog" if world else "item_ownership")
+        catalog = domains / ("shopkeeper_catalog" if shop else "locker_catalog" if locker else "world_item_catalog" if world else "item_ownership")
         held = None
         if label in ("empty", "uninitialized"):
             catalog.unlink()
-            if world or locker:
+            if world or locker or shop:
                 (domains / "item_ownership").unlink()
             if label == "uninitialized":
                 shutil.rmtree(domains)
@@ -942,7 +1152,7 @@ def check_boundaries(fixture, binary, build, world=False, locker=False):
         elif label == "zero-file":
             catalog.write_bytes(b"")
         before = inventory(root)
-        option = "--economic-locker-custody-audit" if locker else "--economic-world-custody-audit" if world else "--economic-custody-catalog-audit"
+        option = "--economic-shopkeeper-custody-audit" if shop else "--economic-locker-custody-audit" if locker else "--economic-world-custody-audit" if world else "--economic-custody-catalog-audit"
         result = subprocess.run([str(binary), option, str(root)],
                                 capture_output=True, text=True, timeout=30)
         assert inventory(root) == before
@@ -952,7 +1162,9 @@ def check_boundaries(fixture, binary, build, world=False, locker=False):
         if expected:
             assert result.returncode == 0 and not result.stderr, (label, result)
             value = json.loads(result.stdout)
-            if locker:
+            if shop:
+                assert value["shop_present"] == value["shop_owner_literals_verified"] == (label == "healthy")
+            elif locker:
                 assert value["locker_present"] == value["locker_owner_literals_verified"] == (label == "healthy")
             elif world:
                 assert value["world_present"] == value["world_owner_literals_verified"] == (label == "healthy")
@@ -961,7 +1173,7 @@ def check_boundaries(fixture, binary, build, world=False, locker=False):
         else:
             assert result.returncode == 1 and not result.stdout and result.stderr == "native_restore_qualification_failed\n", (label, result)
         rows.append(dict(case=label, exit=result.returncode, authority_unchanged=True))
-    (build / ("locker-boundaries.json" if locker else "world-boundaries.json" if world else "boundaries.json")).write_text(json.dumps(rows, indent=2) + "\n")
+    (build / ("shop-boundaries.json" if shop else "locker-boundaries.json" if locker else "world-boundaries.json" if world else "boundaries.json")).write_text(json.dumps(rows, indent=2) + "\n")
     return rows
 
 
@@ -983,6 +1195,10 @@ if __name__ == "__main__":
         locker_observations = check_locker_catalogs(fixture, binary, build)
         locker_findings = check_locker_findings(fixture, binary, build)
         locker_boundaries = check_boundaries(fixture, binary, build, locker=True)
+        shop_observations = check_shop_catalogs(fixture, binary, build)
+        shop_findings = check_shop_findings(fixture, binary, build)
+        shop_boundaries = check_boundaries(fixture, binary, build, shop=True)
+        print("shopkeeper custody: " + str(len(shop_observations)) + " format cases, " + str(len(shop_findings)) + " findings, " + str(len(shop_boundaries)) + " boundaries passed")
         print("locker custody: " + str(len(locker_observations)) + " format cases, " + str(len(locker_findings)) + " findings, " + str(len(locker_boundaries)) + " boundaries passed")
         print("independent custody catalog: " + str(len(observations)) + " native/operator cases passed")
         print("world custody: " + str(len(world_observations)) + " format cases, " +
