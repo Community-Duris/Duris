@@ -1,5 +1,11 @@
 # Accounting sidework coordination completion audit - 2026-10-07
 
+**Historical finite checkpoint only.** This audit does not close the user's
+subsequently authorized continuing coordination Goal. See the superseding
+[project lifecycle and current queue](CONTINUING_PROJECT_COORDINATION.md).
+The primary implementation and its original qualification requirements remain
+unfinished; all verified deliveries below remain preserved checkpoints.
+
 The fixed architecture milestone and selected quest follow-ups are discharged
 at their stated scopes. This audit preserves the fixed requirements established
 before implementation; no required row was dropped or marked complete despite
