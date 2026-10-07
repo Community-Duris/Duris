@@ -1,4 +1,4 @@
-# Collector domain separation handoff — 2026-10-07
+# Accounting domain separation handoff — 2026-10-07
 
 ## Current delivery status
 
@@ -6,9 +6,12 @@
 preserved. The user-authorized charter at accounting
 `a7b3181edb80bf188f616c39b8e7cb144e11cb18` supersedes its first-delivery-only
 completion boundary. See [the fixed operation inventory](OPERATION_INVENTORY.md)
-for assessed domains, required R1/R2 work and the next Craft/Forge reservation.
-That reservation is proposed, not primary-accepted. No later extraction is yet
-implemented or qualified at this publication.
+for assessed domains and the fixed R0/R1/R2 delivery set. The coordinator accepted
+inventory v1 and R1's seam in upstream review `b876f9442040653cf53c15d81d5188166e1cd829`.
+R1 is implemented at `48cdf9cb0893873651216f7940aae2691d060e58`, with successful
+focused components and both maintained builds. Actual Craft/Forge runtime
+qualification is running; its original inspector link failure is retained below.
+R2 remains required and outstanding. The continuation Goal is active.
 
 Actual continuation-tool evidence: `get_goal` first returned no current Goal;
 `create_goal` then `get_goal` returned `status: active`, no budget, for this chat.
@@ -19,12 +22,71 @@ authority and treating required owner-blocked work as unfinished. Verified clean
 checkout and branch at `ce3b631003303ee4fbfb8a0bd527ad8508982250` in the original
 ac24 worktree. The Goal must not complete at the inventory or next-bundle boundary.
 
-**Implemented and qualified at source/component/maintained-build scope**, on
+**R0 implemented and qualified at source/component/maintained-build scope**, on
 `origin/codex/accounting-domain-separation`. Both maintained backends have
 terminal successful builds. The bounded first delivery is ready for primary
 review/import; upstream integration and actual Collector runtime journeys are
 not claimed. Earlier proposed and implementation sections retain the research
 and ownership history, not an outstanding implementation requirement.
+
+## R1 published implementation and terminal evidence
+
+Source commit `48cdf9cb0893873651216f7940aae2691d060e58`, parent
+`92871c3dcb9bf90932eb102775ed9547022f4163`, published on the same owned branch.
+`crafting_plan.h` contains the existing plan type and material-count rules with
+owned value/VNUM/magical/multiplier inputs. `crafting_build_plan` captures the
+native facts and calls that implementation. Preview and make retain their shared
+wrapper. Native input selection/submission, output UID admission, progression,
+recipe persistence and active guards are unchanged.
+
+Terminal focused checks passed: `test_crafting_material_bounds.py` (original
+ASan/UBSan/float-cast-overflow controls retained, plus direct owned cases),
+`test_crafting_module_contract.py`, `test_crafting_config_contract.py`,
+`test_crafting_recipe_persistence_contract.py`,
+`test_crafting_enhancement_regressions.py`,
+`test_crafting_material_probe_cleanup.py`, `test_recipe_craft_transaction.py`,
+and `test_craft_progression.py`. The latter two compile actual native owner slices;
+they do not replace gameplay/persistence journeys. Staged changed-line format,
+full touched-header/source clang-format check and `git diff --check` passed.
+
+Maintained development builds in task-owned container
+`duris-domain-separation-ac24-r1` both finished with exit 0. Image
+`duris-finish-accounting-qa:local`, ID
+`sha256:74b699976165c15fc29cf92b9c2dbefcdbca35505a08efc84d14bf644cbf6d5b`,
+GCC 13.3, actual checkout read-only at `/workspace`; task-owned output volume
+`duris-domain-separation-ac24-build` at `/workspace/bin`. These are dependency
+rebuilds from qualified R0 objects, not claims of another 740-file clean build.
+
+- `make -C src -j2`: SQL executable SHA-256
+  `b85d8bbbd7970cf7fc831959531841658319a826c10df194bcec5fd80f0b72ab`.
+- `make -C src -j2 PERSISTENCE_BACKEND=flatfile DMS_BINARY=/workspace/bin/server/dms_flat_new`:
+  flat executable SHA-256
+  `79e385143b87bf6d013f2e9c4a9d8393ee8359bbf71894076ed4370083872843`.
+
+Source SHA-256 pins: `crafting_plan.h`
+`623cd76374693dc87a940db5409fae4884313d1fa5affc401f68a8f6437cb268`;
+`crafting.h` `ea148ac7f1276c3a81449339494df0bbd94ad2a91d66f205b3ead59066c98c00`;
+`crafting.c` `cadb63d7c3d060ed1e4628df21624f54d3fdb6bd70480c2e2dfa5cc766a96051`;
+`test_crafting_material_bounds.py`
+`6bc12e410bc7898399276548fc60033ff2f1ad8f773ab1d5d5c3793233a3d2bd`.
+
+Private evidence under `bin/tests/domain-separation-r1-20261007/`: full SQL/flat
+compile/link logs, terminal exits/hashes, component logs and source pins. No
+artifacts, logs or player/database data are committed. Coordinator source review
+at this exact code revision found no actionable defect; its independently run
+unchanged sanitizer regression passed. Published review on accounting is
+`d91f59af06239a5736d10498b89091699c5e05c6` (documentation-only since this source
+base). Review/import and runtime qualification are distinct statuses.
+
+Runtime qualification uses a separate owned container
+`duris-domain-separation-ac24-r1-runtime` with no network, disposable fixture
+account/ports/data and maintained binaries. The unmodified inspector attempt
+failed at link with missing `economic_baseline_decode`; retained
+`inspector-original.log`. A private launcher adds only the existing
+`economic_baseline_codec.c` provider to the original inspector source list and
+runs the unchanged `run_alchemist_crafting_journey.py` recipe-only assertions.
+No shared manifest repair is made. This attempt is running at this publication;
+no runtime pass, SQL journey or primary import is yet claimed.
 
 ## Goal and checkout evidence
 

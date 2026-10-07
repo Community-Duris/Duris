@@ -10,7 +10,8 @@ merge is necessary to implement these seams. This is an operation-level
 architecture assessment, not a second writer registry or activation census.
 
 Required feasible delivery set is fixed as **R0, R1 and R2** below. R0 is the
-completed Collector bundle. R1 and R2 remain actionable owned work; neither may
+completed Collector bundle. R1 is published/qualified at component and maintained-build scope; its runtime
+qualification is ongoing. R2 remains actionable owned work; neither may
 be silently removed or called complete from research alone. Each requires a
 production caller, focused executable proof, maintained build, accurate handoff
 and published coordinator disposition/review. A genuine conflict that makes a
@@ -41,7 +42,7 @@ requirement to implement one must be explicitly added to this fixed set.
 | K3 Collector: purchase/expiry | `collector_purchase_prepare` and `collector_expiry_prepare` already accept owned actor/listing/item/custody/time inputs, produce typed commands, and retain exact blobs. Accounting plan/native owner separate. | Already separated; no repeat extraction. Adjacent shared test-link defects retained in R0 handoff. |
 | Q1 quest rewards: item/coin/XP/recipient selection and frozen continuation | Typed quest/mobile values and stock, accounting adapters and frozen continuations exist. `quest_native_completion_owner::prepare_original`, birth/custody and publication integrate live native evidence. | Active primary/quest-prep boundary. QP02 selector fix belongs to quest-prep; its stock, recipe ordering and native path are not changed here. |
 | Q2 quest costs: bartender creation/map/abandon/refund | Existing pointer-free callback context preserves original attempt, but task/cash/receipt authority and active refund remain coupled. | QP07 callback fix/execution belongs to quest-prep; active debit/refund belongs to primary. No architecture edit of `specs.world_quest.c` or quest test ownership. |
-| F1 crafting: Craft/Forge material quote and preview/make plan | `crafting.c:crafting_build_plan` calls live `itemvalue/get_matstart/has_affect`, then validates facts and computes counts using a global multiplier. Existing `crafting_plan` is owned, shared by preview and execution. | **R1 required feasible extraction, next priority**: owned numeric/config facts to the same plan; retain capture wrapper and all native craft operations. |
+| F1 crafting: Craft/Forge material quote and preview/make plan | `crafting.c:crafting_build_plan` calls live `itemvalue/get_matstart/has_affect`, then validates facts and computes counts using a global multiplier. Existing `crafting_plan` is owned, shared by preview and execution. | **R1 implemented** `48cdf9cb0`; components/builds pass, runtime qualification ongoing: owned numeric/config facts to the same plan; retain capture wrapper and all native craft operations. |
 | F2 crafting: input selection, output admission, progression, pouch conservation | `submit_recipe_craft` selects live input roots; existing item movement/native craft owner freezes input/output/pouch mutations and progression receipts. | Existing typed mutation/evidence boundary, primary-owned native selection/admission/recovery. R1 must not alter these functions or recipe persistence. |
 | F3 crafting/enhancement/refining: paid enhancement, forge variants | Existing config/math helpers and shared craft/coin pathways exist; outcomes still include live objects, RNG and costs in producer functions. | Future extraction requires frozen outcome/selected input facts from actual owner. Preserve active refusal and native compound semantics; not folded into R1 quote. |
 | G1 gambling: blackjack and casino specials | `specs.gellz.c:blackjack_table` has explicit active-epoch refusal; retained inactive gameplay holds mutable card state, RNG and payouts. Casino specials retain legacy behavior. | Active blackjack deprecation is intentional. No useful active owned preparation is authorized by restoring it; inactive rules remain unchanged. Other compound gambling authority is primary-required before a new supported route. |
@@ -50,7 +51,9 @@ requirement to implement one must be explicitly added to this fixed set.
 
 ## Prioritized owned queue and proof obligations
 
-1. **R1 Craft/Forge material plan** — proposed, not primary-accepted.
+1. **R1 Craft/Forge material plan** — accepted inventory seam; implemented at
+   `48cdf9cb0893873651216f7940aae2691d060e58`, component/build-qualified.
+   Coordinator source review found no defect; real journey is ongoing.
    Production paths: new `src/economy/crafting_plan.h`, existing
    `src/economy/crafting.h` (same plan type, include only), and
    `src/economy/crafting.c:crafting_build_plan` plus its local quantity-scaling
