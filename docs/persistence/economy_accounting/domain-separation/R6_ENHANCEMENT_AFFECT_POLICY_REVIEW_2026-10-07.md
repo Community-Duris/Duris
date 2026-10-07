@@ -71,3 +71,56 @@ These are provisional byte-pinned components. Final commit, adjacent controls,
 maintained builds, current module checks and complete handoff remain pending.
 The continuing Goal stays active; passing these components does not qualify
 native compound outcomes or establish primary adoption.
+
+## Final declared-scope review and Collector successor
+
+Committed implementation `98448166748d54f6b383bf9e3ece108d12beb079` and
+published terminal handoff `f920564cfe5cf45733c954887e914be4f7437d2e` pass the coordinator's final review at
+their declared component, maintained-build and import scope. All three Git
+source bodies exactly match the independently tested corrected snapshot.
+All three source pins and all 50 proof-index hashes independently match.
+
+The coordinator checked actual task-owned container binaries, saved terminal
+exit0, one fresh compilation per profile and both full 740-object links.
+SQL ELF `3a315df8b41dc01f2bd3cb683d526d245b0181b1d542a7b6ce134712c6de2884`;
+flat ELF `ae152f127e75d7dc67d7da9500bebefbcd6d6cc4001a0ac4c148b9c50e54b001`.
+These are the preserved R0-R6 branch graph, not a current 754-provider build.
+Retain original fixture failures and the unchanged reset-hook assertion failure;
+passing supported components does not turn either original failure into a pass.
+
+For the separately qualified352-plus-R0-R6 composition, the coordinator
+authenticated every one of the 6,441 exported file bodies against Git tree
+`316a1a49804c84eb35ef0c16b872fd8e5c9a1f9f`, with zero mismatches. Archive SHA256
+`6eeed999f4194fcd1c9b0784509273bed49c6e97d676e687949613ceaa95f9ff` matches.
+Actual ordinary-payment/policy and pool controls and strict SQL/flat full-module
+type checks pass on that immutable export. Full current links and native
+enhancement/player/persistence/recovery journeys remain unrun.
+
+Independent final-patch checks agree with the handoff: production-only SHA256
+`661f33a82426b5892dd3b1e33e681ff5a570c15c101cbc8ae234b7a82adee71c`
+applies to bare352, while the full three-file patch retains R3's ordinary-test
+predecessor. The original bare test-context failure stays visible. Primary
+adoption remains unknown; source independence is not whole-bundle independence.
+
+Primary successor `daa5c2b5f152b88d7c9ad56e21079541a291d14b` adds retained and
+current Collector flatfile proof readers. The coordinator preserves that source
+and independently confirms R6 production-only application still passes; full
+tests retain the same expected prerequisite. Enhancement and ordinary-test
+preimages are byte-identical to352. Earlier component/ELF evidence keeps its
+original source pins and is not relabeled as a new full successor qualification.
+
+The new Collector handoff reports original component and both maintained
+754-provider build qualification by the primary owner. Its private receipts
+were not independently verified here. Its APIs borrow the existing authority
+lock, may finish an existing journal, and return historical evidence separately
+from current owned projection; they create no publication capability. Reuse
+that owner boundary rather than duplicate it as another architecture helper.
+SQL physical player/coordinator/ACK/cold journeys, flatfile submission,
+publication/restored holds/guarded ACK and broader compound gates remain open.
+This unrelated reader change supplies no missing native quest admission or
+independent lifecycle verifier.
+
+R6 is reviewed and available for optional import at this scope. The continuing
+finish line remains primary Plans1-5 and applicable original R1-R8 qualification.
+Reassess substantial independent work and exact owner dependencies; no further
+thin wrapper of already explicit rules is selected by this review.
