@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 206 &&
+		require(catalog.story_mappings.size() == 207 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -24482,6 +24482,128 @@ int main(int argc, char **argv)
 								     request->steps.front().text) !=
 								std::string::npos,
 						"Dirk'nspire spent inputs lost acceptance or reward recreated preparation");
+			}
+		}
+
+		{
+			const auto &proofs = story_for("stormport", "tchan-stormport-proofs");
+			const auto &shield = story_for("stormport", "citysmith-granite-shield");
+			const zone_story_quest_catalog::story_definition *requests[] = { &proofs,
+											 &shield };
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 224, 22410, 100, "arrival") ==
+					result::applied,
+				"Storm Port discovery failed");
+			require(journey.meet_npc(7, 42, 22428, 4809, 101) == result::rejected,
+				"Tchan encounter ignored undiscovered physical monastery");
+			require(journey.discover_zone(7, 42, 48, 4809, 102, "arrival") ==
+						result::applied &&
+					journey.meet_npc(7, 42, 22428, 4809, 103) ==
+						result::applied &&
+					journey.meet_npc(7, 42, 22436, 22418, 104) ==
+						result::applied,
+				"Storm Port foreign giver or independent smith encounter failed");
+			const int materials[] = { 22431, 22433, 22432, 22434, 22406, 22405 };
+			const auto before = journey.serialize_state();
+			// Synthetic readiness does not qualify actual native sources, ferry fees or travel.
+			for (unsigned mask = 0; mask < 64; ++mask)
+			{
+				supplies = {};
+				for (unsigned index = 0; index < 6; ++index)
+					if (mask & (1U << index))
+						supplies.carried[materials[index]] = 1;
+				const auto journal = journey.render_journal(
+					7, 42, 224, 10, 1, 105, false, false, &supplies);
+				unsigned index = 0;
+				for (const auto *request : requests)
+					for (const auto &step : request->steps)
+						if (step.kind == "carried_item")
+						{
+							require(journal.find(
+									std::string(
+										mask & (1U
+											<< index) ?
+											"[Ready now] " :
+											"[Missing now] ") +
+									step.text) !=
+									std::string::npos,
+								"Storm Port exact bundle material readiness was merged");
+							++index;
+						}
+				require(index == 6 && journey.serialize_state() == before &&
+						journey.progress_for_zone(7, 42, 224).completed ==
+							0,
+					"Storm Port material readiness mutated accepted history");
+			}
+			supplies = {};
+			supplies.equipped[18] = 22431;
+			supplies.carried[22404] = 1;
+			supplies.carried[22435] = 1;
+			supplies.carried[22407] = 1;
+			auto journal = journey.render_journal(7, 42, 224, 10, 1, 106, false, false,
+							      &supplies);
+			for (const auto *request : requests)
+				for (size_t index = 0; index + 1 < request->steps.size(); ++index)
+					require(journal.find("[Missing now] " +
+							     request->steps[index].text) !=
+							std::string::npos,
+						"Storm Port held proof, parent container or reward substituted for loose materials");
+			for (unsigned first = 0; first < 2; ++first)
+			{
+				service supplied(catalog), recovered(catalog), raw(raw_catalog);
+				const auto &initial = *requests[first];
+				const auto &other = *requests[1 - first];
+				const int room = first ? 22418 : 4809;
+				record(supplied, initial.contracts.front(),
+				       "stormport-first-return", 224, room);
+				require(supplied.progress_for_zone(7, 42, 224).completed == 1 &&
+						supplied.progress_for_zone(7, 42, 48).completed ==
+							0,
+					"Storm Port supplied acceptance required invented route/history or changed to physical giver zone");
+				require(supplied.discover_zone(7, 42, 224, 22410, 121, "arrival") ==
+							result::applied &&
+						supplied.discover_zone(7, 42, 48, 4809, 121,
+								       "arrival") ==
+							result::applied &&
+						supplied.meet_npc(7, 42, 22428, 4809, 121) ==
+							result::applied &&
+						supplied.meet_npc(7, 42, 22436, 22418, 121) ==
+							result::applied,
+					"Storm Port post-acceptance independent visibility setup failed");
+				journal = supplied.render_journal(7, 42, 224, 10, 1, 121, false,
+								  false, &supplies);
+				require(journal.find("[Recorded] " + initial.steps.back().text) !=
+							std::string::npos &&
+						journal.find("[Recorded] " +
+							     other.steps.back().text) ==
+							std::string::npos,
+					"Storm Port one accepted bundle completed both cards");
+				auto replay = completion(initial.contracts.front(),
+							 "stormport-first-return", 120);
+				replay.transaction.zone_number = 224;
+				replay.transaction.room_vnum = room;
+				require(supplied.record_completion(replay) ==
+						result::already_applied,
+					"Storm Port exact native receipt replay duplicated acceptance");
+				record(supplied, other.contracts.front(), "stormport-other-return",
+				       224, first ? 4809 : 22418);
+				const auto saved = supplied.serialize_state();
+				require(recovered.deserialize_state(saved, &error) &&
+						raw.deserialize_state(saved, &error) &&
+						recovered.progress_for_zone(7, 42, 224).completed ==
+							2 &&
+						raw.progress_for_zone(7, 42, 224).completed == 2,
+					"Storm Port cold mapped/raw recovery lost independent meaningful bundles");
+				journal = recovered.render_journal(7, 42, 224, 10, 1, 122, false,
+								   false, &supplies);
+				for (const auto *request : requests)
+					require(journal.find("[Recorded] " +
+							     request->steps.back().text) !=
+								std::string::npos &&
+							journal.find("[Missing now] " +
+								     request->steps.front().text) !=
+								std::string::npos,
+						"Storm Port spent proofs or reward possession changed recovered acceptance");
 			}
 		}
 

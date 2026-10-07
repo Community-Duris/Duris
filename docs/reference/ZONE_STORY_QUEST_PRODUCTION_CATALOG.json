@@ -62291,6 +62291,650 @@
     {
       "contacts": [
         {
+          "description": "Tchan accepts the four Storm Port proof items for a mantle. His current reset places him in the separate Monestary of Tranquility, rather than the old local monastery. His task-clearing prayer service is unavailable while accounting is active.",
+          "keyword": "tchan",
+          "mob_vnum": 22428,
+          "name": "Tchan, the high priest",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "The citysmith accepts granite and leather straps together for a shield. He also offers native FIX instruction under current teaching admission. Learning and later repairing an item are separate outcomes.",
+          "keyword": "smith",
+          "mob_vnum": 22436,
+          "name": "the city smithy",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Docks of Storm Port. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22400,
+          "name": "an orc dock guard",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around East Gates of Storm Port, The South Gates of Storm Port. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22401,
+          "name": "an orc gate guard",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Docks of Storm Port, The Northern Docks, The Southern Docks. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22402,
+          "name": "a harbour worker",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Northern Docks. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22403,
+          "name": "an orc shipwright",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Docks of Storm Port. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "harbour",
+          "mob_vnum": 22404,
+          "name": "the harbour master",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Northern Docks, The Southern Docks. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22405,
+          "name": "an orc sailor",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Rocky Pasteau, A Rocky Plateau. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "young",
+          "mob_vnum": 22406,
+          "name": "a young warg",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Rocky Plateau. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "mountain",
+          "mob_vnum": 22407,
+          "name": "a mountain manta",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Rocky Pasteau, A Rocky Plateau, The Summit. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "venus",
+          "mob_vnum": 22408,
+          "name": "a venus fly trap",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Along the Aqueduct. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "duergar",
+          "mob_vnum": 22409,
+          "name": "a duergar foreman",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around North Storm Street and Soldier's Path, Squall Road and Gale Road Intersection, Tempest Avenue. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "merchant",
+          "mob_vnum": 22410,
+          "name": "an orc merchant",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Play Room. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "infant",
+          "mob_vnum": 22411,
+          "name": "an orc infant",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Graveyard of Storm Port. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "groaning",
+          "mob_vnum": 22412,
+          "name": "a groaning zombie",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Graveyard of Storm Port. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "skeleton",
+          "mob_vnum": 22413,
+          "name": "an enraged skeleton",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Inside a Huge Water Wheel. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "water",
+          "mob_vnum": 22414,
+          "name": "the wheel operator",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Prayer Room of the Dark Knights. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22415,
+          "name": "Daagar, the anti-paladin lord",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Slave Gallows. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "human",
+          "mob_vnum": 22416,
+          "name": "a human slave",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Slave Gallows. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "gnome",
+          "mob_vnum": 22417,
+          "name": "a gnome slave",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Slave Gallows. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "grey",
+          "mob_vnum": 22418,
+          "name": "a grey elf slave",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Slave Gallows. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "dwarf",
+          "mob_vnum": 22419,
+          "name": "a dwarf slave",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Campsite on the Edge of the Reservoir. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "goblin",
+          "mob_vnum": 22420,
+          "name": "Suulod",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Before Two Black Stone Buildings, Gale Road, Squall Road West Intersection. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22421,
+          "name": "an orc city guard",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around East End of North Storm Street and Gale Road, North Storm Street, Squall Road. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "young",
+          "mob_vnum": 22422,
+          "name": "a young orc soldier",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around North Storm Street, Squall Road, Tempest Avenue and Gale Road Intersection. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "female",
+          "mob_vnum": 22423,
+          "name": "an orc female",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Gale Road, North Storm Street. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "stray",
+          "mob_vnum": 22424,
+          "name": "a stray dog",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Slave Gallows. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "slave",
+          "mob_vnum": 22425,
+          "name": "the slave driver",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Rocky Plateau. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "mountain",
+          "mob_vnum": 22426,
+          "name": "a mountain goat",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around East End of North Storm Street and Gale Road, On the Verge of Squall Road, Soldier's Path. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22427,
+          "name": "an orc commoner",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Stern of the SeaStalker. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "crew",
+          "mob_vnum": 22429,
+          "name": "an orc crewman",
+          "topics": []
+        },
+        {
+          "description": "The captain carries the badge in the older ship bridge. Access to that ship interior needs builder review; current operating ferry interiors are elsewhere. Encounter, recovery and Tchan\u2019s acceptance are separate.",
+          "keyword": "captain",
+          "mob_vnum": 22430,
+          "name": "the juggernaught captain",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Bridge of the SeaStalker. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "first",
+          "mob_vnum": 22431,
+          "name": "the first mate",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around North Storm Street and Soldier's Path, Squall Road West Intersection, Tempest Avenue. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "black",
+          "mob_vnum": 22432,
+          "name": "a black crow",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Graveyard of Storm Port. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "death",
+          "mob_vnum": 22433,
+          "name": "a death knight",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Sparring Grounds. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "rend",
+          "mob_vnum": 22434,
+          "name": "Rend",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Maim's Mercenary Chamber. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "maim",
+          "mob_vnum": 22435,
+          "name": "Maim",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Nursery. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "matron",
+          "mob_vnum": 22437,
+          "name": "the matron",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Waiting Room of the Inn. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "troll",
+          "mob_vnum": 22438,
+          "name": "a troll patron",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Waiting Room of the Inn. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22439,
+          "name": "an orc sailor",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Hall of Assassins. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "torn",
+          "mob_vnum": 22440,
+          "name": "Torn",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Hall of Thieves. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "trank",
+          "mob_vnum": 22441,
+          "name": "Trank",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Sailor's Supplies. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22442,
+          "name": "a sneaky shopkeeper",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Inside the Broken Tower of Insurrection. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22443,
+          "name": "a mystic orc merchant",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Below the Graveyard. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "local",
+          "mob_vnum": 22444,
+          "name": "an orc rogue",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Stab'ems Store. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "rogue",
+          "mob_vnum": 22445,
+          "name": "the rogue shopkeeper",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Storm Port Bank. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "banker",
+          "mob_vnum": 22446,
+          "name": "the banker",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Prayer Room of the Dark Knights. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "emissary",
+          "mob_vnum": 22447,
+          "name": "an emissary",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Road to Storm Port. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "soldier",
+          "mob_vnum": 22448,
+          "name": "a soldier of fortune",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Road to Storm Port. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "soldier",
+          "mob_vnum": 22449,
+          "name": "a soldier of fortune",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Gate Guard Barracks. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22450,
+          "name": "an orc dock guard",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around On a Small Reservoir. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "king",
+          "mob_vnum": 22451,
+          "name": "a kingfish",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Path up to the Plateau. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "mountain",
+          "mob_vnum": 22452,
+          "name": "a mountain goat",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Side Room. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22453,
+          "name": "an orc whore",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Sparring Grounds. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "young",
+          "mob_vnum": 22454,
+          "name": "a sleeping orc soldier",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Side Room. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22455,
+          "name": "an orc whore",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Side Room. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22456,
+          "name": "an orc sailor",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Sheltered Campsite. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "resting",
+          "mob_vnum": 22457,
+          "name": "a resting goblin",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Reception Room of the Brothel. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "madam",
+          "mob_vnum": 22458,
+          "name": "the brothel madam",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Below the Reservoir. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "nereid",
+          "mob_vnum": 22459,
+          "name": "a nereid",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Storm Port Armory. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22460,
+          "name": "an orc weaponsmaster",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Hidden Basement. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "giant",
+          "mob_vnum": 22461,
+          "name": "a giant verbeeg",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around The Fallen Pillar of Elements. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "orc",
+          "mob_vnum": 22462,
+          "name": "an orc treasure hunter",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around By the Cliff Face. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "rocks",
+          "mob_vnum": 22463,
+          "name": "a rock golem",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Inside the Prison. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "human",
+          "mob_vnum": 22464,
+          "name": "a human prisoner",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Inside the Prison. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "half",
+          "mob_vnum": 22465,
+          "name": "a half-elf prisoner",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Inside the Prison. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "minotaur",
+          "mob_vnum": 22466,
+          "name": "a minotaur prisoner",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Savenge load. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "savenge",
+          "mob_vnum": 22467,
+          "name": "Savenge",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Inside a Dojo. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "sensei",
+          "mob_vnum": 22468,
+          "name": "the sensei",
+          "topics": []
+        },
+        {
+          "description": "The ticket handler\u2019s native line is a timed room action, without a player ASK topic. Current operating ferries use a different ticket system; hearing this message does not record a ticket or journey.",
+          "keyword": "sailor",
+          "mob_vnum": 22469,
+          "name": "a ticket handler",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around Prayer Room of the Dark Knights. An encounter records meeting this contact; assistance, learning, rescue and service outcomes need separate evidence.",
+          "keyword": "lanagin",
+          "mob_vnum": 22470,
+          "name": "Lanagin the priest of Bloodstone",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore Storm Port\u2019s docks, streets, guilds and hidden outskirts; prepare the citysmith\u2019s shield materials and Tchan\u2019s four proofs.",
+      "orientation": [
+        "The coast and road connect to Storm Port through its outer routes. Successful physical arrival records discovery; a travel message or a moving boat alone does not.",
+        "Tchan\u2019s native greeting uses hi or hello as alternate words for one conversation. He accepts four exact items together: prison shackles, a captain\u2019s badge, a verbeeg tooth and a smooth stone. His empty acceptance reply still has a mantle reward.",
+        "Tchan is currently stocked in the separate Monestary of Tranquility. Finding him there and discovering Storm Port are separate; his native bundle remains a Storm Port request. The old local monastery description is not proof he is stocked there.",
+        "The citysmith accepts a slab of granite and leather straps together for a shield. This request and Tchan\u2019s request are independent, with no required greeting or order between them.",
+        "The death knight carries granite, and hidden straps are inside the closed harbourmaster\u2019s desk. Open the desk, search and then GET the straps. Current native flags do not lock it despite its drawer prose.",
+        "The minotaur in the prison carries shackles; the verbeeg below the food shop carries a hidden tooth; the cliff golem carries a hidden smooth stone. Revealing a passage or object, opening it, recovering materials and accepted turn-in are separate actions.",
+        "The captain\u2019s badge is stocked on the bridge of the older ship interior. Its current access route needs builder review. The operating ferries use different interiors; supplied exact materials remain legal for Tchan\u2019s bundle.",
+        "Carry every requested material loose. Held, worn or nested items do not prepare a bundle. The four mantle proofs have native NORENT flags, so keeping them through logout differs from keeping a recorded accepted receipt.",
+        "Current preparation changes as items are acquired or spent. Supplied exact items also fit. Possessing a mantle or shield does not reconstruct an accepted request or prove first acquisition from its native source.",
+        "The current Seaspray and Stromvok ferries use their own tickets and route identifiers. New ticket purchases are unavailable while accounting is active. An old local ticket or the ticket handler\u2019s timed message does not prove boarding, paid passage or destination arrival.",
+        "Tchan\u2019s task-clearing prayer is also unavailable while accounting is active. Meeting teachers, shopping, hiring crews, repairing ships and renting need their own admitted outcomes; they do not complete these two requests.",
+        "The slaves and prisoners, graveyard, religious places, guilds, families and town defenses suggest wider stories. Builders must define lasting rescue, investigation, learning and restoration outcomes before they can award completion."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "stormport",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:22431,I:22432,I:22433,I:22434;receive=I:22435;disappear=0",
+              "giver_vnum": 22428
+            }
+          ],
+          "id": "tchan-stormport-proofs",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The minotaur in the prison carries these shackles. Recover the exact item into loose inventory; a personal kill is not required by the native turn-in.",
+              "id": "prison-shackles",
+              "item_vnums": [
+                22431
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the prison shackles loose"
+            },
+            {
+              "count": 1,
+              "hint": "The captain carries this badge on the older ship bridge. Its current access route needs builder review; the operating ferries do not enter that interior. A supplied exact badge also fits.",
+              "id": "captain-badge",
+              "item_vnums": [
+                22433
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the captain\u2019s badge loose"
+            },
+            {
+              "count": 1,
+              "hint": "The giant verbeeg carries a hidden tooth in the basement below the food shop. Reveal and opening admission, actual recovery and custody are separate; the native turn-in does not require a remembered carve.",
+              "id": "verbeeg-tooth",
+              "item_vnums": [
+                22432
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the verbeeg tooth loose"
+            },
+            {
+              "count": 1,
+              "hint": "The rock golem carries a hidden smooth stone on the cliffs behind the secret rocks passage. Search and current recovery are separate; the native turn-in allows a supplied exact stone.",
+              "id": "smooth-stone",
+              "item_vnums": [
+                22434
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the smooth stone loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:22431,I:22432,I:22433,I:22434;receive=I:22435;disappear=0",
+                  "giver_vnum": 22428
+                }
+              ],
+              "hint": "Offer the complete exact bundle loose in one admitted turn-in. Current materials prepare this request; the accepted receipt records its completion independently of the other request.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record Tchan\u2019s accepted four-item bundle"
+            }
+          ],
+          "summary": "Carry the complete requested bundle loose and offer it for a mantle. This request can be accepted independently of the other Storm Port turn-in.",
+          "title": "Bring Tchan the four Storm Port proofs"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:22405,I:22406;receive=I:22407;disappear=0",
+              "giver_vnum": 22436
+            }
+          ],
+          "id": "citysmith-granite-shield",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The death knight in the graveyard carries the granite. Carry the exact slab loose; a personal kill or remembered source visit is not required.",
+              "id": "granite",
+              "item_vnums": [
+                22406
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the slab of granite loose"
+            },
+            {
+              "count": 1,
+              "hint": "Look in the wooden desk in the harbourmaster\u2019s station. Its native container starts closed without a lock. Open it, search for the hidden straps, then GET them; the prose about a locked drawer does not add a native pick prerequisite.",
+              "id": "leather-straps",
+              "item_vnums": [
+                22405
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the leather straps loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:22405,I:22406;receive=I:22407;disappear=0",
+                  "giver_vnum": 22436
+                }
+              ],
+              "hint": "Offer the complete exact bundle loose in one admitted turn-in. Current materials prepare this request; the accepted receipt records its completion independently of the other request.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the citysmith\u2019s accepted two-item bundle"
+            }
+          ],
+          "summary": "Carry the complete requested bundle loose and offer it for a shield. This request can be accepted independently of the other Storm Port turn-in.",
+          "title": "Bring the citysmith granite and leather straps"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Starts at forest22634 and accepts the exact ticket for Master\u2019s helm; remains.",
           "keyword": "decker",
           "mob_vnum": 22617,

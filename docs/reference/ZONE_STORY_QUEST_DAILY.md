@@ -249,3 +249,8 @@ The [dossier](../design/zone-stories/BUGGER.md) retains one meaningful potential
 ## Dirk’nspire daily qualification
 
 The [dossier](../design/zone-stories/DIRKN.md) retains two meaningful potential candidates. Mode2/lifespan10..20 and caps do not prove fresh READY paper/document stock or giver/parent/child generations. Actual global moneybox parent selection, admitted search/lock/GET, supplied custody, native scarab/wallet recipient settlement/save/recovery and completed accountable renewal require qualification. Foreign Foe Hammer bounties keep their Alatorin identities. New tracking requires active READY accounting and daily policy remains disabled.
+
+
+## Storm Port daily qualification
+
+The [dossier](../design/zone-stories/STORMPORT.md) preserves two potential candidates. Mode2/lifespan40..50 and cap1 proofs do not establish fresh accountable stock or old-ship badge access. Foreign Tchan/giver generation, actual desk parent UID, hidden object reveal/GET, supplied custody, NORENT logout and reward recipient/save/replay renewal need qualification. Modern ferry ticket purchases and Tchan prayer refuse active accounting; neither is a hidden required step. New tracking requires active READY accounting; daily policy remains disabled.

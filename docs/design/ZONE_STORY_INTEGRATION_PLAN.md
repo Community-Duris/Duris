@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 206 authored journals, accounting-gated player surfaces, starter/town
+**Status: 207 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5341,3 +5341,8 @@ Colony nursing, transport, maturation, excavation, food and slime-threat stories
 The [dossier](zone-stories/DIRKN.md) maps two independent Balith returns, including the meaningful coin reward despite disappointed prose. Existing schema3/revision1 covers optional exact loose preparation and independent receipts. Global reset parent/cap identity, named-container search, key0 lock admission, default teacher/shop service, poisoned liquids, falling and packed weapon effects need admitted outcomes rather than prose-based completion.
 
 Foe Hammer’s two separate Alatorin consumers create a keep/use/spend choice; explicit native G I survives the _noquest_ keyword. Torn-paper infiltration/daughter, captivity, families, temple and rival-clan stories need builder-defined lasting endpoints. Thirty-four owned follow-ups cover these capabilities, source/recipient/save/recovery, fair separate fix/news repairs and accountable renewal. New tracking requires active READY accounting; daily policy remains disabled.
+
+
+## Storm Port integration extension
+
+The [dossier](zone-stories/STORMPORT.md) maps independent four-proof and two-material returns. Existing schema3 covers exact loose preparation and accepted receipts, including an empty reply with a real reward. Foreign-giver physical discovery versus quest-home identity, hidden container/object custody, NORENT inputs and source access remain distinct. Thirty-four owned follow-ups cover blocked accounting services, modern ferry fee/ticket/leg/arrival, ship/crew services, default learning/rent, repair-material correctness and wider builder endpoints. No native repair is included; any later repair needs a separate named fix/news commit. New tracking requires active READY accounting and daily policy remains disabled.
