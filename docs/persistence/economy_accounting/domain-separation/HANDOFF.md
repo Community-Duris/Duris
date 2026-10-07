@@ -265,8 +265,18 @@ worktree's ignored `bin/tests/domain-separation-r1-20261007/` and
 `bin/tests/domain-separation-r2-20261007/`. Proof file hashes are retained in the
 private evidence index. No environment/credentials, game data, binaries or logs
 are included in source commits. Both source bundles have independent coordinator
-source/numeric review with no actionable defect; final published review evidence
-and inventory dispositions must be reconciled before marking this Goal complete.
+source/numeric review with no actionable defect. The coordinator additionally
+inspected terminal runtime/build/subset evidence and independently reproduced the
+same currency-contract error/failure on unchanged accounting and R2, confirming
+that limitation is baseline. Final published review evidence and inventory
+dispositions must be reconciled before marking this Goal complete.
+
+Task runtime cleanup: both original journey servers and test jobs completed;
+the SQL journey removed its unique schema. Normal MariaDB shutdown was requested,
+then the owned runtime container was stopped after its grace period (exit 137).
+That cleanup exit is not a server build or journey result. It is now stopped;
+the owned build volume and copied ignored proof artifacts remain available.
+No primary runtime, database or other agent resources were stopped.
 
 For primary import, review code commits independently: R0 `3d2b85b06`, R1
 `48cdf9cb0893873651216f7940aae2691d060e58` (four files), R2
