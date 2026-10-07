@@ -462,6 +462,225 @@ def check_root_pages(binary, fixture, environment, build):
         return cases
 
 
+def check_authority_pages(binary, fixture, environment, build):
+    """Durable metadata cross-links use independent frames and never mutate authority."""
+    import flatfile_economic_audit as pages
+    import time
+    from unittest import mock
+    cases = 0
+    with tempfile.TemporaryDirectory(prefix="duris-authority-pages-", dir=build) as root:
+        root = Path(root)
+        produced = subprocess.run([str(fixture), str(root), "paged-authority"],
+            env=environment, capture_output=True, text=True, timeout=120)
+        assert produced.returncode == 0 and not produced.stderr, produced
+        assert produced.stdout == "NATIVE_PAGED_AUTHORITY 608\n", produced
+        evidence, domains = root / "economic-evidence", root / "domains"
+        def domain_inventory():
+            result = {}
+            for path in domains.rglob("*"):
+                info = path.lstat()
+                result[str(path.relative_to(domains))] = (info.st_mode, info.st_nlink,
+                    path.read_bytes() if path.is_file() else None)
+            return result
+
+        before, native_before = inventory(evidence), domain_inventory()
+        assert before["authority.eal"][112:128] == bytes(16)
+
+        def raw(direction, bucket, after="-", ceiling="-", valid=True):
+            snapshot = inventory(evidence)
+            observed = subprocess.run([str(binary), "--economic-authority-page", str(root),
+                direction, str(bucket), after, ceiling], env=environment, capture_output=True,
+                text=True, timeout=45)
+            assert inventory(evidence) == snapshot and domain_inventory() == native_before
+            assert observed.returncode == (0 if valid else 1), observed
+            assert observed.stderr == ("" if valid else "native_restore_qualification_failed\n"), observed
+            if valid:
+                report = json.loads(observed.stdout)
+                assert report["direction"] == direction and report["bucket"] == bucket
+                assert report["rows"] <= 2 and report["bucket_rows"] <= 4096
+                return report
+            assert not observed.stdout, observed
+
+        first = raw("mapping", 1)
+        assert first["rows"] == first["verified"] == 2 and first["bucket_rows"] == 3
+        assert first["cursor"] == format(257, "016x") and first["ceiling"] == format(513, "016x")
+        assert not first["range_exhausted"]
+        second = raw("mapping", 1, first["cursor"], first["ceiling"])
+        assert second["rows"] == second["verified"] == 1 and second["range_exhausted"]
+        cases += 2
+
+        def locator_rows(name):
+            data = before[name]
+            count = struct.unpack_from("<I", data, 68)[0]
+            offset, result = 72, []
+            for _ in range(count):
+                length = struct.unpack_from("<H", data, offset)[0]
+                active, last = struct.unpack_from("<QQ", data, offset+4)
+                key = data[offset+20:offset+20+length]
+                result.append((key, active, last, offset))
+                offset += 20+length
+            assert offset == len(data)
+            return result
+
+        indexes = {name: locator_rows(name) for name in before if name.startswith("native-")}
+        dense = next(name for name, values in indexes.items() if len(values) > 2)
+        native_bucket = int(dense[7:9], 16)
+        first_native = raw("native", native_bucket)
+        assert first_native["rows"] == first_native["verified"] == 2 and not first_native["range_exhausted"]
+        continued = raw("native", native_bucket, first_native["cursor"], first_native["ceiling"])
+        assert continued["rows"] > 0 and not continued["invalid_links"]
+        cases += 2
+        # Native bank keys permit a one-byte alias and the maximum 50-byte alias.
+        for name, values in indexes.items():
+            for position, (key, _, last, _) in enumerate(values):
+                if last not in (607, 608):
+                    continue
+                result = raw("native", int(name[7:9], 16),
+                    values[position-1][0].hex() if position else "-", values[-1][0].hex())
+                assert not result["invalid_links"] and result["rows"] > 0
+                cases += 1
+
+        progress = Path(build) / "authority-page-progress.json"
+        source = pages.source_digest(root, binary)
+        command = [sys.executable, "-B", str(ROOT / "scripts/flatfile_economic_audit.py"),
+            "--state-root", str(root), "--qualifier", str(binary), "--progress", str(progress),
+            "--scope", "authority-links"]
+
+        def cli(valid=True):
+            snapshot = inventory(evidence)
+            observed = subprocess.run(command, env=environment, capture_output=True, text=True, timeout=60)
+            assert observed.returncode == (0 if valid else 1), observed
+            assert inventory(evidence) == snapshot and domain_inventory() == native_before
+            assert not observed.stderr, observed
+            return json.loads(observed.stdout)
+
+        assert cli()["bucket"] == 0
+        persisted = cli()
+        assert persisted["direction"] == "mapping" and persisted["examined_links"] == 2
+        assert persisted["bucket"] == 1 and not persisted["range_exhausted"]
+        cases += 2
+
+        def load():
+            return pages.validate(pages.progress_io.load(progress, pages.MAX_PROGRESS_BYTES,
+                pages.AuditError, "flatfile audit progress"), source, time.time(), True)
+
+        def step():
+            report, updated = pages.scan(root, binary, load(), authority_links=True)
+            pages.progress_io.save(progress, updated, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+            assert report["examined_links"] <= 2
+            for flag in ("complete", "consistent_entire_sweep", "release_qualified", "authority_crosslinks_closed",
+                         "native_holdings_compared", "baseline_books_closed", "lifecycle_receipts_closed", "orphan_namespace_closed"):
+                assert report[flag] is False
+            assert inventory(evidence) == before and domain_inventory() == native_before
+            return report, updated
+
+        for _ in range(510):
+            report, saved = step()
+        assert report["direction"] == "native" and report["bucket"] == 255 and saved["rotation"] == 0
+        assert saved["total_findings"] == 0 and len(saved["buckets"]) == 512
+        assert saved["buckets"][1]["cursor"] == format(257, "016x")
+        step()
+        report, saved = step()
+        assert report["bucket"] == 1 and report["range_exhausted"] and report["examined_links"] == 1
+        assert saved["buckets"][1] == dict(cursor="", ceiling=None, completed_ranges=1)
+        cases += 2
+
+        # Both saved anchors must still be members; arbitrary fences cannot earn completion.
+        raw("mapping", 1, format(258, "016x"), format(513, "016x"), False)
+        raw("mapping", 1, format(257, "016x"), format(769, "016x"), False)
+        for label, missing in (("cursor", first_native["cursor"]), ("ceiling", first_native["ceiling"])):
+            values = indexes[dense]
+            key, _, _, offset = next(row for row in values if row[0].hex() == missing)
+            content = bytearray(before[dense])
+            del content[offset:offset+20+len(key)]
+            struct.pack_into("<I",content,68,len(values)-1)
+            struct.pack_into("<I",content,12,len(content)-48)
+            files = dict(before);files[dense] = rehash(content)
+            change(files,"authority.eal",184+native_bucket*32,hashlib.sha256(files[dense]).digest())
+            for name,data in files.items():
+                (evidence / name).write_bytes(data)
+            raw("native",native_bucket,first_native["cursor"],first_native["ceiling"],False)
+            for name,data in before.items():
+                (evidence / name).write_bytes(data)
+        cases += 4
+
+        # A well-framed native index can still disagree with its live mapping.
+        target_name, values, position = next((name, values, i) for name, values in indexes.items()
+            for i, (_, _, last, _) in enumerate(values) if last == 3)
+        target_bucket = int(target_name[7:9], 16)
+        target_key, _, _, offset = values[position]
+        files = dict(before)
+        change(files, target_name, offset+4, struct.pack("<Q", 0), 184+target_bucket*32)
+        for name, data in files.items():
+            (evidence / name).write_bytes(data)
+        mapping = raw("mapping", 3)
+        assert mapping["invalid_links"] == [format(3, "016x")] and mapping["verified"] == 1
+        native = raw("native", target_bucket, values[position-1][0].hex() if position else "-", values[-1][0].hex())
+        assert native["invalid_links"] == [target_key.hex()] and native["verified"] == native["rows"]-1
+        saved = load();saved["rotation"] = 3
+        saved["buckets"][3].update(cursor="",ceiling=None)
+        pages.progress_io.save(progress, saved, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+        retained = cli(False)
+        assert retained["total_finding_count"] == 1 and retained["retained_finding_count"] == 1
+        assert load()["findings"][0] == dict(bucket=3, direction="mapping", key=format(3,"016x"), code="flatfile_authority_link_invalid")
+        for name, data in before.items():
+            (evidence / name).write_bytes(data)
+        assert cli(False)["bucket"] == 4
+        cases += 4
+
+        saved = load();saved["rotation"] = 1
+        pages.progress_io.save(progress, saved, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+        damaged = bytearray(before["mapping-01.eam"]);damaged[-1] ^= 1
+        (evidence / "mapping-01.eam").write_bytes(damaged)
+        checkpoint = load()["buckets"][1].copy()
+        refused = cli(False)
+        assert refused["page_refused"] and refused["next_bucket"] == 2
+        assert load()["buckets"][1] == checkpoint
+        (evidence / "mapping-01.eam").write_bytes(before["mapping-01.eam"])
+        assert cli(False)["bucket"] == 2
+        cases += 2
+
+        saved = load();saved["rotation"] = 1
+        with mock.patch.object(pages.subprocess, "run", side_effect=subprocess.TimeoutExpired("qualifier",45)):
+            report, timed_out = pages.scan(root, binary, saved, authority_links=True)
+        assert report["page_refused"] and timed_out["rotation"] == 2 and timed_out["buckets"][1] == saved["buckets"][1]
+        original = progress.read_bytes()
+        with mock.patch.object(pages.progress_io.os, "replace", side_effect=OSError("interrupted")):
+            try:
+                pages.progress_io.save(progress, timed_out, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+            except OSError:
+                pass
+            else:
+                raise AssertionError("interrupted authority progress replaced checkpoint")
+        assert progress.read_bytes() == original
+        cases += 2
+        wrong_scope = subprocess.run(command[:-2], env=environment, capture_output=True, text=True, timeout=60)
+        assert wrong_scope.returncode == 1 and not wrong_scope.stdout and wrong_scope.stderr == "flatfile_economic_audit_refused\n"
+        assert progress.read_bytes() == original and inventory(evidence) == before
+        cases += 1
+
+        for mode in ("hold-authority-lock", "pending-authority-journal"):
+            if mode == "hold-authority-lock":
+                holder = subprocess.Popen([str(fixture), str(root), mode], env=environment,
+                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                try:
+                    assert select.select([holder.stdout],[],[],10)[0]
+                    assert holder.stdout.readline() == "NATIVE_AUTHORITY_LOCK_HELD\n"
+                    for direction in ("mapping", "native"):
+                        raw(direction, 1, valid=False);cases += 1
+                finally:
+                    stdout, stderr = holder.communicate("release\n",timeout=10)
+                    assert holder.returncode == 0 and not stdout and not stderr
+            else:
+                produced = subprocess.run([str(fixture),str(root),mode],env=environment,capture_output=True,text=True,timeout=30)
+                assert produced.returncode == 0 and not produced.stderr
+                native_before = domain_inventory()
+                for direction in ("mapping", "native"):
+                    raw(direction,1,valid=False);cases += 1
+    print("AUTHORITY_PAGE_CONTROLS " + str(cases),flush=True)
+    return cases
+
+
 def main():
     os.umask(0o077)
     with tempfile.TemporaryDirectory(prefix="duris-restore-authority-build-",
@@ -471,6 +690,7 @@ def main():
         environment = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
                            UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
         root_page_cases = check_root_pages(binary, fixture, environment, build)
+        authority_page_cases = check_authority_pages(binary, fixture, environment, build)
         metadata = subprocess.run([str(fixture), str(build), "compare-metadata"],
             env=environment, capture_output=True, text=True, timeout=30)
         assert metadata.returncode == 0 and not metadata.stderr, metadata
@@ -497,6 +717,17 @@ int main(int argc, char **argv) {
             restore_economic_authority::scoped_audit_budget scope(budget);
             restore_economic_authority::authority_read_lock lock(argv[2]);
             restore_economic_records::checker(argv[2]).page(1, {}, {}, false);
+        } else if (std::string(argv[1]) == "authority-mapping-budget" ||
+                   std::string(argv[1]) == "authority-native-budget") {
+            using namespace restore_economic_authority;
+            audit_budget budget;
+            budget.remaining_files = 3; // Control/catalog/local index, then cross-link refusal.
+            scoped_audit_budget scope(budget);
+            authority_read_lock lock(argv[2]);
+            bytes key;
+            put(key, 1, 2); put(key, 0, 8); put(key, 1, 2); put(key, 11, 8);
+            const bool mapping = std::string(argv[1]) == "authority-mapping-budget";
+            checker(argv[2]).page(mapping, mapping ? 3 : hash(key)[0], {}, {}, false);
         } else if (std::string(argv[1]) == "hold-read-lock") {
             restore_economic_authority::authority_read_lock lock(argv[2]);
             std::cout << "INDEPENDENT_AUTHORITY_READ_LOCK_HELD\\n" << std::flush;
@@ -538,6 +769,14 @@ int main(int argc, char **argv) {
             assert inventory(budget_root / "economic-evidence") == before
             assert inventory(budget_root / "domains") == native_before
             root_page_cases += 1
+            for mode in ("authority-mapping-budget", "authority-native-budget"):
+                refused = subprocess.run([str(audit), mode, str(budget_root)],
+                    env=environment, capture_output=True, text=True, timeout=30)
+                assert refused.returncode == 1 and not refused.stdout
+                assert refused.stderr == "native_restore_qualification_failed\n", refused
+                assert inventory(budget_root / "economic-evidence") == before
+                assert inventory(budget_root / "domains") == native_before
+                authority_page_cases += 1
         with tempfile.TemporaryDirectory(prefix="duris-envelope-records-",
                                          dir=build) as envelope_root:
             envelope_root = Path(envelope_root)
@@ -1561,6 +1800,7 @@ int main(int argc, char **argv) {
                           "audit_boundary_cases": boundary_cases,
                           "audit_limit_cases": limit_cases,
                           "root_page_cases": root_page_cases,
+                          "authority_page_cases": authority_page_cases,
                           "qualifier_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
                           "fixture_sha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
                           "sanitized_reader_sha256": hashlib.sha256(audit.read_bytes()).hexdigest()}))

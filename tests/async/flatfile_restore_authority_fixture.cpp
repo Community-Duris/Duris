@@ -430,9 +430,9 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	assert(mode == "lifetimes" || mode == "records" || mode == "paged-records" ||
-	       mode == "item-records" || mode == "envelope-records" || mode == "source-claims" ||
-	       mode == "retention" || mode == "baseline" || mode == "baseline-empty" ||
-	       mode == "baseline-rich" || mode == "baseline-maximum" ||
+	       mode == "paged-authority" || mode == "item-records" || mode == "envelope-records" ||
+	       mode == "source-claims" || mode == "retention" || mode == "baseline" ||
+	       mode == "baseline-empty" || mode == "baseline-rich" || mode == "baseline-maximum" ||
 	       mode == "baseline-full-index");
 	for (size_t bucket = 0; bucket < 256; ++bucket)
 	{
@@ -464,6 +464,16 @@ int main(int argc, char **argv)
 	create(economic_account_kind::auction_escrow, 0, { 4, UINT32_MAX, {} });
 	create(economic_account_kind::pending_claim, 0, { 5, INT32_MAX, {} });
 	create(economic_account_kind::treasury, 0, { 6, uint64_t{ UINT32_MAX } + 1, {} });
+	if (mode == "paged-authority")
+	{
+		for (uint64_t pid = 1000; pid < 1600; ++pid)
+			create(economic_account_kind::wallet, 0, { 1, pid, {} });
+		create(economic_account_kind::bank, 0, { 2, 0, "a" });
+		create(economic_account_kind::bank, 127, { 2, 0, std::string(50, 'z') });
+		assert(critical_operation_id_is_zero(control().active_epoch));
+		std::cout << "NATIVE_PAGED_AUTHORITY 608\n";
+		return 0;
+	}
 	flatfile_economic_epoch epoch;
 	epoch.epoch = id(50);
 	epoch.ordinal = 1;

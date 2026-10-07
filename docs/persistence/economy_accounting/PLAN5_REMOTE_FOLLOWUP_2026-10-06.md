@@ -821,3 +821,31 @@ Seal `D:/CodexEvidence/accounting-plan5/bin/flatfile-root-pages-seal-01-20261006
 curator packet for primary's nonblocking local notebook. No notebook application,
 cross-chat message or acknowledgement is claimed. Primary owns integration and
 publication of the combined tested candidate.
+
+
+## Durable independent authority cross-link pages
+
+[The completed owned slice](PLAN5_FLATFILE_AUTHORITY_PAGES_QUALIFICATION_2026-10-06.md)
+is published on the same `codex/accounting-plan5`, based on `0f40bbd9cfef523571d9cee74963cf45c5da7446`.
+The delivery receipt binds its exact result/remote SHA and all earlier branch tips.
+The final native regression passes 29 authority controls plus the original
+28 root controls, 20 positive/367 refusal cases, 12 boundary and nine limit
+controls. Disposable canonical 0062 MariaDB/MySQL pass 64 SQL methods;
+69 marker cases, both 740-object production builds and nine never-initialized
+observations pass. Final selected Linux checks have zero skips. Exact source
+archives are separately recorded; only the unused authority regression helper
+differs for components/builds. Failed/stopped attempts remain retained.
+
+Mapping/native-locator pages reuse independent decoders and existing cross-links,
+save protected external progress, retain semantic findings, and rotate refusals
+without advancing their cursor. Scope mismatches and vanished anchors refuse.
+All whole-reconstruction/current-holdings/release flags stay false. No shared
+interface/schema or central registration change is requested. Native/migrations
+and shared manifests stay unchanged. Baseline/lifecycle/orphan progress, genuine
+holdings/gameplay/fault, combined lifecycle and release-host budgets remain open.
+
+Seal `D:/CodexEvidence/accounting-plan5/bin/flatfile-authority-pages-seal-01-20261006/evidence.json`,
+SHA256 `9ea826123267a8c9bb5d1f3ed10649a0e2e4d20b5f3018db59e0c07a7a3ef015`,
+and report/delivery form the nonblocking primary-local notebook curator packet.
+No application, acknowledgement, direct message, activation or release completion
+is claimed. Primary owns the tested combined candidate.
