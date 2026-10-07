@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 
 HARNESS = r'''
+#include "economy/enhancement_affect_policy.h"
 #include "economy/enhancement_price.h"
 #include <cassert>
 #include <climits>
@@ -15,11 +16,12 @@ HARNESS = r'''
 #include <cstdarg>
 #include <cstring>
 #include <initializer_list>
-constexpr int MAX_STRING_LENGTH=4096, NOWHERE=-1, VIRTUAL=0, FALSE=0, TO_CHAR=0;
+constexpr int MAX_STRING_LENGTH=4096, NOWHERE=-1, VIRTUAL=0, FALSE=0, TRUE=1, TO_CHAR=0;
 constexpr int ITEM_TAKE=1, ITEM_HOLD=2, ITEM_ATTACH_BELT=4, ITEM_WEAR_BACK=8,
  ITEM_GUILD_INSIGNIA=16, ITEM_SECRET=1, ITEM_NODROP=2, ITEM_INVISIBLE=4, ITEM_NOREPAIR=8;
 struct character { struct { int level=50; } player; int in_room=NOWHERE; int64_t money=10000; };
-struct object { int wear_flags=32, extra_flags=0, R_num=0, value=10; const char* short_description="fixture"; };
+struct object { int wear_flags=32, extra_flags=0, R_num=0, value=10; const char* short_description="fixture";
+ unsigned long bitvector=0,bitvector2=0,bitvector3=0,bitvector4=0,bitvector5=0; };
 using P_char=character*; using P_obj=object*;
 struct enhance_index_entry { int ival=11, wear_flags=32, vnum=2; enhance_index_entry* next=nullptr; };
 enhance_index_entry entry; enhance_index_entry* enhance_ival_table[1]={&entry};
@@ -47,7 +49,9 @@ object output, source_item, material_item;
 int checked_snprintf(char* buf,size_t size,const char* format,...) {
  va_list args; va_start(args,format); int result=vsnprintf(buf,size,format,args); va_end(args); return result;
 }
-bool is_enhance_banned(P_obj) { return false; }
+unsigned long enhance_allow_mask=0,enhance_allow_mask2=0,enhance_allow_mask3=0,
+ enhance_allow_mask4=0,enhance_allow_mask5=0;
+@POLICY@
 bool chaos_material_pouch_is_active(P_obj o) { return pouch_mode && o==&material_item; }
 P_obj chaos_material_pouch_find(P_char) { return &material_item; }
 int itemvalue(P_obj o) { return o->value; }
@@ -71,7 +75,62 @@ int SUB_MONEY(P_char ch,int amount,int) {
 }
 @FUNCTION@
 void reset_counts() { attempts=debits=published=input_retired=output_retired=reads=0; }
+void reset_affect_facts() {
+ for (P_obj item : {&source_item,&material_item,&output})
+  item->bitvector=item->bitvector2=item->bitvector3=item->bitvector4=item->bitvector5=0;
+ enhance_allow_mask=enhance_allow_mask2=enhance_allow_mask3=enhance_allow_mask4=enhance_allow_mask5=0;
+}
 int main() {
+ enhancement_affect_words affects{},allowed{};
+ assert(!enhancement_affects_banned(affects,allowed));
+ affects.fill(ULONG_MAX); allowed.fill(ULONG_MAX);
+ assert(!enhancement_affects_banned(affects,allowed));
+ const unsigned long high_bit=ULONG_MAX ^ (ULONG_MAX >> 1);
+ unsigned long object::* const members[5]={&object::bitvector,&object::bitvector2,
+  &object::bitvector3,&object::bitvector4,&object::bitvector5};
+ unsigned long* const masks[5]={&enhance_allow_mask,&enhance_allow_mask2,
+  &enhance_allow_mask3,&enhance_allow_mask4,&enhance_allow_mask5};
+ assert(is_enhance_banned(nullptr));
+ for (unsigned int word=0;word<5;++word) {
+  affects.fill(0); allowed.fill(0); affects[word]=high_bit|1UL;
+  assert(enhancement_affects_banned(affects,allowed));
+  allowed[word]=1UL;
+  assert(enhancement_affects_banned(affects,allowed));
+  allowed[word]=ULONG_MAX;
+  assert(!enhancement_affects_banned(affects,allowed));
+  allowed[word]=0; allowed[(word+1)%5]=ULONG_MAX;
+  assert(enhancement_affects_banned(affects,allowed));
+  object native;
+  reset_affect_facts(); native.*members[word]=high_bit|1UL;
+  assert(is_enhance_banned(&native));
+  *masks[word]=1UL; assert(is_enhance_banned(&native));
+  *masks[word]=ULONG_MAX; assert(!is_enhance_banned(&native));
+ }
+ affects.fill(0); allowed.fill(0); affects[0]=1;
+ const bool prepared=enhancement_affects_banned(affects,allowed);
+ enhance_allow_mask=ULONG_MAX;
+ assert(prepared && enhancement_affects_banned(affects,allowed)==prepared);
+ object changed; changed.bitvector=1;
+ assert(!is_enhance_banned(&changed));
+ reset_affect_facts();
+
+ source_item.value=10; material_item.value=100; entry.ival=11;
+ reject_debit=false; pouch_mode=false;
+ for (unsigned int word=0;word<5;++word) for (bool source_banned : {false,true}) {
+  reset_affect_facts(); reset_counts(); character actor;
+  P_obj banned_item=source_banned ? &source_item : &material_item;
+  banned_item->*members[word]=high_bit;
+  assert(banned_item->*members[word]==high_bit);
+  enhance(&actor,&source_item,&material_item);
+  assert(actor.money==10000 && !attempts && !debits && !reads && !published && !input_retired && !output_retired);
+ }
+ reset_affect_facts(); reset_counts(); character pouch_actor;
+ material_item.bitvector5=high_bit; pouch_mode=true;
+ enhance(&pouch_actor,&source_item,&material_item);
+ assert(pouch_actor.money==9500 && attempts==1 && debits==1 && published==1 && input_retired==1);
+ assert(material_item.bitvector5==high_bit);
+ reset_affect_facts();
+
  int owned_cost=42;
  assert(enhancement_prepare_ordinary_price(20,20,1000,-1,&owned_cost) && owned_cost==1000);
  assert(!enhancement_prepare_ordinary_price(21,20,1000,-1,&owned_cost) && owned_cost==1000);
@@ -127,7 +186,8 @@ int main() {
 with tempfile.TemporaryDirectory(prefix='duris-ordinary-enhance-payment-') as temporary:
     cpp=Path(temporary)/'payment.cpp'
     binary=Path(temporary)/'payment'
-    cpp.write_text(HARNESS.replace('@FUNCTION@',extract_function('enhance.c','void enhance(')))
+    cpp.write_text(HARNESS.replace('@POLICY@',extract_function('enhance.c','bool is_enhance_banned('))
+                          .replace('@FUNCTION@',extract_function('enhance.c','void enhance(')))
     subprocess.run([os.environ.get('CXX','g++'),'-std=c++20','-Wall','-Wextra','-Werror',
                     '-O1','-g','-fsanitize=address,undefined','-fno-sanitize-recover=all',
                     '-fno-pie','-no-pie','-Isrc',str(cpp),'-o',str(binary)],cwd=ROOT,check=True)

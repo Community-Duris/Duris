@@ -19,6 +19,7 @@
 #include "cmd/interp.h"
 #include "core/mm.h"
 #include "core/prototypes.h"
+#include "economy/enhancement_affect_policy.h"
 #include "magic/spells.h"
 #include "core/structs.h"
 #include "core/utils.h"
@@ -1852,18 +1853,13 @@ bool is_enhance_banned(P_obj item)
 		return TRUE;
 
 	/* If the item has any AFF bit set that is NOT in the allow mask, it's banned */
-	if (item->bitvector & ~enhance_allow_mask)
-		return TRUE;
-	if (item->bitvector2 & ~enhance_allow_mask2)
-		return TRUE;
-	if (item->bitvector3 & ~enhance_allow_mask3)
-		return TRUE;
-	if (item->bitvector4 & ~enhance_allow_mask4)
-		return TRUE;
-	if (item->bitvector5 & ~enhance_allow_mask5)
-		return TRUE;
-
-	return FALSE;
+	const enhancement_affect_words affects = { item->bitvector, item->bitvector2,
+						   item->bitvector3, item->bitvector4,
+						   item->bitvector5 };
+	const enhancement_affect_words allowed = { enhance_allow_mask, enhance_allow_mask2,
+						   enhance_allow_mask3, enhance_allow_mask4,
+						   enhance_allow_mask5 };
+	return enhancement_affects_banned(affects, allowed);
 }
 
 /* Return the zone number owning an object's template vnum. */
