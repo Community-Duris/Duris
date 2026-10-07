@@ -25,6 +25,7 @@
 #include "world/quest_mobile_native.h"
 #include "qualify_flatfile_economic_records.h"
 #include "qualify_flatfile_economic_namespace.h"
+#include "qualify_flatfile_economic_money_history.h"
 
 // Native parsers may log diagnostics containing identities; this process reports
 // only aggregate success or a fixed failure code.
@@ -510,6 +511,42 @@ int main(int argc, char **argv)
 					  << '"';
 			std::cout << "]}\n";
 			return 0;
+		}
+		if (argc == 3 && std::string(argv[1]) == "--economic-money-history-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			auto result = restore_economic_money_history::audit(argv[2], budget);
+			std::cout
+				<< "{\"accepted_roots\":" << result.accepted_roots
+				<< ",\"ordinary_account_edges\":" << result.edges
+				<< ",\"epoch_accounts\":" << result.accounts
+				<< ",\"baseline_anchored_accounts\":"
+				<< result.baseline_anchored_accounts
+				<< ",\"unanchored_accounts\":" << result.unanchored_accounts
+				<< ",\"invalid_accounts\":" << result.invalid_accounts
+				<< ",\"same_epoch_transition_continuity_verified\":"
+				<< (result.valid() ? "true" : "false") << ",\"findings_truncated\":"
+				<< (result.invalid_accounts > result.findings.size() ? "true" :
+										       "false")
+				<< ",\"account_origins_verified\":false,\"cross_epoch_continuity_verified\":false"
+				   ",\"native_holdings_compared\":false,\"full_R7_qualified\":false"
+				   ",\"release_qualified\":false,\"findings\":[";
+			bool comma = false;
+			for (const auto &finding : result.findings)
+			{
+				if (comma)
+					std::cout << ',';
+				comma = true;
+				std::cout << "{\"epoch\":\""
+					  << restore_economic_baseline::hex(finding.epoch)
+					  << "\",\"operation\":\""
+					  << restore_economic_baseline::hex(finding.operation)
+					  << "\",\"account\":\""
+					  << restore_economic_baseline::hex(finding.account)
+					  << "\",\"code\":\"" << finding.code << "\"}";
+			}
+			std::cout << "]}\n";
+			return result.valid() ? 0 : 1;
 		}
 		if (argc == 3 && std::string(argv[1]) == "--economic-evidence-audit")
 		{

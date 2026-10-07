@@ -1,6 +1,8 @@
 // Independent physical retained-operation scan. No mutation/recovery codecs.
 #ifndef DURIS_QUALIFY_FLATFILE_ECONOMIC_RECORDS_H
 #define DURIS_QUALIFY_FLATFILE_ECONOMIC_RECORDS_H
+
+#include <functional>
 #include "qualify_flatfile_economic_baseline.h"
 #include "qualify_flatfile_economic_lifecycle.h"
 #include <bit>
@@ -409,6 +411,9 @@ class checker
 	std::vector<digest> claimed_events;
 	restore_economic_baseline::checker baselines;
 	restore_economic_lifecycle::checker lifecycles;
+	std::function<void(const identity &, const identity &, std::span<const uint8_t>,
+			   std::span<const uint8_t>)>
+		accepted_plan;
 
 	void record(std::span<const uint8_t> encoded, const identity &operation)
 	{
@@ -541,8 +546,10 @@ class checker
 			need(payload_version == 1 && source == 6 && deadline == 4 && !publication &&
 			     keys == 1 && identities[0] == key{ 9, 0x45434f4e42415345 } &&
 			     !revisions && !result_size);
-			baselines.observe(lineage, epoch, operation, intent, payload, plan,
-					  durable_revision);
+			auto witness = baselines.observe(lineage, epoch, operation, intent, payload,
+							 plan, durable_revision);
+			if (accepted_plan)
+				accepted_plan(epoch, operation, plan, witness);
 			return;
 		}
 		if (intent[27])
@@ -566,6 +573,8 @@ class checker
 			need(claimed_events.size() < buckets * bucket_capacity);
 			claimed_events.push_back(key);
 		}
+		if (accepted_plan)
+			accepted_plan(epoch, operation, plan, {});
 	}
 	std::vector<entry> index(size_t bucket, digest *body_digest = nullptr)
 	{
@@ -677,11 +686,15 @@ class checker
 	}
 
     public:
-	explicit checker(const std::filesystem::path &path)
+	explicit checker(const std::filesystem::path &path,
+			 std::function<void(const identity &, const identity &,
+					    std::span<const uint8_t>, std::span<const uint8_t>)>
+				 observe = {})
 		: root(path)
 		, directory(path / "economic-evidence")
 		, baselines(path)
 		, lifecycles(path)
+		, accepted_plan(std::move(observe))
 	{
 	}
 	// Bind every history page to the same authenticated control/catalog, original

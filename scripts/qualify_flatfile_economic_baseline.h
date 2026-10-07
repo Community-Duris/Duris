@@ -252,9 +252,9 @@ class checker
 		}
 		return result;
 	}
-	void observe(const identity &lineage, const identity &epoch, const identity &operation,
-		     std::span<const uint8_t> intent, std::span<const uint8_t> payload,
-		     std::span<const uint8_t> plan, uint64_t revision)
+	bytes observe(const identity &lineage, const identity &epoch, const identity &operation,
+		      std::span<const uint8_t> intent, std::span<const uint8_t> payload,
+		      std::span<const uint8_t> plan, uint64_t revision)
 	{
 		need(revision && payload.size() == 48 && intent.size() == 256 &&
 		     number(intent, 16, 4) == 1 && number(intent, 20, 4) == 1);
@@ -355,6 +355,7 @@ class checker
 		need(same(plan.subspan(256), body));
 		need(roots++ < buckets * bucket_capacity);
 		books[epoch].push_back({ operation, revision, checksum });
+		return encoded;
 	}
 	void finish(const identity &lineage, const std::vector<epoch_marker> &catalog)
 	{

@@ -45,7 +45,8 @@ static critical_operation_id id(uint64_t value)
 	return result;
 }
 static flatfile_accounting_record record(uint32_t sequence, bool large, bool source = false,
-					 int32_t pid = 11, bool items = false, uint8_t bucket = 1)
+					 int32_t pid = 11, bool items = false, uint8_t bucket = 1,
+					 uint64_t wallet_revision = 0)
 {
 	flatfile_accounting_record value;
 	critical_operation_id operation = {};
@@ -73,6 +74,7 @@ static flatfile_accounting_record record(uint32_t sequence, bool large, bool sou
 	state.player_fence = value.command.keys[0];
 	state.bank_fence = value.command.keys[1];
 	state.state.wallet.amount[0] = 100;
+	state.state.wallet_revision = wallet_revision;
 	state.state.bank.amount[0] = 50;
 	const auto freeze = source ? economic_quest_wallet_reward_intent :
 				     economic_bank_transfer_intent;
@@ -434,7 +436,7 @@ int main(int argc, char **argv)
 	       mode == "source-claims" || mode == "retention" || mode == "baseline" ||
 	       mode == "baseline-empty" || mode == "baseline-rich" || mode == "baseline-maximum" ||
 	       mode == "baseline-full-index" || mode == "baseline-empty-history" ||
-	       mode == "baseline-history");
+	       mode == "baseline-history" || mode == "baseline-money-history");
 	for (size_t bucket = 0; bucket < 256; ++bucket)
 	{
 		assert(access::initialize_native_bucket(root, lock, control().revision, bucket,
@@ -566,7 +568,7 @@ int main(int argc, char **argv)
 		native_digest.fill(3);
 		batch.holdings.push_back({ { id(1), economic_account_kind::wallet, 3, 0 },
 					   { 100, 0, 0, 0 },
-					   0,
+					   mode == "baseline-money-history" ? 42u : 0u,
 					   native_digest });
 		assert(access::initialize_baseline(root, lock, id(1), batch.epoch,
 						   batch.opening_account, id(53), &operations,
@@ -693,6 +695,16 @@ int main(int argc, char **argv)
 		}
 		else
 			stage();
+		if (mode == "baseline-money-history")
+		{
+			assert(access::initialize_evidence_bucket(root, lock, control().revision, 1,
+								  id(8), &operations, &error) == 0);
+			commit();
+			assert(access::stage(root, lock, record(1, false, false, 11, false, 1, 42),
+					     &operations,
+					     &error) == flatfile_accounting_status::ok);
+			commit();
+		}
 		if (mode == "baseline-rich")
 		{
 			const auto first = batch;

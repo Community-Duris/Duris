@@ -1167,3 +1167,64 @@ writer recovery, genuine gameplay, R7/R8 and release remain open. Normal/55-cont
 checks pass; release still refuses missing writer evidence. Accounting remains
 inactive and existing exclusions stay exact. This is the nonblocking local-notebook
 curator packet; application, notification and acknowledgement are not claimed.
+
+
+## Bounded retained money-history reconciliation — 2026-10-07
+
+The same remote `codex/accounting-plan5` carries the next independent slice,
+base `4f277dcf806ecca667e141ac8628bb06cf0f8e71`. Its
+[exact qualification](PLAN5_FLATFILE_MONEY_HISTORY_QUALIFICATION_2026-10-07.md)
+establishes four native overlapping account histories accepted by the original
+reader and adds a bounded read-only continuity command. Actual baseline witnesses
+anchor the native revision clock; a native42-to-43 transfer accepts, while a
+fabricated1-to-2 clock or missing first edge refuses. Current holdings, complete
+origins, cross-epoch and release flags remain false.
+
+Final source archive `dde75eb772b0380021a69b337cca25922e47c061b64baef4c5ed776d75542144`
+qualifies28 focused observations, all original authority cases,18 review methods
+and1 complete managed lifecycle method with two actual isolated boots, retention
+and all fault refusals;0 selected skips. Fresh740-object flatfile production
+build and exact final-source Make follow-up are separately attributed. All16
+audit-family inputs and full retained inventories stay unchanged. Both native red
+runs, three failed harness attempts and pre-clock superseded passing runs remain.
+The helper runs through the existing registered driver; shared manifests are exact.
+SQL methods are not repeated for this flatfile-only slice.
+
+Seal SHA256 `ed316f7aefe3a18a2cc21ca470a40307e12f9852e67d5030dc1eb82f220e6027` binds 36,493 artifacts/7,841,477,488 bytes in
+`flatfile-money-history-seal-01-20261007/evidence.json` under
+`D:/CodexEvidence/accounting-plan5/bin/`. Result and verified remote SHA, canonical
+source/modes/four links and all seven earlier ancestral tips are bound by
+`flatfile-money-history-preflight-03-20261007` and
+`flatfile-money-history-delivery-01-20261007` receipts. No work is
+moved to another remote branch. Eight owned code files plus this follow-up and
+the report change; no shared schema/interface, producer, coordinator, runner,
+registry/matrix or activation request is required. Native/canonical62 inputs stay
+exact at the frozen base.
+
+Latest refreshed primary `b41a7d1df27a14eca732f279c9a0451dc33b224f` has a distinct
+native tree. Its reported both-engine pending cold-capacity passes supersede the
+historical cold timeout. Its private custody UID/schema64 migration/resume
+qualification now reports238 expected command outcomes; original producer reruns
+and maintained gameplay integration remain open. The later documentation-only
+primary refresh is separately bound by `flatfile-money-history-primary-refresh-01-20261007/evidence.json`,
+SHA256 `6ca10195fdb4f89411724c383b5b0556aa92896f461ff57d1f13317ae194a8a1`;
+the runtime seal preserves its earlier3461a662 refresh. No combined candidate, full R7/R8
+or release completion is claimed here. Primary owns integration/publication of
+that candidate. Accounting remains inactive and existing exclusions remain exact.
+This is the nonblocking locally maintained notebook's curator packet; application,
+notification and acknowledgement are not claimed.
+
+
+The first money-history publication preflight refuses the two added source files'
+0644-versus-canonical0664 metadata mismatch, with identical bytes. Its exact
+failure remains. Canonical-mode archive `7ab17f6829313db9654f028b388d12efd0236a8c0fb72b7601cbd1df5bfb20d0`
+then passes all three original full commands,18 reviews,20/367 native cases plus
+all28 money observations and the complete two-boot managed retention method;
+zero selected skips. Fixtures/readers compile fresh. All other runtime payloads,
+modes and four links remain exact. Supplement
+`flatfile-money-history-mode-supplement-01-20261007/evidence.json`, SHA256
+`bc5bd65dd94856110bd8ce85f2a10687e57b64b128b8b4ba24e0cea3020cf041`, authenticates 3,978 artifacts/449,606,421 bytes,
+including that failed preflight and the exact later primary checkpoint.
+Delivery explicitly qualifies only these two source metadata differences and
+verifies the canonical result. Runtime inputs match this final qualified archive;
+publication prose is excluded from that comparison. All earlier evidence remains.
