@@ -177,6 +177,7 @@ NON_WRITERS = {
     "special.flying_citadel_unreachable_move": "flying_citadel returns FALSE unconditionally before the room-to-room object movement; the two calls cannot execute in this build.",
 }
 PROJECTION_ROUTES = {
+    "coin.cold_room_projection": "Restores an existing original-UID room coin pile from the original borrowed SQL session after locked current custody, literal, source, indexed plan, retained root/child and ledger proof. It projects locked owner revisions and exact literal bytes without a new issuance, command, posting or ACK. Flatfile support and complete current native/restart qualification remain unverified.",
     "auction.native_item_publication": "Original retained list/claim owner publishes the authenticated committed item forest through started/returned native effect steps; list removes live copies and claim places original UIDs, without a second custody root.",
     "movement.pick_break_committed_publication": "Projects exact committed lockpick destruction after current runtime destroyed-owner, UID, revision and held-slot proof; absent authentic physical pick is a retry without messages or RNG.",
     "quest.native_cost_cash_publication": "Projects originally committed native quest cost cash and reference revisions after exact old/new identity, original cash revision, canonical projection and retained action-journal proof; partial unreturned writes grant no replay or ACK.",
@@ -895,7 +896,7 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
     elif route_id in NATIVE_SCHEMA2_COMPONENT_IDS:
         decision = "sql_component_requires_qualified_root"
         policy = "Keep native admission/activation closed until the already-required complete source/lifetime/root, publication/recovery, gameplay and backend parity qualification is satisfied; source linkage grants no qualification."
-    elif route_id in NATIVE_UNQUALIFIED_PROJECTION_IDS:
+    elif route_id in NATIVE_UNQUALIFIED_PROJECTION_IDS or route_id == "coin.cold_room_projection":
         decision = "block_until_projection_proof"
         policy = PROJECTION_ROUTES[route_id] + " Keep complete original native route qualification and activation closed; census or isolated fixtures do not promote backend/world/restart coverage."
     elif route_id in SCHEMA2_SQL_SHOP_COMPONENT_IDS:

@@ -1,5 +1,22 @@
 # Double-entry economy: remaining requirements
 
+## Maintained post-ACK room coin recovery qualified - 2026-10-07
+
+[Qualified coin fix](COIN_POSTACK_MAINTAINED_INTEGRATION_2026-10-07.md) restores acknowledged ordinary room piles on cold
+boot with the original UID, complete retained literal, custody and owner counters,
+and preserves the native money prototype's zero/one-renderer shape. Both original
+754-provider production builds, ten source contracts, 60 physical publication
+controls, 14 inert staging controls and the final writer/accounting contracts pass.
+The genuine current-source MariaDB10.11 and MySQL8.0.46 journeys pass the real
+command/ACK, both full-server cold boots and all five normal stops per engine.
+Primary independently authenticates 146 sealed evidence files and 3,830 recoverable
+raw/mode/link members. Startup observation uses the existing native watchdog inside
+the original120-second budget; native birth/shutdown guards and stop30 stay intact.
+The separate 35-case owner fixture gap predates this fix and remains open, as do
+flatfile parity, the rest of Plans2-4 and full R1-R8/release qualification. All925
+prior writer policies stay intact; the new cold-projection row remains explicitly
+unqualified for complete coverage. Inactive and declined spell behavior stay intact.
+
 ## Native auction creator proof qualified - 2026-10-07
 
 [Retained creator and zero-fee fix](AUCTION_NATIVE_CREATOR_PROOF_FIX_2026-10-07.md)

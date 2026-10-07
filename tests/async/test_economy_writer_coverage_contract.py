@@ -19,6 +19,25 @@ MATRIX = ROOT / "docs/persistence/economy_accounting/writer_coverage_matrix.json
 
 
 class SplitEconomyActivationContract(unittest.TestCase):
+    def test_cold_coin_projection_does_not_inherit_qualification_from_lexical_coverage(self):
+        inventory = json.loads((ROOT / "docs/persistence/economy_accounting/writers.json").read_text())
+        row = next(row for row in inventory["writers"] if row["id"] == "coin.cold_room_projection")
+        route = self.routes[row["id"]]
+        self.assertEqual(row["sites"], [])
+        self.assertEqual(row["evidence"], [])
+        self.assertTrue(all(value["status"] == "unverified" and not value["evidence"]
+                            for value in row["backends"].values()))
+        self.assertEqual(route["disposition"], "runtime_projection_route")
+        self.assertEqual(route["source"]["function"], "coin_physical_recovery_restore_room")
+        self.assertEqual(route["source"]["definition_lines"], coverage.source_definition_lines(
+            ROOT / row["path"], row["symbol"]))
+        self.assertTrue(route["source"]["definition_lines"])
+        self.assertTrue(route["blocking_policy_after_activation"]["must_block_on_activation"])
+        self.assertFalse(route["double_entry_evidence"]["unified_operation_postings_observed"])
+        self.assertFalse(route["current_critical_command_schema"]["schema_2_gameplay_producer_connected"])
+        self.assertFalse(self.artifact["coverage_complete"])
+        self.assertEqual(self.artifact["playable_release_status"], "BLOCKED")
+
     def test_incoming_semantic_paths_do_not_inherit_lexical_coverage_qualification(self):
         ids = ("repair.player_item_payload", "spell.dispel_object_state",
                "spell.dispel_portal_lifecycle", "spell.dispel_anchor_lifecycle")

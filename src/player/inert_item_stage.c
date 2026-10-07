@@ -199,7 +199,7 @@ prepare_inert_money_stage(const player_item_snapshot &literal, uint64_t original
 {
 	if (!original_uid || original_uid != literal.object_uid || literal.type != ITEM_MONEY ||
 	    literal.parent_index != PLAYER_SNAPSHOT_NO_PARENT || literal.equipment_slot != -1 ||
-	    literal.extra_descriptions.size() != 1)
+	    literal.extra_descriptions.size() > 1)
 		return inert_item_stage_result::invalid;
 	bool nonempty = false;
 	for (size_t index = 0; index < verified_denominations.size(); ++index)

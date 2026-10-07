@@ -119,3 +119,14 @@ src/persistence/economic_sql_accounting_lifecycle_transaction.h text eol=lf
 tests/async/test_economic_sql_lifecycle_activation_contract.py text eol=lf
 
 tests/async/test_coin_transfer_shared_bank_accounting.py text eol=lf
+
+# Maintained coin proof and regression pins use canonical LF bytes.
+src/cmd/actobj.c text eol=lf
+src/economy/coin_physical_publication.c text eol=lf
+src/economy/coin_transfer_accounting.c text eol=lf
+src/economy/coin_transfer_accounting.h text eol=lf
+src/persistence/sql_room_coin_payload.c text eol=lf
+src/persistence/sql_room_coin_payload.h text eol=lf
+tests/async/inert_money_literal_harness.cpp text eol=lf
+tests/async/test_inert_money_literal.py text eol=lf
+tests/async/test_economy_writer_coverage_contract.py text eol=lf
