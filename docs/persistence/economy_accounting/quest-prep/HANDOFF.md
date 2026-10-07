@@ -1,5 +1,17 @@
 # Continuing project acceptance — 2026-10-07
 
+New bounded coordinator assignment: [original shop codec closure investigation
+and one-file ownership reservation](SHOP_CODEC_CLOSURE_INVESTIGATION.md).
+Immutable primarye6e058515f5433a1a3028f80d5d7d672d48b2471 reproduces original
+link FAIL7.090s. Adding only three existing canonical providers privately compiles
+and executes the COMPLETE unchanged 46-assert harness: PASS7.799s. All ten original
+input hashes/harness match architecture's bare-primary comparison. New98fd
+publication changes only docs, not these inputs. No maintained shared driver or
+production edit is authored; only this handoff and the investigation document.
+Exact recipe/source/provider/ELF/experiment/evidence pins and preserved FAIL are
+in that reservation. Actual Goal remains BLOCKED; new private component proof
+does not discharge native world/lifecycle/birth/refund/ACK or full-project gates.
+
 Current Goal **BLOCKED**, not complete: the actual Goal tool returned blocked
 at updatedAt1791387688 (createdAt1791384873, no budget). Three consecutive
 continuations revalidated the same unavailable native prerequisites after the
