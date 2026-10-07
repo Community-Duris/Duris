@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 193 authored journals, accounting-gated player surfaces, starter/town
+**Status: 194 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5244,3 +5244,10 @@ The [Drifting Realm dossier](zone-stories/DRIFTING_REALM.md) maps four identical
 Effective behavior must include default type/command bindings, shop func.mob plus independent qst_func, and prototype loader clearing of stale PROCLIB flags. LOOK lights, ENTER bed and JUMP cliff require actual arrival evidence; drink-container whirlpool prose does not implement travel. Four PICKPROOF/100-percent-break keys expose a shared unlock-before-destruction settlement gap. Add coherent access/key publication qualification before consumed-key or passage objectives. A shop purchase explicitly refusing active accounting cannot become an achievable tracking step until its economic mutation is ported.
 
 Mode-zero initial stock, conditional/manual renewal and four foreign zones require independent availability qualification; retaining two potential daily candidates does not promise replenishment. Moral reform, ruler dominance, invitation/romance and fortune-reading episodes need builder-authored settled endpoints. The local dreamfoil is only one ingredient of Alatorin's separate four-flower request. These are precise follow-ups; no native repair ships in this checkpoint.
+
+
+## Clavikord integration extension
+
+The [Clavikord dossier](zone-stories/LIZARDMAN_SWAMPS_OF_CLAVIKORD.md) adds independent redemption/revenge returns with competing NPC/source episodes: Bemon carries the head Vornin needs, while Bemon's own D return attempts to remove his inventory. Universal campaign adapters need explicit shared/personal branch policy, NPC generation, actual retirement/renewal and supplied-proof history. A rare/wandering recipient is not a fixed counter or guaranteed daily resource. The foreign merchant provides an alternate exact Sslith head, with active-accounting trade still unavailable.
+
+Effective bindings include Bemon's table-driven epic teacher, Vornin's empty shop and independent quest handlers. Port combined training/shop economic settlement before service objectives. Use actual flag/parser constants: guardian regeneration is not a level gate, and wight trap damage12 lacks an effect case while its GET/PUT attempt still consumes charge and rejects pickup. Expand builder selector/combination validation and separate admitted trap activation, state mutation and owned recovery. Moral, corruption, shrine and future-help text needs explicit endpoints. Secret reveal/OPEN/passage and paired ENTER pools require successful native evidence. Twenty owned follow-ups record fair decisions; no native repair ships.

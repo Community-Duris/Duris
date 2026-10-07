@@ -1,0 +1,192 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "lizard",
+  "coverage": "complete",
+  "introduction": "Find Bemon and Vornin’s independent head requests, with separate routes through the haunted swamp, hidden village and witchdoctor shrine.",
+  "orientation": [
+    "The surface grasslands south of the swamp lead north to its approach trail, warning sign and Mukrok. Continue north into the swamp. Bemon, Vornin and the wight belong to its roaming population; their current locations and presence can vary.",
+    "The northern swamp trail reaches a great weeping willow. The way down into the village is secret and closed; find the entrance and open it before using that route. It is separate from obtaining a requested head.",
+    "Sslith’s throne is inside the village beyond the great cypress dwelling and bathing pool. His bodyguard Seht and the tako demon are separate encounters along this route. The local exact head is declared on Sslith; a supplied exact head can also fit Bemon’s request.",
+    "Bemon accepts Sslith’s head for the bracelet of lights and then leaves. Vornin accepts Bemon’s head for the bracelet of shadows and then leaves. Neither return requires an earlier conversation, personal kill or the other quest’s receipt.",
+    "Bemon himself is the declared local holder of the head Vornin requests. Completing Bemon’s return also removes his remaining inventory, so these stories are not a guaranteed consecutive chain within one appearance. Existing supplied material and later source availability remain separate possibilities.",
+    "The two Sslithian pool objects respond to ENTER pool and connect the village’s pool with the witchdoctor shrine’s pool. Ordinary shrine paths also lead toward an Underdark tunnel opening. Using a pool is separate from either head return.",
+    "The wight’s bracelet, witchdoctor’s totem, tribal equipment, warning sign and swamp corruption are optional exploration leads. No accepted local shrine, curse-clearing or rescue exchange is declared. Bemon’s training and merchant trading are currently unavailable.",
+    "Both recipients can depart, source items have separate limits, and Vornin has an uncertain appearance. A new day does not guarantee fresh heads or returning recipients. Current preparation remains separate from your recorded accepted returns."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 6013,
+      "name": "Bemon, the Crusader",
+      "keyword": "bemon",
+      "description": "Bemon roams with the swamp population. Ask quest or charge about helping his redemption. His accepted return makes him depart; his separate Expert Parry training is currently unavailable.",
+      "topics": [
+        "quest",
+        "charge"
+      ]
+    },
+    {
+      "mob_vnum": 6014,
+      "name": "Vornin, the blood enemy of Bemon",
+      "keyword": "vornin",
+      "description": "Vornin roams the swamp when present. Ask bemon about his revenge request. He departs after accepting the exact head. His separate shop advertises no regular products, and trading is currently unavailable.",
+      "topics": [
+        "bemon"
+      ]
+    },
+    {
+      "mob_vnum": 6003,
+      "name": "Sslith, the Lizard King",
+      "keyword": "sslith",
+      "description": "Sslith sits in the throne room within the village under the willow. He is the declared local holder of his severed head. Recovering that exact proof and Bemon accepting it are separate steps.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6004,
+      "name": "Seht, the personal bodyguard to the king",
+      "keyword": "seht",
+      "description": "Seht protects Sslith at the throne and wears the shield of the Clavikord. His defeat or shield recovery does not replace either requested head.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6015,
+      "name": "Mukrok, the guardian troll",
+      "keyword": "mukrok",
+      "description": "Mukrok stands at the surface approach near the warning sign. His description warns skilled visitors away; an ordinary encounter is separate from an accepted quest or a recorded passage.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6002,
+      "name": "a gigantic tako demon",
+      "keyword": "tako",
+      "description": "The gigantic tako demon is declared at the bathing pool before Sslith’s throne. It is a separate native encounter on the village route.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6011,
+      "name": "the swamp wight of the Clavikord",
+      "keyword": "wight",
+      "description": "The swamp wight is part of the roaming population and wears the sharkbone bracelet. Its charged pickup trap can reject an attempt before the bracelet is recovered. This treasure is separate from the two requested heads.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6019,
+      "name": "Ze'Keshka the Witchdoctor",
+      "keyword": "zekeshka",
+      "description": "Ze’Keshka rests in her shrine lair with the tako-skull totem and shell arm plates. The shrine is optional exploration with no accepted local witchdoctor offering.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6020,
+      "name": "a slimy lizardman",
+      "keyword": "slimy",
+      "description": "Slimy lizardmen are declared as the witchdoctor’s followers in her lair. Their protection and equipment lore do not establish an extra quest return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6006,
+      "name": "a conclave of shadows",
+      "keyword": "shadows",
+      "description": "Conclaves of shadows are declared throughout the swamp and its dispersing population. Their growing-shadow description does not define a settled corruption-clearing quest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6007,
+      "name": "a huge skeleton",
+      "keyword": "skeleton",
+      "description": "Huge skeletons join the swamp population. The old corpses in the descriptions do not define a tracked rescue, corpse recovery or carving objective.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6010,
+      "name": "a zombie",
+      "keyword": "zombie",
+      "description": "Zombies join the roaming swamp population. Their nighttime rage and corpse lore are ordinary encounter context, separate from accepted head returns.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6012,
+      "name": "a feral dire wolf",
+      "keyword": "wolf",
+      "description": "Feral dire wolves roam with the swamp population. These encounters do not substitute for Sslith’s head or Bemon’s head.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "bemon-sslith-head",
+      "title": "Help Bemon with Sslith’s head",
+      "category": "request",
+      "summary": "One exact Sslith head earns the native bracelet of lights and Bemon’s departure. The accepted return does not establish a personal king defeat or reinstatement at a temple.",
+      "contracts": [
+        {
+          "giver_vnum": 6013,
+          "completion_key": "give=I:6008;receive=I:6009;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "proof",
+          "text": "Carry Sslith’s exact severed head loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            6008
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Sslith is the declared local holder at his throne. A foreign merchant also declares the same exact head, although current trading is unavailable. Supplied exact material fits without inventing its recovery history."
+        },
+        {
+          "id": "return",
+          "text": "Record Bemon’s accepted head return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6013,
+              "completion_key": "give=I:6008;receive=I:6009;disappear=1"
+            }
+          ],
+          "hint": "Offer the exact loose head to the named recipient. The accepted return records this quest and the recipient departs. Owning either bracelet does not create that receipt."
+        }
+      ]
+    },
+    {
+      "id": "vornin-bemon-head",
+      "title": "Bring Bemon’s head to Vornin",
+      "category": "request",
+      "summary": "One exact Bemon head earns the native bracelet of shadows and Vornin’s departure. This is independent of helping Bemon and of obtaining a generic carved body part.",
+      "contracts": [
+        {
+          "giver_vnum": 6014,
+          "completion_key": "give=I:6005;receive=I:6007;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "proof",
+          "text": "Carry Bemon’s exact bloody head loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            6005
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Bemon carries the declared local head. His own accepted quest removes his remaining inventory, and Vornin may be absent. A supplied exact head can fit without an earlier Bemon receipt; ordinary CARVE does not create this specific proof."
+        },
+        {
+          "id": "return",
+          "text": "Record Vornin’s accepted head return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6014,
+              "completion_key": "give=I:6005;receive=I:6007;disappear=1"
+            }
+          ],
+          "hint": "Offer the exact loose head to the named recipient. The accepted return records this quest and the recipient departs. Owning either bracelet does not create that receipt."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

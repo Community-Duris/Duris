@@ -184,3 +184,8 @@ Domain availability qualification: both native hand-ins remain potential daily c
 ## Drifting Realm daily qualification
 
 The [Drifting Realm dossier](../design/zone-stories/DRIFTING_REALM.md) preserves two native candidates: four exact identical shards and one each of five different skulls. No D retirement or native prior-receipt gate applies. Mode0 supplies initial fresh-boot stock without an ordinary boot reset timer; conditional/manual renewal remains separate. Foreign skull sources have independent mode1/2/cap1 availability. Discovery or a day change does not renew local keys, proofs or giver stock. Keep policy disabled by default until READY-accounting owned source/hand-in/renewal journeys qualify actual availability, atomic outcomes, rejection and recovery. Neither optional earlier context nor ordinary reward possession adds a daily unit.
+
+
+## Clavikord daily qualification
+
+The [Clavikord dossier](../design/zone-stories/LIZARDMAN_SWAMPS_OF_CLAVIKORD.md) retains two candidates because mode1 is resettable, although each recipient departs after accepting a different head. Bemon is also the source of Vornin's proof; finishing Bemon's own return can remove that stock within the same appearance. Vornin has a25-percent declaration, and both givers wander. Qualify owned NPC/source renewal, caps/chances, active READY exact returns and retirement/recovery independently of discovery/UTC rollover. The merchant's alternate Sslith head and supplied proofs remain valid origins without personal-kill history; unavailable accounting-era trading is not a daily route. Policy stays disabled by default.
