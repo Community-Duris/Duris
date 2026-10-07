@@ -1,11 +1,32 @@
 # Continuing candidate reconciliation — 2026-10-07
 
-Producer candidate `275df7f626e12cb396a22da34317a4e7f355e9a1`; current remotely
+Initial producer candidate `275df7f626e12cb396a22da34317a4e7f355e9a1`; current remotely
 verified charter `b1ac97c3a9a1d1e50db6657b71862fb65681ce41`; owned completed branch
 checkpoint `ee5c8a056c15323849290efc962a1a02e75c4037`. Existing branch/worktree and
 R0/R1/R2 implementations are preserved. The new actual Goal is ACTIVE/no budget,
 createdAt1791384853; its finish line is the primary integrated project disposition,
 not this reconciliation or R3. Source freeze/data/build evidence remain distinct.
+
+## Current352 successor
+
+Primary source advances to `35298aacdf0b55e5026db98103f4e3e7b63094ad`, adding
+post-ACK SQL room-coin proof/UID cold restoration and a754th maintained provider.
+Its published genuine both-engine modeled room command/ACK/two-cold/normal-stop
+proof closes that route defect, preserving original budgets and earlier failed
+attempts. Full coin/flat parity, owner35 fixture, SHOP/Collector/compound routes
+and original Plans2-4/R1-R8 qualification remain open. No source, writer registry,
+shared fixture, native authority or reader is repaired/imported by this worker.
+
+R0-R5 optional composition on exact352 succeeds only in a private index, tree
+`9b5f0ceb84299234fda4abda19b480886d03be2d`,6440 exported files, archive SHA256
+`f2ecb05e59bfe102c244c435f4b67a22591a9f60538885d34b4579a7b5f603b8`.
+Actual cap/config/material controls and full enhancement SQL/flat strict module
+syntax/type checks pass on that current immutable source. The earlier fresh
+753-provider builds remain proof only for275 plus R0-R3; new754-overlay full
+build/native journeys are unrun. Independent R5 production/stat patch applies
+bare352; complete R5 test delta requires only R3's config predecessor. Initial
+failed context checks remain retained. Exact pins/commands/results are in
+[R5_SUPERIOR_STAT_CAP_HANDOFF.md](R5_SUPERIOR_STAT_CAP_HANDOFF.md).
 
 ## Independent compatibility and adoption
 
@@ -96,7 +117,7 @@ The nine-domain inventory is reassessed against these concrete new interfaces:
    require a reviewed capture boundary. Reuse R1 count types where semantics agree;
    its ceil policy differs from superior's existing0.999999 truncation, so do not
    silently unify those policies. R4 preserves the latter; further capture must be reserved after actual source/proof review.
-3. **Proposed R5 F3 superior stat cap**: explicit base/configured multiplier to signed-byte cap, preserving saturation/truncation and native capture at the original wrapper. See [exact reservation](R5_SUPERIOR_STAT_CAP_RESERVATION.md); review precedes edits.
+3. **R5 F3 superior stat cap**: approved and implemented through `b31809a0d`; explicit base/configured multiplier preserves signed-byte saturation/truncation and original wrapper capture. Original/extracted, adjacent, owned builds and current352 module controls pass; final review pending. See [handoff](R5_SUPERIOR_STAT_CAP_HANDOFF.md). Further template/outcome preparation requires separately reviewed native capture facts.
 4. **P2/S1 forge or service quote preparation**: inspect existing ore-price and
    paid service formulas for a genuine remaining stable operation; existing
    `forge_prices`/currency prepared mutation may already cover it. No blanket

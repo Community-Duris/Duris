@@ -8,7 +8,10 @@ ACTIVE/no budget, createdAt1791384853. Current candidate and ranked queue are in
 [CONTINUATION_RECONCILIATION_2026-10-07.md](CONTINUATION_RECONCILIATION_2026-10-07.md);
 R3 pricing is implemented and its declared-scope final review passes locally;
 R4 tribute counts are implemented with independent original/extracted controls
-and both owned maintained builds passing. Final publication/review dependencies
+and both owned maintained builds passing. R5 numeric cap is implemented and
+qualified through `b31809a0d`, final review pending. Current source352 adds native
+room-coin cold proof; exact overlay/module limits and native owner dependencies
+are recorded in the R5/current reconciliation handoffs. Final publication/review dependencies
 and current-candidate proof are recorded separately in their handoffs. This inventory evolves after meaningful
 candidate advances and deliveries; no new batch cap closes the continuing Goal.
 

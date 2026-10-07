@@ -41,9 +41,21 @@ native journey qualification remain separately scoped. GitHub recovered and
 ordinary push/remote read verifies all preserved successors through `0a5084db1`.
 No source was changed to work around publication. The queue remains continuing,
 and the nine-domain assessment is reranked from actual remaining owner facts.
-The next [R5 stat-cap reservation](R5_SUPERIOR_STAT_CAP_RESERVATION.md) isolates
-the remaining numeric/global cap rule; code edits await its own boundary review.
-Thin forge-table and previously declined cleric seams are not selected.
+R5's separate boundary review is approved; connected stat-cap preparation is
+implemented at `d45402ca5` plus include-context follow-up `b31809a0d`. Original/
+extracted cap controls, adjacent checks and both final owned maintained builds
+pass. See [R5 handoff](R5_SUPERIOR_STAT_CAP_HANDOFF.md); final review is pending.
+At this checkpoint `get_goal` returns actual ACTIVE/no budget, createdAt1791384853.
+
+New primary `35298aacdf0b55e5026db98103f4e3e7b63094ad` restores acknowledged SQL
+room coin piles and adds a754th provider. Earlier275-based fresh753-build proof
+stays pinned to275. Current352 plus optional R0-R5 passes private composition,
+actual cap/config/material controls and full enhancement SQL/flat module type
+checks; no new754-provider overlay ELF or native journey is claimed. R5 production
+and stat regression apply independently to bare352, while its full configuration
+test patch requires R3's existing predecessor. Primary code/manifests and owner35
+fixture stay preserved. Thin forge-table and previously declined cleric seams are
+not selected. Nine-domain native capture/authority dependencies remain explicit.
 
 ## Historical finite R0/R1/R2 checkpoint status
 
