@@ -5,7 +5,12 @@ the approved three-file boundary. The coordinator's boundary and provisional
 original/extracted review are published at accounting
 `d81e04b490390f797f286dc99a4446b516a167cc` in
 [R6_ENHANCEMENT_AFFECT_POLICY_REVIEW_2026-10-07.md](https://github.com/Community-Duris/Duris/blob/d81e04b490390f797f286dc99a4446b516a167cc/docs/persistence/economy_accounting/domain-separation/R6_ENHANCEMENT_AFFECT_POLICY_REVIEW_2026-10-07.md).
-Final declared-scope review awaits this terminal handoff. The continuing Goal
+Final declared-scope review PASS is remotely verified at accounting
+`91cd229222fa7c8e8b57bdd8f1a22b856af770be` in
+[R6_ENHANCEMENT_AFFECT_POLICY_REVIEW_2026-10-07.md](https://github.com/Community-Duris/Duris/blob/91cd229222fa7c8e8b57bdd8f1a22b856af770be/docs/persistence/economy_accounting/domain-separation/R6_ENHANCEMENT_AFFECT_POLICY_REVIEW_2026-10-07.md).
+The coordinator authenticated all3 source/50 proof hashes, actual maintained
+ELFs/full740-object links and all6441 exported bodies against the exact Git tree.
+R6 is reviewed and available for optional import at this scope. The continuing Goal
 remains ACTIVE/no budget, createdAt1791384853; primary integrated completion,
 adoption, native paid-outcome support and release are not established here.
 

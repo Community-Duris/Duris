@@ -3,7 +3,8 @@
 Latest post-R6 [nine-family owner dependency assessment](POST_R6_OWNER_DEPENDENCIES_2026-10-07.md)
 checks compatibility against primary `daa5c2b5f` without promoting build/journey
 evidence or adding a thin extraction. Current turn made implementation/qualification
-progress; overall continuing Goal remains ACTIVE and final R6 review is pending.
+progress; overall continuing Goal remains ACTIVE. Final R6 review PASS is
+published at accounting91cd22922 and linked in its handoff.
 
 ## Continuing project status — supersedes finite closure
 
@@ -69,8 +70,8 @@ pass; the unchanged original/extracted module reset-count failure is retained.
 Current352+R0-R6 component/module proof is separately pinned. Its production patch
 is independently applicable; the complete test patch retains R3's prerequisite.
 See [R6 terminal handoff](R6_ENHANCEMENT_AFFECT_POLICY_HANDOFF.md). Provisional
-coordinator component review is published at `d81e04b49`; final review awaits
-this handoff. Primary successor `daa5c2b5f` adds Collector flatfile retained/current
+coordinator component review is published at `d81e04b49`; final declared-scope
+review PASS is remotely verified at accounting `91cd22922` and linked in the handoff. Primary successor `daa5c2b5f` adds Collector flatfile retained/current
 proof readers and maintained component/build evidence, leaving native journeys
 and supported flatfile outcomes open. The352 supplement is not relabeled as
 that successor. Continuing Goal ACTIVE; nine-domain dependencies are reassessed.
