@@ -1,6 +1,7 @@
 {"version": 1, "tests": {
   "telemetry_rollup_budget_test.py": {"profile":"fast","mode":"unittest","minimum_cases":7,"cpu":1,"memory_mb":256,"seconds":0.417,"purpose":"Focused offline budget regressions for issue #268."},
   "telemetry_rollup_engine_test.py": {"profile":"fast","mode":"unittest","minimum_cases":14,"cpu":1,"memory_mb":256,"seconds":0.071,"purpose":"Focused offline contract tests for the #268 external rollup engine."},
+  "test_mm_reserve.py": {"profile":"native","mode":"script","minimum_cases":1,"cpu":2,"memory_mb":4096,"seconds":2100,"timeout_seconds":3600,"purpose":"Actual memory pool controls linked with both complete original production provider closures; mmap-only allocation failure injection, no SQL/game services."},
   "test_accept_watchdog_contract.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.029,"purpose":"accept watchdog contract"},
   "test_account_bank_delta_safety.py": {"profile":"fast","mode":"script","minimum_cases":1,"cpu":1,"memory_mb":256,"seconds":0.087,"purpose":"Account-bank delta and committed-publication source contracts."},
   "test_account_bank_dual_backend_baseline.py": {"profile":"native","mode":"unittest","minimum_cases":2,"cpu":1,"memory_mb":512,"seconds":30.951,"purpose":"Dual-backend account bank balance verification and baseline audit contracts."},
