@@ -70,6 +70,115 @@ gates are outside this guidance. Existing required changes to those areas remain
 owned by their current plan. Preserve inactive behavior, wallet-root exclusions,
 the declined inactive spell-path change and all current acceptance requirements.
 
+## Continuing architecture and quest-prep coordination - 2026-10-07
+
+The user authorizes the coordinator to keep both **Separate accounting domain
+preparation** and **Prepare quest accounting fixtures** on track, check their
+actual Goals and execution, and supply useful bounded follow-up assignments.
+[Workstream coordination charter](domain-separation/WORKSTREAM_COORDINATION.md)
+records ownership, the fixed architecture inventory milestone, quest-prep
+follow-up scope, current published pins, initial queue and completion rules.
+
+This supersedes the first-delivery-only Goal boundary below. The completed
+Collector extraction/review remains completed; the next architecture assignment
+is an operation inventory followed by the next stable extraction. Quest prep
+reconciles its published pack against the latest candidate and diagnoses the
+retained flat QP06 later-drop stale-authority refusal without changing the shared
+movement/recovery owner. The coordinator checks both streams at assignment and
+completion boundaries and periodically during execution, corrects drift and
+premature completion, reviews bundles and updates these remote handoff links.
+
+These are separate sidework milestones. The primary continues its current
+accounting plan without waiting, and consumes compatible reviewed bundles at
+normal integration boundaries. Publication does not establish primary adoption.
+
+## Fourth agent: independent domain separation - 2026-10-07
+
+The user authorizes a separate implementation stream, chat
+**Separate accounting domain preparation**, with a persistent Goal, its own
+managed worktree, and branch `codex/accounting-domain-separation`. This stream
+prepares future authority conversion while accounting continues on its current
+trajectory. It adds no accounting milestone, release gate, or dependency on the
+fourth agent. No architecture bundle is implemented or qualified by this entry.
+
+**Goal and first delivery.** Identify one suitable stable domain, then implement
+and qualify at least one useful extraction of existing validation, calculations,
+and effect preparation into owned-state logic independent of SQL access and live
+game pointers. Connect that logic to the existing production execution path; an
+unused interface, survey, or modeled oracle alone does not complete the Goal.
+Reuse existing typed preparations and adapters, including their native effects
+and accounting evidence. Do not duplicate logic that is already separated.
+Limit the first delivery to the selected domain; record other opportunities for
+later goals rather than expanding indefinitely.
+
+**Owned scope and conflict avoidance.** The fourth agent may refactor selected
+stable domain-rule functions and the minimal local production call sites needed
+to use them, on its own branch. This is an explicit exception for that separate
+stream to the primary's forward-only guidance above; it does not ask the primary
+to reopen completed work. Before implementation, publish a research/ownership
+handoff naming the selected operation, exact functions/files, candidate base,
+existing interfaces, semantic invariants, affected checks, and overlap risks.
+Check recent upstream changes and current primary/Plan 5/quest handoffs. Choose
+another operation if the target is actively changing or needs a shared interface
+redesign. A published proposed reservation is not proof that the primary has
+accepted ownership or that unpublished primary work is absent. The primary may
+identify conflicts or defer any bundle; it never waits for a reservation.
+
+The primary retains native transaction owners and their locking/capability,
+source/lifetime, commit, receipt, outbox, replay, and recovery semantics; shared
+coordinator, contracts/codecs, migrations, activation, writer registry/matrix,
+and producer integration remain primary-owned. Plan 5 audit/restore and the
+quest-prep agent's current quest fixes/execution remain with their owners.
+Do not edit those shared or actively owned functions independently. A minimal
+call-site replacement is permitted only within the selected stable operation
+and must preserve those semantics. Submit larger interface requests in the
+handoff and continue independently useful work elsewhere within the Goal.
+
+**Qualification and publication.** Preserve current SQL-first authority, original
+compound/child atomicity, exact identities/revisions, frozen outcomes, current
+backend behavior, inactive behavior, and existing failure/refusal contracts.
+Prepared effects remain inputs to the existing authenticated execution owner;
+they grant no authority. Format changed C/C++ lines, run the maintained build,
+and execute the relevant existing regressions and applicable backend journeys.
+Extend coverage only for concrete extraction risks. State component versus
+runtime evidence and any unavailable verification. Keep independent audit logic
+independent. Publish coherent verified bundles promptly to the owned remote
+branch, preserving history; do not push implementation to experimental-accounting.
+
+**Research and bundled handoff.** Use
+`docs/persistence/economy_accounting/domain-separation/HANDOFF.md` on
+`origin/codex/accounting-domain-separation` as the canonical research, ownership,
+and import index. It must distinguish proposed, implemented, qualified, and
+upstream-integrated work. For each bundle record base/result SHAs, exact owned
+files/functions, import order and prerequisites, source/build/backend pins,
+executed commands/results, evidence references, retained failures, conflicts,
+and remaining dependencies. Keep credentials, logs, player data, generated
+worlds and binaries out of commits. Publish research early and complete bundles
+as they become usable; no direct access to the remote primary chat is required.
+
+**Primary consumption at normal boundaries.** When next reviewing this plan or
+finishing a coherent accounting slice, fetch the fourth agent's remote branch
+and read its canonical handoff if published. Review compatible completed bundles
+and import only those useful to the current candidate. Record consumed SHAs and
+actual integrated qualification in the existing implementation history/handoff;
+record conflicts or deferral there when needed. Unconsumed research is advisory,
+and worker-only evidence does not qualify the combined accounting candidate.
+Continue accounting if the branch/handoff is not yet available or a bundle would
+increase the current milestone's work. This plan's publication makes the stream
+discoverable; it does not establish that a running primary has already read it.
+
+The independent coordinator's
+[delivery review](domain-separation/COORDINATOR_REVIEW_2026-10-07.md) records source
+assessment, separately executed checks, import prerequisites and outstanding
+qualification. Read its current status alongside the worker handoff; an in-progress
+review or worker-only result is not combined-candidate qualification.
+
+Actual RAM execution, authority switching/failover, general framework creation,
+new persistence formats/schema, broad rewrites, deployment, and accounting
+activation remain outside this stream. Completion of its first Goal means the
+selected working extraction and qualification are committed/pushed with a usable
+handoff; it does not mean the whole game is separated or RAM-authoritative.
+
 ## Latest literal-capacity recovery result — 2026-10-07
 
 [Qualification and integration](LITERAL_POOL_CAPACITY_RECOVERY_QUALIFICATION_2026-10-07.md)
