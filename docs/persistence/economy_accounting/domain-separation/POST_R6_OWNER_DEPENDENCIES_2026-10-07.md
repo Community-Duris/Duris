@@ -7,7 +7,10 @@ R1-R8 completion remains required. No further implementation is selected merely
 to extend the extraction sequence. Final R6 declared-scope review PASS is remotely
 verified at accounting91cd22922; all selected handoffs/reviews are delivered.
 Actual get_goal at this boundary returns ACTIVE/no budget with full objective
-preserved; temporary independent-queue exhaustion does not satisfy completion.
+preserved. A subsequent coordinator feasibility correction identifies a
+substantial existing all-stat planning boundary using synchronous per-observation
+facts, without a new native capability. See [R7 reservation](R7_SUPERIOR_PLAN_RESERVATION.md).
+The earlier empty-feasible-queue assessment below is superseded for that operation.
 
 ## New primary compatibility checkpoint
 
@@ -40,7 +43,7 @@ at its last observable integration disposition; no later adoption is inferred.
 | S Shops | shop_trade_accounting_plan and typed trade/physical publication callback | Owner-reviewed keeper/shop/stock and exact frozen price/topology/outcome capture; authentic coordinator receipt, native effect stages, guarded ACK and cold recovery. shop_trade_publication.h already provides an owner callback, not permission for a parallel producer or authority implementation. |
 | A Auctions | Owned bid/list/settlement/claim intents/plans; auction_repository_prepare_accounting and native command/publication owners | Full original creator/custody forest and historical/current-cut authority plus genuine player/coordinator/ACK/recovery and supported flat parity. Qualified creator/component work remains distinct from physical journeys. No second bid, claim or replay plan is needed. |
 | Q Quests | Native coin GIVE project, native cost policy, frozen continuation/recovery context; quest-prep's accepted pack | Authentic original lifecycle/reset-born source, settlement/ACK and held-charge/refund owner interfaces. native_quest_recovery_context.h expressly grants no source, SQL, physical publication or ACK authority. Quest worker's three-audit blocked disposition remains; Collector readers do not unblock it. |
-| F Crafting/enhancement | R1 plan, R3 prices, R4 material counts, R5 caps, R6 affect policy; existing superior_enhancement_plan/material aggregation | A reviewed owned capture of original APPLY order, first prototype modifier, compatible wear and lowest-VNUM target, actual target readability/material facts and contiguous future steps. read_object/extract_obj and mutable catalog walks still supply these facts. Further compound effects additionally require original RNG/selected input/output/payment/source agreement. No capture grant is published; do not move reads or infer targets from later state. |
+| F Crafting/enhancement | R1 plan, R3 prices, R4 material counts, R5 caps, R6 affect policy; existing superior_enhancement_plan/material aggregation | A reviewed owned capture of original APPLY order, first prototype modifier, compatible wear and lowest-VNUM target, actual target readability/material facts and contiguous future steps. read_object/extract_obj and mutable catalog walks still supply these facts. Further compound effects additionally require original RNG/selected input/output/payment/source agreement. Existing producer observations may supply facts at each original point without a new capture grant. A substantial all-stat planner is now reserved for review, preserving fresh reads and partial failure. Compound source/outcome authority still remains native; do not hoist reads or infer targets from later state. |
 | C Currency/banking | currency_prepare_mutation, accounting adapters and R2 value/payment vectors | Genuine original balances/revisions/session and source/native authority for new compound routes; full route/backend/recovery proof stays primary. New SQL room cold projection already has its native owner. It is not a new numeric preparation seam. |
 | P Paid services | R2 payment/identify calculations, native service wrappers and shared forge_prices | Frozen native effect/input/outcome identity and existing receipt/recovery owner for a supported service. Ore selection/detachment occurs before smith price checks and cannot be hoisted. Repair observes/mutates prototypes with payment/effects. Shared five-entry pricing and declined inactive cleric work do not justify new wrappers. |
 | G Gambling | Existing active blackjack refusal; native legacy card/RNG and casino payout paths | An owner-supported compound route with original card/RNG/house payout/source/receipt facts. Blackjack deprecation remains intentional. No new active outcome is selected by extracting legacy calculations. |
@@ -49,8 +52,12 @@ F's maximum-item-value gate is already a bounded local rule with existing actual
 level-gate controls. Its short global-capture wrapper alone does not constitute
 the next substantial gap. Existing explicit encumbrance/takeability rules,
 material aggregation and shared forge tables are likewise reused. This assessment
-leaves no newly selected independent implementation; it does not discharge the
-remaining native interfaces, required journeys or overall project.
+originally left no newly selected independent implementation. That conclusion
+was too broad for the existing all-stat producer and is corrected by the R7
+reservation. Original builder/aggregation plus ten ordering/partial-plan scenarios
+now execute PASS privately; maintained source/tests await boundary review. No
+unchanged blocker turn is counted after this concrete feasibility progress. The
+remaining native interfaces, required journeys and overall project stay open.
 
 Monitor meaningful published native boundaries and remaining-requirement changes.
 When an authentic interface makes a substantial slice feasible, reserve its exact
