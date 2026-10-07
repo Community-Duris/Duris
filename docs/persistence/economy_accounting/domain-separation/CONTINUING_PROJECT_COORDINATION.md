@@ -517,28 +517,34 @@ original primary Plans1-5/applicable R1-R8/native integrated finish line.
 
 ## Recurring monitor
 
-### Latest reviewed deliveries and next bounded assignments
+### Current queue and concrete publication triggers
 
-The next concrete shared business-validation operation now has
-[R13 exact three-file execution approval](R13_SHOP_ITEM_ACCEPTANCE_REVIEW_2026-10-07.md).
-Strengthened reservationdfd78bea2 follows a current nine-family reassessment and
-selects the complete trade_with classifier used through get_selling_obj by sale,
-valuation and repair. New header, bounded native wrapper/provider and first direct
-runner only; native lookup/messages/parser/helpers/admission/effects/authority stay.
-The accepted-item result when keyword evaluation is false and the real invocation/
-diagnostics remain. No keyword-policy fix, query elision or new native capability.
+R0-R14 and the selected quest-prep repairs are closed at their independently
+reviewed scopes. Earlier execution approvals below are historical checkpoints;
+they do not leave R13 or R14 implementation or canonical review pending.
 
-Root independently authenticates all19 controlled-query proofs/272 actual compiler
-inputs/34 Git headers and PASSes38 baseline controls. The separate real-parser
-supplement authenticates all27 proofs/273 inputs/34 Git headers, all8 full native
-definitions and actual flag/operator tables. Root PASSes54 baseline/Og controls
-each; original deadlines/flags, diagnostic traces and the initial wrong HUM-table
-fixture expectation are preserved. The one maintained runner must retain BOTH
-components. Extraction, current bare imports/builds/artifacts and final canonical
-review remain pending. Architecture's actual Goal tool confirms ACTIVE/no budget;
-implementation proceeds in its isolated worktree after remote approval publication.
-Quest prep's native Goal stays BLOCKED on the same exact owner dependencies.
-Root Goal/monitor retain the complete primary finish line, with no adoption wait.
+Use the [current owner-dependency and next-action table](POST_R14_OWNER_DEPENDENCIES_2026-10-07.md),
+reviewed from architecture e04f22df7f99047c78e24152b5b8d07a64547bb4, exact body SHA256
+78029705e10e8dd0a805a8e6f0050269fd6539e2467210287ddf3552ab772cb0. Only that worker document changed;
+source and tests remain exact. Maintained driver paths, SHOP owner boundaries,
+paid-service source facts and primary f8f351b9b disposition were checked.
+
+No independent implementation is currently selected. Watch for the table's real
+source/interface/fixture publications, then reserve a connected case or operation
+for the appropriate existing chat. Test preparation can begin once sufficient
+original owner facts are available; completed native execution is its later
+qualification gate. Do not repeat unchanged suites or manufacture another helper.
+The primary's combined23 candidate and lifecycle envelope V2 remain private;
+complete player snapshots, native revision establishment and genuine journeys
+remain prerequisites. Plan 5 owns its independent V2 reader work.
+
+Architecture remains aligned to the full unfinished goal. Quest-prep native work
+remains blocked on authentic lifecycle/source/cost/settlement/publication owners.
+This dependency review and remote publication are concrete progress; they do not
+prove overall completion. Keep the event monitor active and apply the actual
+three-consecutive-turn blocked audit if the same impasse later repeats.
+
+### Earlier reviewed delivery checkpoints
 
 Latest code/qualification review closes the two selected implementation boundaries:
 [R12 quotation extraction](R12_SHOP_SALE_QUOTE_REVIEW_2026-10-07.md), code
