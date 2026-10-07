@@ -262,7 +262,8 @@ def check_lifecycle_pages(binary, fixture, audit, artifacts, environment):
             observations.append(dict(label=label, exit=ran.returncode, report=report, native_state_unchanged=True))
             return report
 
-        assert cli("durable first page")["examined_receipts"] == 2
+        first = cli("durable first page")
+        assert first["examined_receipts"] == 2 and first["consistent_page"] is True
         anchored = load()
         native_before = retained(root)
         assert anchored["buckets"][20]["cursor"] and anchored["buckets"][20]["ceiling"]
@@ -280,10 +281,14 @@ def check_lifecycle_pages(binary, fixture, audit, artifacts, environment):
         later_missing = dict(extended)
         later_missing.pop(receipts[4])
         install(later_missing)
-        assert cli("second-page missing receipt sticky finding", True)["verified_receipt_roots"] == 1
+        missing = cli("second-page missing receipt sticky finding", True)
+        assert missing["verified_receipt_roots"] == 1 and not missing["page_refused"]
+        assert missing["consistent_page"] is False
         assert load()["findings"] == [dict(bucket=20, operation_id=receipts[4][10:-4], code="flatfile_lifecycle_receipt_invalid")]
         install(extended)
-        assert cli("healthy sibling after sticky finding", True)["bucket"] == 21
+        subsequent = cli("healthy sibling after sticky finding", True)
+        assert subsequent["bucket"] == 21 and subsequent["consistent_page"] is True
+        assert subsequent["total_finding_count"] == 1
 
         saved = load()
         saved["rotation"] = 20
@@ -294,6 +299,7 @@ def check_lifecycle_pages(binary, fixture, audit, artifacts, environment):
         (evidence / "authority.eal").write_bytes(control)
         refused = cli("refused page rotates without advancing", True)
         assert refused["page_refused"] and not refused["range_exhausted"] and refused["next_bucket"] == 21
+        assert refused["consistent_page"] is False
         assert load()["buckets"][20] == checkpoint
         install(extended)
         assert cli("healthy sibling after refusal", True)["bucket"] == 21
@@ -301,6 +307,7 @@ def check_lifecycle_pages(binary, fixture, audit, artifacts, environment):
         with mock.patch.object(pages.subprocess, "run", side_effect=subprocess.TimeoutExpired("qualifier", 45)):
             refused, updated = pages.scan(root, binary, saved, lifecycle_receipts=True)
         assert refused["page_refused"] and updated["rotation"] == 21 and updated["buckets"][20] == checkpoint
+        assert refused["consistent_page"] is False
         observations.append(dict(label="timeout rotates without advancing", native_state_unchanged=True))
         original_progress = progress.read_bytes()
         with mock.patch.object(pages.progress_io.os, "replace", side_effect=OSError("interrupted")):

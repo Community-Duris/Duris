@@ -1011,6 +1011,13 @@ lifecycle operation ID, and the CLI continues to exit 1 after a sticky finding.
 The checkpoint is bound to the root path, executable, operator source and
 progress helper; a different scope/source/lineage needs a separate checkpoint.
 
+For every flatfile page scope, `consistent_page` is true only when the current
+page completed without refusal and every selected record, link or receipt
+verified. A semantic finding makes this field false even when the native page
+returned normally. A later healthy page can report `consistent_page=true` while
+the checkpoint retains earlier findings and the CLI continues to exit 1.
+This field does not assert consistency of the entire sweep.
+
 `verified_receipt_roots` covers only the selected required receipt/root/witness
 links. Generic and unknown initializer origins, orphan receipt filenames,
 baseline-book/reservation closure, native current holdings and complete source

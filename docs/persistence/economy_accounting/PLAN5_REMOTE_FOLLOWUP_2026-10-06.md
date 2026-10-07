@@ -934,3 +934,28 @@ Complete book/orphan/reconstruction/R7/R8, actual gameplay/faults, combined
 backup/restore/retention, private producer/cold and release-host gates stay open.
 No slice blocker, maintained activation or production change. Primary owns combined
 integration and publication.
+
+
+## Completed flatfile page consistency repair — 2026-10-07
+
+[Exact qualification](PLAN5_FLATFILE_PAGE_CONSISTENCY_QUALIFICATION_2026-10-07.md)
+on `codex/accounting-plan5`, base `e9d498f655b81b8947709914a0ddcc35a6a4559d`, corrects a current-page
+consistency report that remained true with an invalid root, authority link or
+lifecycle receipt. Fresh original native CLI observations reproduce all three;
+both complete strengthened native entry points pass on source
+`ab84f7d2be7d3a2a98abd01377b6bd0089d559fb492e10295168fefd2a8765a9` with zero skips. Healthy later pages retain
+their local true result while prior exceptions/CLI exit 1 remain sticky.
+
+Only the operator, two registered Python tests and three owned documents change.
+No shared interface/schema/producer/coordinator/registry/activation/manifest
+request is made. Native/migration/provider inputs remain exact. The 55 coverage
+contracts and normal/inventory gates pass; release still refuses missing writer
+evidence. No SQL or server-build rerun is applicable or claimed for this repair.
+
+Seal `D:/CodexEvidence/accounting-plan5/bin/flatfile-page-consistency-seal-01-20261006/evidence.json`
+has SHA256 `926f6ac59c37ac2dc19ad62f91df9345b838362e771c04f16e16ab5d2ab2bfa8`, 11,734 artifacts / 1,178,693,152 bytes.
+Delivery binds result/remote/clean tested source and all seven preserved branch
+tips. Refreshed primary `01c5ebf3698dff6815a643e39c16b81b6345fcd8` remains a separate combined
+qualification. Full R7/R8/Plan 5/release and native gameplay/backup/retention/
+growing-history/writer gates remain open. This packet is ready for the primary's
+nonblocking local notebook curator; no application or acknowledgement is claimed.
