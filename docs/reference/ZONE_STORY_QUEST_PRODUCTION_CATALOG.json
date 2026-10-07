@@ -96422,6 +96422,236 @@
     {
       "contacts": [
         {
+          "description": "Bring the exact royal signet ring. The crown exchange is independent of the soul return.",
+          "keyword": "kaloian",
+          "mob_vnum": 57002,
+          "name": "Khan Kaloian",
+          "topics": []
+        },
+        {
+          "description": "Ask hi or khan. Return Aspuru's exact tormented soul for the aura and purple vial.",
+          "keyword": "gauce",
+          "mob_vnum": 57003,
+          "name": "Saint Gauce",
+          "topics": [
+            "hi",
+            "hello",
+            "khan",
+            "aspuru"
+          ]
+        },
+        {
+          "description": "Find the actual wandering shepard and return the exact filthy goat hides for his staff.",
+          "keyword": "shepard",
+          "mob_vnum": 57036,
+          "name": "a shepard",
+          "topics": []
+        },
+        {
+          "description": "Carry four distinct grangle roots loose before offering one. The accepted exchange gives a gem and the tribesman leaves.",
+          "keyword": "tribesman",
+          "mob_vnum": 57058,
+          "name": "a trakkian tribesman",
+          "topics": []
+        },
+        {
+          "description": "Declared holder of the tormented soul and hellstone key. An encounter or death alone does not prove recovery.",
+          "keyword": "aspuru",
+          "mob_vnum": 57000,
+          "name": "Khan Aspuru",
+          "topics": []
+        },
+        {
+          "description": "Declared wearer of the exact filthy goat hides. Current hides do not prove a personal kill or live-goat rescue.",
+          "keyword": "wildman",
+          "mob_vnum": 57039,
+          "name": "a captured wildman",
+          "topics": []
+        },
+        {
+          "description": "Incidental potion seller. Periodic mixing speech is scenery; shop availability and actual trades are separate.",
+          "keyword": "witch",
+          "mob_vnum": 57007,
+          "name": "a tribal witch",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow the ancestral signet, tormented soul, lost flock and four-root requests. Keep exact exchanges, current preparation, tomb access and later treasure separate.",
+      "orientation": [
+        "Four independent requests lead through the royal tombs, monastery, lost flock and grangle nests. Each records its own accepted exchange; the journal does not require them in a single order.",
+        "Ask Saint Gauce hi or khan for his warnings and request for Aspuru's tormented soul. The aliases hello and aspuru reach those same responses. A conversation does not complete a return.",
+        "Khan Kaloian accepts the exact tarnished royal signet ring for his crown. His thanks describe releasing an ancestor, but this exchange checks the ring itself. A supplied ring can satisfy the request.",
+        "Khan Aspuru is declared in his tomb with a tormented soul and a hellstone key. The soul goes to Saint Gauce for his aura and a vial of purple liquid. Soul recovery, the accepted return and reward delivery are distinct.",
+        "The lost flock request accepts the filthy goat hides worn by the captured wildman. Return those exact hides to the shepard for his staff. This is evidence of the flock's fate, rather than a tracked live-goat rescue.",
+        "The shepard is declared in a creature staging room with outward routes. Look for the actual wandering shepard; a reset location does not guarantee where he can currently be met.",
+        "Bring four separate grangle roots loose in your inventory to the tribesman. Four nests are declared with one root each. Open a visible nest before taking its contents; supplied roots can also prepare the exchange.",
+        "The tribesman gives a circular gem and leaves after his accepted exchange. The gem is a key for a later hidden treasure door and breaks when used to unlock it. Receiving the gem does not record unlocking or entering the treasure chambers.",
+        "A candle opens access beneath the monastery after you PULL it and open the passage. Other levers use PULL, while the flat stone uses PUSH. These mechanisms remove a blockage; they do not record a personal quest return.",
+        "The skeleton key leads into Aspuru's tomb. His hellstone key leads onward to the hidden vault and breaks when it unlocks the door. Find and open the actual passage when admitted; an acquired key alone does not prove passage.",
+        "Visible cave entrances use ENTER and have matching return caves. The hut also uses ENTER, with an ordinary south exit for return. Steep shafts and hot underground chambers have real environmental hazards.",
+        "The witch sells potions, and the monastery has a hireling service. Neither is a required quest payment. The witch's periodic potion-mixing speech is scenery rather than an addressed keyword or crafting receipt.",
+        "The vault's epic node has its own TOUCH reward process. The memory and ordinary treasure are separate finds. Saint Gauce's aura can be used in a wider buckler recipe; that later exchange belongs to its own giver and zone.",
+        "Reset declarations are leads, not guaranteed stock. Active accounting currently declines native reset item issuance and unported shop or hireling mutations. Daily rollover does not replenish roots or promise a returning tribesman. New discovery, encounter, journal, achievement and daily credit requires active, ready accounting."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "trakkia",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:57024;receive=I:57038;disappear=0",
+              "giver_vnum": 57002
+            }
+          ],
+          "id": "royal-signet",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The ring is declared in Aspuru's lost vault. The native exchange accepts a supplied exact ring and does not require your own tomb kill or earlier soul return.",
+              "id": "requested-items",
+              "item_vnums": [
+                57024
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the royal signet ring loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:57024;receive=I:57038;disappear=0",
+                  "giver_vnum": 57002
+                }
+              ],
+              "hint": "Only this accepted exact exchange records the card. Current items, a topic, another return, a key use and reward possession do not substitute.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the accepted signet-ring return"
+            }
+          ],
+          "summary": "The tarnished royal signet ring earns Khan Kaloian's crown.",
+          "title": "Return the ancestral signet"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:57054;receive=I:32019,I:55323;disappear=0",
+              "giver_vnum": 57003
+            }
+          ],
+          "id": "aspuru-soul",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Aspuru is the declared holder in his tomb. Keep source recovery, current soul custody, the return and each reward publication separate.",
+              "id": "requested-items",
+              "item_vnums": [
+                57054
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry Aspuru's tormented soul loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:57054;receive=I:32019,I:55323;disappear=0",
+                  "giver_vnum": 57003
+                }
+              ],
+              "hint": "Only this accepted exact exchange records the card. Current items, a topic, another return, a key use and reward possession do not substitute.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the accepted soul return"
+            }
+          ],
+          "summary": "Saint Gauce accepts the exact soul for his aura and a vial of purple liquid.",
+          "title": "Return Aspuru's tormented soul"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:57044;receive=I:57053;disappear=0",
+              "giver_vnum": 57036
+            }
+          ],
+          "id": "lost-flock-evidence",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The captured wildman is declared wearing these hides in the prison pit. Find the actual shepard; goat scenery, animal death or a rescue story does not replace the exact hides.",
+              "id": "requested-items",
+              "item_vnums": [
+                57044
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the filthy goat hides loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:57044;receive=I:57053;disappear=0",
+                  "giver_vnum": 57036
+                }
+              ],
+              "hint": "Only this accepted exact exchange records the card. Current items, a topic, another return, a key use and reward possession do not substitute.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the accepted goat-hide return"
+            }
+          ],
+          "summary": "The filthy goat hides earn the shepard's staff.",
+          "title": "Bring news of the lost flock"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:57040,I:57040,I:57040,I:57040;receive=I:57041;disappear=1",
+              "giver_vnum": 57058
+            }
+          ],
+          "id": "grangle-roots",
+          "steps": [
+            {
+              "count": 4,
+              "hint": "Four declared closed, unlocked nests each hold one root when stocked. Keep four distinct roots loose together. The gem can later unlock a treasure door, but the return does not prove door use.",
+              "id": "requested-items",
+              "item_vnums": [
+                57040
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry four grangle roots loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:57040,I:57040,I:57040,I:57040;receive=I:57041;disappear=1",
+                  "giver_vnum": 57058
+                }
+              ],
+              "hint": "Only this accepted exact exchange records the card. Current items, a topic, another return, a key use and reward possession do not substitute.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the accepted four-root return"
+            }
+          ],
+          "summary": "Four exact roots earn the tribesman's circular gem; he departs after the exchange.",
+          "title": "Gather four grangle roots"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Silver foreman in the underground mining hut; gives a stud for the missing silver bag.",
           "keyword": "foreman",
           "mob_vnum": 57548,

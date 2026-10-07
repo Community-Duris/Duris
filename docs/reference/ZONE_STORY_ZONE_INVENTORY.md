@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 184 authored journals.
+2668 distinct Q contracts; 185 authored journals.
 
 Regenerate with:
 
@@ -221,7 +221,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Kingdom of Torg (`torg`) | 15 | 15 | 4 | Yes | [1 × Llznixor's cleaned skull symbol; 1 × Dorn's steel forehead plate; 1 × Tibor's tankard; other required items → a curtain of elemental fire, the Legend of The Lore Keeper](../../areas/qst/torg.qst#L188) | inn, lanella_heart, timoro_die |
 | City of Torrhan (`torrhan`) | 26 | 18 | 14 | Yes | [1 × a dirty seashell → a dark purple potion, some blackened shark-skin gloves](../../areas/qst/torrhan.qst#L140) | crew_shop_proc, ship_shop_proc |
 | Tower of High Sorcery (`tower`) | 2 | 2 | 0 | Fallback | [1 × a piece of calcite; 1 × a large flask; 1 × a small diamond tattoo → a mysterious ear stud](../../areas/qst/tower.qst#L15) | bulette |
-| The Trakkia Mountains (`trakkia`) | 4 | 2 | 0 | Fallback | [4 × a grangle root → a strange, circular gem](../../areas/qst/trakkia.qst#L52) | pet_shops |
+| The Trakkia Mountains (`trakkia`) | 4 | 2 | 0 | Yes | [4 × a grangle root → a strange, circular gem](../../areas/qst/trakkia.qst#L52) | pet_shops |
 | Tribal Forest (`tribal`) | 10 | 15 | 2 | Yes | [1 × a severed left leg; 1 × a severed left hand; 1 × a severed right hand; other required items → a redwood longbow, an elegant deerskin quiver](../../areas/qst/tribal.qst#L266) | amethyst_orb |
 | The Transparent Tower (`trnsptow`) | 4 | 26 | 2 | Yes | [3 × a pale purple token; 1 × the scepter of illusion → a key made of mist](../../areas/qst/trnsptow.qst#L195) | artifact_stone, trans_tower_shadow_globe, transp_tow_acerlade, zion_light_dark |
 | Troll Caves (`troll_caves`) | 5 | 5 | 2 | Yes | [1 × small obsidian stones → an obsidian dagger](../../areas/qst/troll_caves.qst#L61) | — |

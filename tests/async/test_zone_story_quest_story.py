@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 184 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 185 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,14 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+trakkia=next(m for m in catalog['story_mappings'] if m['source_area']=='trakkia')
+assert (trakkia['coverage'],trakkia['schema_version'],trakkia['revision'])==('complete',3,1) and not trakkia['exclusions']
+assert len(trakkia['stories'])==4 and len(trakkia['contacts'])==7 and sum(len(c['topics']) for c in trakkia['contacts'])==4
+assert sum(len(s['steps']) for s in trakkia['stories'])==8 and sorted(s['steps'][0]['count'] for s in trakkia['stories'])==[1,1,1,4]
+assert all(s['steps'][0]['kind']=='carried_item' and s['steps'][0]['optional'] and len(s['contracts'])==1 and s['steps'][-1]['contracts']==s['contracts'] for s in trakkia['stories'])
+assert report['eligible_by_zone']['570']==4 and sum(d['daily_eligible'] for d in catalog['definitions'] if d['source_area']=='trakkia')==4
+assert {s['id'] for s in trakkia['stories']}=={'royal-signet','aspuru-soul','lost-flock-evidence','grangle-roots'}
 
 shaughin=next(m for m in catalog['story_mappings'] if m['source_area']=='shaughin')
 assert (shaughin['coverage'],shaughin['schema_version'],shaughin['revision'])==('complete',3,1) and not shaughin['exclusions']

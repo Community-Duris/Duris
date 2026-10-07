@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 184 &&
+		require(catalog.story_mappings.size() == 185 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,168 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "trakkia"; });
+			require(mapping.stories.size() == 4 && mapping.contacts.size() == 7 &&
+					mapping.revision == 1,
+				"Trakkia journal scope failed");
+			int achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 570)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 4 && dailies == 4,
+				"Trakkia independent daily units changed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 570, 57000, 100, "arrival") ==
+					result::applied,
+				"Trakkia injected discovery failed");
+			require(journey.meet_npc(7, 42, 57000, 57096, 101) == result::applied,
+				"Trakkia optional source encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 570, 10, 1, 102, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Trakkia source encounter exposed returns");
+			for (int v : { 57002, 57003, 57036, 57058 })
+				require(journey.meet_npc(7, 42, v,
+							 v == 57002 ? 57064 :
+							 v == 57003 ? 57068 :
+							 v == 57058 ? 57136 :
+								      57035,
+							 103) == result::applied,
+					"Trakkia giver encounter failed");
+			const auto before = journey.serialize_state();
+			supplies = {};
+			for (int v : { 57038, 55323, 32019, 57053, 57041, 57019, 57055, 57037 })
+				supplies.carried[v] = 4;
+			journal = journey.render_journal(7, 42, 570, 10, 1, 104, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(journal.find("[Missing now] " + story.steps[0].text) !=
+						std::string::npos,
+					"Trakkia rewards/keys/nests replaced requested materials");
+			supplies = {};
+			supplies.equipped[3] = 57044;
+			supplies.equipped[18] = 57024;
+			supplies.carried[2] = 4;
+			journal = journey.render_journal(7, 42, 570, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(journal.find("[Missing now] " + story.steps[0].text) !=
+						std::string::npos,
+					"Trakkia worn/held/nested item supplied loose input");
+			const auto &roots = story_for("trakkia", "grangle-roots");
+			for (int count = 1; count < 4; ++count)
+			{
+				supplies = {};
+				supplies.carried[57040] = count;
+				journal = journey.render_journal(7, 42, 570, 10, 1, 106, false,
+								 false, &supplies);
+				require(journal.find("[Missing now] " + roots.steps[0].text) !=
+							std::string::npos &&
+						journal.find("[Pending] " +
+							     roots.steps.back().text) !=
+							std::string::npos,
+					"Trakkia partial roots satisfied four-root return");
+			}
+			require(journey.serialize_state() == before,
+				"Trakkia partial custody mutated history");
+			supplies = {};
+			for (const auto &story : mapping.stories)
+				supplies.carried[story.steps[0].item_vnums.front()] =
+					story.steps[0].count;
+			journal = journey.render_journal(7, 42, 570, 10, 1, 107, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+			{
+				require(journal.find("[Ready now] " + story.steps[0].text) !=
+						std::string::npos,
+					"Trakkia supplied exact input not ready");
+				require(journal.find("[Pending] " + story.steps.back().text) !=
+						std::string::npos,
+					"Trakkia current input invented receipt");
+			}
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 570).completed == 0,
+				"Trakkia custody recorded source/return history");
+			const auto &ring = story_for("trakkia", "royal-signet");
+			record(journey, ring.contracts.front(), "trakkia-ring", 570, 57064);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 570, 10, 1, 121, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 570).completed == 1 &&
+					journal.find("[Recorded] " + ring.steps.back().text) !=
+						std::string::npos,
+				"Trakkia ring required earlier soul return");
+			for (const auto &story : mapping.stories)
+			{
+				require(journal.find("[Missing now] " + story.steps[0].text) !=
+						std::string::npos,
+					"Trakkia receipt recreated consumed input");
+				if (story.id != ring.id)
+					require(journal.find("[Pending] " +
+							     story.steps.back().text) !=
+							std::string::npos,
+						"Trakkia ring expanded another receipt");
+			}
+			record(journey, roots.contracts.front(), "trakkia-roots", 570, 57136);
+			supplies.carried[57041] = 1;
+			journal = journey.render_journal(7, 42, 570, 10, 1, 122, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 570).completed == 2 &&
+					journal.find("[Missing now] " + roots.steps[0].text) !=
+						std::string::npos,
+				"Trakkia gem regenerated roots or added treasure credit");
+			supplies = {};
+			supplies.carried[57040] = 3;
+			journal = journey.render_journal(7, 42, 570, 10, 1, 123, false, false,
+							 &supplies);
+			require(journal.find("[Missing now] " + roots.steps[0].text) !=
+					std::string::npos,
+				"Trakkia three reacquired roots satisfied four");
+			supplies.carried[57040] = 4;
+			journal = journey.render_journal(7, 42, 570, 10, 1, 124, false, false,
+							 &supplies);
+			require(journal.find("[Ready now] " + roots.steps[0].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 570).completed == 2,
+				"Trakkia fresh four roots changed history");
+			for (const auto &story : mapping.stories)
+				if (story.id != ring.id && story.id != roots.id)
+				{
+					const auto tx = "trakkia-" + story.id;
+					record(journey, story.contracts.front(), tx.c_str(), 570,
+					       57068);
+				}
+			require(journey.progress_for_zone(7, 42, 570).completed == 4,
+				"Trakkia four exact receipts lost identity");
+			auto replay = completion(roots.contracts.front(), "trakkia-roots", 120);
+			replay.transaction.zone_number = 570;
+			replay.transaction.room_vnum = 57136;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Trakkia replay duplicated receipt");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 570).completed == 4,
+				"Trakkia cold recovery lost receipts");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 570, 57000, 100, "arrival") ==
+					result::applied,
+				"Trakkia raw arrival failed");
+			record(raw, ring.contracts.front(), "trakkia-raw", 570, 57064);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 570).completed == 1,
+				"Trakkia raw-to-authored recovery expanded credit");
 		}
 
 		{
