@@ -1059,3 +1059,55 @@ its admitted budget. Reports retain `baseline_controls_closed`,
 `baseline_books_closed`, `complete`, `consistent_entire_sweep`,
 `orphan_namespace_closed`, `native_holdings_compared` and `release_qualified`
 as false. This scope supplies bounded control/reference evidence only.
+
+## Independent baseline history and physical namespace
+
+Use fresh, separate private checkpoints for the new scopes:
+
+```bash
+python3 scripts/flatfile_economic_audit.py \
+  --state-root /absolute/restored-state \
+  --qualifier /absolute/bin/tools/qualify_flatfile_restore \
+  --progress /absolute/private-operator-directory/baseline-history.json \
+  --scope baseline-history
+
+python3 scripts/flatfile_economic_audit.py \
+  --state-root /absolute/restored-state \
+  --qualifier /absolute/bin/tools/qualify_flatfile_restore \
+  --progress /absolute/private-operator-directory/physical-namespace.json \
+  --scope physical-namespace
+```
+
+Baseline history first captures the authenticated catalogue/head cut, then checks
+each required book's controls and traverses original roots by bucket. Durable
+revision membership detects missing or duplicate revisions; reservation totals
+and terminal identity must match. A later changed source cut refuses continuation
+and stale closure. The native interfaces are
+`--economic-baseline-history-context ROOT`,
+`--economic-baseline-history-control ROOT EPOCH` and
+`--economic-baseline-history-page ROOT BUCKET AFTER`.
+
+Physical namespace captures a bounded private inventory beside the checkpoint,
+then independently checks its original names, physical economic families and
+reverse references. Its native interfaces are `--economic-namespace-inventory`,
+`--economic-namespace-context` and `--economic-namespace-file`; the Python owner
+supplies their bounded inventory/file arguments. Preserve the checkpoint and
+its auxiliary inventory together. Existing auxiliary files are never silently
+replaced: an interrupted unclaimed capture requires a fresh checkpoint path.
+Auxiliary substitution, changed source families, locks, pending journals and
+invalid economic files refuse or produce retained findings. Economic source
+files are read-only; the operator never repairs them.
+
+Existing native time/byte/file limits, 45-second subprocess bounds, exclusive
+private checkpoint ownership, source binding, atomic publication and sticky
+findings remain. Namespace inventory can admit more than 8,192 entries within
+its explicit bounded family-derived ceiling; that does not remove per-operation
+resource limits. Counts describe the captured historical cut.
+
+`known_initialized_baseline_books_closed` and
+`known_physical_economic_namespace_closed` apply only to those named scopes.
+They do not certify native holdings, general orphan closure, the entire sweep
+or release. `complete`, `consistent_entire_sweep`, `baseline_books_closed`,
+`orphan_namespace_closed`, `native_holdings_compared` and `release_qualified`
+remain false. See [primary qualification](
+PLAN5_HISTORY_NAMESPACE_PRIMARY_INTEGRATION_2026-10-07.md).

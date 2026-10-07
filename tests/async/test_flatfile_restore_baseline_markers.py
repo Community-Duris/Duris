@@ -25,6 +25,24 @@ def fingerprint(directory):
             for path in sorted(directory.rglob("*")) if path.is_file()}
 
 
+def audit_source_inputs(source_root=None):
+    """Pin the owned reader/operator family, including its directory membership.
+
+    Native src/ and each caller's fixture inputs remain separately recorded.
+    Recompute this complete map at the terminal guard so newly added or removed
+    audit files cannot disappear from a qualification certificate.
+    """
+    source_root = source_root or ROOT
+    paths = {source_root / name for name in (
+        "scripts/build_restore_qualifier.py", "tests/async/flatfile_namespace_cases.py",
+        "tests/async/test_flatfile_restore_baseline_markers.py",
+        "tests/async/native_build_artifacts.py", "tests/async/server_build_artifacts.py")}
+    for pattern in ("qualify_flatfile_*.h", "qualify_flatfile_*.cpp", "flatfile_*audit.py"):
+        paths.update((source_root / "scripts").glob(pattern))
+    return {str(path.relative_to(source_root)): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sorted(paths)}
+
+
 def retained(directory):
     result = {}
     for path in sorted(directory.rglob("*")):
@@ -61,6 +79,7 @@ def main():
         "scripts/build_restore_qualifier.py", "tests/async/flatfile_restore_authority_fixture.cpp",
         "tests/async/test_flatfile_restore_economic_authority.py",
         "tests/async/test_flatfile_restore_baseline_markers.py")}
+    audit_inputs = audit_source_inputs()
     binary = qualifier.build(artifacts / "qualify")
     fixture = build_fixture(artifacts / "fixture", native)
     legacy_fixture = build_fixture(artifacts / "fixture-legacy", legacy_native) if legacy_native else None
@@ -296,10 +315,11 @@ int main(int argc, char **argv) {
         assert fingerprint(legacy_native / "src") == legacy_before, "legacy native inputs changed during qualification"
     for name, checksum in owned.items():
         assert hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == checksum, name + " changed during qualification"
+    assert audit_source_inputs() == audit_inputs, "audit reader/operator inputs changed during qualification"
     report = {"format": 1, "native_source": str(native), "native_raw_inputs": source_before,
               "legacy_native_source": str(legacy_native) if legacy_native else None,
               "legacy_native_raw_inputs": legacy_before,
-              "owned_inputs": owned, "cases": results,
+              "owned_inputs": owned, "audit_source_inputs": audit_inputs, "cases": results,
               "case_count": len(results), "structural_refusals": sum(not row["structurally_readable"] for row in results),
               "readable_unqualified": sum(row["structurally_readable"] and not row["baseline_provenance_complete"] for row in results),
               "provenance_qualified": sum(row["baseline_provenance_complete"] for row in results),
@@ -309,7 +329,7 @@ int main(int argc, char **argv) {
                                 for path in (binary, fixture, audit, *((legacy_fixture,) if legacy_fixture else ()))}}
     (artifacts / "evidence.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(json.dumps({key: value for key, value in report.items()
-                      if key not in ("cases", "native_raw_inputs", "legacy_native_raw_inputs", "owned_inputs")}))
+                      if key not in ("cases", "native_raw_inputs", "legacy_native_raw_inputs", "owned_inputs", "audit_source_inputs")}))
 
 
 if __name__ == "__main__":
