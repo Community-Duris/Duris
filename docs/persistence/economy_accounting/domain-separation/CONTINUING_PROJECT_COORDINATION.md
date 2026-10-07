@@ -534,20 +534,27 @@ source/interface/fixture publications, then reserve a connected case or operatio
 for the appropriate existing chat. Test preparation can begin once sufficient
 original owner facts are available; completed native execution is its later
 qualification gate. Do not repeat unchanged suites or manufacture another helper.
-The latest [published native checkpoint](https://github.com/Community-Duris/Duris/blob/fef51aca3da13629309213bda2926f2a731a27fc/docs/persistence/economy_accounting/SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
-supersedes the earlier combined23/30 progress description. It reports a private
-combined32 candidate: frozen30 plus two persisted physical-capture files. All
-18 full-server controls and the physical runtime/fault/RR cases remain unexecuted.
-The native implementation and fixtures are still unpublished. Complete physical
-correspondence, other source providers and genuine journeys remain prerequisites.
+The latest [published native checkpoint](https://github.com/Community-Duris/Duris/blob/98c7e40f79f1f25d9cc50b6a4a8e04957dbfae82/docs/persistence/economy_accounting/SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
+supersedes the earlier combined23/30/32 progress descriptions. It reports a private
+combined34 candidate: the earlier thirty files plus four physical-capture and
+correspondence files. The pure report preserves raw observations, ambiguous
+mappings, duplicate UIDs, topology errors, unmatched custody and tombstones.
+Row correspondence does not certify a complete native forest or activation.
+All 18 full-server controls and the physical runtime/fault/RR cases remain open.
+The native implementation and fixtures are still unpublished. Original opening
+forest validation, modern room capture, other source providers and genuine
+journeys remain prerequisites. The old v9 controls still bind combined32; their
+combined34 successor is pending. Do not qualify the new candidate with old proof.
 
-The new capture API is deliberately unwired. Its RR consistent READ ONLY caller
-contract differs from writable cutover and room FOR UPDATE reads. Its EPH1 digest
-includes receipt/mapping rows changed by installation, so it cannot replace the
-durable ESN5 boundary or prove an unchanged before/after installation cut. Existing
-lifecycle consumers still use original source2 capture and normalization. The
-primary owns this continuation; do not duplicate its normalizer or modify the
-partial installer. Plan 5 retains native lifecycle V2 reader ownership.
+The borrowed physical API now permits the existing writable RR cutover transaction:
+it performs SELECTs only and never starts or ends the caller's transaction. The
+earlier READ ONLY wording was unnecessary and is superseded. Original owning
+source2 READ ONLY capture is unchanged; the caller still owns the same-session
+consistent cut and quiescence. EPH1 includes receipt/mapping rows changed by
+installation, so it still cannot replace ESN5 or prove an unchanged before/after
+installation cut. The primary owns physical correspondence and modern-room
+continuations; do not duplicate its normalizer or modify the partial installer.
+Plan 5 retains native lifecycle V2 reader ownership.
 
 The separately [integrated coin audit reader](../PLAN5_COIN_EXPORT_PRIMARY_INTEGRATION_2026-10-07.md)
 at 39524579d047db3d165b495255c6cc9d67ae1de0 shares the native cumulative row budget
@@ -561,6 +568,13 @@ Both workers' continuing goals last reported blocked and unfinished. No newly
 published input enables a concrete domain or quest assignment. Their selected
 deliveries remain closed; authentic lifecycle/source/cost/settlement/publication
 owner interfaces and original fixtures remain the applicable triggers.
+Quest prep's [source-interface reassessment](https://github.com/Community-Duris/Duris/blob/9c14df4183e6633b0a6e99b563dc6b7451792817/docs/persistence/economy_accounting/quest-prep/OWNER_INTERFACE_REASSESSMENT_2026-10-07.md)
+confirms its actual capture/assertion imports do not use the changed coin audit
+reader. Its five ranked next cases require genuine recipe/cost/ACK cuts, supported
+attempt replacement, reset births, pre-ACK reward movement/paired retirement or
+durable held refunds. Its two-document delivery changes no source or test; the
+coordinator checked the stated native/migration and imported-file pins. No new
+quest execution or production-adoption claim is made.
 This dependency review and remote publication are concrete progress; they do not
 prove overall completion. Keep the event monitor active and apply the actual
 three-consecutive-turn blocked audit if the same impasse later repeats.
