@@ -41,6 +41,7 @@
 #include <string>
 #include <limits>
 #include <algorithm>
+#include "economy/shop_sale_quote.h"
 #include <span>
 
 /*
@@ -2301,6 +2302,28 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	return;
 }
 
+struct shop_sale_quote_observations
+{
+	P_char actor;
+	P_char keeper;
+	P_obj selected;
+	int shop_nr;
+
+	float charisma_modifier()
+	{
+		return (float)cha_app[STAT_INDEX(MAX(100, GET_C_CHA(actor)))].modifier;
+	}
+	bool different_races() { return GET_RACE(actor) != GET_RACE(keeper); }
+	float buy_percent() { return shop_index[shop_nr].buy_percent; }
+	int object_cost() { return selected->cost; }
+	sh_int condition() { return selected->condition; }
+	bool barter_enabled() { return has_innate(actor, INNATE_BARTER); }
+	bool barter_successful() { return GET_C_CHA(actor) > number(0, 125); }
+	int trophy_count() { return sql_shop_trophy(selected); }
+	float trophy_modifier() { return get_property("shops.sellTrophyMod", 0.05); }
+	float minimum_percent() { return get_property("shops.sellMinPct", 0.10); }
+};
+
 void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 {
 	const bool accounted = economic_gameplay_authority::active();
@@ -2314,7 +2337,6 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 	P_obj temp1;
 	char Gbuf1[MAX_STRING_LENGTH];
 	char argm[MAX_INPUT_LENGTH];
-	float cost_factor;
 	int sale;
 
 	if (!(is_ok(keeper, ch, shop_nr)))
@@ -2371,26 +2393,8 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 		do_tell(keeper, Gbuf1, 0);
 		return;
 	}
-	cost_factor = (float)cha_app[STAT_INDEX(MAX(100, GET_C_CHA(ch)))].modifier;
-	if (GET_RACE(ch) != GET_RACE(keeper))
-		cost_factor = cost_factor / 2.;
-
-	cost_factor = shop_index[shop_nr].buy_percent * (1.0 + (cost_factor / 100.));
-	if (cost_factor > shop_index[shop_nr].buy_percent)
-		cost_factor = shop_index[shop_nr].buy_percent - .01;
-
-	/*
-	  Taken out the staff/scroll/wand/potion modifier since players only
-	  sell these items now and never buy them
-	  if (temp1->type == ITEM_SCROLL || temp1->type == ITEM_POTION ||
-	      temp1->type == ITEM_STAFF || temp1->type == ITEM_WAND)
-	    cost_factor *= .1;
-	*/
-	/* condition affects value too */
-	sale = (int)(temp1->cost * cost_factor * MIN(100, temp1->condition) / 100);
-
-	if (sale < 1)
-		sale = 1;
+	shop_sale_quote_observations quote_observations{ ch, keeper, temp1, shop_nr };
+	sale = shop_sale_quote::sale_base(quote_observations);
 
 	if ((GET_VNUM(keeper) != 11005) && /* guild shops don't lose cash */
 	    ((shop_index[shop_nr].shop_is_roaming == 1) && (GET_MONEY(keeper) < sale)))
@@ -2410,16 +2414,11 @@ void shopping_sell(char *arg, P_char ch, P_char keeper, int shop_nr)
 	}
 	int temp = 0;
 
-	if ((temp = sql_shop_trophy(temp1)) > 1)
+	const auto trophy_quote = shop_sale_quote::adjust(sale, quote_observations);
+	temp = trophy_quote.trophy_count;
+	sale = trophy_quote.price;
+	if (temp > 1)
 	{
-		int orig_sale = sale;
-
-		sale -= (int)(get_property("shops.sellTrophyMod", 0.05) * temp * sale);
-		sale = MAX((int)(get_property("shops.sellMinPct", 0.10) * orig_sale), sale);
-
-		if (sale < 1)
-			sale = 1;
-
 		snprintf(
 			Gbuf1, MAX_STRING_LENGTH,
 			"The shopkeeper says 'This item is rather common, you won't get as much for it.'\r\n");
@@ -2515,7 +2514,6 @@ void shopping_value(char *arg, P_char ch, P_char keeper, int shop_nr)
 	char argm[MAX_INPUT_LENGTH];
 	P_obj temp1;
 	char Gbuf1[MAX_STRING_LENGTH];
-	float cost_factor;
 	int sale;
 
 	if (!(is_ok(keeper, ch, shop_nr)))
@@ -2549,50 +2547,16 @@ void shopping_value(char *arg, P_char ch, P_char keeper, int shop_nr)
 		return;
 	}
 
-	cost_factor = (float)cha_app[STAT_INDEX(MAX(100, GET_C_CHA(ch)))].modifier;
-
-	if (GET_RACE(ch) != GET_RACE(keeper))
-		cost_factor = cost_factor / 2;
-
-	cost_factor = shop_index[shop_nr].buy_percent * (1.0 + (cost_factor / 100.));
-
-	if (cost_factor > shop_index[shop_nr].buy_percent)
-		cost_factor = shop_index[shop_nr].buy_percent - .01;
-
-	if (has_innate(ch, INNATE_BARTER))
-	{
-		if (GET_C_CHA(ch) > number(0, 125))
-		{
-			cost_factor -= .25;
-		}
-		else
-		{
-			cost_factor += .10;
-		}
-	}
-	/*
-	  if (temp1->type == ITEM_SCROLL || temp1->type == ITEM_POTION ||
-	      temp1->type == ITEM_STAFF || temp1->type == ITEM_WAND)
-	    cost_factor *= .1;
-	*/
-	/* condition affects value too */
-	sale = (int)(temp1->cost * cost_factor * MIN(100, temp1->condition) / 100);
-
-	if (sale < 1)
-		sale = 1;
+	shop_sale_quote_observations quote_observations{ ch, keeper, temp1, shop_nr };
+	sale = shop_sale_quote::valuation_base(quote_observations);
 
 	int temp;
 
-	if ((temp = sql_shop_trophy(temp1)) > 1)
+	const auto trophy_quote = shop_sale_quote::adjust(sale, quote_observations);
+	temp = trophy_quote.trophy_count;
+	sale = trophy_quote.price;
+	if (temp > 1)
 	{
-		int orig_sale = sale;
-
-		sale -= (int)(get_property("shops.sellTrophyMod", 0.05) * temp * sale);
-		sale = MAX((int)(get_property("shops.sellMinPct", 0.10) * orig_sale), sale);
-
-		if (sale < 1)
-			sale = 1;
-
 		snprintf(
 			Gbuf1, MAX_STRING_LENGTH,
 			"The shopkeeper says 'This item is rather common, it's not worth that much.'\r\n");
