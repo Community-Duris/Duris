@@ -79,8 +79,10 @@ epoch without the lifecycle-origin receipt required by actual startup before
 world restoration. The successor uses the real lifecycle installer and passes
 its changed-seed strict syntax check; primary authenticates its exact native
 inputs and receipt preparation. No startup or active-projection substitute is
-permitted. Fourteen full-server cases remain
-unexecuted, and startup refusals must be recorded at their actual boundary.
+permitted. The startup-control successor now requires the exact original fatal
+message/status, no boot/observer entry, and unchanged retained authority and UID
+metadata; eighteen isolated predicates pass and primary authentication passes.
+Fourteen full-server cases remain unexecuted.
 
 Plan 3's existing installer captures only wallets and shared banks. The private
 genesis candidate adds a borrowed-lock world reader including saved-item records
@@ -90,9 +92,37 @@ Both changed-provider profiles pass strict syntax; original reader bodies stay
 unchanged. This exact physical census applies only to fresh genesis. Later COIN
 recovery authenticates retained current heads, since its world projection can
 legitimately be absent or historical. Lifecycle integration stages pile heads,
-EAB, reservations, receipt and epoch selection in the original single commit;
-its implementation and qualification remain private and unfinished. Historical
-native lifecycle V1 proof remains distinct from the new pile profile.
+EAB, reservations, receipt and epoch selection in the original single commit.
+Independent review found and resolved an empty-pile incompatibility: genesis
+now refuses before capture/staging when the original boot materializer cannot
+restore the zero-denomination object. Historical V1 encoder tokens, native
+wallet/bank capture, retry and runtime recovery remain unchanged. Both lifecycle
+and control profiles pass syntax; their genuine public-install/retry/fault
+assertions are prepared but unexecuted.
+
+Primary authenticates the frozen lifecycle packet and combines it with the boot
+and census slices into one private 23-file candidate. The combined lifecycle TU
+passes both original production-profile strict syntax checks:
+`bin/tests/flat-lifecycle-census-primary-20261007/combined23/RESULT.json`.
+This candidate needs genuine complete player snapshots in its native fixtures;
+the worker is adapting the seed and opening-pile journeys without bypassing the
+new capture requirement. Inspection also found that the prepared lifecycle
+fixture requests revision 7 from the original owner-establishment API, which
+accepts revision 1 only. That fixture must use genuine native advancement or
+revision-1 genesis; syntax does not establish its positive path. Full links
+and executable qualification remain open.
+
+The narrow Plan 5 interface is native lifecycle envelope V2 with the existing
+48-byte header/body layout, original wallet/bank mappings and descriptors, and
+pile holdings/items in the existing EAB. Pile keys use native UID/context zero;
+heads name the derived baseline command ID and retain native revisions. V2
+coverage binds the original V1 wallet/bank digest plus sorted UID, room, native
+revision, balance and source fingerprint. Historical V1 remains canonical and
+immutable on retry. The independent readers in
+`scripts/qualify_flatfile_economic_lifecycle.h` and
+`scripts/qualify_flatfile_economic_authority.h` currently accept native lifecycle
+V1 only; independent V2 qualification belongs to the Plan 5 owner. Qualifier
+catalog V2/V3 history is a different format. No reader gate is waived.
 
 Docker still reports that it cannot start, with an empty server version even
 when the command exits zero. No service or native build was retried on that
