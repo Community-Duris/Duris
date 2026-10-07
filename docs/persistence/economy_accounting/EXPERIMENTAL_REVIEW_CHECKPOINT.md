@@ -1,5 +1,19 @@
 # Experimental accounting review checkpoint
 
+## Independent history and namespace qualified — 2026-10-07
+
+[Primary integration](PLAN5_HISTORY_NAMESPACE_PRIMARY_INTEGRATION_2026-10-07.md)
+adds catalogue-required consecutive history and captured physical-namespace
+checks. All three complete original native suites pass with zero skips:
+lifecycle69 history/48 namespace controls; authority77 history/49 namespace
+controls; all131 lifecycle,20 healthy/367 damaged and69 marker cases remain.
+Primary authenticates6,377 source inputs and17,098 native regular bodies/modes,
+then imports exactly13 qualified files. Accounting/checkpoint contracts,
+syntax, formatting and whitespace pass. Source archive transport conversion
+is verified separately from Git blob identity. Protected WIP stays exact.
+Named known-range closure does not certify full accounting; native holdings,
+producer/player journeys, full recovery and release remain open.
+
 ## Latest literal-capacity recovery result â€” 2026-10-07
 
 [Qualification and integration](LITERAL_POOL_CAPACITY_RECOVERY_QUALIFICATION_2026-10-07.md)
