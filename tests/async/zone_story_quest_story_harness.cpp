@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 210 &&
+		require(catalog.story_mappings.size() == 211 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -24956,6 +24956,100 @@ int main(int argc, char **argv)
 							   &supplies);
 			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
 				"Treasure Caves absent reward or consumed input changed recovered acceptance");
+		}
+
+		{
+			const auto &arms = story_for("jin", "sirax-lost-arms");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 82007, 82019, 100) == result::rejected,
+				"Jindon contact ignored undiscovered physical zone");
+			require(journey.discover_zone(7, 42, 820, 82063, 101, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 820, 10, 1, 102, false, false)
+							.find(arms.title) == std::string::npos &&
+					journey.meet_npc(7, 42, 82007, 82019, 103) ==
+						result::applied,
+				"Jindon discovery exposed request before Sirax encounter");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    arms.steps[row].text) != std::string::npos;
+			};
+			for (unsigned custody = 0; custody < 6; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[82019] = 1;
+				if (custody == 2)
+					supplies.carried[82003] = 1;
+				if (custody == 3)
+					supplies.equipped[18] = 82004;
+				if (custody == 4)
+					supplies.carried[82017] = 1;
+				if (custody == 5)
+					supplies.carried[82029] = 1;
+				const auto journal = journey.render_journal(
+					7, 42, 820, 10, 1, 104, false, false, &supplies);
+				require(status(journal, 0, "Missing now") &&
+						!status(journal, 1, "Recorded") &&
+						journey.progress_for_zone(7, 42, 820).completed ==
+							0 &&
+						journey.serialize_state() == before,
+					"Jindon ticket, reward, held input, wrong limb or claw forged preparation or acceptance");
+			}
+			supplies = {};
+			supplies.carried[82004] = 1;
+			auto journal = journey.render_journal(7, 42, 820, 10, 1, 105, false, false,
+							      &supplies);
+			require(status(journal, 0, "Ready now") &&
+					!status(journal, 1, "Recorded") &&
+					journal.find("Next: " + arms.steps.back().text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 820).completed == 0 &&
+					journey.serialize_state() == before,
+				"Jindon supplied exact arms required source history or forged accepted exchange");
+			// Synthetic committed receipt qualifies projection, not live source or reward settlement.
+			record(journey, arms.contracts.front(), "jin-arms-offering", 820, 82019);
+			supplies = {};
+			supplies.carried[82019] = 1;
+			journal = journey.render_journal(7, 42, 820, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(journal, 1, "Recorded") &&
+					status(journal, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 820).completed == 1 &&
+					journey.progress_for_zone(7, 42, 5000).completed == 0 &&
+					!journey.has_discovered(7, 42, 5000) &&
+					journey.progress_for_zone(7, 42, 7000).completed == 0 &&
+					!journey.has_discovered(7, 42, 7000),
+				"Jindon spent arms erased receipt or invented surface/Underdark arrival and foreign acceptance");
+			require(supplied.discover_zone(7, 42, 820, 82063, 101, "arrival") ==
+					result::applied,
+				"Jindon supplied-return setup failed");
+			record(supplied, arms.contracts.front(), "jin-supplied-offering", 820,
+			       82019);
+			require(supplied.progress_for_zone(7, 42, 820).completed == 1,
+				"Jindon acceptance required remembered greeting, hunt or foreign quest receipt");
+			auto replay = completion(arms.contracts.front(), "jin-arms-offering", 120);
+			replay.transaction.zone_number = 820;
+			replay.transaction.room_vnum = 82019;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Jindon replay duplicated the accepted exchange");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 820).completed == 1 &&
+					raw.progress_for_zone(7, 42, 820).completed == 1 &&
+					!recovered.has_discovered(7, 42, 5000) &&
+					!recovered.has_discovered(7, 42, 7000),
+				"Jindon mapped/raw recovery lost acceptance or invented foreign zone discovery");
+			supplies = {};
+			journal = recovered.render_journal(7, 42, 820, 10, 1, 122, false, false,
+							   &supplies);
+			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
+				"Jindon absent reward or consumed input changed recovered acceptance");
 		}
 
 		std::cout

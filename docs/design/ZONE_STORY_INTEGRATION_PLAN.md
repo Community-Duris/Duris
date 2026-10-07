@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 210 authored journals, accounting-gated player surfaces, starter/town
+**Status: 211 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5366,3 +5366,8 @@ The [dossier](zone-stories/FUTURE_CEOTHIA.md) maps one exact vial request with o
 ## Treasure Caves integration extension
 
 The [dossier](zone-stories/TREASURE_CAVES.md) maps one exact figurine request with optional current custody and one accepted coin receipt. Forty owned follow-ups cover keyed pickproof containers, NOSHOW switches, original-source versus transfer history, actual falling/equipment/cure results, shared stock, builder-defined agency/escort/ecology and accountable renewal. Existing schema3 covers the native request; broader admitted control/source/recipient/lasting-state endpoints require actual callers and builder choices. New tracking requires active READY accounting; daily policy remains disabled. Actual repairs use separate named fix/news commits.
+
+
+## Jindon integration extension
+
+The [dossier](zone-stories/JINDON_DEATHWOOD.md) maps one exact arms return with optional custody and one accepted sword receipt. Forty-four owned follow-ups cover source versus supplied material, paid-entry refusal and currency/arrival coupling, GET/ENTER travel, final charges, the unsupported altar trap value, real effects and builder-defined agency/welfare/restitution/restoration. Existing schema3 covers Q8; broader admitted source/control/recipient/lasting-state endpoints need real callers and builder choices. New tracking requires active READY accounting; daily policy stays disabled. Actual repairs use separate named fix/news commits.

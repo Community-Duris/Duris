@@ -274,3 +274,8 @@ The [dossier](../design/zone-stories/FUTURE_CEOTHIA.md) preserves one achievemen
 ## Treasure Caves daily qualification
 
 The [dossier](../design/zone-stories/TREASURE_CAVES.md) preserves one achievement and one potential daily. Mode2/lifespan10..12 and cap1 chest/key/figurine/vines do not prove accountable renewal. Active authority guards native O/P/G/E construction. Qualify source generation, root/parent/custody/transfer, persistent giver, actual coin operation/recipient/save/replay and completed replenishment before activation. New tracking requires active READY accounting; frozen committed recovery is separate and daily policy remains disabled.
+
+
+## Jindon daily qualification
+
+The [dossier](../design/zone-stories/JINDON_DEATHWOOD.md) preserves one achievement and one potential daily. Mode2/lifespan40..50/cap1 arms and persistent Sirax do not prove accountable renewal. Active authority guards item resets and legacy paid entry. Qualify actual source generation/transfer/custody, item issuance/recipient/save/replay and replenishment before activation. New tracking requires active READY accounting; committed recovery is separate and daily policy stays disabled.

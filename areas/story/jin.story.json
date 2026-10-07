@@ -1,0 +1,410 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "jin",
+  "coverage": "complete",
+  "introduction": "Explore Jindon’s carnival, help Sirax recover his lost arms and understand the separate Deathwood, temple and exhibit stories.",
+  "orientation": [
+    "Explore Jindon’s carnival and the separate Deathwood, temple and abandoned-cabin routes. Discovery follows your actual arrival; meeting Sirax reveals his request.",
+    "The ticketmaster blocks ordinary westward entry and offers BUY ticket for a fee. This paid entrance is currently unavailable while accounting is active and needs payment integration.",
+    "Meet Sirax in the Two-limbed Thri-kreen exhibit and ask thri-kreen, two, limb, limbs, ogre, missing or battle. These seven aliases share one addressed response.",
+    "Sirax asks for his lost arms. Faggle carries the exact arms in the Arm and a Limb Shop. An exact copy supplied by another player also fits the native return; no remembered greeting or personal kill is required.",
+    "Carry the exact arms loose and offer them to Sirax for Illithid Bane. Current materials and accepted history are separate. Other limbs, a weapon reward or a carnival ticket cannot record the return.",
+    "Sirax’s response describes feeling at peace and considering departure. The native exchange keeps him in place; it does not by itself record healing, reattachment, rescue or safe departure.",
+    "BUY ticket describes handing over a ticket but moves the buyer directly to the bridge. The separately stocked carnival ticket uses GET as its travel trigger and is not an ordinary takeable item.",
+    "The bridge’s hidden downward route leads beneath it. Revealing the route, crossing it and dealing with the troll are separate from paying for carnival admission or returning Sirax’s arms.",
+    "ENTER the whirlpool leads into the Deathwood. This moves the player rather than rescuing the trapped Yuan-Ti warrior. Travel text is separate from actual arrival and the warrior’s safety.",
+    "The Deathwood leads past undead and the cyclops cave to the suspension bridge, temple and abandoned cabin. A toll mentioned in troll descriptions does not establish a working payment service.",
+    "The altar is a locked container with a trap declaration whose damage value needs builder review. Lockpicking, opening, disarming, actual effects and any temple restoration need distinct outcomes.",
+    "The dragon carries a staff configured for greater ravenflight, and the priest carries a golden lockpick. Current equipment or using a word does not prove a successful spell, unlock or quest.",
+    "Vernan’s grill has a native food shop. Other shop, game, performance and exhibit descriptions are broader story leads; builders must define settled purchases, fair play, assistance and recipient agency.",
+    "The grill and meditation room have healing controls. Descriptions of safety do not add a safe-room flag. The animals, exhibits and headless beings need defined assistance and lasting choices before rescue or restoration is tracked.",
+    "New journal tracking requires active READY accounting. Daily replay remains disabled until original source generations, the item reward, saves, replay and renewed availability are qualified."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 82000,
+      "name": "the ticket master",
+      "keyword": "minotaur",
+      "description": "The ticketmaster blocks westward entry and offers a paid direct journey to the bridge. Active accounting refuses the legacy payment. A stocked ticket is a separate GET-triggered device; purchase text does not issue it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82001,
+      "name": "a clown",
+      "keyword": "clown",
+      "description": "This contact is stocked around The Gaming Square. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82002,
+      "name": "Uggiewilly",
+      "keyword": "uggie",
+      "description": "This contact is stocked around Uggiewilly's Spices and Hair Herbs. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82003,
+      "name": "a headless drow",
+      "keyword": "headless",
+      "description": "This contact is stocked around Shop of the Headless Drow. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82004,
+      "name": "Loudog",
+      "keyword": "loudog",
+      "description": "This contact is stocked around Loudog's Happy Hour Bar. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82005,
+      "name": "Jaskin",
+      "keyword": "jaskin",
+      "description": "This contact is stocked around Jaskin's Perverted Sex Toys. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82006,
+      "name": "Faggle",
+      "keyword": "faggle",
+      "description": "Faggle carries the exact arms requested by Sirax. Personal recovery, supplied material and an accepted return are different facts; the native return does not require killing Faggle.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82007,
+      "name": "Sirax",
+      "keyword": "thri",
+      "description": "Sirax requests his missing arms and rewards Illithid Bane. Seven aliases share one response. The accepted exchange does not prove reattachment, safe departure or healing, and he has no retirement clause.",
+      "topics": [
+        "thri-kreen",
+        "two",
+        "limb",
+        "limbs",
+        "ogre",
+        "missing",
+        "battle"
+      ]
+    },
+    {
+      "mob_vnum": 82008,
+      "name": "Gyrkx",
+      "keyword": "gyrkx",
+      "description": "This contact is stocked around Gyrkx's Shop of TrollSkin. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82009,
+      "name": "a dazzled traveller",
+      "keyword": "dazzled",
+      "description": "This traveller’s description suggests rigged games and theft. A fair-play or restitution story needs an actual loss, identified beneficiary, contribution and settled result.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82010,
+      "name": "a barbarian",
+      "keyword": "barbarian",
+      "description": "The barbarian’s gambling losses suggest assistance or restitution. Define agency and an admitted outcome before treating a description or encounter as completed aid.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82011,
+      "name": "a dusty onlooker",
+      "keyword": "onlooker",
+      "description": "This contact is stocked around The Gaming Square. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82012,
+      "name": "a small dog",
+      "keyword": "dog",
+      "description": "This contact is stocked around Carnival Road, Diverging Paths of Travel, Split in Carnival Road. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82013,
+      "name": "a bearded lady",
+      "keyword": "bearded",
+      "description": "This contact is stocked around Adjacent Paths. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82014,
+      "name": "a fire eater",
+      "keyword": "fire",
+      "description": "This contact is stocked around Before a Shoppe. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82015,
+      "name": "a hairy halfling",
+      "keyword": "halfling",
+      "description": "This hairy-halfling prototype has no local stock declaration. Its performance and hometown story are leads for builder review; a prototype alone does not establish live availability.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82016,
+      "name": "a thri-kreen juggler",
+      "keyword": "thri",
+      "description": "This contact is stocked around Carnival Road. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82017,
+      "name": "an organ grinder",
+      "keyword": "organ",
+      "description": "This contact is stocked around Turning Before a Shop. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82018,
+      "name": "an onlooker",
+      "keyword": "onlooker",
+      "description": "This contact is stocked around The Higher Row of Seats, The Lower Level Seats. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82019,
+      "name": "a large onlooker",
+      "keyword": "large",
+      "description": "This contact is stocked around Inside a Grand Tent, Near the Center of the Arena, The Higher Row of Seats, The Lower Level Seats. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82020,
+      "name": "a large elephant",
+      "keyword": "elephant",
+      "description": "The arena elephant suggests an animal-welfare story. Assistance, consent where applicable, safe release and lasting recipient state must be defined separately from defeating an encounter.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82021,
+      "name": "a large bird",
+      "keyword": "bird",
+      "description": "This contact is stocked around Center of the Ring. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82022,
+      "name": "a lion",
+      "keyword": "lion",
+      "description": "The chained arena lion suggests an independent welfare or liberation branch. A kill, loot or room visit cannot establish rescue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82023,
+      "name": "a donkey",
+      "keyword": "donkey",
+      "description": "This contact is stocked around The Donkey Exhibit. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82024,
+      "name": "a scaly reptilian",
+      "keyword": "reptilian",
+      "description": "This exhibited reptilian suggests alchemical investigation and agency. Its separately stocked arm is not the exact arms requested by Sirax.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82025,
+      "name": "Heidie",
+      "keyword": "heidie",
+      "description": "This contact is stocked around Heidie's House of Horrors. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82026,
+      "name": "an Illithid-Githyanki",
+      "keyword": "illithid",
+      "description": "This contact is stocked around The illithid-Githyanki Exhibit. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82027,
+      "name": "a scarecrow",
+      "keyword": "crow",
+      "description": "This contact is stocked around The ScareCrow Exhibit. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82028,
+      "name": "Vernan",
+      "keyword": "vernan",
+      "description": "Vernan’s grill has a native food shop for steak, onion and ale. Settled trade and assistance are separate from Sirax’s arms-return receipt.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82029,
+      "name": "Finler",
+      "keyword": "finler",
+      "description": "This contact is stocked around Amist the Brush. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82030,
+      "name": "a commoner",
+      "keyword": "commoner",
+      "description": "This contact is stocked around A Narrow Path, A Split in a Path, A Turn in a Path, Amist the Brush. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82031,
+      "name": "a ferocious lion",
+      "keyword": "lion",
+      "description": "This contact is stocked around Inside a Huge Tent. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82032,
+      "name": "a young doe",
+      "keyword": "doe",
+      "description": "This contact is stocked around Within a Thick Forest. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82033,
+      "name": "a troll",
+      "keyword": "troll",
+      "description": "This contact is stocked around Under the Bridge. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82034,
+      "name": "a large stag",
+      "keyword": "large",
+      "description": "This contact is stocked around Within a Thick Forest. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82035,
+      "name": "Ocul",
+      "keyword": "ocul",
+      "description": "Ocul’s attachment to his animals suggests care or safe-release choices. Builders need actual beneficiaries, routes and admitted lasting outcomes before these are recorded.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82036,
+      "name": "a two-headed cyclops",
+      "keyword": "giant",
+      "description": "The cyclops cave has a separate encounter and escape story. Defeating the cyclops or surviving a route does not prove Sirax’s return or a restored forest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82037,
+      "name": "A priest",
+      "keyword": "kneeling",
+      "description": "The priest carries a golden lockpick near the locked altar. Lockpick custody, admitted opening, trap effects and temple restoration are separate outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82038,
+      "name": "A headless Ogre",
+      "keyword": "headless",
+      "description": "This contact is stocked around The Trophy Room. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82039,
+      "name": "A headless Thri-Kreen",
+      "keyword": "headless",
+      "description": "This contact is stocked around The Trophy Room. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82040,
+      "name": "A headless Centaur",
+      "keyword": "headless",
+      "description": "This contact is stocked around The Trophy Room. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82041,
+      "name": "An angered trophy hunter",
+      "keyword": "trophy",
+      "description": "The trophy hunter carries a dragon claw in the cabin. It is native stock rather than a CARVE commission. Define any investigation, restitution or hunting outcome separately.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82042,
+      "name": "A large skeleton",
+      "keyword": "large",
+      "description": "This contact is stocked around Bone Littered Path, Forest Path, Inside the DeathWood Forest, Inside the Deathwood Forest. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82043,
+      "name": "a wraith of an old man",
+      "keyword": "wraith",
+      "description": "This contact is stocked around Path into the Forest, Slow Moving Stream. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82044,
+      "name": "A giant two-headed dragon",
+      "keyword": "two-headed",
+      "description": "The two-headed dragon carries the staff of flight and flaming gloves. Their actual admitted effects differ from possession, defeat and the native arms request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82045,
+      "name": "A lost Yuan-Ti warrior",
+      "keyword": "yuan-ti",
+      "description": "The Yuan-Ti warrior is described as trapped in the whirlpool. Player ENTER travel does not move him or record a rescue; builder defines agency, safe destination and actual recipient arrival.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82046,
+      "name": "a large rat",
+      "keyword": "large",
+      "description": "This contact is stocked around The Kitchen. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 82047,
+      "name": "A smelly troll",
+      "keyword": "smelly",
+      "description": "The smelly troll’s description demands a toll. No literal local toll special was found; builder must qualify any generic installed controller before promising a payment or safe crossing.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "sirax-lost-arms",
+      "title": "Help Sirax recover his lost arms",
+      "category": "request",
+      "summary": "Offer the exact arms for Illithid Bane. Current materials and accepted history are separate; the return does not establish physical healing or safe departure.",
+      "contracts": [
+        {
+          "giver_vnum": 82007,
+          "completion_key": "give=I:82004;receive=I:82003;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "arms",
+          "text": "Carry Sirax’s exact lost arms loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            82004
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Faggle carries these arms in the Arm and a Limb Shop. An exact supplied copy also fits. This row shows current materials and does not record a personal kill or first recovery."
+        },
+        {
+          "id": "return",
+          "text": "Record Sirax’s accepted arms return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 82007,
+              "completion_key": "give=I:82004;receive=I:82003;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact loose arms to Sirax in his exhibit. The accepted receipt records the sword reward. Other limbs, reward custody, ticket purchase, dialogue and travel cannot create this receipt."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
