@@ -6,6 +6,7 @@ from __future__ import annotations
 import contextlib
 import fcntl
 import io
+import hashlib
 import json
 import multiprocessing
 import os
@@ -25,6 +26,45 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import persistence_backup as backup  # noqa: E402
 import persistence_restore as restore  # noqa: E402
 from test_persistence_backup import Fixture, policy, provision  # noqa: E402
+from test_flatfile_restore_baseline_markers import audit_source_inputs  # noqa: E402
+
+
+class AuditSourceProvenanceTests(unittest.TestCase):
+    def test_reader_and_operator_drift_changes_terminal_certificate(self):
+        recorded = audit_source_inputs()
+        required = ("scripts/qualify_flatfile_economic_namespace.h",
+                    "scripts/flatfile_economic_audit.py", "scripts/flatfile_baseline_history_audit.py",
+                    "scripts/flatfile_namespace_audit.py", "tests/async/flatfile_namespace_cases.py")
+        for name in required:
+            self.assertEqual(recorded[name], hashlib.sha256((ROOT / name).read_bytes()).hexdigest())
+        with tempfile.TemporaryDirectory(prefix="duris-audit-source-drift-") as temporary:
+            source = Path(temporary)
+            for name in recorded:
+                path = source / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes((ROOT / name).read_bytes())
+            self.assertEqual(audit_source_inputs(source), recorded)
+            for name in required:
+                with self.subTest(changed=name):
+                    path = source / name
+                    original = path.read_bytes()
+                    path.write_bytes(original + b"\n# disposable drift\n")
+                    self.assertNotEqual(audit_source_inputs(source), recorded)
+                    path.unlink()
+                    if name.startswith("scripts/"):
+                        self.assertNotEqual(audit_source_inputs(source), recorded)
+                    else:
+                        with self.assertRaises(FileNotFoundError):
+                            audit_source_inputs(source)
+                    path.write_bytes(original)
+                    self.assertEqual(audit_source_inputs(source), recorded)
+            for name in ("scripts/qualify_flatfile_future.h", "scripts/flatfile_future_audit.py"):
+                with self.subTest(added=name):
+                    path = source / name
+                    path.write_bytes(b"disposable added audit source\n")
+                    self.assertNotEqual(audit_source_inputs(source), recorded)
+                    path.unlink()
+                    self.assertEqual(audit_source_inputs(source), recorded)
 
 
 class BackupReviewRemediationTests(Fixture):

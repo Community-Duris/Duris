@@ -1114,3 +1114,29 @@ remain exact; no activation, production write, finding correction or independent
 experimental-accounting push occurs. This report and receipts form the locally
 maintained notebook's nonblocking curator packet; application, notification and
 primary acknowledgement are not claimed.
+
+## Audit input provenance repair — 2026-10-07
+
+[Exact qualification](PLAN5_AUDIT_INPUT_PROVENANCE_QUALIFICATION_2026-10-07.md)
+repairs three original guards that accepted a changed namespace header consumed
+by the native compiler. They now recheck the14-file audit family, including
+additions/removals. All18 backup review methods and36 exact terminal guard drift
+cases pass; original lifecycle131/marker69 native cases pass, zero skips.
+The managed method reaches and passes its source guard but fails its initial
+economic source audit before capture/boot: it seeds a pending authority
+transaction and incorrectly expects the online audit to accept it. That stale
+ordering is retained as a separate required owned follow-up; the reader's refusal
+boundary will remain intact. No managed restore pass is claimed here.
+
+Base `99120f1375ee3e7a077ac9642ab48a5099427db3`, tested archive `8ff0d4e3e148f7fbb12f4cd7a44a703dbdd731b2aaeb681055ff5829a6e42df4`;
+native/migration trees remain exact, canonical source62. Publication stays on
+`codex/accounting-plan5`, preserving all seven tips. Four owned test files change,
+with no shared contract, producer, registry/matrix, runner or activation request.
+Seal SHA256 `0b058da8044679d9bf7fc9ab3c344411a558164cce481bb8033396fea8c2b613` authenticates 13,212 artifacts/
+1,336,773,155 bytes, including failures. Canonical result/remote SHA and
+ancestry are in `flatfile-audit-inputs-{preflight,delivery}-01-20261007` receipts.
+Primary `36e8f6ad78ef027851c1da809acca7570dcd95d6` has a distinct native tree; full R7/R8, holdings, writer
+recovery, gameplay and combined release remain open. Normal/55-contract checks
+pass; release still refuses missing writer evidence. SQL is not repeated.
+The local notebook packet remains nonblocking, with no application/acknowledgement
+claim. Existing inactive behavior and exclusions remain preserved.

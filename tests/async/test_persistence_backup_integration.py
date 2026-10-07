@@ -34,7 +34,7 @@ import build_restore_qualifier as native
 from _restore_fixture import build as build_fixture
 from test_flatfile_restore_economic_authority import build_fixture as build_economic_fixture
 from test_flatfile_restore_lifecycle_receipts import build_fixture as build_lifecycle_fixture, retained
-from test_flatfile_restore_baseline_markers import fingerprint
+from test_flatfile_restore_baseline_markers import audit_source_inputs, fingerprint
 import migration_runner as migrations
 from test_persistence_backup import policy
 
@@ -887,6 +887,7 @@ class FlatfileLifecycleRecoveryIntegration(unittest.TestCase):
                  "tests/async/test_persistence_backup_integration.py",
                  "migrations/runtime_compatibility_manifest.json", "migrations/data_lifecycle_manifest.json"]
         cls.owned_inputs = {name: hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in names}
+        cls.audit_inputs = audit_source_inputs()
         cls.qualifier = native.build(cls.artifacts / "qualify")
         cls.fixture = build_fixture(cls.artifacts / "state-fixture")
         cls.lifecycle = build_lifecycle_fixture(cls.artifacts / "lifecycle-fixture")
@@ -898,10 +899,12 @@ class FlatfileLifecycleRecoveryIntegration(unittest.TestCase):
             assert fingerprint(ROOT / "src") == cls.native_inputs, "native source changed during test"
             for name, checksum in cls.owned_inputs.items():
                 assert hashlib.sha256((ROOT/name).read_bytes()).hexdigest() == checksum, name
+            assert audit_source_inputs() == cls.audit_inputs, "audit reader/operator inputs changed during test"
             for name, values in cls.runtime_inputs.items():
                 assert fingerprint(ROOT/name) == values, name + " changed during test"
             report = {"format": 1, "outcomes": cls.outcomes, "native_raw_inputs": cls.native_inputs,
                       "runtime_inputs": cls.runtime_inputs, "owned_inputs": cls.owned_inputs,
+                      "audit_source_inputs": cls.audit_inputs,
                       "source_capture_executed": False, "lifecycle_install_executed": False,
                       "accounting_activated": False, "full_R8_qualified": False,
                       "required_file_discovery_qualified": any(

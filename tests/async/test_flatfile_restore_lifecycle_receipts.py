@@ -18,7 +18,7 @@ import tempfile
 
 from test_flatfile_restore_economic_authority import ROOT, change, inventory, rehash, check_baseline_control_pages, check_baseline_history_pages
 from flatfile_namespace_cases import check_namespace_pages
-from test_flatfile_restore_baseline_markers import fingerprint
+from test_flatfile_restore_baseline_markers import audit_source_inputs, fingerprint
 from native_build_artifacts import build_native
 from test_flatfile_accounting_store import SOURCES
 import build_restore_qualifier as qualifier
@@ -379,6 +379,7 @@ def main():
              "tests/async/test_flatfile_restore_baseline_markers.py",
              "tests/async/native_build_artifacts.py", "tests/async/test_flatfile_accounting_store.py"]
     owned_inputs = {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in names}
+    audit_inputs = audit_source_inputs()
     binary = qualifier.build(artifacts / "qualify")
     fixture = build_fixture(artifacts / "fixture")
     environment = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
@@ -759,7 +760,9 @@ int main(int argc, char **argv) {
         assert fingerprint(args.legacy_artifacts) == legacy_inputs, "legacy fixture artifacts changed"
     for name, checksum in owned_inputs.items():
         assert hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == checksum, name + " changed during test"
+    assert audit_source_inputs() == audit_inputs, "audit reader/operator inputs changed during test"
     report = {"format": 1, "native_raw_inputs": native_inputs, "owned_inputs": owned_inputs,
+              "audit_source_inputs": audit_inputs,
               "cases": results, "case_count": len(results), "refused": sum(not row["accepted"] for row in results),
               "accepted": sum(row["accepted"] for row in results), "skips": 0,
               "lifecycle_pages": page_report,
@@ -779,7 +782,7 @@ int main(int argc, char **argv) {
                                              *((args.previous_qualifier,) if args.previous_qualifier else ()))}}
     (artifacts/"evidence.json").write_text(json.dumps(report, indent=2, sort_keys=True)+"\n")
     print(json.dumps({key: value for key, value in report.items()
-                      if key not in ("native_raw_inputs", "owned_inputs", "cases", "legacy_inputs",
+                      if key not in ("native_raw_inputs", "owned_inputs", "audit_source_inputs", "cases", "legacy_inputs",
                                      "previous_reader_compatibility_refusals")}))
 
 
