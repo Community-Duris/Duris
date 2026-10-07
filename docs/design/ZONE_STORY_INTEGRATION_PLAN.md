@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 192 authored journals, accounting-gated player surfaces, starter/town
+**Status: 193 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5235,3 +5235,12 @@ The review expands the universal plan in these concrete ways:
 7. Model causal source availability under mode-one descriptor emptiness, caps and skipped issuance. Daily rollover does not replenish stock. NPC departure text establishes the native extraction only; wider wife/clan rescue needs an authored durable outcome.
 
 All twenty owned follow-ups and fair repair alternatives are in the dossier. This checkpoint changes journal metadata, documentation and regressions; no native world or quest repair ships. Played access, hand-in, reward, service and persistence qualification remains pending.
+
+
+## Drifting Realm integration extension
+
+The [Drifting Realm dossier](zone-stories/DRIFTING_REALM.md) maps four identical soul shards and five distinct same-name colored skulls as two independent exact returns. The earlier receipt remains optional because native acceptance enforces no chain. Extend universal source indexing to foreign parent/room/generation and accessible exact-proof labels without transferring receipt ownership, inventing source recovery or discovering outside zones. Native NODROP ordinary gifts and durable quest interception have different admission rules.
+
+Effective behavior must include default type/command bindings, shop func.mob plus independent qst_func, and prototype loader clearing of stale PROCLIB flags. LOOK lights, ENTER bed and JUMP cliff require actual arrival evidence; drink-container whirlpool prose does not implement travel. Four PICKPROOF/100-percent-break keys expose a shared unlock-before-destruction settlement gap. Add coherent access/key publication qualification before consumed-key or passage objectives. A shop purchase explicitly refusing active accounting cannot become an achievable tracking step until its economic mutation is ported.
+
+Mode-zero initial stock, conditional/manual renewal and four foreign zones require independent availability qualification; retaining two potential daily candidates does not promise replenishment. Moral reform, ruler dominance, invitation/romance and fortune-reading episodes need builder-authored settled endpoints. The local dreamfoil is only one ingredient of Alatorin's separate four-flower request. These are precise follow-ups; no native repair ships in this checkpoint.

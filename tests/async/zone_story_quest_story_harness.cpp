@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 192 &&
+		require(catalog.story_mappings.size() == 193 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -23129,6 +23129,102 @@ int main(int argc, char **argv)
 					recovered.progress_for_zone(7, 42, 368).total == 2 &&
 					!recovered.has_discovered(7, 42, 550),
 				"Domain recovery lost independent returns or invented foreign discovery");
+		}
+
+		{
+			const auto &shards = story_for("dream", "qin-four-soul-shards");
+			const auto &skulls = story_for("dream", "qin-five-crystal-skulls");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 313, 31301, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 313, 10, 1, 101, false, false)
+							.find(skulls.title) == std::string::npos,
+				"Drifting discovery exposed Qin before encounter");
+			require(journey.meet_npc(7, 42, 31310, 31312, 102) == result::applied,
+				"Drifting Qin encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Drifting journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto status = [&](const auto &entry, size_t row, const char *label)
+			{
+				return section(entry).find(std::string("[") + label + "] " +
+							   entry.steps[row].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[31313] = 1;
+			supplies.carried[31315] = 1;
+			supplies.carried[31311] = 3;
+			supplies.equipped[18] = 31311;
+			supplies.carried[31316] = 5;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 313, 10, 1, 103, false, false,
+							 &supplies);
+			require(status(shards, 0, "Missing now") &&
+					status(skulls, 1, "Ready now") &&
+					status(skulls, 2, "Missing now") &&
+					journey.evidence_for(shards.contracts.front(), 2)
+							.successful_attempts == 0 &&
+					journey.serialize_state() == before,
+				"Drifting held fourth shard, reward or duplicate skulls fabricated readiness/history");
+			supplies.carried[31311] = 4;
+			for (int v = 31316; v <= 31320; ++v)
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 313, 10, 1, 104, false, false,
+							 &supplies);
+			require(status(shards, 0, "Ready now") &&
+					section(skulls).find("Next: " + skulls.steps.back().text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 313).completed == 0 &&
+					journey.serialize_state() == before,
+				"Drifting supplied skull set required the optional earlier receipt or wrote history");
+			for (size_t row = 1; row <= 5; ++row)
+				require(status(skulls, row, "Ready now"),
+					"Drifting exact skull identity missing");
+			// Synthetic receipts qualify projection, not played bound-item offering or travel.
+			record(journey, skulls.contracts.front(), "dream-skulls-first", 313, 31312);
+			for (int v = 31316; v <= 31320; ++v)
+				supplies.carried.erase(v);
+			journal = journey.render_journal(7, 42, 313, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(skulls, 1, "Missing now") && status(skulls, 6, "Recorded") &&
+					journey.progress_for_zone(7, 42, 313).completed == 1 &&
+					journey.evidence_for(shards.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Drifting final-first receipt invented earlier exchange or lost spent proof history");
+			record(journey, shards.contracts.front(), "dream-shards-later", 313, 31312);
+			supplies.carried.clear();
+			supplies.equipped.clear();
+			journal = journey.render_journal(7, 42, 313, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(shards, 0, "Missing now") && status(shards, 1, "Recorded") &&
+					status(skulls, 0, "Recorded"),
+				"Drifting spending erased receipts or optional earlier context");
+			auto replay =
+				completion(skulls.contracts.front(), "dream-skulls-first", 120);
+			replay.transaction.zone_number = 313;
+			replay.transaction.room_vnum = 31312;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Drifting replay duplicated completion");
+			service recovered(catalog), raw(raw_catalog);
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 313).completed == 2 &&
+					recovered.progress_for_zone(7, 42, 313).total == 2 &&
+					raw.progress_for_zone(7, 42, 313).completed == 2 &&
+					!recovered.has_discovered(7, 42, 337) &&
+					!recovered.has_discovered(7, 42, 857) &&
+					!recovered.has_discovered(7, 42, 997) &&
+					!recovered.has_discovered(7, 42, 889),
+				"Drifting recovery lost native receipts or invented foreign discovery");
 		}
 
 		std::cout

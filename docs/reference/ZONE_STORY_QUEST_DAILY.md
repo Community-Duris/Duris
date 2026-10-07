@@ -179,3 +179,8 @@ Church ownership correction: four native candidates now belong to Church878, whi
 
 
 Domain availability qualification: both native hand-ins remain potential daily candidates, with policy disabled by default. Boadwyn's required contract/band have no producer in the reviewed sources; Bal Sagoth's exact skulls are capped stock rather than ordinary CARVE results. Due mode-one resets use descriptor-based emptiness and do not guarantee source replenishment at rollover. Supplied exact items retain native acceptance without invented personal recovery. Ihsahn's separate training purchase refuses while accounting is active and is not a journal/daily objective. The [Domain dossier](../design/zone-stories/DOMAIN_OF_LOST_SOULS.md) records source restoration and combined service settlement prerequisites before broader activation.
+
+
+## Drifting Realm daily qualification
+
+The [Drifting Realm dossier](../design/zone-stories/DRIFTING_REALM.md) preserves two native candidates: four exact identical shards and one each of five different skulls. No D retirement or native prior-receipt gate applies. Mode0 supplies initial fresh-boot stock without an ordinary boot reset timer; conditional/manual renewal remains separate. Foreign skull sources have independent mode1/2/cap1 availability. Discovery or a day change does not renew local keys, proofs or giver stock. Keep policy disabled by default until READY-accounting owned source/hand-in/renewal journeys qualify actual availability, atomic outcomes, rejection and recovery. Neither optional earlier context nor ordinary reward possession adds a daily unit.

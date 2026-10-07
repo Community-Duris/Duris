@@ -1,0 +1,263 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "dream",
+  "coverage": "complete",
+  "introduction": "Follow Qin’s soul-shard and five-skull requests, with clear sources for each proof and separate leads through the realm’s visions.",
+  "orientation": [
+    "One public boundary is down from Ethereal Plane room12442 into A Vast Escape. Qin’s mist counter is through the eastern vision door. The fluffy bed in Arcium’s Room of Release is another declared entry, using ENTER bed.",
+    "Down from A Vast Escape is A Distant Reality. LOOK insanity at the flickering light travels to the channelled visions; LOOK reality at the other light returns to Arcium’s Room of Release. Use the specific keyword because both objects are lights.",
+    "The whirlpool near the entrance is described as a route, but its current data is a drink container with no teleport procedure. The actual declared travel control is the flickering light. Its wording or intended travel needs a builder decision.",
+    "Four static charged keys are declared along the channelled rooms. The four eastern vision doors use that key and are PICKPROOF; successful native unlocking rolls a key break every time. Door state, key destruction and actual passage are separate.",
+    "The four shard holders, in route order, are Whonh, Devin, Milrd and Nomd. Qin accepts four copies of the exact ethereal soul shard together, not four different shard prototypes and not a personal-kill record.",
+    "After the resting place, the inner psyche leads to the primary insight and shadowy inner voice. Several channelled and sanctum rooms use native water-noswim terrain; ordinary movement needs suitable support under native rules.",
+    "Qin’s later request accepts five different crystal skulls: the inner voice’s magenta skull, Gorlon’s blue skull in Miaeril Village, Voinak’s red skull in Lava Springs, Kovii’s green skull in Arcium, and Razhl’s yellow skull at Fishermans Wharf. The plain names match, but the exact identities differ.",
+    "The earlier shard exchange explains the offered progression; the final native hand-in does not require that prior receipt. Valid supplied exact proofs can fit without invented source history. The skulls’ native no-drop/no-rent restrictions still affect ordinary transfers and keeping them.",
+    "The cliff object in Trapped In A Dazed Confusion responds to JUMP cliff and returns to Arcium’s Room of Release. That return room has a locked southeast door; return travel is separate from obtaining its key or passing the lock.",
+    "The holy and evil groups, ballroom, lounge, tarot cards and moral visions are optional exploration. Qin’s tarot purchase is currently unavailable with active accounting. The inner voice’s dreamfoil can contribute to Alatorin’s separate four-flower return.",
+    "This zone has reset mode zero and no ordinary reset timer scheduled at normal boot. Source stock and any deliberate renewal must be observed; a day change does not replenish shards, keys, skulls or the giver. New tracking requires active, ready accounting and daily policy remains disabled by default."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 31310,
+      "name": "Qin, the master illusionist",
+      "keyword": "qin",
+      "description": "At the mist counter near the entrance. Ask hi or help for the soul shards, and yes or quest for the skull request. His eight aliases share two responses. His separate tarot shop currently refuses purchases with the accounting required for journals.",
+      "topics": [
+        "hi",
+        "help",
+        "deliver",
+        "boundless",
+        "fantasies",
+        "fantasy",
+        "yes",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 31308,
+      "name": "Whonh, a patient monk",
+      "keyword": "whonh",
+      "description": "In the Humble Sanctuary beyond the first keyed vision; declared holder of one ethereal soul shard. The static key is stocked on the preceding channelled room.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31305,
+      "name": "Devin, the devious mercenary",
+      "keyword": "devin",
+      "description": "In the Shady Hideout beyond the second keyed vision; declared holder of one ethereal soul shard. His source identity differs from the other three holders even though the shard is the same item.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31306,
+      "name": "Milrd, a devout cleric",
+      "keyword": "milrd",
+      "description": "In A Vigorous Scenary beyond the third keyed vision; declared holder of one ethereal soul shard. His army-resurrection description does not define a separate journal return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31307,
+      "name": "Nomd, a lazy-eyed necromancer",
+      "keyword": "nomd",
+      "description": "In A Final Resting Place beyond the fourth keyed vision; declared holder of one ethereal soul shard. The forward route continues toward the inner psyche.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31300,
+      "name": "a shadowy inner voice",
+      "keyword": "voice",
+      "description": "At Upon A Primary Insight; declared holder of the magenta crystal skull and imported dreamfoil. The skull is one of Qin’s five different proofs; dreamfoil is an outbound Alatorin gardener ingredient. Neither pickup proves personal moral reform.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31302,
+      "name": "a mighty agathinon prophet",
+      "keyword": "prophet",
+      "description": "In the Glimpse of Heaven; declared wielder of Liberator with a healer and eladrin guardian nearby. The holy group is optional exploration, not an additional native hand-in.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31304,
+      "name": "a demonic vampire",
+      "keyword": "vampire",
+      "description": "In the Glimpse of Hell; declared wielder of Purge with a warlock and phantom minion nearby. This encounter is separate from Qin’s two accepted returns.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31311,
+      "name": "a lonely deva princess",
+      "keyword": "princess",
+      "description": "In the Castle Ballroom; declared wearer of the abandonment boots and rose wand. The true-love description has no local accepted gift or romance completion.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31313,
+      "name": "a burly titan bodyguard",
+      "keyword": "bodyguard",
+      "description": "Declared at both the Grand Entry and Castle Ballroom. His invitation description does not supply an accepted invitation exchange; the ordinary closed ballroom door remains a separate access action.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31312,
+      "name": "a young sucubbus harlot",
+      "keyword": "harlot",
+      "description": "Declared in Past Secluded Desires and the Lustful Lounge. These encounters provide atmosphere and ordinary native behavior, without a journal hand-in.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31309,
+      "name": "an invoking faerie enchantress",
+      "keyword": "enchantress",
+      "description": "In the Lustful Lounge; declared wearer of cloth stockings and the necromantic shroud. This is an optional exploration encounter.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31314,
+      "name": "a sinister archon nightmare",
+      "keyword": "nightmare",
+      "description": "Nightmares are declared along the channelled visions and inner sanctum. Their recurring encounters do not substitute for a shard, skull or accepted return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 31315,
+      "name": "a raging ghostly reflection",
+      "keyword": "reflection",
+      "description": "Ghostly reflections share several vision and sanctum rooms with nightmares. A defeat or passing encounter does not prove moral reform or complete Qin’s exact requests.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "qin-four-soul-shards",
+      "title": "Bring four ethereal soul shards to Qin",
+      "category": "request",
+      "summary": "Four copies of one exact soul shard earn the native full-body suit. The accepted return is separate from defeating four holders or reforming their lives.",
+      "contracts": [
+        {
+          "giver_vnum": 31310,
+          "completion_key": "give=I:31311,I:31311,I:31311,I:31311;receive=I:31313;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-31311",
+          "text": "Carry four exact ethereal soul shards loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            31311
+          ],
+          "count": 4,
+          "optional": true,
+          "hint": "Whonh, Devin, Milrd and Nomd are the four declared holders under a shared cap of four. Valid supplied copies fit the native recipe; held or nested shards are separate from loose preparation."
+        },
+        {
+          "id": "return",
+          "text": "Record Qin’s accepted four-shard return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 31310,
+              "completion_key": "give=I:31311,I:31311,I:31311,I:31311;receive=I:31313;disappear=0"
+            }
+          ],
+          "hint": "Offer the four exact loose shards together to Qin at the mist counter. His native reward is the soul-shard suit; wearing or receiving that suit does not create this receipt."
+        }
+      ]
+    },
+    {
+      "id": "qin-five-crystal-skulls",
+      "title": "Bring Qin five different crystal skulls",
+      "category": "request",
+      "summary": "One exact skull from each of five identities earns the swirling force of light and darkness. The shard return is optional narrative context, with no native prior-receipt requirement.",
+      "contracts": [
+        {
+          "giver_vnum": 31310,
+          "completion_key": "give=I:31316,I:31317,I:31318,I:31319,I:31320;receive=I:31315;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "earlier-shard-return",
+          "text": "Remember the earlier soul-shard exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 31310,
+              "completion_key": "give=I:31311,I:31311,I:31311,I:31311;receive=I:31313;disappear=0"
+            }
+          ],
+          "optional": true,
+          "hint": "Qin offers this larger quest after the shard reward, but its native acceptance also permits a complete supplied skull set without that earlier personal return."
+        },
+        {
+          "id": "material-31316",
+          "text": "Carry the inner voice’s crystal skull loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            31316
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Magenta text; declared on the shadowy inner voice at Upon A Primary Insight in Drifting Realm. This exact identity differs from the four foreign skulls."
+        },
+        {
+          "id": "material-31317",
+          "text": "Carry Gorlon’s crystal skull loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            31317
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Blue text; declared on Gorlon in the underground hideout at Miaeril Village. A second copy of the local skull cannot replace it."
+        },
+        {
+          "id": "material-31318",
+          "text": "Carry Voinak’s crystal skull loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            31318
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Red text; declared on Voinak in the Hellish Throne Room at Lava Springs. Keep his native encounter and route requirements separate from custody."
+        },
+        {
+          "id": "material-31319",
+          "text": "Carry Kovii’s crystal skull loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            31319
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Green text; declared on Kovii in Arcium’s Sealed Crypt. Its exact identity is required, regardless of its matching plain name."
+        },
+        {
+          "id": "material-31320",
+          "text": "Carry Razhl’s crystal skull loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            31320
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Yellow text; declared on Razhl in the Serpent’s Private Lair at Fishermans Wharf. The source room is underwater; source recovery and the accepted return are different facts."
+        },
+        {
+          "id": "return",
+          "text": "Record Qin’s accepted five-skull return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 31310,
+              "completion_key": "give=I:31316,I:31317,I:31318,I:31319,I:31320;receive=I:31315;disappear=0"
+            }
+          ],
+          "hint": "Offer one of each exact skull loose together to Qin. Ordinary gifts and drops can be restricted by native item flags; the exact durable quest offering has its own admission and settlement. Reward possession alone never establishes this receipt."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
