@@ -3,14 +3,14 @@
 [R9 ordered NPC essence reward reservation](R9_ESSENCE_REWARD_RESERVATION.md)
 records the current nine-family reassessment and complete original27-scenario
 trace feasibility PASS. Exact four-file boundary awaits coordinator review; no
-maintained implementation is made. R8 final review remains pending.
+maintained implementation is made. R8 final declared-scope review PASS is published at accounting74b25fc9b.
 
 R8 ordinary cascade is implemented at `7f0d11b4d` plus compiler fix `9f5119fc3`.
 Actual original/extracted23-scenario controls, adjacent checks and both maintained
 740-object builds PASS; initial SQLwarning/buildfailure remains retained. Current
 f521+R0-R8 and minimal f521+R3/R6/R8 component/module checks PASS; bare-primary
 production module checks PASS. See [R8 terminal handoff](R8_ORDINARY_SEARCH_HANDOFF.md).
-Final declared-scope review is pending. Actual continuing Goal remains ACTIVE/no
+Final declared-scope review PASS is published at accounting74b25fc9b. Actual continuing Goal remains ACTIVE/no
 budget; original Plans1-5/applicable R1-R8 finish line and native journeys remain.
 
 R7 approved all-stat planning is implemented at `bf8ffda1d6bae94866c6cb2834d0561d7d914ed9`.

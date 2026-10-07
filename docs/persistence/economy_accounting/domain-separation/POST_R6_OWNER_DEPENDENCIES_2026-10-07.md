@@ -3,7 +3,7 @@
 R8 search control is now implemented and qualified at7f/9f; see
 [R8 terminal handoff](R8_ORDINARY_SEARCH_HANDOFF.md). Exact original/extracted
 controls, both maintained740-object builds and current/minimal dependency module
-checks PASS; final review remains pending. Actual continuing Goal is ACTIVE/no
+checks PASS; final review PASS is published at accounting74b25fc9b. Actual continuing Goal is ACTIVE/no
 budget with the full integrated finish line preserved. The earlier empty-feasible
 queue below is historical and does not prohibit substantial existing-producer
 planning through faithful synchronous observations. Reassess nine families after

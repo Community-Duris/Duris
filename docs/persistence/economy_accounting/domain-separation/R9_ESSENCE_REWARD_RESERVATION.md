@@ -1,7 +1,7 @@
 # R9 ordered NPC essence reward selection reservation — 2026-10-07
 
 R8 implementation7f/9f and terminal handoffc01f69d47793651faa49a347443e2c72235fb090
-are published; final R8 review remains pending. This proposal selects a new
+are published; final R8 review PASS is published at accounting74b25fc9b. This proposal selects a new
 substantial existing-producer reward decision, not another fee/cap/table wrapper.
 No maintained source/test edits are made before coordinator boundary review.
 Actual continuing Goal remains ACTIVE/no budget with the full Plans1-5/applicable

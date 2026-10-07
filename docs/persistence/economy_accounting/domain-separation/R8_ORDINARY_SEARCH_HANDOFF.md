@@ -6,7 +6,13 @@ published and qualified at declared component, maintained-build and current
 import/module scope. Coordinator approved the exact three-file reservation at
 accounting `f5216feff44a4620715dafcbec60829cc9e14a9a` in
 [R8_ORDINARY_SEARCH_REVIEW_2026-10-07.md](https://github.com/Community-Duris/Duris/blob/f5216feff44a4620715dafcbec60829cc9e14a9a/docs/persistence/economy_accounting/domain-separation/R8_ORDINARY_SEARCH_REVIEW_2026-10-07.md).
-Final declared-scope review is pending. This worker bundle R8 does not complete
+Final declared-scope review PASS is published and remotely verified at accounting
+`74b25fc9bc8d0f3bb4e62555cb05d091a7028d04` in
+[R8_ORDINARY_SEARCH_REVIEW_2026-10-07.md](https://github.com/Community-Duris/Duris/blob/74b25fc9bc8d0f3bb4e62555cb05d091a7028d04/docs/persistence/economy_accounting/domain-separation/R8_ORDINARY_SEARCH_REVIEW_2026-10-07.md).
+Coordinator independently authenticated all3 source/46 proof hashes and byte counts,
+actual SQL/flat ELFs and740 links, all6444 minimal export bodies, exact R3/R6-only
+prerequisites and both imports on later8e4. Full other exports were not separately
+reauthenticated by the coordinator. This worker bundle R8 does not complete
 original R8 or the continuing project. Actual continuing Goal remains ACTIVE/no
 budget, createdAt1791384853, with the full Plans1-5/applicable original R1-R8
 integrated implementation, supported gameplay/persistence/recovery, resolved
@@ -128,5 +134,5 @@ No proof artifacts, credentials, logs or binaries are committed.
 
 The full continuing finish line remains open. No adoption, supported native
 outcome, activation, deployment or integrated completion is inferred from this
-handoff. Final declared-scope review and the evolving nine-family assessment
-continue after publication.
+handoff. Final declared-scope review is resolved; the evolving nine-family assessment
+continues with the reviewed-boundary request in R9.
