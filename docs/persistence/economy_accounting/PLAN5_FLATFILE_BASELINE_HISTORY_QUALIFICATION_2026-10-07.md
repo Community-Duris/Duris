@@ -85,7 +85,7 @@ Final native/component archive SHA256
 links. Native tree `4abb609524a1f1682ea4c190f82d75003c4d679b` and migration tree
 `1d041c8bc27cfc2b2bfdc8095b6c1348ac3a15c5` match the base; canonical migrations end at 0062.
 The delivery verifies every nonpublication payload/link against the committed
-result. Three owned publication documents are excluded from executable testing.
+result and explicitly binds the single qualified archive-mode variant below. Three owned publication documents are excluded from executable testing.
 
 The immutable image is
 `sha256:13d9e3ccbd77e8e4432f3f2647c54ccfbdd7c83a83585346b5527077c2f1e32a`,
@@ -159,6 +159,31 @@ Protected evidence root is `D:/CodexEvidence/accounting-plan5/bin/`:
   `de3dce3352f0396384cd866ab702c4fd7ef619496b7dc32650255854fc6dedd9`, 66,130 artifacts / 12,892,787,552 bytes.
 - `flatfile-baseline-history-delivery-01-20261007/delivery.json`: exact result,
   remote head, clean source and seven ancestor tips after publication.
+
+Publication preflight found one transport-mode difference: the preparation
+helper assigned `0644` to new `scripts/flatfile_baseline_history_audit.py`, while
+Git's canonical tar emits `0664`. Working, committed and qualified source bytes
+all have SHA256 `eda0360020fabc21ddfcf04ff0e4d1032e4d67b29f9207e6199dde501887f260`;
+line endings and code are identical. The initial line-ending diagnosis was
+incorrect. No source or shared Git attribute change is needed.
+
+Canonical archive `cecbe9b7bbefa8a5911770618e074b02cedb5f01061e862ea4df0d0fc360d334`
+from implementation commit `d4df44355c1ec0a3ac1f2ccac95c4c94f0217fa6` reruns all
+51 authority / 38 lifecycle history checks at actual source mode `0664`, with
+zero skips. It reuses the sealed native binaries only after proving identical
+C++/native inputs and binary hashes; no new native compilation is claimed.
+The first supplemental harness omitted the entrypoints' `0077` private-data
+umask, and the reader correctly refused those data files. That failed observation
+is retained; the corrected harness passes with private fixture files. The
+inventory's Windows long-path observation is also retained with its corrected
+extended absolute-path check.
+
+`flatfile-baseline-history-mode-supplement-01-20261007/evidence.json` binds both
+supplemental terminal states and 4,238 artifacts, SHA256
+`75d71151ffcfaf40ba48f832f034eef88eaed03eb2b46697a9a0cb230acc30b0`. Final delivery verifies every payload and link,
+all unchanged modes and this explicitly qualified single mode variant. The
+publication follow-up changes owned documentation only; implementation/native
+inputs remain exact, and published history is preserved.
 
 No validation skips or slice blocker remain. Full Plan 5/release gates below
 remain open.

@@ -1039,3 +1039,19 @@ combined backup/restore/retention, private producer/cold cases, release-host
 growth/memory/latency/writer qualification and full R7/R8/release remain open.
 Wallet-root exclusions, inactive behavior and the declined inactive spell change
 remain. No maintained activation or production mutation occurs.
+
+
+### Canonical archive-mode publication follow-up
+
+Implementation commit `d4df44355c1ec0a3ac1f2ccac95c4c94f0217fa6` remains preserved.
+Publication preflight found that the new Python module was prepared at `0644`,
+while Git's canonical archive emits `0664`; every source byte is identical.
+All 51 authority / 38 lifecycle history cases pass again at canonical mode,
+with zero skips and verified native binary/input reuse. The initial supplemental
+umask setup refusal and Windows inventory-path observation remain retained.
+Supplement `flatfile-baseline-history-mode-supplement-01-20261007/evidence.json`
+has SHA256 `75d71151ffcfaf40ba48f832f034eef88eaed03eb2b46697a9a0cb230acc30b0` and 4,238 artifacts. Delivery
+records the single qualified metadata difference and verifies all payloads,
+links, unchanged modes, remote head, clean worktree and seven earlier tips.
+This documentation follow-up makes no runtime/shared/activation change and
+qualifies no additional release, gameplay, R7/R8 or combined-candidate gate.
