@@ -1,5 +1,19 @@
 # Fixed domain-separation operation inventory — 2026-10-07
 
+## Final fixed-set disposition
+
+All required R0/R1/R2 rows are implemented, connected, qualified at their declared
+scopes, published and reviewed. Final coordinator disposition at accounting
+`7a3ee6fb71157f355d63c85de34da748fef60fee` is
+[available for optional primary import](https://github.com/Community-Duris/Duris/blob/7a3ee6fb71157f355d63c85de34da748fef60fee/docs/persistence/economy_accounting/domain-separation/INVENTORY_REVIEW_2026-10-07.md).
+No required row was removed or made dependency-blocked. There is no actionable
+owned extraction defect or missing handoff. R0 native journeys, R2 physical coin
+recovery/full shared runner and combined-candidate qualification remain outside
+the discharged evidence scopes; retained failures remain visible in the canonical
+[HANDOFF.md](HANDOFF.md). Adoption is unknown. The nine-domain assessment and future
+owner-dependent coupling below remain valid; no full conversion/activation claim
+is made. Earlier queue language is the preserved research/proof obligation history.
+
 ## Candidate and finite completion boundary
 
 Inventory version 1, assessed against accounting source
