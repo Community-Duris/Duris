@@ -66,7 +66,6 @@ class AccountingInvariantAuditor:
         # 3. Operations audit
         receipts = {}
         consumed_source_events = set()
-        consumed_item_transfers = set()
 
         for op in fixture.get("operations", []):
             op_id = op.get("operation_id")
@@ -126,11 +125,16 @@ class AccountingInvariantAuditor:
                 child_ids.add(c_id)
                 require(child.get("parent_id") == op_id, f"Child {c_id} parent_id does not match op {op_id}")
 
-            # Item custody uniqueness during transfer
-            for item in op.get("items", []):
+            # Item events bind to this operation in their native event order.
+            for index, item in enumerate(op.get("items", [])):
+                require(isinstance(item, dict), f"Invalid item event {index} in op {op_id}")
+                require(type(item.get("uid")) is int and 0 < item["uid"] < 2**64,
+                        f"Invalid item UID at event {index} in op {op_id}")
+                require(type(item.get("event_index")) is int and item["event_index"] == index,
+                        f"Invalid item event index at event {index} in op {op_id}")
+                require(item.get("operation_id") == op_id,
+                        f"Item event {index} operation_id does not match op {op_id}")
                 stats["items_checked"] += 1
-                uid = item.get("uid")
-                require(uid is not None, f"Item event missing uid in op {op_id}")
 
         if self.verbose:
             print(f"[{fixture_name}] Verified: {stats}")

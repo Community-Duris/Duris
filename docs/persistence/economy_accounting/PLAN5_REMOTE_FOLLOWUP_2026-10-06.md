@@ -1,6 +1,32 @@
 # Plan5 remote branch follow-up and primary refresh â€” 2026-10-06
 
 
+## Fixture item-event identity and order - 2026-10-07
+
+[Exact qualification](PLAN5_ITEM_EVENT_IDENTITY_QUALIFICATION_2026-10-07.md)
+continues from published `ab41214a15acfa542555402935c3fa6c43101661` on the same remote branch.
+Eleven malformed item events were accepted and one raised an uncaught exception.
+The owned fix validates exact uint64 UID, zero-based integer event order and
+containing-operation binding; all twelve controls now refuse without mutation.
+All 23 invariant methods and 55 writer contracts pass with zero skips. Valid
+repeated-UID events and exact whole-operation replay remain accepted.
+
+Code tree `4d181272e2d2711fe719870ed26263e6fb789438`; archive `1d5a4502b72a1ff661d855ce04cf8ecdf3abb27e164d4d68b4d15c8117ee9589`;
+seal SHA256 `c1e492a14745e61f5eb812e8ff3e8867e6f557a2047aee5552f87c86d3dbc1ca`. Historical native proof is kept separate from the
+refreshed primary `74b25fc9bc8d0f3bb4e62555cb05d091a7028d04`. Its original and partial
+recipes fail; the complete in-memory four-provider proposal passes original
+native types and both reference methods. The report gives exact missing functions,
+consumer, unchanged fields/invariants and tests for the shared runner owner.
+No maintained shared runner/native/schema/registry is edited. Native unit passes
+and synthetic fixtures do not qualify the combined candidate or full R7/R8.
+
+The previous consumption slice is now remotely published and delivered as
+`ab41214a15acfa542555402935c3fa6c43101661`. All seven alternate tips/follow-ups remain preserved. The primary
+notebook curator packet is ready; application/acknowledgement/notification remain
+unclaimed and nonblocking. Both engines, genuine producer/recovery journeys,
+complete holdings/origins/UID comparisons and release-host evidence remain open.
+
+
 ## Independent native source consumers and frozen sets — 2026-10-07
 
 [Exact qualification](PLAN5_AUCTION_SOURCE_CONSUMPTION_QUALIFICATION_2026-10-07.md)

@@ -79,6 +79,120 @@ class TestAccountingInvariants(unittest.TestCase):
             self.auditor.audit_fixture(fix, "conflicting_dup_op")
         self.assertIn("conflicting payload", str(ctx.exception))
 
+    def item_fixture(self):
+        return copy.deepcopy(next(f for f in self.golden["fixtures"]
+                                  if f["id"] == "sale_100_gold_fee_5"))
+
+    def test_item_uids_require_exact_nonzero_uint64(self):
+        for invalid in (0, -1, 2**64, True, False, 601.0, "601", None, [], {}):
+            with self.subTest(uid=invalid):
+                fixture = self.item_fixture()
+                fixture["operations"][0]["items"][0]["uid"] = invalid
+                before = copy.deepcopy(fixture)
+                with self.assertRaisesRegex(AuditError, "Invalid item UID"):
+                    self.auditor.audit_fixture(fixture, "invalid_item_uid")
+                self.assertEqual(fixture, before)
+        fixture = self.item_fixture()
+        del fixture["operations"][0]["items"][0]["uid"]
+        with self.assertRaisesRegex(AuditError, "Invalid item UID"):
+            self.auditor.audit_fixture(fixture, "missing_item_uid")
+
+    def test_item_uid_integer_boundaries_remain_exact(self):
+        for uid in (1, 2**53 + 1, 2**64 - 1):
+            with self.subTest(uid=uid):
+                fixture = self.item_fixture()
+                item = fixture["operations"][0]["items"][0]
+                original = item["uid"]
+                item["uid"] = uid
+                for state in (item["before"], item["after"]):
+                    state["root"] = uid
+                state = fixture["custody"].pop(str(original))
+                state["root"] = uid
+                fixture["custody"][str(uid)] = state
+                before = copy.deepcopy(fixture)
+                stats = self.auditor.audit_fixture(fixture, "exact_item_uid")
+                self.assertEqual(stats["items_checked"], 1)
+                self.assertEqual(fixture, before)
+
+    def test_item_event_indices_require_exact_native_order(self):
+        for invalid in (False, True, 0.0, "0", -1, 1, 2**32, None):
+            with self.subTest(event_index=invalid):
+                fixture = self.item_fixture()
+                fixture["operations"][0]["items"][0]["event_index"] = invalid
+                with self.assertRaisesRegex(AuditError, "Invalid item event index"):
+                    self.auditor.audit_fixture(fixture, "invalid_item_index")
+        fixture = self.item_fixture()
+        del fixture["operations"][0]["items"][0]["event_index"]
+        with self.assertRaisesRegex(AuditError, "Invalid item event index"):
+            self.auditor.audit_fixture(fixture, "missing_item_index")
+        fixture = self.item_fixture()
+        item = fixture["operations"][0]["items"][0]
+        fixture["operations"][0]["items"].append(copy.deepcopy(item))
+        with self.assertRaisesRegex(AuditError, "Invalid item event index"):
+            self.auditor.audit_fixture(fixture, "duplicate_item_index")
+
+    def test_item_events_bind_to_the_containing_operation(self):
+        for invalid in (None, False, 1, "", "0" * 32, "f" * 32):
+            with self.subTest(operation_id=invalid):
+                fixture = self.item_fixture()
+                fixture["operations"][0]["items"][0]["operation_id"] = invalid
+                with self.assertRaisesRegex(AuditError, "operation_id does not match"):
+                    self.auditor.audit_fixture(fixture, "unbound_item_event")
+        fixture = self.item_fixture()
+        del fixture["operations"][0]["items"][0]["operation_id"]
+        with self.assertRaisesRegex(AuditError, "operation_id does not match"):
+            self.auditor.audit_fixture(fixture, "missing_item_operation")
+
+    def test_nonobject_item_events_are_refused(self):
+        for invalid in (None, False, 1, [], "item"):
+            with self.subTest(item=invalid):
+                fixture = self.item_fixture()
+                fixture["operations"][0]["items"] = [invalid]
+                with self.assertRaisesRegex(AuditError, "Invalid item event"):
+                    self.auditor.audit_fixture(fixture, "nonobject_item")
+
+    def test_repeated_uid_events_and_exact_operation_replay_are_preserved(self):
+        fixture = self.item_fixture()
+        operation = fixture["operations"][0]
+        original = operation["items"][0]
+        following = copy.deepcopy(original)
+        following.update(event_index=1, before=copy.deepcopy(original["after"]),
+                         after=copy.deepcopy(original["before"]))
+        operation["items"].append(following)
+        stats = self.auditor.audit_fixture(fixture, "ordered_repeated_uid")
+        self.assertEqual(stats["items_checked"], 2)
+        fixture["operations"].append(copy.deepcopy(operation))
+        before = copy.deepcopy(fixture)
+        self.assertEqual(self.auditor.audit_fixture(fixture, "ordered_item_replay"), stats)
+        self.assertEqual(fixture, before)
+
+    def test_cli_item_event_refusals_preserve_input(self):
+        controls = (("uid", True), ("uid", 2**64), ("event_index", False),
+                    ("event_index", 2), ("operation_id", "f" * 32),
+                    ("nonobject", None), ("duplicate_index", None))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "invalid-item.json"
+            for key, invalid in controls:
+                with self.subTest(field=key, value=invalid):
+                    fixture = self.item_fixture()
+                    items = fixture["operations"][0]["items"]
+                    if key == "nonobject":
+                        fixture["operations"][0]["items"] = [invalid]
+                    elif key == "duplicate_index":
+                        items.append(copy.deepcopy(items[0]))
+                    else:
+                        items[0][key] = invalid
+                    body = json.dumps({"fixtures": [fixture]}).encode()
+                    path.write_bytes(body)
+                    result = subprocess.run(
+                        [sys.executable, str(ROOT / "scripts/audit_accounting_invariants.py"),
+                         "--golden", str(path)], capture_output=True, text=True, check=False)
+                    self.assertEqual(result.returncode, 1)
+                    self.assertIn("AUDIT FAILED", result.stderr)
+                    self.assertNotIn("Traceback", result.stderr)
+                    self.assertNotIn("Audit PASSED", result.stdout)
+                    self.assertEqual(path.read_bytes(), body)
+
     def test_detects_cyclic_custody(self):
         fix = {
             "holdings": {},
