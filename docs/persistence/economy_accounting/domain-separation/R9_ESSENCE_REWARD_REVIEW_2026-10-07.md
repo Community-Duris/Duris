@@ -80,8 +80,103 @@ Choose stable include context; do not introduce a hidden R8 dependency. Qualify
 the actual current bare component/full module separately from maintained740-object
 graphs, current754-provider full links and unrun native journeys.
 
-Implementation, final application/qualification, handoff and independent final
-review remain pending. Primary continues without an adoption wait or completed-area
-rewrite. Quest still lacks its native prerequisites and remains BLOCKED, not
-complete. Coordinator/architecture Goals and heartbeat remain active against full
-primary Plans1-5/applicable original R1-R8 completion. R9 cannot close that scope.
+The boundary approval above is historical. The final disposition below supersedes
+its implementation and review checkpoints.
+
+## Final declared-scope review - 2026-10-07
+
+Implementation `15d8cb1a47de7ec61889cfdfae5e78ab63ca46dd` plus independent-include
+fix `305dc3558f3e24597010ef745362965aa1365ebf`, with handoff
+`de23d6365c8f2c40d01369ee05172b569e1c993e`, PASS independent review at the declared
+component, maintained-build and bare-primary import scope. The four-file boundary,
+ordered observations, native ownership and original numeric laws above remain.
+Primary adoption is unknown and is not required before continuing accounting.
+
+The first include context adjoined an optional R5 header. Review identified that
+hidden import dependency;305 moves the selector include to common standard-header
+context. Complete final production and test patches now apply independently to
+bare primarye49d83a3dfeb53062c28d202e0566517f8d7989a. No R0-R8 prerequisite remains.
+This was an import-context correction, not an R9 compiler failure.
+
+### Independent executable comparison
+
+The coordinator executed the actual complete original and extracted producers
+with every original assertion, all27 native-range scenarios and two explicitly
+controlled ordinal-policy cases under unchanged C++20 warning/sanitizer flags
+and30-second limit. Both PASS. Final305 function/header/test/contract inputs match
+the independently executed snapshot exactly; no repeat runtime is claimed.
+
+High9 retains zero and the single no-reward log after the ordinal, before any
+read/grant. Low14 retains raw14 and original read/debug/grant order. Only these
+two labeled cases permit an out-of-range third scripted draw; original and
+native-range cases retain all range assertions. These controls prove fallthrough
+policy, not authentic RNG output, native distribution or supported outcomes.
+
+Worker adjacent configuration/balance, payment, material/all-stat/stat/pool and
+active paid-refusal checks PASS. The unchanged world/db.c reset-count contract
+FAILS against both original and extracted source; both failures are retained.
+No existing control, compiler flag, deadline or failure was removed or weakened.
+
+### Authenticated implementation and retained builds
+
+The coordinator authenticated all four Git source bodies and all45 indexed proof
+files, including exact byte counts, actual copied and retained Docker binaries,
+generated controls, compiler/terminal records and preserved failures. Each final
+maintained profile compiles one provider and fully links740 existing objects.
+SQL/flat/controller exits are0 under their original strict flags. These graphs
+are distinct from the current primary754-provider full build.
+
+| Final input | SHA256 |
+|---|---|
+| src/item/enhance.c | `ac3d968f15a679561b3f98bb55dfa9da7f7d0844dee7e2a3153acab338aeab4b` |
+| src/economy/enhancement_essence_reward.h | `d083e2a4a7e80901713656b8308575adaec9ab9edca82a22518c67fa96365db3` |
+| numeric regression | `84181031bd379818cbd6c91171ed93b730695434906e85764b7d0d09a43396fa` |
+| config contract | `023422d9adc0fe8c1d66221940394dafce7d834c37d574b0a025291a18b9e9cd` |
+| independent component log | `1b7d45210f0fc34f5d3975a197c3f85bcfc36e7be88ec1197908c1807d52f87c` |
+| SQL ELF | `f5989034ff4b8164feb9ec6fc5b5244f82d624fcda8d5af1cb6032aab53fa368` |
+| Flat ELF | `6a80a6b62cc50b62ff7fb6444407e7002dfb766d464996c7ffc3ba2f675ae118` |
+
+Private independent evidence remains in ignored
+bin/tests/coordinator-essence/{final-import-RESULT.json,component-equivalence-RESULT.json,
+final-handoff-RESULT.json} in the coordinator review worktree. The worker retains
+the45-file index in bin/tests/domain-r9-20261007. Private artifacts are not committed.
+
+### Bare-current application and qualification limits
+
+The coordinator independently applies both exact patches to bare primarye49 and
+reproduces their declared Git trees. It authenticates all6,443 complete-package
+export bodies against Git and the archive hash. Worker separately authenticates
+all6,443 production-export bodies; the coordinator does not claim that second
+whole-export authentication as its own.
+
+| Import | Patch SHA256 | Resulting Git tree |
+|---|---|---|
+| Complete four-file package | `52d24f1103c4bf9ae1ca65df891024909bd799dec919eeb404dff960ec3354fd` | `6d616730e8b2829d404f98cd74b01a8b91afeb9a` |
+| Production-only package | `c881c4a0036cb09bb1aab9462f1edd9b2aabfc2d5d7a4a6b3938d4624e97c0cd` | `eeb4ab7f126bbada88ff20710fcdc3232485265e` |
+
+Complete archive SHA256 is
+`e45c39f3804fdff72c091b56ddceda8dee6a6f974844da81042e1663425f697c`.
+Worker actual bare-complete numeric/config/balance and SQL/flat enhancement module
+checks PASS; production-only SQL/flat module checks PASS while retaining original
+primary tests. The coordinator authenticates their records, image and read-only
+source/network-none isolation. No DB/player/game server starts were used.
+
+Component/module execution,740-object maintained links and independent import
+proof do not establish current754-provider full links, genuine death/birth/custody,
+gameplay, publication/ACK or recovery qualification. Those original obligations
+remain with their owners. This optional delivery cannot close primary Plans1-5,
+applicable original R1-R8, backend parity or release. No activation/deployment.
+
+### Continuing queue
+
+Worker post-R9 assessment93662eeaea1ecdba52a66b812c6fb1c03942a876 identifies
+complete shop purchase quote as a concrete feasibility candidate. Its existing
+actual-caller fixture fails compilation on original current source before runtime;
+the original failure and all controls are retained. No shop implementation is
+reserved. Establish a legitimate current fixture closure and exact operation/file
+reservation before selecting maintained changes; preserve native trade authority
+and primary ownership. Do not substitute thin wrappers or fabricated capabilities.
+
+Quest has no new native prerequisite and remains BLOCKED, not complete. Coordinator,
+architecture Goal and15-minute heartbeat remain active against the broader primary
+finish line. R9 review completion is a checkpoint; no unchanged quest wake is needed.

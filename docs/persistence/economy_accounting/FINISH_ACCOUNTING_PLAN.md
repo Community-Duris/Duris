@@ -131,6 +131,26 @@ gates are outside this guidance. Existing required changes to those areas remain
 owned by their current plan. Preserve inactive behavior, wallet-root exclusions,
 the declined inactive spell-path change and all current acceptance requirements.
 
+## Ordered essence optional bundle independently reviewed - 2026-10-07
+
+[R9 final review](domain-separation/R9_ESSENCE_REWARD_REVIEW_2026-10-07.md)
+qualifies code305dc3558f3e24597010ef745362965aa1365ebf and handoffde23d6365c8f2c40d01369ee05172b569e1c993e
+at their declared component/maintained-build/bare-primary import scope. All four
+source and45 proof files, actual SQL/flat ELFs and740-object links are authenticated.
+Complete original/extracted controls independently PASS. Both production and full
+packages apply independently to bare primarye49 without optional predecessors;
+all6,443 complete export bodies are independently authenticated. The unchanged
+module reset-count failure remains recorded. No current754 full link, native
+birth/gameplay/publication/ACK/recovery qualification or adoption is inferred.
+
+Primary may consume this reviewed bundle without an adoption wait or reopening
+completed areas. The architecture chat continues concrete shop purchase-quote
+feasibility, preserving the executed original fixture compile failure and every
+original control. No maintained shop scope is yet reserved. Quest has no new
+native prerequisite and remains BLOCKED, not complete. Coordinator/architecture
+Goals and recurring15-minute monitor retain the full primary finish line; this
+review checkpoint does not close Plans1-5, original R1-R8 or release requirements.
+
 ## Continuing project coordination supersedes finite closure - 2026-10-07
 
 The user has authorized a new actual continuing coordinator Goal and continuing
