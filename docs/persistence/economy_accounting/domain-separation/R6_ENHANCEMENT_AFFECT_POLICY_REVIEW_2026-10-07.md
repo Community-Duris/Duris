@@ -38,3 +38,36 @@ independence, compound gameplay or recovery qualification. No catalogue,
 prototype/target, RNG, outcome, debit, receipt, ACK or shared owner changes
 belong here. Reassess the nine-domain queue after delivery or meaningful owner
 changes. This component cannot satisfy the primary integrated finish line.
+
+## Independent provisional component review
+
+The coordinator captured immutable copies of the three proposed files and
+required existing test helpers while the worker continued its own verification.
+Predicate extraction stays within the approved boundary. The production-only
+wrapper patch plus actual header pass private-index application checks against
+bare352; no primary checkout or shared source is changed.
+
+The first extended producer test failed identically against unchanged original
+and extracted source. Its conditional-object/member-pointer fixture assignment
+left both original objects' affect words zero; diagnostic values show normal
+payment/publication followed because no forbidden fact reached the producer.
+A standalone reproducer also fails under the original WSL GCC11.4 sanitizer
+flags. This result establishes the fixture observation, not a production defect
+or a general compiler diagnosis. Original failed logs and snapshots are retained.
+
+Selecting an explicit P_obj and assigning through it fixes the fixture setup.
+The worker adopted that form and added a pre-call field assertion. The
+coordinator separately captured this corrected actual test, SHA256
+`a5a1e8f84a4e1dfc7c3f3d60ac82ca90e803b0d966e53b1f87738437da3c474e`,
+and reran the complete original/extracted producer/predicate bodies: both PASS
+with unchanged assertions, C++20 warnings, ASan/UBSan, no-PIE and30-second limit.
+Producer SHA256
+`d501a7a80d293008f98b6dfc6978312038b747dbb30ffd893da4547aa9932dde`;
+header `e4b2ece6a4d55577988e94551cb74e00ef6ff12e7a2cae1402c712ad4e18bde1`.
+Private evidence is under coordinator-r6/component-snapshot and
+component-corrected in the isolated review checkout's ignored bin/tests.
+
+These are provisional byte-pinned components. Final commit, adjacent controls,
+maintained builds, current module checks and complete handoff remain pending.
+The continuing Goal stays active; passing these components does not qualify
+native compound outcomes or establish primary adoption.
