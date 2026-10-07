@@ -42,8 +42,11 @@ and `primary_notice(level)` through the exact existing native debug at its origi
 point. The header owns the first strict probability comparison, conditional notice,
 second strict comparison, branch-specific1..8/1..13 ordinal draw and complete21-way
 VNUM selection. Primary failure returns false/zero without later observations;
-primary success with no selected reward retains true/zero for the existing native
-error log. Preserve each original switch outcome rather than replacing it with
+Primary success with no selected high reward retains true/zero for the existing native
+error log. In the low branch, initialize reward to the raw ordinal draw BEFORE
+its switch, preserving the original unhandled-ordinal fallthrough. High branch
+starts at zero until a matching case. Do not clamp, normalize or introduce a new
+policy for the native RNG contract. Preserve each original switch outcome rather than replacing it with
 new assumptions about contiguous VNUMs or broadening accepted RNG results.
 
 In `src/item/enhance.c:enhance_load_essence_drop`, keep level capture before the
@@ -76,9 +79,13 @@ Existing numeric test SHA256
 existing essence config contract
 `c4a6390d903498bc3f0ca9e05db225714789dc3f0637c6e99e44da7554d63a2c`.
 
-Ignored bin/tests/domain-r9-feasibility-20261007 retains **5 proof files**: generated
+Ignored bin/tests/domain-r9-feasibility-20261007 retains **8 proof files**: generated
 complete original CPP, extended harness, source pins, command/result and terminal
-log, authenticated by proof-index.json. Actual original compile/run PASS with
+log plus the earlier generated CPP/harness/log, authenticated by proof-index.json.
+The final complete original controls additionally assert fresh native name/VNUM
+and elite diagnostic values after the first RNG changes them: changed name,
+VNUM999, captured effective level100 and current non-elite suffix. Actual original
+compile/run PASS with
 unchanged C++20 -Wall/-Wextra/-Werror -O1/-g ASan/UBSan/no-recover, no-PIE and30-second
 execution deadline. Existing wide global/zone elite, thresholds, enabled/level
 gates and missing-template controls remain. **27 additional trace scenarios**
@@ -87,7 +94,7 @@ inheritance, config/level/elite mutation during first roll, config mutation at t
 interposed debug, disabled/level short circuits and primary equality failure.
 Exact RNG ranges, debug/read/grant order, native selected VNUM and existing debug
 level/elite text are asserted. Snapshot roll limits/effective level remain captured
-despite later global/mob mutation, while debug sees the fresh elite flag.
+despite later global/mob mutation, while debug sees the fresh elite flag, name and VNUM.
 
 The actual controlled native wrapper can preserve these points. This is component
 feasibility, not real RNG distribution, death/birth/custody, native source or
