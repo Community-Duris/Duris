@@ -1,5 +1,15 @@
 # Finish accounting implementation plan
 
+## Independent lifecycle V2 reader integrated - 2026-10-07
+
+[Primary evidence](PLAN5_LIFECYCLE_V2_PRIMARY_INTEGRATION_2026-10-07.md)
+records the reviewed retained-pile/envelope reader and exact five peer blobs.
+Formatting, strict fixture syntax and normal contracts pass. Its original native
+component link fails on the retained WSL math-library closure; runtime cases and
+original V2 installer qualification remain open. Full operator dependencies,
+Plans2-4, census/activation and R1-R8 release qualification are unfinished.
+
+
 ## Persisted provider union source ready - 2026-10-07
 
 [Current evidence](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md) records

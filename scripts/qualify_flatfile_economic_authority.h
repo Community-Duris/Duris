@@ -207,6 +207,21 @@ class authority_read_lock
 		finish();
 	}
 	bool locked() const { return lock_fd.value >= 0; }
+	// Current native money scans also refuse legacy domain recovery intents.
+	// Existing retained-only readers keep their original authority-only gate.
+	void no_pending_player_domains() const
+	{
+		no_pending();
+		if (domains_fd.value >= 0)
+			for (const char *name :
+			     { ".player-domain-transaction", ".currency-transaction" })
+			{
+				struct stat info = {};
+				need(fstatat(domains_fd.value, name, &info, AT_SYMLINK_NOFOLLOW) ==
+					     -1 &&
+				     errno == ENOENT);
+			}
+	}
 	void finish() const
 	{
 		unchanged(root_fd.value, AT_FDCWD, root.c_str());
@@ -339,21 +354,23 @@ inline bytes file_bytes(const std::filesystem::path &directory, const std::strin
 }
 inline bytes frame(const std::filesystem::path &directory, const std::string &name,
 		   const char *magic, size_t limit = maximum_bytes, const digest &expected = {},
-		   uint32_t *catalog_version = nullptr)
+		   uint32_t *envelope_version = nullptr)
 {
 	auto encoded = file_bytes(directory, name, limit, expected);
 	reader in{ encoded };
 	auto prefix = in.take(8);
 	auto version = in.number(4);
 	need(memcmp(prefix.data(), magic, 8) == 0 &&
-	     (version == 1 || (catalog_version && memcmp(magic, "DURECE1", 8) == 0 &&
-			       (version == 2 || version == 3))) &&
+	     (version == 1 ||
+	      (envelope_version &&
+	       ((memcmp(magic, "DURECE1", 8) == 0 && (version == 2 || version == 3)) ||
+		(memcmp(magic, "DURELR\0", 8) == 0 && version == 2)))) &&
 	     in.number(4) == encoded.size() - 48);
 	auto body_digest = in.fixed<32>();
 	auto body = in.take(encoded.size() - 48);
 	need(body_digest == hash(body));
-	if (catalog_version)
-		*catalog_version = version;
+	if (envelope_version)
+		*envelope_version = version;
 	return { body.begin(), body.end() };
 }
 enum class baseline_initialization : uint8_t
@@ -457,6 +474,7 @@ struct mapping
 	uint64_t authority;
 	bytes key;
 	bool retired;
+	identity creating_operation = {};
 };
 struct native_entry
 {
@@ -588,7 +606,8 @@ class checker
 				key.insert(key.end(), name_bytes.begin(), name_bytes.end());
 			else
 				put(key, native, 8);
-			result.push_back({ authority, std::move(key), nonzero(retiring) });
+			result.push_back(
+				{ authority, std::move(key), nonzero(retiring), creating });
 		}
 		in.done();
 		return result;
@@ -670,6 +689,25 @@ class checker
 	{
 		control();
 		epochs();
+	}
+	identity current_epoch() const { return last_epoch; }
+	digest authority_body() const { return control_digest; }
+	// Call after begin_page(); retained-record run() verifies the full closure.
+	// Return the immutable economic identity separately from its current locator.
+	template <typename Observe> void for_each_mapping(Observe observe) const
+	{
+		for (size_t bucket = 0; bucket < buckets; ++bucket)
+			for (const auto &row : mappings(bucket))
+			{
+				audit_checkpoint();
+				bytes account(lineage.begin(), lineage.end());
+				put(account, 1, 2);
+				put(account, number(row.key, 0, 2), 2);
+				put(account, row.authority, 8);
+				put(account, number(row.key, 2, 8), 8);
+				put(account, 0, 4);
+				observe(account, row);
+			}
 	}
 	// Reverse physical-file association, independent of the cross-link pages.
 	void namespace_metadata(const std::string &name)
