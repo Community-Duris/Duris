@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exact EAB1 origin decoding and SQL read-only snapshot boundary checks."""
 
+import ast
 import copy
 from decimal import Decimal
 import hashlib
@@ -269,6 +270,74 @@ class Connection:
 
     def rollback(self):
         self.rollbacks += 1
+
+
+class CoinPayloadTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Reuse the existing SQL fixture's framing without starting a database.
+        fixture = ROOT / "tests/async/run_economic_sql_audit_snapshot_mysql.py"
+        function, = [node for node in ast.parse(fixture.read_text()).body
+                     if isinstance(node, ast.FunctionDef) and node.name == "coin_payload"]
+        namespace = {"struct": struct}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), str(fixture), "exec"), namespace)
+        cls.payload = staticmethod(namespace["coin_payload"])
+
+    def test_area_money_prototypes_preserve_exact_denominations(self):
+        for vnum in (1, 3, 402013, 402014, 2**31 - 1):
+            blob = self.payload(82, [1, 2, 3, 4], vnum)
+            before = bytes(blob)
+            self.assertEqual(snapshot_exporter.decode_coin_payload(blob, 82, vnum), [1, 2, 3, 4])
+            self.assertEqual(blob, before)
+
+    def test_area_money_binds_uid_and_native_prototype(self):
+        blob = self.payload(82, [1, 2, 3, 4], 402013)
+        for uid, vnum in ((83, 402013), (82, 402014), (82, 3)):
+            with self.subTest(uid=uid, vnum=vnum), self.assertRaises(snapshot_exporter.ExportError):
+                snapshot_exporter.decode_coin_payload(blob, uid, vnum)
+
+    def test_area_money_refuses_noncanonical_prototype_representations(self):
+        for vnum in (True, 1.0, "1", None, 0, -1, 2**31):
+            with self.subTest(vnum=vnum), self.assertRaises(snapshot_exporter.ExportError):
+                snapshot_exporter.decode_coin_payload(self.payload(82, [1, 2, 3, 4], 1), 82, vnum)
+
+    def test_area_money_refuses_nonmoney_and_corrupt_literals(self):
+        original = self.payload(82, [1, 2, 3, 4], 402013)
+        nonmoney = bytearray(original)
+        nonmoney[30] = 19
+        for blob in (bytes(nonmoney), original[:-1], original + b"\0",
+                     self.payload(82, [-1, 2, 3, 4], 402013)):
+            with self.subTest(blob=blob), self.assertRaises(snapshot_exporter.ExportError):
+                snapshot_exporter.decode_coin_payload(blob, 82, 402013)
+
+    def test_coin_row_budget_includes_item_and_every_nested_vector(self):
+        cases = ((8191, ()), (0, (0,) * 8191), (0, (8190,)))
+        for vnum in (3, 402013):
+            for dynamic, spells in cases:
+                with self.subTest(vnum=vnum, dynamic=dynamic, spells=len(spells)):
+                    blob = self.payload(82, [1, 2, 3, 4], vnum,
+                                        dynamic_count=dynamic, spell_counts=spells)
+                    self.assertEqual(snapshot_exporter.decode_coin_payload(blob, 82, vnum), [1, 2, 3, 4])
+            for dynamic, spells in ((8192, ()), (0, (0,) * 8192), (0, (8191,))):
+                with self.subTest(vnum=vnum, dynamic=dynamic, spells=len(spells)):
+                    blob = self.payload(82, [1, 2, 3, 4], vnum,
+                                        dynamic_count=dynamic, spell_counts=spells)
+                    with self.assertRaisesRegex(snapshot_exporter.ExportError, "nested row count exceeds limit"):
+                        snapshot_exporter.decode_coin_payload(blob, 82, vnum)
+
+    def test_coin_row_budget_is_shared_across_collections_and_descriptions(self):
+        for vnum in (3, 402013):
+            for dynamic, spells in ((4095, (4095,)), (0, (4094, 4095))):
+                with self.subTest(vnum=vnum, dynamic=dynamic, spells=spells):
+                    blob = self.payload(82, [1, 2, 3, 4], vnum,
+                                        dynamic_count=dynamic, spell_counts=spells)
+                    self.assertEqual(snapshot_exporter.decode_coin_payload(blob, 82, vnum), [1, 2, 3, 4])
+            for dynamic, spells in ((4095, (4096,)), (0, (4095, 4095)), (8190, (0, 0))):
+                with self.subTest(vnum=vnum, dynamic=dynamic, spells=spells):
+                    blob = self.payload(82, [1, 2, 3, 4], vnum,
+                                        dynamic_count=dynamic, spell_counts=spells)
+                    with self.assertRaisesRegex(snapshot_exporter.ExportError, "nested row count exceeds limit"):
+                        snapshot_exporter.decode_coin_payload(blob, 82, vnum)
 
 
 class ItemRevisionTests(unittest.TestCase):
