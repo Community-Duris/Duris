@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 196 &&
+		require(catalog.story_mappings.size() == 197 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -23551,6 +23551,76 @@ int main(int argc, char **argv)
 					!recovered.has_discovered(7, 42, 140) &&
 					!recovered.has_discovered(7, 42, 5000),
 				"Vecna cold/raw recovery lost returns or invented foreign approach discovery");
+		}
+
+		{
+			const auto &message =
+				story_for("killing_fields", "maelron-missing-message");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 333, 33302, 100, "arrival") ==
+					result::applied,
+				"Killing Fields discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 333, 10, 1, 101, false, false);
+			require(journal.find(message.title) == std::string::npos,
+				"Killing Fields discovery exposed an unmet recipient");
+			require(journey.meet_npc(7, 42, 33308, 33385, 102) == result::applied,
+				"Killing Fields merchant encounter failed");
+			journal = journey.render_journal(7, 42, 333, 10, 1, 103, false, false);
+			require(journal.find(message.title) == std::string::npos,
+				"Killing Fields service contact exposed an independent request");
+			require(journey.meet_npc(7, 42, 33300, 33469, 104) == result::applied,
+				"Killing Fields Maelron encounter failed");
+			const auto status = [&](size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    message.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[8] = 1;
+			supplies.carried[33306] = 1;
+			supplies.carried[33315] = 1;
+			supplies.equipped[18] = 33302;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 333, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 333).completed == 0 &&
+					journey.serialize_state() == before,
+				"Killing Fields container, generic part, shop stock or held note fabricated preparation/history");
+			supplies.carried[33302] = 1;
+			journal = journey.render_journal(7, 42, 333, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(0, "Ready now") &&
+					journal.find("Next: " + message.steps.back().text) !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Killing Fields supplied exact note required invented source/decode/rescue history");
+			// Synthetic receipt qualifies projection, not native note recovery, hand-in, currency settlement or D.
+			record(journey, message.contracts.front(), "killing-fields-message", 333,
+			       33469);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 333, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 333).completed == 1,
+				"Killing Fields spent preparation erased accepted return");
+			auto replay = completion(message.contracts.front(),
+						 "killing-fields-message", 120);
+			replay.transaction.zone_number = 333;
+			replay.transaction.room_vnum = 33469;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Killing Fields replay duplicated accepted return");
+			service recovered(catalog), raw(raw_catalog);
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 333).completed == 1 &&
+					recovered.progress_for_zone(7, 42, 333).total == 1 &&
+					raw.progress_for_zone(7, 42, 333).completed == 1 &&
+					!recovered.has_discovered(7, 42, 335) &&
+					!recovered.has_discovered(7, 42, 5000),
+				"Killing Fields cold/raw recovery lost return or invented foreign discovery");
 		}
 
 		std::cout

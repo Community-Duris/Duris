@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 196 authored journals, accounting-gated player surfaces, starter/town
+**Status: 197 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5267,3 +5267,12 @@ The [Vecna dossier](zone-stories/VECNAS_TOMB.md) maps two independent exact retu
 Expand future builder configuration only with versioned, validated event selectors and explicit personal/shared/party credit. The player journal should progressively reveal known contacts and branches, show current preparation versus recorded history, explain an unmet or unavailable next step, and link accepted returns to pending/recovered reward consequences. A supplied exact item must retain a different acquisition history while fitting native acceptance. Same-UID form change, a distinct replacement reward, command attempt, global relocation and actual successful action must remain separate. New tracking requires active READY accounting; frozen committed recovery is separately recoverable.
 
 Thirty-five owned follow-ups cover effective overwritten control bindings, dormant periodic actor gates, altar safety/vocabulary, unsupported/unplaced traps, disabled missing prototypes, custody iteration, callback contracts and deliberate renewal/balance choices. Builders resolve intended behavior before separately named native repairs, each with prominent PR/news before/after evidence. Source mapping does not activate hazards or certify played behavior. Mode0 with custom rebirth and a secured epic reset request is not guaranteed daily stock.
+
+
+## Killing Fields integration extension
+
+The [Killing Fields dossier](zone-stories/KILLING_FIELDS.md) demonstrates a single accepted return embedded in a larger descriptive story: the missing friend, coded note, corpse container, haunted road, camp and roaming merchant. Keep native acceptance compatible with supplied exact material. Future builder configuration should declare semantic dialogue families, successful hidden-root/child reveals, inspection/decoding, identified friend/rescue/death episodes, actual purchase/effect outcomes and source/container/root lineage only when an authoritative adapter exists. Current custody, recorded acceptance, actor wallet settlement and actual retirement need distinct status text.
+
+Progressive journals should reveal contacts and their reviewed leads, keep one clear Next step for the accepted request, and explain current preparation without promising optional narrative outcomes already happened. A service can be shown beside a quest with its own current availability; purchases do not imply quest completion. Route names, warning signs and reset placements do not guarantee safe passage or permanent NPC location. Add versioned validated selectors and explicit personal/shared/party credit before deeper objectives. New tracking requires active READY accounting; frozen committed recovery remains separate.
+
+Twenty-four owned follow-ups include a shared shop count-index safety repair plan, deliberate outward-only/prose/road-flag decisions, semantic code/friend mapping and settled currency/commerce/source renewal. Separate any actual native repair into a named commit with prominent PR/news before/after behavior. Preserve existing combat, shop, road and reset balance during source mapping.

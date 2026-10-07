@@ -199,3 +199,8 @@ The [Tower dossier](../design/zone-stories/TOWER_OF_HIGH_SORCERY.md) retains two
 ## Vecna's Tomb daily qualification
 
 The [Vecna dossier](../design/zone-stories/VECNAS_TOMB.md) retains two potential candidates with mode0 sources and D recipients. Qualify active READY exact input admission, eligible party credit, individual item reward/save settlement, actual recipient retirement and owned root/giver generation renewal. Custom undead rebirth, committed epic claims, reset requests, SQL percentage/hourly retries and completed resets are different episodes. Discovery or UTC rollover supplies no material, survival history, personal defeat or returning lich. Policy remains disabled by default.
+
+
+## Killing Fields daily qualification
+
+The [dossier](../design/zone-stories/KILLING_FIELDS.md) retains one potential candidate with a container-stocked note and departing, moving giver. Qualify active READY exact input, frozen eligible party completion credit, actor currency child/save settlement, actual D retirement and owned note/container/giver renewal. Mode1 age/emptiness, reset caps and completed source construction remain separate from daily rollover. Discovery supplies no note, decoding, personal recovery, rescue or guaranteed shop. Policy remains disabled by default.
