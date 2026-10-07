@@ -106,3 +106,28 @@ final review remain pending. This approval changes no primary acceptance, covera
 release, activation or Plan5 ownership. Quest lacks its native prerequisites and
 remains BLOCKED, not complete. Coordinator/architecture Goals and15-minute monitor
 retain the full primary Plans1-5/applicable original R1-R8 finish line.
+
+## Published implementation checkpoint
+
+Code `7bbf942e3b7c12dea22e5bf03a592b48aedd690f` is published at the approved
+three-file boundary. All three committed inputs exactly match the coordinator's
+independently executed formatted package: original Python checks, all56 original
+runtime assertions and23 quote scenarios per controlled profile PASS. No additional
+runtime is claimed for the committed equivalence check.
+
+The coordinator independently applies both actual worker patches to bare primarye6,
+reproduces their declared Git trees and authenticates every6,444 source body in EACH
+export plus archive hashes. No optional R0-R9 prerequisite remains. It authenticates
+both copied/retained SQL and flat ELFs and independently parses one shop.c compile
+and740 unique linked objects per strict maintained profile. Actual bare purchase
+and SQL/flat shop-module checks are reported passing; final artifact/index/handoff
+review remains pending. These checks establish no current754 full link or native
+player/keeper/source/publication/ACK/recovery journey.
+
+The live-route source contract fails the same original token check in both trees.
+An additional command-codec test fails linking in bare primary and bare primary+R10,
+with identical native inputs/harness and missing existing lockpick/quest projection
+providers; its owned-tree PASS is a different scope. Preserve both failures and
+their exact comparison. The quest-preparation chat is privately investigating a
+legitimate canonical codec fixture closure as a new independent task. No maintained
+shared driver repair is approved, and native quest/birth prerequisites remain absent.

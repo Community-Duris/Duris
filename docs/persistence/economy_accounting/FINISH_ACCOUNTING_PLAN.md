@@ -166,6 +166,24 @@ no accounted capability is fabricated. Primary continues without an adoption wai
 Quest remains blocked on native prerequisites; continuing Goals/monitor and all
 original primary finish/qualification obligations remain in force.
 
+## Published shop sidework and independent codec fixture investigation - 2026-10-07
+
+[R10 checkpoint](domain-separation/R10_SHOP_PURCHASE_QUOTE_REVIEW_2026-10-07.md)
+records published7bbf942e3b7c12dea22e5bf03a592b48aedd690f. Its exact component
+package independently PASSes; both bare-primary patches, all6,444 export bodies
+per package, actual SQL/flat ELFs and740-object maintained links are authenticated.
+Final handoff/index review remains pending. The original live-route source-token
+failure and bare-primary command-codec link failure remain explicit; no current754
+full build, native journey, owner adoption or release qualification is inferred.
+
+The quest-preparation chat has a new private canonical-provider closure task from
+that original codec failure: preserve its complete harness/assertions and inspect
+existing lockpick/quest cost/GIVE providers. No maintained shared driver or native
+production change is approved. This gives independent qualification work without
+claiming native quest/birth/custody/publication/ACK prerequisites are unblocked.
+Architecture finishes R10; primary continues under its existing ownership and
+qualification plan without an adoption wait or any new milestone/gate.
+
 ## Continuing project coordination supersedes finite closure - 2026-10-07
 
 The user has authorized a new actual continuing coordinator Goal and continuing

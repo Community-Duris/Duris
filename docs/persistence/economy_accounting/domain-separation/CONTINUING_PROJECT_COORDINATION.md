@@ -412,6 +412,39 @@ Primary continues without an adoption wait. Quest still lacks native prerequisit
 and remains BLOCKED, not complete. Continuing Goals/monitor retain the broader
 primary finish line after this new execution checkpoint.
 
+## Published shop implementation and new codec fixture investigation
+
+R10 implementation7bbf942e3b7c12dea22e5bf03a592b48aedd690f is published. The
+coordinator independently executes its exact formatted package and authenticates
+committed equivalence, both actual bare-primary patches, all6,444 source bodies
+in each export, actual SQL/flat ELFs and740-object links. Final handoff/index review
+remains pending; original source-contract and bare codec-fixture failures stay
+explicit. Native/current754 qualification and adoption are not inferred.
+
+The original bare-primary command-codec linker failure supplies a concrete new
+private prep task: locate the existing lockpick retirement and native quest cost/
+GIVE projection providers, reproduce the complete original harness and test a
+legitimate canonical closure with every assertion/flag preserved. Missing symbols
+include lockpick_retirement_payload_valid and the cost/GIVE projection codec
+functions. This is a newly observed fixture gap, not a new native quest capability.
+
+The quest-preparation chat is actively investigating in its existing isolated
+worktree from immutable primarye6 source. No maintained shared driver/production
+edit, accepting authority stub, DB/player/server operation or stale quest batch
+rerun is authorized. Return an exact reviewed reservation/original executable
+proof or precise dependency. Preserve completed quest packs and actual Goal
+disposition; authentic lifecycle/reset-born source, custody, publication/ACK and
+held-charge/refund requirements remain blocked and cannot be relabeled complete.
+Architecture owns R10 completion; coordinator owns review/publication; primary
+retains shared authorities. This investigation adds no primary adoption wait.
+
+After R10, reassess the complete529-line itemvalue valuation as one unassigned
+follow-on hypothesis: it serves enhancement/crafting/salvage, quest policy and
+world/recovery admission. Existing minimum-circle/procedure-weight helpers stay
+native; preserve all numeric/affect/flag/order/debug laws. Require a substantial
+owned-state/observation boundary and actual original executable proof before
+selecting implementation. No new scope is approved by this queue entry.
+
 ## Recurring monitor
 
 The existing thread heartbeat checks every15 minutes, supplemented by active
