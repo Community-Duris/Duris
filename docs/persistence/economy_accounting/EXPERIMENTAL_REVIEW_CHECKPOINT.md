@@ -1,5 +1,13 @@
 # Experimental accounting review checkpoint
 
+## Independent opening-policy reader integrated — 2026-10-06
+
+[Primary integration](PLAN5_OPENING_POLICY_PID_PRIMARY_INTEGRATION_2026-10-06.md)
+authenticates original policy/PID facts, including zero and retired claims.
+All 209 selected pure methods pass, zero skips; exact native/migration inputs
+match the separately reported Plan5 qualification. External native artifacts
+remain peer-attributed. Producer claims, complete startup and release stay open.
+
 ## Projection contract parser repaired — 2026-10-06
 
 [Primary repair](PROJECTION_DEFAULT_ARGUMENT_PARSER_PRIMARY_REPAIR_2026-10-06.md)
