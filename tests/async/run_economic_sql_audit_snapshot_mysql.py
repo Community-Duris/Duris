@@ -158,7 +158,7 @@ TABLES = (
 )
 
 
-def coin_payload(uid, amounts, vnum=3):
+def coin_payload(uid, amounts, vnum=3, *, dynamic_count=0, spell_counts=()):
     blob = bytearray(struct.pack("<IihQqibB", 1, -1, -1, uid, 0, vnum, 20, 0))
     blob.extend(struct.pack("<I", 0) * 4)
     blob.extend(struct.pack("<8i", *amounts, 0, 0, 0, 0))
@@ -167,8 +167,78 @@ def coin_payload(uid, amounts, vnum=3):
     blob.extend(struct.pack("<ibihh", 0, 0, 0, 100, 0))
     blob.extend(struct.pack("<5Q", *([0] * 5)))
     blob.extend(struct.pack("<8h", *([0] * 8)))
-    blob.extend(struct.pack("<2I", 0, 0))
+    blob.extend(struct.pack("<I", dynamic_count))
+    blob.extend(bytes(12 * dynamic_count))
+    blob.extend(struct.pack("<I", len(spell_counts)))
+    for count in spell_counts:
+        blob.extend(bytes(9))  # Two empty strings and a false spellbook flag.
+        blob.extend(struct.pack("<I", count))
+        blob.extend(bytes(4 * count))
     return bytes(blob)
+
+
+def verify_coin_payload_row_budget(owner, reader, snapshot):
+    """The SELECT-only exporter uses the full native codec's shared row bound."""
+    from _plan5_equipment_restore import Connection, inventory
+
+    output = ROOT / "bin/tests/plan5-coin-row-budget" / uuid.uuid4().hex
+    output.mkdir(parents=True)
+    initial = inventory(owner)
+    cases = (
+        ("empty", 0, (), True),
+        ("affects_exact", 8191, (), True),
+        ("affects_above", 8192, (), False),
+        ("descriptions_exact", 0, (0,) * 8191, True),
+        ("descriptions_above", 0, (0,) * 8192, False),
+        ("spells_exact", 0, (8190,), True),
+        ("spells_above", 0, (8191,), False),
+        ("combined_exact", 4095, (4095,), True),
+        ("combined_above", 4095, (4096,), False),
+        ("two_descriptions_exact", 0, (4094, 4095), True),
+        ("two_descriptions_above", 0, (4095, 4095), False),
+        ("affects_descriptions_above", 8190, (0, 0), False),
+    )
+    records = []
+    try:
+        for vnum in (3, 402013):
+            for label, dynamic, spells, accepted in cases:
+                payload = coin_payload(82, [1, 2, 3, 4], vnum,
+                                       dynamic_count=dynamic, spell_counts=spells)
+                with owner.cursor() as cursor:
+                    cursor.execute("UPDATE item_current_owner SET vnum=%s,coin_payload=%s "
+                                   "WHERE item_uid=82", (vnum, payload))
+                before = inventory(owner)
+                connection = Connection(reader)
+                captured, error = None, None
+                try:
+                    captured = capture(connection, LINEAGE, EPOCH)
+                except exporter.ExportError as caught:
+                    error = str(caught)
+                assert connection.rollbacks == connection.observer.closes == 1
+                assert inventory(owner) == before
+                row = dict(case=label, vnum=vnum, rows=1 + dynamic + len(spells) + sum(spells),
+                           accepted=captured is not None, error=error, rollback_calls=1,
+                           cursor_close_calls=1, native_sources_unchanged=True)
+                records.append(row)
+                print("COIN_ROW_SOURCE " + json.dumps(row, sort_keys=True), flush=True)
+                target = output / (str(vnum) + "-" + label)
+                target.mkdir()
+                (target / "payload.bin").write_bytes(payload)
+                for name in ("before", "after"):
+                    (target / ("authority-" + name + ".json")).write_text(
+                        json.dumps(before, sort_keys=True) + "\n")
+                (target / "queries.json").write_text(json.dumps(connection.observer.queries) + "\n")
+                if accepted:
+                    assert error is None and captured == snapshot, row
+                    (target / "snapshot.json").write_text(json.dumps(captured, sort_keys=True) + "\n")
+                else:
+                    assert captured is None and error == "coin-pile nested row count exceeds limit", row
+    finally:
+        with owner.cursor() as cursor:
+            cursor.execute("UPDATE item_current_owner SET vnum=3,coin_payload=%s WHERE item_uid=82",
+                           (coin_payload(82, [1, 2, 3, 4]),))
+    assert inventory(owner) == initial and capture(reader, LINEAGE, EPOCH) == snapshot
+    (output / "observations.json").write_text(json.dumps(records, indent=2) + "\n")
 
 
 def verify_area_coin_views(owner, reader, snapshot):
@@ -962,6 +1032,7 @@ try:
             verify_compound_item_actions(setup, audit, snapshot)
             verify_collector_quarantine_views(setup, audit, snapshot)
             verify_coin_payload_source_bounds(setup, audit, snapshot)
+            verify_coin_payload_row_budget(setup, audit, snapshot)
             verify_supply_outcome_views(setup, audit)
             assert capture(audit, LINEAGE, EPOCH) == snapshot
             with setup.cursor() as cursor:

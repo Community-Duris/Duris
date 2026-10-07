@@ -681,6 +681,12 @@ area-specific prototypes. The codec's type byte selects a candidate; bounded
 full decoding then requires the exact native UID/prototype, one money item and
 nonnegative denomination values. The same predicate covers source bounds,
 mapping joins and the live-pile census. Noncoin opaque payloads remain excluded.
+The full literal decoder also shares the native 8,192-row budget across its
+one item, dynamic affects, extra descriptions and every description's spell
+rows. A payload totaling 8,193 rows refuses with
+`coin-pile nested row count exceeds limit`, even when each individual vector
+fits its own bound. The refusal closes and rolls back the read transaction;
+it never produces a partial holdings snapshot or changes native authority.
 Missing literals and complete coin-origin/lifecycle classification remain gaps;
 this diagnostic cut never certifies complete native holdings or release.
 The exporter omits baseline root effects because the

@@ -89,6 +89,18 @@ def decode_coin_payload(blob: bytes, expected_uid: int, expected_vnum: int = COI
     count = number("I")
     if count != 1:
         raise ExportError("coin-pile payload must contain exactly one item")
+    # The native decoder shares one row budget across the item and every
+    # nested vector, including spell rows across separate descriptions.
+    remaining_rows = MAX_ITEM_ROWS - count
+
+    def row_count() -> int:
+        nonlocal remaining_rows
+        count = number("I")
+        if count > remaining_rows:
+            raise ExportError("coin-pile nested row count exceeds limit")
+        remaining_rows -= count
+        return count
+
     parent = number("i")
     number("h")  # equipment slot
     uid = number("Q")
@@ -112,24 +124,18 @@ def decode_coin_payload(blob: bytes, expected_uid: int, expected_vnum: int = COI
         number("Q")  # bitvectors
     for _ in range(8):
         number("h")  # fixed affects
-    dynamic_count = number("I")
-    if dynamic_count > MAX_ITEM_ROWS:
-        raise ExportError("coin-pile dynamic affect count exceeds limit")
+    dynamic_count = row_count()
     for _ in range(dynamic_count):
         number("h")
         number("h")
         number("Q")
-    description_count = number("I")
-    if description_count > MAX_ITEM_ROWS:
-        raise ExportError("coin-pile extra description count exceeds limit")
+    description_count = row_count()
     for _ in range(description_count):
         skip_string()
         skip_string()
         if number("B") > 1:
             raise ExportError("invalid coin-pile spellbook flag")
-        spell_count = number("I")
-        if spell_count > MAX_ITEM_ROWS:
-            raise ExportError("coin-pile spell count exceeds limit")
+        spell_count = row_count()
         for _ in range(spell_count):
             number("i")
     if offset != len(blob) or uid != expected_uid or parent != -1 or \

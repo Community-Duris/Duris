@@ -1453,3 +1453,17 @@ See [source, evidence and remaining gates](PLAN5_FLATFILE_PILE_HEAD_NAMESPACE_20
 No shared schema/API change. Full native custody/value, combined, real journeys,
 R7/R8/release and notebook application remain unclaimed. All work stays on
 the same remote codex/accounting-plan5 with all seven previous tips preserved.
+
+## Native coin payload shared row budget - 2026-10-07
+
+Base `629da9ecdc846518ce8afbf275dd1a5d152997fd`; separately published result is the containing commit.
+The old independent decoder accepts12 oversized literals rejected by the
+actual primary codec `0fd938ce2fbae7b7e675346d60b30b3867bea0f7`. The fix matches all24 native boundary cases;
+both SQL engines pass24 new cuts each and the complete original driver.
+The focused pure suite passes186 methods with zero skips. Earlier wrapper
+failures/six guarded broad-suite skips remain exact in the evidence.
+See [owned source, proof and remaining gates](PLAN5_COIN_PAYLOAD_SHARED_ROW_BUDGET_2026-10-07.md),
+seal `269ede4ce45e47b4ecc3d46fa63c8c78db3a5067939b9661728f2131e2d569b0`. No shared interface/schema change. Full native holdings,
+combined canonical qualification, real journeys, R7/R8/release and notebook
+application remain unclaimed. Keep all work on remote codex/accounting-plan5,
+preserving the seven previous tips; primary notebook work stays nonblocking.
