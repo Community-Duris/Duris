@@ -211,6 +211,18 @@ No quest native prerequisite appeared: quest remains BLOCKED, not complete.
 Architecture is assessing the next substantial actual operation; coordinator
 and recurring monitor remain active against the broader accounting finish line.
 
+Ordinary cascade successor: reservation5a299035f949104551aee942b0640cff839395f0
+has [three-file boundary approval](domain-separation/R8_ORDINARY_SEARCH_REVIEW_2026-10-07.md).
+Original producer/test/loop and11 feasibility pins are independently authenticated;
+final23 search cases plus complete existing payment controls independently PASS
+with unchanged flags/deadline. The original loop matches currentprimary6b96.
+Whole ordered control uses synchronous observations; catalogue/object/source
+ownership, captured facts, live reads and strict search budget remain native.
+Implementation/final qualification/handoff/review are pending. Production delta
+must apply to bare latest primary; full tests retain R3/R6 prerequisites only.
+No current full build/native journey/adoption or original R8 accounting acceptance
+is claimed. Primary proceeds without waiting; continuing Goal/monitor stay active.
+
 Older checkpoint status text below remains historical and is superseded here.
 
 Both existing workers have actual continuing Goals ACTIVE against the broader

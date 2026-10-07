@@ -309,6 +309,24 @@ blanket assumption that a new capture grant blocks existing local preparation.
 The coordinator, architecture Goal and recurring monitor remain active. This
 delivery does not satisfy the continuing primary finish line.
 
+## Ordinary cascade successor approved
+
+Reservation5a299035f949104551aee942b0640cff839395f0 has
+[independent three-file boundary approval](R8_ORDINARY_SEARCH_REVIEW_2026-10-07.md).
+The coordinator independently verified original producer/test/loop preimages,
+all11 feasibility pins and final23-scenario original execution with the complete
+existing ordinary controls and unchanged flags/deadline. The original loop also
+matches current primary6b96. Whole ordered search control can use synchronous
+observations while live catalogue/source/object ownership stays native.
+
+Implementation/final qualification/handoff/review remain pending. Production
+application must be checked on bare current primary; complete tests explicitly
+retain R3/R6 predecessors. No R4/R5/R7 prerequisite is assumed. Native ordering,
+strict budget and config/link/source changes must be preserved; no catalogue
+snapshot or new authority. Existing worker/primary ownership and continuing
+finish line remain. Quest has no new native prerequisite and stays BLOCKED,
+not complete. Coordinator and monitor remain active.
+
 ## Recurring monitor
 
 The existing thread heartbeat checks every15 minutes, supplemented by active
