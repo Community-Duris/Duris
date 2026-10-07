@@ -14,7 +14,7 @@ Published docs-only result is `4ca4016096812b0baad978cacc2b2844f8b5d229` on
 origin/codex/accounting-quest-prep, authoring this document and HANDOFF.md only.
 Analyzed accounting candidate is `b22d731bc66bd95f09e6cbc2180c99578c7f7205`.
 Publication-time fetch observes `503384ca3c7b6bd913010ae3f0922623d503aa40`;
-its sole successor commit changes three documentation paths, including R11 review,
+its sole successor commit changes only the R11 review documentation path,
 and none of the analyzed source/tests/helpers. Execution keeps its actual b22 pin.
 R10 code is `7bbf942e3b7c12dea22e5bf03a592b48aedd690f`. No optional prep or
 R0–R9 patch was composed. This investigation does not duplicate R11 valuation.
