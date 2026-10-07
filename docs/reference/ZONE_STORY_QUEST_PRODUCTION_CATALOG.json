@@ -132228,6 +132228,355 @@
     {
       "contacts": [
         {
+          "description": "This relatively harmless snake has bright alternating bands of red, yellow and black.",
+          "keyword": "snake",
+          "mob_vnum": 82701,
+          "name": "a green snake",
+          "topics": []
+        },
+        {
+          "description": "The elder hierophant welcomes four different foods in independent offerings. One exact recovered or supplied food fits its own request; the accepted exchange is separate from a lasting friendship or benefit to the forest.",
+          "keyword": "elder",
+          "mob_vnum": 82702,
+          "name": "the elder hierophant",
+          "topics": []
+        },
+        {
+          "description": "This peaceful creature looks at you with big dark eyes.",
+          "keyword": "doe",
+          "mob_vnum": 82703,
+          "name": "a large doe",
+          "topics": []
+        },
+        {
+          "description": "The bear is a big, brown, furry animal with very large claws and very sharp teeth.",
+          "keyword": "bear",
+          "mob_vnum": 82704,
+          "name": "a brown bear",
+          "topics": []
+        },
+        {
+          "description": "It is a large fox with beautiful, red-brown fur and a long, thick brush.",
+          "keyword": "fox",
+          "mob_vnum": 82705,
+          "name": "a brown fox",
+          "topics": []
+        },
+        {
+          "description": "It is an exceptionally large wolf with thick, black fur.",
+          "keyword": "wolf",
+          "mob_vnum": 82706,
+          "name": "a vicious wolf",
+          "topics": []
+        },
+        {
+          "description": "These insects are more of an annoyance than a threat.",
+          "keyword": "insects",
+          "mob_vnum": 82707,
+          "name": "a swarm of insects",
+          "topics": []
+        },
+        {
+          "description": "She is a graceful creature on long, slender legs, and with large, brown eyes looking back at you with an air of watchful interest.",
+          "keyword": "deer",
+          "mob_vnum": 82708,
+          "name": "a fallow deer",
+          "topics": []
+        },
+        {
+          "description": "A beast is the size of the largest common dog.",
+          "keyword": "dog",
+          "mob_vnum": 82709,
+          "name": "a wild dog",
+          "topics": []
+        },
+        {
+          "description": "This mouse is about the length of your hand, with sharp teeth, which it uses to bite.",
+          "keyword": "mouse",
+          "mob_vnum": 82710,
+          "name": "a field mouse",
+          "topics": []
+        },
+        {
+          "description": "The horse whinnies at you, then runs around you a few times, then just goes back to grazing.",
+          "keyword": "horse",
+          "mob_vnum": 82711,
+          "name": "a young horse",
+          "topics": []
+        },
+        {
+          "description": "This enormous tree must be a thousand years old.",
+          "keyword": "tree",
+          "mob_vnum": 82712,
+          "name": "a huge skeletal tree",
+          "topics": []
+        },
+        {
+          "description": "This enormous tree must be a thousand years old.",
+          "keyword": "tree",
+          "mob_vnum": 82713,
+          "name": "a huge skeletal tree",
+          "topics": []
+        },
+        {
+          "description": "The old tree looks as though the wind has battered and torn at it for years.",
+          "keyword": "tree",
+          "mob_vnum": 82714,
+          "name": "an old oak tree",
+          "topics": []
+        },
+        {
+          "description": "The old tree looks as though the wind has battered and torn at it for years.",
+          "keyword": "tree",
+          "mob_vnum": 82715,
+          "name": "a colossal tree",
+          "topics": []
+        },
+        {
+          "description": "Cvok is a lumberjack whose surroundings suggest logging and damaged woodland. Meeting him and seeing the clearing guide a possible restoration story; useful work needs further integration.",
+          "keyword": "cvok",
+          "mob_vnum": 82716,
+          "name": "Cvok the Lumberjack",
+          "topics": []
+        },
+        {
+          "description": "The grey cat cocks an ear towards you, sensing your scrutiny, then purrs contentedly.",
+          "keyword": "cat",
+          "mob_vnum": 82717,
+          "name": "a grey cat",
+          "topics": []
+        },
+        {
+          "description": "The centaur is a native source of the large chunk of meat. Current location and material supply depend on actual admission and movement; carrying meat or a saddle does not establish personal recovery.",
+          "keyword": "centaur",
+          "mob_vnum": 82718,
+          "name": "the wandering centaur hunter",
+          "topics": []
+        },
+        {
+          "description": "Queen Zriaxa speaks of freedom for the forest inhabitants. Existing followers and reaching her tree top do not yet prove a completed liberation or a saved benefit to a living recipient.",
+          "keyword": "queen",
+          "mob_vnum": 82719,
+          "name": "the spider queen, Zriaxa",
+          "topics": []
+        },
+        {
+          "description": "The yound spider slave looks freshly hatched and sprightly.",
+          "keyword": "young",
+          "mob_vnum": 82720,
+          "name": "a spider slave",
+          "topics": []
+        },
+        {
+          "description": "This scaly creature looks like it is well adapted to its forest habitat.",
+          "keyword": "lizard",
+          "mob_vnum": 82721,
+          "name": "a horned lizard",
+          "topics": []
+        },
+        {
+          "description": "The sparrow has brown feathers and small wings, looks like it is enjoying life.",
+          "keyword": "sparrow",
+          "mob_vnum": 82722,
+          "name": "a sparrow",
+          "topics": []
+        },
+        {
+          "description": "It looks really disgusting and doesn't smell very nice either.",
+          "keyword": "python",
+          "mob_vnum": 82723,
+          "name": "a large python",
+          "topics": []
+        },
+        {
+          "description": "The turtle is small in size and has hard scales on its body,it looks most of all like a tiny scaled creature.",
+          "keyword": "turtle",
+          "mob_vnum": 82724,
+          "name": "a small wood turtle",
+          "topics": []
+        },
+        {
+          "description": "A small brown and green slime covered spider.",
+          "keyword": "drone",
+          "mob_vnum": 82725,
+          "name": "a drone spider",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow four independent food offerings to the elder hierophant and explore the forest\u2019s refuge, foraging, wildlife, friendship, forestry, ancient guardians, promised freedom, canopy and river stories.",
+      "orientation": [
+        "Discover the forest from its current Surface entrance, learn the light and dense paths, and keep a verified way back as you explore the river and ancient tree.",
+        "The elder hierophant accepts blackberries, a small yellow mushroom, a chunk of meat or a large chunk of meat. Each is its own offering; you do not need all four foods together.",
+        "Prepare one exact food loose in your inventory for its matching offering. A different food, an equipped berry or a packed-away material does not satisfy that current preparation.",
+        "A food recovered from its source or an exact copy supplied by another player fits the matching native request. A supplied copy does not claim your own first harvest or personal kill.",
+        "Mushrooms and berries are hidden native room materials. Finding a described bush or mushroom does not guarantee current stock or prove that you personally recovered a particular item.",
+        "Only selected deer and doe source rows carry the small meat, while the centaur supplies the large meat. Other wildlife and every deer are not interchangeable sources.",
+        "An accepted offering stays recorded after its food is spent. The promised experience amount, your actual saved reward and a useful effect on the hierophant are separate evidence.",
+        "Eating the food yourself uses its own effects and consumes it. That does not count as offering it to the hierophant, curing his hunger or completing a friendship.",
+        "Cvok and the scarred clearing suggest forestry and restoration. Meeting him, seeing logs or defeating a tree does not yet prove useful work or a recovered habitat.",
+        "Ancient trees, dark trunks and webbed branches form distinct routes. Follow the actual exits, preserve travel and combat costs, and keep a way down; scenery alone does not create a door or a climbing quest.",
+        "Zriaxa\u2019s promise of freedom points to a longer story. Following, charm or ordinary combat does not yet record liberation; protecting specific living recipients needs further integration.",
+        "The dark river, forest refuge and damaged trees suggest care and rescue. An admitted crossing, surviving return and useful saved recipient or habitat outcome need distinct evidence before deeper stories can be completed."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "forgotten_forest",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:82703;receive=E:17000;disappear=0",
+              "giver_vnum": 82702
+            }
+          ],
+          "id": "offer-blackberries",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Bring one exact blackberries loose in your inventory. Recovered or supplied copies fit. Equipping or packing it does not satisfy this preparation, and this row does not claim a personal harvest or kill.",
+              "id": "prepare-food",
+              "item_vnums": [
+                82703
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the blackberries"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:82703;receive=E:17000;disappear=0",
+                  "giver_vnum": 82702
+                }
+              ],
+              "hint": "Offer this exact food when the hierophant can accept it. The accepted exchange stays recorded after the food is spent. Other offerings, actual saved experience and lasting friendship or forest care have separate evidence.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete the blackberries offering"
+            }
+          ],
+          "summary": "The elder hierophant accepts one exact blackberries as an independent offering. Recovered or supplied material fits. Current preparation, accepted exchange and the actual saved experience reward are distinct.",
+          "title": "Offer blackberries"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:82702;receive=E:14000;disappear=0",
+              "giver_vnum": 82702
+            }
+          ],
+          "id": "offer-yellow-mushroom",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Bring one exact small yellow mushroom loose in your inventory. Recovered or supplied copies fit. Equipping or packing it does not satisfy this preparation, and this row does not claim a personal harvest or kill.",
+              "id": "prepare-food",
+              "item_vnums": [
+                82702
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the small yellow mushroom"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:82702;receive=E:14000;disappear=0",
+                  "giver_vnum": 82702
+                }
+              ],
+              "hint": "Offer this exact food when the hierophant can accept it. The accepted exchange stays recorded after the food is spent. Other offerings, actual saved experience and lasting friendship or forest care have separate evidence.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete the small yellow mushroom offering"
+            }
+          ],
+          "summary": "The elder hierophant accepts one exact small yellow mushroom as an independent offering. Recovered or supplied material fits. Current preparation, accepted exchange and the actual saved experience reward are distinct.",
+          "title": "Offer a yellow mushroom"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:82701;receive=E:18100;disappear=0",
+              "giver_vnum": 82702
+            }
+          ],
+          "id": "offer-small-meat",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Bring one exact chunk of meat loose in your inventory. Recovered or supplied copies fit. Equipping or packing it does not satisfy this preparation, and this row does not claim a personal harvest or kill.",
+              "id": "prepare-food",
+              "item_vnums": [
+                82701
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the chunk of meat"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:82701;receive=E:18100;disappear=0",
+                  "giver_vnum": 82702
+                }
+              ],
+              "hint": "Offer this exact food when the hierophant can accept it. The accepted exchange stays recorded after the food is spent. Other offerings, actual saved experience and lasting friendship or forest care have separate evidence.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete the chunk of meat offering"
+            }
+          ],
+          "summary": "The elder hierophant accepts one exact chunk of meat as an independent offering. Recovered or supplied material fits. Current preparation, accepted exchange and the actual saved experience reward are distinct.",
+          "title": "Offer a chunk of meat"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:82706;receive=E:49000;disappear=0",
+              "giver_vnum": 82702
+            }
+          ],
+          "id": "offer-large-meat",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Bring one exact large chunk of meat loose in your inventory. Recovered or supplied copies fit. Equipping or packing it does not satisfy this preparation, and this row does not claim a personal harvest or kill.",
+              "id": "prepare-food",
+              "item_vnums": [
+                82706
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the large chunk of meat"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:82706;receive=E:49000;disappear=0",
+                  "giver_vnum": 82702
+                }
+              ],
+              "hint": "Offer this exact food when the hierophant can accept it. The accepted exchange stays recorded after the food is spent. Other offerings, actual saved experience and lasting friendship or forest care have separate evidence.",
+              "id": "accepted-offering",
+              "kind": "completion",
+              "text": "Complete the large chunk of meat offering"
+            }
+          ],
+          "summary": "The elder hierophant accepts one exact large chunk of meat as an independent offering. Recovered or supplied material fits. Current preparation, accepted exchange and the actual saved experience reward are distinct.",
+          "title": "Offer a large chunk of meat"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Mill. Ask cog, part or mill. An exact large iron cog yields the old military blade; no running-mill state is measured.",
           "keyword": "miller",
           "mob_vnum": 82808,

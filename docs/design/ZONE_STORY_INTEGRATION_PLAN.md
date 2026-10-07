@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 224 authored journals, accounting-gated player surfaces, starter/town
+**Status: 225 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5452,3 +5452,8 @@ The [dossier](zone-stories/TUROLZOO.md) maps one exact supplied-compatible two-t
 ## Valley of Crushk integration extension
 
 The [dossier](zone-stories/VALLEY_CRUSHK.md) maps the supplied-compatible shiv/currency bounty and nine broader stories with46 owned follow-ups. Separate personal/supplied provenance, current loose material, accepted root consumption, identified wallet payment and recovery. Magic utterance/unlock/open/cross, royal/civic help, privacy, hungry recipient, youth training, exact shop purchase/effect and living habitat outcomes require defined successful identities. Complete source mapping retains inactive legacy graph and unresolved M207 as bounded fair-review findings. Current prose/handled commands/generic transfers do not create completion; preserve active READY authority and disabled daily policy.
+
+
+## Forgotten Forest integration extension
+
+The [dossier](zone-stories/FORGOTTEN_FOREST.md) maps four independent supplied-compatible food/XP offerings and nine broader stories with46 owned follow-ups. Separate first source custody, current loose material, accepted consumed roots, actual capped/frozen actor/party XP and useful saved trust/care/liberation outcomes. Preserve hidden forage, rarity/caps, staging/trap intent, actual F admission, restrictive travel and current sector semantics. New typed effects require builder-defined beneficiaries and successful saved controllers. Active READY authority remains required and daily policy remains disabled.

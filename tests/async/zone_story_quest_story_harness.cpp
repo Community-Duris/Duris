@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 224 &&
+		require(catalog.story_mappings.size() == 225 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -26172,6 +26172,129 @@ int main(int argc, char **argv)
 							   &supplies);
 			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
 				"Crushk spent material changed recovered accepted history");
+		}
+
+		{
+			const zone_story_quest_catalog::story_definition *offerings[] = {
+				&story_for("forgotten_forest", "offer-blackberries"),
+				&story_for("forgotten_forest", "offer-yellow-mushroom"),
+				&story_for("forgotten_forest", "offer-small-meat"),
+				&story_for("forgotten_forest", "offer-large-meat")
+			};
+			const int foods[] = { 82703, 82702, 82701, 82706 };
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 82702, 82762, 100) == result::rejected,
+				"Forgotten Forest contact ignored undiscovered zone");
+			require(journey.discover_zone(7, 42, 827, 82701, 101, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 827, 30, 1, 102, false, false)
+							.find(offerings[0]->title) ==
+						std::string::npos &&
+					journey.meet_npc(7, 42, 82702, 82762, 103) ==
+						result::applied,
+				"Forgotten Forest offerings bypassed physical discovery/contact");
+			const auto before = journey.serialize_state();
+			const auto status = [&](const std::string &journal, unsigned offering,
+						size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    offerings[offering]->steps[row].text) !=
+				       std::string::npos;
+			};
+			for (unsigned i = 0; i < 4; ++i)
+			{
+				for (unsigned custody = 0; custody < 5; ++custody)
+				{
+					supplies = {};
+					if (custody == 1)
+						supplies.carried[foods[(i + 1) % 4]] = 1;
+					if (custody == 2)
+						supplies.equipped[0] = foods[i];
+					if (custody >= 3)
+						supplies.carried[foods[i]] = custody == 3 ? 1 : 4;
+					const auto journal = journey.render_journal(
+						7, 42, 827, 30, 1, 104, false, false, &supplies);
+					require(journal.find(offerings[i]->title) !=
+								std::string::npos &&
+							status(journal, i, 0,
+							       custody >= 3 ? "Ready now" :
+									      "Missing now") &&
+							!status(journal, i, 1, "Recorded") &&
+							journey.progress_for_zone(7, 42, 827)
+									.completed == 0 &&
+							journey.serialize_state() == before,
+						"Forgotten Forest wrong/equipped/current/surplus food forged independent preparation or acceptance");
+				}
+			}
+			supplies = {};
+			for (int food : foods)
+				supplies.carried[food] = 1;
+			auto journal = journey.render_journal(7, 42, 827, 30, 1, 105, false, false,
+							      &supplies);
+			for (unsigned i = 0; i < 4; ++i)
+				require(status(journal, i, 0, "Ready now") &&
+						!status(journal, i, 1, "Recorded"),
+					"Forgotten Forest owning all alternatives invented a completed meal");
+			require(journey.serialize_state() == before,
+				"Forgotten Forest preparation mutated history");
+			// Synthetic receipts qualify independent journal projection, not live food consumption, XP save, source recovery, NPC feeding, liberation or habitat effects.
+			record(journey, offerings[0]->contracts.front(),
+			       "forgotten-forest-offering-0", 827, 82762);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 827, 30, 1, 121, false, false,
+							 &supplies);
+			require(status(journal, 0, 1, "Recorded") &&
+					status(journal, 0, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 827).completed == 1 &&
+					!journey.has_discovered(7, 42, 5000),
+				"Forgotten Forest one spent offering erased receipt or invented foreign discovery");
+			for (unsigned i = 1; i < 4; ++i)
+				require(!status(journal, i, 1, "Recorded"),
+					"Forgotten Forest one offering completed other recipes");
+			const auto partial = journey.serialize_state();
+			require(recovered.deserialize_state(partial, &error) &&
+					raw.deserialize_state(partial, &error) &&
+					recovered.progress_for_zone(7, 42, 827).completed == 1 &&
+					raw.progress_for_zone(7, 42, 827).completed == 1,
+				"Forgotten Forest partial mapped/raw recovery merged independent offerings");
+			require(supplied.discover_zone(7, 42, 827, 82701, 101, "arrival") ==
+					result::applied,
+				"Forgotten Forest supplied-material setup failed");
+			for (unsigned i = 0; i < 4; ++i)
+			{
+				record(supplied, offerings[i]->contracts.front(),
+				       ("forgotten-forest-supplied-" + std::to_string(i)).c_str(),
+				       827, 82762);
+				require(supplied.progress_for_zone(7, 42, 827).completed == i + 1,
+					"Forgotten Forest supplied acceptance invented harvest, kill, topic or ALL prerequisites");
+				if (i)
+					record(journey, offerings[i]->contracts.front(),
+					       ("forgotten-forest-offering-" + std::to_string(i))
+						       .c_str(),
+					       827, 82762);
+				auto replay = completion(
+					offerings[i]->contracts.front(),
+					("forgotten-forest-offering-" + std::to_string(i)).c_str(),
+					120);
+				replay.transaction.zone_number = 827;
+				replay.transaction.room_vnum = 82762;
+				require(journey.record_completion(replay) ==
+						result::already_applied,
+					"Forgotten Forest replay duplicated offering");
+			}
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 827).completed == 4 &&
+					raw.progress_for_zone(7, 42, 827).completed == 4,
+				"Forgotten Forest complete mapped/raw recovery lost individual receipts");
+			journal = recovered.render_journal(7, 42, 827, 30, 1, 122, false, false,
+							   &supplies);
+			for (unsigned i = 0; i < 4; ++i)
+				require(status(journal, i, 1, "Recorded") &&
+						status(journal, i, 0, "Missing now"),
+					"Forgotten Forest recovered spent materials changed acceptance history");
 		}
 
 		std::cout

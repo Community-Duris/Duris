@@ -344,3 +344,8 @@ The [dossier](../design/zone-stories/TUROLZOO.md) retains one achievement/potent
 ## Valley of Crushk daily qualification
 
 The [dossier](../design/zone-stories/VALLEY_CRUSHK.md) retains one achievement/potential daily for exact43143 ->C4000/no D. Mode2/native repeatability does not guarantee current giver or foreign source supply; all23 local O/G/E rows are refused before active item creation. Qualify admitted source episode/UID, exact supplied-compatible root consumption, independent identified wallet commit/save/replay and frozen completion recovery. Courtesy/court/civic/hunger/training/shop/care stories remain typed integration plans. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
+
+
+## Forgotten Forest daily qualification
+
+The [dossier](../design/zone-stories/FORGOTTEN_FOREST.md) retains four independent native achievement/potential daily units for exact82703/E17000,82702/E14000,82701/E18100 and82706/E49000, all no D. Mode2/native repeatability does not guarantee current giver or food stock; all10 local O/G/E rows are refused before active item creation. Qualify real source publication/cap/chance/parent/UID and supplied-compatible root consumption, actual frozen actor/party XP save/replay and useful beneficiary renewal separately. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.

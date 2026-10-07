@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 224 authored journals.
+2668 distinct Q contracts; 225 authored journals.
 
 Regenerate with:
 
@@ -94,7 +94,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Charcoal Palace (`firep`) | 1 | 3 | 0 | Yes | [1 × a magnificent pile of black and red dragonscales; 1 × a pair of battered and worn gauntlets → a pair of vampiric dragonscale gauntlets, the broken rays of morning Sunrise](../../areas/qst/firep.qst#L33) | block_dir, charcoal_guard, fruaack_shout, kossuth, zion_fnf |
 | The Altar of the Firesworn (`firesworn_altar`) | 1 | 7 | 0 | Yes | [1 × the divine essence of blood; 1 × the divine essence of fire; 1 × the divine essence of mist; other required items → Tiliwibble's skeleton key of unlocking, a jagged hilt studded with gems](../../areas/qst/firesworn_altar.qst#L93) | — |
 | Fishermans Wharf (`fishermans_wharf`) | 5 | 8 | 2 | Yes | [1 × a full-size eagle egg; 4 × a bundle of sticks; 3 × a soft beaver pelt → a petrified fanged snake](../../areas/qst/fishermans_wharf.qst#L14) | — |
-| The Forgotten Forest (`forgotten_forest`) | 4 | 0 | 0 | Fallback | [1 × a chunk of meat → native reward/response](../../areas/qst/forgotten_forest.qst#L16) | — |
+| The Forgotten Forest (`forgotten_forest`) | 4 | 0 | 0 | Yes | [1 × a chunk of meat → native reward/response](../../areas/qst/forgotten_forest.qst#L16) | — |
 | Lair of the Gibberling King (`gibber`) | 2 | 3 | 0 | Yes | [1 × a wand of dismissal; 1 × an essence of Crymson → a robe of the earth](../../areas/qst/gibber.qst#L32) | — |
 | Githzerai Stronghold (`githzer`) | 13 | 20 | 0 | Yes | [5 × a signet ring with a kingly crest → a bright marble key](../../areas/qst/githzer.qst#L283) | lucky_weapon |
 | The Gagga'Jobo Cave System (`goblincave`) | 6 | 7 | 0 | Yes | [4 × a strip of chothe hide → a pair of goblin-made gloves](../../areas/qst/goblincave.qst#L46) | — |
