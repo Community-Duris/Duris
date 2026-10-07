@@ -44958,6 +44958,227 @@
     {
       "contacts": [
         {
+          "description": "Ask quest or trophy. Bring two copies of the exact requested trophy loose; four returns have independent receipts.",
+          "keyword": "thregamar",
+          "mob_vnum": 6513,
+          "name": "Thregamar the master hunter",
+          "topics": [
+            "hi",
+            "quest",
+            "reward",
+            "trophy"
+          ]
+        },
+        {
+          "description": "Adult upper-cavern constrictors have selected heart stock rows. An encounter or death alone does not prove heart recovery.",
+          "keyword": "constrictor",
+          "mob_vnum": 6507,
+          "name": "a cavern constrictor",
+          "topics": []
+        },
+        {
+          "description": "King constrictors have selected upper-heart stock rows. Lower cold-blooded hearts are a different exact prototype.",
+          "keyword": "king",
+          "mob_vnum": 6509,
+          "name": "a massive king constrictor",
+          "topics": []
+        },
+        {
+          "description": "Giant cavern bears in the lower lairs are declared holders of the exact bear tooth. Two teeth prepare one return.",
+          "keyword": "bear",
+          "mob_vnum": 6600,
+          "name": "a giant cavern bear",
+          "topics": []
+        },
+        {
+          "description": "Lower cave panthers are declared paw holders. Two exact paws prepare Thregamar's panther return.",
+          "keyword": "panther",
+          "mob_vnum": 6602,
+          "name": "a cave panther",
+          "topics": []
+        },
+        {
+          "description": "Ancient lower constrictors are declared cold-blooded-heart holders. Two lower hearts are needed; upper hearts do not substitute.",
+          "keyword": "ancient",
+          "mob_vnum": 6603,
+          "name": "an ancient constrictor",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow Thregamar's four paired-trophy returns, from upper snakes to lower hearts, bear teeth and panther paws. Keep current pairs, native receipts, source work and route hazards distinct.",
+      "orientation": [
+        "Thregamar offers four independent trophy exchanges. Each needs two copies of one exact trophy and returns a potion. His suggestion to practice on upper-cavern snakes is advice; the exchanges can be completed in any order.",
+        "Ask Thregamar quest for his request, or trophy for the longer explanation and route clues. The aliases hi and reward reach those same two responses. Speaking a keyword does not complete a trophy return or teach a tracked skill.",
+        "Adult constrictors and king constrictors are declared heart holders in the upper hunting caverns. Young snakes and death vipers are different creatures. Not every declared adult or king has a heart stock row.",
+        "Ancient constrictors in the lower hunting grounds hold cold-blooded hearts. Cave panthers hold their exact paws, and giant cavern bears hold their exact teeth. These are separate materials; an upper heart cannot substitute for a lower heart.",
+        "Keep both requested trophies loose in your inventory before offering a matching one. The accepted exchange consumes two distinct exact items together. Worn, held or nested items do not fill the current preparation count.",
+        "A trophy supplied by another player can prepare the native exchange. Current custody does not prove your own kill or first recovery from a source. One trophy cannot count twice, and a consumed pair cannot fund another return.",
+        "A wooden trapdoor is declared in a dwelling and a matching trapdoor in the lower dead end. Use ENTER on the visible matching trapdoor. The maelstrom and an opening in the falls also use ENTER, but their destinations have water hazards.",
+        "Thregamar mentions an old fire and a secret way. The camp passage links the lower grounds to the kill-processing camp; its current near passage is open in the effective native data. A separate outer hidden doorway requires discovery and opening when admitted.",
+        "The glowing mushroom trail provides route clues. Its intact path rooms restrict normal mobile movement, while shattered sections lack that protection. Mushroom light is not a guarantee against player combat or every hazard.",
+        "The waterfall has underwater chambers, falling checks and downward currents. The pool below has a northward current. Prepare suitable water and breathing support; route visibility does not prove a safe passage or successful return.",
+        "Camp workers, hanging carcasses and fishing nets explain the settlement. The selected native system does not encode a carcass-processing, animal-rescue, fishing or mushroom-restoration quest. Potion possession or use is also separate from the accepted exchange.",
+        "Reset locations are leads, not guaranteed stock. Current active accounting declines native reset item issuance. Daily rollover does not create trophies or settle potion delivery. New discovery, encounter, journal, achievement and daily credit requires active, ready accounting."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "shaughin",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:6509,I:6509;receive=I:6510;disappear=0",
+              "giver_vnum": 6513
+            }
+          ],
+          "id": "upper-constrictor-hearts",
+          "steps": [
+            {
+              "count": 2,
+              "hint": "Adult and king constrictors have selected upper-heart stock rows. A supplied pair also prepares the exchange; a personal kill is not required.",
+              "id": "trophy-pair",
+              "item_vnums": [
+                6509
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry two upper constrictor hearts loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:6509,I:6509;receive=I:6510;disappear=0",
+                  "giver_vnum": 6513
+                }
+              ],
+              "hint": "Only this accepted exact paired-trophy exchange records the card. Topic responses, encounters, current trophies, another return and potion possession or use do not substitute.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the accepted upper-heart pair return"
+            }
+          ],
+          "summary": "Two exact upper-cavern constrictor hearts return a potion of constrictor blood.",
+          "title": "Bring two upper constrictor hearts"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:6615,I:6615;receive=I:6511;disappear=0",
+              "giver_vnum": 6513
+            }
+          ],
+          "id": "ancient-constrictor-hearts",
+          "steps": [
+            {
+              "count": 2,
+              "hint": "Ancient constrictors in the lower maze hold this exact heart when stocked. Upper hearts, young snakes and death vipers do not substitute.",
+              "id": "trophy-pair",
+              "item_vnums": [
+                6615
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry two cold-blooded constrictor hearts loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:6615,I:6615;receive=I:6511;disappear=0",
+                  "giver_vnum": 6513
+                }
+              ],
+              "hint": "Only this accepted exact paired-trophy exchange records the card. Topic responses, encounters, current trophies, another return and potion possession or use do not substitute.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the accepted cold-blooded-heart pair return"
+            }
+          ],
+          "summary": "Two exact lower-cavern cold-blooded hearts return a greater constrictor blood potion.",
+          "title": "Bring two cold-blooded hearts"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:6613,I:6613;receive=I:6512;disappear=0",
+              "giver_vnum": 6513
+            }
+          ],
+          "id": "great-bear-teeth",
+          "steps": [
+            {
+              "count": 2,
+              "hint": "Giant cavern bears are declared in four lower lairs, each with exact tooth stock. One tooth or a different animal part cannot fill a pair.",
+              "id": "trophy-pair",
+              "item_vnums": [
+                6613
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry two great bear teeth loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:6613,I:6613;receive=I:6512;disappear=0",
+                  "giver_vnum": 6513
+                }
+              ],
+              "hint": "Only this accepted exact paired-trophy exchange records the card. Topic responses, encounters, current trophies, another return and potion possession or use do not substitute.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the accepted bear-tooth pair return"
+            }
+          ],
+          "summary": "Two exact teeth of a great bear return an underworld bear extract potion.",
+          "title": "Bring two great bear teeth"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:6614,I:6614;receive=I:6513;disappear=0",
+              "giver_vnum": 6513
+            }
+          ],
+          "id": "mighty-panther-paws",
+          "steps": [
+            {
+              "count": 2,
+              "hint": "Cave panthers are declared in four lower hunting rooms with exact paw stock. Keep two distinct paws loose before offering one.",
+              "id": "trophy-pair",
+              "item_vnums": [
+                6614
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry two mighty panther paws loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:6614,I:6614;receive=I:6513;disappear=0",
+                  "giver_vnum": 6513
+                }
+              ],
+              "hint": "Only this accepted exact paired-trophy exchange records the card. Topic responses, encounters, current trophies, another return and potion possession or use do not substitute.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the accepted panther-paw pair return"
+            }
+          ],
+          "summary": "Two exact paws of a mighty panther return a potion of panther essence.",
+          "title": "Bring two mighty panther paws"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Summer satyr. An initial dream-tree instance carries a lost-soul essence; later matching satyrs do not all receive it.",
           "keyword": "satyr",
           "mob_vnum": 6700,

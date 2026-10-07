@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 183 &&
+		require(catalog.story_mappings.size() == 184 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,151 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "shaughin"; });
+			require(mapping.stories.size() == 4 && mapping.contacts.size() == 6 &&
+					mapping.revision == 1,
+				"Shaughin journal scope failed");
+			int achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 65)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 4 && dailies == 4,
+				"Shaughin independent daily units changed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 65, 6500, 100, "arrival") ==
+					result::applied,
+				"Shaughin injected discovery failed");
+			require(journey.meet_npc(7, 42, 6507, 6527, 101) == result::applied,
+				"Shaughin optional source encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 65, 10, 1, 102, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Shaughin source encounter exposed returns");
+			require(journey.meet_npc(7, 42, 6513, 6510, 103) == result::applied,
+				"Shaughin giver encounter failed");
+			const auto before = journey.serialize_state();
+			supplies = {};
+			for (int v : { 6510, 6511, 6512, 6513, 6508, 6602, 6604 })
+				supplies.carried[v] = 2;
+			journal = journey.render_journal(7, 42, 65, 10, 1, 104, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(journal.find("[Missing now] " + story.steps[0].text) !=
+						std::string::npos,
+					"Shaughin potions or scenery replaced exact pair");
+			supplies = {};
+			supplies.equipped[18] = 6509;
+			supplies.equipped[3] = 6613;
+			supplies.carried[2] = 1;
+			journal = journey.render_journal(7, 42, 65, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(journal.find("[Missing now] " + story.steps[0].text) !=
+						std::string::npos,
+					"Shaughin worn/held or nested trophy supplied loose pair");
+			supplies = {};
+			for (int v : { 6509, 6613, 6614, 6615 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 65, 10, 1, 106, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+			{
+				require(journal.find("[Missing now] " + story.steps[0].text) !=
+						std::string::npos,
+					"Shaughin one trophy counted twice");
+				require(journal.find("[Pending] " + story.steps.back().text) !=
+						std::string::npos,
+					"Shaughin partial pair invented receipt");
+			}
+			require(journey.serialize_state() == before,
+				"Shaughin partial custody mutated history");
+			for (int v : { 6509, 6613, 6614, 6615 })
+				supplies.carried[v] = 2;
+			journal = journey.render_journal(7, 42, 65, 10, 1, 107, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+			{
+				require(journal.find("[Ready now] " + story.steps[0].text) !=
+						std::string::npos,
+					"Shaughin supplied exact pair not ready");
+				require(journal.find("[Pending] " + story.steps.back().text) !=
+						std::string::npos,
+					"Shaughin current pair invented receipt");
+			}
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 65).completed == 0,
+				"Shaughin custody recorded source or return history");
+			const auto &ancient = story_for("shaughin", "ancient-constrictor-hearts");
+			record(journey, ancient.contracts.front(), "shaughin-ancient", 65, 6510);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 65, 10, 1, 121, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 65).completed == 1 &&
+					journal.find("[Recorded] " + ancient.steps.back().text) !=
+						std::string::npos,
+				"Shaughin out-of-order exact return failed");
+			for (const auto &story : mapping.stories)
+			{
+				require(journal.find("[Missing now] " + story.steps[0].text) !=
+						std::string::npos,
+					"Shaughin receipt recreated consumed pair");
+				if (story.id != ancient.id)
+					require(journal.find("[Pending] " +
+							     story.steps.back().text) !=
+							std::string::npos,
+						"Shaughin one return expanded other receipt credit");
+			}
+			supplies.carried[6615] = 1;
+			journal = journey.render_journal(7, 42, 65, 10, 1, 122, false, false,
+							 &supplies);
+			require(journal.find("[Missing now] " + ancient.steps[0].text) !=
+					std::string::npos,
+				"Shaughin one reacquired heart completed pair");
+			supplies.carried[6615] = 2;
+			journal = journey.render_journal(7, 42, 65, 10, 1, 123, false, false,
+							 &supplies);
+			require(journal.find("[Ready now] " + ancient.steps[0].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 65).completed == 1,
+				"Shaughin fresh pair changed receipt history");
+			for (const auto &story : mapping.stories)
+				if (story.id != ancient.id)
+				{
+					const auto tx = "shaughin-" + story.id;
+					record(journey, story.contracts.front(), tx.c_str(), 65,
+					       6510);
+				}
+			require(journey.progress_for_zone(7, 42, 65).completed == 4,
+				"Shaughin exact four receipts lost identity");
+			auto replay =
+				completion(ancient.contracts.front(), "shaughin-ancient", 120);
+			replay.transaction.zone_number = 65;
+			replay.transaction.room_vnum = 6510;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Shaughin replay duplicated receipt");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 65).completed == 4,
+				"Shaughin cold recovery lost receipts");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 65, 6500, 100, "arrival") ==
+					result::applied,
+				"Shaughin raw arrival failed");
+			record(raw, ancient.contracts.front(), "shaughin-raw", 65, 6510);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 65).completed == 1,
+				"Shaughin raw-to-authored recovery expanded pair credit");
 		}
 
 		{

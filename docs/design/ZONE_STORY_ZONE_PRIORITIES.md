@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 170 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 171 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -375,7 +375,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 | 168 | [The Underworld](zone-stories/UNDERWORLD.md) (`underworld`) | Zorta unholy relic/Cause Light; competing holy/unholy returns; life/death pools; shrine keys; duergar palace/treasury; forge/slave/shaft/corpse leads. | Comprehensive schema3/revision1:1Q/1 card/6 contacts/3M/4 aliases/1 optional row/2 steps;232 rooms/39 mobiles/55 objects/217 resets/full selected closure.20 reward/access/source follow-ups;1 achievement/1 potential daily;no native repair. |
 | 169 | [Zalkapfaan, City of the Headless Horde](zone-stories/ZALKAPFAAN.md) (`headless`) | Engineer assembly; ear bounty; three armor requisitions; Malra/Kaan keys and Zekrallin piety; spoken study/temple; roaming actors; pool/node/quarry/teacher. | Comprehensive schema3/revision1:8Q/8 cards/9 contacts/2M/2 aliases/12 optional rows/20 steps;60 rooms/59 mobiles/57 objects/227 resets/full selected closure. Twenty branch/access/availability/service follow-ups;8 achievements/5 potential dailies;no native repair. |
 | 170 | [The Spires of the Elder Eternal Evil](zone-stories/SPIRES_OF_ELDER_EVIL.md) (`eternal`) | Four serpent scales; two visage makers; Issis hide/key; Vaprak standard; Flant three books; switches and elder access. | Comprehensive schema3/revision1:6Q/6 cards/12 contacts/2M/2 aliases/11 optional rows/17 steps;333 rooms/45 mobiles/67 objects/331 resets/full selected closure. Twenty material/access/availability/builder follow-ups;6 achievements/6 potential dailies;no native repair. |
-| 171 | The Shaughin Settlement (`shaughin`) | [Meet the giver → 2 × the heart of a constrictor → a potion of constrictor blood](../../areas/qst/shaughin.qst#L40) | 4 Q; 2 dialogue; 0 candidate link items |
+| 171 | [The Shaughin Settlement](zone-stories/SHAUGHIN_SETTLEMENT.md) (`shaughin`) | Upper heart pairs; ancient hearts; bear teeth; panther paws; Thregamar clues and lower hunting routes. | Comprehensive schema3/revision1:4QA/4 cards/6 contacts/2MA/4 aliases/4 optional quantity-two rows/8 steps;49 rooms/14 mobiles/14 objects/136 resets/full selected closure. Twenty source/access/availability/builder follow-ups;4 achievements/4 potential dailies;no native repair. |
 | 172 | The Trakkia Mountains (`trakkia`) | [Meet the giver → 4 × a grangle root → a strange, circular gem](../../areas/qst/trakkia.qst#L52) | 4 Q; 2 dialogue; 0 candidate link items |
 | 173 | The Stone Tomb of Kelek (`kelek`) | [Meet the giver → 1 × the ears of a troll; 1 × the skull of an ogre; 1 × the shriveled hand of a duergar → a hastily scribbled note](../../areas/qst/church.qst#L62) | 3 Q; 2 dialogue; 0 candidate link items |
 | 174 | Krethik Keep (`krethik`) | [Meet the giver → 1 × a rat and tomato sandwich → a thin vial of sour liquid](../../areas/qst/krethik.qst#L8) | 3 Q; 2 dialogue; 0 candidate link items |
