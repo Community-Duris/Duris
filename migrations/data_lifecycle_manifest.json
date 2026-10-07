@@ -10169,6 +10169,407 @@
       "dependencies": [
         "database:telemetry_rollup_progression_coverage_v9"
       ]
+    },
+    {
+      "id": "database:telemetry_reward_cut_v2",
+      "kind": "database_table",
+      "locator": "telemetry_reward_cut_v2",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_native_operation_participant_account_or_generation_coverage",
+      "technical_purpose": "Private sealed consistent native source-cut identity, counts, digest, bounded discovery cursor and original capture time; no award or publication authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:telemetry_reward_selection_v2",
+      "kind": "database_table",
+      "locator": "telemetry_reward_selection_v2",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_native_operation_participant_account_or_generation_coverage",
+      "technical_purpose": "Exact ordered native operation selection belonging to one retained cut; no inference from amounts, names or clocks",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_reward_cut_v2"
+      ]
+    },
+    {
+      "id": "database:telemetry_reward_source_v2",
+      "kind": "database_table",
+      "locator": "telemetry_reward_source_v2",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_native_operation_participant_account_or_generation_coverage",
+      "technical_purpose": "Private exact native physical source keys and portable payload witnesses for independent replay, overlap and conflicts after raw-source pruning",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_reward_cut_v2"
+      ]
+    },
+    {
+      "id": "database:telemetry_reward_sweep_v2",
+      "kind": "database_table",
+      "locator": "telemetry_reward_sweep_v2",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_native_operation_participant_account_or_generation_coverage",
+      "technical_purpose": "Private durable fair historical sweep scope, revision and bucket checkpoint; no game-thread scans or source mutation",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:telemetry_reward_sweep_bucket_v2",
+      "kind": "database_table",
+      "locator": "telemetry_reward_sweep_bucket_v2",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_native_operation_participant_account_or_generation_coverage",
+      "technical_purpose": "Private bounded per-bucket progress, high boundary and explicit retention gap linked to the exact last retained cut",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_reward_cut_v2",
+        "database:telemetry_reward_sweep_v2"
+      ]
+    },
+    {
+      "id": "database:telemetry_reward_sweep_step_v2",
+      "kind": "database_table",
+      "locator": "telemetry_reward_sweep_step_v2",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_native_operation_participant_account_or_generation_coverage",
+      "technical_purpose": "Private immutable bounded sweep steps and captured cut receipts for interruption and lost-acknowledgement reconciliation",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_reward_cut_v2",
+        "database:telemetry_reward_sweep_v2"
+      ]
+    },
+    {
+      "id": "database:telemetry_reward_generation_v2",
+      "kind": "database_table",
+      "locator": "telemetry_reward_generation_v2",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_native_operation_participant_account_or_generation_coverage",
+      "technical_purpose": "Private versioned canonical event and health generation counts, evidence digests, coverage payload and atomic publication phase",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:telemetry_reward_binding_v2",
+      "kind": "database_table",
+      "locator": "telemetry_reward_binding_v2",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_native_operation_participant_account_or_generation_coverage",
+      "technical_purpose": "Private exact generation-to-retained-source bindings preserving economic root, child, participant and dependency lineage",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_reward_cut_v2",
+        "database:telemetry_reward_generation_v2",
+        "database:telemetry_reward_source_v2"
+      ]
+    },
+    {
+      "id": "database:telemetry_reward_event_private_v2",
+      "kind": "database_table",
+      "locator": "telemetry_reward_event_private_v2",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_native_operation_participant_account_or_generation_coverage",
+      "technical_purpose": "Private immutable canonical economic events with classification, separate reward units and explicit unsupported authority",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_reward_generation_v2"
+      ]
+    },
+    {
+      "id": "database:telemetry_reward_coverage_v2",
+      "kind": "database_table",
+      "locator": "telemetry_reward_coverage_v2",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_native_operation_participant_account_or_generation_coverage",
+      "technical_purpose": "Immutable restricted-report generation coverage published atomically with canonical events and health; unknown dates and attribution remain explicit",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_reward_generation_v2"
+      ]
+    },
+    {
+      "id": "database:telemetry_reward_event_v2",
+      "kind": "database_table",
+      "locator": "telemetry_reward_event_v2",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_native_operation_participant_account_or_generation_coverage",
+      "technical_purpose": "Immutable restricted-report canonical events; custody, corrections, openings and sinks cannot inflate earned rewards",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_reward_coverage_v2"
+      ]
+    },
+    {
+      "id": "database:telemetry_reward_health_private_v2",
+      "kind": "database_table",
+      "locator": "telemetry_reward_health_private_v2",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_native_operation_participant_account_or_generation_coverage",
+      "technical_purpose": "Private exact retained fair-sweep and backlog, retention, coverage and freshness evidence; unsupported source history stays unknown",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_reward_generation_v2"
+      ]
+    },
+    {
+      "id": "database:telemetry_reward_health_v2",
+      "kind": "database_table",
+      "locator": "telemetry_reward_health_v2",
+      "data_category": "observational_telemetry",
+      "data_subject_key": "scoped_native_operation_participant_account_or_generation_coverage",
+      "technical_purpose": "Immutable restricted-report bounded sweep health published with the matching generation; missing history cannot become an all-clear",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:telemetry_reward_coverage_v2"
+      ]
     }
   ]
 }

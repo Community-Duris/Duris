@@ -427,7 +427,12 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             migrate_prefix(normal, "migration_manifest.json", 56)
             canonical_prefix = history(normal)
             boot(normal, False)
+            migrate_prefix(normal, "migration_manifest.json", 75)
+            progression_prefixes = {"migration_head": history(normal)}
+            boot(normal, False)
             migrate(normal, "migration_manifest.json")
+            check(progression_prefixes["migration_head"] == history(normal, 75),
+                  "canonical reward append rewrote progression receipts")
             check(canonical_prefix == history(normal, 56),
                   "canonical append rewrote the recorded accounting prefix")
             snapshot = history(normal)
@@ -456,7 +461,12 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             migrate_prefix(fork, "migration_manifest.staging_0045.json", 56)
             staging_prefix = history(fork)
             boot(fork, False)
+            migrate_prefix(fork, "migration_manifest.staging_0045.json", 75)
+            progression_prefixes["staging_0045_migration_head"] = history(fork)
+            boot(fork, False)
             migrate(fork, "migration_manifest.staging_0045.json")
+            check(progression_prefixes["staging_0045_migration_head"] == history(fork, 75),
+                  "staging reward append rewrote progression receipts")
             check(staging_prefix == history(fork, 56),
                   "staging append rewrote the recorded accounting prefix")
             check(before == history(fork, 45), "transition rewrote staging receipts")
@@ -489,7 +499,12 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
             check(master_before == history(from_master, 31), "refusal altered master receipts")
             migrate_prefix(from_master, "migration_manifest.master_0031.json", 56)
             master_prefix = history(from_master)
+            migrate_prefix(from_master, "migration_manifest.master_0031.json", 75)
+            progression_prefixes["master_0031_migration_head"] = history(from_master)
+            boot(from_master, False)
             migrate(from_master, "migration_manifest.master_0031.json")
+            check(progression_prefixes["master_0031_migration_head"] == history(from_master, 75),
+                  "master reward append rewrote progression receipts")
             check(master_prefix == history(from_master, 56),
                   "master append rewrote the recorded accounting prefix")
             check(master_before == history(from_master, 31), "upgrade rewrote master receipts")
@@ -521,7 +536,12 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
                 check("edited or reordered" in refusal,
                       "canonical accepted a divergent recorded telemetry history")
                 check(old_prefix == history(current), "refusal changed telemetry receipts")
+                migrate_prefix(current, manifest_name, 75)
+                progression_prefixes[key] = history(current)
+                boot(current, False)
                 migrate(current, manifest_name)
+                check(progression_prefixes[key] == history(current, 75),
+                      "retained telemetry reward append rewrote progression receipts")
                 check(old_prefix == history(current, 67),
                       "append rewrote the recorded telemetry prefix")
                 complete = history(current)
@@ -565,6 +585,10 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
                              "retained_telemetry_histories": preserved_prefixes,
                              "converged_history_count": len(current_histories),
                              "complete_sequence_count": len(canonical.migrations),
+                             "progression_75_prefixes_preserved": {
+                                 key: {"prefix_count": 75, "append_count": 3,
+                                       "prefix_sha256": hashlib.sha256(value.encode()).hexdigest()}
+                                 for key, value in progression_prefixes.items()},
                              "runtime_table_count": runtime["current_table_count"]}
             duplicate_guard(engine_factory(label, name, password,
                                           f"duris_268_{token}_duplicatetest"),
@@ -599,6 +623,18 @@ def run(update: bool, lock_only: bool = False, loopback_engine: str | None = Non
         for label, current_histories in engines:
             for engine, key in current_histories:
                 print(f"{label}/{engine.database.rsplit('_', 1)[-1]}: {boot(engine)}", flush=True)
+                if key == "migration_head":
+                    engine.sql("ALTER TABLE telemetry_reward_generation_v2 MODIFY reserved_bytes INT NOT NULL;",
+                               database=engine.database)
+                    boot(engine, False)
+                    engine.sql("ALTER TABLE telemetry_reward_generation_v2 MODIFY reserved_bytes INT UNSIGNED NOT NULL;",
+                               database=engine.database)
+                    boot(engine)
+                    engine.sql("DROP TRIGGER telemetry_reward2_source_insert;", database=engine.database)
+                    boot(engine, False)
+                    engine.sql_file(ROOT / "migrations/immutable/0073_telemetry_canonical_reward_retention.sql")
+                    boot(engine)
+                    report[label]["canonical_reward_type_and_trigger_tamper_rejected"] = True
                 # An old row tampered while the head/state remain unchanged must
                 # fail in the shell and the actual compiled boot predicate.
                 engine.sql("UPDATE mud_schema_history SET description=CONCAT(description,'!') "

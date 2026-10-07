@@ -1052,6 +1052,91 @@ int main()
 	const auto starter_replayed = critical_command_repository_reconcile(connection, starter);
 	same_receipt(starter_result, starter_replayed);
 	assert(starter_replayed.outcome == critical_apply_outcome::already_applied);
+
+	// A real native quest-wallet owner supplies earned issuance alongside its
+	// compatibility ledger. Move the payout to the bank afterwards so a positive
+	// custody change cannot become a second earned reward in telemetry.
+	currency_command_payload quest_payload = {};
+	quest_payload.pid = static_cast<uint32_t>(pid);
+	quest_payload.racewar = 1;
+	quest_payload.reason = currency_reason_type::wallet_reward;
+	quest_payload.reason_id = 1;
+	memcpy(quest_payload.account_name.data(), account.data(), account.size());
+	quest_payload.wallet_delta.amount[0] = 100;
+	critical_command quest;
+	assert(currency_command_build(&quest, new_id(), quest_payload, UINT64_MAX, UINT64_MAX,
+				      critical_source_site::recovery,
+				      critical_deadline_class::recovery));
+	assert(economic_gameplay_authority_test_access::install(lineage, epoch, bootstrap,
+								starter_wallets, starter_banks) ==
+	       economic_accounting_error::ok);
+	assert(economic_gameplay_authority::prepare_currency(&quest) ==
+	       economic_accounting_error::ok);
+	economic_gameplay_authority_test_access::reset();
+	quest.accepted_at_usec = 1;
+	quest.publication_required = true;
+	const auto quest_result = critical_command_repository_apply(connection, quest);
+	assert(quest_result.outcome == critical_apply_outcome::applied &&
+	       quest_result.result_size == CURRENCY_RESULT_PAYLOAD_BYTES);
+	operations.push_back(quest.operation_id);
+	const auto quest_replayed = critical_command_repository_reconcile(connection, quest);
+	same_receipt(quest_result, quest_replayed);
+	assert(quest_replayed.outcome == critical_apply_outcome::already_applied);
+	const auto moved_quest = committed(100);
+	assert(scalar(connection, wallet_sql) == 925);
+	if (getenv("DURIS_TELEMETRY_BANK_CHECKPOINT"))
+	{
+		for (const auto &operation :
+		     { first.first.operation_id, second.first.operation_id, starter.operation_id,
+		       quest.operation_id, moved_quest.first.operation_id })
+		{
+			char encoded[CRITICAL_COMMAND_ID_HEX_SIZE] = {};
+			assert(critical_operation_id_to_hex(operation, encoded, sizeof(encoded)));
+			printf("BANK_OP %s\n", encoded);
+		}
+		puts("TELEMETRY_BANK_READY");
+		fflush(stdout);
+		bool late_committed = false;
+		for (;;)
+		{
+			char acknowledgement[16] = {};
+			assert(fgets(acknowledgement, sizeof(acknowledgement), stdin));
+			if (!strcmp(acknowledgement, "continue\n"))
+				break;
+			assert(!strcmp(acknowledgement, "late\n") && !late_committed);
+			critical_operation_id late_id = {};
+			late_id.bytes.back() = 1;
+			assert(scalar(connection,
+				      "SELECT COUNT(*) FROM economic_accounting_operation WHERE operation_id=" +
+					      literal(late_id)) == 0);
+			auto late_payload = quest_payload;
+			late_payload.wallet_delta.amount[0] = 17;
+			critical_command late;
+			assert(currency_command_build(&late, late_id, late_payload, UINT64_MAX,
+						      UINT64_MAX, critical_source_site::recovery,
+						      critical_deadline_class::recovery));
+			assert(economic_gameplay_authority_test_access::install(
+				       lineage, epoch, bootstrap, starter_wallets, starter_banks) ==
+			       economic_accounting_error::ok);
+			assert(economic_gameplay_authority::prepare_currency(&late) ==
+			       economic_accounting_error::ok);
+			economic_gameplay_authority_test_access::reset();
+			late.accepted_at_usec = 1;
+			late.publication_required = true;
+			const auto late_result =
+				critical_command_repository_apply(connection, late);
+			assert(late_result.outcome == critical_apply_outcome::applied);
+			operations.push_back(late.operation_id);
+			committed(17);
+			assert(scalar(connection, wallet_sql) == 925);
+			late_committed = true;
+			char encoded[CRITICAL_COMMAND_ID_HEX_SIZE] = {};
+			assert(critical_operation_id_to_hex(late.operation_id, encoded,
+							    sizeof(encoded)));
+			printf("LATE_BANK_OP %s\n", encoded);
+			fflush(stdout);
+		}
+	}
 	execute(connection, "START TRANSACTION");
 	execute(connection, "DELETE FROM economic_accounting_source_claim" + starter_where);
 	assert(economic_sql_bank_verify_retained(

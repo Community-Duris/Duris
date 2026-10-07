@@ -76,6 +76,13 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
             ("migration_manifest.telemetry_0067.json", 67, "f8af5838b5ac77756f1d5180c3d42a793377a75799d3cb45dcfb51321ac80e2e"),
             ("migration_manifest.telemetry_0067_staging_0045.json", 67, "08d07ec9a950aaca627030dac5db458d176ce4cd096db6ab2ca82cb4d67c28c6"),
             ("migration_manifest.telemetry_0067_master_0031.json", 67, "4d654e5a29d9f232aa4d16c6692a93a93dbe59bf37118f51428f54787c2f9a8a"),
+            # Complete histories at the qualified progression delivery cf82f7ad5.
+            ("migration_manifest.json", 75, "c33e0c4dc70c6fa4e82085b7675b364a03bbb917d1aa62af621138bf8543ffb9"),
+            ("migration_manifest.staging_0045.json", 75, "0db67c541eb9f613cbd34ffc02c5f5eaad86e18873ee8407ee18f3b46f23189d"),
+            ("migration_manifest.master_0031.json", 75, "90fbbb0f9e24b9d81faa597ceb4b43f3e0e2962c60ef565fbadc2fed1f476cbe"),
+            ("migration_manifest.telemetry_0067.json", 75, "6d2e2e6ff8d7bfa962029f241926d413062b989415b4d4f2e527065b3b6e55b7"),
+            ("migration_manifest.telemetry_0067_staging_0045.json", 75, "746e1a0892d2d7684e0b321ecabaac73958f9cea1e7096e18bf654d1aca09f56"),
+            ("migration_manifest.telemetry_0067_master_0031.json", 75, "80bfcd11e9c905757e0f0aeed4e806f1646b2725a8342605af22dc82be26f2ab"),
         )
         for name, count, checksum in histories:
             with self.subTest(manifest=name):
@@ -91,7 +98,7 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
                 self.assertEqual(runner.run_pending(manifest, executor),
                                  [step.migration_id for step in manifest.migrations[count:]])
                 self.assertEqual(executor.rows[:count], prefix)
-                self.assertEqual(len(executor.rows), 70)
+                self.assertEqual(len(executor.rows), 78)
                 restore_qualifier.require_completed_history(executor.rows)
                 self.assertEqual(runner.run_pending(manifest, FakeExecutor(executor.rows)), [])
                 edited = list(executor.rows)
@@ -220,9 +227,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         manifest = runner.load_manifest()
         self.assertEqual(manifest.required_table_count, 170)
         self.assertEqual(len(manifest.required_tables), 170)
-        self.assertEqual(len(manifest.migrations), 70)
+        self.assertEqual(len(manifest.migrations), 78)
         self.assertEqual(manifest.migrations[-1].migration_id,
-                         "0067_telemetry_typed_control")
+                         "0075_telemetry_canonical_reward_publication")
         self.assertEqual(manifest.migrations[0].migration_id,
                          "0001_lookup_dataset_state")
         self.assertEqual(manifest.migrations[1].migration_id,
@@ -370,7 +377,7 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertEqual(runner.run_pending(staging, executor),
                          [item.migration_id for item in staging.migrations[45:]])
         self.assertEqual(executor.rows[:45], rows)
-        self.assertEqual(len(executor.rows), 70)
+        self.assertEqual(len(executor.rows), 78)
         replay = FakeExecutor(executor.rows)
         self.assertEqual(runner.run_pending(staging, replay), [])
         self.assertEqual(replay.events, ["lock", "baseline", "unlock"])
@@ -403,9 +410,9 @@ class ImmutableMigrationRunnerTest(unittest.TestCase):
         self.assertEqual(runner.run_pending(master, resumed),
                          [item.migration_id for item in master.migrations[31:]])
         self.assertEqual(resumed.rows[:31], prefix)
-        self.assertEqual(len(resumed.rows), 70)
+        self.assertEqual(len(resumed.rows), 78)
         self.assertEqual(resumed.rows[-1].migration_id,
-                         "0067_telemetry_typed_control")
+                         "0075_telemetry_canonical_reward_publication")
         replay = FakeExecutor(resumed.rows)
         self.assertEqual(runner.run_pending(master, replay), [])
         self.assertEqual(replay.events, ["lock", "baseline", "unlock"])

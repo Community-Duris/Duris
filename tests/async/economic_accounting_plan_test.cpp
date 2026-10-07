@@ -73,6 +73,14 @@ void roundtrip(const economic_accounting_plan &plan)
 	CHECK(economic_plan_digest(plan, &first_hash) == error::ok);
 	CHECK(economic_plan_digest(decoded, &second_hash) == error::ok);
 	CHECK(first_hash == second_hash);
+	if (std::getenv("DURIS_TELEMETRY_PLAN_EXPORT"))
+	{
+		static constexpr char digits[] = "0123456789abcdef";
+		std::cout << "PLAN_HEX ";
+		for (uint8_t byte : encoded)
+			std::cout << digits[byte >> 4] << digits[byte & 15];
+		std::cout << '\n';
+	}
 }
 #include "golden.inc"
 #include "reference.inc"

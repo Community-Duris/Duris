@@ -23,6 +23,10 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         self.sql = (SRC / "sql.c").read_text()
         self.comm = (SRC / "comm.c").read_text()
         self.header = (SRC / "runtime_compatibility_contract.h").read_text()
+        table_literals = re.search(r"RUNTIME_TABLE_SQL_LIST\s*=\s*((?:\"[^\"]*\"\s*)+);", self.header)
+        self.assertIsNotNone(table_literals)
+        self.runtime_tables = "".join(json.loads(literal)
+            for literal in re.findall(r'"[^\"]*"', table_literals[1]))
 
     def test_offline_death_schema_rejects_column_and_index_damage(self):
         import tempfile
@@ -70,27 +74,27 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         """
         report = runtime.validate()
         # Includes death evidence/recovery, SQL lifecycle, and identity review tables.
-        self.assertEqual(report["current_table_count"], 263)
+        self.assertEqual(report["current_table_count"], 295)
         for table in ("player_death_disposition", "player_death_custody",
                       "player_death_conflict_evidence"):
-            self.assertIn("'" + table + "'", self.header)
+            self.assertIn("'" + table + "'", self.runtime_tables)
         for table in ("collector_catalog_state", "collector_deaths",
                       "collector_listings", "collector_ledger",
                       "collector_reconciliation_quarantine", "offline_message_receipts"):
-            self.assertIn("'" + table + "'", self.header)
-        self.assertIn("'corpse_catalog_state'", self.header)
-        self.assertIn("'zone_story_quest_state'", self.header)
-        self.assertIn("'economic_sql_lifecycle_installation'", self.header)
-        self.assertIn("'economic_sql_activation_receipt'", self.header)
-        self.assertIn("'economic_sql_global_activation'", self.header)
+            self.assertIn("'" + table + "'", self.runtime_tables)
+        self.assertIn("'corpse_catalog_state'", self.runtime_tables)
+        self.assertIn("'zone_story_quest_state'", self.runtime_tables)
+        self.assertIn("'economic_sql_lifecycle_installation'", self.runtime_tables)
+        self.assertIn("'economic_sql_activation_receipt'", self.runtime_tables)
+        self.assertIn("'economic_sql_global_activation'", self.runtime_tables)
         for table in ("telemetry_identity_reviewer", "telemetry_identity_registry",
                       "telemetry_identity_association", "telemetry_generation_identity",
                       "telemetry_incident_registry_v2", "telemetry_incident_v2",
                       "telemetry_rollup_identity_coverage", "telemetry_identity_input",
                       "telemetry_rollup_identity_effort", "telemetry_rollup_portfolio_xp"):
-            self.assertIn("'" + table + "'", self.header)
+            self.assertIn("'" + table + "'", self.runtime_tables)
         self.assertEqual(report["migration_head"],
-                         "0067_telemetry_typed_control")
+                         "0075_telemetry_canonical_reward_publication")
         self.assertEqual(set(report["normalized_metadata_fingerprints"]),
                          {"mysql8", "mariadb10_11"})
         self.assertIn("RUNTIME_MIGRATION_HISTORY_CHECKSUM", self.header)
@@ -119,20 +123,20 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
         import tempfile
         from unittest import mock
         value = runtime.load()
-        self.assertEqual(value["migration_head"]["sequence"], 70)
-        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 70)
+        self.assertEqual(value["migration_head"]["sequence"], 78)
+        self.assertEqual(value["staging_0045_migration_head"]["sequence"], 78)
         self.assertEqual(value["staging_0045_migration_head"]["id"],
-                         "0067_telemetry_typed_control")
+                         "0075_telemetry_canonical_reward_publication")
         self.assertNotEqual(value["migration_head"]["history_checksum"],
                             value["staging_0045_migration_head"]["history_checksum"])
-        self.assertEqual(value["master_0031_migration_head"]["sequence"], 70)
+        self.assertEqual(value["master_0031_migration_head"]["sequence"], 78)
         self.assertEqual(value["master_0031_migration_head"]["id"],
-                         "0067_telemetry_typed_control")
+                         "0075_telemetry_canonical_reward_publication")
         retained_telemetry = ("telemetry_0067_migration_head",
             "telemetry_0067_staging_0045_migration_head", "telemetry_0067_master_0031_migration_head")
         for field in retained_telemetry:
-            self.assertEqual(value[field]["sequence"], 70)
-            self.assertEqual(value[field]["id"], "0056_spell_ward_durability")
+            self.assertEqual(value[field]["sequence"], 78)
+            self.assertEqual(value[field]["id"], "0075_telemetry_canonical_reward_publication")
         histories = ("migration_head", "staging_0045_migration_head",
                      "master_0031_migration_head", *retained_telemetry)
         self.assertEqual(len({value[field]["history_checksum"] for field in histories}), 6)
@@ -212,6 +216,18 @@ class RuntimeBootCompatibilityTest(unittest.TestCase):
                       "economic_sql_global_activation"):
             self.assertIn("'" + table + "'", detailed[0][0])
         for source in (self.sql, verifier):
+            for table in ("telemetry_reward_cut_v2", "telemetry_reward_selection_v2",
+                          "telemetry_reward_source_v2", "telemetry_reward_sweep_v2",
+                          "telemetry_reward_sweep_bucket_v2", "telemetry_reward_sweep_step_v2",
+                          "telemetry_reward_generation_v2", "telemetry_reward_binding_v2",
+                          "telemetry_reward_event_private_v2", "telemetry_reward_coverage_v2",
+                          "telemetry_reward_event_v2", "telemetry_reward_health_private_v2",
+                          "telemetry_reward_health_v2"):
+                self.assertIn("'" + table + "'", detailed[0][0])
+                self.assertIn("'" + table + "'", self.runtime_tables)
+                triggers = re.search(r"event_object_table IN \(([^)]*)\)", source)
+                self.assertIsNotNone(triggers)
+                self.assertIn("'" + table + "'", triggers[1])
             self.assertIn("BINARY k.referenced_table_schema <> BINARY DATABASE()", source)
             self.assertIn("BINARY k.table_name='user_profile_stats'", source)
             self.assertIn("BINARY k.referenced_table_schema=BINARY DATABASE()", source)

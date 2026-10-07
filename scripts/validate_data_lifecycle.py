@@ -61,6 +61,9 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0070_telemetry_result_publication.sql",
     ROOT / "migrations" / "immutable" / "0071_telemetry_progression_context.sql",
     ROOT / "migrations" / "immutable" / "0072_telemetry_progression_publication.sql",
+    ROOT / "migrations" / "immutable" / "0073_telemetry_canonical_reward_retention.sql",
+    ROOT / "migrations" / "immutable" / "0074_telemetry_canonical_reward_sweep.sql",
+    ROOT / "migrations" / "immutable" / "0075_telemetry_canonical_reward_publication.sql",
     ROOT / "migrations" / "immutable" / "0055_sql_room_item_payload.sql",
 )
 
@@ -581,6 +584,12 @@ def validate_manifest(manifest: dict, expected_tables: set[str],
                 entry["terminal_action"] != "retain"):
             raise ValidationError(
                 "telemetry coverage evidence must remain protected and retained"
+            )
+        if entry_id.startswith("database:telemetry_reward_") and (
+                not entry["protected_record"] or entry["season_action"] != "retain" or
+                entry["terminal_action"] != "retain"):
+            raise ValidationError(
+                f"{entry_id}: reward replay and coverage evidence must remain protected and retained"
             )
         if entry["protected_record"] and entry["exception"] not in PROTECTED_EXCEPTIONS:
             raise ValidationError(f"{entry_id} protected record lacks a recognized exception")

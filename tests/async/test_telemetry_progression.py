@@ -536,6 +536,17 @@ def retained_context_values(binary: Path):
     partial = evidence(missing).milestones[1]
     assert partial["missing_interval_usec"] == 5 and "missing_intervals" in partial["unknown"]
     assert partial["full_stage_connected_usec"] is None and partial["observed_connected_usec"] == 10
+    # A completed native stage can outlive its producer's segment budget.
+    # Keep both the flagged last interval and uncovered tail; completion alone
+    # must not promote the partial effort to a qualified full-stage duration.
+    exhausted = copy.deepcopy(missing)
+    next(row for row in exhausted if row["record_kind"] == 1 and row["start_monotonic_usec"] == 10)["quality_flags"] |= 6
+    exhausted_stage = evidence(exhausted).milestones[1]
+    assert exhausted_stage["status"] == "observed_completion" and not exhausted_stage["left_censored"]
+    assert {"interval_quality", "missing_intervals"} <= set(exhausted_stage["unknown"])
+    assert exhausted_stage["missing_interval_usec"] == 5 and exhausted_stage["observed_connected_usec"] == 10
+    assert all(exhausted_stage[name] is None for name in (
+        "full_stage_connected_usec", "full_stage_heuristic_active_usec", "full_stage_elapsed_usec"))
     interval_configuration = copy.deepcopy(journey)
     next(row for row in interval_configuration if row["record_kind"] == 1 and row["start_monotonic_usec"] == 10)["config_id"] += 1
     changed_stage = evidence(interval_configuration).milestones[1]

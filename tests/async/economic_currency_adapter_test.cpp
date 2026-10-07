@@ -5,11 +5,50 @@
 #include <cerrno>
 #include <climits>
 #include <cstring>
+#include <cstdlib>
 #include <iostream>
+#include <openssl/sha.h>
 #include <random>
 #include <type_traits>
 
 using error = economic_accounting_error;
+// Component evidence only; the SQL/gameplay gate must supply committed receipts.
+void export_telemetry_plan(const critical_command &command,
+			   const economic_prepared_currency &prepared)
+{
+	if (!std::getenv("DURIS_TELEMETRY_PLAN_EXPORT"))
+		return;
+	std::vector<uint8_t> plan, encoded, keys;
+	assert(economic_plan_encode(prepared.plan(), &plan) == error::ok);
+	// Native intent freezes before admission supplies a timestamp. This remains
+	// a component fixture and does not assert an actual SQL commit.
+	auto admitted = command;
+	admitted.accepted_at_usec = 1;
+	assert(critical_command_encode(admitted, &encoded) == critical_command_codec_result::ok);
+	std::array<uint8_t, CURRENCY_RESULT_PAYLOAD_BYTES> result;
+	assert(currency_command_encode_result(prepared.mutation().after(), &result));
+	for (const auto &key : command.keys)
+	{
+		keys.push_back(static_cast<uint8_t>(key.type));
+		for (size_t byte = 0; byte < 8; ++byte)
+			keys.push_back(static_cast<uint8_t>(key.id >> (8 * byte)));
+	}
+	economic_digest command_hash = {}, keys_hash = {};
+	SHA256(encoded.data(), encoded.size(), command_hash.data());
+	SHA256(keys.data(), keys.size(), keys_hash.data());
+	static constexpr char digits[] = "0123456789abcdef";
+	std::cout << "BANK_HEX";
+	for (const std::span<const uint8_t> value :
+	     { std::span<const uint8_t>(plan), std::span<const uint8_t>(command.accounting_intent),
+	       std::span<const uint8_t>(command.payload), std::span<const uint8_t>(result),
+	       std::span<const uint8_t>(command_hash), std::span<const uint8_t>(keys_hash) })
+	{
+		std::cout << ' ';
+		for (uint8_t byte : value)
+			std::cout << digits[byte >> 4] << digits[byte & 15];
+	}
+	std::cout << '\n';
+}
 critical_operation_id id(uint8_t value)
 {
 	critical_operation_id result = {};
@@ -76,6 +115,7 @@ void prepare_and_agree()
 	assert((after.bank.amount == economic_coin_vector{ 7, 3, 1, 0 }));
 	assert(after.wallet_revision == 5 && after.bank_revision == 10);
 	assert(prepared->agrees_with(prepared->plan()) == error::ok);
+	export_telemetry_plan(command, *prepared);
 	std::optional<economic_prepared_currency> flat;
 	assert(economic_bank_transfer_prepare(command, intent, state,
 					      currency_revision_policy::flatfile_legacy,
@@ -177,6 +217,7 @@ void prepare_and_agree()
 					      &prepared) == error::ok);
 	assert((prepared->mutation().after().wallet.amount == economic_coin_vector{ 7, 3, 1, 1 }));
 	assert((prepared->mutation().after().bank.amount == economic_coin_vector{}));
+	export_telemetry_plan(command, *prepared);
 	command = transfer(currency_reason_type::wallet_reward);
 	state = authority(command);
 	std::vector<uint8_t> sentinel = { 99 };
@@ -250,6 +291,7 @@ void quest_wallet_reward()
 						    currency_revision_policy::flatfile_legacy,
 						    &flatfile) == error::ok);
 	assert(prepared->agrees_with(flatfile->plan()) == error::ok);
+	export_telemetry_plan(command, *prepared);
 	command.source_site = critical_source_site::command;
 	assert(economic_quest_wallet_reward_intent(command, state.epoch, state.wallet_account,
 						   state.bank_account,
@@ -465,6 +507,7 @@ void chaos_starter_bank_supply()
 	       sql_plan.accounts[2].key.kind == economic_account_kind::issuance &&
 	       sql_plan.postings[0].account_index == 1 && sql_plan.postings[1].account_index == 2);
 	assert(economic_plan_validate_structure(sql_plan) == error::ok);
+	export_telemetry_plan(command, *sql_prepared);
 	auto wrong_source = intent;
 	++wrong_source.admission.metadata.source_event->slot;
 	assert(economic_intent_encode(wrong_source, &command.accounting_intent) == error::ok);

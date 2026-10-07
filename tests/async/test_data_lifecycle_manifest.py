@@ -18,54 +18,11 @@ ROOT = Path(__file__).resolve().parents[2]
 VALIDATOR = ROOT / "scripts" / "validate_data_lifecycle.py"
 MANIFEST = ROOT / "migrations" / "data_lifecycle_manifest.json"
 REDIS_REGISTRY = SRC / "redis_key_registry.def"
-SCHEMA_FILES = (
-    ROOT / "migrations" / "bootstrap_multithread_safe.sql",
-    ROOT / "migrations" / "bootstrap_legacy_baseline.sql",
-    ROOT / "migrations" / "immutable" / "0001_lookup_dataset_state.sql",
-    ROOT / "migrations" / "immutable" / "0003_season_reset_state.sql",
-    ROOT / "migrations" / "immutable" / "0004_server_reboots.sql",
-    ROOT / "migrations" / "immutable" / "0006_kingdom_realms.sql",
-    ROOT / "migrations" / "immutable" / "0009_kingdom_garrison.sql",
-    ROOT / "migrations" / "immutable" / "0011_player_death_disposition.sql",
-    ROOT / "migrations" / "immutable" / "0014_telemetry_storage.sql",
-    ROOT / "migrations" / "immutable" / "0016_artifact_mana.sql",
-    ROOT / "migrations" / "immutable" / "0017_telemetry_rollup_support.sql",
-    ROOT / "migrations" / "immutable" / "0018_collector_catalog.sql",
-    ROOT / "migrations" / "immutable" / "0019_corpse_lifecycle_authority.sql",
-    ROOT / "migrations" / "immutable" / "0026_zone_story_quest_state.sql",
-    ROOT / "migrations" / "immutable" / "0027_saved_item_recovery_handoff.sql",
-    ROOT / "migrations" / "immutable" / "0030_telemetry_quarantine.sql",
-    ROOT / "migrations" / "immutable" / "0031_economy_accounting.sql",
-    ROOT / "migrations" / "immutable" / "0032_economic_baseline.sql",
-    ROOT / "migrations" / "immutable" / "0033_economic_sql_lifecycle_owner.sql",
-    ROOT / "migrations" / "immutable" / "0034_player_death_conflict_evidence.sql",
-    ROOT / "migrations" / "immutable" / "0036_economic_sql_activation_receipt.sql",
-    ROOT / "migrations" / "immutable" / "0045_quest_reward_obligation.sql",
-    ROOT / "migrations" / "immutable" / "0047_quest_xp_receipt.sql",
-    ROOT / "migrations" / "immutable" / "0048_quest_xp_entitlement.sql",
-    ROOT / "migrations" / "immutable" / "0049_player_spell_effect_receipt.sql",
-    ROOT / "migrations" / "immutable" / "0051_player_item_runtime_state.sql",
-    ROOT / "migrations" / "immutable" / "0053_craft_progression.sql",
-    ROOT / "migrations" / "immutable" / "0054_telemetry_incident_coverage.sql",
-    ROOT / "migrations" / "immutable" / "0055_telemetry_observation_projections.sql",
-    ROOT / "migrations" / "immutable" / "0056_telemetry_account_identity.sql",
-    ROOT / "migrations" / "immutable" / "0057_telemetry_ownership_observations.sql",
-    ROOT / "migrations" / "immutable" / "0058_telemetry_identity_review.sql",
-    ROOT / "migrations" / "immutable" / "0059_telemetry_ownership_incident_coverage.sql",
-    ROOT / "migrations" / "immutable" / "0060_telemetry_identity_publication.sql",
-    ROOT / "migrations" / "immutable" / "0061_telemetry_shared_battle_facts.sql",
-    ROOT / "migrations" / "immutable" / "0062_telemetry_battle_contributions.sql",
-    ROOT / "migrations" / "immutable" / "0063_telemetry_battle_source.sql",
-    ROOT / "migrations" / "immutable" / "0064_telemetry_battle_publication.sql",
-    ROOT / "migrations" / "immutable" / "0065_telemetry_battle_builds.sql",
-    ROOT / "migrations" / "immutable" / "0066_telemetry_build_publication.sql",
-    ROOT / "migrations" / "immutable" / "0067_telemetry_typed_control.sql",
-    ROOT / "migrations" / "immutable" / "0055_sql_room_item_payload.sql",
-)
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
 VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)
 assert VALIDATOR_SPEC.loader is not None
 VALIDATOR_SPEC.loader.exec_module(VALIDATOR_MODULE)
+SCHEMA_FILES = VALIDATOR_MODULE.DEFAULT_SCHEMA_FILES
 
 
 class LifecycleManifestTest(unittest.TestCase):
@@ -122,7 +79,7 @@ class LifecycleManifestTest(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 263)
+        self.assertEqual(report["database_tables"], 295)
         self.assertEqual(report["non_database_stores"], 51)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
@@ -149,6 +106,32 @@ class LifecycleManifestTest(unittest.TestCase):
                         self.run_validator(self.write_manifest(Path(temporary), changed)),
                         "telemetry coverage evidence must remain protected and retained",
                     )
+
+    def test_canonical_reward_evidence_cannot_be_unprotected_or_purged(self) -> None:
+        tables = ("cut", "selection", "source", "sweep", "sweep_bucket", "sweep_step",
+                  "generation", "binding", "event_private", "coverage", "event",
+                  "health_private", "health")
+        for name in tables:
+            entry_id = "database:telemetry_reward_" + name + "_v2"
+            entry = self.entry(entry_id)
+            self.assertTrue(entry["protected_record"])
+            self.assertEqual(entry["season_action"], "retain")
+            self.assertEqual(entry["terminal_action"], "retain")
+            self.assertEqual(entry["export_rule"]["disposition"], "pending")
+            self.assertEqual(entry["export_rule"]["subject_route"], "operation_domain")
+            self.assertEqual(entry["active_retention"],
+                             "indefinite_until_recovery_and_controller_approved_purge_horizon")
+            for field, value in (("protected_record", False), ("season_action", "reset_delete"),
+                                 ("terminal_action", "deactivate")):
+                with self.subTest(table=name, field=field):
+                    changed = json.loads(json.dumps(self.manifest))
+                    next(row for row in changed["entries"] if row["id"] == entry_id)[field] = value
+                    with tempfile.TemporaryDirectory() as temporary:
+                        self.assert_rejected(
+                            self.run_validator(self.write_manifest(Path(temporary), changed)),
+                            "reward replay and coverage evidence must remain protected and retained",
+                        )
+
     def test_exact_room_payload_retains_recovery_and_season_provenance(self) -> None:
         entry = self.entry("database:sql_room_item_payload")
         self.assertEqual(entry["data_category"], "reconciliation_or_replay_record")

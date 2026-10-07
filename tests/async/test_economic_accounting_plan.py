@@ -6,10 +6,13 @@ from pathlib import Path
 import shlex
 import struct
 import subprocess
+import sys
 import tempfile
 import test_economic_accounting_types as fixtures
 
 ROOT=Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+from scripts.telemetry.canonical_reward_contract import decode_plan
 
 def reference():
     ident=lambda n:bytes([n])+bytes(15)
@@ -59,12 +62,24 @@ def main():
                 'src/economy/economic_accounting_types.c','src/economy/economic_accounting_intent.c','src/persistence/critical_command.c','src/item/item_transfer_command.c', "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", 'src/player/player_snapshot_codec.c')]
             command += ['-lcrypto','-o',str(executable)]
             subprocess.run(command,check=True)
-            environment=dict(os.environ,ASAN_OPTIONS='detect_leaks=1:halt_on_error=1',UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1')
+            environment=dict(os.environ,ASAN_OPTIONS='detect_leaks=1:halt_on_error=1',UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1',
+                             DURIS_TELEMETRY_PLAN_EXPORT='1')
             result=subprocess.run([str(executable)],env=environment,capture_output=True,text=True)
             if result.returncode:
                 print(result.stdout, end=""); print(result.stderr, end="")
                 result.check_returncode()
-            outputs.append(result.stdout);print(mode+': '+result.stdout.strip())
+            lines=result.stdout.splitlines()
+            native_plans=[bytes.fromhex(line.removeprefix('PLAN_HEX ')) for line in lines if line.startswith('PLAN_HEX ')]
+            if len(native_plans) < 14: raise AssertionError('native golden plan export is incomplete')
+            for raw in native_plans:
+                plan=decode_plan(raw)
+                if plan.raw != raw: raise AssertionError('telemetry changed exact native plan bytes')
+                if sum(map(len, (*plan.items_before,*plan.items_after,*plan.item_events))) != (
+                    plan.metadata['before_witness_count'] * 64 + plan.metadata['after_witness_count'] * 64 +
+                    plan.metadata['item_event_count'] * 128): raise AssertionError('telemetry lost native item evidence')
+            outputs.append(result.stdout)
+            print(mode+': '+'\n'.join(line for line in lines if not line.startswith('PLAN_HEX ')))
+            print(mode+f': telemetry inspected {len(native_plans)} exact native plans including maximum cardinality')
         if outputs[0]!=outputs[1]:raise AssertionError('backend compilation changed canonical results')
 
 if __name__=='__main__':main()

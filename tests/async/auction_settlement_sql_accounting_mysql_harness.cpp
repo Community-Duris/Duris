@@ -2,9 +2,14 @@
 #include "economy/auction_settlement_accounting.h"
 #include "persistence/economic_sql_auction_item_claim_transaction.h"
 #include "persistence/economic_sql_auction_settlement_transaction.h"
+#ifdef DURIS_TELEMETRY_AUCTION_QUALIFICATION
+#include "economy/auction_money_claim_accounting.h"
+#include "persistence/economic_sql_auction_money_claim_transaction.h"
+#endif
 
 #include <mysql.h>
 
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
@@ -18,11 +23,47 @@ constexpr uint32_t SELLER = 2147000711U;
 constexpr uint32_t WINNER = 2147000712U;
 constexpr uint32_t TRUSTED = 2147000713U;
 constexpr uint64_t ITEM = 9900000711ULL;
+#ifdef DURIS_TELEMETRY_AUCTION_QUALIFICATION
+constexpr uint64_t INITIAL_PENDING = 0;
 
-critical_operation_id id(uint8_t first)
+void require_telemetry_disposable_target()
+{
+	const auto equals = [](const char *name, const char *value)
+	{
+		const char *actual = std::getenv(name);
+		return actual && std::strcmp(actual, value) == 0;
+	};
+	assert(equals("TEST_DB_DISPOSABLE", "1") &&
+	       equals("ECONOMIC_ACCOUNTING_DISPOSABLE_SCHEMA", "1") &&
+	       equals("DB_HOST", "127.0.0.1"));
+	const char *socket = std::getenv("DB_SOCKET");
+	assert(!socket || !*socket);
+	const char *database = std::getenv("DB_NAME");
+	constexpr char prefix[] = "economic_schema_test_";
+	assert(database && std::strncmp(database, prefix, sizeof(prefix) - 1) == 0 &&
+	       database[sizeof(prefix) - 1]);
+	for (const char *cursor = database; *cursor; ++cursor)
+		assert((*cursor >= 'a' && *cursor <= 'z') || (*cursor >= 'A' && *cursor <= 'Z') ||
+		       (*cursor >= '0' && *cursor <= '9') || *cursor == '_');
+	const char *port = std::getenv("DB_PORT");
+	assert(port && *port);
+	for (const char *cursor = port; *cursor; ++cursor)
+		assert(*cursor >= '0' && *cursor <= '9');
+	const auto number = std::strtoul(port, nullptr, 10);
+	assert(number > 0 && number <= 65535);
+	const char *sources = std::getenv("TELEMETRY_AUCTION_CLAIM_SOURCES");
+	assert(!sources || std::strcmp(sources, "2") == 0 || std::strcmp(sources, "128") == 0 ||
+	       std::strcmp(sources, "129") == 0);
+}
+#else
+constexpr uint64_t INITIAL_PENDING = 100;
+#endif
+
+critical_operation_id id(uint32_t first)
 {
 	critical_operation_id value = {};
-	value.bytes[0] = first;
+	for (size_t index = 0; index < sizeof(first); ++index)
+		value.bytes[index] = static_cast<uint8_t>(first >> (index * 8));
 	return value;
 }
 
@@ -164,15 +205,16 @@ auction_settlement_listing listing(uint32_t auction_id, uint64_t uid, uint64_t e
 	return state;
 }
 
-critical_command closure(uint8_t operation, auction_action action,
+critical_command closure(uint32_t operation, auction_action action,
 			 const auction_settlement_listing &state,
 			 const auction_settlement_accounts &accounts,
-			 const critical_operation_id &epoch, bool trusted = false)
+			 const critical_operation_id &epoch, bool trusted = false,
+			 uint16_t fee_basis_points = 300)
 {
 	auction_command_payload payload = {};
 	payload.action = action;
 	payload.auction_id = state.auction_id;
-	payload.closing_fee_basis_points = 300;
+	payload.closing_fee_basis_points = fee_basis_points;
 	if (trusted)
 	{
 		payload.actor_pid = TRUSTED;
@@ -245,10 +287,137 @@ void reconnect()
 							strtoul(getenv("DB_PORT"), nullptr, 10)),
 						nullptr, 0));
 }
+
+#ifdef DURIS_TELEMETRY_AUCTION_QUALIFICATION
+void telemetry_money_claim(const critical_command &first, const economic_account_key &wallet,
+			   const economic_account_key &bank, const economic_account_key &pending,
+			   const critical_operation_id &epoch,
+			   const critical_operation_id &bootstrap)
+{
+	const char *requested = std::getenv("TELEMETRY_AUCTION_CLAIM_SOURCES");
+	const size_t source_count = requested ? std::strtoul(requested, nullptr, 10) : 2;
+	auction_money_claim_state state;
+	state.beneficiary_pid = SELLER;
+	state.money = 2910;
+	state.sources = { { first.operation_id, 2, SELLER, pending.authority_id, 2910 } };
+	auction_command_result result = {};
+	unsigned int code = 0;
+	bool applied = false;
+	// Listings/bids are explicit prerequisites; every credit uses the actual
+	// typed settlement owner. Large journeys include its zero-fee SQL branch.
+	for (size_t index = 1; index < source_count; ++index)
+	{
+		const uint32_t base = index == 1 ? 18 : 1000 + static_cast<uint32_t>(index) * 3;
+		const uint64_t uid = ITEM + 500 + index;
+		const bool zero_fee = source_count > 2 && index + 1 == source_count;
+		const uint32_t auction_id = auction(id(base), id(base + 1), uid, 1700000000);
+		auction_settlement_accounts accounts;
+		accounts.escrow = mapping(pending.lineage, economic_account_kind::auction_escrow, 0,
+					  4, auction_id, bootstrap);
+		accounts.seller_claim = pending;
+		const auto staged = listing(auction_id, uid, 1700000000, id(base), id(base + 1));
+		const auto sale = closure(base + 2, auction_action::finalize, staged, accounts,
+					  epoch, false, zero_fee ? 0 : 300);
+		execute("START TRANSACTION");
+		inbox(sale.operation_id, static_cast<uint16_t>(sale.type), 2, 0);
+		economic_sql_auction_settlement_context settlement;
+		assert(economic_sql_auction_settlement_lock(connection, sale, &settlement) == 0);
+		assert(economic_sql_auction_settlement_execute_and_record(
+			       connection, sale, settlement, &result, &code, &applied) == 0);
+		assert(code == 0 && applied);
+		receipt(sale, result);
+		execute("COMMIT");
+		const uint64_t amount = zero_fee ? 3000 : 2910;
+		state.money += amount;
+		state.sources.push_back(
+			{ sale.operation_id, 2, SELLER, pending.authority_id, amount });
+	}
+	std::sort(state.sources.begin(), state.sources.end(),
+		  [](const auto &left, const auto &right)
+		  { return left.operation.bytes < right.operation.bytes; });
+	assert(scalar("SELECT money FROM auction_money_pickups WHERE pid=" +
+		      std::to_string(SELLER)) == static_cast<uint64_t>(state.money));
+	state.revision = scalar("SELECT claim_revision FROM auction_money_pickups WHERE pid=" +
+				std::to_string(SELLER));
+	auction_command_payload payload = {};
+	payload.action = auction_action::claim_money;
+	payload.actor_pid = SELLER;
+	payload.racewar = 1;
+	std::memcpy(payload.account_name.data(), "auction_settle_seller", 21);
+	std::memcpy(payload.actor_name.data(), "AuctionSeller", 13);
+	critical_command command = {};
+	assert(auction_command_build(&command, id(21), payload, critical_source_site::command,
+				     critical_deadline_class::interactive));
+	command.accepted_at_usec = 1;
+	assert(auction_money_claim_accounting_intent(command, epoch, wallet, bank, pending, state,
+						     &command.accounting_intent) ==
+	       economic_accounting_error::ok);
+	command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	economic_sql_auction_money_claim_context context;
+	// Refuse a changed allocation and a real failure after wallet/posting writes.
+	execute("UPDATE economic_pending_claim_source SET amount=2911 WHERE source_operation_id=" +
+		literal(id(20)));
+	execute("START TRANSACTION");
+	inbox(command.operation_id, static_cast<uint16_t>(command.type), 2, 0);
+	assert(economic_sql_auction_money_claim_lock(connection, command, &context) == 0);
+	assert(economic_sql_auction_money_claim_execute_and_record(connection, command, context,
+								   &result, &code, &applied) != 0);
+	execute("ROLLBACK");
+	execute("UPDATE economic_pending_claim_source SET amount=2910 WHERE source_operation_id=" +
+		literal(id(20)));
+	execute("CREATE TRIGGER fail_telemetry_auction_claim BEFORE UPDATE ON "
+		"economic_pending_claim_source FOR EACH ROW SIGNAL SQLSTATE '45000' "
+		"SET MESSAGE_TEXT='forced telemetry claim failure'");
+	execute("START TRANSACTION");
+	inbox(command.operation_id, static_cast<uint16_t>(command.type), 2, 0);
+	assert(economic_sql_auction_money_claim_lock(connection, command, &context) == 0);
+	assert(economic_sql_auction_money_claim_execute_and_record(connection, command, context,
+								   &result, &code, &applied) != 0);
+	execute("ROLLBACK");
+	execute("DROP TRIGGER fail_telemetry_auction_claim");
+	assert(scalar("SELECT money FROM auction_money_pickups WHERE pid=" +
+		      std::to_string(SELLER)) == static_cast<uint64_t>(state.money));
+	assert(scalar("SELECT gold FROM player_data WHERE pid=" + std::to_string(SELLER)) == 0);
+	assert(scalar("SELECT wallet_revision FROM player_data WHERE pid=" +
+		      std::to_string(SELLER)) == 0);
+	assert(scalar("SELECT COUNT(*) FROM economic_pending_claim_source WHERE "
+		      "claim_operation_id IS NOT NULL") == 0);
+	assert(scalar("SELECT COUNT(*) FROM economic_accounting_operation WHERE operation_id=" +
+		      literal(command.operation_id)) == 0);
+	execute("START TRANSACTION");
+	inbox(command.operation_id, static_cast<uint16_t>(command.type), 2, 0);
+	assert(economic_sql_auction_money_claim_lock(connection, command, &context) == 0);
+	assert(economic_sql_auction_money_claim_execute_and_record(connection, command, context,
+								   &result, &code, &applied) == 0);
+	assert(code == 0 && applied && result.event_type == auction_event_type::money_claimed);
+	receipt(command, result);
+	execute("COMMIT");
+	reconnect();
+	assert(scalar("SELECT money FROM auction_money_pickups WHERE pid=" +
+		      std::to_string(SELLER)) == 0);
+	assert(scalar("SELECT COUNT(*) FROM economic_pending_claim_source WHERE claim_operation_id=" +
+		      literal(command.operation_id)) == source_count);
+	std::printf(
+		"TELEMETRY_AUCTION_READY %s",
+		hex(command.operation_id.bytes.data(), command.operation_id.bytes.size()).c_str());
+	for (const auto &source : state.sources)
+		std::printf(
+			" %s",
+			hex(source.operation.bytes.data(), source.operation.bytes.size()).c_str());
+	std::printf("\n");
+	std::fflush(stdout);
+	char acknowledgement[32] = {};
+	assert(std::fgets(acknowledgement, sizeof(acknowledgement), stdin) &&
+	       std::strcmp(acknowledgement, "continue\n") == 0);
+}
+#endif
 } // namespace
 
 int main()
 {
+#ifdef DURIS_TELEMETRY_AUCTION_QUALIFICATION
+	require_telemetry_disposable_target();
+#endif
 	assert(getenv("DB_HOST") && getenv("DB_USER") && getenv("DB_PASSWD") && getenv("DB_NAME") &&
 	       getenv("DB_PORT"));
 	connection = mysql_init(nullptr);
@@ -272,7 +441,7 @@ int main()
 	execute("INSERT INTO economic_lineage_state(lineage,active_epoch) VALUES(" +
 		literal(lineage) + "," + literal(epoch) + ")");
 	execute("INSERT INTO auction_money_pickups(pid,money,claim_revision) VALUES(" +
-		std::to_string(SELLER) + ",100,1)");
+		std::to_string(SELLER) + "," + std::to_string(INITIAL_PENDING) + ",1)");
 	const auto seller_wallet =
 		mapping(lineage, economic_account_kind::wallet, 0, 1, SELLER, bootstrap);
 	const auto seller_bank_key =
@@ -309,7 +478,7 @@ int main()
 	assert(scalar("SELECT status+0 FROM auctions WHERE id=" + std::to_string(sale_auction)) ==
 	       1);
 	assert(scalar("SELECT money FROM auction_money_pickups WHERE pid=" +
-		      std::to_string(SELLER)) == 100);
+		      std::to_string(SELLER)) == INITIAL_PENDING);
 	assert(scalar("SELECT COUNT(*) FROM auction_item_custody WHERE auction_id=" +
 		      std::to_string(sale_auction) + " AND claim_pid IS NULL") == 1);
 	assert(scalar("SELECT COUNT(*) FROM auction_ledger WHERE operation_id=" +
@@ -335,7 +504,7 @@ int main()
 	assert(scalar("SELECT status+0 FROM auctions WHERE id=" + std::to_string(sale_auction)) ==
 	       2);
 	assert(scalar("SELECT money FROM auction_money_pickups WHERE pid=" +
-		      std::to_string(SELLER)) == 3010);
+		      std::to_string(SELLER)) == INITIAL_PENDING + 2910);
 	assert(scalar("SELECT amount FROM economic_pending_claim_source WHERE "
 		      "source_operation_id=" +
 		      literal(sale.operation_id) +
@@ -361,6 +530,12 @@ int main()
 		      " AND active_native_id IS NULL "
 		      "AND retiring_operation_id=" +
 		      literal(sale.operation_id) + " AND revision=1") == 1);
+#ifdef DURIS_TELEMETRY_AUCTION_QUALIFICATION
+	telemetry_money_claim(sale, seller_wallet, seller_bank_key, seller_claim_key, epoch,
+			      bootstrap);
+	mysql_close(connection);
+	return 0;
+#endif
 	const uint32_t removed_auction = auction(id(7), id(8), ITEM + 100, 2000000000);
 	const auto removal_escrow = mapping(lineage, economic_account_kind::auction_escrow, 0, 4,
 					    removed_auction, bootstrap);

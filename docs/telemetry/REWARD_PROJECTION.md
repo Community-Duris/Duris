@@ -5,6 +5,17 @@ committed in the authoritative ledgers. It is an external, bounded worker
 contract. It does not make telemetry authoritative, add a gameplay write, or
 turn a live notification into a reward record.
 
+The sections below describe the original reward projection **definition 1**.
+Its positive-net amounts retain their historical meaning; they do not establish
+canonical earned issuance across the newer accounting journal. The current
+compatibility work and audited native receipt boundary are documented in
+[CANONICAL_REWARDS.md](CANONICAL_REWARDS.md). A timestamp high-water or completed
+finite sweep alone cannot prove that a delayed transaction has not committed
+behind the cursor. Definition 2 now qualifies stable selected source cuts and the complete canonical
+publication path for its supported native SQL bank/coin/auction routes. Complete
+history, other origins/units/backends and dated currency portfolios remain
+unavailable; the broader #490 section 4 stays open.
+
 ## Authority and identity
 
 `currency_ledger`, `epic_ledger`, and `combat_frag_ledger` are the amount

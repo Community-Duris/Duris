@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <initializer_list>
 #include <string>
 #include <vector>
 
@@ -39,8 +40,38 @@ extern "C" unsigned int __wrap_mysql_errno(MYSQL *connection)
 
 namespace
 {
+#ifdef DURIS_TELEMETRY_COIN_QUALIFICATION
+void require_telemetry_disposable_target()
+{
+	const auto equal_env = [](const char *name, const char *expected)
+	{
+		const char *value = std::getenv(name);
+		return value && std::strcmp(value, expected) == 0;
+	};
+	assert(equal_env("TEST_DB_DISPOSABLE", "1") &&
+	       equal_env("ECONOMIC_ACCOUNTING_DISPOSABLE_SCHEMA", "1") &&
+	       equal_env("DB_HOST", "127.0.0.1"));
+	const char *database = std::getenv("DB_NAME");
+	assert(database && equal_env("CURRENCY_TEST_DB_NAME", database) &&
+	       std::strncmp(database, "economic_schema_test_", 21) == 0 && database[21]);
+	for (const char *letter = database; *letter; ++letter)
+		assert((*letter >= 'A' && *letter <= 'Z') || (*letter >= 'a' && *letter <= 'z') ||
+		       (*letter >= '0' && *letter <= '9') || *letter == '_');
+	const char *socket = std::getenv("DB_SOCKET"), *port = std::getenv("DB_PORT");
+	assert((!socket || !*socket) && port && *port);
+	for (const char *letter = port; *letter; ++letter)
+		assert(*letter >= '0' && *letter <= '9');
+	char *end = nullptr;
+	const auto parsed_port = std::strtoul(port, &end, 10);
+	assert(end && !*end && parsed_port >= 1 && parsed_port <= 65535);
+}
+#endif
+
 MYSQL *open_pool_test_connection(unsigned long flags = 0)
 {
+#ifdef DURIS_TELEMETRY_COIN_QUALIFICATION
+	require_telemetry_disposable_target();
+#endif
 	const char *host = std::getenv("DB_HOST");
 	const char *user = std::getenv("DB_USER");
 	const char *password = std::getenv("DB_PASSWD");
@@ -306,6 +337,42 @@ void check_active_pile_split_merge(uint64_t pile_uid, item_owner_identity room,
 				   const critical_operation_id &lineage,
 				   const critical_operation_id &epoch);
 
+void telemetry_coin_checkpoint(const char *family,
+			       std::initializer_list<critical_operation_id> operations)
+{
+#ifdef DURIS_TELEMETRY_COIN_QUALIFICATION
+	require_telemetry_disposable_target();
+	printf("TELEMETRY_COIN_READY %s", family);
+	for (const auto &operation : operations)
+	{
+		assert(!critical_operation_id_is_zero(operation));
+		printf(" %s", operation_hex(operation).c_str());
+	}
+	puts("");
+	fflush(stdout);
+	char response[32] = {};
+	assert(std::fgets(response, sizeof(response), stdin) &&
+	       std::strcmp(response, "continue\n") == 0);
+#else
+	(void)family;
+	(void)operations;
+#endif
+}
+
+uint64_t telemetry_coin_fixture_revision(uint64_t before, uint64_t committed_steps)
+{
+#ifdef DURIS_TELEMETRY_COIN_QUALIFICATION
+	// Several independent native cases share this synthetic wallet. Retained
+	// historical evidence must not reuse a lifecycle key by rewinding revisions
+	// while preparing the next case's balances.
+	assert(before <= UINT64_MAX - committed_steps);
+	return before + committed_steps;
+#else
+	(void)committed_steps;
+	return before;
+#endif
+}
+
 void check_active_coin_item_accounting(uint32_t pid, const char *account,
 				       const critical_operation_id &lineage,
 				       const critical_operation_id &epoch)
@@ -322,8 +389,12 @@ void check_active_coin_item_accounting(uint32_t pid, const char *account,
 	assert(coin_transfer_command_build(&command, operation, payload,
 					   critical_source_site::command,
 					   critical_deadline_class::interactive));
-	const economic_account_key wallet_account = { lineage, economic_account_kind::wallet, pid,
-						      0 };
+	const uint64_t wallet_lifetime = static_cast<uint64_t>(
+		scalar("SELECT mapping_id FROM economic_account_mapping WHERE lineage=UNHEX('" +
+		       operation_hex(lineage) +
+		       "') AND account_kind=1 AND native_id=" + std::to_string(pid)));
+	const economic_account_key wallet_account = { lineage, economic_account_kind::wallet,
+						      wallet_lifetime, 0 };
 	const economic_account_key pile_account = { lineage, economic_account_kind::pile, pile_uid,
 						    0 };
 	std::vector<uint8_t> intent;
@@ -525,6 +596,7 @@ void check_active_coin_item_accounting(uint32_t pid, const char *account,
 		      pickup_root_id + "'),UNHEX('" + pickup_pile_id + "'),UNHEX('" +
 		      pickup_wallet_id + "'))") == 3);
 
+	telemetry_coin_checkpoint("drop_pickup", { operation, pickup.operation_id });
 	// This fixture runs inside a disposable SQL schema. Remove only its rows and
 	// restore the synthetic player's pre-test balances before legacy coin cases.
 	const std::string operation_ids = "UNHEX('" + root_id + "'),UNHEX('" + wallet_id +
@@ -567,10 +639,13 @@ void check_active_coin_item_accounting(uint32_t pid, const char *account,
 	execute("DELETE FROM critical_operation_inbox WHERE operation_id IN (" + operation_ids +
 		")");
 	execute("UPDATE player_data SET copper=1,wallet_revision=" +
-		std::to_string(source.change.expected_revisions[0].revision) +
+		std::to_string(telemetry_coin_fixture_revision(
+			source.change.expected_revisions[0].revision, 2)) +
 		" WHERE pid=" + std::to_string(pid));
 	execute("UPDATE account_banks SET bank_revision=" +
-		std::to_string(source.change.expected_revisions[1].revision) + " WHERE id=" +
+		std::to_string(telemetry_coin_fixture_revision(
+			source.change.expected_revisions[1].revision, 2)) +
+		" WHERE id=" +
 		std::to_string(scalar("SELECT id FROM account_banks WHERE account_name='" +
 				      std::string(account) + "' AND racewar=1")));
 	puts("PASS: activated SQL wallet-to-pile drop and full pickup commit balanced postings, custody references, and retained replay");
@@ -586,7 +661,12 @@ void check_active_coin_change_accounting(uint32_t pid, const char *account,
 	const auto source = coin_wallet(pid, account, { 1, 0, 0, 5 }, { 1, 9, 9, 4 });
 	const auto destination = coin_pile(room, pile_uid, 0, {}, { 10, 0, 0, 0 });
 	auto command = coin_command(source, destination);
-	const economic_account_key wallet = { lineage, economic_account_kind::wallet, pid, 0 };
+	const uint64_t wallet_lifetime = static_cast<uint64_t>(
+		scalar("SELECT mapping_id FROM economic_account_mapping WHERE lineage=UNHEX('" +
+		       operation_hex(lineage) +
+		       "') AND account_kind=1 AND native_id=" + std::to_string(pid)));
+	const economic_account_key wallet = { lineage, economic_account_kind::wallet,
+					      wallet_lifetime, 0 };
 	const economic_account_key pile = { lineage, economic_account_kind::pile, pile_uid, 0 };
 	std::vector<uint8_t> intent;
 	assert(coin_transfer_accounting_intent(command, epoch, wallet, pile, &intent) ==
@@ -723,6 +803,7 @@ void check_active_coin_change_accounting(uint32_t pid, const char *account,
 		"UNHEX('" + root_id + "'),UNHEX('" + wallet_id + "'),UNHEX('" + pile_id + "')";
 	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE operation_id IN (" + ids + ")") ==
 	       3);
+	telemetry_coin_checkpoint("change", { command.operation_id });
 	check_active_pile_split_merge(pile_uid, room, lineage, epoch);
 
 	execute("DELETE d FROM critical_outbox_delivery_dedupe d JOIN critical_outbox o "
@@ -750,10 +831,13 @@ void check_active_coin_change_accounting(uint32_t pid, const char *account,
 		" AND owner_id=" + std::to_string(room_id) + " AND owner_context_id=0");
 	execute("DELETE FROM critical_operation_inbox WHERE operation_id IN (" + ids + ")");
 	execute("UPDATE player_data SET copper=1,silver=0,gold=0,platinum=5,wallet_revision=" +
-		std::to_string(source.change.expected_revisions[0].revision) +
+		std::to_string(telemetry_coin_fixture_revision(
+			source.change.expected_revisions[0].revision, 1)) +
 		" WHERE pid=" + std::to_string(pid));
 	execute("UPDATE account_banks SET bank_revision=" +
-		std::to_string(source.change.expected_revisions[1].revision) + " WHERE id=" +
+		std::to_string(telemetry_coin_fixture_revision(
+			source.change.expected_revisions[1].revision, 1)) +
+		" WHERE id=" +
 		std::to_string(scalar("SELECT id FROM account_banks WHERE account_name='" +
 				      std::string(account) + "' AND racewar=1")));
 	puts("PASS: activated SQL coin drop records the exact change-making denomination vector");
@@ -857,6 +941,8 @@ void check_active_pile_split_merge(uint64_t pile_uid, item_owner_identity room,
 				       "(before_copper=0 AND after_copper=4 AND "
 				       "before_revision=0 AND after_revision=1))")) == 2);
 	}
+	telemetry_coin_checkpoint("pile_split_merge",
+				  { roots[0].operation_id, roots[1].operation_id });
 	std::vector<std::string> all_ids;
 	std::vector<std::string> root_ids;
 	std::vector<std::string> child_ids;
@@ -1011,6 +1097,7 @@ void check_active_peer_accounting(uint32_t pid, const char *account,
 	assert(scalar("SELECT COUNT(*) FROM critical_outbox WHERE operation_id IN (" + ids + ")") ==
 	       3);
 
+	telemetry_coin_checkpoint("peer", { command.operation_id });
 	// The disposable fixture leaves the legacy coin matrix at its original state.
 	execute("DELETE d FROM critical_outbox_delivery_dedupe d JOIN critical_outbox o "
 		"ON o.outbox_id=d.outbox_id WHERE o.operation_id IN (" +
@@ -1032,9 +1119,11 @@ void check_active_peer_accounting(uint32_t pid, const char *account,
 		" AND mapping_id=" + std::to_string(peer_lifetime));
 	execute("DELETE FROM player_data WHERE pid=" + std::to_string(peer_pid));
 	execute("UPDATE player_data SET copper=1,wallet_revision=" +
-		std::to_string(source.change.expected_revisions[0].revision) +
+		std::to_string(telemetry_coin_fixture_revision(
+			source.change.expected_revisions[0].revision, 1)) +
 		" WHERE pid=" + std::to_string(pid));
-	execute("UPDATE account_banks SET bank_revision=" + std::to_string(bank_revision) +
+	execute("UPDATE account_banks SET bank_revision=" +
+		std::to_string(telemetry_coin_fixture_revision(bank_revision, 2)) +
 		" WHERE account_name='" + std::string(account) + "' AND racewar=1");
 	puts("PASS: activated SQL peer transfer preserves shared-bank revisions, balanced postings, and replay");
 }
@@ -1140,6 +1229,8 @@ void check_active_split_children(const char *account, const critical_operation_i
 		      std::to_string(pids[2]) + ")") == 11);
 	assert(scalar("SELECT copper FROM player_data WHERE pid=" + std::to_string(pids[0])) ==
 	       5); // 11 / 3 gives two shares of 3; the splitter keeps the extra 2.
+	telemetry_coin_checkpoint("split_recipients",
+				  { children[0].operation_id, children[1].operation_id });
 	for (size_t index = 0; index < children.size(); ++index)
 	{
 		const auto replayed = pooled_apply(children[index]);
@@ -1661,6 +1752,9 @@ void coin_failure_matrix()
 
 int main()
 {
+#ifdef DURIS_TELEMETRY_COIN_QUALIFICATION
+	require_telemetry_disposable_target();
+#endif
 	assert(mysql_library_init(0, nullptr, nullptr) == 0);
 	const char *host = getenv("DB_HOST"), *user = getenv("DB_USER"),
 		   *password = getenv("DB_PASSWD"), *database = getenv("CURRENCY_TEST_DB_NAME"),

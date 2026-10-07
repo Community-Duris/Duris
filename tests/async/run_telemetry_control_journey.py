@@ -39,6 +39,7 @@ def run():
         password=environment["DB_PASSWD"], database=database, autocommit=True, cursorclass=pymysql.cursors.DictCursor)
     users, adapters = [], []
     receipt = dict(status="running", actual_running_server=True, synthetic_accounts=9,
+        native_save_trace_enabled=os.environ.get("TELEMETRY_CONTROL_JOURNEY_TRACE_SAVES", "0") == "1",
         production_or_staging_access=False, engine=os.environ["TELEMETRY_REPOSITORY_DB_IMAGE"])
     result = Path(os.environ["TELEMETRY_CONTROL_JOURNEY_RESULT"])
     token = hashlib.sha256(database.encode()).hexdigest()[:12]
@@ -112,7 +113,7 @@ $~"""))
             objects.write_text(value)
             journey.generate_certificate(runtime)
             reviewed_property_catalog(runtime, runtime / "reviewed-properties.catalog")
-            for name in ("logs/log", "journals/players", "journals/critical", "telemetry-ledger", "bin/server"):
+            for name in ("logs/log", "logs/player-log", "journals/players", "journals/critical", "telemetry-ledger", "bin/server"):
                 (runtime / name).mkdir(parents=True, exist_ok=True, mode=0o700)
             binary = ROOT / "bin/server/dms_new"
             def executable_hash(path):
@@ -141,6 +142,7 @@ $~"""))
                 TELEMETRY_PROPERTY_CATALOG_FILE=str(runtime / "reviewed-properties.catalog"),
                 TELEMETRY_OUTAGE_LEDGER_DIR=str(runtime / "telemetry-ledger"),
                 TELEMETRY_ENABLED="false", TELEMETRY_BACKEND="sql", TELEMETRY_DB_USER=users[1], TELEMETRY_DB_PASSWD=password,
+                DURIS_NEVENT_TRACE_PLAYER=os.environ.get("TELEMETRY_CONTROL_JOURNEY_TRACE_SAVES", "0"),
                 TELEMETRY_INTERVAL_USEC="1000000", TELEMETRY_CHECKPOINT_INTERVAL_USEC="1000000",
                 TELEMETRY_ACTIVE_WINDOW_USEC="3000000", TELEMETRY_CONTEXT_SEGMENTS_PER_MINUTE="64")
             process = output = None
@@ -643,21 +645,24 @@ $~"""))
                     before = int(query("SELECT COALESCE(MAX(ingest_id),0) AS n FROM telemetry_interval")[0]["n"])
                     issue(staff, "load mob 22802", "You have created")
                     if npc_xp == 800:
-                        # Keep the narrow rate prerequisite at one maximum HP;
-                        # regeneration during command prompts must not turn it
-                        # into a prolonged fight with changing build exposure.
                         # Native kills of opponents within five levels add a
                         # bloodlust affect after the award. A level-4 target
                         # keeps this level-10 rate scenario in a stable build
                         # stratum; native level-difference XP modifiers apply.
                         issue(staff, "setbit char subject level 4")
-                        issue(staff, "setbit char subject basehit 1")
-                        issue(staff, "setattr subject hit 1", "OK.")
+                    # One current HP alone permits regeneration up to the
+                    # prototype maximum during prompts and critical misses.
+                    # Repeated damage XP can then exhaust the unchanged
+                    # 64-segment cap before a full native level stage ends.
+                    # Verify the bounded NPC prerequisite for every fight;
+                    # player awards and levels still follow ordinary combat.
+                    issue(staff, "setbit char subject basehit 1")
+                    issue(staff, "setattr subject hit 1", "OK.")
                     issue(staff, "setbit char subject hit 1")
-                    if npc_xp == 800:
-                        inspected = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", issue(staff, "stat char subject"))
-                        assert re.search(r"Level:\s*4\(", inspected), inspected
-                        assert re.search(r"Hits:\s*\[\s*1/\s*1/\s*1\+", inspected), inspected
+                    inspected = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", issue(staff, "stat char subject"))
+                    target_level = 4 if npc_xp == 800 else 10
+                    assert re.search(r"Level:\s*" + str(target_level) + r"\(", inspected), inspected
+                    assert re.search(r"Hits:\s*\[\s*1/\s*1/\s*1\+", inspected), inspected
                     # convertMob replaces prototype XP during native loading.
                     # Set only the NPC prerequisite; player XP still follows
                     # native damage/kill awards, modifiers, caps and levels.
@@ -671,7 +676,8 @@ $~"""))
                     assert "will kill mortally wounded victims." in preference
                     issue(client, "wield mace")
                     transcript_start = len(client.transcript)
-                    attempt = dict(character=character, npc_xp=npc_xp, ordinary_command_attempts=1,
+                    attempt = dict(character=character, npc_xp=npc_xp, target_level=target_level,
+                        target_current_and_maximum_HP_verified=1, ordinary_command_attempts=1,
                         completion_budget_seconds=180 if wait_for_receipt else 60)
                     receipt["native_progression_attack_attempts"].append(attempt)
                     issue(client, "kill subject")
@@ -876,7 +882,7 @@ $~"""))
                     private_writer_recovery="fresh producer after terminal-circuit lifecycle restart",
                     recovery_kill_award_receipts=[[row["boot_id"], row["process_id"], row["record_seq"]] for row in recovery_awards if row["progression_source"] == 3],
                     XP_award_committed=False, telemetry_certifies_character_save=False,
-                    seeded_prerequisites="stopped server: level 10, HP, first character's XP one below the actual native level-11 threshold; native NPC prototype; staff sets NPC current HP to 1 and NPC XP to 1000000 for milestones or 800, level 4 and one verified maximum HP for the narrow rate window before each ordinary kill; native level-difference XP modifiers and mortality apply; ordinary staff rested buff; ordinary mortal camp before switching back",
+                    seeded_prerequisites="stopped server: level 10, HP, first character's XP one below the actual native level-11 threshold; native NPC prototype; staff verifies one current and maximum NPC HP before every ordinary kill, NPC XP 1000000 and level 10 for milestones or XP 800 and level 4 for the narrow rate window; native level-difference XP modifiers and mortality apply; ordinary staff rested buff; ordinary mortal camp before switching back",
                     rate_input_origin=rate_origin, rate_input_watermark=rate_through,
                     rate_window_selection="native connected exposure through the kill-share decision; earlier fight cuts and awards retained in adjacent generations; no whole-fight or active-attention rate",
                     rate_probe_origin=rate_probe_origin,
@@ -918,6 +924,8 @@ $~"""))
                         pass
                 (result.parent / (result.stem + "-server-failure.log")).write_text(
                     (runtime / "server.out").read_text(errors="replace") + "\n" + journey.runtime_logs(runtime) +
+                    "\n--- player persistence ---\n" + ((runtime / "logs/player-log/player").read_text(errors="replace")[-16000:]
+                        if (runtime / "logs/player-log/player").is_file() else "player persistence log unavailable") +
                     "\n" + "\n".join(bytes(client.transcript[-6000:]).decode(errors="replace").replace(journey.PASSWORD, "[redacted]")
                         for client in clients), encoding="utf-8")
                 raise

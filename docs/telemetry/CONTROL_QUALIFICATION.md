@@ -1,4 +1,4 @@
-# Personal-local battle and progression qualification
+# Personal-local battle, progression and canonical reward qualification
 
 Run from the repository root with Python 3 and Docker Desktop or a local Docker
 daemon:
@@ -14,6 +14,28 @@ MariaDB 10.11.14 and MySQL 8.0.46 fixtures sequentially. Each engine exercises a
 six migration histories, the native repository for all 16 raw families, exact
 control/result/progression value storage and independent loss review, the native runtime/writer/report
 journey, and a real server journey. It creates no host-facing listener or port.
+
+The canonical reward follow-up adds independent reward definition-2 source
+capture, exact retention, fair bank sweeps/health, atomic publication and
+restricted readback. On each engine the native bank and wallet/pile helpers run
+sequentially in the same owned schema, preserving non-reused mapping lifetimes
+and receipt history. Separate owned schemas exercise auction claims backed by
+2, 128 and 129 actual native timed settlements; 128 sources publish under the
+existing budgets and 129 must refuse before retention. Registered migrations
+0073–0075, all six histories, measured runtime fingerprints, native schema
+verifiers and guarded reruns remain part of the command. Source SELECT-only,
+projection/private separation, immutable prior generations, exact CLI replay,
+late lower-sorting commits, retention gaps and query-plan diagnostics are
+required. Native owner fixtures establish their selected transaction boundary;
+the actual-server journey separately preserves the earlier battle/progression
+qualification. They do not establish full accounting gameplay admission,
+population rates, dated currency portfolios or production load.
+
+**Locally qualified, 2026-10-07:** the complete maintained command with the compatible tools image passes **116/116 phases** on MariaDB 10.11.14 and MySQL 8.0.46 in source-stable run `ea5be3761214`. Supported native bank, wallet/pile and auction paths qualify source-to-restricted-readback compatibility. The entire accounting feature and accepted telemetry expansion remain unfinished.
+
+Exact receipt, source/binary hashes, both-engine query plans and resource measurements are in
+[CANONICAL_REWARDS.md](CANONICAL_REWARDS.md#complete-qualification-and-measured-evidence).
+The earlier 38/45-phase receipts below retain their dated battle/progression scope.
 
 The comparability/outcome extension is locally qualified by the complete
 38-phase two-engine command. It includes native result adapters, exact

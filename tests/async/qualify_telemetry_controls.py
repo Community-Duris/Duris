@@ -20,6 +20,13 @@ ROOT = Path(__file__).resolve().parents[2]
 LABEL = "duris.telemetry.control-qualification"
 IMAGES = {"mariadb": "mariadb:10.11.14", "mysql": "mysql:8.0.46"}
 FOCUSED = (
+    "test_immutable_migration_runner.py", "test_runtime_boot_compatibility.py", "test_data_lifecycle_manifest.py",
+    "test_telemetry_reward_projection.py", "test_telemetry_canonical_reconciliation.py", "test_telemetry_canonical_conflicts.py",
+    "test_telemetry_canonical_health.py",
+    "test_telemetry_canonical_publication.py",
+    "test_telemetry_canonical_coin.py",
+    "test_telemetry_canonical_auction.py",
+    "test_economic_accounting_plan.py", "test_economic_currency_adapter.py",
     "test_telemetry_control_inventory.py", "test_telemetry_battle_contribution_contract.py",
     "test_telemetry_control_stream.py", "test_telemetry_battle_history.py",
     "test_telemetry_progression.py", "test_telemetry_contract_headers.py", "test_telemetry_repository.py", "test_telemetry_reports_contract.py",
@@ -29,6 +36,20 @@ FOCUSED = (
     "test_epic_stone_runtime.py", "test_boon_reward_zone_transactional_cutover.py",
     "test_rested_bonus_runtime.py", "test_world_quest_xp_feedback.py", "test_chaos_infinite_starting_grants.py",
 )
+
+
+def canonical_schema_sources():
+    """Native custody needs the registered upgrades beyond the base bootstrap."""
+    manifest = json.loads((ROOT / "migrations/migration_manifest.json").read_text(encoding="utf-8"))
+    sources = ["SOURCE /workspace/migrations/bootstrap_multithread_safe.sql; "]
+    for entry in manifest["migrations"]:
+        relative = entry["apply"]
+        path = ROOT / "migrations" / relative
+        if not path.resolve().is_relative_to((ROOT / "migrations").resolve()) or path.suffix != ".sql" or \
+            hashlib.sha256(path.read_bytes()).hexdigest() != entry["apply_checksum"]:
+            raise RuntimeError("canonical fixture registered schema source mismatch")
+        sources.append("SOURCE /workspace/migrations/" + relative + "; ")
+    return "".join(sources)
 
 
 def source_digest():
@@ -121,6 +142,11 @@ def run(args):
             "src/telemetry/telemetry_health.c", "src/world/limits.c", "src/combat/fight.c", "src/core/prototypes.h",
             "src/economy/boon.c", "src/combat/chaos.c", "src/cmd/actwiz.c", "src/cmd/actinf.c", "src/cmd/actset.c",
             "src/guild/guild.c", "src/magic/affects.c", "src/magic/spells.c")
+        changed += ("tests/async/economic_accounting_plan_test.cpp", "tests/async/economic_currency_adapter_test.cpp",
+                    "tests/async/economic_sql_bank_transaction_mysql_harness.cpp",
+                    "tests/async/currency_transaction_mysql_harness.cpp",
+                    "tests/async/auction_settlement_sql_accounting_mysql_harness.cpp",
+                    "tests/async/telemetry_canonical_auction_contract_harness.cpp")
         format_args = ["bash", "scripts/format.sh", "--check"]
         for path in changed:
             if Path(path).suffix in (".c", ".h", ".cc", ".cpp", ".hpp"):
@@ -139,6 +165,15 @@ def run(args):
         docker_exec(["python3", "scripts/validate_runtime_compatibility.py"], "runtime-contract")
         docker_exec(["python3", "scripts/validate_data_lifecycle.py"], "lifecycle-contract")
         output_root = "/workspace/bin/tests/" + name
+        canonical_bank_binary = output_root + "/canonical-native-bank"
+        docker_exec(["python3", "tests/async/run_economic_sql_bank_transaction_mysql.py",
+            "--compile-only", canonical_bank_binary, "--real-pool"], "canonical-bank-asan-ubsan-build")
+        canonical_coin_binary = output_root + "/canonical-native-coin"
+        docker_exec(["python3", "tests/async/run_telemetry_canonical_coin_mysql.py",
+            "--compile-only", canonical_coin_binary], "canonical-coin-asan-ubsan-build")
+        canonical_auction_binary = output_root + "/canonical-native-auction"
+        docker_exec(["python3", "tests/async/compile_telemetry_canonical_auction.py",
+            "--compile-only", canonical_auction_binary], "canonical-auction-asan-ubsan-build")
         docker_exec(["python3", "tests/async/test_telemetry_runtime_exhaustion.py", "--sanitize",
             "--clock-performance-output", output_root + "/clock-performance.json"], "paired-clock-asan-ubsan")
         docker_exec(["python3", "tests/async/test_telemetry_control_performance.py", "--output",
@@ -173,6 +208,58 @@ def run(args):
             docker_exec(["python3", "tests/async/test_staging_migration_fork_mysql.py", "--disposable-loopback",
                 "mariadb10_11" if engine == "mariadb" else "mysql8", "--report", output_root + "/" + engine + "-lineages.json"],
                 engine + "-lineages", lineage_env)
+            canonical_database = "economic_schema_test_" + token + "_canonical"
+            canonical_env = dict(lineage_env, ECONOMIC_ACCOUNTING_DISPOSABLE_SCHEMA="1",
+                                 DB_NAME=canonical_database, MYSQL_PWD=password)
+            docker_exec(["mysql", "--protocol=tcp", "-h127.0.0.1", "-uroot", "-e",
+                "CREATE DATABASE `" + canonical_database + "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; "
+                "USE `" + canonical_database + "`; " + canonical_schema_sources()],
+                engine + "-canonical-bank-schema", canonical_env)
+            docker_exec(["bash", "migrations/immutable/0073_telemetry_canonical_reward_retention.sh"],
+                engine + "-canonical-bank-schema-verify", canonical_env)
+            docker_exec(["bash", "migrations/immutable/0074_telemetry_canonical_reward_sweep.sh"],
+                engine + "-canonical-bank-sweep-verify", canonical_env)
+            docker_exec(["bash", "migrations/immutable/0075_telemetry_canonical_reward_publication.sh"],
+                engine + "-canonical-bank-publication-verify", canonical_env)
+            docker_exec(["python3", "tests/async/run_economic_sql_bank_transaction_mysql.py", "--real-pool",
+                "--compiled-bank", canonical_bank_binary, "--telemetry-source", "--telemetry-retention", "--telemetry-reconciliation", "--telemetry-publication", "--telemetry-source-report",
+                output_root + "/" + engine + "-canonical-bank-source.json"],
+                engine + "-canonical-bank-source", canonical_env)
+            docker_exec(["python3", "tests/async/run_telemetry_canonical_coin_mysql.py",
+                "--compiled-coin", canonical_coin_binary, "--report",
+                output_root + "/" + engine + "-canonical-coin-source.json"],
+                engine + "-canonical-coin-source", canonical_env)
+            docker_exec(["mysql", "--protocol=tcp", "-h127.0.0.1", "-uroot", canonical_database, "-e",
+                "SOURCE /workspace/migrations/immutable/0073_telemetry_canonical_reward_retention.sql; "
+                "SOURCE /workspace/migrations/immutable/0074_telemetry_canonical_reward_sweep.sql; "
+                "SOURCE /workspace/migrations/immutable/0075_telemetry_canonical_reward_publication.sql;"],
+                engine + "-canonical-bank-schema-rerun", canonical_env)
+            docker_exec(["bash", "migrations/immutable/0073_telemetry_canonical_reward_retention.sh"],
+                engine + "-canonical-bank-rerun-verify", canonical_env)
+            docker_exec(["bash", "migrations/immutable/0074_telemetry_canonical_reward_sweep.sh"],
+                engine + "-canonical-bank-sweep-rerun-verify", canonical_env)
+            docker_exec(["bash", "migrations/immutable/0075_telemetry_canonical_reward_publication.sh"],
+                engine + "-canonical-bank-publication-rerun-verify", canonical_env)
+            for source_count in (2, 128, 129):
+                suffix = "" if source_count == 2 else "-" + str(source_count)
+                phase = engine + "-canonical-auction" + suffix
+                auction_database = "economic_schema_test_" + token + "_auction_" + str(source_count)
+                auction_env = dict(canonical_env, DB_NAME=auction_database)
+                docker_exec(["mysql", "--protocol=tcp", "-h127.0.0.1", "-uroot", "-e",
+                    "CREATE DATABASE `" + auction_database + "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; "
+                    "USE `" + auction_database + "`; " + canonical_schema_sources()],
+                    phase + "-schema", auction_env)
+                docker_exec(["python3", "tests/async/run_telemetry_canonical_auction_mysql.py",
+                    "--compiled-auction", canonical_auction_binary, "--sources", str(source_count), "--report",
+                    output_root + "/" + phase + "-source.json"], phase + "-source", auction_env)
+                docker_exec(["mysql", "--protocol=tcp", "-h127.0.0.1", "-uroot", auction_database, "-e",
+                    "SOURCE /workspace/migrations/immutable/0073_telemetry_canonical_reward_retention.sql; "
+                    "SOURCE /workspace/migrations/immutable/0074_telemetry_canonical_reward_sweep.sql; "
+                    "SOURCE /workspace/migrations/immutable/0075_telemetry_canonical_reward_publication.sql;"],
+                    phase + "-schema-rerun", auction_env)
+                for number, component in (("0073", "retention"), ("0074", "sweep"), ("0075", "publication")):
+                    migration = "migrations/immutable/" + number + "_telemetry_canonical_reward_" + component
+                    docker_exec(["bash", migration + ".sh"], phase + "-" + component + "-verify", auction_env)
             for mode, test in (("writer", "test_telemetry_repository.py"),
                     ("storage", "test_telemetry_control_storage.py"),
                     ("progression", "test_telemetry_progression.py"),
@@ -186,6 +273,15 @@ def run(args):
                 docker_exec(["python3", "tests/async/" + test, "--sql-fixture"], engine + "-" + mode, env)
             receipt["engines"][engine] = {mode: json.loads((directory / (engine + "-" + mode + ".json")).read_text(encoding="utf-8"))
                 for mode in ("lineages", "writer", "storage", "progression", "native", "gameplay")}
+            receipt["engines"][engine]["canonical_bank_source"] = json.loads(
+                (directory / (engine + "-canonical-bank-source.json")).read_text(encoding="utf-8"))
+            receipt["engines"][engine]["canonical_coin_source"] = json.loads(
+                (directory / (engine + "-canonical-coin-source.json")).read_text(encoding="utf-8"))
+            receipt["engines"][engine]["canonical_auction_source"] = json.loads(
+                (directory / (engine + "-canonical-auction-source.json")).read_text(encoding="utf-8"))
+            receipt["engines"][engine]["canonical_auction_limits"] = {str(count): json.loads(
+                (directory / (engine + "-canonical-auction-" + str(count) + "-source.json")).read_text(encoding="utf-8"))
+                for count in (128, 129)}
             owned_remove(container)
         receipt["actual_gameplay"] = True
         receipt["performance"] = json.loads((directory / "control-performance.json").read_text(encoding="utf-8"))

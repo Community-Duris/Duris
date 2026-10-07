@@ -155,7 +155,7 @@ def load() -> dict:
             "runtime compatibility manifest fields differ"
         )
     if value["manifest_version"] != 1 or value["baseline_table_count"] != 170 or \
-            value["current_table_count"] != 282:
+            value["current_table_count"] != 295:
         raise migration_runner.MigrationContractError("runtime manifest version/count drift")
     if not isinstance(value["runtime_table_sql_list"], str) or not re.fullmatch(
             r"'[A-Za-z0-9_]+'(?:,'[A-Za-z0-9_]+')*",
@@ -205,7 +205,7 @@ def validate() -> dict:
         raise migration_runner.MigrationContractError("runtime and migration baseline drift")
     staging = migration_runner.load_manifest(
         ROOT / "migrations/migration_manifest.staging_0045.json")
-    if len(migration.migrations) != 75 or len(staging.migrations) != 75 or \
+    if len(migration.migrations) != 78 or len(staging.migrations) != 78 or \
             staging.baseline_id != migration.baseline_id or \
             staging.required_tables != migration.required_tables or \
             staging.migrations[:44] != migration.migrations[:44] or \
@@ -222,7 +222,7 @@ def validate() -> dict:
         ROOT / "migrations/migration_manifest.master_0031.json")
     # Receipt IDs are immutable names; sequence is the declared application order.
     # Reuse 0051's identical SQL/verifier bytes without renaming master's receipt.
-    if len(master.migrations) != 75 or master.baseline_id != migration.baseline_id or \
+    if len(master.migrations) != 78 or master.baseline_id != migration.baseline_id or \
             master.required_tables != migration.required_tables or \
             master.migrations[:30] != migration.migrations[:30] or \
             master.migrations[30] != replace(migration.migrations[50], sequence=31,
@@ -245,7 +245,7 @@ def validate() -> dict:
              "migration_manifest.telemetry_0067_master_0031.json")):
         telemetry = migration_runner.load_manifest(ROOT / "migrations" / path)
         # Keep the recorded 1â€“67 telemetry prefix; append only the other lineage.
-        if len(telemetry.migrations) != 75 or telemetry.baseline_id != canonical.baseline_id or \
+        if len(telemetry.migrations) != 78 or telemetry.baseline_id != canonical.baseline_id or \
                 telemetry.required_tables != canonical.required_tables or \
                 telemetry.migrations[:53] != canonical.migrations[:53] or \
                 telemetry.migrations[53:67] != tuple(replace(item, sequence=item.sequence - 3)

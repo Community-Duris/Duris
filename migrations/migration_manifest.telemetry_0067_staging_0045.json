@@ -928,6 +928,36 @@
       "compatibility": "mysql8-mariadb10",
       "apply_checksum": "be902825e2fe777be2628b27220ab466d4e7c54be8d6eddc38c79b57a783c74c",
       "verify_checksum": "c6216427c1dba77a8ca41646edbb7be861db2fc98cdbb76d3e1dd88a3da6e759"
+    },
+    {
+      "id": "0073_telemetry_canonical_reward_retention",
+      "sequence": 76,
+      "description": "Retain exact bounded native canonical reward cuts and source evidence independently of raw history",
+      "apply": "immutable/0073_telemetry_canonical_reward_retention.sql",
+      "verify": "immutable/0073_telemetry_canonical_reward_retention.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "c9ff689171bc5dd32c3ee66bbfbb39fea57fd8fa837680dda006ca7d8b63713a",
+      "verify_checksum": "76d3638ea363caf23d1a86ada59d598e35b115aa062e83c2d7ca7e1ed40bf96f"
+    },
+    {
+      "id": "0074_telemetry_canonical_reward_sweep",
+      "sequence": 77,
+      "description": "Checkpoint bounded fair canonical reward sweeps with durable exact cut progress and retention gaps",
+      "apply": "immutable/0074_telemetry_canonical_reward_sweep.sql",
+      "verify": "immutable/0074_telemetry_canonical_reward_sweep.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "a02eed6ba1bf428b2817ed51187cdf87bad1548d35624e943206766070379f1d",
+      "verify_checksum": "3494e8e294ef706b5a3b110647684b6b2a0e4d4d8c8bb4c37300c54de7def698"
+    },
+    {
+      "id": "0075_telemetry_canonical_reward_publication",
+      "sequence": 78,
+      "description": "Stage and atomically publish independent canonical reward events and exact retained health coverage",
+      "apply": "immutable/0075_telemetry_canonical_reward_publication.sql",
+      "verify": "immutable/0075_telemetry_canonical_reward_publication.sh",
+      "compatibility": "mysql8-mariadb10",
+      "apply_checksum": "6a2cfb316d477c769af7b881e7f903731aedf9c785394873372e8637c18e8372",
+      "verify_checksum": "0086ab0082c259ddddf5a90174d9897818490cce2102c419d1bbf87abf6e1e5b"
     }
   ]
 }
