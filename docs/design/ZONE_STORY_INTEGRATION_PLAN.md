@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 213 authored journals, accounting-gated player surfaces, starter/town
+**Status: 214 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5381,3 +5381,8 @@ The [dossier](zone-stories/LAVA_SPRINGS.md) maps one native six-input Cinder com
 ## Lylr-Meop integration extension
 
 The [dossier](zone-stories/LYLR_MEOP.md) maps one native scalp exchange, optional material and accepted receipt. Forty owned follow-ups cover hidden/source or supplied custody, actual approach/fall, giver retirement, captive agency/restraints/escort, vault dispatch/contents, shop and generated-world-quest services, effects and lasting civic/recipient outcomes. Existing schema3 covers Q11. Typed endpoints require demonstrated actual callers and builder policy; access reciprocity, asymmetric key, unsupported trap, Hylga’s absent drink shop and naming need fair separately reviewable follow-up. Active READY accounting remains required; daily policy stays disabled.
+
+
+## Halfling Silver Mine integration extension
+
+The [dossier](zone-stories/HALFLING_SILVER_MINE.md) maps one exact native whip exchange and nine wider progression stories. Forty-four owned follow-ups cover first-source versus supplied custody, desk-to-trapdoor keys, real shaft/heat admission, historical source ownership, intrusion/vault security, containers/equipment, random-grid accessibility, industrial work, worker welfare and legitimate lasting planar/civic outcomes. Existing schema3 covers Q8; wider prerequisites and endpoints require actual callers and explicit builder policy. Key/pick/secret asymmetries, possible terrain/concealment intent and staff containment require played fair repair diagnosis with separate fix/news commits. Active READY accounting remains required; daily policy stays disabled.

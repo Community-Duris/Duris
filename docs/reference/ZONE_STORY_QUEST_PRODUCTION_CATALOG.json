@@ -44028,6 +44028,259 @@
     {
       "contacts": [
         {
+          "description": "The barracks cook suggests food and worker-care stories. There is no local shop declaration; actual supplies, consent, recipient and lasting welfare need defined contributions.",
+          "keyword": "chef",
+          "mob_vnum": 4900,
+          "name": "a barracks cook",
+          "topics": []
+        },
+        {
+          "description": "This exhausted worker and the tired worker are separate prototypes. Visits or a rest message do not prove care, a surviving recovery or changed work conditions.",
+          "keyword": "exhausted",
+          "mob_vnum": 4901,
+          "name": "an exhausted halfling",
+          "topics": []
+        },
+        {
+          "description": "This worker in the bathroom suggests hygiene and dignity. Define appropriate consent and actual beneficiary outcomes without treating an encounter as completed aid.",
+          "keyword": "halfling",
+          "mob_vnum": 4902,
+          "name": "a naked halfling",
+          "topics": []
+        },
+        {
+          "description": "The squatter has a knapsack and descriptive drink debris nearby. Define agency, appropriate support and lasting welfare rather than treating loot or a kill as cleanup.",
+          "keyword": "filthy",
+          "mob_vnum": 4903,
+          "name": "a filthy squatter",
+          "topics": []
+        },
+        {
+          "description": "The drunk halfling is a distinct resident. Define consent, safe care and actual recovery; a visit or supplied item does not prove that care happened.",
+          "keyword": "drunk",
+          "mob_vnum": 4904,
+          "name": "a drunk halfling",
+          "topics": []
+        },
+        {
+          "description": "The veteran miner works at the active site. Actual mining, contribution and lasting worker safety require a demonstrated controller; the mining description alone cannot create a work receipt.",
+          "keyword": "halfling",
+          "mob_vnum": 4905,
+          "name": "a halfling miner",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Hub in the Silver Mine, The Active Mining Site, The Central Line, The End of the Service Tunnel, The Rough Branch of the Silver Tunnel. Actual source recovery, contribution and lasting mine or worker outcomes need their own evidence.",
+          "keyword": "halfling",
+          "mob_vnum": 4906,
+          "name": "a halfling worker",
+          "topics": []
+        },
+        {
+          "description": "Strong workers sort wood in the lumber cavern. Sorting, delivery, construction and a safe beneficiary outcome need distinct admitted contributions.",
+          "keyword": "strong",
+          "mob_vnum": 4907,
+          "name": "a strong halfling",
+          "topics": []
+        },
+        {
+          "description": "The driller works in the crafters area. A machine description, room visit or acquired tool is not evidence of a completed repair or useful work.",
+          "keyword": "halfling",
+          "mob_vnum": 4908,
+          "name": "the halfling driller",
+          "topics": []
+        },
+        {
+          "description": "The chiseller is equipped with a simple chisel. Equipment recovery and an actual crafting contribution have separate source and recipient outcomes.",
+          "keyword": "halfling",
+          "mob_vnum": 4909,
+          "name": "a halfling chiseller",
+          "topics": []
+        },
+        {
+          "description": "The miller operates near the sawmill. Define real work, machine admission and surviving worker or player results before crediting production or safe operation.",
+          "keyword": "halfling",
+          "mob_vnum": 4910,
+          "name": "a halfling miller",
+          "topics": []
+        },
+        {
+          "description": "Miners carry mining picks; one reset also equips the hidden belt of mining. Tool custody, source recovery, mining work and lasting mine safety are separate facts.",
+          "keyword": "halfling",
+          "mob_vnum": 4911,
+          "name": "a halfling miner",
+          "topics": []
+        },
+        {
+          "description": "The cart pusher and fixed mining carts suggest transport and upkeep. Carts are authored containers; moving ore and restoring service need real admitted controllers.",
+          "keyword": "halfling",
+          "mob_vnum": 4912,
+          "name": "a halfling cart pusher",
+          "topics": []
+        },
+        {
+          "description": "The supervisor suggests choices about production and worker conditions. Define contribution, authority, beneficiary consent and lasting change rather than inferring governance from an encounter.",
+          "keyword": "halfling",
+          "mob_vnum": 4913,
+          "name": "a halfling supervisor",
+          "topics": []
+        },
+        {
+          "description": "The engineer carries a hidden desk key and a pentagram. His locked desk holds the engineers key for the shaft trapdoor. These clues do not prove responsibility for the planar disturbance.",
+          "keyword": "halfling",
+          "mob_vnum": 4914,
+          "name": "a halfling engineer",
+          "topics": []
+        },
+        {
+          "description": "The vaultkeeper carries a vault key behind the keyed or hidden approaches. A key, guard defeat or entered vault does not prove restored security or returned property.",
+          "keyword": "vaultkeeper",
+          "mob_vnum": 4915,
+          "name": "the vaultkeeper",
+          "topics": []
+        },
+        {
+          "description": "This contact is stocked around A Food Pantry, A Hub in the Silver Mine, A Newly Dug Silver Tunnel, The Cellar of the Food Pantry, The Crafters Area of the Wood Shop, The End of the Line, The Entrance to the Service Tunnel, The Ofice of the Mine Chief. Actual source recovery, contribution and lasting mine or worker outcomes need their own evidence.",
+          "keyword": "furry",
+          "mob_vnum": 4916,
+          "name": "a furry rat",
+          "topics": []
+        },
+        {
+          "description": "The rope puller services the shaft room. Rope and pulley descriptions do not define an actual transport, rescue or maintenance controller.",
+          "keyword": "halfling",
+          "mob_vnum": 4917,
+          "name": "a halfling rope puller",
+          "topics": []
+        },
+        {
+          "description": "The bellowman suggests ventilation upkeep. Bellows and air-quality prose require actual work and beneficiary evidence before claiming a repair or safe air.",
+          "keyword": "halfling",
+          "mob_vnum": 4918,
+          "name": "a halfling bellowman",
+          "topics": []
+        },
+        {
+          "description": "Red demons are stocked along the rough tunnel near the cellar and vault approaches. Defeat, prevented intrusion, surviving residents and lasting restored boundaries are separate outcomes.",
+          "keyword": "red",
+          "mob_vnum": 4919,
+          "name": "a red demon",
+          "topics": []
+        },
+        {
+          "description": "Mine guards protect the barracks and may carry mining picks. Equipment recovery and an admitted defense, escort or beneficiary result have distinct evidence.",
+          "keyword": "halfling",
+          "mob_vnum": 4920,
+          "name": "a halfling mine guard",
+          "topics": []
+        },
+        {
+          "description": "The worried priest accepts the exact whip for a badge of purity. Worried, worry and hi share one response. Supplied material remains eligible; lasting planar closure and worker safety need separate outcomes.",
+          "keyword": "priest",
+          "mob_vnum": 4921,
+          "name": "a worried priest",
+          "topics": [
+            "worried",
+            "worry",
+            "hi"
+          ]
+        },
+        {
+          "description": "The balor is equipped with the exact whip in the Smouldering Pits. Defeat, first-source recovery, supplied custody, the priest\u2019s accepted receipt and lasting planar closure are distinct facts.",
+          "keyword": "balor",
+          "mob_vnum": 4922,
+          "name": "a vicious balor",
+          "topics": []
+        },
+        {
+          "description": "Janitors are stocked in the random load grid. Their declared existence does not prove an ordinary encounter or cleanup service; qualify actual relocation and contribution before adding credit.",
+          "keyword": "janitor",
+          "mob_vnum": 4923,
+          "name": "a service tunnel janitor",
+          "topics": []
+        },
+        {
+          "description": "The tired worker is separate from the exhausted worker. Define actual care and lasting welfare rather than treating those descriptions as a transformation state machine.",
+          "keyword": "tired",
+          "mob_vnum": 4924,
+          "name": "a tired halfling",
+          "topics": []
+        },
+        {
+          "description": "The mine chief suggests investigation, restoration and worker-policy choices. The pentagram, order\u2019s message or a kill does not establish guilt, authority transfer or a lasting civic outcome.",
+          "keyword": "mine",
+          "mob_vnum": 4925,
+          "name": "the mine chief",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow the worried priest\u2019s whip exchange and explore the mine\u2019s engineering, planar intrusion, vault, industrial and worker-welfare stories.",
+      "orientation": [
+        "Enter the mine from the rocky hillside and meet the worried priest in the barracks. Actual arrival discovers the zone; meeting the priest reveals his request.",
+        "Ask the priest about worried, worry or hi. These three aliases share one response about the order contacting an evil presence from a lower plane.",
+        "The priest accepts one exact balor\u2019s whip for a badge of purity. The balor carries the equipped source whip in the Smouldering Pits of Misery. An exact supplied whip also fits; no remembered personal kill, greeting, first-source recovery or engineer investigation is required.",
+        "Carry the whip loose before offering it. The optional material row shows current loose custody; held, worn or contained material has different offering admission. It does not prove a personal source recovery or accepted history.",
+        "Offer the exact loose whip to the worried priest. One accepted exchange records completion. Spent materials, a missing badge, a source defeat or a room visit cannot replace or erase that receipt. The priest has no native departure clause.",
+        "The wall schematic warns against going down. Reading the map, discovering a route and surviving it are separate facts; a warning does not complete the priest\u2019s request.",
+        "The engineer carries a hidden desk key. His locked desk contains a different key for the hub\u2019s downward trapdoor. Source recovery, a supplied key, admitted unlocking, opening and crossing are separate outcomes.",
+        "The downward trapdoor has different keys on its two sides. Successful unlocking mirrors to the reciprocal side; builders must check reset, relocking and both directions before selecting a balanced repair.",
+        "The long shaft has no ground and can start an actual fall. Flight, levitation, mounts, climbing, movement refusal, landing and death must retain their native behavior; visiting the shaft does not prove survival.",
+        "Several lower pits use the fire sector and can schedule heat damage. The balor\u2019s own room uses an indoor underground sector despite its flame description. Actual hazards follow the room controls.",
+        "The demon tunnel reaches openings into the food cellar and a hidden vault entrance. Discovering, opening and crossing those routes is distinct from ending an intrusion or restoring mine security.",
+        "The vault has a normal keyed entrance and a hidden tunnel entrance. Its two keyed faces have different pick protection. Builders must qualify actual lock admission while preserving intended access and challenge.",
+        "The vaultkeeper carries a vault key. Another key and a backpack are stocked in the random load grid, which has no declared route from the ordinary entrance. A reset declaration does not guarantee player access or renewed supply.",
+        "Vault chests and the rack are containers. The rack\u2019s declared child is a golden boomerang; money-bag prose does not establish coins. Opening a container, recovering its child, admitted equipment use and donating recovered property are different outcomes.",
+        "The mine chief, cook, workers, rope puller, bellowman, miller, supervisor, driller, chiseller, cart pusher and janitors suggest wider upkeep and welfare stories. Builders must define real contributions, consent, beneficiaries, choice and lasting results; machinery and labor descriptions do not implement those outcomes.",
+        "New tracking requires active READY accounting. Daily replay remains disabled until actual source availability, exact input/reward/recipient/save/replay and accountable renewal are qualified. Wider planar, engineering, vault, industrial and welfare stories need real typed callers and explicit builder policy."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "mining",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:4911;receive=I:4912;disappear=0",
+              "giver_vnum": 4921
+            }
+          ],
+          "id": "balor-whip-for-priest",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The balor has the equipped source whip in the Smouldering Pits. An exact supplied copy also fits. This optional row shows loose custody without proving a kill, first-source recovery or survived route.",
+              "id": "balor-whip",
+              "item_vnums": [
+                4911
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact balor\u2019s whip loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:4911;receive=I:4912;disappear=0",
+                  "giver_vnum": 4921
+                }
+              ],
+              "hint": "Offer the exact loose whip to the worried priest for the badge. Dialogue, keys, a source defeat, shaft survival or badge possession cannot create this receipt.",
+              "id": "exchange",
+              "kind": "completion",
+              "text": "Record the priest\u2019s accepted whip exchange"
+            }
+          ],
+          "summary": "Offer the exact whip for a badge of purity. Source recovery, supplied custody, accepted reward and lasting mine restoration are distinct outcomes.",
+          "title": "Bring the worried priest the balor\u2019s whip"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Declares the exact heart requested by Vadatorn. Encountering or defeating it does not record his accepted trio.",
           "keyword": "minotaur",
           "mob_vnum": 5000,

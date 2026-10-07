@@ -289,3 +289,8 @@ The [dossier](../design/zone-stories/LAVA_SPRINGS.md) retains one achievement an
 ## Lylr-Meop daily qualification
 
 The [dossier](../design/zone-stories/LYLR_MEOP.md) retains one achievement and one potential daily. Mode2/lifespan40..50, giver cap4/scalp cap1 and D retirement do not prove renewed availability. Qualify actual access, hidden source/transfer, exact input/reward/recipient/save/replay and same-generation retirement/replenishment. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
+
+
+## Halfling Silver Mine daily qualification
+
+The [dossier](../design/zone-stories/HALFLING_SILVER_MINE.md) retains one achievement and one potential daily. Mode2/lifespan20..30, priest/balor/whip cap1 and a nondeparting giver do not prove renewed source availability. Qualify actual approach, exact source or supplied material, input/reward/recipient/save/replay and accountable source/reset renewal. Grid key stock is not guaranteed access. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
