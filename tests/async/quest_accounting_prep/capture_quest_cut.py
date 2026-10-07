@@ -59,7 +59,8 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta, *, legacy_no
         tables = ("economic_epoch", "mud_schema_migrations", "mud_schema_history", "mud_schema_migration_state",
                   "mud_schema_baselines", "player_data", "player_affects", "world_quest_accomplished",
                   "item_current_owner", "item_ownership_ledger", "currency_ledger", "quest_reward_obligation",
-                  "quest_reward_xp_entitlement", "quest_mobile_native", "economic_accounting_item_reference",
+                  "quest_reward_xp_entitlement", "quest_mobile_native", "quest_mobile_native_birth_origin",
+                  "economic_accounting_item_reference",
                   "economic_accounting_operation", "critical_operation_inbox", "economic_accounting_coin_posting",
                   "economic_accounting_source_claim", "economic_accounting_account_effect")
         engines = selected(cursor, "SELECT TABLE_NAME AS table_name,ENGINE AS engine FROM information_schema.tables "
@@ -138,6 +139,12 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta, *, legacy_no
             blob_bytes += int(size["size"])
             if int(size["row_count"]) > MAX_ROWS or blob_bytes * 2 > MAX_BYTES:
                 raise ValueError("combined native BLOB budget exceeded")
+            size = selected(cursor, "SELECT CAST(COALESCE(SUM(OCTET_LENGTH(canonical_origin)),0) AS UNSIGNED) AS size,COUNT(*) AS row_count "
+                            "FROM quest_mobile_native_birth_origin WHERE mobile_instance_id IN (" +
+                            placeholders(mobile_ids) + ")", tuple(mobile_ids))[0]
+            blob_bytes += int(size["size"])
+            if int(size["row_count"]) > MAX_ROWS or blob_bytes * 2 > MAX_BYTES:
+                raise ValueError("combined native birth-origin BLOB budget exceeded")
         result["obligations"] = selected(cursor,
             "SELECT offering_operation_id,player_pid,continuation,xp_applied_mask,"
             "(acknowledged_at IS NOT NULL) AS acknowledged FROM quest_reward_obligation "
@@ -150,7 +157,16 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta, *, legacy_no
             "FROM quest_mobile_native WHERE " +
             ("mobile_instance_id IN (" + placeholders(mobile_ids) + ")" if mobile_ids else "1=0") +
             " ORDER BY mobile_instance_id", tuple(mobile_ids))
+        # Retained schema63 origin is distinct from the progressed current image.
+        # Capture exact bytes for the maintained owner validator; this reader
+        # neither interprets its envelope nor grants birth/publication authority.
+        result["birth_origins"] = selected(cursor,
+            "SELECT mobile_instance_id,birth_operation,publication_revision,canonical_origin "
+            "FROM quest_mobile_native_birth_origin WHERE " +
+            ("mobile_instance_id IN (" + placeholders(mobile_ids) + ")" if mobile_ids else "1=0") +
+            " ORDER BY mobile_instance_id", tuple(mobile_ids))
         native_ids = set(operations)
+        native_ids.update(entry["birth_operation"] for entry in result["birth_origins"])
         for name in ("ownership_events", "currency"):
             native_ids.update(entry["operation_id"] for entry in result[name])
         native_ids.update(entry["offering_operation_id"] for entry in result["obligations"])

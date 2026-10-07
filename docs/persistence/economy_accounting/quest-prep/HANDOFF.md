@@ -7,6 +7,9 @@ Plans1–5/applicable original R1–R8 integrated completion, not this delivery.
 
 Current source candidate275df7f626e12cb396a22da34317a4e7f355e9a1; synchronization
 merge1fe9f048f preserves exact upstream quest.c and the historical QP07 guard.
+Published owned compatibility bundle7429e4f21d83d9bd8d07c5447bd33b13e2f5ec0c,
+base1fe9f048f; five authored owned files listed below. Import that compatible owned
+bundle independently; synchronization merge is not an implementation import unit.
 QP02's old code patch is superseded/overlapping; do not import its unsupported-coin
 refusal. Current cash-shortage/later-backpack selector and original identity/count
 controls pass. All seven production-term/supply checks,285 paid recipe components,
@@ -21,6 +24,8 @@ capture plus genuine supported legacy Kord SQL XP-ACK/later-move against a newly
 built pinned ELF. No current ELF/native journey claimed yet; previous source6db
 ELFs and all mini/full-world evidence retain their old pins. The primary's current
 handoff explicitly keeps genuine activation/major gameplay/full release incomplete.
+
+[Next current schema64 capture/legacy Kord execution reservation](CURRENT_CAPTURE_EXECUTION.md).
 
 # Additional full-world cold-room control — 2026-10-07
 
