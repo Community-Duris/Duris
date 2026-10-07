@@ -46,6 +46,20 @@ New seventeen oracle controls and offline wrong-source/ELF/overwrite refusals PA
 Original failure, final verification, helper/cut hashes and exact shared
 dependency request are in that execution document.
 
+Current Kord postprocessor/oracle/evidence bundle
+b63591998a9e9e591b34b12b667ba4a650007410 (base3cc3867c4) is pushed. Authored files:
+legacy_xp.py, run_quest_execution.py, quest_cut_checks.py, test_quest_cut_checks.py
+and CURRENT_CAPTURE_EXECUTION.md/CONTINUING_RECONCILIATION.md/HANDOFF.md. Import
+after compatible reader36bf and inspector3cc; no production/shared edits in bundle.
+Executed first runner9582bc and final guarded46ad19 have separate actual hashes and
+separate PASS records; original aggregate remains FAIL. No gameplay repeat.
+
+Latest accounting publication3f6f1fe0cb62906e07dd8a36b4436ebb53e7582f advances docs
+only fromb1; production275 remains the source pin. Next available current batch
+control is [genuine full-world SQL bartender calibration](CURRENT_BARTENDER_EXECUTION.md)
+with unchanged existing drivers and current36bf ELF, preserving dynamic fee/task
+truth and original deadlines. No active native or delayed stale settlement claimed.
+
 # Additional full-world cold-room control — 2026-10-07
 
 Additional finite control is now **executed and pushed**, preserving the completed
