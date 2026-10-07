@@ -120,7 +120,9 @@ primary finish line. R0/R1/R2 patches remain independently applicable to the
 new producer candidate; current changed-dependency proof is separate from older
 ELF evidence. The enhancement-price reservation is published and
 [boundary-reviewed](domain-separation/R3_ENHANCEMENT_RESERVATION_REVIEW_2026-10-07.md);
-implementation/qualification are pending, with active paid-outcome refusal kept.
+implementation and independent original/extracted payment checks are published,
+with maintained-build/adjacent-contract handoff review still open. Active
+paid-outcome refusal is kept. Exact reviewed pins are in the linked checkpoint.
 Quest prep retains the newly published native-cost selector owner and updates
 its historical cash/recipe acceptance coverage and native evidence reader.
 Its old blanket paid-refusal patch is superseded by current owner support.

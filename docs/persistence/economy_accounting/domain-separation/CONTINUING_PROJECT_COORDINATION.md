@@ -119,6 +119,18 @@ its superseded blanket-refusal contract. No current native journey is inferred.
 
 This checkpoint leaves implementation, reviews and the overall Goal active.
 
+## Independent implementation checkpoint
+
+R3 implementation `48b7a6d` and strict-compiler repair `3a722a00` have independent
+original/extracted payment proof recorded in the
+[enhancement review](R3_ENHANCEMENT_RESERVATION_REVIEW_2026-10-07.md).
+Maintained build and adjacent-contract handoff review remain open. Current quest
+prep `36bfef3c` has independent QP01/QP02/QP05/QP06 selector passes and a source
+review of the bounded retained-origin capture change, recorded in the
+[quest checkpoint](../quest-prep/CURRENT_CANDIDATE_COORDINATOR_REVIEW_2026-10-07.md).
+Its fresh SQL Kord XP-ACK/later-move build/run is pending. No component or batch
+completion satisfies the overall Goal.
+
 ## Recurring monitor
 
 The existing thread heartbeat checks every15 minutes, supplemented by active
