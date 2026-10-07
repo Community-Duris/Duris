@@ -104,13 +104,34 @@ Primary authenticates the frozen lifecycle packet and combines it with the boot
 and census slices into one private 23-file candidate. The combined lifecycle TU
 passes both original production-profile strict syntax checks:
 `bin/tests/flat-lifecycle-census-primary-20261007/combined23/RESULT.json`.
-This candidate needs genuine complete player snapshots in its native fixtures;
-the worker is adapting the seed and opening-pile journeys without bypassing the
-new capture requirement. Inspection also found that the prepared lifecycle
-fixture requests revision 7 from the original owner-establishment API, which
-accepts revision 1 only. That fixture must use genuine native advancement or
-revision-1 genesis; syntax does not establish its positive path. Full links
-and executable qualification remain open.
+The native fixture successor now writes and reads back genuine complete player
+snapshots before the public installer. Its original fourteen controls remain,
+with saved-pile genesis and genuine partial/full pickup successors added. Native
+item/owner revisions advance 1->2->3 independently of wallet revisions 100->101->102.
+The changed seed passes strict syntax; primary's read-only packet authentication
+passes. All seventeen full-server cases remain unexecuted. The separate lifecycle
+fixture corrects the invalid revision-7 owner establishment to revision 1 and
+prepares revision 7 through public creation and six original repair operations.
+Both syntax profiles and primary packet authentication pass; installer, retry and
+fault assertions remain unexecuted. Source inspection confirms that the original
+public writer admits those room operations under the fixture's inactive control.
+Frozen production source and prior evidence stay unchanged. Full links and
+executable qualification remain open.
+
+Primary now combines the frozen 23-file recovery/genesis slice with the seven
+shutdown/SHOP files in one disjoint 30-file private candidate. Every original
+source-archive member and all 1,304 unchanged production inputs authenticate.
+An independent bounded interface review finds no blocking composition defect;
+both startup and world-boot consumers pass strict syntax in both original
+production profiles. The compressed native transport is reopened and all 6,434
+bodies and modes authenticate: archive SHA256
+`8c93aae1b7d8bd0896f5263bf9c15aa09b0ca71e7e7844cb7355e4ef982ad7e5`,
+manifest `f6707df33a10de7fec99e68b2a233f10308187884d1b1a1cbe56b226fcb9be31`.
+Receipts are in `bin/tests/flat-lifecycle-census-primary-20261007/combined30/`.
+The earlier seven-file SQL build does not qualify this composition. Both full
+production links and original runtime journeys must use this exact candidate.
+Copyover and account deletion also call the changed outbox drain; retain their
+publication/drain/resume regression checks alongside normal shutdown.
 
 The narrow Plan 5 interface is native lifecycle envelope V2 with the existing
 48-byte header/body layout, original wallet/bank mappings and descriptors, and
@@ -123,6 +144,55 @@ immutable on retry. The independent readers in
 `scripts/qualify_flatfile_economic_authority.h` currently accept native lifecycle
 V1 only; independent V2 qualification belongs to the Plan 5 owner. Qualifier
 catalog V2/V3 history is a different format. No reader gate is waived.
+
+The independent reader owner can prepare against these exact wire facts without
+waiting for native execution. This is a source-derived contract, not a qualifying
+binary fixture. The frozen native implementation SHA256 is
+`d81ec1ad1d16a0f797b3c13eed6a655af9f3d90d3b9d86adddf36b12387967a2`.
+
+| Native envelope field | Encoding |
+| --- | --- |
+| Magic | Eight bytes: `DURELR`, zero, zero |
+| Version and body length | Two little-endian unsigned 32-bit integers; accept precisely native versions 1 and 2 |
+| Body digest | SHA256 of the complete body, 32 bytes |
+| Body | Original V1 field order and widths; V2 adds no trailing UID vector or descriptor section |
+
+The body retains request operation/lineage/epoch IDs, actor and accepted time,
+requested and retained coverage digests, boundary digest, one-byte flags (exactly
+3), opening account key, baseline operation/revision, lineage creator/control
+revision, original epoch descriptor, mappings, native wallet/bank sources, then
+length-prefixed command/EAB/plan. Account keys use the original shared codec.
+Mapping count, wallet count, bank count and blob lengths are unsigned 32-bit;
+names use unsigned 16-bit byte lengths, source racewar is one byte, and IDs retain
+their existing fixed width. Other numeric fields retain their original widths.
+Mapping count equals wallet plus bank count in both versions; pile accounts do
+not add mapping rows. Require exact bounded consumption and canonical re-encoding.
+
+For V2, derive pile UIDs from the decoded EAB item witnesses, in increasing UID
+order without duplicates. Pair each item with precisely its pile holding:
+matching lineage/UID, context zero, nonzero native revision and source fingerprint,
+matching item/holding fingerprints, active room-root custody, no parent/equipment,
+room ID in 1..INT_MAX, and equal holding/item native revisions. Denominations are
+nonnegative and bounded by INT32_MAX. Preserve original item/holding limits and
+all existing baseline command, plan, reservation and common-receipt proof checks.
+Native revisions are independent of the accounting opening effect 0->1.
+
+V2 coverage is SHA256 of the concatenation below. Integer fields are little
+endian; neither tag nor fingerprints use length prefixes:
+
+1. ASCII `DURIS-FLATFILE-COVERAGE-V2` without a terminator.
+2. The unchanged 32-byte V1 wallet/bank coverage digest.
+3. Unsigned 64-bit pile count.
+4. For each increasing UID: unsigned 64-bit UID, room ID, native revision,
+   four unsigned 64-bit denomination values, then the 32-byte source fingerprint.
+
+Historical V1 requires empty EAB items and no pile UIDs, with holdings matching
+mappings. Its coverage and canonical bytes remain original V1. Historical V2
+retry authenticates retained descriptors and evidence; it does not recapture a
+current physical pile after a later typed pickup/destruction. Fresh genesis alone
+performs the complete physical census and selected-player snapshot checks. Unknown
+versions, malformed pairings, digest mismatch and noncanonical bytes must refuse;
+qualifier catalogue versions must not be accepted as native lifecycle versions.
 
 Docker still reports that it cannot start, with an empty server version even
 when the command exits zero. No service or native build was retried on that
