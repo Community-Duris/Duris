@@ -1140,3 +1140,30 @@ recovery, gameplay and combined release remain open. Normal/55-contract checks
 pass; release still refuses missing writer evidence. SQL is not repeated.
 The local notebook packet remains nonblocking, with no application/acknowledgement
 claim. Existing inactive behavior and exclusions remain preserved.
+
+## Managed pending-source audit ordering repair — 2026-10-07
+
+[Exact qualification](PLAN5_PENDING_SOURCE_AUDIT_QUALIFICATION_2026-10-07.md)
+resolves the genuine managed failure retained in the preceding provenance slice.
+The journey audits the healthy source before its pending seed, directly verifies
+pending-source read-only refusal, and retains the entire managed restore method.
+It now passes:18 review regressions,1 complete managed method,zero skips; two
+actual isolated boots, original replay/dedupe, unchanged old inactive receipts,
+two retained generations, pruning and every required-file/corruption refusal.
+
+Base `d2e979a9ebdf5ec7905aaa6fa3e55385ec6cf149`, tested archive `401dd5e712928694d89a72058471250313463afa92c9f3c4b2daabf8d792876b`;
+only the owned managed test code changes. No shared interface, producer,
+coordinator, registry/matrix, runner or activation edit is requested. The
+production server retains its earlier740-unit build attribution and identical
+native inputs. Current SQL methods are not repeated. Native source/canonical62
+migration inputs remain exact. Result/remote SHA and all seven preserved tips are
+bound by `flatfile-pending-audit-{preflight,delivery}-01-20261007` receipts on
+`codex/accounting-plan5`. Seal SHA256 `6504b112017748acc82be45f4e22fb8bdee8e614eab2eb4967873e3112f08151` authenticates
+27 artifacts/571,400,062 bytes, while the preceding
+failed-run seal remains intact. The prior stale ordering gate is now closed.
+
+Latest refreshed primary is `36e8f6ad78ef027851c1da809acca7570dcd95d6`; its combined candidate, full holdings,
+writer recovery, genuine gameplay, R7/R8 and release remain open. Normal/55-contract
+checks pass; release still refuses missing writer evidence. Accounting remains
+inactive and existing exclusions stay exact. This is the nonblocking local-notebook
+curator packet; application, notification and acknowledgement are not claimed.

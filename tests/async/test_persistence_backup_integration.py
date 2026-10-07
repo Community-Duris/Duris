@@ -926,15 +926,9 @@ class FlatfileLifecycleRecoveryIntegration(unittest.TestCase):
         environment = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
                            UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
         backup.run([str(self.lifecycle), str(live), "retained"], env=environment)
-        backup.run([str(self.fixture), "seed-wal", str(live)])
-        backup.run([str(self.fixture), "seed-pending-transaction", str(live)])
         evidence = live / "economic-evidence"
         receipt = next(evidence.glob("lifecycle-*.elr")).name
         economic_before = retained(evidence)
-        source_before = backup.inventory(live, exclude_locks=True)
-        journals_before = {name: backup.inventory(path) for name, path in self.p["journal_roots"].items()}
-        self.assertTrue((live/"domains/.critical-authority-transaction").is_file())
-        self.assertTrue(all(values for values in journals_before.values()))
 
         # Use fresh explicit tool outputs without overwriting any existing
         # workspace binary. The managers already support a copied checkout.
@@ -964,6 +958,24 @@ class FlatfileLifecycleRecoveryIntegration(unittest.TestCase):
             self.assertEqual(control[112:128], bytes(16), "accounting became active")
 
         audit(live)
+        backup.run([str(self.fixture), "seed-wal", str(live)])
+        backup.run([str(self.fixture), "seed-pending-transaction", str(live)])
+        source_before = backup.inventory(live, exclude_locks=True)
+        journals_before = {name: backup.inventory(path) for name, path in self.p["journal_roots"].items()}
+        self.assertTrue((live/"domains/.critical-authority-transaction").is_file())
+        self.assertTrue(all(values for values in journals_before.values()))
+        # Online audits require a stable authority cut. Recovery belongs only
+        # to the manager's fresh copied candidate, never to this source audit.
+        pending_before = retained(live)
+        refused = subprocess.run([str(self.qualifier), "--economic-evidence-audit", str(live)],
+                                 env=environment, capture_output=True, timeout=45)
+        self.assertEqual(refused.returncode, 1)
+        self.assertEqual(refused.stdout, b"")
+        self.assertEqual(refused.stderr, b"native_restore_qualification_failed\n")
+        self.assertEqual(retained(live), pending_before)
+        self.assertEqual(backup.inventory(live, exclude_locks=True), source_before)
+        for name, values in journals_before.items():
+            self.assertEqual(backup.inventory(self.p["journal_roots"][name]), values)
         with mock.patch.object(backup, "ROOT", tools), mock.patch.dict(os.environ, {
                 "FLATFILE_STATE_DIR": str(live), "PLAYER_SAVE_JOURNAL_DIR": str(self.p["journal_roots"]["players"]),
                 "CRITICAL_COMMAND_JOURNAL_DIR": str(self.p["journal_roots"]["critical"])}):
@@ -1103,6 +1115,7 @@ class FlatfileLifecycleRecoveryIntegration(unittest.TestCase):
             self.assertEqual(backup.inventory(live, exclude_locks=True), missing_source_before)
 
         self.outcomes.append({"native_pending_transaction_replayed": True, "native_journals_drained": True,
+                              "pending_source_online_audit_refused_read_only": True,
                               "actual_service_boots": 2, "old_inactive_receipt_preserved": True,
                               "cold_boot_uid_high_water": {"before": before_uid, "after": after_uid},
                               "retained_generations": 2, "unretained_generation_pruned": True,
