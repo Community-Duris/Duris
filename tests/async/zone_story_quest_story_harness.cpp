@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 181 &&
+		require(catalog.story_mappings.size() == 182 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,144 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(
+				catalog.story_mappings.begin(), catalog.story_mappings.end(),
+				[](const auto &m) { return m.source_area == "headless"; });
+			require(mapping.stories.size() == 8 && mapping.contacts.size() == 9 &&
+					mapping.revision == 1,
+				"Zalkapfaan journal scope failed");
+			int achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 27)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 8 && dailies == 5,
+				"Zalkapfaan grouped or departing returns changed independent units");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 27, 2730, 100, "arrival") ==
+					result::applied,
+				"Zalkapfaan discovery failed");
+			require(journey.meet_npc(7, 42, 2733, 2736, 101) == result::applied,
+				"Zalkapfaan optional teacher encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 27, 10, 1, 102, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Zalkapfaan optional service exposed unrelated request");
+			for (int v : { 2749, 2755, 2758, 2777, 2778, 2787 })
+				require(journey.meet_npc(7, 42, v, 2755, 103) == result::applied,
+					"Zalkapfaan giver encounter failed");
+			const auto before = journey.serialize_state();
+			supplies = {};
+			for (int v : { 2733, 2732, 2749, 2750, 2767, 2773, 2780, 2782, 2783, 2784,
+				       2785, 2786, 359, 55189 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 27, 10, 1, 104, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				for (size_t n = 0; n + 1 < story.steps.size(); ++n)
+					require(journal.find("[Missing now] " +
+							     story.steps[n].text) !=
+							std::string::npos,
+						"Zalkapfaan keys, corpse or rewards substituted exact offerings");
+			supplies = {};
+			supplies.equipped[3] = 2747;
+			supplies.equipped[18] = 2748;
+			supplies.carried[2733] = 1;
+			journal = journey.render_journal(7, 42, 27, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				for (size_t n = 0; n + 1 < story.steps.size(); ++n)
+					require(journal.find("[Missing now] " +
+							     story.steps[n].text) !=
+							std::string::npos,
+						"Zalkapfaan worn/held tokens or container supplied loose input");
+			supplies = {};
+			for (int v : { 2778, 2735, 2764, 2771, 2765, 2777, 2747, 2748 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 27, 10, 1, 106, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+			{
+				for (size_t n = 0; n + 1 < story.steps.size(); ++n)
+					require(journal.find("[Ready now] " +
+							     story.steps[n].text) !=
+							std::string::npos,
+						"Zalkapfaan supplied exact material was not ready");
+				require(journal.find("[Pending] " + story.steps.back().text) !=
+						std::string::npos,
+					"Zalkapfaan preparation invented receipt");
+			}
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 27).completed == 0,
+				"Zalkapfaan custody created source or completion history");
+			const auto &vest = story_for("headless", "armor-34");
+			const auto &malra = story_for("headless", "malra-key");
+			const auto &piety = story_for("headless", "piety-soul");
+			record(journey, vest.contracts.front(), "headless-vest", 27, 2755);
+			record(journey, malra.contracts.front(), "headless-malra", 27, 2765);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 27, 10, 1, 121, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 27).completed == 2 &&
+					journal.find("[Recorded] " + vest.steps.back().text) !=
+						std::string::npos &&
+					journal.find("[Recorded] " + malra.steps.back().text) !=
+						std::string::npos &&
+					journal.find("[Pending] " + piety.steps.back().text) !=
+						std::string::npos,
+				"Zalkapfaan spent inputs completed competing return or lost receipt");
+			for (const auto &story : mapping.stories)
+				for (size_t n = 0; n + 1 < story.steps.size(); ++n)
+					require(journal.find("[Missing now] " +
+							     story.steps[n].text) !=
+							std::string::npos,
+						"Zalkapfaan receipt recreated consumed inputs");
+			supplies.carried[2764] = 1;
+			supplies.carried[2771] = 1;
+			supplies.carried[2747] = 1;
+			supplies.carried[2748] = 1;
+			journal = journey.render_journal(7, 42, 27, 10, 1, 122, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 27).completed == 2 &&
+					journal.find("[Ready now] " + piety.steps[0].text) !=
+						std::string::npos &&
+					journal.find("[Pending] " + piety.steps.back().text) !=
+						std::string::npos,
+				"Zalkapfaan reacquisition changed independent history");
+			for (const auto &story : mapping.stories)
+				if (story.id != vest.id && story.id != malra.id)
+				{
+					const auto tx = "headless-" + story.id;
+					record(journey, story.contracts.front(), tx.c_str(), 27,
+					       2755);
+				}
+			require(journey.progress_for_zone(7, 42, 27).completed == 8,
+				"Zalkapfaan exact receipt set lost independent branches");
+			auto replay = completion(vest.contracts.front(), "headless-vest", 120);
+			replay.transaction.zone_number = 27;
+			replay.transaction.room_vnum = 2755;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Zalkapfaan replay duplicated receipt");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 27).completed == 8,
+				"Zalkapfaan cold recovery lost branch receipts");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 27, 2730, 100, "arrival") ==
+					result::applied,
+				"Zalkapfaan raw discovery failed");
+			record(raw, piety.contracts.front(), "headless-raw-piety", 27, 2755);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 27).completed == 1,
+				"Zalkapfaan raw-to-authored recovery lost or expanded a receipt");
 		}
 
 		{

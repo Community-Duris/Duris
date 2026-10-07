@@ -244,9 +244,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 166 | The Troll Hills | [Comprehensive dossier](zone-stories/TROLL_HILLS.md):1Q/3M/148 rooms/20 mobiles/8 objects/123 resets/full selected closure | Schema3/revision1:1 card/3 contacts/8 aliases/1 optional row/2 steps;1 achievement/1 potential daily |20 source/access/binding follow-ups;no native repair |
 | 167 | A Dark and Twisted Wood | [Comprehensive dossier](zone-stories/DARK_AND_TWISTED_WOOD.md):1Q/3M/100 rooms/31 mobiles/37 objects/145 resets/full selected closure | Schema3/revision1:1 card/3 contacts/5 aliases/2 optional rows/3 steps;1 achievement/1 potential daily |20 source/branch/access follow-ups;no native repair |
 | 168 | The Underworld | [Comprehensive dossier](zone-stories/UNDERWORLD.md):1Q/3M/232 rooms/39 mobiles/55 objects/217 resets/full selected closure | Schema3/revision1:1 card/6 contacts/4 aliases/1 optional row/2 steps;1 achievement/1 potential daily |20 reward/access/source follow-ups;no native repair |
-| 169–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 169 | Zalkapfaan, City of the Headless Horde | [Comprehensive dossier](zone-stories/ZALKAPFAAN.md):8Q/2M/60 rooms/59 mobiles/57 objects/227 resets/full selected closure | Schema3/revision1:8 cards/9 contacts/2 aliases/12 optional rows/20 steps;8 achievements/5 potential dailies | Twenty branch/access/availability/service follow-ups;no native repair |
+| 170–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Zalkapfaan, City of the Headless Horde (`headless`).
+The next area is The Spires of the Elder Eternal Evil (`eternal`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -7143,3 +7144,54 @@ The [complete Underworld dossier](zone-stories/UNDERWORLD.md) maps one departing
 Catalog181 journals/1522 achievements/1408 potential dailies/2184 rows. Native2668 definitions/fingerprint/revision2/registry, all180 previous maps and original220 order preserved. Source-comprehensive168/220; 52 pending.
 
 Validation: full production regression, all181 compiled Python/C++ journal journeys, source/schema assertions, changed/staged format and exact preservation passed. Checked9716 local documentation links; all180 previous maps and2668 native definitions unchanged. The maintained Linux server build passed; src is unchanged here. The unchanged full production regression passed on an isolated native Linux filesystem with all6194 selected input files verified by SHA-256 against the worktree before recording the result. All181 compiled journal journeys ran successfully in the worktree on Windows with the maintained native compiler and static cJSON dependency. No played active-accounting relic exchange, imported source recovery, conditional skill learning, competing return, pool travel, key break, palace or nested treasure, hazard/corpse recovery or persistence outcome is claimed.
+
+
+## Priority 169 checkpoint: Zalkapfaan, City of the Headless Horde
+
+The [complete Zalkapfaan dossier](zone-stories/ZALKAPFAAN.md) maps eight native returns as eight cards across four progression families, nine contacts, two addressed aliases and twenty follow-ups. Engineering, bounty and three two-material armor requests retain five potential dailies; two departing token-for-key returns and Zekrallin's two-token soul return remain story-only under resetmode0. Twelve optional custody rows never claim personal recovery or reusable consumed roots. Spoken-password unlock→OPEN→arrival, breakable keys, actual staged roaming, queen reset admission and conditional post-node reset are qualified by current dispatch. Commodore purchases and mining refuse during active accounting; pool/node effects need owned persisted outcomes. No native repair ships; selected data/quest fixes require separate named commits and prominent PR/news treatment.
+
+## Follow-ups and builder decisions
+
+1. **Consumed branches.** Represent consumed-root alternatives for three armor requests and the two golems versus Zekrallin. Preserve all eight independent receipts and five-daily/three-story-only classification. Do not impose an exclusive choice or a quest order that native contracts do not require.
+
+2. **Source versus supplied materials.** Record item UID, source actor/container, original spawn episode and transfer cause for assembly, ears, requisition, scales and tokens. Distinguish gifts, theft, trade, corpse recovery, worn token removal, nested transfer and reacquisition. Preserve supplied exact-item acceptance.
+
+3. **Durable native returns.** Freeze exact giver/binding, admitted visible owned loose roots, recipient eligibility and item rewards before publication. Test all eight receipts, duplicate delivery, departure cleanup, replay, absent actor and cold recovery. A receipt does not prove personal source work or newly obtained rewards.
+
+4. **Armor assembly.** Show each exact two-input requirement with missing/current counts and its independent receipt. Native dialogue mentions hours, but no wait, partial deposit or additional fee is encoded. Any future asynchronous crafting job needs its own accepted state, cancellation/recovery and delivered outcome.
+
+5. **Conversation knowledge.** Record addressed project and piety responses separately from SAY, alias recognition and a saved knowledge fact. Golem reward text reveals names; it does not automatically produce an owned password objective. Keep conversations optional until builders deliberately encode a gate.
+
+6. **Spoken access.** Publish admitted successful word-key unlocks with actor, exact exit pair, keyword identity and before/after lock state. Follow with owned OPEN and actual arrival. Test wrong words, unadmitted speech, repeated unlock, reciprocal state, reset/relock and recovery; do not count raw speech.
+
+7. **Physical key access.** Track current held/loose keys2732/2749/2750/2767/2773 and actual unlock/open/arrival. Virtue and copper keys break100percent after successful unlock; others have zero native break chance. Nested custody and historic ownership do not establish usable access.
+
+8. **Conditional routes.** Keep two actual entry targets and the directed40/52/54 access scenarios explicit. Key branches and spoken-password branches differ; shared alternate approaches can avoid a gate. Do not require all religious returns to reach a scene or award progress from static reachability.
+
+9. **Staged roaming actors.** Qualify queen/advisor/religious-advisor initial stock, movement through2784..2788, actual encounter, holding-room diversion and death. Existing non-sentinel STAY_ZONE actors can roam into ten scenes; six rooms without player incoming paths alone do not prove broken quests.
+
+10. **Declared chance and reset admission.** Review queen M331 arg4=33 against current M admission requiring arg4==100 on ordinary resets unless forced. Initial boot force2 can admit the33percent roll. Prose1/16..1/2 is not the reset probability. Establish intended behavior with builders before selecting a named native fix.
+
+11. **Dynamic availability.** Explain absent givers, departed story-only actors, consumed materials, holding-room stock, copied world recovery and pending authority. Mode0 omits ordinary timer scheduling but has a conditional post-node-touch DB reset path. Daily rollover neither issues stock nor guarantees a meeting.
+
+12. **Accounting reset issuance.** Add a durable reset-generation identity and atomically publish admitted O/P/G/E equipment, pools, earth, nested ears and node/memory stock with source lineage. Existing active accounting guard declines item issuance before read_object; never count a declared reset as a successful acquisition.
+
+13. **Charisma pool outcomes.** Record exact selected successful DRINK, level51 eligibility, shared48hour TAG_POOL, prior stat/health, frozen RNG, bounded result and persisted effect. Separate cooldown injury, healing, neutral or negative stat outcomes and positive gain; possession is no pool completion.
+
+14. **Owned node touch.** Qualify commander-carried stone359 periodic zone identity, recovery to visible loose/floor custody, peaceful eligible TOUCH, exact UID and committed group award/reset request. Memory55189 is a separate souvenir. G issuance, possession and command text do not prove a committed node outcome.
+
+15. **Epic teacher accounting.** The Commodore is bound through the epic teacher table, but current active accounting declines purchases. Add an atomic epic/coin payment plus frozen skill state and persisted learned outcome, dynamic availability and rollback/recovery. Do not bypass the current guard or invent class restrictions.
+
+16. **Mining accounting.** Broken earth193 is generically bound to mine, which currently declines during active accounting. Add frozen resource depletion, pick/skill eligibility, timed work, output item UID/quality and cancellation/recovery publication before any counted quarry stage. Keep mining separate from scale delivery.
+
+17. **Temple acts.** Guillotine, prisoner, cardinal, severed head and newly animated headless are lore/combat scenes without a selected execution, conversion, rescue or soul-release terminal. Builders must design participant eligibility, victim ownership, reversible failure and saved outcomes before a story hook.
+
+18. **Water and combat outcomes.** Moat2769 has current15west in actual water-swim6; flight/levitation, command eligibility and successful movement matter. Record owned arrival/survival only after resolution. Mobile1d1+1 is augmented by level-squared HP in the loader; do not infer a combat repair from raw dice.
+
+19. **Lore and builder decisions.** Review engineer quartermaster blame versus advisor source, promise of engine immunity, armor work duration and obsolete holding fractions. Current mappings state the encoded behavior fairly. Selected data/quest repairs need separate named fix/news commits, precise before/after and prominent PR/news notes.
+
+20. **Played qualification.** Run authorized active READY accounting journeys for all five daily and three story-only exchanges, gifts/source recovery, repeated/competing inputs, departure, passwords/keys, staged encounters and recovery. Qualify pool/node outcomes separately; teacher/mining guards remain visible. Source and compiled regressions do not replace played proof.
+
+Catalog182 journals/1522 achievements/1408 potential dailies/2184 rows. Native2668 definitions/fingerprint/revision2/registry,all181 previous maps and original220 order preserved. Source-comprehensive169/220; 51 pending.
+
+Validation: full production regression, all182 compiled Python/C++ journal journeys, source/schema assertions, changed/staged format and exact preservation passed. Checked9752 local documentation links; all181 previous maps and2668 native definitions unchanged. The maintained Linux server build passed; src is unchanged here. The unchanged full production regression passed on an isolated native Linux filesystem with all6197 selected input files verified by SHA-256 against the worktree before recording the result. All182 compiled journal journeys ran successfully in the worktree on Windows with the maintained native compiler and static cJSON dependency. No played active-accounting engineer or bounty hand-in, armor delivery, religious return, spoken door, staged encounter, pool effect, node touch, mining, training or persistence outcome is claimed.

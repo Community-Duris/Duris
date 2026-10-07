@@ -3976,3 +3976,49 @@ The [complete Underworld dossier](../design/zone-stories/UNDERWORLD.md) maps one
 18. **Conditional arrivals.** Qualify actual Githyanki SHIFT PRIME, MIND TRAVEL and the bound Ixarkon veil96402 as optional random arrivals at4437. Preserve race/plane/cooldown, combat/no-teleport and exact target rules. Arrival credit must come from successful movement, not a candidate destination or issued command.
 19. **Stock and reset issuance.** Implement durable reset generation/issuance before fresh active-accounting stock guarantees. Current reset guard refuses item loading before live placement. Project unavailable/departed/cap-suppressed stock without inventing replenishment; qualify O/P/E/G children, issued UIDs, restart and duplicate suppression.
 20. **Daily and played qualification.** Exercise discovery, giver encounter, exact visible loose offering, independent foreign receipts, frozen skill/departure, replay, restart and both pool directions with active READY accounting. Daily rollover changes eligibility; it restores neither source items nor actors. Keep synthetic/source qualification separate from played evidence.
+
+## Zalkapfaan: spoken access, roaming sources and owned outcomes
+
+The [complete Zalkapfaan dossier](../design/zone-stories/ZALKAPFAAN.md) maps eight native returns as eight cards across four progression families, nine contacts, two addressed aliases and twenty follow-ups. Engineering, bounty and three two-material armor requests retain five potential dailies; two departing token-for-key returns and Zekrallin's two-token soul return remain story-only under resetmode0. Twelve optional custody rows never claim personal recovery or reusable consumed roots. Spoken-password unlock→OPEN→arrival, breakable keys, actual staged roaming, queen reset admission and conditional post-node reset are qualified by current dispatch. Commodore purchases and mining refuse during active accounting; pool/node effects need owned persisted outcomes. No native repair ships; selected data/quest fixes require separate named commits and prominent PR/news treatment.
+
+## Follow-ups and builder decisions
+
+1. **Consumed branches.** Represent consumed-root alternatives for three armor requests and the two golems versus Zekrallin. Preserve all eight independent receipts and five-daily/three-story-only classification. Do not impose an exclusive choice or a quest order that native contracts do not require.
+
+2. **Source versus supplied materials.** Record item UID, source actor/container, original spawn episode and transfer cause for assembly, ears, requisition, scales and tokens. Distinguish gifts, theft, trade, corpse recovery, worn token removal, nested transfer and reacquisition. Preserve supplied exact-item acceptance.
+
+3. **Durable native returns.** Freeze exact giver/binding, admitted visible owned loose roots, recipient eligibility and item rewards before publication. Test all eight receipts, duplicate delivery, departure cleanup, replay, absent actor and cold recovery. A receipt does not prove personal source work or newly obtained rewards.
+
+4. **Armor assembly.** Show each exact two-input requirement with missing/current counts and its independent receipt. Native dialogue mentions hours, but no wait, partial deposit or additional fee is encoded. Any future asynchronous crafting job needs its own accepted state, cancellation/recovery and delivered outcome.
+
+5. **Conversation knowledge.** Record addressed project and piety responses separately from SAY, alias recognition and a saved knowledge fact. Golem reward text reveals names; it does not automatically produce an owned password objective. Keep conversations optional until builders deliberately encode a gate.
+
+6. **Spoken access.** Publish admitted successful word-key unlocks with actor, exact exit pair, keyword identity and before/after lock state. Follow with owned OPEN and actual arrival. Test wrong words, unadmitted speech, repeated unlock, reciprocal state, reset/relock and recovery; do not count raw speech.
+
+7. **Physical key access.** Track current held/loose keys2732/2749/2750/2767/2773 and actual unlock/open/arrival. Virtue and copper keys break100percent after successful unlock; others have zero native break chance. Nested custody and historic ownership do not establish usable access.
+
+8. **Conditional routes.** Keep two actual entry targets and the directed40/52/54 access scenarios explicit. Key branches and spoken-password branches differ; shared alternate approaches can avoid a gate. Do not require all religious returns to reach a scene or award progress from static reachability.
+
+9. **Staged roaming actors.** Qualify queen/advisor/religious-advisor initial stock, movement through2784..2788, actual encounter, holding-room diversion and death. Existing non-sentinel STAY_ZONE actors can roam into ten scenes; six rooms without player incoming paths alone do not prove broken quests.
+
+10. **Declared chance and reset admission.** Review queen M331 arg4=33 against current M admission requiring arg4==100 on ordinary resets unless forced. Initial boot force2 can admit the33percent roll. Prose1/16..1/2 is not the reset probability. Establish intended behavior with builders before selecting a named native fix.
+
+11. **Dynamic availability.** Explain absent givers, departed story-only actors, consumed materials, holding-room stock, copied world recovery and pending authority. Mode0 omits ordinary timer scheduling but has a conditional post-node-touch DB reset path. Daily rollover neither issues stock nor guarantees a meeting.
+
+12. **Accounting reset issuance.** Add a durable reset-generation identity and atomically publish admitted O/P/G/E equipment, pools, earth, nested ears and node/memory stock with source lineage. Existing active accounting guard declines item issuance before read_object; never count a declared reset as a successful acquisition.
+
+13. **Charisma pool outcomes.** Record exact selected successful DRINK, level51 eligibility, shared48hour TAG_POOL, prior stat/health, frozen RNG, bounded result and persisted effect. Separate cooldown injury, healing, neutral or negative stat outcomes and positive gain; possession is no pool completion.
+
+14. **Owned node touch.** Qualify commander-carried stone359 periodic zone identity, recovery to visible loose/floor custody, peaceful eligible TOUCH, exact UID and committed group award/reset request. Memory55189 is a separate souvenir. G issuance, possession and command text do not prove a committed node outcome.
+
+15. **Epic teacher accounting.** The Commodore is bound through the epic teacher table, but current active accounting declines purchases. Add an atomic epic/coin payment plus frozen skill state and persisted learned outcome, dynamic availability and rollback/recovery. Do not bypass the current guard or invent class restrictions.
+
+16. **Mining accounting.** Broken earth193 is generically bound to mine, which currently declines during active accounting. Add frozen resource depletion, pick/skill eligibility, timed work, output item UID/quality and cancellation/recovery publication before any counted quarry stage. Keep mining separate from scale delivery.
+
+17. **Temple acts.** Guillotine, prisoner, cardinal, severed head and newly animated headless are lore/combat scenes without a selected execution, conversion, rescue or soul-release terminal. Builders must design participant eligibility, victim ownership, reversible failure and saved outcomes before a story hook.
+
+18. **Water and combat outcomes.** Moat2769 has current15west in actual water-swim6; flight/levitation, command eligibility and successful movement matter. Record owned arrival/survival only after resolution. Mobile1d1+1 is augmented by level-squared HP in the loader; do not infer a combat repair from raw dice.
+
+19. **Lore and builder decisions.** Review engineer quartermaster blame versus advisor source, promise of engine immunity, armor work duration and obsolete holding fractions. Current mappings state the encoded behavior fairly. Selected data/quest repairs need separate named fix/news commits, precise before/after and prominent PR/news notes.
+
+20. **Played qualification.** Run authorized active READY accounting journeys for all five daily and three story-only exchanges, gifts/source recovery, repeated/competing inputs, departure, passwords/keys, staged encounters and recovery. Qualify pool/node outcomes separately; teacher/mining guards remain visible. Source and compiled regressions do not replace played proof.

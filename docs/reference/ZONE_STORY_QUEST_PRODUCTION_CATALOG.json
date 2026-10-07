@@ -41826,6 +41826,442 @@
     {
       "contacts": [
         {
+          "description": "Ask project, then bring a loose clockwork assembly for the earring. Zaal-kab is the declared source; supplied exact assemblies fit too.",
+          "keyword": "engineer",
+          "mob_vnum": 2749,
+          "name": "a one-legged headless engineer",
+          "topics": [
+            "project"
+          ]
+        },
+        {
+          "description": "Bring the exact ears of Murf for the emerald circlet. The target-pole corpse is the source lead; the contract does not require your own new kill.",
+          "keyword": "officer",
+          "mob_vnum": 2755,
+          "name": "a massive headless bounty officer",
+          "topics": []
+        },
+        {
+          "description": "Each of the three armor returns consumes one requisition and its chosen scale type. Prepare a fresh pair for each accepted return; the dialogue does not create a timed crafting job.",
+          "keyword": "smith",
+          "mob_vnum": 2758,
+          "name": "a gargantuan headless smith",
+          "topics": []
+        },
+        {
+          "description": "The chrome golem accepts the token to Malra for the mithril key and departs. This spends a token also used by Zekrallin.",
+          "keyword": "chrome",
+          "mob_vnum": 2777,
+          "name": "a golem of burnished chrome",
+          "topics": []
+        },
+        {
+          "description": "The blood golem accepts the token to Kaan for the iron key and departs. This spends a token also used by Zekrallin.",
+          "keyword": "blood",
+          "mob_vnum": 2778,
+          "name": "a golem of thick, coagulated blood",
+          "topics": []
+        },
+        {
+          "description": "Ask piety. Bring both loose religious tokens for the shattered soul. He roams from staging and departs after his return; the same tokens cannot also be spent on the golems.",
+          "keyword": "zekrallin",
+          "mob_vnum": 2787,
+          "name": "Zekrallin, religious advisor to the force commander",
+          "topics": [
+            "piety"
+          ]
+        },
+        {
+          "description": "Zaal-kab carries the clockwork assembly when stocked and can roam out of staging. His initial reset room is not a guaranteed player meeting place.",
+          "keyword": "zaal-kab",
+          "mob_vnum": 2786,
+          "name": "Zaal-kab, first advisor to the force commander",
+          "topics": []
+        },
+        {
+          "description": "The queen carries queen-xorn scales when stocked and can roam out of staging. Her declared reset chance and room lore do not guarantee present stock.",
+          "keyword": "queen",
+          "mob_vnum": 2785,
+          "name": "the queen of the xorn",
+          "topics": []
+        },
+        {
+          "description": "The Commodore is a ship damage control teacher. This is an optional service, and new epic skill purchases currently decline during active accounting.",
+          "keyword": "commodore",
+          "mob_vnum": 2733,
+          "name": "a leather-hided headless commodore",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow the engineer, bounty officer and armor requisitions, then choose how to spend the Malra-Kaan tokens. Explore the spoken doors, roaming advisors, command study and temple as separate leads.",
+      "orientation": [
+        "Explore the gates, docks, army quarter, noble homes, religious bastion and command keep of Zalkapfaan. The portcullis has two approaches; the surface waters also meet the harbor. Routes, enemies and current stock still matter.",
+        "Ask the one-legged engineer project about his unfinished weapon. Bring a clockwork assembly for his earring. His words blame the quartermaster, while the declared assembly source is Zaal-kab, the force commander's advisor. A supplied exact assembly also fits.",
+        "The bounty officer accepts the ears of Murf for an emerald circlet. Those exact ears are stocked inside the battered elven corpse at the target pole. Recovering them is a source lead; this return does not require a new personal kill.",
+        "The smith offers three independent armor requests. Each consumes a fresh purchase requisition together with sea-serpent scales, hatchling xorn scales or queen-xorn scales. The same requisition cannot be spent on multiple suits. Carry each chosen pair loose before offering it.",
+        "A tired soldier carries the requisition when stocked. The sea serpent in the moat and an egg chamber hatchling carry two scale types; the roaming xorn queen carries the third. Source recovery and receiving the same exact materials from someone else are separate histories that both can supply a native return.",
+        "The armor dialogue describes hours of work, but the encoded exchange returns the armor directly. The journal records each accepted delivery independently. It does not create a crafting timer, partial deposit, extra fee or exclusive armor choice.",
+        "The deacon wears a token to Malra and the bishop wears a token to Kaan. The chrome golem accepts Malra's token for the mithril key, while the blood golem accepts Kaan's token for the iron key. Both golems depart after their return.",
+        "The iron and mithril keys open the two locked approaches to the last religious bastion. The spoken password malra-kaan unlocks its temple wall. The command study uses kal-zerr, a name written on the commander's guard badge. After an admitted successful SAY, OPEN and cross the unlocked passage.",
+        "Zekrallin accepts both religious tokens for a shattered soul and departs. This consumes the same token types needed by the two golems. Keep the tokens for the path you want, or obtain fresh exact tokens for the other returns. Hearing the names or carrying a soul does not complete a different return.",
+        "The warden carries the copper key for the command keep; a midnight guard carries the adamantium key for the war room. The virtue gate key and copper keep key break after a successful unlock. The religious and adamantium keys have no encoded break chance.",
+        "The queen, Zaal-kab and Zekrallin can roam out of the hidden staging rooms into the zone. Their appearance depends on actual reset admission, movement and survival. Room descriptions mentioning fractions do not guarantee encounter odds or a fixed player meeting place.",
+        "The command study contains a charisma pool, and the force commander carries a rune-covered epic stone and a memory of Zalkapfaan when stocked. The pool has a level requirement, a shared cooldown and a risky stat effect. Node rewards require the actual accepted touch outcome; holding either souvenir does not complete these side activities.",
+        "The Commodore teaches ship damage control, and broken earth marks a quarry. Epic skill purchases and mining currently decline while accounting is active. They are optional service leads with follow-up work, not required steps in these item-return journals.",
+        "The temple's guillotine, prisoner and animated headless tell a grim story, but no separate execution, rescue, soul release or conversion quest is encoded. The water-filled moat has a conditional westward current; surviving it is distinct from delivering scales.",
+        "Declared stock and roaming quest givers are not guaranteed by daily rollover. Reset mode zero omits the ordinary periodic reset schedule, with a separate conditional reset path after a committed node touch. Current active accounting also refuses native reset item issuance. New discovery, encounter, journal, achievement and daily progress requires active, ready accounting."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "headless",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:2778;receive=I:2782;disappear=0",
+              "giver_vnum": 2749
+            }
+          ],
+          "id": "clockwork-project",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Zaal-kab carries it when stocked; a supplied exact assembly also fits. Worn, held, nested or spent items do not fill this current count.",
+              "id": "assembly",
+              "item_vnums": [
+                2778
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a clockwork assembly loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2778;receive=I:2782;disappear=0",
+                  "giver_vnum": 2749
+                }
+              ],
+              "hint": "Conversation, source recovery, a bill of lading and a promise about the engine do not substitute for the exact accepted exchange.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the engineer's accepted assembly return"
+            }
+          ],
+          "summary": "Bring the assembly for the engineer's earring. Source recovery and his promise about the war engine remain separate from the accepted item return.",
+          "title": "Finish the engineer's clockwork project"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:2735;receive=I:2786;disappear=0",
+              "giver_vnum": 2755
+            }
+          ],
+          "id": "murf-bounty",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Look inside the battered elven corpse at the target pole when stocked. Current loose custody does not prove that you personally killed Murf.",
+              "id": "ears",
+              "item_vnums": [
+                2735
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the ears of Murf loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2735;receive=I:2786;disappear=0",
+                  "giver_vnum": 2755
+                }
+              ],
+              "hint": "Corpse recovery, a different pair of ears, a personal kill or wearing the circlet does not substitute for this receipt.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the bounty officer's accepted ear return"
+            }
+          ],
+          "summary": "Recover the ears from the target-pole corpse or obtain the same exact item, then bring them to the bounty officer.",
+          "title": "Return the ears of Murf"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:2764,I:2771;receive=I:2783;disappear=0",
+              "giver_vnum": 2758
+            }
+          ],
+          "id": "armor-34",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "A tired soldier carries it when stocked. One current requisition prepares a chosen return; it cannot pay for all three suits.",
+              "id": "requisition",
+              "item_vnums": [
+                2764
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a purchase requisition loose"
+            },
+            {
+              "count": 1,
+              "hint": "An egg chamber hatchling carries this exact scale type; queen scales are different.",
+              "id": "hatchling-scales",
+              "item_vnums": [
+                2771
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry hatchling xorn scales loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2764,I:2771;receive=I:2783;disappear=0",
+                  "giver_vnum": 2758
+                }
+              ],
+              "hint": "Consumes a requisition and hatchling scales. The other armor returns keep their own receipt and require fresh consumed inputs.",
+              "id": "xorn-vest",
+              "kind": "completion",
+              "text": "Record the xorn-hide vest return"
+            }
+          ],
+          "summary": "Three independent returns share one requisition type. Each armor needs its own fresh requisition and matching scales; the smith returns it through a native exchange.",
+          "title": "Requisition: xorn-hide vest"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:2764,I:2765;receive=I:2784;disappear=0",
+              "giver_vnum": 2758
+            }
+          ],
+          "id": "armor-42",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "A tired soldier carries it when stocked. One current requisition prepares a chosen return; it cannot pay for all three suits.",
+              "id": "requisition",
+              "item_vnums": [
+                2764
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a purchase requisition loose"
+            },
+            {
+              "count": 1,
+              "hint": "The moat serpent carries this exact scale type when stocked. Current water hazards and supplied material history remain separate.",
+              "id": "serpent-scales",
+              "item_vnums": [
+                2765
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry sea-serpent scales loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2764,I:2765;receive=I:2784;disappear=0",
+                  "giver_vnum": 2758
+                }
+              ],
+              "hint": "Consumes a requisition and sea-serpent scales. There is no encoded delay or partial crafting deposit.",
+              "id": "serpent-armor",
+              "kind": "completion",
+              "text": "Record the sea-serpent armor return"
+            }
+          ],
+          "summary": "Three independent returns share one requisition type. Each armor needs its own fresh requisition and matching scales; the smith returns it through a native exchange.",
+          "title": "Requisition: sea-serpent armor"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:2764,I:2777;receive=I:2785;disappear=0",
+              "giver_vnum": 2758
+            }
+          ],
+          "id": "armor-50",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "A tired soldier carries it when stocked. One current requisition prepares a chosen return; it cannot pay for all three suits.",
+              "id": "requisition",
+              "item_vnums": [
+                2764
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a purchase requisition loose"
+            },
+            {
+              "count": 1,
+              "hint": "The roaming queen carries them when stocked. A supplied exact pile fits; staging lore does not guarantee her appearance.",
+              "id": "queen-scales",
+              "item_vnums": [
+                2777
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry queen-xorn scales loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2764,I:2777;receive=I:2785;disappear=0",
+                  "giver_vnum": 2758
+                }
+              ],
+              "hint": "Consumes a requisition and queen scales. A different armor or the queen's death does not record this exchange.",
+              "id": "queen-armor",
+              "kind": "completion",
+              "text": "Record the enchanted xorn-hide armor return"
+            }
+          ],
+          "summary": "Three independent returns share one requisition type. Each armor needs its own fresh requisition and matching scales; the smith returns it through a native exchange.",
+          "title": "Requisition: queen-xorn armor"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:2747;receive=I:2750;disappear=1",
+              "giver_vnum": 2777
+            }
+          ],
+          "id": "malra-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The deacon wears this token when stocked. Remove it from equipment or containers before preparing a return; decide between the chrome golem and Zekrallin.",
+              "id": "malra-token",
+              "item_vnums": [
+                2747
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a token to Malra loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2747;receive=I:2750;disappear=1",
+                  "giver_vnum": 2777
+                }
+              ],
+              "hint": "Spends Malra's token and makes the golem depart. It does not record Zekrallin's return, password knowledge or entering the bastion.",
+              "id": "malra-key",
+              "kind": "completion",
+              "text": "Record the chrome golem's mithril-key return"
+            }
+          ],
+          "summary": "Two golems exchange religious tokens for access keys; Zekrallin consumes both token types for a soul. These are three independent story-only returns with competing inputs.",
+          "title": "Malra: the mithril access key"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:2748;receive=I:2749;disappear=1",
+              "giver_vnum": 2778
+            }
+          ],
+          "id": "kaan-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The bishop wears this token when stocked. A supplied exact token fits; decide between the blood golem and Zekrallin.",
+              "id": "kaan-token",
+              "item_vnums": [
+                2748
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a token to Kaan loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2748;receive=I:2749;disappear=1",
+                  "giver_vnum": 2778
+                }
+              ],
+              "hint": "Spends Kaan's token and makes the golem depart. A fresh token is needed if you also want to supply Zekrallin.",
+              "id": "kaan-key",
+              "kind": "completion",
+              "text": "Record the blood golem's iron-key return"
+            }
+          ],
+          "summary": "Two golems exchange religious tokens for access keys; Zekrallin consumes both token types for a soul. These are three independent story-only returns with competing inputs.",
+          "title": "Kaan: the iron access key"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:2747,I:2748;receive=I:2780;disappear=1",
+              "giver_vnum": 2787
+            }
+          ],
+          "id": "piety-soul",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The deacon wears this token when stocked. Remove it from equipment or containers before preparing a return; decide between the chrome golem and Zekrallin.",
+              "id": "malra-token",
+              "item_vnums": [
+                2747
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a token to Malra loose"
+            },
+            {
+              "count": 1,
+              "hint": "The bishop wears this token when stocked. A supplied exact token fits; decide between the blood golem and Zekrallin.",
+              "id": "kaan-token",
+              "item_vnums": [
+                2748
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry a token to Kaan loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:2747,I:2748;receive=I:2780;disappear=1",
+                  "giver_vnum": 2787
+                }
+              ],
+              "hint": "Spends both tokens and makes him depart. Asking piety, opening the temple, a supplied soul or either golem receipt is separate.",
+              "id": "piety-soul",
+              "kind": "completion",
+              "text": "Record Zekrallin's accepted two-token return"
+            }
+          ],
+          "summary": "Two golems exchange religious tokens for access keys; Zekrallin consumes both token types for a soul. These are three independent story-only returns with competing inputs.",
+          "title": "Zekrallin: the two-token piety return"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "The gardener offers leads about the desk, family name and haunted manor.",
           "keyword": "gardener",
           "mob_vnum": 3504,
