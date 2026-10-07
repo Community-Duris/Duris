@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 174 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 175 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -379,7 +379,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 | 172 | [The Trakkia Mountains](zone-stories/TRAKKIA_MOUNTAINS.md) (`trakkia`) | Ancestral signet; Aspuru soul; lost-flock evidence; four grangle roots; tomb/key/treasure routes and Saints campaign. | Comprehensive schema3/revision1:4Q/4 cards/7 contacts/2M/4 aliases/4 optional custody rows/8 steps;166 rooms/63 mobiles/58 objects/333 resets/full selected closure. Twenty source/access/availability/builder follow-ups;4 achievements/4 potential dailies;no native repair. |
 | 173 | [The Stone Tomb of Kelek](zone-stories/STONE_TOMB_OF_KELEK.md) (`kelek`) | Smith mithril/hammer; catalog-linked Church cardinal proof and captive proofs; Church note delivery; tomb/crypt/Deliverer/node routes. | Comprehensive schema3/revision1:3Q/3 cards/13 contacts/2M/2 aliases/6 optional singleton rows/9 steps;216 rooms/16 mobiles/14 objects/110 resets/full selected closure. Twenty ownership/source/access/availability/builder follow-ups;3 achievements/3 potential dailies;no native repair. |
 | 174 | [Krethik Keep](zone-stories/KRETHIK_KEEP.md) (`krethik`) | Freth sandwich; troll totem; advisor conspiracy note; independent Winterhaven memory/head deliveries; key/chest/statue/brick/portal/fall/node routes. | Comprehensive schema3/revision1:3Q/3 cards/15 contacts/2M/5 local aliases+1 foreign topic/3 optional singleton rows/6 steps;148 rooms/69 mobiles/77 objects/591 resets/full selected closure. Twenty link/source/access/availability/builder follow-ups;3 achievements/3 potential dailies;no native repair. |
-| 175 | Thetis's Realm (`thetis`) | [Meet the giver → 1 × a blue gem → a blue potion](../../areas/qst/thetis.qst#L7) | 3 Q; 2 dialogue; 0 candidate link items |
+| 175 | [Thetis's Realm](zone-stories/THETIS_REALM.md) (`thetis`) | Crab gem; mermaid earring; Burgadan returned map/spade; independent Hordine key and Jade treasure route; courtyard/cells/throne/chests and breathing. | Comprehensive schema3/revision1:3Q/3 cards/16 contacts/2M/4 aliases/3 optional singleton rows/6 steps;100 rooms/38 mobiles/39 objects/243 resets/full selected closure. Twenty returned-proof/source/access/availability/builder follow-ups;3 achievements/2 potential dailies;missing104 documented,no native repair. |
 | 176 | The Lair of Tiamat (`azhural`) | [Meet the giver → 8 × a shard of bone → a key of fused bone shards](../../areas/qst/azhural.qst#L18) | 2 Q; 2 dialogue; 0 candidate link items |
 | 177 | Quintaragon Castle (`castle`) | [Meet the giver → 1 × a white bone studded with fine diamonds → the flaming orb of revenge](../../areas/qst/castle.qst#L31) | 2 Q; 2 dialogue; 0 candidate link items |
 | 178 | The Church of the Eternal Dusk (`church`) | [Meet the giver → 1 × a badge of holy patronage → native reward/response](../../areas/qst/church.qst#L14) | 2 Q; 2 dialogue; 0 candidate link items |

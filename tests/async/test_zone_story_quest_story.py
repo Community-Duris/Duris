@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 187 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 188 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,18 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+thetis=next(m for m in catalog['story_mappings'] if m['source_area']=='thetis')
+assert (thetis['coverage'],thetis['schema_version'],thetis['revision'])==('complete',3,1) and not thetis['exclusions']
+assert len(thetis['stories'])==3 and len(thetis['contacts'])==16 and sum(len(c['topics']) for c in thetis['contacts'])==4
+assert sum(len(s['steps']) for s in thetis['stories'])==6 and all(len(s['steps'])==2 for s in thetis['stories'])
+assert all(s['steps'][0]['kind']=='carried_item' and s['steps'][0]['optional'] and s['steps'][0]['count']==1 and len(s['steps'][0]['item_vnums'])==1 for s in thetis['stories'])
+assert all(len(s['contracts'])==1 and s['steps'][-1]['contracts']==s['contracts'] for s in thetis['stories'])
+assert report['eligible_by_zone']['380']==3 and sum(d['daily_eligible'] for d in catalog['definitions'] if d['source_area']=='thetis')==2
+assert {s['id'] for s in thetis['stories']}=={'stolen-blue-gem','lost-coral-earring','burgadans-treasure-lead'}
+assert all(s['contracts'][0]['giver_vnum'] in (38015,38025,38037) for s in thetis['stories'])
+assert next(d for d in catalog['definitions'] if d['giver_vnum']==38037)['daily_exclusion']=='Item exchange'
+assert {d['zone_number'] for d in catalog['definitions'] if d['giver_vnum']==22626}=={226}
 
 krethik=next(m for m in catalog['story_mappings'] if m['source_area']=='krethik')
 assert (krethik['coverage'],krethik['schema_version'],krethik['revision'])==('complete',3,1) and not krethik['exclusions']

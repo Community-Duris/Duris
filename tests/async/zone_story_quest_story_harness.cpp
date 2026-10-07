@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 187 &&
+		require(catalog.story_mappings.size() == 188 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,197 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "thetis"; });
+			require(mapping.stories.size() == 3 && mapping.contacts.size() == 16 &&
+					mapping.revision == 1,
+				"Thetis journal scope failed");
+			int achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 380)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 3 && dailies == 2,
+				"Thetis returned map entered the daily pool or changed achievements");
+			const auto &gem = story_for("thetis", "stolen-blue-gem");
+			const auto &earring = story_for("thetis", "lost-coral-earring");
+			const auto &map = story_for("thetis", "burgadans-treasure-lead");
+			const auto &key = story_for("spshold", "hordine-torn-map");
+			service journey(catalog);
+			require(journey.meet_npc(7, 42, 38015, 38001, 99) == result::rejected,
+				"Thetis encounter skipped discovery");
+			require(journey.discover_zone(7, 42, 380, 38000, 100, "arrival") ==
+					result::applied,
+				"Thetis discovery failed");
+			for (const auto &location :
+			     std::vector<std::pair<int, int>>{ { 38004, 38006 },
+							       { 38006, 38016 },
+							       { 38036, 38027 },
+							       { 38033, 38097 } })
+				require(journey.meet_npc(7, 42, location.first, location.second,
+							 101) == result::applied,
+					"Thetis optional source encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 380, 10, 1, 102, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Thetis source encounter exposed unseen giver");
+			for (const auto &location : std::vector<std::pair<int, int>>{
+				     { 38015, 38001 }, { 38025, 38048 }, { 38037, 38013 } })
+				require(journey.meet_npc(7, 42, location.first, location.second,
+							 103) == result::applied,
+					"Thetis giver encounter failed");
+			const auto before = journey.serialize_state();
+			supplies = {};
+			for (int v : { 38028, 38013, 38037, 38014, 38019, 38021, 38033, 38035,
+				       38000, 38034, 38036, 22622, 22633, 77210, 77211 })
+				supplies.carried[v] = 2;
+			journal = journey.render_journal(7, 42, 380, 10, 1, 104, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(journal.find("[Missing now] " + story.steps.front().text) !=
+							std::string::npos &&
+						journal.find("[Pending] " +
+							     story.steps.back().text) !=
+							std::string::npos,
+					"Thetis reward/key/chest supplied the offering");
+			supplies = {};
+			supplies.equipped[18] = 38018;
+			supplies.equipped[19] = 38001;
+			supplies.equipped[16] = 77209;
+			supplies.carried[38034] = 1;
+			journal = journey.render_journal(7, 42, 380, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(journal.find("[Missing now] " + story.steps.front().text) !=
+						std::string::npos,
+					"Thetis equipped or contained item supplied loose offering");
+			supplies = {};
+			for (const auto &story : mapping.stories)
+				supplies.carried[story.steps.front().item_vnums.front()] = 1;
+			journal = journey.render_journal(7, 42, 380, 10, 1, 106, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(journal.find("[Ready now] " + story.steps.front().text) !=
+							std::string::npos &&
+						journal.find("[Pending] " +
+							     story.steps.back().text) !=
+							std::string::npos,
+					"Thetis supplied singleton not ready or minted receipt");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 380).completed == 0,
+				"Thetis custody recorded source or completion history");
+			require(!journey.daily_eligible_for(7, 42, map.contracts.front(), 10, 1, 10,
+							    107),
+				"Thetis returned-proof exchange became daily eligible");
+			record(journey, map.contracts.front(), "thetis-burgadan", 380, 38013);
+			supplies = {};
+			supplies.carried[38037] = 1;
+			supplies.carried[77209] = 1;
+			journal = journey.render_journal(7, 42, 380, 10, 1, 121, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 380).completed == 1 &&
+					journal.find("[Recorded] " + map.steps.back().text) !=
+						std::string::npos &&
+					journal.find("[Ready now] " + map.steps.front().text) !=
+						std::string::npos,
+				"Thetis returned map lost receipt or exact current custody");
+			require(journal.find("[Pending] " + gem.steps.back().text) !=
+						std::string::npos &&
+					journal.find("[Pending] " + earring.steps.back().text) !=
+						std::string::npos,
+				"Thetis referral completed independent local returns");
+			require(journey.progress_for_zone(7, 42, 226).completed == 0 &&
+					journey.meet_npc(7, 42, 22626, 22659, 122) ==
+						result::rejected &&
+					!journey.daily_eligible_for(7, 42, key.contracts.front(),
+								    10, 1, 10, 122),
+				"Thetis source discovery granted foreign credit,encounter or daily access");
+			auto wrong = completion(key.contracts.front(), "thetis-wrong-owner", 120);
+			wrong.transaction.zone_number = 380;
+			wrong.transaction.room_vnum = 38013;
+			require(journey.record_completion(wrong) == result::rejected,
+				"Thetis stole Hordine receipt ownership");
+			record(journey, key.contracts.front(), "thetis-hordine", 226, 22659);
+			require(journey.progress_for_zone(7, 42, 226).completed == 1 &&
+					journey.progress_for_zone(7, 42, 380).completed == 1 &&
+					!journey.progress_for_zone(7, 42, 226).discovered,
+				"Thetis foreign hand-in changed local credit or fabricated foreign discovery");
+			supplies = {};
+			supplies.carried[22633] = 1;
+			supplies.carried[38037] = 1;
+			journal = journey.render_journal(7, 42, 380, 10, 1, 123, false, false,
+							 &supplies);
+			require(journal.find("[Missing now] " + map.steps.front().text) !=
+						std::string::npos &&
+					journal.find("[Recorded] " + map.steps.back().text) !=
+						std::string::npos,
+				"Thetis chest key recreated spent map or erased referral");
+			require(journey.discover_zone(7, 42, 226, 22659, 124, "arrival") ==
+						result::applied &&
+					journey.meet_npc(7, 42, 22626, 22659, 125) ==
+						result::applied,
+				"Thetis later foreign discovery/encounter failed");
+			journal = journey.render_journal(7, 42, 226, 10, 1, 126, false, false);
+			require(journal.find("[Recorded] " + key.steps.back().text) !=
+					std::string::npos,
+				"Thetis foreign journal lost earlier accepted key exchange");
+			record(journey, gem.contracts.front(), "thetis-crab", 380, 38001);
+			supplies = {};
+			supplies.carried[38028] = 1;
+			journal = journey.render_journal(7, 42, 380, 10, 1, 127, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 380).completed == 2 &&
+					journal.find("[Missing now] " + gem.steps.front().text) !=
+						std::string::npos &&
+					journal.find("[Recorded] " + gem.steps.back().text) !=
+						std::string::npos &&
+					journal.find("[Pending] " + earring.steps.back().text) !=
+						std::string::npos,
+				"Thetis potion recreated gem or crab departure completed earring");
+			supplies.carried[38018] = 1;
+			journal = journey.render_journal(7, 42, 380, 10, 1, 128, false, false,
+							 &supplies);
+			require(journal.find("[Ready now] " + gem.steps.front().text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 380).completed == 2,
+				"Thetis gem reacquisition duplicated receipt");
+			record(journey, earring.contracts.front(), "thetis-mermaid", 380, 38048);
+			require(journey.progress_for_zone(7, 42, 380).completed == 3 &&
+					journey.progress_for_zone(7, 42, 226).completed == 1,
+				"Thetis independent receipts or foreign ownership changed");
+			auto replay = completion(map.contracts.front(), "thetis-burgadan", 120);
+			replay.transaction.zone_number = 380;
+			replay.transaction.room_vnum = 38013;
+			require(journey.record_completion(replay) == result::already_applied &&
+					!journey.daily_eligible_for(7, 42, map.contracts.front(),
+								    10, 1, 10, 129),
+				"Thetis replay or returned-map daily policy changed");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 380).completed == 3 &&
+					cold.progress_for_zone(7, 42, 226).completed == 1,
+				"Thetis cold recovery lost independent receipts");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 380, 38000, 100, "arrival") ==
+					result::applied,
+				"Thetis raw discovery failed");
+			record(raw, map.contracts.front(), "thetis-raw", 380, 38013);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 380).completed == 1 &&
+					authored.progress_for_zone(7, 42, 226).completed == 0 &&
+					!authored.daily_eligible_for(7, 42, map.contracts.front(),
+								     10, 1, 10, 130),
+				"Thetis raw-to-authored recovery expanded credit or daily policy");
 		}
 
 		{

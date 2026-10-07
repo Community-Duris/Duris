@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 187 authored journals, accounting-gated player surfaces, starter/town
+**Status: 188 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5100,3 +5100,32 @@ The [complete Krethik dossier](zone-stories/KRETHIK_KEEP.md) maps three independ
 | Causal stock and reset issuance | Mode1/591 reset declarations are not live availability. Active accounting refuses O/P/G/E before placement without durable reset-generation identity. Implement governed source issuance, shop stock, container contents, depletion and availability projections before promising source recovery or repeatable daily supply. |
 | Fair historical builder review | 20143 explicitly distributes spirits and has outgoing exits; do not reconnect it automatically. Winterhaven planning maps versus other-war mobile lore, captured dragon/slaves, altar/corpse/sacrificial descriptions and old gnomish-key staging labels need intent review. No encoded rescue/sacrifice/political request was found; future mechanics require explicit designs. |
 | Played qualification and repair reporting | Play active READY discovery/encounters, source/gift singleton offerings, both D1 departures, two independent owner550 returns, key/chest/switch/portal/fall paths, node and transformed-reward persistence. Any selected native repair needs its own named fix/news commit and prominent PR/news before/after evidence; this journal checkpoint changes no native behavior. |
+
+## Thetis: returned proof, underwater routes and builder intent
+
+The [complete Thetis dossier](zone-stories/THETIS_REALM.md) maps three independent gem/earring/returned-map cards, sixteen contacts, two responses/four aliases, three optional singleton rows, six steps and twenty follow-ups. Three achievements/two potential dailies remain classified; Burgadan returns the map prototype and remains daily-excluded. Full100-room closure includes actual courtyard/cell/throne/PICK/chest routes, blue gem consumption and breathing, D1 departures and the bounded owner226 Hordine/owner772 Jade silt/treasure route. Supplied materials can fit without personal source or referral history. Expand versioned linked_requests and owned source/gift/consumption/door/reading/hazard/loot outcomes while preserving canonical IDs, frozen receipts and active READY accounting. Record missing38095N→104, mask waterbreathing prose/effect mismatch, chest/lore/boundary intent and unscripted captives/royal restoration for fair builder decisions. Establish intended behavior before selecting a separately named fix/news commit; no native repair ships in this checkpoint.
+
+## Owned follow-ups and fair builder decisions
+
+| Area | Required capability or decision |
+| --- | --- |
+| Active source issuance and renewal | Mode1 and O/P/G/E declarations do not guarantee current sources. Active accounting refuses item resets without durable generation identity. Governed issued stock, container contents and depletion must precede promised daily supply. |
+| First source versus supplied material | Admit actor/UID/prototype/source NPC/container/room/prior ownership once. Gifts and later recustody may satisfy exact offerings without proving first personal recovery or kill. Preserve current singleton custody rows until these durable facts exist. |
+| Independent exact singleton returns | Three loose offerings have distinct receipts/rewards; wrong, held, equipped, nested, spent and reacquired items must not merge requests. Supplied exact copies fit without invented source history. |
+| Gem consumption and breathing |38018 itself is a potion. Track admitted selected consumption/effect, combat spill/NO_MAGIC/cooldown and present breathing; never retain a spent gem as ready or award the crab return for using its spell. |
+| Earring chest route | Red key/octopus, selected chest UNLOCK/OPEN, exact nested earring extraction, courtyard passage and mermaid hand-in are separate. Do not require a personal octopus kill from room prose. |
+| Functional iron key and alternate PICK | Preserve exact type13 prototype compatibility. Actor-owned door change, successful eligible pick and passage differ from guard encounter/loose key possession. No type or gate repair from a name. |
+| Golden key and multi-lock stock | Six cells plus gem chest use a100% break key. Qualify current replacements/shared pre-open state, failed destruction, resets, contained multigem stock and quantities without granting a rescue from access. |
+| Throne and directed return | Locate raw7/D6 secret/pickproof throne entrance, use skeleton key, OPEN and survive passage. Preserve one-way38083 return and low-bit raw interpretation; current lore cannot add a reverse or secret objective. |
+| Returned-map proof and daily policy | Burgadan's consumed UID/reissued map prototype/spade and committed receipt need replay/cold compatibility. Returned current map neither proves source nor whole treasure hunt. Keep native Item exchange daily exclusion. |
+| Independent foreign linked requests | Stable canonical owner226 Hordine receipt and owner772 source/access visibility need `linked_requests` presentation. Do not move IDs or grant recipient discovery/encounter/daily credit from source380 discovery. |
+| Silt and door/key transaction | Spade is a key; actual above PICK is possible. Secret/lock/OPEN/reciprocal state, key-break submission/refusal and passage need explicit admitted outcomes. Any transactional repair must be isolated and preserve legitimate alternate routes. |
+| Treasure chest and money recovery | Key receipt, chest OPEN, selected item extraction and coin settlement differ. Frozen source/loot/currency output must handle retries, shared emptied chest and supplied gear; no new380 treasure achievement inferred. |
+| Underwater hazard and safe preparation | Current temporary WATERBREATH, expiry, drowning schedules and completed movement determine survival. Persist durable episode evidence only when designed; discovery or breathing-item name alone is insufficient. |
+| Learned questions and reading | Four aliases have two responses. Add admitted selected NPC/response and map/spade reading facts with correct command path; failures, generic chat refusal and text inspection are not completion. |
+| D1 departure and availability | Crab/mermaid leave after their own accepted Q; Burgadan stays. Durable removal/reset/current encounter and frozen receipts need cold/replay qualification independently of global daily rollover. |
+| Missing active starfish destination |38095N→104 is absent from active manifest and removed by renum_world. Establish historical intended home or retire stale exit/prose; do not guess a target. Select a named isolated area fix and prominent news entry if resolved. |
+| Mask role and effect intent | Waterbreathing description contradicts selected prototype effects. Choose historically appropriate truthful prose or balanced ability after qualification; no ability activated by the journal. |
+| Fair chest, boundary and item prose | Chest lid/open/broken-lock prose conflicts with current flags29; foreign key/break semantics differ from DIG lore. Review38075 staff-feedback boundary intent and spellbook200 stored capacity versus300-page prose. Preserve topology/rarity while selecting specific repairs. |
+| Designed wider realm episodes | Captive mage/slave, sirens, clams, royal vengeance, queen, purple potion giver, translator crown and turtle help need authored prerequisites/controllers/outcomes or honest prose retirement. No inferred rescue/restore/language/ride achievement. |
+| Played qualification and repair reporting | Play active READY discovery/encounters, first source/gift/loose returns,D1 recovery,returned-map flow,foreign owner226 exchange,doors/chests/keys and underwater/treasure persistence. Any native repair needs its own named fix/news commit and prominent before/after PR treatment. This checkpoint plans changes without native gameplay repair. |
