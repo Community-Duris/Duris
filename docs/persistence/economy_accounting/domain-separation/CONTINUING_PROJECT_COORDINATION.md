@@ -449,6 +449,27 @@ selecting implementation. No new scope is approved by this queue entry.
 
 ### Latest reviewed deliveries and next bounded assignments
 
+The next concrete shared business-validation operation now has
+[R13 exact three-file execution approval](R13_SHOP_ITEM_ACCEPTANCE_REVIEW_2026-10-07.md).
+Strengthened reservationdfd78bea2 follows a current nine-family reassessment and
+selects the complete trade_with classifier used through get_selling_obj by sale,
+valuation and repair. New header, bounded native wrapper/provider and first direct
+runner only; native lookup/messages/parser/helpers/admission/effects/authority stay.
+The accepted-item result when keyword evaluation is false and the real invocation/
+diagnostics remain. No keyword-policy fix, query elision or new native capability.
+
+Root independently authenticates all19 controlled-query proofs/272 actual compiler
+inputs/34 Git headers and PASSes38 baseline controls. The separate real-parser
+supplement authenticates all27 proofs/273 inputs/34 Git headers, all8 full native
+definitions and actual flag/operator tables. Root PASSes54 baseline/Og controls
+each; original deadlines/flags, diagnostic traces and the initial wrong HUM-table
+fixture expectation are preserved. The one maintained runner must retain BOTH
+components. Extraction, current bare imports/builds/artifacts and final canonical
+review remain pending. Architecture's actual Goal tool confirms ACTIVE/no budget;
+implementation proceeds in its isolated worktree after remote approval publication.
+Quest prep's native Goal stays BLOCKED on the same exact owner dependencies.
+Root Goal/monitor retain the complete primary finish line, with no adoption wait.
+
 Latest code/qualification review closes the two selected implementation boundaries:
 [R12 quotation extraction](R12_SHOP_SALE_QUOTE_REVIEW_2026-10-07.md), code
 `72f375cbfcc7b8b5c95b7784f245b210d0b163d4`, and

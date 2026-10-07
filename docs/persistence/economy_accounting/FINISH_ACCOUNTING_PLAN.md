@@ -270,6 +270,34 @@ Production authority/native journeys remain separate. Architecture continues
 R11 qualification; primary continues without an adoption wait. Full continuing
 finish line and native quest/accounting blockers remain unchanged.
 
+## Complete shop item acceptance execution approved - 2026-10-07
+
+[R13 exact three-file approval](domain-separation/R13_SHOP_ITEM_ACCEPTANCE_REVIEW_2026-10-07.md)
+selects the complete trade_with business classifier, shared through the actual
+get_selling_obj path by sale, valuation and repair. Strengthened
+[reservationdfd78bea24632ba94951bdc3645ccc814cf5f6b1](https://github.com/Community-Duris/Duris/blob/dfd78bea24632ba94951bdc3645ccc814cf5f6b1/docs/persistence/economy_accounting/domain-separation/R13_SHOP_ITEM_ACCEPTANCE_RESERVATION.md)
+follows the current nine-family owner assessment. New shop_item_acceptance.h,
+bounded shop.c wrapper/provider and first test_shop_item_acceptance.py only.
+Preserve native types, cost/flag/repair gates, fresh configured-type reads,
+empty wand/staff and armor/worn behavior, keyword invocation/diagnostics and the
+original accepted result even on false evaluation. Parser/helpers/metadata,
+lookup/messages, admission, money/custody/publication/ACK and recovery stay native.
+
+Root independently authenticates original19 controlled-query proofs/272 compiler
+inputs/34 Git headers and PASSes38 baseline controls; separate real-keyword27
+proofs/273 inputs/34 headers and eight complete native functions/tables authenticate,
+and54 baseline/Og controls each PASS. Preserve both components, original diagnostics
+and the retained private HUM-table expectation failure. The one maintained runner
+must execute BOTH frozen38 and54 fixtures. No extracted compatibility is claimed yet.
+
+Architecture proceeds in its existing isolated worktree: original/extracted
+components, smallest adjacent checks, formatting, both strict maintained builds,
+standalone bare-current full/production imports and actual module/compiler closure,
+then exact committed artifacts/handoff for final independent review. No optional
+predecessor requirement or primary adoption wait. Quest native prerequisites remain
+blocked; current6ca private native/tooling and Plans1-5/applicable R1-R8/full finish
+remain open. Actual architecture Goal and root Goal/15-minute monitor stay ACTIVE.
+
 ## Quotation extraction and enhancement contract independently reviewed - 2026-10-07
 
 Optional R12 code72f375cbfcc7b8b5c95b7784f245b210d0b163d4 has
