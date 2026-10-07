@@ -10,11 +10,12 @@ for assessed domains and the fixed R0/R1/R2 delivery set. The coordinator accept
 inventory v1 and R1's seam in upstream review `b876f9442040653cf53c15d81d5188166e1cd829`.
 R1 is implemented at `48cdf9cb0893873651216f7940aae2691d060e58`, with successful
 focused components, both maintained builds and the real flatfile recipe journey.
-Its SQL journey is ongoing. R2 is implemented at
+Its SQL journey has also passed. R2 is implemented at
 `24fa551ae16900b41e509f79fe4685762e0fb2e9`; original/extracted numeric controls and
-both maintained builds pass. Selected production-linked completion qualification
-is ongoing. Retained failures and private fixture adaptations appear below.
-The continuation Goal remains active until terminal evidence and dispositions.
+both maintained builds pass. The selected production-linked completion subset
+passes all 84 scenarios (42 per backend). Retained failures and private fixture
+adaptations appear below. Final reviews/dispositions are being reconciled; the
+continuation Goal remains active at this publication.
 
 Actual continuation-tool evidence: `get_goal` first returned no current Goal;
 `create_goal` then `get_goal` returned `status: active`, no budget, for this chat.
@@ -89,8 +90,7 @@ failed at link with missing `economic_baseline_decode`; retained
 `economic_baseline_codec.c` provider to the original inspector source list and
 runs the unchanged `run_alchemist_crafting_journey.py` recipe-only assertions.
 No shared manifest repair is made. This attempt is running at this publication;
-superseded by the terminal flat journey below. SQL journey and primary import
-remain pending at this checkpoint.
+superseded by the terminal flat journey below. SQL journey later passed as recorded below; primary import remains unknown.
 
 ## R1 terminal flatfile runtime qualification
 
@@ -109,7 +109,7 @@ UIDs and XP, retained pouch counters, copyover and two cold restarts.
 An SQL recipe-only run uses the retained R1 SQL executable, unique disposable
 schema on a task-owned MariaDB server at container loopback port 33306, canonical
 bootstrap/migration runner and existing cleanup. Container has no external
-network. SQL result is ongoing at this checkpoint. No production database,
+network. SQL result later passed as recorded below. No production database,
 real user account or upstream activation is used.
 
 ## R2 implementation and terminal build checkpoint
@@ -162,8 +162,7 @@ Adjacent unchanged `test_locker_identify.py` passes actual lore/service controls
 error in untouched `critical_command_repository.c`, and 1 writer-census failure
 for 12 existing assignments in untouched `coin_physical_recovery.c`.
 `test_economic_currency_adapter.py` cannot link because its shared source list
-omits `shop_trade_recovery_manifest.c`; a private existing-provider-only run is
-ongoing. Neither shared test is changed by this bundle.
+omits `shop_trade_recovery_manifest.c`; a private existing-provider-only run later passed for both backends. Neither shared test is changed by this bundle.
 
 The unchanged full `test_currency_completion_retention.py` fails link before
 executing any scenarios: missing existing native-birth/Collector/recovery
@@ -171,9 +170,111 @@ providers and two newly referenced coin live endpoints. `completion-original-man
 retains it. A private launcher selects the original wallet/bank/identify scenarios
 (excludes names containing `coin`), adds existing production providers and places
 `abort()` guards on both excluded coin endpoints. Original selected assertions,
-compiler sanitizers and deadlines remain intact. It is running; this is not a
-full-runner pass or shared coin qualification. Terminal names/counts and any
-additional failures will be published before milestone completion.
+compiler sanitizers and deadlines remain intact. It later passed the selected 84 scenarios below. This is not a full-runner
+pass or shared coin qualification. The first private provider attempt's additional
+native codec/recipe link failures remain in `completion-selected.log`.
+
+## Terminal R1 SQL and R2 caller qualification
+
+`recipe-sql.log` completed `RECIPE_SQL_EXIT=0`, against the retained R1 SQL binary
+`b85d8bbbd7970cf7fc831959531841658319a826c10df194bcec5fd80f0b72ab`.
+It exercised the same original recipe-only assertions as flat: actual Craft/Forge
+preview, exact materials/tools, fresh outputs, progression XP and retained pouch
+counters, then copyover and two cold restarts with exact output UIDs and XP.
+Canonical bootstrap, `migration_runner.py adopt --kind fresh_bootstrap`, then
+`run` twice executed from this source tree. The runner removes its unique schema
+in `finally`; subsequent `SHOW DATABASES` listed only system schemas, and no
+journey server remained. No separately sampled schema-version number is claimed.
+
+`completion-selected-providers.log` completed `COMPLETION_SELECTED_EXIT=0`:
+**42 original selected scenarios per backend, 84 total**, actual production
+currency transaction/codec/admission/authority adapter linked under the original
+ASan/UBSan compiler controls. Both excluded live endpoints abort if reached;
+none was reached. The original selected assertions and execution controls remain
+intact; the original runner has 67 scenarios per backend, of which 25 coin-specific
+scenarios per backend were deliberately excluded from this scoped evidence.
+
+Added existing production providers only:
+`quest_mobile_native.c`, `native_mobile_birth_recipe.c`,
+`native_mobile_birth_constructor_recipe.c`, `native_mobile_birth_command.c`,
+`collector_accounting.c`, `collector_command.c`, `collector_codec.c`,
+`collector_policy.c`, and `shop_trade_recovery_manifest.c`.
+Excluded endpoint guards:
+`coin_physical_publication_restore_and_acknowledge(const critical_command &, const critical_completion &)`
+and `player_save_pipeline_restore_sql_coin_obligation(const critical_command &)`.
+No replacement result is returned from either guard. No shared manifest is edited.
+These selected scenarios qualify real value/payment callers and their retained
+publication contracts; they do not qualify native coin physical recovery or DB
+transaction execution. Original shared runner link/contract defects remain owned
+by the primary/shared fixture work and do not become extraction requirements.
+
+Exact selected names, each run on SQL and flatfile:
+
+- `platinum_active_persistent`.
+- `platinum_active_local`.
+- `platinum_refused_pickup`.
+- `platinum_refused_review`.
+- `platinum_success`.
+- `platinum_failure`.
+- `platinum_stale`.
+- `platinum_replay`.
+- `platinum_offline`.
+- `platinum_awaiting_durability`.
+- `platinum_uncertain_admission`.
+- `platinum_ambiguous`.
+- `platinum_malformed`.
+- `platinum_local`.
+- `malformed`.
+- `already_applied`.
+- `wallet_range`.
+- `bank_range`.
+- `ambiguous`.
+- `ambiguous_with_payload`.
+- `exhausted_retry`.
+- `offline`.
+- `rejected`.
+- `rejected_without_payload`.
+- `callback_chain`.
+- `callback_rehash`.
+- `active_rebasable`.
+- `blocked_rebasable`.
+- `accounted_bank_publication`.
+- `accounted_bank_ack_retry`.
+- `accounted_bank_invalid_result`.
+- `accounted_bank_restart`.
+- `accounted_bank_producer`.
+- `accounted_bank_producer_restart`.
+- `accounted_chaos_starter_producer`.
+- `active_prepared_wallet_payment`.
+- `active_prepared_bank_payment`.
+- `active_prepare_wallet_payment`.
+- `active_prepare_bank_payment`.
+- `legacy_prepared_wallet_payment`.
+- `legacy_prepared_bank_payment`.
+- `active_pending_prepared_payment`.
+
+Private `adapter-private.log` completed `ADAPTER_PRIVATE_EXIT=0` for both SQL and
+flat sanitizer configurations, adding only the existing
+`shop_trade_recovery_manifest.c` to the original currency adapter source list.
+Its original typed bank transfers, starter supply and currency preparation
+assertions are unchanged. It remains a private provider-corrected pass distinct
+from the retained original runner link failure.
+
+Terminal logs, source/binary pins and private launchers are copied into this
+worktree's ignored `bin/tests/domain-separation-r1-20261007/` and
+`bin/tests/domain-separation-r2-20261007/`. Proof file hashes are retained in the
+private evidence index. No environment/credentials, game data, binaries or logs
+are included in source commits. Both source bundles have independent coordinator
+source/numeric review with no actionable defect; final published review evidence
+and inventory dispositions must be reconciled before marking this Goal complete.
+
+For primary import, review code commits independently: R0 `3d2b85b06`, R1
+`48cdf9cb0893873651216f7940aae2691d060e58` (four files), R2
+`24fa551ae16900b41e509f79fe4685762e0fb2e9` (three files). R1/R2 patches were
+independently checked applicable to published accounting source. Confirm current
+preimages and primary unpublished changes at import. Docs/inventory revisions are
+handoff history, not a required execution dependency. Import/adoption, combined
+candidate qualification and release/activation remain primary-owned and unknown.
 
 ## Goal and checkout evidence
 
