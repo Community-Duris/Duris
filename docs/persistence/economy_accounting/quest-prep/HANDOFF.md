@@ -4,6 +4,11 @@ New finite PRIVATE enhancement-boundary investigation **complete; one-file
 reservation pending review, no maintained edit**. Owned starting8d794f0c32b316f4d50ab0bf8dda7448c613b67d;
 fresh patchless primary0fd938ce2fbae7b7e675346d60b30b3867bea0f7. Authored only
 this handoff and [ENHANCE_BOUNDARY_INVESTIGATION.md](ENHANCE_BOUNDARY_INVESTIGATION.md).
+Investigation publication2188c2caa82bb8af670aa950c9df473a4c0b8240,
+base8d794f0c32b316f4d50ab0bf8dda7448c613b67d, is pushed to
+origin/codex/accounting-quest-prep. Consume that exact docs-only bundle
+independently. This canonical successor only records its exact delivery pin in
+the same owned documents; no maintained repair or optional dependency.
 Actual continuing Goal remains BLOCKED, not resumed/complete. No native quest
 batch, live-route job, DB/player/server/compiler or native-world operation rerun.
 
