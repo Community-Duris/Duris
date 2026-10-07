@@ -9,7 +9,8 @@ runner and five adjacent checks pass. Eleven owned adjacent checks pass; one old
 enhance module-boundary failure is paired unchanged. All76 indexed proof files,
 exact source/ELF/import/tree/archive pins and terminal states are published in the
 [R11 terminal handoff](R11_ITEM_VALUE_QUOTE_HANDOFF.md). The coordinator's independent
-committed component checkpoint passes; final artifact review is pending.
+committed component and final artifact review PASS is published at accounting
+`0fd938ce2fbae7b7e675346d60b30b3867bea0f7`; the selected R11 handoff is closed.
 
 R10 final declared-scope review PASS remains published at accountingdc1489782,
 authenticating all3 inputs/all94 proof files and complete imports/build artifacts.
@@ -17,7 +18,7 @@ See [R10 terminal handoff](R10_SHOP_PURCHASE_QUOTE_HANDOFF.md).
 [Post-R10 nine-family assessment](POST_R10_OWNER_DEPENDENCIES_2026-10-07.md)
 accounts for current native flat changes and separate quest codec ownership.
 The continuing Goal remains ACTIVE/no budget through native/current754 journeys,
-primary Plans1–5/applicable original R1–R8 completion and published owner completion
+primary Plans1-5/applicable original R1-R8 completion and published owner completion
 disposition. Adoption and the full finish line remain open; no activation occurs.
 
 [Post-R9 assessment](POST_R9_OWNER_DEPENDENCIES_2026-10-07.md) is historical
