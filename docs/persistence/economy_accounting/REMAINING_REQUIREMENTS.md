@@ -1,5 +1,15 @@
 # Double-entry economy: remaining requirements
 
+## Shared native qualification progress - 2026-10-07
+
+[Current qualification checkpoint](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
+records the complete private shutdown/SHOP candidate and the actual SQL754
+Make/full-link pass. Complete cache export then failed for host disk space;
+Docker startup and the WSL math-library closure block remaining native checks.
+Flat Make, genuine Collector/SHOP journeys and shared flat boot qualification
+remain open. No production fix is imported or gate promoted. Preserve original
+budgets, failed evidence, inactive/spell boundaries and all926 writer policies.
+
 ## Flatfile ordinary room-pile reader qualified - 2026-10-07
 
 [Qualified data reader](FLATFILE_COIN_COLD_READER_INTEGRATION_2026-10-07.md)
