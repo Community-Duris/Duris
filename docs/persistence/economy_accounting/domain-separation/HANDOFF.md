@@ -12,6 +12,11 @@ exact source/ELF/import/tree/archive pins and terminal states are published in t
 committed component and final artifact review PASS is published at accounting
 `0fd938ce2fbae7b7e675346d60b30b3867bea0f7`; the selected R11 handoff is closed.
 
+Next owned work is proposed in [R12](R12_SHOP_SALE_QUOTE_RESERVATION.md): complete
+staged sale/value quotations with86 original controls under baseline/Og. No
+implementation precedes boundary review. The [post-R11 nine-family assessment](POST_R11_OWNER_DEPENDENCIES_2026-10-07.md)
+records current native qualification progress and remaining owner dependencies.
+
 R10 final declared-scope review PASS remains published at accountingdc1489782,
 authenticating all3 inputs/all94 proof files and complete imports/build artifacts.
 See [R10 terminal handoff](R10_SHOP_PURCHASE_QUOTE_HANDOFF.md).
