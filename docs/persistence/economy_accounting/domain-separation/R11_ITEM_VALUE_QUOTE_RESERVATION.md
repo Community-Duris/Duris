@@ -185,3 +185,25 @@ prerequisites. Primary owns current native source/coin/room-pile work and remain
 integrated Plans1-5/applicable original R1-R8 qualification. Review/adoption remains
 unknown until published. This proposal is useful continuing work, not a new finish
 line or milestone. No deployment/activation; primary never waits for optional work.
+
+## Verified native statement boundaries — implementation checkpoint
+
+Direct inspection of pinned native tradeskill.c lines2026-2028 shows:
+
+```cpp
+spellcirclesum = get_mincircle(spells[0]);
+spellcirclesum += get_mincircle(spells[1]);
+spellcirclesum += get_mincircle(spells[2]);
+```
+
+These are THREE separate full expressions, not one addition expression. The
+current extraction substitutes the same native observation in each statement,
+retaining that assignment/compound-assignment grouping and sequencing. The
+commented diagnostic with three call arguments is not executable code. Original
+whole-file/body pins d71fed616.../d854888f... remain unchanged and both actual
+original/extracted baseline/Og45-control executions pass. No calculation edit or
+new temporary is needed for this clarification; do not replace native statements
+with a newly grouped addition. This corrects the later draft-review phrasing while
+preserving its exact-rule audit and approved boundary. R10's native barter operand
+expression remains a separate, unsequenced expression with its original profile
+limits; that observation is not transferred onto these native statements.
