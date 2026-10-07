@@ -168,7 +168,7 @@ from the same page's extra key, explicitly inexact; it excludes unseen late
 commits and new higher IDs. The protected checkpoint retains at most 32
 operation-ID/diagnostic observations and a sticky truncation flag. Subsequent
 clean pages do not erase earlier findings or make the CLI report clearance.
-Status 1 means retained findings; status 2 means refusal without advancing the
+For root-only mode, status 1 means retained findings; status 2 means refusal without advancing the
 checkpoint. Status 0 means this partial page completed without retained
 findings. Local cursor target binding is not a database incarnation or trusted
 capture seal. Checkpoint reuse after restore cannot establish historical
@@ -189,12 +189,32 @@ python3 scripts/economic_sql_canonical_audit.py \
   --page-roots 2 --all-namespaces
 ```
 
-This mode writes `economic_sql_canonical_progress_v2`. Each namespace keeps
+This mode writes `economic_sql_canonical_progress_v3`. Each namespace keeps
 its own cursor, pinned ceiling, counters, ages and sticky findings. Selecting
 it with an existing valid v1 checkpoint preserves the complete root progress
-and starts the other namespaces from their beginning. After that explicit
-upgrade, root-only mode refuses the v2 file. A v2 checkpoint must not be copied
+and starts the other namespaces from their beginning. A valid v2 checkpoint
+preserves all three namespace states and its next namespace when upgraded.
+Both upgrades initialize separate scheduling-refusal counts to zero; older
+checkpoints contain no refusal history. Root-only mode refuses the aggregate
+file. A checkpoint must not be copied
 between database targets or interpreted as a database incarnation seal.
+
+Query, byte, projection-row and cooperative time budget exhaustion refuses the
+selected page and persists a rotation to the next namespace. The refused
+namespace retains its exact cursor, ceiling, coverage counters and findings;
+its refusal count and last-refusal time are separate, bounded checkpoint fields.
+This lets siblings continue even when one page repeatedly exceeds a budget.
+The page reports `page_refused=true`, no new findings, unknown query/byte/record
+measurements (`null`), and `coverage.consistent_page=false`. A refusal does not
+establish even a one-record backlog lower bound. Transport, schema, source,
+rollback and cursor-close errors still exit 2 without saving a rotation.
+
+In aggregate mode, status 1 means retained findings or scheduling refusals.
+`retained_refusal_count` remains sticky through later successful pages and
+sweeps; those pages cannot clear a refusal or return an all-clear status.
+Status 0 means a successful partial page with neither retained findings nor
+refusals. Creating new progress starts new scheduling history and cannot
+establish coverage for an older checkpoint or qualify a release.
 
 Controls use `(lineage,epoch)` and reservations use
 `(lineage,epoch,identity_kind,identity_id)` from their existing primary indexes.
@@ -215,7 +235,7 @@ witness membership and interior book continuity remain the existing root
 reader's checks. The namespace pages do not repeatedly decode whole capsules
 for every reservation, and they never repair an observation.
 
-The v2 page report identifies the selected and next namespace and supplies
+The v3 page report identifies the selected and next namespace and supplies
 aggregate counters and ages for all three. Its completed-sweep count is the
 minimum of their individual counts; it describes separate historical passes,
 not one consistent authority cut. At most32 findings per namespace are retained

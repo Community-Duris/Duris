@@ -849,3 +849,25 @@ SHA256 `9ea826123267a8c9bb5d1f3ed10649a0e2e4d20b5f3018db59e0c07a7a3ef015`,
 and report/delivery form the nonblocking primary-local notebook curator packet.
 No application, acknowledgement, direct message, activation or release completion
 is claimed. Primary owns the tested combined candidate.
+
+
+## SQL scheduler rotation after a page-budget refusal
+
+[The owned scheduling repair](PLAN5_SQL_REFUSAL_FAIRNESS_QUALIFICATION_2026-10-06.md)
+continues on `codex/accounting-plan5`, base `bc58072b4b051ec3d103784b56993e2906eecc30`.
+All seven earlier branch tips/follow-ups remain ancestors; delivery binds the
+result and remote SHA. Real MariaDB/MySQL red observations establish repeated
+namespace starvation; the frozen green source passes 67 methods with zero Linux
+skips on canonical 0062. All three namespace refusals save rotation while
+preserving exact coverage state; six CLI processes per engine prove sticky status
+1 through later clean success. SELECT denial 1142, FK denial 1452 and complete
+database inventories remain exact. Native/shared sources and manifests stay
+unchanged; the report hands off exact mandatory pure/native case registrations.
+
+Seal `D:/CodexEvidence/accounting-plan5/bin/sql-refusal-fairness-seal-01-20261006/evidence.json`,
+SHA256 `248b6975153d886485459ef94f328a548cb1e1fefa897912762d8ea69d1fabfe`, report and delivery are the nonblocking notebook
+curator packet. Failed harness setup attempts remain excluded and preserved.
+No acknowledgement/application/direct message is claimed. Full reconstruction,
+R7/R8, genuine writer/gameplay/fault, combined lifecycle and host budgets remain
+open; primary alone qualifies/publishes the combined candidate. No independent
+slice blocker, maintained activation, production change or release completion.
