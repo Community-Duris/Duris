@@ -31,6 +31,7 @@
 #include "qualify_flatfile_auction_source_balance.h"
 #include "qualify_flatfile_auction_source_credit.h"
 #include "qualify_flatfile_auction_source_consumption.h"
+#include "qualify_flatfile_native_custody.h"
 
 // Native parsers may log diagnostics containing identities; this process reports
 // only aggregate success or a fixed failure code.
@@ -551,6 +552,31 @@ int main(int argc, char **argv)
 				std::cout << (i ? "," : "") << '"' << hex(result.invalid_records[i])
 					  << '"';
 			std::cout << "]}\n";
+			return 0;
+		}
+		if (argc == 3 && std::string(argv[1]) == "--economic-custody-catalog-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			const auto result = restore_native_custody::audit_catalog(argv[2], budget);
+			std::cout
+				<< "{\"format\":\"flatfile_custody_catalog_audit_v1\","
+				   "\"scope\":\"durable_custody_catalog_decoding\",\"catalog_present\":"
+				<< (result.present ? "true" : "false")
+				<< ",\"catalog_version\":" << result.version
+				<< ",\"catalog_revision\":" << result.revision
+				<< ",\"owners\":" << result.owners << ",\"items\":" << result.items
+				<< ",\"operations\":" << result.operations
+				<< ",\"active_items\":" << result.active
+				<< ",\"destroyed_items\":" << result.destroyed
+				<< ",\"quarantined_items\":" << result.quarantined
+				<< ",\"inline_coin_payloads\":" << result.inline_coin_payloads
+				<< ",\"coin_operations\":" << result.coin_operations
+				<< ",\"quest_operations\":" << result.quest_operations
+				<< ",\"custody_catalog_decoded\":"
+				<< (result.present ? "true" : "false")
+				<< ",\"native_holdings_compared\":false,\"owner_literals_compared\":false,"
+				   "\"item_history_verified\":false,\"full_R7_qualified\":false,"
+				   "\"release_qualified\":false}\n";
 			return 0;
 		}
 		if (argc == 3 && std::string(argv[1]) == "--economic-wallet-bank-audit")

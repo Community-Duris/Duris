@@ -1288,6 +1288,24 @@ This recipe retains its partial-capture findings and cannot qualify a complete
 world backup, managed backup generation, service boot or release. See
 [the exact cold-restore qualification](PLAN5_EQUIPMENT_COLD_RESTORE_QUALIFICATION_2026-10-06.md).
 
+The maintained flatfile qualifier accepts
+`--economic-custody-catalog-audit /absolute/private/state-root` for independent
+DUROWN catalog decoding. It validates versions 1 through 8, owner identities,
+item placement fields, inline coin literals and retained operation framing,
+including quest continuation versions 1 through 6. It uses the existing shared
+read lock, protected reads and aggregate audit budget. Pending journals, unsafe
+paths, corrupt bytes or an unavailable required lock refuse without partial
+JSON. It creates no lock, invokes no recovery and changes no authority file.
+An absent catalog is reported explicitly as absent and undecoded.
+
+The aggregate output deliberately leaves native holdings comparison, owner
+literal comparison, item history, full R7 and release qualification false.
+Catalog structure alone cannot prove current value, command/source admission,
+fee acceptance, provenance or backup completeness. The focused native-oracle
+test requires `--native-source /absolute/exact/integrated-checkout`; use the
+refreshed primary supporting fee-only quest continuation v6. See
+[the exact source and evidence handoff](PLAN5_INDEPENDENT_CUSTODY_CATALOG_2026-10-07.md).
+
 These are release gates to measure on each backend and the final integrated
 commit. They are not claimed as measured results here.
 

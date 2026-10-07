@@ -1467,3 +1467,21 @@ seal `269ede4ce45e47b4ecc3d46fa63c8c78db3a5067939b9661728f2131e2d569b0`. No shar
 combined canonical qualification, real journeys, R7/R8/release and notebook
 application remain unclaimed. Keep all work on remote codex/accounting-plan5,
 preserving the seven previous tips; primary notebook work stays nonblocking.
+
+## Independent durable custody catalog - 2026-10-07
+
+Base `cffe05a0352a3d482fe9a2b48bf4861db834252c`; separately published result is the containing commit.
+The new independent DUROWN reader and aggregate operator match actual primary
+`973bb6c0e423acf105b2bea4680dcea2df4417b6` on all133 catalog cases and13 read-only boundary controls,
+zero skips. Current quest v6 is structurally checked; original fee acceptance,
+full holdings/literals/history and release remain unqualified. Seven real
+native providers replace the retained first failed link. Maintained operator
+build, validated incremental740-object Make, formatter and normal validator
+pass; release validation refuses for missing writer execution evidence.
+See [exact owned source, commands, evidence and gates](PLAN5_INDEPENDENT_CUSTODY_CATALOG_2026-10-07.md),
+seal `39701e1ee1351ad4bf22fbedbaff411e2f6b151acedd8f175c47e09be66e0e71`.
+No shared schema/interface change; primary owns integration and shared runner
+registration with an explicit exact `--native-source` path. Both SQL engines,
+combined canonical qualification, original journeys, R7/R8 and notebook
+application remain unclaimed. Keep the same remote codex/accounting-plan5
+and all seven prior tips. The primary notebook remains nonblocking.
