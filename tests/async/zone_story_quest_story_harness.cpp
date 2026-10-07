@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 182 &&
+		require(catalog.story_mappings.size() == 183 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,154 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "eternal"; });
+			require(mapping.stories.size() == 6 && mapping.contacts.size() == 12 &&
+					mapping.revision == 1,
+				"Spires journal scope failed");
+			int achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 1354)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 6 && dailies == 6,
+				"Spires independent daily units changed");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 1354, 135400, 100, "arrival") ==
+					result::applied,
+				"Spires injected arrival failed");
+			require(journey.meet_npc(7, 42, 135408, 135606, 101) == result::applied,
+				"Spires optional source encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 1354, 10, 1, 102, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Spires source encounter exposed unrelated returns");
+			for (int v : { 135402, 135440, 135441, 135442, 135443, 135444 })
+				require(journey.meet_npc(7, 42, v, 135400, 103) == result::applied,
+					"Spires giver encounter failed");
+			const auto before = journey.serialize_state();
+			supplies = {};
+			for (int v : { 135427, 135428, 135435, 135458, 135459, 135460, 135431 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 1354, 10, 1, 104, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				for (size_t n = 0; n + 1 < story.steps.size(); ++n)
+					require(journal.find("[Missing now] " +
+							     story.steps[n].text) !=
+							std::string::npos,
+						"Spires reward or key replaced exact offering");
+			supplies = {};
+			supplies.equipped[18] = 135442;
+			supplies.equipped[3] = 135440;
+			supplies.carried[2] = 1;
+			journal = journey.render_journal(7, 42, 1354, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				for (size_t n = 0; n + 1 < story.steps.size(); ++n)
+					require(journal.find("[Missing now] " +
+							     story.steps[n].text) !=
+							std::string::npos,
+						"Spires worn/held or container contents supplied loose roots");
+			const auto &scales = story_for("eternal", "four-serpent-scales");
+			const auto &books = story_for("eternal", "flant-books");
+			const auto &tix = story_for("eternal", "tix-visage");
+			const auto &maker = story_for("eternal", "doppleganger-visage");
+			supplies = {};
+			for (int v : { 135451, 135452, 135453, 135437, 135438 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 1354, 10, 1, 106, false, false,
+							 &supplies);
+			require(journal.find("[Missing now] " + scales.steps[3].text) !=
+						std::string::npos &&
+					journal.find("[Missing now] " + books.steps[2].text) !=
+						std::string::npos,
+				"Spires partial materials invented complete preparation");
+			require(journal.find("[Pending] " + scales.steps.back().text) !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Spires partial collection invented receipt");
+			supplies = {};
+			for (int v : { 135451, 135452, 135453, 135454, 135442, 135440, 135455,
+				       135437, 135438, 135439 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 1354, 10, 1, 107, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+			{
+				for (size_t n = 0; n + 1 < story.steps.size(); ++n)
+					require(journal.find("[Ready now] " +
+							     story.steps[n].text) !=
+							std::string::npos,
+						"Spires supplied exact set not ready");
+				require(journal.find("[Pending] " + story.steps.back().text) !=
+						std::string::npos,
+					"Spires custody invented receipt");
+			}
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 1354).completed == 0,
+				"Spires preparation recorded source or return history");
+			record(journey, tix.contracts.front(), "eternal-tix", 1354, 135587);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 1354, 10, 1, 121, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 1354).completed == 1 &&
+					journal.find("[Recorded] " + tix.steps.back().text) !=
+						std::string::npos &&
+					journal.find("[Pending] " + maker.steps.back().text) !=
+						std::string::npos,
+				"Spires identical mask expanded giver credit");
+			for (const auto &story : mapping.stories)
+				for (size_t n = 0; n + 1 < story.steps.size(); ++n)
+					require(journal.find("[Missing now] " +
+							     story.steps[n].text) !=
+							std::string::npos,
+						"Spires receipt recreated consumed materials");
+			supplies.carried[135442] = 1;
+			journal = journey.render_journal(7, 42, 1354, 10, 1, 122, false, false,
+							 &supplies);
+			require(journal.find("[Ready now] " + maker.steps[0].text) !=
+						std::string::npos &&
+					journal.find("[Pending] " + maker.steps.back().text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 1354).completed == 1,
+				"Spires fresh visage changed independent receipt");
+			for (const auto &story : mapping.stories)
+				if (story.id != tix.id)
+				{
+					const auto tx = "eternal-" + story.id;
+					record(journey, story.contracts.front(), tx.c_str(), 1354,
+					       135400);
+				}
+			require(journey.progress_for_zone(7, 42, 1354).completed == 6,
+				"Spires exact six receipts lost multi-root or giver identity");
+			auto replay = completion(tix.contracts.front(), "eternal-tix", 120);
+			replay.transaction.zone_number = 1354;
+			replay.transaction.room_vnum = 135587;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Spires replay duplicated receipt");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 1354).completed == 6,
+				"Spires cold recovery lost receipts");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 1354, 135400, 100, "arrival") ==
+					result::applied,
+				"Spires raw arrival failed");
+			record(raw, tix.contracts.front(), "eternal-raw-tix", 1354, 135587);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 1354).completed == 1,
+				"Spires raw-to-authored recovery expanded identical recipe credit");
 		}
 
 		{

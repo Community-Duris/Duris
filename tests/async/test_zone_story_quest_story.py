@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 182 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 183 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,14 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+eternal=next(m for m in catalog['story_mappings'] if m['source_area']=='eternal')
+assert (eternal['coverage'],eternal['schema_version'],eternal['revision'])==('complete',3,1) and not eternal['exclusions']
+assert len(eternal['stories'])==6 and len(eternal['contacts'])==12 and sum(len(c['topics']) for c in eternal['contacts'])==2
+assert sum(len(s['steps']) for s in eternal['stories'])==17 and sum(row['kind']=='carried_item' for s in eternal['stories'] for row in s['steps'])==11
+assert all(len(s['contracts'])==1 and s['steps'][-1]['contracts']==s['contracts'] for s in eternal['stories'])
+assert report['eligible_by_zone']['1354']==6 and sum(d['daily_eligible'] for d in catalog['definitions'] if d['source_area']=='eternal')==6
+assert {s['id'] for s in eternal['stories']}=={'four-serpent-scales','tix-visage','issis-hide','vaprak-standard','flant-books','doppleganger-visage'}
 
 headless=next(m for m in catalog['story_mappings'] if m['source_area']=='headless')
 assert (headless['coverage'],headless['schema_version'],headless['revision'])==('complete',3,1) and not headless['exclusions']

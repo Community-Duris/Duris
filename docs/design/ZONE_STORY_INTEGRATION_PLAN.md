@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 182 authored journals, accounting-gated player surfaces, starter/town
+**Status: 183 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -4955,3 +4955,32 @@ The [complete Zalkapfaan dossier](zone-stories/ZALKAPFAAN.md) maps eight native 
 19. **Lore and builder decisions.** Review engineer quartermaster blame versus advisor source, promise of engine immunity, armor work duration and obsolete holding fractions. Current mappings state the encoded behavior fairly. Selected data/quest repairs need separate named fix/news commits, precise before/after and prominent PR/news notes.
 
 20. **Played qualification.** Run authorized active READY accounting journeys for all five daily and three story-only exchanges, gifts/source recovery, repeated/competing inputs, departure, passwords/keys, staged encounters and recovery. Qualify pool/node outcomes separately; teacher/mining guards remain visible. Source and compiled regressions do not replace played proof.
+
+## Spires: material availability and builder source decisions
+
+The [complete Spires dossier](zone-stories/SPIRES_OF_ELDER_EVIL.md) maps six independent returns, twelve contacts, two addressed aliases, eleven optional current-material rows, seventeen steps and twenty follow-ups. Four scales and three books retain exact atomic sets; two visage makers retain independent receipts and fresh consumed inputs. Six achievements/six potential dailies remain classified. Generic PULL→near unblocking→SEARCH→arrival and breakable keys are qualified. Hide issuance, floor-book pickup, corpse locality and absent external/disconnected elder routes are fair builder decisions; static source-comprehensive mapping does not prove playability. Add causal availability and owned source/transfer/access/reward outcomes under active READY accounting. No native repair ships; selected repairs need separate named fix/news commits and prominent PR/news treatment.
+
+## Owned follow-ups and fair builder decisions
+
+| Area | Required capability or decision |
+| --- | --- |
+| Independent native receipts | Preserve six exact giver/binding receipts and six achievement/six potential daily units. Identical mask recipes remain separate; narrative families must not collapse receipt units or consume one visage twice. |
+| Multiple current materials | Show four distinct scale and three distinct book counts with missing/current state. Freeze all exact loose roots and consume each set atomically. Do not invent partial deposits, timers, a coin charge or a personal kill requirement. |
+| Source versus supplied custody | Publish item UID, source actor/container, spawn generation and transfer cause. Distinguish corpse recovery, gifts, theft, trade, carried-container recovery and reacquisition while retaining supplied exact-item acceptance. |
+| Reward delivery and recovery | Separate accepted offering, six retained receipts and actual mask/key/horns/weapon grants. Freeze all reward identities and recover committed entitlements without duplicate issuance; reward possession does not credit another giver. |
+| Addressed conversations | Record Issis loss and Horanth outrage only after admitted addressed responses. Keep aliases, raw SAY, encounter, knowledge and action outcomes separate; neither topic is a native return prerequisite. |
+| Switch dispatch | Automatic ITEM_SWITCH bindings use CMD_PULL340, visible exact selected object and configured room/direction. Record actual near BLOCKED transition after success; periodic setup or a social echo is not success. |
+| Secret passage discovery | After a switch clears blockage, eligible room SEARCH can clear the near SECRET bit. Record that discovery and owned arrival separately; these switches reset open walls, so do not require an invented OPEN step. |
+| Reverse passage and reset | Naga switch clears135523E only;135639W remains blocked. Shadow reverse135645E starts secret and unblocked. Qualify alternate return paths, near versus reciprocal state, absent stock, repeats and reset/recovery before promising travel. |
+| Usable keys and breakage | Current loose or HOLD key135458/135459/135460, actual admitted unlock and arrival differ. Emerald/elder value1=100 breaks after unlock, skull value1=0 does not. A granted non-takeable skull key remains usable in current loose custody; nesting changes access. |
+| World arrival | No selected registered boundary or incoming object portal connects the zone. Builders must nominate and qualify the intended normal entry, eligibility and owned arrival before journals promise discovery or reachable stock. Do not fabricate a zone connection. |
+| Disconnected elder section | Directed foyer union256 ordinary/264 keys/272 reachable stocked switches leaves61 rooms outside; ignoring every exit state still reaches272. Weak components275+43+15 singletons expose a separate43-room elder section with Dendar and Kezef. Review intended access or staging before choosing a separately named layout repair. |
+| Hide source builder review | Hide135440 is required by Issis but no active registered reset, native reward or selected compiled producer issues it. Hound135412 M370@135732 has no hide G/E. Generic corpse preserves existing possessions and CARVE creates prototype8, not this hide. Decide an intended source, lineage and balance, then test it as a separate fix/news commit. |
+| Book pickup builder review | Books135437/438/439 are reset on floors with wear0, not TAKE/HOLD. Normal nonlocal GET declines unless PC level>=60. Decide whether books should be portable or acquired by a deliberate interaction; do not mass-enable TAKE based on quest names. |
+| Corpse material admission | Scales and visage also have wear0, but carried/worn local container GET can bypass nonlocal pickup flags. Qualify floor versus carried corpse, weight, sight, owner, transfer/grant and nested recovery before labeling those sources impossible or selecting flags repairs. |
+| Reset stock accounting | Native mode2 and100percent rows declare stock, while current active accounting refuses O/P/G/E before read_object. Add durable generation and atomic source issuance with UID/custody lineage before counted recovery; daily rollover does not replenish stock. |
+| Dynamic availability | Explain source unconfigured, disconnected source route, pickup refused, absent giver, prepared set, spent input, pending reward and unavailable accounting separately. Current schema cannot dynamically derive these causal states; add typed availability facts without turning prose into gates. |
+| Revenge and faction outcomes | Issis's Slaazh revenge and Horanth's kill-all request are not native terminal predicates. Builders must design exact targets, participant scope, repeats and persisted combat outcomes before additional counted stages; keep existing hand-in rewards unchanged. |
+| Rescue, summoning and nightmare scenes | Flant/emissary captivity, sacrifices, summoning circle, Elf-Eater, Dendar swallowing sun and planar text have no selected resolved rescue/conversion/summoning/sun terminal. Require deliberate actor/world ownership and failure/recovery design before adding hooks. |
+| Placeholder and unused intent | Kezef, Elf-Eater, Lady, Tix and ordinary doppleganger retain PH/level1 placeholder records; level-squared loader handling does not establish intended balance. Unused souvenirs, weapon variants, serpentine key135431 and copied switch extra descriptions require fair builder review, not automatic combat/item changes. |
+| Played qualification and repair reporting | After source mapping, play active READY discovery, source/gift/local-corpse recovery, all six returns, four-/three-root consumption, breakable keys, PULL→SEARCH→arrival, reverse travel, reset and reward recovery. Selected native repairs require separate named fix/news commits, before/after evidence and prominent PR/news wording. |
