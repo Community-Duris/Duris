@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 186 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 187 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,17 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+krethik=next(m for m in catalog['story_mappings'] if m['source_area']=='krethik')
+assert (krethik['coverage'],krethik['schema_version'],krethik['revision'])==('complete',3,1) and not krethik['exclusions']
+assert len(krethik['stories'])==3 and len(krethik['contacts'])==15 and sum(len(c['topics']) for c in krethik['contacts'])==6
+assert sum(len(s['steps']) for s in krethik['stories'])==6 and all(len(s['steps'])==2 for s in krethik['stories'])
+assert all(s['steps'][0]['kind']=='carried_item' and s['steps'][0]['optional'] and s['steps'][0]['count']==1 and len(s['steps'][0]['item_vnums'])==1 for s in krethik['stories'])
+assert all(len(s['contracts'])==1 and s['steps'][-1]['contracts']==s['contracts'] for s in krethik['stories'])
+assert report['eligible_by_zone']['200']==3 and sum(d['daily_eligible'] for d in catalog['definitions'] if d['source_area']=='krethik')==3
+assert {s['id'] for s in krethik['stories']}=={'feed-freth','stolen-totem','conspiracy-note'}
+assert all(s['contracts'][0]['giver_vnum'] in (20003,20024,20045) for s in krethik['stories'])
+assert {d['zone_number'] for d in catalog['definitions'] if d['giver_vnum']==55205}=={550}
 
 kelek=next(m for m in catalog['story_mappings'] if m['source_area']=='kelek')
 assert (kelek['coverage'],kelek['schema_version'],kelek['revision'])==('complete',3,1) and not kelek['exclusions']

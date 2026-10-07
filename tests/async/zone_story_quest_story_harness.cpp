@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 186 &&
+		require(catalog.story_mappings.size() == 187 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,177 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "krethik"; });
+			require(mapping.stories.size() == 3 && mapping.contacts.size() == 15 &&
+					mapping.revision == 1,
+				"Krethik journal scope failed");
+			int achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 200)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 3 && dailies == 3,
+				"Krethik independent daily units changed");
+			const auto &freth = story_for("krethik", "feed-freth");
+			const auto &troll = story_for("krethik", "stolen-totem");
+			const auto &advisor = story_for("krethik", "conspiracy-note");
+			const auto &memory = story_for("wh", "request-55205-8495158f345a");
+			const auto &head = story_for("wh", "request-55205-0b740fd8240c");
+			service journey(catalog);
+			require(journey.meet_npc(7, 42, 20003, 20122, 99) == result::rejected,
+				"Krethik encounter skipped discovery");
+			require(journey.discover_zone(7, 42, 200, 20000, 100, "arrival") ==
+					result::applied,
+				"Krethik discovery failed");
+			for (const auto &location :
+			     std::vector<std::pair<int, int>>{ { 20019, 20103 },
+							       { 20006, 20141 },
+							       { 20066, 20147 },
+							       { 20001, 20055 } })
+				require(journey.meet_npc(7, 42, location.first, location.second,
+							 101) == result::applied,
+					"Krethik optional source encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 200, 10, 1, 102, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Krethik source encounter exposed unseen local giver");
+			for (const auto &location : std::vector<std::pair<int, int>>{
+				     { 20003, 20122 }, { 20024, 20054 }, { 20045, 20138 } })
+				require(journey.meet_npc(7, 42, location.first, location.second,
+							 103) == result::applied,
+					"Krethik real giver encounter failed");
+			const auto before = journey.serialize_state();
+			supplies = {};
+			for (int v : { 20018, 20066, 20076, 55176, 20043, 20065, 20073, 20074,
+				       20000, 359, 72, 55414, 55362 })
+				supplies.carried[v] = 2;
+			journal = journey.render_journal(7, 42, 200, 10, 1, 104, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(journal.find("[Missing now] " + story.steps.front().text) !=
+							std::string::npos &&
+						journal.find("[Pending] " +
+							     story.steps.back().text) !=
+							std::string::npos,
+					"Krethik reward/key/foreign proof supplied local ingredient");
+			supplies = {};
+			supplies.equipped[16] = 20016;
+			supplies.equipped[18] = 20017;
+			supplies.carried[20072] = 1;
+			journal = journey.render_journal(7, 42, 200, 10, 1, 105, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(journal.find("[Missing now] " + story.steps.front().text) !=
+						std::string::npos,
+					"Krethik held/worn/container custody supplied loose input");
+			supplies = {};
+			for (const auto &story : mapping.stories)
+				supplies.carried[story.steps.front().item_vnums.front()] = 1;
+			journal = journey.render_journal(7, 42, 200, 10, 1, 106, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(journal.find("[Ready now] " + story.steps.front().text) !=
+							std::string::npos &&
+						journal.find("[Pending] " +
+							     story.steps.back().text) !=
+							std::string::npos,
+					"Krethik supplied exact root not ready or custody minted receipt");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 200).completed == 0,
+				"Krethik supplies recorded source or completion history");
+			record(journey, freth.contracts.front(), "krethik-freth", 200, 20122);
+			supplies = {};
+			supplies.carried[20018] = 1;
+			journal = journey.render_journal(7, 42, 200, 10, 1, 121, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 200).completed == 1 &&
+					journal.find("[Recorded] " + freth.steps.back().text) !=
+						std::string::npos &&
+					journal.find("[Missing now] " + freth.steps.front().text) !=
+						std::string::npos,
+				"Krethik vial recreated consumed sandwich or lost receipt");
+			require(journal.find("[Pending] " + troll.steps.back().text) !=
+						std::string::npos &&
+					journal.find("[Pending] " + advisor.steps.back().text) !=
+						std::string::npos,
+				"Krethik feeding completed totem/note");
+			supplies.carried[20017] = 1;
+			journal = journey.render_journal(7, 42, 200, 10, 1, 122, false, false,
+							 &supplies);
+			require(journal.find("[Ready now] " + freth.steps.front().text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 200).completed == 1,
+				"Krethik reacquisition duplicated receipt");
+			record(journey, troll.contracts.front(), "krethik-troll", 200, 20054);
+			supplies = {};
+			supplies.carried[20066] = 1;
+			supplies.carried[20076] = 1;
+			supplies.carried[55176] = 1;
+			journal = journey.render_journal(7, 42, 200, 10, 1, 123, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 200).completed == 2 &&
+					journey.progress_for_zone(7, 42, 550).completed == 0 &&
+					journal.find("[Pending] " + advisor.steps.back().text) !=
+						std::string::npos,
+				"Krethik troll departure coupled note or foreign receipts");
+			require(journey.meet_npc(7, 42, 55205, 55400, 124) == result::rejected &&
+					!journey.daily_eligible_for(7, 42, memory.contracts.front(),
+								    10, 1, 10, 124),
+				"Krethik source discovery granted recipient encounter or daily access");
+			record(journey, memory.contracts.front(), "krethik-memory", 550, 55400);
+			require(journey.progress_for_zone(7, 42, 550).completed == 1 &&
+					journey.progress_for_zone(7, 42, 200).completed == 2 &&
+					!journey.progress_for_zone(7, 42, 550).discovered,
+				"Krethik memory receipt changed owner or fabricated discovery");
+			record(journey, head.contracts.front(), "krethik-head", 550, 55400);
+			require(journey.progress_for_zone(7, 42, 550).completed == 2 &&
+					journey.progress_for_zone(7, 42, 200).completed == 2,
+				"Krethik independent head delivery coupled local return");
+			require(journey.discover_zone(7, 42, 550, 55400, 125, "arrival") ==
+						result::applied &&
+					journey.meet_npc(7, 42, 55205, 55400, 126) ==
+						result::applied,
+				"Krethik recipient-zone encounter failed");
+			journal = journey.render_journal(7, 42, 550, 10, 1, 127, false, false);
+			require(journal.find("[Recorded] " + memory.steps.back().text) !=
+						std::string::npos &&
+					journal.find("[Recorded] " + head.steps.back().text) !=
+						std::string::npos,
+				"Krethik recipient discovery lost prior independent deliveries");
+			record(journey, advisor.contracts.front(), "krethik-advisor", 200, 20138);
+			require(journey.progress_for_zone(7, 42, 200).completed == 3 &&
+					journey.progress_for_zone(7, 42, 550).completed == 2,
+				"Krethik note/currency/XP receipt lost independent identity");
+			auto replay = completion(troll.contracts.front(), "krethik-troll", 120);
+			replay.transaction.zone_number = 200;
+			replay.transaction.room_vnum = 20054;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Krethik replay duplicated departing return");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 200).completed == 3 &&
+					cold.progress_for_zone(7, 42, 550).completed == 2,
+				"Krethik cold recovery lost owner or receipts");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 200, 20000, 100, "arrival") ==
+					result::applied,
+				"Krethik raw discovery failed");
+			record(raw, freth.contracts.front(), "krethik-raw", 200, 20122);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 200).completed == 1 &&
+					authored.progress_for_zone(7, 42, 550).completed == 0,
+				"Krethik raw-to-authored recovery expanded credit");
 		}
 
 		{

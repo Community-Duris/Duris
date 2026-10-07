@@ -1,0 +1,252 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "krethik",
+  "coverage": "complete",
+  "introduction": "Explore Krethik Keep's kitchen, dungeon and visiting emissaries. Follow three independent requests, with leads to Blig and Ferrik's ancient tomb.",
+  "orientation": [
+    "Krethik Keep has an armory, a dungeon, visiting emissaries and the ancient tomb of Ferrik. Three local requests can be completed independently.",
+    "Ask Freth hi or hello. The cook in the kitchen is the declared source of a rat and tomato sandwich. Bring the exact sandwich loose to Freth for a thin vial of sour liquid; a supplied sandwich also fits.",
+    "Ask the captive troll help or quest. Blig is declared holding the stolen spiked ironwood totem. Bring that exact totem loose for turtle-shell leg plates. The troll leaves after the exchange.",
+    "The dungeon guard carries a rusty cell key. The cells can also admit a successful lockpick attempt by an eligible character. Meeting a guard or holding a key does not show that a cell was opened.",
+    "The high priest carries the black key for the second-floor stair door. The duergar emissary upstairs carries a note about a plot against Tyrik. Bring the exact note to the orcish advisor for coins and experience; he then leaves.",
+    "Enter the bloody triangle in the upstairs study to reach Blig on the cliff. Another triangle leads back. A crack in the dungeon leads to the rat den, where a second crack leads back.",
+    "Tyrik carries an emerald key. It opens the huge chest in the planning chambers, which is declared holding the stone key for the ancient tomb.",
+    "Push the granite statue in the gathering area to clear the blocked trapdoor. The trapdoor still needs to be unlocked with the stone key and opened. The iron door inside also uses the stone key.",
+    "A loose brick at the tomb entrance clears the blocked wall in the next chamber. Open that passage before moving into Ferrik's tomb.",
+    "Ferrik is declared carrying a memory of Krethik Keep. Its separate delivery to the Krethik ambassador in Winterhaven earns a shopkeepers token, a strange enchantment scroll and coins.",
+    "Blig is also declared holding his bloody head. The same ambassador has a separate request for that exact head, rewarding the ring of the Moon and coins. Neither ambassador request depends on finishing the local troll request.",
+    "The torturer's weapon, the tomb's spell fountain and its epic node have their own effects. The silver dragon in the animal pen and slaves in Tyrik's quarters are part of the keep's wider story.",
+    "Reset declarations are leads rather than guaranteed stock. Daily rollover does not replenish materials. New discovery, encounter, journal, achievement and daily credit requires active, ready accounting."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 20003,
+      "name": "Freth",
+      "keyword": "freth",
+      "description": "In the armory; ask hi or hello and bring the exact sandwich for the sour vial.",
+      "topics": [
+        "hi",
+        "hello"
+      ]
+    },
+    {
+      "mob_vnum": 20034,
+      "name": "an orc cook",
+      "keyword": "cook",
+      "description": "In the kitchen; declared holder of the rat and tomato sandwich. Eating it consumes food needed by Freth.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 20024,
+      "name": "a Troll emissary",
+      "keyword": "troll",
+      "description": "In a northern dungeon cell; ask help or quest. Return the exact stolen totem for leg plates; the troll leaves afterward.",
+      "topics": [
+        "hi",
+        "help",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 20006,
+      "name": "Blig",
+      "keyword": "blig",
+      "description": "On the cliff reached through the study triangle; declared holder of both the stolen totem and his bloody head.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 20009,
+      "name": "a Duergar emissary",
+      "keyword": "duergar",
+      "description": "In an upstairs guest bedroom; declared holder of the conspiracy note.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 20045,
+      "name": "an orcish advisor",
+      "keyword": "advisor",
+      "description": "Before the throne room; return the exact note for coins and experience. He leaves after reading it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 20042,
+      "name": "an orcish dungeon guard",
+      "keyword": "guard",
+      "description": "In the dungeon corridor; declared holder of the rusty cell key. Opening a cell is a separate action.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 20019,
+      "name": "an orcish priest",
+      "keyword": "priest",
+      "description": "At the temple altar; declared holder of the black key for the second-floor stair door.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 20004,
+      "name": "Tyrik Bloodyfist",
+      "keyword": "tyrik",
+      "description": "In the throne room; declared holder of the emerald key for the planning-chamber chest.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 20001,
+      "name": "a muscular orc torturer",
+      "keyword": "torturer",
+      "description": "In the torture chamber; declared wielder of the mindbreaker. Its combat effect is separate from a delivery.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 20066,
+      "name": "Ferrik Bloodfist",
+      "keyword": "ferrik",
+      "description": "In the ancient tomb; declared holder of the memory requested by the Krethik ambassador in Winterhaven.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 55205,
+      "name": "an ambassador from Krethik Keep",
+      "keyword": "krethik",
+      "description": "In Winterhaven; ask hi. Memory and head deliveries are two separate Winterhaven requests.",
+      "topics": [
+        "hi"
+      ]
+    },
+    {
+      "mob_vnum": 20012,
+      "name": "a young silver dragon",
+      "keyword": "dragon",
+      "description": "A captive young silver dragon in the animal pen.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 20016,
+      "name": "a half-elf slave",
+      "keyword": "half-elf",
+      "description": "A half-elf slave in Tyrik's quarters.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 20017,
+      "name": "a human slave",
+      "keyword": "human",
+      "description": "A human slave in Tyrik's quarters.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "feed-freth",
+      "title": "Bring food to Freth",
+      "category": "story",
+      "summary": "Freth accepts one rat and tomato sandwich for a thin vial of sour liquid.",
+      "contracts": [
+        {
+          "giver_vnum": 20003,
+          "completion_key": "give=I:20017;receive=I:20018;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-20017",
+          "text": "Carry the exact sandwich loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            20017
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The cook in the kitchen is the declared source. A supplied exact sandwich also fits. Eating it, buying armor or carrying the reward does not complete this return."
+        },
+        {
+          "id": "return",
+          "text": "Bring food to Freth",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 20003,
+              "completion_key": "give=I:20017;receive=I:20018;disappear=0"
+            }
+          ],
+          "hint": "Give the exact requested item loose. Current possession is separate from the accepted return."
+        }
+      ]
+    },
+    {
+      "id": "stolen-totem",
+      "title": "Return the troll's stolen totem",
+      "category": "story",
+      "summary": "The captive troll accepts one spiked ironwood totem for turtle-shell leg plates, then leaves.",
+      "contracts": [
+        {
+          "giver_vnum": 20024,
+          "completion_key": "give=I:20016;receive=I:20066;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-20016",
+          "text": "Carry the spiked ironwood totem loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            20016
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Blig is declared holding the totem on the cliff. Reach him through the upstairs study triangle. Unequip the exact totem before giving it; supplied copies fit without a recorded personal kill."
+        },
+        {
+          "id": "return",
+          "text": "Return the troll's stolen totem",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 20024,
+              "completion_key": "give=I:20016;receive=I:20066;disappear=1"
+            }
+          ],
+          "hint": "Give the exact requested item loose. Current possession is separate from the accepted return."
+        }
+      ]
+    },
+    {
+      "id": "conspiracy-note",
+      "title": "Bring the conspiracy note to the advisor",
+      "category": "story",
+      "summary": "The orcish advisor accepts the exact note for coins and experience, then leaves.",
+      "contracts": [
+        {
+          "giver_vnum": 20045,
+          "completion_key": "give=I:20034;receive=C:250000,E:100000;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "material-20034",
+          "text": "Carry the conspiracy note loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            20034
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The duergar emissary upstairs is the declared source. The advisor reads it before the throne room. Supplied exact notes fit; his departure does not establish an audience with Tyrik or a resolved conspiracy."
+        },
+        {
+          "id": "return",
+          "text": "Bring the conspiracy note to the advisor",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 20045,
+              "completion_key": "give=I:20034;receive=C:250000,E:100000;disappear=1"
+            }
+          ],
+          "hint": "Give the exact requested item loose. Current possession is separate from the accepted return."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
