@@ -2,7 +2,8 @@
 
 Published reservation `c97e97458` is approved for the narrow pricing extraction.
 Implementation, independent payment checks and preserved-branch maintained builds
-are reviewed and remotely available; current-candidate build proof is pending.
+are reviewed and remotely available. The exact composed producer275 candidate's
+753-provider builds are reviewed below; newer primary352 compatibility is separate.
 This is a delivery checkpoint
 under the [continuing project charter](CONTINUING_PROJECT_COORDINATION.md).
 
@@ -64,6 +65,27 @@ quotes may provide further independent boundaries after separate reservation;
 already pure native quest coin/cost calculations are reused. Required primary
 gameplay/recovery remains unfinished, so R3 completion cannot complete either
 worker's continuing Goal or the coordinator Goal.
+
+## Current 753-provider build successor review
+
+Published handoff `3da00f1d60b826280bb8e5c51a5859a3705423a6` adds terminal
+maintained SQL/flat proof for the immutable producer-plus-R0/R1/R2/R3 tree
+`bcfe7b324cb9fedf2d297ea673f6f8cb83d4f13c`, archive SHA256
+`d1c0ed200bf1aabb5df78977f2ec3341ad8441bf67fab4dad6b382c246542877`.
+R4 is absent; the final R3 configuration test remains a separate test-only pin.
+
+The coordinator independently checked all six build proof hashes, both complete
+logs (753 fresh provider compilations and full 753-object link each), terminal
+SQL/flat exit0 records and the actual candidate container's source/ELF hashes.
+Its `enhance.c` hash matches exact R3 production bytes. SQL ELF SHA256
+`300bfac6299bbf18a45e5e69a7653975e81ef6039218ed1fe48c97a2b3cb4a0b`;
+flat `b463412d16c901715ebf91fc4e8fe81bf6f8518e261b7288c7372a1b236914f0`.
+The original 740-provider branch binaries remain separate historical evidence.
+
+Disposition adds **reviewed maintained build/link qualification of that exact
+current composed candidate**. Primary adoption and genuine native compound
+gameplay/persistence/recovery remain unproven. No source was imported to primary.
+The continuing project finish line remains open.
 
 The coordinator also independently checked all three historical R0/R1/R2 patches
 with `git apply --check` at `b1ac97c3a`, without applying them or changing the clean
