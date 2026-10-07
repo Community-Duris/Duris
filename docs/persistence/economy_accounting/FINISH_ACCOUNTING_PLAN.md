@@ -162,6 +162,19 @@ component proof remains distinct from full native/integrated qualification.
 No new quest prerequisite appeared; blocked quest status and active monitor
 remain. Optional adoption stays primary-owned.
 
+Latest successor: primarydaa5c2b5f adds Collector flatfile retained/current
+proof readers; preserve its owner-reported component/754-provider qualification
+and explicit remaining native/backend obligations. R6 code984481667 plus
+handofff920564cfe5cf45733c954887e914be4f7437d2e now passes independent final declared-scope review, including
+three source/50 proof pins, actual740-provider ELFs and all6441 current352
+exported source bodies. Production import passes the new successor; full tests
+retain the R3 predecessor. Earlier evidence remains source-pinned.
+[Final affect-policy review](domain-separation/R6_ENHANCEMENT_AFFECT_POLICY_REVIEW_2026-10-07.md)
+records proof limits and optional import. Reassess substantial independent
+gaps and exact owner dependencies; no thin wrapping of already-owned rules.
+Quest remains blocked on authentic native prerequisites. Overall finish line
+and active coordinator/monitor are unchanged.
+
 Older checkpoint status text below remains historical and is superseded here.
 
 Both existing workers have actual continuing Goals ACTIVE against the broader

@@ -215,6 +215,31 @@ No new native quest prerequisite was published. Quest Goal remains BLOCKED,
 not complete; avoid unchanged wakes. Coordinator/architecture Goals and
 recurring monitor remain active. The broader finish line is unchanged.
 
+## R6 final review and new Collector reader milestone
+
+R6 implementation `984481667` and handoff `f920564cfe5cf45733c954887e914be4f7437d2e` pass
+[final declared-scope review](R6_ENHANCEMENT_AFFECT_POLICY_REVIEW_2026-10-07.md).
+The coordinator authenticated committed/tested source equality, all three
+source and 50 proof pins, actual maintained SQL/flat ELFs and full 740-object
+links. All 6,441 current352 overlay source bodies match their Git tree. Original
+failures and full test package's R3 predecessor remain explicit. No current
+754-provider full build, native journey or primary adoption is inferred.
+
+New primary `daa5c2b5f` adds Collector flatfile historical/current proof readers
+and reports complete original component and both754-provider qualification.
+Private owner receipts were not independently verified here. Preserve its
+source, reuse the borrowed-lock proof/projection interfaces, and retain the
+published unsupported flatfile publication/holds/ACK and SQL player journey
+obligations. R6 production application still passes and its local source/test
+preimages are unchanged; earlier qualification keeps its original352 pins.
+
+The quest Goal remains BLOCKED, not complete: no relevant native source,
+independent lifecycle, settlement or recovery capability appeared. Architecture
+is reassessing substantial independent gaps across all nine families after
+R6, with exact missing owner interfaces retained. Do not duplicate completed
+owned rules or manufacture thin extractions. Coordinator and recurring monitor
+remain active; this checkpoint does not satisfy the primary finish line.
+
 ## Recurring monitor
 
 The existing thread heartbeat checks every15 minutes, supplemented by active
