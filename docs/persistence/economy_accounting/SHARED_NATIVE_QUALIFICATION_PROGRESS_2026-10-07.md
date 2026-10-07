@@ -59,13 +59,45 @@ keeper proof damages and exact owner-counter assertions added.
 
 ## Parallel flat boot work and next acceptance
 
-The private flat boot composition now uses complete initialized-bucket history,
-retired-head/current-root proof, absent-control namespace fencing, whole native
-owner census before typed partition, and protected inert stages owned until the
-original shared publication succeeds. Original SQL restore remains unchanged.
-Four structural-reader and two typed-view strict syntax checks pass in both
-profiles. Complete shared composition review/compilation, sanitizer damaged
-controls, production links and genuine flat restart/ACK journeys remain open.
+The private shared boot candidate now includes authenticated opening-baseline
+piles alongside retained typed COIN history. It preserves native revision 7
+independently of the accounting opening effect 0->1, complete custody and owner
+counters, consumed lifetimes, and original rollback ownership. Baseline-only
+history does not fence aggregate room money. Original SQL restore is unchanged.
+The frozen 15-file foundation passed sixteen strict syntax checks; the 17-file
+successor passed six changed-TU checks in both production profiles. Independent
+source review found no blocking defect. Primary authenticated all 17 files,
+1,313 unchanged fallback inputs and the complete helper seals and receipts:
+`bin/tests/coin-flatfile-boot-owner-primary-20261007/baseline-successor/PRIMARY-AUTHENTICATION.json`.
+These checks do not prove executable boot, publication, ACK or release.
+
+The full-server control preparation now checks exact restore outcomes, original
+destruction-owner counters and selected runtime UID identities on rollback.
+Its changed observer syntax and fourteen isolated Python predicate checks pass.
+Inspection then established that the old seed manually selected a participant
+epoch without the lifecycle-origin receipt required by actual startup before
+world restoration. The successor uses the real lifecycle installer and passes
+its changed-seed strict syntax check; primary authenticates its exact native
+inputs and receipt preparation. No startup or active-projection substitute is
+permitted. Fourteen full-server cases remain
+unexecuted, and startup refusals must be recorded at their actual boundary.
+
+Plan 3's existing installer captures only wallets and shared banks. The private
+genesis candidate adds a borrowed-lock world reader including saved-item records
+and an indexed physical/custody/literal room-pile census. Source review caught
+and corrected coin-prototype/type confusion and repeated world catalog reads.
+Both changed-provider profiles pass strict syntax; original reader bodies stay
+unchanged. This exact physical census applies only to fresh genesis. Later COIN
+recovery authenticates retained current heads, since its world projection can
+legitimately be absent or historical. Lifecycle integration stages pile heads,
+EAB, reservations, receipt and epoch selection in the original single commit;
+its implementation and qualification remain private and unfinished. Historical
+native lifecycle V1 proof remains distinct from the new pile profile.
+
+Docker still reports that it cannot start, with an empty server version even
+when the command exits zero. No service or native build was retried on that
+result. Production links, executable controls and genuine flat restart/ACK
+journeys remain open; no private source candidate is imported or gate promoted.
 
 Next: recover supported native tooling and the original complete cache; finish
 both production profiles; execute the unchanged full native Collector and SHOP
