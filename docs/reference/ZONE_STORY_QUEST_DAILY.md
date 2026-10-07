@@ -239,3 +239,8 @@ The [dossier](../design/zone-stories/BCTDL.md) retains one potential seal candid
 ## BrimStone Forge daily qualification
 
 The [dossier](../design/zone-stories/BRIMEFORGE.md) retains two potential candidates. Mode2 scheduling does not prove fresh accounted lockets or rune availability. All distinct loose roots must be accepted together; actual reward item/XP entitlements, recipients/save/recovery, NORENT key lifecycle and completed accountable source/giver renewal need qualification. Daily policy remains disabled and new tracking requires active READY accounting.
+
+
+## Bugger Caves daily qualification
+
+The [dossier](../design/zone-stories/BUGGER.md) retains one meaningful potential candidate and excludes the wrong-food response. Native self-exchange is already daily-ineligible; exclusion also prevents achievement/story progress. Mode2 timing and reset caps do not prove fresh READY eggs or parent/child generations. All three exact loose roots, actual recipient armor settlement/save/recovery, NORENT egg lifecycle and completed accountable renewal require qualification. New tracking requires active READY accounting and daily policy remains disabled.

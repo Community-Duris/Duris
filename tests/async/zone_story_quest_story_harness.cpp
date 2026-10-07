@@ -211,8 +211,8 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 204 &&
-				tracker.summary_for(7, 42).total == 1522,
+		require(catalog.story_mappings.size() == 205 &&
+				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -24250,6 +24250,123 @@ int main(int argc, char **argv)
 			require(journey.progress_for_zone(7, 42, 1310).completed == 2 &&
 					journey.progress_for_zone(7, 42, 1310).total == 2,
 				"BrimStone sequential returns were merged or lost");
+		}
+
+		{
+			const auto &request = story_for("bugger", "queen-eggs-and-carapace");
+			const auto &map = *std::find_if(catalog.story_mappings.begin(),
+							catalog.story_mappings.end(),
+							[](const auto &m)
+							{ return m.source_area == "bugger"; });
+			require(map.exclusions.size() == 1, "Bugger wrong-food exclusion missing");
+			const auto &refusal = map.exclusions.begin()->first;
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 64, 6400, 100, "arrival") ==
+						result::applied &&
+					journey.meet_npc(7, 42, 6409, 6402, 102) == result::applied,
+				"Bugger source encounter setup failed");
+			std::string journal =
+				journey.render_journal(7, 42, 64, 10, 1, 103, false, false);
+			require(journal.find("[Story incomplete] " + request.title + "\r\n") ==
+					std::string::npos,
+				"Bugger attendant encounter revealed an unmet Queen's request");
+			require(journey.meet_npc(7, 42, 6402, 6412, 104) == result::applied,
+				"Bugger Queen encounter failed");
+			const auto before = journey.serialize_state();
+			const int materials[] = { 6403, 6404, 6405 };
+			// Synthetic current custody views do not qualify native SEARCH, GET or transfer.
+			for (unsigned mask = 0; mask < 8; ++mask)
+			{
+				supplies = {};
+				for (unsigned index = 0; index < 3; ++index)
+					if (mask & (1U << index))
+						supplies.carried[materials[index]] = 1;
+				journal = journey.render_journal(7, 42, 64, 10, 1, 105, false,
+								 false, &supplies);
+				for (unsigned index = 0; index < 3; ++index)
+					require(journal.find(std::string(mask & (1U << index) ?
+										 "[Ready now] " :
+										 "[Missing now] ") +
+							     request.steps[index].text) !=
+							std::string::npos,
+						"Bugger partial set merged distinct egg/carapace readiness");
+				require(journey.serialize_state() == before &&
+						journey.progress_for_zone(7, 42, 64).completed == 0,
+					"Bugger preparation persisted a quest acceptance");
+			}
+			supplies = {};
+			supplies.carried[6402] = 3;
+			supplies.carried[6403] = 3;
+			supplies.equipped[18] = 6404;
+			journal = journey.render_journal(7, 42, 64, 10, 1, 106, false, false,
+							 &supplies);
+			require(journal.find("[Ready now] " + request.steps[0].text) !=
+						std::string::npos &&
+					journal.find("[Missing now] " + request.steps[1].text) !=
+						std::string::npos &&
+					journal.find("[Missing now] " + request.steps[2].text) !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Bugger food, duplicate lost egg or held material substituted for the loose set");
+			record(journey, refusal, "bugger-wrong-egg", 64, 6412);
+			require(journey.progress_for_zone(7, 42, 64).completed == 0 &&
+					journey.progress_for_zone(7, 42, 64).total == 1 &&
+					journey.evidence_for(refusal, 2).successful_attempts == 1,
+				"Bugger wrong-food receipt earned an achievement or lost settlement evidence");
+			service refusal_recovered(catalog), refusal_raw(raw_catalog);
+			const auto refused = journey.serialize_state();
+			require(refusal_recovered.deserialize_state(refused, &error) &&
+					refusal_raw.deserialize_state(refused, &error) &&
+					refusal_recovered.progress_for_zone(7, 42, 64).completed ==
+						0 &&
+					refusal_recovered.progress_for_zone(7, 42, 64).total == 1 &&
+					refusal_recovered.evidence_for(refusal, 2)
+							.successful_attempts == 1 &&
+					refusal_raw.progress_for_zone(7, 42, 64).completed == 1 &&
+					refusal_raw.progress_for_zone(7, 42, 64).total == 2,
+				"Bugger cold recovery counted refusal or discarded raw native compatibility");
+			auto refused_replay = completion(refusal, "bugger-wrong-egg", 120);
+			refused_replay.transaction.zone_number = 64;
+			refused_replay.transaction.room_vnum = 6412;
+			require(journey.record_completion(refused_replay) ==
+					result::already_applied,
+				"Bugger refusal replay duplicated native settlement");
+			record(journey, request.contracts.front(), "bugger-complete-set", 64, 6412);
+			auto accepted_replay =
+				completion(request.contracts.front(), "bugger-complete-set", 120);
+			accepted_replay.transaction.zone_number = 64;
+			accepted_replay.transaction.room_vnum = 6412;
+			require(journey.record_completion(accepted_replay) ==
+					result::already_applied,
+				"Bugger joint-set replay duplicated acceptance");
+			supplies = {};
+			supplies.carried[6406] = 1;
+			journal = journey.render_journal(7, 42, 64, 10, 1, 121, false, false,
+							 &supplies);
+			require(journal.find("[Recorded] " + request.steps.back().text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 64).completed == 1 &&
+					journey.progress_for_zone(7, 42, 64).total == 1,
+				"Bugger spent joint set lost acceptance or added refusal progress");
+			for (unsigned index = 0; index < 3; ++index)
+				require(journal.find("[Missing now] " +
+						     request.steps[index].text) !=
+						std::string::npos,
+					"Bugger armor reward recreated spent egg/carapace custody");
+			service supplied(catalog), recovered(catalog), raw(raw_catalog);
+			record(supplied, request.contracts.front(), "bugger-supplied-exact-set", 64,
+			       6412);
+			require(supplied.progress_for_zone(7, 42, 64).completed == 1,
+				"Bugger supplied set required invented search, kill, greeting, care or arrival history");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 64).completed == 1 &&
+					recovered.progress_for_zone(7, 42, 64).total == 1 &&
+					recovered.evidence_for(refusal, 2).successful_attempts ==
+						1 &&
+					raw.progress_for_zone(7, 42, 64).completed == 2,
+				"Bugger cold/raw recovery lost exact acceptance or excluded native evidence");
 		}
 
 		std::cout

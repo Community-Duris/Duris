@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 191 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 192 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -396,7 +396,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 | 189 | [Phantasmagoric Caverns](zone-stories/VALDRAK.md) (`valdrak`) | Three exact spider items → one accepted currency/XP return and departure; independent ritual/community, garden, spring, shop and cave stories. | Comprehensive schema3/revision1: one Q/card,57 contacts,three valid topics/four steps;100 rooms/57 mobiles/19 objects/311 resets. Thirty owned acquisition/settlement/retirement/service/access/renewal/fair-repair follow-ups; three raw dialogue families versus two recognized inventory blocks. |
 | 190 | [The Bronze Citadel](zone-stories/BCTDL.md) (`bctdl`) | Independent seal → key and heart → armor/departure; practical wall maze, keyed wings, bronze cube, prison and custom equipment progression. | Comprehensive schema3/revision1: two cards,35 contacts,one topic/four steps;77 rooms/35 mobiles/71 objects/302 resets. Thirty-two owned source/trap/custody/access/reward/retirement/renewal/fair-repair follow-ups. |
 | 191 | [The BrimStone Forge](zone-stories/BRIMEFORGE.md) (`brimeforge`) | Three distinct overseer lockets → wand/XP/ethereal key; independent rune → mithril key, secret mines, forge/prison access and liberation leads. | Comprehensive schema3/revision1: two cards,16 contacts,one family/four topics/six steps;49 rooms/16 mobiles/20 objects/120 resets. Thirty-two owned source/custody/access/reward/effect/renewal/fair-repair follow-ups. |
-| 192 | The Bugger Caves (`bugger`) | [Meet the giver → 1 × a bugger egg; 1 × a bugger egg; 1 × a buggers carapace → some spiked carapace armor](../../areas/qst/bugger.qst#L7) | 2 Q; 1 dialogue; 0 candidate link items |
+| 192 | [The Bugger Caves](zone-stories/BUGGER.md) (`bugger`) | Hidden lost/misplaced eggs and container carapace → exact joint Queen return → armor; wrong-food refusal, brood/worker/slime and secret-exit stories. | Comprehensive schema3/revision1: one card/one exclusion,22 contacts,one family/three topics/four steps;28 rooms/22 mobiles/7 objects/91 resets. Twenty-eight owned source/reveal/parent/custody/refusal/reward/arrival/renewal/fair-repair follow-ups. |
 | 193 | Dirk'nspire Stronghold (`dirkn`) | [Meet the giver → 1 × a tattered piece of silk-paper → native reward/response](../../areas/qst/dirkn.qst#L19) | 2 Q; 1 dialogue; 0 candidate link items |
 | 194 | Storm Port (`stormport`) | [Meet the giver → 1 × a set of shackles from the prison; 1 × a captain's badge; 1 × a verbeeg tooth and the remaining ingredients → the magnificent mantle of Storm Port](../../areas/qst/stormport.qst#L12) | 2 Q; 1 dialogue; 0 candidate link items |
 | 195 | Arachdrathos - Drow City (`arac-web`) | [Meet the giver → native offering → a dildo-shaped key](../../areas/qst/arac-web.qst#L6) | 1 Q; 1 dialogue; 0 candidate link items |

@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 204 authored journals.
+2668 distinct Q contracts; 205 authored journals.
 
 Regenerate with:
 
@@ -52,7 +52,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Town of Breale (`breale`) | 6 | 6 | 0 | Yes | [2 × a red mushroom; 1 × some ash; 2 × a tiny pile of wood → the amulet of the triad of witches](../../areas/qst/breale.qst#L72) | breale_townsfolk |
 | The BrimStone Forge (`brimeforge`) | 2 | 1 | 0 | Yes | [1 × the locket of the first; 1 × the locket of the second; 1 × the locket of the third → a wand of fiery power, an ethereal key](../../areas/qst/brimeforge.qst#L8) | — |
 | Bloodstone Keep (`bs`) | 65 | 74 | 35 | Yes | [1 × the essence of Ogremoch; 1 × the essence of Imix; 1 × the essence of Yan-c-bin; other required items → the elixir of power](../../areas/qst/bs.qst#L1082) | bs_baron, bs_barons_mistress, bs_boar, bs_boss, bs_brat, bs_citizen |
-| The Bugger Caves (`bugger`) | 2 | 1 | 0 | Fallback | [1 × a bugger egg; 1 × a bugger egg; 1 × a buggers carapace → some spiked carapace armor](../../areas/qst/bugger.qst#L7) | — |
+| The Bugger Caves (`bugger`) | 2 | 1 | 0 | Yes | [1 × a bugger egg; 1 × a bugger egg; 1 × a buggers carapace → some spiked carapace armor](../../areas/qst/bugger.qst#L7) | — |
 | The Twin Keeps of Devastated Tharnadia (`caertannad`) | 30 | 37 | 10 | Yes | [3 × a Bren'Shan harpy feather; 3 × a Straka harpy feather → a necklace of frost harpy feathers](../../areas/qst/caertannad.qst#L395) | caertannad_summon |
 | Quintaragon Castle (`castle`) | 2 | 2 | 0 | Yes | [1 × a white bone studded with fine diamonds → the flaming orb of revenge](../../areas/qst/castle.qst#L31) | — |
 | Caves of Mt. Skelenak (`caves_skelenak`) | 9 | 8 | 0 | Yes | [1 × a bronze scepter; 1 × an engraved bracelet of human bones → a copper mask](../../areas/qst/caves_skelenak.qst#L143) | guild_guard, piercer |

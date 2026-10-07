@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 204 authored journals, accounting-gated player surfaces, starter/town
+**Status: 205 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5327,3 +5327,10 @@ Builder declarations should describe intended rescue/restoration/custom worn-equ
 The [BrimStone Forge dossier](zone-stories/BRIMEFORGE.md) maps three exact locket sources from distinct instances of one overseer and an independent supplied-rune exchange. Accounting requires all distinct actor roots together in one durable batch; legacy giver deposits are a separate flow. Current loose preparation, source lineage/transfer, accepted receipt, actual item/XP obligations, fragile keys/shared door state/crossing and worn/device effect settlement require separate evidence.
 
 Builder declarations need intended rune/chest-key sources, mismatched chest-as-key and key0 portcullis decisions, actual rescue/cleansing endpoints and accurate acceptance/prose. Raw3 means PICKPROOF in the loader; current KNOCK is container-only, so access cannot be inferred from key absence or a presumed spell bypass. Mode2 renewal remains subject to the active accounting generation-issuance gate. Thirty-two owned follow-ups preserve static absence boundaries and fair separately named fix/news repairs. New tracking requires active READY accounting.
+
+
+## Bugger Caves integration extension
+
+The [dossier](zone-stories/BUGGER.md) adds one exact three-item request and explicitly excludes the Queen’s wrong-food response. Native definitions remain unchanged; one refusal unit is removed from achievement/story presentation. Identical item names need description and identity guidance. Personal SEARCH, source-parent generation, actual GET/root custody, supplied input and simultaneous batch acceptance require distinct evidence. Reset P’s global prototype lookup needs an actual frozen parent UID.
+
+Colony nursing, transport, maturation, excavation, food and slime-threat stories need builder-defined lasting outcomes; prose and encounters do not complete them. Innate room6405 arrival is an alternate admitted discovery route, rather than an item source. Twenty-eight owned follow-ups cover these capabilities, native recipient/save/recovery, fair separate fix/news repairs and completed mode2/accountable renewal. Existing schema/exclusions suffice for the current journal. New tracking requires active READY accounting; daily policy remains disabled.
