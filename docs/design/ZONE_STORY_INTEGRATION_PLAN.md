@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 230 authored journals, accounting-gated player surfaces, starter/town
+**Status: 231 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5482,3 +5482,8 @@ The [dossier](zone-stories/BARROW_OF_THE_QUIOSHO.md) maps one supplied-compatibl
 ## Keep of Evil integration extension
 
 The [dossier](zone-stories/KEEP_OF_EVIL.md) maps one supplied-compatible desk-key/XP exchange and15 broader stories with45 owned follow-ups. Existing schema suffices for native preparation/acceptance. Add acknowledged source/root/UID provenance,actual shared controls and surviving admitted passage,logical living/form/episode identities,and useful positive postcommit rescue,care,training,trade,music,faction or epic projections only where builders intentionally define them. Paid practice and shop mutation currently refuse active accounting;stock,services,legacy flags,staging and custom transforms need owned fair decisions. Keep original foreign contracts and epic authority,without double awards or personal route gates for supplied native materials. Active READY accounting remains required and daily policy disabled;native repairs remain separately named fix/news scopes.
+
+
+## New Cave city integration extension
+
+The [dossier](zone-stories/NEW_CAVE_CITY.md) maps one native three-material wizard exchange and15 broader stories with45 owned follow-ups. Existing schema suffices for three optional preparation rows and one accepted atomic completion. Add intentional source/root/UID provenance,competing original foreign ownership,authoritative training/commerce settlement,logical recipient/form/curse episodes and useful positive saved benefit only where builders define actual controllers. The wizard’s recurring source belongs to Twin Towers Forest;epic purchases currently refuse active accounting. Tablet source/clue,TRASH intelligence scroll,fish teacher flag,legacy M tails,mine weight/parent and directional copy need owned fair decisions before separate repairs. Supplied materials acquire no personal boss/route gates. Active READY accounting remains required and daily policy disabled;native repairs remain separately named fix/news scopes.

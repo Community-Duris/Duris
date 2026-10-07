@@ -56575,6 +56575,269 @@
       ]
     },
     {
+      "contacts": [
+        {
+          "description": "The gate guard is associated with the indigo key. Obtaining the key,opening its gate and passing safely are separate milestones.",
+          "keyword": "skeleton",
+          "mob_vnum": 15100,
+          "name": "the skeleton gate guard",
+          "topics": []
+        },
+        {
+          "description": "The skeletal knights were forced into service in the cleric\u2019s story. The journal has no agreed release or peaceful restoration task for them yet.",
+          "keyword": "skeletal",
+          "mob_vnum": 15101,
+          "name": "the skeletal knight",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounter while exploring Valhingen and choosing a safe route. Meeting or fighting a resident is separate from completing an agreed quest.",
+          "keyword": "undead",
+          "mob_vnum": 15102,
+          "name": "a vampiric warg",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounter while exploring Valhingen and choosing a safe route. Meeting or fighting a resident is separate from completing an agreed quest.",
+          "keyword": "wight",
+          "mob_vnum": 15103,
+          "name": "an evil-looking wight",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounter while exploring Valhingen and choosing a safe route. Meeting or fighting a resident is separate from completing an agreed quest.",
+          "keyword": "ghoul",
+          "mob_vnum": 15104,
+          "name": "a ghoul",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounter while exploring Valhingen and choosing a safe route. Meeting or fighting a resident is separate from completing an agreed quest.",
+          "keyword": "ghast",
+          "mob_vnum": 15105,
+          "name": "a ghast",
+          "topics": []
+        },
+        {
+          "description": "Quturac is associated with the bone key for the wraith\u2019s route. An encounter,key recovery and an admitted passage are separate milestones.",
+          "keyword": "quturac",
+          "mob_vnum": 15106,
+          "name": "Quturac, the skeletal death dragon",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounter while exploring Valhingen and choosing a safe route. Meeting or fighting a resident is separate from completing an agreed quest.",
+          "keyword": "dragon",
+          "mob_vnum": 15107,
+          "name": "an undead dragon",
+          "topics": []
+        },
+        {
+          "description": "Autexil guards Akabar\u2019s lair and is associated with the aqua key. A supplied exact key can help with access without your own victory over him.",
+          "keyword": "autexil",
+          "mob_vnum": 15108,
+          "name": "Autexil the Guardian",
+          "topics": []
+        },
+        {
+          "description": "Akabar was once a healer of Tharnadia. His fall and his library suggest a larger history and restitution story;the journal has no agreed reform task for him yet.",
+          "keyword": "akabar",
+          "mob_vnum": 15109,
+          "name": "Akabar",
+          "topics": []
+        },
+        {
+          "description": "This undead wife\u2019s profile describes harm and coercion. Helping her needs her wishes and an actual useful peaceful outcome;ordinary combat does not record that result.",
+          "keyword": "soul",
+          "mob_vnum": 15110,
+          "name": "the soul of an undead wife",
+          "topics": []
+        },
+        {
+          "description": "This undead husband is part of the household\u2019s troubled story. The journal has no agreed restitution or peaceful restoration task here yet.",
+          "keyword": "soul",
+          "mob_vnum": 15111,
+          "name": "the soul of an undead husband",
+          "topics": []
+        },
+        {
+          "description": "Ordack\u2019s library offers clues about the city\u2019s past. Reading scenery and completing an agreed research or restitution task are different milestones.",
+          "keyword": "necromancer",
+          "mob_vnum": 15112,
+          "name": "Ordack",
+          "topics": []
+        },
+        {
+          "description": "Dranum carries a memory of New Cave city and equipment with its own powers. Recovering them,completing a foreign memory commission and bringing useful peace are separate stories.",
+          "keyword": "dranum",
+          "mob_vnum": 15113,
+          "name": "Dranum the Slayer",
+          "topics": []
+        },
+        {
+          "description": "Akulab rules from the upper quarters. The journal has no agreed leadership or restoration task;prepare for the actual travel restrictions and encounter.",
+          "keyword": "akulab",
+          "mob_vnum": 15114,
+          "name": "Akulab the Overlord",
+          "topics": []
+        },
+        {
+          "description": "Dred\u2019s sack is associated with a grey mine key. Its actual placement,key recovery and successfully passing a mine door are separate milestones.",
+          "keyword": "dred",
+          "mob_vnum": 15115,
+          "name": "Dred the Guardian of the Mine",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounter while exploring Valhingen and choosing a safe route. Meeting or fighting a resident is separate from completing an agreed quest.",
+          "keyword": "water",
+          "mob_vnum": 15116,
+          "name": "a water elemental",
+          "topics": []
+        },
+        {
+          "description": "The wizard exchanges the exact mystic tablet,Bel\u2019s heart and Orb of Unmaking together for an Intelligence scroll. Recovered or supplied exact copies fit. His separate epic training is currently unavailable while accounting is active.",
+          "keyword": "valhingen",
+          "mob_vnum": 15120,
+          "name": "the undead wizard",
+          "topics": []
+        },
+        {
+          "description": "The water fiend guards the landing. A successful water journey and ordinary combat are different milestones.",
+          "keyword": "water",
+          "mob_vnum": 15121,
+          "name": "a water fiend",
+          "topics": []
+        },
+        {
+          "description": "This fish is described as undead. The journal has no living animal-care task or qualified lesson for it.",
+          "keyword": "undead",
+          "mob_vnum": 15122,
+          "name": "an undead fish",
+          "topics": []
+        },
+        {
+          "description": "The undead children suggest a story about the city\u2019s curse. The journal has no agreed useful release or restoration task for them yet.",
+          "keyword": "undead",
+          "mob_vnum": 15123,
+          "name": "an undead child",
+          "topics": []
+        },
+        {
+          "description": "The boat keeper carries a skiff and describes selling boats. The journal does not yet record a settled purchase;obtaining a boat and making a safe journey are separate milestones.",
+          "keyword": "undead",
+          "mob_vnum": 15124,
+          "name": "the undead boat keeper",
+          "topics": []
+        },
+        {
+          "description": "Jurtrem\u2019s torture room suggests a story about victims and restitution. Defeating him and recording a meaningful peaceful outcome are separate milestones.",
+          "keyword": "jurtrem",
+          "mob_vnum": 15125,
+          "name": "Jurtrem the Dreaded",
+          "topics": []
+        },
+        {
+          "description": "The kraken inhabits the cold lake. Prepare for its encounter while choosing an admitted route and a safe return.",
+          "keyword": "kraken",
+          "mob_vnum": 15126,
+          "name": "the kraken",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounter while exploring Valhingen and choosing a safe route. Meeting or fighting a resident is separate from completing an agreed quest.",
+          "keyword": "shadow",
+          "mob_vnum": 15127,
+          "name": "a shadow lord",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore Valhingen\u2019s ruined cave city and meet its undead wizard. Prepare his three-material commission while following leads about the city\u2019s curse,its libraries,the mine,the cold lake and meaningful restitution.",
+      "orientation": [
+        "Learn an admitted route into Valhingen and back. The current Surface mine entrances and Underdark tunnel lead to different parts of the city.",
+        "Seek the undead wizard in Valhingen\u2019s magic shop. His commission asks for the exact mystic tablet,Bel\u2019s still-beating heart and Orb of Unmaking together.",
+        "Carry one exact copy of each requested material loose in your inventory. Recovered or supplied copies fit without your own boss victories or personal route history.",
+        "The tablet\u2019s clue suggests further requirements,but the wizard\u2019s current exchange takes the three listed materials. The journal records that exact accepted exchange.",
+        "Finding an intended source for the mystic tablet remains a lead to investigate. The journal does not promise a new source or automatic replenishment.",
+        "Bel\u2019s heart and the Orb of Unmaking also belong to other commissions. Choose which original exchange to complete;one spent set does not finish every request.",
+        "Preparing the three materials is different from completing the accepted exchange. Its receipt remains recorded after those materials are spent.",
+        "Receiving the Intelligence scroll and gaining a useful intelligence benefit are separate milestones. The journal does not yet record an admitted useful effect from the scroll.",
+        "The wizard also offers epic intelligence training under its own rules. Listing a lesson or hearing an ambient message does not record learning;these purchases are currently unavailable while accounting is active.",
+        "Indigo,aqua,bone and grey mine keys serve different doors. Finding a key,opening the correct door and making a safe passage are separate steps.",
+        "Akabar\u2019s history and Ordack\u2019s library suggest knowledge and restitution stories. The journal has no agreed reform or research task for them yet.",
+        "The undead households,children and forced knights suggest stories about the curse and useful peace. Ordinary combat or removing a creature does not itself record helping a victim.",
+        "Jurtrem and Dranum have distinct encounters and equipment. Their defeat,loot recovery and an intentional restitution or restoration outcome are separate stories.",
+        "The mine and cold lake offer different routes and risks. The boat keeper\u2019s skiff,an actual purchase and a successful journey with a safe return are different milestones.",
+        "A memory of New Cave city has a commission with an ambassador elsewhere. The rune stone has its own epic rules;these outcomes remain separate from the wizard\u2019s exchange."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "new_cavecity",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:402,I:26614,I:32490;receive=I:411;disappear=0",
+              "giver_vnum": 15120
+            }
+          ],
+          "id": "wizard-intelligence-scroll",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Bring one exact copy loose in your inventory. A recovered or supplied copy fits without personal source or boss history.",
+              "id": "prepare-402",
+              "item_vnums": [
+                402
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the mystic runed stone tablet"
+            },
+            {
+              "count": 1,
+              "hint": "Bring one exact copy loose in your inventory. A recovered or supplied copy fits without personal source or boss history.",
+              "id": "prepare-32490",
+              "item_vnums": [
+                32490
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the still-beating heart of Bel"
+            },
+            {
+              "count": 1,
+              "hint": "Bring one exact copy loose in your inventory. A recovered or supplied copy fits without personal source or boss history.",
+              "id": "prepare-26614",
+              "item_vnums": [
+                26614
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the Orb of Unmaking"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:402,I:26614,I:32490;receive=I:411;disappear=0",
+                  "giver_vnum": 15120
+                }
+              ],
+              "hint": "One accepted three-material exchange stays recorded after the materials are spent. Useful scroll benefits and epic training remain separate outcomes.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the wizard\u2019s accepted exchange"
+            }
+          ],
+          "summary": "Bring the exact mystic tablet,Bel\u2019s heart and Orb of Unmaking together to the wizard for an Intelligence scroll. Recovered or supplied copies fit. Useful scroll benefits and epic training remain separate stories.",
+          "title": "The wizard\u2019s three-material commission"
+        }
+      ]
+    },
+    {
       "contacts": [],
       "coverage": "complete",
       "exclusions": [],
