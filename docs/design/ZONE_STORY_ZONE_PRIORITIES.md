@@ -13,8 +13,8 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 219 now have comprehensive
-source maps; the other entries retain their earlier rough/provisional status.
+source dossiers and precise blockers. Priorities 1 through 220 now have comprehensive
+source maps;the original220-area source-mapping queue is complete. Deeper implementation and played qualification remain separately owned.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
 Newhaven's [completed dossier](zone-stories/NEWHAVEN.md) adds rift/counterpart
@@ -424,7 +424,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 | 217 | [Barrow of the Quiosho](zone-stories/BARROW_OF_THE_QUIOSHO.md) (`elftomb`) | Safe entry/return → independent warrior head/amulet commission;crypt access/source custody,battlefield history/spirit help,Borrix salvage/commerce,foreign eye recovery,swanmay/living care,forest/lake care,hazard passage and useful equipment. | Comprehensive schema3/revision1: one card/15 contacts/no invented topics/one optional row/two steps;207 rooms/15 mobs/28 objects/178 resets.40 owned follow-ups preserve supplied eligibility and actual useful effects. |
 | 218 | [Keep of Evil](zone-stories/KEEP_OF_EVIL.md) (`evkeep`) | Safe entry/return → independent librarian desk-key/XP commission;palace controls,living prisoner/captive/dragon rescue,animal care,training,alchemist/armourer services,history/spirit restitution,music,court/foreign memory,Knight/equipment and original epic-node outcomes. | Comprehensive schema3/revision1: one card/59 contacts/no invented topics/one optional row/two steps;147 rooms/59 mobs/85 objects/272 resets.45 owned follow-ups map15 broader stories with actual control,accounting and useful-benefit boundaries. |
 | 219 | [New Cave city](zone-stories/NEW_CAVE_CITY.md) (`new_cavecity`) | Safe entry/return → independent wizard three-material exchange;tablet source and foreign artifact choice,useful scroll effect,epic training,Akabar/Ordack knowledge,undead peace,victim restitution,Dranum equipment,keys/mine/stronghold/lake,foreign memory and original epic outcomes. | Comprehensive schema3/revision1:one card/25 contacts/no invented topics/three optional rows/four steps;73 rooms/25 mobs/34 objects/129 resets.45 owned follow-ups map15 broader stories with actual source,accounting,recipient and useful-benefit boundaries. |
-| 220 | Lost City of Tikitzopl (`tikit`) | [Meet the giver → 1 × a scared kitty cat → the temple key](../../areas/qst/tikit.qst#L2) | 1 Q; 0 dialogue; 0 candidate link items |
+| 220 | [Lost City of Tikitzopl](zone-stories/LOST_CITY_OF_TIKITZOPL.md) (`tikit`) | Safe entry/return → explicit native sacrifice/key choice;kitty source and humane animal protection,household safety,voluntary freedom,faerie ecology,river/key travel,city services/devices/refuge,civic/history work,competing foreign equipment commissions and deeper-temple access/return. | Comprehensive schema3/revision1:one card/71 contacts/no invented topics/one optional row/two steps;340 rooms/71 mobs/55 objects/389 resets/eight SHP records.45 owned follow-ups map15 broader stories;no native repair. |
 
 ## Deferred and Q-free content
 

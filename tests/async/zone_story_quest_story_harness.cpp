@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 231 &&
+		require(catalog.story_mappings.size() == 232 &&
 				tracker.summary_for(7, 42).total == 1518,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -26878,6 +26878,94 @@ int main(int argc, char **argv)
 					!journey.has_discovered(7, 42, 266) &&
 					!journey.has_discovered(7, 42, 550),
 				"New Cave city receipt forged foreign-source discovery");
+		}
+
+		{
+			const auto &exchange = story_for("tikit", "sacrifice-for-temple-key");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 43763, 44037, 100) == result::rejected,
+				"Tikitzopl leader contact ignored undiscovered physical zone");
+			require(journey.discover_zone(7, 42, 437, 43700, 101, "arrival") ==
+					result::applied,
+				"Tikitzopl discovery failed");
+			require(journey.render_journal(7, 42, 437, 50, 1, 102, false, false)
+						.find(exchange.title) == std::string::npos,
+				"Tikitzopl discovery exposed unmet leader exchange");
+			require(journey.meet_npc(7, 42, 43763, 44037, 103) == result::applied,
+				"Tikitzopl leader encounter failed");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    exchange.steps[row].text) != std::string::npos;
+			};
+			for (int custody = 0; custody < 7; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[43754] = 1;
+				if (custody == 2)
+					supplies.carried[43743] = 1;
+				if (custody == 3)
+					supplies.equipped[0] = 43742;
+				if (custody == 4)
+					supplies.carried[44164] = 1;
+				if (custody >= 5)
+					supplies.carried[43742] = custody == 5 ? 1 : 4;
+				const auto journal = journey.render_journal(
+					7, 42, 437, 50, 1, 104, false, false, &supplies);
+				require(status(journal, 0,
+					       custody >= 5 ? "Ready now" : "Missing now") &&
+						!status(journal, 1, "Recorded") &&
+						journey.progress_for_zone(7, 42, 437).completed ==
+							0 &&
+						journey.progress_for_zone(7, 42, 437).total == 1 &&
+						journey.serialize_state() == before,
+					"Tikitzopl wrong materials/equipped/reward/loose/surplus custody changed readiness or invented acceptance");
+			}
+			supplies = {};
+			require(journey.meet_npc(7, 42, 43742, 43957, 105) == result::applied,
+				"Tikitzopl faerie encounter failed");
+			const auto faerie_only = journey.render_journal(7, 42, 437, 50, 1, 106,
+									false, false, &supplies);
+			require(status(faerie_only, 0, "Missing now") &&
+					!status(faerie_only, 1, "Recorded") &&
+					journey.progress_for_zone(7, 42, 437).completed == 0,
+				"Tikitzopl same-VNUM faerie encounter forged kitty custody or sacrifice");
+			// Synthetic receipts qualify projection/recovery, not live stock, native consumption/reward, animal identity, care, settled services or passage.
+			record(journey, exchange.contracts.front(), "tikit-native-sacrifice", 437,
+			       44037);
+			record(supplied, exchange.contracts.front(), "tikit-supplied-sacrifice",
+			       437, 44037);
+			require(supplied.progress_for_zone(7, 42, 437).completed == 1 &&
+					!supplied.has_met_npc(7, 42, 43728) &&
+					!supplied.has_met_npc(7, 42, 43750) &&
+					!supplied.has_met_npc(7, 42, 43741) &&
+					!supplied.has_met_npc(7, 42, 43742) &&
+					!supplied.has_met_npc(7, 42, 44101),
+				"Tikitzopl supplied acceptance required mage/shop/faerie/foreign contact history");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 437).completed == 1 &&
+					raw.progress_for_zone(7, 42, 437).completed == 1,
+				"Tikitzopl cold mapped/raw recovery lost accepted sacrifice exchange");
+			supplies = {};
+			const auto journal = recovered.render_journal(7, 42, 437, 50, 1, 122, false,
+								      false, &supplies);
+			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
+				"Tikitzopl spent sacrifice erased acceptance or recreated material");
+			auto replay = completion(exchange.contracts.front(),
+						 "tikit-native-sacrifice", 120);
+			replay.transaction.zone_number = 437;
+			replay.transaction.room_vnum = 44037;
+			require(journey.record_completion(replay) == result::already_applied &&
+					journey.serialize_state() == saved,
+				"Tikitzopl accepted sacrifice replay duplicated history");
+			require(!journey.has_discovered(7, 42, 441),
+				"Tikitzopl receipt forged foreign temple-zone discovery");
 		}
 
 		std::cout

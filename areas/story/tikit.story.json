@@ -1,0 +1,563 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "tikit",
+  "coverage": "complete",
+  "introduction": "Explore Tikitzopl’s city, river, forest and households. The leader’s native exchange sacrifices a scared-kitty item for a temple key. Follow separate leads about living animal protection, voluntary freedom, city services and the deeper temple.",
+  "orientation": [
+    "Learn a current route into Tikitzopl and back. The city, river, forest and deeper temple have different paths and travel constraints.",
+    "Meet the Sacrificial Leader near the pit. His exact scared-kitty exchange grants a temple key and sacrifices the animal described by the item.",
+    "Decide whether to complete that native exchange. It records the sacrifice for a key;it does not record animal rescue or a humane care outcome.",
+    "If choosing the exchange, carry one exact scared-kitty item loose in your inventory. A recovered or supplied copy fits without your own source encounter.",
+    "The mage’s dwelling and pet shop are associated with the kitty item. Source recovery, a supplied copy and a settled purchase are different histories.",
+    "Animal protection at the cages needs a builder-defined living recipient and useful care outcome. The journal has no agreed humane alternative to the sacrifice yet.",
+    "The mothers, children and servants suggest stories about safety and voluntary freedom. Ordinary following, combat or removal does not itself record helping them.",
+    "Meet the faeries and learn about the ancient forest and meadow. The journal has no agreed tree or living animal-care task from their profile alone.",
+    "Use the right key for the snake pit, storerooms, bench, house or temple approach. Finding a key, unlocking and making an admitted passage are separate steps.",
+    "Prepare for the river and bridges under their actual movement rules. A journey needs a safe admitted landing and return, not only reaching a bridge.",
+    "City shops have separate original services. Listing is different from a useful settled purchase or repair;purchases and repairs are currently unavailable.",
+    "Food, potions, wands, staff and the eyepiece have distinct real effects. Possession or a use attempt does not itself record successful useful help.",
+    "The upstairs inn room offers refuge under its original rules. Meeting the innkeeper and completing an admitted successful save are different milestones.",
+    "The library, council, jail and theater suggest knowledge, civic and restoration stories. The journal has no agreed completion from scenery or profiles alone.",
+    "Some city equipment belongs to the deeper temple’s competing commissions. The temple key, those independent exchanges and its return route remain separate stories."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 43700,
+      "name": "Ixantl",
+      "keyword": "ixantl",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43701,
+      "name": "a guardian apeman",
+      "keyword": "apeman",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43702,
+      "name": "a large apeman",
+      "keyword": "ape",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43703,
+      "name": "Enixaptl, the weaponsmith",
+      "keyword": "enixaptl",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43704,
+      "name": "Xanfer, the shopkeeper",
+      "keyword": "xanfer",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43705,
+      "name": "Xynapti, the baker",
+      "keyword": "xynapti",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43706,
+      "name": "Kohlinar, the jeweler",
+      "keyword": "kohlinar",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43707,
+      "name": "a bodyguard of Kohlinar",
+      "keyword": "bodyguard",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43708,
+      "name": "a bodyguard of Kohlinar",
+      "keyword": "bodyguard",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43709,
+      "name": "a bodyguard of Kohlinar",
+      "keyword": "apeman",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43710,
+      "name": "an apeman worshiper",
+      "keyword": "worshiper",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43711,
+      "name": "Kherinan, the Innkeeper",
+      "keyword": "kherinan",
+      "description": "The inn has a real refuge room upstairs. Meeting Kherinan and successfully saving at the inn under its original rules are different milestones.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43712,
+      "name": "Ahmeni, the Barkeep",
+      "keyword": "ahmeni",
+      "description": "Ahmeni’s bar suggests a provisioning story. The journal has no agreed useful service task here yet.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43713,
+      "name": "a drunken apeman",
+      "keyword": "drunken",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43714,
+      "name": "a drunken apewoman",
+      "keyword": "ape",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43715,
+      "name": "the BUTCHER",
+      "keyword": "butcher",
+      "description": "The butcher’s profile describes meat preparation. The journal has no agreed provision or humane animal-care task from that description.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43716,
+      "name": "an apeman father",
+      "keyword": "father",
+      "description": "This household’s profile describes abuse. Meeting its members, fighting and recording a willing recipient’s useful safety are different outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43717,
+      "name": "a mother apewoman",
+      "keyword": "mother",
+      "description": "This mother’s profile describes fear and coercion. Helping her requires her wishes, an admitted safe destination and a useful saved outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43718,
+      "name": "an apeman child",
+      "keyword": "child",
+      "description": "This child’s household suggests a protection story. Ordinary following or defeating a resident does not itself record safety.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43719,
+      "name": "an apeman noble",
+      "keyword": "noble",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43720,
+      "name": "a lowly servant",
+      "keyword": "servant",
+      "description": "This servant needs somewhere useful to go. A meaningful freedom story needs voluntary release, a destination and a saved positive benefit.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43721,
+      "name": "a lowly servant",
+      "keyword": "servant",
+      "description": "This servant’s profile describes lifelong coercion. The journal has no agreed useful freedom task;ordinary combat or removal does not record release.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43722,
+      "name": "Auxetix the Magician",
+      "keyword": "auxetix",
+      "description": "Auxetix’s magic shop offers a separate service under its original rules. Listing, device possession and an admitted useful effect are different milestones.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43723,
+      "name": "Tekifan, of the High Council",
+      "keyword": "tekifan",
+      "description": "The council’s leadership and city concerns suggest a civic story. The journal has no agreed faction or governance task from this profile.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43724,
+      "name": "Tekinar, of the High Council",
+      "keyword": "tekinar",
+      "description": "Tekinar’s Council sword belongs to a separate equipment commission in the deeper temple. A supplied exact sword fits that original exchange without personal victory here.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43725,
+      "name": "Tikiapti, of the High Council",
+      "keyword": "tikiapti",
+      "description": "Tikiapti’s Skullsmasher belongs to a competing deeper-temple commission. Source recovery and that original accepted exchange are separate milestones.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43726,
+      "name": "Tikitani, of the High Council",
+      "keyword": "tikitani",
+      "description": "Tikitani’s Disemboweler belongs to a competing deeper-temple commission. Follow relationships and equipment do not record a personal scouting task.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43727,
+      "name": "a guardian of the High Council",
+      "keyword": "guardian",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43728,
+      "name": "an inSaNe mAgE",
+      "keyword": "apeman",
+      "description": "The mage’s dwelling contains frightened cats, and he is associated with the kitty item. Recovering that item, helping an actual living animal and choosing the leader’s sacrifice are separate outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43729,
+      "name": "a Tikitzopl guardsman",
+      "keyword": "guard",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43730,
+      "name": "an apeman merchant",
+      "keyword": "merchant",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43731,
+      "name": "a huge stone golem",
+      "keyword": "golem",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43732,
+      "name": "Graxtl",
+      "keyword": "graxtl",
+      "description": "Graxtl’s repair shop suggests useful work on damaged equipment. Repairs are currently unavailable.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43733,
+      "name": "a silver serpent",
+      "keyword": "silver",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43734,
+      "name": "a large snake",
+      "keyword": "snake",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43735,
+      "name": "a small snake",
+      "keyword": "snake",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43736,
+      "name": "a sneaky rogue",
+      "keyword": "rogue",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43737,
+      "name": "an apeman noble",
+      "keyword": "noble",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43738,
+      "name": "an apeman noble",
+      "keyword": "noble",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43739,
+      "name": "an apeman noble",
+      "keyword": "noble",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43740,
+      "name": "a guardian of the High Council",
+      "keyword": "guardian",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43741,
+      "name": "a small faerie",
+      "keyword": "faerie",
+      "description": "The faeries’ profiles describe care for animals and trees. The journal has no agreed ecological task or addressed answer yet;meeting a faerie and saving a useful habitat outcome are different milestones.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43742,
+      "name": "a small faerie",
+      "keyword": "faerie",
+      "description": "The faeries’ profiles describe care for animals and trees. The journal has no agreed ecological task or addressed answer yet;meeting a faerie and saving a useful habitat outcome are different milestones.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43743,
+      "name": "a small faerie",
+      "keyword": "faerie",
+      "description": "The faeries’ profiles describe care for animals and trees. The journal has no agreed ecological task or addressed answer yet;meeting a faerie and saving a useful habitat outcome are different milestones.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43744,
+      "name": "a small faerie",
+      "keyword": "faerie",
+      "description": "The faeries’ profiles describe care for animals and trees. The journal has no agreed ecological task or addressed answer yet;meeting a faerie and saving a useful habitat outcome are different milestones.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43745,
+      "name": "a small faerie",
+      "keyword": "faerie",
+      "description": "The faeries’ profiles describe care for animals and trees. The journal has no agreed ecological task or addressed answer yet;meeting a faerie and saving a useful habitat outcome are different milestones.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43746,
+      "name": "a small faerie",
+      "keyword": "faerie",
+      "description": "The faeries’ profiles describe care for animals and trees. The journal has no agreed ecological task or addressed answer yet;meeting a faerie and saving a useful habitat outcome are different milestones.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43747,
+      "name": "a small faerie",
+      "keyword": "faerie",
+      "description": "The faeries’ profiles describe care for animals and trees. The journal has no agreed ecological task or addressed answer yet;meeting a faerie and saving a useful habitat outcome are different milestones.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43748,
+      "name": "a Tikitzopl guardsman",
+      "keyword": "guard",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43749,
+      "name": "a Tikitzopl guardsman",
+      "keyword": "guard",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43750,
+      "name": "Kahtkihlr, the Pet Shop owner",
+      "keyword": "kahtkihlr",
+      "description": "Kahtkihlr’s profile describes cruelty to animals. The shop declares the kitty item as stock. Purchases are currently unavailable. Obtaining the item does not itself record living animal rescue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43751,
+      "name": "a buff deer",
+      "keyword": "buff",
+      "description": "This living forest animal is distinct from the kitty item. An ordinary encounter or kill does not record useful animal care.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43752,
+      "name": "a buff deer",
+      "keyword": "buff",
+      "description": "This living forest animal is distinct from the kitty item. An ordinary encounter or kill does not record useful animal care.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43753,
+      "name": "a buff deer",
+      "keyword": "buff",
+      "description": "This living forest animal is distinct from the kitty item. An ordinary encounter or kill does not record useful animal care.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43754,
+      "name": "a large stag",
+      "keyword": "stag",
+      "description": "This living forest animal is distinct from the kitty item. An ordinary encounter or kill does not record useful animal care.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43755,
+      "name": "a large stag",
+      "keyword": "stag",
+      "description": "This living forest animal is distinct from the kitty item. An ordinary encounter or kill does not record useful animal care.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43756,
+      "name": "a large stag",
+      "keyword": "stag",
+      "description": "This living forest animal is distinct from the kitty item. An ordinary encounter or kill does not record useful animal care.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43757,
+      "name": "a doe",
+      "keyword": "doe",
+      "description": "This living forest animal is distinct from the kitty item. An ordinary encounter or kill does not record useful animal care.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43758,
+      "name": "a doe",
+      "keyword": "doe",
+      "description": "This living forest animal is distinct from the kitty item. An ordinary encounter or kill does not record useful animal care.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43759,
+      "name": "a doe",
+      "keyword": "doe",
+      "description": "This living forest animal is distinct from the kitty item. An ordinary encounter or kill does not record useful animal care.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43760,
+      "name": "a large apeman",
+      "keyword": "ape",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43761,
+      "name": "a large apeman",
+      "keyword": "ape",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43762,
+      "name": "a small spider",
+      "keyword": "spider",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43763,
+      "name": "the Sacrifical Leader",
+      "keyword": "sacrificial",
+      "description": "The leader accepts the exact scared-kitty item for a temple key. His exchange sacrifices the animal described by the item. A supplied exact copy fits;the accepted exchange does not record rescue or passage through the temple.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43764,
+      "name": "an apeman worshiper",
+      "keyword": "worshiper",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43765,
+      "name": "an apeman worshiper",
+      "keyword": "worshiper",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43766,
+      "name": "an apeman worshiper",
+      "keyword": "worshiper",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43767,
+      "name": "an apeman worshiper",
+      "keyword": "worshiper",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43768,
+      "name": "a silver serpent",
+      "keyword": "silver",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43769,
+      "name": "a silver serpent",
+      "keyword": "silver",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 43770,
+      "name": "a silver serpent",
+      "keyword": "silver",
+      "description": "Explore this resident’s part of Tikitzopl and choose an admitted route. Meeting or fighting a resident is separate from completing an agreed task or providing useful help.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "sacrifice-for-temple-key",
+      "title": "The leader’s sacrifice for a temple key",
+      "category": "story",
+      "summary": "Choose whether to bring the exact scared-kitty item to the leader. His accepted exchange sacrifices the animal described by the item and grants a temple key. A recovered or supplied copy fits. Rescue and temple passage are separate outcomes.",
+      "contracts": [
+        {
+          "giver_vnum": 43763,
+          "completion_key": "give=I:43742;receive=I:43743;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "prepare-kitty-item",
+          "kind": "carried_item",
+          "text": "Prepare the kitty item for the sacrifice",
+          "hint": "If choosing this exchange, carry one exact copy loose. A supplied copy fits. The leader will sacrifice it for a temple key;this does not record animal rescue.",
+          "item_vnums": [
+            43742
+          ],
+          "count": 1,
+          "optional": true
+        },
+        {
+          "id": "accepted-sacrifice",
+          "kind": "completion",
+          "text": "Record the accepted sacrifice for the key",
+          "hint": "The accepted native sacrifice remains recorded after the kitty item is spent. Receiving a key, opening the approach and entering the deeper temple are separate milestones.",
+          "contracts": [
+            {
+              "giver_vnum": 43763,
+              "completion_key": "give=I:43742;receive=I:43743;disappear=0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
