@@ -822,7 +822,7 @@ Unsafe directories/locks, pending journals and replaced authority inodes refuse;
 the final read rechecks the original directory/lock identity before reporting.
 An absent lock is accepted only for an empty legacy observation and is not created.
 
-The operator scan admits at most128 MiB of physical reads,2048 file reads and
+The operator scan admits at most128 MiB of physical reads,16384 file reads and
 8192 directory visits, including repeated reads and ignored entries. Its
 30-second deadline is cooperative and is checked during decoding and before
 final reporting; it does not establish a hard I/O or release-host latency bound.
@@ -963,3 +963,13 @@ The release report must name exact tested commit, backend and image/version,
 commands, sampled workload, route coverage and any intentionally unsupported
 route. Synthetic fixtures and real player journeys are separate lines. Current
 evidence and blockers are in [the release report](RELEASE_REPORT_2026-09-27.md).
+
+## Maximum lifecycle one-shot workload — 2026-10-06
+
+The [primary maximum-budget qualification](PLAN5_LIFECYCLE_BUDGET_PRIMARY_INTEGRATION_2026-10-06.md)
+measures the unchanged maximum native-codec lifecycle fixture at 9,574 physical
+reads, 19,639,289 bytes and 2,675 directory entries. The one-shot read cap is
+16,384; 128 MiB, 8,192 entries and the cooperative 30-second deadline remain.
+Repeated physical reads still count. The two durable page modes keep their
+explicit 64-read/32 MiB limits. Larger history can still refuse and is not release
+qualification; no economic state is corrected by this read-only operator.
