@@ -1,10 +1,10 @@
 # Coordinator review of R1 Craft/Forge material preparation - 2026-10-07
 
-R1's source and focused component assessment found no actionable defect. Both
-maintained backend builds have successful terminal evidence. The existing isolated
-runtime journey is still in progress at this review checkpoint; its result and
-the worker's final qualification handoff remain outstanding. R2 and the continuing
-coordination Goal are not complete.
+R1 is implemented, connected, qualified and reviewed at the stated scope with
+no actionable defect. Both maintained builds and actual recipe-only Craft/Forge
+journeys on SQL and flatfile have successful terminal evidence. The earlier
+checkpoint below is preserved; terminal evidence supersedes its pending status.
+Primary adoption and combined-candidate qualification remain separately owned.
 
 ## Exact bundle and scope
 
@@ -77,6 +77,32 @@ there matches the recorded source and both terminal binaries:
 | Flat `dms_flat_new` | `79e385143b87bf6d013f2e9c4a9d8393ee8359bbf71894076ed4370083872843` |
 
 ## Remaining actions
+
+### Terminal review supplement
+
+Worker handoff `4f7fa384b09914094a56cd8040e6f9c1588f92a4` publishes both terminal
+journeys and retained setup failures. The coordinator inspected the actual
+`recipe-flat-with-adapter.log` and `recipe-sql.log`, their private result/index
+and launchers. Both pass genuine mortal Craft/Forge material/tool retirement,
+fresh output UIDs, saved XP and retained pouch counters, then copyover and two
+cold restarts. Log SHA256s are respectively
+`a21bef07e9b30c7df4a786164d19a918d5771e98eb46edff200cc8c7ff9afa87` and
+`a472e1302f5ee8e77cd852f9b60f46e87cda117194a490e497d667b1569f9d58`.
+
+The original inspector link failure and first private missing-adapter failure
+remain retained. Final private launchers add only existing baseline codec/adapter
+providers without changing journey assertions or deadlines. The original journey
+copies its executable to private runtime storage before boot; the coordinator
+verified that implementation and the frozen flat binary hash, so subsequent R2
+builds do not relabel R1's running source. SQL uses the retained R1 SQL binary,
+task-owned loopback MariaDB and disposable schema with canonical migration
+runner; worker records schema/server cleanup. No production DB or real account
+is involved. The coordinator inspected evidence rather than rerunning journeys.
+
+R1's requirement is discharged at source/component/maintained-build and these
+recipe-only runtime scopes. The canonical handoff now reflects implemented and
+terminal status. R2 has a separate [final review](R2_CURRENCY_REVIEW_2026-10-07.md).
+The following checkpoint instructions are historical and no longer pending.
 
 Let the confirmed live runtime verification finish; an observation timeout is
 not a restart instruction. Record its original commands, tested source/binary,

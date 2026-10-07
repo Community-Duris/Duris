@@ -92,6 +92,28 @@ These are separate sidework milestones. The primary continues its current
 accounting plan without waiting, and consumes compatible reviewed bundles at
 normal integration boundaries. Publication does not establish primary adoption.
 
+### Reviewed sidework available for optional import
+
+The fixed architecture inventory has three reviewed implementations: Collector
+image `3d2b85b0688684721f8db559cb3ea35b1830a1cc`, Craft/Forge quote
+`48cdf9cb0893873651216f7940aae2691d060e58`, and wallet/bank deltas
+`24fa551ae16900b41e509f79fe4685762e0fb2e9`. See
+[exact dispositions and scoped proof](domain-separation/INVENTORY_REVIEW_2026-10-07.md)
+and the worker's canonical handoff on `codex/accounting-domain-separation`.
+Craft/Forge SQL/flat recipe journeys pass; currency has 84 selected completion
+passes, with coin-specific cases explicitly excluded. Shared fixture failures
+are retained. Import independent narrow code bundles at normal boundaries after
+checking current preimages; publication does not establish primary adoption.
+
+Quest-prep reconciliation, mini-mode stale-room refusal diagnosis and conditional
+creation-watermark assessment are published and
+[reviewed](domain-separation/QUEST_PREP_REVIEW_2026-10-07.md). The original mini
+later-drop journey remains RED. A finite ordinary full-world cold-room control
+is reserved on the quest-prep branch, pending execution/review; it adds no
+shared production ownership or release gate. The coordinator continues monitoring
+both actual Goals, final handoffs and this selected control. These sidework row
+names are unrelated to the accounting plan's original R1-R8 acceptance gates.
+
 ## Fourth agent: independent domain separation - 2026-10-07
 
 The user authorizes a separate implementation stream, chat

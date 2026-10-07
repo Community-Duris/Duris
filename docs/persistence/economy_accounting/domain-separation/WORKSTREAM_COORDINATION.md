@@ -99,6 +99,35 @@ concrete remaining accounting requirements and reported gaps.
 
 ## Initial queue and evidence
 
+### Current reviewed dispositions
+
+The fixed architecture set is implemented, connected, qualified and reviewed:
+R0 [Collector image](COORDINATOR_REVIEW_2026-10-07.md),
+R1 [Craft/Forge quote](R1_CRAFTING_REVIEW_2026-10-07.md), and
+R2 [wallet/bank deltas](R2_CURRENCY_REVIEW_2026-10-07.md).
+[Inventory dispositions](INVENTORY_REVIEW_2026-10-07.md) retain each exact code
+pin and verification scope. Worker terminal handoff is `4f7fa384b09914094a56cd8040e6f9c1588f92a4`.
+R1 actual SQL/flat recipe journeys pass; R2 passes 42 original selected completion
+scenarios per backend, excluding 25 coin scenarios per backend with abort guards.
+Original shared-runner failures remain retained. Primary adoption is unknown.
+The architecture chat must reconcile these final published dispositions before
+its fixed Goal completes; no fresh domain survey or extra required row is added.
+
+Quest candidate reconciliation, real-provider mini refusal diagnosis and bounded
+creation-watermark assessment are delivered and
+[reviewed](QUEST_PREP_REVIEW_2026-10-07.md). The original mini later-drop journey
+remains RED. One selected additional control is now reserved at
+`8be236a150075a9f28de7a9991e4ad40705be779`: real ordinary full-world cold-room
+restoration followed by a second starter-item drop before any GET. Existing owned
+fixtures support it, without shared production/driver changes. This finite control
+is pending execution, handoff and coordinator review; no Kord/XP-ACK/active native
+birth/refund/empty-room claim follows. Verify the new actual quest Goal after its
+previous finite follow-up completed. Root coordination remains active for that
+control and final handoff/disposition checks, with periodic heartbeat monitoring.
+
+The following initial assignments and checkpoint statuses are historical,
+superseded by this current table of dispositions and the linked final reviews.
+
 | Stream | Last published delivery | Next bounded assignment |
 |---|---|---|
 | Architecture | Worker `ce3b631003303ee4fbfb8a0bd527ad8508982250`; implementation `3d2b85b0688684721f8db559cb3ea35b1830a1cc`; completed [review](COORDINATOR_REVIEW_2026-10-07.md) | Pin operation inventory and candidate; select/publish next stable extraction reservation, then implement and qualify it |
