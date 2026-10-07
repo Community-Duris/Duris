@@ -130,3 +130,22 @@ and extra test files. The retained local protocol is necessary to extract the
 full planning operation without moving observations past earlier failures. Reuse
 the existing plan, numeric rules, native helper bodies and focused runner. This
 reservation and any delivered R7 do not close the broader integrated Goal.
+
+## Original native-helper feasibility supplement
+
+After reservation publication cf689eb7a, the same private harness was extended
+with the COMPLETE unchanged extracted base/entry-modifier/target/cap/remaining
+helper bodies (renamed only for coexistence with traced wrappers). Seven further
+original cases PASS under identical flags and30-second limit: actual prototype
+first matching APPLY, unreadable prototype with cap0 and no cleanup, cap config
+changed during prototype cleanup, current modifier changed during that cleanup,
+target-cleanup value/config/stat changes followed by contiguous remaining probes
+stopping at the first gap, lowest-VNUM/first-linked ties with zero effective wear,
+and nonzero incompatible wear refusal. Full plan outputs and exact native traces
+are asserted. Original controls and ten prior ordering cases still pass.
+
+The native supplement is separately indexed as native-proof-pins.json; the
+original feasibility hash index is preserved. This remains controlled component
+proof with actual helper bodies and instrumented read/cleanup endpoints, not
+native lifetime, physical source/publication or gameplay qualification. No
+production/test edits are made before boundary review.
