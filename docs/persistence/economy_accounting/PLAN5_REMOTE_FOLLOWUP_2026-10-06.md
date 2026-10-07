@@ -608,3 +608,29 @@ curator packet, without acknowledgement or cross-chat message. Maintained
 accounting stays inactive. The unchanged original money-recovery fixture's
 private synthetic activation does not qualify genuine R6 or release activation.
 All earlier tips/work remain preserved.
+
+## Baseline root pages and preserved SQL integer storage - 2026-10-06
+
+Same branch/worktree/remote. Base `dc9033f2266bc3a825d9a81e350a40c1e857b2ba`. Two separate issue commits
+are bound by the post-commit delivery receipt. [Exact qualification](PLAN5_SQL_BASELINE_PAGE_QUALIFICATION_2026-10-06.md)
+adds original EAB1/EAB2 baseline root authentication, bounded reservations,
+receipt/claim-origin checks and correct witness-budget refusal. The both-engine
+run establishes a JSON integer-normalization defect; an independent storage
+check fixes it before decoding. All 20 native alias cuts now require refusal.
+Final source `5e82e6330aec96ec4b63b2bc4c05da6ffd59d30b3ab2844fe70b3afb78d20973` passes 50 canonical, 46 origin
+and one complete restore method, 97 executed/zero skips, both canonical0062
+engines and original fresh native SQL/flatfile probes. All 174 measured pages
+stay within declared component bounds. Native four-book bytes and modeled
+maximum 9,071-reservation SQL cuts retain their different proof scopes.
+Seal `c6e6b025d327b9a5f2ce7fd896b7107c8eea00c07b0e6e1a63a992b5e03bc24d` inventories 11840 artifacts,
+7498930943 bytes, zero links. Red/intermediate failures, fixture
+corrections and Windows lock skip remain preserved. The report lists exact
+primary-owned registrations; no shared files or schema change is made.
+Every page keeps incomplete whole-store coverage. Complete baseline books,
+claim consumption, orphan/native authority, flatfile/all-store fair sweeps,
+genuine source/activation, producer/recovery/retention and release budgets remain.
+Primary was refreshed to `ca852d01f88b078b65f62af0c7955ef3f65c7663`; its production source
+is unchanged and private successor qualification is not claimed. Maintained
+accounting stays inactive; original synthetic recovery activation is disclosed.
+The report/seal/receipt is the nonblocking primary-local notebook curator
+packet, without cross-chat message, acknowledgement or integration claim.

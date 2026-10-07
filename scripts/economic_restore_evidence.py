@@ -15,6 +15,32 @@ MAX_PLAN = 4 * 1024 * 1024
 LIMITS = (3072, 6144, 64, 6000, 6000, 3000)
 WIDTHS = (120, 48, 32, 64, 64, 128)
 SOURCE_REQUIRED = set(range(5, 23)) | set(range(26, 32)) | set(range(33, 37)) | set(range(38, 47))
+INTEGER_STORAGE = {
+    "economic_accounting_operation": ("accounting_version", "writer_id", "policy_version", "compiler_version",
+        "actor_kind", "actor_id", "reason", "outcome", "result_code", "account_count", "posting_count",
+        "child_count", "before_witness_count", "after_witness_count", "item_event_count"),
+    "economic_accounting_account_effect": ("account_index", "before_copper", "before_silver", "before_gold",
+        "before_platinum", "after_copper", "after_silver", "after_gold", "after_platinum", "before_revision", "after_revision"),
+    "economic_accounting_coin_posting": ("line_index", "event_index", "account_index", "child_index", "delta_copper",
+        "delta_silver", "delta_gold", "delta_platinum", "copper_value"),
+    "economic_accounting_child": ("child_index", "domain_id", "discriminator", "parent_index", "relationship"),
+    "economic_accounting_item_reference": ("line_index", "event_index", "child_index", "item_uid",
+        "before_revision", "after_revision", "legacy_event_index"),
+    "item_ownership_ledger": ("event_index", "item_uid", "root_item_uid", "parent_item_uid", "from_owner_type",
+        "from_owner_id", "from_owner_context_id", "to_owner_type", "to_owner_id", "to_owner_context_id",
+        "item_revision", "from_equipment_slot", "to_equipment_slot"),
+    "economic_baseline_witness": ("book_revision", "witness_version", "holding_count", "item_count",
+        "command_accepted_at_usec", "claim_origin_version"),
+    "economic_baseline_control": ("revision",),
+    "economic_baseline_reservation": ("identity_kind", "identity_id"),
+    "critical_operation_inbox": ("command_type", "schema_version", "payload_version", "status", "result_code",
+        "failure_stage", "durable_revision"),
+    "economic_sql_lifecycle_installation": ("phase",),
+    "economic_account_mapping": ("mapping_id", "backend_kind", "account_kind", "locator_kind", "native_id", "context_id"),
+    "economic_pending_claim_source": ("source_slot", "claim_mapping_id", "beneficiary_pid", "amount"),
+    "economic_pending_claim_consumption": ("source_slot", "amount"),
+    "quest_mobile_native": ("mobile_instance_id", "mobile_revision", "stock_revision", "lifetime_state"),
+}
 ORIGINAL_REQUIRED = {19, 20, 40, 45, 46}
 # Independent interpretation of the version-1 reason/account contract.
 ACCOUNT_MASK = {
@@ -344,6 +370,20 @@ class CanonicalReader:
 
     def __init__(self, executor):
         self.executor = executor
+        self.storage_checked = False
+
+    def require_integer_storage(self):
+        # JSON_ARRAY may normalize integral DOUBLE/DECIMAL values to integer
+        # JSON tokens. Authenticate the underlying integer storage before that
+        # conversion; value equality cannot establish representation equality.
+        if not self.storage_checked:
+            scopes = ["(table_name='" + table + "' AND column_name IN (" +
+                      ",".join("'" + column + "'" for column in columns) + "))"
+                      for table, columns in INTEGER_STORAGE.items()]
+            if self.executor.sql("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=DATABASE() "
+                "AND (" + " OR ".join(scopes) + ") AND data_type NOT IN ('tinyint','smallint','mediumint','int','bigint');") != "0":
+                self.mismatch("canonical_storage")
+            self.storage_checked = True
 
     def mismatch(self, code):
         raise RuntimeError("restore_economic_" + code + "_mismatch")
@@ -398,6 +438,7 @@ def verify_canonical_root(reader, operation):
     if (not isinstance(operation, str) or len(operation) != 32 or
             any(c not in "0123456789abcdef" for c in operation) or not int(operation, 16)):
         mismatch("metadata")
+    reader.require_integer_storage()
     where = "operation_id=UNHEX('" + operation + "')"
     fields = [hexadecimal(name) for name in ("lineage", "epoch", "operation_id", "original_operation_id")]
     fields += ["accounting_version", "writer_id", "policy_version", "compiler_version",
@@ -600,6 +641,7 @@ def require_integrity(executor):
     pagination enumerates the candidate, not a live commit watermark.
     """
     reader = CanonicalReader(executor)
+    reader.require_integer_storage()
     mismatch = reader.mismatch
     arrays = reader.arrays
     hexadecimal = reader.hexadecimal

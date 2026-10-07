@@ -119,6 +119,14 @@ reads use pages of at most 257 rows, so a valid 9,071-reservation witness fits t
 existing projection bound. Other roots must have no baseline witness or
 reservations; rejected roots must have no details.
 
+The independent canonical reader checks that observed numeric source columns
+use SQL integer storage before reading JSON projections. MySQL/MariaDB can
+render integral DOUBLE or DECIMAL values as JSON integers; that conversion
+cannot authenticate the original representation. Such altered storage is
+reported as `restore_economic_canonical_storage_mismatch`, even when projected
+values equal the retained plan. This check also applies to the full restore
+reader. It does not replace complete migration/runtime schema qualification.
+
 The report counts authenticated baseline roots and retained NULL claim-origin
 markers separately. Historical NULL admission times and claim-origin markers
 stay unknown. This mode does not authenticate the entire baseline book,

@@ -1350,7 +1350,8 @@ class NativeSQLOriginTests(unittest.TestCase):
                         self.assertEqual(progress['total_rows'], len(self.batches))
                         found = [finding['code'] for report in reports for finding in report['findings']]
                         expected = (['restore_economic_canonical_account_mismatch',
-                                     'restore_economic_canonical_posting_mismatch']
+                                     'restore_economic_canonical_posting_mismatch',
+                                     'restore_economic_canonical_storage_mismatch']
                                     if refusal == 'EAB1 SQL projection mismatch' else
                                     ['restore_economic_baseline_witness_mismatch'])
                         if refusal:

@@ -202,6 +202,8 @@ class RestoreProjectionFixture:
                 return '1'
             return '3'
         if 'information_schema.columns' in query:
+            if 'data_type NOT IN' in query:
+                return '1' if getattr(self, 'bad_integer_storage', False) else '0'
             if "column_name='claim_origin_version'" in query:
                 return self.claim_origin_column_count
             return self.admission_column_count
@@ -812,6 +814,15 @@ class CanonicalSweepTests(unittest.TestCase):
             with self.subTest(damage=damage):
                 report, _ = self.baseline_page(fixture)
                 self.assertEqual(report['findings'], [{'code': 'restore_economic_'+code+'_mismatch'}])
+
+    def test_sql_json_integer_alias_storage_is_refused_before_capsules(self):
+        fixture = RestoreProjectionFixture(baseline=True)
+        fixture.bad_integer_storage = True
+        report, _ = self.baseline_page(fixture)
+        self.assertEqual(report['findings'], [{'code': 'restore_economic_canonical_storage_mismatch'}])
+        self.assertFalse(any('SUBSTRING(canonical_' in query for query in fixture.queries))
+        with self.assertRaisesRegex(RuntimeError, 'restore_economic_canonical_storage_mismatch'):
+            evidence.require_integrity(fixture)
 
     def test_baseline_pages_authenticate_versioned_claim_origins_keep_historical_unknown(self):
         from test_economic_sql_audit_origins import key, witness, money_witness
@@ -1573,8 +1584,8 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                                          'types':[type(value).__name__ for value in projected],
                                          'original_schema':original_schema,
                                          'original_definition':original_definition,
-                                         'expected_refusal':floating},indent=2)+'\n')
-                                    check(label, 'restore_economic_'+code+'_mismatch' if floating else None)
+                                         'expected_refusal':True, 'json_exposed_float':floating},indent=2)+'\n')
+                                    check(label, 'restore_economic_canonical_storage_mismatch')
                                 finally:
                                     with owner.cursor() as cursor:
                                         cursor.execute('ALTER TABLE '+table+' MODIFY '+original_definition)
