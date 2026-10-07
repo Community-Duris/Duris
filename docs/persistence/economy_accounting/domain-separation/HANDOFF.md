@@ -1,5 +1,10 @@
 # Accounting domain separation handoff — 2026-10-07
 
+[R9 ordered NPC essence reward reservation](R9_ESSENCE_REWARD_RESERVATION.md)
+records the current nine-family reassessment and complete original27-scenario
+trace feasibility PASS. Exact four-file boundary awaits coordinator review; no
+maintained implementation is made. R8 final review remains pending.
+
 R8 ordinary cascade is implemented at `7f0d11b4d` plus compiler fix `9f5119fc3`.
 Actual original/extracted23-scenario controls, adjacent checks and both maintained
 740-object builds PASS; initial SQLwarning/buildfailure remains retained. Current
