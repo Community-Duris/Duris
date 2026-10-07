@@ -1,20 +1,24 @@
 # Accounting domain separation handoff â€” 2026-10-07
 
-R10 complete shop purchase quote is approved at accountinge6 and implemented at
-`7bbf942e3b7c12dea22e5bf03a592b48aedd690f`. Complete original/extracted actual-caller
-controls preserve all56 old assertions, all original Python checks and46 added quote
-cases. Both maintained740-object builds and exact bare-primary production/full
-imports, full-module SQL/flat checks and actual purchase runner PASS. Original
-live-route and bare-current adjacent command-codec fixture failures are retained
-and compared with original inputs. No optional prerequisite is needed. See
-[R10 terminal handoff](R10_SHOP_PURCHASE_QUOTE_HANDOFF.md). Final declared-scope
-review PASS is published at accountingdc1489782, authenticating all3 inputs/all94
-proof files and complete imports/build artifacts. The next complete itemvalue
-candidate is separately reserved in [R11](R11_ITEM_VALUE_QUOTE_RESERVATION.md).
+R11 complete item value quote is approved at accountingb22 and implemented at
+`ce7e0bc9ad8a66e7185ddd1af873548fb7092754`. Complete original/extracted controls
+preserve all45 cases under baseline and -Og. Both strict maintained740-object
+builds and bare-primary production/full imports pass; both exports pass full-module
+SQL/flat checks with437 actual compiler inputs per profile. The bare-full actual
+runner and five adjacent checks pass. Eleven owned adjacent checks pass; one old
+enhance module-boundary failure is paired unchanged. All76 indexed proof files,
+exact source/ELF/import/tree/archive pins and terminal states are published in the
+[R11 terminal handoff](R11_ITEM_VALUE_QUOTE_HANDOFF.md). The coordinator's independent
+committed component checkpoint passes; final artifact review is pending.
+
+R10 final declared-scope review PASS remains published at accountingdc1489782,
+authenticating all3 inputs/all94 proof files and complete imports/build artifacts.
+See [R10 terminal handoff](R10_SHOP_PURCHASE_QUOTE_HANDOFF.md).
 [Post-R10 nine-family assessment](POST_R10_OWNER_DEPENDENCIES_2026-10-07.md)
 accounts for current native flat changes and separate quest codec ownership.
-The continuing Goal remains ACTIVE/no budget with native/current754 journeys and
-primary Plans1-5/applicable original R1-R8 requirements open; adoption is unknown.
+The continuing Goal remains ACTIVE/no budget through native/current754 journeys,
+primary Plans1–5/applicable original R1–R8 completion and published owner completion
+disposition. Adoption and the full finish line remain open; no activation occurs.
 
 [Post-R9 assessment](POST_R9_OWNER_DEPENDENCIES_2026-10-07.md) is historical
 selection/original-fixture evidence, superseded for R10 implementation by this
