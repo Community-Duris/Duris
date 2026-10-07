@@ -47,6 +47,13 @@ ROOT_SOURCES = ("economic_accounting_operation", "economic_accounting_account_ef
                 "economic_baseline_control", "economic_baseline_witness", "economic_baseline_reservation",
                 "currency_ledger", "critical_outbox", "economic_sql_lifecycle_installation",
                 "economic_account_mapping", "economic_pending_claim_source")
+CANDIDATE_SOURCES = (("economic_accounting_operation", "PRIMARY"),
+                     ("economic_accounting_account_effect", "PRIMARY"),
+                     ("economic_accounting_coin_posting", "PRIMARY"),
+                     ("economic_accounting_child", "PRIMARY"),
+                     ("economic_accounting_item_reference", "PRIMARY"),
+                     ("economic_accounting_source_claim", "uq_economic_source_operation"),
+                     ("economic_baseline_witness", "PRIMARY"))
 
 
 class CursorExecutor:
@@ -101,6 +108,32 @@ def valid_identity(value):
     # A cursor can enumerate a corrupt zero key; the original decoder refuses
     # it as economic identity. Scheduling must still advance past that finding.
     return isinstance(value, str) and bool(re.fullmatch("[0-9a-f]{32}", value))
+
+
+def candidate_identities(executor, *, after=None, ceiling=None, limit=1):
+    """Merge bounded index seeks; root loss must not hide its retained details.
+
+    Each source contributes at most `limit` distinct IDs. Seeking strictly past
+    each ID avoids scanning all of its details or aggregating the entire table.
+    An omitted lower bound selects the largest ID across the same sources.
+    """
+    identities = set()
+    for table, index in CANDIDATE_SOURCES:
+        previous = after
+        for _ in range(1 if after is None else limit):
+            where = "" if after is None else (" WHERE operation_id>UNHEX('" + previous +
+                "') AND operation_id<=UNHEX('" + ceiling + "')")
+            output = executor.sql("SELECT LOWER(HEX(operation_id)) FROM " + table + " FORCE INDEX (" + index + ")" +
+                where + " ORDER BY operation_id" + (" DESC" if after is None else "") + " LIMIT 1;")
+            values = output.splitlines()
+            if not values:
+                break
+            if (len(values) != 1 or not valid_identity(values[0]) or
+                    (after is not None and not previous < values[0] <= ceiling)):
+                raise AuditError("invalid canonical audit candidate identities")
+            identities.add(values[0])
+            previous = values[0]
+    return max(identities, default="") if after is None else sorted(identities)[:limit]
 
 
 def new_progress(source, now):
@@ -234,15 +267,11 @@ def scan_page(connection, progress, *, page_roots=MAX_PAGE_ROOTS, now=None):
                         "AND ENGINE='InnoDB' AND table_name IN (" + tables + ");") != str(len(ROOT_SOURCES)):
             raise AuditError("canonical audit page source is missing or not InnoDB")
         if state["ceiling"] is None:
-            state["ceiling"] = executor.sql("SELECT LOWER(HEX(operation_id)) FROM economic_accounting_operation "
-                                           "FORCE INDEX (PRIMARY) ORDER BY operation_id DESC LIMIT 1;")
+            state["ceiling"] = candidate_identities(executor)
             if state["ceiling"] != "" and not valid_identity(state["ceiling"]):
                 raise AuditError("invalid canonical audit page ceiling")
             state.update(cursor="", started_at=now, sweep_rows=0, sweep_verified=0, sweep_findings=0)
-        output = executor.sql("SELECT LOWER(HEX(operation_id)) FROM economic_accounting_operation "
-            "FORCE INDEX (PRIMARY) WHERE operation_id>UNHEX('" + state["cursor"] + "') AND operation_id<=UNHEX('" + state["ceiling"] +
-            "') ORDER BY operation_id LIMIT " + str(page_roots + 1) + ";")
-        identities = output.splitlines()
+        identities = candidate_identities(executor, after=state["cursor"], ceiling=state["ceiling"], limit=page_roots+1)
         previous = state["cursor"]
         if len(identities) > page_roots + 1:
             raise AuditError("canonical audit page exceeds root limit")
@@ -251,7 +280,7 @@ def scan_page(connection, progress, *, page_roots=MAX_PAGE_ROOTS, now=None):
                 raise AuditError("invalid canonical audit page identities")
             previous = operation
         findings = []
-        baselines, historical_claim_origins = 0, 0
+        baselines, historical_claim_origins, unattached = 0, 0, 0
         reader = CanonicalReader(executor)
         for operation in identities[:page_roots]:
             try:
@@ -325,6 +354,14 @@ def scan_page(connection, progress, *, page_roots=MAX_PAGE_ROOTS, now=None):
                     code = str(error)
                 if not re.fullmatch("restore_economic_[a-z_]+_mismatch", code):
                     raise
+                if code == "restore_economic_metadata_mismatch" and int(operation, 16):
+                    present = executor.sql("SELECT EXISTS(SELECT 1 FROM economic_accounting_operation "
+                        "WHERE operation_id=UNHEX('" + operation + "') LIMIT 1);")
+                    if present not in ("0", "1"):
+                        raise AuditError("invalid canonical audit root presence")
+                    if present == "0":
+                        code = "restore_economic_orphan_root_mismatch"
+                        unattached += 1
                 finding = dict(operation_id=operation, code=code)
                 findings.append(dict(code=code))  # Routine stdout stays aggregate/ID-free.
                 state["sweep_findings"] += 1
@@ -348,6 +385,7 @@ def scan_page(connection, progress, *, page_roots=MAX_PAGE_ROOTS, now=None):
         return dict(format="economic_sql_canonical_page_v1", scope="retained_root_page",
             examined_roots=min(len(identities), page_roots), findings=findings, queries=executor.queries,
             baseline_roots_authenticated=baselines, historical_claim_origin_roots=historical_claim_origins,
+            unattached_root_ids=unattached, candidate_source_count=len(CANDIDATE_SOURCES),
             read_bytes=executor.bytes, seconds=time.monotonic()-started,
             range_exhausted=exhausted, completed_sweeps=state["completed_sweeps"],
             sweep_rows=state["sweep_rows"], sweep_findings=state["sweep_findings"],

@@ -98,7 +98,7 @@ python3 scripts/economic_sql_canonical_audit.py \
   --progress-path /protected/audit/canonical-progress.json --page-roots 2
 ```
 
-Each invocation checks at most two roots in one read-only consistent snapshot
+Each invocation checks at most two candidate operation IDs in one read-only consistent snapshot
 and rolls back before publishing local progress. It bounds each projection to
 8,192 rows, the page to 1,024 SELECTs and 32 MiB of returned text, and admission
 of additional queries to 30 seconds. The connection retains its 30-second SQL
@@ -108,6 +108,24 @@ while higher IDs arrive, then starts again at the lowest ID. IDs schedule
 reads; they never certify commit order. A lower-ID transaction committed behind
 the cursor is eligible on the next sweep. Every page has one read view; the
 whole sweep combines different read views and always reports `complete=false`.
+
+The candidate range merges IDs from the root table, account effects, coin postings,
+children, item references, source claims and baseline witnesses. Each source uses
+its existing operation-ID-leading index and direct single-ID seeks. Repeated
+details for one operation do not consume additional candidate slots; no whole-table
+aggregation is needed. The ceiling covers the same seven sources, so a retained
+detail beyond the largest surviving root, or with no surviving roots, is scheduled.
+A missing nonzero parent root reports `restore_economic_orphan_root_mismatch`;
+the audit leaves the evidence unchanged. `candidate_source_count` records seven
+sources and `unattached_root_ids` counts these missing parents on this page.
+
+Version-1 checkpoints remain readable. An already started range finishes under
+its saved ceiling, and the following sweep captures the expanded range. Existing
+`examined_roots`, `sweep_rows` and `total_rows` fields count scheduled candidate IDs;
+they are not counts of surviving stored roots. Sticky findings and inexact backlog
+retain their existing meanings. Composite-key reservations and controls, native
+holdings and other evidence are outside this candidate enumeration; orphan coverage
+still remains incomplete.
 
 This mode reuses the full reader's original EAI1/EAP1 metadata, digest, count,
 effect, posting, child, item-reference and custody checks. It also checks each

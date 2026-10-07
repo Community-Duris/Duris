@@ -654,3 +654,21 @@ activation/recovery/retention and release budgets remain. The exact three
 primary-owned pure registrations are in the report. No shared schema/matrix
 changes or private successor qualification is claimed. This is the nonblocking
 primary-local notebook curator packet; no message/acknowledgement is claimed.
+
+## Rootless canonical ID discovery - 2026-10-06
+
+Same branch/worktree/remote. Base `ac03196f038cd8c197284f05bc0766110f31d2c3`.
+[Exact qualification](PLAN5_SQL_ORPHAN_SWEEP_QUALIFICATION_2026-10-06.md) records
+the frozen pure/native false accept and bounded seven-index candidate merge.
+All 103 methods pass, zero Linux skips, both fresh canonical0062 engines and
+fresh original native probes. Both engines detect the two existing orphan cuts,
+with unchanged inventories, rollback/close evidence and 28 intact-page index
+plans. Source `052712aff313e5adcf8a44da3264d7d6cfb806702e3703e1c941a5dac6bb0e2d` and seal `1dd1fc86a2c6346938de9431b21f58c09dba1275082e24e9efa9062a099d697b` bind this
+scope. Row counters count candidate IDs; checkpoint v1, sticky findings and
+incomplete coverage remain. The report has three exact primary-owned registration
+requests and additive operator fields. Primary refresh `fec13b26d108b617e6b6f83b910d3f7067be20ec`
+hands off EBS2/ESN5/EIC2; their independent qualification remains future work.
+Composite-key/control/full authority, genuine producer/activation/recovery/
+retention and release budgets remain. No shared edits, private successor
+qualification, cross-chat message or acknowledgement is claimed. This packet
+supports the nonblocking primary-local notebook curator workflow.

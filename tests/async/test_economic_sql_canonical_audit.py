@@ -197,7 +197,19 @@ class RestoreProjectionFixture:
                 rows = rows[:257]
             return '\n'.join(json.dumps(row) for row in rows)
         if query.startswith('SELECT LOWER(HEX(operation_id))'):
-            return self.operation
+            table = query.split(' FROM ',1)[1].split()[0]
+            collections = {'economic_accounting_operation':'metadata', 'economic_accounting_account_effect':'accounts',
+                'economic_accounting_coin_posting':'postings', 'economic_accounting_child':'children',
+                'economic_accounting_item_reference':'items', 'economic_baseline_witness':'witness'}
+            present = (self.rows['metadata'][0][17] == 1 and bool(self.rows['metadata'][0][11])
+                       if table == 'economic_accounting_source_claim' else bool(self.rows.get(collections[table])))
+            if not present:
+                return ''
+            if ' DESC ' in query:
+                return self.operation
+            low = re.search(r"operation_id>UNHEX\('([0-9a-f]*)'\)",query)
+            high = re.search(r"operation_id<=UNHEX\('([0-9a-f]*)'\)",query)
+            return self.operation if (not low or low[1] < self.operation) and (not high or self.operation <= high[1]) else ''
         if query == 'SELECT COUNT(*) FROM economic_accounting_operation;':
             return '1'
         if query.startswith('SELECT HEX(SUBSTRING('):
@@ -746,6 +758,107 @@ class CanonicalAuditTests(unittest.TestCase):
 
 
 class CanonicalSweepTests(unittest.TestCase):
+    def candidate_page(self, sources, roots, state=None, *, now=101, page_roots=2, refuse=None):
+        executor = mock.Mock(queries=0, bytes=0)
+        queries = []
+        def read(query):
+            queries.append(query)
+            executor.queries += 1
+            self.assertTrue(query.startswith('SELECT '))
+            if refuse and refuse in query:
+                raise audit.PageBudgetError('canonical audit page budget exhausted')
+            if 'information_schema.tables' in query:
+                result = str(len(audit.ROOT_SOURCES))
+            elif 'information_schema.columns' in query:
+                result = '0'
+            elif query.startswith('SELECT LOWER(HEX(operation_id))'):
+                table = query.split(' FROM ',1)[1].split()[0]
+                values = sorted(set(sources.get(table, [])))
+                if ' DESC ' in query:
+                    result = values[-1] if values else ''
+                else:
+                    low, high = re.findall(r"UNHEX\('([0-9a-f]*)'\)",query)
+                    limit = int(re.search(r'LIMIT (\d+)',query).group(1))
+                    result = '\n'.join(value for value in values if low < value <= high)[:limit*33-1]
+            else:
+                matches = re.findall(r"operation_id=UNHEX\('([0-9a-f]{32})'\)",query)
+                fixture = roots.get(matches[0]) if matches else None
+                if query.startswith('SELECT EXISTS(SELECT 1 FROM economic_accounting_operation WHERE '):
+                    result = '1' if fixture else '0'
+                elif 'FROM (SELECT 1 FROM economic_accounting_source_claim' in query:
+                    result = '1'
+                elif query.startswith('SELECT JSON_ARRAY(') and 'FROM economic_accounting_source_claim' in query:
+                    row = fixture.rows['metadata'][0]
+                    result = json.dumps([row[0], row[11], row[2], 1]) if row[17] == 1 and row[11] else ''
+                elif fixture:
+                    result = fixture.sql(query)
+                elif query.startswith('SELECT JSON_ARRAY('):
+                    result = ''
+                else:
+                    result = '0'
+            executor.bytes += len(result.encode())
+            return result
+        executor.sql.side_effect = read
+        connection = mock.Mock()
+        state = audit.new_progress('ab'*32, 100) if state is None else state
+        before = copy.deepcopy((sources, state))
+        with mock.patch.object(audit, 'CursorExecutor', return_value=executor):
+            try:
+                result = audit.scan_page(connection, state, now=now, page_roots=page_roots)
+            finally:
+                self.assertEqual((sources, state), before)
+                connection.rollback.assert_called_once_with()
+                connection.cursor.return_value.close.assert_called_once_with()
+        return result[0], result[1], queries
+
+    def test_orphan_candidates_from_each_indexed_source_are_not_hidden(self):
+        for table in ('economic_accounting_account_effect', 'economic_accounting_coin_posting',
+                      'economic_accounting_child', 'economic_accounting_item_reference',
+                      'economic_accounting_source_claim', 'economic_baseline_witness'):
+            sources = {table: ['99'*16]}
+            with self.subTest(table=table):
+                report, state, _ = self.candidate_page(sources, {})
+                self.assertEqual(report['findings'], [{'code': 'restore_economic_orphan_root_mismatch'}])
+                self.assertEqual(state['total_rows'], 1)
+                self.assertEqual(state['findings'][0]['operation_id'], '99'*16)
+                self.assertFalse(report['coverage']['orphan_evidence_authenticated'])
+
+    def test_candidate_sweep_merges_duplicates_and_resumes_delayed_lower_ids(self):
+        roots = {fixture.operation: fixture for fixture in
+                 (RestoreProjectionFixture(canonical=claim_capsules(value, 0, 1)) for value in (0x82,0x84))}
+        sources = {'economic_accounting_operation': list(roots),
+                   'economic_accounting_account_effect': ['83'*16]*10000,
+                   'economic_accounting_coin_posting': ['83'*16],
+                   'economic_baseline_witness': ['85'*16]}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'progress.json'
+            report, state, queries = self.candidate_page(sources,roots,page_roots=1)
+            self.assertEqual(state['cursor'],'82'*16)
+            self.assertEqual(state['ceiling'],'85'*16)
+            audit.save_progress(path,state)
+            state = audit.load_progress(path,'ab'*32,now=102)
+            sources['economic_accounting_item_reference'] = ['81'*16]
+            report, state, _ = self.candidate_page(sources,roots,state,now=103,page_roots=1)
+            self.assertEqual(state['cursor'],'83'*16)
+            self.assertEqual(report['findings'],[{'code':'restore_economic_orphan_root_mismatch'}])
+            for now in (104,105):
+                report,state,_ = self.candidate_page(sources,roots,state,now=now,page_roots=1)
+            self.assertEqual(state['total_rows'],4)
+            self.assertEqual(state['completed_sweeps'],1)
+            report,state,_ = self.candidate_page(sources,roots,state,now=106,page_roots=1)
+            self.assertEqual(state['cursor'],'81'*16)
+            self.assertEqual(report['findings'],[{'code':'restore_economic_orphan_root_mismatch'}])
+            self.assertEqual(state['total_findings'],3)
+            self.assertFalse(report['coverage']['complete'])
+            seeks = [query for query in queries if query.startswith('SELECT LOWER(HEX(operation_id))')]
+            self.assertLessEqual(len(seeks),28)
+            self.assertTrue(all(' FORCE INDEX (' in query and query.endswith(' LIMIT 1;') for query in seeks))
+
+    def test_candidate_budget_refusal_does_not_advance_progress(self):
+        with self.assertRaises(audit.PageBudgetError):
+            self.candidate_page({'economic_baseline_witness':['99'*16]}, {},
+                                refuse='FROM economic_baseline_witness ')
+
     def baseline_page(self, fixture):
         original = fixture.sql
         executor = mock.Mock(queries=0, bytes=0)
@@ -754,6 +867,8 @@ class CanonicalSweepTests(unittest.TestCase):
             executor.queries += 1
             if 'information_schema.tables' in query and 'economic_accounting_operation' in query:
                 result = str(len(audit.ROOT_SOURCES))
+            elif query.startswith('SELECT LOWER(HEX(operation_id))'):
+                result = original(query)
             elif 'FROM economic_accounting_source_claim' in query:
                 row = fixture.rows['metadata'][0]
                 result = ('1' if query.startswith('SELECT COUNT(*)') else
@@ -878,6 +993,8 @@ class CanonicalSweepTests(unittest.TestCase):
                 raise audit.PageBudgetError('canonical audit page budget exhausted')
             if 'information_schema.tables' in query and 'economic_accounting_operation' in query:
                 return str(len(audit.ROOT_SOURCES))
+            if query.startswith('SELECT LOWER(HEX(operation_id))'):
+                return original(query)
             if 'FROM economic_accounting_source_claim' in query:
                 row = fixture.rows['metadata'][0]
                 return '1' if query.startswith('SELECT COUNT(*)') else json.dumps([row[0], row[11], row[2], 1])
@@ -946,6 +1063,8 @@ class CanonicalSweepTests(unittest.TestCase):
         def read(query):
             if 'information_schema.tables' in query and 'economic_accounting_operation' in query:
                 return str(len(audit.ROOT_SOURCES))
+            if query.startswith('SELECT LOWER(HEX(operation_id))'):
+                return original(query)
             if 'SELECT HEX(SUBSTRING(canonical_witness' in query:
                 return budget.sql(query)
             if 'FROM economic_accounting_source_claim' in query:
@@ -967,7 +1086,15 @@ class CanonicalSweepTests(unittest.TestCase):
         for key in ('', '00'*16):
             connection = mock.Mock()
             executor = mock.Mock(queries=3, bytes=64)
-            executor.sql.side_effect = [str(len(audit.ROOT_SOURCES)), key, key]
+            def read(query):
+                if 'information_schema.tables' in query:
+                    return str(len(audit.ROOT_SOURCES))
+                if query.startswith('SELECT LOWER(HEX(operation_id))'):
+                    if 'FROM economic_accounting_operation ' in query:
+                        return key if ' DESC ' in query or "operation_id>UNHEX('')" in query else ''
+                    return ''
+                return '0'
+            executor.sql.side_effect = read
             with self.subTest(key=key), mock.patch.object(audit, 'CursorExecutor', return_value=executor):
                 report, state = audit.scan_page(connection, audit.new_progress('ab'*32, 100), now=101)
             self.assertTrue(report['range_exhausted'])
@@ -988,11 +1115,18 @@ class CanonicalSweepTests(unittest.TestCase):
                 if 'information_schema.tables' in query:
                     return str(len(audit.ROOT_SOURCES))
                 if query.startswith('SELECT LOWER(HEX(operation_id))'):
+                    table = query.split(' FROM ',1)[1].split()[0]
+                    collections = {'economic_accounting_operation':'metadata', 'economic_accounting_account_effect':'accounts',
+                        'economic_accounting_coin_posting':'postings', 'economic_accounting_child':'children',
+                        'economic_accounting_item_reference':'items', 'economic_baseline_witness':'witness'}
+                    values = [key for key, fixture in self.roots.items()
+                              if (bool(fixture.rows['metadata'][0][11]) if table == 'economic_accounting_source_claim'
+                                  else bool(fixture.rows.get(collections[table])))]
                     if 'DESC' in query:
-                        return max(self.roots, default='')
+                        return max(values, default='')
                     low, high = re.findall(r"UNHEX\('([0-9a-f]*)'\)", query)
                     limit = int(re.search(r'LIMIT (\d+)', query).group(1))
-                    return '\n'.join(key for key in sorted(self.roots) if low < key <= high)[:limit*33-1]
+                    return '\n'.join(key for key in sorted(values) if low < key <= high)[:limit*33-1]
                 identities = re.findall(r"operation_id=UNHEX\('([0-9a-f]{32})'\)", query)
                 if 'FROM (SELECT 1 FROM economic_accounting_source_claim' in query:
                     return '1'
@@ -1082,8 +1216,6 @@ class CanonicalSweepTests(unittest.TestCase):
             def read(query):
                 if 'information_schema.tables' in query:
                     return str(len(audit.ROOT_SOURCES))
-                if query.startswith('SELECT LOWER(HEX(operation_id))'):
-                    return fixture.operation
                 if query.startswith('SELECT HEX(SUBSTRING('+field):
                     return budget.sql(query)
                 return original(query)
@@ -1601,15 +1733,49 @@ class NativeCanonicalAuditTests(unittest.TestCase):
                                 self.assertEqual(ran.stderr, '')
                                 self.assertEqual(json.loads(ran.stdout)['retained_roots'], 1)
                             self.assertEqual(before, inventory())
-                            page_report, progress = audit.scan_page(reader, audit.new_progress('ab'*32, time.time()))
+                            page_connection = mock.Mock(wraps=reader)
+                            page_cursor = mock.Mock(wraps=reader.cursor())
+                            page_connection.cursor.return_value = page_cursor
+                            page_report, progress = audit.scan_page(page_connection, audit.new_progress('ab'*32, time.time()))
+                            page_connection.rollback.assert_called_once_with()
+                            page_cursor.close.assert_called_once_with()
+                            page_queries = [call.args[0] for call in page_cursor.execute.call_args_list]
+                            self.assertTrue(all(query.startswith(('SELECT ','SET TRANSACTION ','START TRANSACTION '))
+                                for query in page_queries))
+                            candidate_plans = []
+                            if label == 'intact':
+                                # Explain the actual ceiling and first range seeks.
+                                # Empty sources have no populated-index proof.
+                                for table, index in audit.CANDIDATE_SOURCES:
+                                    with owner.cursor() as explain:
+                                        explain.execute('SELECT COUNT(*) AS n FROM '+table)
+                                        populated = explain.fetchone()['n'] > 0
+                                        selected = [query for query in page_queries
+                                            if query.startswith('SELECT * FROM (SELECT LOWER(HEX(operation_id)) FROM '+table+' FORCE INDEX ')
+                                            and (' DESC LIMIT 1)' in query or "operation_id>UNHEX('')" in query)]
+                                        self.assertEqual(len(selected), 2)
+                                        for query in selected:
+                                            explain.execute('EXPLAIN '+query)
+                                            plan = explain.fetchall()
+                                            if populated:
+                                                self.assertTrue(any(row.get('key') == index for row in plan), plan)
+                                            candidate_plans.append(dict(table=table, index=index, populated=populated,
+                                                query=query, plan=plan))
                             self.assertFalse(page_report['coverage']['complete'])
                             self.assertFalse(page_report['release_qualified'])
                             if code is None:
                                 self.assertEqual(page_report['findings'], [])
                             elif code.startswith('restore_economic_'):
                                 self.assertEqual(page_report['findings'], [{'code': code}])
+                            if label in ('orphan_detail','orphan_source_claim'):
+                                self.assertIn({'code':'restore_economic_orphan_root_mismatch'},page_report['findings'])
+                                self.assertEqual(progress['total_rows'],2)
+                                self.assertEqual(page_report['unattached_root_ids'],1)
                             (work/(engine+'-'+label+'-page.json')).write_text(json.dumps(
-                                dict(report=page_report, progress=progress, unchanged=before == inventory()), indent=2)+'\n')
+                                dict(report=page_report, progress=progress, unchanged=before == inventory(),
+                                    queries=page_queries, candidate_index_plans=candidate_plans,
+                                    rollback_calls=page_connection.rollback.call_count,
+                                    close_calls=page_cursor.close.call_count), indent=2)+'\n')
                             self.assertEqual(before, inventory())
                             results.append({'engine': engine,'version': version,'label': label,'code': code,
                                 'command': command,'exit': ran.returncode,'queries': queries,
