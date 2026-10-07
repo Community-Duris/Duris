@@ -1,5 +1,16 @@
 # Plan 4: priced and compound gameplay domains
 
+## Collector flatfile proof-reader prerequisite integrated - 2026-10-07
+
+[Qualified prerequisite](../COLLECTOR_FLATFILE_PROOF_READERS_INTEGRATION_2026-10-07.md) adds borrowed-lock retained/current native proof readers and repairs the
+complete original component fixture. The original71.118-second recipe, both
+original754-provider production links, ten shared-source contracts and four
+changed-line formatting checks pass. Primary authenticates the complete raw
+source/native exports and an explicit canonical LF token/literal bridge.
+All926 writer policies remain unchanged; no route or release gate is promoted.
+Collector player/coordinator/ACK, SQL cold recovery, flatfile publication and
+the remaining original Plan4/Plans2-4/R1-R8 acceptance remain open.
+
 ## Native auction creator proof qualified - 2026-10-07
 
 [Retained creator and zero-fee fix](../AUCTION_NATIVE_CREATOR_PROOF_FIX_2026-10-07.md)

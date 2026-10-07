@@ -198,6 +198,8 @@
       "src/flatfile/flatfile_accounting_coin_transaction.h": "92949cacbe51eaa9b6a65536b7f94b32d4a7b80ac264ae0a259085126feaf1f4",
       "src/flatfile/flatfile_accounting_lifecycle_transaction.c": "f5828b2fdb91ab66ba95928a34fefae4182a0b37b204fd9c2d71ba6e41bce098",
       "src/flatfile/flatfile_accounting_lifecycle_transaction.h": "fe491f88ad0fa3bd9f64077345c226d039c1b022c928f8b405c135199b0d273b",
+      "src/flatfile/flatfile_collector_repository.c": "af1be45d70af38918b4f10f78504f8fef830c5f4e568c70bddde8a9214c9b4b3",
+      "src/flatfile/flatfile_collector_repository.h": "71add098796afe4add187b2d3fc994310215703f3327d0597497b277d5b14386",
       "src/flatfile/flatfile_economic_runtime.c": "0361c613879b7ea4bfd4c5dca5fe441a1ea77558753a87db88cdc72a2434e6b9",
       "src/flatfile/flatfile_economic_runtime.h": "68ec558f35fb45e539fa3269cd0523af6c4d1facb7ea7f70281d45ff6c294cdf",
       "src/flatfile/flatfile_item_repository.c": "26c87c0989a623b486d77edf02eb31ec0de9a2ba4ed19fb10722433d77fc9ddd",
@@ -319,11 +321,14 @@
       "src/world/world_activity.c": "6c7443dc54ffb37f33a3d4b9a0d3a24405efd2822a4b4695c299bf21501c6c04",
       "src/world/world_activity.h": "2b581aaee6228e30b2e66a4ab3bb9e78878b3112bfbc38fa95aca4f1f2ab5942",
       "tests/async/economic_sql_lifecycle_owner_mysql_harness.cpp": "3561a0fca268598bec620da0c98b70e7ff6e8d16992238be9688f2bb8b1a3f2e",
+      "tests/async/flatfile_collector_native_unavailable.cpp": "cb14d724a011867f42f4a6ee9a3804a7756d1d27aca20f20a2ecb8900884ffeb",
+      "tests/async/flatfile_collector_repository_harness.cpp": "95bfd2db52b586fddec45f514026e94f5853f75d499c7306dfee1cae7f034ece",
       "tests/async/inert_money_literal_harness.cpp": "c0d2a1c1322a6321fd9f86280b8cd87abcbb41f4c9b578e673711df27c57c3a2",
       "tests/async/test_auction_retained_seller_fee.py": "6229e32f084d90f019af7b187dc82c5fa62262873768e7e335275bcf14e4de16",
       "tests/async/test_coin_transfer_shared_bank_accounting.py": "f48cd0bf3fcd980a6ee3a41eb94c42898aa3f6deaf60058f56d71e955cd79da8",
       "tests/async/test_economic_sql_lifecycle_activation_contract.py": "10da6a9517092507a6ed6255536fe8b6a09c85383efffe75edb0c1d22d0209c4",
       "tests/async/test_economy_writer_coverage_contract.py": "089f47d41bf9c0883c1fd3b99ecc150037a0796c81c28f82b32524195c42279c",
+      "tests/async/test_flatfile_collector_repository.py": "0a38db332267215177db3a38c9b594657b6f3c5d3c90a3ca3abb86b81f88cbfe",
       "tests/async/test_inert_money_literal.py": "92ad092458d7ad5ef4ca15200a53e8532f69d36f3f0831fc723fca82eda0da70"
     },
     "status": "source_integrated_unqualified"
@@ -7470,7 +7475,7 @@
       "source": {
         "anchor_status": "function_definition_verified",
         "definition_lines": [
-          1995
+          1997
         ],
         "file": "src/flatfile/flatfile_collector_repository.c",
         "function": "flatfile_collector_repository_apply",

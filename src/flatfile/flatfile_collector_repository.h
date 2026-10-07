@@ -74,4 +74,24 @@ critical_apply_result
 flatfile_collector_repository_apply_accounted(const std::string &root,
 					      const critical_command &command);
 
+struct flatfile_collector_purchase_projection
+{
+	critical_apply_result receipt = {};
+	collector_command_result result = {};
+	uint64_t player_save_revision = 0;
+};
+// Borrow the existing authority lock through publication/ACK. Reads may finish
+// an existing authority journal; they never submit/apply an absent operation.
+// Success returns exact historical evidence separately from current projection.
+// Receipt/projection outputs are unchanged on failure; the error may change.
+// No authority is minted here.
+unsigned int flatfile_collector_repository_verify_retained_locked(const std::string &,
+								  const flatfile_authority_lock &,
+								  const critical_command &,
+								  critical_apply_result *,
+								  std::string *);
+unsigned int flatfile_collector_repository_read_purchase_projection_locked(
+	const std::string &, const flatfile_authority_lock &, const critical_command &,
+	flatfile_collector_purchase_projection *, std::string *);
+
 #endif
