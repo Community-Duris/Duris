@@ -175,6 +175,16 @@ gaps and exact owner dependencies; no thin wrapping of already-owned rules.
 Quest remains blocked on authentic native prerequisites. Overall finish line
 and active coordinator/monitor are unchanged.
 
+R7 whole-planner successor: reservationcf689eb7a has independent
+[boundary approval](domain-separation/R7_SUPERIOR_PLAN_REVIEW_2026-10-07.md)
+and an authorized isolated four-file implementation assignment. Original
+ordering/partial-plan baseline passes with unchanged controls. Supply owned
+facts at original native observation points; preserve probes, early failure,
+partial outputs and existing authority/refusal. This corrects the broad claim
+that a new capture grant is always required for local enhancement extraction.
+Explicit R4 dependency and final qualification/handoff remain pending. The
+primary continues without waiting; no new quest prerequisite appeared.
+
 Older checkpoint status text below remains historical and is superseded here.
 
 Both existing workers have actual continuing Goals ACTIVE against the broader

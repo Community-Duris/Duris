@@ -263,6 +263,27 @@ call/effect that cannot be preserved. No implementation is approved by this
 feasibility request alone. Other native authority dependencies remain real and
 owned. Primary integration does not wait; the continuing Goal stays active.
 
+## R7 whole-planner execution boundary
+
+The concrete reassessment found a feasible next operation. Reservation
+`cf689eb7a39eda67536a6de0cca05f2dafc81928` has
+[independent boundary approval](R7_SUPERIOR_PLAN_REVIEW_2026-10-07.md) and an
+authorized four-file implementation assignment in the isolated architecture
+worktree. The full ordered all-stat planning control can consume owned values
+from a synchronous local provider at each original native observation point.
+Native probes/lifetime/payment/effects/refusal and recovery remain unchanged.
+
+The coordinator authenticated all six original helper/builder bodies and both
+test preimages, and independently passed ten added original trace/partial-plan
+scenarios under unchanged sanitizers and deadline. This proves feasibility;
+implementation and final original/extracted/maintained/current qualification
+remain pending. Explicit R4 import dependency is retained. The earlier blanket
+capture-grant blocker is corrected; other authentic owner dependencies remain.
+
+Primary source remains the Collector daa5 milestone plus coordinator docs at
+this boundary. No new quest prerequisite appeared; quest remains BLOCKED, not
+complete. Architecture/coordinator Goals and recurring monitor remain active.
+
 ## Recurring monitor
 
 The existing thread heartbeat checks every15 minutes, supplemented by active
