@@ -1,5 +1,12 @@
 # Enhancement module-boundary investigation — 2026-10-07
 
+Historical private/pre-approval evidence follows. The one-file boundary has since
+been approved at primaryc590fdb9 and implemented as
+7e37d1db1244717e4e8107b5313ac9dc706f69bd. [Current committed import/execution
+handoff](ENHANCE_BOUNDARY_IMPLEMENTATION.md) supersedes the pending reservation
+below. Preserve original/private pins, failures and direct-reentry concern; none
+is relabeled as maintained or native-world execution.
+
 Disposition: **private investigation complete; exact one-file repair proposed**.
 No maintained source/test/helper was edited. Root reviews the reservation before
 implementation. The original maintained test still FAILS. Private source-boundary
