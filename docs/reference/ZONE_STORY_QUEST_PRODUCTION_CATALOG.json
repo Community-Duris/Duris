@@ -73738,6 +73738,241 @@
     {
       "contacts": [
         {
+          "description": "The keep\u2019s lord is declared on the third level with Sir LeBaum. Ask contract, curse or wife; all three topics share one response. His joint return needs the exact demonic contract and platinum Celtic wedding band. Their producer remains a builder follow-up.",
+          "keyword": "boadwyn",
+          "mob_vnum": 36822,
+          "name": "Sir Boadwyn, Lord of the Keep",
+          "topics": [
+            "contract",
+            "curse",
+            "wife"
+          ]
+        },
+        {
+          "description": "In the throne room; ask hero or heroes for the same request. He accepts three exact seasoned-warrior skulls for a stitched-skull sheath. Ordinary carved body parts do not fit that hand-in.",
+          "keyword": "sagoth",
+          "mob_vnum": 36837,
+          "name": "Bal Sagoth, the self-proclaimed epopt of Midgard.",
+          "topics": [
+            "hero",
+            "heroes"
+          ]
+        },
+        {
+          "description": "The female gladiator in the ransacked bedroom is declared carrying one exact seasoned-warrior skull. The gladiator also appears elsewhere without that declared skull; room and source identity matter.",
+          "keyword": "gladiator",
+          "mob_vnum": 36801,
+          "name": "a minotaur gladiator",
+          "topics": []
+        },
+        {
+          "description": "One penanggalan in the rubble-filled kitchen is declared carrying the exact skull. The nearby cook is a different mobile; a second penanggalan load in the kitchen has no skull declaration.",
+          "keyword": "penanggalan",
+          "mob_vnum": 36862,
+          "name": "a penanggalan",
+          "topics": []
+        },
+        {
+          "description": "On the third-level bend; declared holder of the third exact skull. All three holders share a capped skull prototype, so current possession does not prove three different defeats.",
+          "keyword": "targos",
+          "mob_vnum": 36820,
+          "name": "Targos, the minotaur Blood Lord",
+          "topics": []
+        },
+        {
+          "description": "At the skeletal gate; declared holder of its twisted bone key. The first passage from the Underdark uses the pullable human spine before reaching him.",
+          "keyword": "keeper",
+          "mob_vnum": 36800,
+          "name": "Tar'l, the minotaur gate keeper",
+          "topics": []
+        },
+        {
+          "description": "At the second-level bend before the staircase; declared holder of the minotaur horn key for the PICKPROOF upper staircase.",
+          "keyword": "knight",
+          "mob_vnum": 36813,
+          "name": "an undead knight",
+          "topics": []
+        },
+        {
+          "description": "On the third level with Kvolg; declared wearer of the twisted stone key for the war chamber. His separate two-weapon training service is currently unavailable with the accounting required by these journals.",
+          "keyword": "ihsahn",
+          "mob_vnum": 36849,
+          "name": "Ihsahn, the drow swashbuckler",
+          "topics": []
+        },
+        {
+          "description": "In the garden with Erebus and Kyeril; declared holder of the Domain memory, his femur, the robe and a rune-covered stone. These are separate exploration and outbound proof leads, not local hand-in receipts.",
+          "keyword": "euronymous",
+          "mob_vnum": 36855,
+          "name": "Euronymous, Devil Prince of Anti-paladins",
+          "topics": []
+        },
+        {
+          "description": "Declared follower of Euronymous in the garden, carrying the soul sceptre and his cloak. No local hand-in or release objective is attached to this encounter.",
+          "keyword": "erebus",
+          "mob_vnum": 36854,
+          "name": "Erebus, greater devil of Bartakhis",
+          "topics": []
+        },
+        {
+          "description": "The frost dragon follows the garden group and is declared carrying its heart and a dragonscale belt. These named items are separate from Boadwyn\u2019s demonic contract, despite the contract sharing the dragon\u2019s number.",
+          "keyword": "kyeril",
+          "mob_vnum": 36856,
+          "name": "Kyeril, the frost dragon",
+          "topics": []
+        },
+        {
+          "description": "In the warrior\u2019s bedchamber with Lord Dragas and Sir Nargel. The war council and its equipment are optional exploration, without a local quest-completion receipt.",
+          "keyword": "samoth",
+          "mob_vnum": 36843,
+          "name": "Samoth, the Blood Knight of Kvasir",
+          "topics": []
+        },
+        {
+          "description": "Declared follower at the warrior\u2019s bedchamber. Defeating a council member is separate from accepted skull and contract returns.",
+          "keyword": "dragas",
+          "mob_vnum": 36844,
+          "name": "Lord Dragas",
+          "topics": []
+        },
+        {
+          "description": "Declared follower at the warrior\u2019s bedchamber. His role is lore and exploration rather than a local hand-in.",
+          "keyword": "nargel",
+          "mob_vnum": 36845,
+          "name": "Sir Nargel, the royal advisor",
+          "topics": []
+        },
+        {
+          "description": "In the war chamber; declared wearer of the ring of Sekhmet and gauntlets of rending. The ring has a charged trap; possessing it is separate from the two requests.",
+          "keyword": "golem",
+          "mob_vnum": 36847,
+          "name": "a bronze cyclops golem",
+          "topics": []
+        },
+        {
+          "description": "Declared third-level patrol leader with a minotaur anti-paladin. His sword and patrol are optional exploration leads.",
+          "keyword": "githyanki",
+          "mob_vnum": 36824,
+          "name": "Azaz'lberith, the githyanki Death Lord",
+          "topics": []
+        },
+        {
+          "description": "In the secret chamber behind the ransacked bedroom; declared holder of Domination. The mirror there is an exit lead back to the entrance passage, separate from this encounter.",
+          "keyword": "erinyes",
+          "mob_vnum": 36811,
+          "name": "an angered erinyes",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore the cursed keep, distinguish its exact proof returns from its lore, and follow the stories into the garden and beyond.",
+      "orientation": [
+        "The public approach is north from the deep Underdark into a dank tunnel. Pull the human spine at the relief to clear the blocked passage toward the skeletal gate; the human skull on the far side controls the return passage.",
+        "Tar\u2019l carries the skeletal gate\u2019s twisted bone key. Its lock permits ordinary PICK attempts when your character can. The devil\u2019s tooth key lies in the barracks and opens the first PICKPROOF staircase; the key has a charged trap.",
+        "The undead knight at the second-level bend carries the minotaur horn key for the next PICKPROOF staircase. The female gladiator\u2019s skull is in the ransacked bedroom, a penanggalan\u2019s is in the kitchen, and Targos\u2019s is on the third level.",
+        "Ask Sir Boadwyn about contract, curse or wife. The library\u2019s three-page Domain of Souls book explains his pact. The exact demonic contract and wedding band have no producer in the reviewed sources; their restoration needs a builder decision.",
+        "Ask Bal Sagoth about hero or heroes. His request accepts three copies of the exact seasoned-warrior skull. His carving instructions do not match ordinary CARVE, which produces a different body part.",
+        "At the alchemist\u2019s magically locked door, Diabolus Mendes is the name shown in the inscription. Admitted speech of diabolus can unlock it; opening and moving through remain separate. Secret passages also lead to the erinyes chamber, marbled hall and garden\u2019s circular chamber.",
+        "The circular chamber\u2019s natural pool leads into the submerged tunnel. A blacktail shark is declared holding the underworld key for the PICKPROOF sunken chest; the chest contains a shark-engraved ring and Kvasir dagger. The air-pocket ladder leads back toward the entrance.",
+        "Euronymous\u2019s garden group holds the Domain memory and his femur. The Waterdeep ambassador accepts the exact memory or sheath in separate exchanges; Thorl also accepts the same skull set for a sheath. Those outbound receipts have their own givers and ownership.",
+        "Ihsahn\u2019s key opens the war chamber, and the warrior\u2019s bedchamber holds Samoth\u2019s council. These encounters, the rune-covered stone and separate training service have no new journal objective here. Two-weapon training is currently unavailable under the accounting required for journal tracking.",
+        "Potential daily candidates depend on enabled reviewed policy, actual discovery and available sources. The zone resets when due and empty under native rules; a new day does not promise a new giver, key or skull. New tracking requires active, ready accounting."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "dlsc",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:36856,I:36860;receive=E:75500,I:36859;disappear=1",
+              "giver_vnum": 36822
+            }
+          ],
+          "id": "boadwyn-contract-and-band",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The parchment names Sir L. Boadwyn and Arganas. No producer was found in the reviewed reset, quest, shop and controller sources. A supplied exact contract still fits; a dragon heart does not.",
+              "id": "material-36856",
+              "item_vnums": [
+                36856
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact demonic contract loose"
+            },
+            {
+              "count": 1,
+              "hint": "Its inscription names Lady Elizabyth Boadwyn. A supplied exact band fits, but custody does not establish personally rescuing her or discovering an item source.",
+              "id": "material-36860",
+              "item_vnums": [
+                36860
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the platinum Celtic wedding band loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:36856,I:36860;receive=E:75500,I:36859;disappear=1",
+                  "giver_vnum": 36822
+                }
+              ],
+              "hint": "Offer both exact items loose together to Sir Boadwyn. This records his native reward and departure, with the wider clan curse and his wife\u2019s fate left as narrative rather than additional tracked outcomes.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record Boadwyn\u2019s accepted joint return"
+            }
+          ],
+          "summary": "One exact contract and one exact wedding band together earn a serpentine ring and native experience; Boadwyn then departs. The item sources need builder integration.",
+          "title": "Return the contract and wedding band to Sir Boadwyn"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:55037,I:55037,I:55037;receive=I:55038;disappear=0",
+              "giver_vnum": 36837
+            }
+          ],
+          "id": "bal-sagoth-three-skulls",
+          "steps": [
+            {
+              "count": 3,
+              "hint": "The declared holders are the female gladiator in the ransacked bedroom, one penanggalan in the kitchen and Targos on the third level. Supplied copies also fit. Ordinary CARVE makes a different body-part item; three different source kills are not enforced.",
+              "id": "material-55037",
+              "item_vnums": [
+                55037
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry three exact seasoned-warrior skulls loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:55037,I:55037,I:55037;receive=I:55038;disappear=0",
+                  "giver_vnum": 36837
+                }
+              ],
+              "hint": "Offer three exact skulls loose together to Bal Sagoth in the throne room. He stays after rewarding you. A sheath earned from another giver or handed to you does not establish this receipt.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record Bal Sagoth\u2019s accepted three-skull return"
+            }
+          ],
+          "summary": "Three copies of the exact stocked skull earn a stitched-skull sheath. Native acceptance does not require personal kills or ordinary carving.",
+          "title": "Bring three seasoned-warrior skulls to Bal Sagoth"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "In the audience chamber, with mages and elite guards. Ask about fool, help, talent, hero and proof. His four exact offerings are independent outcomes; his prophecy does not require doing them in a fixed order.",
           "keyword": "lord",
           "mob_vnum": 37100,

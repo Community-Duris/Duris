@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 191 authored journals, accounting-gated player surfaces, starter/town
+**Status: 192 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5218,3 +5218,20 @@ The [complete Church dossier](zone-stories/CHURCH_OF_THE_ETERNAL_DUSK.md) maps f
 
 
 The final code review also closes an accounting gate defect: ordinary legacy completions with no committed transaction ID could reach tracking while accounting was off. Both new-completion adapters now require active accounting; unchanged native rewards continue and stable committed recovery remains separate. Focused regressions reject both entry points without persistence writes and retain inactive-accounting committed recovery.
+
+
+## Domain: stocked proofs, source gaps and table-driven services
+
+The [complete Domain dossier](zone-stories/DOMAIN_OF_LOST_SOULS.md) and [source audit](../reference/zone-story-audits/dlsc.md) map two independent exact returns, seventeen contacts and five steps. Boadwyn requires the contract and wedding band together; Bal Sagoth requires three copies of one skull prototype. Optional custody rows preserve supplied native inputs and exact completion receipts. Full selected source closure covers 100 rooms/218 exits, 71 mobiles, 100 objects, 488 resets and all native dialogue/requests. Two achievements and two potential dailies remain classified. New tracking requires active READY accounting.
+
+The review expands the universal plan in these concrete ways:
+
+1. Preserve typed namespaces and exact reset parents. Skull stock belongs to the female gladiator, one penanggalan and Targos; the nearby cook is not its declared holder. Contract object36856 and dragon mobile36856 are different identities.
+2. Distinguish stocked trophy custody from corpse creation, CARVE and first personal recovery. Ordinary CARVE creates bodypart8, not required skull55037, and ordinary NPC corpse construction does not set the PC HUMANOID flag. Builders must choose a scoped provenance adapter or a separate dialogue correction; neither is activated by this journal.
+3. Record checked source absence with its scope. No reviewed producer supplies Boadwyn's contract/band. Decide intended source and balance before a named restoration fix; the journal preserves supplied exact inputs without promising a source.
+4. Extend effective binding inventory beyond literal assignments. Ihsahn's epic teacher table is bound during initialization, yet purchases explicitly refuse with active accounting. Implement a combined epic/copper/skill-state settlement and qualify rollback, replay, refund and listing availability before introducing a service milestone.
+5. Keep admitted PULL, spoken unlock, key/trap use, SECRET discovery, OPEN, teleport dispatch and actual arrival separate. Shared access changes do not automatically establish personal learning, recovery, kill or passage history.
+6. Keep foreign recipes and alternate producers under their native owners. A Thorl sheath or supplied sheath does not establish Bal Sagoth's receipt; one Domain femur or spirit contributes to a larger foreign material set without completing it.
+7. Model causal source availability under mode-one descriptor emptiness, caps and skipped issuance. Daily rollover does not replenish stock. NPC departure text establishes the native extraction only; wider wife/clan rescue needs an authored durable outcome.
+
+All twenty owned follow-ups and fair repair alternatives are in the dossier. This checkpoint changes journal metadata, documentation and regressions; no native world or quest repair ships. Played access, hand-in, reward, service and persistence qualification remains pending.

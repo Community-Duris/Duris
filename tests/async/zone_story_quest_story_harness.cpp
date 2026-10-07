@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 191 &&
+		require(catalog.story_mappings.size() == 192 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -23046,6 +23046,89 @@ int main(int argc, char **argv)
 							.successful_attempts == 1 &&
 					!recovered.has_discovered(7, 42, 550),
 				"Northern Lakes cold recovery lost independent receipts or invented foreign discovery");
+		}
+
+		{
+			const auto &pact = story_for("dlsc", "boadwyn-contract-and-band");
+			const auto &skulls = story_for("dlsc", "bal-sagoth-three-skulls");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 368, 36800, 100, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 368, 10, 1, 101, false, false)
+							.find(skulls.title) == std::string::npos,
+				"Domain discovery exposed an unseen giver's request");
+			require(journey.meet_npc(7, 42, 36822, 36865, 102) == result::applied &&
+					journey.meet_npc(7, 42, 36837, 36894, 102) ==
+						result::applied,
+				"Domain exact giver encounter failed");
+			std::string journal;
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Domain journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto status = [&](const auto &entry, size_t row, const char *label)
+			{
+				return section(entry).find(std::string("[") + label + "] " +
+							   entry.steps[row].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[8] = 3;
+			supplies.carried[36899] = 1;
+			supplies.carried[55038] = 1;
+			supplies.equipped[18] = 55037;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 368, 10, 1, 103, false, false,
+							 &supplies);
+			require(status(skulls, 0, "Missing now") &&
+					status(pact, 0, "Missing now") &&
+					status(pact, 1, "Missing now") &&
+					journey.serialize_state() == before,
+				"Domain carved parts, dragon namespace, sheath or held skull fabricated readiness");
+			supplies.carried[55037] = 2;
+			supplies.carried[36856] = 2;
+			journal = journey.render_journal(7, 42, 368, 10, 1, 104, false, false,
+							 &supplies);
+			require(status(skulls, 0, "Missing now") && status(pact, 0, "Ready now") &&
+					status(pact, 1, "Missing now"),
+				"Domain held third skull or duplicate contracts replaced loose exact proofs");
+			supplies.carried[55037] = 3;
+			supplies.carried[36860] = 1;
+			journal = journey.render_journal(7, 42, 368, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(skulls, 0, "Ready now") && status(pact, 1, "Ready now") &&
+					section(skulls).find("Next: " + skulls.steps.back().text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 368).completed == 0 &&
+					journey.serialize_state() == before,
+				"Domain supplied preparation required source history or forged acceptance");
+			// Synthetic accepted receipts qualify projection, not live stock or hand-in settlement.
+			record(journey, skulls.contracts.front(), "dlsc-skulls", 368, 36894);
+			supplies.carried.erase(55037);
+			supplies.equipped.clear();
+			journal = journey.render_journal(7, 42, 368, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(skulls, 0, "Missing now") && status(skulls, 1, "Recorded") &&
+					journey.evidence_for(pact.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Domain spent skulls erased the receipt or completed Boadwyn");
+			record(journey, pact.contracts.front(), "dlsc-pact", 368, 36865);
+			auto replay = completion(skulls.contracts.front(), "dlsc-skulls", 120);
+			replay.transaction.zone_number = 368;
+			replay.transaction.room_vnum = 36894;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Domain skull replay duplicated completion");
+			service recovered(catalog);
+			require(recovered.deserialize_state(journey.serialize_state(), &error) &&
+					recovered.progress_for_zone(7, 42, 368).completed == 2 &&
+					recovered.progress_for_zone(7, 42, 368).total == 2 &&
+					!recovered.has_discovered(7, 42, 550),
+				"Domain recovery lost independent returns or invented foreign discovery");
 		}
 
 		std::cout

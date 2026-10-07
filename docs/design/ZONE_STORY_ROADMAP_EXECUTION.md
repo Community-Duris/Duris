@@ -254,9 +254,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 176 | The Lair of Tiamat | [Comprehensive dossier](zone-stories/AZHURAL.md):2QA/2MA/89 rooms/26 mobiles/38 objects/129 resets/full selected closure | Schema3/revision1:2 cards/9 contacts/9 aliases/6 optional rows/8 steps;2 achievements/0 potential dailies | Twenty source/batch/access/encounter/builder follow-ups;no native repair |
 | 177 | Quintaragon Castle | [Comprehensive dossier](zone-stories/CASTLE.md):2Q/2MA/130 rooms/39 mobiles/51 objects/283 resets/full selected closure | Schema3/revision1:2 cards/13 contacts/5 aliases/2 optional rows/4 steps;2 achievements/2 potential dailies | Twenty source/access/teacher/stone/external/builder follow-ups;no native repair |
 | 178 | The Church of the Eternal Dusk | [Comprehensive dossier](zone-stories/CHURCH_OF_THE_ETERNAL_DUSK.md):4Q/3M/33 rooms/55 mobiles/55 objects/161 resets/full selected closure | Schema3/revision1:4 cards/12 contacts/5 aliases/8 optional rows/12 steps;4 achievements/4 potential dailies | Twenty owned follow-ups;separate ownership repair/Kelek revision2 with frozen compatibility |
-| 179–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 179 | Domain of Lost Souls | [Comprehensive dossier](zone-stories/DOMAIN_OF_LOST_SOULS.md):2Q/2M/100 rooms/71 mobiles/100 objects/488 resets/full selected closure | Schema3/revision1:2 cards/17 contacts/5 aliases/3 optional rows/5 steps;2 achievements/2 potential dailies | Twenty source/custody/access/service/reset/builder follow-ups;no native repair |
+| 180–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is Domain of Lost Souls (`dlsc`).
+The next area is Drifting Realm (`dream`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -7511,3 +7512,25 @@ Validation passed: shared owner/source Python regressions; compiled runtime exac
 
 
 The final code review also closes an accounting gate defect: ordinary legacy completions with no committed transaction ID could reach tracking while accounting was off. Both new-completion adapters now require active accounting; unchanged native rewards continue and stable committed recovery remains separate. Focused regressions reject both entry points without persistence writes and retain inactive-accounting committed recovery.
+
+
+## Priority 179 checkpoint: Domain of Lost Souls
+
+The [complete Domain dossier](zone-stories/DOMAIN_OF_LOST_SOULS.md) and [source audit](../reference/zone-story-audits/dlsc.md) map two independent exact returns, seventeen contacts and five steps. Boadwyn requires the contract and wedding band together; Bal Sagoth requires three copies of one skull prototype. Optional custody rows preserve supplied native inputs and exact completion receipts. Full selected source closure covers 100 rooms/218 exits, 71 mobiles, 100 objects, 488 resets and all native dialogue/requests. Two achievements and two potential dailies remain classified. New tracking requires active READY accounting.
+
+The review expands the universal plan in these concrete ways:
+
+1. Preserve typed namespaces and exact reset parents. Skull stock belongs to the female gladiator, one penanggalan and Targos; the nearby cook is not its declared holder. Contract object36856 and dragon mobile36856 are different identities.
+2. Distinguish stocked trophy custody from corpse creation, CARVE and first personal recovery. Ordinary CARVE creates bodypart8, not required skull55037, and ordinary NPC corpse construction does not set the PC HUMANOID flag. Builders must choose a scoped provenance adapter or a separate dialogue correction; neither is activated by this journal.
+3. Record checked source absence with its scope. No reviewed producer supplies Boadwyn's contract/band. Decide intended source and balance before a named restoration fix; the journal preserves supplied exact inputs without promising a source.
+4. Extend effective binding inventory beyond literal assignments. Ihsahn's epic teacher table is bound during initialization, yet purchases explicitly refuse with active accounting. Implement a combined epic/copper/skill-state settlement and qualify rollback, replay, refund and listing availability before introducing a service milestone.
+5. Keep admitted PULL, spoken unlock, key/trap use, SECRET discovery, OPEN, teleport dispatch and actual arrival separate. Shared access changes do not automatically establish personal learning, recovery, kill or passage history.
+6. Keep foreign recipes and alternate producers under their native owners. A Thorl sheath or supplied sheath does not establish Bal Sagoth's receipt; one Domain femur or spirit contributes to a larger foreign material set without completing it.
+7. Model causal source availability under mode-one descriptor emptiness, caps and skipped issuance. Daily rollover does not replenish stock. NPC departure text establishes the native extraction only; wider wife/clan rescue needs an authored durable outcome.
+
+All twenty owned follow-ups and fair repair alternatives are in the dossier. This checkpoint changes journal metadata, documentation and regressions; no native world or quest repair ships. Played access, hand-in, reward, service and persistence qualification remains pending.
+
+Catalog: 192 journals, 1522 achievements, 1408 potential dailies and 2184 units. All 2668 native definitions, source fingerprint, registry and 191 prior maps are preserved. Original 220-area order is unchanged; comprehensive source mapping is 179/220 with 41 pending. The next area is Drifting Realm (`dream`).
+
+
+Validation passed: focused Domain source/schema regression; all 192 compiled Python/C++ journal checks, including Domain repeated-item readiness, supplied proofs, independent exact receipts, spent materials, replay and cold recovery; full production/catalog/inventory/audit regression on an isolated Linux filesystem with 6232 hash-verified source inputs; maintained Linux C++20 server build; canonical clang-format14; original 220-area order, all 2668 native definitions, source fingerprint, registry and 191 prior maps preserved. Checked 1408 local links in the changed documents. This result paragraph was added after the successful exact-input run and separately verified; test, catalog and native inputs remain identical to that run. No played or production operation is claimed.
