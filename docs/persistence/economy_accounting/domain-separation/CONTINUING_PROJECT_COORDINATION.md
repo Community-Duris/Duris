@@ -449,6 +449,31 @@ selecting implementation. No new scope is approved by this queue entry.
 
 ### Latest reviewed deliveries and next bounded assignments
 
+The latest selected operations now have exact execution approval, superseding
+the reservation-only assignments below. Architecture reservationbd3cd6281 has
+[R12 three-file approval](R12_SHOP_SALE_QUOTE_REVIEW_2026-10-07.md): complete staged
+sale/valuation base and trophy calculations, two real callers and first direct
+runner. Root authenticates all49 original proofs/446 actual compiler inputs/70
+current repository headers and independently PASSes final86 baseline controls.
+Worker's original-Og also PASSes. Native gate/RNG/property/arithmetic distinctions
+remain explicit; no extracted/current import/native qualification is claimed yet.
+
+Prep investigation2188c2caa/canonical8668b431d has
+[exact one-file enhancement contract approval](../quest-prep/ENHANCE_MODULE_BOUNDARY_REVIEW_2026-10-07.md).
+All13 sealed proofs/11 source inputs/all6,448 archive entries authenticate; root
+independently reproduces original FAIL, final61 source checks, all28 rejection
+controls and harmless formatting PASS. Preserve all20 original semantics and the
+separate direct-reentry/missing-config source witness; no current reload route,
+production correction, native acceptance or new release gate is inferred.
+
+Both chats implement in their existing isolated worktrees, qualify actual committed
+standalone current-primary imports and publish exact handoffs for final review.
+No optional predecessor/cross-workstream dependency or primary adoption wait.
+Published6ca shared-native progress is documentation-only: private candidate/cache/
+tooling issues and native Collector/SHOP/flat boot/Plans2-5/R1-R8 remain open.
+It exposes no new native quest capability and does not falsely resume its blocked
+Goal. Root actual Goal and heartbeat remain ACTIVE through the full finish line.
+
 R11 implementationce7e0bc9/handoff89d79bae now has
 [FINAL independent extraction-scope review PASS](R11_ITEM_VALUE_QUOTE_REVIEW_2026-10-07.md).
 All76 proof files, both actual native ELFs/740-object graphs, both standalone

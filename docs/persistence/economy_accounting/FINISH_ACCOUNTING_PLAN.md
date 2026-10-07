@@ -270,6 +270,35 @@ Production authority/native journeys remain separate. Architecture continues
 R11 qualification; primary continues without an adoption wait. Full continuing
 finish line and native quest/accounting blockers remain unchanged.
 
+## Staged shop quotation and enhancement contract execution approved - 2026-10-07
+
+[R12 exact three-file review](domain-separation/R12_SHOP_SALE_QUOTE_REVIEW_2026-10-07.md)
+approves reservationbd3cd6281: complete staged sale/valuation calculations, native
+two-caller integration and first direct runner. All49 original proof entries,
+446 actual compiler inputs/70 current tracked headers authenticate; final86
+baseline controls independently PASS and original-Og PASSes. Preserve sale's
+pre-trophy keeper/NODROP gates and no barter, valuation's native comparison/RNG,
+float/double/int arithmetic and repeated property observations. No implementation,
+extracted/current import/native qualification or primary adoption is claimed yet.
+
+[Enhancement one-file review](quest-prep/ENHANCE_MODULE_BOUNDARY_REVIEW_2026-10-07.md)
+approves investigation2188c2caa/canonical8668b431d for the existing source-contract
+test only. Root authenticates13 sealed proofs/11 inputs/all6,448 archive entries
+and independently reproduces original FAIL, final61 checks/all28 rejections and
+harmless formatting PASS. Preserve all20 original semantic predicates and actual
+reset/native selector/staging/recovery/death/boot/reload boundaries. The separate
+missing-file direct-reentry witness is not a demonstrated current reload route,
+production fix or new release gate. Maintained repair/final review are pending.
+
+Both existing isolated chats now implement, qualify committed standalone packages
+on then-current primary and publish exact code/evidence/handoffs for review. No
+optional predecessor or cross-workstream requirement, adoption wait or completed
+primary rewrite. New6ca shared native qualification progress is docs-only, with
+private candidate/cache/tooling and Collector/SHOP/flat boot/full Plans/R1-R8
+requirements still open. Original source pins stay honest; no unchanged reruns
+or native quest capability is invented. Full continuing Goals/ACTIVE monitor
+retain the observable primary finish line; these batches cannot complete it.
+
 ## Reviewed valuation and current shop-route deliveries - 2026-10-07
 
 [R11 final independent review](domain-separation/R11_ITEM_VALUE_QUOTE_REVIEW_2026-10-07.md)
