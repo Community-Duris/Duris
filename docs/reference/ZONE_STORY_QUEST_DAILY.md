@@ -224,3 +224,8 @@ The [dossier](../design/zone-stories/MYCONID.md) retains one potential candidate
 ## Vargan II daily qualification
 
 The [dossier](../design/zone-stories/V2.md) retains one potential candidate with three hidden/NORENT exact pieces, one sword reward and a no-D giver. Qualify active READY joint acceptance, frozen eligible party history, actor reward-child settlement/save/recovery, physical stock policy and completed mode2 giver/source renewal. Key/map discovery, campaign advice, hazards and UTC rollover cannot establish a fresh bundle or settle the reward. Policy stays disabled by default.
+
+
+## Phantasmagoric Caverns daily qualification
+
+The [dossier](../design/zone-stories/VALDRAK.md) retains one potential candidate with two exact weapons and hidden heart, currency/XP terms and D retirement. Qualify active READY acceptance, frozen party history versus actor currency/actual capped XP recipients, settlement/save/recovery, giver/follower lifecycle and completed cap1 source/giver renewal. Garden, spring, shopping, ritual prose and UTC rollover cannot establish a fresh accepted bundle. Policy stays disabled by default.

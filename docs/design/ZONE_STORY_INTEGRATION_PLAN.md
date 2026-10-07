@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 201 authored journals, accounting-gated player surfaces, starter/town
+**Status: 202 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5306,3 +5306,10 @@ Builder declarations should specify optional key or admitted PICK/KNOCK alternat
 The [Vargan II dossier](zone-stories/V2.md) adds a concrete hidden-source, three-piece return with later campaign advice. Reuse three exact optional loose-item rows and one joint accepted completion. Source combat, corpse/root lineage, admitted reveal, shared visibility, actual first recovery, transferred custody and persistent physical stock need independent evidence; SECRET/NORENT cannot be inferred from journal state alone. Dialogue and reward prose do not install a skill, rescue or foreign victory.
 
 Builder declarations should separate temple key/current door state, optional court chamber and actual loaded door state, hidden open drawer→map retrieval/reading, underwater admission/breath/survival and upper-level effect/geometry/fall outcomes. The current no-DOWN fallback and conditional unguarded target-DOWN access need a separately named guard/regression repair preserving travel policy, plus fair intended-geometry review. Twenty-eight owned follow-ups retain exact sources, actor/party reward ownership and completed renewal. Builder exit declarations require a separate raw-label → setup_dir construction → reset/current state qualification: raw5/raw9 are masked to ordinary doors, and D0 adds no secret/blocked flags. Requalify prior raw-only access conclusions where applicable before adding a mandatory reveal or proposing an access repair. New tracking requires active READY accounting; repairs need named fix/news commits with prominent before/after evidence.
+
+
+## Phantasmagoric Caverns integration extension
+
+The [Phantasmagoric dossier](zone-stories/VALDRAK.md) adds a three-source joint return with hidden heart, currency/XP caps and giver retirement. Reuse exact loose preparation plus one acceptance; source combat/reveal/root custody/player transfer, actor cash, frozen recipient XP, save/recovery, follower and D lifecycle need independent outcomes. Ritual/community freedom remains intended narrative until an adapter owns actual operation and restored state.
+
+Builder declarations should separate garden recovery/eating/settled effects, spring operation and sector admission, shop purchase/recipient settlement, exact encounter variants and single-file crossing/return. Raw4 exit labels must be traced through setup_dir and current state before reveal or access objectives. A mixed safe/punctuated dialogue alias must not make the evidence tool silently omit the whole valid family: plan a focused inventory correction retaining exact safe tokens, plus corpus/output qualification; native punctuation/prose repair is a separate builder choice. Thirty owned follow-ups retain these cases. New tracking requires active READY accounting; native repairs need named fix/news commits and prominent before/after evidence.

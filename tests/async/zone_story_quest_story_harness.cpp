@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 201 &&
+		require(catalog.story_mappings.size() == 202 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -23936,6 +23936,94 @@ int main(int argc, char **argv)
 					!recovered.has_discovered(7, 42, 21) &&
 					recovered.progress_for_zone(7, 42, 21).completed == 0,
 				"Vargan II cold/raw recovery lost one return or fabricated a foreign campaign");
+		}
+
+		{
+			const auto &sword = story_for("valdrak", "xolot-three-spider-return");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 531, 53100, 100, "arrival") ==
+					result::applied,
+				"Phantasmagoric discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 531, 10, 1, 101, false, false);
+			require(journal.find(sword.title) == std::string::npos,
+				"Phantasmagoric discovery exposed an unmet Xolot");
+			require(journey.meet_npc(7, 42, 53132, 53190, 102) == result::applied,
+				"Phantasmagoric Gravf encounter failed");
+			journal = journey.render_journal(7, 42, 531, 10, 1, 103, false, false);
+			require(journal.find(sword.title) == std::string::npos,
+				"Phantasmagoric source encounter fabricated the separate giver");
+			require(journey.meet_npc(7, 42, 53156, 53119, 103) == result::applied,
+				"Phantasmagoric merchant encounter failed");
+			journal = journey.render_journal(7, 42, 531, 10, 1, 103, false, false);
+			require(journal.find(sword.title) == std::string::npos,
+				"Phantasmagoric shop forged the separate king request");
+			require(journey.meet_npc(7, 42, 53110, 53150, 104) == result::applied,
+				"Phantasmagoric actual Xolot encounter failed");
+			const auto status = [&](size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    sword.steps[row].text) != std::string::npos;
+			};
+			supplies = {};
+			for (const int vnum : { 8, 53101, 53105, 53106, 53107, 53110, 53113 })
+				supplies.carried[vnum] = 1;
+			supplies.equipped[18] = 53108;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 531, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now") &&
+					status(2, "Missing now"),
+				"Phantasmagoric generic food, optional stock, Raptor or held weapon prepared the bundle");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 531).completed == 0,
+				"Phantasmagoric preparation fabricated durable acceptance");
+			supplies = {};
+			supplies.carried[53108] = 3;
+			journal = journey.render_journal(7, 42, 531, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Missing now") &&
+					status(2, "Missing now") &&
+					journey.serialize_state() == before,
+				"Phantasmagoric duplicate longswords substituted for the distinct claymore or heart");
+			supplies = {};
+			for (const int vnum : { 53108, 53117, 53118 })
+				supplies.carried[vnum] = 1;
+			journal = journey.render_journal(7, 42, 531, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(0, "Ready now") && status(1, "Ready now") &&
+					status(2, "Ready now") &&
+					journal.find("Next: " + sword.steps.back().text) !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Phantasmagoric supplied exact bundle required invented dialogue, source combat, original recovery, purchases or ritual");
+			// Synthetic receipt qualifies projection, not native inputs, cash/XP recipients, SEARCH, retirement or ritual outcomes.
+			record(journey, sword.contracts.front(), "valdrak-three-item-return", 531,
+			       53150);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 531, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(0, "Missing now") && status(1, "Missing now") &&
+					status(2, "Missing now") && status(3, "Recorded") &&
+					journey.progress_for_zone(7, 42, 531).completed == 1 &&
+					journey.progress_for_zone(7, 42, 531).total == 1,
+				"Phantasmagoric spent pieces erased or duplicated the joint return");
+			auto replay = completion(sword.contracts.front(),
+						 "valdrak-three-item-return", 120);
+			replay.transaction.zone_number = 531;
+			replay.transaction.room_vnum = 53150;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Phantasmagoric replay duplicated the accepted bundle");
+			service recovered(catalog), raw(raw_catalog);
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 531).completed == 1 &&
+					recovered.progress_for_zone(7, 42, 531).total == 1 &&
+					raw.progress_for_zone(7, 42, 531).completed == 1 &&
+					!recovered.has_discovered(7, 42, 21) &&
+					recovered.progress_for_zone(7, 42, 21).completed == 0,
+				"Phantasmagoric cold/raw recovery lost one return or fabricated a foreign campaign");
 		}
 
 		std::cout
