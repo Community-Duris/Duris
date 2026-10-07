@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 188 authored journals, accounting-gated player surfaces, starter/town
+**Status: 189 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5129,3 +5129,32 @@ The [complete Thetis dossier](zone-stories/THETIS_REALM.md) maps three independe
 | Fair chest, boundary and item prose | Chest lid/open/broken-lock prose conflicts with current flags29; foreign key/break semantics differ from DIG lore. Review38075 staff-feedback boundary intent and spellbook200 stored capacity versus300-page prose. Preserve topology/rarity while selecting specific repairs. |
 | Designed wider realm episodes | Captive mage/slave, sirens, clams, royal vengeance, queen, purple potion giver, translator crown and turtle help need authored prerequisites/controllers/outcomes or honest prose retirement. No inferred rescue/restore/language/ride achievement. |
 | Played qualification and repair reporting | Play active READY discovery/encounters, first source/gift/loose returns,D1 recovery,returned-map flow,foreign owner226 exchange,doors/chests/keys and underwater/treasure persistence. Any native repair needs its own named fix/news commit and prominent before/after PR treatment. This checkpoint plans changes without native gameplay repair. |
+
+## Azhural: multi-item batches, flight wards and admitted passage
+
+The [complete Azhural dossier](zone-stories/AZHURAL.md) maps two independent story-only exchanges: eight exact bone shards for the entrance key, then one exact essence from each flight for the chromatic talisman. Nine contacts, two MA responses/nine aliases, six optional material rows and two receipts provide eight steps. Two achievements and zero potential dailies remain classified because both givers depart and reset mode is zero. Full local closure covers 89 rooms/216 exits, 26 mobiles, 38 objects and 129 reset commands. All eight shard parents lie outside the bone gate; five ward doors, the talisman gateway, two native ENTER portals and secret ruby-key vault have separate access outcomes. Supplied exact materials fit without personal kill or earlier receipt history. Expand durable source/transfer, batch feedback, learned responses, door/key publication, admitted arrival, group encounter and reward facts under active READY accounting. Review the isolated Malsperanze room, public arrival route, placeholder Tiamat finale, blank scenes and unstocked crown/rewards fairly; any selected native repair requires its own named fix/news commit. No native repair ships here.
+
+## Owned follow-ups and required capability
+
+| # | Owner | Follow-up and acceptance evidence |
+| --- | --- | --- |
+| 1 | Accounting/source runtime | Give O/G/E issuance a durable reset-generation identity; qualify initial boot, forced repop, refusal and cold recovery before advertising live supply. |
+| 2 | Story/source runtime | Record first actual shard or essence acquisition with actor, UID, prototype, source NPC/slot, generation and transfer reason; gifts and source recovery must remain distinguishable. |
+| 3 | Quest/UI runtime | Expose all-eight and all-five batch acceptance clearly; test seven shards, repeated same UID, wrong color, held/nested items, refusal and preserved ownership. Avoid a deposit-progress display without persisted escrow semantics. |
+| 4 | Quest/receipt runtime | Preserve independent actor-owned receipts through accepted reward/departure, replay and cold load; room echo and nearby group members do not share automatic credit. |
+| 5 | Builder/access runtime | Qualify the bone door from supplied key, existing opening and ordinary source route; no personal source-kill prerequisite. |
+| 6 | Builder/access runtime | Map each flight ward to its exact parent and door; record admitted unlock/OPEN/arrival, not possession or key text. |
+| 7 | Builder | Review the white reverse key-zero asymmetry against intended return/reset behavior. If correction is warranted, isolate it as a named route fix with news treatment. |
+| 8 | Accounting/door runtime | Coordinate keyed unlock and key destruction publication/refusal/recovery; the current 100 percent roll does not prove committed consumption. |
+| 9 | Story/combat runtime | Design personal and group consort-defeat credit explicitly, including encounter identity, eligible contributors, death/source ordering and gifts. Do not substitute essence possession for battle success. |
+| 10 | Builder/combat runtime | Qualify actual proc/class/equipment behavior and survival for the five flights; several hidden prototypes are unused or incomplete. Balance decisions belong in separate reviewed changes. |
+| 11 | Quest/access runtime | Represent talisman reward, guardian departure and gateway door as separate outcomes; prose about lowered wings cannot mark an unlocked passage. |
+| 12 | Story/transport runtime | Record admitted ENTER and exact arrival through each portal, including denial, recovery and other actors; current receipt history is not a native portal requirement. |
+| 13 | Builder/world runtime | Establish intended public arrival through historical transport design and live configuration; absence of an ordinary boundary is a source lead, not proof of universal inaccessibility. |
+| 14 | Builder | Decide the purpose of isolated Malsperanze room135283; add an intentional connection/controller or retire unused content only in a separate named fix. |
+| 15 | Builder/encounter runtime | Decide Azhural’s Tiamat finale and replace/retire the explicit placeholder deliberately. A full multi-head encounter requires lifecycle, group credit, rewards and accounting recovery design. |
+| 16 | Builder/reward runtime | Establish the ruby key and vault reward route, exact source loot versus supplied items and native treasure stocking; neither existing receipt completes the finale. |
+| 17 | Builder/relic runtime | Decide intended local source of the crown and other reserved rewards. Record successful crown activation/timer/effect only after source and balance approval; do not auto-stock them. |
+| 18 | Story/dialogue runtime | Add learned-response facts for the two MA blocks with content revision, actor and successful response; nine aliases remain two conversations, and bystander echo is separate. |
+| 19 | Builder/editorial | Review blank rooms, clipped Ynndakaneil response and unused invasion/guardian prototypes fairly. Choose authored completion or honest retirement; publish actual repairs in clearly named fix/news commits. |
+| 20 | Integration/testing | Run played active READY discovery, batch custody/denial, source/gift, departure, gates, portal arrival, consort/queen and reward persistence journeys before promotion; keep blockers and source qualification visible. |

@@ -16,7 +16,7 @@ mapping = next(m for m in catalog["story_mappings"] if m["source_area"] == "twin
 report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
-assert report['mapped_area_count'] == 188 and report['eligible_by_zone']['162'] == 4
+assert report['mapped_area_count'] == 189 and report['eligible_by_zone']['162'] == 4
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']
@@ -433,6 +433,17 @@ for id,weapon in (('vitrius-short-sword',89141),('vitrius-long-sword',89142),('v
 u=[u for u in module.story_units(catalog) if u['zone_number']==890]
 assert len(u)==4 and not any(x['achievement'] or x['daily_candidate'] for x in u)
 
+
+azhural=next(m for m in catalog['story_mappings'] if m['source_area']=='azhural')
+assert (azhural['coverage'],azhural['schema_version'],azhural['revision'])==('complete',3,1) and not azhural['exclusions']
+assert len(azhural['stories'])==2 and len(azhural['contacts'])==9 and sum(len(c['topics']) for c in azhural['contacts'])==9
+assert sum(len(s['steps']) for s in azhural['stories'])==8 and sum(t.get('optional',False) for s in azhural['stories'] for t in s['steps'])==6
+bone,flights=azhural['stories'];assert bone['steps'][0]['count']==8 and bone['steps'][0]['item_vnums']==[135211]
+assert [(t['item_vnums'],t['count']) for t in flights['steps'][:-1]]==[([v],1) for v in range(135201,135206)]
+assert all(len(s['contracts'])==1 and s['steps'][-1]['contracts']==s['contracts'] for s in azhural['stories'])
+assert report['eligible_by_zone']['1352']==2 and not any(d['daily_eligible'] for d in catalog['definitions'] if d['source_area']=='azhural')
+assert {s['id'] for s in azhural['stories']}=={'bone-key-for-the-caverns','essences-for-the-dragonspawn-gateway'}
+assert all(d['daily_exclusion']=='Story-only quest' and not d['repeatable'] for d in catalog['definitions'] if d['source_area']=='azhural')
 
 thetis=next(m for m in catalog['story_mappings'] if m['source_area']=='thetis')
 assert (thetis['coverage'],thetis['schema_version'],thetis['revision'])==('complete',3,1) and not thetis['exclusions']

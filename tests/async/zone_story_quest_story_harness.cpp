@@ -209,7 +209,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 188 &&
+		require(catalog.story_mappings.size() == 189 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -7714,6 +7714,186 @@ int main(int argc, char **argv)
 				require(authored.evidence_for(entry.contracts.front(), 2)
 							.successful_attempts == 1,
 					"Werrun accepted independent receipt lost on reclassification");
+		}
+
+		{
+			const auto &mapping = *std::find_if(catalog.story_mappings.begin(),
+							    catalog.story_mappings.end(),
+							    [](const auto &m)
+							    { return m.source_area == "azhural"; });
+			require(mapping.stories.size() == 2 && mapping.contacts.size() == 9 &&
+					mapping.revision == 1,
+				"Azhural journal scope failed");
+			int achievements = 0, dailies = 0;
+			for (const auto &u : zone_story_quest_catalog::quest_units(catalog))
+				if (u.zone_number == 1352)
+				{
+					achievements += u.achievement;
+					dailies += u.daily_candidate;
+				}
+			require(achievements == 2 && dailies == 0,
+				"Azhural story-only departures entered dailies or changed achievements");
+			const auto &bone = story_for("azhural", "bone-key-for-the-caverns");
+			const auto &flights =
+				story_for("azhural", "essences-for-the-dragonspawn-gateway");
+			require(bone.steps.front().count == 8 && flights.steps.size() == 6,
+				"Azhural eight-shard or five-color checklist collapsed");
+			service journey(catalog);
+			require(journey.meet_npc(7, 42, 135219, 135202, 99) == result::rejected,
+				"Azhural encounter skipped discovery");
+			require(journey.discover_zone(7, 42, 1352, 135201, 100, "arrival") ==
+					result::applied,
+				"Azhural discovery failed");
+			for (const auto &location :
+			     std::vector<std::pair<int, int>>{ { 135212, 135201 },
+							       { 135211, 135207 },
+							       { 135209, 135216 },
+							       { 135208, 135237 },
+							       { 135207, 135249 },
+							       { 135210, 135260 },
+							       { 135206, 135274 } })
+				require(journey.meet_npc(7, 42, location.first, location.second,
+							 101) == result::applied,
+					"Azhural source encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 1352, 10, 1, 102, false, false);
+			for (const auto &story : mapping.stories)
+				require(journal.find("] " + story.title + "\r\n") ==
+						std::string::npos,
+					"Azhural source encounter exposed unseen request giver");
+			require(journey.meet_npc(7, 42, 135219, 135202, 103) == result::applied &&
+					journey.meet_npc(7, 42, 135220, 135221, 103) ==
+						result::applied,
+				"Azhural giver encounter failed");
+			const auto before = journey.serialize_state();
+			supplies = {};
+			for (int v : { 135208, 135210, 135214, 135225, 135226, 135227, 135228,
+				       135229, 135230, 135231, 135232 })
+				supplies.carried[v] = 8;
+			journal = journey.render_journal(7, 42, 1352, 10, 1, 104, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				for (const auto &step : story.steps)
+					require(journal.find((step.kind == "carried_item" ?
+								      "[Missing now] " :
+								      "[Pending] ") +
+							     step.text) != std::string::npos,
+						"Azhural reward/ward/portal/pillar supplied requested materials or receipt");
+			supplies = {};
+			supplies.carried[135211] = 7;
+			journal = journey.render_journal(7, 42, 1352, 10, 1, 105, false, false,
+							 &supplies);
+			require(journal.find("[Missing now] " + bone.steps.front().text) !=
+					std::string::npos,
+				"Azhural seven shards satisfied an eight-shard batch");
+			supplies.carried[135211] = 8;
+			journal = journey.render_journal(7, 42, 1352, 10, 1, 106, false, false,
+							 &supplies);
+			require(journal.find("[Ready now] " + bone.steps.front().text) !=
+						std::string::npos &&
+					journal.find("[Pending] " + bone.steps.back().text) !=
+						std::string::npos,
+				"Azhural exact supplied eight shards missing or minted completion");
+			supplies = {};
+			supplies.carried[135211] = 7;
+			supplies.equipped[18] = 135211;
+			journal = journey.render_journal(7, 42, 1352, 10, 1, 107, false, false,
+							 &supplies);
+			require(journal.find("[Missing now] " + bone.steps.front().text) !=
+					std::string::npos,
+				"Azhural held eighth shard counted as loose");
+			supplies = {};
+			supplies.carried[135201] = 5;
+			journal = journey.render_journal(7, 42, 1352, 10, 1, 108, false, false,
+							 &supplies);
+			for (const auto &step : flights.steps)
+				if (step.kind == "carried_item")
+					require(journal.find((step.item_vnums.front() == 135201 ?
+								      "[Ready now] " :
+								      "[Missing now] ") +
+							     step.text) != std::string::npos,
+						"Azhural duplicate red essences replaced distinct colors");
+			supplies = {};
+			for (int v : { 135201, 135202, 135204, 135205 })
+				supplies.carried[v] = 1;
+			supplies.equipped[18] = 135203;
+			journal = journey.render_journal(7, 42, 1352, 10, 1, 109, false, false,
+							 &supplies);
+			require(journal.find("[Missing now] " + flights.steps[2].text) !=
+					std::string::npos,
+				"Azhural held blue essence counted as loose");
+			supplies.carried[135203] = 1;
+			journal = journey.render_journal(7, 42, 1352, 10, 1, 110, false, false,
+							 &supplies);
+			for (const auto &step : flights.steps)
+				require(journal.find((step.kind == "carried_item" ? "[Ready now] " :
+										    "[Pending] ") +
+						     step.text) != std::string::npos,
+					"Azhural supplied exact colors failed readiness or minted receipt");
+			require(journey.serialize_state() == before &&
+					journey.progress_for_zone(7, 42, 1352).completed == 0,
+				"Azhural custody invented source/battle/gate/completion history");
+			for (const auto &story : mapping.stories)
+				require(!journey.daily_eligible_for(7, 42, story.contracts.front(),
+								    10, 1, 10, 111),
+					"Azhural story-only quest became a daily");
+			record(journey, flights.contracts.front(), "azhural-five-flights", 1352,
+			       135221);
+			supplies = {};
+			supplies.carried[135214] = 1;
+			journal = journey.render_journal(7, 42, 1352, 10, 1, 121, false, false,
+							 &supplies);
+			require(journey.progress_for_zone(7, 42, 1352).completed == 1 &&
+					journal.find("[Recorded] " + flights.steps.back().text) !=
+						std::string::npos &&
+					journal.find("[Pending] " + bone.steps.back().text) !=
+						std::string::npos,
+				"Azhural essence-first receipt imposed bone history or completed independent shard request");
+			for (const auto &step : flights.steps)
+				if (step.kind == "carried_item")
+					require(journal.find("[Missing now] " + step.text) !=
+							std::string::npos,
+						"Azhural talisman recreated consumed essences");
+			record(journey, bone.contracts.front(), "azhural-eight-shards", 1352,
+			       135202);
+			require(journey.progress_for_zone(7, 42, 1352).completed == 2,
+				"Azhural independent accepted batches did not complete two stories");
+			supplies = {};
+			supplies.carried[135211] = 8;
+			for (int v : { 135201, 135202, 135203, 135204, 135205 })
+				supplies.carried[v] = 1;
+			journal = journey.render_journal(7, 42, 1352, 11, 1, 122, false, false,
+							 &supplies);
+			for (const auto &story : mapping.stories)
+				require(journal.find("[Recorded] " + story.steps.back().text) !=
+							std::string::npos &&
+						!journey.daily_eligible_for(7, 42,
+									    story.contracts.front(),
+									    11, 1, 10, 122),
+					"Azhural rollover/reacquisition erased story-only receipt or enabled daily");
+			require(journey.progress_for_zone(7, 42, 1352).completed == 2,
+				"Azhural reacquisition duplicated achievements");
+			auto replay =
+				completion(flights.contracts.front(), "azhural-five-flights", 120);
+			replay.transaction.zone_number = 1352;
+			replay.transaction.room_vnum = 135221;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Azhural accepted five-flight replay duplicated completion");
+			service cold(catalog);
+			require(cold.deserialize_state(journey.serialize_state(), &error) &&
+					cold.progress_for_zone(7, 42, 1352).completed == 2,
+				"Azhural cold recovery lost independent story-only receipts");
+			service raw(raw_catalog);
+			require(raw.discover_zone(7, 42, 1352, 135201, 100, "arrival") ==
+					result::applied,
+				"Azhural raw discovery failed");
+			record(raw, flights.contracts.front(), "azhural-raw-flights", 1352, 135221);
+			service authored(catalog);
+			require(authored.deserialize_state(raw.serialize_state(), &error) &&
+					authored.progress_for_zone(7, 42, 1352).completed == 1 &&
+					!authored.daily_eligible_for(
+						7, 42, flights.contracts.front(), 11, 1, 10, 123),
+				"Azhural raw-to-authored recovery expanded independent credit/daily policy");
 		}
 
 		{

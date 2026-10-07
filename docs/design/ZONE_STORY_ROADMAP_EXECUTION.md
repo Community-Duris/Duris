@@ -251,9 +251,10 @@ Existing completed feature fixes are listed explicitly for the PR/news handoff:
 | 173 | The Stone Tomb of Kelek | [Comprehensive dossier](zone-stories/STONE_TOMB_OF_KELEK.md):3Q/2M/216 rooms/16 mobiles/14 objects/110 resets/full selected closure | Schema3/revision1:3 cards/13 contacts/2 aliases/6 optional singleton rows/9 steps;3 achievements/3 potential dailies | Twenty ownership/source/access/availability/builder follow-ups;no native repair |
 | 174 | Krethik Keep | [Comprehensive dossier](zone-stories/KRETHIK_KEEP.md):3Q/2M/148 rooms/69 mobiles/77 objects/591 resets/full selected closure | Schema3/revision1:3 cards/15 contacts/5 local aliases+1 foreign topic/3 optional singleton rows/6 steps;3 achievements/3 potential dailies | Twenty link/source/access/availability/builder follow-ups;no native repair |
 | 175 | Thetis's Realm | [Comprehensive dossier](zone-stories/THETIS_REALM.md):3Q/2M/100 rooms/38 mobiles/39 objects/243 resets/full selected closure | Schema3/revision1:3 cards/16 contacts/4 aliases/3 optional singleton rows/6 steps;3 achievements/2 potential dailies | Twenty returned-proof/source/access/availability/builder follow-ups;missing104 documented,no native repair |
-| 176–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
+| 176 | The Lair of Tiamat | [Comprehensive dossier](zone-stories/AZHURAL.md):2QA/2MA/89 rooms/26 mobiles/38 objects/129 resets/full selected closure | Schema3/revision1:2 cards/9 contacts/9 aliases/6 optional rows/8 steps;2 achievements/0 potential dailies | Twenty source/batch/access/encounter/builder follow-ups;no native repair |
+| 177–220 | Remaining roadmap | Pending comprehensive review; earlier rough proposals and complete Q classification remain useful evidence | Existing authored maps/native fallback retained | Work through original queue; record each reviewed family and custom dependency |
 
-The next area is The Lair of Tiamat (`azhural`).
+The next area is Quintaragon Castle (`castle`).
 Source and gameplay qualification remain distinct throughout the full queue.
 Do not advance a zone's status merely because the map parses, the Q denominator
 matches, or a candidate item graph was extracted.
@@ -7405,3 +7406,37 @@ The [complete Thetis dossier](zone-stories/THETIS_REALM.md) maps three independe
 Catalog188 journals/1522 achievements/1408 potential dailies/2184 rows. Native2668 definitions/fingerprint/revision2/registry,all187 previous maps and original220 order preserved. Source-comprehensive175/220; 45 pending.
 
 Validation: full production regression, all188 compiled Python/C++ journal journeys, source/schema assertions, changed/staged format and exact preservation passed. Checked9916 local documentation links; all187 previous maps and2668 native definitions unchanged. The maintained Linux server build passed; src is unchanged here. The unchanged full production regression passed on an isolated native Linux filesystem with all6215 selected input files verified by SHA-256 against the worktree before recording the result. All188 compiled journal journeys ran successfully in the worktree on Windows with the maintained native compiler and static cJSON dependency. No played active-accounting discovery, source recovery, singleton return, D1 departure, returned-map UID reissuance, foreign key exchange, door/chest/key breakage, underwater survival or treasure persistence outcome is claimed.
+
+
+## Priority 176 checkpoint: The Lair of Tiamat
+
+The [complete Azhural dossier](zone-stories/AZHURAL.md) maps two independent story-only exchanges: eight exact bone shards for the entrance key, then one exact essence from each flight for the chromatic talisman. Nine contacts, two MA responses/nine aliases, six optional material rows and two receipts provide eight steps. Two achievements and zero potential dailies remain classified because both givers depart and reset mode is zero. Full local closure covers 89 rooms/216 exits, 26 mobiles, 38 objects and 129 reset commands. All eight shard parents lie outside the bone gate; five ward doors, the talisman gateway, two native ENTER portals and secret ruby-key vault have separate access outcomes. Supplied exact materials fit without personal kill or earlier receipt history. Expand durable source/transfer, batch feedback, learned responses, door/key publication, admitted arrival, group encounter and reward facts under active READY accounting. Review the isolated Malsperanze room, public arrival route, placeholder Tiamat finale, blank scenes and unstocked crown/rewards fairly; any selected native repair requires its own named fix/news commit. No native repair ships here.
+
+## Owned follow-ups and required capability
+
+| # | Owner | Follow-up and acceptance evidence |
+| --- | --- | --- |
+| 1 | Accounting/source runtime | Give O/G/E issuance a durable reset-generation identity; qualify initial boot, forced repop, refusal and cold recovery before advertising live supply. |
+| 2 | Story/source runtime | Record first actual shard or essence acquisition with actor, UID, prototype, source NPC/slot, generation and transfer reason; gifts and source recovery must remain distinguishable. |
+| 3 | Quest/UI runtime | Expose all-eight and all-five batch acceptance clearly; test seven shards, repeated same UID, wrong color, held/nested items, refusal and preserved ownership. Avoid a deposit-progress display without persisted escrow semantics. |
+| 4 | Quest/receipt runtime | Preserve independent actor-owned receipts through accepted reward/departure, replay and cold load; room echo and nearby group members do not share automatic credit. |
+| 5 | Builder/access runtime | Qualify the bone door from supplied key, existing opening and ordinary source route; no personal source-kill prerequisite. |
+| 6 | Builder/access runtime | Map each flight ward to its exact parent and door; record admitted unlock/OPEN/arrival, not possession or key text. |
+| 7 | Builder | Review the white reverse key-zero asymmetry against intended return/reset behavior. If correction is warranted, isolate it as a named route fix with news treatment. |
+| 8 | Accounting/door runtime | Coordinate keyed unlock and key destruction publication/refusal/recovery; the current 100 percent roll does not prove committed consumption. |
+| 9 | Story/combat runtime | Design personal and group consort-defeat credit explicitly, including encounter identity, eligible contributors, death/source ordering and gifts. Do not substitute essence possession for battle success. |
+| 10 | Builder/combat runtime | Qualify actual proc/class/equipment behavior and survival for the five flights; several hidden prototypes are unused or incomplete. Balance decisions belong in separate reviewed changes. |
+| 11 | Quest/access runtime | Represent talisman reward, guardian departure and gateway door as separate outcomes; prose about lowered wings cannot mark an unlocked passage. |
+| 12 | Story/transport runtime | Record admitted ENTER and exact arrival through each portal, including denial, recovery and other actors; current receipt history is not a native portal requirement. |
+| 13 | Builder/world runtime | Establish intended public arrival through historical transport design and live configuration; absence of an ordinary boundary is a source lead, not proof of universal inaccessibility. |
+| 14 | Builder | Decide the purpose of isolated Malsperanze room135283; add an intentional connection/controller or retire unused content only in a separate named fix. |
+| 15 | Builder/encounter runtime | Decide Azhural’s Tiamat finale and replace/retire the explicit placeholder deliberately. A full multi-head encounter requires lifecycle, group credit, rewards and accounting recovery design. |
+| 16 | Builder/reward runtime | Establish the ruby key and vault reward route, exact source loot versus supplied items and native treasure stocking; neither existing receipt completes the finale. |
+| 17 | Builder/relic runtime | Decide intended local source of the crown and other reserved rewards. Record successful crown activation/timer/effect only after source and balance approval; do not auto-stock them. |
+| 18 | Story/dialogue runtime | Add learned-response facts for the two MA blocks with content revision, actor and successful response; nine aliases remain two conversations, and bystander echo is separate. |
+| 19 | Builder/editorial | Review blank rooms, clipped Ynndakaneil response and unused invasion/guardian prototypes fairly. Choose authored completion or honest retirement; publish actual repairs in clearly named fix/news commits. |
+| 20 | Integration/testing | Run played active READY discovery, batch custody/denial, source/gift, departure, gates, portal arrival, consort/queen and reward persistence journeys before promotion; keep blockers and source qualification visible. |
+
+Catalog189 journals/1522 achievements/1408 potential dailies/2184 rows. Native2668 definitions/fingerprint/revision2/registry,all188 previous maps and original220 order preserved. Source-comprehensive176/220; 44 pending.
+
+Validation: full production regression, all189 compiled Python/C++ journal journeys, source/schema assertions, changed/staged format and exact preservation passed. Checked9946 local documentation links; all188 previous maps and2668 native definitions unchanged. The maintained Linux server build passed; src is unchanged here. The unchanged full production regression passed on an isolated native Linux filesystem with all6218 selected input files verified by SHA-256 against the worktree before recording the result. All189 compiled journal journeys ran successfully in the worktree on Windows with the maintained native compiler and static cJSON dependency. No played active-accounting discovery, source recovery, eight-shard/five-essence batch custody, giver departure, ward/door/key breakage, portal arrival, consort or queen encounter, crown use or vault persistence outcome is claimed.

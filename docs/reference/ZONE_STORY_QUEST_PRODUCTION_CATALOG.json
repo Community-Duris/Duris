@@ -156961,6 +156961,224 @@
     {
       "contacts": [
         {
+          "description": "At the massive cavern entrance; ask tiamat, gate, entrance, pass or hi. Bring all eight bone shards together for the entrance key; the figure leaves.",
+          "keyword": "shadowy",
+          "mob_vnum": 135219,
+          "name": "a shadowy figure",
+          "topics": [
+            "tiamat",
+            "gate",
+            "entrance",
+            "pass",
+            "hi"
+          ]
+        },
+        {
+          "description": "Bone golems are declared carrying one shard each at the two Pillars of Skulls outside the entrance gate.",
+          "keyword": "golem",
+          "mob_vnum": 135212,
+          "name": "a golem of fused demon bones",
+          "topics": []
+        },
+        {
+          "description": "Dragon-knight protectors before each flight\u2019s lair are declared carrying its ward stone. The ward opens that lair\u2019s locked door.",
+          "keyword": "protector",
+          "mob_vnum": 135211,
+          "name": "a dragon-knight protector",
+          "topics": []
+        },
+        {
+          "description": "The white consort in the center of the frost lair is declared carrying the white flight essence.",
+          "keyword": "zenalithiananthisa",
+          "mob_vnum": 135209,
+          "name": "Zenalithianathisa, the ancient white dragon consort",
+          "topics": []
+        },
+        {
+          "description": "The black consort in the center of the swamp lair is declared carrying the black flight essence.",
+          "keyword": "kalanakanitan",
+          "mob_vnum": 135208,
+          "name": "Kalanakanitan, the ancient black dragon consort",
+          "topics": []
+        },
+        {
+          "description": "The green consort in the center of the forest lair is declared carrying the green flight essence.",
+          "keyword": "xasormalathin",
+          "mob_vnum": 135207,
+          "name": "Xasormalathin, the ancient green dragon consort",
+          "topics": []
+        },
+        {
+          "description": "The blue consort in the center of the rolling dunes is declared holding the blue flight essence.",
+          "keyword": "tenanizeothian",
+          "mob_vnum": 135210,
+          "name": "Tenanizeothian, the ancient blue dragon consort",
+          "topics": []
+        },
+        {
+          "description": "The red consort on the floating magma slab is declared carrying the red flight essence.",
+          "keyword": "ephelemon",
+          "mob_vnum": 135206,
+          "name": "Ephelemon, the ancient red dragon consort",
+          "topics": []
+        },
+        {
+          "description": "Before the Dragonspawn Gateway; ask tiamat, archway, gateway or passage. Bring one exact essence from each flight together for the chromatic talisman; the stone dragon leaves.",
+          "keyword": "ynndakaneil",
+          "mob_vnum": 135220,
+          "name": "the stone dragon Ynndakaneil",
+          "topics": [
+            "tiamat",
+            "archway",
+            "gateway",
+            "passage"
+          ]
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Gather bone shards at the Pillars of Skulls, follow the five dragon flights through their warded lairs and bring their essences to the guardian of the Dragonspawn Gateway.",
+      "orientation": [
+        "The two Pillars of Skulls lie outside the massive entrance to the Azhural Caverns. Bone golems at both pillars are declared carrying the eight shards requested by the shadowy figure at the gate.",
+        "Ask the shadowy figure tiamat, gate, entrance, pass or hi. Carry eight exact bone shards loose together, then offer a shard to submit the set for the fused-bone key. Supplied exact shards fit too; the figure leaves afterward.",
+        "The entrance door uses the fused-bone key. Beyond it, the caverns branch toward five dragon lairs. Dragon-knight protectors before each lair are declared carrying its separate ward stone.",
+        "Follow the icy ward toward the white flight, the acid-etched ward toward the black flight, the vine-covered ward toward the green flight, the sand-blasted ward toward the blue flight and the fiery ward toward the red flight.",
+        "The named consort at the center of each lair is the declared source of that flight\u2019s essence. The blue consort holds its essence; the other four carry theirs. Each exact color is a different required item.",
+        "Ynndakaneil waits before the Dragonspawn Gateway. Ask tiamat, archway, gateway or passage. Carry one exact essence from each flight loose together, then offer an essence to submit all five for the talisman of chromatic allowance.",
+        "A supplied set of essences also fits Ynndakaneil\u2019s request. The stone dragon leaves afterward. The bone-key exchange and the essence exchange each have their own recorded completion.",
+        "The talisman unlocks the gateway door to the Dragonspawn Arches. Open the door, then enter the arches to follow the passage into Avernus. Possessing the talisman and arriving beyond the arches are separate parts of the route.",
+        "The Avernus passage leads toward the throne. Its secret vault door uses a separate ruby-encrusted key declared on the throne\u2019s occupant. A fiery portal in the vault leads back to the cavern entrance.",
+        "The bone key, flight wards, chromatic talisman and ruby key each have a 100 percent break roll after a successful keyed unlock. Use available keys and check the current door state when returning to a route.",
+        "These are story requests with achievement credit. Both givers depart, and this zone has no ordinary automatic replenishment, so neither request is a daily candidate. Source declarations are leads rather than guaranteed live stock.",
+        "New discovery, encounter, journal, achievement and daily credit requires active, ready accounting. Current loose materials show preparation; accepted exchanges remain recorded after their materials and keys are gone."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "azhural",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:135211,I:135211,I:135211,I:135211,I:135211,I:135211,I:135211,I:135211;receive=I:135210;disappear=1",
+              "giver_vnum": 135219
+            }
+          ],
+          "id": "bone-key-for-the-caverns",
+          "steps": [
+            {
+              "count": 8,
+              "hint": "Four bone golems at each of the two Pillars of Skulls are declared carrying one shard each. Supplied exact shards also fit. Seven shards, a pillar or the key does not supply this set.",
+              "id": "material-135211",
+              "item_vnums": [
+                135211
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry eight exact bone shards loose together"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:135211,I:135211,I:135211,I:135211,I:135211,I:135211,I:135211,I:135211;receive=I:135210;disappear=1",
+                  "giver_vnum": 135219
+                }
+              ],
+              "hint": "With all eight distinct shards loose, offer a shard to submit the full set. The accepted key exchange and later unlocking of the entrance are separate outcomes.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Bring eight bone shards to the gatekeeper"
+            }
+          ],
+          "summary": "Exchange eight exact bone shards for the fused-bone entrance key; the shadowy figure leaves.",
+          "title": "Bring eight bone shards to the gatekeeper"
+        },
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:135201,I:135202,I:135203,I:135204,I:135205;receive=I:135214;disappear=1",
+              "giver_vnum": 135220
+            }
+          ],
+          "id": "essences-for-the-dragonspawn-gateway",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The red consort is the declared source. A supplied exact essence also fits. Carry it loose alongside the other four colors before offering any of them.",
+              "id": "material-135201",
+              "item_vnums": [
+                135201
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact red flight essence loose"
+            },
+            {
+              "count": 1,
+              "hint": "The green consort is the declared source. A supplied exact essence also fits. Carry it loose alongside the other four colors before offering any of them.",
+              "id": "material-135202",
+              "item_vnums": [
+                135202
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact green flight essence loose"
+            },
+            {
+              "count": 1,
+              "hint": "The blue consort is the declared source. A supplied exact essence also fits. Carry it loose alongside the other four colors before offering any of them.",
+              "id": "material-135203",
+              "item_vnums": [
+                135203
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact blue flight essence loose"
+            },
+            {
+              "count": 1,
+              "hint": "The black consort is the declared source. A supplied exact essence also fits. Carry it loose alongside the other four colors before offering any of them.",
+              "id": "material-135204",
+              "item_vnums": [
+                135204
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact black flight essence loose"
+            },
+            {
+              "count": 1,
+              "hint": "The white consort is the declared source. A supplied exact essence also fits. Carry it loose alongside the other four colors before offering any of them.",
+              "id": "material-135205",
+              "item_vnums": [
+                135205
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact white flight essence loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:135201,I:135202,I:135203,I:135204,I:135205;receive=I:135214;disappear=1",
+                  "giver_vnum": 135220
+                }
+              ],
+              "hint": "Bring one exact essence of each color together. The accepted exchange records the talisman request; the gateway door and the arches are later parts of the route.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Bring all five flight essences to Ynndakaneil"
+            }
+          ],
+          "summary": "Exchange one exact essence from each dragon flight for the chromatic talisman; the stone dragon leaves.",
+          "title": "Bring all five flight essences to Ynndakaneil"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Bring all four exact scales loose for the elder key. Current source and access gaps remain documented.",
           "keyword": "serpent",
           "mob_vnum": 135402,
