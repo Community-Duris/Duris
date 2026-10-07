@@ -1,5 +1,61 @@
 # Finish accounting implementation plan
 
+## Implementation approach for future RAM authority — 2026-10-07
+
+Apply this guidance to remaining accounting implementation so a later RAM-authority
+conversion can reuse domain rules and prepared effects. Current native authority,
+SQL-first delivery, work order, backend requirements, ownership assignments,
+qualification schedule and release gates remain in force. This guidance adds no
+architecture milestone or claim of completed coverage.
+
+**Forward-only scope.** Finish the current coherent slice before adopting this
+guidance. Apply it to new paths and code already being changed for an existing
+accounting requirement. Preserve completed and qualified slices; do not reopen,
+rename, move or rewrite them solely for architectural consistency. Continue
+repairing defects required by the existing plan, retaining their original proof
+obligations. Record larger extraction opportunities in the existing handoff or
+implementation history and proceed with the required accounting work. If a
+separation introduces substantial extra implementation or qualification, defer
+that separation rather than expanding this milestone.
+
+**Domain preparation.** Where a small local separation fits work already needed,
+keep domain validation, calculations and effect preparation independent of SQL
+access and live game pointers. Reuse existing typed commands, before/after
+mutations, accounting plans and domain adapters. Supply owned state and explicit
+facts from the transaction owner; freeze outcome-defining time, randomness,
+recipients and source identities where existing replay requirements demand it.
+The prepared result should describe the native effects and corresponding
+accounting evidence together. Use those same prepared effects for application
+and verify the actual native effects before commit. Preserve existing per-child,
+batch and compound atomicity boundaries; preparation does not combine previously
+separate operations or authorize a new mutation.
+
+**Native execution remains authoritative.** Keep reads, locks, lifetime and
+capability proofs, source claims, native writes, receipt/outbox handling,
+commit/rollback, replay and durability acknowledgements in the existing native
+transaction owner. A pure preparation result, supplied snapshot or structurally
+valid accounting plan is not authority, an applied-effect proof or a durable
+receipt. Preserve the owner-issued proofs and effect verification. Keep live
+publication after the existing durable boundary, with the original IDs,
+revisions, holds and recovery obligations. Independent audit remains independent
+of mutation/preparation logic.
+
+**Reuse and coordination.** The primary retains Plans 1–4 and shared coordinator,
+contracts, producer integration, writer registry/matrix and activation ownership;
+the second coordinated agent retains Plan 5. Separate future architecture work
+must use an isolated worktree and an agreed operation/file boundary. Submit
+shared interface needs through the primary owner with exact fields, invariants,
+consumers and affected checks; do not independently modify the same owner or
+assume a plan edit has been read by another running agent. Integrate completed
+slices against one identified candidate and retain revision-specific evidence.
+
+RAM execution, interchangeable authority strategies, automatic failover,
+authority switching, a second queue/custody catalog, general framework creation,
+new migrations or wire formats solely for future conversion, and new qualification
+gates are outside this guidance. Existing required changes to those areas remain
+owned by their current plan. Preserve inactive behavior, wallet-root exclusions,
+the declined inactive spell-path change and all current acceptance requirements.
+
 ## Latest literal-capacity recovery result — 2026-10-07
 
 [Qualification and integration](LITERAL_POOL_CAPACITY_RECOVERY_QUALIFICATION_2026-10-07.md)
