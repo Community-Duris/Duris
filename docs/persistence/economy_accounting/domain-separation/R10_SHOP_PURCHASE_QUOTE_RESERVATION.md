@@ -141,6 +141,11 @@ comparison observes charisma100 before number() changes it to0, successful facto
 becomes float.76, later stock cost120 yields int91, current epic.5 discounts45,
 final fee46. This is actual compiler/profile evidence, not a universal language
 operand rule. Keep the native comparison expression together in the provider.
+A separately retained original supplement in domain-shop-og-feasibility-20261007
+also compile/runs the exact same CPP with -Og added to the unchanged component
+recipe; both exits0 and the same46 oracle passes. This tests the maintained
+optimization level without claiming the whole maintained warning/backend recipe
+or a universal language order. The original baseline flags remain mandatory.
 The epic-mutation case keeps previously truncated sale101 while bonus observation
 changes stock/config; odd half discount yields51. Native later reads/captured earlier
 factors are protected without broad snapshots or recapture.
