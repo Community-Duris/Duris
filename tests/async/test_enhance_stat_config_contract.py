@@ -13,7 +13,10 @@ for key in (
     '"enhance_stat.platinum.per.ival"',
 ):
     assert key in source, key
-assert "base_modifier * enhance_stat_cap_multiplier" in source
+assert "enhancement_stat_cap(base_modifier, enhance_stat_cap_multiplier)" in source
+stat_rules = (SRC / "economy/enhancement_stat_rules.h").read_text()
+assert "base_modifier * multiplier" in stat_rules
+assert "cap >= SCHAR_MAX ? SCHAR_MAX : static_cast<int>(cap)" in stat_rules
 assert "enhancement_prepare_superior_price(itemvalue(source), enhance_stat_platinum_base," in source
 assert "enhance_stat_platinum_per_ival, &cost)" in source
 prices = (SRC / "economy/enhancement_price.h").read_text()

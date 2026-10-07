@@ -21,6 +21,7 @@
 #include "magic/spells.h"
 #include "core/structs.h"
 #include "core/utils.h"
+#include "economy/enhancement_stat_rules.h"
 #include "item/enhance.h"
 #include "economy/enhancement_price.h"
 #include "economy/tradeskill.h"
@@ -403,11 +404,7 @@ static int enhance_entry_modifier(const struct enhance_index_entry *entry, int a
 /* A superior stat must fit its persisted signed-byte modifier. */
 static int enhance_stat_cap(int base_modifier)
 {
-	if (base_modifier <= 0 || !std::isfinite(enhance_stat_cap_multiplier) ||
-	    enhance_stat_cap_multiplier <= 0.0)
-		return 0;
-	const double cap = base_modifier * enhance_stat_cap_multiplier;
-	return cap >= SCHAR_MAX ? SCHAR_MAX : static_cast<int>(cap);
+	return enhancement_stat_cap(base_modifier, enhance_stat_cap_multiplier);
 }
 
 /* Find the deterministic next template: exact stat value, compatible wear slot, lowest vnum. */
