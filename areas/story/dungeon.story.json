@@ -1,0 +1,322 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "dungeon",
+  "coverage": "complete",
+  "introduction": "Explore Treasure Caves, recover the thief’s brass figurine and follow the separate cave, dragon and household story leads.",
+  "orientation": [
+    "Explore Treasure Caves from the forest trail or the Underdark approach. Discovery follows your actual arrival; meeting the thief reveals his request.",
+    "The loose vines at the dead end can be targeted even though they are hidden from the room item listing. PULL vines clears the downward obstruction. Opening the door and crossing are separate actions.",
+    "Meet the thief in the Strange Library and ask hi, hello, hail, help or quest. These five aliases share one addressed response, rather than five separate achievements.",
+    "The thief wants his small brass tiger figurine. Bring the exact item loose in your inventory for coins. An exact copy supplied by another player also fits; the native return does not require a remembered greeting, personal kill or first recovery.",
+    "The figurine is declared inside the large iron chest in the ogre chief’s home. The chief carries the iron key; the chest is locked and pickproof. Current key custody, unlocking, opening and recovering the figurine are distinct from an accepted turn-in.",
+    "The thief’s dialogue points near the Red Dragon’s lair, while the declared chest is in the ogre chief’s home. The intended location hint needs builder review. The dragons are not required by the native figurine return.",
+    "The library scroll, torn map and signs are room clues. Their wording does not create carried items, quest receipts or mandatory search steps.",
+    "The lizard king carries a blue shortsword with a timed armor effect when wielded. Speaking armor, obtaining the sword and receiving the actual effect are separate from returning the figurine.",
+    "The dragon hoard is scenery rather than a container of collectible gems. Two different red dragon prototypes share the lair; encounter, defeat, equipment recovery and accepted quests remain separate outcomes.",
+    "The ladder and mountain route include real falling controls. Flight, climbing, mounts and the admitted landing matter; surviving a route is different from merely entering a room or reading danger text.",
+    "The chief’s shelf contains murky green potions configured to remove poison. The shelf description calls them poisonous, so the intended wording and effect need builder review before a cure story is promised.",
+    "The stolen necklace, captive goblins, ogre household and troll’s wish to return to Ghore suggest wider stories. Builders must define assistance, recipients, safe destinations and lasting choices before these become tracked objectives.",
+    "New journal tracking requires active READY accounting. Daily replay remains disabled until accountable source generations, the coin reward, saves, replay and renewed availability are qualified."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 93000,
+      "name": "the black crow",
+      "keyword": "crow",
+      "description": "This contact is stocked around A Strange Entranceway. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93001,
+      "name": "the thief",
+      "keyword": "thief",
+      "description": "The thief requests the brass tiger figurine in the Strange Library. Its declared source is the chief’s chest; the dialogue’s dragon-lair hint needs review. Five aliases share one response, and an exact supplied figurine fits the native return.",
+      "topics": [
+        "hi",
+        "hello",
+        "hail",
+        "help",
+        "quest"
+      ]
+    },
+    {
+      "mob_vnum": 93002,
+      "name": "the sickly green goblin",
+      "keyword": "goblin",
+      "description": "This contact is stocked around A Guards Barrack, Down a Dark Hall, Down a Dark Tunnel. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93003,
+      "name": "a small rat",
+      "keyword": "rat",
+      "description": "This contact is stocked around A Dark Corridor, A Small Tunnel, Down a Dark Tunnel, In a Strange Den, The Acid Worms Lair, The Leader's Lair. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93004,
+      "name": "a goblin guard",
+      "keyword": "goblin",
+      "description": "This contact is stocked around A Cave Junction, A Dark Corridor, An Intersection in the Caves. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93005,
+      "name": "the goblin leader",
+      "keyword": "goblin",
+      "description": "The goblin leader shares a room with slaves. An assistance or liberation story needs explicit agency, beneficiaries and safe departure; meeting or defeating the leader does not establish a rescue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93006,
+      "name": "a goblin slave",
+      "keyword": "goblin",
+      "description": "These goblin slaves suggest a liberation story. Define their choice, actual departure, safe destination and lasting result before awarding rescue progress.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93007,
+      "name": "the goblin acolyte",
+      "keyword": "goblin",
+      "description": "This contact is stocked around Meeting Room. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93008,
+      "name": "the acid worm",
+      "keyword": "acid",
+      "description": "The acid worm and cave ecology suggest investigation or restoration. Actual combat, effects and recovery differ from the room’s acid and cave-in descriptions.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93009,
+      "name": "an inexperienced goblin guard",
+      "keyword": "inexperienced",
+      "description": "This contact is stocked around A Dark Corridor, A Guards Barrack, A Guards Barracks, Down a Dark Hall, In a Dark Corridor. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93010,
+      "name": "an elite goblin guard",
+      "keyword": "elite",
+      "description": "This contact is stocked around A Guards Barracks, A Passageway, The Goblin Homes. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93011,
+      "name": "a small goblin child",
+      "keyword": "goblin",
+      "description": "This contact is stocked around A Goblin Abode. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93012,
+      "name": "a female goblin",
+      "keyword": "female",
+      "description": "This contact is stocked around A Goblin Abode. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93013,
+      "name": "a goblin baby",
+      "keyword": "goblin",
+      "description": "This contact is stocked around A Goblin Abode. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93014,
+      "name": "a tough male goblin",
+      "keyword": "tough",
+      "description": "This contact is stocked around A Goblin Abode. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93015,
+      "name": "a vicious lizardman",
+      "keyword": "lizard",
+      "description": "Lizardmen occupy the local caves and are also stocked in Tharnadian Ruins. The thief’s stolen-necklace story needs an intended item and restitution outcome; an encounter or kill does not record diplomacy.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93016,
+      "name": "the lizard king",
+      "keyword": "king",
+      "description": "The lizard king carries the blue shortsword. Its wielded armor effect is separate from the thief’s figurine return and any future necklace restitution.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93017,
+      "name": "the red dragon",
+      "keyword": "dragon",
+      "description": "This red dragon carries gem-studded dragon hide in the lair. A second red dragon has a different prototype. The hoard is scenery, and neither dragon is a native figurine prerequisite.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93018,
+      "name": "some green slime",
+      "keyword": "slime",
+      "description": "This contact is stocked around A Cave Junction, A Small Path, Down the Stairs, Entrance to a Stairway, On a Wall. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93019,
+      "name": "an ogre sentinel",
+      "keyword": "ogre",
+      "description": "This contact is stocked around A Guard Post. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93020,
+      "name": "the ogre chief",
+      "keyword": "ogre",
+      "description": "The ogre chief carries the iron key in his home. It opens the pickproof chest containing the figurine; the shelf and chieftess are independent leads. Key recovery is different from accepting the thief’s return.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93021,
+      "name": "an ogre boy",
+      "keyword": "ogre",
+      "description": "This contact is stocked around An Ogre Home. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93022,
+      "name": "a female ogre",
+      "keyword": "ogre",
+      "description": "This contact is stocked around An Ogre Home. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93023,
+      "name": "an ogre male",
+      "keyword": "ogre",
+      "description": "This contact is stocked around An Ogre Home. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93024,
+      "name": "a crazed ogre",
+      "keyword": "ogre",
+      "description": "This contact is stocked around The Ogre Homes. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93025,
+      "name": "a small bat",
+      "keyword": "bat",
+      "description": "This contact is stocked around A Cave Junction, A Corridor, An Intersection in the Caves, At the Bottom of the Ladder, Entrance to a Small Tunnel, Entrance to a Stairway, Entrance to the Ogres Homes, In a Strange Den, Meeting Room, On The Stairs, The Leader's Lair, The Ogre Homes, Up the Stairs. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93026,
+      "name": "an ogre acolyte",
+      "keyword": "acolyte",
+      "description": "This contact is stocked around An Ogre Home. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93027,
+      "name": "the ogre chieftess",
+      "keyword": "chieftess",
+      "description": "The ogre chieftess shares the chief’s home. Any assistance, escape or household choice needs her agency, defined recipients and an admitted lasting result.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93028,
+      "name": "a massive underground lizard",
+      "keyword": "lizard",
+      "description": "This contact is stocked around A Cave Junction, A Small Path, End of a Corridor. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93029,
+      "name": "a huge guard",
+      "keyword": "guard",
+      "description": "This contact is stocked around A Small Tunnel, Meeting Room. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93030,
+      "name": "a massive warg",
+      "keyword": "warg",
+      "description": "Wargs are stocked independently and as ridden mounts. Actor, rider and contribution identities matter for encounters and falls; mounting or defeating one does not complete the figurine request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93031,
+      "name": "a huge troll",
+      "keyword": "troll",
+      "description": "The troll wants to return to Ghore in his description. A builder must define his consent, escort admission, actual destination and safe arrival before this is a tracked return story.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93032,
+      "name": "a huge ogre warrior",
+      "keyword": "ogre",
+      "description": "This contact is stocked around The Ogre Homes. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93033,
+      "name": "some red slime",
+      "keyword": "slime",
+      "description": "This contact is stocked around A Cave Junction, A Small Path. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93034,
+      "name": "the red dragon",
+      "keyword": "dragon",
+      "description": "This second red dragon shares the lair but has a different prototype. Preserve exact encounter and contribution identities; dragon defeat does not certify figurine recovery or the thief’s acceptance.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 93035,
+      "name": "a small bat",
+      "keyword": "bat",
+      "description": "This contact is stocked around A Mountain Pass, A Path on the Mountains, The Summit. Meeting this contact is separate from a kill, recovery, assistance or a lasting story outcome.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "thief-brass-figurine",
+      "title": "Return the thief’s brass tiger figurine",
+      "category": "request",
+      "summary": "Offer the exact figurine for coins. Current materials and accepted history are separate; recovering the chief’s key or defeating a dragon cannot create the turn-in receipt.",
+      "contracts": [
+        {
+          "giver_vnum": 93001,
+          "completion_key": "give=I:93006;receive=C:10000;disappear=0"
+        }
+      ],
+      "steps": [
+        {
+          "id": "figurine",
+          "text": "Carry the exact brass tiger figurine loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            93006
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The declared source is the chief’s pickproof iron chest, opened with his iron key. An exact supplied copy also fits. This row shows current materials and does not certify personal recovery or a kill."
+        },
+        {
+          "id": "return",
+          "text": "Record the thief’s accepted figurine return",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 93001,
+              "completion_key": "give=I:93006;receive=C:10000;disappear=0"
+            }
+          ],
+          "hint": "Offer the exact loose figurine to the thief in the Strange Library. The accepted receipt records the coin reward. Key or sword custody, coin balance, dialogue and opening the chest cannot create this receipt."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

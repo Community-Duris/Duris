@@ -269,3 +269,8 @@ The [dossier](../design/zone-stories/ARCIUM.md) preserves one native achievement
 ## Future Ceothia daily qualification
 
 The [dossier](../design/zone-stories/FUTURE_CEOTHIA.md) preserves one achievement and one potential daily. Empty-only mode1/lifespan40..50 and cap1 keys/devices do not prove renewed accountable sources. The requested vial has no explicit selected-source producer, and active authority guards native O/P/G/E construction. Qualify exact source/transfer/custody, giver generation, mixed key/currency/save/retirement/replay and completed renewal before activation. New tracking requires active READY accounting; frozen committed recovery is separate and daily policy remains disabled.
+
+
+## Treasure Caves daily qualification
+
+The [dossier](../design/zone-stories/TREASURE_CAVES.md) preserves one achievement and one potential daily. Mode2/lifespan10..12 and cap1 chest/key/figurine/vines do not prove accountable renewal. Active authority guards native O/P/G/E construction. Qualify source generation, root/parent/custody/transfer, persistent giver, actual coin operation/recipient/save/replay and completed replenishment before activation. New tracking requires active READY accounting; frozen committed recovery is separate and daily policy remains disabled.

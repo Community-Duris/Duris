@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 209 authored journals, accounting-gated player surfaces, starter/town
+**Status: 210 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5361,3 +5361,8 @@ The [dossier](zone-stories/ARCIUM.md) maps the six distinct hearts as one joint 
 ## Future Ceothia integration extension
 
 The [dossier](zone-stories/FUTURE_CEOTHIA.md) maps one exact vial request with optional current custody and one accepted key/coin receipt. Forty-two owned follow-ups cover the missing selected-source producer, potion versus departure semantics, three keys and time arrivals, rare loader admission, native stone results, foreign horn/thread ownership, equipment effects and builder-defined rescue/timeline outcomes. Schema3 covers the native request; broader source/contribution/recipient/lasting-state results need admitted adapters with real callers. New tracking requires active READY accounting; daily policy remains disabled. Actual repairs use separate named fix/news commits.
+
+
+## Treasure Caves integration extension
+
+The [dossier](zone-stories/TREASURE_CAVES.md) maps one exact figurine request with optional current custody and one accepted coin receipt. Forty owned follow-ups cover keyed pickproof containers, NOSHOW switches, original-source versus transfer history, actual falling/equipment/cure results, shared stock, builder-defined agency/escort/ecology and accountable renewal. Existing schema3 covers the native request; broader admitted control/source/recipient/lasting-state endpoints require actual callers and builder choices. New tracking requires active READY accounting; daily policy remains disabled. Actual repairs use separate named fix/news commits.

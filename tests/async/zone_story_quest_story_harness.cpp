@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 209 &&
+		require(catalog.story_mappings.size() == 210 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -24859,6 +24859,103 @@ int main(int argc, char **argv)
 							   &supplies);
 			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
 				"Future Ceothia absent reward or consumed input changed recovered acceptance");
+		}
+
+		{
+			const auto &figurine = story_for("dungeon", "thief-brass-figurine");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 93001, 93006, 100) == result::rejected,
+				"Treasure Caves contact ignored undiscovered physical zone");
+			require(journey.discover_zone(7, 42, 930, 93115, 101, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 930, 10, 1, 102, false, false)
+							.find(figurine.title) ==
+						std::string::npos &&
+					journey.meet_npc(7, 42, 93001, 93006, 103) ==
+						result::applied,
+				"Treasure Caves discovery exposed request before thief encounter");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    figurine.steps[row].text) != std::string::npos;
+			};
+			for (unsigned custody = 0; custody < 6; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[93016] = 1;
+				if (custody == 2)
+					supplies.carried[93009] = 1;
+				if (custody == 3)
+					supplies.equipped[18] = 93006;
+				if (custody == 4)
+					supplies.carried[93007] = 1;
+				if (custody == 5)
+					supplies.carried[93008] = 1;
+				const auto journal = journey.render_journal(
+					7, 42, 930, 10, 1, 104, false, false, &supplies);
+				require(status(journal, 0, "Missing now") &&
+						!status(journal, 1, "Recorded") &&
+						journey.progress_for_zone(7, 42, 930).completed ==
+							0 &&
+						journey.serialize_state() == before,
+					"Treasure Caves key, chest, held input, sword or hoard forged preparation or acceptance");
+			}
+			supplies = {};
+			supplies.carried[93006] = 1;
+			auto journal = journey.render_journal(7, 42, 930, 10, 1, 105, false, false,
+							      &supplies);
+			require(status(journal, 0, "Ready now") &&
+					!status(journal, 1, "Recorded") &&
+					journal.find("Next: " + figurine.steps.back().text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 930).completed == 0 &&
+					journey.serialize_state() == before,
+				"Treasure Caves supplied exact figurine required source history or forged accepted exchange");
+			// Synthetic committed receipt qualifies projection, not live source or reward settlement.
+			record(journey, figurine.contracts.front(), "dungeon-figurine-offering",
+			       930, 93006);
+			supplies = {};
+			supplies.carried[93016] = 1;
+			journal = journey.render_journal(7, 42, 930, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(journal, 1, "Recorded") &&
+					status(journal, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 930).completed == 1 &&
+					journey.progress_for_zone(7, 42, 360).completed == 0 &&
+					!journey.has_discovered(7, 42, 360) &&
+					journey.progress_for_zone(7, 42, 7000).completed == 0 &&
+					!journey.has_discovered(7, 42, 7000),
+				"Treasure Caves spent figurine erased receipt or invented forest/Underdark arrival and foreign acceptance");
+			require(supplied.discover_zone(7, 42, 930, 93115, 101, "arrival") ==
+					result::applied,
+				"Treasure Caves supplied-return setup failed");
+			record(supplied, figurine.contracts.front(), "dungeon-supplied-offering",
+			       930, 93006);
+			require(supplied.progress_for_zone(7, 42, 930).completed == 1,
+				"Treasure Caves acceptance required remembered greeting, hunt or foreign quest receipt");
+			auto replay = completion(figurine.contracts.front(),
+						 "dungeon-figurine-offering", 120);
+			replay.transaction.zone_number = 930;
+			replay.transaction.room_vnum = 93006;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Treasure Caves replay duplicated the accepted exchange");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 930).completed == 1 &&
+					raw.progress_for_zone(7, 42, 930).completed == 1 &&
+					!recovered.has_discovered(7, 42, 360) &&
+					!recovered.has_discovered(7, 42, 7000),
+				"Treasure Caves mapped/raw recovery lost acceptance or invented foreign zone discovery");
+			supplies = {};
+			journal = recovered.render_journal(7, 42, 930, 10, 1, 122, false, false,
+							   &supplies);
+			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
+				"Treasure Caves absent reward or consumed input changed recovered acceptance");
 		}
 
 		std::cout
