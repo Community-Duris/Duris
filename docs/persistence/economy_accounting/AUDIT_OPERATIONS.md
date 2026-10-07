@@ -174,6 +174,61 @@ findings. Local cursor target binding is not a database incarnation or trusted
 capture seal. Checkpoint reuse after restore cannot establish historical
 coverage, native authority, activation or release readiness.
 
+Add `--all-namespaces` with `--progress-path` to rotate through one bounded
+root, baseline-control or baseline-reservation page per invocation. The order
+is roots, controls, reservations, then roots again; even a large root history
+cannot postpone the other two namespaces. `--page-roots 1..2` bounds candidate
+records in the selected namespace. The same read-only transaction, rollback,
+projection/query/byte/time bounds, private lock and atomic checkpoint apply.
+
+```sh
+python3 scripts/economic_sql_canonical_audit.py \
+  --host 127.0.0.1 --user accounting_audit --database duris \
+  --password-env ACCOUNTING_AUDIT_PASSWORD \
+  --progress-path /protected/audit/all-canonical-progress.json \
+  --page-roots 2 --all-namespaces
+```
+
+This mode writes `economic_sql_canonical_progress_v2`. Each namespace keeps
+its own cursor, pinned ceiling, counters, ages and sticky findings. Selecting
+it with an existing valid v1 checkpoint preserves the complete root progress
+and starts the other namespaces from their beginning. After that explicit
+upgrade, root-only mode refuses the v2 file. A v2 checkpoint must not be copied
+between database targets or interpreted as a database incarnation seal.
+
+Controls use `(lineage,epoch)` and reservations use
+`(lineage,epoch,identity_kind,identity_id)` from their existing primary indexes.
+Binary identities use fixed lowercase hex; numeric key parts use fixed-width
+unsigned big-endian hex in private progress, preserving SQL key order through
+UINT64_MAX. Incompatible signed/noninteger reservation-key storage refuses
+before range capture. Zero scheduling keys remain enumerable so corrupt rows can produce
+findings. Expanded lexicographic seeks and one extra candidate bound each
+page without whole-table aggregation. Each finite range finishes before its
+namespace starts again, making delayed lower keys eligible on the next pass.
+
+Control pages check lifecycle/creator/opening identity, legitimate empty
+revision0 books, and bounded first/terminal/overrun witness references. A bad
+control reports `restore_economic_baseline_book_mismatch`. Reservation pages
+check identity and retained witness/control/root/lifecycle attachment; an
+orphan reports `restore_economic_baseline_reservation_mismatch`. Exact original
+witness membership and interior book continuity remain the existing root
+reader's checks. The namespace pages do not repeatedly decode whole capsules
+for every reservation, and they never repair an observation.
+
+The v2 page report identifies the selected and next namespace and supplies
+aggregate counters and ages for all three. Its completed-sweep count is the
+minimum of their individual counts; it describes separate historical passes,
+not one consistent authority cut. At most32 findings per namespace are retained
+privately, with sticky truncation. Status1 reflects findings anywhere in the
+checkpoint, including on a later clean page. Budget/refusal failures leave
+the checkpoint and rotation unchanged. Routine output excludes private keys.
+The backlog lower bound belongs only to the selected page. All complete native,
+receipt, allocation, orphan, activation and release authority remains unproven;
+`complete`, `consistent_entire_sweep` and `release_qualified` stay false.
+Other retained/native namespaces, flatfile resumability, full quiescent
+comparison and release-host performance remain separate gates. See
+[the composite namespace qualification](PLAN5_SQL_COMPOSITE_SWEEP_QUALIFICATION_2026-10-06.md).
+
 Every non-exception view includes the whole audited input's `coverage` object:
 `lineage`, `selected_epoch`, `complete`, `quiescent`, and `exception_count`.
 This includes unfiltered holdings, supply, prices, routes and provenance. The

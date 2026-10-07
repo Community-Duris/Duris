@@ -698,3 +698,36 @@ the nonblocking primary-local notebook curator packet, without message,
 acknowledgement or integration claim. All earlier branch work stays preserved;
 maintained accounting stays inactive and original synthetic recovery activation
 is disclosed.
+
+
+## Fair composite-key SQL sweep continuation — 2026-10-06
+
+All new work and follow-ups to earlier branches remain on remote
+`codex/accounting-plan5`, at the same separate worktree. Base `9328c5c3f6974a92f02c9ec23ab6f53fe92dafd9`;
+result and exact remote publication are bound by
+`composite-sweep-delivery-01-20261006/delivery.json`. Seven earlier tips remain
+ancestors; no history is rewritten and no independent experimental-accounting
+push occurs. [The exact qualification](PLAN5_SQL_COMPOSITE_SWEEP_QUALIFICATION_2026-10-06.md)
+adds explicit fair root/control/reservation pages with durable v2 progress,
+while keeping default v1 root consumers compatible and all release authority false.
+
+All117 final Linux methods pass, zero skips, on archive
+`8c8627ec8b4a3e5dd557237c936c7c15bdeaf8cc9480d3162a73dfea0fbeb1ed`. Native/migration trees remain
+`4abb609524a1f1682ea4c190f82d75003c4d679b` / `1d041c8bc27cfc2b2bfdc8095b6c1348ac3a15c5`, fresh canonical0062.
+Both disposable engines prove specific unattached namespace findings, durable
+late-key resume, PRIMARY seeks, SELECT-only inventory preservation and refusals.
+The prior2 GiB fixture-storage failure remains sealed; final fixture storage is
+3 GiB under the unchanged4 GiB memory cap and original native/read budgets.
+Windows112 selected methods have four Linux-covered skips; release validator
+still refuses missing executable writer evidence. No shared code/schema,
+registry/matrix or central manifest edit is requested.
+
+Latest primary `eefb96d1b7f8a7184a765b72dcd15b2b00e11781` and its auction source-claim
+qualification/checkpoint were read. Its newer shared native tree is not
+imported or independently qualified here. Primary integration must preserve
+the predecessor independent reader APIs and qualify its eventual combined
+candidate. Report, follow-up, source seal SHA256 `a3badb088eac9feff52330b6ceb62987ea44343eff8d00d0da6f4621a58b3f25` and delivery receipt
+are the curator packet for primary's nonblocking local notebook; application
+or acknowledgement is not claimed. Full R6/R7, flatfile/native/receipt coverage,
+actual producer/publication/recovery, retention and release-host budgets remain
+open. Inactive behavior, wallet-root exclusions and the declined spell path stay.

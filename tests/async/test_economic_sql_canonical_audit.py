@@ -1265,9 +1265,390 @@ class CanonicalSweepTests(unittest.TestCase):
                 self.assertEqual(audit.load_progress(path, 'ab'*32, now=101), audit.new_progress('ab'*32, 100))
 
 
+class CompositeSweepTests(unittest.TestCase):
+    """Scheduling models; original SQL predicates are exercised on both engines."""
+
+    def page(self, namespace, keys, state=None, *, now=101, bad=(), refuse=False, unsigned=True):
+        state = audit.new_all_progress('ab'*32, 100) if state is None else state
+        state = copy.deepcopy(state)
+        state['next_namespace'] = namespace
+        previous = copy.deepcopy(state)
+        executor = mock.Mock(queries=0, bytes=0)
+        queries = []
+        def read(query):
+            queries.append(query)
+            executor.queries += 1
+            if refuse and 'SELECT EXISTS(' in query:
+                raise audit.PageBudgetError('test original page budget')
+            if 'information_schema.tables' in query:
+                return str(len(audit.ROOT_SOURCES))
+            if 'information_schema.columns' in query:
+                if 'column_type' in query:
+                    return '2' if unsigned else '1'
+                return '0'
+            return '1' if any(key[:32] in query and key[32:64] in query for key in bad) else '0'
+        executor.sql.side_effect = read
+        def candidates(executor, namespace, *, after=None, ceiling=None, limit=1):
+            return max(keys, default='') if after is None else [key for key in sorted(keys)
+                if after < key <= ceiling][:limit]
+        connection = mock.Mock()
+        with mock.patch.object(audit, 'CursorExecutor', return_value=executor), \
+                mock.patch.object(audit, 'composite_candidates', side_effect=candidates):
+            try:
+                result = audit.scan_all_page(connection, state, page_roots=1, now=now)
+            finally:
+                self.assertEqual(state, previous)
+                connection.rollback.assert_called_once_with()
+                connection.cursor.return_value.close.assert_called_once_with()
+        return *result, queries
+
+    def test_standalone_control_and_orphan_reservation_findings(self):
+        for namespace, key, code in (('controls', '81'*16+'82'*16, 'baseline_book'),
+                ('reservations', '81'*16+'82'*16+'02'+format(91, '016x'), 'baseline_reservation')):
+            with self.subTest(namespace=namespace):
+                report, state, queries = self.page(namespace, [key], bad=[key])
+                self.assertEqual(report['findings'], [{'code':'restore_economic_'+code+'_mismatch'}])
+                self.assertEqual(state['namespaces'][namespace]['findings'][0]['key'], key)
+                self.assertEqual(report['namespace'], namespace)
+                self.assertNotIn(key[:32], json.dumps(report))
+                self.assertFalse(report['coverage']['complete'])
+                self.assertFalse(report['release_qualified'])
+                self.assertTrue(all(query.startswith('SELECT ') for query in queries))
+
+    def test_delayed_lower_composite_key_revisited_after_pinned_ceiling(self):
+        for namespace, suffix in (('controls',''), ('reservations','02'+format(91,'016x'))):
+            low, first, last, tail = [format(value,'032x')+'82'*16+suffix for value in (1,2,4,5)]
+            keys = [first,last]
+            report, state, _ = self.page(namespace, keys)
+            self.assertEqual(state['namespaces'][namespace]['cursor'], first)
+            self.assertEqual(state['namespaces'][namespace]['ceiling'], last)
+            with tempfile.TemporaryDirectory() as directory:
+                path = Path(directory)/'all-progress.json'
+                audit.save_progress(path,state)
+                state = audit.load_progress(path,'ab'*32,all_namespaces=True,now=102)
+                keys.extend((low,tail))
+                report,state,_ = self.page(namespace,keys,state,now=103,bad=[low])
+                self.assertTrue(report['range_exhausted'])
+                self.assertEqual(state['namespaces'][namespace]['completed_sweeps'],1)
+                report,state,_ = self.page(namespace,keys,state,now=104,bad=[low])
+                self.assertEqual(state['namespaces'][namespace]['cursor'],low)
+                self.assertEqual(report['retained_finding_count'],1)
+                report,state,_ = self.page(namespace,keys,state,now=105)
+                self.assertEqual(report['retained_finding_count'],1)
+
+    def test_round_robin_preserves_root_resume_and_sticky_findings(self):
+        root = audit.new_progress('ab'*32,100)
+        root.update(cursor='82'*16,ceiling='84'*16,total_rows=1,sweep_rows=1,
+                    sweep_findings=1,total_findings=1,
+                    findings=[dict(operation_id='82'*16,code='restore_economic_metadata_mismatch')])
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'progress.json'
+            audit.save_progress(path,root)
+            state = audit.load_progress(path,'ab'*32,all_namespaces=True,now=101)
+            self.assertEqual(state['namespaces']['roots'],root)
+            order = []
+            for index in range(9):
+                namespace = state['next_namespace']
+                order.append(namespace)
+                if namespace == 'roots':
+                    old = copy.deepcopy(state['namespaces']['roots'])
+                    advanced = copy.deepcopy(old)
+                    advanced['last_page_at'] = 102+index
+                    with mock.patch.object(audit,'scan_page',return_value=(dict(findings=[],
+                            range_exhausted=False,queries=1,read_bytes=0,seconds=0,
+                            coverage=dict(complete=False),read_only=True,release_qualified=False),advanced)) as scan:
+                        report,state = audit.scan_all_page(mock.Mock(),state,page_roots=1,now=102+index)
+                    scan.assert_called_once()
+                    self.assertEqual(scan.call_args.args[1],old)
+                else:
+                    report,state,_ = self.page(namespace,[],state,now=102+index)
+                self.assertEqual(report['retained_finding_count'],1)
+                self.assertFalse(report['coverage']['consistent_entire_sweep'])
+                audit.save_progress(path,state)
+                state = audit.load_progress(path,'ab'*32,all_namespaces=True,now=103+index)
+            self.assertEqual(order,['roots','controls','reservations']*3)
+            self.assertEqual(state['namespaces']['controls']['completed_sweeps'],3)
+            self.assertEqual(state['namespaces']['reservations']['completed_sweeps'],3)
+
+    def test_composite_budget_refusal_does_not_advance_checkpoint(self):
+        for namespace, suffix in (('controls',''),('reservations','02'+format(91,'016x'))):
+            state = audit.new_all_progress('ab'*32,100)
+            state['next_namespace'] = namespace
+            before = copy.deepcopy(state)
+            with self.subTest(namespace=namespace), self.assertRaises(audit.PageBudgetError):
+                self.page(namespace,['81'*16+'82'*16+suffix],state,refuse=True)
+            self.assertEqual(state,before)
+
+    def test_all_progress_refuses_aliases_foreign_modes_and_invalid_keys(self):
+        state = audit.new_all_progress('ab'*32,100)
+        for mutate in (lambda value: value.update(next_namespace='unknown'),
+                lambda value: value['namespaces'].pop('controls'),
+                lambda value: value['namespaces']['controls'].update(completed_sweeps=True),
+                lambda value: value['namespaces']['reservations'].update(cursor='ff'*41,ceiling='00'*41),
+                lambda value: value['namespaces']['controls'].update(cursor='00'*33,ceiling='ff'*32),
+                lambda value: value['namespaces']['controls'].update(findings=[dict(key='ff'*32,
+                    code='restore_economic_baseline_book_mismatch',operation_id='ff'*16)])):
+            damaged = copy.deepcopy(state)
+            mutate(damaged)
+            with self.assertRaises(audit.AuditError):
+                audit.validate_all_progress(damaged,'ab'*32,101)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'all-progress.json'
+            audit.save_progress(path,state)
+            with self.assertRaises(audit.AuditError):
+                audit.load_progress(path,'ab'*32,now=101)
+            with self.assertRaises(audit.AuditError):
+                audit.load_progress(path,'cd'*32,all_namespaces=True,now=101)
+            with mock.patch.object(audit.os,'replace',side_effect=OSError('test interrupted replacement')):
+                with self.assertRaises(OSError):
+                    audit.save_progress(path,audit.new_all_progress('ab'*32,101))
+            self.assertEqual(audit.load_progress(path,'ab'*32,all_namespaces=True,now=101),state)
+
+    def test_composite_primary_seeks_preserve_zero_and_unsigned_order(self):
+        for namespace in ('controls','reservations'):
+            prefix = '00'*16+'22'*16
+            keys = ([prefix, '11'*16+'22'*16] if namespace == 'controls' else
+                    [prefix+'01'+format(value,'016x') for value in (0,10,2**64-1)])
+            executor = mock.Mock()
+            executor.sql.return_value = '\n'.join(keys)
+            self.assertEqual(audit.composite_candidates(executor,namespace,after='',ceiling=keys[-1],limit=3),keys)
+            query = executor.sql.call_args.args[0]
+            self.assertIn(' FORCE INDEX (PRIMARY)',query)
+            self.assertIn(' LIMIT 3;',query)
+            self.assertNotIn('GROUP BY',query)
+            executor.sql.return_value = keys[1]
+            self.assertEqual(audit.composite_candidates(executor,namespace,after=keys[0],ceiling=keys[-1]),[keys[1]])
+            query = executor.sql.call_args.args[0]
+            self.assertIn("lineage>UNHEX('"+'00'*16+"')",query)
+            if namespace == 'reservations':
+                self.assertIn('identity_id>0',query)
+                self.assertIn('identity_id<=18446744073709551615',query)
+            executor.sql.return_value = keys[0]+'\n'+keys[0]
+            with self.assertRaises(audit.AuditError):
+                audit.composite_candidates(executor,namespace,after='',ceiling=keys[-1],limit=3)
+
+    def test_reservation_key_storage_refusal_precedes_range_capture(self):
+        state = audit.new_all_progress('ab'*32,100)
+        state['next_namespace'] = 'reservations'
+        before = copy.deepcopy(state)
+        with self.assertRaisesRegex(audit.AuditError,'unsigned integer keys'):
+            self.page('reservations',['81'*16+'82'*16+'01'+format(90,'016x')],state,unsigned=False)
+        self.assertEqual(state,before)
+
+
 @unittest.skipUnless(os.environ.get('DURIS_PLAN5_CANONICAL_NATIVE') == '1',
                      'requires explicitly selected native and fresh private SQL checks')
 class NativeCanonicalAuditTests(unittest.TestCase):
+    def test_fair_composite_pages_and_unattached_namespaces_both_engines(self):
+        import pymysql
+        import migration_runner as migrations
+        import persistence_restore as restore
+        from test_persistence_backup_integration import sql
+        from test_economic_sql_audit_origins import BaselineVersionTests, NativeSQLOriginTests, key
+
+        work = Path(os.environ['DURIS_PLAN5_CANONICAL_ARTIFACTS']+'-composite').resolve()
+        self.assertFalse(work.exists())
+        self.assertTrue(work.is_relative_to((ROOT/'bin').resolve()))
+        work.mkdir(parents=True)
+        row = BaselineVersionTests.row(positions=[(81,(1,1,7,0,81,0,2,0))],holdings=[key(1,100)])
+        blob, operation = row['canonical_witness'], row['operation_id']
+        payload = b'EBC1'+struct.pack('<HHII',1,48,len(blob),0)+hashlib.sha256(blob).digest()
+        command = (b'CCM1'+struct.pack('<I',2)+operation+
+            struct.pack('<HHHBBQIII',20,1,6,4,0,row['command_accepted_at_usec'],1,0,48)+
+            struct.pack('<B7xQ',9,0x45434f4e42415345)+payload+struct.pack('<I',256)+row['canonical_intent'])
+        self.assertEqual(hashlib.sha256(command).digest(),row['inbox_command_hash'])
+        fixture = NativeSQLOriginTests()
+        fixture.batches = [(blob,operation,1,command,row['canonical_plan'],row['canonical_intent'])]
+        results = []
+        for engine in ('mariadb','mysql'):
+            with restore.private_database(work/engine,engine) as env:
+                version = sql(env,'SELECT VERSION()')
+                sql(env,payload=(ROOT/'migrations/bootstrap_multithread_safe.sql').read_bytes())
+                with mock.patch.dict(os.environ,env,clear=True):
+                    manifest = migrations.load_manifest()
+                    executor = migrations.MysqlExecutor(manifest)
+                    executor.adopt('fresh_bootstrap')
+                    migrations.run_pending(manifest,executor)
+                self.assertEqual(sql(env,'SELECT MAX(sequence_number) FROM mud_schema_history'),'62')
+                owner = pymysql.connect(unix_socket=env['DB_SOCKET'],user='root',database='duris_restore',
+                    autocommit=True,cursorclass=pymysql.cursors.DictCursor)
+                late = pymysql.connect(unix_socket=env['DB_SOCKET'],user='root',database='duris_restore',
+                    autocommit=False,cursorclass=pymysql.cursors.DictCursor)
+                reader = None
+                try:
+                    fixture.seed(owner)
+                    def insert(connection,table,fields):
+                        with connection.cursor() as cursor:
+                            cursor.execute('INSERT INTO '+table+' ('+','.join(fields)+') VALUES ('+
+                                           ','.join(['%s']*len(fields))+')',tuple(fields.values()))
+                    def control(value,connection=owner,*,damaged=False,revision=0):
+                        lineage,epoch = bytes([value])*16,b'\x33'*16
+                        creator = b'\x07'+bytes(15)
+                        insert(connection,'economic_lineage_state',dict(lineage=lineage,active_epoch=None))
+                        insert(connection,'economic_epoch',dict(lineage=lineage,epoch=epoch,ordinal=1,
+                            transition_kind=1,transition_digest=b'\x42'*32,creating_operation_id=creator))
+                        opening = (b'\xff'*16 if damaged else lineage)+struct.pack('<HHQQ4x',1,9,99,0)
+                        insert(connection,'economic_baseline_control',dict(lineage=lineage,epoch=epoch,
+                            opening_account=opening,creating_operation_id=creator,revision=revision,
+                            last_operation_id=operation if revision else None))
+                        return lineage.hex()+epoch.hex()
+                    control(2,damaged=True)  # Legal SQL length; corrupt standalone opening authority.
+                    control(4)  # A legitimate empty staged book is not a finding.
+                    control(6,revision=1)  # Valid FK to inbox, but no witness in this book.
+                    delayed_control = control(1,late,damaged=True)
+                    def reservation(identity,connection=owner):
+                        with connection.cursor() as cursor:
+                            cursor.execute('SET FOREIGN_KEY_CHECKS=0')
+                        try:
+                            insert(connection,'economic_baseline_reservation',dict(lineage=blob[16:32],
+                                epoch=blob[32:48],identity_kind=1,identity_id=identity,operation_id=b'\x99'*16))
+                        finally:
+                            with connection.cursor() as cursor:
+                                cursor.execute('SET FOREIGN_KEY_CHECKS=1')
+                        return blob[16:48].hex()+'01'+format(identity,'016x')
+                    reservation(150)  # Explicit imported corruption; no witness/root/claim names 0x99.
+                    delayed_reservation = reservation(90,late)
+                    with owner.cursor() as cursor:
+                        with self.assertRaises(pymysql.MySQLError) as fk_refusal:
+                            insert(owner,'economic_baseline_reservation',dict(lineage=blob[16:32],epoch=blob[32:48],
+                                identity_kind=1,identity_id=151,operation_id=b'\x99'*16))
+                        self.assertEqual(fk_refusal.exception.args[0],1452)
+                        cursor.execute("CREATE USER 'composite_reader'@'localhost' IDENTIFIED BY 'private-composite-reader'")
+                        cursor.execute("GRANT SELECT ON duris_restore.* TO 'composite_reader'@'localhost'")
+                    reader = pymysql.connect(unix_socket=env['DB_SOCKET'],user='composite_reader',
+                        password='private-composite-reader',database='duris_restore',autocommit=True,
+                        cursorclass=pymysql.cursors.SSDictCursor,connect_timeout=5,read_timeout=30,write_timeout=5)
+                    with reader.cursor() as cursor:
+                        with self.assertRaises(pymysql.MySQLError) as denied:
+                            cursor.execute('UPDATE economic_baseline_control SET revision=revision')
+                        self.assertEqual(denied.exception.args[0],1142)
+                    def inventory():
+                        with owner.cursor() as cursor:
+                            cursor.execute('SHOW TABLES')
+                            names = [next(iter(value.values())) for value in cursor.fetchall()]
+                            values = []
+                            for name in sorted(names):
+                                cursor.execute('SELECT * FROM `'+name+'`')
+                                rows = sorted(json.dumps(value,sort_keys=True,
+                                    default=lambda value: value.hex() if isinstance(value,bytes) else str(value))
+                                    for value in cursor.fetchall())
+                                values.append((name,rows))
+                        return hashlib.sha256(json.dumps(values).encode()).hexdigest()
+                    unchanged = inventory()
+                    legacy,legacy_progress = audit.scan_page(reader,audit.new_progress('ab'*32,time.time()))
+                    self.assertEqual(legacy['findings'],[])
+                    self.assertEqual(legacy_progress['total_rows'],1)
+                    self.assertEqual(inventory(),unchanged)
+                    path = work/(engine+'-progress.json')
+                    state = audit.load_progress(path,'ab'*32,all_namespaces=True)
+                    observations,actual_queries = [],[]
+                    def page(label):
+                        nonlocal state
+                        before,previous = inventory(),copy.deepcopy(state)
+                        wrapped = mock.Mock(wraps=reader)
+                        captured = mock.Mock(wraps=reader.cursor())
+                        wrapped.cursor.return_value = captured
+                        report,state = audit.scan_all_page(wrapped,state,page_roots=1)
+                        wrapped.rollback.assert_called_once_with()
+                        captured.close.assert_called_once_with()
+                        self.assertEqual(previous['source_digest'],state['source_digest'])
+                        queries = [call.args[0] for call in captured.execute.call_args_list]
+                        self.assertTrue(all(query.startswith(('SELECT ','SET TRANSACTION ','START TRANSACTION '))
+                                            for query in queries))
+                        actual_queries.extend(queries)
+                        self.assertEqual(inventory(),before)
+                        self.assertLessEqual(report['queries'],audit.MAX_PAGE_QUERIES)
+                        self.assertLessEqual(report['read_bytes'],audit.MAX_INPUT_BYTES)
+                        self.assertLess(report['seconds'],audit.PAGE_SECONDS)
+                        self.assertFalse(report['coverage']['complete'])
+                        self.assertFalse(report['coverage']['consistent_entire_sweep'])
+                        self.assertFalse(report['release_qualified'])
+                        self.assertNotIn(delayed_control[:32],json.dumps(report))
+                        observations.append(dict(label=label,report=report,state=copy.deepcopy(state),
+                                                 database_sha256=before,rollback_calls=1,cursor_closed=True))
+                        audit.save_progress(path,state)
+                        state = audit.load_progress(path,'ab'*32,all_namespaces=True)
+                        return report
+                    for index in range(3):
+                        page('initial '+str(index))
+                    self.assertEqual(state['namespaces']['controls']['cursor'],'02'*16+'33'*16)
+                    self.assertEqual(state['namespaces']['reservations']['cursor'],blob[16:48].hex()+'01'+format(100,'016x'))
+                    late.commit()  # Both newly committed keys sort below persisted cursors.
+                    control(0xf0)  # Above the control ceiling captured on its first page.
+                    for index in range(36):
+                        page('resume '+str(index))
+                        if index in (2,8,14):
+                            control(0xf1+index)
+                        if min(part['completed_sweeps'] for part in state['namespaces'].values()) >= 2:
+                            break
+                    self.assertGreaterEqual(min(part['completed_sweeps'] for part in state['namespaces'].values()),2)
+                    self.assertIn(delayed_control,[value['key'] for value in state['namespaces']['controls']['findings']])
+                    self.assertIn(delayed_reservation,[value['key'] for value in state['namespaces']['reservations']['findings']])
+                    order = [value['report']['namespace'] for value in observations]
+                    self.assertEqual(order,[audit.NAMESPACES[index%3] for index in range(len(order))])
+                    self.assertGreater(state['namespaces']['roots']['completed_sweeps'],2)
+                    plans = []
+                    for namespace,(table,columns) in audit.COMPOSITE_SOURCES.items():
+                        selected = [query for query in actual_queries if
+                            'FROM '+table+' FORCE INDEX (PRIMARY)' in query and query.startswith('SELECT * FROM (SELECT CONCAT')]
+                        self.assertTrue(any(' DESC' in query for query in selected))
+                        self.assertTrue(any(' WHERE ' in query for query in selected))
+                        for query in selected:
+                            with owner.cursor() as cursor:
+                                cursor.execute('EXPLAIN '+query)
+                                plan = cursor.fetchall()
+                            indexed = [value for value in plan if value['table']==table]
+                            self.assertEqual(len(indexed),1,plan)
+                            self.assertEqual(indexed[0]['key'],'PRIMARY',plan)
+                            self.assertIn(indexed[0]['type'],('index','range'),plan)
+                            self.assertNotIn('filesort',indexed[0].get('Extra','').lower())
+                            plans.append(dict(namespace=namespace,query=query,plan=plan))
+                    refusals = []
+                    for namespace in ('controls','reservations'):
+                        fresh = audit.new_all_progress('ab'*32,time.time())
+                        fresh['next_namespace'] = namespace
+                        previous,before = copy.deepcopy(fresh),inventory()
+                        wrapped = mock.Mock(wraps=reader)
+                        captured = mock.Mock(wraps=reader.cursor())
+                        wrapped.cursor.return_value = captured
+                        with mock.patch.object(audit,'MAX_PAGE_QUERIES',2),self.assertRaises(audit.PageBudgetError):
+                            audit.scan_all_page(wrapped,fresh,page_roots=1)
+                        self.assertEqual(fresh,previous)
+                        self.assertEqual(inventory(),before)
+                        wrapped.rollback.assert_called_once_with()
+                        captured.close.assert_called_once_with()
+                        refusals.append(dict(namespace=namespace,no_progress_advance=True,queries=2,
+                                             rollback_calls=1,cursor_closed=True,database_sha256=before))
+                    cli = [sys.executable,str(ROOT/'scripts/economic_sql_canonical_audit.py'),
+                        '--host','127.0.0.1','--socket',env['DB_SOCKET'],'--user','composite_reader',
+                        '--database','duris_restore','--password-env','PLAN5_COMPOSITE_PASSWORD',
+                        '--progress-path',str(work/(engine+'-cli-progress.json')),'--page-roots','1','--all-namespaces']
+                    cli_runs = []
+                    for namespace,expected in (('roots',0),('controls',1),('reservations',1),('roots',1)):
+                        before = inventory()
+                        ran = subprocess.run(cli,capture_output=True,text=True,timeout=35,
+                            env=dict(os.environ,PLAN5_COMPOSITE_PASSWORD='private-composite-reader'))
+                        self.assertEqual((ran.returncode,ran.stderr),(expected,''),ran.stdout+ran.stderr)
+                        report = json.loads(ran.stdout)
+                        self.assertEqual(report['namespace'],namespace)
+                        self.assertNotIn(delayed_control[:32],ran.stdout)
+                        self.assertEqual(inventory(),before)
+                        cli_runs.append(dict(namespace=namespace,exit=ran.returncode,report=report))
+                    self.assertEqual(sql(env,'SELECT COUNT(*) FROM economic_lineage_state WHERE active_epoch IS NOT NULL'),'0')
+                    results.append(dict(engine=engine,version=version,canonical_sequence=62,observations=observations,
+                        legacy_root_page=legacy,root_only_missed_unattached_namespaces=True,
+                        query_plans=plans,budget_refusals=refusals,CLI_command=cli,CLI_runs=cli_runs,
+                        SELECT_only_denial=1142,normal_foreign_key_denial=1452,
+                        modeled_capsules=True,imported_reservation_corruption=True,native_producer_or_gameplay=False,
+                        complete_database_inventories_unchanged=True,release_qualified=False))
+                    (work/'results.json').write_text(json.dumps(results,indent=2)+'\n')
+                finally:
+                    late.rollback()
+                    if reader is not None:
+                        reader.close()
+                    late.close()
+                    owner.close()
+
     def test_maximum_baseline_page_both_engines(self):
         import pymysql
         import migration_runner as migrations
