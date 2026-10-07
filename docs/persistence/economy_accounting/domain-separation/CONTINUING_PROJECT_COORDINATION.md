@@ -447,6 +447,18 @@ selecting implementation. No new scope is approved by this queue entry.
 
 ## Recurring monitor
 
+The quest codec reservation now has
+[independent one-file approval](../quest-prep/SHOP_CODEC_CLOSURE_REVIEW_2026-10-07.md).
+Coordinator authenticates all2,646 original source inventory entries, seven
+retained proof files, exact original HARNESS/46 assertions and actual canonical
+providers, then separately compiles/runs the complete unchanged harness: exits0/0.
+Quest prep may add only three rel() entries in the original test compiler list,
+qualify the current-primary import and publish its exact one-file handoff. Final
+maintained repair/review are pending; native prerequisites remain blocked.
+Primarydc1489782 incorporates flat coin source claims/room-pile proof reader;
+neither changes this driver's thirteen compiler-source inputs. Preserve actual
+original pins and authenticate current headers/imports for final proof.
+
 R10 final independent review PASS is published in
 [the canonical review](R10_SHOP_PURCHASE_QUOTE_REVIEW_2026-10-07.md). Code7bbf942e
 and handoff0edd9867 have exact committed/runtime equivalence, both actual bare

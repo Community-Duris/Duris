@@ -221,6 +221,16 @@ Architecture continues private whole-itemvalue feasibility. Both continuing
 workstreams and the monitor retain the full primary finish line without an
 adoption wait or completed-primary rewrite.
 
+## Canonical shop codec fixture repair approved - 2026-10-07
+
+[One-file independent review](quest-prep/SHOP_CODEC_CLOSURE_REVIEW_2026-10-07.md)
+approves only three existing canonical compiler-source entries in the existing
+shop codec test. All2,646 original source inventory entries/evidence are
+authenticated and the exact full original harness independently PASSes all46
+assertions. Quest prep owns isolated implementation/current-primary import proof
+and handoff; final repair/review remain pending. Native quest and full accounting
+qualification remain open; primary continues without an adoption wait.
+
 ## Continuing project coordination supersedes finite closure - 2026-10-07
 
 The user has authorized a new actual continuing coordinator Goal and continuing
