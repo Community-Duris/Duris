@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 227 &&
+		require(catalog.story_mappings.size() == 228 &&
 				tracker.summary_for(7, 42).total == 1518,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -26540,6 +26540,96 @@ int main(int argc, char **argv)
 			require(!journey.has_discovered(7, 42, 324) &&
 					!journey.has_discovered(7, 42, 266),
 				"Bandit receipt forged foreign-source discovery");
+		}
+
+		{
+			const auto &exchange = story_for("darkfall", "grellinar-agility-scroll");
+			const int materials[] = { 32490, 26614, 402 };
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 95304, 95346, 100) == result::rejected,
+				"Darkfall Grellinar contact ignored undiscovered physical zone");
+			require(journey.discover_zone(7, 42, 953, 95300, 101, "arrival") ==
+					result::applied,
+				"Darkfall discovery failed");
+			require(journey.render_journal(7, 42, 953, 50, 1, 102, false, false)
+						.find(exchange.title) == std::string::npos,
+				"Darkfall discovery exposed unmet Grellinar exchange");
+			require(journey.meet_npc(7, 42, 95304, 95346, 103) == result::applied,
+				"Darkfall Grellinar encounter failed");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    exchange.steps[row].text) != std::string::npos;
+			};
+			for (unsigned mask = 0; mask < 8; ++mask)
+				for (unsigned custody = 0; custody < 4; ++custody)
+				{
+					supplies = {};
+					for (unsigned i = 0; i < 3; ++i)
+						if (mask & (1U << i))
+						{
+							if (custody == 0)
+								supplies.carried[406 + i] = 1;
+							if (custody == 1)
+								supplies.equipped[i] = materials[i];
+							if (custody >= 2)
+								supplies.carried[materials[i]] =
+									custody == 2 ? 1 : 4;
+						}
+					const auto journal = journey.render_journal(
+						7, 42, 953, 50, 1, 104, false, false, &supplies);
+					for (unsigned i = 0; i < 3; ++i)
+						require(status(journal, i,
+							       custody >= 2 && (mask & (1U << i)) ?
+								       "Ready now" :
+								       "Missing now"),
+							"Darkfall partial/wrong/equipped/loose/surplus materials changed exact readiness");
+					require(!status(journal, 3, "Recorded") &&
+							journey.progress_for_zone(7, 42, 953)
+									.completed == 0 &&
+							journey.progress_for_zone(7, 42, 953)
+									.total == 1 &&
+							journey.serialize_state() == before,
+						"Darkfall current trio invented accepted exchange or lasting benefit");
+				}
+			// Synthetic acceptance verifies projection/recovery, not live source issuance, consumption, stat gain, successful controls or rescue.
+			record(journey, exchange.contracts.front(), "darkfall-native-trio", 953,
+			       95346);
+			record(supplied, exchange.contracts.front(), "darkfall-supplied-trio", 953,
+			       95346);
+			require(supplied.progress_for_zone(7, 42, 953).completed == 1 &&
+					!supplied.has_met_npc(7, 42, 32420) &&
+					!supplied.has_met_npc(7, 42, 26642) &&
+					!supplied.has_met_npc(7, 42, 95303) &&
+					!supplied.has_met_npc(7, 42, 95302),
+				"Darkfall supplied exchange required boss or camp contact history");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 953).completed == 1 &&
+					raw.progress_for_zone(7, 42, 953).completed == 1,
+				"Darkfall cold mapped/raw recovery lost accepted trio");
+			supplies = {};
+			const auto journal = recovered.render_journal(7, 42, 953, 50, 1, 122, false,
+								      false, &supplies);
+			require(status(journal, 3, "Recorded"),
+				"Darkfall spent trio erased acceptance");
+			for (unsigned i = 0; i < 3; ++i)
+				require(status(journal, i, "Missing now"),
+					"Darkfall receipt recreated spent material");
+			auto replay =
+				completion(exchange.contracts.front(), "darkfall-native-trio", 120);
+			replay.transaction.zone_number = 953;
+			replay.transaction.room_vnum = 95346;
+			require(journey.record_completion(replay) == result::already_applied &&
+					journey.serialize_state() == saved,
+				"Darkfall accepted trio replay duplicated history");
+			require(!journey.has_discovered(7, 42, 324) &&
+					!journey.has_discovered(7, 42, 266),
+				"Darkfall receipt forged foreign-source discovery");
 		}
 
 		std::cout

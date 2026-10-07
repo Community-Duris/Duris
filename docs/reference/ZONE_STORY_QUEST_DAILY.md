@@ -359,3 +359,8 @@ The [dossier](../design/zone-stories/RICE_FIELDS.md) retains one princess accept
 ## Bandit Canyons daily qualification
 
 The [dossier](../design/zone-stories/BANDIT_CANYONS.md) retains one Olat accepted-exchange achievement/potential daily without changing totals. Actual source availability, exact supplied-compatible root consumption, reward/save/replay, lasting stat benefit and fair renewal remain separate. Mode2 does not guarantee stock; all85 local O/P/G/E rows are refused before active item creation. Three loose materials do not complete a quest and personal access/boss/clue history is optional. New tracking requires active READY accounting; committed recovery remains separate and daily policy disabled.
+
+
+## Darkfall Forest daily qualification
+
+The [dossier](../design/zone-stories/DARKFALL_FOREST.md) retains one accepted Grellinar trio achievement/potential daily without changing totals. Actual supplied-compatible consumption,406 reward/save/replay,lasting agility and source/giver renewal remain separately qualified. Allfive local item reset rows are refused before active creation; mode2/rollover does not publish proof,repair a carriage,grant skills or protect a resident. New tracking requires active READY accounting; committed recovery remains separate and daily policy disabled.

@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 227 authored journals, accounting-gated player surfaces, starter/town
+**Status: 228 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5467,3 +5467,8 @@ The [dossier](zone-stories/RICE_FIELDS.md) maps four native exchanges, three rec
 ## Bandit Canyons integration extension
 
 The [dossier](zone-stories/BANDIT_CANYONS.md) maps one supplied-compatible native exchange and ten broader stories with46 owned follow-ups. Separate three-material acceptance and scroll UID from lasting strength, negative-key SAY from OPEN/cross, D8 blocked state from PULL/PUSH/no-op, actual waterfall sectors from current prose and loot from useful living help. Bounded tablet-source/reward/clue/topology/level questions require modern builder intent and separate fair fix/news scope. Typed committed work/care/control/stat events depend on concrete useful saved outcomes; schema3 suffices for the journal. Active READY accounting remains required and daily policy disabled.
+
+
+## Darkfall Forest integration extension
+
+The [dossier](zone-stories/DARKFALL_FOREST.md) maps one supplied-compatible exact trio/Agility-scroll exchange and eight broader stories with46 owned follow-ups. Separate accepted receipt and scroll UID from lasting agility/learning,raw4 bushes from initialized open route,actual music admission/scheduled grouped recipient effect from startup/verse echo,and scenery/loot from useful carriage,camp,pet,plant and traveler benefit. Bounded legacy starter/effect,Halgeous/Grellinar identity,wreck blocking,hidden-route and reserved-room questions need modern builder intent and fair separate fix/news scope. Existing journal schema suffices; concrete positive saved effects define future typed integration. Active READY accounting remains required and daily policy disabled.
