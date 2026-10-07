@@ -1,5 +1,58 @@
 # Continuing project acceptance — 2026-10-07
 
+New finite PRIVATE enhancement-boundary investigation **complete; one-file
+reservation pending review, no maintained edit**. Owned starting8d794f0c32b316f4d50ab0bf8dda7448c613b67d;
+fresh patchless primary0fd938ce2fbae7b7e675346d60b30b3867bea0f7. Authored only
+this handoff and [ENHANCE_BOUNDARY_INVESTIGATION.md](ENHANCE_BOUNDARY_INVESTIGATION.md).
+Actual continuing Goal remains BLOCKED, not resumed/complete. No native quest
+batch, live-route job, DB/player/server/compiler or native-world operation rerun.
+
+Full unchanged `python3 -B tests/async/test_enhance_module_boundary_contract.py`
+FAIL exit1/0.031060971s at line29 raw db hook count. Test blob
+311f5292d17357c1a9d7197615b82901948e1b6f unchanged. Independent full20-predicate
+census19 satisfied/one literal failure preserved; not an original PASS. Actual
+legacy calls formatted multiline, exactly one each in G/E; native arms forward
+through original birth owner to selection policy actually in enhance.c. Defined
+die and run_the_game boot APIs, staged stock/publication and separate recovery
+hook mapped; global counts alone cannot establish this chain.
+
+Final private probe PASS61 source-boundary checks/20 definitions, with direct
+missing-config reentry witness separately RED. Only production config caller is
+guarded boot wrapper; initial masks zero; comm/chaos use that wrapper, no current
+staff reload path demonstrated. No reachable exploit/full fail-closed/runtime
+proof or new gate claimed. All28 guarantee removals rejected by whole private
+checker on isolated copied inputs, including both-hooks-in-G with global count2;
+harmless formatting PASS and controlled fixture cleaned. Both initial wrong
+definition/branch selection failures retained. Root independent earlier60-check
+draft PASS is separately pinned; final61 adds material-kind refusal proof and
+now also has root independent final61/28/whitespace/cleanup PASS and full13receipt/
+11source/6448archive authentication; original FAIL/census independently confirmed.
+Root's earlier interrupted137 control attempt was preserved/repeated in its own
+container; no production failure or worker rerun. Formal boundary review pending.
+Exact one-file proposal: test_enhance_module_boundary_contract.py
+ONLY, unchanged existing helpers; no maintained repair/patch before approval.
+
+All6448 canonical file/link bodies/sizes/modes/targets authenticated before/after,
+unchanged and no unexpected files. Source/helper/archive/function/program/result
+pins, complete predicate table and actual commands in investigation. Proofs remain
+ignored under bin/tests/enhance-boundary-0f466-20261007; actual archive is
+current-primary-0fd938.tar. SEALED.json SHA256
+777a93e95a20443013fa0a832cbfb317624a2fb727ebcc07b2e5cbdd51ea1602.
+Owned sleep-only container stopped; no shared authority/Plan5/production change.
+Import this docs-only investigation independently; no optional architecture
+dependency. git diff --check PASS. Original native/shared prerequisites remain.
+Publication-time fetch6ca40d01652b29bd7faf475db2754ff628bdd228 changes only four
+qualification docs, source/tests unchanged. Read current shared-native checkpoint:
+private shutdown/SHOP candidate/build, cache/tooling blockers and remaining flat/
+genuine native journeys; no published fix/gate or quest interface unblock. Keep
+actual0fd export/evidence pins; no unchanged qualification rerun.
+
+Live-route final independent review is now **published remotely** at primary
+0fd938ce2fbae7b7e675346d60b30b3867bea0f7 in SHOP_LIVE_ROUTE_REVIEW_2026-10-07.md.
+It closes codefd4563fab/evidenceba0c0bbf4/canonical5090bd4c2 at maintained
+source-contract scope only. Primary adoption/native acceptance remain unknown;
+the following receipt-time publication-in-progress text is historical.
+
 Final independent live-route review **PASS reported by coordinator** for
 codefd4563fab791b33a2905db22baa4167f3567c298,
 evidenceba0c0bbf44d125c93623ffbdc78a70a12e706f39 and
