@@ -5,7 +5,15 @@ qualified at component, preserved maintained-build and current import/module
 scope. Coordinator approved the exact four-file reservation at accounting
 `c04a0faead4775863d408e1224e1668f869198e1` in
 [R7_SUPERIOR_PLAN_REVIEW_2026-10-07.md](https://github.com/Community-Duris/Duris/blob/c04a0faead4775863d408e1224e1668f869198e1/docs/persistence/economy_accounting/domain-separation/R7_SUPERIOR_PLAN_REVIEW_2026-10-07.md).
-Final declared-scope review awaits this handoff. Actual continuing Goal remains
+Final declared-scope review PASS is remotely verified at accounting
+`6b96e9a08ff4cfe3a654417e76b7ca68514e274e` in
+[R7_SUPERIOR_PLAN_REVIEW_2026-10-07.md](https://github.com/Community-Duris/Duris/blob/6b96e9a08ff4cfe3a654417e76b7ca68514e274e/docs/persistence/economy_accounting/domain-separation/R7_SUPERIOR_PLAN_REVIEW_2026-10-07.md).
+The coordinator independently executed final original/extracted controls and
+verified exact plan declarations,4 source/44 proof hashes, actual740-object
+ELFs/logs and all6440 minimal export bodies. It also checked both actual patches
+on latest primary4f3ee6550 plus R4 alone, tree
+`c3873323823163fbc771364f2f13cc3912d2f4b9`, without claiming latest execution.
+R7 is reviewed and available for optional import. Actual continuing Goal remains
 ACTIVE/no budget; no adoption, native supported outcome or integrated completion
 is inferred.
 

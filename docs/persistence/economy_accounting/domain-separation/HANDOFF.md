@@ -1,11 +1,18 @@
 # Accounting domain separation handoff — 2026-10-07
 
+[R8 ordinary cascade reservation](R8_ORDINARY_SEARCH_RESERVATION.md) selects
+ordered search control with fresh per-probe configuration and unchanged native
+linked lookup/read ownership. Complete original producer plus23 new search cases
+PASS privately; exact three-file boundary awaits review before implementation.
+R7 is finally reviewed; native authority and the full integrated finish line remain.
+
 R7 approved all-stat planning is implemented at `bf8ffda1d6bae94866c6cb2834d0561d7d914ed9`.
 Identical original/extracted21-scenario ordering/complete-plan controls, adjacent
 checks and both owned740-object builds PASS. Current c04+R0-R7 and independent
 c04+R4/R7 material/all-stat/full-module checks PASS; no current754 full build or
 native journey is inferred. See [R7 terminal handoff](R7_SUPERIOR_PLAN_HANDOFF.md).
-Final declared-scope review is pending. The full continuing Goal remains ACTIVE.
+Final declared-scope review PASS is published at accounting6b96e9a08. The full
+continuing Goal remains ACTIVE.
 
 Latest post-R6 [nine-family owner dependency assessment](POST_R6_OWNER_DEPENDENCIES_2026-10-07.md)
 checks compatibility against primary `daa5c2b5f` without promoting build/journey

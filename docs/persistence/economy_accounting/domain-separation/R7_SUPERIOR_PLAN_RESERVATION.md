@@ -158,4 +158,5 @@ Implementation bf8ffda1d6bae94866c6cb2834d0561d7d914ed9 and
 operation. Original/extracted21-scenario controls, adjacent checks, both owned
 maintained740-object builds and current/R4-only-prefix component/module checks
 PASS. Initial routing failure and unchanged module reset-count failure remain
-retained. Final review pending; the proposal language above is reservation history.
+retained. Final declared-scope review PASS at accounting6b96e9a08; the proposal
+language above is reservation history.
