@@ -118,11 +118,12 @@ The nine-domain inventory is reassessed against these concrete new interfaces:
    its ceil policy differs from superior's existing0.999999 truncation, so do not
    silently unify those policies. R4 preserves the latter; further capture must be reserved after actual source/proof review.
 3. **R5 F3 superior stat cap**: approved and implemented through `b31809a0d`; explicit base/configured multiplier preserves signed-byte saturation/truncation and original wrapper capture. Original/extracted, adjacent, owned builds and current352 module controls pass; final review pending. See [handoff](R5_SUPERIOR_STAT_CAP_HANDOFF.md). Further template/outcome preparation requires separately reviewed native capture facts.
-4. **P2/S1 forge or service quote preparation**: inspect existing ore-price and
+4. **Proposed R6 F3/I enhancement affect policy**: common five-word native unsigned-long allow validation can take owned flags and explicit masks, preserving null wrapper and actual source/material/pool caller semantics. Extend the existing ordinary producer test with the real predicate instead of its unconditional stub. See [exact three-file reservation](R6_ENHANCEMENT_AFFECT_POLICY_RESERVATION.md); review precedes edits.
+5. **P2/S1 forge or service quote preparation**: inspect existing ore-price and
    paid service formulas for a genuine remaining stable operation; existing
    `forge_prices`/currency prepared mutation may already cover it. No blanket
    service implementation or active outcome reopening is authorized.
-5. **C/I/S/A/K/Q/G coupled effects**: existing currency preparation, item transfer
+6. **C/I/S/A/K/Q/G coupled effects**: existing currency preparation, item transfer
    plans, shop/auction accounting, Collector lifecycle/purchase and newly owned
    native GIVE calculations remain reuse boundaries. Shared native/source/lifetime/
    receipt work requires current owner facts. Quest-prep retains real quest

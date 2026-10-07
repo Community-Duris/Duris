@@ -56,6 +56,10 @@ and stat regression apply independently to bare352, while its full configuration
 test patch requires R3's existing predecessor. Primary code/manifests and owner35
 fixture stay preserved. Thin forge-table and previously declined cleric seams are
 not selected. Nine-domain native capture/authority dependencies remain explicit.
+Next [R6 affect-policy reservation](R6_ENHANCEMENT_AFFECT_POLICY_RESERVATION.md)
+selects the common five-word allow validation and real source/material/pool
+callers. Native unsigned-long width and null/pouch semantics are pinned; its
+three-file source/test boundary awaits review before edits.
 
 ## Historical finite R0/R1/R2 checkpoint status
 
