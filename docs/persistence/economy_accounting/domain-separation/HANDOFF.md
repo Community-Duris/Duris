@@ -206,7 +206,7 @@ Executed commands/results:
 
 | Command | Result and evidence scope |
 | --- | --- |
-| `python3 tests/async/test_collector_collection_preparation.py` | PASS on WSL GCC11 and image GCC13.3, including final production-codec controls; `collection-final.log`. Native object/custody/capture fixture seams remain; this is an executable component, not a player journey. |
+| `python3 tests/async/test_collector_collection_preparation.py` | PASS: initial component on WSL GCC11; final frozen harness on image GCC13.3, including all production-codec controls (`collection-final.log`). The independent coordinator separately passed the published final runner under WSL. Native object/custody/capture fixture seams remain; this is an executable component, not a player journey. |
 | `python3 tests/async/test_collector_policy.py` | PASS; `policy-final.log`. Existing policy component. |
 | `bash scripts/format.sh` then `bash scripts/format.sh --check` | PASS. WSL used explicit `GIT_DIR` pointing at this managed worktree's actual Git metadata and `GIT_WORK_TREE` pointing at this checkout because its `.git` contains a Windows absolute path. Final direct clang-format dry-run of all three touched C++ files also passes. |
 | `git diff --check` / staged equivalent | PASS. |
