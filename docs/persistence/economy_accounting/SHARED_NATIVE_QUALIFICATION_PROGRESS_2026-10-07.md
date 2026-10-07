@@ -4,6 +4,90 @@ Disposition: implementation and qualification remain open. This checkpoint
 records established failures, private candidates and an environment blocker;
 it does not import production changes or close an accounting/release gate.
 
+## Current physical-capture and full-server control successor
+
+Primary authenticated the sealed two-file persisted physical capture prerequisite
+and composed it with frozen30 into private **combined32**. Capture retains the
+original source2 DTO and adds 13 raw projections in the same caller-owned
+transaction: player/corpse/saved/locker/account-locker item rows, pet lifetimes,
+corpse identity/revision/location, private/account chest mappings and pet/shop
+equipment. Existing source2 already retains pet/shop/siege item rows and keeper
+mapping. Capture preserves NULLs, duplicate UIDs and orphan mappings as evidence.
+Aggregate row/cell/byte bounds charge both parts once. Metadata locks/InnoDB
+checks cover 34 unique tables. New EPH1 binds original ESC2 plus the extension
+table digests; original source2 counters, APIs and framing remain unchanged.
+
+Read-only review caught invalid singleton-column `GREATEST` SQL for lockers and
+account_lockers. The private fix uses the single length directly inside MAX;
+all original multi-column queries retain their exact shape. The changed provider
+and added actual native fixture pass strict syntax in SQL and flatfile profiles;
+formatting passes. All original60-second ceilings stay intact. Runtime query,
+allocation-fault, RR and failure fixtures remain unexecuted.
+
+Primary authenticates 24 capture-packet records, 44 composition-packet records,
+all32 candidates/maintained preimages, 1,302 unchanged production inputs, and all
+6,434 original archive bodies/modes. Exactly two files differ from frozen30.
+The compressed source transport preserves original member names and controller
+contract; it contains no new Python coin-export integration or future normalizer.
+
+| Frozen combined32 artifact | SHA256 |
+| --- | --- |
+| SOURCE-PINS.json | `8d0ae220da00cd339b921efadc8758ee0e7371e6e5ee6dabb51aa109debe3480` |
+| transport/source.tar | `3461789347b8944aa619c32c9386e54318c12309989e3643f96e2dbee54ac6d4` |
+| transport/source-pins.json | `91ff1063063c5875a493a3f887909ef688ba855641083cd3a2d7d8d996ba7225` |
+
+Actual primary receipt is
+`bin/tests/activation-physical-capture-primary-20261007/combined32-primary/RESULT.json`;
+private proposal/fixtures/recipe are in
+`tmp/activation-physical-capture-primary-20261007/`.
+No compiler or native check was repeated for composition; no native source
+was imported. Existing lifecycle consumers still call original source2 capture
+and normalization. The new API is deliberately unwired pending complete physical
+correspondence, other source providers and the original activation owner.
+
+The next bounded implementation consumes these persisted rows without modifying
+the partial staged installer. It must resolve owner lifetime, UID duplicates,
+same-source parent/root topology and equipment, preserve historical tombstones,
+and expose unmatched custody as requiring other providers. Modern room payloads,
+native live/reset/mobile objects and other omitted domains remain separate.
+Nonzero pet/shop equipment cannot silently become zero or widen item authority.
+
+Two concrete composition constraints remain explicit: the physical provider's
+caller contract is RR consistent READ ONLY, while current cutover is writable
+and room reads use FOR UPDATE. Also EPH1 binds receipt/mapping rows changed by
+installation, so it cannot replace the durable ESN5 native-boundary digest or
+serve as an unchanged before/after-installation cut. Existing EBS2/EIC2/ESN1-5
+and staged empty-opening behavior remain intact. This is source preparation,
+not source-complete activation or independent release proof.
+
+The full-server control successor now prepares genuine native revision7 through
+original public creation and six repair operations before the public V2 installer.
+Original native receipts, complete baseline command/EAB/lookup and cold projection
+must prove native revision7 independently of accounting revision1. It retains all
+prior17 controls and adds `baseline_native7`: **18 cases, all unexecuted**.
+Changed seed strict syntax passes once; primary packet authentication passes.
+Its v8 successor binds unchanged18 controls to frozen30. The v9 successor now
+binds those exact18 controls to frozen32; primary read-only authentication
+passes for all original transport bodies/modes and the complete old30 subset.
+No compiler/runtime repetition or promotion occurred. Prior seed syntax
+applies only to source23. V9 FINAL-PINS SHA256 is
+`05e478e38f898f045cb32b07a1f666a8a53f532b7e02c7d3068cdab984a2b10a`;
+actual primary receipt is
+`bin/tests/activation-physical-capture-primary-20261007/controls-v9-primary/RESULT.json`.
+
+The maintained independent coin exporter is separately integrated and pushed as
+`39524579d047db3d165b495255c6cc9d67ae1de0`:
+[primary coin evidence](PLAN5_COIN_EXPORT_PRIMARY_INTEGRATION_2026-10-07.md).
+All186 focused pure methods pass, zero skips; normal contracts pass and full
+release retains its expected missing-writer refusal. Native/migration trees
+remain unchanged; peer native/modeled SQL artifacts remain externally reported.
+
+Current Docker availability refresh again exits1: Docker Desktop is unable to
+start. No service repair/start, native retry, budget waiver or failed-link retry
+occurred. Full original production links and executable database/gameplay/recovery
+checks remain required before any private native fix is imported. Source workers
+continue through this environment blocker. All926 policies and full gates remain.
+
 ## Established failures and complete private candidate
 
 Collector's real native journey reached its committed purchase, but the original
