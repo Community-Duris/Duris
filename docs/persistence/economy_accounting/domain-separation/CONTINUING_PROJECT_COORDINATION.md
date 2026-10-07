@@ -529,10 +529,22 @@ reviewed from architecture e04f22df7f99047c78e24152b5b8d07a64547bb4, exact body 
 source and tests remain exact. Maintained driver paths, SHOP owner boundaries,
 paid-service source facts and primary f8f351b9b disposition were checked.
 
-No independent implementation is currently selected. Watch for the table's real
-source/interface/fixture publications, then reserve a connected case or operation
-for the appropriate existing chat. Test preparation can begin once sufficient
-original owner facts are available; completed native execution is its later
+One finite independent qualification assignment is selected: architecture runs
+the complete published lifecycle V2 reader component from exact primary
+506b54c9958652895b61f58367e25fb67bc9c552, using that same frozen full export for
+the driver and native sources. [Primary integration evidence](../PLAN5_LIFECYCLE_V2_PRIMARY_INTEGRATION_2026-10-07.md)
+retains the original WSL link failure and zero runtime cases. The assigned local
+container is separate from other owners' jobs; original sources, sanitizer/link
+flags, 600-second build and 45-second case limits, all 65 coverage cases, five
+envelopes and zero-skip/unchanged-authority checks remain. No Plan 5 code or test
+editing, native installer, service repair, full Make or database work is assigned.
+Actual execution, source/artifact authentication and root review are pending.
+This optional component result adds no adoption or primary-implementation wait.
+
+No independent domain or quest implementation is currently selected. Watch for
+the table's real source/interface/fixture publications, then reserve a connected
+case or operation for the appropriate existing chat. Preparation can begin once
+sufficient original owner facts are available; native execution is its later
 qualification gate. Do not repeat unchanged suites or manufacture another helper.
 Read the [current shared native checkpoint](../SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
 on each meaningful advance; its exact candidate and fixture pins supersede older
@@ -589,10 +601,12 @@ reader changes, not native producer or gameplay completion. Coordinator verified
 that src and migrations are unchanged from 5826195dd to fef51aca3; it did not
 repeat the reported qualification or authenticate private runtime artifacts.
 
-Both workers' continuing goals last reported blocked and unfinished. No newly
-published input enables a concrete domain or quest assignment. Their selected
-deliveries remain closed; authentic lifecycle/source/cost/settlement/publication
-owner interfaces and original fixtures remain the applicable triggers.
+Both workers' continuing goals last reported blocked and unfinished. Architecture
+is executing the newly available finite reader qualification above while retaining
+its actual Goal status; no duplicate Goal or automatic resumption is claimed.
+Quest native work still has no newly available implementation inputs. Completed
+deliveries stay closed. Authentic lifecycle/source/cost/settlement/publication
+owner interfaces and original fixtures remain the native implementation triggers.
 Quest prep's [source-interface reassessment](https://github.com/Community-Duris/Duris/blob/9c14df4183e6633b0a6e99b563dc6b7451792817/docs/persistence/economy_accounting/quest-prep/OWNER_INTERFACE_REASSESSMENT_2026-10-07.md)
 confirms its actual capture/assertion imports do not use the changed coin audit
 reader. Its five ranked next cases require genuine recipe/cost/ACK cuts, supported
