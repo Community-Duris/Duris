@@ -455,8 +455,10 @@ Latest code/qualification review closes the two selected implementation boundari
 [enhancement contract repair](../quest-prep/ENHANCE_MODULE_BOUNDARY_REVIEW_2026-10-07.md),
 code `7e37d1db1244717e4e8107b5313ac9dc706f69bd`. Both independently apply to bare
 primaryc590 without optional architecture/prep predecessors. Exact canonical
-worker documentation deliveries are being published separately; optional actual
-adoption and genuine native acceptance remain unknown/open.
+worker documentation deliveries are published and independently reviewed:
+[R12 deliverye74f25c61](https://github.com/Community-Duris/Duris/blob/e74f25c6134da4dc39d2d806d8718ba936741e53/docs/persistence/economy_accounting/domain-separation/R12_SHOP_SALE_QUOTE_HANDOFF.md)
+and [enhancement delivery94276187d](https://github.com/Community-Duris/Duris/blob/94276187d88e30756831e79edf7cfe7c4a5f2347/docs/persistence/economy_accounting/quest-prep/ENHANCE_BOUNDARY_IMPLEMENTATION.md).
+Optional actual adoption and genuine native acceptance remain unknown/open.
 
 R12 root execution PASSes committed baseline/Og86 each, full/production import
 trees/all6,453 and6,452 export bodies, both retained/copied strict740-object ELFs,
@@ -467,8 +469,9 @@ all8 sealed receipts, exact one-file import and both6,451-entry canonical archiv
 authenticate. Original fixture failures and the separate direct-reentry source
 concern stay explicit. These are calculation/module/source-contract proofs.
 
-Both chats finish canonical handoffs, then reassess published changes and precise
-owner prerequisites. Primary6ca exposes no new quest capability or completed native
+Both selected canonical handoffs are closed at their declared scope. The chats
+now reassess published changes and precise owner prerequisites. Primary6ca exposes
+no new quest capability or completed native
 journey. Native repair/smith selection, pre-payment effects, material lifetime and
 publication are not replaced by price-only wrappers. Select a materially useful
 independent connected operation only when real original feasibility/ownership

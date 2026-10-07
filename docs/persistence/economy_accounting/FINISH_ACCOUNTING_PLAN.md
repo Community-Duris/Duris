@@ -290,9 +290,13 @@ Root complete maintained command PASSes61, rejects all28 guarantee removals and
 accepts harmless formatting. Original raw-count failure is preserved; separate
 direct-reentry/missing-file source concern remains unfixed and unqualified.
 
-Canonical worker documentation handoffs are being published separately; import
-code alone only after normal review at a suitable owner batch. Actual adoption is
-unknown. No primary wait, completed-area rewrite or new release gate. Current6ca
+Canonical worker documentation deliveries are published and independently reviewed:
+[R12 e74f25c6134da4dc39d2d806d8718ba936741e53](https://github.com/Community-Duris/Duris/blob/e74f25c6134da4dc39d2d806d8718ba936741e53/docs/persistence/economy_accounting/domain-separation/R12_SHOP_SALE_QUOTE_HANDOFF.md)
+and [enhancement94276187d88e30756831e79edf7cfe7c4a5f2347](https://github.com/Community-Duris/Duris/blob/94276187d88e30756831e79edf7cfe7c4a5f2347/docs/persistence/economy_accounting/quest-prep/ENHANCE_BOUNDARY_IMPLEMENTATION.md).
+All seven changed docs are UTF8 with unchanged qualified source/tests and exact
+authenticated SHA256 references. Selected code/qualification/canonical review is
+closed. Import code alone after normal review at a suitable owner batch; actual
+adoption is unknown. No primary wait, completed-area rewrite or new gate. Current6ca
 shared-native private candidate/cache/tooling, Collector/SHOP/flat boot and native
 quest lifecycle/cost/publication/ACK/held-settlement/refund remain owner dependencies.
 Both chats reassess concrete useful independent work after handoff; do not invent

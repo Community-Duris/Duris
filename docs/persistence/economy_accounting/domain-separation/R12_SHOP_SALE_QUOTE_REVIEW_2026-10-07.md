@@ -176,3 +176,18 @@ state exact dependencies; completed quotations are not an arbitrary extraction
 cap and not a reason to invent price-only wrappers. Primary Plans1-5/applicable
 original R1-R8, release and optional adoption remain open. Root Goal/heartbeat
 remain ACTIVE throughout the observable finish line.
+
+## Canonical delivery closure
+
+Published canonical documentation delivery
+`e74f25c6134da4dc39d2d806d8718ba936741e53` is independently authenticated.
+Its four changed files are exactly the three owned overviews and
+[R12_SHOP_SALE_QUOTE_HANDOFF.md](https://github.com/Community-Duris/Duris/blob/e74f25c6134da4dc39d2d806d8718ba936741e53/docs/persistence/economy_accounting/domain-separation/R12_SHOP_SALE_QUOTE_HANDOFF.md).
+All four are valid UTF8; source/tests remain exactly the qualified code72f.
+Every64-digit SHA256 in the canonical handoff matches the independently
+authenticated code/export/receipt/image/original-proof pins. Handoff text SHA256
+`e5d5a7b5bb27d329ed5d7d79b45c5e06707caaa9cb46f017b152294b3eee74f9`.
+Root quotation-delivery-authentication-RESULT.json records exact document bytes.
+This closes the selected R12 canonical handoff review without another execution
+or adoption wait. Primarye0b changes documentation only from the actualc590 import
+base. Genuine native qualification, optional adoption and overall finish stay open.
