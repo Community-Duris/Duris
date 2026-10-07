@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 194 authored journals, accounting-gated player surfaces, starter/town
+**Status: 195 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5251,3 +5251,10 @@ Mode-zero initial stock, conditional/manual renewal and four foreign zones requi
 The [Clavikord dossier](zone-stories/LIZARDMAN_SWAMPS_OF_CLAVIKORD.md) adds independent redemption/revenge returns with competing NPC/source episodes: Bemon carries the head Vornin needs, while Bemon's own D return attempts to remove his inventory. Universal campaign adapters need explicit shared/personal branch policy, NPC generation, actual retirement/renewal and supplied-proof history. A rare/wandering recipient is not a fixed counter or guaranteed daily resource. The foreign merchant provides an alternate exact Sslith head, with active-accounting trade still unavailable.
 
 Effective bindings include Bemon's table-driven epic teacher, Vornin's empty shop and independent quest handlers. Port combined training/shop economic settlement before service objectives. Use actual flag/parser constants: guardian regeneration is not a level gate, and wight trap damage12 lacks an effect case while its GET/PUT attempt still consumes charge and rejects pickup. Expand builder selector/combination validation and separate admitted trap activation, state mutation and owned recovery. Moral, corruption, shrine and future-help text needs explicit endpoints. Secret reveal/OPEN/passage and paired ENTER pools require successful native evidence. Twenty owned follow-ups record fair decisions; no native repair ships.
+
+
+## Tower of High Sorcery integration extension
+
+The [Tower dossier](zone-stories/TOWER_OF_HIGH_SORCERY.md) adds independent three-material Labyrinth and two-part kraken bundles with mixed room/carried/equipped/nested origins. Universal source adapters need exact root UID/container lineage, actor/party, first acquisition versus transfer, spending and recovery. Native recipes accept supplied exact materials; anatomical item type8 does not mean ordinary CARVE constructs the requested proof. Zbarnos's three-kraken/curse text exceeds the verified two-item terms, so builders explicitly choose wording reconciliation or separate personal/shared outcome endpoints.
+
+Multi-reward presentation must distinguish accepted receipt from XP/coin/item child settlement and attempted D retirement. Freeze eligible party and effective XP caps while preserving each member's actual source history; qualify partial failure and cold/replay recovery. Instance-specific wandering/source availability can fail independently of UTC rollover, including a possible dispersal sink for a capped craftsman. Effective loader/conversion/default/table roles must precede behavior findings: raw kraken dice do not establish actual HP, rogue keywords do not suffice for CLASS_ROGUE binding, and periodic bulette speech is not a dialogue achievement. Shared PULL/reverse-door state, exact key break/unlock, boat/water admission and actual passage need typed outcomes. Twenty owned follow-ups document fair builder choices; no native repair ships.

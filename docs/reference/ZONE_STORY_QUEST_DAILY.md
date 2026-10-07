@@ -189,3 +189,8 @@ The [Drifting Realm dossier](../design/zone-stories/DRIFTING_REALM.md) preserves
 ## Clavikord daily qualification
 
 The [Clavikord dossier](../design/zone-stories/LIZARDMAN_SWAMPS_OF_CLAVIKORD.md) retains two candidates because mode1 is resettable, although each recipient departs after accepting a different head. Bemon is also the source of Vornin's proof; finishing Bemon's own return can remove that stock within the same appearance. Vornin has a25-percent declaration, and both givers wander. Qualify owned NPC/source renewal, caps/chances, active READY exact returns and retirement/recovery independently of discovery/UTC rollover. The merchant's alternate Sslith head and supplied proofs remain valid origins without personal-kill history; unavailable accounting-era trading is not a daily route. Policy stays disabled by default.
+
+
+## Tower of High Sorcery daily qualification
+
+The [Tower dossier](../design/zone-stories/TOWER_OF_HIGH_SORCERY.md) retains two mode1 candidates with independent three-material and two-part recipes. Both recipients depart; Zbarnos wanders from dispersal with a possible no-exit sink. Labyrinth room/G/P-with-equipped-sack sources and Tower E/G parts have independent caps and custody. Qualify active READY exact bundle admission, eligible party/XP terms, XP/coin/item child settlement, actual recipient retirement and owned source renewal across zone boundaries. Discovery/UTC rollover does not supply materials, remove a curse, guarantee three personal kills or return an absent giver. Potential daily classification is not guaranteed availability; policy remains disabled by default.

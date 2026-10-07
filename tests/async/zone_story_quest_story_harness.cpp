@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 194 &&
+		require(catalog.story_mappings.size() == 195 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -23322,6 +23322,129 @@ int main(int argc, char **argv)
 					raw.progress_for_zone(7, 42, 60).completed == 2 &&
 					!recovered.has_discovered(7, 42, 1000),
 				"Clavikord cold/raw recovery lost native returns or invented merchant zone discovery");
+		}
+
+		{
+			const auto &smedge = story_for("tower", "smedgewack-labyrinth-materials");
+			const auto &zbarnos = story_for("tower", "zbarnos-kraken-parts");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 93, 9334, 100, "arrival") ==
+					result::applied,
+				"Tower discovery failed");
+			std::string journal =
+				journey.render_journal(7, 42, 93, 10, 1, 101, false, false);
+			require(journal.find(smedge.title) == std::string::npos &&
+					journal.find(zbarnos.title) == std::string::npos,
+				"Tower discovery exposed unencountered givers");
+			require(journey.meet_npc(7, 42, 9321, 9340, 102) == result::applied,
+				"Tower Smedgewack encounter failed");
+			journal = journey.render_journal(7, 42, 93, 10, 1, 103, false, false);
+			require(journal.find(smedge.title) != std::string::npos &&
+					journal.find(zbarnos.title) == std::string::npos,
+				"Tower Smedgewack encounter exposed independent Zbarnos request");
+			require(journey.meet_npc(7, 42, 9367, 9376, 104) == result::applied,
+				"Tower wandering Zbarnos encounter failed");
+			const auto section = [&](const auto &entry)
+			{
+				const auto start = journal.find("] " + entry.title + "\r\n");
+				require(start != std::string::npos,
+					"Tower journal section missing");
+				const auto end = journal.find("\r\n  [", start + 3);
+				return journal.substr(start,
+						      end == std::string::npos ? end : end - start);
+			};
+			const auto status = [&](const auto &entry, size_t row, const char *label)
+			{
+				return section(entry).find(std::string("[") + label + "] " +
+							   entry.steps[row].text) !=
+				       std::string::npos;
+			};
+			supplies = {};
+			supplies.carried[8] = 2;
+			supplies.carried[5067] = 1;
+			supplies.carried[9369] = 1;
+			supplies.carried[9373] = 1;
+			supplies.carried[9375] = 1;
+			supplies.equipped[21] = 9366;
+			supplies.equipped[18] = 5035;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 93, 10, 1, 105, false, false,
+							 &supplies);
+			require(status(smedge, 0, "Missing now") &&
+					status(smedge, 1, "Missing now") &&
+					status(smedge, 2, "Missing now") &&
+					status(zbarnos, 0, "Missing now") &&
+					status(zbarnos, 1, "Missing now") &&
+					journey.progress_for_zone(7, 42, 93).completed == 0 &&
+					journey.serialize_state() == before,
+				"Tower sack, generic part, held/equipped proof or reward fabricated material or history");
+			supplies.carried[5011] = 1;
+			supplies.carried[5016] = 1;
+			supplies.carried[9365] = 1;
+			journal = journey.render_journal(7, 42, 93, 10, 1, 106, false, false,
+							 &supplies);
+			require(status(smedge, 0, "Ready now") && status(smedge, 1, "Ready now") &&
+					status(smedge, 2, "Missing now") &&
+					status(zbarnos, 0, "Ready now") &&
+					status(zbarnos, 1, "Missing now") &&
+					journey.serialize_state() == before,
+				"Tower partial supplied bundles fabricated missing exact material or a receipt");
+			supplies.carried[9366] = 1;
+			journal = journey.render_journal(7, 42, 93, 10, 1, 107, false, false,
+							 &supplies);
+			require(status(zbarnos, 0, "Ready now") &&
+					status(zbarnos, 1, "Ready now") &&
+					section(zbarnos).find("Next: " +
+							      zbarnos.steps.back().text) !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Tower exact supplied kraken bundle required an invented kill or prior request receipt");
+			// Synthetic receipts qualify projection, not native XP settlement, source custody or retirement.
+			record(journey, zbarnos.contracts.front(), "tower-zbarnos-first", 93, 9376);
+			supplies.carried.erase(9365);
+			supplies.carried.erase(9366);
+			journal = journey.render_journal(7, 42, 93, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(zbarnos, 0, "Missing now") &&
+					status(zbarnos, 1, "Missing now") &&
+					status(zbarnos, 2, "Recorded") &&
+					journey.progress_for_zone(7, 42, 93).completed == 1 &&
+					journey.evidence_for(smedge.contracts.front(), 2)
+							.successful_attempts == 0,
+				"Tower Zbarnos-first return invented Smedgewack history or lost spent bundle receipt");
+			supplies.carried[5035] = 1;
+			journal = journey.render_journal(7, 42, 93, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(smedge, 0, "Ready now") && status(smedge, 1, "Ready now") &&
+					status(smedge, 2, "Ready now"),
+				"Tower exact Labyrinth bundle was not prepared independently");
+			record(journey, smedge.contracts.front(), "tower-smedge-later", 93, 9340);
+			supplies.carried.clear();
+			supplies.equipped.clear();
+			journal = journey.render_journal(7, 42, 93, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(smedge, 0, "Missing now") &&
+					status(smedge, 1, "Missing now") &&
+					status(smedge, 2, "Missing now") &&
+					status(smedge, 3, "Recorded") &&
+					status(zbarnos, 2, "Recorded"),
+				"Tower spending exact bundles erased independent accepted returns");
+			auto replay =
+				completion(zbarnos.contracts.front(), "tower-zbarnos-first", 120);
+			replay.transaction.zone_number = 93;
+			replay.transaction.room_vnum = 9376;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Tower replay duplicated accepted bundle return");
+			service recovered(catalog), raw(raw_catalog);
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 93).completed == 2 &&
+					recovered.progress_for_zone(7, 42, 93).total == 2 &&
+					raw.progress_for_zone(7, 42, 93).completed == 2 &&
+					!recovered.has_discovered(7, 42, 50) &&
+					!recovered.has_discovered(7, 42, 55),
+				"Tower cold/raw recovery lost bundle receipts or invented foreign discovery");
 		}
 
 		std::cout

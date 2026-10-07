@@ -48978,6 +48978,270 @@
     {
       "contacts": [
         {
+          "description": "Smedgewack waits in the Tower. Ask labyrinth, no, return or maze about the three exact materials he wants from the Labyrinth. His accepted return includes experience, an earstud and coins, and makes him depart.",
+          "keyword": "smedgewack",
+          "mob_vnum": 9321,
+          "name": "Smedgewack",
+          "topics": [
+            "labyrinth",
+            "no",
+            "return",
+            "maze"
+          ]
+        },
+        {
+          "description": "Zbarnos roams when present. Ask kraken, eye or scale about his two exact materials. He rewards an accepted return and departs. His curse story does not require a recorded personal defeat of all three krakens.",
+          "keyword": "zbarnos",
+          "mob_vnum": 9367,
+          "name": "Zbarnos, The Master Craftsman",
+          "topics": [
+            "kraken",
+            "eye",
+            "scale"
+          ]
+        },
+        {
+          "description": "The tower guardian is a declared holder of the large bright key for the main gate. Key recovery, unlocking and actual passage are separate from either material return.",
+          "keyword": "guardian",
+          "mob_vnum": 9308,
+          "name": "the Tower Guardian",
+          "topics": []
+        },
+        {
+          "description": "The chief guard carries the small bright key for the upper archmage door. This is a separate source and access lead.",
+          "keyword": "chief",
+          "mob_vnum": 9307,
+          "name": "Brekrvertornthal, The Chief Guard",
+          "topics": []
+        },
+        {
+          "description": "The golden warrior carries the outer prison key. Its recovery does not settle the nearby hidden passage or Zbarnos return.",
+          "keyword": "warrior",
+          "mob_vnum": 9311,
+          "name": "The golden warrior",
+          "topics": []
+        },
+        {
+          "description": "Barkwoof wears a small brittle key at the end of the statue sequence. The keyed trapdoor is a separate access lead.",
+          "keyword": "barkwoof",
+          "mob_vnum": 9343,
+          "name": "Barkwoof, The Mongrelman",
+          "topics": []
+        },
+        {
+          "description": "Armonder and his followers are optional native encounters beyond the Tower halls. Their lore does not define another accepted local request.",
+          "keyword": "armonder",
+          "mob_vnum": 9352,
+          "name": "Armonder",
+          "topics": []
+        },
+        {
+          "description": "The chained silver dragon has a dragonslayer and egg. Its challenge and treasure are separate exploration leads, with no extra accepted local hand-in.",
+          "keyword": "dragon",
+          "mob_vnum": 9317,
+          "name": "a silver dragon",
+          "topics": []
+        },
+        {
+          "description": "Drestah is the upper archmage encounter. His imported memory item belongs to another zone request; owning it does not complete a Tower quest.",
+          "keyword": "drestah",
+          "mob_vnum": 9300,
+          "name": "Drestah, The Archmage",
+          "topics": []
+        },
+        {
+          "description": "Jethromus is a native mage encounter within the Tower. Ordinary combat and equipment remain separate from the two accepted returns.",
+          "keyword": "jethromus",
+          "mob_vnum": 9303,
+          "name": "Jethromus, The Black Mage",
+          "topics": []
+        },
+        {
+          "description": "Sarlania is a native cleric encounter. Her description and equipment do not define another local quest receipt.",
+          "keyword": "sarlania",
+          "mob_vnum": 9304,
+          "name": "Sarlania, The Cleric",
+          "topics": []
+        },
+        {
+          "description": "Xlorkortor is a high priest encounter. His native role is a separate optional lead.",
+          "keyword": "xlorkortor",
+          "mob_vnum": 9309,
+          "name": "Xlorkortor, The High Priest",
+          "topics": []
+        },
+        {
+          "description": "Karkran stands at the dock and carries a strange skiff. The skiff is an ordinary boat; this is not a declared fare service or quest reward.",
+          "keyword": "karkran",
+          "mob_vnum": 9363,
+          "name": "Karkran",
+          "topics": []
+        },
+        {
+          "description": "The mysterious kraken is a separate lake encounter. It holds neither requested kraken part and its personal defeat is not checked by Zbarnos\u2019s hand-in.",
+          "keyword": "kraken",
+          "mob_vnum": 9354,
+          "name": "a mysterious kraken",
+          "topics": []
+        },
+        {
+          "description": "The gargantuan kraken wears the exact scale in the submerged network. Recovering that scale and returning it with the eye are separate facts.",
+          "keyword": "kraken",
+          "mob_vnum": 9360,
+          "name": "a gargantuan kraken",
+          "topics": []
+        },
+        {
+          "description": "The giant kraken carries the exact eye in the submerged network. A supplied exact eye can also fit without recording its original recovery.",
+          "keyword": "kraken",
+          "mob_vnum": 9361,
+          "name": "a giant kraken",
+          "topics": []
+        },
+        {
+          "description": "Bulettes and landsharks inhabit the statue passage. Their shared periodic lines are atmospheric speech and do not define keyword achievements.",
+          "keyword": "bulette",
+          "mob_vnum": 9342,
+          "name": "the landshark",
+          "topics": []
+        },
+        {
+          "description": "The sinister rogue is a native encounter. Its name alone does not establish a bound thief service or an accepted quest.",
+          "keyword": "rogue",
+          "mob_vnum": 9316,
+          "name": "a sinister rogue",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow Smedgewack\u2019s Labyrinth materials and Zbarnos\u2019s kraken parts as two independent requests, with separate Tower access and treasure leads.",
+      "orientation": [
+        "The current surface approach enters the Tower at its southern entrance. The main gate, upper archmage door, prison door and statue trapdoor have separate keys. Successful recovery, unlocking, opening and crossing are different steps; a supplied key or already-open door may also provide access.",
+        "Find Smedgewack in the Tower and ask labyrinth, no, return or maze. He wants one exact piece of calcite, one large flask and one small diamond tattoo. In the Labyrinth these are declared on a rock worm, inside an explorer\u2019s worn sack, and on the ground at a sparkling corner respectively.",
+        "Remove equipped materials or retrieve them from their containers before offering them loose. Possessing a source sack, a generic body part or a quest reward does not replace the requested item. Supplied exact materials can fit without an earlier conversation or personal recovery history.",
+        "Find Zbarnos where he has wandered and ask kraken, eye or scale. He wants the exact eye and scale together. The giant kraken carries the eye and the gargantuan kraken wears the scale in the submerged caverns; the mysterious kraken is a separate encounter.",
+        "The skull and goblin spine respond to PULL and can unblock the passage between the prison wall and corridor. Pulling, observing an already-open passage and actually crossing it are separate facts. Neither native return requires a recorded pull or key-use receipt.",
+        "Beyond that passage the corridors lead toward the dock, lake and submerged network. Karkran carries an ordinary skiff. Native water travel, visibility, survival and combat still apply; merely owning the skiff does not record a journey or guarantee underwater safety.",
+        "The archmage, priests, dragon, Armonder\u2019s followers, statue guardians and their treasure are separate exploration leads. Zbarnos\u2019s text describes three defeated krakens and a lifted curse, but the accepted recipe checks only the two exact materials. No extra curse, personal-kill or conversation achievement is declared.",
+        "Both accepted returns make their recipients depart. Reward experience, coins and items have separate settlement and recovery paths. Source caps, wandering recipients and actual resets govern availability; a new day does not promise replenishment or a returning giver. Recorded accepted returns remain after preparation is spent."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "tower",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:5011,I:5016,I:5035;receive=C:53000,E:18100,I:9375;disappear=1",
+              "giver_vnum": 9321
+            }
+          ],
+          "id": "smedgewack-labyrinth-materials",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "A rock worm in the Labyrinth carries this calcite. Source recovery and a supplied exact piece fit different histories; neither creates the accepted return.",
+              "id": "material-5011",
+              "item_vnums": [
+                5011
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact piece of calcite loose"
+            },
+            {
+              "count": 1,
+              "hint": "The Labyrinth explorer\u2019s worn mold-covered sack contains the flask. Recover the exact flask from its container; owning the sack alone does not prepare the offering.",
+              "id": "material-5016",
+              "item_vnums": [
+                5016
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact large flask loose"
+            },
+            {
+              "count": 1,
+              "hint": "The Labyrinth declares the tattoo on the ground at a sparkling corner. Wearing it and carrying it loose are different preparation states.",
+              "id": "material-5035",
+              "item_vnums": [
+                5035
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact small diamond tattoo loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:5011,I:5016,I:5035;receive=C:53000,E:18100,I:9375;disappear=1",
+                  "giver_vnum": 9321
+                }
+              ],
+              "hint": "Offer the full exact bundle loose to the named recipient. Its accepted receipt records this return; source recovery, rewards settling and the recipient\u2019s departure are separate consequences.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record Smedgewack\u2019s accepted material bundle"
+            }
+          ],
+          "summary": "One exact calcite, flask and tattoo bundle earns the native earstud, experience and coins, followed by departure. Each material is optional current preparation; only the accepted return completes the request.",
+          "title": "Bring Labyrinth materials to Smedgewack"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:9365,I:9366;receive=E:33333,I:9369,I:9373;disappear=1",
+              "giver_vnum": 9367
+            }
+          ],
+          "id": "zbarnos-kraken-parts",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The giant kraken carries this eye. A supplied exact eye can fit; a generic carved body part cannot replace it.",
+              "id": "material-9365",
+              "item_vnums": [
+                9365
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact kraken eye loose"
+            },
+            {
+              "count": 1,
+              "hint": "The gargantuan kraken wears this scale. Worn, nested and loose custody differ; recovering the scale and Zbarnos accepting the bundle are separate events.",
+              "id": "material-9366",
+              "item_vnums": [
+                9366
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the exact kraken scale loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9365,I:9366;receive=E:33333,I:9369,I:9373;disappear=1",
+                  "giver_vnum": 9367
+                }
+              ],
+              "hint": "Offer the full exact bundle loose to the named recipient. Its accepted receipt records this return; source recovery, rewards settling and the recipient\u2019s departure are separate consequences.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record Zbarnos\u2019s accepted eye and scale bundle"
+            }
+          ],
+          "summary": "The exact eye and scale together earn the native mask, ring and experience, followed by departure. The return is independent of Smedgewack and does not establish three personal kraken defeats or a separate settled curse outcome.",
+          "title": "Return the kraken parts to Zbarnos"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Weaponsmith shop. Ask weapons. The exact obsidian fragment commission yields the ornate silver dagger; ordinary stock and the daughter's claimed gift remain separate.",
           "keyword": "lawter",
           "mob_vnum": 9411,
