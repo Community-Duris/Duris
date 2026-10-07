@@ -1,9 +1,20 @@
 # Coordinator assessment of operation inventory v1 - 2026-10-07
 
-The coordinator accepts the bounded inventory and proposed R1 preparation seam
-as the current independent implementation queue. Implementation and qualification
-of R1/R2 remain outstanding. This is not a claim that all game domains are
-converted, RAM-authoritative, or ready for accounting activation.
+The coordinator accepts bounded inventory v1. Its fixed R0/R1/R2 extractions
+are now implemented, connected, qualified at their declared scopes, published
+and reviewed. The original reservation assessment below is preserved as history.
+This does not claim full domain conversion, RAM authority or accounting activation.
+
+| Required row | Implementation | Final disposition |
+|---|---|---|
+| R0 Collector image | `3d2b85b0688684721f8db559cb3ea35b1830a1cc` | [Reviewed](COORDINATOR_REVIEW_2026-10-07.md); component/codec and fresh maintained builds; native journeys unrun |
+| R1 Craft/Forge quote | `48cdf9cb0893873651216f7940aae2691d060e58` | [Reviewed](R1_CRAFTING_REVIEW_2026-10-07.md); numerical/components, maintained builds and SQL/flat recipe journeys |
+| R2 wallet/bank deltas | `24fa551ae16900b41e509f79fe4685762e0fb2e9` | [Reviewed](R2_CURRENCY_REVIEW_2026-10-07.md); original/extracted numerical controls, maintained builds and 84 selected completion scenarios |
+
+All are optional import bundles; primary adoption is unknown. No required row
+was removed or silently converted to a dependency disposition. Remaining
+owner-dependent capture/authority coupling stays explicit future work, outside
+this fixed milestone. No shared qualification failure is represented as a pass.
 
 Reviewed inventory publication:
 `92871c3dcb9bf90932eb102775ed9547022f4163`,
