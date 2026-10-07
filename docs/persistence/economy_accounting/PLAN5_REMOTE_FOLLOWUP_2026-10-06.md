@@ -871,3 +871,26 @@ No acknowledgement/application/direct message is claimed. Full reconstruction,
 R7/R8, genuine writer/gameplay/fault, combined lifecycle and host budgets remain
 open; primary alone qualifies/publishes the combined candidate. No independent
 slice blocker, maintained activation, production change or release completion.
+
+
+## Maximum lifecycle operator budget
+
+[The owned native budget repair](PLAN5_LIFECYCLE_OPERATOR_BUDGET_QUALIFICATION_2026-10-06.md)
+continues on `codex/accounting-plan5`, base `21f5896f6a8f7601ac9bea400f842781c962536f`.
+The supported healthy 3,071-holding receipt needs 9,574 physical reads and
+19,639,289 bytes; the prior 2,048-read budget refused it. The default count is now
+16,384, preserving 128 MiB / 8,192-entry / 30-second bounds and the separate
+64-read pages. All 131 lifecycle cases, original authority/root/page controls,
+69 marker cases and 67 both-engine canonical 0062 methods pass, zero selected
+Linux skips. Both fresh 740-object
+production builds pass. The failed metrics collector is retained; build and
+final component archives are separately bound, with unchanged native inputs.
+
+Seal `D:/CodexEvidence/accounting-plan5/bin/lifecycle-budget-seal-01-20261006/evidence.json`,
+SHA256 `a95a5c6f2aefb0b9b4899d76926b278188fabbe9641076ac1bbc3c1b45d7ce01`, report and receipt are the nonblocking local notebook
+curator packet. All earlier branch tips/follow-ups remain ancestors. No shared
+interface/registration change, acknowledgement/application or direct message is
+claimed. Missing lifecycle pages are established and remain next; complete
+reconstruction/R7/R8/genuine producer/cold/combined lifecycle/release-host gates
+remain open. No independent slice blocker, maintained activation or production
+change; primary owns combined candidate integration and qualification.

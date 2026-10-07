@@ -965,6 +965,18 @@ See [the exact binding qualification](PLAN5_CAPTURED_ITEM_BINDING_QUALIFICATION_
 
 ## Qualification budgets
 
+The independent `--economic-evidence-audit` flatfile operator admits at most
+16,384 physical input-file reads, 128 MiB of physical input, 8,192 directory entries
+and 30 seconds of cooperative work. Repeated reads through the bounded
+eight-bucket caches count individually. The prior 2,048-read limit refused the
+supported 3,071-holding lifecycle fixture after only 2,478,480 bytes; that healthy
+fixture requires 9,574 reads and 19,639,289 bytes. The native regression measures
+this workload under sanitizers while checking unchanged authority metadata.
+These are component measurements, not a release-host or growing-history budget
+qualification. Stores exceeding any cap still refuse; this one-shot audit does
+not establish resumable lifecycle or complete reconciliation coverage. Retained
+root and authority-link pages retain their explicit 64-read/32 MiB limits.
+
 The isolated native flatfile restore qualifier validates every retained
 `domains/quest-mobile-native-<id>.qmn` image after authority-bundle recovery, in
 both state preflight and final qualification. It requires a canonical nonzero

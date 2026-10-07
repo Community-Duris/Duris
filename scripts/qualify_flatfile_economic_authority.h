@@ -46,7 +46,9 @@ struct audit_budget_refused : std::runtime_error
 };
 struct audit_budget
 {
-	size_t remaining_bytes = 128 * 1024 * 1024, remaining_files = 2048;
+	// A valid 3071-holding lifecycle fixture uses 9574 physical reads through
+	// the bounded eight-bucket caches. Keep byte/time bounds while admitting it.
+	size_t remaining_bytes = 128 * 1024 * 1024, remaining_files = 16384;
 	size_t remaining_entries = 8192;
 	std::chrono::steady_clock::time_point deadline =
 		std::chrono::steady_clock::now() + std::chrono::seconds(30);
