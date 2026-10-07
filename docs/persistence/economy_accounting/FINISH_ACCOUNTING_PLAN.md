@@ -145,6 +145,12 @@ Continue accounting if the branch/handoff is not yet available or a bundle would
 increase the current milestone's work. This plan's publication makes the stream
 discoverable; it does not establish that a running primary has already read it.
 
+The independent coordinator's
+[delivery review](domain-separation/COORDINATOR_REVIEW_2026-10-07.md) records source
+assessment, separately executed checks, import prerequisites and outstanding
+qualification. Read its current status alongside the worker handoff; an in-progress
+review or worker-only result is not combined-candidate qualification.
+
 Actual RAM execution, authority switching/failover, general framework creation,
 new persistence formats/schema, broad rewrites, deployment, and accounting
 activation remain outside this stream. Completion of its first Goal means the
