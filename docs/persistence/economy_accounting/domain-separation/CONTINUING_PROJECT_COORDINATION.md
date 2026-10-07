@@ -240,6 +240,29 @@ R6, with exact missing owner interfaces retained. Do not duplicate completed
 owned rules or manufacture thin extractions. Coordinator and recurring monitor
 remain active; this checkpoint does not satisfy the primary finish line.
 
+## Next feasibility reassessment: original all-stat planning
+
+Worker dependency assessment `9200ac9621a8c1e4ab0a0802a8d3e4d6e0a12a63`
+records the nine-family interfaces and compatible optional compositions. The
+coordinator requests one concrete reassessment before accepting that no useful
+independent implementation remains: the existing complete superior all-stat
+planner, rather than another scalar helper.
+
+Absence of a separately published capture grant is not itself a blocker for
+a compatible local enhancement rule extraction already authorized by the user.
+An exact proposal may supply owned facts at each original observation/prototype/
+target/cleanup point while preserving native owner ordering, early failure and
+partial-plan behavior. Existing base/target probes, first matching modifiers,
+APPLY order, material aggregation and contiguous remaining steps provide the
+concrete source to inspect. Do not prefetch later probes past an earlier failure,
+mint native/publication authority or introduce a generalized backend framework.
+
+The worker must either reserve a substantial owned planning boundary with
+executable original/extracted call-order proof, or identify the specific native
+call/effect that cannot be preserved. No implementation is approved by this
+feasibility request alone. Other native authority dependencies remain real and
+owned. Primary integration does not wait; the continuing Goal stays active.
+
 ## Recurring monitor
 
 The existing thread heartbeat checks every15 minutes, supplemented by active
