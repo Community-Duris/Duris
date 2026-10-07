@@ -207,6 +207,21 @@ class authority_read_lock
 		finish();
 	}
 	bool locked() const { return lock_fd.value >= 0; }
+	// Current native money scans also refuse legacy domain recovery intents.
+	// Existing retained-only readers keep their original authority-only gate.
+	void no_pending_player_domains() const
+	{
+		no_pending();
+		if (domains_fd.value >= 0)
+			for (const char *name :
+			     { ".player-domain-transaction", ".currency-transaction" })
+			{
+				struct stat info = {};
+				need(fstatat(domains_fd.value, name, &info, AT_SYMLINK_NOFOLLOW) ==
+					     -1 &&
+				     errno == ENOENT);
+			}
+	}
 	void finish() const
 	{
 		unchanged(root_fd.value, AT_FDCWD, root.c_str());
@@ -670,6 +685,25 @@ class checker
 	{
 		control();
 		epochs();
+	}
+	identity current_epoch() const { return last_epoch; }
+	digest authority_body() const { return control_digest; }
+	// Call after begin_page(); retained-record run() verifies the full closure.
+	// Return the immutable economic identity separately from its current locator.
+	template <typename Observe> void for_each_mapping(Observe observe) const
+	{
+		for (size_t bucket = 0; bucket < buckets; ++bucket)
+			for (const auto &row : mappings(bucket))
+			{
+				audit_checkpoint();
+				bytes account(lineage.begin(), lineage.end());
+				put(account, 1, 2);
+				put(account, number(row.key, 0, 2), 2);
+				put(account, row.authority, 8);
+				put(account, number(row.key, 2, 8), 8);
+				put(account, 0, 4);
+				observe(account, row);
+			}
 	}
 	// Reverse physical-file association, independent of the cross-link pages.
 	void namespace_metadata(const std::string &name)

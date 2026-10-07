@@ -46,7 +46,7 @@ static critical_operation_id id(uint64_t value)
 }
 static flatfile_accounting_record record(uint32_t sequence, bool large, bool source = false,
 					 int32_t pid = 11, bool items = false, uint8_t bucket = 1,
-					 uint64_t wallet_revision = 0)
+					 uint64_t wallet_revision = 0, uint64_t bank_revision = 0)
 {
 	flatfile_accounting_record value;
 	critical_operation_id operation = {};
@@ -76,6 +76,7 @@ static flatfile_accounting_record record(uint32_t sequence, bool large, bool sou
 	state.state.wallet.amount[0] = 100;
 	state.state.wallet_revision = wallet_revision;
 	state.state.bank.amount[0] = 50;
+	state.state.bank_revision = bank_revision;
 	const auto freeze = source ? economic_quest_wallet_reward_intent :
 				     economic_bank_transfer_intent;
 	assert(freeze(value.command, state.epoch, state.wallet_account, state.bank_account,
@@ -436,7 +437,10 @@ int main(int argc, char **argv)
 	       mode == "source-claims" || mode == "retention" || mode == "baseline" ||
 	       mode == "baseline-empty" || mode == "baseline-rich" || mode == "baseline-maximum" ||
 	       mode == "baseline-full-index" || mode == "baseline-empty-history" ||
-	       mode == "baseline-history" || mode == "baseline-money-history");
+	       mode == "baseline-history" || mode == "baseline-money-history" ||
+	       mode == "baseline-wallet-bank" || mode == "baseline-wallet-bank-transfer" ||
+	       mode == "baseline-wallet-bank-epochs" || mode == "baseline-wallet-bank-retired" ||
+	       mode == "baseline-wallet-bank-unanchored");
 	for (size_t bucket = 0; bucket < 256; ++bucket)
 	{
 		assert(access::initialize_native_bucket(root, lock, control().revision, bucket,
@@ -463,7 +467,8 @@ int main(int argc, char **argv)
 				      wallet.revision, id(6), &operations, &error) == 0);
 	commit();
 	// A recreated native identity gets a new lifetime; the retired one remains.
-	create(economic_account_kind::wallet, 0, { 1, static_cast<uint64_t>(pid), {} });
+	const auto active_wallet =
+		create(economic_account_kind::wallet, 0, { 1, static_cast<uint64_t>(pid), {} });
 	create(economic_account_kind::auction_escrow, 0, { 4, UINT32_MAX, {} });
 	create(economic_account_kind::pending_claim, 0, { 5, INT32_MAX, {} });
 	create(economic_account_kind::treasury, 0, { 6, uint64_t{ UINT32_MAX } + 1, {} });
@@ -486,12 +491,15 @@ int main(int argc, char **argv)
 	assert(access::append_epoch(root, lock, control().revision, epoch, &operations, &error) ==
 	       0);
 	commit();
-	epoch.predecessor = epoch.epoch;
-	epoch.epoch = id(51);
-	epoch.ordinal = 2;
-	assert(access::append_epoch(root, lock, control().revision, epoch, &operations, &error) ==
-	       0);
-	commit();
+	if (!mode.starts_with("baseline-wallet-bank"))
+	{
+		epoch.predecessor = epoch.epoch;
+		epoch.epoch = id(51);
+		epoch.ordinal = 2;
+		assert(access::append_epoch(root, lock, control().revision, epoch, &operations,
+					    &error) == 0);
+		commit();
+	}
 	assert(critical_operation_id_is_zero(control().active_epoch));
 	if (mode == "envelope-records")
 	{
@@ -570,6 +578,9 @@ int main(int argc, char **argv)
 					   { 100, 0, 0, 0 },
 					   mode == "baseline-money-history" ? 42u : 0u,
 					   native_digest });
+		if (mode.starts_with("baseline-wallet-bank"))
+			batch.holdings.push_back(
+				{ bank.account, { 50, 0, 0, 0 }, 1, native_digest });
 		assert(access::initialize_baseline(root, lock, id(1), batch.epoch,
 						   batch.opening_account, id(53), &operations,
 						   &error) == flatfile_accounting_status::ok);
@@ -693,7 +704,7 @@ int main(int argc, char **argv)
 				stage();
 			}
 		}
-		else
+		else if (mode != "baseline-wallet-bank-unanchored")
 			stage();
 		if (mode == "baseline-money-history")
 		{
@@ -704,6 +715,45 @@ int main(int argc, char **argv)
 					     &operations,
 					     &error) == flatfile_accounting_status::ok);
 			commit();
+		}
+		if (mode == "baseline-wallet-bank-transfer" ||
+		    mode == "baseline-wallet-bank-unanchored")
+		{
+			assert(access::initialize_evidence_bucket(root, lock, control().revision, 1,
+								  id(8), &operations, &error) == 0);
+			commit();
+			assert(access::stage(
+				       root, lock, record(1, false, false, 11, false, 1, 0, 1),
+				       &operations, &error) == flatfile_accounting_status::ok);
+			commit();
+		}
+		if (mode == "baseline-wallet-bank-retired")
+		{
+			assert(access::retire_mapping(root, lock, control().revision,
+						      active_wallet.account, active_wallet.revision,
+						      id(56), &operations, &error) == 0);
+			commit();
+		}
+		if (mode == "baseline-wallet-bank-epochs")
+		{
+			// Catalog order selects the current epoch even when its ID sorts first.
+			epoch.predecessor = epoch.epoch;
+			epoch.epoch = id(25);
+			epoch.ordinal = 2;
+			epoch.creating_operation = id(55);
+			assert(access::append_epoch(root, lock, control().revision, epoch,
+						    &operations, &error) == 0);
+			commit();
+			batch.epoch = id(25);
+			batch.preparation_id = id(54);
+			batch.holdings[0].balance[0] = 200;
+			batch.holdings[1].balance[0] = 70;
+			assert(access::initialize_baseline(root, lock, id(1), batch.epoch,
+							   batch.opening_account, id(55),
+							   &operations, &error) ==
+			       flatfile_accounting_status::ok);
+			commit();
+			stage();
 		}
 		if (mode == "baseline-rich")
 		{

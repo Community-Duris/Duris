@@ -1,5 +1,30 @@
 # Plan5 remote branch follow-up and primary refresh â€” 2026-10-06
 
+
+## Independent current wallet/bank comparison qualified — 2026-10-07
+
+[Exact qualification](PLAN5_CURRENT_WALLET_BANK_QUALIFICATION_2026-10-07.md)
+extends the published `1e79b8ad7` decoder on the same `codex/accounting-plan5`
+remote branch. The new read-only command checks current catalog epoch, immutable
+account/current locator, native four-denomination values and money clocks. The
+native stale-wallet gap is reproduced, then 38 sanitizer/operator
+observations and the complete original native/managed drivers pass with0 selected
+skips. Backup review18, original20 valid/367 refusals and2 real isolated boots /
+2 retained generations remain passing. Maintained Make recompiles740 providers;
+its earlier archive is bound to the final fixture-corrected source by all1,304
+native and1,290 dependency bodies/modes. Final55 contracts, normal validator,
+formatting and whitespace pass; release still refuses missing executable writer
+evidence. All seven earlier ancestral tips remain preserved.
+
+Final tested archive `b9936c34b8f6842006c8c2ee8770fe5c92e8344816880205cdd1bf7487a0613c`, code tree `bb03d72a8f0d0d37dc5e30aefbcd68b3a649212e`;
+seal SHA256 `625b28abeab28d7d95ec0572f67fff1f08a0b4d7b4e21892cf2ef0efdeca6fdd`. Latest primary `331f622c15ecbc5f7bade45e87c8c92f873733e6`
+remains separately attributed and owns combined integration. No shared interface/
+schema request, registry/activation/shared runner change or experimental-accounting
+push is made. Current scoped comparison grants no full origins/other-domain R7,
+R8 or release qualification. Primary applies this report/follow-up/receipt curator
+packet to its locally maintained notebook; application and acknowledgement are
+not claimed. The final sealed delivery receipt records the exact result/remote SHA.
+
 Plan5 work and all earlier branch follow-ups continue on remote
 `codex/accounting-plan5`, at worktree
 `C:\Users\alexa\.codex\worktrees\accounting-plan5\NewDuris Max`.

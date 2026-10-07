@@ -2373,9 +2373,13 @@ int main(int argc, char **argv) {
                                               fixture=fixture, operator=binary)
         from flatfile_native_domain_cases import qualify as qualify_native_domains
         native_domains = qualify_native_domains(ROOT, Path(build) / "native-domains")
+        from flatfile_wallet_bank_cases import qualify as qualify_wallet_bank
+        wallet_bank = qualify_wallet_bank(ROOT, Path(build) / "wallet-bank", fixture=fixture,
+            operator=binary, native_fixture=Path(build) / "native-domains/native")
         print(json.dumps({"positive_stores": successes, "refused_corruptions": refusals,
                           "money_history_cases": len(money_history["observations"]),
                           "native_domain_cases": len(native_domains["observations"]),
+                          "wallet_bank_cases": len(wallet_bank["observations"]),
                           "native_invocations_per_case": 3, "economic_bytes_unchanged": True,
                           "generic_semantic_corruptions": 50, "native_semantic_decodes": native_semantic_decodes,
                           "native_metadata_comparisons": 1058,

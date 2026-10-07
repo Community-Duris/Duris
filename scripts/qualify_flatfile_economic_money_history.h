@@ -27,6 +27,14 @@ struct finding
 	account_key account = {};
 	const char *code;
 };
+struct terminal
+{
+	identity epoch = {}, operation = {};
+	account_key account = {};
+	coins balance = {};
+	uint64_t revision = 0;
+	bool baseline_anchored = false, valid = false;
+};
 struct result
 {
 	size_t accepted_roots = 0, edges = 0, accounts = 0, baseline_anchored_accounts = 0;
@@ -75,7 +83,7 @@ class checker
 			edges.push_back(value);
 		}
 	}
-	result finish()
+	result finish(const std::function<void(const terminal &)> &observe = {})
 	{
 		output.edges = edges.size();
 		// Operation IDs, physical buckets and append order are not commit order.
@@ -106,6 +114,7 @@ class checker
 				++output.unanchored_accounts;
 			auto balance = edges[first].before;
 			auto revision = edges[first].before_revision;
+			bool valid = true;
 			for (size_t i = first; i < end; ++i)
 			{
 				audit_checkpoint();
@@ -121,6 +130,7 @@ class checker
 					code = "balance_discontinuity";
 				if (code)
 				{
+					valid = false;
 					++output.invalid_accounts;
 					if (output.findings.size() < maximum_findings)
 						output.findings.push_back({ row.epoch,
@@ -131,6 +141,10 @@ class checker
 				balance = row.after;
 				revision = row.after_revision;
 			}
+			if (observe)
+				observe({ edges[first].epoch, edges[end - 1].operation,
+					  edges[first].account, balance, revision,
+					  edges[first].baseline, valid });
 			first = end;
 		}
 		audit_checkpoint();
