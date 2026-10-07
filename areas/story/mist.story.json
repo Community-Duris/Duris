@@ -1,0 +1,128 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "mist",
+  "coverage": "complete",
+  "introduction": "Find Palon in the Shadow Forest, learn his request, and distinguish the accepted head exchange from woodland exploration and source recovery.",
+  "orientation": [
+    "Explore the Shadow Forest from its jungle path, forest-road connection or woodland trail. An actual arrival discovers the zone; meeting Palon reveals his request.",
+    "The guardian druid can block travelers above level36 who try to go north past him at the jungle approach. Other routes and an absent, sleeping or otherwise unavailable guardian have their own conditions.",
+    "Ask Palon about darnac. His answer describes the same request shown in the journal; hearing it does not complete the exchange.",
+    "Bring Palon the exact bloody head of Darnac for a crown of light. Darnac carries the source item. An exact supplied copy also fits without a remembered personal kill, first recovery or prior conversation.",
+    "Carry the head loose before offering it. A held or packed head needs different preparation. The optional row shows what is ready now; it does not remember how you obtained it.",
+    "One accepted exchange records completion and Palon departs. A spent head, a missing crown, a creature defeat or a remembered meeting cannot replace or erase that accepted history.",
+    "Palon and Darnac can move around the forest. Seek them where they actually are; their starting stock rooms are not directions to an accessible meeting place.",
+    "Paths, the mossy mound, the cottage and the huge tree offer landmarks. Finding a landmark, reading a clue and guiding someone safely are separate outcomes.",
+    "Grolen and the treant are connected with protecting the forest. Their descriptions and equipment do not establish a completed conservation, faction or rescue quest.",
+    "Human travelers roam the forest. Their stories about homes, clothing or a rose describe their background; those words alone do not create a delivery request or stocked reward.",
+    "Equipment from the forest has its own wearing and use conditions. Receiving the crown records this exchange; wearing it or recovering other equipment is a different event.",
+    "Further investigation, stewardship and guidance stories are described in the builder plan. Their useful outcomes need specific integration before they become additional journal achievements."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 6300,
+      "name": "a large black spider",
+      "keyword": "spider",
+      "description": "Large black spiders roam from the forest stock. Encountering one, recovering a source item and helping a traveler survive are separate outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6301,
+      "name": "a small black spider",
+      "keyword": "spider",
+      "description": "Small black spiders are a separate prototype from the large spiders. Their descriptive venom does not certify poisoning, antidote use or a rescue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6302,
+      "name": "a swarm of small insects",
+      "keyword": "swarm",
+      "description": "Insect swarms move through the forest. Their presence does not prove that Grolen summoned them or that a player changed the woodland.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6303,
+      "name": "a huge treant",
+      "keyword": "treant",
+      "description": "The treant carries equipped forest walking boots. Recovering them is distinct from carving, protecting the forest or helping the treant.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6304,
+      "name": "Grolen",
+      "keyword": "grolen",
+      "description": "Grolen wears the mask and spider necklace in the tree fort. His account of protecting the forest does not establish an accepted conservation or faction outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6305,
+      "name": "Darnac",
+      "keyword": "darnac",
+      "description": "Darnac carries the exact bloody head required by Palon and wears the barbed stiletto. The carried head is a source item; possession or a defeat does not prove a personal carving event.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6306,
+      "name": "Palon",
+      "keyword": "palon",
+      "description": "Palon accepts the exact bloody head for a crown of light and departs. Supplied copies fit his native request; later crown custody remains separate from accepted history.",
+      "topics": [
+        "darnac"
+      ]
+    },
+    {
+      "mob_vnum": 6307,
+      "name": "a guardian druid",
+      "keyword": "guardian",
+      "description": "The guardian druid guards northward passage at the jungle approach. His actual presence and condition matter; the same restriction does not apply automatically to every route.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 6308,
+      "name": "a human traveller",
+      "keyword": "traveller",
+      "description": "Human travelers have woodland and Tharnadian background. Their descriptive rose and clothing are not declared item deliveries or actual escort requests.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "darnac-head-for-palon",
+      "title": "Bring Palon the bloody head of Darnac",
+      "category": "request",
+      "summary": "Offer the exact head for a crown of light and Palon’s departure. Source recovery, supplied custody and accepted reward are distinct.",
+      "contracts": [
+        {
+          "giver_vnum": 6306,
+          "completion_key": "give=I:6305;receive=I:6306;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "darnac-head",
+          "text": "Carry the exact bloody head of Darnac loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            6305
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Darnac carries the source head. An exact supplied copy also fits. This optional row shows loose custody without proving a personal kill, carving, first recovery or survived route."
+        },
+        {
+          "id": "exchange",
+          "text": "Record Palon’s accepted head exchange",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 6306,
+              "completion_key": "give=I:6305;receive=I:6306;disappear=1"
+            }
+          ],
+          "hint": "Offer the exact loose head to Palon for the crown and his departure. A conversation, source defeat, different item or crown possession cannot create this receipt."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}

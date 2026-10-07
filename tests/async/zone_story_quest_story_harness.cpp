@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 215 &&
+		require(catalog.story_mappings.size() == 216 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -25385,6 +25385,84 @@ int main(int argc, char **argv)
 							   &supplies);
 			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
 				"Forest of Mir missing reward or spent material changed recovered history");
+		}
+
+		{
+			const auto &head = story_for("mist", "darnac-head-for-palon");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 6306, 6334, 100) == result::rejected,
+				"The Shadow Forest contact ignored undiscovered zone");
+			require(journey.discover_zone(7, 42, 63, 6300, 101, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 63, 10, 1, 102, false, false)
+							.find(head.title) == std::string::npos &&
+					journey.meet_npc(7, 42, 6306, 6334, 103) == result::applied,
+				"The Shadow Forest request bypassed Palon encounter");
+			require(journey.render_journal(7, 42, 63, 37, 1, 103, false, false)
+						.find(head.title) != std::string::npos,
+				"The Shadow Forest journal invented a global guardian level prerequisite");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    head.steps[row].text) != std::string::npos;
+			};
+			for (unsigned custody = 0; custody < 6; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[6306] = 1;
+				if (custody == 2)
+					supplies.carried[6303] = 1;
+				if (custody == 3)
+					supplies.equipped[18] = 6305;
+				if (custody >= 4)
+					supplies.carried[6305] = custody == 4 ? 1 : 2;
+				const auto journal = journey.render_journal(
+					7, 42, 63, 10, 1, 104, false, false, &supplies);
+				require(status(journal, 0,
+					       custody >= 4 ? "Ready now" : "Missing now") &&
+						!status(journal, 1, "Recorded") &&
+						journey.progress_for_zone(7, 42, 63).completed ==
+							0 &&
+						journey.serialize_state() == before,
+					"The Shadow Forest supplied/held head, stiletto or crown forged history");
+			}
+			// Synthetic receipt qualifies projection, not live guardian/roaming/source admission, crown issuance or Palon departure.
+			record(journey, head.contracts.front(), "mist-head-offering", 63, 6334);
+			supplies = {};
+			auto journal = journey.render_journal(7, 42, 63, 10, 1, 121, false, false,
+							      &supplies);
+			require(status(journal, 1, "Recorded") &&
+					status(journal, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 63).completed == 1 &&
+					!journey.has_discovered(7, 42, 5000),
+				"The Shadow Forest spent head erased receipt or invented foreign arrival");
+			require(supplied.discover_zone(7, 42, 63, 6300, 101, "arrival") ==
+					result::applied,
+				"The Shadow Forest supplied return setup failed");
+			record(supplied, head.contracts.front(), "mist-supplied-offering", 63,
+			       6334);
+			require(supplied.progress_for_zone(7, 42, 63).completed == 1,
+				"The Shadow Forest acceptance required remembered source kill, greeting or guardian crossing, carving or crown wear");
+			auto replay = completion(head.contracts.front(), "mist-head-offering", 120);
+			replay.transaction.zone_number = 63;
+			replay.transaction.room_vnum = 6334;
+			require(journey.record_completion(replay) == result::already_applied,
+				"The Shadow Forest replay duplicated head acceptance");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 63).completed == 1 &&
+					raw.progress_for_zone(7, 42, 63).completed == 1 &&
+					!recovered.has_discovered(7, 42, 5000),
+				"The Shadow Forest mapped/raw recovery lost acceptance or invented foreign discovery");
+			journal = recovered.render_journal(7, 42, 63, 10, 1, 122, false, false,
+							   &supplies);
+			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
+				"The Shadow Forest missing reward or spent material changed recovered history");
 		}
 
 		std::cout

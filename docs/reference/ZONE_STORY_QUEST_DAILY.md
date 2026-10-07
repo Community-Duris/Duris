@@ -299,3 +299,8 @@ The [dossier](../design/zone-stories/HALFLING_SILVER_MINE.md) retains one achiev
 ## Forest of Mir daily qualification
 
 The [dossier](../design/zone-stories/FOREST_OF_MIR.md) retains one native achievement and one potential daily. Mode1/lifespan20..25, cap1 scroll/giver, a nondeparting priest, pool activations and relic calendar cooldowns do not prove usable renewed supply. Qualify actual source or exact supplied copy, experience/token/recipient/save/replay, real movement/source availability and accountable renewal. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
+
+
+## The Shadow Forest daily qualification
+
+The [dossier](../design/zone-stories/SHADOW_FOREST.md) retains one native achievement/potential daily. Mode2/lifespan25..35, source/giver cap1, D departure and actual roaming do not guarantee accessible renewed stock. Qualify usable source or exact supplied head, guardian/approach admission, crown/departure/recipient/save/replay and new generations. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.

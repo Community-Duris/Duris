@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 215 authored journals, accounting-gated player surfaces, starter/town
+**Status: 216 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5391,3 +5391,8 @@ The [dossier](zone-stories/HALFLING_SILVER_MINE.md) maps one exact native whip e
 ## Forest of Mir integration extension
 
 The [dossier](zone-stories/FOREST_OF_MIR.md) maps the native scroll exchange and ten wider progression stories: web/fire conservation, Johan guidance, Mythra/Xort choices, orc faction outcomes, maze/refuge navigation, river travel, pools/key chain, wyrm/vault/property outcomes, useful relic effects and the existing epic node. 61 owned follow-ups preserve exact supplied eligibility and separate actual contribution/beneficiary/controller state from stock and autonomous effects. Inert trap formats, disconnected maze, concealment, fire factor/cleanup and proc guards require fair diagnosis before separate fix/news commits. Existing schema3 covers the native Q; active READY accounting remains required and daily policy stays disabled.
+
+
+## The Shadow Forest integration extension
+
+The [dossier](zone-stories/SHADOW_FOREST.md) maps Palon’s head exchange plus six broader stories: guardian/ward approaches, investigation/faction, Grolen ecology, treant stewardship, traveler/landmark guidance and useful equipment.34 owned follow-ups keep supplied eligibility separate from first-source/death/carving evidence, actual roaming and lasting beneficiary state. Direction-specific guardian rules, inactive approaches and dead-end staging need source/played qualification before fair separate fix/news repairs. Existing schema3 covers the native Q; active READY accounting remains required and daily policy stays disabled.
