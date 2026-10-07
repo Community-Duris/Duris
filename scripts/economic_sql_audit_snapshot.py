@@ -56,7 +56,15 @@ def bounded(cursor, sql: str, params: tuple = ()) -> list[dict]:
     return rows
 
 
-def decode_coin_payload(blob: bytes, expected_uid: int) -> list[int]:
+def coin_source_sql(alias: str = "") -> str:
+    # The native codec stores ITEM_MONEY at byte31, including area prototypes.
+    # This only selects candidates; full bounded decoding authenticates values.
+    prefix = alias + "." if alias else ""
+    return (f"({prefix}vnum={COIN_VNUM} OR "
+            f"SUBSTRING({prefix}coin_payload,31,1)=X'14')")
+
+
+def decode_coin_payload(blob: bytes, expected_uid: int, expected_vnum: int = COIN_VNUM) -> list[int]:
     """Decode denomination values from the bounded player-item snapshot codec."""
     if not isinstance(blob, bytes) or not blob or len(blob) > MAX_ITEM_PAYLOAD_BYTES:
         raise ExportError("invalid coin-pile payload size")
@@ -81,6 +89,18 @@ def decode_coin_payload(blob: bytes, expected_uid: int) -> list[int]:
     count = number("I")
     if count != 1:
         raise ExportError("coin-pile payload must contain exactly one item")
+    # The native decoder shares one row budget across the item and every
+    # nested vector, including spell rows across separate descriptions.
+    remaining_rows = MAX_ITEM_ROWS - count
+
+    def row_count() -> int:
+        nonlocal remaining_rows
+        count = number("I")
+        if count > remaining_rows:
+            raise ExportError("coin-pile nested row count exceeds limit")
+        remaining_rows -= count
+        return count
+
     parent = number("i")
     number("h")  # equipment slot
     uid = number("Q")
@@ -104,27 +124,23 @@ def decode_coin_payload(blob: bytes, expected_uid: int) -> list[int]:
         number("Q")  # bitvectors
     for _ in range(8):
         number("h")  # fixed affects
-    dynamic_count = number("I")
-    if dynamic_count > MAX_ITEM_ROWS:
-        raise ExportError("coin-pile dynamic affect count exceeds limit")
+    dynamic_count = row_count()
     for _ in range(dynamic_count):
         number("h")
         number("h")
         number("Q")
-    description_count = number("I")
-    if description_count > MAX_ITEM_ROWS:
-        raise ExportError("coin-pile extra description count exceeds limit")
+    description_count = row_count()
     for _ in range(description_count):
         skip_string()
         skip_string()
         if number("B") > 1:
             raise ExportError("invalid coin-pile spellbook flag")
-        spell_count = number("I")
-        if spell_count > MAX_ITEM_ROWS:
-            raise ExportError("coin-pile spell count exceeds limit")
+        spell_count = row_count()
         for _ in range(spell_count):
             number("i")
-    if offset != len(blob) or uid != expected_uid or parent != -1 or vnum != COIN_VNUM or \
+    if offset != len(blob) or uid != expected_uid or parent != -1 or \
+            type(expected_vnum) is not int or not 0 < expected_vnum <= 2**31 - 1 or \
+            vnum != expected_vnum or \
             item_type != ITEM_MONEY or any(amount < 0 for amount in values[:4]):
         raise ExportError("coin-pile payload identity or values are invalid")
     return values[:4]
@@ -1182,7 +1198,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     cursor.execute("SELECT COUNT(*) AS row_count,"
                    "COALESCE(SUM(OCTET_LENGTH(coin_payload)),0) AS payload_bytes,"
                    "COALESCE(MAX(OCTET_LENGTH(coin_payload)),0) AS max_payload_bytes "
-                   "FROM item_current_owner WHERE vnum=%s", (COIN_VNUM,))
+                   "FROM item_current_owner WHERE " + coin_source_sql())
     coin_bounds = cursor.fetchone()
     if (coin_bounds is None or coin_bounds["row_count"] > MAX_ROWS or
             coin_bounds["payload_bytes"] > MAX_INPUT_BYTES or
@@ -1190,8 +1206,8 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
         raise ExportError("coin-pile source exceeds audit bounds")
     cursor.execute("SELECT COALESCE(SUM(OCTET_LENGTH(i.coin_payload)),0) AS payload_bytes "
                    "FROM economic_account_mapping m JOIN item_current_owner i "
-                   "ON m.account_kind=3 AND i.item_uid=m.active_native_id AND i.vnum=%s "
-                   "WHERE m.lineage=%s AND m.backend_kind=1", (COIN_VNUM, lineage))
+                   "ON m.account_kind=3 AND i.item_uid=m.active_native_id AND " + coin_source_sql("i") +
+                   " WHERE m.lineage=%s AND m.backend_kind=1", (lineage,))
     mapping_bounds = cursor.fetchone()
     if mapping_bounds is None or mapping_bounds["payload_bytes"] > MAX_INPUT_BYTES:
         raise ExportError("mapped coin-pile source exceeds audit bounds")
@@ -1217,7 +1233,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
         "b.bank_copper,b.bank_silver,b.bank_gold,b.bank_platinum,b.bank_revision,"
         "i.item_uid AS pile_uid,i.vnum AS pile_vnum,i.state AS pile_state,"
         "i.item_revision AS pile_revision,"
-        f"CASE WHEN i.vnum={COIN_VNUM} THEN i.coin_payload ELSE NULL END AS pile_payload,"
+        f"CASE WHEN {coin_source_sql('i')} THEN i.coin_payload ELSE NULL END AS pile_payload,"
         "a.id AS escrow_id,a.status AS escrow_status,a.winning_bidder_pid AS escrow_winner_pid,"
         "a.cur_price AS escrow_copper,"
         "a.auction_revision AS escrow_revision,"
@@ -1268,7 +1284,8 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
         exists = {
             1: row["wallet_id"] is not None,
             2: row["bank_id"] is not None,
-            3: row["pile_uid"] is not None and row["pile_vnum"] == COIN_VNUM and row["pile_state"] == 1,
+            3: row["pile_uid"] is not None and row["pile_state"] == 1 and
+               (row["pile_vnum"] == COIN_VNUM or row["pile_payload"] is not None),
             4: row["escrow_id"] is not None and auction_escrow_mapping_is_live(
                 row["escrow_status"], row["escrow_winner_pid"]),
             5: row["claim_row_id"] is not None or row["claim_player_id"] is not None,
@@ -1283,7 +1300,8 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
         balance = {
             1: [row[f"wallet_{unit}"] for unit in ("copper", "silver", "gold", "platinum")],
             2: [row[f"bank_{unit}"] for unit in ("copper", "silver", "gold", "platinum")],
-            3: decode_coin_payload(row["pile_payload"], row["pile_uid"]) if row["pile_payload"] is not None else None,
+            3: decode_coin_payload(row["pile_payload"], row["pile_uid"], row["pile_vnum"])
+               if row["pile_payload"] is not None else None,
             4: auction_escrow_balance(row["escrow_status"], row["escrow_copper"],
                                       row["escrow_winner_pid"]),
             5: [row["claim_copper"] if row["claim_row_id"] is not None else 0, 0, 0, 0],
@@ -1307,7 +1325,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             (1, "wallet", "player_data", "pid", "1=1"),
             (2, "bank", "account_banks", "id", "1=1"),
             (3, "pile", "item_current_owner", "item_uid",
-             f"vnum={COIN_VNUM} AND state=1"),
+             coin_source_sql() + " AND state=1"),
             (4, "auction_escrow", "auctions", "id",
              "status='OPEN' OR (status='REMOVED' AND winning_bidder_pid<>0)"),
             (5, "pending_claim", "auction_money_pickups", "pid", "1=1"),
@@ -1490,7 +1508,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     items = bounded(cursor,
         "SELECT item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,"
         "owner_context_id,item_revision,state,equipment_slot,vnum,"
-        f"CASE WHEN vnum={COIN_VNUM} THEN coin_payload ELSE NULL END AS coin_payload "
+        f"CASE WHEN {coin_source_sql()} THEN coin_payload ELSE NULL END AS coin_payload "
         "FROM item_current_owner ORDER BY item_uid")
     coin_payload_rows = 0
     missing_coin_payload_rows = 0
@@ -1504,13 +1522,13 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
                                 "revision": row["item_revision"],
                                 "state": ITEM_STATES[row["state"]],
                                 "equipment_slot": row["equipment_slot"]})
-        if row["vnum"] == COIN_VNUM:
+        if row["vnum"] == COIN_VNUM or row["coin_payload"] is not None:
             blob = row["coin_payload"]
             if blob is None:
                 amounts = None
                 missing_coin_payload_rows += 1
             else:
-                amounts = decode_coin_payload(blob, row["item_uid"])
+                amounts = decode_coin_payload(blob, row["item_uid"], row["vnum"])
                 coin_payload_rows += 1
             native["coin_piles"].append({
                 "uid": row["item_uid"],

@@ -123,7 +123,8 @@ TABLES = (
     "creating_operation_id BINARY(16)) ENGINE=InnoDB",
     "CREATE TABLE economic_sql_lifecycle_installation (operation_id BINARY(16),"
     "lineage BINARY(16),epoch BINARY(16),baseline_operation_id BINARY(16),phase INT,"
-    "selected_epoch BINARY(16),revision BIGINT) ENGINE=InnoDB",
+    "selected_epoch BINARY(16),revision BIGINT,"
+    "native_boundary_digest BINARY(32) NULL,request_digest BINARY(32) NULL) ENGINE=InnoDB",
     "CREATE TABLE economic_pending_claim_source (source_operation_id BINARY(16),source_slot INT,"
     "lineage BINARY(16),claim_mapping_id BIGINT,beneficiary_pid BIGINT,amount BIGINT,"
     "claim_operation_id BINARY(16)) ENGINE=InnoDB",
@@ -157,8 +158,8 @@ TABLES = (
 )
 
 
-def coin_payload(uid, amounts):
-    blob = bytearray(struct.pack("<IihQqibB", 1, -1, -1, uid, 0, 3, 20, 0))
+def coin_payload(uid, amounts, vnum=3, *, dynamic_count=0, spell_counts=()):
+    blob = bytearray(struct.pack("<IihQqibB", 1, -1, -1, uid, 0, vnum, 20, 0))
     blob.extend(struct.pack("<I", 0) * 4)
     blob.extend(struct.pack("<8i", *amounts, 0, 0, 0, 0))
     blob.extend(struct.pack("<6q", *([0] * 6)))
@@ -166,21 +167,170 @@ def coin_payload(uid, amounts):
     blob.extend(struct.pack("<ibihh", 0, 0, 0, 100, 0))
     blob.extend(struct.pack("<5Q", *([0] * 5)))
     blob.extend(struct.pack("<8h", *([0] * 8)))
-    blob.extend(struct.pack("<2I", 0, 0))
+    blob.extend(struct.pack("<I", dynamic_count))
+    blob.extend(bytes(12 * dynamic_count))
+    blob.extend(struct.pack("<I", len(spell_counts)))
+    for count in spell_counts:
+        blob.extend(bytes(9))  # Two empty strings and a false spellbook flag.
+        blob.extend(struct.pack("<I", count))
+        blob.extend(bytes(4 * count))
     return bytes(blob)
 
 
-def bounded_coin_payload(uid, size):
+def verify_coin_payload_row_budget(owner, reader, snapshot):
+    """The SELECT-only exporter uses the full native codec's shared row bound."""
+    from _plan5_equipment_restore import Connection, inventory
+
+    output = ROOT / "bin/tests/plan5-coin-row-budget" / uuid.uuid4().hex
+    output.mkdir(parents=True)
+    initial = inventory(owner)
+    cases = (
+        ("empty", 0, (), True),
+        ("affects_exact", 8191, (), True),
+        ("affects_above", 8192, (), False),
+        ("descriptions_exact", 0, (0,) * 8191, True),
+        ("descriptions_above", 0, (0,) * 8192, False),
+        ("spells_exact", 0, (8190,), True),
+        ("spells_above", 0, (8191,), False),
+        ("combined_exact", 4095, (4095,), True),
+        ("combined_above", 4095, (4096,), False),
+        ("two_descriptions_exact", 0, (4094, 4095), True),
+        ("two_descriptions_above", 0, (4095, 4095), False),
+        ("affects_descriptions_above", 8190, (0, 0), False),
+    )
+    records = []
+    try:
+        for vnum in (3, 402013):
+            for label, dynamic, spells, accepted in cases:
+                payload = coin_payload(82, [1, 2, 3, 4], vnum,
+                                       dynamic_count=dynamic, spell_counts=spells)
+                with owner.cursor() as cursor:
+                    cursor.execute("UPDATE item_current_owner SET vnum=%s,coin_payload=%s "
+                                   "WHERE item_uid=82", (vnum, payload))
+                before = inventory(owner)
+                connection = Connection(reader)
+                captured, error = None, None
+                try:
+                    captured = capture(connection, LINEAGE, EPOCH)
+                except exporter.ExportError as caught:
+                    error = str(caught)
+                assert connection.rollbacks == connection.observer.closes == 1
+                assert inventory(owner) == before
+                row = dict(case=label, vnum=vnum, rows=1 + dynamic + len(spells) + sum(spells),
+                           accepted=captured is not None, error=error, rollback_calls=1,
+                           cursor_close_calls=1, native_sources_unchanged=True)
+                records.append(row)
+                print("COIN_ROW_SOURCE " + json.dumps(row, sort_keys=True), flush=True)
+                target = output / (str(vnum) + "-" + label)
+                target.mkdir()
+                (target / "payload.bin").write_bytes(payload)
+                for name in ("before", "after"):
+                    (target / ("authority-" + name + ".json")).write_text(
+                        json.dumps(before, sort_keys=True) + "\n")
+                (target / "queries.json").write_text(json.dumps(connection.observer.queries) + "\n")
+                if accepted:
+                    assert error is None and captured == snapshot, row
+                    (target / "snapshot.json").write_text(json.dumps(captured, sort_keys=True) + "\n")
+                else:
+                    assert captured is None and error == "coin-pile nested row count exceeds limit", row
+    finally:
+        with owner.cursor() as cursor:
+            cursor.execute("UPDATE item_current_owner SET vnum=3,coin_payload=%s WHERE item_uid=82",
+                           (coin_payload(82, [1, 2, 3, 4]),))
+    assert inventory(owner) == initial and capture(reader, LINEAGE, EPOCH) == snapshot
+    (output / "observations.json").write_text(json.dumps(records, indent=2) + "\n")
+
+
+def verify_area_coin_views(owner, reader, snapshot):
+    """Area-specific ITEM_MONEY literals retain the same independent balances."""
+    from _plan5_equipment_restore import Connection, inventory
+
+    output = ROOT / "bin/tests/plan5-area-coin-views" / uuid.uuid4().hex
+    output.mkdir(parents=True)
+    initial = inventory(owner)
+    records = []
+
+    def update(vnum, state=1, payload=None):
+        with owner.cursor() as cursor:
+            cursor.execute("UPDATE item_current_owner SET vnum=%s,state=%s,coin_payload=%s "
+                           "WHERE item_uid=82", (vnum, state, payload if payload is not None else
+                                                coin_payload(82, [1, 2, 3, 4], vnum)))
+
+    def sample(label, expected=None, error=None):
+        before = inventory(owner)
+        connection = Connection(reader)
+        captured, actual_error = None, None
+        try:
+            captured = capture(connection, LINEAGE, EPOCH)
+        except exporter.ExportError as caught:
+            actual_error = str(caught)
+        assert connection.rollbacks == connection.observer.closes == 1
+        assert inventory(owner) == before
+        target = output / label
+        target.mkdir()
+        for name in ("before", "after"):
+            (target / ("authority-" + name + ".json")).write_text(
+                json.dumps(before, sort_keys=True) + "\n")
+        (target / "queries.json").write_text(json.dumps(connection.observer.queries) + "\n")
+        if captured is not None:
+            (target / "snapshot.json").write_text(json.dumps(captured, sort_keys=True) + "\n")
+        row = dict(case=label, error=actual_error, rollback_calls=1, cursor_close_calls=1,
+                   native_sources_unchanged=True)
+        records.append(row)
+        (output / "observations.json").write_text(json.dumps(records, indent=2) + "\n")
+        print("AREA_COIN_SOURCE " + json.dumps(row, sort_keys=True), flush=True)
+        assert actual_error == error, row
+        if expected is not None:
+            assert captured == expected, label
+        return captured
+
+    try:
+        for state in (1, 2, 3):
+            update(3, state)
+            expected = capture(reader, LINEAGE, EPOCH)
+            for vnum in (402013, 402014, 2**31 - 1):
+                update(vnum, state)
+                sample(f"prototype-{vnum}-state-{state}", expected)
+        update(402013)
+        with owner.cursor() as cursor:
+            cursor.execute("UPDATE item_current_owner SET coin_payload=%s WHERE item_uid=82",
+                           (coin_payload(82, [2, 2, 3, 4], 402013),))
+        drift = sample("area-denomination-drift")
+        assert Reconciler().audit(drift)["exception_counts"].get("stale_native_balance", 0) == (
+            Reconciler().audit(snapshot)["exception_counts"].get("stale_native_balance", 0) + 1)
+        update(402013, payload=coin_payload(82, [1, 2, 3, 4], 402014))
+        sample("area-prototype-mismatch", error="coin-pile payload identity or values are invalid")
+        update(402013, payload=coin_payload(83, [1, 2, 3, 4], 402013))
+        sample("area-uid-mismatch", error="coin-pile payload identity or values are invalid")
+        update(402013, payload=coin_payload(82, [-1, 2, 3, 4], 402013))
+        sample("area-negative-amount", error="coin-pile payload identity or values are invalid")
+        update(402013)
+        with reader.cursor() as cursor:
+            try:
+                cursor.execute("UPDATE item_current_owner SET state=state WHERE item_uid=82")
+            except pymysql.MySQLError as caught:
+                assert caught.args[0] == 1142, caught.args
+            else:
+                raise AssertionError("area coin reader admitted UPDATE")
+    finally:
+        update(3)
+    assert inventory(owner) == initial and capture(reader, LINEAGE, EPOCH) == snapshot
+    (output / "evidence.json").write_text(json.dumps(dict(probes=records, output=str(output),
+        modeled_partial_sql=True, source_fixture_restored=True, permission_denial=1142,
+        accounting_activated=False, release_complete=False), indent=2) + "\n")
+
+
+def bounded_coin_payload(uid, size, vnum=3):
     # Valid snapshot-codec strings make byte-ceiling checks independent of an
     # earlier malformed-payload refusal. Every string stays within4096 bytes.
-    prefix = coin_payload(uid, [1, 2, 3, 4])[:-4] + struct.pack("<I", 512)
+    prefix = coin_payload(uid, [1, 2, 3, 4], vnum)[:-4] + struct.pack("<I", 512)
     record = struct.pack("<I", 4096) + b"x" * 4096 + struct.pack("<I", 4096) + b"y" * 4096 + bytes(5)
     prefix += record * 511
     tail = size - len(prefix) - 13
     assert 0 <= tail <= 4096
     result = prefix + struct.pack("<I", tail) + b"z" * tail + struct.pack("<I", 0) + bytes(5)
     assert len(result) == size
-    assert exporter.decode_coin_payload(result, uid) == [1, 2, 3, 4]
+    assert exporter.decode_coin_payload(result, uid, vnum) == [1, 2, 3, 4]
     return result
 
 
@@ -232,10 +382,10 @@ def verify_coin_payload_source_bounds(setup, audit, snapshot):
             assert not selected, observation
         return result, sum(selected)
 
-    def seed(uid, size, mapping_ids):
+    def seed(uid, size, mapping_ids, vnum=3):
         with setup.cursor() as cursor:
-            cursor.execute(ITEM_INSERT + "(%s,%s,NULL,1,7,0,1,1,3,%s)",
-                           (uid, uid, bounded_coin_payload(uid, size)))
+            cursor.execute(ITEM_INSERT + "(%s,%s,NULL,1,7,0,1,1,%s,%s)",
+                           (uid, uid, vnum, bounded_coin_payload(uid, size, vnum)))
             for mapping_id in mapping_ids:
                 cursor.execute("INSERT INTO economic_account_mapping VALUES "
                                "(%s,3,3,0,%s,%s,1,NULL,%s,%s)",
@@ -269,6 +419,25 @@ def verify_coin_payload_source_bounds(setup, audit, snapshot):
 
         seed(100, exporter.MAX_ITEM_PAYLOAD_BYTES, list(range(100, 109)))
         observed("repeated_mapping_join_above_32MiB", "mapped coin-pile source exceeds audit bounds")
+        clean()
+
+        seed(100, exporter.MAX_ITEM_PAYLOAD_BYTES, [100], 402013)
+        with setup.cursor() as cursor:
+            cursor.execute("UPDATE item_current_owner SET coin_payload=CONCAT(coin_payload,X'00') WHERE item_uid=100")
+        observed("area_individual_above_4MiB", "coin-pile source exceeds audit bounds")
+        clean()
+        for uid in range(100, 108):
+            seed(uid, exporter.MAX_ITEM_PAYLOAD_BYTES - original_bytes if uid == 100 else
+                 exporter.MAX_ITEM_PAYLOAD_BYTES, [uid], 402013)
+        _, selected = observed("area_aggregate_exact_32MiB")
+        assert selected == 2 * exporter.MAX_INPUT_BYTES
+        with setup.cursor() as cursor:
+            payload = bounded_coin_payload(100, exporter.MAX_ITEM_PAYLOAD_BYTES - original_bytes + 1, 402013)
+            cursor.execute("UPDATE item_current_owner SET coin_payload=%s WHERE item_uid=100", (payload,))
+        observed("area_aggregate_above_32MiB", "coin-pile source exceeds audit bounds")
+        clean()
+        seed(100, exporter.MAX_ITEM_PAYLOAD_BYTES, list(range(100, 109)), 402013)
+        observed("area_repeated_mapping_join_above_32MiB", "mapped coin-pile source exceeds audit bounds")
         clean()
 
         with setup.cursor() as cursor:
@@ -732,7 +901,8 @@ try:
             bind_synthetic_baseline(cursor, blob)
             cursor.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
                            (LINEAGE, struct.pack("<HH", 10, 1) + blob[48:64] + EPOCH + blob[72:80] + bytes(4), OP))
-            cursor.execute("INSERT INTO economic_sql_lifecycle_installation VALUES "
+            cursor.execute("INSERT INTO economic_sql_lifecycle_installation("
+                           "operation_id,lineage,epoch,baseline_operation_id,phase,selected_epoch,revision) VALUES "
                            "(%s,%s,%s,%s,2,%s,1)",
                            (INSTALL, LINEAGE, EPOCH, OP, EPOCH))
             cursor.execute(ROOT_INSERT +
@@ -858,9 +1028,11 @@ try:
         try:
             snapshot = capture(audit, LINEAGE, EPOCH)
             assert snapshot["complete"] is False and snapshot["quiescent"] is True
+            verify_area_coin_views(setup, audit, snapshot)
             verify_compound_item_actions(setup, audit, snapshot)
             verify_collector_quarantine_views(setup, audit, snapshot)
             verify_coin_payload_source_bounds(setup, audit, snapshot)
+            verify_coin_payload_row_budget(setup, audit, snapshot)
             verify_supply_outcome_views(setup, audit)
             assert capture(audit, LINEAGE, EPOCH) == snapshot
             with setup.cursor() as cursor:

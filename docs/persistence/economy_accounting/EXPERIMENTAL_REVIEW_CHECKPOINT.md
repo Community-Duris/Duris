@@ -1,5 +1,14 @@
 # Experimental accounting review checkpoint
 
+## Independent coin exporter integrated - 2026-10-07
+
+[Primary integration](PLAN5_COIN_EXPORT_PRIMARY_INTEGRATION_2026-10-07.md)
+fixes shared native row budgets and area-money prototype capture. The old
+failure reproduces locally; all186 focused pure methods pass, zero skips,
+and normal contracts pass. Peer native/modeled SQL evidence stays reported
+and externally unauthenticated. Full release still refuses missing writer
+evidence; Plans2-4, joint Plan5 and source-complete activation remain open.
+
 ## Shared native qualification progress - 2026-10-07
 
 [Current qualification checkpoint](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
