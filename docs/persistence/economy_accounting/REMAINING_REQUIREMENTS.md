@@ -1,5 +1,14 @@
 # Double-entry economy: remaining requirements
 
+## Shopkeeper native fixture recipes repaired - 2026-10-07
+
+[Source repair evidence](SHOPKEEPER_NATIVE_RECIPE_REPAIR_2026-10-07.md) records
+three/four missing real providers restored to the original repository/ownership
+recipes. Original AST, flags, assertions and providers remain exact; inventory
+and normal accounting validation pass. Native execution is deferred with the
+major-plan candidate; external peer passes remain reported. No release gate closes.
+
+
 ## Persisted union candidate authenticated - 2026-10-07
 
 [Primary source handoff](PERSISTED_PROVIDER_UNION_PRIMARY_HANDOFF_2026-10-07.md)

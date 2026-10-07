@@ -1,5 +1,14 @@
 # Finish accounting implementation plan
 
+## Shopkeeper native fixture recipes repaired - 2026-10-07
+
+[Source repair evidence](SHOPKEEPER_NATIVE_RECIPE_REPAIR_2026-10-07.md) records
+three/four missing real providers restored to the original repository/ownership
+recipes. Original AST, flags, assertions and providers remain exact; inventory
+and normal accounting validation pass. Native execution is deferred with the
+major-plan candidate; external peer passes remain reported. No release gate closes.
+
+
 ## Published lifecycle V2 component execution reviewed - 2026-10-07
 
 [Coordinator review](domain-separation/LIFECYCLE_V2_READER_COMPONENT_REVIEW_2026-10-07.md)
