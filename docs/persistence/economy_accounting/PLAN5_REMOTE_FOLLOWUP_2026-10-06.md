@@ -907,3 +907,30 @@ protected `sql-report-command-correction-delivery-01-20261006` receipt binds the
 result/remote SHA, unchanged source payloads and seven preserved ancestor tips.
 This is part of the nonblocking local notebook curator packet, with no broader
 runtime, primary-candidate or release claim.
+
+## Durable required lifecycle receipt/root pages
+
+Base `7bec84ae9642197642978cd15afba2a4030275b8` on the same `codex/accounting-plan5` worktree/remote.
+The [owned qualification](PLAN5_LIFECYCLE_RECEIPT_PAGES_QUALIFICATION_2026-10-06.md)
+adds catalogue-driven two-receipt pages and private durable CLI progress,
+retaining missing required files and old inactive epochs. Original red observations
+establish the absent native interface/CLI scope. All 131 original lifecycle cases
+and 46 page controls pass, including two maximum receipts
+at 6,154 reads / 17,988,794
+bytes, actual append fences, refusal fairness and unchanged native metadata.
+Complete authority/baseline/canonical SQL batches pass with zero skips on both
+fresh canonical0062 engines; both fresh740-object production builds pass.
+
+Final executable archive `27092ccd47b1bda12d8805df72555aaf506e9543e1fa424cee7f8891b9195c93` and production build
+archive `c84f334e484ff3c64abf60c7a63cdfb9b565af009ea3e6eb7243a7a9ea1d0f77` retain the report's precise Python
+directory-control difference; all production/provider inputs remain exact. The
+seal `d379240bd6c98365bce09d8a52adb7a0946443f268db0e4fc7d5b600aaa625cf` binds 19,292 artifacts and terminal states;
+delivery binds result/remote, every executable payload/mode/link and seven earlier
+ancestor tips. Failed fixture/control attempts remain preserved and excluded.
+No shared interface/schema/registration change is required: the existing registered
+lifecycle script runs all added controls. This is the nonblocking local notebook
+curator packet; no application/acknowledgement or cross-chat message is claimed.
+Complete book/orphan/reconstruction/R7/R8, actual gameplay/faults, combined
+backup/restore/retention, private producer/cold and release-host gates stay open.
+No slice blocker, maintained activation or production change. Primary owns combined
+integration and publication.

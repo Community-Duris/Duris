@@ -977,6 +977,48 @@ qualification. Stores exceeding any cap still refuse; this one-shot audit does
 not establish resumable lifecycle or complete reconciliation coverage. Retained
 root and authority-link pages retain their explicit 64-read/32 MiB limits.
 
+The flatfile operator's `--scope lifecycle-receipts` uses the same external,
+private checkpoint and exclusive checkpoint-owner lock as the other page scopes.
+For example:
+
+```sh
+python3 scripts/flatfile_economic_audit.py \
+  --state-root /absolute/disposable-or-authorized/state \
+  --qualifier /absolute/bin/tools/qualify_flatfile_restore \
+  --progress /absolute/private-operator-directory/lifecycle-progress.json \
+  --scope lifecycle-receipts
+```
+
+The native page command is `--economic-lifecycle-page ROOT BUCKET AFTER CEILING`,
+where BUCKET is a canonical decimal number from 0 to 255 and IDs are lowercase
+32-digit hex; `-` starts a new cursor/fence. Each page selects at most two
+`lifecycle_owner` initializers from the authority-bound epoch catalogue, ordered
+by original operation ID within its first-byte bucket. This discovers wholly
+missing required files and old inactive epochs. It verifies original receipt
+framing/coverage/mappings, its derived baseline operation, the indexed common
+root's physical geometry/checksum and original command/plan/revision, and the
+original witness's independently reconstructed effects. The existing read-only
+authority lock excludes cooperating writers and refuses pending journals.
+
+Lifecycle pages retain the 16,384-read/128 MiB/8,192-entry/30-second limits so a
+page can admit two supported maximum-holding receipts. Every physical read
+counts; an oversized or expired page refuses. Its durable cursor/fence advances
+only after a successful page response. Both anchors must remain in the required
+catalogue set. Appends above a saved fence wait for the next range. Each call
+rotates to another bucket, including after a refusal; refused pages retain their
+cursor and earn no completed range. Semantic findings retain the original
+lifecycle operation ID, and the CLI continues to exit 1 after a sticky finding.
+The checkpoint is bound to the root path, executable, operator source and
+progress helper; a different scope/source/lineage needs a separate checkpoint.
+
+`verified_receipt_roots` covers only the selected required receipt/root/witness
+links. Generic and unknown initializer origins, orphan receipt filenames,
+baseline-book/reservation closure, native current holdings and complete source
+coverage require their separate audits. Reports keep `complete`,
+`consistent_entire_sweep`, `lifecycle_receipts_closed`, `baseline_books_closed`,
+`orphan_namespace_closed`, `native_holdings_compared` and `release_qualified`
+false. A completed traversal range grants no activation or release authority.
+
 The isolated native flatfile restore qualifier validates every retained
 `domains/quest-mobile-native-<id>.qmn` image after authority-bundle recovery, in
 both state preflight and final qualification. It requires a canonical nonzero
