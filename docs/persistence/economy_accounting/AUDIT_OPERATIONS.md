@@ -80,6 +80,151 @@ Boolean and string aliases do not identify that UID. Retained/unattributed
 histories, global refusal and output limits retain their original behavior.
 See [the primary UID qualification](PLAN5_UID_PROVENANCE_PRIMARY_QUALIFICATION_2026-10-06.md).
 
+For repeated SQL canonical-root checks, add `--progress-path` pointing to a
+protected local file. Its parent directory must already exist. The maintained
+Linux/POSIX CLI uses an exclusive OS lock and writes a mode-0600 checkpoint by
+fsync, atomic rename, and directory fsync. A killed process releases its lock;
+a page interrupted before checkpoint publication is retried. Malformed,
+oversized, foreign-target, symlinked, or unprotected checkpoints refuse.
+
+```sh
+python3 scripts/economic_sql_canonical_audit.py \
+  --host 127.0.0.1 --user accounting_audit --database duris \
+  --password-env ACCOUNTING_AUDIT_PASSWORD \
+  --progress-path /protected/audit/canonical-progress.json --page-roots 2
+```
+
+Each invocation checks at most two candidate operation IDs in one read-only consistent snapshot
+and rolls back before publishing local progress. It bounds each projection to
+8,192 rows, the page to 1,024 SELECTs and 32 MiB of returned text, and admission
+of additional queries to 30 seconds. The connection retains its 30-second SQL
+read timeout. These are component bounds, not game-loop or release-host budgets.
+The sweep freezes its upper ID at the start, finishes that finite range even
+while higher IDs arrive, then starts again at the lowest ID. IDs schedule
+reads; they never certify commit order. A lower-ID transaction committed behind
+the cursor is eligible on the next sweep. Every page has one read view; the
+whole sweep combines different read views and always reports `complete=false`.
+
+The candidate range merges IDs from the root table, account effects, coin postings,
+children, item references, source claims and baseline witnesses. Each source uses
+its existing operation-ID-leading index and direct single-ID seeks. Repeated
+details for one operation do not consume additional candidate slots; no whole-table
+aggregation is needed. The ceiling covers the same seven sources, so a retained
+detail beyond the largest surviving root, or with no surviving roots, is scheduled.
+A missing nonzero parent root reports `restore_economic_orphan_root_mismatch`;
+the audit leaves the evidence unchanged. `candidate_source_count` records seven
+sources and `unattached_root_ids` counts these missing parents on this page.
+
+Version-1 checkpoints remain readable. An already started range finishes under
+its saved ceiling, and the following sweep captures the expanded range. Existing
+`examined_roots`, `sweep_rows` and `total_rows` fields count scheduled candidate IDs;
+they are not counts of surviving stored roots. Sticky findings and inexact backlog
+retain their existing meanings. Composite-key reservations and controls, native
+holdings and other evidence are outside this candidate enumeration; orphan coverage
+still remains incomplete.
+
+This mode reuses the full reader's original EAI1/EAP1 metadata, digest, count,
+effect, posting, child, item-reference and custody checks. It also checks each
+root's lifecycle namespace and exact source claim. Selected committed baseline
+roots additionally authenticate their original EAB1/EAB2 witness, exact
+reservations, inbox command/fence binding, successful receipt, versioned
+claim-origin policy/identity, and absence of native mutation effects. Reservation
+reads use pages of at most 257 rows, so a valid 9,071-reservation witness fits the
+existing projection bound. Other roots must have no baseline witness or
+reservations; rejected roots must have no details.
+
+Each selected baseline witness also checks its book control revision and terminal
+operation in the same read view. An indexed projection reads at most the
+predecessor, successor and terminal revisions, refusing gaps, foreign or rejected
+neighbour roots and a mismatched terminal as `restore_economic_baseline_book_mismatch`.
+These local checks do not enumerate controls with no retained roots or prove a
+consistent whole-book cut across separate pages. Full quiescent comparison remains
+required; page reports retain incomplete whole-store coverage.
+
+The independent canonical reader checks that observed numeric source columns
+use SQL integer storage before reading JSON projections. MySQL/MariaDB can
+render integral DOUBLE or DECIMAL values as JSON integers; that conversion
+cannot authenticate the original representation. Such altered storage is
+reported as `restore_economic_canonical_storage_mismatch`, even when projected
+values equal the retained plan. This check also applies to the full restore
+reader. It does not replace complete migration/runtime schema qualification.
+
+The report counts authenticated baseline roots and retained NULL claim-origin
+markers separately. Historical NULL admission times and claim-origin markers
+stay unknown. This mode does not authenticate the entire baseline book,
+pending-claim consumption allocations, orphan evidence, complete command
+receipts, or current native holdings. Those whole-store coverage fields remain
+false, including after an empty or completed range.
+The existing full-database check remains necessary under release quiescence.
+Flatfile resumable scans and complete reconciliation remain separate gates.
+
+Routine output has aggregate counts, diagnostic codes, page resource metrics,
+sweep age and time since the last completed range. Backlog is a lower bound
+from the same page's extra key, explicitly inexact; it excludes unseen late
+commits and new higher IDs. The protected checkpoint retains at most 32
+operation-ID/diagnostic observations and a sticky truncation flag. Subsequent
+clean pages do not erase earlier findings or make the CLI report clearance.
+Status 1 means retained findings; status 2 means refusal without advancing the
+checkpoint. Status 0 means this partial page completed without retained
+findings. Local cursor target binding is not a database incarnation or trusted
+capture seal. Checkpoint reuse after restore cannot establish historical
+coverage, native authority, activation or release readiness.
+
+Add `--all-namespaces` with `--progress-path` to rotate through one bounded
+root, baseline-control or baseline-reservation page per invocation. The order
+is roots, controls, reservations, then roots again; even a large root history
+cannot postpone the other two namespaces. `--page-roots 1..2` bounds candidate
+records in the selected namespace. The same read-only transaction, rollback,
+projection/query/byte/time bounds, private lock and atomic checkpoint apply.
+
+```sh
+python3 scripts/economic_sql_canonical_audit.py \
+  --host 127.0.0.1 --user accounting_audit --database duris \
+  --password-env ACCOUNTING_AUDIT_PASSWORD \
+  --progress-path /protected/audit/all-canonical-progress.json \
+  --page-roots 2 --all-namespaces
+```
+
+This mode writes `economic_sql_canonical_progress_v2`. Each namespace keeps
+its own cursor, pinned ceiling, counters, ages and sticky findings. Selecting
+it with an existing valid v1 checkpoint preserves the complete root progress
+and starts the other namespaces from their beginning. After that explicit
+upgrade, root-only mode refuses the v2 file. A v2 checkpoint must not be copied
+between database targets or interpreted as a database incarnation seal.
+
+Controls use `(lineage,epoch)` and reservations use
+`(lineage,epoch,identity_kind,identity_id)` from their existing primary indexes.
+Binary identities use fixed lowercase hex; numeric key parts use fixed-width
+unsigned big-endian hex in private progress, preserving SQL key order through
+UINT64_MAX. Incompatible signed/noninteger reservation-key storage refuses
+before range capture. Zero scheduling keys remain enumerable so corrupt rows can produce
+findings. Expanded lexicographic seeks and one extra candidate bound each
+page without whole-table aggregation. Each finite range finishes before its
+namespace starts again, making delayed lower keys eligible on the next pass.
+
+Control pages check lifecycle/creator/opening identity, legitimate empty
+revision0 books, and bounded first/terminal/overrun witness references. A bad
+control reports `restore_economic_baseline_book_mismatch`. Reservation pages
+check identity and retained witness/control/root/lifecycle attachment; an
+orphan reports `restore_economic_baseline_reservation_mismatch`. Exact original
+witness membership and interior book continuity remain the existing root
+reader's checks. The namespace pages do not repeatedly decode whole capsules
+for every reservation, and they never repair an observation.
+
+The v2 page report identifies the selected and next namespace and supplies
+aggregate counters and ages for all three. Its completed-sweep count is the
+minimum of their individual counts; it describes separate historical passes,
+not one consistent authority cut. At most32 findings per namespace are retained
+privately, with sticky truncation. Status1 reflects findings anywhere in the
+checkpoint, including on a later clean page. Budget/refusal failures leave
+the checkpoint and rotation unchanged. Routine output excludes private keys.
+The backlog lower bound belongs only to the selected page. All complete native,
+receipt, allocation, orphan, activation and release authority remains unproven;
+`complete`, `consistent_entire_sweep` and `release_qualified` stay false.
+Other retained/native namespaces, flatfile resumability, full quiescent
+comparison and release-host performance remain separate gates. See
+[the composite namespace qualification](PLAN5_SQL_COMPOSITE_SWEEP_QUALIFICATION_2026-10-06.md).
+
 Every non-exception view includes the whole audited input's `coverage` object:
 `lineage`, `selected_epoch`, `complete`, `quiescent`, and `exception_count`.
 This includes unfiltered holdings, supply, prices, routes and provenance. The
