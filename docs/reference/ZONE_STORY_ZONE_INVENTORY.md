@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 216 authored journals.
+2668 distinct Q contracts; 217 authored journals.
 
 Regenerate with:
 
@@ -153,7 +153,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | Du'Maathe Castle (`mntcastl`) | 8 | 12 | 1 | Yes | [1 × a small handful of fine sand; 1 × a recipe for a granular potion → a granular potion](../../areas/qst/mntcastl.qst#L237) | inn |
 | Moonshae Island (`moonshae`) | 2 | 5 | 0 | Yes | [1 × the lost sword of Cymrych Hugh → a scarlet ring](../../areas/qst/moonshae.qst#L18) | sister_knight |
 | Neverwinter Woods (`moria`) | 5 | 2 | 0 | Yes | [1 × the amethyst rune; 1 × the sapphire rune; 1 × the diamond rune; other required items → a ruby-encrusted eyepatch](../../areas/qst/moria.qst#L65) | nw_agatha, nw_ammaster, nw_ansal, nw_brock, nw_builder, nw_carpen |
-| Mosswood (`moss`) | 1 | 1 | 0 | Fallback | [1 × a large beet → native reward/response](../../areas/qst/moss.qst#L9) | — |
+| Mosswood (`moss`) | 1 | 1 | 0 | Yes | [1 × a large beet → native reward/response](../../areas/qst/moss.qst#L9) | — |
 | The Mountain of the Banished (`mount`) | 3 | 4 | 0 | Yes | [1 × the essence of Tolog; 1 × the essence of Pakar; 1 × the essence of Zooox; other required items → the symbol of chaos, the visor of destruction](../../areas/qst/mount.qst#L56) | — |
 | Mountain Tracts of the Untamed (`mountaintracks`) | 4 | 4 | 1 | Yes | [1 × a green dragon scale; 1 × a vampire's tooth → a glowing green potion](../../areas/qst/mountaintracks.qst#L57) | — |
 | Miaeril Village (`mril`) | 3 | 3 | 0 | Yes | [5 × a freshly killed salmon → the lost book of 'Magic'](../../areas/qst/mril.qst#L48) | — |

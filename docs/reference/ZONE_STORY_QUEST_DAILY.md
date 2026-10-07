@@ -304,3 +304,8 @@ The [dossier](../design/zone-stories/FOREST_OF_MIR.md) retains one native achiev
 ## The Shadow Forest daily qualification
 
 The [dossier](../design/zone-stories/SHADOW_FOREST.md) retains one native achievement/potential daily. Mode2/lifespan25..35, source/giver cap1, D departure and actual roaming do not guarantee accessible renewed stock. Qualify usable source or exact supplied head, guardian/approach admission, crown/departure/recipient/save/replay and new generations. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
+
+
+## Mosswood daily qualification
+
+The [dossier](../design/zone-stories/MOSSWOOD.md) retains one native achievement/potential daily. Mode2/lifespan40..80, beet cap2,Ijale cap1 and no departure do not prove renewed available stock or lawful repeated C1000 payouts. Qualify actual source reveal/recovery or supplied input,food choice,accepted consumption,identified wallet recipient/save/replay and fresh generations. Shop production is separate from beet supply. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.

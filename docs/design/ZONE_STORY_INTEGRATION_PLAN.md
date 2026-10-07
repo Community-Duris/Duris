@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 216 authored journals, accounting-gated player surfaces, starter/town
+**Status: 217 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5396,3 +5396,8 @@ The [dossier](zone-stories/FOREST_OF_MIR.md) maps the native scroll exchange and
 ## The Shadow Forest integration extension
 
 The [dossier](zone-stories/SHADOW_FOREST.md) maps Palon’s head exchange plus six broader stories: guardian/ward approaches, investigation/faction, Grolen ecology, treant stewardship, traveler/landmark guidance and useful equipment.34 owned follow-ups keep supplied eligibility separate from first-source/death/carving evidence, actual roaming and lasting beneficiary state. Direction-specific guardian rules, inactive approaches and dead-end staging need source/played qualification before fair separate fix/news repairs. Existing schema3 covers the native Q; active READY accounting remains required and daily policy stays disabled.
+
+
+## Mosswood integration extension
+
+The [dossier](zone-stories/MOSSWOOD.md) maps Ijale’s exact beet/C1000 exchange and nine broader stories: farm work,supply and construction; livestock/pets/horses; village crafts/commerce; wizard household/knowledge; captain/guard investigation; pond/woodland/faerie stewardship; swamp choices; rocky route/hunter guidance; and household/community support.42 owned follow-ups separate source reveal/recovery,supplied eligibility,eating,accepted input and identified wallet payout. Actual shop/gate/door/roaming controls and useful lasting beneficiaries require qualification; descriptive services and dormant stock need explicit builder decisions. Existing schema3 handles the native Q. Active READY accounting remains required and daily policy stays disabled.

@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 216 &&
+		require(catalog.story_mappings.size() == 217 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -25463,6 +25463,83 @@ int main(int argc, char **argv)
 							   &supplies);
 			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
 				"The Shadow Forest missing reward or spent material changed recovered history");
+		}
+
+		{
+			const auto &beet = story_for("moss", "beet-for-ijale");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 23518, 23403, 100) == result::rejected,
+				"Mosswood contact ignored undiscovered zone");
+			require(journey.discover_zone(7, 42, 234, 23400, 101, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 234, 10, 1, 102, false, false)
+							.find(beet.title) == std::string::npos &&
+					journey.meet_npc(7, 42, 23518, 23403, 103) ==
+						result::applied,
+				"Mosswood request bypassed Ijale encounter");
+			require(journey.render_journal(7, 42, 234, 37, 1, 103, false, false)
+						.find(beet.title) != std::string::npos,
+				"Mosswood journal invented extra farming or greeting prerequisites");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    beet.steps[row].text) != std::string::npos;
+			};
+			for (unsigned custody = 0; custody < 5; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[23435] = 1;
+				if (custody == 2)
+					supplies.carried[23434] = 1;
+				if (custody >= 3)
+					supplies.carried[23436] = custody == 3 ? 1 : 2;
+				const auto journal = journey.render_journal(
+					7, 42, 234, 10, 1, 104, false, false, &supplies);
+				require(status(journal, 0,
+					       custody >= 3 ? "Ready now" : "Missing now") &&
+						!status(journal, 1, "Recorded") &&
+						journey.progress_for_zone(7, 42, 234).completed ==
+							0 &&
+						journey.serialize_state() == before,
+					"Mosswood supplied beet, robe or apple forged history");
+			}
+			// Synthetic receipt qualifies projection, not live search/get/food admission, accepted input or C1000 wallet publication.
+			record(journey, beet.contracts.front(), "moss-beet-offering", 234, 23403);
+			supplies = {};
+			auto journal = journey.render_journal(7, 42, 234, 10, 1, 121, false, false,
+							      &supplies);
+			require(status(journal, 1, "Recorded") &&
+					status(journal, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 234).completed == 1 &&
+					!journey.has_discovered(7, 42, 5000),
+				"Mosswood spent beet erased receipt or invented foreign arrival");
+			require(supplied.discover_zone(7, 42, 234, 23400, 101, "arrival") ==
+					result::applied,
+				"Mosswood supplied return setup failed");
+			record(supplied, beet.contracts.front(), "moss-supplied-offering", 234,
+			       23403);
+			require(supplied.progress_for_zone(7, 42, 234).completed == 1,
+				"Mosswood acceptance required remembered source recovery, greeting, eating or apple purchase");
+			auto replay = completion(beet.contracts.front(), "moss-beet-offering", 120);
+			replay.transaction.zone_number = 234;
+			replay.transaction.room_vnum = 23403;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Mosswood replay duplicated beet acceptance");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 234).completed == 1 &&
+					raw.progress_for_zone(7, 42, 234).completed == 1 &&
+					!recovered.has_discovered(7, 42, 5000),
+				"Mosswood mapped/raw recovery lost acceptance or invented foreign discovery");
+			journal = recovered.render_journal(7, 42, 234, 10, 1, 122, false, false,
+							   &supplies);
+			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
+				"Mosswood missing reward or spent material changed recovered history");
 		}
 
 		std::cout

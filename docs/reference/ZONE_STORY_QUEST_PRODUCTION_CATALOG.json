@@ -63609,6 +63609,972 @@
     {
       "contacts": [
         {
+          "description": "This small animal pecks at the ground here in search of insects and seeds. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "chicken",
+          "mob_vnum": 23400,
+          "name": "a chicken",
+          "topics": []
+        },
+        {
+          "description": "A large mammal, this cow is kept by the villagers for its milk and meat. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "cow",
+          "mob_vnum": 23401,
+          "name": "a cow",
+          "topics": []
+        },
+        {
+          "description": "This female pig lies in the earth here, its right side up. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "sow",
+          "mob_vnum": 23402,
+          "name": "a sow",
+          "topics": []
+        },
+        {
+          "description": "Running around as if its tail were on fire, this little piglet looks like it cannot see enough sights and it wants to be in all places at once. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "piglet",
+          "mob_vnum": 23403,
+          "name": "a piglet",
+          "topics": []
+        },
+        {
+          "description": "One of the many pigs in town, this one is busy digging a shallow hole in the ground here. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "pig",
+          "mob_vnum": 23404,
+          "name": "a pig",
+          "topics": []
+        },
+        {
+          "description": "This bird has landed on the ground here, perhaps nearby something that interests it. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "black",
+          "mob_vnum": 23405,
+          "name": "a raven",
+          "topics": []
+        },
+        {
+          "description": "This is one of the townsfolk, a rather plain looking man that could live on any farm in the realms. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "villager",
+          "mob_vnum": 23406,
+          "name": "a Mosswood villager",
+          "topics": []
+        },
+        {
+          "description": "Jurushka makes clothing in her descriptive store. No raw SHP keeper record targets her; an actual clothier service or commission needs specific integration.",
+          "keyword": "jurushka",
+          "mob_vnum": 23407,
+          "name": "Jurushka, the clothier",
+          "topics": []
+        },
+        {
+          "description": "Ralg runs the native weapon shop and carries stocked weapons. His forge and farming-tool descriptions do not establish an accepted repair or crafting job.",
+          "keyword": "ralg",
+          "mob_vnum": 23408,
+          "name": "Ralg, the smith",
+          "topics": []
+        },
+        {
+          "description": "A child around nine or ten years old, this boy or girl - it is somewhat difficult to determine as he or she runs around and has not yet developed any distinguishing characteristics - is playing here. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "child",
+          "mob_vnum": 23409,
+          "name": "a Mosswood Village child",
+          "topics": []
+        },
+        {
+          "description": "Barely more than a farmer with a studded club at his side, this is one of the few village watchmen. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "man",
+          "mob_vnum": 23410,
+          "name": "a Mosswood Village watchman",
+          "topics": []
+        },
+        {
+          "description": "Looking at you longer than is comfortable, this woman must be interested to see another stranger in town. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "woman",
+          "mob_vnum": 23411,
+          "name": "a Mosswood Village female",
+          "topics": []
+        },
+        {
+          "description": "One of the older villagers, this man sits here under the large tree on the northwestern side of the town square. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "old",
+          "mob_vnum": 23412,
+          "name": "an old Mosswood townsman",
+          "topics": []
+        },
+        {
+          "description": "Leaning against the tree where several village elders have gathered, this woman looks to be well in her sixties or even seventies. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "elderly",
+          "mob_vnum": 23413,
+          "name": "an elderly woman",
+          "topics": []
+        },
+        {
+          "description": "The wizard lives in the hill house. Robe23434 is defined without a local reset source; its description does not establish present carried stock. Messages, lessons, components and useful magic need accepted objectives and verified effects.",
+          "keyword": "wise",
+          "mob_vnum": 23414,
+          "name": "the Mosswood wizard",
+          "topics": []
+        },
+        {
+          "description": "The teenage servant tends household chores and books. No stocked book delivery or accepted household task is established by that description.",
+          "keyword": "boy",
+          "mob_vnum": 23415,
+          "name": "a teenage servant",
+          "topics": []
+        },
+        {
+          "description": "The wood golem is native mobile stock in the wizard\u2019s house. Encountering it does not establish creating, commanding or repairing a construct.",
+          "keyword": "wooden",
+          "mob_vnum": 23416,
+          "name": "a simple wood golem",
+          "topics": []
+        },
+        {
+          "description": "Working on a piece of land here, this man is obviously a farmer. A sighting, item or defeat alone does not establish an accepted task or lasting result. This prototype has no M/F reset source in Mosswood; present encounters require their own source qualification.",
+          "keyword": "farmer",
+          "mob_vnum": 23417,
+          "name": "a Mosswood Village farmer",
+          "topics": []
+        },
+        {
+          "description": "A small but strong looking horse, this brown equine must be used by the villagers to pull their ploughs, wagons and carry materials. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "strong",
+          "mob_vnum": 23418,
+          "name": "a strong looking horse",
+          "topics": []
+        },
+        {
+          "description": "This boy is sitting on the ground here, playing with some simple wooden toys. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "playing",
+          "mob_vnum": 23419,
+          "name": "a playing Mosswood Village boy",
+          "topics": []
+        },
+        {
+          "description": "The mischievous imp is part of the wizard\u2019s household. Its presence is distinct from a witnessed summoning or helpful spell effect.",
+          "keyword": "small",
+          "mob_vnum": 23420,
+          "name": "a mischievous imp",
+          "topics": []
+        },
+        {
+          "description": "A small and graceful feline, this cat is probably kept by the villagers for its hunting capabilities. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "cat",
+          "mob_vnum": 23421,
+          "name": "a domesticated cat",
+          "topics": []
+        },
+        {
+          "description": "Lying on a clear section of ground, this dog might be mistaken for a stray or mutt in any sizeable town. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "black",
+          "mob_vnum": 23422,
+          "name": "a black dog",
+          "topics": []
+        },
+        {
+          "description": "This animal is a cross between a donkey and a horse. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "mule",
+          "mob_vnum": 23423,
+          "name": "a mule",
+          "topics": []
+        },
+        {
+          "description": "This stupid looking animal looks at you with a really dim look in its eyes. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "fuzzy",
+          "mob_vnum": 23424,
+          "name": "a sheep",
+          "topics": []
+        },
+        {
+          "description": "Looking at you with small, beady eyes, this rat looks tensed and ready to dart off at a second's notice. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "rat",
+          "mob_vnum": 23425,
+          "name": "a rat",
+          "topics": []
+        },
+        {
+          "description": "Sitting on a bench placed at the side of the village square, this man is is working on what looks like a basket. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "craftsman",
+          "mob_vnum": 23426,
+          "name": "a craftsman",
+          "topics": []
+        },
+        {
+          "description": "A young man who is dressed differently from the others, this one looks like his is not from Mosswood Village. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "adventurer",
+          "mob_vnum": 23427,
+          "name": "a wandering adventurer",
+          "topics": []
+        },
+        {
+          "description": "This man is a member of the upper middle class in Waterdeep, the city of Splendor. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "merchant",
+          "mob_vnum": 23428,
+          "name": "a merchant from Verspin",
+          "topics": []
+        },
+        {
+          "description": "This man is not a villager from here. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "shopper",
+          "mob_vnum": 23429,
+          "name": "a shopper from Woodseer",
+          "topics": []
+        },
+        {
+          "description": "Taller and more muscular than a normal human, this man has something primitive about him. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "large",
+          "mob_vnum": 23430,
+          "name": "a barbarian",
+          "topics": []
+        },
+        {
+          "description": "This man looks like either a rogue or a wizard. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "evil",
+          "mob_vnum": 23431,
+          "name": "a citadel apprentice",
+          "topics": []
+        },
+        {
+          "description": "This man sits here in the grass, leaning against a tree trunk. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "villager",
+          "mob_vnum": 23432,
+          "name": "a relaxing commoner",
+          "topics": []
+        },
+        {
+          "description": "A squat creature, this toad sits next to some water here on the forest floor. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "fat",
+          "mob_vnum": 23433,
+          "name": "a fat toad",
+          "topics": []
+        },
+        {
+          "description": "A man of arms, this soldier is standing around the makeshift barracks here in the clearing in the forest. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "soldier",
+          "mob_vnum": 23434,
+          "name": "a Tharnadian soldier",
+          "topics": []
+        },
+        {
+          "description": "This soldier looks different from the others. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "mercenary",
+          "mob_vnum": 23435,
+          "name": "a mercenary soldier",
+          "topics": []
+        },
+        {
+          "description": "The captain leads the investigating soldiers. Two F reset rows attach native followers to him; they are not a player\u2019s accepted escort.",
+          "keyword": "tough",
+          "mob_vnum": 23436,
+          "name": "the group captain",
+          "topics": []
+        },
+        {
+          "description": "This deer is quite large when one looks at it from this short distance. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "deer",
+          "mob_vnum": 23437,
+          "name": "a deer",
+          "topics": []
+        },
+        {
+          "description": "This is a disgustingly large spider, as large as an adult cat and perhaps even bigger, it is hard to tell because there is a great deal of bristling hair covering its body and its legs may not be extended. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "spider",
+          "mob_vnum": 23438,
+          "name": "a hairy spider",
+          "topics": []
+        },
+        {
+          "description": "This long-legged spider moves with remarkable grace. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "funnelweb",
+          "mob_vnum": 23439,
+          "name": "a funnelweb spider",
+          "topics": []
+        },
+        {
+          "description": "This creature looks like a four and half foot human. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "hobgoblin",
+          "mob_vnum": 23440,
+          "name": "a hobgoblin",
+          "topics": []
+        },
+        {
+          "description": "This ugly, bipedal creatures stands around six feet tall, and it has a stooping gait and hunched shoulders. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "ettercap",
+          "mob_vnum": 23441,
+          "name": "an ettercap",
+          "topics": []
+        },
+        {
+          "description": "This man looks like he is a part of the forest floor, as his entire body is covered with a layer of mold. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "mold",
+          "mob_vnum": 23442,
+          "name": "a mold man",
+          "topics": []
+        },
+        {
+          "description": "This is a strange ball of light that drifts through the air. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "will",
+          "mob_vnum": 23443,
+          "name": "a will o'wisp",
+          "topics": []
+        },
+        {
+          "description": "Looking very much like a goblin or orc, this humanoid is slightly different nonetheless. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "small",
+          "mob_vnum": 23444,
+          "name": "a kobold",
+          "topics": []
+        },
+        {
+          "description": "Thin and wiry, this troll looks clumsy at first, especially with its long arms that hang down to besides its knees. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "lanky",
+          "mob_vnum": 23445,
+          "name": "a lanky troll",
+          "topics": []
+        },
+        {
+          "description": "Perfectly at home here in the swamp, this snake has grown to a large size. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "constricting",
+          "mob_vnum": 23446,
+          "name": "a constricting snake",
+          "topics": []
+        },
+        {
+          "description": "This creature is a hatchling dragon, but it is as big as a cow already. A sighting, item or defeat alone does not establish an accepted task or lasting result. This prototype has no M/F reset source in Mosswood; present encounters require their own source qualification.",
+          "keyword": "black",
+          "mob_vnum": 23447,
+          "name": "a black dragon hatchling",
+          "topics": []
+        },
+        {
+          "description": "This large beetle is beyond just big, as it is the size of a cat. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "bombardier",
+          "mob_vnum": 23448,
+          "name": "a bombardier beetle",
+          "topics": []
+        },
+        {
+          "description": "A large insect, this beetle is a scary sight. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "beetle",
+          "mob_vnum": 23449,
+          "name": "a boring beetle",
+          "topics": []
+        },
+        {
+          "description": "This red beetle is difficult to not see. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "fire",
+          "mob_vnum": 23450,
+          "name": "a fire beetle",
+          "topics": []
+        },
+        {
+          "description": "A large beetle chews on the crops here, its impressive mandibles grinding down the shafts of the grain as if they were grass. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "stag",
+          "mob_vnum": 23451,
+          "name": "a stag beetle",
+          "topics": []
+        },
+        {
+          "description": "A squat humanoid creature, this wide-bodied animal is a bullywug. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "bullywug",
+          "mob_vnum": 23452,
+          "name": "a bullywug scout",
+          "topics": []
+        },
+        {
+          "description": "A squat humanoid creature, this wide-bodied animal is a bullywug. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "bullywug",
+          "mob_vnum": 23453,
+          "name": "a bullywug warrior",
+          "topics": []
+        },
+        {
+          "description": "A squat humanoid creature, this wide-bodied animal is a bullywug. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "bullywug",
+          "mob_vnum": 23454,
+          "name": "a bullywug shaman",
+          "topics": []
+        },
+        {
+          "description": "An impressively muscled creature, this green man-like being has a reptilian build. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "lizard",
+          "mob_vnum": 23455,
+          "name": "a lizard man",
+          "topics": []
+        },
+        {
+          "description": "A squat humanoid creature, this wide-bodied animal is a bullywug. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "leader",
+          "mob_vnum": 23456,
+          "name": "the bullywug leader",
+          "topics": []
+        },
+        {
+          "description": "This fish darts around in a shallow pond between the roots of the trees. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "scaly",
+          "mob_vnum": 23457,
+          "name": "a scaly fish",
+          "topics": []
+        },
+        {
+          "description": "At first it is hard to tell whether this is a snake or a fish, but at last it is clear that it is an eel. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "eel-like",
+          "mob_vnum": 23458,
+          "name": "an eel-like fish",
+          "topics": []
+        },
+        {
+          "description": "This ugly humanoid is covered in mud from head to toe. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "mud",
+          "mob_vnum": 23459,
+          "name": "a muckdweller",
+          "topics": []
+        },
+        {
+          "description": "Looking like a patch of moss that has grown on a branch overhead, this is, upon closer examination, a giant leech. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "large",
+          "mob_vnum": 23460,
+          "name": "a giant leech",
+          "topics": []
+        },
+        {
+          "description": "An fascinating creature, this insect is truly a sight to behold. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "large",
+          "mob_vnum": 23461,
+          "name": "a dragonfly",
+          "topics": []
+        },
+        {
+          "description": "This little frog sits on a low branch of a tree here. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "tiny",
+          "mob_vnum": 23462,
+          "name": "a poisonous frog",
+          "topics": []
+        },
+        {
+          "description": "This spider's body is about the size of a man's fist, but with its legs it looks much larger. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "swamp",
+          "mob_vnum": 23463,
+          "name": "a swamp spider",
+          "topics": []
+        },
+        {
+          "description": "Large eyes peer back at you. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "small",
+          "mob_vnum": 23464,
+          "name": "a grippli",
+          "topics": []
+        },
+        {
+          "description": "An orc moves throught the vegetation here, perhaps hunting for prey. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "scarred",
+          "mob_vnum": 23465,
+          "name": "an orc scout",
+          "topics": []
+        },
+        {
+          "description": "This little man-like creature is at best four feet in height. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "kobold",
+          "mob_vnum": 23466,
+          "name": "a kobold",
+          "topics": []
+        },
+        {
+          "description": "Orcs are the evil counterparts of humans, and they are the most common of the evil humanoids. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "orc",
+          "mob_vnum": 23467,
+          "name": "an orc heavy infantry",
+          "topics": []
+        },
+        {
+          "description": "Orcs are the evil counterparts of humans, and they are the most common of the evil humanoids. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "orc",
+          "mob_vnum": 23468,
+          "name": "an orc patrol",
+          "topics": []
+        },
+        {
+          "description": "This mound of earth looks like just a heap of dirt and rocks at first, but as you move around the area, it comes to life. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "mound",
+          "mob_vnum": 23469,
+          "name": "an earth elemental",
+          "topics": []
+        },
+        {
+          "description": "This looks like a section of the tunnel ceiling at first sight, but it can be seen to move slowly as if in anticipation of your moving underneath it. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "trapper",
+          "mob_vnum": 23470,
+          "name": "a trapper",
+          "topics": []
+        },
+        {
+          "description": "This creature is somewhat hard to qualify, as it has the build of a goblin but with much larger muscles. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "large",
+          "mob_vnum": 23471,
+          "name": "a bugbear",
+          "topics": []
+        },
+        {
+          "description": "This is the first human to be seen this far from the village, and he looks like a tough customer. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "hunter",
+          "mob_vnum": 23472,
+          "name": "a Mosswood Village hunter",
+          "topics": []
+        },
+        {
+          "description": "This bird resembles a giant chicken, but with all yellow feathers. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "jarbo",
+          "mob_vnum": 23473,
+          "name": "a jarbo",
+          "topics": []
+        },
+        {
+          "description": "This is a really strange creature. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "large",
+          "mob_vnum": 23474,
+          "name": "a kenku",
+          "topics": []
+        },
+        {
+          "description": "Seeming to be just a collection of vines at first sight, it can be seen that they all grow from a central cluster. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "spidery",
+          "mob_vnum": 23475,
+          "name": "a thornslinger",
+          "topics": []
+        },
+        {
+          "description": "This insect can be heard long before it can be seen, and even when one is very close to the source of the sound it takes a while to notice the bug. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "large",
+          "mob_vnum": 23476,
+          "name": "a cave cricket",
+          "topics": []
+        },
+        {
+          "description": "A medium sized feline predator, this lynx is still far larger than any normal domestic cat. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "lynx",
+          "mob_vnum": 23477,
+          "name": "a lynx",
+          "topics": []
+        },
+        {
+          "description": "This worm is a horrible sight, for it is enormous and has many legs along the length of its body. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "ankheg",
+          "mob_vnum": 23478,
+          "name": "an ankheg",
+          "topics": []
+        },
+        {
+          "description": "The playful faerie lives near the brook and faerie ring. A sighting or defeat is not knowledge, conservation or a magical reward.",
+          "keyword": "fairie",
+          "mob_vnum": 23479,
+          "name": "a playful fairie",
+          "topics": []
+        },
+        {
+          "description": "The playful pseudodragon shares the faerie clearing. Its friendly description does not establish an accepted pet or adoption.",
+          "keyword": "pseudodragon",
+          "mob_vnum": 23480,
+          "name": "a pseudodragon",
+          "topics": []
+        },
+        {
+          "description": "Squeezed into a hole in the rock, this bat cannot be very comfortable. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "bat",
+          "mob_vnum": 23481,
+          "name": "a bat",
+          "topics": []
+        },
+        {
+          "description": "This bear lies on the floor of the cave, up in the back against the wall. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "medium",
+          "mob_vnum": 23482,
+          "name": "a cave bear",
+          "topics": []
+        },
+        {
+          "description": "This creature has crept up into the opening under an overhang here, but it is quite easily visible as it has aquamarine colored scales. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "snake-like",
+          "mob_vnum": 23483,
+          "name": "a behir",
+          "topics": []
+        },
+        {
+          "description": "A large insectoid creature, it also has a tail section like a lobster. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "cave",
+          "mob_vnum": 23484,
+          "name": "a cave fisher",
+          "topics": []
+        },
+        {
+          "description": "As it sits on a branch here, this owl looks quite squat. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "owl",
+          "mob_vnum": 23485,
+          "name": "an owl",
+          "topics": []
+        },
+        {
+          "description": "This majestic bird looks extremely cunning. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "falcon",
+          "mob_vnum": 23486,
+          "name": "a falcon",
+          "topics": []
+        },
+        {
+          "description": "The brownie\u2019s description concerns livestock care. Encountering it does not record a player\u2019s actual feeding or a surviving animal beneficiary.",
+          "keyword": "small",
+          "mob_vnum": 23487,
+          "name": "a brownie",
+          "topics": []
+        },
+        {
+          "description": "This large clump of algae appears void of any intellect. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "phycomid",
+          "mob_vnum": 23488,
+          "name": "a phycomid fungus",
+          "topics": []
+        },
+        {
+          "description": "This large fungus resembles a mushroom. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "shrieker",
+          "mob_vnum": 23489,
+          "name": "a shrieker fungus",
+          "topics": []
+        },
+        {
+          "description": "Looking like a child, this little man is the same size and has the same expression on his face as a playing boy. A sighting, item or defeat alone does not establish an accepted task or lasting result. This prototype has no M/F reset source in Mosswood; present encounters require their own source qualification.",
+          "keyword": "tiny",
+          "mob_vnum": 23490,
+          "name": "a gremlin",
+          "topics": []
+        },
+        {
+          "description": "Looking very out of place, it is a surprise that this creature isn't attacked on sight by the townspeople. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "fremlin",
+          "mob_vnum": 23491,
+          "name": "a fremlin",
+          "topics": []
+        },
+        {
+          "description": "This brown water bird has found its way to the small pond in the woods here. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "duck",
+          "mob_vnum": 23492,
+          "name": "a duck",
+          "topics": []
+        },
+        {
+          "description": "Swideth tends a descriptive general store. The store bell and wares are lore; no raw SHP keeper record targets her or installs a bell interaction.",
+          "keyword": "swideth",
+          "mob_vnum": 23493,
+          "name": "Swideth",
+          "topics": []
+        },
+        {
+          "description": "Making her way across the path here, this woman carries with her a simple cage made from twigs. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "woman",
+          "mob_vnum": 23494,
+          "name": "a townswoman",
+          "topics": []
+        },
+        {
+          "description": "Standing around with several other Mosswood villagers, this man is having a heated discussion. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "excited",
+          "mob_vnum": 23495,
+          "name": "an excited villager",
+          "topics": []
+        },
+        {
+          "description": "This boy is playing with a dog here, throwing a stick as far as it can and trying to throw it in places where it may be difficult to find. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "playing",
+          "mob_vnum": 23496,
+          "name": "a playing child",
+          "topics": []
+        },
+        {
+          "description": "This dog is playing with the boy here, performing the seemingly useless task of fetching the stick he throws. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "playing",
+          "mob_vnum": 23497,
+          "name": "a playing dog",
+          "topics": []
+        },
+        {
+          "description": "A small but strong looking horse, this brown equine must be used by the villagers to pull their ploughs, wagons and carry materials. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "horse",
+          "mob_vnum": 23498,
+          "name": "a grazing horse",
+          "topics": []
+        },
+        {
+          "description": "A man of arms, this soldier is standing around the makeshift barracks here in the clearing in the forest. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "soldier",
+          "mob_vnum": 23499,
+          "name": "a Waterdhavian soldier",
+          "topics": []
+        },
+        {
+          "description": "This soldier looks different from the others. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "mercenary",
+          "mob_vnum": 23500,
+          "name": "a mercenary soldier",
+          "topics": []
+        },
+        {
+          "description": "This man is dressed in armor, like the others, but he does not look like a real soldier. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "cook",
+          "mob_vnum": 23501,
+          "name": "the company's cook",
+          "topics": []
+        },
+        {
+          "description": "The Echo Maker has descriptive speech and forest stock. No local assigned speech controller was found; an ambient line is not addressed quest knowledge.",
+          "keyword": "echo",
+          "mob_vnum": 23502,
+          "name": "the Mosswood Village Echo Maker",
+          "topics": []
+        },
+        {
+          "description": "Seeming to be just a collection of vines at first sight, it can be seen that they all grow from a central cluster. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "spidery",
+          "mob_vnum": 23503,
+          "name": "a thornslinger",
+          "topics": []
+        },
+        {
+          "description": "The gnome describes an invention for preparing cabbage. No installed recipe, output item or accepted invention result was established.",
+          "keyword": "gnome",
+          "mob_vnum": 23504,
+          "name": "a short gnome",
+          "topics": []
+        },
+        {
+          "description": "This large creature is an ogre, the race of humanoids that is below giants in size, but of very heavy build. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "ogre",
+          "mob_vnum": 23505,
+          "name": "a fat ogre",
+          "topics": []
+        },
+        {
+          "description": "The recluse lives apart from the village. Entering his cottage does not establish consent, an aid request or a lasting welfare outcome.",
+          "keyword": "recluse",
+          "mob_vnum": 23506,
+          "name": "the Village recluse",
+          "topics": []
+        },
+        {
+          "description": "This big bird is large even though it swoops through the air at some distance. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "large",
+          "mob_vnum": 23507,
+          "name": "a large black bird",
+          "topics": []
+        },
+        {
+          "description": "The bored soldier stands at the gate. His description invites conversation but does not add a native password, permission grant or passage quest.",
+          "keyword": "guard",
+          "mob_vnum": 23508,
+          "name": "a bored soldier",
+          "topics": []
+        },
+        {
+          "description": "A stocky and strong creature, this pig-like creature is covered in a thick coat of hair. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "large",
+          "mob_vnum": 23509,
+          "name": "a large boar",
+          "topics": []
+        },
+        {
+          "description": "Going through the field here, this boy guides the beanstalks up the sticks they climb. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "boy",
+          "mob_vnum": 23510,
+          "name": "a young boy",
+          "topics": []
+        },
+        {
+          "description": "Gathering all the clothing which lies about this room into a bin, this girl does her part on the farm despite her young age. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "daughter",
+          "mob_vnum": 23511,
+          "name": "a farmer's daughter",
+          "topics": []
+        },
+        {
+          "description": "This woman is cutting a pile of beans in two. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "wife",
+          "mob_vnum": 23512,
+          "name": "the farmer's wife",
+          "topics": []
+        },
+        {
+          "description": "Sitting on a stump that is normally used for chopping wood, this man is the farmer of this piece of land. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "farmer",
+          "mob_vnum": 23513,
+          "name": "the farmer",
+          "topics": []
+        },
+        {
+          "description": "A scruffy man with an unkempt brown beard, this individual is probably the owner of this piece of land. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "farmer",
+          "mob_vnum": 23514,
+          "name": "the farmer",
+          "topics": []
+        },
+        {
+          "description": "Accompanying his father, this boy is around fourteen years old. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "oldest",
+          "mob_vnum": 23515,
+          "name": "the oldest son",
+          "topics": []
+        },
+        {
+          "description": "Sitting in a chair which is a direct angle between the window and the inside of the house, this woman can keep an eye on both outside and inside. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "wife",
+          "mob_vnum": 23516,
+          "name": "the farmer's wife",
+          "topics": []
+        },
+        {
+          "description": "This little child is perhaps half a year old. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "toddler",
+          "mob_vnum": 23517,
+          "name": "a toddler",
+          "topics": []
+        },
+        {
+          "description": "Ijale accepts the exact large beet for C1000 coins without departing. Her hi/hello response is one greeting. Her apple shop is a separate service; supplied beets remain eligible.",
+          "keyword": "ijale",
+          "mob_vnum": 23518,
+          "name": "Ijale, the vegetable salesgirl",
+          "topics": [
+            "hi",
+            "hello"
+          ]
+        },
+        {
+          "description": "The stable keeper tends the riding horses. Care, purchase, riding, return and surviving delivery need separate accepted outcomes.",
+          "keyword": "old",
+          "mob_vnum": 23519,
+          "name": "the stable keeper",
+          "topics": []
+        },
+        {
+          "description": "Although the house looks spotless, this woman is nonetheless cleaning the little dust that can be found. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "woman",
+          "mob_vnum": 23520,
+          "name": "a kind woman",
+          "topics": []
+        },
+        {
+          "description": "The gardener removes weeds in the village garden. No local belt or magical garden-access prerequisite is installed by this description.",
+          "keyword": "gardening",
+          "mob_vnum": 23521,
+          "name": "a gardener",
+          "topics": []
+        },
+        {
+          "description": "Frozen in what she was doing, this small girl does not know what to do with your presence here. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "small",
+          "mob_vnum": 23522,
+          "name": "a small girl",
+          "topics": []
+        },
+        {
+          "description": "Carrying a scythe with a very long blade, this farmer could surely cut down a lot of wheat. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "farmer",
+          "mob_vnum": 23523,
+          "name": "a farmer",
+          "topics": []
+        },
+        {
+          "description": "Picking some ripe vegetables from the garden, this woman may be gathering some food for later today. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "woman",
+          "mob_vnum": 23524,
+          "name": "the farmer's wife",
+          "topics": []
+        },
+        {
+          "description": "Bedgar runs the native armor shop. Buying produced armor, restoring equipment and helping his workshop are separate outcomes.",
+          "keyword": "bedgar",
+          "mob_vnum": 23525,
+          "name": "Bedgar, the armorer",
+          "topics": []
+        },
+        {
+          "description": "Its shoulder almost at the height of a man's arms, this is a large and imposing horse. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "black",
+          "mob_vnum": 23526,
+          "name": "a black horse",
+          "topics": []
+        },
+        {
+          "description": "This is the first human to be seen this far from the village, and he looks like a tough customer. A sighting, item or defeat alone does not establish an accepted task or lasting result.",
+          "keyword": "hunter",
+          "mob_vnum": 23527,
+          "name": "a village hunter",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Meet Ijale in Mosswood\u2019s village market, prepare an exact large beet, and distinguish recovering or receiving supplies from an accepted trade.",
+      "orientation": [
+        "Arrive in Mosswood through its village road to discover the zone. Meet Ijale to reveal her beet request; the journal keeps current supplies separate from accepted history.",
+        "Ask Ijale about hi or hello. Both words lead to the same greeting and request; hearing either does not complete a trade or create a second achievement.",
+        "Ijale accepts one exact large beet for the native coin reward. Bring the beet loose in your inventory. A supplied copy also fits without remembered farming, first recovery or a prior greeting.",
+        "Large beets are hidden ground stock near the cattle plot and beet fields. Search can reveal surviving stock; finding it and carrying it are separate actions. Another player may already have taken it.",
+        "The optional beet row describes what you carry now. Packed supplies need to be taken out before offering. A remembered find, an apple or money cannot replace the exact beet.",
+        "Eating the beet uses up that food instead of completing Ijale\u2019s request. An accepted trade uses its own receipt; later missing supplies or a changed purse do not erase that history.",
+        "Ijale also runs a fruit shop. Buying an apple and giving her a beet are separate interactions, and buying fruit is not required for her request.",
+        "Ralg\u2019s weapons and Bedgar\u2019s armor have ordinary shop prices and availability. Descriptive stores elsewhere in the village need their own service integration before they become trade objectives.",
+        "Bean, beet and wheat farms show field work, fences, barns and family chores. Visiting these places or defeating pests does not by itself record a useful contribution to a farm.",
+        "Livestock, pets and horses have different roles. Working horses, riding horses and a stable keeper do not establish an accepted animal-care, riding or delivery quest.",
+        "The wizard\u2019s hill house, servant, wood golem and imp provide a household story to explore. Descriptive books and inventions are not automatically items, lessons or useful spell outcomes.",
+        "Soldiers and their captain are investigating the woods. A guard and a gate stand on a route, but permission, answers and a lasting resolution need explicit integration.",
+        "The pond offers water when its stock remains. Drinking, filling a container, caring for wildlife and restoring a water source are different outcomes.",
+        "The faerie ring, brook, woodlands and rocky paths offer landmarks. Their stories need accepted knowledge, actual route admission and useful results before further achievements are added.",
+        "Swamp creatures, caves, the troll burrow and the rock plateau have their own dangers and native movement rules. Atmospheric descriptions alone do not certify swimming, falling, rescue or safe shelter.",
+        "The builder plan covers wider farm, family, wildlife, investigation and guidance stories. Additional journal objectives will appear when their successful actions and lasting outcomes are specifically integrated."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "moss",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:23436;receive=C:1000;disappear=0",
+              "giver_vnum": 23518
+            }
+          ],
+          "id": "beet-for-ijale",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Search for surviving hidden ground stock or obtain an exact supplied beet. Take it out of any container before offering; this row reports current loose custody without proving farming or personal first recovery.",
+              "id": "large-beet",
+              "item_vnums": [
+                23436
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry one exact large beet loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:23436;receive=C:1000;disappear=0",
+                  "giver_vnum": 23518
+                }
+              ],
+              "hint": "Give the exact loose beet to Ijale for the C1000 coin reward. A greeting, apple purchase, remembered source, eating or purse balance cannot create this receipt.",
+              "id": "exchange",
+              "kind": "completion",
+              "text": "Record Ijale\u2019s accepted beet trade"
+            }
+          ],
+          "summary": "Offer one exact large beet for the native coin reward. Personal recovery, supplied custody, eating and accepted payment are separate events.",
+          "title": "Supply a large beet to Ijale"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Ask hi or hello at the hidden card table. Three exact loose circles earn 66666 experience and 66666 copper together; Snarg departs after acceptance.",
           "keyword": "snarg",
           "mob_vnum": 23623,
