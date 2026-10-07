@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 219 &&
+		require(catalog.story_mappings.size() == 220 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -25722,6 +25722,103 @@ int main(int argc, char **argv)
 							   &supplies);
 			require(status(journal, 5, "Recorded") && status(journal, 0, "Missing now"),
 				"Ny’Neth Stronghold missing key or spent ores changed recovered history");
+		}
+
+		{
+			const auto &souls = story_for("nyneth3", "fourteen-souls-for-the-hunger");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 38736, 38807, 100) == result::rejected,
+				"Ny’Neth Continued contact ignored undiscovered zone");
+			require(journey.discover_zone(7, 42, 387, 38700, 101, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 387, 10, 1, 102, false, false)
+							.find(souls.title) == std::string::npos &&
+					journey.meet_npc(7, 42, 38736, 38807, 103) ==
+						result::applied,
+				"Ny’Neth Continued request bypassed Hunger encounter");
+			require(journey.render_journal(7, 42, 387, 10, 1, 103, false, false)
+						.find(souls.title) != std::string::npos,
+				"Ny’Neth Continued journal invented extra source, greeting, hero rescue or campaign prerequisites");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    souls.steps[row].text) != std::string::npos;
+			};
+			for (unsigned custody = 0; custody < 8; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[38755] = 1;
+				if (custody == 2)
+					supplies.carried[38741] = 14;
+				if (custody >= 3)
+					for (long vnum = 38741; vnum < 38754; ++vnum)
+						supplies.carried[vnum] = 1;
+				if (custody == 4)
+					supplies.equipped[18] = 38754;
+				if (custody == 5)
+					supplies.carried[55208] = 1;
+				if (custody >= 6)
+					for (long vnum = 38741; vnum <= 38754; ++vnum)
+						supplies.carried[vnum] = custody == 6 ? 1 : 2;
+				const auto journal = journey.render_journal(
+					7, 42, 387, 10, 1, 104, false, false, &supplies);
+				for (size_t row = 0; row < 14; ++row)
+				{
+					const bool ready = custody >= 6 ||
+							   (custody >= 3 && row < 13) ||
+							   (custody == 2 && row == 0);
+					require(status(journal, row,
+						       ready ? "Ready now" : "Missing now"),
+						"Ny’Neth Continued substituted a duplicate, held or foreign soul for a distinct loose type");
+				}
+				require(!status(journal, 14, "Recorded") &&
+						journey.progress_for_zone(7, 42, 387).completed ==
+							0 &&
+						journey.serialize_state() == before,
+					"Ny’Neth Continued preparation or reward-key possession forged accepted history");
+			}
+			// Synthetic receipt qualifies projection, not live fourteen-root consumption, reward, travel, boss, artifact or epic admission.
+			record(journey, souls.contracts.front(), "nyneth3-souls-offering", 387,
+			       38807);
+			supplies = {};
+			auto journal = journey.render_journal(7, 42, 387, 10, 1, 121, false, false,
+							      &supplies);
+			require(status(journal, 14, "Recorded") &&
+					status(journal, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 387).completed == 1 &&
+					!journey.has_discovered(7, 42, 229) &&
+					!journey.has_discovered(7, 42, 230),
+				"Ny’Neth Continued spent souls erased receipt or invented foreign arrival");
+			require(supplied.discover_zone(7, 42, 387, 38700, 101, "arrival") ==
+					result::applied,
+				"Ny’Neth Continued supplied return setup failed");
+			record(supplied, souls.contracts.front(), "nyneth3-supplied-offering", 387,
+			       38807);
+			require(supplied.progress_for_zone(7, 42, 387).completed == 1,
+				"Ny’Neth Continued acceptance required remembered source recovery, personal kill, greeting, rescue, key use or epic participation");
+			auto replay =
+				completion(souls.contracts.front(), "nyneth3-souls-offering", 120);
+			replay.transaction.zone_number = 387;
+			replay.transaction.room_vnum = 38807;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Ny’Neth Continued replay duplicated souls acceptance");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 387).completed == 1 &&
+					raw.progress_for_zone(7, 42, 387).completed == 1 &&
+					!recovered.has_discovered(7, 42, 229) &&
+					!recovered.has_discovered(7, 42, 230),
+				"Ny’Neth Continued mapped/raw recovery lost acceptance or invented foreign discovery");
+			journal = recovered.render_journal(7, 42, 387, 10, 1, 122, false, false,
+							   &supplies);
+			require(status(journal, 14, "Recorded") &&
+					status(journal, 0, "Missing now"),
+				"Ny’Neth Continued missing key or spent souls changed recovered history");
 		}
 
 		std::cout

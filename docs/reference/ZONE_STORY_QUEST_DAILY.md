@@ -319,3 +319,8 @@ The [dossier](../design/zone-stories/NEXUS_ROPER.md) retains one native achievem
 ## Ny’Neth’s Stronghold daily qualification
 
 The [dossier](../design/zone-stories/NYNETH2.md) preserves one native achievement/potential daily. No departure does not prove renewable five-ore supply: mode0 and the active-accounting reset guard require durable source generations before fresh ore, keys, carts, painting or monolith availability. Qualify five exact loose roots, supplied eligibility, atomic consumption, acknowledged mine-key recipient/save/replay and actual renewal. Separate epic claims, key passages, consented rescue and campaign arrival have different success evidence. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
+
+
+## Ny’Neth Continued daily qualification
+
+The [dossier](../design/zone-stories/NYNETH3.md) preserves one native achievement/potential daily at the14-root boundary. No departure and mode0 do not prove renewable supply:active accounting refuses138 reset item rows. Qualify fourteen distinct loose durable roots,supplied eligibility,atomic consumption,acknowledged black-key recipient/save/replay and actual renewal. First source,hero survival,boss victory,artifact usefulness and committed epic participants have separate evidence. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.

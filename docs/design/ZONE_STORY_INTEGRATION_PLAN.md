@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 219 authored journals, accounting-gated player surfaces, starter/town
+**Status: 220 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5415,3 +5415,12 @@ The [dossier](zone-stories/NYNETH2.md) maps the five distinct ore samples and ei
 ### Accounted reset-generation requirement
 
 The current reset guard refuses item-issuing O/G/E and related commands while accounting is active, before read_object or live placement. Ny’Neth’s 187 item rows, and other zones using those commands, need durable generation/source identities, acknowledged spawn/custody publication, native caps/conditional children and replay/recovery/replacement qualification before dependable fresh supply. Existing authoritative/recovered stock is separate. Do not bypass the guard or infer renewal from no-departure, configured lifetimes or an epic reset request. Follower admission through last_mob_followable remains separate and must be preserved.
+
+
+## Ny’Neth Continued integration extension
+
+The [dossier](zone-stories/NYNETH3.md) covers the exact fourteen-soul exchange and eleven broader campaign,maze,source,hero,redemption,pact,boss,wife,curse,artifact and final-vault stories,with56 owned follow-ups. Reuse existing schema3,max14 durable offerings and fourteen optional exact-identity labels plus completion. Identical visible item names need carrier-linked requirements while supplied copies remain eligible without personal kill history. Active READY accounting remains required; daily policy stays disabled.
+
+### Custom generation and useful-effect requirements
+
+Account-aware reset generations must cover138 local O/G/E rows and native conditional followers. Dynamic Ny’Neth Fury and artifact ancestor spawns need distinct controller/source/instance/group/expiry and replay ownership. Actual equipment/effect/beneficiary admission,property-selected action outcomes and foreign effective handler order must precede useful achievements. Artifact names,apparitions,deflection,loot,hero deaths and boss defeat cannot fabricate rescue or pact completion. Actual repairs remain separately named fix/news work.
