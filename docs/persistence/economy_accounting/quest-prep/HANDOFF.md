@@ -1,6 +1,49 @@
 # Continuing project acceptance — 2026-10-07
 
-New finite assignment: **private live-route investigation complete; maintained
+Approved finite live-route repair **implemented and pushed**:
+fd4563fab791b33a2905db22baa4167f3567c298, basebf4a1282aa7309bd07fe213521fc2cd42c90b1a9.
+Authors ONLY tests/async/test_shop_trade_live_route.py; existing helpers unchanged.
+Boundary approval is primary0f4669671352bcf78e5297c070f5ec23281f0c3e, published
+SHOP_LIVE_ROUTE_REVIEW_2026-10-07.md. [Current implementation/import/execution
+handoff](SHOP_LIVE_ROUTE_IMPLEMENTATION.md) supersedes the historical pending
+reservation below. All original semantic guards and16 current globals retained;
+actual defined owner chain, four non-null hooks, exact custody/snapshots/revisions,
+physical-before-notification, uncertain effects/pending retention and separate
+native owner/receipt ACK remain106 source checks across23 definitions.
+
+Actual one-file patch imports on fresh bare0f466; tree
+4109e3b20ea17ee40c8d0311dd8cabd4aec44464 differs only in the test. Complete
+maintained `python3 -B tests/async/test_shop_trade_live_route.py` PASS exit0/0.471120s.
+Optional actual R10 code7bbf942e3b7c12dea22e5bf03a592b48aedd690f composition tree
+cc511475b80e75a62b15b2dff50b84c2ff1c277b PASS exit0/0.481079s, same106 checks.
+Final committed full entry point rejects all27 genuine source-guarantee removals
+on each candidate; exact copied test/helpers/current sources, real extraction,
+no substituted oracle. Both controlled temporary fixtures cleaned. All6448 bare/
+6448 repaired/6449 combined export bodies/sizes/modes/links authenticated before/
+after, unchanged and no unexpected files. Original fresh0f FAIL exit1/0.031498s
+preserved, plus earlier b22/b22+R10 failures and initial sensitivity-design failures.
+
+Original/repaired test blobs95803d00847f74c16e1647c80e67dd7c433656a5 /
+7ce624589f1a83cbd699475cc5eca6070da8642e. Patch SHA256
+d9e260dab703c5df2bd3179a1ee82466ee077eaa29529d635e6ac96aca55ca68.
+Proofs ignored under bin/tests/shop-live-route-0f466-20261007; SEALED.json SHA256
+fcf8df0da581a4c604b9b4b27a34fe764540c2a43de08c46cb85d9632ffc04f1.
+Exact candidate/helper/source/archives/commands/receipt hashes in implementation
+handoff. Current verify AST and23 native body hashes match reviewed private/b22
+inputs; only buy changes underR10. No private PASS relabeled as maintained/native.
+Import codefd4563fab alone; no optional sidework ancestry. Final coordinator review
+and primary adoption pending. Owned source-only container stopped; no DB/player/
+server/compiler/native operation or broad rerun. git diff --check PASS.
+
+Separate prose correction595fb4fb9461be1a2c1e12070f3f95e79642b3b3,
+basefd4563fab791b33a2905db22baa4167f3567c298, changes only investigation's503 path
+count to one R11 review path. Old seals/pins unchanged. This evidence publication
+authors only SHOP_LIVE_ROUTE_IMPLEMENTATION.md, investigation disposition and
+HANDOFF.md. Actual continuing Goal remains BLOCKED, not resumed/complete; native
+lifecycle/reset-born source/custody/cost/capture/publication/ACK/delayed bartender/
+held-charge/refund/pre-ACK move/paired retirement and full-project gates remain.
+
+Historical private assignment: **private live-route investigation complete; maintained
 repair unimplemented**. Base5ec386905c141fd3dade1b74e15d7a8c5157c0e7. Authored
 paths only this HANDOFF.md and [SHOP_LIVE_ROUTE_INVESTIGATION.md](SHOP_LIVE_ROUTE_INVESTIGATION.md).
 Investigation result4ca4016096812b0baad978cacc2b2844f8b5d229 is pushed to

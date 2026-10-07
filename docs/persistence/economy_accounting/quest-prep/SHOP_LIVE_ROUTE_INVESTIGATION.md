@@ -1,5 +1,12 @@
 # Shop live-route source-contract investigation — 2026-10-07
 
+Historical pre-approval evidence follows. The exact boundary has since been
+approved at primary0f466967 and the one-file maintained repair implemented as
+fd4563fab791b33a2905db22baa4167f3567c298. [Current committed import/execution
+handoff](SHOP_LIVE_ROUTE_IMPLEMENTATION.md) supersedes the pending reservation
+and unimplemented disposition below. Preserve all original private pins/failures;
+no private execution is relabeled as maintained or native runtime proof.
+
 Disposition: **private investigation complete; maintained repair unimplemented**.
 The complete original `tests/async/test_shop_trade_live_route.py` still FAILS on
 both bare primary and bare primary plus R10. Its obsolete syntax/slicing seams
