@@ -369,3 +369,8 @@ The [dossier](../design/zone-stories/DARKFALL_FOREST.md) retains one accepted Gr
 ## Barrow of the Quiosho daily qualification
 
 The [dossier](../design/zone-stories/BARROW_OF_THE_QUIOSHO.md) retains one accepted warrior head/amulet achievement/potential daily without changing totals. Actual source/giver/reward adoption,UID custody,consumption,save/replay and useful beneficiary renewal remain separately qualified. All78 local item stock rows are refused before active creation;ordinary existing non-takeable O/P does not refill depleted containers. Mode2/rollover does not prove fair renewal. New tracking requires active READY accounting;committed recovery remains separate and daily policy disabled.
+
+
+## Keep of Evil daily qualification
+
+The [dossier](../design/zone-stories/KEEP_OF_EVIL.md) retains one librarian key/XP achievement/potential daily without changing totals. Mode0 and epic-triggered reset scheduling do not prove source,giver,reward,control or beneficiary renewal. All117 local item stock rows face active issuance refusal;ordinary O/P placement and replenishment remain independently qualified. Paid training and shop mutation also refuse active accounting. Qualify original consumption/positive XP,UID custody,source or transfer,save/replay and fair renewal epochs before daily activation. New tracking requires active READY accounting;committed recovery remains separate and daily policy disabled.

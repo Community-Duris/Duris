@@ -91951,6 +91951,485 @@
       ]
     },
     {
+      "contacts": [
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "gatekeeper",
+          "mob_vnum": 44801,
+          "name": "the orderly gatekeeper",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "guard",
+          "mob_vnum": 44802,
+          "name": "the muted guard patrolling the ground floor",
+          "topics": []
+        },
+        {
+          "description": "This eyeless prisoner has broken legs. Helping him needs a living recipient, useful care and a safe escape; the journal has no completed rescue task for him yet.",
+          "keyword": "human",
+          "mob_vnum": 44803,
+          "name": "an eyeless human prisoner",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "soldier",
+          "mob_vnum": 44804,
+          "name": "the dastardly soldier of the SabreTooth Grin Clan",
+          "topics": []
+        },
+        {
+          "description": "This captive gnome is a person to help. Opening a cell and helping its prisoner reach safety are separate milestones.",
+          "keyword": "poor",
+          "mob_vnum": 44805,
+          "name": "a prisoner",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "captain",
+          "mob_vnum": 44806,
+          "name": "the captain of the SabreTooth Grin Clan",
+          "topics": []
+        },
+        {
+          "description": "The General\u2019s slave follows him. Following alone does not show consent or freedom; a release story needs the captive\u2019s wishes and a useful safe outcome.",
+          "keyword": "slave",
+          "mob_vnum": 44807,
+          "name": "the devoted General's slave",
+          "topics": []
+        },
+        {
+          "description": "The General\u2019s concubine is part of the court\u2019s story. Her wishes and any useful release are separate from her current following relationship.",
+          "keyword": "concubine",
+          "mob_vnum": 44808,
+          "name": "the General's concubine",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "general",
+          "mob_vnum": 44809,
+          "name": "the three-stars General of the Tower garrison",
+          "topics": []
+        },
+        {
+          "description": "This hungry bandog follows the General. Care for a living dog and ordinary combat are separate stories.",
+          "keyword": "dog",
+          "mob_vnum": 44810,
+          "name": "the bloodthirsty bandog",
+          "topics": []
+        },
+        {
+          "description": "This captive halfling is a person to help. The journal does not yet record an agreed rescue or safe arrival for this prisoner.",
+          "keyword": "poor",
+          "mob_vnum": 44811,
+          "name": "a prisoner",
+          "topics": []
+        },
+        {
+          "description": "This captive thri-kreen is a person to help. A living rescue needs a safe destination and an admitted route.",
+          "keyword": "poor",
+          "mob_vnum": 44812,
+          "name": "a prisoner",
+          "topics": []
+        },
+        {
+          "description": "This captive gith is a person to help. A visit, cell opening or following relationship does not itself record a rescue.",
+          "keyword": "poor",
+          "mob_vnum": 44813,
+          "name": "a prisoner",
+          "topics": []
+        },
+        {
+          "description": "This prisoner asks for help escaping to Tharnadia. The journal does not yet record an agreed rescue or safe arrival there.",
+          "keyword": "poor",
+          "mob_vnum": 44814,
+          "name": "a prisoner",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "knight",
+          "mob_vnum": 44815,
+          "name": "the unholy paladin of the SabreTooth Grin Clan",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "overseer",
+          "mob_vnum": 44816,
+          "name": "the prison overseer",
+          "topics": []
+        },
+        {
+          "description": "The one-eyed armourer\u2019s workshop refuses outsiders. The journal does not yet record a craft or repair commission here.",
+          "keyword": "armorer",
+          "mob_vnum": 44817,
+          "name": "the one-eyed armorer",
+          "topics": []
+        },
+        {
+          "description": "The battle master offers class-qualified guidance about development. Advice, eligible lessons and a successfully learned skill are separate milestones.",
+          "keyword": "master",
+          "mob_vnum": 44818,
+          "name": "the battle master of the SabreTooth Grin Clan",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "squire",
+          "mob_vnum": 44819,
+          "name": "the young anti-paladin's squire",
+          "topics": []
+        },
+        {
+          "description": "The battle elephant lives in the keep. Any care story needs a living animal, an actual need and a useful result.",
+          "keyword": "elephant",
+          "mob_vnum": 44820,
+          "name": "a huge battle elephant",
+          "topics": []
+        },
+        {
+          "description": "Warhorses occupy the stables. Equipment recovery and helping a living horse are separate stories.",
+          "keyword": "heavy",
+          "mob_vnum": 44821,
+          "name": "a warhorse",
+          "topics": []
+        },
+        {
+          "description": "This fire victim\u2019s profile is a lead about the keep\u2019s past. The journal does not yet record a peaceful-release or restitution task.",
+          "keyword": "humanoid",
+          "mob_vnum": 44822,
+          "name": "a transparent profile of a victim of fire",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "wave",
+          "mob_vnum": 44823,
+          "name": "a tangible wave of evil presence",
+          "topics": []
+        },
+        {
+          "description": "Lord Nymav is the garrison\u2019s enchanter. His lore and encounters are separate from an agreed useful service.",
+          "keyword": "lord",
+          "mob_vnum": 44824,
+          "name": "Lord Nymav K'haar, Enchanter of the SabreTooth Grin Clan",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "soldier",
+          "mob_vnum": 44825,
+          "name": "the plundering soldier of the SabreTooth Grin Clan",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "soldier",
+          "mob_vnum": 44826,
+          "name": "the decisive soldier of the SabreTooth Grin Clan",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "soldier",
+          "mob_vnum": 44827,
+          "name": "the felonious soldier of the SabreTooth Grin Clan",
+          "topics": []
+        },
+        {
+          "description": "The alchemist has a shop in the keep. Viewing stock, settling a purchase and using an item purposefully are separate milestones.",
+          "keyword": "shopkeeper",
+          "mob_vnum": 44828,
+          "name": "the alchemist shopkeeper",
+          "topics": []
+        },
+        {
+          "description": "The holy Slayer\u2019s regret suggests a history and restitution story. The journal does not yet record an agreed peaceful outcome.",
+          "keyword": "holy",
+          "mob_vnum": 44829,
+          "name": "the holy slayer",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "dragon",
+          "mob_vnum": 44830,
+          "name": "the turtle dragon",
+          "topics": []
+        },
+        {
+          "description": "The living wall is part of the keep\u2019s haunted story. Ordinary combat does not itself record restitution or peaceful release.",
+          "keyword": "wall",
+          "mob_vnum": 44831,
+          "name": "the living wall",
+          "topics": []
+        },
+        {
+          "description": "This flesh eater is associated with a source for the librarian\u2019s golden desk key. A supplied exact key also fits the librarian\u2019s request.",
+          "keyword": "eater",
+          "mob_vnum": 44832,
+          "name": "the nasty-looking flesh eater",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "ogre",
+          "mob_vnum": 44833,
+          "name": "a patrolling ogre guard",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "efreeti",
+          "mob_vnum": 44834,
+          "name": "an efreeti mage",
+          "topics": []
+        },
+        {
+          "description": "The grand Knight of Fate and the eyes suggest a larger tale. The journal does not yet record an ordered eyes puzzle or a completed restoration task.",
+          "keyword": "grand",
+          "mob_vnum": 44835,
+          "name": "the grand knight of Fate",
+          "topics": []
+        },
+        {
+          "description": "This flesh eater is associated with another source for the librarian\u2019s golden desk key. Finding the key and recording its accepted exchange are separate milestones.",
+          "keyword": "eater",
+          "mob_vnum": 44836,
+          "name": "the nasty-looking flesh eater",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "dracolich",
+          "mob_vnum": 44837,
+          "name": "the three-headed dracolich",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "illithid",
+          "mob_vnum": 44838,
+          "name": "an illithid knight",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "golem",
+          "mob_vnum": 44839,
+          "name": "a lesser golem",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "shaman",
+          "mob_vnum": 44840,
+          "name": "the beholder shaman",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "demon",
+          "mob_vnum": 44841,
+          "name": "a greater fire demon",
+          "topics": []
+        },
+        {
+          "description": "Fosedi is the palace healer. He is a different person from the aged librarian who requests the desk key; the journal has no addressed healing commission for him yet.",
+          "keyword": "fosedi",
+          "mob_vnum": 44842,
+          "name": "Fosedi the palace healer",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "guard",
+          "mob_vnum": 44843,
+          "name": "an elite palace guard",
+          "topics": []
+        },
+        {
+          "description": "The githyanki lich queen is part of the court. Her lore and an intentional alliance or useful diplomatic outcome are separate stories.",
+          "keyword": "lich",
+          "mob_vnum": 44844,
+          "name": "the githyanki lich queen",
+          "topics": []
+        },
+        {
+          "description": "Rotidev is a court dignitary. Meeting him does not establish an alliance or a completed commission.",
+          "keyword": "rotidev",
+          "mob_vnum": 44845,
+          "name": "Rotidev the Shadow Lord",
+          "topics": []
+        },
+        {
+          "description": "Dehattf represents the Elemental Plane of Fire. His court presence suggests a diplomatic story whose useful outcome is not yet recorded here.",
+          "keyword": "dehattf",
+          "mob_vnum": 44846,
+          "name": "Dehattf, Emissary of the Elemental Plane of Fire",
+          "topics": []
+        },
+        {
+          "description": "The lizardman prince is part of the court. An actual alliance needs its own agreed task and useful outcome.",
+          "keyword": "lizardman",
+          "mob_vnum": 44847,
+          "name": "the lizardman prince",
+          "topics": []
+        },
+        {
+          "description": "Seysar is the Master of Dark Magic. He is a different person from the aged librarian who requests the desk key.",
+          "keyword": "master",
+          "mob_vnum": 44848,
+          "name": "Seysar the Master of Dark Magic",
+          "topics": []
+        },
+        {
+          "description": "Nakzor is a dragons hunter in the court. Helping the living bound dragon and ordinary hunting are separate stories.",
+          "keyword": "nakzor",
+          "mob_vnum": 44849,
+          "name": "Nakzor the dragons hunter",
+          "topics": []
+        },
+        {
+          "description": "Aleena carries instruments and follows the king. An instrument, a performed song and a useful result for an agreed audience are separate milestones.",
+          "keyword": "aleena",
+          "mob_vnum": 44850,
+          "name": "Aleena",
+          "topics": []
+        },
+        {
+          "description": "King Raxamus is associated with a memory of the Keep of Evil. An ambassador elsewhere owns its exchange; the journal does not record a court alliance from recovering it.",
+          "keyword": "raxamus",
+          "mob_vnum": 44851,
+          "name": "Raxamus the King of Underworlds",
+          "topics": []
+        },
+        {
+          "description": "The red dragon is described as magically bound and enslaved. The journal does not yet record a living release or rescue task for it.",
+          "keyword": "dragon",
+          "mob_vnum": 44852,
+          "name": "the enslaved red dragon",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "necromancer",
+          "mob_vnum": 44853,
+          "name": "the palace necromancer",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "assassin",
+          "mob_vnum": 44854,
+          "name": "a soulless shadowy assassin",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "basilisk",
+          "mob_vnum": 44855,
+          "name": "the scaled basilisk",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "granite",
+          "mob_vnum": 44856,
+          "name": "a granite golem",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "dog",
+          "mob_vnum": 44857,
+          "name": "a bloodthirsty battle dog",
+          "topics": []
+        },
+        {
+          "description": "The aged librarian accepts the exact golden desk key for experience. A recovered or supplied copy fits; other door keys do not satisfy this request.",
+          "keyword": "marcinr",
+          "mob_vnum": 44858,
+          "name": "the aged librarian",
+          "topics": []
+        },
+        {
+          "description": "Prepare for this resident\u2019s encounters while exploring the keep and choosing a safe route. A meeting or ordinary battle is separate from completing an agreed quest.",
+          "keyword": "golem",
+          "mob_vnum": 44859,
+          "name": "an adamantite golem",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore the Keep of Evil\u2019s prison,garrison and palace. Meet the aged librarian and prepare his desk-key commission while following leads about captives,the bound dragon,the court and its haunted past.",
+      "orientation": [
+        "Enter through the current Surface gate and learn an admitted route back. The keep\u2019s guarded wings and magical passages need preparation.",
+        "Seek the aged librarian in the library. He exchanges the exact golden desk key for experience; the ordinary golden,sapphire,tarnished and jailor keys have different uses.",
+        "Carry the desk key loose in your inventory. A recovered or supplied copy fits without your own flesh-eater victory,prison rescue,palace route or royal audience.",
+        "Flesh eaters in the palace are associated with desk-key sources. Finding a source,holding the key and recording the librarian\u2019s accepted exchange are separate milestones.",
+        "A rusty switch responds to pushing. Clearing its blocked passage leaves a door to open; finding the switch and successfully passing the door are separate steps.",
+        "Touching the ruined monument offers another magical passage when it can actually be used. Its finite charges and your successful arrival are separate from the librarian\u2019s exchange.",
+        "Prisoners,court captives and the bound red dragon suggest stories about helping living people and creatures. The journal does not yet record agreed rescues or safe destinations for them.",
+        "The stables and hungry dogs offer leads about living care. Ordinary combat,food possession or a following animal does not itself complete a care task.",
+        "The battle master\u2019s advice and the alchemist\u2019s stock offer leads about useful training and supplies. Advice,viewing stock and a successfully settled service are different milestones.",
+        "The armourer\u2019s workshop refuses outsiders. The journal does not yet record a craft or repair commission there.",
+        "The keep\u2019s holy Slayer,haunted corridors and wall suggest a history and restitution tale. Reading scenery or fighting a spirit does not itself complete peaceful release.",
+        "Aleena\u2019s instruments and the court\u2019s dignitaries suggest music and diplomatic stories. A useful performance or alliance needs its own agreed outcome.",
+        "A memory of the Keep of Evil has an existing exchange with an ambassador elsewhere. Recovering it here and completing that foreign commission are separate milestones.",
+        "The Knight of Fate and the eyes suggest a larger tale. The journal does not yet record an ordered eyes puzzle or a completed equipment restoration task.",
+        "The rune stone has its own epic reward rules. The librarian\u2019s accepted exchange stays recorded after the key is spent;library restoration and epic awards remain separate outcomes."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "evkeep",
+      "stories": [
+        {
+          "category": "story",
+          "contracts": [
+            {
+              "completion_key": "give=I:44880;receive=E:150000;disappear=0",
+              "giver_vnum": 44858
+            }
+          ],
+          "id": "librarian-desk-key",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Bring one exact desk key loose in your inventory. A recovered or supplied copy fits;other door keys do not satisfy this request.",
+              "id": "prepare-44880",
+              "item_vnums": [
+                44880
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the golden desk key"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:44880;receive=E:150000;disappear=0",
+                  "giver_vnum": 44858
+                }
+              ],
+              "hint": "The accepted desk-key exchange stays recorded after the key is spent. Library restoration and other useful tasks need their own outcomes.",
+              "id": "accepted-exchange",
+              "kind": "completion",
+              "text": "Record the librarian\u2019s accepted exchange"
+            }
+          ],
+          "summary": "Return the exact golden desk key to the aged librarian for experience. A recovered or supplied copy fits without personal palace,prison or source history. Any library restoration remains a separate story.",
+          "title": "The aged librarian\u2019s desk key"
+        }
+      ]
+    },
+    {
       "contacts": [],
       "coverage": "complete",
       "exclusions": [],

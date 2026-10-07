@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 229 &&
+		require(catalog.story_mappings.size() == 230 &&
 				tracker.summary_for(7, 42).total == 1518,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -26708,6 +26708,84 @@ int main(int argc, char **argv)
 				"Barrow accepted head replay duplicated history");
 			require(!journey.has_discovered(7, 42, 40),
 				"Barrow receipt forged foreign monk-zone discovery");
+		}
+
+		{
+			const auto &exchange = story_for("evkeep", "librarian-desk-key");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 44858, 44931, 100) == result::rejected,
+				"Keep of Evil librarian contact ignored undiscovered physical zone");
+			require(journey.discover_zone(7, 42, 448, 44801, 101, "arrival") ==
+					result::applied,
+				"Keep of Evil discovery failed");
+			require(journey.render_journal(7, 42, 448, 50, 1, 102, false, false)
+						.find(exchange.title) == std::string::npos,
+				"Keep of Evil discovery exposed unmet librarian exchange");
+			require(journey.meet_npc(7, 42, 44858, 44931, 103) == result::applied,
+				"Keep of Evil librarian encounter failed");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    exchange.steps[row].text) != std::string::npos;
+			};
+			for (int custody = 0; custody < 7; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[44833] = 1;
+				if (custody == 2)
+					supplies.carried[44801] = 1;
+				if (custody == 3)
+					supplies.equipped[0] = 44880;
+				if (custody == 4)
+					supplies.carried[55033] = 1;
+				if (custody >= 5)
+					supplies.carried[44880] = custody == 5 ? 1 : 4;
+				const auto journal = journey.render_journal(
+					7, 42, 448, 50, 1, 104, false, false, &supplies);
+				require(status(journal, 0,
+					       custody >= 5 ? "Ready now" : "Missing now") &&
+						!status(journal, 1, "Recorded") &&
+						journey.progress_for_zone(7, 42, 448).completed ==
+							0 &&
+						journey.progress_for_zone(7, 42, 448).total == 1 &&
+						journey.serialize_state() == before,
+					"Keep of Evil wrong keys/equipped/reward/loose/surplus custody changed readiness or invented acceptance");
+			}
+			// Synthetic receipts qualify projection/recovery, not live stock, native consumption/XP, controls, care or effects.
+			record(journey, exchange.contracts.front(), "evkeep-native-key", 448,
+			       44931);
+			record(supplied, exchange.contracts.front(), "evkeep-supplied-key", 448,
+			       44931);
+			require(supplied.progress_for_zone(7, 42, 448).completed == 1 &&
+					!supplied.has_met_npc(7, 42, 44832) &&
+					!supplied.has_met_npc(7, 42, 44836) &&
+					!supplied.has_met_npc(7, 42, 44818) &&
+					!supplied.has_met_npc(7, 42, 55222),
+				"Keep of Evil supplied acceptance required source/trainer/foreign contact history");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 448).completed == 1 &&
+					raw.progress_for_zone(7, 42, 448).completed == 1,
+				"Keep of Evil cold mapped/raw recovery lost accepted key exchange");
+			supplies = {};
+			const auto journal = recovered.render_journal(7, 42, 448, 50, 1, 122, false,
+								      false, &supplies);
+			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
+				"Keep of Evil spent key erased acceptance or recreated material");
+			auto replay =
+				completion(exchange.contracts.front(), "evkeep-native-key", 120);
+			replay.transaction.zone_number = 448;
+			replay.transaction.room_vnum = 44931;
+			require(journey.record_completion(replay) == result::already_applied &&
+					journey.serialize_state() == saved,
+				"Keep of Evil accepted key replay duplicated history");
+			require(!journey.has_discovered(7, 42, 550),
+				"Keep of Evil receipt forged foreign ambassador-zone discovery");
 		}
 
 		std::cout

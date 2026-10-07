@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 229 authored journals, accounting-gated player surfaces, starter/town
+**Status: 230 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5477,3 +5477,8 @@ The [dossier](zone-stories/DARKFALL_FOREST.md) maps one supplied-compatible exac
 ## Barrow of the Quiosho integration extension
 
 The [dossier](zone-stories/BARROW_OF_THE_QUIOSHO.md) maps one supplied-compatible head/amulet exchange and ten broader stories with40 owned follow-ups. Add typed acknowledged source/root/UID recovery and transfer provenance,actual access and surviving useful travel,logical NPC form/controller/episode transitions,and useful positive saved recipient effects where builders intentionally define them. Preserve independent native exchange ownership and supplied eligibility. Coffin distribution/renewal,trader/holding intent,hut copy,scroll compatibility,spirit release and army outcomes need owned decisions and fair separate fix/news scopes. Existing schema suffices for this working exchange; active READY accounting remains required and daily policy disabled.
+
+
+## Keep of Evil integration extension
+
+The [dossier](zone-stories/KEEP_OF_EVIL.md) maps one supplied-compatible desk-key/XP exchange and15 broader stories with45 owned follow-ups. Existing schema suffices for native preparation/acceptance. Add acknowledged source/root/UID provenance,actual shared controls and surviving admitted passage,logical living/form/episode identities,and useful positive postcommit rescue,care,training,trade,music,faction or epic projections only where builders intentionally define them. Paid practice and shop mutation currently refuse active accounting;stock,services,legacy flags,staging and custom transforms need owned fair decisions. Keep original foreign contracts and epic authority,without double awards or personal route gates for supplied native materials. Active READY accounting remains required and daily policy disabled;native repairs remain separately named fix/news scopes.
