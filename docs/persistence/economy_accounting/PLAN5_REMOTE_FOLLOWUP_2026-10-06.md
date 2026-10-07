@@ -1485,3 +1485,23 @@ registration with an explicit exact `--native-source` path. Both SQL engines,
 combined canonical qualification, original journeys, R7/R8 and notebook
 application remain unclaimed. Keep the same remote codex/accounting-plan5
 and all seven prior tips. The primary notebook remains nonblocking.
+
+
+## Independent world literals and custody - 2026-10-07
+
+Base `c35500689dc0f2a3c92d662d30f8711b55a0e938`; the separately published result is the containing commit.
+The new read-only DURWRLD/DUROWN operator compares native world topology,
+ownership and available full coin payloads. Exact primary
+`439a8fe704b5167171d318f644c3b2b514f8cd22` oracle passes all59 world-format cases,
+37 findings at three limits (111 cuts),14 world boundary controls and the original
+133 custody/13 boundary checks, zero skips. Complete holdings/history/source/
+ledger/real journeys and release remain unqualified. The unchanged shared world
+runner fails to link; an isolated four-real-provider proposal passes the entire
+original harness and is handed off for primary-owned application. No schema/API
+or shared source edit. Maintained operator, validated incremental740-object
+Make, formatter and normal validator pass; release refuses missing writer
+execution evidence. See [exact source, commands, evidence and gates](PLAN5_WORLD_LITERAL_CUSTODY_2026-10-07.md),
+seal `f88fe295aee2fe317ca4f86914a58d5881cdcd84765efad5b5858fe55215ac7d`.
+All work remains on remote codex/accounting-plan5 with the seven previous tips
+preserved. Combined canonical/both-engine/R7/R8 qualification and notebook
+application are unclaimed. Primary notebook maintenance remains nonblocking.

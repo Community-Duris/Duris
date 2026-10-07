@@ -51,23 +51,24 @@ struct coin_literal
 	int32_t vnum;
 	std::array<int32_t, 4> balance;
 };
-inline coin_literal decode_coin(std::span<const uint8_t> encoded)
+struct item_literal
 {
-	need(!encoded.empty() && encoded.size() <= item_payload_limit);
+	int32_t parent;
+	int16_t equipment;
+	uint64_t uid;
+	int32_t vnum;
+	uint8_t type;
+	std::array<int32_t, 8> values;
+	std::span<const uint8_t> encoded;
+};
+// Native snapshot-list framing; every literal borrows the immutable input.
+inline std::vector<item_literal> decode_items(std::span<const uint8_t> encoded)
+{
+	need(!encoded.empty() && encoded.size() <= 4 * 1024 * 1024);
 	reader in{ encoded };
-	need(in.number(4) == 1 && signed32(in) == -1);
-	(void)in.take(2); // Equipment is an independent custody field.
-	coin_literal result{ in.number(8), 0, {} };
-	(void)in.take(8); // Generated key.
-	result.vnum = signed32(in);
-	need(in.number(1) == 20);
-	(void)in.take(1); // Native string mask is not constrained by this codec.
-	for (size_t i = 0; i < 4; ++i)
-		(void)text(in, 4096);
-	for (auto &amount : result.balance)
-		amount = signed32(in);
-	(void)in.take(4 * 4 + 6 * 8 + 5 * 4 + 4 + 1 + 4 + 2 + 2 + 5 * 8 + 8 * 2);
-	size_t remaining = 8191; // The item consumes the first shared native row.
+	const auto count = in.number(4);
+	need(count <= 4096);
+	size_t remaining = 8192 - count;
 	const auto rows = [&]()
 	{
 		const auto count = in.number(4);
@@ -75,16 +76,50 @@ inline coin_literal decode_coin(std::span<const uint8_t> encoded)
 		remaining -= count;
 		return count;
 	};
-	(void)in.take(rows() * 12);
-	const auto descriptions = rows();
-	for (size_t i = 0; i < descriptions; ++i)
+	std::vector<item_literal> result;
+	std::vector<size_t> depths;
+	for (size_t i = 0; i < count; ++i)
 	{
-		(void)text(in, 4096);
-		(void)text(in, 4096);
-		need(in.number(1) <= 1);
-		(void)in.take(rows() * 4);
+		const auto begin = in.offset;
+		item_literal row{};
+		row.parent = signed32(in);
+		row.equipment = std::bit_cast<int16_t>(static_cast<uint16_t>(in.number(2)));
+		row.uid = in.number(8);
+		(void)in.take(8); // Generated key.
+		row.vnum = signed32(in);
+		row.type = in.number(1);
+		(void)in.take(1); // The native codec does not constrain string mask bits.
+		for (size_t j = 0; j < 4; ++j)
+			(void)text(in, 4096);
+		for (auto &value : row.values)
+			value = signed32(in);
+		(void)in.take(6 * 8 + 5 * 4 + 4 + 1 + 4 + 2 + 2 + 5 * 8 + 8 * 2);
+		(void)in.take(rows() * 12);
+		const auto descriptions = rows();
+		for (size_t j = 0; j < descriptions; ++j)
+		{
+			(void)text(in, 4096);
+			(void)text(in, 4096);
+			need(in.number(1) <= 1);
+			(void)in.take(rows() * 4);
+		}
+		need(row.parent >= -1 && row.parent < static_cast<int32_t>(i));
+		const auto depth = row.parent < 0 ? 1 : depths[row.parent] + 1;
+		need(depth <= 32);
+		depths.push_back(depth);
+		row.encoded = encoded.subspan(begin, in.offset - begin);
+		result.push_back(row);
 	}
 	in.done();
+	return result;
+}
+inline coin_literal decode_coin(std::span<const uint8_t> encoded)
+{
+	need(encoded.size() <= item_payload_limit);
+	const auto items = decode_items(encoded);
+	need(items.size() == 1 && items[0].type == 20);
+	coin_literal result{ items[0].uid, items[0].vnum, {} };
+	std::copy_n(items[0].values.begin(), 4, result.balance.begin());
 	return result;
 }
 // Validate the entire continuation, retaining only the admissible XP bit slots.

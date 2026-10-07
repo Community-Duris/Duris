@@ -1306,6 +1306,24 @@ test requires `--native-source /absolute/exact/integrated-checkout`; use the
 refreshed primary supporting fee-only quest continuation v6. See
 [the exact source and evidence handoff](PLAN5_INDEPENDENT_CUSTODY_CATALOG_2026-10-07.md).
 
+`--economic-world-custody-audit /absolute/private/state-root [--limit 0..100]`
+independently decodes the complete durable world catalog and compares every
+room, saved-world and corpse item with custody. It reports missing/unadmitted
+UIDs, non-active state, owner/context, root/parent, vnum/equipment disagreement,
+negative money-item denominations and complete retained coin-literal mismatch.
+Detached coin framing changes only the parent index; all remaining bytes are
+compared. Historical absent inline payloads remain explicit legacy inputs.
+All totals are computed at every detail limit, and UID details use decimal
+strings. Character aliases and literal text are omitted.
+
+The scoped verification covers world literal decoding and the available
+custody/coin-payload agreement. Other owner families, individual item history,
+source admission, account/posting balances and release remain unqualified.
+World aggregate revisions are separate from custody owner clocks; the reader
+does not invent equality between them. Missing required locks, pending journals,
+unsafe or corrupt files and exhausted budgets refuse without partial output.
+See [the exact world qualification and shared-runner handoff](PLAN5_WORLD_LITERAL_CUSTODY_2026-10-07.md).
+
 These are release gates to measure on each backend and the final integrated
 commit. They are not claimed as measured results here.
 
