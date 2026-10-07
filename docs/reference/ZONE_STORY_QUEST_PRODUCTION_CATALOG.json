@@ -157223,6 +157223,242 @@
     {
       "contacts": [
         {
+          "description": "Three overseers wear different lockets in different mine caverns. Recover the first, second and third lockets; three copies of one locket do not make the set.",
+          "keyword": "overseer",
+          "mob_vnum": 131008,
+          "name": "an illithid overseer",
+          "topics": []
+        },
+        {
+          "description": "Ask hello to learn about the three lockets. Carry all three loose together, then offer one to complete the set for the fiery wand, experience and ethereal key.",
+          "keyword": "efreeti",
+          "mob_vnum": 131009,
+          "name": "a traveling Efreeti",
+          "topics": [
+            "hi",
+            "hello",
+            "hey",
+            "howdy"
+          ]
+        },
+        {
+          "description": "The guardian in the prison corridor exchanges the ancient arcane rune for a mithril key. A supplied exact rune fits independently of the efreeti return; the rune\u2019s local source needs builder integration.",
+          "keyword": "guardian",
+          "mob_vnum": 131011,
+          "name": "an ethereal guardian",
+          "topics": []
+        },
+        {
+          "description": "This svirfneblin slave works in the mines. The enslaved workers form a wider story lead; meeting them does not record their liberation.",
+          "keyword": "svirfneblin",
+          "mob_vnum": 131001,
+          "name": "a svirfneblin slave",
+          "topics": []
+        },
+        {
+          "description": "This troll slave works in the mines. The enslaved workers form a wider story lead; meeting them does not record their liberation.",
+          "keyword": "troll",
+          "mob_vnum": 131002,
+          "name": "a troll slave",
+          "topics": []
+        },
+        {
+          "description": "This minotaur slave works in the mines. The enslaved workers form a wider story lead; meeting them does not record their liberation.",
+          "keyword": "minotaur",
+          "mob_vnum": 131003,
+          "name": "a minotaur slave",
+          "topics": []
+        },
+        {
+          "description": "This drow slave works in the mines. The enslaved workers form a wider story lead; meeting them does not record their liberation.",
+          "keyword": "drow",
+          "mob_vnum": 131004,
+          "name": "a drow slave",
+          "topics": []
+        },
+        {
+          "description": "This thri-kreen slave works in the mines. The enslaved workers form a wider story lead; meeting them does not record their liberation.",
+          "keyword": "thri-kreen",
+          "mob_vnum": 131005,
+          "name": "a thri-kreen slave",
+          "topics": []
+        },
+        {
+          "description": "The devil slavemasters oversee the mine workers. Their defeat and any lasting liberation need separate outcomes.",
+          "keyword": "devil",
+          "mob_vnum": 131006,
+          "name": "a devil slavemaster",
+          "topics": []
+        },
+        {
+          "description": "The vile demons inhabit the mines. Their encounter and equipment are separate from the two item exchanges.",
+          "keyword": "vile",
+          "mob_vnum": 131007,
+          "name": "a vile demon",
+          "topics": []
+        },
+        {
+          "description": "Spectres inhabit the sulfurous caverns near the prison corridor. The warning sign and these encounters are exploration leads, not an extra completed exchange.",
+          "keyword": "spectre",
+          "mob_vnum": 131010,
+          "name": "a dangerous spectre",
+          "topics": []
+        },
+        {
+          "description": "Lord Kaynor occupies the northern prison cell. The guardian\u2019s mithril key fits that cell; access and a defined rescue or release need their own outcomes.",
+          "keyword": "kaynor",
+          "mob_vnum": 131012,
+          "name": "Lord Kaynor, the exiled lord of Tharnadia",
+          "topics": []
+        },
+        {
+          "description": "The wicked child of the Chronomancer occupies the eastern prison cell, opened by the general\u2019s large key. Meeting the prisoner and resolving captivity are different outcomes.",
+          "keyword": "child",
+          "mob_vnum": 131013,
+          "name": "The wicked child of the Chronomancer",
+          "topics": []
+        },
+        {
+          "description": "Azurael occupies the southern prison cell. Its current key reference needs builder review; an encounter does not record rescue or release.",
+          "keyword": "azureal",
+          "mob_vnum": 131014,
+          "name": "Azurael, the lieutenant of Zariel",
+          "topics": []
+        },
+        {
+          "description": "These guardsmen follow the Minotaur general. Their battle and any recovery are separate from the efreeti and guardian returns.",
+          "keyword": "guardsman",
+          "mob_vnum": 131015,
+          "name": "a massive guardsman",
+          "topics": []
+        },
+        {
+          "description": "The general in the forge carries the single large key and has three guardsmen followers. This key belongs to the eastern prison cell, separate from the two item exchanges.",
+          "keyword": "general",
+          "mob_vnum": 131016,
+          "name": "a Minotaur general",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore the brimstone mines, recover three overseer lockets, and follow the forge and prison key stories.",
+      "orientation": [
+        "Two cave entrances connect the mines with the Cave of the Roc and a destroyed shop. Search the mines for hidden cracks; finding a passage and crossing it are different steps.",
+        "Ask the traveling efreeti hello in the entrance cavern. Hi, hey and howdy are alternate greetings for the same conversation lead.",
+        "Three illithid overseers wear three different lockets. Gather the first, second and third lockets and carry the entire set loose before offering one to the efreeti.",
+        "The efreeti exchange gives a wand of fiery power, experience and an ethereal key. Its response is currently empty; the accepted exchange is still recorded.",
+        "The ethereal key fits the eastern door into the forge and is fragile. The forge\u2019s northern portcullis has an unresolved key reference; deeper access needs builder review.",
+        "The Minotaur general carries the large key for the eastern prison cell. The ethereal guardian exchanges an ancient arcane rune for a mithril key for the northern cell.",
+        "The rune and the barracks chest key have no declared source in the reviewed stock. The southern prison door also has a mismatched key reference. These are unfinished builder leads, not completed journal steps.",
+        "The rune return accepts a supplied exact rune without remembered efreeti completion or personal source battles. Current item checklists differ from accepted quest history after the items are spent.",
+        "Mine workers, slavemasters, spectres, Kaynor, the Chronomancer\u2019s child and Azurael offer wider encounter stories. Cleansing, liberation, rescue, weapon effects and shared door access need their own defined outcomes."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "brimeforge",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:131002,I:131003,I:131004;receive=E:300000,I:131005,I:131006;disappear=0",
+              "giver_vnum": 131009
+            }
+          ],
+          "id": "efreeti-three-lockets",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Find the overseer wearing the locket of the first. Recover or obtain this exact locket and carry it loose with the second and third lockets.",
+              "id": "material-131002",
+              "item_vnums": [
+                131002
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the locket of the first loose"
+            },
+            {
+              "count": 1,
+              "hint": "Find the overseer wearing the locket of the second. A different locket or an equipped one does not prepare this part of the set.",
+              "id": "material-131003",
+              "item_vnums": [
+                131003
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the locket of the second loose"
+            },
+            {
+              "count": 1,
+              "hint": "Find the overseer wearing the locket of the third. A supplied exact locket also fits; carry all three loose together.",
+              "id": "material-131004",
+              "item_vnums": [
+                131004
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the locket of the third loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:131002,I:131003,I:131004;receive=E:300000,I:131005,I:131006;disappear=0",
+                  "giver_vnum": 131009
+                }
+              ],
+              "hint": "Bring all three distinct lockets together and offer one to the efreeti when present. The whole set is consumed for the wand, experience and ethereal key; receiving and using the rewards are later outcomes.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the efreeti\u2019s accepted three-locket return"
+            }
+          ],
+          "summary": "Gather three distinct lockets and return the complete set for a fiery wand, experience and an ethereal key. The key helps with forge access; cleansing the mines is a wider story lead.",
+          "title": "Bring the three lockets to the traveling efreeti"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:131019;receive=I:131012;disappear=0",
+              "giver_vnum": 131011
+            }
+          ],
+          "id": "guardian-arcane-rune",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Carry the exact rune loose. Its local source is not declared in the reviewed zone stock; it cannot be substituted with a locket, key or brimstone shard.",
+              "id": "material-131019",
+              "item_vnums": [
+                131019
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the ancient arcane rune loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:131019;receive=I:131012;disappear=0",
+                  "giver_vnum": 131011
+                }
+              ],
+              "hint": "Offer the exact rune to the guardian in the prison corridor. The exchange is independent of the efreeti return and gives a mithril key; cell access and rescue remain separate.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record the guardian\u2019s accepted rune return"
+            }
+          ],
+          "summary": "Exchange the exact ancient arcane rune for the mithril key used at the northern prison cell. The rune\u2019s source needs builder integration; a supplied exact rune remains a legal offering.",
+          "title": "Bring the ancient arcane rune to the ethereal guardian"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "A miner supplies the setting through ambient mining actions; there is no accepted request or learned ASK topic.",
           "keyword": "pech",
           "mob_vnum": 131200,

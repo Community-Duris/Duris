@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 203 authored journals, accounting-gated player surfaces, starter/town
+**Status: 204 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5320,3 +5320,10 @@ Builder declarations should separate garden recovery/eating/settled effects, spr
 The [Bronze Citadel dossier](zone-stories/BCTDL.md) adds two independent Zariel returns and a practical key/cube/prison progression. Exact source lineage, trap-triggered rejected GET versus later custody, key reward/NO_RENT lifecycle, shared switch state versus personal operation/crossing, type25 actual arrival versus consumed command, and mode0 committed epic reset versus executed generation require separate adapters. The active accounting reset issuance refusal must remain closed until generation ownership exists.
 
 Builder declarations should describe intended rescue/restoration/custom worn-equipment effects separately from accepted returns. MA/QA room broadcast is not witness credit. A supplied heart does not require remembered seal completion. Record the one-armor versus two-potions response mismatch as a fair prose/intended-reward decision, and the cube ROOM-only trap plus GET-only helper boundary as unresolved intent. Thirty-two owned follow-ups retain exact evidence and responsible decisions. Native repairs need named fix/news commits and prominent before/after evidence; new tracking requires active READY accounting.
+
+
+## BrimStone Forge integration extension
+
+The [BrimStone Forge dossier](zone-stories/BRIMEFORGE.md) maps three exact locket sources from distinct instances of one overseer and an independent supplied-rune exchange. Accounting requires all distinct actor roots together in one durable batch; legacy giver deposits are a separate flow. Current loose preparation, source lineage/transfer, accepted receipt, actual item/XP obligations, fragile keys/shared door state/crossing and worn/device effect settlement require separate evidence.
+
+Builder declarations need intended rune/chest-key sources, mismatched chest-as-key and key0 portcullis decisions, actual rescue/cleansing endpoints and accurate acceptance/prose. Raw3 means PICKPROOF in the loader; current KNOCK is container-only, so access cannot be inferred from key absence or a presumed spell bypass. Mode2 renewal remains subject to the active accounting generation-issuance gate. Thirty-two owned follow-ups preserve static absence boundaries and fair separately named fix/news repairs. New tracking requires active READY accounting.

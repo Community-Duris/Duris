@@ -234,3 +234,8 @@ The [dossier](../design/zone-stories/VALDRAK.md) retains one potential candidate
 ## Bronze Citadel daily qualification
 
 The [dossier](../design/zone-stories/BCTDL.md) retains one potential seal candidate; the heart is story-only. Mode0, NORENT key custody, shared cube access, active accounting reset item refusal and deferred epic/reset generation require qualification. Actual READY acceptance, reward root/recipient settlement/save/recovery, retirement and completed accountable source/giver renewal are required. Daily policy remains disabled; UTC rollover, a reset request or opening a shared route does not prove renewal.
+
+
+## BrimStone Forge daily qualification
+
+The [dossier](../design/zone-stories/BRIMEFORGE.md) retains two potential candidates. Mode2 scheduling does not prove fresh accounted lockets or rune availability. All distinct loose roots must be accepted together; actual reward item/XP entitlements, recipients/save/recovery, NORENT key lifecycle and completed accountable source/giver renewal need qualification. Daily policy remains disabled and new tracking requires active READY accounting.

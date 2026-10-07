@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 203 &&
+		require(catalog.story_mappings.size() == 204 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -24126,6 +24126,130 @@ int main(int argc, char **argv)
 			require(sequential.progress_for_zone(7, 42, 324).completed == 2 &&
 					sequential.progress_for_zone(7, 42, 324).total == 2,
 				"Bronze Citadel independent sequential returns were merged or lost");
+		}
+
+		{
+			const auto &lockets = story_for("brimeforge", "efreeti-three-lockets");
+			const auto &rune = story_for("brimeforge", "guardian-arcane-rune");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 1310, 131001, 100, "arrival") ==
+						result::applied &&
+					journey.meet_npc(7, 42, 131008, 131004, 102) ==
+						result::applied,
+				"BrimStone source encounter setup failed");
+			std::string journal =
+				journey.render_journal(7, 42, 1310, 10, 1, 103, false, false);
+			require(journal.find("[Story incomplete] " + lockets.title + "\r\n") ==
+						std::string::npos &&
+					journal.find("[Story incomplete] " + rune.title + "\r\n") ==
+						std::string::npos,
+				"BrimStone overseer encounter revealed unmet givers");
+			require(journey.meet_npc(7, 42, 131009, 131001, 104) == result::applied,
+				"BrimStone efreeti encounter failed");
+			const auto before = journey.serialize_state();
+			// Current checklists are synthetic custody views, not native combat/transfer qualification.
+			const int materials[] = { 131002, 131003, 131004 };
+			for (unsigned mask = 0; mask < 8; ++mask)
+			{
+				supplies = {};
+				for (unsigned index = 0; index < 3; ++index)
+					if (mask & (1U << index))
+						supplies.carried[materials[index]] = 1;
+				journal = journey.render_journal(7, 42, 1310, 10, 1, 105, false,
+								 false, &supplies);
+				for (unsigned index = 0; index < 3; ++index)
+					require(journal.find(std::string(mask & (1U << index) ?
+										 "[Ready now] " :
+										 "[Missing now] ") +
+							     lockets.steps[index].text) !=
+							std::string::npos,
+						"BrimStone partial set merged distinct locket readiness");
+				require(journey.serialize_state() == before &&
+						journey.progress_for_zone(7, 42, 1310).completed ==
+							0,
+					"BrimStone current preparation persisted a completion");
+			}
+			supplies = {};
+			supplies.carried[131002] = 3;
+			supplies.equipped[18] = 131003;
+			supplies.carried[131007] = 1;
+			journal = journey.render_journal(7, 42, 1310, 10, 1, 106, false, false,
+							 &supplies);
+			require(journal.find("[Ready now] " + lockets.steps[0].text) !=
+						std::string::npos &&
+					journal.find("[Missing now] " + lockets.steps[1].text) !=
+						std::string::npos &&
+					journal.find("[Missing now] " + lockets.steps[2].text) !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"BrimStone duplicates, held locket or brimstone substituted for distinct loose inputs");
+			record(journey, lockets.contracts.front(), "brimeforge-lockets", 1310,
+			       131001);
+			supplies = {};
+			supplies.carried[131005] = 1;
+			supplies.carried[131006] = 1;
+			supplies.carried[131012] = 1;
+			journal = journey.render_journal(7, 42, 1310, 10, 1, 121, false, false,
+							 &supplies);
+			require(journal.find("[Recorded] " + lockets.steps.back().text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 1310).completed == 1 &&
+					journey.progress_for_zone(7, 42, 1310).total == 2,
+				"BrimStone spent set lost accepted history or fabricated rune completion");
+			for (unsigned index = 0; index < 3; ++index)
+				require(journal.find("[Missing now] " +
+						     lockets.steps[index].text) !=
+						std::string::npos,
+					"BrimStone reward wand/key fabricated current locket custody");
+			auto replay =
+				completion(lockets.contracts.front(), "brimeforge-lockets", 120);
+			replay.transaction.zone_number = 1310;
+			replay.transaction.room_vnum = 131001;
+			require(journey.record_completion(replay) == result::already_applied,
+				"BrimStone joint set replay duplicated acceptance");
+			service independent(catalog);
+			require(independent.discover_zone(7, 42, 1310, 131037, 100, "arrival") ==
+						result::applied &&
+					independent.meet_npc(7, 42, 131011, 131038, 104) ==
+						result::applied,
+				"BrimStone independent guardian setup failed");
+			supplies = {};
+			supplies.carried[131019] = 1;
+			const auto rune_before = independent.serialize_state();
+			journal = independent.render_journal(7, 42, 1310, 10, 1, 106, false, false,
+							     &supplies);
+			require(journal.find("[Ready now] " + rune.steps[0].text) !=
+						std::string::npos &&
+					journal.find("[Story incomplete] " + lockets.title +
+						     "\r\n") == std::string::npos &&
+					independent.serialize_state() == rune_before,
+				"BrimStone supplied rune required invented efreeti, source battle, greeting or access history");
+			record(independent, rune.contracts.front(), "brimeforge-rune-first", 1310,
+			       131038);
+			supplies = {};
+			supplies.carried[131012] = 1;
+			journal = independent.render_journal(7, 42, 1310, 10, 1, 121, false, false,
+							     &supplies);
+			require(journal.find("[Recorded] " + rune.steps.back().text) !=
+						std::string::npos &&
+					journal.find("[Missing now] " + rune.steps[0].text) !=
+						std::string::npos &&
+					independent.progress_for_zone(7, 42, 1310).completed == 1,
+				"BrimStone reward key substituted for spent rune or fabricated the locket return");
+			service recovered(catalog), raw(raw_catalog);
+			const auto saved = independent.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 1310).completed == 1 &&
+					raw.progress_for_zone(7, 42, 1310).completed == 1,
+				"BrimStone cold/raw recovery lost independent rune history or fabricated the joint set");
+			require(journey.meet_npc(7, 42, 131011, 131038, 122) == result::applied,
+				"BrimStone sequential guardian encounter failed");
+			record(journey, rune.contracts.front(), "brimeforge-rune-after-lockets",
+			       1310, 131038);
+			require(journey.progress_for_zone(7, 42, 1310).completed == 2 &&
+					journey.progress_for_zone(7, 42, 1310).total == 2,
+				"BrimStone sequential returns were merged or lost");
 		}
 
 		std::cout
