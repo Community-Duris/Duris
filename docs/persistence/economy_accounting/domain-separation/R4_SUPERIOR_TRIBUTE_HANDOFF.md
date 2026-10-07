@@ -12,7 +12,9 @@ and published handoff `96090b821`: original/extracted regression, three source
 pins, the initial18 proof hashes, both maintained1-provider/740-object build
 terminals and actual Docker ELF hashes were independently verified. R4-only patch
 application against bare current accounting `3f6f1fe0c` also passes. Disposition:
-reviewed and available for optional primary import. The later frozen-candidate
+reviewed and available for optional primary import. Final review is published
+on remotely verified accounting `0f65b29e52232fe34142d06716f7f635d84227bc` in
+[R4_SUPERIOR_TRIBUTE_REVIEW_2026-10-07.md](https://github.com/Community-Duris/Duris/blob/0f65b29e52232fe34142d06716f7f635d84227bc/docs/persistence/economy_accounting/domain-separation/R4_SUPERIOR_TRIBUTE_REVIEW_2026-10-07.md). The later frozen-candidate
 component/type supplement is separate from that reviewed18-file checkpoint. GitHub recovered: ordinary push
 and remote read now verify the source commit on `codex/accounting-domain-separation`.
 The continuing Goal remains ACTIVE beyond this checkpoint.
