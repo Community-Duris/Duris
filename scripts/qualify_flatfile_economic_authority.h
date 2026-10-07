@@ -671,6 +671,29 @@ class checker
 		control();
 		epochs();
 	}
+	// Reverse physical-file association, independent of the cross-link pages.
+	void namespace_metadata(const std::string &name)
+	{
+		begin_page();
+		if (name == "authority.eal" || name == "epochs.eae")
+			return;
+		for (size_t bucket = 0; bucket < buckets; ++bucket)
+		{
+			if (name == filename("mapping-", bucket, ".eam"))
+			{
+				(void)mappings(bucket);
+				need(nonzero(mapping_digests[bucket]));
+				return;
+			}
+			if (name == filename("native-", bucket, ".ean"))
+			{
+				(void)natives(bucket);
+				need(nonzero(native_digests[bucket]));
+				return;
+			}
+		}
+		need(false);
+	}
 	// Two selected cross-links, with bounded independent frames for their
 	// counterpart buckets. Native key order is a traversal fence, not commit order.
 	authority_page page(bool mapping_direction, size_t bucket, const bytes &after,

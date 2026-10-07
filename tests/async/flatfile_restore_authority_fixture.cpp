@@ -433,7 +433,8 @@ int main(int argc, char **argv)
 	       mode == "paged-authority" || mode == "item-records" || mode == "envelope-records" ||
 	       mode == "source-claims" || mode == "retention" || mode == "baseline" ||
 	       mode == "baseline-empty" || mode == "baseline-rich" || mode == "baseline-maximum" ||
-	       mode == "baseline-full-index");
+	       mode == "baseline-full-index" || mode == "baseline-empty-history" ||
+	       mode == "baseline-history");
 	for (size_t bucket = 0; bucket < 256; ++bucket)
 	{
 		assert(access::initialize_native_bucket(root, lock, control().revision, bucket,
@@ -646,6 +647,29 @@ int main(int argc, char **argv)
 						      &error) == flatfile_accounting_status::ok);
 			commit();
 		};
+		if (mode == "baseline-empty-history" || mode == "baseline-history")
+		{
+			const auto holding = batch.holdings.front();
+			batch.holdings.clear();
+			for (uint64_t revision = 0; revision < 3; ++revision)
+			{
+				batch.batch_index = revision;
+				stage();
+			}
+			if (mode == "baseline-history")
+			{
+				batch.batch_index = 3;
+				batch.holdings.push_back(holding);
+				stage();
+				assert(access::initialize_baseline(root, lock, id(1), id(51),
+								   batch.opening_account, id(54),
+								   &operations, &error) ==
+				       flatfile_accounting_status::ok);
+				commit();
+			}
+			assert(critical_operation_id_is_zero(control().active_epoch));
+			return 0;
+		}
 		if (mode == "baseline-full-index")
 		{
 			// A full native shard is 88 bytes larger than a generic 2 MiB file.

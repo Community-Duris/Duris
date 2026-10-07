@@ -24,6 +24,7 @@
 #include "kingdom/kingdom_restore.h"
 #include "world/quest_mobile_native.h"
 #include "qualify_flatfile_economic_records.h"
+#include "qualify_flatfile_economic_namespace.h"
 
 // Native parsers may log diagnostics containing identities; this process reports
 // only aggregate success or a fixed failure code.
@@ -236,6 +237,8 @@ int main(int argc, char **argv)
 {
 	try
 	{
+		if (restore_economic_namespace::command(argc, argv))
+			return 0;
 		if (argc == 7 && std::string(argv[1]) == "--economic-authority-page")
 		{
 			using namespace restore_economic_authority;
@@ -305,6 +308,132 @@ int main(int argc, char **argv)
 				std::cout << (i ? "," : "") << '"' << hex(result.invalid_links[i])
 					  << '"';
 			std::cout << "]}\n";
+			return 0;
+		}
+		if ((argc == 4 && std::string(argv[1]) == "--economic-baseline-history-context") ||
+		    (argc == 5 && std::string(argv[1]) == "--economic-baseline-history-control") ||
+		    (argc == 6 && std::string(argv[1]) == "--economic-baseline-history-page"))
+		{
+			using namespace restore_economic_authority;
+			need(std::filesystem::path(argv[2]).is_absolute());
+			auto decode = []<size_t Size>(const std::string &text)
+			{
+				std::array<uint8_t, Size> value = {};
+				need(text.size() == Size * 2);
+				for (size_t i = 0; i < text.size(); ++i)
+				{
+					const auto c = text[i];
+					need((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'));
+					value[i / 2] = static_cast<uint8_t>(
+						(value[i / 2] << 4) |
+						(c <= '9' ? c - '0' : c - 'a' + 10));
+				}
+				need(nonzero(value));
+				return value;
+			};
+			audit_budget budget;
+			scoped_audit_budget scope(budget);
+			authority_read_lock lock(argv[2]);
+			const auto evidence = std::filesystem::path(argv[2]) / "economic-evidence";
+			if (!lock.locked() || !std::filesystem::exists(evidence) ||
+			    std::filesystem::is_empty(evidence))
+			{
+				lock.finish();
+				audit_checkpoint();
+				std::cout << "{\"initialized\":false}\n";
+				return 0;
+			}
+			auto hex = [](const auto &value)
+			{ return restore_economic_baseline::hex(value); };
+			restore_economic_records::checker reader(argv[2]);
+			if (argc == 4)
+			{
+				const auto context = reader.history_context();
+				need(std::string(argv[3]) == "-" ||
+				     context.cut == decode.operator()<32>(argv[3]));
+				lock.finish();
+				audit_checkpoint();
+				std::cout << "{\"initialized\":true,\"lineage\":\""
+					  << hex(context.lineage) << "\",\"source_cut_sha256\":\""
+					  << hex(context.cut) << "\",\"legacy_unknown_epochs\":"
+					  << context.legacy_unknown_epochs << ",\"books\":[";
+				bool first = true;
+				for (const auto &[epoch, book] : context.books)
+				{
+					std::cout << (first ? "" : ",") << "{\"epoch\":\""
+						  << hex(epoch)
+						  << "\",\"revision\":" << book.revision
+						  << ",\"terminal\":\"" << hex(book.terminal)
+						  << "\"}";
+					first = false;
+				}
+				std::cout << "]}\n";
+			}
+			else if (argc == 5)
+			{
+				const auto control =
+					reader.history_control(decode.operator()<16>(argv[3]),
+							       decode.operator()<32>(argv[4]));
+				lock.finish();
+				audit_checkpoint();
+				std::cout << "{\"initialized\":true,\"lineage\":\""
+					  << hex(control.lineage) << "\",\"source_cut_sha256\":\""
+					  << hex(control.cut) << "\",\"epoch\":\""
+					  << hex(control.epoch)
+					  << "\",\"revision\":" << control.revision
+					  << ",\"terminal\":\"" << hex(control.terminal)
+					  << "\",\"reservations\":" << control.reservations
+					  << "}\n";
+			}
+			else
+			{
+				const std::string bucket_text = argv[3];
+				unsigned bucket = 0;
+				const auto parsed = std::from_chars(
+					bucket_text.data(), bucket_text.data() + bucket_text.size(),
+					bucket);
+				need(parsed.ec == std::errc{} &&
+				     parsed.ptr == bucket_text.data() + bucket_text.size() &&
+				     !bucket_text.empty() &&
+				     std::to_string(bucket) == bucket_text && bucket < buckets);
+				const auto value =
+					reader.history_page(bucket,
+							    std::string(argv[4]) == "-" ?
+								    identity{} :
+								    decode.operator()<16>(argv[4]),
+							    decode.operator()<32>(argv[5]));
+				lock.finish();
+				audit_checkpoint();
+				const auto &page = value.page;
+				std::cout << "{\"initialized\":true,\"lineage\":\""
+					  << hex(page.lineage) << "\",\"source_cut_sha256\":\""
+					  << hex(page.authority_body) << "\",\"bucket\":" << bucket
+					  << ",\"cursor\":\"" << hex(page.cursor)
+					  << "\",\"rows\":" << page.rows
+					  << ",\"verified\":" << page.verified
+					  << ",\"bucket_rows\":" << page.bucket_rows
+					  << ",\"range_exhausted\":"
+					  << (page.exhausted ? "true" : "false")
+					  << ",\"invalid_records\":[";
+				for (size_t i = 0; i < page.invalid_records.size(); ++i)
+					std::cout << (i ? "," : "") << '"'
+						  << hex(page.invalid_records[i]) << '"';
+				std::cout << "],\"baseline\":";
+				if (value.baseline)
+				{
+					const auto &entry = *value.baseline;
+					std::cout << "{\"epoch\":\"" << hex(entry.epoch)
+						  << "\",\"operation\":\"" << hex(entry.operation)
+						  << "\",\"revision\":" << entry.revision
+						  << ",\"reservations\":" << entry.reservations
+						  << ",\"book_reservations\":"
+						  << entry.book_reservations << ",\"terminal\":"
+						  << (entry.terminal ? "true" : "false") << '}';
+				}
+				else
+					std::cout << "null";
+				std::cout << "}\n";
+			}
 			return 0;
 		}
 		if (argc == 6 && (std::string(argv[1]) == "--economic-evidence-page" ||
