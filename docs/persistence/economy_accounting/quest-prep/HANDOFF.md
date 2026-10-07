@@ -7,6 +7,9 @@ tests/async/test_shop_trade_command.py, exactly three canonical rel() source
 additions; no other maintained path. [Current implementation/import/execution
 handoff](SHOP_CODEC_CLOSURE_IMPLEMENTATION.md) supersedes the earlier pending
 reservation at its reviewed boundary. Approval is published primarye6c1fa35.
+Owned evidence publication49c5060239513e63cf12dffe3d74df3e6e8e5e31,
+base0b0075724457511f6a7c6599489958cf45cd828a, authors only that implementation
+document and HANDOFF.md. Both code and evidence are remotely available.
 The standalone patch applies to bare currente6c1fa35fb41674c2a0ce425354e61a629c0e879,
 result tree51aaf7b87c77a375c264372f2bf7e7ce0116d62f, differing only in that test.
 Authenticate all6446 exported file/link bodies/modes and385 compiler dependencies,
@@ -19,7 +22,7 @@ Original e6 link FAIL and private closure PASS remain sealed with their old pins
 Current repair container stopped; no DB/player/server operation or broad rerun.
 Actual continuing Goal remains BLOCKED with original native/full-project blockers.
 
-New bounded coordinator assignment: [original shop codec closure investigation
+Historical private investigation before approval: [original shop codec closure investigation
 and one-file ownership reservation](SHOP_CODEC_CLOSURE_INVESTIGATION.md).
 Investigation publication a1e4ade02460652ccf0dc98a66a2c2f6af0de4ec,
 basecbdd5f8837db868796587d41f2153748fd71bdc1, pushed to the prep branch.
@@ -27,8 +30,8 @@ Immutable primarye6e058515f5433a1a3028f80d5d7d672d48b2471 reproduces original
 link FAIL7.090s. Adding only three existing canonical providers privately compiles
 and executes the COMPLETE unchanged 46-assert harness: PASS7.799s. All ten original
 input hashes/harness match architecture's bare-primary comparison. New98fd
-publication changes only docs, not these inputs. No maintained shared driver or
-production edit is authored; only this handoff and the investigation document.
+publication changes only docs, not these inputs. At that checkpoint no maintained
+shared driver or production edit was authored; only the handoff and investigation document.
 Exact recipe/source/provider/ELF/experiment/evidence pins and preserved FAIL are
 in that reservation. Actual Goal remains BLOCKED; new private component proof
 does not discharge native world/lifecycle/birth/refund/ACK or full-project gates.
