@@ -1009,3 +1009,53 @@ This field does not assert consistency of the entire sweep.
 Pages report partial coverage: complete/consistent-entire-sweep/release and
 holdings/baseline/orphan/lifecycle closure flags remain false. A range count
 or zero findings does not qualify complete accounting or release.
+
+The flatfile operator also supports catalogue-required baseline controls. Use a
+separate external private checkpoint for this scope:
+
+```bash
+python3 scripts/flatfile_economic_audit.py \
+  --state-root /absolute/restored-state \
+  --qualifier /absolute/bin/tools/qualify_flatfile_restore \
+  --progress /absolute/private-operator-directory/baseline-controls-progress.json \
+  --scope baseline-controls
+```
+
+The native command is `--economic-baseline-controls-page ROOT BUCKET AFTER
+CEILING`. It selects at most two initialized epoch IDs from the authenticated
+catalogue in the first-byte bucket, including inactive epochs. Each selected
+book must retain its head and all 16 reservation shards even if it has no roots.
+The original independent decoders check the opening account, initializer for a
+revision-zero book, canonical ordered shard members, shard checksums, terminal
+root/revision and every reservation operation's original root and witness.
+Reconstructed witness membership must exactly match the selected book's shards.
+The reader takes the existing authority read lock, refuses pending journals,
+and never repairs findings or invokes accounting mutation logic.
+
+This scope uses the independent reader's existing 16,384 physical-read,
+128 MiB byte and 8,192 directory-entry ceilings with a cooperative 30-second
+deadline. The Python qualifier subprocess has its existing 45-second timeout.
+The retained-root and authority-link page budgets stay unchanged. Budget or
+timeout refusal rotates to the next bucket without advancing the selected
+cursor. An epoch ceiling fixes each bucket's traversal range; appended epochs
+above that ceiling require a subsequent range. Private checkpoint ownership,
+atomic replacement, source/lineage binding and sticky findings use the same
+operator machinery as the other scopes.
+
+Reports use `flatfile_economic_baseline_controls_page_v1` and scope
+`required_baseline_control_reference_page`, with `examined_books`,
+`verified_book_controls` and `total_books_observed`. Findings identify the epoch
+with `flatfile_baseline_control_invalid` or
+`flatfile_baseline_control_page_refused`. A semantic finding makes the current
+page inconsistent while valid sibling books can still be verified. Later
+healthy pages preserve earlier findings and CLI status 1. These counters record
+observations across traversals, not distinct books certified complete.
+
+Earlier empty roots can have no reservation references. This page does not
+prove consecutive history or the head's total root count, enumerate orphan or
+unknown-initialization namespaces, or compare current native holdings. The
+whole independent reader still checks complete baseline root history within
+its admitted budget. Reports retain `baseline_controls_closed`,
+`baseline_books_closed`, `complete`, `consistent_entire_sweep`,
+`orphan_namespace_closed`, `native_holdings_compared` and `release_qualified`
+as false. This scope supplies bounded control/reference evidence only.

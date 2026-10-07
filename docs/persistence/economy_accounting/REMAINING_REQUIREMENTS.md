@@ -1,5 +1,14 @@
 # Double-entry economy: remaining requirements
 
+## Required baseline controls qualified — 2026-10-07
+
+[Primary integration](PLAN5_BASELINE_CONTROLS_PRIMARY_INTEGRATION_2026-10-07.md)
+adds catalogue-required baseline control/reference pages, including rootless
+and inactive initialized books. All three original native reader suites pass
+with zero skips; 65 new baseline controls pass alongside existing cases.
+Missing controls stay visible; full history, holdings, producers, recovery
+and release remain open. Complete/closure/release flags remain false.
+
 ## Flatfile page consistency qualified — 2026-10-07
 
 [Primary integration](PLAN5_PAGE_CONSISTENCY_PRIMARY_INTEGRATION_2026-10-07.md)
