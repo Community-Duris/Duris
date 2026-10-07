@@ -1,11 +1,17 @@
 # Current shop live-route source-contract boundary review - 2026-10-07
 
-Disposition: **exact ONE-file implementation boundary approved.** Investigation
+Disposition: **FINAL independent review PASS at maintained source-contract scope.**
+Code `fd4563fab791b33a2905db22baa4167f3567c298`, evidence
+`ba0c0bbf44d125c93623ffbdc78a70a12e706f39` and canonical handoff
+`5090bd4c282f21eae889bb74c3838f4798c5d179` close the approved one-file repair.
+Optional adoption and genuine native acceptance remain unknown and separate.
+
+Historical exact ONE-file boundary approval: investigation
 `4ca4016096812b0baad978cacc2b2844f8b5d229`, text SHA256
 `dfa2dcf8bc20e7af2cba6a63fb86967e6905e144592273102bfb35267ff7307b`, and
 canonical handoff `bf4a1282aa7309bd07fe213521fc2cd42c90b1a9` supply the complete
 original predicate map and independently reviewed private feasibility. Maintained
-repair, committed current-primary import/execution and final review remain pending.
+repair, committed current-primary import/execution and final review were pending.
 Optional primary adoption and actual native acceptance remain separate.
 
 ## Exact change and original guarantees
@@ -87,3 +93,46 @@ approval. Native quest lifecycle/reset-born/source/custody, cost/capture/publica
 ACK and held-charge/refund/paired-retirement remain owner dependencies. The actual
 blocked quest Goal is not falsely resumed or completed by this finite repair;
 root continuing Goal/monitor retain the full primary finish line.
+
+## Final committed implementation and independent qualification
+
+The actual code commit changes ONLY tests/async/test_shop_trade_live_route.py.
+Existing extraction/code-matching helpers and production sources are untouched.
+The committed verify() AST equals the previously independently reviewed feasibility
+checker. All original semantic requirements and the106-check map remain; the new
+loader examines23 actual definitions with real helpers and complete maintained main.
+The separate595fb4fb9 documentation correction fixes the historical path count;
+it changes no sealed execution evidence or code import dependency.
+
+Coordinator authenticates all11 final sealed receipts/programs against SEALED.json
+SHA256 `fcf8df0da581a4c604b9b4b27a34fe764540c2a43de08c46cb85d9632ffc04f1`.
+The exact20459-byte repair patch SHA256 is
+`d9e260dab703c5df2bd3179a1ee82466ee077eaa29529d635e6ac96aca55ca68`.
+It applies independently to bare primary0f466967; the coordinator separately
+applies both actual repair/R10 patches and reproduces trees
+`4109e3b20ea17ee40c8d0311dd8cabd4aec44464` and
+`cc511475b80e75a62b15b2dff50b84c2ff1c277b`. All6,448 original,6,448 repaired
+and6,449 combined canonical archive entries authenticate body/size/mode/link.
+No optional prep/R0-R10 ancestry is required for the one-file import.
+
+The coordinator separately runs the exact committed complete maintained entry
+point using frozen canonical inputs and unchanged helpers in its own temporary
+fixtures. Both bare repair and repair+R10 PASS all106 source checks. Each candidate
+rejects all27 reviewed guarantee-removal controls through its actual maintained
+main, rather than a substituted private oracle. Original bare primary still exits1
+on the raw keeper-custody spelling. Restored input bytes are checked after every
+control, and temporary fixtures are removed. Worker independently qualifies both
+complete exported trees with the same results; source/export inventories remain
+unchanged. Current source and23 native bodies retain reviewed original pins,
+except the expected buy/shop changes under optional R10.
+
+Original test blob95803d00847f74c16e1647c80e67dd7c433656a5 becomes
+7ce624589f1a83cbd699475cc5eca6070da8642e; final test SHA256 is
+`0f1f3e0d069166647af8afe886c33170a2dafb05ff08a06b20d4172926ea816e`.
+The canonical implementation evidence document is
+[SHOP_LIVE_ROUTE_IMPLEMENTATION.md](https://github.com/Community-Duris/Duris/blob/5090bd4c282f21eae889bb74c3838f4798c5d179/docs/persistence/economy_accounting/quest-prep/SHOP_LIVE_ROUTE_IMPLEMENTATION.md).
+Root private record is live-route-committed-review-RESULT.json under ignored
+coordinator-shop. This final review closes the selected repair and handoff at
+source-contract scope. It proves no actual gameplay, publication/recovery/ACK,
+DB/backend or release journey. Primary adoption remains owner-controlled/unknown;
+native quest prerequisites and the continuing primary finish line remain open.

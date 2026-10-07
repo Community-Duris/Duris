@@ -1,5 +1,12 @@
 # Complete item valuation boundary review - 2026-10-07
 
+Disposition: **FINAL independent review PASS at the declared extraction scope.**
+Implementation `ce7e0bc9ad8a66e7185ddd1af873548fb7092754` and canonical handoff
+`89d79bae37c3e05b35845d347f118effd49f53d8` close the selected R11 delivery.
+The [complete handoff](https://github.com/Community-Duris/Duris/blob/89d79bae37c3e05b35845d347f118effd49f53d8/docs/persistence/economy_accounting/domain-separation/R11_ITEM_VALUE_QUOTE_HANDOFF.md)
+retains exact import/artifact pins and proof limits. Original/current native world
+qualification and optional primary adoption remain separate and unknown.
+
 Reservation `f0212c9e3c56c946b765049168a6db6935f57b02`, text SHA256
 `aeb7c4cdf0b3660c3d5c99ecd5b63062c158772b90d0021c27acef58207eb462`,
 is approved at its exact THREE-file boundary. The architecture chat may implement
@@ -125,3 +132,52 @@ This draft audit is no new runtime or final committed qualification. Worker repo
 all45 original/extracted controls passing under baseline and separate -Og; builds,
 current bare packages, final committed artifacts and final review remain pending.
 Private itemvalue-rule-review-RESULT.json retains actual draft inputs and limits.
+
+## Final committed calculation and qualification review
+
+The committed three inputs match the independently audited draft pins above.
+All3,154 native calculation tokens retain exact order through the reviewed
+observation substitutions; all other tradeskill bytes and both genuine metadata
+helpers are unchanged. The final maintained45-control DRIVER and original
+controlled PRELUDE retain their original bytes except the required include.
+The coordinator independently executes the exact committed runner with its frozen
+committed header under baseline and the separate -Og sanitizer supplement:
+all four compile/runtime exits0, all45 controls each, diagnostic mutation114.
+Original metadata/procedure/debug/table fixtures remain controlled; native world
+source/lifetime/custody/publication/ACK is not established by these calculations.
+
+The coordinator authenticates every76 indexed artifact/receipt by bytes and hash,
+index SHA256 `d8b620899872168379c110291be0392daaf5502dc788af3ce516d64d7f73cf44`.
+Both actual SQL/flat retained and copied native ELFs match their pins:
+SQL `92526c9e519452ce69bb13ae4aaba84d69bccc3affee4b5a3fbb51704b2a8420`,
+flat `07c09756c22eec7251431f87563370f5ae5b11423ec70bfadeb4e3c06016170c`.
+Actual strict build logs contain one changed economy/tradeskill.c compile and740
+unique linked objects each. These are owned maintained graphs; current primary754
+full builds, boot and integrated native journeys are not inferred.
+
+Full three-file and production two-file patches independently apply to bare
+primary434dc079. Root authenticates the actual patches, resulting trees, ZIPs and
+every6,449 full/6,448 production export body. Result trees are
+`6f697ce3056b41f73eb960c5ac3bc0c1703c9a05` and
+`e967b4edfed336dbc0efbe02867f8b16f3b4ebe9`. No optional R0-R10/prep ancestry is
+required. Successor0f466967 changes no src/tests bytes from this import base.
+
+Both read-only actual exports pass complete tradeskill syntax/type qualification
+under SQL and flat profiles with C++20/Wall/Wextra/Werror. Root separately rereads
+all437 actual source/system-header dependency bytes per profile in each exact
+isolated container; all manifest hashes, export repository inputs, image and
+network-none/read-only mount identities match. The full export also passes the
+maintained baseline/-Og45-control runner and five selected adjacent contracts.
+Production-only omits the test and is qualified at complete module scope.
+Eleven owned adjacent checks pass; the identical original/extracted enhancement
+boundary contract failure remains retained and is separately investigated by
+quest prep. No shared failing test is weakened or repaired within R11.
+
+Private coordinator records are itemvalue-committed-RESULT.json,
+itemvalue-import-authentication-RESULT.json,
+itemvalue-build-artifact-authentication-RESULT.json and
+itemvalue-final-artifact-authentication-RESULT.json under ignored coordinator-shop.
+They close the declared implementation/import/artifact review. Genuine metadata,
+gameplay/persistence/recovery and current primary qualification remain owner work;
+the full continuing Goals/monitor and Plans1-5/applicable original R1-R8 finish line
+remain open. Completed primary areas require no rewrite or adoption wait.
