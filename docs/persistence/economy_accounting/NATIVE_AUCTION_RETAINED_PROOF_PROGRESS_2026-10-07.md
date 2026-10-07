@@ -1,5 +1,61 @@
 # Native auction retained proof: current private progress
 
+## Actual MySQL relisting and replay now pass
+
+The original measured-schema64 full-provider component reaches LIST171 with
+outcome0/error0 and both exact replay modes with outcome1/error0, revision11.
+The previously observed duplicate-key failure is absent. Earlier original
+LIST151, settlement152 and pickup153/154 controls still pass. The run then
+refuses at a later borrowed native capture; source ordering identifies native
+BID187 as the next capture, before LIST181. Original MySQL-first fail-fast leaves
+MariaDB unrun. A stopped-copy diagnostic now verifies the genuine LIST171
+receipt, original item/source claim and current native root. It exposes a stale
+fixture expectation: BID187 offers1 after LIST171 starts at500, while original
+accounting capture requires a first bid at least equal to the current price.
+The production price rule is preserved. The original numeric187 capture
+substage was not recorded, so the first failed helper remains unproven.
+
+Primary authenticates all query exports and406 copied datadir members/modes;
+27 of28 SELECTs pass. The direct auction-price query fails1054 because its
+winner-column name is wrong; no successful price readback is invented. Price500
+comes from immutable fixture input and unchanged INSERT/order, with no intervening
+mutation. Exact owned copy cleanup and resource absence pass. Evidence is in
+`tmp/auction-schema64-stopped-mysql187-diagnostic-primary-20261007`, including
+`PRIMARY-TERMINAL-AUTHENTICATION.json`.
+
+The reviewed private fixture correction first requires successful genuine
+accounted-v1 native capture at price500 and authenticates its decoded source.
+It then retains original BID187 price1, requires the original pure predicate's
+invalid_identity and native preparation's EILSEQ, and compares every database
+row and canonical command byte before/after. An unfrozen command is never
+executed or given a fabricated durable receipt. Remaining original durable
+refusal/replay controls stay unchanged. The corrected full-provider driver now
+compiles and links successfully. Actual MySQL passes the valid price500 source
+capture, original price1 preparation refusal (EILSEQ84/invalid_identity2), then
+original FINALIZE172 and CLAIM173 with both exact replay modes. It next refuses
+at the native tree capture before LIST181; that numeric predicate remains
+unobserved. Original fail-fast ordering leaves MariaDB unrun.
+
+This successor exits1, preserving the new first failure. Primary independently
+authenticates146 sealed files and542 native members (506 regular), exact case
+ordering and absence of the original container/two cleaned owned volumes.
+Terminal seal `5e7bbf217c47cffc91befae1529dc692e5a39e592d77743a0554cd07aa6ba89a`.
+Evidence and root authentication remain in
+`tmp/auction-relist-schema64-bid187-component-launch-primary-20261007`.
+The broader component, both-engine producer acceptance and maintained source
+integration remain open; no production price policy was changed.
+
+Actual component exit is1; this is partial progress, not a successful whole
+component or gameplay qualification. Root authenticates all121 sealed files
+and542 native members (506 regular), original output ordering and exact cleanup.
+Terminal seal `97a8725aadf35ab1b5e6b0a8ae71217d567d121c3147e053b2c1bcd2293d61b9`;
+root receipt `65bf1f34250e5bb45d2562d38d21ba8024ec5cbdd67ae8b52101707eea13b83b`.
+Evidence remains in
+`tmp/auction-relist-schema64-measured-component-launch-primary-20261007`.
+The source, original assertions and case limits remain unchanged; no retry or
+maintained producer integration occurred.
+
+
 ## Measured schema64 native builds qualified
 
 The measured runtime-contract successor passes both original 753-provider
