@@ -1,4 +1,5 @@
 #include "economy/currency_transaction.h"
+#include "economy/currency_value_plan.h"
 #include "economy/currency_publication.h"
 #include "economy/economic_gameplay_authority.h"
 #include "economy/account_bank_balances.h"
@@ -1024,50 +1025,19 @@ void update_retained_health()
 
 currency_vector canonical_value(int64_t value)
 {
-	currency_vector result = {};
-	static constexpr std::array<int64_t, CURRENCY_DENOMINATION_COUNT> values = { 1, 10, 100,
-										     1000 };
-	for (size_t index = values.size(); index-- > 0;)
-	{
-		result.amount[index] = value / values[index];
-		value %= values[index];
-	}
-	return result;
+	return currency_canonical_value(value);
 }
 bool wallet_value_delta(P_char character, int64_t value_delta, currency_vector *delta)
 {
-	if (!value_delta || value_delta == INT64_MIN)
+	if (value_delta >= 0 || value_delta == INT64_MIN)
+		return currency_prepare_wallet_value_delta({}, value_delta, delta);
+	if (!character || IS_NPC(character))
 		return false;
-	currency_vector wallet_delta = {};
-	if (value_delta > 0)
-		wallet_delta = canonical_value(value_delta);
-	else
-	{
-		if (!character || IS_NPC(character))
-			return false;
-		const std::array<int64_t, CURRENCY_DENOMINATION_COUNT> current = {
-			GET_COPPER(character), GET_SILVER(character), GET_GOLD(character),
-			GET_PLATINUM(character)
-		};
-		static constexpr std::array<int64_t, CURRENCY_DENOMINATION_COUNT> values = { 1, 10,
-											     100,
-											     1000 };
-		int64_t total = 0;
-		for (size_t index = 0; index < current.size(); ++index)
-		{
-			if (current[index] > (INT64_MAX - total) / values[index])
-				return false;
-			total += current[index] * values[index];
-		}
-		const int64_t spend = -value_delta;
-		if (total < spend)
-			return false;
-		const currency_vector after = canonical_value(total - spend);
-		for (size_t index = 0; index < current.size(); ++index)
-			wallet_delta.amount[index] = after.amount[index] - current[index];
-	}
-	*delta = wallet_delta;
-	return true;
+	const std::array<int, CURRENCY_DENOMINATION_COUNT> current = { GET_COPPER(character),
+								       GET_SILVER(character),
+								       GET_GOLD(character),
+								       GET_PLATINUM(character) };
+	return currency_prepare_wallet_value_delta(current, value_delta, delta);
 }
 } // namespace
 
@@ -1560,36 +1530,11 @@ static bool bank_payment_deltas(P_char character, int64_t value, currency_vector
 {
 	if (!character || IS_NPC(character) || value <= 0)
 		return false;
-	const std::array<int64_t, CURRENCY_DENOMINATION_COUNT> current = {
+	const std::array<int, CURRENCY_DENOMINATION_COUNT> current = {
 		GET_BALANCE_COPPER(character), GET_BALANCE_SILVER(character),
 		GET_BALANCE_GOLD(character), GET_BALANCE_PLATINUM(character)
 	};
-	static constexpr std::array<int64_t, CURRENCY_DENOMINATION_COUNT> values = { 1, 10, 100,
-										     1000 };
-	int64_t total = 0;
-	for (size_t index = 0; index < current.size(); ++index)
-	{
-		if (current[index] > (INT64_MAX - total) / values[index])
-			return false;
-		total += current[index] * values[index];
-	}
-	if (total < value)
-		return false;
-	currency_vector bank_delta = {};
-	int64_t remaining = value;
-	for (size_t index = 0; index < current.size() && remaining > 0; ++index)
-	{
-		const int64_t needed = (remaining + values[index] - 1) / values[index];
-		const int64_t used = std::min(current[index], needed);
-		bank_delta.amount[index] = -used;
-		remaining -= used * values[index];
-	}
-	currency_vector wallet_delta = {};
-	if (remaining < 0)
-		wallet_delta = canonical_value(-remaining);
-	*wallet = wallet_delta;
-	*bank = bank_delta;
-	return true;
+	return currency_prepare_bank_payment_deltas(current, value, wallet, bank);
 }
 
 bool currency_transaction_prepare_identify(P_char character, int64_t cost,
