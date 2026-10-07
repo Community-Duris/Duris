@@ -270,6 +270,42 @@ Production authority/native journeys remain separate. Architecture continues
 R11 qualification; primary continues without an adoption wait. Full continuing
 finish line and native quest/accounting blockers remain unchanged.
 
+## Complete shop customer access execution approved - 2026-10-07
+
+[R14 exact three-file approval](domain-separation/R14_SHOP_CUSTOMER_ACCESS_REVIEW_2026-10-07.md)
+selects complete is_ok customer access through native buy/sell/value/list/peruse/
+repair callers. Published
+[reservation3067d913c79db815c5a2492ef9324599059593f1](https://github.com/Community-Duris/Duris/blob/3067d913c79db815c5a2492ef9324599059593f1/docs/persistence/economy_accounting/domain-separation/R14_SHOP_CUSTOMER_ACCESS_RESERVATION.md)
+follows the updated nine-family dependency disposition. New customer policy header,
+bounded native provider/feedback wrapper and first two-component direct runner only.
+Preserve nested hours/edges, native race/trust/visibility read order, actual
+visibility callback, fresh TO_ROOM then TO_CHAR formatting and final with_who.
+Transient allowed/refusal data grants no native admission/lifetime/custody authority.
+
+Root independently authenticates all42 original indexed files, actual313/446
+compiler inputs and33/70 Git headers, exact complete is_ok and six native command
+bodies. Direct47 and complete real-value24 PASS baseline/Og: all eight compile/
+runtime exits0 with original120/30 bounds and sanitizer/strict flags. Both frozen
+fixture pairs remain required. No extracted qualification/adoption is claimed yet.
+Actual current quote-provider closure may be included only where native source
+has it; never rewrite whole value bodies or require optional predecessors in bare.
+
+Architecture implements the approved operation in its existing isolated worktree,
+pairs original/extracted controls, checks adjacent/formatting and strict builds,
+then standalone full/prod imports/module/compiler closure and canonical evidence
+for independent final review. Native custody/publication/ACK/recovery, private flat boot/genesis
+candidate/tooling, current754 composition and original Plans1-5/applicable R1-R8
+full finish remain owners. Quest native prerequisites are unavailable. R13 and
+prior completed work remain closed; root Goal/15-minute monitor remain ACTIVE.
+
+Primary owner progress439a8fe704b5167171d318f644c3b2b514f8cd22 arrived during
+boundary review and changes documentation only. Its private flat baseline/boot
+successor and corrected lifecycle-origin seed have reported syntax/source
+qualification; fresh pile-genesis/lifecycle integration, fourteen executable
+controls, current production links and native restart/ACK remain unfinished.
+Tooling/cache recovery remains open. No new public quest interface or source
+input changes; R14 qualification must use the then-current bare primary.
+
 ## Complete shop item acceptance independently reviewed - 2026-10-07
 
 [R13 FINAL review](domain-separation/R13_SHOP_ITEM_ACCEPTANCE_REVIEW_2026-10-07.md)
