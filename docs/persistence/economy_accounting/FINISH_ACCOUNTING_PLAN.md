@@ -70,6 +70,28 @@ gates are outside this guidance. Existing required changes to those areas remain
 owned by their current plan. Preserve inactive behavior, wallet-root exclusions,
 the declined inactive spell-path change and all current acceptance requirements.
 
+## Continuing architecture and quest-prep coordination - 2026-10-07
+
+The user authorizes the coordinator to keep both **Separate accounting domain
+preparation** and **Prepare quest accounting fixtures** on track, check their
+actual Goals and execution, and supply useful bounded follow-up assignments.
+[Workstream coordination charter](domain-separation/WORKSTREAM_COORDINATION.md)
+records ownership, the fixed architecture inventory milestone, quest-prep
+follow-up scope, current published pins, initial queue and completion rules.
+
+This supersedes the first-delivery-only Goal boundary below. The completed
+Collector extraction/review remains completed; the next architecture assignment
+is an operation inventory followed by the next stable extraction. Quest prep
+reconciles its published pack against the latest candidate and diagnoses the
+retained flat QP06 later-drop stale-authority refusal without changing the shared
+movement/recovery owner. The coordinator checks both streams at assignment and
+completion boundaries and periodically during execution, corrects drift and
+premature completion, reviews bundles and updates these remote handoff links.
+
+These are separate sidework milestones. The primary continues its current
+accounting plan without waiting, and consumes compatible reviewed bundles at
+normal integration boundaries. Publication does not establish primary adoption.
+
 ## Fourth agent: independent domain separation - 2026-10-07
 
 The user authorizes a separate implementation stream, chat
