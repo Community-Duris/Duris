@@ -28,6 +28,28 @@ bare352; complete R5 test delta requires only R3's config predecessor. Initial
 failed context checks remain retained. Exact pins/commands/results are in
 [R5_SUPERIOR_STAT_CAP_HANDOFF.md](R5_SUPERIOR_STAT_CAP_HANDOFF.md).
 
+## Subsequent Collector proof-reader milestone and R6 delivery
+
+Primary `daa5c2b5f152b88d7c9ad56e21079541a291d14b` supplies borrowed-lock
+Collector retained-operation authentication and current purchase projection.
+Its original complete component fixture and both754-provider maintained builds
+pass at the owner's published scope. Writer policies/backend route evidence
+remain unchanged. Genuine SQL player/coordinator/ACK/cold journeys, supported
+flatfile submission/publication/restored holds/guarded ACK and original compound
+acceptance remain open. No primary source/test/manifest is changed here.
+
+R6 `98448166748d54f6b383bf9e3ece108d12beb079` delivers approved native-width
+five-word affect policy with actual producer rejection/pouch controls. Original/
+extracted, adjacent and both owned740-object builds pass; initial fixture failure
+and unchanged module reset-count failure remain visible. Exact352+R0-R6 tree
+`316a1a49804c84eb35ef0c16b872fd8e5c9a1f9f`,6441 files/archive
+`6eeed999f4194fcd1c9b0784509273bed49c6e97d676e687949613ceaa95f9ff`,
+passes actual policy/payment/pool and full enhancement SQL/flat type checks.
+This frozen supplement is not successor daa5 qualification. Source-only bare352
+application passes; complete test packaging retains R3 alone. See
+[R6 handoff](R6_ENHANCEMENT_AFFECT_POLICY_HANDOFF.md). Final review is pending;
+provisional component review is published at accounting d81e04b49.
+
 ## Independent compatibility and adoption
 
 Python uses `git show --format= --binary` exact bundle patches, a task-private
@@ -117,8 +139,8 @@ The nine-domain inventory is reassessed against these concrete new interfaces:
    require a reviewed capture boundary. Reuse R1 count types where semantics agree;
    its ceil policy differs from superior's existing0.999999 truncation, so do not
    silently unify those policies. R4 preserves the latter; further capture must be reserved after actual source/proof review.
-3. **R5 F3 superior stat cap**: approved and implemented through `b31809a0d`; explicit base/configured multiplier preserves signed-byte saturation/truncation and original wrapper capture. Original/extracted, adjacent, owned builds and current352 module controls pass; final review pending. See [handoff](R5_SUPERIOR_STAT_CAP_HANDOFF.md). Further template/outcome preparation requires separately reviewed native capture facts.
-4. **Proposed R6 F3/I enhancement affect policy**: common five-word native unsigned-long allow validation can take owned flags and explicit masks, preserving null wrapper and actual source/material/pool caller semantics. Extend the existing ordinary producer test with the real predicate instead of its unconditional stub. See [exact three-file reservation](R6_ENHANCEMENT_AFFECT_POLICY_RESERVATION.md); review precedes edits.
+3. **R5 F3 superior stat cap**: approved and implemented through `b31809a0d`; explicit base/configured multiplier preserves signed-byte saturation/truncation and original wrapper capture. Original/extracted, adjacent, owned builds and current352 module controls pass; final declared-scope review PASS is published at accounting63a6e0ef5. See [handoff](R5_SUPERIOR_STAT_CAP_HANDOFF.md). Further template/outcome preparation requires separately reviewed native capture facts.
+4. **R6 F3/I enhancement affect policy**: implemented/published at `984481667`; actual original/extracted producer/policy and maintained builds PASS, final review pending. Five native unsigned-long words and explicit masks preserve null/source/material/pool semantics. The real predicate replaces the test stub; retained fixture failure is corrected without weakening expectations. See [terminal handoff](R6_ENHANCEMENT_AFFECT_POLICY_HANDOFF.md). Further native capture remains owner-dependent.
 5. **P2/S1 forge or service quote preparation**: inspect existing ore-price and
    paid service formulas for a genuine remaining stable operation; existing
    `forge_prices`/currency prepared mutation may already cover it. No blanket

@@ -9,9 +9,12 @@ ACTIVE/no budget, createdAt1791384853. Current candidate and ranked queue are in
 R3 pricing is implemented and its declared-scope final review passes locally;
 R4 tribute counts are implemented with independent original/extracted controls
 and both owned maintained builds passing. R5 numeric cap is implemented and
-qualified through `b31809a0d`, final review pending. Current source352 adds native
-room-coin cold proof; exact overlay/module limits and native owner dependencies
-are recorded in the R5/current reconciliation handoffs. Final publication/review dependencies
+qualified through `b31809a0d`, final declared-scope review PASS at accounting
+`63a6e0ef5`. R6 affect policy is delivered at `984481667`, original/extracted and
+owned maintained-build qualified; final review awaits its terminal handoff.
+Current352 component/module proof stays separately pinned. Successor `daa5c2b5f`
+adds authentic Collector flatfile proof readers; native outcome/journey ownership
+and exact remaining interfaces stay with primary. See R6/current reconciliation. Final publication/review dependencies
 and current-candidate proof are recorded separately in their handoffs. This inventory evolves after meaningful
 candidate advances and deliveries; no new batch cap closes the continuing Goal.
 

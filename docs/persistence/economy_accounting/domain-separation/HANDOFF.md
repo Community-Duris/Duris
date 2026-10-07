@@ -44,7 +44,8 @@ and the nine-domain assessment is reranked from actual remaining owner facts.
 R5's separate boundary review is approved; connected stat-cap preparation is
 implemented at `d45402ca5` plus include-context follow-up `b31809a0d`. Original/
 extracted cap controls, adjacent checks and both final owned maintained builds
-pass. See [R5 handoff](R5_SUPERIOR_STAT_CAP_HANDOFF.md); final review is pending.
+pass. See [R5 handoff](R5_SUPERIOR_STAT_CAP_HANDOFF.md); final independent declared-scope
+review PASS is published at accounting `63a6e0ef5`.
 At this checkpoint `get_goal` returns actual ACTIVE/no budget, createdAt1791384853.
 
 New primary `35298aacdf0b55e5026db98103f4e3e7b63094ad` restores acknowledged SQL
@@ -56,10 +57,18 @@ and stat regression apply independently to bare352, while its full configuration
 test patch requires R3's existing predecessor. Primary code/manifests and owner35
 fixture stay preserved. Thin forge-table and previously declined cleric seams are
 not selected. Nine-domain native capture/authority dependencies remain explicit.
-Next [R6 affect-policy reservation](R6_ENHANCEMENT_AFFECT_POLICY_RESERVATION.md)
-selects the common five-word allow validation and real source/material/pool
-callers. Native unsigned-long width and null/pouch semantics are pinned; its
-three-file source/test boundary awaits review before edits.
+R6's approved five-word affect validation is implemented/published at
+`98448166748d54f6b383bf9e3ece108d12beb079`. Complete original/extracted
+policy/payment controls, adjacent checks and both740-object maintained links
+pass; the unchanged original/extracted module reset-count failure is retained.
+Current352+R0-R6 component/module proof is separately pinned. Its production patch
+is independently applicable; the complete test patch retains R3's prerequisite.
+See [R6 terminal handoff](R6_ENHANCEMENT_AFFECT_POLICY_HANDOFF.md). Provisional
+coordinator component review is published at `d81e04b49`; final review awaits
+this handoff. Primary successor `daa5c2b5f` adds Collector flatfile retained/current
+proof readers and maintained component/build evidence, leaving native journeys
+and supported flatfile outcomes open. The352 supplement is not relabeled as
+that successor. Continuing Goal ACTIVE; nine-domain dependencies are reassessed.
 
 ## Historical finite R0/R1/R2 checkpoint status
 

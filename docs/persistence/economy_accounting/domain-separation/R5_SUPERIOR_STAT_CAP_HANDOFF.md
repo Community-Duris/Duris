@@ -8,8 +8,13 @@ body and both test preimages. Its boundary/import checkpoint is published at
 accounting `5dd702797094bed9d1be617f00fd50b4e3d90456` in
 [R5_SUPERIOR_STAT_CAP_REVIEW_2026-10-07.md](https://github.com/Community-Duris/Duris/blob/5dd702797094bed9d1be617f00fd50b4e3d90456/docs/persistence/economy_accounting/domain-separation/R5_SUPERIOR_STAT_CAP_REVIEW_2026-10-07.md).
 This handoff chooses the permitted explicit R3 test prerequisite and verifies it
-with the private R3-only prefix check. Final declared-scope evidence review is
-pending; no independent full-bundle import claim is made. The actual
+with the private R3-only prefix check. Final declared-scope evidence review PASS
+is published at accounting `63a6e0ef5d6843820d29fb2c61202b77d8648642` in
+[R5_SUPERIOR_STAT_CAP_REVIEW_2026-10-07.md](https://github.com/Community-Duris/Duris/blob/63a6e0ef5d6843820d29fb2c61202b77d8648642/docs/persistence/economy_accounting/domain-separation/R5_SUPERIOR_STAT_CAP_REVIEW_2026-10-07.md).
+The coordinator independently executed original/extracted controls, authenticated
+all four source and36 proof hashes and checked actual maintained ELFs/logs.
+R5 is reviewed and available at its declared scope; no independent full-bundle
+import claim is made. The actual
 continuing Goal remains ACTIVE/no budget; this checkpoint cannot satisfy the
 primary Plans1-5/applicable original R1-R8 integrated finish line.
 
@@ -122,6 +127,6 @@ Native room enumeration, literal/custody proof, startup session, original UID,
 ACK and publication remain the primary coin owners; do not duplicate their SQL
 reader as a calculation helper. Further enhancement catalog/outcome capture
 requires a separate concrete owner boundary. Thin forge-table or previously
-declined cleric paths remain unselected. Final review and primary integrated
-completion remain pending; neither optional compatibility nor this batch closes
+declined cleric paths remain unselected. Final R5 review passes; primary integrated
+completion remains pending. Neither optional compatibility nor this batch closes
 the continuing Goal.
