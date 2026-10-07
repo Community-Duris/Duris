@@ -259,3 +259,8 @@ The [dossier](../design/zone-stories/STORMPORT.md) preserves two potential candi
 ## Arachdrathos city daily qualification
 
 The [dossier](../design/zone-stories/ARAC-WEB.md) preserves the existing coin-only unit’s exclusion: No repeatable item offering. It contributes no achievement and no potential daily. Mode2/lifespan15..25, cap1 keeper/key stock and a retired giver do not establish fresh accountable renewal. Coin-only purchase and Body Traders services refuse active accounting; dynamic bartender quota does not turn that service into a zone daily. Require active READY accounting for new tracking; daily policy remains disabled.
+
+
+## Arcium daily qualification
+
+The [dossier](../design/zone-stories/ARCIUM.md) preserves one native achievement and one potential daily. Mode2/lifespan25..35, six cap1 heart sources and periodic timing do not qualify fresh accountable stock. Active authority guards native O/P/G/E construction. Exact six-root custody, hidden reveal/recovery, supplied transfer, Joji generation, joint reward/save/retirement/replay and completed renewal need played qualification. Keys and dream access remain separate from the offering; source-complete mapping cannot enable guarded stock or paid epic learning. New tracking requires active READY accounting; daily policy remains disabled.

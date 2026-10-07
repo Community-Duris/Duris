@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 207 authored journals, accounting-gated player surfaces, starter/town
+**Status: 208 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5351,3 +5351,8 @@ The [dossier](zone-stories/STORMPORT.md) maps independent four-proof and two-mat
 ## Arachdrathos city integration extension
 
 The [dossier](zone-stories/ARAC-WEB.md) maps the existing paid-key receipt and37 owned follow-ups. Keep three greeting aliases as one conversation; preserve the native daily exclusion and explain the coin-only active-accounting refusal. Current key custody, unlock/open/crossing, six-house allegiance, captive agency, civic restoration and actual settled services have separate endpoints. The generated world-quest task identity offers a reusable adapter foundation, with fee/task-generation/refund/history/save and cold recovery gaps explicitly owned. Existing schema3 covers this journal without new APIs or speculative bindings. New tracking requires active READY accounting; daily policy remains disabled. Native repairs require separate named fix/news commits.
+
+
+## Arcium integration extension
+
+The [dossier](zone-stories/ARCIUM.md) maps the six distinct hearts as one joint request, with optional exact loose preparation and one accepted receipt. Source recovery, supplied custody, hidden reveal, personal contribution, alternate Hope constructors and giver retirement remain distinct. Thirty-seven owned follow-ups cover diagonal/key/hidden access, dream arrivals, advertised epic-teacher binding versus normal guildmaster advice, accounting settlement/renewal and wider builder-designed curse, rescue, nature and dragon stories. Current schema3 covers the native request; broader outcomes need admitted source/contribution/recipient/lasting-state adapters. New tracking requires active READY accounting; daily policy remains disabled. Any actual native repair needs a separately named fix/news commit.

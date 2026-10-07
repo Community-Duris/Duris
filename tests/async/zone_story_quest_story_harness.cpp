@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 207 &&
+		require(catalog.story_mappings.size() == 208 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -24667,6 +24667,104 @@ int main(int argc, char **argv)
 						std::string::npos &&
 					recovered.progress_for_zone(7, 42, 364).completed == 0,
 				"Arachdrathos spent NORENT key changed recovered receipt or service policy");
+		}
+
+		{
+			const auto &hearts = story_for("arcium", "joji-six-hearts");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 85700, 85803, 100) == result::rejected,
+				"Arcium contact ignored undiscovered physical kingdom");
+			require(journey.discover_zone(7, 42, 857, 85700, 101, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 857, 10, 1, 102, false, false)
+							.find(hearts.title) == std::string::npos &&
+					journey.meet_npc(7, 42, 85700, 85803, 103) ==
+						result::applied,
+				"Arcium discovery exposed the request before Joji encounter");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    hearts.steps[row].text) != std::string::npos;
+			};
+			for (unsigned custody = 0; custody < 5; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[85721] = 1;
+				if (custody == 2)
+					supplies.carried[85707] = 1;
+				if (custody == 3)
+					supplies.equipped[18] = 85715;
+				if (custody == 4)
+					supplies.carried[85715] = 6;
+				const auto journal = journey.render_journal(
+					7, 42, 857, 10, 1, 104, false, false, &supplies);
+				for (size_t row = 0; row < 6; ++row)
+					require(status(journal, row,
+						       custody == 4 && row == 0 ? "Ready now" :
+										  "Missing now"),
+						"Arcium reward, container, held heart or duplicates replaced distinct loose materials");
+				require(!status(journal, 6, "Recorded") &&
+						journey.progress_for_zone(7, 42, 857).completed ==
+							0 &&
+						journey.serialize_state() == before,
+					"Arcium viewing or custody manufactured an accepted joint offering");
+			}
+			supplies = {};
+			for (int vnum = 85715; vnum <= 85720; ++vnum)
+				supplies.carried[vnum] = 1;
+			auto journal = journey.render_journal(7, 42, 857, 10, 1, 105, false, false,
+							      &supplies);
+			for (size_t row = 0; row < 6; ++row)
+				require(status(journal, row, "Ready now"),
+					"Arcium supplied exact heart required invented personal source history");
+			require(journal.find("Next: " + hearts.steps.back().text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 857).completed == 0 &&
+					journey.serialize_state() == before,
+				"Arcium six-material readiness forged accepted history");
+			// Synthetic committed receipt qualifies projection, not live source or joint settlement.
+			record(journey, hearts.contracts.front(), "arcium-joint-offering", 857,
+			       85803);
+			supplies = {};
+			supplies.carried[85721] = 1;
+			journal = journey.render_journal(7, 42, 857, 10, 1, 121, false, false,
+							 &supplies);
+			require(status(journal, 6, "Recorded") &&
+					status(journal, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 857).completed == 1 &&
+					journey.progress_for_zone(7, 42, 313).completed == 0 &&
+					!journey.has_discovered(7, 42, 313),
+				"Arcium spent hearts erased receipt or invented Qin completion/dream arrival");
+			require(supplied.discover_zone(7, 42, 857, 85700, 101, "arrival") ==
+					result::applied,
+				"Arcium supplied return setup failed");
+			record(supplied, hearts.contracts.front(), "arcium-supplied-offering", 857,
+			       85803);
+			require(supplied.progress_for_zone(7, 42, 857).completed == 1,
+				"Arcium accepted receipt required a remembered greeting, kill or preparation");
+			auto replay =
+				completion(hearts.contracts.front(), "arcium-joint-offering", 120);
+			replay.transaction.zone_number = 857;
+			replay.transaction.room_vnum = 85803;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Arcium joint offering replay duplicated achievement");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 857).completed == 1 &&
+					raw.progress_for_zone(7, 42, 857).completed == 1 &&
+					!recovered.has_discovered(7, 42, 313) &&
+					!recovered.has_discovered(7, 42, 5000),
+				"Arcium mapped/raw recovery lost acceptance or invented foreign discovery");
+			supplies = {};
+			journal = recovered.render_journal(7, 42, 857, 10, 1, 122, false, false,
+							   &supplies);
+			require(status(journal, 6, "Recorded") && status(journal, 0, "Missing now"),
+				"Arcium reward absence or consumed materials changed recovered acceptance");
 		}
 
 		std::cout

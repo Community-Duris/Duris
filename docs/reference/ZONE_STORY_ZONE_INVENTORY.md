@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 207 authored journals.
+2668 distinct Q contracts; 208 authored journals.
 
 Regenerate with:
 
@@ -33,7 +33,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Mountain Valley of Dawndale (`airshipgrave`) | 13 | 4 | 4 | Yes | [2 × a vial of liquid sunlight; 1 × a handful of combustable rock dust; 1 × a bucket of rank pool water; other required items → the lost blade of the Astral Dancer, 'Ender'](../../areas/qst/airshipgrave.qst#L101) | — |
 | Alatorin - the Forge City (`alatorin`) | 495 | 291 | 47 | Yes | [8 × some rune-covered silk; 2 × a gnomish shopkeepers token → the bindings of the arcane](../../areas/qst/alatorin.qst#L6433) | earring_powers, generic_parry_proc, miners_helmet, rentacleric, ship_shop_proc |
 | Arachdrathos - Drow City (`arac-web`) | 1 | 1 | 0 | Yes | [native payment/conditions → a dildo-shaped key](../../areas/qst/arac-web.qst#L6) | inn, money_changer, pet_shops, world_quest |
-| Arcium, the Plagued Kingdom (`arcium`) | 1 | 1 | 0 | Fallback | [1 × a bleeding heart of Kovii; 1 × a bleeding heart of Granra; 1 × a bleeding heart of Kurlon; other required items → the shield proclaimed 'Hope'](../../areas/qst/arcium.qst#L11) | world_quest |
+| Arcium, the Plagued Kingdom (`arcium`) | 1 | 1 | 0 | Yes | [1 × a bleeding heart of Kovii; 1 × a bleeding heart of Granra; 1 × a bleeding heart of Kurlon; other required items → the shield proclaimed 'Hope'](../../areas/qst/arcium.qst#L11) | world_quest |
 | Ashrumite Village (`ashrumite`) | 12 | 13 | 8 | Yes | [1 × a necklace of silver set with gems; 1 × an amethyst; 1 × an exotic tigers-eye gem; other required items → a small gold nugget](../../areas/qst/ashrumite.qst#L101) | cityguard, drunk_one, dump, guild_guard, inn, janitor |
 | The Lair of Tiamat (`azhural`) | 2 | 2 | 0 | Yes | [8 × a shard of bone → a key of fused bone shards](../../areas/qst/azhural.qst#L18) | sphinx_prefect_crown |
 | Bahamut's Palace (`bahamut`) | 1 | 3 | 0 | Yes | [1 × Bahamut's personal seal → a glowing white key](../../areas/qst/bahamut.qst#L24) | artifact_stone, bahamut, bloodfeast, dragonlord_plate, mrinlor_whip, sunblade |

@@ -1,0 +1,488 @@
+{
+  "schema_version": 3,
+  "revision": 1,
+  "source_area": "arcium",
+  "coverage": "complete",
+  "introduction": "Explore Arcium’s fallen kingdom, understand Joji’s six-heart request and follow the separate forest, royal and dream routes.",
+  "orientation": [
+    "Reach the dark trail from the nearby surface hills or jungle, then explore the forest, swamp, graveyard and undead tower. Discovery follows actual arrival; a map, view or travel message is not arrival.",
+    "Ask Joji about hi, king, kovii, granra, kelien, slican, kurlon, fragnox, lord or lords for one response family. These aliases explain his revenge request; they are not ten separate quest achievements.",
+    "Joji accepts one each of the six named hearts together for the shield Hope and then retires. The material rows show your current loose inventory. The native request does not require a personal kill, a remembered first recovery or a prior conversation; supplied exact hearts also fit.",
+    "The six hearts share a similar appearance but have different identities. They start hidden on their six carriers. Revealing an item, recovering it, receiving it from another player and completing the joint offering are separate facts.",
+    "The royal soldiers carry the skeleton key. It opens the pickproof approaches to the Room of Release, Sealed Crypt and Hidden Escape. The swamp creature carries a different key for the green gate. Current key custody, unlock, opening and successful crossing are separate.",
+    "These keys are NORENT and have a native break chance on a successful unlock. A remembered visit or accepted quest does not replace a missing key. Locked approaches and closed return sides differ under the authored resets.",
+    "The dungeon’s downward trapdoor starts hidden and closed. Search and opening admission matter on that route to the Dragons Haven; access is not a prerequisite receipt for Joji’s request.",
+    "ENTER the fixed zipline cart at the private lookout to reach the dark trail. ENTER the fluffy bed in the Room of Release reaches the Drifting Realm. LOOK reality there returns to the Room of Release; the distant cliff has a separate JUMP return. Successful travel and each destination’s discovery are separate.",
+    "Kovii also carries the green crystal skull that belongs to Qin’s separate Drifting Realm request. It is not one of Joji’s six hearts and does not complete the Arcium story.",
+    "Kurlon is listed for shield combat, but his effective lesson binding needs builder review. Paid epic learning is currently unavailable while accounting is active. Meeting him, learning and delivering his heart are separate outcomes.",
+    "Mredock’s generated world quests and drinks service are separate from Joji’s request. Use quest for your current generated task; actual target progress, payment, delivered reward and saved history need their own evidence.",
+    "Joji’s revenge does not establish that the kingdom’s disease or curse is lifted. Granra’s holiness, Kelien’s restoration, Lorik’s dragon mandate, the former slave and haunted graveyard suggest wider choices that need defined lasting outcomes.",
+    "The living forest, swamp, underwater chambers, dark tower and healing lodge use current native movement and effect rules. Dangerous or magical descriptions do not create extra quest requirements or award recovery, cure or rescue.",
+    "New journal tracking requires active READY accounting. Fresh native item resets are currently guarded during an accounting epoch. Daily renewal needs actual accountable source and giver generations; the daily policy remains disabled."
+  ],
+  "contacts": [
+    {
+      "mob_vnum": 85700,
+      "name": "Joji, the lonely hermit",
+      "keyword": "joji",
+      "description": "Joji asks for six distinct hearts together, rewards Hope and retires. His ten topic aliases are one response. His hunger and salmon description is a separate narrative lead; the native exchange asks for hearts.",
+      "topics": [
+        "hi",
+        "king",
+        "kovii",
+        "granra",
+        "kelien",
+        "slican",
+        "kurlon",
+        "fragnox",
+        "lord",
+        "lords"
+      ]
+    },
+    {
+      "mob_vnum": 85701,
+      "name": "a diseased rat",
+      "keyword": "rat",
+      "description": "This contact is stocked around A Bend in the Trail, A Dark Trail. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85702,
+      "name": "a lentl stalker",
+      "keyword": "lentl",
+      "description": "This contact is stocked around The Forbidden Forest. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85703,
+      "name": "a hunchback man",
+      "keyword": "hunchback",
+      "description": "The hunchback runs the general store. Listed stock, buying or selling, crafting and a settled delivery are different outcomes. Ordinary shop mutations currently refuse active accounting.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85704,
+      "name": "a sinister werewolf",
+      "keyword": "werewolf",
+      "description": "This contact is stocked around The Forbidden Forest. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85705,
+      "name": "a rabid raccoon",
+      "keyword": "raccoon",
+      "description": "This contact is stocked around A Dark Trail, A Landslide Spillout. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85706,
+      "name": "a dim spectral ghost",
+      "keyword": "ghost",
+      "description": "This contact is stocked around A Gloomy Graveyard. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85707,
+      "name": "an undead horse",
+      "keyword": "horse",
+      "description": "This contact is stocked around A Dark Trail, A Long Drawbridge Landing. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85708,
+      "name": "an infant dragon",
+      "keyword": "infant",
+      "description": "This contact is stocked around The Dragons Haven. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85709,
+      "name": "a magnificent mother wyrm",
+      "keyword": "wyrm",
+      "description": "This contact is stocked around The Dragons Bedding Den. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85710,
+      "name": "an irate slave",
+      "keyword": "slave",
+      "description": "The former slave is described as free but still bound to this undead kingdom. Define the intended cure, agency and safe endpoint before awarding a rescue; merely meeting or defeating him does not establish it.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85711,
+      "name": "a wolfspider",
+      "keyword": "wolfspider",
+      "description": "This contact is stocked around The Living Forest. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85712,
+      "name": "an undead archer",
+      "keyword": "archer",
+      "description": "This contact is stocked around A Grand Balcony. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85713,
+      "name": "a black-boned skeleton",
+      "keyword": "skeleton",
+      "description": "This contact is stocked around A Dirt Path, A Landslide Road. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85714,
+      "name": "a giant bat",
+      "keyword": "bat",
+      "description": "This contact is stocked around Among the Tree Tops, The Dragons Haven. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85716,
+      "name": "an undead soldier",
+      "keyword": "soldier",
+      "description": "This contact is stocked around A Sealed Crypt, The Tower of Undead Minions. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85717,
+      "name": "a black crow",
+      "keyword": "crow",
+      "description": "This contact is stocked around A Dark Trail, A Gloomy Graveyard. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85718,
+      "name": "a repulsive lizard",
+      "keyword": "lizard",
+      "description": "This contact is stocked around A Dark Trail. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85719,
+      "name": "an undead mercenary",
+      "keyword": "mercenary",
+      "description": "This contact is stocked around A Hidden Escape, The Tower of Undead Minions. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85720,
+      "name": "an undead maid",
+      "keyword": "maid",
+      "description": "This contact is stocked around A Crowded Tower of Undead Minions. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85721,
+      "name": "Granra, the priestess of all holiness",
+      "keyword": "granra",
+      "description": "Granra’s prose describes a goddess of holiness who remains with the kingdom. She carries her hidden heart in the Burial Ground. The requested material does not prove a lasting spiritual or political resolution.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85722,
+      "name": "Kelien, the aid of nature",
+      "keyword": "kelien",
+      "description": "Kelien works to restore nature in the Tree Trunker Lodge. He carries his hidden heart. The healing place, assisting nature and Joji’s offering require separate outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85723,
+      "name": "Fragnox, the lord of mind power",
+      "keyword": "fragnox",
+      "description": "Fragnox carries his hidden heart in the Moonlit Cave. Access through the dragon caverns and recovery differ from personal defeat or Joji’s accepted offering.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85724,
+      "name": "Kurlon, the gladiator of endless battles",
+      "keyword": "kurlon",
+      "description": "Kurlon carries his hidden heart in the Hidden Escape and is listed as the shield-combat teacher. The current epic lesson binding needs builder review; paid epic learning is unavailable while accounting is active.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85725,
+      "name": "Slican, the murderous cutpurse",
+      "keyword": "slican",
+      "description": "Slican carries his hidden heart at the dirt path’s Sudden End. The route into the underwater cavern is separate from recovering that heart and accepting Joji’s bundle.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85726,
+      "name": "an undead drunk",
+      "keyword": "drunk",
+      "description": "This contact is stocked around The Tab Tavern. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85727,
+      "name": "an undead beggar",
+      "keyword": "beggar",
+      "description": "This contact is stocked around The Tower of Undead Minions. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85728,
+      "name": "an undead royal soldier",
+      "keyword": "royal",
+      "description": "The royal soldiers carry the skeleton key. Recovering that exact key, a supplied copy, unlocking a royal door and reaching its far side are different facts.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85729,
+      "name": "a mischievous ettercap",
+      "keyword": "ettercap",
+      "description": "This contact is stocked around A Small Pit, The Tree Trunker Lodge. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85730,
+      "name": "a undead gravedigger",
+      "keyword": "gravedigger",
+      "description": "This contact is stocked around The Burial Ground. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85731,
+      "name": "a stone gargoyle",
+      "keyword": "gargoyle",
+      "description": "This contact is stocked around A Grand Balcony, A Private Royal Quarters Lookout. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85732,
+      "name": "an undead thug",
+      "keyword": "thug",
+      "description": "This contact is stocked around A Dirt Path, A Dirt Path's Sudden End. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85733,
+      "name": "an undead noble",
+      "keyword": "noble",
+      "description": "This contact is stocked around A Crowded Tower of Undead Minions. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85734,
+      "name": "a deadly wraith",
+      "keyword": "wraith",
+      "description": "This contact is stocked around A Landslide Road, A Moonlit Cave. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85735,
+      "name": "a haunting tree",
+      "keyword": "tree",
+      "description": "This contact is stocked around The Forbidden Forest. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85736,
+      "name": "a large alligator",
+      "keyword": "alligator",
+      "description": "This contact is stocked around Within a Murky Swamp. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85737,
+      "name": "a boa constrictor",
+      "keyword": "boa",
+      "description": "This contact is stocked around The Living Forest. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85738,
+      "name": "a hostile fish",
+      "keyword": "fish",
+      "description": "This contact is stocked around A Crossing in the Cavern, An Underwater Cavern. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85739,
+      "name": "a swamp creature",
+      "keyword": "creature",
+      "description": "The swamp creature carries the skunkweed-scented key for the green gate. The key differs from the royal skeleton key; its source and admitted gate crossing need separate evidence.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85740,
+      "name": "a swamp monster",
+      "keyword": "monster",
+      "description": "This contact is stocked around Within a Swamp Monsters Lair. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85741,
+      "name": "a swamp enchantress",
+      "keyword": "enchantress",
+      "description": "This contact is stocked around Within a Swamp Monsters Lair. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85742,
+      "name": "a venus flytrap",
+      "keyword": "flytrap",
+      "description": "This contact is stocked around The Living Forest. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85743,
+      "name": "a wild boar",
+      "keyword": "boar",
+      "description": "This contact is stocked around A Bend in the Trail, A Dark Trail. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85744,
+      "name": "a deadly viper",
+      "keyword": "viper",
+      "description": "This contact is stocked around The Living Forest. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85745,
+      "name": "an angry treant",
+      "keyword": "treant",
+      "description": "This contact is stocked around The Forbidden Forest. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85746,
+      "name": "Lorik, the legendary dragon hunter",
+      "keyword": "lorik",
+      "description": "Lorik’s description gives a royal mission and a lifelong dragon hunt. Native lore alone does not define a commission, trophy delivery, protection or completed mandate.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85747,
+      "name": "Kovii, the King of Arcium",
+      "keyword": "kovii",
+      "description": "Kovii carries his hidden heart and a green crystal skull in the Sealed Crypt. The skull belongs to Qin’s foreign request. His shame, Joji’s revenge and lifting the kingdom’s curse are distinct stories.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85748,
+      "name": "a hatchling dragon",
+      "keyword": "hatchling",
+      "description": "This contact is stocked around The Dragons Bedding Den, The Dragons Haven. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85749,
+      "name": "a mean water muskrat",
+      "keyword": "muskrat",
+      "description": "This contact is stocked around An Underwater Cavern, An Underwater Nook. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85750,
+      "name": "a gaseous tree frog",
+      "keyword": "frog",
+      "description": "This contact is stocked around A Murky Swamp. Meeting this contact is separate from a kill, material recovery, learning, assistance or a lasting story outcome.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 85751,
+      "name": "Mredock, the bartender",
+      "keyword": "mredock",
+      "description": "Mredock combines the Tab Tavern shop with generated world quests. Current target progress, drink custody, fees, delivered rewards and saved quest history are separate from Joji’s six-heart exchange.",
+      "topics": []
+    }
+  ],
+  "stories": [
+    {
+      "id": "joji-six-hearts",
+      "title": "Bring Joji the six hearts of Arcium",
+      "category": "request",
+      "summary": "Bring one exact heart from each named lord together for Hope. Current preparation, personal source history and the accepted joint offering are separate; the reward does not certify that the kingdom’s curse is lifted.",
+      "contracts": [
+        {
+          "giver_vnum": 85700,
+          "completion_key": "give=I:85715,I:85716,I:85717,I:85718,I:85719,I:85720;receive=I:85721;disappear=1"
+        }
+      ],
+      "steps": [
+        {
+          "id": "kovii-heart",
+          "text": "Carry Kovii’s exact heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            85715
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "The king carries it in the Sealed Crypt. The skeleton key opens the northeast approach from the royal quarters. Each heart starts hidden on its carrier. Reveal and recover the exact item under current conditions, or bring a supplied exact copy. This row shows current materials; it does not record a personal kill or first recovery."
+        },
+        {
+          "id": "granra-heart",
+          "text": "Carry Granra’s exact heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            85716
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Granra carries it in the royal Burial Ground, beyond the ordinary closed southeast fence from the graveyard. Each heart starts hidden on its carrier. Reveal and recover the exact item under current conditions, or bring a supplied exact copy. This row shows current materials; it does not record a personal kill or first recovery."
+        },
+        {
+          "id": "kurlon-heart",
+          "text": "Carry Kurlon’s exact heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            85717
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Kurlon carries it in the Hidden Escape. Its southeast approach from the royal quarters uses the skeleton key. Each heart starts hidden on its carrier. Reveal and recover the exact item under current conditions, or bring a supplied exact copy. This row shows current materials; it does not record a personal kill or first recovery."
+        },
+        {
+          "id": "fragnox-heart",
+          "text": "Carry Fragnox’s exact heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            85718
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Fragnox carries it in the Moonlit Cave beyond the Dragons Haven. The dungeon’s downward trapdoor is a separate hidden route. Each heart starts hidden on its carrier. Reveal and recover the exact item under current conditions, or bring a supplied exact copy. This row shows current materials; it does not record a personal kill or first recovery."
+        },
+        {
+          "id": "kelien-heart",
+          "text": "Carry Kelien’s exact heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            85719
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Kelien carries it in the Tree Trunker Lodge in the Forbidden Forest. The underground pit is a separate route. Each heart starts hidden on its carrier. Reveal and recover the exact item under current conditions, or bring a supplied exact copy. This row shows current materials; it does not record a personal kill or first recovery."
+        },
+        {
+          "id": "slican-heart",
+          "text": "Carry Slican’s exact heart loose",
+          "kind": "carried_item",
+          "item_vnums": [
+            85720
+          ],
+          "count": 1,
+          "optional": true,
+          "hint": "Slican carries it at the dirt path’s Sudden End near the graveyard. The pit door leads into the underwater cavern. Each heart starts hidden on its carrier. Reveal and recover the exact item under current conditions, or bring a supplied exact copy. This row shows current materials; it does not record a personal kill or first recovery."
+        },
+        {
+          "id": "return",
+          "text": "Record Joji’s accepted six-heart bundle",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 85700,
+              "completion_key": "give=I:85715,I:85716,I:85717,I:85718,I:85719,I:85720;receive=I:85721;disappear=1"
+            }
+          ],
+          "hint": "Offer one of each of the six exact hearts together, loose in your inventory, to Joji in the dungeon. Incomplete sets stay with you under the durable offering path. The accepted receipt records the shield reward and giver retirement; possessing Hope or a heart does not create that receipt."
+        }
+      ]
+    }
+  ],
+  "exclusions": []
+}
