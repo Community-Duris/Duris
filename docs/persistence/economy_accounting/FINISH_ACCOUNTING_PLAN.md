@@ -270,6 +270,36 @@ Production authority/native journeys remain separate. Architecture continues
 R11 qualification; primary continues without an adoption wait. Full continuing
 finish line and native quest/accounting blockers remain unchanged.
 
+## Quotation extraction and enhancement contract independently reviewed - 2026-10-07
+
+Optional R12 code72f375cbfcc7b8b5c95b7784f245b210d0b163d4 has
+[FINAL quotation review PASS](domain-separation/R12_SHOP_SALE_QUOTE_REVIEW_2026-10-07.md).
+Complete sale/valuation base and trophy rules are separated through synchronous
+native observations with original gate/order/arithmetic semantics. Exactly three
+code files; both bare-current full/production imports require no optional R0-R11
+or prep ancestry. Root independently executes baseline/Og86 controls each, verifies
+both strict owned740 graphs and all75 artifacts, authenticates all6453/6452 export
+bodies and actual462SQL/456flat compiler inputs per complete bare shop module.
+This controlled calculation/module proof is distinct from current754/native journeys.
+
+Optional prep code7e37d1db1244717e4e8107b5313ac9dc706f69bd has
+[FINAL enhancement contract review PASS](quest-prep/ENHANCE_MODULE_BOUNDARY_REVIEW_2026-10-07.md).
+Exactly one existing test changes; production/helpers are unchanged. Actual bare
+current import, both6451-entry archives and all8 sealed receipts authenticate.
+Root complete maintained command PASSes61, rejects all28 guarantee removals and
+accepts harmless formatting. Original raw-count failure is preserved; separate
+direct-reentry/missing-file source concern remains unfixed and unqualified.
+
+Canonical worker documentation handoffs are being published separately; import
+code alone only after normal review at a suitable owner batch. Actual adoption is
+unknown. No primary wait, completed-area rewrite or new release gate. Current6ca
+shared-native private candidate/cache/tooling, Collector/SHOP/flat boot and native
+quest lifecycle/cost/publication/ACK/held-settlement/refund remain owner dependencies.
+Both chats reassess concrete useful independent work after handoff; do not invent
+scalar wrappers or repeat unchanged checks. The continuing coordinator Goal and
+heartbeat stay ACTIVE through original Plans1-5/applicable R1-R8 and published full
+completion; finite sidework closure cannot satisfy that finish line.
+
 ## Staged shop quotation and enhancement contract execution approved - 2026-10-07
 
 [R12 exact three-file review](domain-separation/R12_SHOP_SALE_QUOTE_REVIEW_2026-10-07.md)

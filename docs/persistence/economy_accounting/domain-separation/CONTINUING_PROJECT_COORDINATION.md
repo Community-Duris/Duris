@@ -449,6 +449,35 @@ selecting implementation. No new scope is approved by this queue entry.
 
 ### Latest reviewed deliveries and next bounded assignments
 
+Latest code/qualification review closes the two selected implementation boundaries:
+[R12 quotation extraction](R12_SHOP_SALE_QUOTE_REVIEW_2026-10-07.md), code
+`72f375cbfcc7b8b5c95b7784f245b210d0b163d4`, and
+[enhancement contract repair](../quest-prep/ENHANCE_MODULE_BOUNDARY_REVIEW_2026-10-07.md),
+code `7e37d1db1244717e4e8107b5313ac9dc706f69bd`. Both independently apply to bare
+primaryc590 without optional architecture/prep predecessors. Exact canonical
+worker documentation deliveries are being published separately; optional actual
+adoption and genuine native acceptance remain unknown/open.
+
+R12 root execution PASSes committed baseline/Og86 each, full/production import
+trees/all6,453 and6,452 export bodies, both retained/copied strict740-object ELFs,
+all75 indexed artifacts and actual462SQL/456flat compiler inputs per bare package.
+Both complete shop modules and selected adjacent contracts PASS. Enhancement root
+execution PASSes61, REJECTs all28 guarantee removals and accepts harmless formatting;
+all8 sealed receipts, exact one-file import and both6,451-entry canonical archives
+authenticate. Original fixture failures and the separate direct-reentry source
+concern stay explicit. These are calculation/module/source-contract proofs.
+
+Both chats finish canonical handoffs, then reassess published changes and precise
+owner prerequisites. Primary6ca exposes no new quest capability or completed native
+journey. Native repair/smith selection, pre-payment effects, material lifetime and
+publication are not replaced by price-only wrappers. Select a materially useful
+independent connected operation only when real original feasibility/ownership
+support it; otherwise record unavailable interfaces and retain event monitoring.
+No new implementation boundary or arbitrary extraction count is imposed here.
+Prep's actual native Goal stays BLOCKED. Root Goal and15-minute heartbeat remain
+ACTIVE throughout required primary Plans1-5/applicable original R1-R8 and the
+published overall finish line; finite side deliveries cannot complete them.
+
 The latest selected operations now have exact execution approval, superseding
 the reservation-only assignments below. Architecture reservationbd3cd6281 has
 [R12 three-file approval](R12_SHOP_SALE_QUOTE_REVIEW_2026-10-07.md): complete staged

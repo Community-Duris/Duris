@@ -1,12 +1,14 @@
 # Enhancement module-boundary repair review - 2026-10-07
 
-Disposition: **exact ONE-file implementation boundary approved** after independent
-original/private feasibility review. Investigation/handoff
+Disposition: **FINAL one-file maintained source-contract review PASS.** Independent
+committed execution/import/artifact review follows original/private feasibility.
+Investigation/handoff
 `2188c2caa82bb8af670aa950c9df473a4c0b8240`, canonical
 `8668b431d532f92ce2b01f027dfce5b7f139c10e`, investigation text SHA256
 `5548656ce69c2d8afd9f8bf21153db8907c92e3f582abe5cbe92dec52794fe5a`, selects ONLY
-tests/async/test_enhance_module_boundary_contract.py. Maintained repair, committed
-current-primary import/execution, final artifact review and adoption remain pending.
+tests/async/test_enhance_module_boundary_contract.py. Code7e37d1db is implemented,
+qualified and independently reviewed at the declared source-contract scope.
+Optional primary adoption and genuine native qualification remain unknown/open.
 No production/helper/framework/authority/schema/Plan5 change is selected.
 
 ## Original semantics and exact defined boundary
@@ -93,3 +95,49 @@ publication/ACK and held settlement/refund remain owner dependencies; the actual
 blocked prep Goal is not falsely resumed or completed. Root Goal/monitor remain
 ACTIVE through the full observable primary finish line. No DB/player/server,
 migration, deployment, activation or native journey is authorized by this repair.
+
+## Final committed maintained execution and artifact review
+
+Code `7e37d1db1244717e4e8107b5313ac9dc706f69bd` changes EXACTLY the selected test.
+Root authenticates original/final Git blobs311f5292/cc0e62af and exact test SHA256
+`2ceff297759b70799337e40fdfac3ec9d24a3dc8f94125be3f9af95a886ac366`.
+Both maintained load_sources()/verify() ASTs match the reviewed61-check proposal.
+All20 original semantic predicates, real branch/source owners and the separate
+missing-file direct-reentry concern retain the reviewed scope.
+
+Actual committed14221-byte patch SHA256 is
+`a06eb688c1e79282990b9e68a6ca07f42df3e579d7b53ccb15b27e48146d4717`.
+It independently applies to bare current primaryc590fdb9 without optional prep/
+architecture predecessors. Result tree
+`2a878126d5161f5002018cc486909f14b54a7ddb` differs in exactly ONE test file.
+Both actual canonical tar archives authenticate all6,451 file/link bodies, sizes,
+modes and link targets against fresh canonical Git archives; all12 current
+source/helper/test inputs match Git. Primary/repair archive SHA256s are
+`e1e845d5996aab32e3e0f5f00e1b3d5c5684ec54201e78003aa334070a8fb9e2` and
+`df019cc6dc592e528e186691988584850c9631af634a57177349ed9b06f63234`.
+
+SEALED.json SHA256 is
+`abf9e2a9bc230d9dd65dc74ac55321bbd3947c8262679fe3f80bd94c01d20867`;
+all8 indexed receipt/program bytes and lengths independently authenticate.
+Root separately executes the COMPLETE committed maintained entry point on exact
+current imported source/test/helper copies:61 checks PASS, all28 guarantee
+removals REJECTED, and harmless multiline formatting PASS. This includes the
+both-hooks-in-G counterexample that preserves the global count of two. Each
+restored input authenticates; temporary source fixtures are removed. The exact
+bare-primary original still FAILs at the original raw-count assertion.
+
+Worker execution and before/after full export inventories remain retained
+separately. No assertions, helpers, source authority or acceptance routes are
+weakened. Counterfactual C++ text is inspected by the actual Python contract;
+it is not executed as a native reset/world/backend or reload journey.
+The missing-file witness remains separate and unfixed, with no demonstrated
+current direct-reentry/staff route and no new release gate.
+
+Ignored root enhance-committed-review-RESULT.json records exact committed import,
+archive, AST, source inputs, original failure and complete sensitivity execution.
+This closes the selected code/qualification/artifact review. Exact canonical
+worker documentation delivery is recorded separately after publication.
+Primary can consume code7e37 alone; no adoption wait or completed-area rewrite.
+The genuine quest lifecycle/cost/publication/ACK/held settlement-refund dependencies,
+Plans1-5/applicable original R1-R8 and overall release finish remain open.
+Root Goal/heartbeat remain ACTIVE; prep's native Goal stays honestly BLOCKED.
