@@ -1,3 +1,9 @@
+> Current 2026-10-07 implementation and execution supersedes prep-only status below.
+> See [HANDOFF.md](HANDOFF.md) and [EXECUTED_JOURNEYS.md](EXECUTED_JOURNEYS.md).
+> QP07 original-attempt effects and QP02 native availability/dispatch are fixed
+> and component-qualified. Genuine legacy SQL capture and supported journeys
+> now execute. Active native authority/refund/original retirement remain separate.
+
 # Integrated quest recovery batch
 
 Prep source pin: `a5a1f4b196496d50a6f46afecfec03aba3e66190`.

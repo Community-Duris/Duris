@@ -1,3 +1,33 @@
+# Current implementation and execution results — 2026-10-07
+
+Published production bundles: QP07 `fd997ee4147ba58d835bf4bd61783b51307bc68c`,
+QP02 `a19a67ad021de8e6bbfb31ca9ffea31e41cb6aa7`. Executed tooling bundle:
+`cab408e566ff7f1357c1fc783be7a095c75f4e78`. Current preserved-history merge
+`6db65f624836f150ed3dfe33508e1f1719145fdb` includes latest fetched accounting
+`f04317d9d72aa5594448809baad6041936b09801`. Original base and research pins remain.
+
+[HANDOFF.md](HANDOFF.md) is current. [EXECUTED_JOURNEYS.md](EXECUTED_JOURNEYS.md)
+records exact commands, binary/schema/backend pins, private evidence and failures.
+The two production defects now pass actual-owner regressions. Current seven-case
+source/components and285 paid recipe checks pass; QP04 financial acceptance
+remains RED (component30), and no actual active charge/refund is inferred from
+its hypothetical debit seam. Actual SQL SELECT capture and supported legacy
+journeys have now executed; the earlier statements below that no journey/SQL
+ran or that QP02/QP07 remain RED are historical and superseded.
+
+Real corrected SQL reader/Kord offering journey passes on a19a67a: exact roots,
+C3000, frozen200 XP plus actual well-rested human modifiers produce520 once,
+slot2 mask4, ACK and second cold. Actual read-only snapshot, current62 migration
+history, missing-player, row/BLOB controls and confirmed schema cleanup pass.
+Flat Kord offering, QP05 reward UID, QP02 definite refusal, QP01 shortage refusal,
+and actual full-world Woodseer bartender on both backends pass. Retained flat
+XP-ACK later drop remains red: critical-command error116/stale_authority_revision.
+That is shared movement/recovery, not a stale callback or XP double-pay finding.
+Current integrated full builds and bounded compatibility journeys are recorded
+when terminal; no native reset/activation/refund/retirement release gate is promoted.
+
+## Historical prep-only results
+
 # Quest prep verification — current recovery bundles
 
 Accounting source: `a5a1f4b196496d50a6f46afecfec03aba3e66190`. Original base:

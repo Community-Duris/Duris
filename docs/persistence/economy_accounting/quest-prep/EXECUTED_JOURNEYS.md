@@ -24,9 +24,9 @@ SQL jobs run sequentially because the maintained migration lock is global.
 | flat-qp03-exact | FAIL retained | Real invisible recipient16006 cannot be seen by player; no original retirement native proof |
 
 Corrected reader terminal result: `sql-qp06-corrected-xp` PASS, exit0,153.865s; 62 applied migration history rows, actual player Human race1/level1 and active well-rested2108, genuine v5 frozen200/slot2 mask4, effective520, exact original UID custody, C3000, ACK, two cold recoveries, row/BLOB/missing-player controls and native-authority refusal. Cleanup schema `quest_journey_test_bf7fe29c5f2d` count0.
-The first flat shortage retry hit the maintained native-cache guard when the
-owned C++ read adapter was formatted during inspector compilation. This setup
-failure is retained (`flat-qp01-shortage-refusal`); the source was frozen and
+Both first flat shortage/invisibility retries hit the maintained native-cache guard when the
+owned C++ read adapter was formatted during inspector compilation. These setup
+failures are retained (`flat-qp01-shortage-refusal`, `flat-qp03-invisible-refusal`); the source was frozen and
 retried in a fresh evidence directory. No weakened cache check.
 
 ## Exact executed commands
@@ -87,3 +87,30 @@ source before the fixes. Maintained full `make -C src` and changed-line format
 checks passed for both production bundles; SQL and flat complete build logs and
 binary hashes are retained privately. Final integrated primary candidate must
 still qualify authentic active accounting/native birth/recovery/restitution.
+
+
+## Current source/component batch
+
+Merged source `6db65f624836f150ed3dfe33508e1f1719145fdb`, latest accounting
+`f04317d9d72aa5594448809baad6041936b09801`. Full SQL/flat maintained builds are
+running from `current-source.tar`; no build/runtime PASS yet. `current-components.log`
+passes all seven source cases/30 variants, native selectors QP01/02/05/06,
+285 catalog recipes, QP03 actual generation/root guard, QP07 actual settlement,
+16 oracle methods and three existing world regressions. Separate
+`current-qp04-refund-diagnostic.log` reproduces component30/exit1. Original commands
+above use `python3 -B` and the same arguments inside `/current`. QP04 remains
+hypothetical debit/refund observation, not evidence that active debit occurred.
+
+`flat-qp01-shortage-refusal-frozen`: PASS exit0,87.380s, genuine three statues,
+actual incomplete-offering response and unchanged original input UIDs through
+cold load. `flat-qp03-invisible-refusal-frozen`: FAIL exit1,42.280s because owned
+runner expected the wrong literal. Actual command `give sword dragon` returns
+`No one by that name around here.` Corrected actual-response check follows on
+the current integrated source; no disappearance/retirement authority inferred.
+
+Read-only existing inspector of `flat-qp06-xp-move/state` (a19a67a) confirms
+reward UID821, VNUM29237, exact player root821/parent0, XP521, C3000, player owner
+revision8 and room revision7. Critical log reports error116/stale_authority_revision.
+Private `authority-after-failure.json` retains the complete original inspection.
+No owner-counter change or journal rewrite was performed; the precise failed
+shared movement predicate is not inferred solely from the errno.

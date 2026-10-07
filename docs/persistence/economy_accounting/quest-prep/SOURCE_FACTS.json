@@ -1,10 +1,10 @@
 [
   {
     "case_id": "QP01",
-    "accounting_pin": "a5a1f4b196496d50a6f46afecfec03aba3e66190",
+    "accounting_pin": "f04317d9d72aa5594448809baad6041936b09801",
     "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
-    "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "candidate_scope": "Actual maintained production source in preserved-history merge; fixture and source checks do not qualify active native journeys. Execution tools are separately committed.",
     "runtime_owners": {
       "dispatch": "assign_the_questers/qst_func -> quester CMD_GIVE -> active_regular_sql submit_native_quest_give",
       "selection": "quest_native_completion_owner::prepare_original",
@@ -166,7 +166,7 @@
       "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
       "areas/zon/tikitt.zon": "3a8967d02bd2b3f49791619ea68d8b82faec2252dc8c27071d0611aa19e49106",
       "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
-      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
+      "src/world/quest.c": "747a43b7f27ff6a3d53cc7776097b9c361d7c6437e6d04bbe5da717895677f8c",
       "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
       "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
       "areas/qst/tikitt.qst": "7101f86829c6d32bc259b6c4bb085188a5dd5c010321684ee1b3a92924374d74",
@@ -179,14 +179,15 @@
       "areas/obj/tikit.obj": "a38f679fa6a652d001067338ab24862589f65cfcf871277d2aa5ecfa5891b2e4",
       "areas/obj/tikitt.obj": "c408c7b37d0d3bba0701548a49624ba5b11df41e501846967adf4ce2021aeea5"
     },
-    "evidence": "source verification only; fixture/component is not a native journey"
+    "evidence": "source verification only; fixture/component is not a native journey",
+    "candidate_pin": "6db65f624836f150ed3dfe33508e1f1719145fdb"
   },
   {
     "case_id": "QP02",
-    "accounting_pin": "a5a1f4b196496d50a6f46afecfec03aba3e66190",
+    "accounting_pin": "f04317d9d72aa5594448809baad6041936b09801",
     "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
-    "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "candidate_scope": "Actual maintained production source in preserved-history merge; fixture and source checks do not qualify active native journeys. Execution tools are separately committed.",
     "runtime_owners": {
       "dispatch": "assign_the_questers/qst_func -> quester CMD_GIVE -> active_regular_sql submit_native_quest_give",
       "selection": "quest_native_completion_owner::prepare_original",
@@ -565,7 +566,7 @@
       "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
       "areas/zon/goblincave.zon": "ae9ecc8247febfee94f6f40d7b8616f4fb66db54c7e8f8d951ab1e94c7f9267d",
       "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
-      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
+      "src/world/quest.c": "747a43b7f27ff6a3d53cc7776097b9c361d7c6437e6d04bbe5da717895677f8c",
       "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
       "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
       "areas/qst/goblincave.qst": "ff8c735e1258bd05f9065c041f24b68ef621b5c952c14e04a4d97b8c492e30f9",
@@ -576,14 +577,15 @@
       "areas/mob/goblincave.mob": "1e1eb3ae41578d2e63595a8cd1c2c782d5ca234e9fae72ee0e5177392776495a",
       "areas/obj/goblincave.obj": "bcdf9cca82ce8d7c28461d68d9769bb6c49c8f0b24eb80fbde64b8937b0f9d34"
     },
-    "evidence": "source verification only; fixture/component is not a native journey"
+    "evidence": "source verification only; fixture/component is not a native journey",
+    "candidate_pin": "6db65f624836f150ed3dfe33508e1f1719145fdb"
   },
   {
     "case_id": "QP03",
-    "accounting_pin": "a5a1f4b196496d50a6f46afecfec03aba3e66190",
+    "accounting_pin": "f04317d9d72aa5594448809baad6041936b09801",
     "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
-    "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "candidate_scope": "Actual maintained production source in preserved-history merge; fixture and source checks do not qualify active native journeys. Execution tools are separately committed.",
     "runtime_owners": {
       "dispatch": "assign_the_questers/qst_func -> quester CMD_GIVE -> active_regular_sql submit_native_quest_give",
       "selection": "quest_native_completion_owner::prepare_original",
@@ -753,7 +755,7 @@
       "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
       "areas/zon/pineholl.zon": "a46a388b07e50aa1767be5f1263d84275748e85d86b5b99531703ec151138aaa",
       "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
-      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
+      "src/world/quest.c": "747a43b7f27ff6a3d53cc7776097b9c361d7c6437e6d04bbe5da717895677f8c",
       "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
       "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
       "areas/qst/pineholl.qst": "257713a2c62b0f40b6fcacb75b6efbaa037dcf83e31c7e9b9849fceb1b75d2a5",
@@ -764,14 +766,15 @@
       "areas/mob/pineholl.mob": "af568e9f8f3fcd800cac256bc14788e1be47a946e02b39a55320221b9c7f9e33",
       "areas/obj/pineholl.obj": "315e62d04c2a786699d16b07e0738142d6228d54b717566684bb1ceacb62f0ad"
     },
-    "evidence": "source verification only; fixture/component is not a native journey"
+    "evidence": "source verification only; fixture/component is not a native journey",
+    "candidate_pin": "6db65f624836f150ed3dfe33508e1f1719145fdb"
   },
   {
     "case_id": "QP04",
-    "accounting_pin": "a5a1f4b196496d50a6f46afecfec03aba3e66190",
+    "accounting_pin": "f04317d9d72aa5594448809baad6041936b09801",
     "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
-    "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "candidate_scope": "Actual maintained production source in preserved-history merge; fixture and source checks do not qualify active native journeys. Execution tools are separately committed.",
     "runtime_owners": {
       "dispatch": "shop_keeper -> SHOP_FUNC(world_quest) -> CMD_ASK",
       "settlement": "world_quest_payment_committed",
@@ -813,10 +816,10 @@
       "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
       "areas/zon/quietus.zon": "db805a1e425995a5fa2e9639f6f771ec06be3c15622686556481b279275ff0f1",
       "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
-      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
+      "src/world/quest.c": "747a43b7f27ff6a3d53cc7776097b9c361d7c6437e6d04bbe5da717895677f8c",
       "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
       "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
-      "src/specs/specs.world_quest.c": "a808577b3573d224df4ed52b9ec0dc9e89aaa05fa056f8b1f44cb8e853aa2ebf",
+      "src/specs/specs.world_quest.c": "4d102b8ec12497bc0ce9c0c8bf170932c99495911f6a12d8871514f88b2563f4",
       "src/world/world_quest.c": "cef7f6e43527a34cefd750056ba7308702a526aec82ceb956ac7191b0dfe3517",
       "src/world/world_quest_policy.c": "f5d00185f49dce98948348149a5242ebe379eee714a834bbb76ac5abeb712fd8",
       "src/economy/shop.c": "de8bdbe95cfa626c6ca869495ccc34afc0097af4c964d021ad2d66cb99d34393",
@@ -824,14 +827,15 @@
       "areas/shp/quietus.shp": "95cdf1e5830e72a8a9aac1e8526ca2b4cf9eb7ab52b50d8c52153dcc5ec1710b",
       "areas/mob/quietus.mob": "557f12686cd1be056391c1d1642a825501827a755d8b936b80702d233da28895"
     },
-    "evidence": "source verification only; fixture/component is not a native journey"
+    "evidence": "source verification only; fixture/component is not a native journey",
+    "candidate_pin": "6db65f624836f150ed3dfe33508e1f1719145fdb"
   },
   {
     "case_id": "QP05",
-    "accounting_pin": "a5a1f4b196496d50a6f46afecfec03aba3e66190",
+    "accounting_pin": "f04317d9d72aa5594448809baad6041936b09801",
     "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
-    "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "candidate_scope": "Actual maintained production source in preserved-history merge; fixture and source checks do not qualify active native journeys. Execution tools are separately committed.",
     "runtime_owners": {
       "dispatch": "assign_the_questers/qst_func -> quester CMD_GIVE -> active_regular_sql submit_native_quest_give",
       "selection": "quest_native_completion_owner::prepare_original",
@@ -1049,7 +1053,7 @@
       "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
       "areas/zon/pineholl.zon": "a46a388b07e50aa1767be5f1263d84275748e85d86b5b99531703ec151138aaa",
       "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
-      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
+      "src/world/quest.c": "747a43b7f27ff6a3d53cc7776097b9c361d7c6437e6d04bbe5da717895677f8c",
       "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
       "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
       "areas/qst/pineholl.qst": "257713a2c62b0f40b6fcacb75b6efbaa037dcf83e31c7e9b9849fceb1b75d2a5",
@@ -1060,14 +1064,15 @@
       "areas/mob/pineholl.mob": "af568e9f8f3fcd800cac256bc14788e1be47a946e02b39a55320221b9c7f9e33",
       "areas/obj/pineholl.obj": "315e62d04c2a786699d16b07e0738142d6228d54b717566684bb1ceacb62f0ad"
     },
-    "evidence": "source verification only; fixture/component is not a native journey"
+    "evidence": "source verification only; fixture/component is not a native journey",
+    "candidate_pin": "6db65f624836f150ed3dfe33508e1f1719145fdb"
   },
   {
     "case_id": "QP06",
-    "accounting_pin": "a5a1f4b196496d50a6f46afecfec03aba3e66190",
+    "accounting_pin": "f04317d9d72aa5594448809baad6041936b09801",
     "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
-    "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "candidate_scope": "Actual maintained production source in preserved-history merge; fixture and source checks do not qualify active native journeys. Execution tools are separately committed.",
     "runtime_owners": {
       "dispatch": "assign_the_questers/qst_func -> quester CMD_GIVE -> active_regular_sql submit_native_quest_give",
       "selection": "quest_native_completion_owner::prepare_original",
@@ -1229,7 +1234,7 @@
       "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
       "areas/zon/newbie.zon": "72687b0101859783f6472e7ff4eb29645551ecc8e69cbac77ff9804b6fd6e16c",
       "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
-      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
+      "src/world/quest.c": "747a43b7f27ff6a3d53cc7776097b9c361d7c6437e6d04bbe5da717895677f8c",
       "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
       "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
       "areas/qst/newbie.qst": "889ea5560152e48d3766e7a10296e889387d75311b889a3d4b1c8faaa06ec874",
@@ -1240,14 +1245,15 @@
       "areas/mob/newbie.mob": "f7075a745335f973235983af430094be28ca23a7d5212ef48a9e50abda7791a5",
       "areas/obj/newbie.obj": "4025c500b3aca83b9a8b59bdd69d4c7f2f84267309871f12dab028ca4aa4660a"
     },
-    "evidence": "source verification only; fixture/component is not a native journey"
+    "evidence": "source verification only; fixture/component is not a native journey",
+    "candidate_pin": "6db65f624836f150ed3dfe33508e1f1719145fdb"
   },
   {
     "case_id": "QP07",
-    "accounting_pin": "a5a1f4b196496d50a6f46afecfec03aba3e66190",
+    "accounting_pin": "f04317d9d72aa5594448809baad6041936b09801",
     "original_accounting_pin": "17c033d69316b21da8598791fc95cae79baa8dc2",
     "research_pin": "55905eac1906cf59405764407f9d22497cccfff3",
-    "candidate_scope": "working-tree source hashes below; base pin is not an integrated-candidate claim",
+    "candidate_scope": "Actual maintained production source in preserved-history merge; fixture and source checks do not qualify active native journeys. Execution tools are separately committed.",
     "runtime_owners": {
       "dispatch": "shop_keeper -> SHOP_FUNC(world_quest) -> CMD_ASK",
       "settlement": "world_quest_payment_committed",
@@ -1289,10 +1295,10 @@
       "areas/AREA": "f219db1267d83fadbf59be7fd9e912e4d0b5d39650c896edae2728e4eea3349a",
       "areas/zon/quietus.zon": "db805a1e425995a5fa2e9639f6f771ec06be3c15622686556481b279275ff0f1",
       "src/world/db.c": "47db8a88e7b5abc97b698a29b0224492a6311a077a2f9bb4b3b6c49aa49b6d40",
-      "src/world/quest.c": "d04578183f354f074fd3e6a8d9b4400049c11fa914967d8d9d5aff67ba9b8d46",
+      "src/world/quest.c": "747a43b7f27ff6a3d53cc7776097b9c361d7c6437e6d04bbe5da717895677f8c",
       "src/specs/specs.assign.c": "56e126fbbc323f58c3eecdc0aaf0c497e8be82ef14ac6ddea36bfc8de88f577d",
       "src/cmd/interp.c": "4f7dcf15adf0217193c9398c70c99d90ac59090f85f043b1b34e6d9be0df3dba",
-      "src/specs/specs.world_quest.c": "a808577b3573d224df4ed52b9ec0dc9e89aaa05fa056f8b1f44cb8e853aa2ebf",
+      "src/specs/specs.world_quest.c": "4d102b8ec12497bc0ce9c0c8bf170932c99495911f6a12d8871514f88b2563f4",
       "src/world/world_quest.c": "cef7f6e43527a34cefd750056ba7308702a526aec82ceb956ac7191b0dfe3517",
       "src/world/world_quest_policy.c": "f5d00185f49dce98948348149a5242ebe379eee714a834bbb76ac5abeb712fd8",
       "src/economy/shop.c": "de8bdbe95cfa626c6ca869495ccc34afc0097af4c964d021ad2d66cb99d34393",
@@ -1300,6 +1306,7 @@
       "areas/shp/quietus.shp": "95cdf1e5830e72a8a9aac1e8526ca2b4cf9eb7ab52b50d8c52153dcc5ec1710b",
       "areas/mob/quietus.mob": "557f12686cd1be056391c1d1642a825501827a755d8b936b80702d233da28895"
     },
-    "evidence": "source verification only; fixture/component is not a native journey"
+    "evidence": "source verification only; fixture/component is not a native journey",
+    "candidate_pin": "6db65f624836f150ed3dfe33508e1f1719145fdb"
   }
 ]

@@ -117,7 +117,7 @@ def execute(args):
                             if args.supply == "shortage":
                                 expected = ("Bring all the requested items together before offering them.",)
                             if args.case == "QP03":
-                                expected = ("No-one by that name here.",)
+                                expected = ("No one by that name around here.",)
                             response = client.expect_any(expected, timeout=15)
                             result["refusal_response"] = response
                         else:
