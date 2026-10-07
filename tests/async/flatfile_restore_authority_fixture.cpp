@@ -165,6 +165,47 @@ int main(int argc, char **argv)
 {
 	assert(argc == 3);
 	const std::string root = argv[1], mode = argv[2];
+	if (mode == "compare-command-envelope")
+	{
+		critical_command command;
+		command.schema_version = 2;
+		command.operation_id = id(1);
+		command.accounting_intent = { 1 }; // Envelope grammar only, not an EAI1 claim.
+		command.accepted_at_usec = 1;
+		command.source_site = critical_source_site::command;
+		command.deadline_class = critical_deadline_class::interactive;
+		command.keys = { { critical_entity_type::player, 1 } };
+		size_t comparisons = 0;
+		for (uint16_t type = 0; type <= 22; ++type)
+			for (uint16_t version : { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, UINT16_MAX })
+				for (bool publication : { false, true })
+				{
+					command.type = static_cast<critical_command_type>(type);
+					command.payload_version = version;
+					command.publication_required = publication;
+					assert(critical_command_envelope_valid(command) ==
+					       restore_economic_records::command_capability_valid(
+						       type, version, publication));
+					++comparisons;
+				}
+		command.type = critical_command_type::test;
+		command.payload_version = 1;
+		command.publication_required = false;
+		for (uint8_t kind = 0; kind <= 16; ++kind)
+			for (uint64_t key :
+			     { uint64_t{ 0 }, uint64_t{ 1 }, UINT64_MAX - 1, UINT64_MAX })
+			{
+				command.keys = { { static_cast<critical_entity_type>(kind), key } };
+				command.expected_revisions = { { command.keys.front(),
+								 UINT64_MAX } };
+				assert(critical_command_envelope_valid(command) ==
+				       restore_economic_records::command_key_valid(kind, key));
+				++comparisons;
+			}
+		std::cout << "NATIVE_INDEPENDENT_COMMAND_ENVELOPE_COMPARISONS " << comparisons
+			  << '\n';
+		return 0;
+	}
 	if (mode.starts_with("mobile-"))
 	{
 		assert(mode == "mobile-v1-live" || mode == "mobile-v1-retired" ||
@@ -278,18 +319,26 @@ int main(int argc, char **argv)
 		std::cout << "NATIVE_INDEPENDENT_METADATA_COMPARISONS " << comparisons << '\n';
 		return 0;
 	}
-	if (mode == "decode-plan" || mode == "decode-intent")
+	if (mode == "decode-plan" || mode == "decode-intent" || mode == "decode-record")
 	{
 		std::ifstream input(root, std::ios::binary | std::ios::ate);
 		assert(input);
 		const auto size = input.tellg();
 		assert(size >= 0 &&
 		       static_cast<uint64_t>(size) <=
-			       (mode == "decode-plan" ? ECONOMIC_ACCOUNTING_MAX_PLAN_BYTES :
-							ECONOMIC_ACCOUNTING_MAX_INTENT_BYTES));
+			       (mode == "decode-plan"	? ECONOMIC_ACCOUNTING_MAX_PLAN_BYTES :
+				mode == "decode-record" ? FLATFILE_ACCOUNTING_RECORD_MAX_BYTES :
+							  ECONOMIC_ACCOUNTING_MAX_INTENT_BYTES));
 		std::vector<uint8_t> encoded(static_cast<size_t>(size));
 		input.seekg(0);
 		assert(input.read(reinterpret_cast<char *>(encoded.data()), size));
+		if (mode == "decode-record")
+		{
+			flatfile_accounting_record value;
+			const auto status = flatfile_accounting_record_decode(encoded, &value);
+			std::cout << static_cast<unsigned>(status) << '\n';
+			return status == flatfile_accounting_status::ok ? 0 : 1;
+		}
 		economic_accounting_plan plan;
 		economic_frozen_intent intent;
 		const auto status = mode == "decode-plan" ?
@@ -335,9 +384,9 @@ int main(int argc, char **argv)
 		return 0;
 	}
 	assert(mode == "lifetimes" || mode == "records" || mode == "item-records" ||
-	       mode == "source-claims" || mode == "retention" || mode == "baseline" ||
-	       mode == "baseline-empty" || mode == "baseline-rich" || mode == "baseline-maximum" ||
-	       mode == "baseline-full-index");
+	       mode == "envelope-records" || mode == "source-claims" || mode == "retention" ||
+	       mode == "baseline" || mode == "baseline-empty" || mode == "baseline-rich" ||
+	       mode == "baseline-maximum" || mode == "baseline-full-index");
 	for (size_t bucket = 0; bucket < 256; ++bucket)
 	{
 		assert(access::initialize_native_bucket(root, lock, control().revision, bucket,
@@ -384,6 +433,67 @@ int main(int argc, char **argv)
 	       0);
 	commit();
 	assert(critical_operation_id_is_zero(control().active_epoch));
+	if (mode == "envelope-records")
+	{
+		assert(access::initialize_evidence_bucket(root, lock, control().revision, 1, id(8),
+							  &operations, &error) == 0);
+		commit();
+		struct envelope
+		{
+			uint16_t type, version;
+			bool publication;
+			uint8_t kind;
+			uint64_t key;
+		};
+		const envelope cases[] = {
+			{ 18, 1, true, 13, 42 },	 { 21, 1, true, 15, UINT64_MAX - 1 },
+			{ 21, 1, false, 15, 42 },	 { 15, 6, true, 1, 42 },
+			{ 15, 7, true, 1, 42 },		 { 15, 8, true, 1, 42 },
+			{ 15, 5, false, 1, 42 },	 { 3, 1, true, 1, 42 },
+			{ 5, 1, true, 3, 42 },		 { 17, 1, true, 1, 42 },
+			{ 20, 1, false, 9, UINT64_MAX },
+		};
+		uint32_t sequence = 0;
+		for (const auto &entry : cases)
+		{
+			// Retained structural rejections exercise the exact native envelope.
+			// They grant no writer capability and apply no gameplay/domain effect.
+			auto value = record(++sequence, false);
+			economic_frozen_intent intent;
+			assert(economic_intent_decode(value.command.accounting_intent, &intent) ==
+			       economic_accounting_error::ok);
+			value.command.schema_version = 1;
+			value.command.accounting_intent.clear();
+			value.command.type = static_cast<critical_command_type>(entry.type);
+			value.command.payload_version = entry.version;
+			value.command.keys = { { static_cast<critical_entity_type>(entry.kind),
+						 entry.key } };
+			value.command.expected_revisions = { { value.command.keys.front(),
+							       UINT64_MAX } };
+			assert(economic_intent_freeze(value.command, intent.admission,
+						      &value.command.accounting_intent) ==
+			       economic_accounting_error::ok);
+			value.command.schema_version = 2;
+			value.command.publication_required = entry.publication;
+			value.plan.clear();
+			value.result_code = EINVAL;
+			value.durable_revision = 0;
+			value.result.clear();
+			std::vector<uint8_t> encoded;
+			flatfile_accounting_record decoded;
+			assert(flatfile_accounting_record_encode(value, &encoded) ==
+			       flatfile_accounting_status::ok);
+			assert(flatfile_accounting_record_decode(encoded, &decoded) ==
+			       flatfile_accounting_status::ok);
+			assert(critical_command_equal(value.command, decoded.command));
+			assert(access::stage(root, lock, value, &operations, &error) ==
+			       flatfile_accounting_status::ok);
+			commit();
+		}
+		assert(critical_operation_id_is_zero(control().active_epoch));
+		std::cout << "NATIVE_ENVELOPE_RECORDS " << sequence << '\n';
+		return 0;
+	}
 	if (mode.starts_with("baseline"))
 	{
 		economic_baseline_batch batch;

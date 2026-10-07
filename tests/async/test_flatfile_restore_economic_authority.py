@@ -76,6 +76,11 @@ def main():
         assert metadata.returncode == 0 and not metadata.stderr, metadata
         assert metadata.stdout == "NATIVE_INDEPENDENT_METADATA_COMPARISONS 1058\n", metadata.stdout
         print(metadata.stdout, end="", flush=True)
+        envelopes = subprocess.run([str(fixture), str(build), "compare-command-envelope"],
+            env=environment, capture_output=True, text=True, timeout=30)
+        assert envelopes.returncode == 0 and not envelopes.stderr, envelopes
+        assert envelopes.stdout == "NATIVE_INDEPENDENT_COMMAND_ENVELOPE_COMPARISONS 574\n"
+        print(envelopes.stdout, end="", flush=True)
         # Exercise the independent reader under sanitizers without invoking
         # candidate recovery or any native mutation/storage interface.
         audit_source = Path(build) / "audit.cpp"
@@ -92,6 +97,87 @@ int main(int argc, char **argv) {
                         "-O1", "-g", "-fsanitize=address,undefined", "-fno-omit-frame-pointer",
                         "-fno-pie", "-no-pie", "-I" + str(ROOT / "scripts"), str(audit_source),
                         "-lcrypto", "-o", str(audit)], check=True)
+        with tempfile.TemporaryDirectory(prefix="duris-envelope-records-",
+                                         dir=build) as envelope_root:
+            envelope_root = Path(envelope_root)
+            produced = subprocess.run([str(fixture), str(envelope_root), "envelope-records"],
+                env=environment, capture_output=True, text=True, timeout=60)
+            assert produced.returncode == 0 and not produced.stderr, produced
+            assert produced.stdout == "NATIVE_ENVELOPE_RECORDS 11\n", produced.stdout
+            print(produced.stdout, end="", flush=True)
+            before = inventory(envelope_root / "economic-evidence")
+            native_before = inventory(envelope_root / "domains")
+            for command in ([str(audit), str(envelope_root)],
+                            [str(binary), "--economic-evidence-audit", str(envelope_root)]):
+                observed = subprocess.run(command, env=environment, capture_output=True,
+                                          text=True, timeout=30)
+                assert observed.returncode == 0 and not observed.stderr, observed
+                assert inventory(envelope_root / "economic-evidence") == before
+                assert inventory(envelope_root / "domains") == native_before
+            # Rebind every checksum and normalized intent hash so the changed
+            # envelope grammar, rather than stale transport hashes, is decisive.
+            index, segment = "bucket-01.eai", "bucket-01-0.eas"
+            cases = (
+                ("native-mobile command key sentinel", 1, 60, struct.pack("<Q", 2**64 - 1)),
+                ("native-mobile revision key sentinel", 1, 76, struct.pack("<Q", 2**64 - 1)),
+                ("native-mobile zero key", 1, 60, b"\0" * 8),
+                ("unknown entity kind", 1, 52, b"\x10"),
+                ("reserved entity bytes", 1, 53, b"\x01"),
+                ("unknown command type", 1, 24, struct.pack("<H", 22)),
+                ("zero payload version", 1, 26, b"\0\0"),
+                ("nonboolean publication", 0, 31, b"\x02"),
+                ("unaccounted shop publication", 3, 26, struct.pack("<H", 5)),
+                ("unknown shop publication version", 3, 26, struct.pack("<H", 9)),
+            )
+            for label, row, offset, data in cases:
+                slot = 80 + row * 64
+                position, size = struct.unpack_from("<II", before[index], slot + 52)
+                position += 80
+                value = bytearray(before[segment][position:position + size])
+                command_start = 74
+                value[command_start + offset:command_start + offset + len(data)] = data
+                payload_size = struct.unpack_from("<I", value, command_start + 48)[0]
+                intent_start = command_start + 96 + payload_size
+                normalized = bytearray(value[command_start:intent_start - 4])
+                normalized[4:8] = struct.pack("<I", 1)
+                normalized[31] = 0
+                normalized[32:40] = struct.pack("<Q", 1)
+                value[intent_start + 160:intent_start + 192] = hashlib.sha256(
+                    b"DURIS-ECONOMIC-COMMAND-V1\0" + normalized).digest()
+                domain = (value[command_start + 24:command_start + 28] +
+                          value[command_start + 48:command_start + 52] +
+                          value[command_start + 92:command_start + 92 + payload_size])
+                value[intent_start + 192:intent_start + 224] = hashlib.sha256(
+                    b"DURIS-ECONOMIC-DOMAIN-V1\0" + domain).digest()
+                value = rehash(value)
+                raw = Path(build) / "envelope-record.bin"
+                raw.write_bytes(value)
+                native = subprocess.run([str(fixture), str(raw), "decode-record"],
+                    env=environment, capture_output=True, text=True, timeout=30)
+                assert native.returncode == 1 and not native.stderr, (label, native)
+                files = dict(before)
+                changed_segment = bytearray(files[segment])
+                changed_segment[position:position + size] = value
+                files[segment] = rehash(changed_segment)
+                change(files, index, slot + 16, hashlib.sha256(value).digest())
+                for name, content in files.items():
+                    (envelope_root / "economic-evidence" / name).write_bytes(content)
+                for command in ([str(audit), str(envelope_root)],
+                                [str(binary), "--economic-evidence-audit", str(envelope_root)]):
+                    observed = subprocess.run(command, env=environment, capture_output=True,
+                                              text=True, timeout=30)
+                    assert observed.returncode == 1 and not observed.stdout, (label, observed)
+                    assert observed.stderr == "native_restore_qualification_failed\n"
+                    assert inventory(envelope_root / "economic-evidence") == files
+                    assert inventory(envelope_root / "domains") == native_before
+                print("ENVELOPE_REFUSED " + label, flush=True)
+            for name, content in before.items():
+                (envelope_root / "economic-evidence" / name).write_bytes(content)
+            restored = subprocess.run([str(audit), str(envelope_root)], env=environment,
+                                      capture_output=True, text=True, timeout=30)
+            assert restored.returncode == 0 and not restored.stdout and not restored.stderr
+            assert inventory(envelope_root / "economic-evidence") == before
+            assert inventory(envelope_root / "domains") == native_before
         successes, refusals, native_semantic_decodes = 0, 0, 0
         with tempfile.TemporaryDirectory(prefix="duris-restore-authority-state-") as temporary:
             candidate = Path(temporary)
@@ -1028,6 +1114,9 @@ int main(int argc, char **argv) {
                           "native_invocations_per_case": 3, "economic_bytes_unchanged": True,
                           "generic_semantic_corruptions": 50, "native_semantic_decodes": native_semantic_decodes,
                           "native_metadata_comparisons": 1058,
+                          "native_command_envelope_comparisons": 574,
+                          "native_command_envelope_records": 11,
+                          "native_command_envelope_refusals": 10,
                           "qualifier_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
                           "fixture_sha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
                           "sanitized_reader_sha256": hashlib.sha256(audit.read_bytes()).hexdigest()}))

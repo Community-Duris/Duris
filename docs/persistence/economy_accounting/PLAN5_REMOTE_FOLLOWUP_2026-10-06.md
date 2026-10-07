@@ -731,3 +731,24 @@ are the curator packet for primary's nonblocking local notebook; application
 or acknowledgement is not claimed. Full R6/R7, flatfile/native/receipt coverage,
 actual producer/publication/recovery, retention and release-host budgets remain
 open. Inactive behavior, wallet-root exclusions and the declined spell path stay.
+
+## Independent flatfile command envelope follow-up
+
+Base `a40ee8cc5f3b9badc2726744be28d4617ed5a3d6`; completed slice stays on remote `codex/accounting-plan5`.
+[Qualification](PLAN5_FLATFILE_COMMAND_ENVELOPE_QUALIFICATION_2026-10-06.md) records
+the native-accepted pre-fix refusal, independent grammar repair,574 native envelope
+comparisons,11 retained rejection envelopes,10 malformed envelope refusals, the
+complete original flatfile suite,64 canonical SQL methods on both fresh0062 engines,
+69 original marker cases and two complete740-object production builds.
+Zero final skips. Original regression statements and earlier branch ancestry stay.
+Native `4abb609524a1f1682ea4c190f82d75003c4d679b` and migration `1d041c8bc27cfc2b2bfdc8095b6c1348ac3a15c5`; archive
+`721041a76a0e3a777826ae5e2ab5f59bf6ccd34ecfb71ed61ede4b920aead4ed`. Exact result and remote publication are bound
+by `flatfile-envelope-delivery-01-20261006/delivery.json`.
+No shared schema/interface or central registration change is requested. Primary
+integrates this issue and qualifies its combined candidate. Refreshed primary
+`299ee884ec31895175af8e6afc15a3d3ac6b868c` is not independently qualified here. Curator packet:
+owned report/follow-up plus `flatfile-envelope-seal-01-20261006/evidence.json`,
+SHA256 `4533676d4a34024015ec281ef35449205e52629e74900a1fc7a506a357074136`. Primary-local notebook remains nonblocking; no application
+or acknowledgement is claimed. Durable flatfile scanning and full producer,
+restore/retention, R7/R8 and release gates remain open; release validation still
+refuses missing executable writer evidence. Accounting stays inactive.
