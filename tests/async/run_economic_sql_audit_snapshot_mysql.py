@@ -123,7 +123,8 @@ TABLES = (
     "creating_operation_id BINARY(16)) ENGINE=InnoDB",
     "CREATE TABLE economic_sql_lifecycle_installation (operation_id BINARY(16),"
     "lineage BINARY(16),epoch BINARY(16),baseline_operation_id BINARY(16),phase INT,"
-    "selected_epoch BINARY(16),revision BIGINT) ENGINE=InnoDB",
+    "selected_epoch BINARY(16),revision BIGINT,"
+    "native_boundary_digest BINARY(32) NULL,request_digest BINARY(32) NULL) ENGINE=InnoDB",
     "CREATE TABLE economic_pending_claim_source (source_operation_id BINARY(16),source_slot INT,"
     "lineage BINARY(16),claim_mapping_id BIGINT,beneficiary_pid BIGINT,amount BIGINT,"
     "claim_operation_id BINARY(16)) ENGINE=InnoDB",
@@ -732,7 +733,8 @@ try:
             bind_synthetic_baseline(cursor, blob)
             cursor.execute("INSERT INTO economic_accounting_source_claim VALUES (%s,%s,%s)",
                            (LINEAGE, struct.pack("<HH", 10, 1) + blob[48:64] + EPOCH + blob[72:80] + bytes(4), OP))
-            cursor.execute("INSERT INTO economic_sql_lifecycle_installation VALUES "
+            cursor.execute("INSERT INTO economic_sql_lifecycle_installation("
+                           "operation_id,lineage,epoch,baseline_operation_id,phase,selected_epoch,revision) VALUES "
                            "(%s,%s,%s,%s,2,%s,1)",
                            (INSTALL, LINEAGE, EPOCH, OP, EPOCH))
             cursor.execute(ROOT_INSERT +

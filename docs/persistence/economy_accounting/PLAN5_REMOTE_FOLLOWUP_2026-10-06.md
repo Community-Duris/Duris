@@ -1421,3 +1421,12 @@ both SQL engines and combined release gates remain open. This is the nonblocking
 locally maintained notebook's curator packet; application, notification and
 acknowledgement are not claimed. Accounting and existing exclusions remain exact.
 Result/remote SHA and all seven earlier ancestral tips are verified in delivery.
+
+## SQL fixture policy columns - 2026-10-07
+
+Base `d1e185eaf256f03c171a9acf14e87d0bc1f2e7a5`; separate fixture-only result is the containing commit.
+The complete original SELECT-only modeled SQL suite passes both engines
+after adding its missing policy columns and explicit INSERT column names.
+See [qualification](PLAN5_SQL_FIXTURE_POLICY_COLUMNS_2026-10-07.md), seal `8166fe91b99b6a095ef828636646c283f006be6e1d94c8745d329157204a6012`.
+Area-coin reconciliation remains a separately retained follow-up. Full
+combined/producer/R7/R8/release and notebook application remain unclaimed.
