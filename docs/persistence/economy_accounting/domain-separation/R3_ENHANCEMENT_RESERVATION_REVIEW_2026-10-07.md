@@ -1,8 +1,8 @@
 # Coordinator boundary review: enhancement prices - 2026-10-07
 
 Published reservation `c97e97458` is approved for the narrow pricing extraction.
-Implementation and qualification remain pending; approval is not code completion
-or permission to support active enhancement outcomes. This is a delivery checkpoint
+The implementation and independent payment checks below are published; maintained
+build and adjacent-contract handoff review remain open. This is a delivery checkpoint
 under the [continuing project charter](CONTINUING_PROJECT_COORDINATION.md).
 
 ## Exact boundary and independent source evidence
@@ -69,3 +69,34 @@ with `git apply --check` at `b1ac97c3a`, without applying them or changing the c
 separate review checkout. All pass. Collector is explicitly deferred in the
 primary producer handoff; patch compatibility does not establish adoption or
 updated runtime qualification.
+
+## Implementation and independent payment checkpoint
+
+Implementation `48b7a6d3873dc5dee2c7ea5b02ecce3eba8d9304` contains the owned
+header and the three producer price substitutions, with payment/source-contract
+coverage following the actual helper. Strict-compiler repair
+`3a722a00893d4fcd8adeb07d610e387c2191aa93` initializes the superior local price
+to zero; the helper success/refusal boundary remains unchanged.
+
+The coordinator inspected both actual diffs and independently executed all three
+published payment runners against the original producer bodies and the extracted
+bodies at `48b7a6d`: six passes. Both variants use the actual new header and the
+same published sanitizer/no-PIE/deadline and payment assertions. A private
+controller substitutes only the source body supplied to the existing extractor
+for the original variant. It changes neither subprocess controls nor assertions.
+Compiler: WSL Ubuntu22 GCC11. The coordinator then independently ran the affected
+superior payment runner at `3a722a00`: pass, including overflow/negative refusal,
+exact debit, pouch and physical materials.
+
+The worker reports terminal maintained SQL/flat build passes and current-candidate
+payment/module type-check passes. Those reports await the exact build evidence
+and source pins in its final handoff; this checkpoint does not independently
+qualify the whole current candidate. An adjacent configuration assertion still
+expects the relocated formula in the producer and is being updated to follow the
+real helper while preserving the remaining assertions. Preserve the original
+failed strict build log and any unchanged baseline module-contract failures.
+
+Price/payment fixture equivalence does not establish genuine active native
+compound enhancement persistence, recovery or accounting support. Primary import
+and private adoption remain unknown. Continuing worker/coordinator Goals remain
+active beyond this delivery.
