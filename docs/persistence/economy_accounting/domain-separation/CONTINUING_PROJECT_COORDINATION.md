@@ -355,6 +355,23 @@ Quest has no new native interface and remains BLOCKED, not complete. Coordinator
 architecture Goal and recurring monitor remain active against the full primary
 finish line; completing R8 does not close them.
 
+## Ordered essence selection execution boundary
+
+The next concrete assessment produced reservationc84abefab0b881bbbf9d4d547199320db4342e08
+and [independent four-file approval](R9_ESSENCE_REWARD_REVIEW_2026-10-07.md).
+The coordinator authenticated all8 feasibility pins and original producer/test/
+contract preimages, confirmed the native body matches primary74b25, and independently
+executed the exact27-scenario original controls under unchanged flags/deadline.
+The dedicated selector owns the complete conditional reward decision; native
+gates/config/zone/elite capture, RNG/diagnostics, birth/grant and callers stay owned.
+
+Implementation/final qualification/handoff/review remain pending. Verify bare
+production AND complete-test independence; retain high-zero/low-raw ordinal laws,
+captured roll limits and fresh diagnostic observations. No new capability, schema,
+world/reset hook or active outcome is introduced. Other nine-family dependencies
+remain recorded; quest has no new native prerequisite and remains BLOCKED,
+not complete. Coordinator/architecture Goals and monitor remain active.
+
 ## Recurring monitor
 
 The existing thread heartbeat checks every15 minutes, supplemented by active

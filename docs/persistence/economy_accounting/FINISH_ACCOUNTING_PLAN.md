@@ -239,6 +239,18 @@ no new implementation or native capability is selected without exact review.
 Quest has no new prerequisite and remains BLOCKED, not complete. Continuing
 Goal/monitor and broader primary finish line remain active.
 
+Ordered essence successor: reservationc84abefab0b881bbbf9d4d547199320db4342e08
+has [four-file boundary approval](domain-separation/R9_ESSENCE_REWARD_REVIEW_2026-10-07.md).
+All8 feasibility pins and original producer/test/contract preimages are independently
+verified; complete original27-scenario execution PASS with unchanged controls.
+The native body matches primary74b25. Dedicated ordered reward selection retains
+native gates/config capture, RNG/diagnostic ordering, birth/grant and callers.
+Implementation/final qualification/handoff/review are pending; prove bare
+production AND full-test independence, retain original ordinal laws and native
+ownership. No capability, activation or original accounting acceptance is promoted.
+Quest remains BLOCKED on unchanged native interfaces; continuing Goals/monitor
+and the broader primary finish line stay active.
+
 Older checkpoint status text below remains historical and is superseded here.
 
 Both existing workers have actual continuing Goals ACTIVE against the broader
