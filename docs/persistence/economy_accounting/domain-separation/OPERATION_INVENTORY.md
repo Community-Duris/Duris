@@ -1,11 +1,11 @@
 # Fixed domain-separation operation inventory — 2026-10-07
 
-[R7 superior-plan reservation](R7_SUPERIOR_PLAN_RESERVATION.md) corrects the
-prior F-family feasibility conclusion: the full existing planning operation can
-receive facts synchronously at each original native observation point. Original
-ordering/partial-plan controls PASS privately; exact four-file boundary awaits
-coordinator review before implementation. Native authority and full finish line
-remain unchanged.
+R7 approved all-stat planning is implemented at `bf8ffda1d6bae94866c6cb2834d0561d7d914ed9`.
+Identical original/extracted21-scenario ordering/complete-plan controls, adjacent
+checks and both owned740-object builds PASS. Current c04+R0-R7 and independent
+c04+R4/R7 material/all-stat/full-module checks PASS; no current754 full build or
+native journey is inferred. See [R7 terminal handoff](R7_SUPERIOR_PLAN_HANDOFF.md).
+Final declared-scope review is pending. The full continuing Goal remains ACTIVE.
 
 Latest post-R6 [nine-family owner dependency assessment](POST_R6_OWNER_DEPENDENCIES_2026-10-07.md)
 checks compatibility against primary `daa5c2b5f` without promoting build/journey

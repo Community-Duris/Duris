@@ -1,11 +1,11 @@
 # Continuing candidate reconciliation — 2026-10-07
 
-[R7 superior-plan reservation](R7_SUPERIOR_PLAN_RESERVATION.md) corrects the
-prior F-family feasibility conclusion: the full existing planning operation can
-receive facts synchronously at each original native observation point. Original
-ordering/partial-plan controls PASS privately; exact four-file boundary awaits
-coordinator review before implementation. Native authority and full finish line
-remain unchanged.
+R7 approved all-stat planning is implemented at `bf8ffda1d6bae94866c6cb2834d0561d7d914ed9`.
+Identical original/extracted21-scenario ordering/complete-plan controls, adjacent
+checks and both owned740-object builds PASS. Current c04+R0-R7 and independent
+c04+R4/R7 material/all-stat/full-module checks PASS; no current754 full build or
+native journey is inferred. See [R7 terminal handoff](R7_SUPERIOR_PLAN_HANDOFF.md).
+Final declared-scope review is pending. The full continuing Goal remains ACTIVE.
 
 Latest post-R6 [nine-family owner dependency assessment](POST_R6_OWNER_DEPENDENCIES_2026-10-07.md)
 checks compatibility against primary `daa5c2b5f` without promoting build/journey
@@ -155,11 +155,12 @@ The nine-domain inventory is reassessed against these concrete new interfaces:
    silently unify those policies. R4 preserves the latter; further capture must be reserved after actual source/proof review.
 3. **R5 F3 superior stat cap**: approved and implemented through `b31809a0d`; explicit base/configured multiplier preserves signed-byte saturation/truncation and original wrapper capture. Original/extracted, adjacent, owned builds and current352 module controls pass; final declared-scope review PASS is published at accounting63a6e0ef5. See [handoff](R5_SUPERIOR_STAT_CAP_HANDOFF.md). Further template/outcome preparation requires separately reviewed native capture facts.
 4. **R6 F3/I enhancement affect policy**: implemented/published at `984481667`; actual original/extracted producer/policy and maintained builds PASS, final review PASS at accounting91cd22922. Five native unsigned-long words and explicit masks preserve null/source/material/pool semantics. The real predicate replaces the test stub; retained fixture failure is corrected without weakening expectations. See [terminal handoff](R6_ENHANCEMENT_AFFECT_POLICY_HANDOFF.md). Further native capture remains owner-dependent.
-5. **P2/S1 forge or service quote preparation**: inspect existing ore-price and
+5. **R7 F3 whole superior planning**: approved c04 and implemented bf8ffda1d. Existing ordered plan control consumes synchronous native facts at original points; partial failure/fresh reads are retained. Complete original/extracted controls, owned maintained builds and current/R4-prefix components/type checks pass. See [handoff](R7_SUPERIOR_PLAN_HANDOFF.md). Final review pending; further actual producer operations need a separately reviewed concrete boundary.
+6. **P2/S1 forge or service quote preparation**: inspect existing ore-price and
    paid service formulas for a genuine remaining stable operation; existing
    `forge_prices`/currency prepared mutation may already cover it. No blanket
    service implementation or active outcome reopening is authorized.
-6. **C/I/S/A/K/Q/G coupled effects**: existing currency preparation, item transfer
+7. **C/I/S/A/K/Q/G coupled effects**: existing currency preparation, item transfer
    plans, shop/auction accounting, Collector lifecycle/purchase and newly owned
    native GIVE calculations remain reuse boundaries. Shared native/source/lifetime/
    receipt work requires current owner facts. Quest-prep retains real quest
