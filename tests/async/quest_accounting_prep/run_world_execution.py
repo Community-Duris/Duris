@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 import time
 
-from case_data import digest
+from case_data import ROOT, digest
 import run_world_quest_dual_backend as world
 import run_quest_reward_ack_crash as crash
 
@@ -20,6 +20,7 @@ def execute(args):
     if digest(args.server) != args.server_sha256:
         raise ValueError("actual binary hash differs")
     result = dict(source_commit=args.source_commit, binary_sha256=args.server_sha256,
+                  schema_manifest_sha256=digest(ROOT / "migrations/runtime_compatibility_manifest.json"),
                   backend=args.backend, authority="legacy full-world Woodseer calibration",
                   cases="QP04 creation and QP07 legitimate map/abandon; no stale debit injection",
                   actual_room=16633, actual_giver=16553, actual_level=56, commands=vars(args).copy())
@@ -35,6 +36,9 @@ def execute(args):
                 environment = dict(sql_environment, DB_SOCKET="")
             result["journey"] = world.perform_quest_journey(binary, args.backend, state_root,
                 environment, evidence_dir=args.evidence_dir, buy_map=True)
+            transcript = (args.evidence_dir / "client.txt").read_text(errors="replace")
+            result["actual_fee_quotes"] = [line for line in transcript.splitlines()
+                if "It'll cost you" in line or "toss me" in line]
 
     try:
         if args.backend == "mariadb":

@@ -343,6 +343,9 @@ def perform_quest_journey(binary: pathlib.Path, backend: str, state_root: pathli
 
             client.send("ask bartender abandon confirm")
             client.expect("You no longer have a task.", timeout=30)
+            if evidence_dir is not None:
+                evidence_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+                (evidence_dir / "client.txt").write_bytes(bytes(client.transcript))
             client.close()
             client = None
             process.send_signal(signal.SIGTERM)
