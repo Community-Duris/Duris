@@ -233,6 +233,235 @@ def check_audit_limits(audit, binary, fixture, environment, build):
         return cases
 
 
+def check_root_pages(binary, fixture, environment, build):
+    with tempfile.TemporaryDirectory(prefix="duris-root-pages-", dir=build) as root:
+        root = Path(root)
+        produced = subprocess.run([str(fixture), str(root), "paged-records"],
+            env=environment, capture_output=True, text=True, timeout=60)
+        assert produced.returncode == 0 and not produced.stderr, produced
+        assert produced.stdout == "NATIVE_PAGED_RECORDS 4\n", produced.stdout
+        print(produced.stdout, end="", flush=True)
+        evidence = root / "economic-evidence"
+        before, domains = inventory(evidence), inventory(root / "domains")
+        assert before["authority.eal"][112:128] == bytes(16)
+        whole = subprocess.run([str(binary), "--economic-evidence-audit", str(root)],
+            env=environment, capture_output=True, text=True, timeout=30)
+        assert whole.returncode == 0 and not whole.stderr, whole
+        observations = []
+        for bucket, rows in ((0, 0), (1, 2), (2, 1)):
+            observed = subprocess.run([str(binary), "--economic-evidence-page", str(root),
+                str(bucket), "-", "-"], env=environment, capture_output=True, text=True, timeout=45)
+            print("ROOT_PAGE_OBSERVATION " + json.dumps(dict(bucket=bucket, exit=observed.returncode,
+                stdout=observed.stdout, stderr=observed.stderr)), flush=True)
+            observations.append((observed, rows))
+            assert inventory(evidence) == before and inventory(root / "domains") == domains
+        assert all(observed.returncode == 0 and not observed.stderr and
+                   json.loads(observed.stdout)["rows"] == rows for observed, rows in observations), observations
+        import flatfile_economic_audit as pages
+        from unittest import mock
+        import time
+        progress = Path(build) / "root-page-progress.json"
+        source = pages.source_digest(root, binary)
+        cases = 3
+
+        def cli(valid=True, path=progress):
+            snapshot, native = inventory(evidence), inventory(root / "domains")
+            observed = subprocess.run([sys.executable, "-B", str(ROOT / "scripts/flatfile_economic_audit.py"),
+                "--state-root", str(root), "--qualifier", str(binary), "--progress", str(path)],
+                env=environment, capture_output=True, text=True, timeout=60)
+            assert observed.returncode == (0 if valid else 1), observed
+            assert inventory(evidence) == snapshot and inventory(root / "domains") == native
+            return observed
+
+        first = json.loads(cli().stdout)
+        assert first["bucket"] == 0 and first["next_bucket"] == 1
+        second = json.loads(cli().stdout)
+        state = pages.progress_io.load(progress, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+        assert second["bucket"] == 1 and second["examined_roots"] == 2
+        assert state["buckets"][1]["cursor"].endswith("00000004")
+        assert state["buckets"][1]["ceiling"].endswith("00000006")
+        assert json.loads(cli().stdout)["bucket"] == 2
+        cases += 3
+        appended = subprocess.run([str(fixture), str(root), "paged-append"],
+            env=environment, capture_output=True, text=True, timeout=30)
+        assert appended.returncode == 0 and appended.stdout == "NATIVE_DELAYED_LOWER_RECORD\n" and not appended.stderr
+        appended_before = inventory(evidence)
+
+        def step():
+            state = pages.validate(pages.progress_io.load(progress, pages.MAX_PROGRESS_BYTES,
+                pages.AuditError, "flatfile audit progress"), source, time.time())
+            report, updated = pages.scan(root, binary, state)
+            pages.progress_io.save(progress, updated, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+            assert not report["complete"] and not report["consistent_entire_sweep"] and not report["release_qualified"]
+            assert inventory(evidence) == appended_before and inventory(root / "domains") == domains
+            return report, updated
+
+        for _ in range(255):
+            report, state = step()
+        assert report["bucket"] == 1 and report["examined_roots"] == 1 and report["range_exhausted"]
+        assert state["buckets"][1]["completed_ranges"] == 1
+        for _ in range(256):
+            report, state = step()
+        assert report["bucket"] == 1 and report["examined_roots"] == 2
+        assert state["buckets"][1]["cursor"].endswith("00000002")
+        assert state["buckets"][1]["ceiling"].endswith("00000006")
+        assert report["completed_historical_ranges"] == 1
+        cases += 2
+
+        # A damaged bucket cannot starve the next one. Its cursor remains exact
+        # and its refusal survives later clean pages and actual CLI restarts.
+        damaged = bytearray(appended_before["bucket-02.eai"])
+        damaged[-1] ^= 1
+        (evidence / "bucket-02.eai").write_bytes(damaged)
+        refused = json.loads(cli(False).stdout)
+        stored = pages.progress_io.load(progress, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+        assert refused["bucket"] == 2 and refused["page_refused"] and refused["next_bucket"] == 3
+        assert stored["buckets"][2] == state["buckets"][2]
+        (evidence / "bucket-02.eai").write_bytes(appended_before["bucket-02.eai"])
+        subsequent = json.loads(cli(False).stdout)
+        assert subsequent["bucket"] == 3 and subsequent["examined_roots"] == 0
+        assert subsequent["total_finding_count"] == 1 and not subsequent["page_refused"]
+        assert "operation_id" not in subsequent
+        cases += 2
+        checkpoint = progress.read_bytes()
+        with mock.patch.object(pages.subprocess, "run", side_effect=subprocess.TimeoutExpired("private-page", 45)):
+            state = pages.validate(pages.progress_io.load(progress, pages.MAX_PROGRESS_BYTES,
+                pages.AuditError, "flatfile audit progress"), source, time.time())
+            report, refused_state = pages.scan(root, binary, state)
+        assert report["page_refused"] and refused_state["buckets"] == state["buckets"]
+        assert progress.read_bytes() == checkpoint
+        with mock.patch.object(pages.progress_io.os, "replace", side_effect=OSError("private interrupted publication")):
+            try:
+                pages.progress_io.save(progress, refused_state, pages.MAX_PROGRESS_BYTES,
+                    pages.AuditError, "flatfile audit progress")
+            except OSError:
+                pass
+            else:
+                raise AssertionError("checkpoint failure was hidden")
+        assert progress.read_bytes() == checkpoint
+        assert not list(progress.parent.glob("." + progress.name + "-*"))
+        cases += 2
+
+        for label, data in (("duplicate fields", b'{"format":1,"format":2}'),
+                            ("wrong source", checkpoint.replace(source.encode(), b"a" * 64)),
+                            ("oversized", b" " * (pages.MAX_PROGRESS_BYTES + 1))):
+            progress.write_bytes(data)
+            observed = cli(False)
+            assert not observed.stdout and observed.stderr == "flatfile_economic_audit_refused\n", label
+            assert progress.read_bytes() == data
+            cases += 1
+        progress.write_bytes(checkpoint)
+        for label in ("symlink", "hardlink", "public", "FIFO"):
+            progress.unlink()
+            alternate = progress.with_name("alternate-progress")
+            alternate.write_bytes(checkpoint)
+            if label == "symlink":
+                progress.symlink_to(alternate)
+            elif label == "hardlink":
+                os.link(alternate, progress)
+            elif label == "public":
+                progress.write_bytes(checkpoint)
+                progress.chmod(0o644)
+            else:
+                os.mkfifo(progress, 0o600)
+            observed = cli(False)
+            assert not observed.stdout and observed.stderr == "flatfile_economic_audit_refused\n", label
+            assert alternate.read_bytes() == checkpoint
+            progress.unlink()
+            alternate.unlink()
+            progress.write_bytes(checkpoint)
+            progress.chmod(0o600)
+            cases += 1
+        inside = root / "operator-progress.json"
+        observed = cli(False, inside)
+        assert not observed.stdout and not inside.exists() and not Path(str(inside) + ".lock").exists()
+        cases += 1
+
+        # A semantic defect remains visible after rebinding every physical
+        # checksum. The native record decoder is an independent refusal oracle.
+        index = bytearray(appended_before["bucket-01.eai"])
+        segment_name = "bucket-01-" + str(struct.unpack_from("<I", index, 128)[0]) + ".eas"
+        segment = bytearray(appended_before[segment_name])
+        offset, size = struct.unpack_from("<II", index, 132)
+        value = bytearray(segment[80 + offset:80 + offset + size])
+        value[74 + 24:74 + 26] = struct.pack("<H", 22)
+        value = rehash(value)
+        raw = Path(build) / "page-invalid-record.bin"
+        raw.write_bytes(value)
+        native = subprocess.run([str(fixture), str(raw), "decode-record"],
+            env=environment, capture_output=True, text=True, timeout=30)
+        assert native.returncode == 1 and not native.stderr, native
+        index[96:128] = hashlib.sha256(value).digest()
+        segment[80 + offset:80 + offset + size] = value
+        (evidence / "bucket-01.eai").write_bytes(rehash(index))
+        (evidence / segment_name).write_bytes(rehash(segment))
+        observed = subprocess.run([str(binary), "--economic-evidence-page", str(root), "1", "-", "-"],
+            env=environment, capture_output=True, text=True, timeout=45)
+        decoded = json.loads(observed.stdout)
+        assert observed.returncode == 0 and not observed.stderr and decoded["rows"] == 2
+        assert decoded["verified"] == 1 and len(decoded["invalid_records"]) == 1
+        semantic_progress = Path(build) / "semantic-page-progress.json"
+        assert json.loads(cli(path=semantic_progress).stdout)["bucket"] == 0
+        semantic = json.loads(cli(False, semantic_progress).stdout)
+        assert semantic["scope"] == "retained_record_page" and semantic["semantically_checked_records"] == 1
+        assert not any(semantic[key] for key in ("complete", "release_qualified", "baseline_books_closed",
+            "lifecycle_receipts_closed", "orphan_namespace_closed", "native_holdings_compared"))
+        semantic_state = pages.progress_io.load(semantic_progress, pages.MAX_PROGRESS_BYTES,
+            pages.AuditError, "flatfile audit progress")
+        assert semantic_state["findings"][0]["code"] == "flatfile_retained_record_invalid"
+        (evidence / "bucket-01.eai").write_bytes(appended_before["bucket-01.eai"])
+        (evidence / segment_name).write_bytes(appended_before[segment_name])
+        cases += 3
+        stored = pages.progress_io.load(progress, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+        stored["lineage"] = "02" + "00" * 15
+        pages.progress_io.save(progress, stored, pages.MAX_PROGRESS_BYTES, pages.AuditError, "flatfile audit progress")
+        foreign = progress.read_bytes()
+        observed = cli(False)
+        assert not observed.stdout and observed.stderr == "flatfile_economic_audit_refused\n"
+        assert progress.read_bytes() == foreign
+        progress.write_bytes(checkpoint)
+        with pages.progress_io.lock(progress, pages.AuditError, "flatfile audit progress"):
+            observed = cli(False)
+            assert not observed.stdout and observed.stderr == "flatfile_economic_audit_refused\n"
+        assert progress.read_bytes() == checkpoint
+        cases += 2
+        # A durable range cannot claim exhaustion when a persisted anchor was
+        # never indexed or disappeared, even if the index checksum is valid.
+        missing_cursor = subprocess.run([str(binary), "--economic-evidence-page", str(root), "1",
+            "01" + "00" * 14 + "05", "01" + "00" * 14 + "06"],
+            env=environment, capture_output=True, text=True, timeout=45)
+        assert missing_cursor.returncode == 1 and not missing_cursor.stdout
+        assert missing_cursor.stderr == "native_restore_qualification_failed\n", missing_cursor
+        anchor_progress = Path(build) / "anchor-page-progress.json"
+        anchored = pages.new_progress(source, time.time())
+        anchored["lineage"] = state["lineage"]
+        anchored["rotation"] = 1
+        anchored["buckets"][1].update(cursor="01" + "00" * 14 + "04",
+            ceiling="01" + "00" * 14 + "06")
+        pages.progress_io.save(anchor_progress, anchored, pages.MAX_PROGRESS_BYTES,
+            pages.AuditError, "flatfile audit progress")
+        shortened = bytearray(before["bucket-01.eai"])
+        count = struct.unpack_from("<I", shortened, 68)[0]
+        total = struct.unpack_from("<Q", shortened, 72)[0]
+        removed_size = struct.unpack_from("<I", shortened, len(shortened) - 8)[0]
+        assert count == 3 and shortened[-64:-48] == bytes.fromhex(anchored["buckets"][1]["ceiling"])
+        struct.pack_into("<I", shortened, 68, count - 1)
+        struct.pack_into("<Q", shortened, 72, total - removed_size)
+        shortened = shortened[:-64]
+        struct.pack_into("<I", shortened, 12, len(shortened) - 48)
+        (evidence / "bucket-01.eai").write_bytes(rehash(shortened))
+        refused = json.loads(cli(False, anchor_progress).stdout)
+        saved = pages.progress_io.load(anchor_progress, pages.MAX_PROGRESS_BYTES,
+            pages.AuditError, "flatfile audit progress")
+        assert refused["page_refused"] and refused["examined_roots"] == 0 and not refused["range_exhausted"]
+        assert saved["buckets"][1] == anchored["buckets"][1] and saved["rotation"] == 2
+        assert saved["buckets"][1]["completed_ranges"] == 0
+        (evidence / "bucket-01.eai").write_bytes(appended_before["bucket-01.eai"])
+        cases += 2
+        assert inventory(evidence) == appended_before and inventory(root / "domains") == domains
+        return cases
+
+
 def main():
     os.umask(0o077)
     with tempfile.TemporaryDirectory(prefix="duris-restore-authority-build-",
@@ -241,6 +470,7 @@ def main():
         fixture = build_fixture(Path(build) / "fixture")
         environment = dict(os.environ, ASAN_OPTIONS="detect_leaks=1:halt_on_error=1",
                            UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
+        root_page_cases = check_root_pages(binary, fixture, environment, build)
         metadata = subprocess.run([str(fixture), str(build), "compare-metadata"],
             env=environment, capture_output=True, text=True, timeout=30)
         assert metadata.returncode == 0 and not metadata.stderr, metadata
@@ -261,7 +491,13 @@ int main(int argc, char **argv) {
     if (argc != 2 && argc != 3) return 2;
     try {
         if (argc == 2) restore_economic_records::checker(argv[1]).run();
-        else if (std::string(argv[1]) == "hold-read-lock") {
+        else if (std::string(argv[1]) == "root-page-budget") {
+            restore_economic_authority::audit_budget budget;
+            budget.remaining_files = 6; // Context/index/segment, then source claim refusal.
+            restore_economic_authority::scoped_audit_budget scope(budget);
+            restore_economic_authority::authority_read_lock lock(argv[2]);
+            restore_economic_records::checker(argv[2]).page(1, {}, {}, false);
+        } else if (std::string(argv[1]) == "hold-read-lock") {
             restore_economic_authority::authority_read_lock lock(argv[2]);
             std::cout << "INDEPENDENT_AUTHORITY_READ_LOCK_HELD\\n" << std::flush;
             std::string release;
@@ -288,6 +524,20 @@ int main(int argc, char **argv) {
                         "-fno-pie", "-no-pie", "-I" + str(ROOT / "scripts"), str(audit_source),
                         "-lcrypto", "-o", str(audit)], check=True)
         limit_cases = check_audit_limits(audit, binary, fixture, environment, build)
+        with tempfile.TemporaryDirectory(prefix="duris-root-page-budget-", dir=build) as budget_root:
+            budget_root = Path(budget_root)
+            produced = subprocess.run([str(fixture), str(budget_root), "source-claims"],
+                env=environment, capture_output=True, text=True, timeout=60)
+            assert produced.returncode == 0 and not produced.stderr, produced
+            before = inventory(budget_root / "economic-evidence")
+            native_before = inventory(budget_root / "domains")
+            refused = subprocess.run([str(audit), "root-page-budget", str(budget_root)],
+                env=environment, capture_output=True, text=True, timeout=30)
+            assert refused.returncode == 1 and not refused.stdout
+            assert refused.stderr == "native_restore_qualification_failed\n", refused
+            assert inventory(budget_root / "economic-evidence") == before
+            assert inventory(budget_root / "domains") == native_before
+            root_page_cases += 1
         with tempfile.TemporaryDirectory(prefix="duris-envelope-records-",
                                          dir=build) as envelope_root:
             envelope_root = Path(envelope_root)
@@ -1310,6 +1560,7 @@ int main(int argc, char **argv) {
                           "native_command_envelope_refusals": 10,
                           "audit_boundary_cases": boundary_cases,
                           "audit_limit_cases": limit_cases,
+                          "root_page_cases": root_page_cases,
                           "qualifier_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
                           "fixture_sha256": hashlib.sha256(fixture.read_bytes()).hexdigest(),
                           "sanitized_reader_sha256": hashlib.sha256(audit.read_bytes()).hexdigest()}))

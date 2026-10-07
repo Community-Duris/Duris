@@ -10,17 +10,16 @@ from __future__ import annotations
 
 import argparse
 import copy
-from contextlib import contextmanager
 import hashlib
 import json
 import math
 import os
 from pathlib import Path
 import re
-import stat
 import sys
-import tempfile
 import time
+
+import economic_audit_progress as audit_progress
 
 from economic_restore_evidence import (CanonicalReader, require_integrity, verify_canonical_root,
                                        verify_canonical_baseline)
@@ -213,30 +212,11 @@ def validate_all_progress(value, source, now):
 def load_progress(path, source, *, now=None, all_namespaces=False):
     now = time.time() if now is None else now
     try:
-        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+        value = audit_progress.load(path, MAX_PROGRESS_BYTES, AuditError, "canonical audit progress")
     except FileNotFoundError:
         if all_namespaces:
             return validate_all_progress(new_all_progress(source, now), source, now)
         return validate_progress(new_progress(source, now), source, now)
-    with os.fdopen(fd, "rb") as stream:
-        info = os.fstat(stream.fileno())
-        if (not stat.S_ISREG(info.st_mode) or Path(path).is_symlink() or info.st_size > MAX_PROGRESS_BYTES or
-                (os.name == "posix" and (info.st_uid != os.getuid() or info.st_mode & 0o077))):
-            raise AuditError("canonical audit progress requires a protected regular file")
-        data = stream.read(MAX_PROGRESS_BYTES + 1)
-    def pairs(rows):
-        result = {}
-        for key, value in rows:
-            if key in result:
-                raise AuditError("duplicate canonical audit progress field")
-            result[key] = value
-        return result
-    if len(data) > MAX_PROGRESS_BYTES:
-        raise AuditError("canonical audit progress exceeds byte limit")
-    try:
-        value = json.loads(data, object_pairs_hook=pairs)
-    except ValueError as error:
-        raise AuditError("invalid canonical audit progress JSON") from error
     if all_namespaces:
         if type(value) is dict and value.get("format") == "economic_sql_canonical_progress_v1":
             root = validate_progress(value, source, now)
@@ -249,46 +229,12 @@ def load_progress(path, source, *, now=None, all_namespaces=False):
 def save_progress(path, value):
     validate = validate_all_progress if value.get("format") == "economic_sql_canonical_progress_v2" else validate_progress
     validate(value, value["source_digest"], time.time())
-    data = (json.dumps(value, allow_nan=False, sort_keys=True, separators=(",", ":")) + "\n").encode()
-    if len(data) > MAX_PROGRESS_BYTES:
-        raise AuditError("canonical audit progress exceeds byte limit")
-    path = Path(path)
-    fd, temporary = tempfile.mkstemp(prefix="." + path.name + "-", dir=path.parent)
-    try:
-        with os.fdopen(fd, "wb") as stream:
-            stream.write(data)
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temporary, path)
-        if os.name == "posix":
-            directory = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
-            try:
-                os.fsync(directory)
-            finally:
-                os.close(directory)
-    finally:
-        if os.path.exists(temporary):
-            os.unlink(temporary)
+    audit_progress.save(path, value, MAX_PROGRESS_BYTES, AuditError, "canonical audit progress")
 
 
-@contextmanager
 def progress_lock(path):
     """CLI progress is single-owner; OS locks release on process interruption."""
-    if os.name != "posix":
-        raise AuditError("durable canonical audit CLI progress requires POSIX file locking")
-    import fcntl
-    fd = os.open(str(path) + ".lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
-    try:
-        info = os.fstat(fd)
-        if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
-            raise AuditError("canonical audit progress lock requires a protected regular file")
-        try:
-            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError as error:
-            raise AuditError("canonical audit progress is already in use") from error
-        yield
-    finally:
-        os.close(fd)
+    return audit_progress.lock(path, AuditError, "canonical audit progress")
 
 
 def scan_page(connection, progress, *, page_roots=MAX_PAGE_ROOTS, now=None):

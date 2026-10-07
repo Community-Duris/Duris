@@ -779,3 +779,45 @@ blocker remains; final selected checks skip nothing. Accounting remains inactive
 wallet-root exclusions and the declined spell path remain preserved. Primary's
 local notebook is nonblocking; this is the curator packet, not an application
 acknowledgement or a claim that a cross-chat message was sent.
+
+
+## Durable retained-root pages and saved-anchor continuity
+
+The same remote `codex/accounting-plan5` now publishes
+[the completed retained-root page slice](PLAN5_FLATFILE_ROOT_PAGES_QUALIFICATION_2026-10-06.md), based on `ece7a6280e209a43636b7717f848892e4377f1a9`.
+The delivery receipt at
+`D:/CodexEvidence/accounting-plan5/bin/flatfile-root-pages-delivery-01-20261006/delivery.json`
+binds its exact result/remote SHA, source closure and all seven earlier branch
+tips. All previous branch follow-ups remain ancestors; no history rewrite or
+experimental-accounting push is used.
+
+Final native regression archive `037af95d84cbd967b64384c819b3a754f7e5a5939b29ec4d1571307fbad3f162` passes28 new
+page controls plus the original20 positive/367 refusal cases,12 audit boundary
+and nine limit/concurrency controls. Code archive
+`ab06ed9db51bc5290cbf3b808b8eb97c0d37e4265e845fdc8228e8e087f08040` passes64 canonical SQL methods on fresh
+MariaDB 10.11.14/MySQL 8.0.46 canonical 0062,69 marker cases and both740-object
+fresh production builds, with zero Linux skips. The only final archive delta
+corrects the unused component regression's private ceiling-loss fixture; all
+other file bytes/modes/links and component/build inputs remain exact. Supplemental
+Windows pure tests pass26 methods with one POSIX flock skip covered on Linux.
+Five final native page-entry legacy/lock/journal controls pass unchanged native
+inventories. Earlier attempts and the flawed first anchor probe remain retained.
+
+Native tree `4abb609524a1f1682ea4c190f82d75003c4d679b` and migrations `1d041c8bc27cfc2b2bfdc8095b6c1348ac3a15c5`
+remain unchanged. Refreshed primary `299ee884ec31895175af8e6afc15a3d3ac6b868c` is inspected
+but its newer/private producer source is not imported or qualified here.
+No shared interface/schema or central manifest change is requested.
+
+The new mode and protected external checkpoint rotate bounded retained-record
+pages fairly; semantic failures remain sticky and budget refusals keep cursors.
+Previously missing/nonexistent saved anchors now refuse without falsely earning
+a completed range. All report-wide completion, closure and release flags stay
+false. Full flatfile metadata/books/lifecycle/holdings/orphan progress, genuine
+producer/gameplay/fault evidence, combined lifecycle evidence and release-host
+budgets remain open. Release validator still refuses missing executable writer
+evidence. No independent slice blocker, activation or production mutation occurs.
+
+Seal `D:/CodexEvidence/accounting-plan5/bin/flatfile-root-pages-seal-01-20261006/evidence.json`, SHA256 `f7f9d0aecc7660c7e18e372913c6c771118e682d547406da9f7a099d14518158`, and the report/delivery are the
+curator packet for primary's nonblocking local notebook. No notebook application,
+cross-chat message or acknowledgement is claimed. Primary owns integration and
+publication of the combined tested candidate.

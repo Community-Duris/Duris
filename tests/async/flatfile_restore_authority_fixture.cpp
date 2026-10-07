@@ -45,11 +45,11 @@ static critical_operation_id id(uint64_t value)
 	return result;
 }
 static flatfile_accounting_record record(uint32_t sequence, bool large, bool source = false,
-					 int32_t pid = 11, bool items = false)
+					 int32_t pid = 11, bool items = false, uint8_t bucket = 1)
 {
 	flatfile_accounting_record value;
 	critical_operation_id operation = {};
-	operation.bytes[0] = 1;
+	operation.bytes[0] = bucket;
 	for (size_t i = 0; i < 4; ++i)
 		operation.bytes[15 - i] = static_cast<uint8_t>(sequence >> (8 * i));
 	currency_command_payload payload = {};
@@ -165,6 +165,20 @@ int main(int argc, char **argv)
 {
 	assert(argc == 3);
 	const std::string root = argv[1], mode = argv[2];
+	if (mode == "paged-append")
+	{
+		flatfile_authority_lock lock;
+		std::string error;
+		assert(lock.acquire(root, &error));
+		std::vector<flatfile_authority_operation> operations;
+		assert(flatfile_accounting_test_access::stage(root, lock, record(1, false),
+							      &operations, &error) ==
+		       flatfile_accounting_status::ok);
+		assert(flatfile_accounting_test_access::commit(root, lock, operations, &error) ==
+		       flatfile_authority_transaction_result::ok);
+		std::cout << "NATIVE_DELAYED_LOWER_RECORD\n";
+		return 0;
+	}
 	if (mode == "hold-authority-lock" || mode == "pending-authority-journal")
 	{
 		flatfile_authority_lock lock;
@@ -415,10 +429,11 @@ int main(int argc, char **argv)
 		       critical_operation_id_is_zero(control().active_epoch));
 		return 0;
 	}
-	assert(mode == "lifetimes" || mode == "records" || mode == "item-records" ||
-	       mode == "envelope-records" || mode == "source-claims" || mode == "retention" ||
-	       mode == "baseline" || mode == "baseline-empty" || mode == "baseline-rich" ||
-	       mode == "baseline-maximum" || mode == "baseline-full-index");
+	assert(mode == "lifetimes" || mode == "records" || mode == "paged-records" ||
+	       mode == "item-records" || mode == "envelope-records" || mode == "source-claims" ||
+	       mode == "retention" || mode == "baseline" || mode == "baseline-empty" ||
+	       mode == "baseline-rich" || mode == "baseline-maximum" ||
+	       mode == "baseline-full-index");
 	for (size_t bucket = 0; bucket < 256; ++bucket)
 	{
 		assert(access::initialize_native_bucket(root, lock, control().revision, bucket,
@@ -672,6 +687,27 @@ int main(int argc, char **argv)
 		}
 		assert(critical_operation_id_is_zero(control().active_epoch));
 		return 0;
+	}
+	if (mode == "paged-records")
+	{
+		for (size_t bucket : { 1, 2 })
+		{
+			assert(access::initialize_evidence_bucket(root, lock, control().revision,
+								  bucket, id(8), &operations,
+								  &error) == 0);
+			commit();
+		}
+		for (auto [sequence, bucket] :
+		     { std::pair{ 2u, uint8_t{ 1 } }, std::pair{ 4u, uint8_t{ 1 } },
+		       std::pair{ 6u, uint8_t{ 1 } }, std::pair{ 3u, uint8_t{ 2 } } })
+		{
+			assert(access::stage(root, lock,
+					     record(sequence, false, false, 11, false, bucket),
+					     &operations,
+					     &error) == flatfile_accounting_status::ok);
+			commit();
+		}
+		std::cout << "NATIVE_PAGED_RECORDS 4\n";
 	}
 	if (mode == "records" || mode == "item-records" || mode == "source-claims" ||
 	    mode == "retention")

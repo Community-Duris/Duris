@@ -37,24 +37,37 @@ inline void need(bool valid)
 // Only the online operator audit installs this cooperative admission budget.
 // Offline candidate qualification keeps the existing format limits. Count
 // repeated physical reads and directory visits, including ignored filenames.
+struct audit_budget_refused : std::runtime_error
+{
+	audit_budget_refused()
+		: std::runtime_error("native_restore_qualification_failed")
+	{
+	}
+};
 struct audit_budget
 {
 	size_t remaining_bytes = 128 * 1024 * 1024, remaining_files = 2048;
 	size_t remaining_entries = 8192;
 	std::chrono::steady_clock::time_point deadline =
 		std::chrono::steady_clock::now() + std::chrono::seconds(30);
-	void checkpoint() const { need(std::chrono::steady_clock::now() < deadline); }
+	void checkpoint() const
+	{
+		if (std::chrono::steady_clock::now() >= deadline)
+			throw audit_budget_refused();
+	}
 	void file(size_t size)
 	{
 		checkpoint();
-		need(remaining_files && size <= remaining_bytes);
+		if (!remaining_files || size > remaining_bytes)
+			throw audit_budget_refused();
 		--remaining_files;
 		remaining_bytes -= size;
 	}
 	void entry()
 	{
 		checkpoint();
-		need(remaining_entries);
+		if (!remaining_entries)
+			throw audit_budget_refused();
 		--remaining_entries;
 	}
 };
@@ -608,6 +621,13 @@ class checker
 	explicit checker(const std::filesystem::path &root)
 		: directory(root / "economic-evidence")
 	{
+	}
+	// Page callers establish only the control/catalog context. Whole-store
+	// mapping/native closure remains in run(); it is not repeated per root page.
+	void begin_page()
+	{
+		control();
+		epochs();
 	}
 	// Historical account identity is immutable even when locator aliases and
 	// mapping revision/operation metadata have subsequently changed.

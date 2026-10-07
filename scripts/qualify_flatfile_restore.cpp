@@ -236,6 +236,64 @@ int main(int argc, char **argv)
 {
 	try
 	{
+		if (argc == 6 && std::string(argv[1]) == "--economic-evidence-page")
+		{
+			using namespace restore_economic_authority;
+			const std::string bucket_text = argv[3], after_text = argv[4],
+					  ceiling_text = argv[5];
+			unsigned bucket = 0;
+			auto parsed = std::from_chars(bucket_text.data(),
+						      bucket_text.data() + bucket_text.size(),
+						      bucket);
+			need(parsed.ec == std::errc{} &&
+			     parsed.ptr == bucket_text.data() + bucket_text.size() &&
+			     !bucket_text.empty() && std::to_string(bucket) == bucket_text &&
+			     bucket < buckets);
+			auto decode = [](const std::string &text)
+			{
+				if (text == "-")
+					return identity{};
+				auto value = restore_economic_baseline::unhex(text);
+				need(nonzero(value));
+				return value;
+			};
+			audit_budget budget;
+			budget.remaining_bytes = 32 * 1024 * 1024;
+			budget.remaining_files = 64;
+			scoped_audit_budget scope(budget);
+			authority_read_lock lock(argv[2]);
+			const auto evidence = std::filesystem::path(argv[2]) / "economic-evidence";
+			if (!lock.locked() || !std::filesystem::exists(evidence) ||
+			    std::filesystem::is_empty(evidence))
+			{
+				lock.finish();
+				audit_checkpoint();
+				std::cout << "{\"initialized\":false}\n";
+				return 0;
+			}
+			auto result = restore_economic_records::checker(argv[2]).page(
+				bucket, decode(after_text), decode(ceiling_text),
+				ceiling_text != "-");
+			lock.finish();
+			audit_checkpoint();
+			auto hex = [](const auto &value)
+			{ return restore_economic_baseline::hex(value); };
+			std::cout
+				<< "{\"initialized\":true,\"lineage\":\"" << hex(result.lineage)
+				<< "\",\"authority_body_sha256\":\"" << hex(result.authority_body)
+				<< "\",\"bucket\":" << bucket << ",\"cursor\":\""
+				<< hex(result.cursor) << "\",\"ceiling\":\"" << hex(result.ceiling)
+				<< "\",\"rows\":" << result.rows
+				<< ",\"verified\":" << result.verified
+				<< ",\"bucket_rows\":" << result.bucket_rows
+				<< ",\"range_exhausted\":" << (result.exhausted ? "true" : "false")
+				<< ",\"invalid_records\":[";
+			for (size_t i = 0; i < result.invalid_records.size(); ++i)
+				std::cout << (i ? "," : "") << '"' << hex(result.invalid_records[i])
+					  << '"';
+			std::cout << "]}\n";
+			return 0;
+		}
 		if (argc == 3 && std::string(argv[1]) == "--economic-evidence-audit")
 		{
 			require(std::filesystem::path(argv[2]).is_absolute());

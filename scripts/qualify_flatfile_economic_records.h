@@ -366,6 +366,14 @@ struct entry
 	digest checksum;
 	uint64_t segment, offset, size;
 };
+struct root_page
+{
+	identity lineage = {}, cursor = {}, ceiling = {};
+	digest authority_body = {};
+	size_t rows = 0, verified = 0, bucket_rows = 0;
+	bool exhausted = false;
+	std::vector<identity> invalid_records;
+};
 class checker
 {
 	std::filesystem::path root, directory;
@@ -533,7 +541,7 @@ class checker
 			claimed_events.push_back(key);
 		}
 	}
-	void bucket(size_t bucket)
+	std::vector<entry> index(size_t bucket)
 	{
 		auto name = filename("bucket-", bucket, ".eai");
 		expected_files.insert(name);
@@ -544,7 +552,7 @@ class checker
 		need(count <= 4096 && stored_total <= bucket_limit &&
 		     body.size() == 32 + count * 64);
 		std::vector<entry> entries;
-		uint64_t total = 0, last_segment = 0;
+		uint64_t total = 0;
 		for (size_t i = 0; i < count; ++i)
 		{
 			entry row{ in.fixed<16>(), in.fixed<32>(), in.number(4), in.number(4),
@@ -555,11 +563,15 @@ class checker
 			     row.segment < segment_count_limit &&
 			     (entries.empty() || entries.back().operation < row.operation));
 			total += row.size;
-			last_segment = std::max(last_segment, row.segment);
 			entries.push_back(row);
 		}
 		in.done();
 		need(total == stored_total);
+		return entries;
+	}
+	void bucket(size_t bucket)
+	{
+		auto entries = index(bucket);
 		if (entries.empty())
 			return;
 		std::sort(entries.begin(), entries.end(),
@@ -567,6 +579,7 @@ class checker
 				  return std::tie(first.segment, first.offset) <
 					 std::tie(second.segment, second.offset);
 			  });
+		const auto last_segment = entries.back().segment;
 		size_t at = 0;
 		for (size_t segment = 0; segment <= last_segment; ++segment)
 		{
@@ -602,6 +615,115 @@ class checker
 		, baselines(path)
 		, lifecycles(path)
 	{
+	}
+	root_page page(size_t bucket, const identity &after, const identity &ceiling,
+		       bool ceiling_known)
+	{
+		need(bucket < buckets && (!nonzero(after) || ceiling_known) &&
+		     (!ceiling_known || after <= ceiling));
+		restore_economic_authority::checker authority(root);
+		authority.begin_page();
+		auto control = frame(directory, "authority.eal", "DURECA1");
+		need(control.size() == 16552);
+		std::copy_n(control.begin(), 16, lineage.begin());
+		digest catalog_digest;
+		std::copy_n(control.begin() + 104, 32, catalog_digest.begin());
+		auto catalog = restore_economic_authority::catalog(directory, catalog_digest);
+		need(catalog.lineage == lineage);
+		for (const auto &entry : catalog.entries)
+			epochs.insert(entry.epoch);
+		root_page result;
+		result.lineage = lineage;
+		result.authority_body = hash(control);
+		result.cursor = after;
+		std::vector<entry> entries;
+		if (control[16520 + bucket / 8] & (1u << (bucket % 8)))
+			entries = index(bucket);
+		else
+		{
+			struct stat info = {};
+			need(lstat((directory / filename("bucket-", bucket, ".eai")).c_str(),
+				   &info) == -1 &&
+			     errno == ENOENT);
+		}
+		result.bucket_rows = entries.size();
+		auto retained = [&](const identity &operation)
+		{
+			return std::any_of(entries.begin(), entries.end(), [&](const auto &row)
+					   { return row.operation == operation; });
+		};
+		need((!nonzero(after) || retained(after)) &&
+		     (!ceiling_known || !nonzero(ceiling) || retained(ceiling)));
+		result.ceiling = ceiling_known	 ? ceiling :
+				 entries.empty() ? identity{} :
+						   entries.back().operation;
+		std::vector<entry> selected;
+		bool more = false;
+		for (const auto &row : entries)
+			if (row.operation > after && row.operation <= result.ceiling)
+			{
+				if (selected.size() == 2)
+				{
+					more = true;
+					break;
+				}
+				selected.push_back(row);
+			}
+		// Reuse bounded frames and the original semantic decoder. Inspect the
+		// physical geometry and every record hash in each touched segment; only
+		// the selected two records are semantically interpreted on this page.
+		std::sort(
+			entries.begin(), entries.end(), [](const auto &a, const auto &b)
+			{ return std::tie(a.segment, a.offset) < std::tie(b.segment, b.offset); });
+		std::map<uint64_t, bytes> segments;
+		for (const auto &selected_row : selected)
+		{
+			if (!segments.contains(selected_row.segment))
+			{
+				auto content =
+					frame(directory,
+					      filename("bucket-", bucket, "-") +
+						      std::to_string(selected_row.segment) + ".eas",
+					      "DURECS1", segment_limit);
+				reader file{ content };
+				need(file.fixed<16>() == lineage && file.number(4) == bucket &&
+				     file.number(4) == selected_row.segment);
+				const auto count = file.number(4);
+				need(count && file.number(4) == 0);
+				uint64_t offset = 0, observed = 0;
+				for (const auto &row : entries)
+					if (row.segment == selected_row.segment)
+					{
+						need(row.offset == offset &&
+						     hash(file.take(row.size)) == row.checksum);
+						offset += row.size;
+						++observed;
+					}
+				file.done();
+				need(count == observed);
+				segments.emplace(selected_row.segment, std::move(content));
+			}
+			const auto &content = segments.at(selected_row.segment);
+			try
+			{
+				record(std::span<const uint8_t>(content).subspan(
+					       32 + selected_row.offset, selected_row.size),
+				       selected_row.operation);
+				++result.verified;
+			}
+			catch (const audit_budget_refused &)
+			{
+				throw;
+			}
+			catch (const std::runtime_error &)
+			{
+				result.invalid_records.push_back(selected_row.operation);
+			}
+			result.cursor = selected_row.operation;
+			++result.rows;
+		}
+		result.exhausted = !more;
+		return result;
 	}
 	initialization_provenance run()
 	{
