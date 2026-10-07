@@ -357,39 +357,15 @@ static int crafting_required_level(int item_value)
 				crafting_level_gate);
 }
 
-static bool crafting_scale_material_count(int64_t count, int *scaled)
-{
-	if (count < 0 || !std::isfinite(crafting_material_quantity_multiplier) ||
-	    crafting_material_quantity_multiplier <= 0.0)
-		return false;
-	const double quote =
-		std::ceil(static_cast<double>(count) * crafting_material_quantity_multiplier);
-	if (!std::isfinite(quote) || quote < 0.0 || quote > INT_MAX)
-		return false;
-	*scaled = static_cast<int>(quote);
-	return true;
-}
-
 bool crafting_build_plan(P_obj item, struct crafting_plan *plan)
 {
 	if (item == NULL || plan == NULL)
 		return FALSE;
 	const int item_value = itemvalue(item);
 	const int low_material_vnum = get_matstart(item);
-	if (item_value < 1 || low_material_vnum <= 0 || low_material_vnum > INT_MAX - 4)
-		return FALSE;
-
-	const int64_t total = static_cast<int64_t>(item_value) + 4;
-	crafting_plan quoted = {};
-	if (!crafting_scale_material_count(total / 5, &quoted.high_material_count) ||
-	    !crafting_scale_material_count(total % 5, &quoted.low_material_count))
-		return FALSE;
-	quoted.item_value = item_value;
-	quoted.low_material_vnum = low_material_vnum;
-	quoted.high_material_vnum = low_material_vnum + 4;
-	quoted.magical = has_affect(item);
-	*plan = quoted;
-	return TRUE;
+	const bool magical = has_affect(item);
+	return crafting_prepare_plan(item_value, low_material_vnum, magical,
+				     crafting_material_quantity_multiplier, plan);
 }
 
 bool crafting_validate_recipe_target(P_obj item)

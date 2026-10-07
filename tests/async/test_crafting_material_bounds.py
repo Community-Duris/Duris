@@ -60,6 +60,24 @@ int main() {
  assert(!crafting_build_plan(&item,&plan));
  material_vnum=400045;
  assert(!crafting_build_plan(nullptr,&plan) && !crafting_build_plan(&item,nullptr));
+ // The production wrapper above calls the actual owned-state implementation.
+ // Evaluate owned facts independently of global/live values, including failure
+ // after the high quote succeeds but the low quote exceeds INT_MAX.
+ crafting_plan owned{};
+ assert(crafting_prepare_plan(2,400045,true,1.5,&owned));
+ assert(owned.item_value==2 && owned.low_material_vnum==400045 &&
+        owned.high_material_vnum==400049 && owned.high_material_count==2 &&
+        owned.low_material_count==2 && owned.magical);
+ const crafting_plan frozen=owned;
+ assert(!crafting_prepare_plan(4,400045,false,static_cast<double>(INT_MAX),&owned));
+ assert(owned.item_value==frozen.item_value && owned.low_material_vnum==frozen.low_material_vnum &&
+        owned.high_material_vnum==frozen.high_material_vnum && owned.low_material_count==frozen.low_material_count &&
+        owned.high_material_count==frozen.high_material_count && owned.magical==frozen.magical);
+ assert(crafting_prepare_plan(2,400045,true,1.5,&owned));
+ assert(owned.low_material_count==frozen.low_material_count && owned.high_material_count==frozen.high_material_count);
+ assert(crafting_prepare_plan(1,INT_MAX-4,false,1.0,&owned) && owned.high_material_vnum==INT_MAX);
+ assert(!crafting_prepare_plan(1,INT_MAX-3,false,1.0,&owned));
+ assert(!crafting_prepare_plan(1,400045,false,1.0,nullptr));
  quoted_value=150; assert(crafting_recipe_target_is_available(&item));
  quoted_value=151; assert(!crafting_recipe_target_is_available(&item));
  assert(crafting_required_level(INT_MAX)==715827883);

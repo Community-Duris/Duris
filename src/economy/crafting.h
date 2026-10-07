@@ -2,21 +2,12 @@
 #define CRAFTING_H
 
 #include "core/structs.h"
+#include "economy/crafting_plan.h"
 
 enum crafting_mode
 {
 	CRAFTING_MODE_CRAFT,
 	CRAFTING_MODE_FORGE
-};
-
-struct crafting_plan
-{
-	int item_value;
-	int low_material_vnum;
-	int high_material_vnum;
-	int low_material_count;
-	int high_material_count;
-	bool magical;
 };
 
 /* Loads no player state. Returns FALSE when the item has no salvage family. */
