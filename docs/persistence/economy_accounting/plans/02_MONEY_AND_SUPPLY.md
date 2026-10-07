@@ -1,5 +1,24 @@
 # Plan 2: money holdings, transfers, issuance, and expenses
 
+## Current shared producer qualification — 2026-10-06
+
+The [shared integration record](../SHARED_PRODUCER_INTEGRATION_PROGRESS_2026-10-06.md)
+and [current checkpoint](../EXPERIMENTAL_REVIEW_CHECKPOINT.md) own the latest
+combined candidate status. Wallet/source handling, complete literal UID forests,
+auction compound effects and retained publication are composed together privately.
+Both original strict753-provider production builds and all nine contracts pass
+on private4f8332ce, with independent primary source/cache authentication. The
+first full-tree SQL fixture refuses before auction cases; source review finds
+its required genuine template catalog absent. A faithful setup successor
+is being prepared. Exact runtime refusal attribution remains open. The genuine cold
+shop recovery previously established an empty object pool; the narrow reservation
+fix passes both genuine actual-mm profile units. Original cold reaches ready
+promotion, then refuses at combined save-start/admission-finish; exact first
+bool attribution and complete cold recovery remain open.
+These build results do not qualify every writer or complete this Plan. Existing
+inactive behavior, refusal gates and the declined spell path remain preserved.
+
+
 Start from add-double-entry HEAD 49af585c4. Develop and test in inactive mode
 against direct typed owners and isolated backend fixtures; Plan 1's final
 activation is not a prerequisite. This plan owns general money writer policy

@@ -1,5 +1,24 @@
 # Plan 3: item supply, custody, and provenance
 
+## Current shared producer qualification — 2026-10-06
+
+The [shared integration record](../SHARED_PRODUCER_INTEGRATION_PROGRESS_2026-10-06.md)
+and [current checkpoint](../EXPERIMENTAL_REVIEW_CHECKPOINT.md) own the latest
+combined candidate status. Wallet/source handling, complete literal UID forests,
+auction compound effects and retained publication are composed together privately.
+Both original strict753-provider production builds and all nine contracts pass
+on private4f8332ce, with independent primary source/cache authentication. The
+first full-tree SQL fixture refuses before auction cases; source review finds
+its required genuine template catalog absent. A faithful setup successor
+is being prepared. Exact runtime refusal attribution remains open. The genuine cold
+shop recovery previously established an empty object pool; the narrow reservation
+fix passes both genuine actual-mm profile units. Original cold reaches ready
+promotion, then refuses at combined save-start/admission-finish; exact first
+bool attribution and complete cold recovery remain open.
+These build results do not qualify every writer or complete this Plan. Existing
+inactive behavior, refusal gates and the declined spell path remain preserved.
+
+
 ## Ordinary movement native-context initializer repair — 2026-10-05
 
 [The three-site source repair](../ITEM_MOVEMENT_NATIVE_CONTEXT_INITIALIZERS_2026-10-05.md) explicitly initializes absent native-mobile

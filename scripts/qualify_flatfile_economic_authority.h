@@ -6,9 +6,11 @@
 #include <algorithm>
 #include <array>
 #include <cerrno>
+#include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <deque>
+#include <dirent.h>
 #include <filesystem>
 #include <fcntl.h>
 #include <openssl/sha.h>
@@ -16,6 +18,7 @@
 #include <span>
 #include <stdexcept>
 #include <sys/stat.h>
+#include <sys/file.h>
 #include <unistd.h>
 #include <vector>
 
@@ -31,6 +34,193 @@ inline void need(bool valid)
 	if (!valid)
 		throw std::runtime_error("native_restore_qualification_failed");
 }
+// Only the online operator audit installs this cooperative admission budget.
+// Offline candidate qualification keeps the existing format limits. Count
+// repeated physical reads and directory visits, including ignored filenames.
+struct audit_budget_refused : std::runtime_error
+{
+	audit_budget_refused()
+		: std::runtime_error("native_restore_qualification_failed")
+	{
+	}
+};
+struct audit_budget
+{
+	// A valid 3071-holding lifecycle fixture uses 9574 physical reads through
+	// the bounded eight-bucket caches. Keep byte/time bounds while admitting it.
+	size_t remaining_bytes = 128 * 1024 * 1024, remaining_files = 16384;
+	size_t remaining_entries = 8192;
+	std::chrono::steady_clock::time_point deadline =
+		std::chrono::steady_clock::now() + std::chrono::seconds(30);
+	void checkpoint() const
+	{
+		if (std::chrono::steady_clock::now() >= deadline)
+			throw audit_budget_refused();
+	}
+	void file(size_t size)
+	{
+		checkpoint();
+		if (!remaining_files || size > remaining_bytes)
+			throw audit_budget_refused();
+		--remaining_files;
+		remaining_bytes -= size;
+	}
+	void entry()
+	{
+		checkpoint();
+		if (!remaining_entries)
+			throw audit_budget_refused();
+		--remaining_entries;
+	}
+};
+inline thread_local audit_budget *current_audit_budget = nullptr;
+struct scoped_audit_budget
+{
+	audit_budget *previous;
+	explicit scoped_audit_budget(audit_budget &budget)
+		: previous(current_audit_budget)
+	{
+		current_audit_budget = &budget;
+	}
+	~scoped_audit_budget() { current_audit_budget = previous; }
+	scoped_audit_budget(const scoped_audit_budget &) = delete;
+	scoped_audit_budget &operator=(const scoped_audit_budget &) = delete;
+};
+inline void audit_checkpoint()
+{
+	if (current_audit_budget)
+		current_audit_budget->checkpoint();
+}
+inline void audit_directory_entry()
+{
+	if (current_audit_budget)
+		current_audit_budget->entry();
+}
+
+// Independent SELECT-equivalent lock acquisition. Never creates a lock, opens
+// native storage, or recovers a journal. Cooperating native writers take the
+// same inode exclusively; readers fail immediately if a writer holds it.
+class authority_read_lock
+{
+	struct fd_owner
+	{
+		int value = -1;
+		~fd_owner()
+		{
+			if (value >= 0)
+				close(value);
+		}
+	};
+	std::filesystem::path root;
+	fd_owner root_fd, domains_fd, evidence_fd, lock_fd;
+	static void directory(int fd)
+	{
+		struct stat info = {};
+		need(fstat(fd, &info) == 0 && S_ISDIR(info.st_mode) && info.st_uid == geteuid() &&
+		     !(info.st_mode & 0077));
+	}
+	static void unchanged(int fd, int parent, const char *name)
+	{
+		struct stat held = {}, named = {};
+		need(fstat(fd, &held) == 0 &&
+		     fstatat(parent, name, &named, AT_SYMLINK_NOFOLLOW) == 0 &&
+		     held.st_dev == named.st_dev && held.st_ino == named.st_ino);
+	}
+	bool empty_evidence() const
+	{
+		if (evidence_fd.value < 0)
+			return true;
+		const int duplicate = dup(evidence_fd.value);
+		need(duplicate >= 0);
+		DIR *stream = fdopendir(duplicate);
+		if (!stream)
+			close(duplicate);
+		need(stream);
+		bool empty = true;
+		int error = 0;
+		while (true)
+		{
+			errno = 0;
+			auto entry = readdir(stream);
+			if (!entry)
+			{
+				error = errno;
+				break;
+			}
+			if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, ".."))
+			{
+				empty = false;
+				break;
+			}
+		}
+		closedir(stream);
+		need(error == 0);
+		return empty;
+	}
+	void no_pending() const
+	{
+		if (domains_fd.value >= 0)
+		{
+			struct stat info = {};
+			need(fstatat(domains_fd.value, ".critical-authority-transaction", &info,
+				     AT_SYMLINK_NOFOLLOW) == -1 &&
+			     errno == ENOENT);
+		}
+	}
+
+    public:
+	explicit authority_read_lock(const std::filesystem::path &path)
+		: root(path)
+	{
+		need(path.is_absolute());
+		root_fd.value = open(path.c_str(), O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW);
+		directory(root_fd.value);
+		for (auto [name, descriptor] : { std::pair{ "domains", &domains_fd },
+						 std::pair{ "economic-evidence", &evidence_fd } })
+		{
+			descriptor->value = openat(root_fd.value, name,
+						   O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW);
+			if (descriptor->value < 0)
+				need(errno == ENOENT);
+			else
+				directory(descriptor->value);
+		}
+		if (domains_fd.value >= 0)
+		{
+			lock_fd.value = openat(domains_fd.value, ".critical-authority.lock",
+					       O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK);
+			if (lock_fd.value < 0)
+				need(errno == ENOENT);
+			else
+			{
+				struct stat info = {};
+				need(fstat(lock_fd.value, &info) == 0 && S_ISREG(info.st_mode) &&
+				     info.st_uid == geteuid() && info.st_nlink == 1 &&
+				     !(info.st_mode & 0077));
+				need(flock(lock_fd.value, LOCK_SH | LOCK_NB) == 0);
+			}
+		}
+		no_pending();
+		// Legacy absent/empty accounting needs no initialization. Return the
+		// empty observation directly; never start an unlocked multi-file scan.
+		need(locked() || empty_evidence());
+		finish();
+	}
+	bool locked() const { return lock_fd.value >= 0; }
+	void finish() const
+	{
+		unchanged(root_fd.value, AT_FDCWD, root.c_str());
+		if (domains_fd.value >= 0)
+			unchanged(domains_fd.value, root_fd.value, "domains");
+		if (evidence_fd.value >= 0)
+			unchanged(evidence_fd.value, root_fd.value, "economic-evidence");
+		if (locked())
+			unchanged(lock_fd.value, domains_fd.value, ".critical-authority.lock");
+		no_pending();
+	}
+	authority_read_lock(const authority_read_lock &) = delete;
+	authority_read_lock &operator=(const authority_read_lock &) = delete;
+};
 inline bool nonzero(std::span<const uint8_t> value)
 {
 	return std::any_of(value.begin(), value.end(), [](auto byte) { return byte != 0; });
@@ -52,6 +242,7 @@ struct reader
 	size_t offset = 0;
 	std::span<const uint8_t> take(size_t count)
 	{
+		audit_checkpoint();
 		need(offset <= value.size() && count <= value.size() - offset);
 		auto part = value.subspan(offset, count);
 		offset += count;
@@ -115,6 +306,7 @@ inline void locator(uint64_t kind, uint64_t context, uint64_t type, uint64_t nat
 inline bytes file_bytes(const std::filesystem::path &directory, const std::string &name,
 			size_t limit, const digest &expected = {})
 {
+	audit_checkpoint();
 	const int fd =
 		open((directory / name).c_str(), O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK);
 	need(fd >= 0);
@@ -127,10 +319,13 @@ inline bytes file_bytes(const std::filesystem::path &directory, const std::strin
 	need(fstat(fd, &info) == 0 && S_ISREG(info.st_mode) && info.st_uid == geteuid() &&
 	     info.st_nlink == 1 && !(info.st_mode & 0077) && info.st_size >= 48 &&
 	     uint64_t(info.st_size) <= limit);
+	if (current_audit_budget)
+		current_audit_budget->file(static_cast<size_t>(info.st_size));
 	bytes encoded(static_cast<size_t>(info.st_size));
 	size_t offset = 0;
 	while (offset < encoded.size())
 	{
+		audit_checkpoint();
 		auto count = read(fd, encoded.data() + offset, encoded.size() - offset);
 		if (count < 0 && errno == EINTR)
 			continue;
@@ -268,6 +463,15 @@ struct native_entry
 	bytes key;
 	uint64_t active, last;
 };
+struct authority_page
+{
+	identity lineage = {};
+	digest authority_body = {};
+	bytes cursor, ceiling;
+	size_t rows = 0, verified = 0, bucket_rows = 0;
+	bool exhausted = false;
+	std::vector<bytes> invalid_links;
+};
 // At most eight decoded buckets are cached during either cross-link pass.
 // Each bucket is bounded by 4096 entries and a 2 MiB frame, independent of the
 // number of retained mapping lifetimes in the store.
@@ -290,7 +494,7 @@ class checker
 	std::filesystem::path directory;
 	identity lineage = {}, last_epoch = {};
 	uint64_t next_mapping = 0, epoch_count = 0;
-	digest epochs_digest = {};
+	digest epochs_digest = {}, control_digest = {};
 	std::array<digest, buckets> native_digests = {}, mapping_digests = {};
 	mutable cache<mapping> historic_accounts;
 
@@ -312,6 +516,7 @@ class checker
 	void control()
 	{
 		auto body = frame("authority.eal", "DURECA1");
+		control_digest = hash(body);
 		reader in{ body };
 		lineage = in.fixed<16>();
 		need(nonzero(lineage) && nonzero(in.take(16)) && nonzero(in.take(16)));
@@ -423,11 +628,125 @@ class checker
 		in.done();
 		return result;
 	}
+	void mapping_link(const mapping &row, cache<native_entry> &native_cache) const
+	{
+		if (row.retired)
+			return;
+		const auto &index =
+			native_cache.get(hash(row.key)[0], [&](auto b) { return natives(b); });
+		auto found = std::lower_bound(index.begin(), index.end(), row.key,
+					      [](const auto &entry, const auto &key)
+					      { return entry.key < key; });
+		need(found != index.end() && found->key == row.key &&
+		     found->active == row.authority);
+	}
+	void native_link(const native_entry &entry, cache<mapping> &mapping_cache) const
+	{
+		const auto &values =
+			mapping_cache.get(entry.last % 256, [&](auto b) { return mappings(b); });
+		const auto position = (entry.last - 1) / 256;
+		need(position < values.size());
+		const auto &row = values[position];
+		if (entry.active)
+			need(!row.retired && row.key == entry.key);
+		else
+		{
+			need(row.key.size() >= 12 && entry.key.size() >= 12 &&
+			     std::equal(row.key.begin(), row.key.begin() + 12, entry.key.begin()));
+			const bool bank = row.key[0] == 2 && row.key[1] == 0;
+			need(bank || row.key == entry.key);
+			need(row.retired || (bank && row.key != entry.key));
+		}
+	}
 
     public:
 	explicit checker(const std::filesystem::path &root)
 		: directory(root / "economic-evidence")
 	{
+	}
+	// Page callers establish only the control/catalog context. Whole-store
+	// mapping/native closure remains in run(); it is not repeated per root page.
+	void begin_page()
+	{
+		control();
+		epochs();
+	}
+	// Two selected cross-links, with bounded independent frames for their
+	// counterpart buckets. Native key order is a traversal fence, not commit order.
+	authority_page page(bool mapping_direction, size_t bucket, const bytes &after,
+			    const bytes &ceiling, bool ceiling_known)
+	{
+		need(bucket < buckets && (after.empty() || ceiling_known) &&
+		     (!ceiling_known || after <= ceiling));
+		begin_page();
+		authority_page result;
+		result.lineage = lineage;
+		result.authority_body = control_digest;
+		result.cursor = after;
+		auto visit = [&](const auto &values, auto key, auto verify)
+		{
+			result.bucket_rows = values.size();
+			auto retained = [&](const bytes &saved)
+			{
+				return std::any_of(values.begin(), values.end(),
+						   [&](const auto &row)
+						   { return key(row) == saved; });
+			};
+			need((after.empty() || retained(after)) &&
+			     (!ceiling_known || ceiling.empty() || retained(ceiling)));
+			result.ceiling = ceiling_known	? ceiling :
+					 values.empty() ? bytes{} :
+							  key(values.back());
+			result.exhausted = true;
+			for (const auto &row : values)
+			{
+				auto current = key(row);
+				if (current <= after || current > result.ceiling)
+					continue;
+				if (result.rows == 2)
+				{
+					result.exhausted = false;
+					break;
+				}
+				try
+				{
+					verify(row);
+					++result.verified;
+				}
+				catch (const audit_budget_refused &)
+				{
+					throw;
+				}
+				catch (const std::runtime_error &)
+				{
+					result.invalid_links.push_back(current);
+				}
+				result.cursor = std::move(current);
+				++result.rows;
+			}
+		};
+		if (mapping_direction)
+		{
+			cache<native_entry> native_cache;
+			visit(
+				mappings(bucket),
+				[](const mapping &row)
+				{
+					bytes result;
+					put(result, row.authority, 8);
+					std::reverse(result.begin(), result.end());
+					return result;
+				},
+				[&](const auto &row) { mapping_link(row, native_cache); });
+		}
+		else
+		{
+			cache<mapping> mapping_cache;
+			visit(
+				natives(bucket), [](const native_entry &row) { return row.key; },
+				[&](const auto &row) { native_link(row, mapping_cache); });
+		}
+		return result;
 	}
 	// Historical account identity is immutable even when locator aliases and
 	// mapping revision/operation metadata have subsequently changed.
@@ -467,6 +786,7 @@ class checker
 		}
 		for (const auto &entry : std::filesystem::directory_iterator(directory))
 		{
+			audit_directory_entry();
 			auto name = entry.path().filename().string();
 			if (name.starts_with("mapping-") || name.starts_with("native-"))
 				need(metadata.contains(name));
@@ -476,39 +796,12 @@ class checker
 		cache<native_entry> native_cache;
 		for (size_t bucket = 0; bucket < buckets; ++bucket)
 			for (const auto &row : mappings(bucket))
-			{
-				if (row.retired)
-					continue;
-				const auto &index = native_cache.get(hash(row.key)[0], [&](auto b)
-								     { return natives(b); });
-				auto found = std::lower_bound(index.begin(), index.end(), row.key,
-							      [](const auto &entry, const auto &key)
-							      { return entry.key < key; });
-				need(found != index.end() && found->key == row.key &&
-				     found->active == row.authority);
-			}
+				mapping_link(row, native_cache);
 		native_cache.entries.clear();
 		cache<mapping> mapping_cache;
 		for (size_t bucket = 0; bucket < buckets; ++bucket)
 			for (const auto &entry : natives(bucket))
-			{
-				const auto &values = mapping_cache.get(entry.last % 256, [&](auto b)
-								       { return mappings(b); });
-				const auto position = (entry.last - 1) / 256;
-				need(position < values.size());
-				const auto &row = values[position];
-				if (entry.active)
-					need(!row.retired && row.key == entry.key);
-				else
-				{
-					need(row.key.size() >= 12 && entry.key.size() >= 12 &&
-					     std::equal(row.key.begin(), row.key.begin() + 12,
-							entry.key.begin()));
-					const bool bank = row.key[0] == 2 && row.key[1] == 0;
-					need(bank || row.key == entry.key);
-					need(row.retired || (bank && row.key != entry.key));
-				}
-			}
+				native_link(entry, mapping_cache);
 	}
 };
 } // namespace restore_economic_authority
