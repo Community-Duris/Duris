@@ -20,7 +20,7 @@ selected patch preimages raw-byte identical; all three optional patches pass
 independent cached apply checks and a private combined overlay. Collector is
 explicitly deferred by primary at the producer integration boundary; R1/R2 adoption
 is unknown, not inferred from compatibility. Current changed-dependency executable
-checks are running on the exact exported candidate plus optional overlays; old
+checks pass on the exact exported candidate plus optional overlays; old
 ELF/journey evidence below is not relabeled as this753-provider candidate.
 
 See [current reconciliation](CONTINUATION_RECONCILIATION_2026-10-07.md),
@@ -29,8 +29,9 @@ See [current reconciliation](CONTINUATION_RECONCILIATION_2026-10-07.md),
 R3 is implemented through `6d544bea7`; coordinator final declared-scope review
 passes locally at the terminal handoff, including independent source, component,
 740-object build/ELF and baseline-contract evidence checks. Review is published on remotely verified accounting `3f6f1fe0c`; its outage
-checkpoint predates the recovered successor publication. Exact current-candidate R3 SQL build now passes its fresh 753-provider
-compilation/link; flat build is still running from the immutable export. Those
+checkpoint predates the recovered successor publication. Both exact current-candidate R3 maintained builds pass their fresh753-provider
+compilation/full links on the immutable export. Exact binaries and terminal
+logs are separately pinned in its handoff. Those
 results remain separate from owned-branch ELFs and native journey qualification.
 R4 boundary was approved locally during the publication outage, implemented at
 `0a5084db1`, and independently original/extracted regression-reviewed. Both owned

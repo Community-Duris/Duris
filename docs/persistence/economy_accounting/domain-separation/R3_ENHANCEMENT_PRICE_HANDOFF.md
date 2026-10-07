@@ -121,14 +121,32 @@ remaining-step catalogue, material aggregation and compound outcome authority
 remain existing owners. Further service/forge quote seams require actual code
 assessment; a finished R3 batch is not continuing-project completion.
 
-## Subsequent immutable current-candidate build
+## Subsequent immutable current-candidate maintained builds
 
-The frozen tree `bcfe7b324cb9fedf2d297ea673f6f8cb83d4f13c` is now being compiled
-with the unchanged maintained commands, separate output volume and pinned image.
-SQL completes exit0 with 753 fresh provider compilations and the full 753-object
-link. SQL ELF SHA256
-`300bfac6299bbf18a45e5e69a7653975e81ef6039218ed1fe48c97a2b3cb4a0b`.
-Flat compilation remains running. This snapshot contains R0/R1/R2/R3 and the
-exact275df7 producer graph; it is not changed by subsequent R4 checkout edits.
-Terminal flat results and copied evidence will be recorded when available. No
-current-candidate native gameplay/persistence/recovery journey is claimed.
+Both fresh maintained builds on frozen tree
+`bcfe7b324cb9fedf2d297ea673f6f8cb83d4f13c` complete exit0; controller exit0.
+Each compiles **753 fresh providers** and performs the full **753-object** link,
+using the same commands and strict controls already recorded above. The snapshot
+contains producer `275df7f626e12cb396a22da34317a4e7f355e9a1` plus optional
+R0/R1/R2/R3, with no R4. Source export remains6429 files, archive SHA256
+`d1c0ed200bf1aabb5df78977f2ec3341ad8441bf67fab4dad6b382c246542877`.
+The final configuration-contract successor is a separately pinned test-only
+supplement, not a source change to this frozen snapshot.
+
+SQL ELF SHA256
+`300bfac6299bbf18a45e5e69a7653975e81ef6039218ed1fe48c97a2b3cb4a0b`;
+flat ELF SHA256
+`b463412d16c901715ebf91fc4e8fe81bf6f8518e261b7288c7372a1b236914f0`.
+Actual copied ELFs, complete build logs, terminal controller, candidate RESULT.json
+and six-file hash index are separately retained as `candidate-*` under
+`bin/tests/domain-r3-20261007/`. The original owned740-provider RESULT/source/
+proof checkpoint remains distinct. Task-owned current-candidate container and
+volume stay available for independent terminal/binary review.
+
+This qualifies the exact optional composed candidate at maintained build/link
+scope, including its changed real753-provider dependency graph. It establishes
+neither primary adoption nor native compound gameplay/persistence/recovery proof.
+R4 owns separate current-candidate component/type evidence; its owned740-object
+ELFs are not these binaries. The actual continuing Goal is ACTIVE/no budget,
+confirmed at the R4 completion/R5 reservation checkpoint. Primary integrated
+Plans1-5/applicable original R1-R8 finish line is still required.

@@ -73,7 +73,7 @@ The historical84-case private completion result is not current-candidate proof.
 Current import remains compatible at patch, component and type-check scopes;
 primary integrated native authority/journey qualification remains its dependency.
 Private proof logs and pins are copied into this worktree's ignored evidence path. The initial six-check checkpoint supplied no full build or journeys. Subsequent
-R3 frozen-candidate SQL fresh753-provider build/link passes; flat is still running.
+R3 frozen-candidate maintained SQL and flat fresh753-provider builds/full links pass, controller exit0.
 See the separately pinned R3 handoff. No current SQL/gameplay/persistence journey
 is claimed.
 Historical R0/R1/R2 binaries and runtime evidence remain labeled by their exact
