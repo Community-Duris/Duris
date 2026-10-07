@@ -2105,6 +2105,35 @@
       ]
     },
     {
+      "id": "flatfile_lifecycle_v2",
+      "path": "tests/async/test_flatfile_lifecycle_v2.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--native-source",
+        ".",
+        "--artifacts",
+        "{evidence}/native"
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_flatfile_lifecycle_v2.py"
+      ],
+      "required_markers": [
+        "\"cases\": 65",
+        "\"accepted\": 12",
+        "\"envelopes\": 5",
+        "\"skips\": 0"
+      ]
+    },
+    {
       "id": "flatfile_restore_lifecycle_receipts",
       "path": "tests/async/test_flatfile_restore_lifecycle_receipts.py",
       "provider": "offline",
