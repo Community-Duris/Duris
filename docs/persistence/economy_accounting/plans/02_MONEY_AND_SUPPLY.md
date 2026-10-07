@@ -1,5 +1,16 @@
 # Plan 2: money holdings, transfers, issuance, and expenses
 
+## Coin owner component fixture repaired - 2026-10-07
+
+[Qualified fixture](../COIN_OWNER_COMPONENT_FIXTURE_INTEGRATION_2026-10-07.md)
+restores the real stopped-pipeline provider/registration and canonical native
+literal inputs. All original35 owner cases pass in both profiles (70 total);
+primary verifies94 actual compiler closures, current223 dependencies and exact
+maintained generated harness bytes. The five earlier physical literal controls
+are retained alongside the original25 controls. Native successful SQL/world/ACK,
+flatfile parity, remaining Plans2-4 and full R1-R8/release remain separate and open.
+Production behavior and all926 writer policies remain unchanged.
+
 ## Maintained post-ACK room coin recovery qualified - 2026-10-07
 
 [Qualified coin fix](../COIN_POSTACK_MAINTAINED_INTEGRATION_2026-10-07.md) restores acknowledged ordinary room piles on cold
