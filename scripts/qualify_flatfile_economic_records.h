@@ -23,6 +23,18 @@ constexpr size_t command_limit = 512 * 1024, plan_limit = 4 * 1024 * 1024;
 constexpr size_t record_limit = 48 + 26 + command_limit + plan_limit + 4096;
 constexpr uint64_t bucket_limit = uint64_t{ 256 } << 20;
 constexpr size_t segment_count_limit = bucket_limit / (segment_limit - record_limit - 80) + 1;
+// Independent schema-2 envelope grammar. Native codecs remain test oracles.
+inline bool command_capability_valid(uint64_t type, uint64_t version, uint64_t publication)
+{
+	return type >= 1 && type <= 21 && version > 0 && version <= UINT16_MAX &&
+	       publication <= 1 &&
+	       (!publication || type == 3 || type == 5 || type == 17 || type == 18 || type == 21 ||
+		(type == 15 && version >= 6 && version <= 8));
+}
+inline bool command_key_valid(uint64_t kind, uint64_t id)
+{
+	return kind >= 1 && kind <= 15 && id && (kind != 15 || id != UINT64_MAX);
+}
 inline std::span<const uint8_t> unwrap(std::span<const uint8_t> value, const char *magic)
 {
 	reader in{ value };
@@ -389,10 +401,9 @@ class checker
 		auto deadline = cmd.number(1), publication = cmd.number(1),
 		     accepted = cmd.number(8);
 		auto keys = cmd.number(4), revisions = cmd.number(4), payload_size = cmd.number(4);
-		need(type >= 1 && type <= 20 && payload_version && source >= 1 && source <= 6 &&
-		     deadline >= 1 && deadline <= 4 && publication <= 1 &&
-		     (!publication || type == 3 || type == 5 || type == 17) && accepted &&
-		     keys > 0 && keys <= 3003 && revisions <= 3003 && payload_size <= 384 * 1024);
+		need(command_capability_valid(type, payload_version, publication) && source >= 1 &&
+		     source <= 6 && deadline >= 1 && deadline <= 4 && accepted && keys > 0 &&
+		     keys <= 3003 && revisions <= 3003 && payload_size <= 384 * 1024);
 		using key = std::pair<uint64_t, uint64_t>;
 		std::vector<key> identities;
 		auto read_key = [&]
@@ -400,7 +411,7 @@ class checker
 			auto kind = cmd.number(1);
 			need(!nonzero(cmd.take(7)));
 			auto id = cmd.number(8);
-			need(kind >= 1 && kind <= 14 && id);
+			need(command_key_valid(kind, id));
 			return key{ kind, id };
 		};
 		for (size_t i = 0; i < keys; ++i)
