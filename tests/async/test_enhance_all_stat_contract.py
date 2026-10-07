@@ -14,7 +14,11 @@ assert "if (stat_idx != -1 && enhance_stat_enabled)" not in source
 
 # A plan aggregates template-derived tribute across all upgradeable stats and
 # validates the entire inventory before mutating the item or consuming anything.
-assert "superior_plan_add_material" in source
+plan_rules = (ROOT / "src/economy/enhancement_superior_plan.h").read_text()
+assert 'return enhancement_prepare_superior_plan(observed, plan);' in source
+assert 'enhancement_superior_plan_add_material' in plan_rules
+assert 'plan->slots[plan->slot_count++] = slot;' in plan_rules
+assert 'observed.remaining(slot, cap)' in plan_rules
 assert "vnum_in_inv(ch, plan->materials[i].vnum) < plan->materials[i].count" in source
 assert "source->affected[plan->slots[i]].modifier++" in source
 assert "vnum_from_inv(ch, plan->materials[i].vnum, plan->materials[i].count)" in source

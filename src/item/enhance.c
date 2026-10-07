@@ -28,7 +28,7 @@
 #include "economy/tradeskill.h"
 #include "economy/economic_gameplay_authority.h"
 #include "item/objmisc.h"
-#include "economy/enhancement_material_quote.h"
+#include "economy/enhancement_superior_plan.h"
 #include "combat/chaos_materials.h"
 
 /* Forward declarations for hash functions used in enhance() and do_enhance() */
@@ -442,23 +442,6 @@ static void mark_item_superior(P_obj item)
 	set_short_description(item, short_desc);
 }
 
-#define MAX_SUPERIOR_MATERIALS (MAX_OBJ_AFFECT * 2)
-
-struct superior_material_requirement
-{
-	int vnum;
-	int count;
-};
-
-struct superior_enhancement_plan
-{
-	int slots[MAX_OBJ_AFFECT];
-	int slot_count;
-	int remaining_enhancements;
-	struct superior_material_requirement materials[MAX_SUPERIOR_MATERIALS];
-	int material_count;
-};
-
 static bool is_superior_stat_apply(int apply_loc)
 {
 	int i;
@@ -466,30 +449,6 @@ static bool is_superior_stat_apply(int apply_loc)
 		if (enhance_stat_names[i].apply_loc == apply_loc)
 			return TRUE;
 	return FALSE;
-}
-
-static bool superior_plan_add_material(struct superior_enhancement_plan *plan, int vnum, int count)
-{
-	int i;
-
-	if (count <= 0)
-		return TRUE;
-	for (i = 0; i < plan->material_count; i++)
-	{
-		if (plan->materials[i].vnum == vnum)
-		{
-			if (plan->materials[i].count > INT_MAX - count)
-				return FALSE;
-			plan->materials[i].count += count;
-			return TRUE;
-		}
-	}
-	if (plan->material_count >= MAX_SUPERIOR_MATERIALS)
-		return FALSE;
-	plan->materials[plan->material_count].vnum = vnum;
-	plan->materials[plan->material_count].count = count;
-	plan->material_count++;
-	return TRUE;
 }
 
 /* Count only template-backed future steps, so the preview never promises an unavailable tier. */
@@ -510,48 +469,48 @@ static int superior_stat_remaining_steps(P_obj item, int apply_loc, int current,
 /* Build the next atomic all-stat improvement and aggregate duplicate material vnums. */
 static bool build_superior_enhancement_plan(P_obj item, struct superior_enhancement_plan *plan)
 {
-	int i;
-
-	memset(plan, 0, sizeof(*plan));
-	for (i = 0; i < MAX_OBJ_AFFECT; i++)
+	struct native_superior_facts
 	{
-		int base;
-		int cap;
-		int remaining;
-		int low_vnum;
-		int high_vnum;
-		struct enhance_index_entry *target;
-		P_obj target_obj;
+		P_obj item;
 
-		if (item->affected[i].location == APPLY_NONE || item->affected[i].modifier <= 0 ||
-		    !is_superior_stat_apply(item->affected[i].location))
-			continue;
-		base = enhance_base_modifier(item, item->affected[i].location);
-		cap = enhance_stat_cap(base);
-		if (base <= 0 || item->affected[i].modifier >= cap)
-			continue;
-		target = find_stat_enhance_target(item, item->affected[i].location,
-						  item->affected[i].modifier + 1);
-		if (!target || !(target_obj = read_object(target->vnum, VIRTUAL)))
-			continue;
+		bool eligible(int slot) const
+		{
+			return !(item->affected[slot].location == APPLY_NONE ||
+				 item->affected[slot].modifier <= 0 ||
+				 !is_superior_stat_apply(item->affected[slot].location));
+		}
 
-		low_vnum = get_matstart(target_obj);
-		extract_obj(target_obj);
-		high_vnum = low_vnum + 4;
-		enhancement_material_quote quote;
-		if (!enhancement_prepare_material_quote(
-			    target->ival, enhance_stat_material_quantity_multiplier, &quote))
-			return FALSE;
-		if (!superior_plan_add_material(plan, low_vnum, quote.low_count) ||
-		    !superior_plan_add_material(plan, high_vnum, quote.high_count))
-			return FALSE;
+		int base(int slot) const
+		{
+			return enhance_base_modifier(item, item->affected[slot].location);
+		}
 
-		plan->slots[plan->slot_count++] = i;
-		remaining = superior_stat_remaining_steps(item, item->affected[i].location,
-							  item->affected[i].modifier, cap);
-		plan->remaining_enhancements = MAX(plan->remaining_enhancements, remaining);
-	}
-	return plan->slot_count > 0;
+		int cap(int base_modifier) const { return enhance_stat_cap(base_modifier); }
+
+		int modifier(int slot) const { return item->affected[slot].modifier; }
+
+		enhancement_superior_target target(int slot) const
+		{
+			struct enhance_index_entry *target =
+				find_stat_enhance_target(item, item->affected[slot].location,
+							 item->affected[slot].modifier + 1);
+			P_obj target_obj;
+			if (!target || !(target_obj = read_object(target->vnum, VIRTUAL)))
+				return {};
+			const int low_vnum = get_matstart(target_obj);
+			extract_obj(target_obj);
+			return { true, low_vnum, target->ival,
+				 enhance_stat_material_quantity_multiplier };
+		}
+
+		int remaining(int slot, int cap) const
+		{
+			return superior_stat_remaining_steps(item, item->affected[slot].location,
+							     item->affected[slot].modifier, cap);
+		}
+	};
+	native_superior_facts observed{ item };
+	return enhancement_prepare_superior_plan(observed, plan);
 }
 
 static bool superior_plan_has_materials(P_char ch, P_obj pouch,
