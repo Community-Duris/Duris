@@ -7,6 +7,7 @@ No database, running server, or local player state is used.
 """
 
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 from _paths import ROOT, extract_function
@@ -31,10 +32,12 @@ PRELUDE = r'''
 #include "core/utils.h"
 #include "core/utility.h"
 #include "economy/shop.h"
+#include "economy/shop_purchase_quote.h"
 #include "economy/economic_gameplay_authority.h"
 #include "economy/currency_transaction.h"
 #include "economy/shop_trade_runtime.h"
 #include "economy/shop_trade_transaction.h"
+#include "economy/shop_trade_publication.h"
 #include "item/item_movement_transaction.h"
 #include "persistence/persistence_mode.h"
 #include "world/epic_bonus.h"
@@ -79,6 +82,13 @@ static shop_trade_payload trade_payload{};
 static uint64_t payment_uid = 0;
 static int64_t payment_delta = 0;
 
+
+static bool quote_barter = false;
+static int quote_roll = 0, quote_mutation = 0;
+static float quote_epic = 0;
+static P_char quote_actor = nullptr;
+static P_obj quote_stock = nullptr;
+static std::vector<std::string> quote_trace;
 void send_to_char(const char *message, P_char) { fixture_messages.emplace_back(message); }
 void logit(const char *, const char *, ...) {}
 void statuslog(int, const char *, ...) {}
@@ -90,7 +100,7 @@ void act(const char *, int, P_char, P_obj, void *, int) { ++rooms; }
 void do_tell(P_char, char *, int) { ++tells; }
 void mobsay(P_char, const char *message) { fixture_messages.emplace_back(message); }
 int real_room(int) { return 0; }
-int STAT_INDEX(int stat) { return stat; }
+int STAT_INDEX(int stat) { quote_trace.push_back("stat:"+std::to_string(stat)); return stat; }
 bool ac_can_see_obj(P_char, P_obj, int) { return true; }
 char *FirstWord(char *word) { return word; }
 void CAP(char *word) { *word = toupper(*word); }
@@ -99,9 +109,18 @@ int checked_snprintf(char *buffer, size_t size, const char *format, ...) {
 }
 int checked_substitute_strings(char *buffer, size_t size, const char *, const char *const *, size_t) { if(size) *buffer = 0; return 0; }
 int is_ok(P_char, P_char, int) { return TRUE; }
-bool has_innate(P_char, int) { return false; }
-int number(int, int) { return 0; }
-float get_epic_bonus(P_char, int) { return 0; }
+bool has_innate(P_char, int id) { assert(id==INNATE_BARTER); quote_trace.push_back("innate"); return quote_barter; }
+int number(int low, int high) {
+    assert(low==0 && high==125 && quote_roll>=low && quote_roll<=high);
+    quote_trace.push_back("roll:0:125");
+    if (quote_mutation==1) { quote_stock->cost=120; shop.sell_percent=99; cha_app[100].modifier=50; quote_actor->curr_stats.Cha=0; }
+    return quote_roll;
+}
+float get_epic_bonus(P_char, int id) {
+    assert(id==EPIC_BONUS_SHOP); quote_trace.push_back("epic");
+    if (quote_mutation==2) { quote_stock->cost=9999; shop.sell_percent=99; quote_actor->curr_stats.Cha=0; }
+    return quote_epic;
+}
 int writeShopKeeper(P_char, int) { return 0; }
 void ADD_MONEY(P_char ch, int amount, const char *) { if (IS_PC(ch)) ++refunds; else GET_COPPER(ch) += amount; }
 int SUB_MONEY(P_char ch, int amount, int) { GET_COPPER(ch) -= amount; return 0; }
@@ -159,6 +178,41 @@ bool item_creation_grant_submit_to_player_with_completion(P_char, P_obj object, 
 bool item_creation_grant_submit_to_player(P_char, P_obj, P_char, P_obj, economic_source_kind, uint64_t) { ++submissions; return true; }
 '''
 
+BINDINGS = r'''
+P_char character_list = nullptr;
+// Controlled service/world endpoints only. No accounted authority exists.
+bool shop_trade_preparation_owner::production_available() noexcept { return false; }
+static bool shop_trade_start_accounted(P_char, P_char, P_obj, P_obj, P_obj, uint32_t,
+    shop_trade_action, int64_t, int = 1, bool = false) { assert(false); return false; }
+static bool shop_trade_submit_accounted_produced_continuation(P_char, const produced_purchase_sequence&) {
+    assert(false); return false;
+}
+static bool shop_trade_source_bytes_match(P_obj object, const shop_trade_payload& payload) {
+    return shop_trade_runtime_object_matches_payload(object, payload);
+}
+static bool shop_trade_publish_physical(P_char actor, const shop_trade_result& result,
+    const shop_trade_payload& payload, uint32_t& stages) {
+    if (!exact) return false;
+    assert(pending_item && payload.selected_item_uid == pending_item->obj_uid);
+    obj_to_char(pending_item, actor);
+    if (payload.target_parent_item_uid) {
+        P_obj target = object_list;
+        while (target && target->obj_uid != payload.target_parent_item_uid) target = target->next;
+        assert(target); obj_from_char(pending_item); obj_to_obj(pending_item, target);
+    }
+    if (result.keeper_cash_recorded) {
+        P_char keeper = world[0].people; assert(keeper); GET_COPPER(keeper) = result.keeper_cash;
+    }
+    stages = 1; return true;
+}
+static shop_trade_physical_publication_fn physical_callback = nullptr;
+bool shop_trade_transaction_submit_with_publication(P_char actor, const shop_trade_payload& payload,
+    shop_trade_physical_publication_fn publication, shop_trade_completion_fn completion) {
+    if (!shop_trade_transaction_submit(actor, payload, completion)) return false;
+    physical_callback = publication; return true;
+}
+'''
+
 DRIVER = r'''
 struct fixture {
     char_data player{}, keeper{}; pc_only_data pc{}; npc_only_data npc{};
@@ -180,7 +234,11 @@ struct fixture {
         bag.loc_p = LOC_CARRIED; bag.loc.carrying = &player; player.carrying = &bag;
         rock.obj_uid = 30; rock.name = const_cast<char *>("rock"); rock.short_description = const_cast<char *>("a rock");
         rock.loc_p = LOC_CARRIED; rock.loc.carrying = &player; bag.next_content = &rock;
+
         stock.next = &bag; bag.next = &rock; object_list = &stock;
+        for (auto& value:cha_app) value.modifier=0;
+        quote_barter=false; quote_roll=quote_mutation=0; quote_epic=0;
+        quote_actor=&player; quote_stock=&stock; quote_trace.clear();
     }
     void buy(const char *command) { char input[MAX_INPUT_LENGTH]; strcpy(input, command); shopping_buy(input, &player, &keeper, 0); }
     void reject_grant() {
@@ -196,7 +254,7 @@ struct fixture {
             shop_trade_result result{};
             if (committed) { result.shop_revision = 1; result.item_count = 1; GET_COPPER(&player) -= payload.price;
                 result.keeper_cash_recorded = keeper_cash_recorded; result.keeper_cash = payload.expected_keeper_cash + payload.price; }
-            exact = publish; callback(&player, committed && publish, result, error, payload);
+            exact = publish; uint32_t stages = 0; const bool physically_published = committed && physical_callback(&player, result, payload, stages); callback(&player, physically_published, result, error, payload);
         } else {
             if (payment_callback) {
                 auto callback = payment_callback; payment_callback = nullptr;
@@ -365,6 +423,76 @@ int main() {
     }
     assert(shop_purchase_price(0) == "0 copper");
     assert(shop_purchase_price(50LL * std::numeric_limits<int>::max()) == "107374182350 copper");
+
+    struct quote_case { int modifier, charisma, race, cost; float percent; bool barter; int roll; float epic; int expected; };
+    const quote_case quote_cases[] = {
+        {0,100,0,101,1,false,0,0,101},
+        {25,100,0,100,1,false,0,0,101},
+        {-25,100,0,100,1,false,0,0,125},
+        {-25,100,1,100,1,false,0,0,150},
+        {25,100,1,100,1,false,0,0,101},
+        {0,80,0,101,1,false,0,0,101},
+        {0,140,0,101,1,false,0,0,101},
+        {0,100,0,101,1,true,99,0,75},
+        {0,100,0,101,1,true,100,0,111},
+        {0,100,0,101,1,true,125,0,111},
+        {0,100,0,101,1,false,0,.5f,51},
+        {0,100,0,101,1,false,0,1.f,1},
+        {0,100,0,101,1,false,0,1.5f,1},
+        {0,100,0,101,1,false,0,-.5f,151},
+        {0,100,0,100,.01f,false,0,0,1},
+        {0,100,0,100,0,true,0,.5f,1},
+        {0,100,0,101,.5f,true,99,.5f,13},
+        {-20,100,0,99,.5f,false,0,0,59},
+    };
+    for (const auto backend:{PERSISTENCE_MODE_FLATFILE_PRIMARY,PERSISTENCE_MODE_MARIADB_PRIMARY}) {
+        for (const auto& c:quote_cases) {
+            fixture f(backend); f.player.curr_stats.Cha=c.charisma; GET_RACE(&f.player)=c.race;
+            cha_app[std::max(100,c.charisma)].modifier=static_cast<::byte>(c.modifier);
+            f.stock.cost=c.cost; shop.sell_percent=c.percent; quote_barter=c.barter; quote_roll=c.roll; quote_epic=c.epic;
+            f.buy("ration"); const int64_t charged=backend==PERSISTENCE_MODE_FLATFILE_PRIMARY?trade_payload.price:-payment_delta;
+            assert(submissions==1 && charged==c.expected && GET_MONEY(&f.player)==1000);
+            std::vector<std::string> expected={"stat:"+std::to_string(std::max(100,c.charisma)),"innate"};
+            if(c.barter) { expected.push_back("roll:0:125"); }
+            expected.push_back("epic");
+            // Complete caller also checks carry capacity: once for flat, twice for the SQL produced path.
+            expected.insert(expected.end(),backend==PERSISTENCE_MODE_FLATFILE_PRIMARY?1:2,"stat:200");
+            if(quote_trace!=expected) { fprintf(stderr,"trace backend %d charisma %d:",backend,c.charisma); for(const auto& value:quote_trace)fprintf(stderr," %s",value.c_str());fputc('\n',stderr); }
+            assert(quote_trace==expected);
+        }
+        {
+            fixture f(backend); f.stock.cost=101; cha_app[100].modifier=25; quote_barter=true; quote_roll=0; quote_epic=.5f; quote_mutation=1;
+            f.buy("ration"); const int64_t charged=backend==PERSISTENCE_MODE_FLATFILE_PRIMARY?trade_payload.price:-payment_delta;
+            fprintf(stderr,"original mutation quote: %lld\n",static_cast<long long>(charged));
+            assert(charged==46 && f.stock.cost==120 && shop.sell_percent==99 && GET_C_CHA(&f.player)==0);
+            std::vector<std::string> expected={"stat:100","innate","roll:0:125","epic"};
+            expected.insert(expected.end(),backend==PERSISTENCE_MODE_FLATFILE_PRIMARY?1:2,"stat:200"); assert(quote_trace==expected);
+        }
+        {
+            fixture f(backend); f.stock.cost=101; quote_epic=.5f; quote_mutation=2;
+            f.buy("ration"); const int64_t charged=backend==PERSISTENCE_MODE_FLATFILE_PRIMARY?trade_payload.price:-payment_delta;
+            assert(charged==51 && f.stock.cost==9999 && shop.sell_percent==99);
+            std::vector<std::string> expected={"stat:100","innate","epic"};
+            expected.insert(expected.end(),backend==PERSISTENCE_MODE_FLATFILE_PRIMARY?1:2,"stat:200"); assert(quote_trace==expected);
+        }
+        {
+            fixture f(backend); f.stock.cost=101; quote_barter=true; quote_roll=0; quote_epic=.5f;
+            f.buy("ration quantity 2"); assert(submissions==1);
+            std::vector<std::string> initial={"stat:100","innate","roll:0:125","epic"};
+            initial.insert(initial.end(),backend==PERSISTENCE_MODE_FLATFILE_PRIMARY?1:2,"stat:200"); assert(quote_trace==initial);
+            const int64_t first=backend==PERSISTENCE_MODE_FLATFILE_PRIMARY?trade_payload.price:-payment_delta;
+            assert(first==38); f.complete(); f.complete(); assert(GET_MONEY(&f.player)==924);
+            std::vector<std::string> complete={"stat:100","innate","roll:0:125","epic"};
+            complete.insert(complete.end(),backend==PERSISTENCE_MODE_FLATFILE_PRIMARY?2:5,"stat:200"); assert(quote_trace==complete);
+        }
+        {
+            fixture f(backend); quote_barter=true; f.buy("ration quantity 0"); assert(quote_trace.empty() && submissions==0);
+        }
+        {
+            fixture f(backend); quote_barter=true; accounting_active=true; f.buy("ration"); assert(quote_trace.empty() && submissions==0);
+        }
+    }
+
     puts("shop purchase parser, command and completion messages passed");
 }
 '''
@@ -393,18 +521,21 @@ def main():
                  "static bool shop_trade_submit_produced_continuation(", "static bool shop_trade_submit_invalid_cleanup(",
                  "static bool shop_trade_route_invalid_cleanup(", "static void shop_trade_completion(",
                  "static void shop_creation_grant_completion(", "static void shop_creation_payment_completion(",
-                 "void shopping_buy(", "void shopping_list(", "int shop_producing("]
+                 "void shopping_buy(", "void shopping_list(", "int shop_producing(",
+                 "static P_char shop_trade_find_original_keeper(", "static void shop_trade_completion_impl("]
     declarations = "\n".join(definition(name).split("{")[0].rstrip() + ";" for name in functions)
     # Default arguments belong in one declaration only.
-    definitions = "\n".join(definition(name) for name in functions).replace(
-        'const char *reason = "the shop could not complete delivery"', 'const char *reason').replace(
-        'bool delayed = false', 'bool delayed')
+    definitions = []
+    for name in functions:
+        prefix, body = definition(name).split("{", 1)
+        prefix = re.sub(r'\s*=\s*(?:"[^"]*"|false|true|nullptr|NULL|[0-9]+)', "", prefix)
+        definitions.append(prefix + "{" + body)
     structs = SHOP[SHOP.index("struct produced_purchase_sequence"):SHOP.index("void lore_item(")]
     request = definition("struct shop_purchase_request") + ";"
-    harness = "\n".join([PRELUDE, structs, request,
+    harness = "\n".join([PRELUDE, structs, BINDINGS, request,
                          extract_function("cmd/interp.c", "char *one_argument("),
                          extract_function("cmd/interp.c", "char *lohrr_chop("),
-                         declarations, definitions, DRIVER])
+                         declarations, "\n".join(definitions), DRIVER])
     build_root = ROOT / "bin/tests"
     build_root.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="shop-usability-", dir=build_root) as directory:

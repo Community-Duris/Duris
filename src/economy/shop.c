@@ -19,6 +19,7 @@
 #include "economy/shop.h"
 #include <ctype.h>
 #include <stdio.h>
+#include "economy/shop_purchase_quote.h"
 #include <string.h>
 #include <glob.h>
 #include "combat/damage.h"
@@ -1896,7 +1897,6 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	char *argm = request.item;
 	P_obj temp1, gem = NULL, container;
 	int i = 0, sale;
-	float cost_factor;
 	char Gbuf1[MAX_STRING_LENGTH];
 
 	if (!(is_ok(keeper, ch, shop_nr)))
@@ -1976,37 +1976,25 @@ void shopping_buy(char *arg, P_char ch, P_char keeper, int shop_nr)
 	    shop_trade_route_invalid_cleanup(ch, keeper, temp1, static_cast<uint32_t>(shop_nr)))
 		return;
 
-	cost_factor = (float)cha_app[STAT_INDEX(MAX(100, GET_C_CHA(ch)))].modifier;
-	if (GET_RACE(ch) != GET_RACE(keeper))
-		cost_factor = cost_factor * 2.;
-
-	cost_factor = shop_index[shop_nr].sell_percent * (1.0 - (cost_factor / 100.));
-	if (cost_factor < shop_index[shop_nr].sell_percent)
+	struct purchase_quote_observations
 	{
-		cost_factor = shop_index[shop_nr].sell_percent + .01;
-	}
+		P_char actor;
+		P_char keeper;
+		P_obj selected;
+		int shop_nr;
 
-	if (has_innate(ch, INNATE_BARTER))
-	{
-		if (GET_C_CHA(ch) > number(0, 125))
+		float charisma_modifier()
 		{
-			cost_factor -= .25;
+			return (float)cha_app[STAT_INDEX(MAX(100, GET_C_CHA(actor)))].modifier;
 		}
-		else
-		{
-			cost_factor += .10;
-		}
-	}
-
-	sale = (int)(temp1->cost * cost_factor);
-
-	// hook for epic bonus
-	sale -= (int)(sale * get_epic_bonus(ch, EPIC_BONUS_SHOP));
-
-	if (sale < 1)
-	{
-		sale = 1;
-	}
+		bool same_race() { return GET_RACE(actor) == GET_RACE(keeper); }
+		float sell_percent() { return shop_index[shop_nr].sell_percent; }
+		bool barter_enabled() { return has_innate(actor, INNATE_BARTER); }
+		bool barter_succeeds() { return GET_C_CHA(actor) > number(0, 125); }
+		int item_cost() { return selected->cost; }
+		float epic_bonus() { return get_epic_bonus(actor, EPIC_BONUS_SHOP); }
+	} quote_observations{ ch, keeper, temp1, shop_nr };
+	sale = shop_prepare_purchase_quote(quote_observations);
 
 	const bool produced_purchase = shop_producing(temp1, shop_nr);
 
