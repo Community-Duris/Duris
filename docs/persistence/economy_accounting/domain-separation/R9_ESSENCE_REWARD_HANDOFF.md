@@ -6,7 +6,13 @@ component, maintained-build and bare-current import/module scope. Coordinator
 approved the exact four-file reservationc84 at accounting
 `e49d83a3dfeb53062c28d202e0566517f8d7989a` in
 [R9_ESSENCE_REWARD_REVIEW_2026-10-07.md](https://github.com/Community-Duris/Duris/blob/e49d83a3dfeb53062c28d202e0566517f8d7989a/docs/persistence/economy_accounting/domain-separation/R9_ESSENCE_REWARD_REVIEW_2026-10-07.md).
-Final declared-scope review is pending. Actual continuing Goal remains ACTIVE/no
+Final declared-scope review PASS is published and remotely verified at accounting
+`81de2cbb46205fa3182f55ffecd93bb5272fc600` in
+[R9_ESSENCE_REWARD_REVIEW_2026-10-07.md](https://github.com/Community-Duris/Duris/blob/81de2cbb46205fa3182f55ffecd93bb5272fc600/docs/persistence/economy_accounting/domain-separation/R9_ESSENCE_REWARD_REVIEW_2026-10-07.md).
+Root independently authenticated all4 source/45 proof hashes and byte counts,
+actual SQL/flat retained and copied ELFs/740 links, all6443 complete bare export
+bodies and both exact imports. It did not separately claim whole production
+export authentication. Actual continuing Goal remains ACTIVE/no
 budget, createdAt1791384853, retaining full primary Plans1-5/applicable original
 R1-R8 integrated implementation and supported gameplay/persistence/recovery,
 resolved required blockers and published owner completion disposition. Worker
@@ -69,7 +75,7 @@ Coordinator independently compiled/executed complete original/extracted final
 inputs, including all27 scenarios and both policy cases, with unchanged controls.
 Its initial component snapshot matches305 source and all three other source pins;
 no repeated runtime was needed for the include-only followup. Final build/import
-artifact review remains pending.
+artifact review PASS is published at accounting81de2cbb46.
 
 Adjacent config/balance, essence/ordinary/superior payment, material/all-stat,
 stat/config/pool and all four active paid-refusal checks PASS. Module boundary
@@ -146,5 +152,5 @@ credentials are committed.
 
 The [R9 reservation](R9_ESSENCE_REWARD_RESERVATION.md) retains the evolving
 nine-family assessment and original feasibility. Final declared-scope review is
-pending; original primary Plans1-5/applicable R1-R8 qualification, missing authentic
+resolved; original primary Plans1-5/applicable R1-R8 qualification, missing authentic
 owner interfaces and supported journeys remain open. No activation/deployment.

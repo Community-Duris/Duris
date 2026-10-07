@@ -1,7 +1,15 @@
 # Post-R9 concrete queue and native-owner dependencies — 2026-10-07
 
+The original maintained fixture failure below remains preserved. A private complete
+current-producer closure now PASSes every original runtime assertion, all original
+Python main assertions and46 added quote scenarios (23 per controlled mode). See
+[R10 reservation](R10_SHOP_PURCHASE_QUOTE_RESERVATION.md) for exact three-file
+scope, accounted-unavailable fixture limits and original failed expectation records.
+No maintained shop scope is implemented before coordinator boundary review.
+R9 final review PASS is remotely verified at accounting81de2cbb46.
+
 R9 implementation15d/305 and terminal handoffde23d6365c8f2c40d01369ee05172b569e1c993e
-are published and qualified at their declared scope; final review remains pending.
+are published and qualified at their declared scope; final review PASS is published at accounting81de2cbb46.
 Actual continuing Goal remains ACTIVE/no budget with the unchanged primary
 Plans1-5/applicable original R1-R8 integrated and supported gameplay/persistence/
 recovery finish line. This turn made substantial implementation/qualification/

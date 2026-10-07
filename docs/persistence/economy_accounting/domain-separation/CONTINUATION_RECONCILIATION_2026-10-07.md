@@ -1,17 +1,23 @@
 # Continuing candidate reconciliation — 2026-10-07
 
+[R10 complete shop purchase quote reservation](R10_SHOP_PURCHASE_QUOTE_RESERVATION.md)
+now has executed complete original feasibility: all old runtime/Python assertions
+plus46 quote scenarios PASS in private current fixture closure. Exact three-file
+boundary awaits coordinator review; no maintained shop edits are made. The original
+fixture compile failure and native authority limits remain explicit.
+
 [Post-R9 nine-family assessment](POST_R9_OWNER_DEPENDENCIES_2026-10-07.md)
 identifies complete shop purchase quote as a concrete next candidate and records
 the executed original actual-caller fixture compile failure. No shop scope is
 reserved or implemented; current native/test ownership and all original controls
-remain preserved. R9 final review remains pending.
+remain preserved. R9 final review PASS is published at accounting81de2cbb46.
 
 R9 ordered NPC essence selection is implemented at15d plus include fix305.
 Complete original/extracted27-scenario controls and both labeled ordinal-policy
 cases PASS, as do adjacent checks, both maintained740-object builds and bare-primary
 full-package component/SQL-flat module checks. Full and production patches require
 no optional predecessor. See [R9 terminal handoff](R9_ESSENCE_REWARD_HANDOFF.md).
-Final R9 declared-scope review is pending; the continuing Goal remains ACTIVE/no
+Final R9 declared-scope review PASS is published at accounting81de2cbb46; the continuing Goal remains ACTIVE/no
 budget. R8 final review PASS remains published at accounting74b25fc9b.
 
 R8 ordinary cascade is implemented at `7f0d11b4d` plus compiler fix `9f5119fc3`.
