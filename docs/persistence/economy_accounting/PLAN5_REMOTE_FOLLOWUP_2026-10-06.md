@@ -752,3 +752,30 @@ SHA256 `4533676d4a34024015ec281ef35449205e52629e74900a1fc7a506a357074136`. Prima
 or acknowledgement is claimed. Durable flatfile scanning and full producer,
 restore/retention, R7/R8 and release gates remain open; release validation still
 refuses missing executable writer evidence. Accounting stays inactive.
+
+## Bounded read-only flatfile audit boundary — 2026-10-06
+
+The next solved slice remains on `codex/accounting-plan5`, base `6af4e27f9991e51599bfe9294432b4ec34b8554b`.
+[Exact qualification](PLAN5_FLATFILE_AUDIT_BOUNDARY_QUALIFICATION_2026-10-06.md)
+establishes eight original unsafe acceptances and qualifies the independent
+shared-lock/journal boundary plus fixed audit admission limits. Seven owned
+code/test files; no shared schema/producer/coordinator/matrix/activation changes.
+All prior branches and their follow-ups remain reachable through this branch.
+The delivery receipt supplies the exact published result and verifies old tips.
+
+Frozen source `f92e752283cd7bd0aca53f60b6ba83639daa3c99c07f364f8da3843a16d30977`, native `4abb609524a1f1682ea4c190f82d75003c4d679b`,
+canonical62 migrations `1d041c8bc27cfc2b2bfdc8095b6c1348ac3a15c5`. The original full flatfile
+regression passes with12 new boundary and9 budget/concurrency controls;
+canonical64 methods on fresh MariaDB/MySQL and69 marker cases have zero skips;
+both maintained builds are fresh740-unit, exit0. Seal `839140252776847acceba240210f83825146267b4f7828602cac3307af7fda25`.
+The native pending journal remains a private storage failure fixture, distinct
+from genuine producer journeys. Inspected primary `299ee884ec31895175af8e6afc15a3d3ac6b868c`
+and its newer native tree are not independently qualified here.
+
+Full Plan5/R7/R8/release stay incomplete, including durable fair flatfile
+pagination and combined native/cold-world/capture/retention/performance gates.
+Release validator still refuses missing executable writer evidence. No slice
+blocker remains; final selected checks skip nothing. Accounting remains inactive,
+wallet-root exclusions and the declined spell path remain preserved. Primary's
+local notebook is nonblocking; this is the curator packet, not an application
+acknowledgement or a claim that a cross-chat message was sent.

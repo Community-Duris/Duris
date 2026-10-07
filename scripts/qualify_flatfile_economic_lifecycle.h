@@ -237,6 +237,7 @@ class checker
 		std::set<identity> present;
 		for (const auto &file : std::filesystem::directory_iterator(directory))
 		{
+			audit_directory_entry();
 			auto name = file.path().filename().string();
 			if (!name.starts_with("lifecycle"))
 				continue;

@@ -165,6 +165,38 @@ int main(int argc, char **argv)
 {
 	assert(argc == 3);
 	const std::string root = argv[1], mode = argv[2];
+	if (mode == "hold-authority-lock" || mode == "pending-authority-journal")
+	{
+		flatfile_authority_lock lock;
+		std::string error;
+		assert(lock.acquire(root, &error));
+		if (mode == "hold-authority-lock")
+		{
+			std::cout << "NATIVE_AUTHORITY_LOCK_HELD\n" << std::flush;
+			std::string release;
+			assert(std::getline(std::cin, release) && release == "release");
+			return 0;
+		}
+		// The native writer publishes its encoded journal, then fails to replace
+		// this private directory. No retained evidence or gameplay image changes.
+		const auto target = std::filesystem::path(root) / "domains/audit-boundary-target";
+		assert(std::filesystem::create_directory(target));
+		flatfile_authority_commit_outcome outcome;
+		const std::vector<flatfile_authority_operation> operations = {
+			{ flatfile_authority_store::domains,
+			  flatfile_authority_operation_kind::write,
+			  "audit-boundary-target",
+			  { 1, 2, 3 } }
+		};
+		assert(flatfile_authority_transaction_commit_operations_with_outcome(
+			       root, lock, operations, &error, &outcome) ==
+		       flatfile_authority_transaction_result::io_error);
+		assert(outcome == flatfile_authority_commit_outcome::committed);
+		assert(std::filesystem::is_regular_file(std::filesystem::path(root) /
+							"domains/.critical-authority-transaction"));
+		std::cout << "NATIVE_PENDING_AUTHORITY_JOURNAL\n";
+		return 0;
+	}
 	if (mode == "compare-command-envelope")
 	{
 		critical_command command;

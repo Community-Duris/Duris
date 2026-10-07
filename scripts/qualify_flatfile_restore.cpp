@@ -241,7 +241,8 @@ int main(int argc, char **argv)
 			require(std::filesystem::path(argv[2]).is_absolute());
 			struct stat root_info = {};
 			require(lstat(argv[2], &root_info) == 0 && S_ISDIR(root_info.st_mode));
-			auto result = restore_economic_records::checker(argv[2]).run();
+			restore_economic_authority::audit_budget budget;
+			auto result = restore_economic_records::audit(argv[2], budget);
 			std::cout << "{\"legacy_unknown_epochs\":" << result.legacy_unknown_epochs
 				  << ",\"never_initialized_epochs\":"
 				  << result.never_initialized_epochs
