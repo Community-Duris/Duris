@@ -92049,6 +92049,174 @@
     {
       "contacts": [
         {
+          "description": "Too many years of nesting within these ruins have turned this vulture into a misshapen freak of nature.",
+          "keyword": "vulture",
+          "mob_vnum": 53000,
+          "name": "a malformed vulture",
+          "topics": []
+        },
+        {
+          "description": "This zebra is deformed in many ways, but the most noticeable deformity is the three tails that drag along the ground behind it.",
+          "keyword": "zebra",
+          "mob_vnum": 53001,
+          "name": "a three-tailed zebra",
+          "topics": []
+        },
+        {
+          "description": "The saber-toothed tiger occupies a filthy cage. Its tooth is one of the hunter\u2019s two requested materials; an exact copy supplied by another player also fits.",
+          "keyword": "tiger",
+          "mob_vnum": 53002,
+          "name": "a saber-toothed tiger",
+          "topics": []
+        },
+        {
+          "description": "The hunter seeks a saber tooth and a gorilla tooth for his collection. Ask about hunt, prey, hunting or help, then offer the exact pair for a thin bark helmet. His accepted exchange remains recorded after the materials are spent.",
+          "keyword": "hunter",
+          "mob_vnum": 53003,
+          "name": "a hunter",
+          "topics": [
+            "hunt",
+            "prey",
+            "hunting",
+            "help"
+          ]
+        },
+        {
+          "description": "The four-armed gorilla occupies a dark cage beneath the keeper\u2019s house and carries four wooden clubs. Its tooth is the other requested material; entering the cage, recovering a tooth and aiding an animal are separate outcomes.",
+          "keyword": "gorilla",
+          "mob_vnum": 53004,
+          "name": "a four-armed gorilla",
+          "topics": []
+        },
+        {
+          "description": "Five misshaped, disproportinate, swollen humps rise up from this camel's back.",
+          "keyword": "camel",
+          "mob_vnum": 53005,
+          "name": "a five-humped camel",
+          "topics": []
+        },
+        {
+          "description": "Something has gone terribly wrong and this mammoth is bald and its skin has become completely translucent.",
+          "keyword": "translucent",
+          "mob_vnum": 53006,
+          "name": "a hairless, translucent mammoth",
+          "topics": []
+        },
+        {
+          "description": "There is no telling how long this drider has lived within these ruins.",
+          "keyword": "drider",
+          "mob_vnum": 53007,
+          "name": "a drider",
+          "topics": []
+        },
+        {
+          "description": "This nightmare is rampaging around the room in a rage.",
+          "keyword": "nightmare",
+          "mob_vnum": 53008,
+          "name": "a fiery-eyed nightmare",
+          "topics": []
+        },
+        {
+          "description": "This creature has less noticeable mutations than most of the other animals around here, but something about it still just doesn't quite seem right.",
+          "keyword": "blue",
+          "mob_vnum": 53009,
+          "name": "a blue monkey",
+          "topics": []
+        },
+        {
+          "description": "This monkey looks much like the smaller monkeys in this area, except that it is much larger.",
+          "keyword": "large",
+          "mob_vnum": 53010,
+          "name": "a large blue monkey",
+          "topics": []
+        },
+        {
+          "description": "This disgusting creature needs to be driven back into the sewers.",
+          "keyword": "sewer",
+          "mob_vnum": 53011,
+          "name": "a sewer rat",
+          "topics": []
+        },
+        {
+          "description": "The keeper continues cleaning amid the ruined zoo. Meeting him, understanding the damaged habitats and making an animal safer are different parts of the zoo\u2019s story.",
+          "keyword": "keeper",
+          "mob_vnum": 53012,
+          "name": "a zoo keeper",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore the ruined Turolopolis Zoo, gather the hunter\u2019s two teeth, and follow its hidden cage, altered animals, keeper, history and habitat stories.",
+      "orientation": [
+        "Enter Turolopolis Zoo from the ruined city park to discover it. Explore its paths, abandoned buildings and enclosures, and meet the creatures and keeper you find.",
+        "The hunter asks for a saber tooth and a gorilla tooth to finish his collection. Hunt, prey, hunting and help share one response; asking each word does not complete a separate quest.",
+        "Carry one exact saber tooth and one exact gorilla tooth loose in your inventory. Two copies of the same tooth do not make the pair. Holding either tooth or packing it away does not satisfy that preparation.",
+        "You can recover the teeth from their sources or bring exact copies supplied by another player. A supplied tooth fits the hunter\u2019s request without claiming that you personally recovered it or defeated its creature.",
+        "The hunter offers a thin bark helmet and then slips into the shadows when the exchange is accepted. The accepted turn-in stays recorded after the teeth are spent or the helmet is gone.",
+        "The old keeper\u2019s house contains a hook associated with a hidden floor route. Pulling the hook, finding the entrance, opening it, crossing and returning safely are different actions.",
+        "Closed cages, dark rooms and the zoo\u2019s magical travel restrictions shape the routes. Read the passages carefully and preserve a way back; a controller\u2019s response alone does not mean you have crossed safely.",
+        "Many residents appear altered, sick or dying. Seeing their condition, gathering a tooth and making an animal healthier are different stories. Their deeper care and recovery need further integration before the journal can record completed outcomes.",
+        "The keeper\u2019s work, broken signs and ruined buildings suggest the zoo\u2019s past and neglected habitats. Meeting a resident or reading a sign can guide exploration without proving that an enclosure has been repaired.",
+        "The Underdark cages, nightmares and collapsed tunnels offer longer stories about danger, containment and a surviving return. Useful protection, restored habitats and lasting collection outcomes need further integration before they count as quest completions."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "turolzoo",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:53001,I:53003;receive=I:53004;disappear=1",
+              "giver_vnum": 53003
+            }
+          ],
+          "id": "collect-the-hunters-teeth",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Bring one exact saber tooth loose in your inventory. Recovered or supplied copies fit. Holding or packing it does not satisfy this preparation, and this row does not claim a personal tiger kill or first recovery.",
+              "id": "prepare-saber-tooth",
+              "item_vnums": [
+                53001
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the saber tooth"
+            },
+            {
+              "count": 1,
+              "hint": "Bring one exact gorilla tooth loose in your inventory. Recovered or supplied copies fit. A second saber tooth cannot replace it, and this row does not require an earlier hook, cage or personal kill history.",
+              "id": "prepare-gorilla-tooth",
+              "item_vnums": [
+                53003
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the gorilla tooth"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:53001,I:53003;receive=I:53004;disappear=1",
+                  "giver_vnum": 53003
+                }
+              ],
+              "hint": "Offer one saber tooth and one gorilla tooth when the hunter can accept the pair. His accepted exchange remains recorded after the materials or bark helmet are gone. His departure and a lasting collection outcome are separate.",
+              "id": "accepted-tooth-pair",
+              "kind": "completion",
+              "text": "Complete the hunter\u2019s tooth collection"
+            }
+          ],
+          "summary": "The hunter accepts one exact saber tooth and one exact gorilla tooth for a thin bark helmet, then vanishes. Recovered or supplied teeth fit. Current preparation, accepted turn-in and lasting collection outcome have distinct evidence.",
+          "title": "Complete the hunter\u2019s tooth collection"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Ask gravf, valdrak or acopiltaczet to hear about three spider leaders. Bring the two exact weapons and heart together for one return; his departure and later ritual advice are separate from a verified community restoration.",
           "keyword": "xolot",
           "mob_vnum": 53110,

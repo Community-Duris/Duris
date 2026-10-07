@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 222 &&
+		require(catalog.story_mappings.size() == 223 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -25987,6 +25987,112 @@ int main(int argc, char **argv)
 							   &supplies);
 			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
 				"Sea Kingdom missing sapphire eye or spent amulet half changed recovered history");
+		}
+
+		{
+			const auto &teeth = story_for("turolzoo", "collect-the-hunters-teeth");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 53003, 53036, 100) == result::rejected,
+				"Zoo contact ignored undiscovered zone");
+			require(journey.discover_zone(7, 42, 530, 53000, 101, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 530, 10, 1, 102, false, false)
+							.find(teeth.title) == std::string::npos &&
+					journey.meet_npc(7, 42, 53003, 53036, 103) ==
+						result::applied,
+				"Zoo request bypassed hunter encounter");
+			require(journey.render_journal(7, 42, 530, 10, 1, 103, false, false)
+						.find(teeth.title) != std::string::npos,
+				"Zoo invented source, personal kill, learned topic or cage prerequisites");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    teeth.steps[row].text) != std::string::npos;
+			};
+			for (unsigned custody = 0; custody < 9; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[53004] = 1;
+				if (custody == 2)
+					supplies.carried[53002] = 2;
+				if (custody == 3)
+				{
+					supplies.equipped[18] = 53001;
+					supplies.equipped[19] = 53003;
+				}
+				if (custody == 4)
+					supplies.carried[53001] = 2;
+				if (custody == 5)
+					supplies.carried[53003] = 2;
+				if (custody == 6 || custody == 7)
+				{
+					supplies.carried[53001] = custody == 7 ? 3 : 1;
+					supplies.carried[53003] = custody == 7 ? 2 : 1;
+				}
+				if (custody == 8)
+				{
+					supplies.carried[53001] = 1;
+					supplies.equipped[18] = 53003;
+				}
+				const auto journal = journey.render_journal(
+					7, 42, 530, 10, 1, 104, false, false, &supplies);
+				require(status(journal, 0,
+					       custody == 4 || custody >= 6 ? "Ready now" :
+									      "Missing now") &&
+						status(journal, 1,
+						       custody == 5 || custody == 6 ||
+								       custody == 7 ?
+							       "Ready now" :
+							       "Missing now"),
+					"Zoo mixed exact teeth or substituted duplicates, reward, club or held tooth for loose materials");
+				require(!status(journal, 2, "Recorded") &&
+						journey.progress_for_zone(7, 42, 530).completed ==
+							0 &&
+						journey.serialize_state() == before,
+					"Zoo preparation or helmet custody forged accepted pair history");
+			}
+			// Synthetic receipt verifies projection, not live pair consumption, helmet grant, departure, route, source, care or habitat settlement.
+			record(journey, teeth.contracts.front(), "turolzoo-pair-offering", 530,
+			       53036);
+			supplies = {};
+			auto journal = journey.render_journal(7, 42, 530, 10, 1, 121, false, false,
+							      &supplies);
+			require(status(journal, 2, "Recorded") &&
+					status(journal, 0, "Missing now") &&
+					status(journal, 1, "Missing now") &&
+					journey.progress_for_zone(7, 42, 530).completed == 1 &&
+					!journey.has_discovered(7, 42, 71),
+				"Zoo spent teeth erased receipt or invented foreign arrival");
+			require(supplied.discover_zone(7, 42, 530, 53000, 101, "arrival") ==
+					result::applied,
+				"Zoo supplied pair setup failed");
+			record(supplied, teeth.contracts.front(), "turolzoo-supplied-pair", 530,
+			       53036);
+			require(supplied.progress_for_zone(7, 42, 530).completed == 1,
+				"Zoo accepted supplied pair required source, kill, topic, hook, search or cage history");
+			auto replay =
+				completion(teeth.contracts.front(), "turolzoo-pair-offering", 120);
+			replay.transaction.zone_number = 530;
+			replay.transaction.room_vnum = 53036;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Zoo replay duplicated accepted pair");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 530).completed == 1 &&
+					raw.progress_for_zone(7, 42, 530).completed == 1 &&
+					!recovered.has_discovered(7, 42, 71),
+				"Zoo mapped/raw recovery lost acceptance or invented city arrival");
+			journal = recovered.render_journal(7, 42, 530, 10, 1, 122, false, false,
+							   &supplies);
+			require(status(journal, 2, "Recorded") &&
+					status(journal, 0, "Missing now") &&
+					status(journal, 1, "Missing now"),
+				"Zoo missing helmet or spent pair changed recovered accepted history");
 		}
 
 		std::cout

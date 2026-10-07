@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 222 authored journals.
+2668 distinct Q contracts; 223 authored journals.
 
 Regenerate with:
 
@@ -228,7 +228,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Troll Hills (`troll_hills`) | 1 | 3 | 0 | Yes | [1 × a small stone ogre idol → a vial of boiling goo](../../areas/qst/troll_hills.qst#L23) | bridge_troll |
 | The Twin Towers (`ttowers`) | 7 | 9 | 0 | Yes | [1 × the bloody heart of Mixt; 1 × the bloody heart of Blaevyna; 1 × the bloody heart of Lyena → Lord Talfyn's Armor of Darkness](../../areas/qst/ttowers.qst#L112) | — |
 | Tundra (`tundra`) | 7 | 12 | 1 | Yes | [1 × an old book; 1 × a dark green book; 1 × a dark magenta book; other required items → a pair of snowy adventurer boots](../../areas/qst/tundra.qst#L40) | inn |
-| Turolopolis Zoo (`turolzoo`) | 1 | 1 | 0 | Fallback | [1 × a saber tooth; 1 × a gorilla tooth → a thin helmet of bark](../../areas/qst/turolzoo.qst#L11) | — |
+| Turolopolis Zoo (`turolzoo`) | 1 | 1 | 0 | Yes | [1 × a saber tooth; 1 × a gorilla tooth → a thin helmet of bark](../../areas/qst/turolzoo.qst#L11) | — |
 | Twin Towers Forest (`twin_towers_forest`) | 84 | 58 | 24 | Yes | [10 × a fox fur → a fox fur cape](../../areas/qst/twin_towers_forest.qst#L771) | forest_animals, forest_corpse, gardener_block |
 | A Dark and Twisted Wood (`twstwd`) | 1 | 3 | 0 | Yes | [1 × a full suit of black platemail; 1 × a broken mithral lance → an iridescent faerie collar](../../areas/qst/twstwd.qst#L29) | — |
 | The Twisting Tunnels of the Durian Underdark (`underdark`) | 2 | 3 | 0 | Yes | [1 × the first half of an ancient amulet; 1 × the second half of an ancient amulet → the bronze Zarbonesti seal of Kryz'Kyssik](../../areas/qst/underdark.qst#L35) | purple_worm |

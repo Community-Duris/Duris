@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 222 authored journals, accounting-gated player surfaces, starter/town
+**Status: 223 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5442,3 +5442,8 @@ The [dossier](zone-stories/SEAKNGDM.md) maps one supplied-compatible native amul
 ### Automatic assembly and compound custom reward settlement
 
 A custom periodic recipe needs captured actor and distinct root material UIDs, exact count policy, reserved consumption/output ownership and accepted lineage before publication. A crew reward needs one accepted material/payment/ship entitlement transaction, actual current owner/reputation, acknowledged crew save and idempotent recovery. Sea Kingdom’s moonstone graph supplies concrete callers: partially seeded alternative fragments, guarded Cyric core/key, Xexos transformations, exactly2+1 assembly, Erzul ring or paid crew and a separately owned Winterhaven recipe. Legacy consumed-material/ignored-debit/unchecked-output paths need qualification and named repair work before achievements. Successful addressed recipient/topic, controller mutation, admitted living arrival/terminal survival and useful effect receipts remain separate from handled commands, action completion enums and printed rewards. Keep authority/reset/ship guards and existing native supplied eligibility.
+
+
+## Turolopolis Zoo integration extension
+
+The [dossier](zone-stories/TUROLZOO.md) maps one exact supplied-compatible two-tooth/helmet/departure card and nine broader stories with46 owned follow-ups. Native ALL pair, hidden controller/search/open/cross, source concealment/custody, history, useful living patient/habitat/keeper/containment outcomes and preserved chase/return require distinct successful identities. Builders define actual causes, tasks, consent/costs, recipients and saved renewal before adapters. Current care-like prose, generic healing/kill/loot, handled commands and keeper aggression flags cannot create synthetic completions. No new runtime schema or native repair is required for this journal; keep active READY authority and daily policy disabled.
