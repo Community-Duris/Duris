@@ -18,13 +18,23 @@ pass under baseline/Og, as do both strict740-object builds and independent bare
 production/full module/import checks. Actual462SQL/456flat compiler inputs and
 all75 indexed artifacts authenticate. Final declared-scope code/import/artifact
 review PASS is published at accountinge0b93aa48. See the [R12 terminal handoff](R12_SHOP_SALE_QUOTE_HANDOFF.md);
-canonical delivery is independently closed at accounting973bb6c0. The
-[post-R12 dependency disposition](POST_R12_OWNER_DEPENDENCIES_2026-10-07.md) records
-current owner findings and proposes only [R13 complete item acceptance](R13_SHOP_ITEM_ACCEPTANCE_RESERVATION.md),
-with unchanged controlled38 and separately labeled real-keyword54 original controls
-per baseline/Og pending boundary review. Both source/proof sets are pinned; no new
-maintained implementation precedes approval. Optional adoption and the primary full finish
-remain open.
+canonical delivery is independently closed at accounting973bb6c0.
+
+R13 complete shop item acceptance is approved at accounting7c8 and implemented at
+835e70e1d9c35d56c2254ca65cbc306c7e60fc81. Both frozen components remain exact:
+controlled38 and real-keyword54 pass under baseline/Og on original, extracted and
+bare-full actual callers. Both strict740-object builds and independent full6454/
+production6453 imports pass. Each export qualifies the complete shop module under
+SQL/flat types; all462/456 actual compiler inputs authenticate. Eight owned and
+five bare-full adjacent checks pass; the old live-route failure remains paired.
+The [R13 terminal handoff](R13_SHOP_ITEM_ACCEPTANCE_HANDOFF.md) pins all91 indexed
+proof files, exact sources/CPP/ELFs/imports/trees/archives and terminal states.
+Independent committed code/import/artifact and canonical delivery review follows
+publication. R11/R12 remain closed. The [post-R12 dependency disposition](POST_R12_OWNER_DEPENDENCIES_2026-10-07.md)
+remains the native owner baseline; R13 completes the proposed acceptance policy
+without resolving those integration dependencies. The continuing Goal remains
+ACTIVE/no budget through the original primary finish line. Optional adoption and
+the primary full finish remain open.
 
 R10 final declared-scope review PASS remains published at accountingdc1489782,
 authenticating all3 inputs/all94 proof files and complete imports/build artifacts.
