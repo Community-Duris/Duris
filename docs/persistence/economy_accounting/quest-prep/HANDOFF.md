@@ -1,3 +1,18 @@
+# Active quest follow-up — 2026-10-07
+
+Persistent Goal verified active via get_goal → create_goal → get_goal, after
+get_goal reported no prior Goal. Charter sourcea7b3181edb80bf188f616c39b8e7cb144e11cb18;
+preserved-history merge8d7f4395cc228f024029781260e51ff04948a3fd. Prior completed
+implementation/execution delivery1a0782f95339252b3c90a73ac102a437933a30c8 remains complete.
+
+[Current reconciliation and finite selected queue](FOLLOWUP_RECONCILIATION.md)
+records observable imports, unchanged qualification inputs and architecture scope.
+Exact flat QP06 prerequisite diagnostic is in progress; creation-watermark review
+is queued. This continuing milestone is unfinished until selected owned work and
+its executable owner handoff are verified and published. No shared authority edits.
+
+## Completed implementation/execution delivery
+
 # Quest implementation and executed evidence handoff — 2026-10-07
 
 Both independently owned production fixes and the supported execution pack are
