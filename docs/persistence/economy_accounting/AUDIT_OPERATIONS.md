@@ -1115,7 +1115,7 @@ SHA256 hex and identities are lowercase nonzero 32-digit hex. Every command
 retains the 16,384-read/128 MiB/8,192-entry/30-second cooperative budget. The
 Python subprocess timeout remains 45 seconds. A refused root page rotates while
 preserving its cursor. A refused control retains a finding and cannot qualify
-that book. Completed buckets freeze within this immutable cut.
+that book. Completed buckets freeze until the current traversal finishes.
 
 The private `flatfile_economic_baseline_history_progress_v1` checkpoint has a
 2 MiB bound, exclusive owner lock, atomic replacement and source binding to the
@@ -1125,7 +1125,24 @@ The report is `flatfile_economic_baseline_history_page_v1`, with scope
 `required_initialized_baseline_history`. `historical_range_complete` records
 finished traversal; `known_initialized_baseline_books_closed` additionally
 requires every control, record and history invariant to pass without findings.
-Later invocations reauthenticate even a closed checkpoint's evidence cut.
+These fields become positive on the page that finishes that traversal. The next
+invocation reauthenticates the same cut and starts another bounded traversal of
+all controls and roots, with both fields false while it is in progress. Book
+bitmaps, root and membership counts, control flags and bucket cursors reset;
+findings and their cumulative count remain sticky. Reported root counts describe
+the current traversal rather than adding repeated visits to the same roots.
+A refused closed-context check preserves the completed traversal and records a
+finding, so it cannot produce a positive closure result.
+
+The cut hashes head/index bodies and their expected references. It does not hash
+every physical witness, shard and segment at once. A matching metadata cut alone
+cannot establish that those files still exist or retain their original contents.
+Repeated traversals reread them and detect later loss or corruption when their
+control or root is visited. A page result attests the observations of that
+traversal; it is not an atomic current-state certificate. Use a protected,
+quiescent restored image for a stable snapshot and retain the page results and
+findings. This scheduling behavior is qualified by
+[the post-closure recheck report](PLAN5_FLATFILE_HISTORY_RECHECK_QUALIFICATION_2026-10-07.md).
 
 This positive field covers the known initialized books only. The report counts
 legacy unknown epochs without inferring their provenance. Orphan filenames,

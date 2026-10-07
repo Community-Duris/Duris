@@ -164,13 +164,17 @@ def context_page(page, state, *, initialize):
         require(expected <= MAX_ROOTS)
         books.append(dict(entry, control_checked=False, reservation_total=None, roots=0,
             bitmap="0" * (2 * ((entry["revision"] + 7) // 8)), observed_reservations=0, terminal_seen=False))
-    if initialize:
-        state.update(lineage=page["lineage"], cut=page["source_cut_sha256"], books=books,
-            legacy_unknown_epochs=page["legacy_unknown_epochs"], phase="controls" if books else "roots")
-    else:
+    if not initialize:
         require(page["lineage"] == state["lineage"] and page["source_cut_sha256"] == state["cut"] and
                 page["legacy_unknown_epochs"] == state["legacy_unknown_epochs"] and
                 [{key: book[key] for key in ("epoch", "revision", "terminal")} for book in state["books"]] == page["books"])
+    if initialize or state["phase"] == "closed":
+        # A matching metadata cut cannot attest physical witnesses/shards/segments
+        # forever. Revisit them in a new bounded traversal; findings stay sticky.
+        state.update(lineage=page["lineage"], cut=page["source_cut_sha256"], books=books,
+            legacy_unknown_epochs=page["legacy_unknown_epochs"], phase="controls" if books else "roots",
+            control_index=0, rotation=0, total_rows=0, total_verified=0,
+            buckets=[dict(cursor="", exhausted=False) for _ in range(256)])
 
 
 def scan(root, qualifier, previous, *, now=None):

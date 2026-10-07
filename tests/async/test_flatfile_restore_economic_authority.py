@@ -992,7 +992,7 @@ def check_baseline_history_pages(binary, fixture, audit, environment, build, *, 
                 assert calls <= 270, state
             assert retained(root) == before
             save(state)
-            return cli("closed cut reauthenticated", bool(state["total_findings"])), state
+            return result, state
 
         modes = ("mixed", "empty", "retained", "generic") if lifecycle else (
             "baseline-empty-history", "baseline-history", "baseline-rich")
@@ -1003,6 +1003,20 @@ def check_baseline_history_pages(binary, fixture, audit, environment, build, *, 
             assert result["historical_range_complete"] and result["completed_buckets"] == 256
             assert result["total_baseline_roots"] == sum(book["revision"] for book in state["books"])
             (destination / (mode + "-closed-progress.json")).write_text(json.dumps(state, indent=2) + "\n")
+            observations.append(dict(label=mode + " fresh traversal closes", report=result, native_state_unchanged=True))
+            reopened = cli(mode + " closed checkpoint starts another traversal")
+            assert reopened["phase"] == "closed" and reopened["next_phase"] in ("controls", "roots")
+            assert not reopened["known_initialized_baseline_books_closed"] and not reopened["historical_range_complete"]
+            refreshed = load()
+            assert refreshed["cut"] == state["cut"] and refreshed["started_at"] == state["started_at"]
+            assert not refreshed["control_index"] and not refreshed["rotation"] and not refreshed["total_rows"]
+            assert not refreshed["total_verified"] and all(not row["cursor"] and not row["exhausted"] for row in refreshed["buckets"])
+            assert all(not book["control_checked"] and not book["roots"] and not history.bitmap(book) and
+                       not book["observed_reservations"] and not book["terminal_seen"] for book in refreshed["books"])
+            second, repeated = sweep(refreshed)
+            assert second["known_initialized_baseline_books_closed"] and repeated["books"] == state["books"]
+            assert repeated["total_rows"] == state["total_rows"] and repeated["total_verified"] == state["total_verified"]
+            observations.append(dict(label=mode + " repeated traversal closes without duplicate counts", report=second, native_state_unchanged=True))
 
         maximum = "maximum-paged" if lifecycle else "baseline-full-index"
         files = produce(maximum)
@@ -1136,6 +1150,58 @@ def check_baseline_history_pages(binary, fixture, audit, environment, build, *, 
 
         files = produce("mixed" if lifecycle else "baseline-history")
         result, closed = sweep(start())
+        # Physical damage leaves authenticated index/head bodies untouched.
+        # A cached closure must never qualify a later metadata-only invocation.
+        witness = next(name for name in files if name.endswith(".eab"))
+        shard = next(name for name in files if name.endswith(".ebi"))
+        segment = next(name for name in files if name.endswith(".eas"))
+        for label, name, corrupt in (("witness loss", witness, False), ("shard loss", shard, False),
+                                     ("segment loss", segment, False), ("witness corruption", witness, True),
+                                     ("shard corruption", shard, True), ("segment corruption", segment, True)):
+            damaged = dict(files)
+            if corrupt:
+                body = bytearray(damaged[name])
+                body[-1] ^= 1
+                damaged[name] = bytes(body)
+            else:
+                del damaged[name]
+            install(damaged)
+            save(closed)
+            before = retained(root)
+            whole = subprocess.run([str(audit), str(root)], env=environment,
+                                   capture_output=True, text=True, timeout=45)
+            assert whole.returncode == 1 and not whole.stdout and whole.stderr == "native_restore_qualification_failed\n", whole
+            assert retained(root) == before
+            reopened = cli("post-closure " + label + " starts physical recheck")
+            assert not reopened["known_initialized_baseline_books_closed"] and not reopened["historical_range_complete"]
+            refreshed = load()
+            calls = 0
+            while not refreshed["total_findings"]:
+                page, refreshed = history.scan(root, binary, refreshed)
+                assert not page["known_initialized_baseline_books_closed"], page
+                calls += 1
+                assert calls <= 275, (label, refreshed)
+            assert not page["consistent_page"] and retained(root) == before
+            calls_to_finding = calls
+            save(refreshed)
+            assert cli("post-closure " + label + " finding persists", True)["total_finding_count"] > 0
+            refreshed = load()
+            install(files)
+            repaired_before = retained(root)
+            while refreshed["phase"] != "closed":
+                page, refreshed = history.scan(root, binary, refreshed)
+                assert not page["page_refused"] and not page["known_initialized_baseline_books_closed"], page
+                calls += 1
+                assert calls <= 550, (label, refreshed)
+            save(refreshed)
+            reopened = cli("restored " + label + " retains finding across next traversal", True)
+            assert reopened["next_phase"] in ("controls", "roots") and not reopened["known_initialized_baseline_books_closed"]
+            assert load()["findings"] == refreshed["findings"] and load()["total_findings"] == refreshed["total_findings"]
+            assert retained(root) == repaired_before
+            observations.append(dict(label="physical recheck detects " + label, calls_to_finding=calls_to_finding,
+                                     independent_whole_audit_refused=True, native_state_unchanged=True))
+        install(files)
+        save(closed)
         head = sorted(name for name in files if name.endswith("head.ebc"))[0]
         install({name: data for name, data in files.items() if name != head})
         result = cli("closed checkpoint reauthenticates native cut", True)

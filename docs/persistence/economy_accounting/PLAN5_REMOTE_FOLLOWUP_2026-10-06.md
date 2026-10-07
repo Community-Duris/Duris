@@ -1055,3 +1055,33 @@ records the single qualified metadata difference and verifies all payloads,
 links, unchanged modes, remote head, clean worktree and seven earlier tips.
 This documentation follow-up makes no runtime/shared/activation change and
 qualifies no additional release, gameplay, R7/R8 or combined-candidate gate.
+
+## Durable history post-closure recheck follow-up
+
+The same remote `codex/accounting-plan5` carries the next independent slice,
+based on `04750f3f2f9744c9a74b4d4c212b2022bd7f87ae`. A closed history checkpoint previously
+continued returning known-book closure after real witness, shard or segment
+loss, while the independent whole reader refused. The fixed private operator
+reauthenticates the same cut and starts another bounded control/root traversal,
+with reset traversal counters and sticky findings. Its
+[qualification report](PLAN5_FLATFILE_HISTORY_RECHECK_QUALIFICATION_2026-10-07.md)
+records the exact consumer semantics and all source/evidence limits.
+
+Frozen archive `9b4d82dd8719e06865834c3dc7aa3f216b6f3380c80c51c3d007bca841a50101` qualifies
+77 authority and 69 lifecycle history checks, all original native audit cases,
+69 baseline-marker cases and 67 canonical audit methods with fresh MariaDB and
+MySQL databases; zero selected skips. Native producer/C++ and migration inputs
+are unchanged at canonical62. No fresh production server build or combined
+producer qualification is inferred from this Python operator fix.
+
+The complete seal is
+`D:/CodexEvidence/accounting-plan5/bin/flatfile-baseline-history-recheck-seal-01-20261007/evidence.json`,
+SHA256 `77d19c7d4a566f73f8aca2959b33a41c4ae185a90c908787130a3d0616cb8e9d`. Final result/remote commit and preserved ancestry
+are recorded in the corresponding `flatfile-baseline-history-recheck-delivery-01-20261007/delivery.json`.
+All seven earlier tips remain on this publication branch. Latest observed
+primary is `e29b222191475382043001326b39fd877049364b`; its producer fault recovery,
+full native holdings/current cut, gameplay, combined R7/R8 and release remain
+open. No shared storage/producer interface change is requested. Primary's
+locally maintained notebook is nonblocking; this report and receipts form the
+curator packet, without a claimed notebook application or direct message.
+Accounting remains inactive and the existing scope exclusions are preserved.
