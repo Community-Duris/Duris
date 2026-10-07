@@ -106,12 +106,12 @@ R0 [Collector image](COORDINATOR_REVIEW_2026-10-07.md),
 R1 [Craft/Forge quote](R1_CRAFTING_REVIEW_2026-10-07.md), and
 R2 [wallet/bank deltas](R2_CURRENCY_REVIEW_2026-10-07.md).
 [Inventory dispositions](INVENTORY_REVIEW_2026-10-07.md) retain each exact code
-pin and verification scope. Worker terminal handoff is `4f7fa384b09914094a56cd8040e6f9c1588f92a4`.
+pin and verification scope. Worker final handoff is `ee5c8a056c15323849290efc962a1a02e75c4037`.
 R1 actual SQL/flat recipe journeys pass; R2 passes 42 original selected completion
 scenarios per backend, excluding 25 coin scenarios per backend with abort guards.
 Original shared-runner failures remain retained. Primary adoption is unknown.
-The architecture chat must reconcile these final published dispositions before
-its fixed Goal completes; no fresh domain survey or extra required row is added.
+The architecture chat reconciled the published reviews and reports actual Goal
+COMPLETE. Its fixed set is discharged; no fresh survey or required row is added.
 
 Quest candidate reconciliation, real-provider mini refusal diagnosis and bounded
 creation-watermark assessment are delivered and
@@ -120,10 +120,17 @@ remains RED. One selected additional control is now reserved at
 `8be236a150075a9f28de7a9991e4ad40705be779`: real ordinary full-world cold-room
 restoration followed by a second starter-item drop before any GET. Existing owned
 fixtures support it, without shared production/driver changes. This finite control
-is pending execution, handoff and coordinator review; no Kord/XP-ACK/active native
-birth/refund/empty-room claim follows. Verify the new actual quest Goal after its
-previous finite follow-up completed. Root coordination remains active for that
-control and final handoff/disposition checks, with periodic heartbeat monitoring.
+is now implemented at `0ceae3a847f6573ec326bac3f36fb632ef5c2fe9`, executed and
+independently reviewed, with final handoff `5e019a44ebb805feadc5101534ce404d4aaa53ad`.
+The actual additional quest Goal is COMPLETE. Exact original UID/custody,
+once-only revisions, unrelated roots/wallet/XP, genuine cold restoration and
+normal process termination are verified. Four fixture failures remain retained.
+No Kord/XP-ACK/active native birth/refund/empty-room claim follows.
+The [completion audit](WORKSTREAM_COMPLETION_AUDIT_2026-10-07.md) records all
+requirements and remaining primary-owned limits. Both finite selected milestones
+are discharged; after remote publication the coordinator can complete its Goal
+and pause the heartbeat as specified in its saved instructions. This is a
+milestone closure, not full accounting/domain conversion or adoption evidence.
 
 The following initial assignments and checkpoint statuses are historical,
 superseded by this current table of dispositions and the linked final reviews.

@@ -2,7 +2,8 @@
 
 The published quest-prep pack is a useful input to primary integration, with
 independently passing component evidence for the two narrow production fixes.
-The follow-up diagnosis and creation-watermark assessment below are now reviewed.
+The follow-up diagnosis, creation-watermark assessment and selected ordinary
+full-world cold-room control below are reviewed with no actionable owned defect.
 They do not qualify integrated gameplay or close the retained mini-mode flat
 reward-drop failure, native handover/birth, D retirement or durable restitution.
 
@@ -71,6 +72,44 @@ separate in its canonical handoff and EXECUTED_JOURNEYS.md.
 ## Follow-up queue and unresolved review point
 
 ### Completed follow-up review and selected cold-room control
+
+The selected control is implemented at
+`0ceae3a847f6573ec326bac3f36fb632ef5c2fe9`, with final canonical handoff
+`5e019a44ebb805feadc5101534ce404d4aaa53ad`. The coordinator inspected the actual
+two-process execution, reviewed the published runner against its executed SHA256
+`3adc0b2647e1cf657d3a3dafccda880fac3c3dac8c6000e3876a717b0968515a`, and independently
+recomputed all custody/revision/conservation assertions from private result
+SHA256 `5c09a23e11ebbdb45d70c65c22ef9a67d79f3e331b95f91f6c46490cf84f3568`.
+The 75.083-second journey is a terminal PASS. This review does not repeat it.
+
+Original mace677 UID68076 moves player to room revision1 and survives genuine
+full-world cold restoration unchanged. Before any GET, explicit `drop 1.sword`
+moves original starter sword1108 UID68097 with player/room revisions3/1 to4/2;
+all unrelated roots, wallet and XP remain exact. Genuine bulk stock release
+then conserves every original identity and advances counters once, allowing
+the original mace to be retrieved at the same UID. Both full processes contain
+normal shutdown and restoration-stage evidence. The maintained camp calibration
+and stock release happen in owned fixtures; no area/special, authority or deadline
+was changed. The strict selected drop/get deadlines remain20 seconds.
+
+The coordinator independently read the retained ELF hash from the task container,
+matched provider/boot/restoration sources to binary source6db, and checked every
+recorded world input: 2224 source files on the host and six generated world files
+copied read-only from the stopped executed container. All2230 match private
+manifest SHA256 `bd2353340862eea330e74e4e6b301dde74c038d7fc5347f464809c718c9b1675`.
+Generated outputs stay private/ignored. The published runner parses and matches
+executed source exactly. Four earlier fixture failures remain retained: omitted
+camp calibration, response literal, wrong shared-alias item UID, and genuine carry
+capacity. The coordinator independently detected the wrong-item cut and sent
+exact corrective guidance; the final run preserves the UID assertion.
+
+Disposition: delivered, qualified and reviewed for this **ordinary nonempty
+full-world cold-room control**. The new worker Goal's tool-confirmed COMPLETE
+status is recorded in its final handoff. Original mini QP06 remains RED;
+Kord reward/XP-ACK, active native SQL, empty-room/third-cold variants and native
+birth/retirement/refund remain unqualified and primary-owned. No additional owned
+control, missing handoff or actionable review defect remains in this finite
+selected follow-up. The reservation/checkpoint text below is historical.
 
 Candidate reconciliation is published in `435a929a6`; the current accounting
 candidate's changes remain documentation-only relative to the examined source.

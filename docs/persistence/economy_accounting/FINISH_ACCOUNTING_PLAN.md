@@ -109,10 +109,16 @@ Quest-prep reconciliation, mini-mode stale-room refusal diagnosis and conditiona
 creation-watermark assessment are published and
 [reviewed](domain-separation/QUEST_PREP_REVIEW_2026-10-07.md). The original mini
 later-drop journey remains RED. A finite ordinary full-world cold-room control
-is reserved on the quest-prep branch, pending execution/review; it adds no
-shared production ownership or release gate. The coordinator continues monitoring
-both actual Goals, final handoffs and this selected control. These sidework row
-names are unrelated to the accounting plan's original R1-R8 acceptance gates.
+is implemented at `0ceae3a847f6573ec326bac3f36fb632ef5c2fe9`, executed and
+independently reviewed. Exact UID/custody/revision/conservation, full restoration
+and normal shutdown evidence pass; the original mini journey remains RED.
+Architecture final handoff: `ee5c8a056c15323849290efc962a1a02e75c4037`. Quest final
+handoff: `5e019a44ebb805feadc5101534ce404d4aaa53ad`. Both actual finite worker Goals
+are COMPLETE. See the [requirement-by-requirement completion audit](domain-separation/WORKSTREAM_COMPLETION_AUDIT_2026-10-07.md)
+for scoped closure and primary-owned dependencies. These sidework row names are
+unrelated to the accounting plan's original R1-R8 acceptance gates. No production
+ownership or release gate is added; optional import and integrated qualification
+remain primary.
 
 ## Fourth agent: independent domain separation - 2026-10-07
 
