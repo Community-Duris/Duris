@@ -227,6 +227,18 @@ must apply to bare latest primary; full tests retain R3/R6 prerequisites only.
 No current full build/native journey/adoption or original R8 accounting acceptance
 is claimed. Primary proceeds without waiting; continuing Goal/monitor stay active.
 
+R8 final successor: code9f5119fc3 and handoffc01f69d47793651faa49a347443e2c72235fb090
+PASS [final declared-scope review](domain-separation/R8_ORDINARY_SEARCH_REVIEW_2026-10-07.md).
+The coordinator independently verified actual original/extracted controls,
+three source/46 proof files, both maintained740-object links/actual ELFs and
+all6444 minimalR3/R6/R8 export bodies. Full tests require R3/R6 only; production
+applies to bareprimary. InitialSQL/compiler and originalmodule failures remain
+preserved. No current754 full link, native journey or primary adoption is claimed.
+Reassess nine-family gaps and complete essence-drop selection feasibility;
+no new implementation or native capability is selected without exact review.
+Quest has no new prerequisite and remains BLOCKED, not complete. Continuing
+Goal/monitor and broader primary finish line remain active.
+
 Older checkpoint status text below remains historical and is superseded here.
 
 Both existing workers have actual continuing Goals ACTIVE against the broader

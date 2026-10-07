@@ -331,6 +331,30 @@ snapshot or new authority. Existing worker/primary ownership and continuing
 finish line remain. Quest has no new native prerequisite and stays BLOCKED,
 not complete. Coordinator and monitor remain active.
 
+## Ordinary cascade final review and next feasibility assessment
+
+R8 code9f5119fc3 and handoffc01f69d47793651faa49a347443e2c72235fb090
+PASS [final declared-scope review](R8_ORDINARY_SEARCH_REVIEW_2026-10-07.md).
+The coordinator authenticated three source/46 proof files, actual maintained
+SQL/flat ELFs and740-object links, and all6,444 minimal R3/R6/R8 export bodies.
+Original/extracted actual ordinary controls independently PASS. Initial compiler
+failure and unchanged module-contract failures remain explicit. Full test
+prerequisites are R3/R6 only; production applies independently to bare primary.
+No current754 full link, native journey or primary adoption is inferred.
+
+After this delivery, reassess across all nine families and inspect the complete
+essence-drop selection operation as one concrete remaining hypothesis. Existing
+zone/config/elite gates, conditional RNG draws, reward selection and diagnostic
+ordering may support an owned preparation boundary while item birth/materialization,
+native caller admission and publication stay with their owners. This is a source/
+original-proof feasibility request, not another approved implementation. Require
+an exact substantial reservation or the precise native call that prevents it;
+avoid thin mappings and fabricated capabilities. Other owner dependencies remain.
+
+Quest has no new native interface and remains BLOCKED, not complete. Coordinator,
+architecture Goal and recurring monitor remain active against the full primary
+finish line; completing R8 does not close them.
+
 ## Recurring monitor
 
 The existing thread heartbeat checks every15 minutes, supplemented by active
