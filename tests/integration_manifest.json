@@ -2057,6 +2057,26 @@
       ]
     },
     {
+      "id": "flatfile_restore_economic_authority",
+      "path": "tests/async/test_flatfile_restore_economic_authority.py",
+      "provider": "offline",
+      "engines": ["once"],
+      "mode": "script",
+      "required_cases": ["script"],
+      "arguments": [],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": ["test_flatfile_restore_economic_authority.py"],
+      "required_markers": [
+        "\"economic_bytes_unchanged\": true",
+        "\"native_metadata_comparisons\": 1058",
+        "\"native_command_envelope_comparisons\": 574",
+        "\"refused_corruptions\": 367",
+        "\"root_page_cases\": 28",
+        "\"authority_page_cases\": 29"
+      ]
+    },
+    {
       "id": "flatfile_restore_baseline_markers",
       "path": "tests/async/test_flatfile_restore_baseline_markers.py",
       "provider": "offline",

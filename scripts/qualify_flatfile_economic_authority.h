@@ -37,24 +37,37 @@ inline void need(bool valid)
 // Only the online operator audit installs this cooperative admission budget.
 // Offline candidate qualification keeps the existing format limits. Count
 // repeated physical reads and directory visits, including ignored filenames.
+struct audit_budget_refused : std::runtime_error
+{
+	audit_budget_refused()
+		: std::runtime_error("native_restore_qualification_failed")
+	{
+	}
+};
 struct audit_budget
 {
 	size_t remaining_bytes = 128 * 1024 * 1024, remaining_files = 2048;
 	size_t remaining_entries = 8192;
 	std::chrono::steady_clock::time_point deadline =
 		std::chrono::steady_clock::now() + std::chrono::seconds(30);
-	void checkpoint() const { need(std::chrono::steady_clock::now() < deadline); }
+	void checkpoint() const
+	{
+		if (std::chrono::steady_clock::now() >= deadline)
+			throw audit_budget_refused();
+	}
 	void file(size_t size)
 	{
 		checkpoint();
-		need(remaining_files && size <= remaining_bytes);
+		if (!remaining_files || size > remaining_bytes)
+			throw audit_budget_refused();
 		--remaining_files;
 		remaining_bytes -= size;
 	}
 	void entry()
 	{
 		checkpoint();
-		need(remaining_entries);
+		if (!remaining_entries)
+			throw audit_budget_refused();
 		--remaining_entries;
 	}
 };
@@ -448,6 +461,15 @@ struct native_entry
 	bytes key;
 	uint64_t active, last;
 };
+struct authority_page
+{
+	identity lineage = {};
+	digest authority_body = {};
+	bytes cursor, ceiling;
+	size_t rows = 0, verified = 0, bucket_rows = 0;
+	bool exhausted = false;
+	std::vector<bytes> invalid_links;
+};
 // At most eight decoded buckets are cached during either cross-link pass.
 // Each bucket is bounded by 4096 entries and a 2 MiB frame, independent of the
 // number of retained mapping lifetimes in the store.
@@ -470,7 +492,7 @@ class checker
 	std::filesystem::path directory;
 	identity lineage = {}, last_epoch = {};
 	uint64_t next_mapping = 0, epoch_count = 0;
-	digest epochs_digest = {};
+	digest epochs_digest = {}, control_digest = {};
 	std::array<digest, buckets> native_digests = {}, mapping_digests = {};
 	mutable cache<mapping> historic_accounts;
 
@@ -492,6 +514,7 @@ class checker
 	void control()
 	{
 		auto body = frame("authority.eal", "DURECA1");
+		control_digest = hash(body);
 		reader in{ body };
 		lineage = in.fixed<16>();
 		need(nonzero(lineage) && nonzero(in.take(16)) && nonzero(in.take(16)));
@@ -603,11 +626,125 @@ class checker
 		in.done();
 		return result;
 	}
+	void mapping_link(const mapping &row, cache<native_entry> &native_cache) const
+	{
+		if (row.retired)
+			return;
+		const auto &index =
+			native_cache.get(hash(row.key)[0], [&](auto b) { return natives(b); });
+		auto found = std::lower_bound(index.begin(), index.end(), row.key,
+					      [](const auto &entry, const auto &key)
+					      { return entry.key < key; });
+		need(found != index.end() && found->key == row.key &&
+		     found->active == row.authority);
+	}
+	void native_link(const native_entry &entry, cache<mapping> &mapping_cache) const
+	{
+		const auto &values =
+			mapping_cache.get(entry.last % 256, [&](auto b) { return mappings(b); });
+		const auto position = (entry.last - 1) / 256;
+		need(position < values.size());
+		const auto &row = values[position];
+		if (entry.active)
+			need(!row.retired && row.key == entry.key);
+		else
+		{
+			need(row.key.size() >= 12 && entry.key.size() >= 12 &&
+			     std::equal(row.key.begin(), row.key.begin() + 12, entry.key.begin()));
+			const bool bank = row.key[0] == 2 && row.key[1] == 0;
+			need(bank || row.key == entry.key);
+			need(row.retired || (bank && row.key != entry.key));
+		}
+	}
 
     public:
 	explicit checker(const std::filesystem::path &root)
 		: directory(root / "economic-evidence")
 	{
+	}
+	// Page callers establish only the control/catalog context. Whole-store
+	// mapping/native closure remains in run(); it is not repeated per root page.
+	void begin_page()
+	{
+		control();
+		epochs();
+	}
+	// Two selected cross-links, with bounded independent frames for their
+	// counterpart buckets. Native key order is a traversal fence, not commit order.
+	authority_page page(bool mapping_direction, size_t bucket, const bytes &after,
+			    const bytes &ceiling, bool ceiling_known)
+	{
+		need(bucket < buckets && (after.empty() || ceiling_known) &&
+		     (!ceiling_known || after <= ceiling));
+		begin_page();
+		authority_page result;
+		result.lineage = lineage;
+		result.authority_body = control_digest;
+		result.cursor = after;
+		auto visit = [&](const auto &values, auto key, auto verify)
+		{
+			result.bucket_rows = values.size();
+			auto retained = [&](const bytes &saved)
+			{
+				return std::any_of(values.begin(), values.end(),
+						   [&](const auto &row)
+						   { return key(row) == saved; });
+			};
+			need((after.empty() || retained(after)) &&
+			     (!ceiling_known || ceiling.empty() || retained(ceiling)));
+			result.ceiling = ceiling_known	? ceiling :
+					 values.empty() ? bytes{} :
+							  key(values.back());
+			result.exhausted = true;
+			for (const auto &row : values)
+			{
+				auto current = key(row);
+				if (current <= after || current > result.ceiling)
+					continue;
+				if (result.rows == 2)
+				{
+					result.exhausted = false;
+					break;
+				}
+				try
+				{
+					verify(row);
+					++result.verified;
+				}
+				catch (const audit_budget_refused &)
+				{
+					throw;
+				}
+				catch (const std::runtime_error &)
+				{
+					result.invalid_links.push_back(current);
+				}
+				result.cursor = std::move(current);
+				++result.rows;
+			}
+		};
+		if (mapping_direction)
+		{
+			cache<native_entry> native_cache;
+			visit(
+				mappings(bucket),
+				[](const mapping &row)
+				{
+					bytes result;
+					put(result, row.authority, 8);
+					std::reverse(result.begin(), result.end());
+					return result;
+				},
+				[&](const auto &row) { mapping_link(row, native_cache); });
+		}
+		else
+		{
+			cache<mapping> mapping_cache;
+			visit(
+				natives(bucket), [](const native_entry &row) { return row.key; },
+				[&](const auto &row) { native_link(row, mapping_cache); });
+		}
+		return result;
 	}
 	// Historical account identity is immutable even when locator aliases and
 	// mapping revision/operation metadata have subsequently changed.
@@ -657,39 +794,12 @@ class checker
 		cache<native_entry> native_cache;
 		for (size_t bucket = 0; bucket < buckets; ++bucket)
 			for (const auto &row : mappings(bucket))
-			{
-				if (row.retired)
-					continue;
-				const auto &index = native_cache.get(hash(row.key)[0], [&](auto b)
-								     { return natives(b); });
-				auto found = std::lower_bound(index.begin(), index.end(), row.key,
-							      [](const auto &entry, const auto &key)
-							      { return entry.key < key; });
-				need(found != index.end() && found->key == row.key &&
-				     found->active == row.authority);
-			}
+				mapping_link(row, native_cache);
 		native_cache.entries.clear();
 		cache<mapping> mapping_cache;
 		for (size_t bucket = 0; bucket < buckets; ++bucket)
 			for (const auto &entry : natives(bucket))
-			{
-				const auto &values = mapping_cache.get(entry.last % 256, [&](auto b)
-								       { return mappings(b); });
-				const auto position = (entry.last - 1) / 256;
-				need(position < values.size());
-				const auto &row = values[position];
-				if (entry.active)
-					need(!row.retired && row.key == entry.key);
-				else
-				{
-					need(row.key.size() >= 12 && entry.key.size() >= 12 &&
-					     std::equal(row.key.begin(), row.key.begin() + 12,
-							entry.key.begin()));
-					const bool bank = row.key[0] == 2 && row.key[1] == 0;
-					need(bank || row.key == entry.key);
-					need(row.retired || (bank && row.key != entry.key));
-				}
-			}
+				native_link(entry, mapping_cache);
 	}
 };
 } // namespace restore_economic_authority

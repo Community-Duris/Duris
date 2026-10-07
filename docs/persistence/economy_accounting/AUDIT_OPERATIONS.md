@@ -828,7 +828,7 @@ The operator scan admits at most128 MiB of physical reads,2048 file reads and
 final reporting; it does not establish a hard I/O or release-host latency bound.
 Budget exhaustion refuses rather than reporting clearance. Offline restore
 candidate qualification retains its original bounds and recovery rules. This
-scan has no durable pagination and does not certify complete native holdings,
+whole scan has no durable pagination and does not certify complete native holdings,
 producer coverage, activation or release readiness.
 
 The independent flatfile restore reader validates retained generic EAI1/EAP1
@@ -848,6 +848,45 @@ independent interpretation of the versioned wire contract; production mutation
 code supplies qualification oracles only in tests. Every observation leaves
 retained economic bytes unchanged. See
 [the exact semantic qualification](PLAN5_FLATFILE_PLAN_SEMANTICS_QUALIFICATION_2026-10-06.md).
+
+## Durable flatfile root and authority pages
+
+Use an existing absolute private authority copy and an explicit protected
+checkpoint outside that authority. The native qualifier takes a shared lock;
+checkpoint writes and its exclusive lock stay outside native authority.
+
+```sh
+python3 scripts/flatfile_economic_audit.py \
+  --state-root /absolute/private/copy \
+  --qualifier /absolute/bin/qualify_flatfile_restore \
+  --progress /absolute/operator/root-progress.json
+
+python3 scripts/flatfile_economic_audit.py \
+  --state-root /absolute/private/copy \
+  --qualifier /absolute/bin/qualify_flatfile_restore \
+  --progress /absolute/operator/authority-progress.json \
+  --scope authority-links
+```
+
+Each invocation observes one bounded page, then durably persists the next
+bucket and that bucket's cursor/pinned ceiling. Retained-root mode rotates256
+buckets; authority-links mode rotates512 mapping/native directions. Each page
+examines at most two records, with existing byte, read and cooperative-time
+bounds. Repeated historical ranges eventually observe lower late arrivals;
+different pages do not constitute one consistent authority snapshot.
+
+Refused buckets retain their cursor and sticky findings while siblings continue.
+Status1 means retained findings; malformed or unsafe progress refuses before
+publishing an update. Finite nonnegative timestamps must be ordered and no later
+than the current clock; a backward clock can refuse an existing checkpoint.
+Source binding includes root path, qualifier, wrapper and progress helper.
+Checkpoint reuse across restore/source changes does not authenticate a new cut.
+Empty legacy authority remains uninitialized and creates no checkpoint.
+
+Root semantic validity and authority crosslinks are partial observations.
+All page reports keep complete sweep, release and full holding/baseline/lifecycle
+coverage flags false. See [primary integration](
+PLAN5_FLATFILE_PAGES_PRIMARY_INTEGRATION_2026-10-06.md).
 
 ## Native mobile custody grammar
 

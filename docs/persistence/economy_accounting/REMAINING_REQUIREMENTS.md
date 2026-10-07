@@ -1,5 +1,13 @@
 # Double-entry economy: remaining requirements
 
+## Durable independent flatfile pages qualified — 2026-10-06
+
+[Primary qualification](PLAN5_FLATFILE_PAGES_PRIMARY_INTEGRATION_2026-10-06.md)
+passes57 new root/authority-page controls and the complete original native suite.
+Sticky refusals and historical-range progress remain partial evidence. The first
+unattributed timestamp refusal is preserved, and the timestamp guard remains
+unchanged. Whole native reconstruction, R7/R8 and release stay unfinished.
+
 ## SQL audit refusal fairness qualified — 2026-10-06
 
 [Primary qualification](PLAN5_SQL_FAIRNESS_PRIMARY_INTEGRATION_2026-10-06.md)

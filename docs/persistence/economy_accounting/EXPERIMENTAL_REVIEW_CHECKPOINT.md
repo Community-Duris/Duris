@@ -1,5 +1,13 @@
 # Experimental accounting review checkpoint
 
+## Latest independent flatfile reader milestone — 2026-10-06
+
+The [complete paging slice](PLAN5_FLATFILE_PAGES_PRIMARY_INTEGRATION_2026-10-06.md)
+passes57 new page controls and all original native comparisons/corruption cases.
+Central registration and operator instructions retain explicit partial coverage.
+Timestamp refusal protection remains unchanged; an earlier unattributed refusal
+and the mount-setup failure are preserved separately from the passing run.
+
 ## Latest independent SQL reader milestone — 2026-10-06
 
 The [integrated fairness slice](PLAN5_SQL_FAIRNESS_PRIMARY_INTEGRATION_2026-10-06.md)

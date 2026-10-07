@@ -1,5 +1,15 @@
 # Finish accounting implementation plan
 
+## Durable independent flatfile pages qualified — 2026-10-06
+
+[Primary integration](PLAN5_FLATFILE_PAGES_PRIMARY_INTEGRATION_2026-10-06.md)
+passes28 retained-root and29 authority-page controls plus all original native
+metadata/envelope, lock/budget and367 corruption-refusal cases. Two focused
+timestamp tests preserve refusal before native reads/checkpoint mutation. The
+first unattributed timestamp refusal is retained; the successful diagnostic
+changes observations only. Central registration and operator instructions are
+updated. Complete native holdings, producers, R7/R8 and release remain open.
+
 ## SQL audit refusal fairness qualified — 2026-10-06
 
 [Primary qualification](PLAN5_SQL_FAIRNESS_PRIMARY_INTEGRATION_2026-10-06.md)
