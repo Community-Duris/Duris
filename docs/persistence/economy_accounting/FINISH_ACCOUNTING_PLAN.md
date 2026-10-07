@@ -19,10 +19,11 @@ Flat Make, genuine Collector/SHOP journeys and shared flat boot qualification
 remain open. No production fix is imported or gate promoted. Preserve original
 budgets, failed evidence, inactive/spell boundaries and all926 writer policies.
 
-The checkpoint now authenticates one private30 recovery/genesis/shutdown/SHOP
-candidate, its combined startup/boot syntax and exact native transport. Genuine
-snapshot/baseline fixtures are corrected; full runtime qualification remains open.
-Its explicit native lifecycle V2 wire contract enables independent Plan5 work.
+The checkpoint authenticates private32: frozen30 recovery/genesis/shutdown/SHOP
+plus two persisted physical-capture files. Original interfaces and transport
+authenticate; all18 genuine full-server controls remain unexecuted. Physical
+correspondence and full activation stay open. The native lifecycle V2 wire
+contract enables independent Plan5 work; no private native fix is imported.
 
 ## Flatfile ordinary room-pile reader qualified - 2026-10-07
 
