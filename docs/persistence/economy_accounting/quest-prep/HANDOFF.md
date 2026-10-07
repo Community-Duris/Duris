@@ -3,6 +3,10 @@
 New finite assignment: **private live-route investigation complete; maintained
 repair unimplemented**. Base5ec386905c141fd3dade1b74e15d7a8c5157c0e7. Authored
 paths only this HANDOFF.md and [SHOP_LIVE_ROUTE_INVESTIGATION.md](SHOP_LIVE_ROUTE_INVESTIGATION.md).
+Investigation result4ca4016096812b0baad978cacc2b2844f8b5d229 is pushed to
+origin/codex/accounting-quest-prep; import that docs-only bundle independently.
+This follow-up authors only canonical publication/review pin updates in those
+same two documents. No optional ancestry is needed to consume the investigation.
 No production, maintained test, driver, helper, manifest, registry or schema edit.
 Actual continuing Goal remains BLOCKED (createdAt1791384873,
 updatedAt1791387688), neither resumed nor complete by this finite assignment.
@@ -16,6 +20,8 @@ analyzed source unchanged. Complete unchanged maintained command
 original FAIL exit1/0.039063524s bare, FAIL exit1/0.037240812s +R10, both missing
 `object->loc.carrying == keeper`. Original script blob95803d00847f74c16e1647c80e67dd7c433656a5.
 Full original predicate census retained, including unavailable old API indices.
+Final publication fetch434dc07908b66e2437b4ea0cd72b602f7c3d350b differs fromb22
+only in R11 review documentation; actual b22 execution/sealed pins retained.
 
 Private current_chain_probe.py PASS106 source predicates/23 actual definitions
 on both exports; mutation_controls.py rejects27 in-memory source corruptions on
@@ -28,6 +34,12 @@ exact source/final literals, revision projection, physical publication before
 notification, retained pending uncertainty and separate native owner/guarded ACK.
 No production defect demonstrated at this source-contract scope; no tail-completion
 or refund guarantee inferred. R10 changes only buy among23 traced definitions.
+Coordinator reports independent PRIVATE feasibility PASS: same verify AST and
+27 controls, only output-directory literal relocated, separate
+/tmp/coordinator-live-route results. It authenticates all23 extracted bodies,
+entire shop.c, custody utils.h and original test against canonical b22. Exact
+probe/controller hashes match this investigation. This checkpoint is source-only;
+published boundary/final review and maintained repair approval remain pending.
 
 Exact prospective reservation **tests/async/test_shop_trade_live_route.py ONLY**
 awaits coordinator boundary review/authorization. Reuse existing extract_function

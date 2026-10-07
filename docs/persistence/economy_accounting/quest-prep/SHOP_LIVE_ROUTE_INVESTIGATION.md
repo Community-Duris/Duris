@@ -10,12 +10,17 @@ Coordinator boundary/final review and any implementation authorization remain
 separate. Actual continuing quest Goal remains **BLOCKED**, not complete/resumed.
 
 Investigation starts from prep `5ec386905c141fd3dade1b74e15d7a8c5157c0e7`.
+Published docs-only result is `4ca4016096812b0baad978cacc2b2844f8b5d229` on
+origin/codex/accounting-quest-prep, authoring this document and HANDOFF.md only.
 Analyzed accounting candidate is `b22d731bc66bd95f09e6cbc2180c99578c7f7205`.
 Publication-time fetch observes `503384ca3c7b6bd913010ae3f0922623d503aa40`;
 its sole successor commit changes three documentation paths, including R11 review,
 and none of the analyzed source/tests/helpers. Execution keeps its actual b22 pin.
 R10 code is `7bbf942e3b7c12dea22e5bf03a592b48aedd690f`. No optional prep or
 R0–R9 patch was composed. This investigation does not duplicate R11 valuation.
+Final publication fetch `434dc07908b66e2437b4ea0cd72b602f7c3d350b` differs from
+b22 only in R11 review documentation. All analyzed source remains unchanged;
+the sealed evidence retains its original b22 and earlier observed503 pins.
 
 ## Preserved original result and complete predicate census
 
@@ -198,6 +203,14 @@ for b22 and `3101e6938597e974e3568e63ed37ad59dc4f8207eb4a562f93c7c4422c32c206`
 for b22+R10. Raw artifacts are private/ignored and excluded from commits.
 SEALED.json SHA256 is
 `76922aaf4218f6588950bc9a98fa1d42b06736aeb9a04d47c5661c2ef26c95d4`.
+
+Coordinator separately reports PRIVATE feasibility PASS in
+`/tmp/coordinator-live-route`, using the exact probe/controller hashes above and
+only relocating output-directory literals. Its unchanged verify AST/106 predicates
+and all27 controls pass, with all23 complete extracted bodies, entire shop.c,
+custody utils.h and original test authenticated against canonical b22 Git source.
+This is an independent source checkpoint; no maintained repair approval or native
+runtime is claimed. Publication of boundary/final review remains coordinator-owned.
 
 ## Exact prospective reservation and remaining dependencies
 
