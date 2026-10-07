@@ -16,7 +16,7 @@ import subprocess
 import sys
 import tempfile
 
-from test_flatfile_restore_economic_authority import ROOT, change, inventory, rehash
+from test_flatfile_restore_economic_authority import ROOT, change, inventory, rehash, check_baseline_control_pages
 from test_flatfile_restore_baseline_markers import fingerprint
 from native_build_artifacts import build_native
 from test_flatfile_accounting_store import SOURCES
@@ -390,10 +390,25 @@ int main(int argc, char **argv) {
     try {
         if (argc == 3) {
             const auto mode = std::string(argv[1]);
-            if (mode != "maximum-budget" && !mode.starts_with("lifecycle-")) return 2;
+            if (mode != "maximum-budget" && !mode.starts_with("lifecycle-") && !mode.starts_with("baseline-")) return 2;
             restore_economic_authority::audit_budget budget;
             const auto files = budget.remaining_files, bytes = budget.remaining_bytes,
                        entries = budget.remaining_entries;
+            if (mode.starts_with("baseline-")) {
+                if (mode == "baseline-files") budget.remaining_files = 1;
+                else if (mode == "baseline-bytes") budget.remaining_bytes = 1;
+                else if (mode == "baseline-deadline") budget.deadline = std::chrono::steady_clock::now();
+                else if (mode != "baseline-budget") return 2;
+                restore_economic_authority::scoped_audit_budget scope(budget);
+                restore_economic_authority::authority_read_lock lock(argv[2]);
+                auto value = restore_economic_records::checker(argv[2]).baseline_controls_page(50, {}, {}, false);
+                lock.finish(); budget.checkpoint();
+                std::cout << files << " " << bytes << " " << entries << " "
+                          << files-budget.remaining_files << " " << bytes-budget.remaining_bytes
+                          << " " << entries-budget.remaining_entries << " " << value.rows
+                          << " " << value.verified << "\\n";
+                return 0;
+            }
             if (mode.starts_with("lifecycle-")) {
                 if (mode == "lifecycle-files") budget.remaining_files = 1;
                 else if (mode == "lifecycle-bytes") budget.remaining_bytes = 1;
@@ -708,6 +723,7 @@ int main(int argc, char **argv) {
             ("FIFO receipt", lambda d: ((d/receipt).unlink(), os.mkfifo(d/receipt, 0o600)))):
             check(label, mixed, unsafe=unsafe)
     page_report = check_lifecycle_pages(binary, fixture, audit, artifacts, environment)
+    baseline_control_pages = check_baseline_control_pages(binary, fixture, audit, environment, artifacts, lifecycle=True)
     assert fingerprint(ROOT / "src") == native_inputs, "native source changed during test"
     if args.legacy_artifacts:
         assert fingerprint(args.legacy_artifacts) == legacy_inputs, "legacy fixture artifacts changed"
@@ -717,6 +733,7 @@ int main(int argc, char **argv) {
               "cases": results, "case_count": len(results), "refused": sum(not row["accepted"] for row in results),
               "accepted": sum(row["accepted"] for row in results), "skips": 0,
               "lifecycle_pages": page_report,
+              "baseline_control_pages": baseline_control_pages,
               "previous_reader_compatibility_refusals": red, "legacy_inputs": legacy_inputs,
               "source_capture_executed": False,
               "lifecycle_install_executed": False, "activation_executed": False,

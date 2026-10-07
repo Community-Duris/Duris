@@ -308,10 +308,13 @@ int main(int argc, char **argv)
 			return 0;
 		}
 		if (argc == 6 && (std::string(argv[1]) == "--economic-evidence-page" ||
-				  std::string(argv[1]) == "--economic-lifecycle-page"))
+				  std::string(argv[1]) == "--economic-lifecycle-page" ||
+				  std::string(argv[1]) == "--economic-baseline-controls-page"))
 		{
 			using namespace restore_economic_authority;
 			const bool lifecycle = std::string(argv[1]) == "--economic-lifecycle-page";
+			const bool baseline = std::string(argv[1]) ==
+					      "--economic-baseline-controls-page";
 			const std::string bucket_text = argv[3], after_text = argv[4],
 					  ceiling_text = argv[5];
 			unsigned bucket = 0;
@@ -331,7 +334,7 @@ int main(int argc, char **argv)
 				return value;
 			};
 			audit_budget budget;
-			if (!lifecycle)
+			if (!lifecycle && !baseline)
 			{
 				budget.remaining_bytes = 32 * 1024 * 1024;
 				budget.remaining_files = 64;
@@ -348,12 +351,15 @@ int main(int argc, char **argv)
 				return 0;
 			}
 			restore_economic_records::checker reader(argv[2]);
-			auto result = lifecycle ? reader.lifecycle_page(bucket, decode(after_text),
-									decode(ceiling_text),
-									ceiling_text != "-") :
-						  reader.page(bucket, decode(after_text),
-							      decode(ceiling_text),
-							      ceiling_text != "-");
+			auto result =
+				baseline ? reader.baseline_controls_page(bucket, decode(after_text),
+									 decode(ceiling_text),
+									 ceiling_text != "-") :
+				lifecycle ? reader.lifecycle_page(bucket, decode(after_text),
+								  decode(ceiling_text),
+								  ceiling_text != "-") :
+					    reader.page(bucket, decode(after_text),
+							decode(ceiling_text), ceiling_text != "-");
 			lock.finish();
 			audit_checkpoint();
 			auto hex = [](const auto &value)
@@ -367,7 +373,8 @@ int main(int argc, char **argv)
 				<< ",\"verified\":" << result.verified
 				<< ",\"bucket_rows\":" << result.bucket_rows
 				<< ",\"range_exhausted\":" << (result.exhausted ? "true" : "false")
-				<< (lifecycle ? ",\"invalid_receipts\":[" :
+				<< (baseline  ? ",\"invalid_books\":[" :
+				    lifecycle ? ",\"invalid_receipts\":[" :
 						",\"invalid_records\":[");
 			for (size_t i = 0; i < result.invalid_records.size(); ++i)
 				std::cout << (i ? "," : "") << '"' << hex(result.invalid_records[i])
