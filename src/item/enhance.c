@@ -6,6 +6,7 @@
  */
 #include <stdio.h>
 #include <string.h>
+#include "economy/enhancement_essence_reward.h"
 #include <math.h>
 #include <ctype.h>
 #include <stdlib.h>
@@ -16,7 +17,6 @@
 #include "net/comm.h"
 #include "world/db.h"
 #include "world/events.h"
-#include "economy/enhancement_essence_reward.h"
 #include "economy/enhancement_stat_rules.h"
 #include "cmd/interp.h"
 #include "core/mm.h"
