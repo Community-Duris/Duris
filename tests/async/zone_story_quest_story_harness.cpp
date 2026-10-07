@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 205 &&
+		require(catalog.story_mappings.size() == 206 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -24367,6 +24367,122 @@ int main(int argc, char **argv)
 						1 &&
 					raw.progress_for_zone(7, 42, 64).completed == 2,
 				"Bugger cold/raw recovery lost exact acceptance or excluded native evidence");
+		}
+
+		{
+			const auto &document = story_for("dirkn", "balith-sealed-document");
+			const auto &paper = story_for("dirkn", "balith-tattered-paper");
+			const auto &bounty = story_for("alatorin", "exchange-83336-74fbcdf9a91d");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 968, 96800, 100, "arrival") ==
+						result::applied &&
+					journey.meet_npc(7, 42, 96820, 96827, 102) ==
+						result::applied &&
+					journey.meet_npc(7, 42, 96838, 96885, 103) ==
+						result::applied,
+				"Dirk'nspire teacher/shop encounter setup failed");
+			std::string journal =
+				journey.render_journal(7, 42, 968, 10, 1, 104, false, false);
+			require(journal.find("[Story incomplete] " + document.title + "\r\n") ==
+						std::string::npos &&
+					journal.find("[Story incomplete] " + paper.title +
+						     "\r\n") == std::string::npos,
+				"Dirk'nspire service encounters revealed unmet Balith requests");
+			require(journey.meet_npc(7, 42, 96829, 96813, 105) == result::applied,
+				"Dirk'nspire Balith encounter failed");
+			const auto before = journey.serialize_state();
+			const zone_story_quest_catalog::story_definition *requests[] = { &document,
+											 &paper };
+			const int materials[] = { 96845, 96802 };
+			// Synthetic custody and receipts do not qualify native search, lock or settlement.
+			for (unsigned mask = 0; mask < 4; ++mask)
+			{
+				supplies = {};
+				for (unsigned index = 0; index < 2; ++index)
+					if (mask & (1U << index))
+						supplies.carried[materials[index]] = 1;
+				journal = journey.render_journal(7, 42, 968, 10, 1, 106, false,
+								 false, &supplies);
+				for (unsigned index = 0; index < 2; ++index)
+					require(journal.find(std::string(mask & (1U << index) ?
+										 "[Ready now] " :
+										 "[Missing now] ") +
+							     requests[index]->steps.front().text) !=
+							std::string::npos,
+						"Dirk'nspire independent material readiness was merged");
+				require(journey.serialize_state() == before &&
+						journey.progress_for_zone(7, 42, 968).completed ==
+							0,
+					"Dirk'nspire current preparation persisted acceptance");
+			}
+			supplies = {};
+			supplies.equipped[18] = 96802;
+			supplies.carried[96815] = 1;
+			supplies.carried[96843] = 1;
+			supplies.carried[96835] = 1;
+			journal = journey.render_journal(7, 42, 968, 10, 1, 107, false, false,
+							 &supplies);
+			for (const auto *request : requests)
+				require(journal.find("[Missing now] " +
+						     request->steps.front().text) !=
+						std::string::npos,
+					"Dirk'nspire held paper, container, scarab or hammer substituted for loose inputs");
+			record(journey, bounty.contracts.front(), "dirkn-foreign-bounty", 831,
+			       83552);
+			require(journey.progress_for_zone(7, 42, 968).completed == 0,
+				"Alatorin hammer bounty completed a Balith request");
+			for (unsigned first = 0; first < 2; ++first)
+			{
+				service supplied(catalog), recovered(catalog), raw(raw_catalog);
+				const auto &initial = *requests[first];
+				const auto &other = *requests[1 - first];
+				record(supplied, initial.contracts.front(), "dirkn-first-return",
+				       968, 96813);
+				require(supplied.progress_for_zone(7, 42, 968).completed == 1 &&
+						supplied.progress_for_zone(7, 42, 968).total == 2,
+					"Dirk'nspire supplied return required invented prior search, greeting, kill or other return");
+				require(supplied.discover_zone(7, 42, 968, 96813, 121, "arrival") ==
+							result::applied &&
+						supplied.meet_npc(7, 42, 96829, 96813, 121) ==
+							result::applied,
+					"Dirk'nspire journal visibility setup after acceptance failed");
+				journal = supplied.render_journal(7, 42, 968, 10, 1, 121, false,
+								  false, &supplies);
+				require(journal.find("[Recorded] " + initial.steps.back().text) !=
+							std::string::npos &&
+						journal.find("[Recorded] " +
+							     other.steps.back().text) ==
+							std::string::npos,
+					"Dirk'nspire first return merged the other contract or lost spent history");
+				auto replay = completion(initial.contracts.front(),
+							 "dirkn-first-return", 120);
+				replay.transaction.zone_number = 968;
+				replay.transaction.room_vnum = 96813;
+				require(supplied.record_completion(replay) ==
+						result::already_applied,
+					"Dirk'nspire first return replay duplicated acceptance");
+				record(supplied, other.contracts.front(), "dirkn-other-return", 968,
+				       96813);
+				const auto saved = supplied.serialize_state();
+				require(recovered.deserialize_state(saved, &error) &&
+						raw.deserialize_state(saved, &error) &&
+						recovered.progress_for_zone(7, 42, 968).completed ==
+							2 &&
+						raw.progress_for_zone(7, 42, 968).completed == 2,
+					"Dirk'nspire independent mapped/raw cold recovery lost a meaningful return");
+				supplies = {};
+				supplies.carried[96843] = 1;
+				journal = recovered.render_journal(7, 42, 968, 10, 1, 122, false,
+								   false, &supplies);
+				for (const auto *request : requests)
+					require(journal.find("[Recorded] " +
+							     request->steps.back().text) !=
+								std::string::npos &&
+							journal.find("[Missing now] " +
+								     request->steps.front().text) !=
+								std::string::npos,
+						"Dirk'nspire spent inputs lost acceptance or reward recreated preparation");
+			}
 		}
 
 		std::cout

@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 205 authored journals, accounting-gated player surfaces, starter/town
+**Status: 206 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5334,3 +5334,10 @@ Builder declarations need intended rune/chest-key sources, mismatched chest-as-k
 The [dossier](zone-stories/BUGGER.md) adds one exact three-item request and explicitly excludes the Queen’s wrong-food response. Native definitions remain unchanged; one refusal unit is removed from achievement/story presentation. Identical item names need description and identity guidance. Personal SEARCH, source-parent generation, actual GET/root custody, supplied input and simultaneous batch acceptance require distinct evidence. Reset P’s global prototype lookup needs an actual frozen parent UID.
 
 Colony nursing, transport, maturation, excavation, food and slime-threat stories need builder-defined lasting outcomes; prose and encounters do not complete them. Innate room6405 arrival is an alternate admitted discovery route, rather than an item source. Twenty-eight owned follow-ups cover these capabilities, native recipient/save/recovery, fair separate fix/news repairs and completed mode2/accountable renewal. Existing schema/exclusions suffice for the current journal. New tracking requires active READY accounting; daily policy remains disabled.
+
+
+## Dirk’nspire integration extension
+
+The [dossier](zone-stories/DIRKN.md) maps two independent Balith returns, including the meaningful coin reward despite disappointed prose. Existing schema3/revision1 covers optional exact loose preparation and independent receipts. Global reset parent/cap identity, named-container search, key0 lock admission, default teacher/shop service, poisoned liquids, falling and packed weapon effects need admitted outcomes rather than prose-based completion.
+
+Foe Hammer’s two separate Alatorin consumers create a keep/use/spend choice; explicit native G I survives the _noquest_ keyword. Torn-paper infiltration/daughter, captivity, families, temple and rival-clan stories need builder-defined lasting endpoints. Thirty-four owned follow-ups cover these capabilities, source/recipient/save/recovery, fair separate fix/news repairs and accountable renewal. New tracking requires active READY accounting; daily policy remains disabled.

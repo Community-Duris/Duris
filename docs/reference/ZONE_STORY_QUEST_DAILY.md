@@ -244,3 +244,8 @@ The [dossier](../design/zone-stories/BRIMEFORGE.md) retains two potential candid
 ## Bugger Caves daily qualification
 
 The [dossier](../design/zone-stories/BUGGER.md) retains one meaningful potential candidate and excludes the wrong-food response. Native self-exchange is already daily-ineligible; exclusion also prevents achievement/story progress. Mode2 timing and reset caps do not prove fresh READY eggs or parent/child generations. All three exact loose roots, actual recipient armor settlement/save/recovery, NORENT egg lifecycle and completed accountable renewal require qualification. New tracking requires active READY accounting and daily policy remains disabled.
+
+
+## Dirk’nspire daily qualification
+
+The [dossier](../design/zone-stories/DIRKN.md) retains two meaningful potential candidates. Mode2/lifespan10..20 and caps do not prove fresh READY paper/document stock or giver/parent/child generations. Actual global moneybox parent selection, admitted search/lock/GET, supplied custody, native scarab/wallet recipient settlement/save/recovery and completed accountable renewal require qualification. Foreign Foe Hammer bounties keep their Alatorin identities. New tracking requires active READY accounting and daily policy remains disabled.
