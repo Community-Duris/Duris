@@ -6,7 +6,7 @@ Links between an exchange output and another input are review candidates; they d
 prove mandatory order, personal sourcing, branches, or a scripted completion.
 
 Scanned 350 catalog zones; 221 have native Q contracts;
-2668 distinct Q contracts; 202 authored journals.
+2668 distinct Q contracts; 203 authored journals.
 
 Regenerate with:
 
@@ -44,7 +44,7 @@ do not establish the absence of shared, generated, or dynamically assigned proce
 | The Basin Wastes (`basin_wa`) | 10 | 6 | 1 | Yes | [1 × a smoldering dragon scale; 1 × a glowing potion; 1 × an ancient signet ring → a glowing white-gold ring](../../areas/qst/basin_wa.qst#L35) | block_dir |
 | Bastine Castle (`bastine`) | 14 | 4 | 0 | Yes | [1 × the wand of Life → a seal of the order of the bastine knights, the platemail of knighthood](../../areas/qst/bastine.qst#L141) | — |
 | The Battlefield (`battlefi`) | 7 | 12 | 0 | Yes | [1 × some swirling mist; 1 × a holy cross; 1 × a skull; other required items → a holy gleaming longsword 'Righteous'](../../areas/qst/battlefi.qst#L67) | righteous_blade, undead_inn |
-| The Bronze Citadel (`bctdl`) | 2 | 1 | 0 | Fallback | [1 × the seal of the Dungeon Master → an intricate black stone key](../../areas/qst/bctdl.qst#L11) | artifact_invisible, bel_sword |
+| The Bronze Citadel (`bctdl`) | 2 | 1 | 0 | Yes | [1 × the seal of the Dungeon Master → an intricate black stone key](../../areas/qst/bctdl.qst#L11) | artifact_invisible, bel_sword |
 | The Black Pearl (`blackpearl`) | 31 | 14 | 19 | Yes | [1 × a sword fragment; 1 × a sword fragment; 1 × a sword fragment; other required items → a thick broadsword named 'dragonslayer'](../../areas/qst/blackpearl.qst#L214) | — |
 | Braddistock Mansion (`brad`) | 5 | 9 | 1 | Yes | [1 × the first piece of the Star Stone; 1 × the second piece of the Star Stone; 1 × the third piece of the Star Stone; other required items → the Star Key](../../areas/qst/lortower.qst#L266) | braddistock |
 | Braddistock Mansion (`braddistock`) | 2 | 1 | 1 | Yes | [1 × a collar with an inscription, "Slippers" → the remains of Lord Braddistock](../../areas/qst/braddistock.qst#L30) | jet_black_maul |

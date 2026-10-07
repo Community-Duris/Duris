@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 202 authored journals, accounting-gated player surfaces, starter/town
+**Status: 203 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5313,3 +5313,10 @@ Builder declarations should separate temple key/current door state, optional cou
 The [Phantasmagoric dossier](zone-stories/VALDRAK.md) adds a three-source joint return with hidden heart, currency/XP caps and giver retirement. Reuse exact loose preparation plus one acceptance; source combat/reveal/root custody/player transfer, actor cash, frozen recipient XP, save/recovery, follower and D lifecycle need independent outcomes. Ritual/community freedom remains intended narrative until an adapter owns actual operation and restored state.
 
 Builder declarations should separate garden recovery/eating/settled effects, spring operation and sector admission, shop purchase/recipient settlement, exact encounter variants and single-file crossing/return. Raw4 exit labels must be traced through setup_dir and current state before reveal or access objectives. A mixed safe/punctuated dialogue alias must not make the evidence tool silently omit the whole valid family: plan a focused inventory correction retaining exact safe tokens, plus corpus/output qualification; native punctuation/prose repair is a separate builder choice. Thirty owned follow-ups retain these cases. New tracking requires active READY accounting; native repairs need named fix/news commits and prominent before/after evidence.
+
+
+## Bronze Citadel integration extension
+
+The [Bronze Citadel dossier](zone-stories/BCTDL.md) adds two independent Zariel returns and a practical key/cube/prison progression. Exact source lineage, trap-triggered rejected GET versus later custody, key reward/NO_RENT lifecycle, shared switch state versus personal operation/crossing, type25 actual arrival versus consumed command, and mode0 committed epic reset versus executed generation require separate adapters. The active accounting reset issuance refusal must remain closed until generation ownership exists.
+
+Builder declarations should describe intended rescue/restoration/custom worn-equipment effects separately from accepted returns. MA/QA room broadcast is not witness credit. A supplied heart does not require remembered seal completion. Record the one-armor versus two-potions response mismatch as a fair prose/intended-reward decision, and the cube ROOM-only trap plus GET-only helper boundary as unresolved intent. Thirty-two owned follow-ups retain exact evidence and responsible decisions. Native repairs need named fix/news commits and prominent before/after evidence; new tracking requires active READY accounting.

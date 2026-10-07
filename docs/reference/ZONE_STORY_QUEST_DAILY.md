@@ -229,3 +229,8 @@ The [dossier](../design/zone-stories/V2.md) retains one potential candidate with
 ## Phantasmagoric Caverns daily qualification
 
 The [dossier](../design/zone-stories/VALDRAK.md) retains one potential candidate with two exact weapons and hidden heart, currency/XP terms and D retirement. Qualify active READY acceptance, frozen party history versus actor currency/actual capped XP recipients, settlement/save/recovery, giver/follower lifecycle and completed cap1 source/giver renewal. Garden, spring, shopping, ritual prose and UTC rollover cannot establish a fresh accepted bundle. Policy stays disabled by default.
+
+
+## Bronze Citadel daily qualification
+
+The [dossier](../design/zone-stories/BCTDL.md) retains one potential seal candidate; the heart is story-only. Mode0, NORENT key custody, shared cube access, active accounting reset item refusal and deferred epic/reset generation require qualification. Actual READY acceptance, reward root/recipient settlement/save/recovery, retirement and completed accountable source/giver renewal are required. Daily policy remains disabled; UTC rollover, a reset request or opening a shared route does not prove renewal.

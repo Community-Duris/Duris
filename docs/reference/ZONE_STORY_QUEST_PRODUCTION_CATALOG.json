@@ -71637,6 +71637,350 @@
     {
       "contacts": [
         {
+          "description": "Bel carries the still-beating heart in his private chamber. Recovering this trapped heart is separate from returning it to Zariel; the first pickup attempt can trigger its fire trap.",
+          "keyword": "bel",
+          "mob_vnum": 32420,
+          "name": "Bel, the lord of the First",
+          "topics": []
+        },
+        {
+          "description": "The Dungeon Master carries the requested seal and an unremarkable key near Zariel\u2019s secret cell. Recovering the seal and opening the cell are different parts of the route.",
+          "keyword": "dungeonmaster",
+          "mob_vnum": 32439,
+          "name": "the Dungeon Master",
+          "topics": []
+        },
+        {
+          "description": "Ask hello when you meet Zariel in the secret cell. Offer the Dungeon Master\u2019s seal for her black stone key, or Bel\u2019s heart for the final reward. The heart return accepts a supplied exact heart without a remembered seal return.",
+          "keyword": "zariel",
+          "mob_vnum": 32448,
+          "name": "Zariel, the former lord of Avernus",
+          "topics": [
+            "hello"
+          ]
+        },
+        {
+          "description": "The assassin in Baalzephon\u2019s chamber wields the dagger of ages. Its invisibility operation is a separate equipment lead, not Zariel\u2019s requested seal or heart.",
+          "keyword": "assassin",
+          "mob_vnum": 32421,
+          "name": "an assassin of ages",
+          "topics": []
+        },
+        {
+          "description": "a snow white devil inhabits The East Side of the Second Floor Hallway. This citadel encounter and its own equipment are separate from Zariel\u2019s accepted returns.",
+          "keyword": "white",
+          "mob_vnum": 32422,
+          "name": "a snow white devil",
+          "topics": []
+        },
+        {
+          "description": "an erinyes devil inhabits A Room Covered in Demonic Glyphs. This citadel encounter and its own equipment are separate from Zariel\u2019s accepted returns.",
+          "keyword": "devil",
+          "mob_vnum": 32423,
+          "name": "an erinyes devil",
+          "topics": []
+        },
+        {
+          "description": "a blue devil inhabits A Side Hallway in the Bronze Citadel, The End of a Hallway in the Bronze Citadel. This citadel encounter and its own equipment are separate from Zariel\u2019s accepted returns.",
+          "keyword": "blue",
+          "mob_vnum": 32424,
+          "name": "a blue devil",
+          "topics": []
+        },
+        {
+          "description": "a scarred pit fiend inhabits A Blazing Meditation Chamber, A Room Covered in Demonic Glyphs. This citadel encounter and its own equipment are separate from Zariel\u2019s accepted returns.",
+          "keyword": "scarred",
+          "mob_vnum": 32425,
+          "name": "a scarred pit fiend",
+          "topics": []
+        },
+        {
+          "description": "a green pit fiend inhabits Along the Path to the Bronze Citadel, The East Side of the Second Floor Hallway. This citadel encounter and its own equipment are separate from Zariel\u2019s accepted returns.",
+          "keyword": "green",
+          "mob_vnum": 32426,
+          "name": "a green pit fiend",
+          "topics": []
+        },
+        {
+          "description": "The silver dragon shares the destroyed room with Dagos. An encounter, rescue or release needs its own defined outcome.",
+          "keyword": "silver",
+          "mob_vnum": 32427,
+          "name": "a mature silver dragon",
+          "topics": []
+        },
+        {
+          "description": "a sly goblin thief inhabits The Outer Wall of the Bronze Citadel. This exact thief variant belongs to the wall maze; its stock is separate from the requested seal and heart.",
+          "keyword": "goblin",
+          "mob_vnum": 32428,
+          "name": "a sly goblin thief",
+          "topics": []
+        },
+        {
+          "description": "a devil has a local prototype but no declared local placement. Its presence and any independent story need builder integration.",
+          "keyword": "pitch",
+          "mob_vnum": 32429,
+          "name": "a devil",
+          "topics": []
+        },
+        {
+          "description": "a tan devil has a local prototype but no declared local placement. Its presence and any independent story need builder integration.",
+          "keyword": "tan",
+          "mob_vnum": 32430,
+          "name": "a tan devil",
+          "topics": []
+        },
+        {
+          "description": "an erinyes priest inhabits A Blazing Meditation Chamber. This citadel encounter and its own equipment are separate from Zariel\u2019s accepted returns.",
+          "keyword": "erinyes",
+          "mob_vnum": 32431,
+          "name": "an erinyes priest",
+          "topics": []
+        },
+        {
+          "description": "a black pit fiend inhabits The East Side of the Second Floor Hallway. This citadel encounter and its own equipment are separate from Zariel\u2019s accepted returns.",
+          "keyword": "black",
+          "mob_vnum": 32432,
+          "name": "a black pit fiend",
+          "topics": []
+        },
+        {
+          "description": "a red abishai guard inhabits A Side Hallway in the Bronze Citadel, The Center Wall Around the Bronze Citadel. This citadel encounter and its own equipment are separate from Zariel\u2019s accepted returns.",
+          "keyword": "red",
+          "mob_vnum": 32433,
+          "name": "a red abishai guard",
+          "topics": []
+        },
+        {
+          "description": "a green abishai guard inhabits A Guardpost Overlooking a Set of Cells, An Intersection in the Dungeon. This citadel encounter and its own equipment are separate from Zariel\u2019s accepted returns.",
+          "keyword": "green",
+          "mob_vnum": 32434,
+          "name": "a green abishai guard",
+          "topics": []
+        },
+        {
+          "description": "a blue abishai guard inhabits A Side Hallway in the Bronze Citadel, The Center Wall Around the Bronze Citadel. This citadel encounter and its own equipment are separate from Zariel\u2019s accepted returns.",
+          "keyword": "blue",
+          "mob_vnum": 32435,
+          "name": "a blue abishai guard",
+          "topics": []
+        },
+        {
+          "description": "a sly goblin thief inhabits The Mid Wall of the Bronze Citadel. This exact thief variant belongs to the wall maze; its stock is separate from the requested seal and heart.",
+          "keyword": "goblin",
+          "mob_vnum": 32436,
+          "name": "a sly goblin thief",
+          "topics": []
+        },
+        {
+          "description": "a sly goblin thief inhabits The Inner Wall of the Bronze Citadel. This exact thief variant belongs to the wall maze; its stock is separate from the requested seal and heart.",
+          "keyword": "goblin",
+          "mob_vnum": 32437,
+          "name": "a sly goblin thief",
+          "topics": []
+        },
+        {
+          "description": "a sly goblin thief inhabits The Center Wall Around the Bronze Citadel. This exact thief variant belongs to the wall maze; its stock is separate from the requested seal and heart.",
+          "keyword": "goblin",
+          "mob_vnum": 32438,
+          "name": "a sly goblin thief",
+          "topics": []
+        },
+        {
+          "description": "a human paladin inhabits the inner walls. These human encounters are wider story leads; a rescue or alliance needs its own defined outcome.",
+          "keyword": "human",
+          "mob_vnum": 32440,
+          "name": "a human paladin",
+          "topics": []
+        },
+        {
+          "description": "a human cleric inhabits the inner walls. These human encounters are wider story leads; a rescue or alliance needs its own defined outcome.",
+          "keyword": "human",
+          "mob_vnum": 32441,
+          "name": "a human cleric",
+          "topics": []
+        },
+        {
+          "description": "a human mercenary inhabits the inner walls. These human encounters are wider story leads; a rescue or alliance needs its own defined outcome.",
+          "keyword": "human",
+          "mob_vnum": 32442,
+          "name": "a human mercenary",
+          "topics": []
+        },
+        {
+          "description": "a human sorcerer inhabits the inner walls. These human encounters are wider story leads; a rescue or alliance needs its own defined outcome.",
+          "keyword": "human",
+          "mob_vnum": 32443,
+          "name": "a human sorcerer",
+          "topics": []
+        },
+        {
+          "description": "a kocrachon sentry inhabits A Guardpost Overlooking a Set of Cells, An Intersection in the Dungeon. This citadel encounter and its own equipment are separate from Zariel\u2019s accepted returns.",
+          "keyword": "kocrachon",
+          "mob_vnum": 32444,
+          "name": "a kocrachon sentry",
+          "topics": []
+        },
+        {
+          "description": "The glabrezu inhabits the cold cell. Entry, surviving a hazard and a defined rescue or release are different outcomes.",
+          "keyword": "glabrezu",
+          "mob_vnum": 32445,
+          "name": "an angered glabrezu Demon",
+          "topics": []
+        },
+        {
+          "description": "The tormented succubus inhabits the cell of temptation when present. Her plight is a prison story lead; meeting her does not record a rescue.",
+          "keyword": "succubus",
+          "mob_vnum": 32446,
+          "name": "an eternally tormented succubus",
+          "topics": []
+        },
+        {
+          "description": "The balor inhabits the hellish torture cell when present. Its whip and a defined prison outcome are separate from the heart return.",
+          "keyword": "balor",
+          "mob_vnum": 32447,
+          "name": "an enraged balor demon",
+          "topics": []
+        },
+        {
+          "description": "Dagos inhabits the destroyed room with a mature silver dragon and carries the obsidian key. This is a wing access and encounter lead, separate from Zariel\u2019s two returns.",
+          "keyword": "dagos",
+          "mob_vnum": 32449,
+          "name": "Dagos, Marshall of the Pit",
+          "topics": []
+        },
+        {
+          "description": "Baalzephon inhabits his private chamber with an assassin and guards. A platinum key from this chamber leads toward the room containing the bronze cube.",
+          "keyword": "baalzephon",
+          "mob_vnum": 32450,
+          "name": "Baalzephon, Duke of Hell",
+          "topics": []
+        },
+        {
+          "description": "The huge chromatic dragon inhabits the wyrm chamber alongside a red pit fiend. This is a separate encounter and equipment lead.",
+          "keyword": "chromatic",
+          "mob_vnum": 32451,
+          "name": "a HUGE chromatic dragon",
+          "topics": []
+        },
+        {
+          "description": "a red pit fiend inhabits The Chamber of the Wyrm. This citadel encounter and its own equipment are separate from Zariel\u2019s accepted returns.",
+          "keyword": "fiend",
+          "mob_vnum": 32452,
+          "name": "a red pit fiend",
+          "topics": []
+        },
+        {
+          "description": "Yeddikadir is a follower in Bel\u2019s chamber with separate stock. A source battle, custody and a defined follower outcome are different events.",
+          "keyword": "yeddikadir",
+          "mob_vnum": 32453,
+          "name": "Yeddikadir, servant of Bel",
+          "topics": []
+        },
+        {
+          "description": "Nalebranc is a follower in Bel\u2019s chamber with separate stock. A source battle, custody and a defined follower outcome are different events.",
+          "keyword": "nalebranc",
+          "mob_vnum": 32454,
+          "name": "Nalebranc, servant of Bel",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Explore the Bronze Citadel\u2019s wall maze, keyed wings, bronze cube and prison while helping Zariel with two distinct item returns.",
+      "orientation": [
+        "The citadel gate outside in Avernus leads to the entrance, and the gate at the entrance leads back when available. The two gates are objects rather than ordinary room exits.",
+        "Follow the wall maze and look for the Dungeon Master and Zariel\u2019s secret cell. A source encounter does not reveal an unmet giver\u2019s request.",
+        "Ask Zariel hello. The conversation introduces the Dungeon Master; it is a conversation lead, not another completed quest.",
+        "Bring the Dungeon Master\u2019s seal to Zariel for her intricate black stone key. The key fits the eastern wing from the foyer; recovering, using and keeping a key are different steps of exploration.",
+        "The bronze cube lies in a room reached from Baalzephon\u2019s chamber. Its declared command is stand cube, which can open the blocked upward route in the foyer. Opening a route and crossing it are separate.",
+        "Bel carries the still-beating heart. Its fire trap can interrupt the first pickup attempt; recover the heart before preparing the return. A supplied exact heart also fits.",
+        "Zariel\u2019s heart return currently gives one suit of Nessus royal guard platemail and makes her depart. The old response promises two items and potions; that description needs a builder decision.",
+        "The two returns remain independent. A supplied exact heart is accepted without remembered dialogue, seal completion, personal kills, key use or cube operation.",
+        "Dagos, Baalzephon, the silver and chromatic dragons, human wall encounters, guards, Bel\u2019s followers and the prison cells offer wider progression leads. Rescue, restoration and equipment operations need their own defined outcomes."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "bctdl",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:32483;receive=I:32422;disappear=0",
+              "giver_vnum": 32448
+            }
+          ],
+          "id": "zariel-dungeon-seal",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "The Dungeon Master carries this exact seal near Zariel\u2019s secret cell. Carry it loose. A supplied exact seal also fits; equipped or nested stock does not prepare the offering.",
+              "id": "material-32483",
+              "item_vnums": [
+                32483
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the seal of the Dungeon Master loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:32483;receive=I:32422;disappear=0",
+                  "giver_vnum": 32448
+                }
+              ],
+              "hint": "Offer the seal to Zariel when she is present. This return earns the black stone key; later unlocking, the bronze cube and the heart return are separate.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record Zariel\u2019s accepted seal return"
+            }
+          ],
+          "summary": "Return the exact seal for the intricate black stone key. The key helps with citadel access; using it is a separate part of the journey.",
+          "title": "Bring the Dungeon Master\u2019s seal to Zariel"
+        },
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:32490;receive=I:32029;disappear=1",
+              "giver_vnum": 32448
+            }
+          ],
+          "id": "zariel-bel-heart",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Bel carries this exact trapped heart in his private chamber. A first pickup attempt can trigger fire without recovering the heart. Carry the recovered or supplied exact heart loose for the offering.",
+              "id": "material-32490",
+              "item_vnums": [
+                32490
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the still-beating heart of Bel loose"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:32490;receive=I:32029;disappear=1",
+                  "giver_vnum": 32448
+                }
+              ],
+              "hint": "Offer the exact heart to Zariel when she is present. The current reward is one suit of Nessus royal guard platemail, followed by her departure. A supplied heart fits without a remembered seal return, personal kill or cube operation.",
+              "id": "return",
+              "kind": "completion",
+              "text": "Record Zariel\u2019s accepted heart return"
+            }
+          ],
+          "summary": "Return Bel\u2019s exact heart for one armor reward and Zariel\u2019s departure. Her transformation and the promised potions in the old response need builder review.",
+          "title": "Bring Bel\u2019s heart to Zariel"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "The filthy slave explains the four towers and accepts his notebook to reveal an entry phrase. Information acceptance is distinct from speaking the phrase, unlocking or entering the shared door.",
           "keyword": "filthy",
           "mob_vnum": 32827,

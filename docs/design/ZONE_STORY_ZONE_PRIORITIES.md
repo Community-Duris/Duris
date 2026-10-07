@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 189 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 190 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -394,7 +394,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 | 187 | [Myconid Mushroom Forest](zone-stories/MYCONID.md) (`myconid`) | External giant spores → one accepted 50-platinum return; separate green-key/potion-cache, mushroom-passage, food/water/ring and court/encounter leads. | Comprehensive schema 3/revision 1: one QA/card, 21 contacts, two M/four aliases, one optional row/two steps; 93 rooms/21 mobiles/15 objects/103 resets. Twenty-eight owned source/access/cache/settlement/renewal/fair-builder follow-ups; one achievement/potential daily. |
 | 188 | [Vargan II](zone-stories/V2.md) (`v2`) | Three exact hidden pieces → one accepted sword return; separate key/map, court/temple, flooded/upper passage, rescue and later campaign leads. | Comprehensive schema3/revision1: one Q/card,23 contacts,two aliases,three optional rows/four steps;119 rooms/23 mobiles/53 objects/139 resets. Twenty-eight owned acquisition/access/hazard/settlement/renewal/fair-repair follow-ups; one achievement/potential daily. |
 | 189 | [Phantasmagoric Caverns](zone-stories/VALDRAK.md) (`valdrak`) | Three exact spider items → one accepted currency/XP return and departure; independent ritual/community, garden, spring, shop and cave stories. | Comprehensive schema3/revision1: one Q/card,57 contacts,three valid topics/four steps;100 rooms/57 mobiles/19 objects/311 resets. Thirty owned acquisition/settlement/retirement/service/access/renewal/fair-repair follow-ups; three raw dialogue families versus two recognized inventory blocks. |
-| 190 | The Bronze Citadel (`bctdl`) | [Meet the giver → 1 × the seal of the Dungeon Master → an intricate black stone key](../../areas/qst/bctdl.qst#L11) | 2 Q; 1 dialogue; 0 candidate link items |
+| 190 | [The Bronze Citadel](zone-stories/BCTDL.md) (`bctdl`) | Independent seal → key and heart → armor/departure; practical wall maze, keyed wings, bronze cube, prison and custom equipment progression. | Comprehensive schema3/revision1: two cards,35 contacts,one topic/four steps;77 rooms/35 mobiles/71 objects/302 resets. Thirty-two owned source/trap/custody/access/reward/retirement/renewal/fair-repair follow-ups. |
 | 191 | The BrimStone Forge (`brimeforge`) | [Meet the giver → 1 × the locket of the first; 1 × the locket of the second; 1 × the locket of the third → a wand of fiery power, an ethereal key](../../areas/qst/brimeforge.qst#L8) | 2 Q; 1 dialogue; 0 candidate link items |
 | 192 | The Bugger Caves (`bugger`) | [Meet the giver → 1 × a bugger egg; 1 × a bugger egg; 1 × a buggers carapace → some spiked carapace armor](../../areas/qst/bugger.qst#L7) | 2 Q; 1 dialogue; 0 candidate link items |
 | 193 | Dirk'nspire Stronghold (`dirkn`) | [Meet the giver → 1 × a tattered piece of silk-paper → native reward/response](../../areas/qst/dirkn.qst#L19) | 2 Q; 1 dialogue; 0 candidate link items |

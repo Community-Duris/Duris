@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 202 &&
+		require(catalog.story_mappings.size() == 203 &&
 				tracker.summary_for(7, 42).total == 1522,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -24024,6 +24024,108 @@ int main(int argc, char **argv)
 					!recovered.has_discovered(7, 42, 21) &&
 					recovered.progress_for_zone(7, 42, 21).completed == 0,
 				"Phantasmagoric cold/raw recovery lost one return or fabricated a foreign campaign");
+		}
+
+		{
+			const auto &seal = story_for("bctdl", "zariel-dungeon-seal");
+			const auto &heart = story_for("bctdl", "zariel-bel-heart");
+			service journey(catalog);
+			require(journey.discover_zone(7, 42, 324, 32420, 100, "arrival") ==
+					result::applied,
+				"Bronze Citadel discovery failed");
+			require(journey.meet_npc(7, 42, 32439, 32482, 102) == result::applied,
+				"Bronze Citadel Dungeon Master encounter failed");
+			std::string journal =
+				journey.render_journal(7, 42, 324, 10, 1, 103, false, false);
+			require(journal.find("[Story incomplete] " + seal.title + "\r\n") ==
+						std::string::npos &&
+					journal.find("[Story incomplete] " + heart.title +
+						     "\r\n") == std::string::npos,
+				"Bronze Citadel source encounter fabricated an unmet Zariel");
+			require(journey.meet_npc(7, 42, 32448, 32483, 104) == result::applied,
+				"Bronze Citadel actual Zariel encounter failed");
+			supplies = {};
+			supplies.equipped[18] = 32483;
+			supplies.carried[32482] = 1;
+			supplies.carried[32449] = 1;
+			const auto before = journey.serialize_state();
+			journal = journey.render_journal(7, 42, 324, 10, 1, 105, false, false,
+							 &supplies);
+			require(journal.find("[Missing now] " + seal.steps[0].text) !=
+						std::string::npos &&
+					journal.find("[Missing now] " + heart.steps[0].text) !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Bronze Citadel held seal, access key or unrelated dagger prepared a return");
+			supplies = {};
+			supplies.carried[32490] = 1;
+			journal = journey.render_journal(7, 42, 324, 10, 1, 106, false, false,
+							 &supplies);
+			require(journal.find("[Ready now] " + heart.steps[0].text) !=
+						std::string::npos &&
+					journal.find("[Missing now] " + seal.steps[0].text) !=
+						std::string::npos &&
+					journey.serialize_state() == before,
+				"Bronze Citadel independent supplied heart required invented prior seal, combat, trap, key or cube history");
+			// Synthetic receipts qualify projection; actual native reward, trap, access, retirement and settlement remain separate.
+			record(journey, heart.contracts.front(), "bctdl-heart-first", 324, 32483);
+			supplies = {};
+			journal = journey.render_journal(7, 42, 324, 10, 1, 121, false, false,
+							 &supplies);
+			require(journal.find("[Recorded] " + heart.steps[1].text) !=
+						std::string::npos &&
+					journal.find("[Missing now] " + heart.steps[0].text) !=
+						std::string::npos &&
+					journey.progress_for_zone(7, 42, 324).completed == 1 &&
+					journey.progress_for_zone(7, 42, 324).total == 2,
+				"Bronze Citadel heart return fabricated the seal return or lost history after spending");
+			auto replay = completion(heart.contracts.front(), "bctdl-heart-first", 120);
+			replay.transaction.zone_number = 324;
+			replay.transaction.room_vnum = 32483;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Bronze Citadel replay duplicated the heart return");
+			service recovered(catalog), raw(raw_catalog);
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 324).completed == 1 &&
+					raw.progress_for_zone(7, 42, 324).completed == 1 &&
+					!recovered.has_discovered(7, 42, 320) &&
+					recovered.progress_for_zone(7, 42, 320).completed == 0,
+				"Bronze Citadel cold/raw recovery fabricated a seal return or foreign reward campaign");
+			service sequential(catalog);
+			require(sequential.discover_zone(7, 42, 324, 32420, 100, "arrival") ==
+						result::applied &&
+					sequential.meet_npc(7, 42, 32448, 32483, 104) ==
+						result::applied,
+				"Bronze Citadel sequential journey setup failed");
+			supplies = {};
+			supplies.carried[32483] = 1;
+			journal = sequential.render_journal(7, 42, 324, 10, 1, 106, false, false,
+							    &supplies);
+			require(journal.find("[Ready now] " + seal.steps[0].text) !=
+						std::string::npos &&
+					journal.find("[Missing now] " + heart.steps[0].text) !=
+						std::string::npos,
+				"Bronze Citadel seal preparation substituted for the heart");
+			record(sequential, seal.contracts.front(), "bctdl-seal", 324, 32483);
+			supplies = {};
+			supplies.carried[32422] = 1;
+			journal = sequential.render_journal(7, 42, 324, 10, 1, 121, false, false,
+							    &supplies);
+			require(journal.find("[Recorded] " + seal.steps[1].text) !=
+						std::string::npos &&
+					journal.find("[Missing now] " + seal.steps[0].text) !=
+						std::string::npos &&
+					journal.find("[Missing now] " + heart.steps[0].text) !=
+						std::string::npos &&
+					sequential.progress_for_zone(7, 42, 324).completed == 1,
+				"Bronze Citadel reward key fabricated another return or source acquisition");
+			record(sequential, heart.contracts.front(), "bctdl-heart-after-seal", 324,
+			       32483);
+			require(sequential.progress_for_zone(7, 42, 324).completed == 2 &&
+					sequential.progress_for_zone(7, 42, 324).total == 2,
+				"Bronze Citadel independent sequential returns were merged or lost");
 		}
 
 		std::cout
