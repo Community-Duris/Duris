@@ -1,4 +1,5 @@
 #include "persistence/economic_sql_auction_bid_transaction.h"
+#include "persistence/economic_sql_auction_source_claim.h"
 
 #include "economy/auction_accounting.h"
 #include "persistence/economic_sql_pending_claim_source.h"
@@ -551,10 +552,12 @@ economic_sql_auction_bid_execute_and_record(MYSQL *connection, const critical_co
 		if ((*result_code == 0) != *mutation_applied)
 			return EILSEQ;
 		if (!*mutation_applied)
-			return insert_operation(connection, command, intent, nullptr,
-						*result_code) ?
-				       0 :
-				       failure_code();
+		{
+			if (!insert_operation(connection, command, intent, nullptr, *result_code))
+				return failure_code();
+			return economic_sql_auction_source_claim_verify(connection, intent,
+									*result_code);
+		}
 		if (accounts.absent_previous_pid)
 		{
 			const auto error = economic_sql_pending_claim_endpoint_create(
@@ -579,6 +582,10 @@ economic_sql_auction_bid_execute_and_record(MYSQL *connection, const critical_co
 			return EILSEQ;
 		if (!insert_operation(connection, command, intent, &plan, 0))
 			return failure_code();
+		const auto source_claim_error =
+			economic_sql_auction_source_claim_record(connection, command, intent);
+		if (source_claim_error)
+			return source_claim_error;
 		for (size_t index = 0; index < plan.accounts.size(); ++index)
 			if (!insert_effect(connection, command.operation_id, index,
 					   plan.accounts[index]))

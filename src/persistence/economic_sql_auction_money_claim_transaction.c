@@ -1,4 +1,5 @@
 #include "persistence/economic_sql_auction_money_claim_transaction.h"
+#include "persistence/economic_sql_auction_source_claim.h"
 #include "persistence/economic_sql_pending_claim_source.h"
 
 #include "economy/auction_money_claim_accounting.h"
@@ -521,10 +522,12 @@ unsigned int economic_sql_auction_money_claim_execute_and_record(
 		if ((*result_code == 0) != *mutation_applied)
 			return EILSEQ;
 		if (!*mutation_applied)
-			return insert_operation(connection, command, intent, nullptr,
-						*result_code) ?
-				       0 :
-				       failure_code();
+		{
+			if (!insert_operation(connection, command, intent, nullptr, *result_code))
+				return failure_code();
+			return economic_sql_auction_source_claim_verify(connection, intent,
+									*result_code);
+		}
 		if (!locked_after(connection, payload, before, active.bank_id, *result))
 			return failure_code();
 		economic_accounting_plan plan;
@@ -534,13 +537,11 @@ unsigned int economic_sql_auction_money_claim_execute_and_record(
 			return EILSEQ;
 		if (!insert_operation(connection, command, intent, &plan, 0))
 			return failure_code();
-		if (!execute(connection,
-			     "INSERT INTO economic_accounting_source_claim("
-			     "lineage,source_event,operation_id,outcome) SELECT lineage,"
-			     "source_event,operation_id,outcome FROM economic_accounting_operation "
-			     "WHERE operation_id=" +
-				     id(command.operation_id)))
-			return failure_code();
+		const auto source_claim_error =
+			economic_sql_auction_source_claim_record(connection, command, intent);
+		if (source_claim_error)
+			return source_claim_error;
+
 		for (size_t index = 0; index < plan.accounts.size(); ++index)
 			if (!insert_effect(connection, command.operation_id, index,
 					   plan.accounts[index]))
