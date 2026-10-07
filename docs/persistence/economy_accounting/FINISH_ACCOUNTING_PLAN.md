@@ -270,6 +270,31 @@ Production authority/native journeys remain separate. Architecture continues
 R11 qualification; primary continues without an adoption wait. Full continuing
 finish line and native quest/accounting blockers remain unchanged.
 
+## Complete shop item acceptance independently reviewed - 2026-10-07
+
+[R13 FINAL review](domain-separation/R13_SHOP_ITEM_ACCEPTANCE_REVIEW_2026-10-07.md)
+closes exact code835e70e1d9c35d56c2254ca65cbc306c7e60fc81 and canonical delivery
+[4500fef9f058caf9f3ca3a19e872d17a360a1991](https://github.com/Community-Duris/Duris/blob/4500fef9f058caf9f3ca3a19e872d17a360a1991/docs/persistence/economy_accounting/domain-separation/R13_SHOP_ITEM_ACCEPTANCE_HANDOFF.md).
+Complete trade_with policy, synchronous native provider and first two-component
+runner only; parser/selector/configuration/money/custody/publication/ACK stay native.
+Root exact rule/body/type/frozen-fixture audit and independent complete committed
+runner PASS: controlled38 and real-parser54 under baseline/Og, all eight exits0.
+Both strict owned740-object builds/retained ELFs authenticate. Full3/prod2 imports
+independently apply to bare7c8 without optional predecessors: all6454/6453 exported
+bodies authenticate, complete SQL/flat shop modules PASS, actual462/456 compiler
+inputs PER package authenticate, full runner plus five adjacent checks PASS.
+All91 indexed artifacts and all four canonical UTF8 documents/hash references
+authenticate. Original/extracted old live-route failure is paired and preserved.
+
+This is a completed optional extraction checkpoint. Primary current754/native
+composition, lifetime/custody, genuine backend/gameplay/persistence/recovery,
+private6ca fixes/tooling and adoption remain owner work. Earlier completed
+bundles remain closed. Architecture reassesses the nine-family queue for useful
+independent work or exact unavailable interfaces; quest native Goal remains
+BLOCKED on actual owner prerequisites. No invented scalar helper, unchanged rerun,
+new adoption wait or release gate. Root Goal/15-minute monitor remain ACTIVE
+through published Plans1-5/applicable original R1-R8/full completion disposition.
+
 ## Complete shop item acceptance execution approved - 2026-10-07
 
 [R13 exact three-file approval](domain-separation/R13_SHOP_ITEM_ACCEPTANCE_REVIEW_2026-10-07.md)

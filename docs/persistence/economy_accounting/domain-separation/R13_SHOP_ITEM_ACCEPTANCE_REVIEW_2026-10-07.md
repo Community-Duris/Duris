@@ -1,7 +1,11 @@
 # Complete shop item acceptance review - 2026-10-07
 
-Disposition: **exact THREE-file implementation boundary approved** after
-independent complete original classifier/selector and real-keyword review.
+Disposition: **FINAL committed code, component, import and artifact review PASS**
+at `835e70e1d9c35d56c2254ca65cbc306c7e60fc81`, with canonical documentation
+delivery `4500fef9f058caf9f3ca3a19e872d17a360a1991` independently authenticated.
+The exact
+THREE-file implementation boundary was approved after independent complete
+original classifier/selector and real-keyword review.
 Initial reservation802df69c67c10090b4ba68bc56aa88828c07dbcd proposes the complete
 trade_with policy. This approval additionally requires BOTH frozen controlled38
 and real-parser54 components, as described below. Strengthened reservation
@@ -9,8 +13,9 @@ and real-parser54 components, as described below. Strengthened reservation
 `91e84e8be1a6cec06abcb92c30fdb6ad395da4dc7589b665ff6ed063918fc2b3`,
 is published with exactly five owned documentation changes and no source/test edit.
 See the [exact reservation](https://github.com/Community-Duris/Duris/blob/dfd78bea24632ba94951bdc3645ccc814cf5f6b1/docs/persistence/economy_accounting/domain-separation/R13_SHOP_ITEM_ACCEPTANCE_RESERVATION.md).
-No extracted/committed qualification or
-primary adoption is claimed yet; R12 and prior bundles stay closed.
+The approval-stage obligations below are preserved as the original boundary;
+the final evidence follows them. Primary adoption remains unknown; R12 and prior
+bundles stay closed.
 
 ## Exact operation, paths and native ownership
 
@@ -117,3 +122,105 @@ useful checkpoint, not an extraction count or new finish line. Quest prep's nati
 Goal remains honestly BLOCKED on published owner interfaces; no new capability is
 invented. Root/architecture continuing Goals and the15-minute monitor retain the
 full primary Plans1-5/applicable original R1-R8/native completion disposition.
+
+## Final committed code and executable review
+
+Code835 changes exactly the approved three maintained paths. Root reads those
+exact Git blobs, independently reverses each provider observation and compares
+the complete classifier's native code/literal tokens. All171 tokens under the
+root lexer match, normalizing only redundant item-pointer parentheses. Restoring
+the original wrapper and removing its include recovers the ENTIRE owned shop.c
+preimage byte for byte. The native selector, all parser/helper bodies and metadata
+are unchanged. Provider field/flag/return types and actual evaluator delegation
+retain the native interfaces. Both frozen controlled38 and real54 PRELUDE/DRIVER
+pairs are byte-exact. The worker's195-token count uses a different lexer; both
+audits establish exact rule equivalence rather than relying on the count alone.
+
+The coordinator executes the COMPLETE committed new runner from the authenticated
+bare-current full export in its separately owned isolated container. Controlled38
+and real-keyword54 each PASS baseline and separate-Og. All EIGHT compile/runtime
+exits are0, original120/30-second bounds and strict sanitizer flags remain, and
+temporary fixtures are cleaned. Worker original/extracted complete runs separately
+PASS all eight steps per variant. This includes real native parser/operator/stack
+and flag-table code, with controlled name/visibility/log/formatter endpoints.
+Original diagnostics and accepted matching items on false evaluation remain.
+
+Eight owned adjacent checks PASS. The old live-route contract fails identically
+on the original and extracted source at object->loc.carrying == keeper; both logs
+are retained, and the separately reviewed prep repair is not borrowed. Formatting
+and whitespace checks PASS. No R13 source/fixture/assertion/deadline repair was
+required. Root's private controller adaptations initially checked the wrong
+printed label and bare-result key; corrected receipt checks authenticate the
+already successful actual runs without a new execution or changed test.
+
+## Final standalone imports, compiler closure and retained builds
+
+Root independently authenticates actual full THREE-file and production TWO-file
+patch bytes, cached check and actual apply against bare primary
+`7c8b665b735955ab060e76a6fddbf1903063ddb8`. Every archive/export blob body matches
+its resulting Git tree:6454 full and6453 production. Optional R0-R12/prep ancestry
+is not required. The include uses common native context, excluding prior optional
+headers from the patch. Owned and bare whole-shop hashes differ because earlier
+optional owned edits are excluded; the new header/runner are identical.
+
+| Package | Resulting tree | Patch SHA256 |
+| --- | --- | --- |
+| Full | 357afca2ed3278fb4e9cc6cd9bfdbc59131dabe5 | c88c8728556528372eb9898fbee88cb77f0c80a754d6e82d5a6a7b49bfc5f87f |
+| Production | fd09da8e2ff794a5438443403cb5c44bbdd610b3 | d7737b9d9601e998d889eb11630a2d0604619c1f234452841f3ebafd6e1ce670 |
+
+Full archive SHA256 is
+`c814a90f54b1b9a2351e464d325f264f194f0979c96e388a322667afd0faa672`;
+production archive is
+`57fa8c2d6560cfaad29fdd4b1b6fef9e2aace2fcd2c791d781fd95ac9450e18f`.
+Both complete shop modules PASS strict SQL and flat syntax/type checks in separate
+network-none containers with read-only authenticated exports and pinned image
+74b699976165c15fc29cf92b9c2dbefcdbca35505a08efc84d14bf644cbf6d5b.
+Root rereads/authenticates every actual compiler input:462 SQL and456 flat PER
+package, including all exported source/header bytes. Full export additionally
+PASSes the complete eight-step runner and five selected adjacent checks;
+production qualifies the complete module without adding the test runner.
+
+Both strict maintained owned builds PASS, each compiling shop.c and linking740
+unique objects. Root authenticates actual log commands/flags and copied AND
+container-retained native ELF bytes. SQL ELF SHA256 is
+`e3be0239eb26b5470dfc5cea2cfe95156ad31a2c5bc04630afeb5ba5fba227d4`;
+flat ELF is
+`775dac41d3943409351850c26fa562a9bcc4771f756549c7d1e07f19cd07aa4b`.
+These older owned740 graphs do not establish the primary's current754 full
+composition or genuine native gameplay/backend qualification.
+
+All91 retained indexed artifacts/receipts authenticate by actual byte length and
+SHA256. Index SHA256 is
+`261572b3ada7f74dcb729659c0efd313494fb27ac8bdb541caba8aa4210fc5a0`.
+Root committed-rule, committed-runner, import, build-artifact, header and final
+artifact authentication RESULT records preserve these independent checks.
+The worker's failed private sealing-path filter is retained; its correction did
+not change native source, fixtures or executable controls. No private evidence,
+binary, archive, log or credential is committed.
+
+Native admission, original lifetime/custody, money/effects, physical publication,
+completion/ACK, persistence/recovery and overall integrated qualification retain
+their owners. This final extraction review does not establish those capabilities,
+primary adoption or completion of Plans1-5/applicable original R1-R8. Continue
+the concrete nine-family dependency reassessment and event monitor; no arbitrary
+extraction cap or invented busywork replaces the original finish line.
+
+## Canonical delivery closure
+
+Published canonical documentation delivery
+`4500fef9f058caf9f3ca3a19e872d17a360a1991` changes exactly the three owned
+overviews and
+[R13_SHOP_ITEM_ACCEPTANCE_HANDOFF.md](https://github.com/Community-Duris/Duris/blob/4500fef9f058caf9f3ca3a19e872d17a360a1991/docs/persistence/economy_accounting/domain-separation/R13_SHOP_ITEM_ACCEPTANCE_HANDOFF.md).
+All four documents are valid UTF8, pass whitespace validation, and leave qualified
+code835/source/tests unchanged. Every SHA256 reference in the handoff matches
+independently authenticated code, export, receipt, image or original-proof pins.
+Handoff text SHA256 is
+`cc0a7438cd2fd8b23734c15f078c88ba8484470991f34d1675a494a62fdd38ad`.
+Root acceptance-delivery-authentication-RESULT.json preserves exact document
+bytes and reference checks. The published branch tip also matches4500.
+
+This closes the selected R13 canonical handoff review. It adds no primary
+adoption wait or native completion claim and does not reopen R11/R12 or earlier
+deliveries. The next queue depends on substantive source/owner findings;
+Plans1-5/applicable original R1-R8 and the full published owner completion
+disposition remain required. Root Goal and recurring monitor remain ACTIVE.
