@@ -534,17 +534,31 @@ source/interface/fixture publications, then reserve a connected case or operatio
 for the appropriate existing chat. Test preparation can begin once sufficient
 original owner facts are available; completed native execution is its later
 qualification gate. Do not repeat unchanged suites or manufacture another helper.
-The latest [published native checkpoint](https://github.com/Community-Duris/Duris/blob/98c7e40f79f1f25d9cc50b6a4a8e04957dbfae82/docs/persistence/economy_accounting/SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
-supersedes the earlier combined23/30/32 progress descriptions. It reports a private
-combined34 candidate: the earlier thirty files plus four physical-capture and
-correspondence files. The pure report preserves raw observations, ambiguous
-mappings, duplicate UIDs, topology errors, unmatched custody and tombstones.
-Row correspondence does not certify a complete native forest or activation.
-All 18 full-server controls and the physical runtime/fault/RR cases remain open.
-The native implementation and fixtures are still unpublished. Original opening
-forest validation, modern room capture, other source providers and genuine
-journeys remain prerequisites. The old v9 controls still bind combined32; their
-combined34 successor is pending. Do not qualify the new candidate with old proof.
+Read the [current shared native checkpoint](../SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
+on each meaningful advance; its exact candidate and fixture pins supersede older
+composition counts in historical coordination checkpoints. The
+[reviewed room-source publication](https://github.com/Community-Duris/Duris/blob/8d74f278537b61ba15f408b783179168a9dd1d21/docs/persistence/economy_accounting/SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
+reports private combined36 and a v10 control binding to combined34 only. All
+eighteen native controls, real database/recovery journeys and production builds
+remain open. Syntax and source authentication never transfer to a later candidate.
+The source archive excludes private room-fixture extensions and the maintained
+Python coin-export fix; it is not a complete checkout or physical census.
+
+Modern-room capture now has reviewed private source; original opening forest
+validation, native live/reset/mobile providers, auction/collector correspondence
+and genuine journeys still retain their owners. Raw historical UID/revision rows,
+missing older literals, malformed descendants, ambiguous custody and tombstones
+remain evidence. No current-row correspondence grants complete forest authority.
+The primary retains provider union, conflicts and activation orchestration.
+
+The new explicit test gap is 4096/4097 roots and 131072/131073 single-item bytes.
+Preparation requires the exact modern-room provider and original fixture inputs,
+including its frozen physical dependencies and aggregate budgets. Those inputs
+remain unpublished. Existing public room-payload limits and aggregate-transfer
+controls do not by themselves qualify this private capture path. Once its real
+inputs become available, inspect overlap and reserve a separate supplement only
+if the original owner has not already supplied those cases. Do not invent a
+replacement provider or add modern admission prerequisites to legacy families.
 
 The borrowed physical API now permits the existing writable RR cutover transaction:
 it performs SELECTs only and never starts or ends the caller's transaction. The
