@@ -90,6 +90,35 @@ Do not edit shared primary production/test drivers merely to unblock a side test
 Owned disposable dev fixtures are permitted; production DB/operational mutations,
 raw private artifacts in commits, activation and deployment are not.
 
+## Current execution checkpoint
+
+Both workers report actual continuing Goals ACTIVE with the primary Plans1-5/
+original R1-R8 finish line. Architecture activation and current reconciliation are
+published at `c97e97458`; its R3 enhancement-price reservation has an
+[independent boundary approval](R3_ENHANCEMENT_RESERVATION_REVIEW_2026-10-07.md).
+R0/R1/R2 patch applicability also independently passes on the coordinator's clean
+current-candidate review checkout. Changed-dependency component results are
+being qualified separately; no old ELF is relabeled as the new candidate.
+
+Quest prep preserves the published `quest.c` owner when refreshing its branch.
+The current owner now supports genuine NPC cash costs: insufficient original
+cash returns not_matched, funded requirements continue, and unreadable genuine
+cash metadata refuses. The historical blanket paid-refusal patch is superseded
+by this current owner behavior; updated cash-shortage/availability/duplicate
+component coverage and native capture-reader reconciliation are underway.
+Native authority and fee-only receipt proof remain distinct from selector stubs.
+The next genuine acceptance case still requires its own source/authority review.
+
+The coordinator independently checked historical production-only patches on the
+clean review checkout at `b1ac97c3a`: QP07 `fd997ee4147ba58d835bf4bd61783b51307bc68c`
+still passes `git apply --check` for `specs.world_quest.c`; QP02
+`a19a67ad021de8e6bbfb31ca9ffea31e41cb6aa7` does not apply to the changed `quest.c`.
+Neither patch was applied. Preserve the published QP07 optional handoff and
+current-owner QP02 behavior; a failed historical patch is not a reason to restore
+its superseded blanket-refusal contract. No current native journey is inferred.
+
+This checkpoint leaves implementation, reviews and the overall Goal active.
+
 ## Recurring monitor
 
 The existing thread heartbeat checks every15 minutes, supplemented by active

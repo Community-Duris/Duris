@@ -113,6 +113,19 @@ monitor stays active until this broader audit passes or the user asks to stop it
 Preserve completed work, primary ownership, original proof and normal adoption
 boundaries. The prior finite charter/audit below are historical checkpoint records.
 
+### Continuing workstream execution checkpoint
+
+Both existing workers have actual continuing Goals ACTIVE against the broader
+primary finish line. R0/R1/R2 patches remain independently applicable to the
+new producer candidate; current changed-dependency proof is separate from older
+ELF evidence. The enhancement-price reservation is published and
+[boundary-reviewed](domain-separation/R3_ENHANCEMENT_RESERVATION_REVIEW_2026-10-07.md);
+implementation/qualification are pending, with active paid-outcome refusal kept.
+Quest prep retains the newly published native-cost selector owner and updates
+its historical cash/recipe acceptance coverage and native evidence reader.
+Its old blanket paid-refusal patch is superseded by current owner support.
+These are checkpoints in the evolving queue, not coordinator completion.
+
 ## Continuing architecture and quest-prep coordination - 2026-10-07
 
 The user authorizes the coordinator to keep both **Separate accounting domain
