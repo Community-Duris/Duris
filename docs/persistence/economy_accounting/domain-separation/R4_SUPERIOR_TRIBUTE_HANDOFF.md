@@ -5,7 +5,9 @@ Connected owned material quote implemented at
 `693d57042ea92512d220d6c200176cb1f1c5126b`. Coordinator approved the exact
 three-file boundary locally while GitHub writes were unavailable, independently
 authenticated the original function pins and then passed the same extended
-original/extracted material controls. No extraction defect was found. Maintained
+original/extracted material controls. No extraction defect was found. The coordinator boundary review is now
+published at accounting `3f6f1fe0cb62906e07dd8a36b4436ebb53e7582f` in
+[R4_SUPERIOR_TRIBUTE_REVIEW_2026-10-07.md](https://github.com/Community-Duris/Duris/blob/3f6f1fe0cb62906e07dd8a36b4436ebb53e7582f/docs/persistence/economy_accounting/domain-separation/R4_SUPERIOR_TRIBUTE_REVIEW_2026-10-07.md). Maintained
 build/evidence final disposition remains pending. GitHub recovered: ordinary push
 and remote read now verify the source commit on `codex/accounting-domain-separation`.
 The continuing Goal remains ACTIVE beyond this checkpoint.
@@ -44,8 +46,10 @@ tribute. Existing source/material effects are checked.
 
 Adjacent material multiplier configuration, all-stat configuration, superior
 configuration, all three payment controls and four actual active paid-outcome
-refusal cases pass. Full touched source/header clang-format and whitespace checks
-pass. The repository changed-line check is recorded separately when terminal.
+refusal cases pass. Repository `scripts/format.sh --check --file src/item/enhance.c --file
+src/economy/enhancement_material_quote.h` and whitespace checks pass. An earlier
+empty-worktree changed-line check also terminates successfully; the explicit
+file check verifies the committed R4 code.
 No shared fixture, manifest or native authority was repaired to obtain these results.
 
 Both maintained builds complete exit0, controller exit0:
@@ -76,8 +80,16 @@ Exact R4-only patch independently passes cached application against bare produce
 `275df7f626e12cb396a22da34317a4e7f355e9a1`; patch SHA256
 `f2947947133f2f624a8cf176403ffbbb047dce3eeba49e89106768ad91ac8701`.
 This does not require R3 adoption. No primary source is imported or modified here.
-Current R4 candidate native/full-build/journey qualification is unrun; application
-compatibility and preserved preimages are distinct from integrated execution.
+R4-only current-candidate snapshot tree `34e24d64c6e42e7de2b5dfba5568e8f3cb5ac934`
+contains6425 exported files; archive SHA256
+`721ea5ec939a6972fd88a4ead268c7dec9c43245ccce36eedad51e1687746b53`.
+Its actual material regression passes with unchanged sanitizer controls, and full
+`enhance.c` passes SQL/flat strict C++20 syntax/type checks against current headers.
+Task-owned `duris-domain-r4-ac24-candidate` uses that read-only Git export, no
+network, a separate same-named output volume and the same pinned image. Copied
+logs/RESULT.json are in the evidence path's `candidate/` directory. Current R4
+candidate full-build/native/journey qualification is unrun; application,
+component and module type compatibility remain distinct from integrated gameplay.
 The immutable R3 candidate build continues without adding R4 to its source.
 
 Source SHA256: header

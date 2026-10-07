@@ -6,7 +6,9 @@ Implemented connected owned pricing. Final source/test result
 `3a722a00893d4fcd8adeb07d610e387c2191aa93`. Parent reservation
 `c97e97458`; coordinator [boundary approval](https://github.com/Community-Duris/Duris/blob/507e4909ee6a570876f274c0787d7a83a987826d/docs/persistence/economy_accounting/domain-separation/R3_ENHANCEMENT_RESERVATION_REVIEW_2026-10-07.md).
 Final coordinator declared-scope source/evidence review passes locally; its
-published disposition remains pending during publication recovery. The continuing Goal
+review is now published on remotely verified accounting
+`3f6f1fe0cb62906e07dd8a36b4436ebb53e7582f` in the linked boundary-review document.
+Its outage checkpoint predates successful publication of final test/handoff successors. The continuing Goal
 remains ACTIVE; this checkpoint does not satisfy the primary Plans1-5/R1-R8 finish line.
 
 ## Implementation and control preservation

@@ -28,8 +28,8 @@ See [current reconciliation](CONTINUATION_RECONCILIATION_2026-10-07.md),
 [R4 tribute-count handoff](R4_SUPERIOR_TRIBUTE_HANDOFF.md).
 R3 is implemented through `6d544bea7`; coordinator final declared-scope review
 passes locally at the terminal handoff, including independent source, component,
-740-object build/ELF and baseline-contract evidence checks. Published review is
-pending. Exact current-candidate R3 SQL build now passes its fresh 753-provider
+740-object build/ELF and baseline-contract evidence checks. Review is published on remotely verified accounting `3f6f1fe0c`; its outage
+checkpoint predates the recovered successor publication. Exact current-candidate R3 SQL build now passes its fresh 753-provider
 compilation/link; flat build is still running from the immutable export. Those
 results remain separate from owned-branch ELFs and native journey qualification.
 R4 boundary was approved locally during the publication outage, implemented at
@@ -38,6 +38,9 @@ maintained builds pass. Final R4 evidence review is pending. GitHub recovered an
 ordinary push/remote read verifies all preserved successors through `0a5084db1`.
 No source was changed to work around publication. The queue remains continuing,
 and the nine-domain assessment is reranked from actual remaining owner facts.
+The next [R5 stat-cap reservation](R5_SUPERIOR_STAT_CAP_RESERVATION.md) isolates
+the remaining numeric/global cap rule; code edits await its own boundary review.
+Thin forge-table and previously declined cleric seams are not selected.
 
 ## Historical finite R0/R1/R2 checkpoint status
 

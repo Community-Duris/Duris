@@ -83,7 +83,7 @@ old source revisions. No shared fixture driver is edited to obtain a pass.
 
 The nine-domain inventory is reassessed against these concrete new interfaces:
 
-1. **R3 F3 enhancement prices**, implemented and qualified at source/component/owned-build scope; coordinator final declared-scope review passes locally, publication pending. Stable numeric seam in unchanged
+1. **R3 F3 enhancement prices**, implemented and qualified at source/component/owned-build scope; coordinator final declared-scope review passes and is published at accounting `3f6f1fe0c`. Stable numeric seam in unchanged
    `enhance.c`: ordinary configured tier, superior affine price and essence fixed
    tier calculations, three real producer callers and existing payment tests.
    Exact reservation [R3_ENHANCEMENT_PRICE_RESERVATION.md](R3_ENHANCEMENT_PRICE_RESERVATION.md).
@@ -96,11 +96,12 @@ The nine-domain inventory is reassessed against these concrete new interfaces:
    require a reviewed capture boundary. Reuse R1 count types where semantics agree;
    its ceil policy differs from superior's existing0.999999 truncation, so do not
    silently unify those policies. R4 preserves the latter; further capture must be reserved after actual source/proof review.
-3. **P2/S1 forge or service quote preparation**: inspect existing ore-price and
+3. **Proposed R5 F3 superior stat cap**: explicit base/configured multiplier to signed-byte cap, preserving saturation/truncation and native capture at the original wrapper. See [exact reservation](R5_SUPERIOR_STAT_CAP_RESERVATION.md); review precedes edits.
+4. **P2/S1 forge or service quote preparation**: inspect existing ore-price and
    paid service formulas for a genuine remaining stable operation; existing
    `forge_prices`/currency prepared mutation may already cover it. No blanket
    service implementation or active outcome reopening is authorized.
-4. **C/I/S/A/K/Q/G coupled effects**: existing currency preparation, item transfer
+5. **C/I/S/A/K/Q/G coupled effects**: existing currency preparation, item transfer
    plans, shop/auction accounting, Collector lifecycle/purchase and newly owned
    native GIVE calculations remain reuse boundaries. Shared native/source/lifetime/
    receipt work requires current owner facts. Quest-prep retains real quest
