@@ -1,5 +1,11 @@
 # Fixed domain-separation operation inventory — 2026-10-07
 
+[Post-R9 nine-family assessment](POST_R9_OWNER_DEPENDENCIES_2026-10-07.md)
+identifies complete shop purchase quote as a concrete next candidate and records
+the executed original actual-caller fixture compile failure. No shop scope is
+reserved or implemented; current native/test ownership and all original controls
+remain preserved. R9 final review remains pending.
+
 R9 ordered NPC essence selection is implemented at15d plus include fix305.
 Complete original/extracted27-scenario controls and both labeled ordinal-policy
 cases PASS, as do adjacent checks, both maintained740-object builds and bare-primary
