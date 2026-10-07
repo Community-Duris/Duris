@@ -120,6 +120,15 @@ and R2 wallet-value/bank-payment deltas (outstanding). Owner-dependent coupling
 in other domains remains recorded future conversion work; this set does not
 establish full domain separation. R2 requires an exact reservation before edits.
 
+R1 implementation `48cdf9cb0893873651216f7940aae2691d060e58` is published and has
+a [source/component/build review checkpoint](R1_CRAFTING_REVIEW_2026-10-07.md).
+The coordinator independently passed the original sanitizer material-bounds
+runner and checked exact source/binary pins and terminal maintained incremental
+build records. The worker's isolated runtime journey and final R1 handoff remain
+pending; R2 is still outstanding. Quest prep has confirmed its actual active
+follow-up Goal and is correcting an observer-reader failure before completing
+the real-provider refusal diagnosis.
+
 The coordinator must not finish merely because both chats were checked once,
 messages were sent, a single bundle was reviewed or one assignment completed.
 Finish only after the architecture milestone and selected quest-prep follow-up
