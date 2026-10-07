@@ -17,6 +17,11 @@ report = module.report_for(catalog)
 assert report["valid"] and report["eligible_by_zone"]["135"] == 10
 assert report["daily_unit_count"] == 1408
 assert report['mapped_area_count'] == 207 and report['eligible_by_zone']['162'] == 4
+arac_city = next(m for m in catalog['story_mappings'] if m['source_area'] == 'arac-web')
+assert (arac_city['schema_version'], arac_city['revision']) == (3, 2)
+assert len(arac_city['contacts']) == 44 and arac_city['stories'][0]['category'] == 'service'
+arac_units = [u for u in module.story_units(catalog) if u['zone_number'] == 364]
+assert len(arac_units) == 1 and not arac_units[0]['achievement'] and not arac_units[0]['daily_candidate']
 depths = next(m for m in catalog['story_mappings'] if m['source_area'] == 'surfacekeeps')
 assert (depths['schema_version'], depths['revision'], depths['coverage']) == (3, 1, 'complete')
 assert len(depths['stories']) == 12 and len(depths['contacts']) == 17 and not depths['exclusions']

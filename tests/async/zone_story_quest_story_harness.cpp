@@ -24607,6 +24607,68 @@ int main(int argc, char **argv)
 			}
 		}
 
+		{
+			const auto &key_service = story_for("arac-web", "gatekeeper-private-key");
+			require(key_service.category == "service" && key_service.steps.size() == 1,
+				"Arachdrathos key service became an achievement or invented preparation");
+			service visit(catalog), recovered(catalog), raw(raw_catalog);
+			require(visit.meet_npc(7, 42, 36423, 36570, 100) == result::rejected,
+				"Arachdrathos contact ignored undiscovered physical city");
+			require(visit.discover_zone(7, 42, 364, 36570, 101, "arrival") ==
+						result::applied &&
+					visit.meet_npc(7, 42, 36423, 36570, 102) == result::applied,
+				"Arachdrathos discovery/contact setup failed");
+			const auto before = visit.serialize_state();
+			for (unsigned custody = 0; custody < 4; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[36400] = 1;
+				if (custody == 2)
+					supplies.equipped[18] = 36400;
+				if (custody == 3)
+					supplies.carried[36401] = 1;
+				const auto journal = visit.render_journal(7, 42, 364, 10, 1, 103,
+									  false, false, &supplies);
+				require(journal.find("[Recorded] " +
+						     key_service.steps.front().text) ==
+							std::string::npos &&
+						journal.find(
+							"unavailable while accounting is active") !=
+							std::string::npos,
+					"Arachdrathos key possession manufactured a purchase or hid native refusal");
+				require(visit.serialize_state() == before &&
+						visit.progress_for_zone(7, 42, 364).completed == 0,
+					"Arachdrathos viewing or custody mutated accepted history");
+			}
+			// Synthetic committed receipt tests projection; native coin settlement remains guarded.
+			record(visit, key_service.contracts.front(), "arac-web-accepted-service",
+			       364, 36570);
+			supplies = {};
+			auto journal = visit.render_journal(7, 42, 364, 10, 1, 121, false, false,
+							    &supplies);
+			require(journal.find("[Recorded] " + key_service.steps.front().text) !=
+						std::string::npos &&
+					visit.progress_for_zone(7, 42, 364).completed == 0,
+				"Arachdrathos accepted service lost receipt or earned achievement credit");
+			auto replay = completion(key_service.contracts.front(),
+						 "arac-web-accepted-service", 120);
+			replay.transaction.zone_number = 364;
+			replay.transaction.room_vnum = 36570;
+			require(visit.record_completion(replay) == result::already_applied,
+				"Arachdrathos repeated key receipt duplicated acceptance");
+			const auto saved = visit.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error),
+				"Arachdrathos mapped/raw cold service recovery failed");
+			journal = recovered.render_journal(7, 42, 364, 10, 1, 122, false, false,
+							   &supplies);
+			require(journal.find("[Recorded] " + key_service.steps.front().text) !=
+						std::string::npos &&
+					recovered.progress_for_zone(7, 42, 364).completed == 0,
+				"Arachdrathos spent NORENT key changed recovered receipt or service policy");
+		}
+
 		std::cout
 			<< "All mappings, optional preparation, independent story journeys, exact materials, service exclusion, mixed-fee visibility, and receipt recovery passed.\n";
 		return 0;

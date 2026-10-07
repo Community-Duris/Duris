@@ -5346,3 +5346,8 @@ Foe Hammer’s two separate Alatorin consumers create a keep/use/spend choice; e
 ## Storm Port integration extension
 
 The [dossier](zone-stories/STORMPORT.md) maps independent four-proof and two-material returns. Existing schema3 covers exact loose preparation and accepted receipts, including an empty reply with a real reward. Foreign-giver physical discovery versus quest-home identity, hidden container/object custody, NORENT inputs and source access remain distinct. Thirty-four owned follow-ups cover blocked accounting services, modern ferry fee/ticket/leg/arrival, ship/crew services, default learning/rent, repair-material correctness and wider builder endpoints. No native repair is included; any later repair needs a separate named fix/news commit. New tracking requires active READY accounting and daily policy remains disabled.
+
+
+## Arachdrathos city integration extension
+
+The [dossier](zone-stories/ARAC-WEB.md) maps the existing paid-key receipt and37 owned follow-ups. Keep three greeting aliases as one conversation; preserve the native daily exclusion and explain the coin-only active-accounting refusal. Current key custody, unlock/open/crossing, six-house allegiance, captive agency, civic restoration and actual settled services have separate endpoints. The generated world-quest task identity offers a reusable adapter foundation, with fee/task-generation/refund/history/save and cold recovery gaps explicitly owned. Existing schema3 covers this journal without new APIs or speculative bindings. New tracking requires active READY accounting; daily policy remains disabled. Native repairs require separate named fix/news commits.

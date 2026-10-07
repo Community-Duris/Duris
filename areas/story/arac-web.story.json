@@ -1,34 +1,366 @@
 {
-  "schema_version": 2,
-  "revision": 1,
+  "schema_version": 3,
+  "revision": 2,
   "source_area": "arac-web",
   "coverage": "complete",
-  "introduction": "Explore Arachdrathos - Drow City and meet its people to uncover local requests.",
+  "introduction": "Explore Arachdrathos’s web, houses, market and guilds; understand the gatekeeper’s key request and the separate city services.",
   "orientation": [
-    "Start with look and exits to learn your surroundings.",
-    "Use help home to learn about hometowns and help quest for quest commands."
+    "Llzazan’s main road, eastern approach and overlook connect to the city. The Descent also has a current reciprocal route. Discovery follows actual admitted arrival, rather than a view, travel message or map display.",
+    "Ask the gatekeeper hi, hello or door for one greeting about the private-room key. The native purchase costs 10 platinum, issues a new key and retires the gatekeeper. Greeting aliases do not each complete a quest.",
+    "This coin-only key purchase is currently unavailable while accounting is active. A recorded purchase stays separate from the current key and door state. This service awards no achievement or daily quest credit.",
+    "The gatekeeper also carries a key. Recovering that copy from its source, receiving a supplied copy and obtaining the purchase reward are different histories. Possession alone cannot prove an accepted purchase.",
+    "From Slaver’s Paradise, the private door leads south into the Pleasure Room. The reverse exit is north, despite that room’s prose saying west. It starts locked and resists picking; the matching key, unlocking, opening and successful crossing are separate.",
+    "Both city-gate pairs start open under their native resets. Their declared second key does not make it a required initial-entry puzzle. Preserve current gate state and admission when travelling.",
+    "The keys have native NORENT flags. Physical key retention through logout differs from a durably recorded accepted receipt. A remembered purchase does not supply a missing current key.",
+    "The six houses have separate entrances in the Arachdrathos Guilds area. Their seals are wearable insignia. Carrying or wearing a seal, visiting a house and earning a lasting allegiance are separate.",
+    "The barkeep offers generated world quests under native level, quota, fee and target rules. Use quest to see a current task. A target conversation or credited kills, the delivered reward and the gatekeeper’s request belong to different progress.",
+    "The Body Traders uses adjacent holding-room stock for its native service. New purchases and pet rentals are unavailable while accounting is active. Encountering a captive or hireling does not record liberation or safe arrival.",
+    "The banker’s coin-exchange advice differs from a bank transaction. The visible counter supports native bank commands and a separate locker entrance under current admission. Reading contracts or ledgers does not complete an investigation.",
+    "The archives, fountain, furnace, market, crossbows, disguise kits and teachers suggest wider stories. Actual admitted learning, crafting, item use and recipient outcomes need their own evidence.",
+    "The city’s wind, void, damaged webs and cavefisher repairs are narrative leads. They do not by themselves define a fall, a mandatory flight ability or a completed restoration. Pool traversal still uses native water admission.",
+    "House intrigue, captive illithid treatment, slave release, religious choices and civic restoration need builder-defined prerequisites and lasting outcomes before they can award completion."
   ],
   "contacts": [
     {
       "mob_vnum": 36423,
       "name": "a gatekeeper",
-      "keyword": "hearty",
-      "description": "This person offers local conversation. Try these topics to learn more.",
+      "keyword": "gatekeeper",
+      "description": "The gatekeeper asks 10 platinum for the private-room key and retires after an accepted purchase. This coin-only request is currently unavailable while accounting is active. His greeting aliases are one conversation; a carried or supplied key does not prove payment.",
       "topics": [
-        "hi"
+        "hi",
+        "hello",
+        "door"
       ]
+    },
+    {
+      "mob_vnum": 36400,
+      "name": "a durithalite elemental",
+      "keyword": "durithalite",
+      "description": "This contact is stocked around Inn of the Howling, Inside the East Gates of Arachdrathos, Inside the Gates of Arachdrathos. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36401,
+      "name": "a durithalite golem",
+      "keyword": "durithalite",
+      "description": "This contact is stocked around Below the Marketplace, Inside the East Gates of Arachdrathos, Inside the Gates of Arachdrathos. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36402,
+      "name": "a zarbon",
+      "keyword": "zarbon",
+      "description": "This contact is stocked around An Intersection under the Arch of Zarbonesti, Below the foot of the Zarbonesti Arch.. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36403,
+      "name": "a zarbon",
+      "keyword": "zarbon",
+      "description": "This contact is stocked around Along the Web., Under the Arch of House Zarbonesti. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36404,
+      "name": "a zarbon",
+      "keyword": "zarbon",
+      "description": "This contact is stocked around An Intersection under the Arch of Zarbonesti, Below the foot of the Zarbonesti Arch.. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36405,
+      "name": "a zarbon",
+      "keyword": "zarbon",
+      "description": "This contact is stocked around An Intersection Well Below the Marketplace, Below the East Gates of Arachdrathos, Below the Marketplace. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36406,
+      "name": "a young Ilithian",
+      "keyword": "violet",
+      "description": "This contact is stocked around Above House Ilith, Before the Entrance of House Ilith, Below House Ilith. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36407,
+      "name": "a young zarbonite",
+      "keyword": "bronze",
+      "description": "This contact is stocked around Before House Zarbonesti, Before the Gates of House Zarbonesti, North of the Reflecting Pool. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36408,
+      "name": "a young zochran",
+      "keyword": "red",
+      "description": "This contact is stocked around Before House Zochra, On the Webwalk Near House Zochra, The Reflecting Plaza. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36409,
+      "name": "a young slinite",
+      "keyword": "green",
+      "description": "This contact is stocked around At the Entrance to House Slin, Magic Square, The North Plaza. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36410,
+      "name": "a young Sa'Zaran",
+      "keyword": "ghost",
+      "description": "This contact is stocked around A Fountain Before the Reflecting Pool, Above House Sa'Zarn, Above the Bone Tower. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36411,
+      "name": "a young Olipthian",
+      "keyword": "shimmering",
+      "description": "This contact is stocked around Along a Meridian Skein above House Olipth, Before House Olipth, North of the Reflecting Pool. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36412,
+      "name": "a baby aboleth",
+      "keyword": "fish",
+      "description": "This contact is stocked around On the Reflecting Pool. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36413,
+      "name": "a trustworthy banker",
+      "keyword": "drow",
+      "description": "The banker’s LIST and EXCHANGE advice redirects coin conversion to the Royal Bank. The visible counter separately admits native bank commands. Advice, balances, a contract, ledger reading and settled deposits or withdrawals are different outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36414,
+      "name": "a turnkey",
+      "keyword": "duergar",
+      "description": "The turnkey wears a House Slin seal. Meeting him, obtaining a seal and releasing someone safely are separate; the seal does not establish allegiance or rescue.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36415,
+      "name": "a captive illithid",
+      "keyword": "squidlike",
+      "description": "The captive illithid wears a helmet described as suppressing psionics. Its removal, an actual change in the captive’s condition, release and safe arrival need separate defined outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36416,
+      "name": "a priestess shopkeeper",
+      "keyword": "beautiful",
+      "description": "This contact is stocked around All of Ilith. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36417,
+      "name": "a necromancer shopkeeper",
+      "keyword": "ancient",
+      "description": "This contact is stocked around The Bone Yard. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36418,
+      "name": "a sorcerer shopkeeper",
+      "keyword": "ancient",
+      "description": "This contact is stocked around Illustrium Arcana. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36419,
+      "name": "a Llzazan merchant",
+      "keyword": "llzazan",
+      "description": "This contact is stocked around The Llzazan Traders. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36420,
+      "name": "a barkeep",
+      "keyword": "barkeep",
+      "description": "The barkeep offers the separate native world-quest service. It generates a personal task under current level, quota, target and fee rules. Use the ordinary quest command for that task; its fee, target progress and delivered reward differ from the gatekeeper request.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36421,
+      "name": "a receptionist",
+      "keyword": "receptionist",
+      "description": "This prototype has no local reset placement. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36422,
+      "name": "a drow attendant",
+      "keyword": "drow",
+      "description": "This contact is stocked around Entrance to The Body Traders. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36424,
+      "name": "a drow whore",
+      "keyword": "drow",
+      "description": "This contact is stocked around The Pleasure Room. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36425,
+      "name": "a male drow prostitute",
+      "keyword": "drow",
+      "description": "This contact is stocked around The Pleasure Room. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36426,
+      "name": "a slave trader",
+      "keyword": "slave",
+      "description": "This contact is stocked around Entrance to The Body Traders. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36427,
+      "name": "A svrifneblin slave.",
+      "keyword": "svirfneblin",
+      "description": "This contact is stocked around The Meat Market. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36428,
+      "name": "a duergar slave",
+      "keyword": "duergar",
+      "description": "This contact is stocked around The Meat Market. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36429,
+      "name": "a drow slave",
+      "keyword": "drow",
+      "description": "This contact is stocked around The Meat Market. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36430,
+      "name": "an illithid slave",
+      "keyword": "illithid",
+      "description": "This contact is stocked around The Meat Market. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36431,
+      "name": "a giant zarbon",
+      "keyword": "zarbon",
+      "description": "This contact is stocked around Near the Center of the Web, The Nexus of the Web. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36432,
+      "name": "Arachdra",
+      "keyword": "giant",
+      "description": "Arachdra, the mother of the web spider, anchors the city’s wider religious and web-maintenance stories. An encounter does not restore a damaged web or establish an alliance.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36433,
+      "name": "a sandworm",
+      "keyword": "giant",
+      "description": "This contact is stocked around A Change in the Wilderness., A Low Cave Ceiling over the Arachdrathan Dunes, The Arachdrathan Dunes. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36434,
+      "name": "a giant cavefisher",
+      "keyword": "giant",
+      "description": "This contact is stocked around A Sandy Cavern. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36435,
+      "name": "a webble",
+      "keyword": "webble",
+      "description": "This contact is stocked around A Very Clean Room. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36436,
+      "name": "a durithalite elemental",
+      "keyword": "durithalite",
+      "description": "This contact is stocked around A Fountain Before the Reflecting Pool, Magic Square, The Reflecting Plaza. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36437,
+      "name": "the weaponsmith",
+      "keyword": "old",
+      "description": "This contact is stocked around Blades and Breakers. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36438,
+      "name": "Asteriatorm",
+      "keyword": "asteriatorm",
+      "description": "This contact is stocked around In the Shadow of Sorcery. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service. Current native teacher and class admission governs any lasting learning; guild prose alone does not record training.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36439,
+      "name": "Krista'Bool",
+      "keyword": "drow",
+      "description": "This contact is stocked around Krista'Bool's House of Kchtia. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36440,
+      "name": "a dark cloaked drow",
+      "keyword": "drow",
+      "description": "This wandering merchant sells disguise kits under native shop admission. Buying or using a kit, assuming an identity and completing an infiltration are different outcomes.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36441,
+      "name": "Beligron",
+      "keyword": "beligron",
+      "description": "This contact is stocked around Along the Web Below the Marketplace. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service. Current native teacher and class admission governs any lasting learning; guild prose alone does not record training.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36442,
+      "name": "Momilion",
+      "keyword": "drow",
+      "description": "This contact is stocked around Along a Lateral Skein. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service. Current native teacher and class admission governs any lasting learning; guild prose alone does not record training.",
+      "topics": []
+    },
+    {
+      "mob_vnum": 36443,
+      "name": "a durithalite elemental",
+      "keyword": "red",
+      "description": "This contact is stocked around A Fountain Before the Reflecting Pool. Meeting this contact is separate from allegiance, assistance, rescue, learning or a settled service.",
+      "topics": []
     }
   ],
-  "stories": [],
-  "exclusions": [
+  "stories": [
     {
-      "reason": "Coin-only, informational, or skill exchanges; supporting services rather than item-delivery story achievements.",
+      "id": "gatekeeper-private-key",
+      "title": "The gatekeeper’s private-room key",
+      "category": "service",
+      "summary": "The gatekeeper asks 10 platinum for a key and leaves after accepting the purchase. Coin-only settlement is currently unavailable while accounting is active. The accepted purchase and later door access are separate.",
       "contracts": [
         {
           "giver_vnum": 36423,
           "completion_key": "give=C:10000;receive=I:36400;disappear=1"
         }
+      ],
+      "steps": [
+        {
+          "id": "accepted-purchase",
+          "text": "Record the gatekeeper’s accepted key purchase",
+          "kind": "completion",
+          "contracts": [
+            {
+              "giver_vnum": 36423,
+              "completion_key": "give=C:10000;receive=I:36400;disappear=1"
+            }
+          ],
+          "hint": "The native request costs 10 platinum, issues a new private-room key and retires the giver. It currently refuses offerings while accounting is active. Only an accepted receipt records this purchase; a greeting, wallet balance, keeper-carried key, supplied key, unlocked door or room entry cannot replace it."
+        }
       ]
     }
-  ]
+  ],
+  "exclusions": []
 }

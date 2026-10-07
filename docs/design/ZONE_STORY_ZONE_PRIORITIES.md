@@ -13,7 +13,7 @@ Raw contract count alone is not a priority score. The [complete active inventory
 covers every catalog zone, including Q-free areas with dialogue or assigned special leads.
 
 Follow the [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) for completed
-source dossiers and precise blockers. Priorities 1 through 194 now have comprehensive
+source dossiers and precise blockers. Priorities 1 through 195 now have comprehensive
 source maps; the other entries retain their earlier rough/provisional status.
 Alatorin's [completed dossier](zone-stories/ALATORIN.md) adds exact district stories,
 all native classifications and bounded source/dispatch findings.
@@ -399,7 +399,7 @@ branches before naming or activating deeper stages. This queue is not daily elig
 | 192 | [The Bugger Caves](zone-stories/BUGGER.md) (`bugger`) | Hidden lost/misplaced eggs and container carapace → exact joint Queen return → armor; wrong-food refusal, brood/worker/slime and secret-exit stories. | Comprehensive schema3/revision1: one card/one exclusion,22 contacts,one family/three topics/four steps;28 rooms/22 mobiles/7 objects/91 resets. Twenty-eight owned source/reveal/parent/custody/refusal/reward/arrival/renewal/fair-repair follow-ups. |
 | 193 | [Dirk’nspire Stronghold](zone-stories/DIRKN.md) (`dirkn`) | Hidden paper and locked document → independent Balith returns; rival clans/captivity/temples and Foe Hammer → distinct Alatorin bounty choice. | Comprehensive schema3/revision1: two cards/39 contacts/one family/four topics/four steps;86 rooms/39 mobiles/46 objects/187 resets. Thirty-four owned source/access/default/effect/foreign-consumer/renewal/fair-repair follow-ups. |
 | 194 | [Storm Port](zone-stories/STORMPORT.md) (`stormport`) | Coastal/civic discovery → independent Tchan proof bundle and citysmith materials; foreign monastery giver, hidden sources and old ship access; modern ferries, guilds, crew, captivity and religious leads. | Comprehensive schema3/revision1: two cards/71 contacts/one player family/two topics/eight steps;147 rooms/71 mobiles/43 objects/275 resets. Thirty-four owned source/access/service/accounting/renewal/fair-repair follow-ups. |
-| 195 | Arachdrathos - Drow City (`arac-web`) | [Meet the giver → native offering → a dildo-shaped key](../../areas/qst/arac-web.qst#L6) | 1 Q; 1 dialogue; 0 candidate link items |
+| 195 | [Arachdrathos - Drow City](zone-stories/ARAC-WEB.md) (`arac-web`) | Llzazan/Descent discovery → civic web and six-house intrigue; guarded gatekeeper fee/key/retirement, separate generated tasks, captive agency, crafting, guild and civic restoration leads. | Comprehensive schema3/revision2: one card/44 contacts/one family/three aliases/one step;190 rooms/44 mobiles/44 objects/191 resets. Thirty-seven owned source/access/service/accounting/fair-repair follow-ups. |
 | 196 | Arcium, the Plagued Kingdom (`arcium`) | [Meet the giver → 1 × a bleeding heart of Kovii; 1 × a bleeding heart of Granra; 1 × a bleeding heart of Kurlon and the remaining ingredients → the shield proclaimed 'Hope'](../../areas/qst/arcium.qst#L11) | 1 Q; 1 dialogue; 0 candidate link items |
 | 197 | Ceothia (`ceofutur`) | [Meet the giver → 1 × a bluestone vial → a shard of bluestone](../../areas/qst/ceofutur.qst#L27) | 1 Q; 1 dialogue; 0 candidate link items |
 | 198 | Treasure Caves (`dungeon`) | [Meet the giver → 1 × a small brass figurine → native reward/response](../../areas/qst/dungeon.qst#L13) | 1 Q; 1 dialogue; 0 candidate link items |

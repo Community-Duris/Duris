@@ -254,3 +254,8 @@ The [dossier](../design/zone-stories/DIRKN.md) retains two meaningful potential 
 ## Storm Port daily qualification
 
 The [dossier](../design/zone-stories/STORMPORT.md) preserves two potential candidates. Mode2/lifespan40..50 and cap1 proofs do not establish fresh accountable stock or old-ship badge access. Foreign Tchan/giver generation, actual desk parent UID, hidden object reveal/GET, supplied custody, NORENT logout and reward recipient/save/replay renewal need qualification. Modern ferry ticket purchases and Tchan prayer refuse active accounting; neither is a hidden required step. New tracking requires active READY accounting; daily policy remains disabled.
+
+
+## Arachdrathos city daily qualification
+
+The [dossier](../design/zone-stories/ARAC-WEB.md) preserves the existing coin-only unit’s exclusion: No repeatable item offering. It contributes no achievement and no potential daily. Mode2/lifespan15..25, cap1 keeper/key stock and a retired giver do not establish fresh accountable renewal. Coin-only purchase and Body Traders services refuse active accounting; dynamic bartender quota does not turn that service into a zone daily. Require active READY accounting for new tracking; daily policy remains disabled.
