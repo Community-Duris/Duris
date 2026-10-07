@@ -1,5 +1,9 @@
 # Complete ordered shop purchase quote boundary review - 2026-10-07
 
+Disposition: **FINAL independent sidework review PASS.** Implementation and
+qualification below supersede the earlier pending checkpoints. Optional primary
+adoption and full native accounting qualification remain separate.
+
 Reservation `30478078f6552fb4b7cd3dc25a98b6f45d02d2ac`, text SHA256
 `0bdd6713e5c2df9d3a5c8962bbdcc5fba67b07889426a34d3f07fe5480909f25`,
 is approved at its exact three-file boundary: new src/economy/shop_purchase_quote.h,
@@ -131,3 +135,64 @@ providers; its owned-tree PASS is a different scope. Preserve both failures and
 their exact comparison. The quest-preparation chat is privately investigating a
 legitimate canonical codec fixture closure as a new independent task. No maintained
 shared driver repair is approved, and native quest/birth prerequisites remain absent.
+
+## Final qualification and import disposition
+
+Canonical handoff `0edd9867ad68257bc6990c5757bcf6e08bf6d96c` publishes
+R10_SHOP_PURCHASE_QUOTE_HANDOFF.md on codex/accounting-domain-separation.
+The coordinator independently authenticates its final proof-index SHA256
+`2b6b9dbdc8594cfbae9e06e79f494dcdd0954af044f8da255d6a7a33279731a3`:
+all94 unique artifacts match both recorded bytes and SHA256. Preserved failures,
+actual generated controls, source pins, package exports and maintained ELFs are
+included. Four actual containers retain the declared pinned image, networknone,
+read-only source mounts and separate writable bin volumes. No DB/game/server
+journey is added by this artifact review.
+
+All three committed files exactly match the coordinator's independently executed
+formatted snapshot. Complete extracted CPP SHA256 is
+`ca3b97868b609658c8277538d6fcebd8ca5fb55abe64aa6dc776d83d9def5bc2`.
+The original Python checks, all56 original DRIVER assertions and23 additional
+quote scenarios in each controlled mode pass under the original strict sanitizer
+recipe. Separate original/extracted -Og supplements pass; original failures and
+the actual differing timeout scopes remain retained. All23 selected function
+bodies outside shopping_buy remain byte-identical. No extra runtime is inferred
+from final committed-byte equivalence.
+
+Both exact worker patches apply independently to immutable bare primarye6,
+without R0-R9 dependencies. The coordinator reproduces both declared trees,
+archive hashes and all6,444 bodies in EACH export:
+
+| Package | Patch SHA256 | Git tree |
+|---|---|---|
+| Complete three-file package | `d6abdd18bbfd91054d3a50e6c0352c2d952598b412d6d49e0cc2e30a0a074b32` | `a0bc18cfae465ecfe7a0559e02bc7f41526f1b30` |
+| Production-only two-file package | `9c5b93317c8b71302fe1cc9378b20a2b41ce0db7435f83bc39fcc9482c187dd2` | `fc20d6ca82174b94e09dc2de35043e982b915744` |
+
+Full export ZIP SHA256 is
+`6f249969e935254fa4b3305c83cef6ee4d1b3935335d332d4fdb5d8e9f41276b`;
+production ZIP is
+`b1a69f8b7b0b60da2fad9d786ee11fa18b34b24fa294fca1f91b3d6325c85a99`.
+The production-only package deliberately preserves the original purchase test.
+Bare complete purchase, adjacent multi-buy/list/issue552/secondary-binding and
+runtime checks pass. Both full and production-only shop modules pass actual
+SQL/flat syntax/type checks. The unchanged live-route source-token failure and
+bare command-codec provider-link failure remain original failures, not promoted
+acceptance. The latter has a separately owned quest-prep investigation.
+
+Both strict maintained SQL/flat builds complete. The coordinator authenticates
+copied AND retained actual ELFs and parses each actual log: one shop.c compile,
+740 unique linked objects, original C++20/-Og/-Werror recipe. SQL ELF SHA256 is
+`51b749ac4cd2fa3e750dbbed703cbedd23a0aa8ca5f591edaa50fa3aa812e475`;
+flat ELF is
+`8ab83eb924f87a712c8119fea1baf19eb1e99b21b2b92e2023d9f14ec5d50bcd`.
+These older maintained graphs do not establish current754-provider full links
+or actual native trade/source/birth/publication/ACK/recovery qualification.
+
+Root private evidence: component-formatted, committed-equivalence-RESULT.json,
+current-import-review/authenticated-worker-imports-RESULT.json,
+build-artifact-authentication-RESULT.json and final-handoff-authentication-RESULT.json
+under ignored coordinator-shop. No private proof or executable is committed.
+The reviewed optional bundle is available; primary adoption remains unknown.
+No existing primary work is reopened and no adoption wait or release gate is added.
+Architecture next assesses the complete itemvalue hypothesis privately; its
+implementation needs a separately reviewed reservation and original proof.
+Continuing Goals and15-minute monitor retain the full primary finish line.

@@ -204,6 +204,23 @@ claiming native quest/birth/custody/publication/ACK prerequisites are unblocked.
 Architecture finishes R10; primary continues under its existing ownership and
 qualification plan without an adoption wait or any new milestone/gate.
 
+## Shop quote final sidework review and codec reservation - 2026-10-07
+
+[R10 final independent review](domain-separation/R10_SHOP_PURCHASE_QUOTE_REVIEW_2026-10-07.md)
+closes sidework code7bbf942e/handoff0edd9867: exact original/extracted controls,
+both bare-primary packages and all6,444 bodies each, actual maintained740-object
+SQL/flat ELFs and all94 indexed artifacts independently authenticated. Original
+live-route and bare codec failures remain explicit. Optional adoption, current754
+full links, native journeys and complete primary acceptance remain separate.
+
+Quest prep publishes investigationa1e4ade0/handoffb33f39d0: three existing
+canonical providers close the complete original codec harness/all46 assertions.
+One-file existing compiler-list repair is reserved for coordinator review; no
+maintained repair is yet approved. Native quest prerequisites remain blocked.
+Architecture continues private whole-itemvalue feasibility. Both continuing
+workstreams and the monitor retain the full primary finish line without an
+adoption wait or completed-primary rewrite.
+
 ## Continuing project coordination supersedes finite closure - 2026-10-07
 
 The user has authorized a new actual continuing coordinator Goal and continuing
