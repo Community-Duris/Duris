@@ -1,5 +1,14 @@
 # Fixed domain-separation operation inventory — 2026-10-07
 
+## Continuing inventory update
+
+The superseding continuing charter at accounting `b1ac97c3` replaces the earlier
+finite overall finish line. R0/R1/R2 remain completed batch checkpoints. New Goal
+ACTIVE/no budget, createdAt1791384853. Current candidate and ranked queue are in
+[CONTINUATION_RECONCILIATION_2026-10-07.md](CONTINUATION_RECONCILIATION_2026-10-07.md);
+R3 pricing is proposed for boundary review. This inventory evolves after meaningful
+candidate advances and deliveries; no new batch cap closes the continuing Goal.
+
 ## Final fixed-set disposition
 
 All required R0/R1/R2 rows are implemented, connected, qualified at their declared

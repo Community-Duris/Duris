@@ -1,5 +1,33 @@
 # Accounting domain separation handoff — 2026-10-07
 
+## Continuing project status — supersedes finite closure
+
+**New continuing Goal ACTIVE, no token budget.** Read superseding charter
+`CONTINUING_PROJECT_COORDINATION.md` on remotely verified accounting
+`b1ac97c3a9a1d1e50db6657b71862fb65681ce41`. `get_goal` first returned no current
+Goal; `create_goal` and then `get_goal` returned actual `status: active`,
+createdAt1791384853 in this chat. Objective: continuing connected domain
+preparation and handoffs through observable primary Plans1-5/applicable original
+R1-R8 integrated completion, required gameplay/persistence/recovery proof and a
+published owner completion disposition, with no remaining selected owned work.
+Finished batches or an empty queue cannot close this Goal. No activation/deployment.
+The completed R0/R1/R2 batch and earlier closure audit remain historical evidence.
+
+Existing ac24 worktree and `codex/accounting-domain-separation` are preserved.
+No reset, merge/rebase, primary import or shared-owner/manifest repair is done.
+Fresh producer candidate `275df7f626e12cb396a22da34317a4e7f355e9a1` leaves all
+selected patch preimages raw-byte identical; all three optional patches pass
+independent cached apply checks and a private combined overlay. Collector is
+explicitly deferred by primary at the producer integration boundary; R1/R2 adoption
+is unknown, not inferred from compatibility. Current changed-dependency executable
+checks are running on the exact exported candidate plus optional overlays; old
+ELF/journey evidence below is not relabeled as this753-provider candidate.
+
+See [current reconciliation](CONTINUATION_RECONCILIATION_2026-10-07.md) and
+[proposed R3 enhancement pricing boundary](R3_ENHANCEMENT_PRICE_RESERVATION.md).
+R3 is awaiting coordinator boundary review before code edits. Next queue is
+continuing, not another finite completion cap.
+
 ## Current delivery status
 
 **Fixed implementation milestone delivered, qualified and reviewed.** All required
