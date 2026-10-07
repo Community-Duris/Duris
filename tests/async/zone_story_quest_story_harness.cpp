@@ -211,7 +211,7 @@ int main(int argc, char **argv)
 				require(journal.find("[Met] " + contact.name) != std::string::npos,
 					"met NPC was missing");
 		}
-		require(catalog.story_mappings.size() == 220 &&
+		require(catalog.story_mappings.size() == 221 &&
 				tracker.summary_for(7, 42).total == 1521,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
@@ -25819,6 +25819,88 @@ int main(int argc, char **argv)
 			require(status(journal, 14, "Recorded") &&
 					status(journal, 0, "Missing now"),
 				"Ny’Neth Continued missing key or spent souls changed recovered history");
+		}
+
+		{
+			const auto &staff = story_for("orrak", "return-the-prisoners-staff");
+			service journey(catalog), supplied(catalog), recovered(catalog),
+				raw(raw_catalog);
+			require(journey.meet_npc(7, 42, 9016, 9038, 100) == result::rejected,
+				"Orrak contact ignored undiscovered zone");
+			require(journey.discover_zone(7, 42, 90, 9000, 101, "arrival") ==
+						result::applied &&
+					journey.render_journal(7, 42, 90, 10, 1, 102, false, false)
+							.find(staff.title) == std::string::npos &&
+					journey.meet_npc(7, 42, 9016, 9038, 103) == result::applied,
+				"Orrak request bypassed prisoner encounter");
+			require(journey.render_journal(7, 42, 90, 10, 1, 103, false, false)
+						.find(staff.title) != std::string::npos,
+				"Orrak journal invented extra source, warning, kill or key-history prerequisites");
+			const auto before = journey.serialize_state();
+			const auto status =
+				[&](const std::string &journal, size_t row, const char *label)
+			{
+				return journal.find(std::string("[") + label + "] " +
+						    staff.steps[row].text) != std::string::npos;
+			};
+			for (unsigned custody = 0; custody < 7; ++custody)
+			{
+				supplies = {};
+				if (custody == 1)
+					supplies.carried[9012] = 1;
+				if (custody == 2)
+					supplies.carried[9015] = 1;
+				if (custody == 3 || custody == 6)
+					supplies.equipped[18] = 9011;
+				if (custody >= 4)
+					supplies.carried[9011] = custody == 5 ? 2 : 1;
+				const auto journal = journey.render_journal(
+					7, 42, 90, 10, 1, 104, false, false, &supplies);
+				require(status(journal, 0,
+					       custody >= 4 ? "Ready now" : "Missing now"),
+					"Orrak substituted reward, wrong weapon or held staff for a loose exact staff");
+				require(!status(journal, 1, "Recorded") &&
+						journey.progress_for_zone(7, 42, 90).completed ==
+							0 &&
+						journey.serialize_state() == before,
+					"Orrak preparation or bracelet possession forged accepted return history");
+			}
+			// Synthetic receipt qualifies projection, not live staff consumption, reward, departure, lasting freedom, travel, hazard or epic admission.
+			record(journey, staff.contracts.front(), "orrak-staff-offering", 90, 9038);
+			supplies = {};
+			auto journal = journey.render_journal(7, 42, 90, 10, 1, 121, false, false,
+							      &supplies);
+			require(status(journal, 1, "Recorded") &&
+					status(journal, 0, "Missing now") &&
+					journey.progress_for_zone(7, 42, 90).completed == 1 &&
+					!journey.has_discovered(7, 42, 45) &&
+					!journey.has_discovered(7, 42, 5000),
+				"Orrak spent staff erased receipt or invented foreign arrival");
+			require(supplied.discover_zone(7, 42, 90, 9000, 101, "arrival") ==
+					result::applied,
+				"Orrak supplied return setup failed");
+			record(supplied, staff.contracts.front(), "orrak-supplied-offering", 90,
+			       9038);
+			require(supplied.progress_for_zone(7, 42, 90).completed == 1,
+				"Orrak acceptance required remembered source recovery, personal kill, warning, key use or epic participation");
+			auto replay =
+				completion(staff.contracts.front(), "orrak-staff-offering", 120);
+			replay.transaction.zone_number = 90;
+			replay.transaction.room_vnum = 9038;
+			require(journey.record_completion(replay) == result::already_applied,
+				"Orrak replay duplicated staff acceptance");
+			const auto saved = journey.serialize_state();
+			require(recovered.deserialize_state(saved, &error) &&
+					raw.deserialize_state(saved, &error) &&
+					recovered.progress_for_zone(7, 42, 90).completed == 1 &&
+					raw.progress_for_zone(7, 42, 90).completed == 1 &&
+					!recovered.has_discovered(7, 42, 45) &&
+					!recovered.has_discovered(7, 42, 5000),
+				"Orrak mapped/raw recovery lost acceptance or invented foreign discovery");
+			journal = recovered.render_journal(7, 42, 90, 10, 1, 122, false, false,
+							   &supplies);
+			require(status(journal, 1, "Recorded") && status(journal, 0, "Missing now"),
+				"Orrak missing bracelet or spent staff changed recovered history");
 		}
 
 		std::cout

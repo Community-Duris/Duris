@@ -49761,6 +49761,196 @@
     {
       "contacts": [
         {
+          "description": "This dirty-looking wolf seems mad at the world, and even you.",
+          "keyword": "wolf",
+          "mob_vnum": 9000,
+          "name": "a black wolf",
+          "topics": []
+        },
+        {
+          "description": "The masked gatekeeper guards the mountain entrance. Ask about orrak to hear his warning; that answer is separate from the prisoner\u2019s staff request.",
+          "keyword": "gatekeeper",
+          "mob_vnum": 9001,
+          "name": "a masked gatekeeper",
+          "topics": [
+            "orrak"
+          ]
+        },
+        {
+          "description": "This warrior has been locked up for to long, and has driven him to the edge of insanity.",
+          "keyword": "warrior",
+          "mob_vnum": 9002,
+          "name": "an insane warrior",
+          "topics": []
+        },
+        {
+          "description": "This being resembles an orc more than anything else, but not much like that even.",
+          "keyword": "orrak",
+          "mob_vnum": 9003,
+          "name": "an orrak guardian",
+          "topics": []
+        },
+        {
+          "description": "This Particular Orrak is large, ugly, and brutish.",
+          "keyword": "orrak",
+          "mob_vnum": 9004,
+          "name": "an orrak warmaster",
+          "topics": []
+        },
+        {
+          "description": "This smaller orrak seems to be learning the ways of death and war from his elders in the catacombs here.",
+          "keyword": "orrak",
+          "mob_vnum": 9005,
+          "name": "an orrak apprentice",
+          "topics": []
+        },
+        {
+          "description": "This extremly angry duergar dwarf looks like he could inflict much pain on trespassers and fools, and to him, you are both.",
+          "keyword": "rogue",
+          "mob_vnum": 9006,
+          "name": "a fierce treasure-hunting rogue",
+          "topics": []
+        },
+        {
+          "description": "This orrak is dressed completely in black robes, but for the sake of the sight of his face, that is probably good.",
+          "keyword": "orrak",
+          "mob_vnum": 9007,
+          "name": "the orrak Priest of Sin",
+          "topics": []
+        },
+        {
+          "description": "This guy looks like the average hook horror, big and ugly.",
+          "keyword": "hookhorror",
+          "mob_vnum": 9008,
+          "name": "a hookhorror",
+          "topics": []
+        },
+        {
+          "description": "This appears to be a God of the orrak, and a fitting one it is.",
+          "keyword": "white",
+          "mob_vnum": 9009,
+          "name": "the white devil",
+          "topics": []
+        },
+        {
+          "description": "This attractive nude female seems to be a slave of the Black Devil.",
+          "keyword": "servant",
+          "mob_vnum": 9010,
+          "name": "a servant of the black devil",
+          "topics": []
+        },
+        {
+          "description": "This is a average orrak, big and ugly.",
+          "keyword": "orrak",
+          "mob_vnum": 9011,
+          "name": "a dazed orrak",
+          "topics": []
+        },
+        {
+          "description": "The Black Devil rules from his shrine with servants and Vothlth. He holds the prisoner\u2019s glittering staff; present stock and lawful recovery depend on the encounter.",
+          "keyword": "devil",
+          "mob_vnum": 9012,
+          "name": "the black devil",
+          "topics": []
+        },
+        {
+          "description": "This huge orrak is composed of vile and filth, with blood tripping off his body has if it where sweat.",
+          "keyword": "orrak",
+          "mob_vnum": 9013,
+          "name": "the orrak butcher",
+          "topics": []
+        },
+        {
+          "description": "Quei Ilxtlor waits beside the glowing pool. Its pleasant appearance does not promise safe water or useful healing.",
+          "keyword": "quei",
+          "mob_vnum": 9014,
+          "name": "Quei Ilxtlor",
+          "topics": []
+        },
+        {
+          "description": "Vellel guards the way to the prison and carries a purple key. Reaching the prisoner, completing his request and claiming later rewards are separate actions.",
+          "keyword": "vellel",
+          "mob_vnum": 9015,
+          "name": "Vellel, the Arch-Angel of Sin",
+          "topics": []
+        },
+        {
+          "description": "The old prisoner says the Orrak took his home and a fiend stole his staff. Return an exact glittering staff for his red-rock bracelet; an exact copy supplied by another player also fits.",
+          "keyword": "old",
+          "mob_vnum": 9016,
+          "name": "an old, imprisoned man",
+          "topics": []
+        },
+        {
+          "description": "This fearsome red dragon seems to be a pet of the Black devil, and a fitting one it is.",
+          "keyword": "vothlth",
+          "mob_vnum": 9017,
+          "name": "Vothlth, the black devil's pet",
+          "topics": []
+        }
+      ],
+      "coverage": "complete",
+      "exclusions": [],
+      "introduction": "Follow Orrak\u2019s forest and catacombs, return the old prisoner\u2019s stolen staff, and distinguish that accepted exchange from the mountain\u2019s longer captive, ritual, hazard and homecoming stories.",
+      "orientation": [
+        "Arrive in Orrak to discover it. Explore the dark forest and mountain, and meet its residents to reveal their stories.",
+        "Ask the masked gatekeeper about orrak to hear his warning. The warning and the old prisoner\u2019s request are separate.",
+        "The old prisoner wants his glittering staff back and offers a bracelet of red rocks. Bring one exact staff loose in your inventory; carrying the reward or a different weapon does not satisfy his request.",
+        "The Black Devil is the declared holder of the staff. You can recover the exact type or use an exact copy supplied by another player. A supplied copy does not claim that you personally recovered it.",
+        "The red skull key leads into the catacombs; the purple key guards the prison beyond Vellel. Finding a key, unlocking a door and successfully passing it are different actions.",
+        "A hidden trapdoor leads to another cell with an insane warrior. The old prisoner and the other captives have distinct stories; defeating them does not record their freedom.",
+        "The white and black shrines hold followers, servants and signs of sacrifice. Their useful release or recovery needs its own outcome beyond combat or looting.",
+        "The room that seems to open into space has a real downward fall route. Flight, climbing, your mount and the actual passage matter. Surviving and finding a way back are separate from entering it.",
+        "The glowing pool looks relaxing, but its liquid may harm you. Its appearance does not guarantee a safe refuge or healing.",
+        "Returning the staff makes the prisoner vanish in the native exchange. That accepted exchange stays recorded after the staff is spent or the bracelet leaves your inventory; a safe new home is a longer story.",
+        "Vellel\u2019s rune-covered stone and the memory of Orrak have separate source and reward rules. Their possession, the staff return, useful liberation and your own surviving return are different outcomes."
+      ],
+      "revision": 1,
+      "schema_version": 3,
+      "source_area": "orrak",
+      "stories": [
+        {
+          "category": "request",
+          "contracts": [
+            {
+              "completion_key": "give=I:9011;receive=I:9012;disappear=1",
+              "giver_vnum": 9016
+            }
+          ],
+          "id": "return-the-prisoners-staff",
+          "steps": [
+            {
+              "count": 1,
+              "hint": "Bring one exact glittering staff loose in your inventory. An exact supplied copy also fits. Holding or packing it does not satisfy this preparation; the row does not record a personal kill or first source recovery.",
+              "id": "prepare-staff",
+              "item_vnums": [
+                9011
+              ],
+              "kind": "carried_item",
+              "optional": true,
+              "text": "Carry the prisoner\u2019s glittering staff"
+            },
+            {
+              "contracts": [
+                {
+                  "completion_key": "give=I:9011;receive=I:9012;disappear=1",
+                  "giver_vnum": 9016
+                }
+              ],
+              "hint": "Offer the exact staff to the old prisoner when he can accept it. His accepted exchange stays recorded after the staff is spent or the bracelet is gone. His disappearance and a lasting safe destination are separate outcomes.",
+              "id": "accepted-return",
+              "kind": "completion",
+              "text": "Complete the prisoner\u2019s staff return"
+            }
+          ],
+          "summary": "The old prisoner trades a bracelet of red rocks for one exact glittering staff and then vanishes. Recovered or supplied copies fit. Current preparation, accepted return and lasting freedom have distinct evidence.",
+          "title": "Return the prisoner\u2019s stolen staff"
+        }
+      ]
+    },
+    {
+      "contacts": [
+        {
           "description": "Ask torture, angel, warangel, torturing, enemy, capture, limp or battered. Return the exact battered-warangel object for his mask; no live capture or escort is specified.",
           "keyword": "torturer",
           "mob_vnum": 9107,

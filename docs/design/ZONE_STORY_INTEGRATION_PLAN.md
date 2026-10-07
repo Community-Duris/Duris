@@ -1,6 +1,6 @@
 # Universal zone story integration plan
 
-**Status: 220 authored journals, accounting-gated player surfaces, starter/town
+**Status: 221 authored journals, accounting-gated player surfaces, starter/town
 coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
@@ -5424,3 +5424,12 @@ The [dossier](zone-stories/NYNETH3.md) covers the exact fourteen-soul exchange a
 ### Custom generation and useful-effect requirements
 
 Account-aware reset generations must cover138 local O/G/E rows and native conditional followers. Dynamic Ny’Neth Fury and artifact ancestor spawns need distinct controller/source/instance/group/expiry and replay ownership. Actual equipment/effect/beneficiary admission,property-selected action outcomes and foreign effective handler order must precede useful achievements. Artifact names,apparitions,deflection,loot,hero deaths and boss defeat cannot fabricate rescue or pact completion. Actual repairs remain separately named fix/news work.
+
+
+## Orrak integration extension
+
+The [dossier](zone-stories/ORRAK.md) covers the exact staff/bracelet/departure exchange and eight broader access, source, captive, knowledge, encounter, hazard, pool and homecoming stories, with 44 owned follow-ups. Reuse schema3 with one optional staff row and accepted completion. Supplied eligibility does not imply first source recovery; native disappearance does not prove a saved living destination. New tracking requires active READY accounting; daily policy remains disabled.
+
+### Successful departure, hazard and liquid outcome adapters
+
+Deeper integrations need durable source/giver generations and exact departed actor, saved living beneficiary/destination, actual learned-response identity, terminal fall survival/relocation and admitted liquid/effect/condition outcomes. Existing encounter callbacks, fall scheduling/landed enums, printed drink messages and generic extraction cannot alone prove useful liberation or refuge. Preserve input-publication barriers and the active durable item-motion/reset guards. Accountable fresh reset stock must cover 18 local item rows and conditional followers. Pool liquid/prose and mount/door intent require separately named fair fix/news work after precise qualification.

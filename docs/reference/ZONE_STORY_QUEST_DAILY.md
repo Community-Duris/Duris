@@ -324,3 +324,8 @@ The [dossier](../design/zone-stories/NYNETH2.md) preserves one native achievemen
 ## Ny’Neth Continued daily qualification
 
 The [dossier](../design/zone-stories/NYNETH3.md) preserves one native achievement/potential daily at the14-root boundary. No departure and mode0 do not prove renewable supply:active accounting refuses138 reset item rows. Qualify fourteen distinct loose durable roots,supplied eligibility,atomic consumption,acknowledged black-key recipient/save/replay and actual renewal. First source,hero survival,boss victory,artifact usefulness and committed epic participants have separate evidence. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
+
+
+## Orrak daily qualification
+
+The [dossier](../design/zone-stories/ORRAK.md) preserves one achievement/potential daily: mode1 can renew the disappearing giver, but active accounting refuses all 18 fresh O/G/E rows including staff and keys. Qualify actual source generation, loose durable recovered/supplied staff, atomic consumption, bracelet recipient/save/replay and exact departure/recovery. Accepted exchange, first source, lasting freedom, fall/drink usefulness and committed epic participants have separate evidence. New tracking requires active READY accounting; committed recovery is separate and daily policy remains disabled.
