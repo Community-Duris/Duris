@@ -3,7 +3,8 @@
 Latest post-R6 [nine-family owner dependency assessment](POST_R6_OWNER_DEPENDENCIES_2026-10-07.md)
 checks compatibility against primary `daa5c2b5f` without promoting build/journey
 evidence or adding a thin extraction. Current turn made implementation/qualification
-progress; overall continuing Goal remains ACTIVE and final R6 review is pending.
+progress; overall continuing Goal remains ACTIVE. Final R6 review PASS is
+published at accounting91cd22922 and linked in its handoff.
 
 ## Continuing inventory update
 
@@ -16,7 +17,7 @@ R4 tribute counts are implemented with independent original/extracted controls
 and both owned maintained builds passing. R5 numeric cap is implemented and
 qualified through `b31809a0d`, final declared-scope review PASS at accounting
 `63a6e0ef5`. R6 affect policy is delivered at `984481667`, original/extracted and
-owned maintained-build qualified; final review awaits its terminal handoff.
+owned maintained-build qualified; final declared-scope review PASS at accounting91cd22922.
 Current352 component/module proof stays separately pinned. Successor `daa5c2b5f`
 adds authentic Collector flatfile proof readers; native outcome/journey ownership
 and exact remaining interfaces stay with primary. See R6/current reconciliation. Final publication/review dependencies

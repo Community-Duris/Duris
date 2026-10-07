@@ -4,7 +4,10 @@ Continuing Goal ACTIVE/no budget, createdAt1791384853. This turn delivered R5/R6
 qualification and R6 terminal publication, so it made meaningful progress and
 does not count as an unchanged blocked turn. Overall Plans1-5/applicable original
 R1-R8 completion remains required. No further implementation is selected merely
-to extend the extraction sequence. Final R6 review remains outstanding.
+to extend the extraction sequence. Final R6 declared-scope review PASS is remotely
+verified at accounting91cd22922; all selected handoffs/reviews are delivered.
+Actual get_goal at this boundary returns ACTIVE/no budget with full objective
+preserved; temporary independent-queue exhaustion does not satisfy completion.
 
 ## New primary compatibility checkpoint
 

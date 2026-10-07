@@ -3,7 +3,8 @@
 Latest post-R6 [nine-family owner dependency assessment](POST_R6_OWNER_DEPENDENCIES_2026-10-07.md)
 checks compatibility against primary `daa5c2b5f` without promoting build/journey
 evidence or adding a thin extraction. Current turn made implementation/qualification
-progress; overall continuing Goal remains ACTIVE and final R6 review is pending.
+progress; overall continuing Goal remains ACTIVE. Final R6 review PASS is
+published at accounting91cd22922 and linked in its handoff.
 
 Initial producer candidate `275df7f626e12cb396a22da34317a4e7f355e9a1`; current remotely
 verified charter `b1ac97c3a9a1d1e50db6657b71862fb65681ce41`; owned completed branch
@@ -52,8 +53,9 @@ and unchanged module reset-count failure remain visible. Exact352+R0-R6 tree
 passes actual policy/payment/pool and full enhancement SQL/flat type checks.
 This frozen supplement is not successor daa5 qualification. Source-only bare352
 application passes; complete test packaging retains R3 alone. See
-[R6 handoff](R6_ENHANCEMENT_AFFECT_POLICY_HANDOFF.md). Final review is pending;
-provisional component review is published at accounting d81e04b49.
+[R6 handoff](R6_ENHANCEMENT_AFFECT_POLICY_HANDOFF.md). Final declared-scope review
+PASS is remotely verified at accounting91cd22922; source, evidence, actual ELFs
+and complete352 export independently authenticate. Adoption remains unknown.
 
 ## Independent compatibility and adoption
 
@@ -145,7 +147,7 @@ The nine-domain inventory is reassessed against these concrete new interfaces:
    its ceil policy differs from superior's existing0.999999 truncation, so do not
    silently unify those policies. R4 preserves the latter; further capture must be reserved after actual source/proof review.
 3. **R5 F3 superior stat cap**: approved and implemented through `b31809a0d`; explicit base/configured multiplier preserves signed-byte saturation/truncation and original wrapper capture. Original/extracted, adjacent, owned builds and current352 module controls pass; final declared-scope review PASS is published at accounting63a6e0ef5. See [handoff](R5_SUPERIOR_STAT_CAP_HANDOFF.md). Further template/outcome preparation requires separately reviewed native capture facts.
-4. **R6 F3/I enhancement affect policy**: implemented/published at `984481667`; actual original/extracted producer/policy and maintained builds PASS, final review pending. Five native unsigned-long words and explicit masks preserve null/source/material/pool semantics. The real predicate replaces the test stub; retained fixture failure is corrected without weakening expectations. See [terminal handoff](R6_ENHANCEMENT_AFFECT_POLICY_HANDOFF.md). Further native capture remains owner-dependent.
+4. **R6 F3/I enhancement affect policy**: implemented/published at `984481667`; actual original/extracted producer/policy and maintained builds PASS, final review PASS at accounting91cd22922. Five native unsigned-long words and explicit masks preserve null/source/material/pool semantics. The real predicate replaces the test stub; retained fixture failure is corrected without weakening expectations. See [terminal handoff](R6_ENHANCEMENT_AFFECT_POLICY_HANDOFF.md). Further native capture remains owner-dependent.
 5. **P2/S1 forge or service quote preparation**: inspect existing ore-price and
    paid service formulas for a genuine remaining stable operation; existing
    `forge_prices`/currency prepared mutation may already cover it. No blanket
