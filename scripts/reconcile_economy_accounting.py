@@ -682,6 +682,7 @@ class Reconciler:
         self.audit_corpse_custody(snapshot.get("backend"), native, native_items)
         self.audit_locker_custody(snapshot.get("backend"), native, native_items)
         self.audit_siege_custody(snapshot.get("backend"), native, native_items)
+        self.audit_saved_ground_custody(snapshot.get("backend"), native, native_items)
         self.audit_uid_scope_coverage(snapshot.get("backend"), native,
                                       item_origins, native_items, references)
         self.audit_unattributed_uid_history(snapshot.get("backend"), native)
@@ -1695,6 +1696,142 @@ class Reconciler:
                     self.emit("siege_coin_literal_mismatch", uid=uid)
         # A live room UID may come from saved_items or exact modern payloads;
         # absence from siege alone cannot prove missing room physical authority.
+
+    def audit_saved_ground_custody(self, backend: str, native: dict, items: dict) -> None:
+        """Check legacy raw groups without promoting retained history to grants."""
+        coverage = native.get("saved_ground_custody_coverage")
+        if coverage is None and "saved_ground_items" not in native and "saved_ground_handoffs" not in native:
+            if backend == "sql_partial":
+                self.emit("missing_saved_ground_custody_coverage", scope="snapshot")
+            return
+        rows, receipts = (self.table(native, name) for name in ("saved_ground_items", "saved_ground_handoffs"))
+        if (not isinstance(coverage, dict) or set(coverage) != {"items", "handoffs"} or
+                any(type(coverage[key]) is not int or coverage[key] != size
+                    for key, size in (("items", len(rows)), ("handoffs", len(receipts)))) or
+                len(rows)+len(receipts) > MAX_ROWS):
+            raise SnapshotError("invalid saved ground custody coverage")
+
+        def integer(row, field, low, high, nullable=False):
+            value = row.get(field)
+            if field not in row or (value is not None or not nullable) and (
+                    type(value) is not int or not low <= value <= high):
+                raise SnapshotError("invalid saved ground custody " + field)
+
+        for row in rows:
+            for field, low, high, nullable in (
+                    ("item_id", 1, 2**32-1, False), ("key_group", 1, 2**32-1, False),
+                    ("room_vnum", -2**31, 2**31-1, True), ("parent_id", 0, 2**32-1, True),
+                    ("uid", 0, 2**64-1, True), ("vnum", -2**31, 2**31-1, False),
+                    ("quantity", 0, 65535, True), ("weight", -2**31, 2**31-1, True),
+                    ("extra_flags", 0, 2**64-1, True), ("item_type", -128, 127, True),
+                    ("modern_history", 0, 1, False)):
+                integer(row, field, low, high, nullable)
+            for index in range(4):
+                integer(row, "value"+str(index), -2**31, 2**31-1, True)
+        historical_groups, historical_roots = set(), set()
+        for receipt in receipts:
+            for field in ("season_epoch", "source_uid"):
+                integer(receipt, field, 1, 2**64-1)
+            for field in ("source_root_id", "destination_root_id", "source_row_count"):
+                integer(receipt, field, 1, 2**32-1)
+            integer(receipt, "source_room_vnum", -2**31, 2**31-1)
+            integer(receipt, "retired", 0, 1)
+            for field in ("source_group", "destination_group"):
+                integer(receipt, field, 1, 2**32-1, True)
+                if receipt[field] is not None:
+                    historical_groups.add(receipt[field])
+            for field in ("source_id_digest", "source_payload_digest", "destination_payload_digest"):
+                value = receipt.get(field)
+                if field not in receipt or (value is not None and
+                        (not isinstance(value, str) or len(value) != 64 or
+                         any(char not in "0123456789ABCDEF" for char in value))):
+                    raise SnapshotError("invalid saved ground handoff digest")
+            historical_roots.update((receipt["source_root_id"], receipt["destination_root_id"]))
+        if rows or receipts:
+            self.emit("saved_ground_full_runtime_authority_unqualified", scope="snapshot")
+        row_counts = Counter(row["item_id"] for row in rows)
+        row_index = self.index(rows, ("item_id",), "saved_ground_duplicate_physical_row")
+        groups = Counter(row["key_group"] for row in rows)
+        roots = Counter(row["key_group"] for row in rows if row["parent_id"] is None)
+        minima = {}
+        for row in rows:
+            minima[row["key_group"]] = min(minima.get(row["key_group"], row["item_id"]), row["item_id"])
+            if row["modern_history"] or row["item_id"] in historical_roots:
+                historical_groups.add(row["key_group"])
+        if receipts or historical_groups:
+            # Receipts require original complete text/affect/extra-descr digests,
+            # season and destination verification. A presence marker never proves
+            # retirement, publication, current custody, or a valid duplicate.
+            self.emit("saved_ground_history_authority_unqualified", scope="snapshot")
+        eligible = [row for row in rows if row["key_group"] not in historical_groups]
+        uid_counts = Counter(row["uid"] for row in eligible if row["uid"])
+        competing = {row.get("uid") for name in ("player_items", "pet_items", "shop_items", "corpse_items",
+                     "locker_items", "account_locker_items", "siege_items") if name in native
+                     for row in self.table(native, name) if type(row.get("uid")) is int and row["uid"] > 0 and
+                     (name != "player_items" or row.get("item_type") != 20 or row.get("parent_id"))}
+        if "auction_roots" in native:
+            competing.update(row["uid"] for row in self.table(native, "auction_roots") if row.get("claimed") is False
+                             and type(row.get("uid")) is int and row["uid"] > 0)
+        # Derived grouping belongs to an audit copy; caller input remains untouched.
+        positioned = {key: dict(row, custody_group=(row["key_group"], row["room_vnum"]))
+                      for key, row in row_index.items()}
+        literals, cache = live_coin_literals(native, items), {}
+        for row in rows:
+            uid, group = row["uid"], row["key_group"]
+            detail = dict(item_id=row["item_id"], key_group=group)
+            if row["room_vnum"] is None or row["room_vnum"] <= 0:
+                self.emit("saved_ground_room_identity_unknown", **detail)
+            if row["vnum"] <= 0:
+                self.emit("saved_ground_item_vnum_invalid", **detail)
+            if row["quantity"] != 1:
+                self.emit("saved_ground_unsupported_quantity", **detail)
+            if row["weight"] is None or row["extra_flags"] is None or row["item_type"] is None:
+                self.emit("saved_ground_prototype_literal_unknown", **detail)
+            if not uid:
+                self.emit("saved_ground_legacy_uid_unknown", **detail)
+            if minima[group] != group or roots[group] != 1 or row["parent_id"] == 0:
+                self.emit("saved_ground_key_graph_invalid", **detail)
+            if groups[group] > 3000:
+                self.emit("saved_ground_group_exceeds_native_limit", **detail)
+            root, parent, error = physical_item_position(positioned[(row["item_id"],)], positioned,
+                row_counts, "custody_group", max_depth=65, position_cache=cache)
+            if error:
+                self.emit("saved_ground_item_"+error, **detail)
+            money = row["vnum"] == 3 or row["item_type"] == 20
+            values = [row["value"+str(index)] for index in range(4)]
+            if money:
+                if any(value is None for value in values):
+                    self.emit("saved_ground_coin_value_unknown", **detail)
+                elif any(value < 0 for value in values):
+                    self.emit("saved_ground_negative_coin_value", **detail)
+            if not uid or group in historical_groups:
+                continue
+            if uid_counts[uid] != 1 or uid in competing:
+                self.emit("saved_ground_duplicate_physical_uid", uid=uid)
+            current = items.get((uid,))
+            if current is None:
+                self.emit("saved_ground_uid_unadmitted", uid=uid)
+                continue
+            if current.get("state") != "live":
+                self.emit("saved_ground_projection_inactive_uid", uid=uid)
+                continue
+            if current.get("owner") != [3, row["room_vnum"], 0]:
+                self.emit("saved_ground_item_owner_mismatch", uid=uid)
+                continue
+            integer(current, "vnum", -2**31, 2**31-1)
+            if current["vnum"] != row["vnum"]:
+                self.emit("saved_ground_item_vnum_mismatch", uid=uid)
+            if root is not None and (current.get("root") != root or
+                    (current.get("parent") or None) != (parent or None)):
+                self.emit("saved_ground_item_topology_mismatch", uid=uid)
+            if current.get("equipment_slot", 0):
+                self.emit("saved_ground_item_equipment_mismatch", uid=uid)
+            if money:
+                if uid not in literals:
+                    self.emit("saved_ground_coin_payload_unknown", uid=uid)
+                elif literals[uid] != values:
+                    self.emit("saved_ground_coin_literal_mismatch", uid=uid)
+        # No reverse absence inference until all room source families qualify.
 
     def audit_original_plans(self, tables: dict, by_op: dict, ownership: dict) -> None:
         """Bind projections to retained EAP1 bytes, independently of mutation code.

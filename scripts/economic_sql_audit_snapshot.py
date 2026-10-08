@@ -1321,6 +1321,56 @@ def read_siege_custody(cursor) -> dict:
     return {"siege_items": rows, "siege_custody_coverage": dict(items=len(rows))}
 
 
+def read_saved_ground_custody(cursor) -> dict:
+    """Retain raw ground rows and possible handoffs, without exporting key text."""
+    cursor.execute("SELECT (SELECT COUNT(*) FROM saved_items)+"
+                   "(SELECT COUNT(*) FROM saved_item_recovery_handoff)+"
+                   "(SELECT COUNT(*) FROM sql_room_item_payload) AS rows_total")
+    bound = cursor.fetchone()
+    if bound is None or bound["rows_total"] > MAX_ROWS:
+        raise ExportError("saved ground custody source exceeds audit bounds")
+    # Key equality follows the loader's SQL collation, including case/accent and
+    # trailing-space aliases. The minimum physical ID is an opaque per-cut group,
+    # never a durable identity or a hash of potentially identifying key text.
+    rows = list(bounded(cursor, "SELECT id AS item_id,"
+        "MIN(id) OVER (PARTITION BY item_key) AS key_group,room_vnum,"
+        "container_id AS parent_id,obj_uid AS uid,vnum,quantity,weight,extra_flags,item_type,"
+        "value0,value1,value2,value3,"
+        "(EXISTS(SELECT 1 FROM sql_room_item_payload p WHERE p.item_uid=s.obj_uid) OR "
+        "EXISTS(SELECT 1 FROM item_ownership_ledger l "
+        "JOIN critical_operation_inbox i ON i.operation_id=l.operation_id "
+        "JOIN economic_accounting_operation o ON o.operation_id=l.operation_id "
+        "WHERE l.item_uid=s.obj_uid AND l.from_owner_type=1 AND l.from_owner_id>0 "
+        "AND l.from_owner_context_id=0 AND l.to_owner_type=3 AND l.to_owner_context_id=0 "
+        "AND l.reason_type=6 AND l.reason_id=l.to_owner_id AND i.command_type=5 "
+        "AND i.schema_version=2 AND i.status=1 AND i.result_code=0 AND i.failure_stage=0 "
+        "AND o.outcome=1 AND o.result_code=0) OR COALESCE(s.obj_uid=18446744073709551615,0) OR "
+        "EXISTS(SELECT 1 FROM item_current_owner own WHERE own.item_uid=s.obj_uid AND own.coin_payload IS NOT NULL) OR "
+        "EXISTS(SELECT 1 FROM economic_accounting_item_reference r "
+        "LEFT JOIN economic_accounting_operation o ON o.operation_id=r.operation_id "
+        "LEFT JOIN critical_operation_inbox i ON i.operation_id=r.operation_id "
+        "WHERE r.item_uid=s.obj_uid AND ((o.writer_id=5 AND o.reason=3) OR i.command_type=17)) OR "
+        "EXISTS(SELECT 1 FROM economic_accounting_account_effect e "
+        "LEFT JOIN economic_accounting_operation o ON o.operation_id=e.operation_id "
+        "LEFT JOIN critical_operation_inbox i ON i.operation_id=e.operation_id "
+        "WHERE OCTET_LENGTH(e.account_key)=40 AND SUBSTRING(e.account_key,17)="
+        "CONCAT(X'01000300',REVERSE(UNHEX(LPAD(HEX(s.obj_uid),16,'0'))),REPEAT(CHAR(0),12)) "
+        "AND ((o.writer_id=5 AND o.reason=3) OR i.command_type=17)) OR "
+        "EXISTS(SELECT 1 FROM item_ownership_ledger l "
+        "JOIN economic_accounting_child c ON c.child_operation_id=l.operation_id "
+        "WHERE l.item_uid=s.obj_uid AND c.domain_id=1129269582)) AS modern_history "
+        "FROM saved_items s ORDER BY id"))
+    receipts = list(bounded(cursor, "SELECT season_epoch,source_root_id,source_uid,source_room_vnum,"
+        "source_row_count,destination_root_id,(retired_at IS NOT NULL) AS retired,"
+        "HEX(source_id_digest) AS source_id_digest,HEX(source_payload_digest) AS source_payload_digest,"
+        "HEX(destination_payload_digest) AS destination_payload_digest,"
+        "(SELECT MIN(s.id) FROM saved_items s WHERE s.item_key=h.source_key) AS source_group,"
+        "(SELECT MIN(s.id) FROM saved_items s WHERE s.item_key=h.destination_key) AS destination_group "
+        "FROM saved_item_recovery_handoff h ORDER BY season_epoch,source_root_id"))
+    return {"saved_ground_items": rows, "saved_ground_handoffs": receipts,
+            "saved_ground_custody_coverage": dict(items=len(rows), handoffs=len(receipts))}
+
+
 def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     # Both native-item and mapping projections can return payload bytes. Bound
     # them before either buffered SELECT, including repeated mapping joins.
@@ -1348,6 +1398,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     native.update(read_corpse_custody(cursor))
     native.update(read_locker_custody(cursor))
     native.update(read_siege_custody(cursor))
+    native.update(read_saved_ground_custody(cursor))
     native["ship_coffers"], native["ship_coffer_coverage"] = read_ship_coffers(cursor)
     native["guild_treasuries"], native["guild_treasury_coverage"] = read_guild_treasuries(cursor)
     gaps = ["ship_coffer_lifetime_origin_revision_and_writer_qualification",
@@ -1361,6 +1412,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             "corpse_prototype_full_payload_catalog_revision_artifact_and_lifecycle_history",
             "locker_prototype_full_payload_access_history_and_account_runtime_authority",
             "siege_runtime_admission_full_payload_and_other_room_physical_authority",
+            "saved_ground_prototype_full_payload_handoff_and_modern_runtime_authority",
             "unattributed_ownership_history",
             "unreferenced_uid_events_without_native_or_baseline_anchors",
             "unresolved_post_baseline_account_origins",
@@ -1717,9 +1769,10 @@ def capture(connection, lineage: bytes, epoch: bytes) -> dict:
             "'auction_money_pickups','auction_item_custody','auction_item_pickups',"
             "'shopkeepers','shopkeeper_items','player_items','player_pets','player_pet_items',"
             "'corpses','corpse_items','lockers','private_chests','locker_items',"
-            "'account_lockers','locker_chests','account_locker_items','siege_items','ships','guilds')")
+            "'account_lockers','locker_chests','account_locker_items','siege_items','ships','guilds',"
+            "'saved_items','saved_item_recovery_handoff','sql_room_item_payload')")
         engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
-        if len(engines) != 34 or any(engine != "InnoDB" for engine in engines.values()):
+        if len(engines) != 37 or any(engine != "InnoDB" for engine in engines.values()):
             raise ExportError("SQL audit source is missing or not InnoDB")
         has_realized_price = realized_price_column_available(cursor)
         evidence = read_evidence(cursor, lineage, epoch, has_realized_price)

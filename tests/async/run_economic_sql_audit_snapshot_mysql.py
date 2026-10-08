@@ -144,6 +144,16 @@ TABLES = (
     "CREATE TABLE account_lockers (id INT UNSIGNED,racewar TINYINT NULL) ENGINE=InnoDB",
     "CREATE TABLE private_chests (id INT UNSIGNED,locker_id INT UNSIGNED,is_public TINYINT NULL) ENGINE=InnoDB",
     "CREATE TABLE locker_chests (id INT UNSIGNED,locker_id INT UNSIGNED,is_public TINYINT NULL) ENGINE=InnoDB",
+    "CREATE TABLE saved_items (id INT UNSIGNED,item_key VARCHAR(100) COLLATE utf8mb4_unicode_ci,room_vnum INT NULL,"
+    "container_id INT UNSIGNED NULL,obj_uid BIGINT UNSIGNED NULL,vnum INT,quantity SMALLINT UNSIGNED NULL,"
+    "weight INT NULL,extra_flags BIGINT UNSIGNED NULL,item_type TINYINT NULL,"
+    "value0 INT NULL,value1 INT NULL,value2 INT NULL,value3 INT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+    "CREATE TABLE saved_item_recovery_handoff (season_epoch BIGINT UNSIGNED,source_root_id INT UNSIGNED,"
+    "source_key VARCHAR(100) COLLATE utf8mb4_unicode_ci,source_uid BIGINT UNSIGNED,source_room_vnum INT,"
+    "source_row_count INT UNSIGNED,source_id_digest BINARY(32),destination_root_id INT UNSIGNED,"
+    "destination_key VARCHAR(100) COLLATE utf8mb4_unicode_ci,retired_at TIMESTAMP NULL,"
+    "source_payload_digest BINARY(32) NULL,destination_payload_digest BINARY(32) NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+    "CREATE TABLE sql_room_item_payload (item_uid BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE siege_items (id INT UNSIGNED,room_vnum INT,container_id INT UNSIGNED NULL,obj_uid BIGINT UNSIGNED NULL,"
     "vnum INT,quantity SMALLINT UNSIGNED NULL,weight INT NULL,extra_flags BIGINT UNSIGNED NULL,item_type TINYINT NULL,"
     "value0 INT NULL,value1 INT NULL,value2 INT NULL,value3 INT NULL) ENGINE=InnoDB",
@@ -186,7 +196,7 @@ TABLES = (
     "to_owner_context_id BIGINT,item_revision BIGINT UNSIGNED,from_owner_revision BIGINT,"
     "reason_type INT,from_owner_type INT NULL,from_owner_id BIGINT UNSIGNED NULL,"
     "from_owner_context_id BIGINT UNSIGNED NULL,from_equipment_slot INT DEFAULT 0,"
-    "to_equipment_slot INT DEFAULT 0) ENGINE=InnoDB",
+    "to_equipment_slot INT DEFAULT 0,reason_id BIGINT DEFAULT 0) ENGINE=InnoDB",
     "CREATE TABLE currency_ledger (operation_id BINARY(16)) ENGINE=InnoDB",
     "CREATE TABLE critical_outbox (operation_id BINARY(16)) ENGINE=InnoDB",
 )
@@ -1333,7 +1343,7 @@ try:
             assert report["checked"]["original_plans_verified"] == 0
             assert report["exception_counts"] == expected_exceptions, report
             for table in ("player_items", "player_pets", "player_pet_items", "corpses", "corpse_items",
-                          "lockers", "private_chests", "locker_items", "account_lockers", "locker_chests", "account_locker_items", "siege_items"):
+                          "lockers", "private_chests", "locker_items", "account_lockers", "locker_chests", "account_locker_items", "siege_items", "saved_items", "saved_item_recovery_handoff", "sql_room_item_payload"):
                 for alteration, restoration in (
                         (f"RENAME TABLE {table} TO {table}_hidden", f"RENAME TABLE {table}_hidden TO {table}"),
                         (f"ALTER TABLE {table} ENGINE=MyISAM", f"ALTER TABLE {table} ENGINE=InnoDB")):
@@ -2080,6 +2090,7 @@ try:
                     writer.execute("INSERT INTO corpses VALUES (5,7,9,1,10)")
                     writer.execute("INSERT INTO corpse_items VALUES (400,5,NULL,84,1,1,1,0,0,0,0,0)")
                     writer.execute("INSERT INTO siege_items VALUES (400,10,NULL,86,1,1,1,0,1,0,0,0,0)")
+                    writer.execute("INSERT INTO saved_items VALUES (400,'PRIVATE-ground',10,NULL,87,1,1,1,0,1,0,0,0,0)")
                     writer.execute("INSERT INTO lockers VALUES (5,0,7,NULL)")
                     writer.execute("INSERT INTO account_lockers VALUES (5,0)")
                     writer.execute("INSERT INTO private_chests VALUES (9,5,1)")
@@ -2122,6 +2133,10 @@ try:
             assert fenced["native"]["siege_items"] == []
             assert later_auctions["siege_items"] == [dict(item_id=400,room_vnum=10,parent_id=None,uid=86,vnum=1,quantity=1,weight=1,extra_flags=0,item_type=1,value0=0,value1=0,value2=0,value3=0)]
             assert later_auctions["siege_custody_coverage"] == dict(items=1)
+            assert fenced["native"]["saved_ground_items"] == []
+            assert later_auctions["saved_ground_items"] == [dict(item_id=400,key_group=400,room_vnum=10,parent_id=None,uid=87,vnum=1,
+                quantity=1,weight=1,extra_flags=0,item_type=1,value0=0,value1=0,value2=0,value3=0,modern_history=0)]
+            assert later_auctions["saved_ground_custody_coverage"] == dict(items=1,handoffs=0)
             locker_names = ("lockers", "private_chests", "locker_items", "account_lockers", "locker_chests", "account_locker_items")
             assert all(fenced["native"][name] == [] for name in locker_names)
             assert later_auctions["locker_custody_coverage"] == {name:1 for name in locker_names}
@@ -2146,7 +2161,7 @@ try:
                 cursor.execute("DELETE FROM player_pets")
                 cursor.execute("DELETE FROM corpse_items")
                 cursor.execute("DELETE FROM corpses")
-                cursor.execute("DELETE FROM siege_items")
+                cursor.execute("DELETE FROM siege_items"); cursor.execute("DELETE FROM saved_items")
                 for table in ("locker_items", "account_locker_items", "private_chests", "locker_chests", "lockers", "account_lockers"):
                     cursor.execute("DELETE FROM " + table)
             with tempfile.TemporaryDirectory(prefix="duris-sql-audit-") as directory:
