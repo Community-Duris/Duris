@@ -1948,3 +1948,33 @@ upgrades/original major-plan/combined candidate and R1–R8 remain open. Curator
 packet; primary-local notebook nonblocking, acknowledgement/application/adoption
 not claimed. Accounting inactive; wallet roots and declined inactive spell path
 preserved. Progress; full goal active.
+
+
+## Saved handoff payload diagnostics — 2026-10-08
+
+Owned branch/worktree remain codex/accounting-plan5; base75805240bc48001cd2dcaaa9e22fa7dbd6a5a2b0 -> fix
+a62edf27f7c0915ebdf943ad7847c5670d336a1a. Four owned reader/test files; no shared edits.
+Primary9fe5e2022c18d181dcace44a7388741659d39233, native833d3085815b396861ad18a77635412212381e4b,
+canonical64 tree7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2. Final composed tree
+212e6d80d497c174a291e5a25030d371f1b5239f; exact source/command/result/failure pins in
+[PLAN5_SAVED_HANDOFF_PAYLOAD_DIAGNOSTICS_2026-10-08.md](PLAN5_SAVED_HANDOFF_PAYLOAD_DIAGNOSTICS_2026-10-08.md).
+
+Real source-cost tamper was invisible to old selected fields; both-engine RED
+now identifies it. Complete bounded SQL payload/metadata/ID digests, raw season,
+orphan census and current unretired handoff diagnostics added. Existing full
+runtime/history authority remains unqualified. Six opt-in tests skipped, no
+release promotion. Final focused11 saved/164 observations,131 reconciler,55
+origins pass; whole exporter both engines passes36 missing/MyISAM controls each.
+Fresh original matrices each18 invocations/21 cases/39 real native processes/60
+read-only cuts pass zero skips. Final reader replays fresh120 cuts with exact
+live-packet equality, predecessor RED and eight SQL bounds/timezone refusals.
+All preparation/batch/auth failures preserved separately; no failed batch relabel.
+
+EvidenceD:/Dev/Tests/Duris/accounting-plan5/saved-handoff-20261008, raw seal SHA256
+7551c95736dd57bf2c2b570cbdf7da707d8e1cd897346fac5345b31d1985d253; post-push delivery records remote publication
+and all seven preserved branch tips. Primary operator-doc correction and exact
+private initialized callback/ZRO1/RSC2 consumer requests are narrow handoffs in
+the report; source remains unpublished/unrun. Primary-local notebook nonblocking;
+curator application/acknowledgement/adoption not claimed. Full Plan5/R1–R8,
+complete current/runtime/collector/origin/backup/retention/upgrade/combined release
+gates remain open. Accounting inactive; wallet roots/declined spell path stay.
