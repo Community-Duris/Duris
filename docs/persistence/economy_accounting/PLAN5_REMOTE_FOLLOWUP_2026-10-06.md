@@ -2410,3 +2410,34 @@ Plan5/R1–R8/release stay unqualified. New primary07c0e0398 is docs only; priva
 notebook input, primary-local notebook nonblocking; application/acknowledgement
 not claimed. No activation, autocorrection, production write, primary push,
 deployment or merge.
+
+
+## Previous-owner provenance — 2026-10-08
+
+Same local/remote codex/accounting-plan5; base6516e214dbb32b9f51fbf9257855fc0f6f918983.
+Result is the containing commit, verified in delivery/result.json; all seven
+prior tips remain ancestors. One production line preserves existing optional
+from_owner through its strict validator in all three provenance collections.
+Exact projections still deduplicate; conflicting known and known-versus-absent
+sources stay visible. Global findings/refusal, bounded output, private-field
+omission and input immutability remain. No shared interface/schema/native/recipe
+or mutation change is requested.
+
+Frozen primary0e13d0fb49e1ff6a31b9c06d6dfec414fb629d3a plus24 overlays:treeec654e84c20a2ca4cdcae38081ab97770096b9bb;
+native833d3085815b396861ad18a77635412212381e4b;migrations7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2/head64.
+Complete16 modules:392 loaded,374 PASS/18 original opt-in skips. Both whole SQL
+snapshot runners PASS; existing5 owner cuts/one partial-NULL refusal/30 CLI per
+engine now assert12 known/3 unknown/15 exact-dedup provenance results. Complete
+original native/canonical coin-restore test PASS/zero skips;3026 decoder cases,
+109 canonical cuts/90 refusals per engine. Original12 budgets and six new
+100000-event near32MiB provenance budgets PASS within30s/256MiB. Corrected RED
+47 assertion failures/zero errors; original RED preserved as well.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/provenance-owner-20261008;
+seal56f8c4f341914644f767f2ec7639995fdd3eb9d74f3a6d3a863cbdaba5c20714. Full report PLAN5_PREVIOUS_OWNER_PROVENANCE_2026-10-08.md is
+curator-ready input; primary-local notebook nonblocking, application/acknowledgement
+unclaimed. The prior complete backup module's one shared fixture-link failure,
+original native provider/UID-owner/baseline handoffs, private combined candidate,
+genuine producers/opening/player/route/fault/load acceptance and Plan5/R1–R8/
+release remain open. No activation, autocorrection, production write, primary
+push, deployment or merge.

@@ -1004,7 +1004,13 @@ def verify_previous_owner_history(owner, audit, snapshot):
                         if name == "provenance":command += ["--uid","84"]
                         result=subprocess.run(command,capture_output=True,text=True,timeout=30)
                         assert result.returncode == 1 and not result.stderr,result.stderr
-                        assert json.loads(result.stdout) == view(cut,Reconciler(limit).audit(cut),name,limit,uid=84)
+                        output = json.loads(result.stdout)
+                        assert output == view(cut,Reconciler(limit).audit(cut),name,limit,uid=84)
+                        if name == "provenance":
+                            assert output["count"] == 1 and len(output["rows"]) == min(limit, 1)
+                            for row in output["rows"]:
+                                assert ("from_owner" not in row if previous[0] is None else
+                                        row.get("from_owner") == list(previous))
                         assert path.read_bytes() == payload
             assert authority() == before
         with owner.cursor() as cursor:
@@ -1023,7 +1029,9 @@ def verify_previous_owner_history(owner, audit, snapshot):
                            "from_owner_context_id=NULL WHERE item_uid=84")
     assert authority() == initial and capture(audit,LINEAGE,EPOCH) == snapshot
     print("PREVIOUS_OWNER_HISTORY " + json.dumps(dict(accepted_cuts=5,owner_mismatch_cuts=3,
-        unknown_legacy_cut=1,partial_owner_refusals=1,cli_checks=30,source_unchanged=True,
+        unknown_legacy_cut=1,partial_owner_refusals=1,cli_checks=30,
+        provenance_known_owner_checks=12,provenance_unknown_owner_checks=3,
+        provenance_exact_dedup_checks=15,source_unchanged=True,
         select_only=True,modeled_partial_sql=True,producer_qualified=False,release_qualified=False),sort_keys=True),flush=True)
 
 

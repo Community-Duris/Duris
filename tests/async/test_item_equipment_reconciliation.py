@@ -49,6 +49,88 @@ def audit_history(rows, current, lineage):
     return auditor.counts
 
 
+class ProvenancePreviousOwnerTests(unittest.TestCase):
+    def test_all_history_collections_preserve_known_previous_owner_without_private_fields(self):
+        for collection in ('ownership_events', 'uid_history_events', 'unattributed_uid_events'):
+            for previous in ([7, 0, 0], [1, 7, 0], [12, 2**64-1, 2**64-1]):
+                with self.subTest(collection=collection, previous=previous):
+                    snapshot = baseline()
+                    destination = snapshot if collection == 'ownership_events' else snapshot['native']
+                    destination[collection] = [dict(history()[0], from_owner=previous,
+                                                   personal_alias='private-owner-alias')]
+                    original = copy.deepcopy(snapshot)
+                    result = view(snapshot, dict(exception_count=3), 'provenance', 100, uid=81)
+                    self.assertEqual(result['count'], 1)
+                    self.assertIn('from_owner', result['rows'][0])
+                    self.assertEqual(result['rows'][0]['from_owner'], previous)
+                    self.assertEqual(result['rows'][0]['owner'], [1, 7, 0])
+                    self.assertEqual(result['coverage']['exception_count'], 3)
+                    self.assertNotIn('private-', json.dumps(result))
+                    self.assertNotIn('alias', json.dumps(result))
+                    self.assertEqual(snapshot, original)
+
+    def test_exact_projections_deduplicate_but_conflicting_or_unknown_sources_stay_visible(self):
+        snapshot = baseline();event = history()[0]
+        snapshot['ownership_events'] = [copy.deepcopy(event)]
+        snapshot['native'].update(uid_history_events=[copy.deepcopy(event)],
+                                  unattributed_uid_events=[copy.deepcopy(event)])
+        self.assertEqual(view(snapshot, {}, 'provenance', 100, uid=81)['count'], 1)
+        snapshot['native']['uid_history_events'][0]['from_owner'] = [1, 8, 0]
+        del snapshot['native']['unattributed_uid_events'][0]['from_owner']
+        original = copy.deepcopy(snapshot)
+        for limit in (0, 1, 100):
+            result = view(snapshot, {}, 'provenance', limit, uid=81)
+            self.assertEqual(result['count'], 3)
+            self.assertEqual(result['truncated'], limit < 3)
+            self.assertEqual(len(result['rows']), min(limit, 3))
+            if limit == 100:
+                self.assertEqual([row.get('from_owner') for row in result['rows']],
+                                 [[1, 7, 0], [1, 8, 0], None])
+                self.assertNotIn('from_owner', result['rows'][2])
+            self.assertEqual(snapshot, original)
+
+    def test_malformed_present_previous_owner_refuses_the_view_without_private_values(self):
+        invalid = (None, [], [1, 7], [1, 7, 0, 0], 'private-owner-alias',
+                   [True, 7, 0], [1, 7.0, 0], [1, 7, True], [1, -1, 0],
+                   [13, 7, 0], [1, 2**64, 0], [1, 7, 2**64])
+        for collection in ('ownership_events', 'uid_history_events', 'unattributed_uid_events'):
+            for previous in invalid:
+                with self.subTest(collection=collection, previous=previous):
+                    snapshot = baseline()
+                    destination = snapshot if collection == 'ownership_events' else snapshot['native']
+                    destination[collection] = [dict(history()[0], from_owner=previous)]
+                    original = copy.deepcopy(snapshot)
+                    with self.assertRaisesRegex(SnapshotError, '^invalid item previous owner$'):
+                        view(snapshot, {}, 'provenance', 100, uid=81)
+                    self.assertEqual(snapshot, original)
+
+    def test_full_cli_preserves_conflicting_previous_owners_and_global_refusal_at_every_limit(self):
+        import subprocess
+        import tempfile
+        snapshot = baseline();rows = history();rows[0]['from_owner'] = [1, 8, 0]
+        snapshot['native'].update(items=[dict(position(slot=7), revision=5)], uid_history_events=rows)
+        snapshot['ownership_events'] = [dict(rows[0], from_owner=[1, 9, 0],
+                                            personal_alias='private-owner-alias')]
+        report = Reconciler().audit(snapshot)
+        self.assertGreater(report['exception_counts'].get('broken_item_owner_history', 0), 0)
+        with tempfile.TemporaryDirectory(prefix='provenance-owner-') as folder:
+            path = Path(folder)/'snapshot.json';payload=json.dumps(snapshot).encode();path.write_bytes(payload)
+            for limit in (0, 1, 100):
+                command=[sys.executable,str(ROOT/'scripts/reconcile_economy_accounting.py'),str(path),
+                         '--view','provenance','--uid','81','--limit',str(limit)]
+                result=subprocess.run(command,capture_output=True,text=True,timeout=30)
+                self.assertEqual((result.returncode,result.stderr),(1,''))
+                output=json.loads(result.stdout)
+                self.assertEqual(output['count'],3)
+                self.assertEqual(output['coverage']['exception_count'],report['exception_count'])
+                self.assertEqual(len(output['rows']),min(limit,3))
+                if limit == 100:
+                    self.assertEqual([row['from_owner'] for row in output['rows'] if row['revision']==4],
+                                     [[1,9,0],[1,8,0]])
+                self.assertNotIn('private-',result.stdout)
+                self.assertEqual(path.read_bytes(),payload)
+
+
 class ItemHistoryPositionTests(unittest.TestCase):
     def test_invalid_intermediate_positions_are_not_hidden_by_a_valid_final_row(self):
         changes = ({'root': 99}, {'parent': 81}, {'owner': [1, 0, 0]},

@@ -3744,6 +3744,7 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
                  "event_index": row["event_index"], "revision": row["revision"],
                  "root": row["root"], "parent": row["parent"], "owner": row["owner"],
                  "state": row["state"], "action": row["action"],
+                 **({"from_owner": item_previous_owner(row)} if "from_owner" in row else {}),
                  **{field: item_equipment_slot(row, field)
                     for field in ("from_equipment_slot", "to_equipment_slot")
                     if field in row and valid_item_equipment_slot(row[field])}}

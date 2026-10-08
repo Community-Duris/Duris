@@ -10,8 +10,12 @@ coverage gates are independently qualified.
 The bounded `--view provenance --uid <UID>` query combines selected-epoch
 ownership events, captured lineage UID history, and captured unattributed UID
 events. It orders by revision, operation ID and event index, counts identical
-projections once, and retains conflicting positions for investigation. Its
-`coverage` object names the lineage and selected epoch, carries the input's
+projections once, and retains conflicting positions for investigation. A captured
+`from_owner` is preserved as the existing nonpersonal `[kind,id,context]` tuple;
+absent historical evidence stays omitted. Different previous owners, including
+known versus absent evidence, remain distinct projections. Malformed present
+previous-owner tuples refuse the read through the existing strict validator.
+Its `coverage` object names the lineage and selected epoch, carries the input's
 `complete` and `quiescent` flags, and says whether the two history collections
 are available. These flags describe captured evidence, not a release
 certification. SQL lineage history starts after each retained opening revision;
