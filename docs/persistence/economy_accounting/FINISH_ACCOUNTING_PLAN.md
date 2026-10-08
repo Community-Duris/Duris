@@ -1,5 +1,15 @@
 # Finish accounting implementation plan
 
+## Watched-item capture sidework reviewed - 2026-10-08
+
+[Independent reader review](quest-prep/WATCHED_UID_CAPTURE_REVIEW_2026-10-08.md)
+records exact optional code/handoff and coordinator-executed focused results.
+Quest prep next prepares a separate native NPC cost assertion and rejection
+controls; architecture's currency acceptance blueprint continues. Owned-pack
+availability does not establish import or native qualification. Same-cut mapping,
+physical publication, authentic setup and existing primary/Plan5 requirements
+remain; no shared authority, owner implementation or release gate is changed.
+
 ## Reviewed preparation handoffs and current sidework - 2026-10-08
 
 [Independent preparation review](domain-separation/PREPARATION_BUNDLES_REVIEW_2026-10-08.md)

@@ -67,6 +67,25 @@ meaningful unblock evidence or needed user resumption. Pause the Goal only when
 the user requests it. This does not promise uninterrupted execution in the
 absence of available work or override platform Goal-state controls.
 
+## Watched-item capture reviewed; next assertion slice - 2026-10-08
+
+[Independent watched-UID review](../quest-prep/WATCHED_UID_CAPTURE_REVIEW_2026-10-08.md)
+passes codecf0bb0a977e6995946c235b70feaaa604dc3f689 and handoff807f5b232,
+with coordinator-executed 19 reader tests, 17 unchanged assertion tests and 14
+preimage compatibility cases. This is incremental owned-pack unit evidence,
+not SQL/native acceptance or primary adoption. Exact dependencies remain explicit.
+
+Quest prep next owns only a new native NPC cost assertion module, focused test
+and handoff, with paths and controls in that review. It checks QP02 original
+native cash/economic agreement without a second player debit and preserves all
+existing oracles. Native mapping/publication authentication and authentic paid
+setup remain unavailable; no owner or authority is invented. Architecture's
+currency acceptance blueprint remains active in its existing isolated worktree.
+Primary84a435c3d publishes only documentation of private warm/SHOP progress and
+blockers; public native source/migrations remain unchanged. No shared owner,
+Plan5 audit or primary rewrite is assigned. Actual native Goals remain BLOCKED;
+heartbeat ACTIVE and broader primary finish line unchanged.
+
 ## Reviewed broader preparation and next deliveries - 2026-10-08
 
 This current queue supersedes the completed two-document assignments below.
