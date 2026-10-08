@@ -3124,6 +3124,82 @@ class ReconciliationTests(unittest.TestCase):
         snapshot["native"]["items"][0].update(state="tombstone", owner=[8, 0, 0])
         self.assertIn("duplicate_item_retirement", self.codes(snapshot))
 
+    def test_rejected_lineage_history_is_not_reused_by_audit_or_provenance(self):
+        variants = [(field, value) for field in ("uid", "operation_id", "event_index")
+                    for value in ([], {})] + [("from_owner", "private-history"), ("from_owner", [1, 7])]
+        histories = []
+        for field, value in variants:
+            row = copy.deepcopy(clean_snapshot()["ownership_events"][0])
+            row[field] = value
+            histories.append([None, row])
+        histories.append([{}] * MAX_ROWS + [{"uid": []}])
+        for index, history in enumerate(histories):
+            snapshot = clean_snapshot()
+            snapshot["native"]["uid_history_events"] = history
+            before = json.dumps(snapshot, sort_keys=True)
+            for limit in (0, 1, 100):
+                with self.subTest(case=index, limit=limit):
+                    auditor = Reconciler(limit)
+                    report = auditor.audit(snapshot)
+                    self.assertEqual(report["exception_counts"], {"missing_lineage_uid_history": 1})
+                    self.assertEqual(auditor.original_plans_verified, 1)
+                    output = view(snapshot, report, "provenance", limit, uid=81)
+                    self.assertEqual(output["coverage"]["exception_count"], 1)
+                    self.assertEqual((output["count"], len(output["rows"])), (1, min(1, limit)))
+                    self.assertNotIn("private-history", json.dumps(output))
+                    self.assertEqual(json.dumps(snapshot, sort_keys=True), before)
+
+    def test_rejected_lineage_history_cannot_suppress_native_or_plan_checks(self):
+        snapshots = [clean_snapshot(), item_unchanged_witness_snapshot("history", "live")]
+        snapshots[0]["native"]["items"][0]["owner"] = [1, 9, 0]
+        snapshots[0]["native"]["uid_history_events"] = [None, {"uid": 81}]
+        snapshots[1]["native"]["uid_history_events"][0]["state"] = "quarantined"
+        snapshots[1]["native"]["uid_history_events"].append(None)
+        for index, snapshot in enumerate(snapshots):
+            before = copy.deepcopy(snapshot)
+            with self.subTest(case=index):
+                auditor = Reconciler()
+                report = auditor.audit(snapshot)
+                self.assertEqual(report["exception_counts"], {"missing_lineage_uid_history": 1, "stale_native_item": 1})
+                self.assertEqual(auditor.original_plans_verified, 1)
+                self.assertEqual(snapshot, before)
+
+    def test_rejected_lineage_history_cli_keeps_global_finding(self):
+        variants = (("uid", []), ("operation_id", {}), ("event_index", []),
+                    ("from_owner", "private-history"), (None, None))
+        for field, value in variants:
+            snapshot = clean_snapshot()
+            row = copy.deepcopy(snapshot["ownership_events"][0])
+            if field is not None:
+                row[field] = value
+            snapshot["native"]["uid_history_events"] = ([None, row] if field is not None
+                                                       else [{}] * MAX_ROWS + [{"uid": []}])
+            with tempfile.TemporaryDirectory(prefix="rejected-lineage-history-") as folder:
+                path = Path(folder) / "snapshot.json"
+                payload = json.dumps(snapshot, sort_keys=True).encode()
+                path.write_bytes(payload)
+                for name in ("exceptions", "holdings", "provenance", "operation", "supply", "prices", "routes"):
+                    for limit in (0, 1, 100):
+                        command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                   str(path), "--view", name, "--limit", str(limit)]
+                        if name == "provenance":
+                            command += ["--uid", "81"]
+                        elif name == "operation":
+                            command += ["--operation-id", OP]
+                        result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                        with self.subTest(field=field, name=name, limit=limit):
+                            self.assertEqual(result.returncode, 1)
+                            self.assertEqual(result.stderr, "")
+                            output = json.loads(result.stdout)
+                            if name == "exceptions":
+                                self.assertEqual(output["exception_counts"], {"missing_lineage_uid_history": 1})
+                            else:
+                                self.assertEqual(output["coverage"]["exception_count"], 1)
+                            self.assertLessEqual(len(output.get("rows", output.get("exceptions", []))), limit)
+                            self.assertNotIn("private-history", result.stdout + result.stderr)
+                            self.assertEqual(path.read_bytes(), payload)
+                            self.assertEqual(json.dumps(snapshot, sort_keys=True).encode(), payload)
+
     def test_uid_history_invalid_envelopes_preserve_the_global_finding(self):
         for history in (1, True, "private-history", {"invalid": "private-history"}, [None], ["private-history"]):
             snapshot = clean_snapshot()

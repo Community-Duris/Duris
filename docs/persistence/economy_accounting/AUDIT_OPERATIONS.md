@@ -1492,3 +1492,12 @@ view (CLI exit1), without indexing invalid collections or exposing their content
 Optional absent history outside SQL-partial capture remains optional. These
 checks are read-only and perform no correction. See [the defect, exact source,
 native/SQL results and curator handoff](PLAN5_UID_HISTORY_ENVELOPES_2026-10-08.md).
+
+
+A lineage-history collection rejected for its shape or row bound contributes no
+UID exemptions, selected/history comparisons, original-plan preimages or
+provenance rows. The existing `missing_lineage_uid_history` finding remains
+global. Native UID checks still run, including stale-owner evidence; rejected
+row content cannot suppress them or reach previous-owner decoding. Valid
+history retains its existing checks, and captured inputs remain unchanged. See
+[the consumer defect, exact qualification and remaining release gates](PLAN5_REJECTED_LINEAGE_HISTORY_2026-10-08.md).

@@ -2712,3 +2712,27 @@ focused/codec02 inputs unchanged. Production reader unchanged since source02. Sh
 provider/UID-owner/original-backup, genuine producers/opening/player/routes/
 recovery/fault/load/ACK/private-combined/activation/Plan5/R1-R8/release remain open.
 No production write, autocorrection, activation, deployment, merge or primary push.
+
+
+## 2026-10-08: rejected lineage history consumers
+
+Same sole local/remote `codex/accounting-plan5`; owned base
+f4ee8a62d040a19baa887a8883394c872ef1da67. Result is this containing commit; exact
+result/remote/clean/ancestry/rehash receipt: `D:/Dev/Tests/Duris/accounting-plan5/lineage-history-rejection-20261008/delivery/result.json`.
+Rejected mixed/oversized history was reused by UID exemptions, overlap lookup,
+original-plan preimages and provenance decoding. Seven API TypeErrors and two
+previous-owner provenance refusals established; focused proof also shows loss of
+native-stale finding and reuse of rejected plan evidence. One private shape
+predicate gates the existing consumers; no new schema/interface request.
+Three methods red 113 failures/21 errors, final three PASS; sixteen full modules
+422 loaded/404 PASS/18 original skips; both complete disposable SQL runners pass,
+extended nine-case scenario/189 CLI per engine/47 tables unchanged. Original
+canonical method freshly passes final02/both current64 engines (3026/1054,
+109 cuts/90 refusals/58 full-entry per engine); two unchanged capsules/four
+native roundtrips per model stage, 66 CLI per stage. Final composed tree 2553beb0f7a5146ca48dab60155ffc5d89e3d7ab,
+primary 4d1e5d938aecd884d1d7beade30ec99d2692205a; raw seal ef18f70be50a11f9263246394723ec833c9e9034d0cc576db35bb676bf09db92.
+Report PLAN5_REJECTED_LINEAGE_HISTORY_2026-10-08.md is curator-ready notebook input;
+primary-local notebook nonblocking, application/import/ack unclaimed. Shared
+provider/UID-owner/original-backup, genuine producer/opening/player/route/recovery/
+fault/load/ACK/private-combined/activation/Plan5/R1-R8/release gates remain open.
+No production write, autocorrection, activation, deployment, merge or primary push.

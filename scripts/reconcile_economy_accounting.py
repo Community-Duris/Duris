@@ -83,6 +83,11 @@ class SnapshotError(ValueError):
     pass
 
 
+def _valid_uid_history_envelope(value: object) -> bool:
+    return (isinstance(value, list) and len(value) <= MAX_ROWS and
+            all(isinstance(row, dict) for row in value))
+
+
 def same_projection(actual, expected) -> bool:
     # Expected values come from the bounded native decoder. Preserve their
     # types and ranges without coercing floats or booleans into integers.
@@ -924,26 +929,24 @@ class Reconciler:
         self.audit_mapping_retirements(lineage, epoch, snapshot.get("backend"), operations,
                                        by_account, origins, native, native_holdings)
         history = native.get("uid_history_events")
+        if not _valid_uid_history_envelope(history):
+            history = []
         self.audit_items(ownership, references, item_origins, native_items,
-                         {row.get("uid") for row in (history if isinstance(history, list) else [])
-                          if isinstance(row, dict)})
-        if isinstance(history, list):
-            for event in history:
-                if not isinstance(event, dict):
-                    continue
-                selected = ownership.get((event.get("operation_id"), event.get("event_index")))
-                if selected is None:
-                    continue
-                # Both captures name the same native ledger row. Unknown historical
-                # fields stay unknown; recorded positions must not contradict.
-                fields = ("uid", "before_revision", "revision", "root", "parent", "owner", "state", "action") + tuple(
-                    field for field in ("from_owner", "from_equipment_slot", "to_equipment_slot")
-                    if field in selected and field in event)
-                if not same_projection([selected.get(field) for field in fields],
-                                       [event.get(field) for field in fields]):
-                    self.emit("conflicting_uid_history_projection", operation_id=event["operation_id"],
-                              event_index=event["event_index"], uid=selected.get("uid"))
-        self.audit_original_plans(tables, by_op, ownership, native.get("uid_history_events"))
+                         {row.get("uid") for row in history})
+        for event in history:
+            selected = ownership.get((event.get("operation_id"), event.get("event_index")))
+            if selected is None:
+                continue
+            # Both captures name the same native ledger row. Unknown historical
+            # fields stay unknown; recorded positions must not contradict.
+            fields = ("uid", "before_revision", "revision", "root", "parent", "owner", "state", "action") + tuple(
+                field for field in ("from_owner", "from_equipment_slot", "to_equipment_slot")
+                if field in selected and field in event)
+            if not same_projection([selected.get(field) for field in fields],
+                                   [event.get(field) for field in fields]):
+                self.emit("conflicting_uid_history_projection", operation_id=event["operation_id"],
+                          event_index=event["event_index"], uid=selected.get("uid"))
+        self.audit_original_plans(tables, by_op, ownership, history)
         return {"exception_count": sum(self.counts.values()), "exception_counts": dict(sorted(self.counts.items())),
                 "exceptions": self.exceptions, "truncated": sum(self.counts.values()) > len(self.exceptions),
                 "checked": {name: len(tables[name]) for name in TABLES} |
@@ -1990,7 +1993,7 @@ class Reconciler:
         preimages = defaultdict(list)
         for rows, slot_field in ((tables["item_origins"], "equipment_slot"),
                                  (tables["ownership_events"], "to_equipment_slot"),
-                                 (history if isinstance(history, list) else (), "to_equipment_slot")):
+                                 (history if _valid_uid_history_envelope(history) else (), "to_equipment_slot")):
             for row in rows:
                 if (not isinstance(row, dict) or
                         not valid_item_custody_position(row, row.get("origin") == "creation",
@@ -3109,8 +3112,7 @@ class Reconciler:
         events = native.get("uid_history_events")
         if events is None and backend != "sql_partial":
             return
-        if (not isinstance(events, list) or len(events) > MAX_ROWS or
-                any(not isinstance(row, dict) for row in events)):
+        if not _valid_uid_history_envelope(events):
             self.emit("missing_lineage_uid_history", scope="snapshot")
             return
         coverage = native.get("uid_event_coverage")
@@ -3808,8 +3810,8 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
                 for collection in (snapshot["ownership_events"],
                                    snapshot["native"].get("uid_history_events"),
                                    snapshot["native"].get("unattributed_uid_events"))
-                if isinstance(collection, list) for row in collection
-                if isinstance(row, dict) and type(row.get("uid")) is int and row["uid"] == uid
+                if _valid_uid_history_envelope(collection) for row in collection
+                if type(row.get("uid")) is int and row["uid"] == uid
                 and isinstance(row.get("operation_id"), str)
                 and HEX_ID.fullmatch(row["operation_id"]) and type(row.get("event_index")) is int
                 and type(row.get("revision")) is int and type(row.get("root")) is int

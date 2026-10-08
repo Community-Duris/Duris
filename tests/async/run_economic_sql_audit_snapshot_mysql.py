@@ -1332,6 +1332,15 @@ def verify_uid_history_envelopes(owner, snapshot):
              ("lineage-row", "uid_history_events", [None], False, "missing_lineage_uid_history"),
              ("unattributed-without-coverage", None, None, True, "missing_unattributed_uid_history"),
              ("unattributed-malformed", "unattributed_uid_events", [None], True, None))
+    retained = next(row for row in snapshot["native"]["uid_history_events"] if row["uid"] == 86)
+    for field, value in (("uid", []), ("operation_id", {}), ("event_index", []),
+                         ("from_owner", "private-history")):
+        rejected = copy.deepcopy(retained)
+        rejected[field] = value
+        cases += (("lineage-mixed-" + field, "uid_history_events", [None, rejected], False,
+                   "missing_lineage_uid_history"),)
+    cases += (("lineage-oversized", "uid_history_events", [{}] * 100_000 + [{"uid": []}],
+               False, "missing_lineage_uid_history"),)
     for label, field, value, remove_coverage, finding in cases:
         cut = copy.deepcopy(snapshot)
         if field is not None:
@@ -1387,6 +1396,7 @@ def verify_uid_history_envelopes(owner, snapshot):
                         assert value["coverage"]["exception_count"] == sum(expected.values())
                     assert len(value.get("rows", value.get("exceptions", []))) <= limit
                 assert path.read_bytes() == payload
+                assert "private-history" not in result.stdout + result.stderr
                 commands.append(dict(command=command, exit=result.returncode,
                                      stdout=result.stdout, stderr=result.stderr))
         assert json.dumps(cut, sort_keys=True).encode() == payload
