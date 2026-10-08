@@ -1,5 +1,20 @@
 # Finish accounting implementation plan
 
+## Smith flat save and original O cursor source joined - 2026-10-08
+
+[Source integration](SMITH_FLAT_SAVE_AND_ORIGINAL_O_CURSOR_SOURCE_INTEGRATION_2026-10-08.md)
+records private candidate `34aa77b5d3dd18c0ac27a47bc4609ba6388279583d2ab71938295b879b680eb1`.
+Queued Smith save and genuine full persisted flat image are separate; the original
+O caller now retains actual quota/incumbent/TAKE and authentic lifetime choices.
+Paired independent source review passed. Known-pure continuation is bounded;
+uncertain and pre-eligibility refusals remain held. Active O and inactive/mobile-P
+bodies remain unchanged. All 209 selected bodies authenticate; inventory is not
+completion. The broader candidate remains unpromoted; maintained code milestone
+4e26a5694 retains its separate scope. Smith flat readiness and room-P caller work
+continue in parallel. Compiler/native/gameplay/persistence/recovery execution stays
+deferred until major-plan readiness. Full Plans 2-4/combined Plan 5/R1-R8 and release
+remain incomplete; original Plan 1 acceptance retains its recorded scope.
+
 ## Maintained Smith save-profile code milestone - 2026-10-08
 
 [Source milestone](SMITH_MAINTAINED_SAVE_PROFILE_2026-10-08.md) applies the separate
