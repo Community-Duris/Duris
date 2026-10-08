@@ -1735,3 +1735,24 @@ integration and keep their original source/evidence scopes. Curator-ready packet
 only; primary-local notebook upkeep is nonblocking and no acknowledgement is
 claimed. Templates/coin literals, full census/history, native V2 install, genuine
 journeys, retention/erasure, upgrades and combined Plans/R1-R8 release remain open.
+
+
+## SQL auction root custody reader — 2026-10-07
+
+Owned code `d01e41fb109c0f576eb5ff5ef61cfa4b927e5af6` on `codex/accounting-plan5`, base
+`dab1a0c6b3ed40294f8138c6436c438b39755c97`.
+[Curator packet](PLAN5_SQL_AUCTION_ROOT_CUSTODY_2026-10-07.md) records the four
+owned files, exact primary6d2bd/canonical64 composition `9a0e9e3db7a5fb649d846fe507cfc12d2bd2dfc2`,
+three predecessor omission controls, 14 genuine native SELECT-only capture
+comparisons (both engines), new7 PASS0skips, original134/58 with six named opt-in
+skips, and the complete original SQL exporter fixture PASS on both engines.
+The final whole budget is 125.952891/900 seconds; all native source
+bodies/modes/links and read inventories remain unchanged. Three failed attempts
+remain retained; exact expectations now include the newly retained vnum.
+Evidence: `D:/Dev/Tests/Duris/accounting-plan5/sql-auction-20261007`; raw cuts and
+native binary: `D:/Dev/Builds/Duris/accounting-plan5-sql-auction-20261007/green04/bin/tests/sql-auction-custody`.
+The packet gives an exact, proposed prototype/clock authority handoff for the
+remaining serialized-template/coin gap. No shared files or activation change.
+Notebook application/acknowledgement and primary adoption are not claimed or
+blocking. Full physical/origin/EAB2/retention/upgrade/player/fault/load and combined
+release gates remain open; no full Plan5/R1–R8 completion is claimed.
