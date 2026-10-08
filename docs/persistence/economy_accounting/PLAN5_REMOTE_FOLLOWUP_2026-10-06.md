@@ -1871,3 +1871,30 @@ access/gameplay and runtime account authority remain unqualified. Exact report
 contains fields/invariants/consumers/tests handoffs and all remaining gates.
 No shared implementation changed. Notebook nonblocking; application/adoption not
 claimed. No activation, production change or auto-correction. Progress; goal active.
+
+
+## SQL siege retained physical correspondence — 2026-10-07
+
+Curator-ready [exact qualification packet](PLAN5_SQL_SIEGE_CUSTODY_2026-10-07.md); same local/remote
+`codex/accounting-plan5`, base `84d7dee041b6b6f4ddabd0c45dea6fa88453622b`, code `59e139b585267d82ccba668c14464a5e99baf5a5`; publication result in
+external delivery/result.json. All seven earlier tips and prior follow-ups remain.
+
+The independent reader now captures every bounded raw siege row, diagnoses
+unknown/corrupt UID/owner/ancestry/literal/coin correspondence and competing
+physical UIDs, and explicitly keeps retained runtime authority unqualified.
+No room-wide reverse claim or invented native siege loader limit. Eight methods
+pass without skips;64 canonical SQL/native cuts across both engines. Actual public
+native siege identity/current/coin bytes corroborate the independent reader;
+full native physical literals/hydration remain open. Prior locker/corpse/player/
+shop pass8/8/8/7 without skips,66/68/46/38 cuts. Reconciler/origin131/55 executed,
+six existing skips. Full original SQL runners and six authenticated predecessor
+false-clears pass. Complete batch379.991161807s/900,
+1751commands;12 actual private DBs stop normally.
+
+Primary `996ce9ebbb7863eb6b149b254ba111a6c5544e9a`, composition `666e92f4e707717e2dd7c83e0110eb114f0a336f`,
+native `833d3085815b396861ad18a77635412212381e4b`, migrations `7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2`.
+Evidence `D:/Dev/Tests/Duris/accounting-plan5/sql-siege-20261007/`.
+Exact report records owned blobs, commands, remaining gates and narrow central
+registration/native parity/runtime authority requests. No shared implementation
+changed. Notebook nonblocking; application/adoption not claimed. No activation,
+production change or autocorrection. Progress; full goal active.
