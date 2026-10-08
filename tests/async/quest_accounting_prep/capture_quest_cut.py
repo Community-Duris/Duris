@@ -46,7 +46,24 @@ def placeholders(values):
     return ",".join(["%s"] * len(values))
 
 
-def capture(connection, case_id, pid, mobile_ids, operations, meta, *, legacy_no_epoch=False):
+def watched_item_uids(values):
+    """Validate a bounded explicit selection; it is not a forest/authority proof."""
+    uids = set()
+    for uid in values:
+        # The native allocator/runtime reserve zero and UINT64_MAX.
+        if type(uid) is not int or not 0 < uid < 2**64 - 1:
+            raise ValueError("watched item UID must be an unsigned native UID (1 through UINT64_MAX-1)")
+        if uid in uids:
+            raise ValueError("duplicate watched item UID")
+        if len(uids) >= MAX_ROWS:
+            raise ValueError("watched item UID selection exceeds quest cut row limit")
+        uids.add(uid)
+    return sorted(uids)
+
+
+def capture(connection, case_id, pid, mobile_ids, operations, meta, *, legacy_no_epoch=False,
+            item_uids=()):
+    item_uids = watched_item_uids(item_uids)
     if pid <= 0 or any(value <= 0 for value in mobile_ids):
         raise ValueError("actual positive player/mobile identity required")
     terms = blocks(case_id)
@@ -107,11 +124,19 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta, *, legacy_no
         if mobile_ids:
             item_where += ["owner_type=12 AND owner_id IN (" + placeholders(mobile_ids) + ")"]
             item_params += mobile_ids
+        if item_uids:
+            item_where += ["item_uid IN (" + placeholders(item_uids) + ")"]
+            item_params += item_uids
         result["items"] = selected(cursor,
             "SELECT item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,owner_context_id,"
             "item_revision,vnum,state,equipment_slot FROM item_current_owner WHERE " +
             " OR ".join("(" + term + ")" for term in item_where) + " ORDER BY item_uid", tuple(item_params))
         uids = [entry["item_uid"] for entry in result["items"]]
+        if item_uids:
+            result["meta"]["watched_item_uids"] = item_uids
+            result["meta"]["missing_item_uids"] = sorted(set(item_uids) - set(uids))
+            # Retain history even when a requested current row is missing.
+            uids = sorted(set(uids) | set(item_uids))
         if uids:
             result["ownership_events"] = selected(cursor,
                 "SELECT operation_id,event_index,item_uid,root_item_uid,parent_item_uid,"
@@ -235,6 +260,8 @@ def main():
     parser.add_argument("--database", required=True)
     parser.add_argument("--pid", type=int, required=True)
     parser.add_argument("--mobile-instance", type=int, nargs="*", default=[])
+    parser.add_argument("--item-uid", type=int, nargs="+", action="extend", default=[],
+                        help="explicit observed item UIDs across cuts; bounded, distinct, no forest/authority proof")
     parser.add_argument("--operation", nargs="*", default=[])
     parser.add_argument("--lineage")
     parser.add_argument("--epoch")
@@ -246,6 +273,7 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
+        item_uids = watched_item_uids(args.item_uid)
         if os.environ.get("TEST_DB_DISPOSABLE") != "1" or os.environ.get("TEST_DB_HOST") != "127.0.0.1":
             raise ValueError("explicit loopback disposable authority required")
         if not re.fullmatch(r"(?:quest_journey_test_[0-9a-f]{12}|(?:quest_accounting|native_quest_publication)_test_[0-9a-f]{16})", args.database):
@@ -276,7 +304,7 @@ def main():
                 connect_timeout=5, read_timeout=10, write_timeout=5)
             try:
                 cut = capture(connection, args.case, args.pid, args.mobile_instance, args.operation, meta,
-                              legacy_no_epoch=args.legacy_no_epoch)
+                              legacy_no_epoch=args.legacy_no_epoch, item_uids=item_uids)
             finally:
                 connection.close()
         except pymysql.MySQLError as error:
