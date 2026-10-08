@@ -1,5 +1,48 @@
 # Persisted provider union: primary source handoff - 2026-10-07
 
+## Reviewed native flat source, frozen submission and prospective cash role - 2026-10-08
+
+Private `tmp/lifecycle-flat-shop-retained-submission-candidate-primary-20261008`
+integrates the genuine once-only native provider, full command freezer/submission
+and explicit prospective NBC4/NMB4 cash-role capture/codec. Candidate SHA256
+`be8942cdd7bebaa240f11ddcbee9317416107595c536866f5125a5008e79992c`: 134 production files, 23 unchanged original fixtures,
+five unchanged schema/manifest inputs and 72 selected C providers registered once.
+Four new object lines preserve all original Makefile rules and flags. Actual counts
+are derived from selected files; the parent's inherited126 metadata was stale
+(its actual source count128 was already recorded correctly). Frozen parent unchanged.
+
+Independent source review found and corrected four concrete defects: older player
+domain journals must drain before each CURRENT cut; active foreign UID/root/parent
+cache links must be censused; genuine keeper/destination transforms must exist in
+the supported client-free profile; newly retained decoded manifest capacities must
+be charged before submission and preserved across exact retries. The provider uses original root locks, complete
+player/pet/keeper literals, mapping/money/custody and whole-catalog BEFORE/AFTER;
+one sealed attempt and immutable outcome/readback preserve retries. Pure helpers'
+exact original bodies now serve both builds without exposing SQL observers.
+
+The genuine READY flat source freezes one full v8 command. Native-stage, command
+and decoded manifest/encoded journal retention charge the unchanged shared32MiB budget. Exact
+submission retries retain command bytes, callbacks, original ACK/body and early
+execution hold; synchronous refusal cannot release an already attempted source.
+No coordinator call occurs under pipeline/leaf locks. Original production/admission,
+publication/ACK, inactive and declined spell gates remain unchanged and closed.
+
+The actual configured keeper selector conflates absence and ambiguity. NBC4
+distinguishes exact zero/one matches and refuses ambiguity; NMB4 binds that role to
+the complete unchanged NBC3/image/stock evidence and exact full intent/key envelope.
+Shared keeper uses its actual shop+1 key, including shop0, without an invented CAS
+revision or wallet. Historical NBC1/2/3, commands1-3 and nonzero-wallet MBR1 stay.
+Values are not factory, source admission, mapping or publication authority.
+
+Changed-line formatting, predecessor/dependency preservation and independent source
+review pass. Compiler/native/gameplay/SQL/persistence/recovery remain UNEXECUTED
+under user major-plan deferral. This checkpoint publishes documentation only;
+private source is unqualified. Full flat driver/publication/ACK/terminal disposition/
+cold recovery, role-aware accounting/results/atomic native-image+SHOP participants,
+birth factory/admission and room O/P integration, complete opening correspondence,
+shared keeper historical transition, activation, Plan5 and R1-R8 qualification
+remain. Original Plan1 independent acceptance retains its scope; no full gate closes.
+
 ## Reviewed original flat attempt and equipped-pet compatibility - 2026-10-08
 
 Private `tmp/lifecycle-flat-shop-original-attempt-candidate-primary-20261008`
