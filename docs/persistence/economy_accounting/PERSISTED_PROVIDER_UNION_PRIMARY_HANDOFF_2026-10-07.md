@@ -67,6 +67,46 @@ No unqualified native production source or migration is imported.
 
 ## Remaining required consumers and qualification
 
+### Fresh activation consumer source successor
+
+The private lifecycle successor now consumes the complete persisted union as a
+fresh-install/fresh-activation prerequisite. Its final formatted source is
+`f8a658bc1c3c56fd9a8736cb79a9294e1044d25aca1921fae3dd949124cb16b9`
+in `tmp/lifecycle-legacy-consumer-primary-20261007`. Independent source review
+accepted its preformat `dc971524`; touched-range formatting passed and preserved
+significant source content. This is implementation preparation, not execution.
+
+The owning installer reads the prerequisite in one maintenance-fenced RR cut
+and rolls back before its original installation writes. READ WRITE permits the
+original holdings reader's shared locks; the cut performs only reads. Existing
+source2 baseline/hash/callback contracts, public READ ONLY capture, boot/recovery
+and exact committed retry paths remain. Uncapped season/current-slot/collector
+findings, unmatched custody and multiple counterparts refuse. Legacy auction
+witness counting is linear in slots plus captured witnesses.
+
+The reviewed legacy auction provider binds genuine successful v1 listing
+receipts to current singleton custody and the original ownership ledger. It
+retains opaque content and original provenance as unknown. Native VNUM zero
+remains allowed. All declared parent slots and ordinals must be present,
+including historical rows; malformed or foreign topology remains incomplete.
+The original money fixture now creates its pre-existing auction7001 through the
+genuine zero-fee v1 producer, retaining the original ident4/UID7 listing and
+original monetary balances/assertions. It does not manufacture decoded content.
+
+The original focused lifecycle recipe has a reviewed schema64/111-source
+successor that retains all42 original providers, flags, budgets and assertions.
+Sparse source composition contains42 production overlays and preserves current
+maintained fallbacks. Original union, auction, room and collector fixture
+successors are reconciled through additive includes/calls; original control
+bodies remain. Compilation, both-engine SQL and native runtime remain unrun.
+
+R6 still lacks the complete live/reset/world counterpart. Separate source work
+is underway in the existing runtime cache/world owner and native-mobile SQL
+participant. Fresh census must enumerate all current actors, objects and native
+rows; boot-recovery selection and historical origin authentication cannot stand
+in for that evidence. A maintenance fence alone does not prove world loading.
+Those consumers and their original full-world controls remain required.
+
 Actual maintained lifecycle install still uses source2-only capture/normalization
 at economic_sql_accounting_lifecycle_transaction.c1771, while current holdings/
 activate_verified use source2-only capture at1641/1969. The accepted union is

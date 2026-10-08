@@ -1,5 +1,14 @@
 # Finish accounting implementation plan
 
+## Fresh activation consumer source reviewed - 2026-10-07
+
+[Source handoff](PERSISTED_PROVIDER_UNION_PRIMARY_HANDOFF_2026-10-07.md) records
+the private persisted-union consumer, owned RR read cut, genuine legacy auction
+identity witness and original money-fixture repair. Source review and touched
+formatting pass; original test controls and recipe remain. Complete mobile/live
+world census and original native/both-engine qualification remain required.
+These private source slices do not close R6, activation or release gates.
+
 ## Restore operator provider closure approved - 2026-10-07
 
 [Independent boundary review](domain-separation/AUDITOR_PROVIDER_BOUNDARY_REVIEW_2026-10-07.md)
