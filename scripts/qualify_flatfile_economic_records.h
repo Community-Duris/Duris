@@ -1,6 +1,8 @@
 // Independent physical retained-operation scan. No mutation/recovery codecs.
 #ifndef DURIS_QUALIFY_FLATFILE_ECONOMIC_RECORDS_H
 #define DURIS_QUALIFY_FLATFILE_ECONOMIC_RECORDS_H
+
+#include <functional>
 #include "qualify_flatfile_economic_baseline.h"
 #include "qualify_flatfile_economic_lifecycle.h"
 #include <bit>
@@ -400,6 +402,14 @@ struct baseline_history_page
 	root_page page;
 	std::optional<baseline_history_root> baseline;
 };
+// Borrowed authenticated wire views; valid only during the callback. Observers
+// must withhold their result until the complete locked scan and guards finish.
+struct record_view
+{
+	identity epoch = {}, operation = {};
+	uint64_t type = 0, payload_version = 0, result_code = 0;
+	std::span<const uint8_t> command, payload, intent, plan, result, witness;
+};
 class checker
 {
 	std::filesystem::path root, directory;
@@ -409,6 +419,10 @@ class checker
 	std::vector<digest> claimed_events;
 	restore_economic_baseline::checker baselines;
 	restore_economic_lifecycle::checker lifecycles;
+	std::function<void(const identity &, const identity &, std::span<const uint8_t>,
+			   std::span<const uint8_t>)>
+		accepted_plan;
+	std::function<void(const record_view &)> observe_record;
 
 	void record(std::span<const uint8_t> encoded, const identity &operation)
 	{
@@ -424,7 +438,7 @@ class checker
 		     (result_code || failure_stage == 0) &&
 		     (result_code ? plan_size == 0 : plan_size >= 256));
 		auto command = in.take(command_size), plan = in.take(plan_size);
-		(void)in.take(result_size);
+		auto result = in.take(result_size);
 		in.done();
 		lifecycles.record(operation, command, plan, durable_revision, result_code,
 				  result_size, failure_stage);
@@ -506,7 +520,21 @@ class checker
 		need(same(tagged_hash("DURIS-ECONOMIC-DOMAIN-V1", domain),
 			  intent.subspan(192, 32)));
 		if (result_code)
+		{
+			if (observe_record)
+				observe_record({ epoch,
+						 operation,
+						 type,
+						 payload_version,
+						 result_code,
+						 command,
+						 payload,
+						 intent,
+						 plan,
+						 result,
+						 {} });
 			return;
+		}
 		need(same(plan.first(4), { reinterpret_cast<const uint8_t *>("EAP1"), 4 }) &&
 		     number(plan, 4, 2) == 1 && !nonzero(plan.subspan(6, 2)) &&
 		     same(plan.subspan(8, 64), intent.subspan(32, 64)) && plan[72] == intent[26] &&
@@ -541,8 +569,14 @@ class checker
 			need(payload_version == 1 && source == 6 && deadline == 4 && !publication &&
 			     keys == 1 && identities[0] == key{ 9, 0x45434f4e42415345 } &&
 			     !revisions && !result_size);
-			baselines.observe(lineage, epoch, operation, intent, payload, plan,
-					  durable_revision);
+			auto witness = baselines.observe(lineage, epoch, operation, intent, payload,
+							 plan, durable_revision);
+			if (accepted_plan)
+				accepted_plan(epoch, operation, plan, witness);
+			if (observe_record)
+				observe_record({ epoch, operation, type, payload_version,
+						 result_code, command, payload, intent, plan,
+						 result, witness });
 			return;
 		}
 		if (intent[27])
@@ -566,6 +600,20 @@ class checker
 			need(claimed_events.size() < buckets * bucket_capacity);
 			claimed_events.push_back(key);
 		}
+		if (accepted_plan)
+			accepted_plan(epoch, operation, plan, {});
+		if (observe_record)
+			observe_record({ epoch,
+					 operation,
+					 type,
+					 payload_version,
+					 result_code,
+					 command,
+					 payload,
+					 intent,
+					 plan,
+					 result,
+					 {} });
 	}
 	std::vector<entry> index(size_t bucket, digest *body_digest = nullptr)
 	{
@@ -675,11 +723,17 @@ class checker
 	}
 
     public:
-	explicit checker(const std::filesystem::path &path)
+	explicit checker(const std::filesystem::path &path,
+			 std::function<void(const identity &, const identity &,
+					    std::span<const uint8_t>, std::span<const uint8_t>)>
+				 observe = {},
+			 std::function<void(const record_view &)> records = {})
 		: root(path)
 		, directory(path / "economic-evidence")
 		, baselines(path)
 		, lifecycles(path)
+		, accepted_plan(std::move(observe))
+		, observe_record(std::move(records))
 	{
 	}
 	// Bind every history page to the same authenticated control/catalog, original
@@ -773,6 +827,42 @@ class checker
 		need(!name.empty() && name.size() <= 255 && name != "." && name != ".." &&
 		     name.find('/') == std::string::npos && name.find('\0') == std::string::npos);
 		need(context.lineage == lineage);
+		if (name.starts_with("pile-head") || name.ends_with(".eph"))
+		{
+			using namespace restore_economic_baseline;
+			need(name.size() == 30 && name.starts_with("pile-head-") &&
+			     name.ends_with(".eph"));
+			uint64_t uid = 0;
+			for (auto digit : name.substr(10, 16))
+			{
+				const auto found = std::strchr(hex_digits, digit);
+				need(found);
+				uid = (uid << 4) | static_cast<uint64_t>(found - hex_digits);
+			}
+			const auto encoded = file_bytes(directory, name, 133);
+			const std::span<const uint8_t> head = encoded;
+			need(head.size() == 133 &&
+			     same(head.first(4),
+				  { reinterpret_cast<const uint8_t *>("EPH1"), 4 }) &&
+			     same(head.subspan(101), hash(head.first(101))) &&
+			     same(head.subspan(4, 16), lineage) && uid &&
+			     number(head, 36, 8) == uid && number(head, 44, 8) && head[84] <= 1 &&
+			     nonzero(head.subspan(85, 16)));
+			identity epoch;
+			std::copy_n(head.begin() + 20, 16, epoch.begin());
+			need(nonzero(epoch) &&
+			     std::any_of(context.catalog.begin(), context.catalog.end(),
+					 [&](const auto &marker)
+					 { return marker.epoch == epoch; }));
+			for (size_t part = 0; part < 4; ++part)
+			{
+				const auto amount = number(head, 52 + part * 8, 8);
+				need(amount <= INT32_MAX && (!head[84] || !amount));
+			}
+			// A baseline head can name the preparation ID. It does not prove a
+			// retained command root or agreement with current native custody.
+			return "pile_head";
+		}
 		auto original = [&](const identity &operation)
 		{
 			need(nonzero(operation));
