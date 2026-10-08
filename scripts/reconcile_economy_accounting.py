@@ -3952,7 +3952,12 @@ def main() -> int:
     try:
         if not 0 <= args.limit <= MAX_OUTPUT_ROWS or args.snapshot.stat().st_size > MAX_INPUT_BYTES:
             raise SnapshotError("snapshot or output limit exceeded")
-        snapshot = json.loads(args.snapshot.read_text(encoding="utf-8"))
+        def unique_fields(pairs):
+            if len({key for key, _ in pairs}) != len(pairs):
+                raise SnapshotError("duplicate snapshot field")
+            return dict(pairs)
+        snapshot = json.loads(args.snapshot.read_text(encoding="utf-8"),
+                              object_pairs_hook=unique_fields)
         report = Reconciler(args.limit).audit(snapshot)
         result = view(snapshot, report, args.view, args.limit, args.uid,
                       operation_id=args.operation_id, holding_key=args.account_key)

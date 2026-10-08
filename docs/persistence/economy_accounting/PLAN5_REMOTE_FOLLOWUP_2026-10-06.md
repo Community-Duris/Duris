@@ -2819,3 +2819,25 @@ R1–R8/release remain open. Cold restoration scope follows the latest primary
 clarification; historical construction chronology is not added as a gate. Curator-
 ready; notebook nonblocking; application/import/ack unclaimed. No production/
 activation/autocorrection/deploy/merge/primary push or cross-chat message.
+
+
+## 2026-10-08: saved-snapshot duplicate JSON fields
+
+Same sole local/remote codex/accounting-plan5; base 6b5d21a8a21f82f951a6df9ae03c9d3911c8ee37. Result is
+this containing commit; post-push exact remote/clean/ancestry/rehash receipt:
+D:/Dev/Tests/Duris/accounting-plan5/snapshot-json-20261008/delivery/result.json. Last-value JSON parsing silently erased
+conflicting evidence before independent audit. Main now rejects any repeated
+decoded field before audit/views with existing exit 2/fixed redacted diagnostic;
+no schema/interface change or mutation import. RED 168 failures;423 loaded reader
+checks plus three explicitly executed budget tests yield 406 unique PASS/17
+unexecuted opt-in checks. Original both-backend native claim fixtures compile and
+produce identical five capsule pairs accepted independently. Both original SQL
+export runners PASS; 252 added CLI checks/210 refusals/42 original controls retain
+13 original findings and all 47 application tables on each engine. Near-limit
+mapping/price/child workloads pass existing 30-second/256MiB budgets. Exact source
+0a2bd861467d34f6ff6666c5a012bad4aa66b5dd, tested primary 6d223ebe1a494326c2613e9371b47e50c41f0951, seal ef28ccc9926b74c569a13933dad34e135951af4544ae030629689548ac30e211. Full report
+PLAN5_SNAPSHOT_JSON_QUALIFICATION_2026-10-08.md retains commands, hashes, scopes,
+failed observation-helper attempts and open gates. Private combined, gameplay/
+producer/opening/fault/recovery/activation/Plan5/R1–R8/release remain unqualified.
+Curator-ready; notebook nonblocking; application/import/ack unclaimed. No
+production/activation/autocorrection/deploy/merge/primary push/cross-chat message.

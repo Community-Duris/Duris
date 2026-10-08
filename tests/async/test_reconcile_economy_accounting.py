@@ -2991,6 +2991,51 @@ class ReconciliationTests(unittest.TestCase):
                 reconciler.audit_items({}, {}, origins, native, {1, 2, 3})
                 self.assertEqual(dict(reconciler.counts), expected)
 
+    def test_cli_rejects_duplicate_snapshot_fields_before_any_view(self):
+        original = json.dumps(clean_snapshot(), separators=(",", ":"))
+        cases = [
+            original.replace('"complete":true', '"complete":false,"complete":true', 1),
+            original.replace('"complete":true', '"complete":true,"complete":true', 1),
+            original.replace('"balance":[7,0,0,0]',
+                             '"balance":[99,0,0,0],"balance":[7,0,0,0]', 1),
+            original.replace('"result_code":0', '"result_code":9,"result_code":0', 1),
+            original.replace('"canonical_plan":',
+                             '"canonical_plan":"private-bad-plan","canonical_plan":', 1),
+            original.replace('"source_event":',
+                             '"source_event":"' + "00" * 48 + '","source_event":', 1),
+            original.replace('"balance":[7,0,0,0]',
+                             '"bal\\u0061nce":[99,0,0,0],"balance":[7,0,0,0]', 1),
+            original.replace('{', '{"private-operator-alias":null,'
+                             '"private-operator-alias":null,', 1),
+        ]
+        with tempfile.TemporaryDirectory(prefix="duris-duplicate-snapshot-") as temporary:
+            path = Path(temporary) / "snapshot.json"
+            for index, body in enumerate([*cases, original]):
+                path.write_text(body, encoding="utf-8")
+                before = path.read_bytes()
+                for name in ("exceptions", "holdings", "provenance", "operation",
+                             "supply", "prices", "routes"):
+                    for limit in (0, 1, 100):
+                        with self.subTest(case=index, view=name, limit=limit):
+                            command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                       str(path), "--view", name, "--limit", str(limit)]
+                            if name == "provenance":
+                                command += ["--uid", "81"]
+                            elif name == "operation":
+                                command += ["--operation-id", OP]
+                            result = subprocess.run(command, capture_output=True, text=True,
+                                                    timeout=30, check=False)
+                            if index < len(cases):
+                                self.assertEqual(result.returncode, 2)
+                                self.assertEqual(result.stdout, "")
+                                self.assertEqual(result.stderr,
+                                                 "reconciliation failed: duplicate snapshot field\n")
+                            else:
+                                self.assertEqual(result.returncode, 0, result.stderr)
+                                self.assertEqual(result.stderr, "")
+                                json.loads(result.stdout)
+                            self.assertEqual(path.read_bytes(), before)
+
     def test_cli_bounded_exception_result(self):
         snapshot = clean_snapshot()
         snapshot["postings"].pop()
