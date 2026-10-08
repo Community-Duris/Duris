@@ -2472,3 +2472,38 @@ is curator-ready input; primary-local notebook nonblocking, application/ack
 unclaimed. Genuine native/provider/UID-owner/baseline/combined/producers/opening/
 player/route/fault/load and Plan5/R1–R8/release gates remain. No activation,
 autocorrection, production write, primary push, deployment or merge.
+
+
+## Zero-net ordinary account history - 2026-10-08
+
+[Exact reader/native/SQL qualification](PLAN5_ZERO_NET_ACCOUNT_HISTORY_2026-10-08.md)
+continues from ce23baf26acbeee486b020f118cd03d0cb9ee9d4 on the same local/remote
+codex/accounting-plan5 and owned worktree. Result is this containing commit,
+verified with seven ancestor tips and remote equality in delivery/result.json.
+
+The old reader falsely rejects native-valid zero-net/equal-revision effects and
+orders them after an advancing effect when operation IDs reverse chronology.
+The predicate/tie order now match the existing native contract. Invalid backward,
+changed-same-clock and unreferenced-same-clock plans still refuse. No shared
+interface/schema or producer change. Four new methods reproduce eight failures
+on the old reader; fixed 16-module run:396 loaded/378 PASS/18 existing opt-in skips.
+Both complete partial SQL runners pass eight new cuts/24 CLI checks per engine,
+with all47 application tables unchanged. Two-mode original codec checks cover
+all16 new captured plans plus model controls. Existing complete canonical native
+restore method passes zero skips on both fresh0064 engines:3026 decoder cases,
+109 cuts/90 expected refusals/58 full-entry cuts per engine. Parent g++ counts
+are driver invocations (two fixture compile/link commands plus16 toolchain queries),
+not18 compilation jobs.
+
+Tested primary5f5a8bdfd0306a6c65857cf936fd6b332832c90b plus27 overlays:
+b34fbb29dfc91c9e8a241044ed4649b634ff5aa7; native833d3085815b396861ad18a77635412212381e4b;
+migrations7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2/head64. Earlier tombstone fix
+c373f04fac0ef14f734bc086c1cef01246dc70fe remains included/preserved and still
+requires primary import. Earlier24-overlay scopes are unchanged.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/zero-net-20261008;
+raw seal fd5aeb200401d8ef5bc0d90883257606e89bdd80b1dae22539974f5c20232dcf. Curator-ready input only; primary-local notebook nonblocking,
+application/ack unclaimed. Shared flatfile-authority provider/room UID-owner/
+native baseline recipe gates and genuine combined/producers/cold/opening/player/
+route/fault/load/activation/Plan5/R1-R8/release remain open. No production write,
+autocorrection, activation, primary push, deployment or merge.

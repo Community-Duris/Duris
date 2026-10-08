@@ -968,6 +968,107 @@ other_mapping_lineage = bytes.fromhex("44" * 16)
 prior_item_root = bytes.fromhex("e5" * 16)
 prior_item_source = bytes.fromhex(source_identity(kind=18, identity="b0"))
 prior_unlinked_operation = bytes.fromhex("b1" * 16)
+def verify_zero_net_account_history(owner, audit, snapshot):
+    """Modeled SQL history; native codec parity is checked independently."""
+    from _plan5_equipment_restore import Connection, inventory
+    from test_reconcile_economy_accounting import bind_original_plans, zero_net_snapshot
+
+    output = ROOT / "bin/tests/plan5-zero-net-history" / uuid.uuid4().hex
+    output.mkdir(parents=True)
+    initial = inventory(owner)
+    original_counts = Reconciler().audit(snapshot)["exception_counts"]
+    first = min((row for row in snapshot["effects"] if row["account_key"] == key(1, 7).hex()),
+                key=lambda row: row["before_revision"])
+    records = []
+    for identity in ("01", "f0"):
+        operation_id = bytes.fromhex(identity * 16)
+        for damage in ("valid", "backwards", "changed-same", "unreferenced-same"):
+            fixture = zero_net_snapshot(first["before_revision"])
+            root_row = fixture["operations"][0]
+            root_row.update(operation_id=operation_id.hex(), item_event_count=0,
+                            source_event=source_identity(identity=identity))
+            fixture["item_references"] = []
+            fixture["ownership_events"] = []
+            effect = fixture["effects"][0]
+            effect.update(operation_id=operation_id.hex(), before=first["before"][:],
+                          after=first["before"][:])
+            for posting in fixture["postings"]:
+                posting["operation_id"] = operation_id.hex()
+            if damage == "backwards":
+                effect["after_revision"] -= 1
+            elif damage == "changed-same":
+                effect["after"][0] += 1
+            elif damage == "unreferenced-same":
+                fixture["postings"] = []
+                root_row["posting_count"] = 0
+            bind_original_plans(fixture)
+            target = output / (identity + "-" + damage)
+            target.mkdir()
+            plan = bytes.fromhex(root_row["canonical_plan"])
+            (target / "canonical-plan.eap").write_bytes(plan)
+            fields = ("accounting_version", "writer_id", "policy_version", "compiler_version",
+                      "actor_kind", "actor_id", "intent_digest", "domain_digest", "plan_digest",
+                      "canonical_plan", "before_witness_count", "after_witness_count")
+            try:
+                with owner.cursor() as cursor:
+                    cursor.execute(ROOT_INSERT + "(%s,%s,%s,NULL,3,1,0,%s,1,%s,0,0,NULL)",
+                                   (operation_id, LINEAGE, EPOCH, bytes.fromhex(root_row["source_event"]),
+                                    root_row["posting_count"]))
+                    cursor.execute("UPDATE economic_accounting_operation SET " +
+                                   ",".join(field + "=%s" for field in fields) + " WHERE operation_id=%s",
+                                   (*[bytes.fromhex(root_row[field]) if field.endswith("digest") or
+                                      field == "canonical_plan" else root_row[field] for field in fields],
+                                    operation_id))
+                    cursor.execute("INSERT INTO critical_operation_inbox(operation_id,status,result_code) "
+                                   "VALUES(%s,1,0)", (operation_id,))
+                    cursor.execute("INSERT INTO economic_accounting_source_claim VALUES(%s,%s,%s)",
+                                   (LINEAGE, bytes.fromhex(root_row["source_event"]), operation_id))
+                    cursor.execute("INSERT INTO economic_accounting_account_effect VALUES(" +
+                                   ",".join(["%s"] * 13) + ")", (operation_id, 0, key(1, 7),
+                                   *effect["before"], *effect["after"], effect["before_revision"], effect["after_revision"]))
+                    for posting in fixture["postings"]:
+                        cursor.execute(POSTING_INSERT + "(%s,%s,0,0,%s,0,0,0,%s)",
+                                       (operation_id, posting["line_index"], posting["delta"][0], posting["copper_value"]))
+                    cursor.execute("UPDATE economic_accounting_coin_posting SET event_index=line_index "
+                                   "WHERE operation_id=%s", (operation_id,))
+                before = inventory(owner)
+                connection = Connection(audit)
+                cut = capture(connection, LINEAGE, EPOCH)
+                assert connection.rollbacks == connection.observer.closes == 1
+                report = Reconciler().audit(cut)
+                if damage == "valid":
+                    assert report["exception_counts"] == original_counts, report
+                else:
+                    assert report["exception_counts"].get("invalid_original_plan", 0) == original_counts.get("invalid_original_plan", 0) + 1
+                    if damage in ("backwards", "changed-same"):
+                        assert report["exception_counts"].get("broken_account_history", 0) > original_counts.get("broken_account_history", 0)
+                payload = json.dumps(cut, sort_keys=True).encode()
+                path = target / "snapshot.json"
+                path.write_bytes(payload)
+                for limit in (0, 1, 100):
+                    result = subprocess.run([sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                             str(path), "--limit", str(limit)], capture_output=True, timeout=30)
+                    assert result.returncode == 1 and not result.stderr, result.stderr
+                    assert json.loads(result.stdout) == view(cut, Reconciler(limit).audit(cut), "exceptions", limit)
+                    assert path.read_bytes() == payload
+                    (target / ("limit-" + str(limit) + ".json")).write_bytes(result.stdout)
+                assert inventory(owner) == before
+                (target / "queries.json").write_text(json.dumps(connection.observer.queries) + "\n")
+                records.append(dict(identity=identity, damage=damage, exception_counts=report["exception_counts"],
+                                    application_tables_unchanged=len(before), cli_checks=3, rollback_calls=1,
+                                    cursor_close_calls=1))
+            finally:
+                with owner.cursor() as cursor:
+                    for table in ("economic_accounting_source_claim", "economic_accounting_coin_posting",
+                                  "economic_accounting_account_effect", "critical_operation_inbox", "economic_accounting_operation"):
+                        cursor.execute("DELETE FROM " + table + " WHERE operation_id=%s", (operation_id,))
+            assert inventory(owner) == initial and capture(audit, LINEAGE, EPOCH) == snapshot
+    result = dict(probes=records, modeled_partial_sql=True, source_fixture_restored=True,
+                  producer_qualified=False, accounting_activated=False, release_complete=False)
+    (output / "results.json").write_text(json.dumps(result, indent=2) + "\n")
+    print("ZERO_NET_ACCOUNT_HISTORY " + json.dumps(result, sort_keys=True), flush=True)
+
+
 def verify_previous_owner_history(owner, audit, snapshot):
     """Modeled source cuts; previous-owner observation is never source admission."""
     def authority():
@@ -1312,6 +1413,7 @@ try:
         try:
             snapshot = capture(audit, LINEAGE, EPOCH)
             assert snapshot["complete"] is False and snapshot["quiescent"] is True
+            verify_zero_net_account_history(setup, audit, snapshot)
             verify_previous_owner_history(setup, audit, snapshot)
             verify_historical_item_positions(setup, audit, snapshot)
             verify_area_coin_views(setup, audit, snapshot)

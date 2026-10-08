@@ -208,6 +208,22 @@ def clean_snapshot():
     })
 
 
+def zero_net_snapshot(revision=1):
+    """Synthetic referenced ordinary effect; native parity is qualified separately."""
+    snapshot = clean_snapshot()
+    snapshot["effects"] = snapshot["effects"][:1]
+    snapshot["effects"][0].update(after=[10, 0, 0, 0], before_revision=revision,
+                                  after_revision=revision)
+    for posting in snapshot["postings"]:
+        posting["account_index"] = 0
+    snapshot["operations"][0]["account_count"] = 1
+    snapshot["account_origins"] = snapshot["account_origins"][:1]
+    snapshot["account_origins"][0]["revision"] = revision
+    snapshot["native"]["holdings"] = [dict(account_key=WALLET, balance=[10, 0, 0, 0],
+                                            revision=revision, alias=None)]
+    return bind_original_plans(snapshot)
+
+
 def rejected_snapshot():
     snapshot = clean_snapshot()
     rejected = copy.deepcopy(snapshot["operations"][0])
@@ -1938,6 +1954,64 @@ class ReconciliationTests(unittest.TestCase):
         for before in (0, 2**63, 2**64 - 2):
             with self.subTest(before=before):
                 self.assertEqual(self.codes(self.money_revision_snapshot(before)), set())
+
+    def test_zero_net_money_effects_preserve_revision(self):
+        for revision in (0, 1, 2**63, 2**64 - 1):
+            with self.subTest(revision=revision):
+                self.assertEqual(self.codes(zero_net_snapshot(revision)), set())
+
+    def test_zero_net_money_effect_precedes_revision_advance(self):
+        for operation_id in ("12" * 16, "66" * 16):
+            snapshot = zero_net_snapshot()
+            advancing = clean_snapshot()
+            root = advancing["operations"][0]
+            root.update(operation_id=operation_id, item_event_count=0,
+                        source_event=source_identity(identity="67"))
+            snapshot["operations"].append(root)
+            for name in ("effects", "postings", "receipts", "source_claims"):
+                for row in advancing[name]:
+                    row["operation_id"] = operation_id
+                    if name == "source_claims":
+                        row["source_event"] = root["source_event"]
+                    if name == "effects":
+                        row["after_revision"] = 4
+                snapshot[name].extend(advancing[name])
+            snapshot["account_origins"].append(advancing["account_origins"][1])
+            snapshot["native"]["holdings"] = advancing["native"]["holdings"]
+            for holding in snapshot["native"]["holdings"]:
+                holding["revision"] = 4
+            bind_original_plans(snapshot)
+            for reversed_rows in (False, True):
+                with self.subTest(operation_id=operation_id, reversed_rows=reversed_rows):
+                    if reversed_rows:
+                        for name in ("operations", "effects", "postings"):
+                            snapshot[name].reverse()
+                    self.assertEqual(self.codes(snapshot), set())
+
+    def test_zero_net_money_invalid_history_still_refuses(self):
+        for damage in ("backwards", "changed-same", "wrong-before"):
+            snapshot = zero_net_snapshot(2)
+            effect = snapshot["effects"][0]
+            if damage == "backwards":
+                effect["after_revision"] = 1
+                snapshot["native"]["holdings"][0]["revision"] = 1
+            elif damage == "changed-same":
+                effect["after"] = [11, 0, 0, 0]
+                snapshot["native"]["holdings"][0]["balance"] = [11, 0, 0, 0]
+            else:
+                effect.update(before=[11, 0, 0, 0], after=[11, 0, 0, 0])
+                snapshot["native"]["holdings"][0]["balance"] = [11, 0, 0, 0]
+            with self.subTest(damage=damage):
+                self.assertIn("broken_account_history", self.codes(bind_original_plans(snapshot)))
+
+    def test_unreferenced_money_effect_requires_revision_advance(self):
+        snapshot = zero_net_snapshot()
+        snapshot["postings"] = []
+        snapshot["operations"][0]["posting_count"] = 0
+        self.assertIn("invalid_original_plan", self.codes(bind_original_plans(snapshot)))
+        snapshot["effects"][0]["after_revision"] = 4
+        snapshot["native"]["holdings"][0]["revision"] = 4
+        self.assertEqual(self.codes(bind_original_plans(snapshot)), set())
 
     def test_boolean_and_overflow_money_revisions_are_not_clean(self):
         for before in (True, -1, 2**64 - 1, 2**64):

@@ -463,6 +463,14 @@ and copper-total ranges. Item events advance one revision; money effects retain
 their native before/after revision chain. Origins, current authority and retained
 creation/retirement roots must agree across the complete unsigned range.
 
+An ordinary money effect with an unchanged balance can retain its revision when
+nonzero postings offset to zero. At a shared starting revision, these effects
+precede an advancing effect regardless of operation ID. Changed balances still
+require a strictly later revision; an unreferenced unchanged effect must also
+advance. Original-plan, posting, opening and current-authority checks remain
+required. [Exact reader qualification](PLAN5_ZERO_NET_ACCOUNT_HISTORY_2026-10-08.md)
+records the native codec and disposable SQL evidence for this behavior.
+
 Opening and current native item positions also require exact JSON integers
 before UID indexing. `uid` is in 1..UINT64_MAX, `root` is in 0..UINT64_MAX,
 and the required `parent` is either null or in 1..UINT64_MAX. `owner` is a

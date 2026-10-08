@@ -2259,6 +2259,7 @@ class Reconciler:
             if origin["origin"] == "creation" and (expected != (0, 0, 0, 0) or revision != 0):
                 self.emit("invalid_account_creation_origin", account_key=key)
             rows = sorted(by_account.get(key, []), key=lambda row: (row.get("before_revision", -1),
+                                                                    row.get("after_revision", -1),
                                                                     row.get("operation_id", "")))
             for row in rows:
                 op_id = row.get("operation_id")
@@ -2268,7 +2269,8 @@ class Reconciler:
                         self.emit("broken_account_history", account_key=key, operation_id=op_id)
                     if (type(row.get("before_revision")) is not int or
                             type(row.get("after_revision")) is not int or
-                            row["after_revision"] <= row["before_revision"]):
+                            row["after_revision"] < row["before_revision"] or
+                            (before != after and row["after_revision"] == row["before_revision"])):
                         self.emit("broken_account_history", account_key=key, operation_id=op_id)
                     delta = tuple(a - b for a, b in zip(after, before))
                     if delta != tuple(deltas.get((op_id, row.get("account_index")), (0, 0, 0, 0))):
