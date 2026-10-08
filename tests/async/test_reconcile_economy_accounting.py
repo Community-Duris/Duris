@@ -471,6 +471,90 @@ print(json.dumps(result,separators=(',',':')))
         str(path), str(limit), name]))
 
 
+class ItemOwnerHistoryTests(unittest.TestCase):
+    def test_opening_owner_mismatch_cannot_pass_a_verified_original_plan(self):
+        for owner in ([1, 8, 0], [2, 9, 0], [2, 8, 1]):
+            snapshot = clean_snapshot()
+            snapshot["item_origins"][0]["owner"] = owner
+            before = copy.deepcopy(snapshot)
+            for limit in (0, 1, 100):
+                report = Reconciler(limit).audit(snapshot)
+                self.assertEqual(report["checked"]["original_plans_verified"], 1)
+                self.assertEqual(report["exception_counts"], {"broken_item_owner_history": 1})
+            self.assertEqual(snapshot, before)
+
+    def test_every_recorded_previous_owner_matches_the_preceding_state(self):
+        origin = dict(origin="baseline", owner=[1, 7, 0], state="live")
+        events = [dict(operation_id=OP, action="move", from_owner=[1, 7, 0],
+                       owner=[2, 8, 3], state="live"),
+                  dict(operation_id="55"*16, action="move", from_owner=[2, 8, 3],
+                       owner=[1, 9, 0], state="live")]
+        good = copy.deepcopy(events)
+        reader = Reconciler();reader.audit_item_lifetime(81, origin, events)
+        self.assertEqual(dict(reader.counts), {})
+        for owner in ([1, 8, 3], [2, 9, 3], [2, 8, 4]):
+            events[1]["from_owner"] = owner
+            reader = Reconciler();reader.audit_item_lifetime(81, origin, events)
+            self.assertEqual(dict(reader.counts), {"broken_item_owner_history": 1})
+        events[1]["from_owner"] = good[1]["from_owner"]
+        self.assertEqual(events, good)
+
+    def test_creation_sentinel_and_missing_historical_owner_are_explicit(self):
+        origin = dict(origin="creation", revision=0, root=81, parent=None,
+                      owner=[0, 0, 0], state="absent")
+        events = [dict(operation_id=OP, action="create", from_owner=[7, 0, 0],
+                       owner=[1, 7, 0], state="live")]
+        reader = Reconciler();reader.audit_item_lifetime(81, origin, events)
+        self.assertEqual(dict(reader.counts), {})
+        events[0]["from_owner"] = [0, 0, 0]
+        reader = Reconciler();reader.audit_item_lifetime(81, origin, events)
+        self.assertEqual(dict(reader.counts), {"broken_item_owner_history": 1})
+        del events[0]["from_owner"]
+        events.append(dict(operation_id="55"*16, action="move", owner=[2, 8, 0], state="live"))
+        before = copy.deepcopy(events)
+        reader = Reconciler();reader.audit_item_lifetime(81, origin, events)
+        self.assertEqual(dict(reader.counts), {"missing_item_owner_evidence": 1})
+        self.assertEqual(events, before)
+
+    def test_lineage_history_checks_the_same_opening_owner(self):
+        snapshot = clean_snapshot()
+        event = dict(snapshot["ownership_events"][0], referenced=False,
+                     operation_epoch=EPOCH, operation_outcome="committed")
+        origin = dict(snapshot["item_origins"][0], owner=[1, 8, 0])
+        reader = Reconciler()
+        reader.audit_lineage_uid_history("disposable", {"uid_history_events": [event]},
+                                 {(81,): origin}, {(81,): snapshot["native"]["items"][0]})
+        self.assertEqual(dict(reader.counts), {"broken_item_owner_history": 1})
+
+    def test_malformed_previous_owner_refuses_without_private_values(self):
+        for owner in (None, [], [1, 7], [1, 7, 0, 0], "private-owner-alias",
+                      [True, 7, 0], [1, 7.0, 0], [1, -1, 0], [13, 7, 0],
+                      [1, 2**64, 0], [1, 7, 2**64]):
+            snapshot = clean_snapshot();snapshot["ownership_events"][0]["from_owner"] = owner
+            before = copy.deepcopy(snapshot)
+            with self.subTest(owner=owner), self.assertRaisesRegex(SnapshotError, "invalid item previous owner"):
+                Reconciler(0).audit(snapshot)
+            self.assertEqual(snapshot, before)
+
+    def test_owner_history_cli_finding_is_global_bounded_and_read_only(self):
+        snapshot = clean_snapshot();snapshot["item_origins"][0]["owner"] = [1, 8, 0]
+        with tempfile.TemporaryDirectory(prefix="owner-history-") as folder:
+            path = Path(folder)/"snapshot.json";payload=json.dumps(snapshot).encode();path.write_bytes(payload)
+            for name in ("exceptions", "holdings", "operation", "provenance", "supply", "prices", "routes"):
+                for limit in (0, 1, 100):
+                    command=[sys.executable,str(ROOT/"scripts/reconcile_economy_accounting.py"),str(path),
+                             "--view",name,"--limit",str(limit)]
+                    if name=="operation":command += ["--operation-id",OP]
+                    if name=="provenance":command += ["--uid","81"]
+                    result=subprocess.run(command,capture_output=True,text=True,timeout=30)
+                    self.assertEqual(result.returncode,1,result.stderr)
+                    self.assertEqual(result.stderr,"");value=json.loads(result.stdout)
+                    if name=="exceptions":self.assertEqual(value["exception_counts"],{"broken_item_owner_history":1})
+                    else:self.assertEqual(value["coverage"]["exception_count"],1)
+                    self.assertLessEqual(len(value.get("rows",value.get("exceptions",[]))),limit)
+                    self.assertEqual(path.read_bytes(),payload)
+
+
 class ReconciliationTests(unittest.TestCase):
     def codes(self, snapshot):
         before = copy.deepcopy(snapshot)
@@ -2819,12 +2903,13 @@ class ReconciliationTests(unittest.TestCase):
     def lineage_lifetime_report(self, actions, origin=None, quarantined_indices=()):
         origin = origin or creation_snapshot()["item_origins"][0]
         events = []
+        previous_owner = [7, 0, 0] if origin["state"] == "absent" else origin["owner"]
         for index, action in enumerate(actions):
             events.append({
                 "operation_id": f"{index + 1:032x}", "event_index": 0, "uid": 81,
                 "before_revision": origin["revision"] + index,
                 "revision": origin["revision"] + index + 1,
-                "root": 81, "parent": None,
+                "root": 81, "parent": None, "from_owner": list(previous_owner),
                 "owner": [8, 0, 0] if action == "destroy" else [1, 7, 0],
                 "state": "tombstone" if action == "destroy" else "live",
                 "action": action, "operation_outcome": "committed", "referenced": False,
@@ -2832,6 +2917,7 @@ class ReconciliationTests(unittest.TestCase):
             })
             if index in quarantined_indices:
                 events[-1].update(owner=[7, 0, 0], state="quarantined")
+            previous_owner = events[-1]["owner"]
         current = {field: events[-1][field]
                    for field in ("uid", "revision", "root", "parent", "owner", "state")}
         current["equipment_slot"] = 0
@@ -2863,7 +2949,8 @@ class ReconciliationTests(unittest.TestCase):
     def test_quarantined_custody_preserves_retired_uid_lifetimes(self):
         retired_origin = copy.deepcopy(clean_snapshot()["item_origins"][0])
         retired_origin.update(owner=[8, 0, 0], state="tombstone")
-        event = {"operation_id": OP, "action": "move", "state": "quarantined"}
+        event = {"operation_id": OP, "action": "move", "state": "quarantined",
+                 "from_owner": [8, 0, 0], "owner": [7, 0, 0]}
         reconciler = Reconciler()
         reconciler.audit_item_lifetime(81, retired_origin, [event])
         self.assertEqual(dict(reconciler.counts), {"resurrected_item_uid": 1})

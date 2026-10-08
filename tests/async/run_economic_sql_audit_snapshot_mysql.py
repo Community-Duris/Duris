@@ -612,7 +612,11 @@ def verify_compound_item_actions(owner, reader, snapshot):
             assert connection.rollbacks == connection.observer.closes == 1 and inventory(owner) == before
             report = Reconciler().audit(captured)
             expected_counts = dict(original_counts)
-            if phase != "craft-creation":
+            if phase == "craft-creation":
+                # This phase records the genuine unowned creation preimage;
+                # the original partial fixture leaves that one owner unknown.
+                assert expected_counts.pop("missing_item_owner_evidence") == 1
+            else:
                 expected_counts["missing_original_plan"] += 1
                 expected_counts["player_uid_missing_physical"] = 1
             assert report["exception_counts"] == expected_counts, report
@@ -964,6 +968,65 @@ other_mapping_lineage = bytes.fromhex("44" * 16)
 prior_item_root = bytes.fromhex("e5" * 16)
 prior_item_source = bytes.fromhex(source_identity(kind=18, identity="b0"))
 prior_unlinked_operation = bytes.fromhex("b1" * 16)
+def verify_previous_owner_history(owner, audit, snapshot):
+    """Modeled source cuts; previous-owner observation is never source admission."""
+    def authority():
+        with owner.cursor() as cursor:
+            cursor.execute("SELECT * FROM item_ownership_ledger ORDER BY operation_id,event_index")
+            return cursor.fetchall()
+    initial = authority()
+    variants = (("known", (7, 0, 0), None),
+                ("wrong-kind", (1, 0, 0), "broken_item_owner_history"),
+                ("wrong-id", (7, 1, 0), "broken_item_owner_history"),
+                ("wrong-context", (7, 0, 1), "broken_item_owner_history"),
+                ("legacy-unknown", (None, None, None), "missing_item_owner_evidence"))
+    try:
+        for name, previous, finding in variants:
+            with owner.cursor() as cursor:
+                cursor.execute("UPDATE item_ownership_ledger SET from_owner_type=%s,from_owner_id=%s,"
+                               "from_owner_context_id=%s WHERE item_uid=84", previous)
+            before = authority();cut = capture(audit, LINEAGE, EPOCH)
+            events = [row for row in cut["ownership_events"] + cut["native"]["uid_history_events"]
+                      if row["uid"] == 84]
+            assert len(events) == 2
+            for event in events:
+                assert ("from_owner" not in event if previous[0] is None else
+                        event["from_owner"] == list(previous))
+            report = Reconciler().audit(cut)
+            assert report["exception_counts"].get("broken_item_owner_history", 0) == int(finding == "broken_item_owner_history")
+            assert report["exception_counts"].get("missing_item_owner_evidence", 0) == int(finding == "missing_item_owner_evidence")
+            with tempfile.TemporaryDirectory(prefix="previous-owner-") as folder:
+                path = Path(folder)/"snapshot.json";payload=json.dumps(cut,sort_keys=True).encode();path.write_bytes(payload)
+                for limit in (0, 1, 100):
+                    for name in ("exceptions", "provenance"):
+                        command=[sys.executable,str(ROOT/"scripts/reconcile_economy_accounting.py"),str(path),
+                                 "--view",name,"--limit",str(limit)]
+                        if name == "provenance":command += ["--uid","84"]
+                        result=subprocess.run(command,capture_output=True,text=True,timeout=30)
+                        assert result.returncode == 1 and not result.stderr,result.stderr
+                        assert json.loads(result.stdout) == view(cut,Reconciler(limit).audit(cut),name,limit,uid=84)
+                        assert path.read_bytes() == payload
+            assert authority() == before
+        with owner.cursor() as cursor:
+            cursor.execute("UPDATE item_ownership_ledger SET from_owner_type=1,from_owner_id=NULL,"
+                           "from_owner_context_id=0 WHERE item_uid=84")
+        before = authority()
+        try:
+            capture(audit, LINEAGE, EPOCH)
+            raise AssertionError("partial previous-owner columns passed capture")
+        except exporter.ExportError as error:
+            assert str(error) == "invalid native item previous owner"
+        assert authority() == before
+    finally:
+        with owner.cursor() as cursor:
+            cursor.execute("UPDATE item_ownership_ledger SET from_owner_type=NULL,from_owner_id=NULL,"
+                           "from_owner_context_id=NULL WHERE item_uid=84")
+    assert authority() == initial and capture(audit,LINEAGE,EPOCH) == snapshot
+    print("PREVIOUS_OWNER_HISTORY " + json.dumps(dict(accepted_cuts=5,owner_mismatch_cuts=3,
+        unknown_legacy_cut=1,partial_owner_refusals=1,cli_checks=30,source_unchanged=True,
+        select_only=True,modeled_partial_sql=True,producer_qualified=False,release_qualified=False),sort_keys=True),flush=True)
+
+
 admin = pymysql.connect(**settings)
 try:
     with admin.cursor() as cursor:
@@ -1130,6 +1193,7 @@ try:
         try:
             snapshot = capture(audit, LINEAGE, EPOCH)
             assert snapshot["complete"] is False and snapshot["quiescent"] is True
+            verify_previous_owner_history(setup, audit, snapshot)
             verify_area_coin_views(setup, audit, snapshot)
             verify_compound_item_actions(setup, audit, snapshot)
             verify_collector_quarantine_views(setup, audit, snapshot)
@@ -1386,7 +1450,7 @@ try:
                                    "missing_item_equipment_evidence": 3,
                                    "unmapped_native_wallet": 1,
                                    "unauthorized_mapping_creation": 1,
-                                   "missing_original_plan": 3}
+                                   "missing_original_plan": 3, "missing_item_owner_evidence": 1}
             # These legacy model roots retain no original capsules or source
             # custody facts. Do not reseal their projections into proof. Native
             # original-plan authentication is covered by the canonical SQL class.
@@ -1673,8 +1737,10 @@ try:
                                "(%s,0,81,81,NULL,1,7,0,%s,99,1)",
                                (high_revision_root, maximum_revision))
             high_snapshot = capture(audit, LINEAGE, EPOCH)
-            assert Reconciler().audit(high_snapshot)["exception_counts"] == {
-                **expected_exceptions, "missing_original_plan": 4}
+            high_report = Reconciler().audit(high_snapshot)
+            assert high_report["exception_counts"] == {
+                **expected_exceptions, "missing_original_plan": 4,
+                "missing_item_owner_evidence": 2}, high_report
             high_event = next(row for row in high_snapshot["native"]["uid_history_events"]
                               if row["uid"] == 81)
             assert (high_event["before_revision"], high_event["revision"]) == (
@@ -1953,7 +2019,8 @@ try:
                 "evidence_loss": 1,
                 "ambiguous_lineage_ownership_uid": 1,
                 "stale_native_item": 1,
-                "unattributed_ownership_event": 1}, historical_uid_report
+                "unattributed_ownership_event": 1,
+                "missing_item_owner_evidence": 2}, historical_uid_report
             assert historical_uid_report["exception_counts"].get("unreferenced_uid_event", 0) == 0
             assert historical_uid_report["exception_counts"].get(
                 "lineage_orphan_uid_reference", 0) == 0

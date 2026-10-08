@@ -1385,3 +1385,22 @@ command performs no recovery or correction and omits private item strings. All
 finding totals remain complete at every detail limit; other owners, holdings,
 source admission, history and release remain unqualified. See
 [exact native proof and shared recipe requests](PLAN5_SHOPKEEPER_LITERAL_CUSTODY_2026-10-07.md).
+
+Item custody history also checks each retained event's `from_owner` tuple against
+the preceding origin or event owner, in both selected-epoch and lineage history.
+`broken_item_owner_history` identifies the UID and operation without private
+values. A creation origin in the audit model has absent owner `[0,0,0]`; the
+native ledger's previous-owner sentinel for that first creation is `[7,0,0]`.
+This comparison does not infer any missing historical state or correct custody.
+
+The existing JSON field `from_owner` contains `[kind,id,context]`: three exact
+integers, kind 0 through 12 and unsigned 64-bit ID/context. The SQL exporter keeps
+all three existing ledger columns in selected, lineage and unattributed history.
+Three NULL or historically omitted columns leave the field absent; partially
+recorded or malformed tuples refuse export. Older snapshots with an absent field
+remain readable and produce `missing_item_owner_evidence` once per anchored UID
+whose history omits it. A present malformed tuple refuses reconciliation. Missing
+origins and unattributed history retain their existing coverage findings; the
+reader does not invent an origin for them. Finding totals apply to every view
+and remain complete at detail limits 0, 1 and 100. See
+[the previous-owner defect, exact checks and curator handoff](PLAN5_ITEM_PREVIOUS_OWNER_HISTORY_2026-10-08.md).

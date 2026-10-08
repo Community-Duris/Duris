@@ -112,6 +112,17 @@ def copper(value: tuple[int, int, int, int]) -> int:
     return total
 
 
+def item_previous_owner(event: dict) -> list[int] | None:
+    if "from_owner" not in event:
+        return None
+    owner = event["from_owner"]
+    if (not isinstance(owner, list) or len(owner) != 3 or
+            type(owner[0]) is not int or not 0 <= owner[0] <= 12 or
+            any(type(value) is not int or not 0 <= value < 2**64 for value in owner[1:])):
+        raise SnapshotError("invalid item previous owner")
+    return owner
+
+
 def account_key(value: object) -> tuple[str, int, int, int]:
     if not isinstance(value, str) or not HEX_KEY.fullmatch(value):
         raise SnapshotError("invalid account key")
@@ -3095,6 +3106,7 @@ class Reconciler:
         seen_events = set()
         seen_revisions = set()
         for row in events:
+            item_previous_owner(row)
             operation_id = require_id(row.get("operation_id"), "UID history operation ID")
             event_index = row.get("event_index")
             uid = row.get("uid")
@@ -3219,6 +3231,7 @@ class Reconciler:
             raise SnapshotError("invalid unattributed UID history coverage")
         seen = set()
         for row in events:
+            item_previous_owner(row)
             operation_id = require_id(row.get("operation_id"),
                                       "unattributed UID operation ID")
             event_index = row.get("event_index")
@@ -3506,7 +3519,16 @@ class Reconciler:
             self.emit("invalid_item_creation_origin", uid=uid)
         created = origin["origin"] == "baseline"
         retired = origin.get("state") == "tombstone"
+        previous_owner = [7, 0, 0] if origin.get("state") == "absent" else origin.get("owner")
+        missing_owner = False
         for event in events:
+            recorded_owner = item_previous_owner(event)
+            if recorded_owner is None:
+                missing_owner = True
+            elif recorded_owner != previous_owner:
+                self.emit("broken_item_owner_history", uid=uid,
+                          operation_id=event.get("operation_id"))
+            previous_owner = event.get("owner")
             action = event.get("action")
             if ((action == "create" and event.get("state") != "live") or
                     (action == "destroy" and event.get("state") != "tombstone")):
@@ -3522,6 +3544,8 @@ class Reconciler:
             if retired and event.get("state") in ("live", "quarantined"):
                 self.emit("resurrected_item_uid", uid=uid, operation_id=event.get("operation_id"))
             retired = retired or action == "destroy" or event.get("state") == "tombstone"
+        if missing_owner:
+            self.emit("missing_item_owner_evidence", uid=uid)
         if not created:
             self.emit("missing_item_creation", uid=uid)
 
@@ -3583,6 +3607,7 @@ class Reconciler:
                 referenced.add(legacy_key)
         by_uid: dict[int, list[dict]] = defaultdict(list)
         for key, event in ownership.items():
+            item_previous_owner(event)
             if (not unsigned_revision(event.get("before_revision")) or
                     not unsigned_revision(event.get("revision"))):
                 raise SnapshotError("invalid ownership event revision")

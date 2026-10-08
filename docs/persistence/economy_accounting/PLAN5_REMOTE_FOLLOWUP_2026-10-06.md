@@ -2292,3 +2292,32 @@ auction, room UID/provider and original full baseline/head64 requests stay. Prim
 local notebook nonblocking; curator application/adoption/acknowledgement unclaimed.
 Full Plan 5/R1–R8/producer/native/player/recovery/load/coverage/release gates remain;
 inactive behavior/wallet exclusions/declined spell path stay. Goal active.
+
+
+## Independent previous-owner history — 2026-10-08
+
+Same local/remote codex/accounting-plan5, base 3a055bb6b1884fa8f1e469d5746dd65ff03202bb; the containing
+commit is the result and delivery/result.json binds the verified remote SHA.
+All seven earlier tips and follow-ups remain ancestors. Unchanged reader falsely
+returned zero findings after an opening-owner change despite original-plan
+verification. The owned reader now checks every previous-owner tuple, preserves
+legacy unknown, refuses partial/malformed tuples and exports all existing SQL
+columns on lineage/unattributed history. No shared schema/native mutation/API
+change. Exact consumer/invariants/tests and remaining shared-provider requests
+are in PLAN5_ITEM_PREVIOUS_OWNER_HISTORY_2026-10-08.md.
+
+Final published primary ab8153878563a9e5d5c44f273423cf0290b5d449, composition 03e3ddb6ed6c7496ea95a49fc1ed3edc4575d960,
+native 833d3085815b396861ad18a77635412212381e4b, migrations 7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2, canonical64.
+207 focused PASS/four original opt-in skips; both whole actual-engine snapshot
+runners PASS, 30 new SQL CLI checks per engine; 12 original near-limit workloads
+PASS. Complete original canonical coin/restore regression PASS with zero skips,
+3026 decoder cases and per-engine 109 cuts/90 refusals. Canonical source and
+final source consumed-input equality are authenticated. Two failed whole-snapshot
+stages and corrected 16-failure RED remain retained; final complete runs green.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/owner-history-20261008;
+seal 88cb0537702429817063497b04e57c05eaf0e438bb7ed0f60861abaca07635e9. Same report plus this additive follow-up are curator-ready
+notebook input; primary-local shared notebook is nonblocking. Application,
+acknowledgement, combined candidate, genuine producers/opening/player journeys,
+full 12-case backup module, Plan5/R1–R8 and release are not claimed. No activation,
+autocorrection, production access, primary push, deployment or merge.
