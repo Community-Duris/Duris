@@ -2796,3 +2796,26 @@ opening/routes/recovery/fault/load/ACK/private combined/activation/Plan5/R1–R8
 release remain open. Curator-ready; notebook nonblocking; application/import/ack
 unclaimed. No production/activation/autocorrection/deploy/merge/primary push or
 cross-chat message.
+
+
+## 2026-10-08: completion-receipt validation
+
+Same sole local/remote codex/accounting-plan5; base 6a1c564b6a8d57273a4115a3f1c03b32a6713f9b. Result is
+this containing commit; exact remote/clean/ancestry/rehash receipt:
+D:/Dev/Tests/Duris/accounting-plan5/completion-receipt-20261008/delivery/result.json. Matching current completion receipts bypassed
+version/time/result-replica validation and could report healthy or begin capture.
+Three readers now reuse existing writer grammar with nonfuture completion bounded
+by capture creation. Existing protected codes/refusal markers remain; valid pending
+replication and new capture pass. No shared interface/schema request. RED 122
+failures/two errors; final 66 filesystem PASS/zero skips, actual CLI126/124 refusals;
+two unchanged original SQL methods PASS plus two actual SQL captures/24 invalid
+receipt refusals/four health controls/two game-loop boots on MariaDB10.11.14 and
+MySQL8.0.46. Composed tree 2f4057ebf4455c0c8f57e5419dceec63b1c5f2e7; tested primary 73e441704fe30a907d53746838f154533b55b292; latest
+138c379e42940cdfdc0d077054b35b76f5bd2016 docs-only/native-schema exact; raw seal 92f14072e00ac6e3092c82f801195784549a2c299140516f3741eac93eb550f4.
+Full report PLAN5_COMPLETION_RECEIPT_QUALIFICATION_2026-10-08.md retains exact
+source/commands/native/engine/scope. Original shared backup recipe blocker and full
+producer/opening/routes/recovery/fault/load/ACK/private combined/activation/Plan5/
+R1–R8/release remain open. Cold restoration scope follows the latest primary
+clarification; historical construction chronology is not added as a gate. Curator-
+ready; notebook nonblocking; application/import/ack unclaimed. No production/
+activation/autocorrection/deploy/merge/primary push or cross-chat message.

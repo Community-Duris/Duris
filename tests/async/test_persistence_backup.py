@@ -466,6 +466,58 @@ class GenerationTests(Fixture):
         with self.assertRaises(backup.BackupError):
             self.create()
 
+    def test_current_completion_receipt_is_valid_before_health_or_capture(self):
+        now = int(time.time())
+        with mock.patch.object(backup.time, "time", return_value=now):
+            for mode in sorted(backup.MODES):
+                self.p["root"] = self.base / ("completion-" + mode)
+                generation = self.create(mode)
+                meta = backup.verify(generation)
+                path = self.p["root"] / "status.json"
+                valid = backup.read_json(path)
+                before = backup.inventory(generation)
+                malformed = [dict(valid, version=value) for value in
+                             (None, True, False, 1.0, "1", 0, 2, [], {})]
+                malformed += [{key: value for key, value in valid.items() if key != "version"}]
+                malformed += [dict(valid, completed=value) for value in
+                              (None, True, False, float(now), "1", [], {}, -1,
+                               meta["created"] - 1, now + 1, float("nan"), float("inf"))]
+                malformed += [{key: value for key, value in valid.items() if key != "completed"}]
+                malformed += [dict(valid, replica=value) for value in
+                              (None, True, [], {}, "pending", "private-replica-alias")]
+                malformed += [{key: value for key, value in valid.items() if key != "replica"},
+                              dict(valid, result="replication_pending")]
+                items = [(Path("newest"), {"created": now}), (generation, meta)]
+                for value in malformed:
+                    for consumer in ("status", "backup", "previous"):
+                        with self.subTest(mode=mode, receipt=value, consumer=consumer):
+                            backup.write_json(path, value)
+                            receipt_hash = backup.digest(path)
+                            with mock.patch.object(backup, "remember_blocked"), \
+                                 mock.patch.object(backup, "checkpoint", side_effect=
+                                      backup.BackupError("synthetic_capture_started")) as capture, \
+                                 mock.patch.object(backup, "complete_generation", side_effect=
+                                      backup.BackupError("synthetic_completion_started")) as complete:
+                                if consumer == "status":
+                                    with self.assertRaisesRegex(backup.BackupError,
+                                                                "^backup_or_rotation_incomplete$"):
+                                        backup.status(self.p)
+                                elif consumer == "backup":
+                                    with self.assertRaisesRegex(backup.BackupError,
+                                                                "^prior_backup_requires_finalization$"):
+                                        backup.backup(self.p, mode)
+                                else:
+                                    self.assertFalse(backup.previous_completion_matches(items, value, self.p))
+                                capture.assert_not_called()
+                                complete.assert_not_called()
+                            self.assertEqual(backup.digest(path), receipt_hash)
+                            self.assertEqual(backup.inventory(generation), before)
+                            self.assertFalse(list(self.p["root"].glob(".staging-*")))
+                backup.write_json(path, valid)
+                self.assertEqual(backup.status(self.p)["result"], "ok")
+                self.assertTrue(backup.previous_completion_matches(items, valid, self.p))
+                self.assertEqual(backup.inventory(generation), before)
+
     def test_stale_or_incomplete_status(self):
         self.create()
         self.assertEqual(backup.status(self.p)["result"], "ok")

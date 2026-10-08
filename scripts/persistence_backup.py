@@ -671,20 +671,25 @@ def clear_blocked_retry(root):
         sync_dir(root)
 
 
-def previous_completion_matches(items, receipt, p):
-    if not isinstance(receipt, dict) or len(items) < 2:
+def _completion_receipt_matches(generation, receipt):
+    if (type(receipt) is not dict or type(receipt.get("version")) is not int or
+            receipt["version"] != 1 or type(receipt.get("completed")) is not int or
+            not generation[1]["created"] <= receipt["completed"] <= int(time.time()) or
+            receipt.get("generation") != generation[0].name):
         return False
-    completed = receipt.get("completed")
     replica = receipt.get("replica")
-    return (type(receipt.get("version")) is int and receipt["version"] == 1 and
-            type(completed) is int and
-            items[1][1]["created"] <= completed <= items[0][1]["created"] + 300 and
+    return (type(replica) is str and
+            ((receipt.get("result") == "ok" and
+              replica in {"not_configured", "transport_and_readback_verified"}) or
+             (receipt.get("result") == "replication_pending" and replica == "pending")))
+
+
+def previous_completion_matches(items, receipt, p):
+    return (len(items) >= 2 and _completion_receipt_matches(items[1], receipt) and
+            receipt["completed"] <= items[0][1]["created"] + 300 and
             receipt.get("result") == "ok" and
-            receipt.get("generation") == items[1][0].name and
-            isinstance(replica, str) and
-            replica in {"not_configured", "transport_and_readback_verified"} and
             (p.get("replica_root") is None or
-             replica == "transport_and_readback_verified"))
+             receipt["replica"] == "transport_and_readback_verified"))
 
 
 def require_within_rpo(generation, p):
@@ -748,11 +753,11 @@ def backup(p, mode):
                     require(shutil.disk_usage(root).free >= p["min_free_bytes"], "low_free_capacity")
                     return complete_generation(root, p, items[0][0], "backup")
                 protected_refusal(root, p, "published_generation_requires_finalize_command")
+            if not _completion_receipt_matches(items[0], receipt):
+                protected_refusal(root, p, "prior_backup_requires_finalization")
             if receipt.get("result") == "replication_pending":
                 require_within_rpo(items[0], p)
                 return complete_generation(root, p, items[0][0], "backup")
-            if receipt.get("result") != "ok":
-                protected_refusal(root, p, "prior_backup_requires_finalization")
         keep = retained(items, p, int(time.time())) if items else set()
         capacity_base = sum(total_size(path) for path, _ in items if path.name in keep)
         require(capacity_base <= p["max_bytes"], "capacity_headroom_required")
@@ -839,11 +844,11 @@ def status(p, require_drill=False):
             if previous_completion_matches(items, receipt, p):
                 protected_refusal(root, p, "published_generation_requires_finalize_command")
             protected_refusal(root, p, "backup_or_rotation_incomplete")
+        if not _completion_receipt_matches(items[0], receipt):
+            protected_refusal(root, p, "backup_or_rotation_incomplete")
         if receipt.get("result") == "replication_pending":
             require(p["replica_root"] is not None, "backup_or_rotation_incomplete")
             require(False, "replica_not_verified")
-        if receipt.get("result") != "ok":
-            protected_refusal(root, p, "backup_or_rotation_incomplete")
         if p["replica_root"] is not None:
             require(receipt.get("replica") == "transport_and_readback_verified", "replica_not_verified")
         drill_path = root / "drill.json"
