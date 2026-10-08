@@ -255,6 +255,46 @@ class GenerationTests(Fixture):
         self.assertTrue((generation / "database.sql.gz").is_file())
         self.assertFalse((generation / "state").exists())
 
+    def test_status_capture_age_is_nonnegative_and_within_rpo(self):
+        now = int(time.time())
+        for mode in sorted(backup.MODES):
+            self.p["root"] = self.base / ("age-" + mode)
+            generation = self.create(mode, now)
+            backup.write_json(self.p["root"] / "drill.json",
+                              dict(result="qualified", completed=now))
+            before = backup.inventory(generation)
+            receipt = backup.digest(self.p["root"] / "status.json")
+            for age in (-300, -1, 0, 1, self.p["rpo_seconds"], self.p["rpo_seconds"] + 1):
+                for require_drill in (False, True):
+                    with self.subTest(mode=mode, age=age, require_drill=require_drill), \
+                         mock.patch.object(backup.time, "time", return_value=now + age):
+                        self.assertEqual(backup.verify(generation)["created"], now)
+                        valid = 0 <= age <= self.p["rpo_seconds"]
+                        if valid:
+                            result = backup.status(self.p, require_drill)
+                            self.assertEqual(result["result"], "ok")
+                            self.assertEqual(result["age_seconds"], age)
+                        else:
+                            with self.assertRaisesRegex(backup.BackupError, "^rpo_exceeded$"):
+                                backup.status(self.p, require_drill)
+                        stdout, stderr = io.StringIO(), io.StringIO()
+                        command = ["backup", "--policy", "/synthetic/policy", "status"]
+                        if require_drill:
+                            command.append("--require-drill")
+                        with mock.patch.object(backup, "policy_load", return_value=self.p), \
+                             mock.patch.object(sys, "argv", command), \
+                             contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                            self.assertEqual(backup.main(), 0 if valid else 1)
+                        if valid:
+                            self.assertEqual(json.loads(stdout.getvalue())["age_seconds"], age)
+                            self.assertEqual(stderr.getvalue(), "")
+                        else:
+                            self.assertEqual(stdout.getvalue(), "")
+                            self.assertEqual(json.loads(stderr.getvalue()),
+                                             dict(event="status", result="failed", code="rpo_exceeded"))
+                        self.assertEqual(backup.inventory(generation), before)
+                        self.assertEqual(backup.digest(self.p["root"] / "status.json"), receipt)
+
     def test_rpo_measures_from_capture_start(self):
         started = int(time.time())
         clock = [started]

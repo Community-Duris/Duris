@@ -826,7 +826,7 @@ def status(p, require_drill=False):
         age = int(time.time()) - items[0][1]["created"]
         size = sum(total_size(path) for path, _ in items)
         free = shutil.disk_usage(root).free
-        require(age <= p["rpo_seconds"], "rpo_exceeded")
+        require(0 <= age <= p["rpo_seconds"], "rpo_exceeded")
         require(size <= p["max_bytes"] and free >= p["min_free_bytes"], "capacity_exceeded")
         require_no_interrupted_work(root, p)
         try:

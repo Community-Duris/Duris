@@ -2756,3 +2756,22 @@ provider defect, genuine producers/opening/routes/recovery/fault/load/ACK/privat
 combined/activation/Plan5/R1–R8/release remain open. Curator-ready; notebook
 nonblocking; application/import/ack unclaimed. No activation/production write/
 autocorrection/deploy/merge/primary push or cross-chat message.
+
+
+## 2026-10-08: nonnegative backup capture age
+
+Same sole remote/local `codex/accounting-plan5`; base d8c606042da403e5332c380801ebe1e4fa7a4cfc. Result is
+this containing commit; exact remote/clean/ancestry/rehash receipt:
+`D:/Dev/Tests/Duris/accounting-plan5/capture-age-20261008/delivery/result.json`. Status previously accepted negative age
+within the verifier's300-second skew tolerance. One condition now matches the
+existing capture/finalization nonnegative-age invariant; no format/interface
+change. Four false healthy controls, RED 8 failures, final 63 filesystem PASS/zero
+skips, six actual CLI calls/four refusals, two original SQL methods PASS plus 12
+real-generation age checks, two game-loop boots; MariaDB10.11.14/MySQL8.0.46.
+Composed tree a19c4d6505cd56a6c1034dd6d95ca2ffa7316541; primary e62269e48aebcab906256908cf97a65dc4ffb5a4; native/schema unchanged.
+Raw seal 03f77533ea2c5ee39cd09397636ba5f49a5bd1fa7ec2bb65624fcafb78381a6c; report PLAN5_CAPTURE_AGE_QUALIFICATION_2026-10-08.md retains
+exact command/source/native/engine/skip scope. Full original backup recipe issue,
+genuine producers/opening/routes/recovery/fault/load/ACK/private combined/
+activation/Plan5/R1–R8/release remain open. Curator-ready; notebook nonblocking;
+application/import/ack unclaimed. No production/activation/autocorrection/deploy/
+merge/primary push or cross-chat message.
