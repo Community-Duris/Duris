@@ -26,6 +26,19 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Coordinator preparation for reported flat-image/O caller join - 2026-10-08
+
+Primary53d8a5d8a is documentation-only;the private corrected flat participant and
+original O caller remain unavailable. Root reads the complete report and verifies
+unchanged maintained source/test/migration trees. Two bounded PRIVATE preparations
+now address concrete future review/acceptance gaps:architecture genuine full flat
+persisted-image/recovery/lock correspondence,and quest original-O admission/quota/
+incumbent/TAKE/lifetime/cursor acceptance. Reuse sealed evidence;no duplicate if
+already covered. Exact outputs,ownership and pending independent review are in
+domain-separation/CONTINUING_PROJECT_COORDINATION.md. No code/test/native execution
+or original Goal resumption;primary major-plan qualification remains deferred.
+Broader finish line is unchanged;heartbeatACTIVE,required native work unfinished.
+
 ## Smith retained-body preparation review closed - 2026-10-08
 
 Both source-grounded deltas on4e26 providers PASS independent review:architecture

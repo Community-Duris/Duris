@@ -452,6 +452,58 @@ Implementation inputs from actual public src833d3085:
   policy,controlled CHARACTER falling and extracted retained restoration;none
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
+## Private Smith flat-image/O caller report and bounded preparation - 2026-10-08
+
+Primary53d8a5d8ab3afc95f53a1777c3c972e8a46e9997 publishes the
+[Smith flat save/original O cursor source report](../SMITH_FLAT_SAVE_AND_ORIGINAL_O_CURSOR_SOURCE_INTEGRATION_2026-10-08.md),read in full.
+Private selected34aa77b5d3dd18c0ac27a47bc4609ba6388279583d2ab71938295b879b680eb1
+reports209 paths/170 source bodies and paired source reviews. Maintained src
+2c957e9bc7aea28093b04c3349faf710f4bcbcc6,tests/async790f367adf805a69d53aac6460938f5c921f9136
+and migrations7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2 remain unchanged.
+Private source/composition/terminal sealer execution is not coordinator-observable.
+
+The report corrects an unseen flat participant's partial queued-body versus
+ALL-component file comparison:retain truthful original queued body separately
+from genuinely read full persisted image under original already-recovered lock.
+Original PID/revision,size normalization,current full-file equality,ownership/
+materialization and full physical BEFORE remain distinct. This is consistent
+with the closed retained-body correspondence warning;it is not an independently
+reviewed private correction or newly available flat Smith capability.
+
+Reported original O caller freezes combined native/warm quota and force,holds
+unknown census including UINT_MAX before force bypass,retains first incumbent/
+TAKE and authentic pending/indexed lifetimes,and clears root alias before factory
+preparation. Actual returned UID,load-missed versus failed/refused/held,known-pure
+continuation eligibility,entry-pending zero-invocation and actual processed cursor
+clearing remain original-owner decisions. Active O and unpublished flat Smith
+readiness/full integration remain closed. Source joins/counts do not qualify
+execution;primary major-plan compile/native/gameplay/recovery deferral remains.
+
+Two bounded PRIVATE source/acceptance preparations are now dispatched:
+
+- Architecture:SMITH_FLAT_PERSISTED_IMAGE_OBSERVATION_BOUNDARY_2026-10-08.txt,
+  from maintained flat player file/repository/authority recovery providers and
+  existing focused fixtures. Establish actual partial queued versus full persisted
+  image,normalization/equality,borrowed/owned lock order/lifetime,recovery-first
+  and refusal obligations for future genuine participant review. The private
+  corrected participant/flat owner remains unavailable;no rewritten masks,new
+  authority API or claimed private review. Reuse prior packets and cite exact
+  existing coverage instead if this precise boundary is already exhausted.
+- Quest:ORIGINAL_O_ADMISSION_CURSOR_ACCEPTANCE_2026-10-08.txt,ONE smallest future
+  original-O quota/incumbent/TAKE/lifetime/continuation case with bounded negatives.
+  Ground original behavior in maintained DB/reset/lookup/native providers and
+  actual-reset fixture;distinguish the reported private changes. Reuse earlier
+  facts and exclude the closed obj_to_room effect map. No invented cursor/API,
+  surrogate owner or changed legacy outcome/conditional-command policy.
+
+Each states available inputs,exact owner/phase observations still missing and
+smallest legitimate later fixture extension. No maintained worker edits,private
+commits,builds,tests,transaction/server/DB/native operation are assigned. Root
+owns independent review/publication;both handoffs are PENDING. Closed packets,
+worktrees and live jobs stay intact. Root evidence D: coordinator-smith-flat-
+original-o-reassessment-20261008/reassessment.json. Actual native Goals remain
+BLOCKED/unfinished;heartbeatACTIVE,no adoption wait or overall completion.
+
 ## Smith correspondence and retention deltas independently reviewed - 2026-10-08
 
 Both bounded PRIVATE deliveries now PASS independent source/design/acceptance
@@ -601,17 +653,16 @@ Smith. Existing native quest pair decoders do not decode Smith17. Any future
 bounded passive Smith reader/oracle needs genuine owner export/schema/pins first;
 no reader edit,private API/format or executable command is reserved now.
 
-Current prioritized queue:genuine Smith compound/persistence/export and legally
-connected fixture;authentic pending-append/producer receipts,measured original-buffer
-capacity and calibrated reachable failures;full-physical/fresh-SQL/native economics/
-publication/recovery;special-placement original owner/O/replay/save/ACK;SHOP original
-refused held-owner/legal late-consumption/fences-at-entry;keeper first-checkpoint/
-boot-warm disposition;history capacity DB proof and remaining native journeys.
-Both new4e26 correspondence/retention deltas and all prior selected preparations
-are CLOSED at their reviewed scopes. No further independent task is selected on
-unchanged inputs. Monitor exact owner/source/fixture publication triggers;preserve
-worktrees/sealed proofs. Native GoalsBLOCKED/unfinished,heartbeatACTIVE;no adoption
-wait,execution qualification or overall completion.
+Current prioritized queue:architecture flat persisted-image observation boundary
+and quest original-O admission/cursor acceptance preparation,each PENDING review;
+then genuine Smith compound/persistence/export/flat readiness and connected fixture,
+authentic pending-append/receipts/measured capacity/calibrated failures,full physical/
+fresh SQL/native economics/publication/recovery,original O/P/special-placement owner
+and save/ACK,SHOP refused held-owner/legal late-consumption/fences-at-entry,keeper
+first-checkpoint/boot-warm disposition,history capacity DB proof and remaining native
+journeys. Closed4e26 correspondence/retention and prior preparations stay exact.
+Native GoalsBLOCKED/unfinished,heartbeatACTIVE;no adoption wait,execution
+qualification or overall completion.
 
 Latest primary960ddd80c1acba5611677270f0156675d6d020ff reports private6641083b:
 full original live-flat refusal cleanup and retained SHOP coordinator cancellation
