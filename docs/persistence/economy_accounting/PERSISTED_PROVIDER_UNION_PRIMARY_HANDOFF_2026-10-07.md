@@ -1,5 +1,45 @@
 # Persisted provider union: primary source handoff - 2026-10-07
 
+## Reviewed reset publication and recovery context - 2026-10-07
+
+Private `tmp/lifecycle-reset-publication-candidate-primary-20261007` composes
+84 production files, 23 unchanged original fixtures and five unchanged schema
+files on maintained02df3a70f. Independent source review and touched formatting
+pass. Composition33d4a0 verifies every pin and preserves the complete predecessor.
+No compilation, native, SQL, migration, gameplay or recovery execution occurred.
+
+The actual factory can preflight a complete detached forest, aggregate prototype
+counts, observe every selected UID/root/parent cache claim, then atomically hydrate
+the cache before callback-free global publication. All metadata remains owned for
+real service steps. Review corrected malformed root locations, foreign-parent
+cache claims and partial metadata cleanup. Original publish/release/drop bodies,
+flatfile template work and the complete active-cache census are preserved.
+
+ZRR1 retains the full original type22 command, ordered UID/recipe progress and
+exact TIR48 with room revision r+1. Its independent codec checks binding, native
+batch publication, original factory services, room placement and final current
+cache proof. The private coordinator requires all five domain validators, exact
+current completion/generation/context CAS, and keeps room/item fences through
+phase2 until authentic terminal evidence transfers durably and the journal retires.
+Generic submission, replay and ACK cannot bypass the typed owner.
+
+The creation-only cold adapter authenticates recipes and constructs the complete
+current forest, including zero/nested money. Its public entry still stages and
+refuses pending the genuine world-context driver; artifacts remain excluded.
+Original rebuild_enrollment already restores a recorded service prefix after
+actual enrollment validation/rebuild; no new prefix setter is required.
+
+Two independent implementation slices continue: durable original terminal-service
+retention and the owning full-world census. Successful initialization belongs
+after copyover/Redis/reconciliation and failed-copyover refusal in game_loop,
+before transport readiness/world input. The runtime-to-maintenance activation
+ownership handoff remains required; activity-ready/game_booted flags do not prove it.
+Actual O producer/admission/publication/ACK, full money/artifact recovery, flatfile
+parity, schema registration/fingerprints and original major-plan/R1-R8 qualification
+remain open. Inactive behavior and safety gates stay; no release gate is closed.
+
+
+
 ## Reviewed creation census and current coin heads - 2026-10-07
 
 Private `tmp/lifecycle-reset-creation-candidate-primary-20261007` composes
