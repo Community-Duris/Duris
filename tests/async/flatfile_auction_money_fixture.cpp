@@ -72,8 +72,7 @@ plan5_claim_timeline(const std::string &root)
 			    effect.key.authority_id == 5)
 				timeline.emplace_back(record, effect);
 	}
-	std::sort(timeline.begin(), timeline.end(),
-		  [](const auto &a, const auto &b)
+	std::sort(timeline.begin(), timeline.end(), [](const auto &a, const auto &b)
 		  { return a.second.before_revision < b.second.before_revision; });
 	return timeline;
 }
@@ -161,8 +160,7 @@ static void plan5_seed_attribution(const std::string &root, const std::string &m
 	assert(lock.acquire(root, &error) &&
 	       !fs::exists(fs::path(root) / "domains/auction_catalog"));
 	const auto records = plan5_records(root);
-	const auto found = std::find_if(records.begin(), records.end(),
-					[](const auto &row)
+	const auto found = std::find_if(records.begin(), records.end(), [](const auto &row)
 					{ return row.command.operation_id.bytes[0] == 6; });
 	assert(found != records.end());
 	const auto &retained = *found;
@@ -233,9 +231,9 @@ static void plan5_seed_attribution(const std::string &root, const std::string &m
 	}
 	if (mode.find("consumption-money") != std::string::npos)
 	{
-		const auto consumer = std::find_if(
-			records.begin(), records.end(),
-			[](const auto &row) { return row.command.operation_id.bytes[0] == 8; });
+		const auto consumer =
+			std::find_if(records.begin(), records.end(), [](const auto &row)
+				     { return row.command.operation_id.bytes[0] == 8; });
 		assert(consumer != records.end() && consumer->result_code == 0);
 		assert(consume_whole_claim_sources(&sources, consumer->command,
 						   { lineage, economic_account_kind::pending_claim,
@@ -286,6 +284,13 @@ static void plan5_output(const auction_catalog &catalog,
 	{
 		std::cout << (comma ? "," : "") << "[5," << money.pid << ',' << money.amount << ','
 			  << money.revision << ']';
+		comma = true;
+	}
+	std::cout << "],\"event_published\":[";
+	comma = false;
+	for (const auto &operation : catalog.operations)
+	{
+		std::cout << (comma ? "," : "") << (operation.event_published ? "true" : "false");
 		comma = true;
 	}
 	std::cout << "]}\n";

@@ -29,8 +29,10 @@ int main(int argc, char **argv) {
         const std::filesystem::path root = argv[2];
         audit_budget budget;
         if (mode == "decode") {
+            std::vector<bool> published;
             auto catalog = restore_native_auction::decode_catalog(
-                file_bytes(root / "domains", "auction_catalog", restore_native_auction::catalog_limit));
+                file_bytes(root / "domains", "auction_catalog", restore_native_auction::catalog_limit),
+                [&](const auto &receipt) { published.push_back(receipt.event_published); });
             auto sources = restore_native_auction::decode_sources(
                 file_bytes(root / "domains", "auction_claim_sources", restore_native_auction::source_limit));
             std::cout << "{\"catalog_revision\":" << catalog.revision
@@ -41,6 +43,12 @@ int main(int argc, char **argv) {
             for (const auto &holding : catalog.holdings) {
                 std::cout << (comma ? "," : "") << '[' << holding.kind << ',' << holding.id
                     << ',' << holding.amount << ',' << holding.revision << ']';
+                comma = true;
+            }
+            std::cout << "],\"event_published\":[";
+            comma = false;
+            for (bool flag : published) {
+                std::cout << (comma ? "," : "") << (flag ? "true" : "false");
                 comma = true;
             }
             std::cout << "]}\n";
@@ -146,7 +154,7 @@ def green_checks(state, out, observations, fixture, operator, native_fixture, in
         struct.pack_into(fmt, data, offset, replacement)
         return frame(data)
 
-    def differential(label, cat=original, src=original_sources, valid=True):
+    def differential(label, cat=original, src=original_sources, valid=True, published=None):
         catalog.write_bytes(cat)
         sources.write_bytes(src)
         before = whole()
@@ -162,6 +170,8 @@ def green_checks(state, out, observations, fixture, operator, native_fixture, in
             assert not native.stderr and not pure.stderr
             decoded = json.loads(native.stdout)
             assert decoded == json.loads(pure.stdout), (label, native, pure)
+            if published is not None:
+                assert decoded["event_published"] == published, (label, decoded)
         else:
             assert not native.stdout and not pure.stdout
             assert native.stderr == "native_auction_decode_refused\n"
@@ -193,8 +203,9 @@ def green_checks(state, out, observations, fixture, operator, native_fixture, in
     result_at = operation + 52
     assert len(original) == result_at + 321
 
-    differential("complete version 2 native catalog and sources")
-    differential("legacy version 1 omits event publication byte", cat=frame(original, original[56:-1], version=1))
+    differential("complete version 2 native catalog and sources", published=[False])
+    differential("legacy version 1 omits event publication byte", cat=frame(original, original[56:-1], version=1), published=[True])
+    differential("version 2 explicitly published receipt", cat=changed(original, result_at + 320, "<B", 1), published=[True])
     differential("native receipt allows event code and nonzero padding",
         cat=changed(changed(original, result_at + 1, "<B", 255), result_at + 319, "<B", 123))
     differential("native item vnum zero is valid", cat=changed(original, item + 16, "<I", 0))

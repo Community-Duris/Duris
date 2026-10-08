@@ -132,7 +132,8 @@ inline catalog decode_catalog(std::span<const uint8_t> encoded,
 		const auto result_code = in.number(4);
 		const auto result_bytes = in.take(320);
 		receipt(result_bytes);
-		bool event_published = false;
+		// Native legacy receipts predate the flag and are already published.
+		bool event_published = file.version == 1;
 		if (file.version == 2)
 		{
 			const auto flag = in.number(1);
