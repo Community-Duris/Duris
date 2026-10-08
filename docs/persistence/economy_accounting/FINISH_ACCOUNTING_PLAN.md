@@ -133,10 +133,15 @@ NMB4 admission source join:189 selected files,81 C providers. Public src/tests/
 migrations unchanged;all execution remains deferred. Never-admitted disposition,
 shared keeper atomic birth and original AFTER provenance remain open. First-ever
 saved-row checkpoint timing and original retained boot-versus-warm disposition
-need owner decisions;replay cold is not provenance. Architecture now prepares
-one PRIVATE focused maintained-source fact brief for those two decisions,using
-closed SHOP map and actual save/restore/reset callers. No policy/implementation
-or new checkpoint clock authorized. Quest native dependencies unchanged. Prior
+need owner decisions;replay cold is not provenance. Architecture source-fact
+brief now PASS root review:21 source bodies/three published docs/102 anchors/five
+artifacts authenticated. M reset tail does not save a keeper checkpoint;ordinary
+SQL upsert can insert,flat save/replace requires an existing row and whole-catalog
+establish is not append-one birth. Save triggers/retry clocks do not choose first
+checkpoint policy. Original retained producer disposition and exact owner-selected
+AFTER cash/stock/revision/clock remain private inputs. No policy/implementation
+or new clock authorized;quest prerequisites unchanged. No next independent task
+is selected until actual owner/source/fixture inputs change. Prior
 0433 Plan5/immutable-forest report remains historical;no private source/adoption
 or integrated qualification observable. GoalBLOCKED/heartbeatACTIVE unchanged.
 Supported

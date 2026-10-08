@@ -269,10 +269,11 @@ Original reviewer reference-search correction is retained in the private report;
 no worker evidence or provider changed. Root supplemental-review.json records
 index/report identities; sealed private review packet remains on D:.
 
-Current prioritized queue: (1)one bounded architecture PRIVATE source-fact brief
-for newly explicit shared-keeper checkpoint/provenance decisions,(2)shared-owner
-history capacity decision and fix-specific integrated real DB proof when published,
-(3)genuine native source/owner/save/ACK/current/cold interfaces and original journeys.
+Current prioritized queue: (1)shared-keeper first-checkpoint decision/authentic
+original retained boot-versus-warm disposition,(2)shared-owner history capacity
+decision/fix-specific integrated real DB proof,(3)genuine native source/owner/save/
+ACK/current/cold interfaces and original journeys. Narrow fact preparation is
+reviewed/closed;next implementation retains shared owners and missing inputs.
 Quest has no newly executable native case;public maintained source is unchanged.
 No maps/helpers are reopened to fill time. Both actual native Goals and root Goal
 remain BLOCKED/unfinished;heartbeat ACTIVE. This is not overall completion/pause.
@@ -298,21 +299,36 @@ Prior0433eae8d7108537e immutable working forest/Plan5 source integration and
 reported reset policy replaces saved keeper cash/stock on cold restore,does not
 union/overlay warm reset and adds no new historical row-ID rule.
 
-Architecture now owns ONE PRIVATE keeper-checkpoint-provenance-facts-20261008
-packet:concise FACTS.txt,exact source pins/anchors and first-row/existing-row versus
-original boot/warm table. Benefit: reduce evidence lookup for the primary's two
-newly explicit owner decisions,without duplicating its shared implementation.
-Available inputs:81dc handoff,closed SHOP map5c53e1e97,maintained boot/reset/native
-mobile tail,core/files save/restore,SQL keeper checkpoint,flat keeper save/restore/
-repository and save-policy callers. Reuse old findings;inspect only needed paths.
-Trace actual checkpoint triggers/refusals/revision/cash/stock facts,identify
-precise unavailable private producer/retained-proof inputs and stop at source
-limits. No policy choice,new clock/field/format/cold-as-provenance or DB/native
-qualification. No new committed docs/tests/code/patch/prototype,shared authorities/
-Plan5/private import/build/server/DB/native batch. One bounded private D: delivery,
-existing isolated WT/completed packets preserved. Root reviews before publishing
-useful optional source-supported owner handoff;no adoption wait. Missing private
-inputs block dependent implementation,not this narrow fact preparation.
+Architecture keeper-checkpoint-provenance fact brief now PASS root review:
+21 maintained source bodies/three published docs/102 exact line anchors/five
+packet artifacts authenticate. Indexb835c796dc1cba46e129d839b0d4d8536be82f76d9394393e75a1d0d1ff9163a;
+root independent review.json in D:/Dev/Temp/coordinator-keeper-checkpoint-provenance-20261008.
+No build/native/DB execution or private source authentication. Reused SHOP map
+remains closed. Source facts for the shared-owner decision:
+- Public reset_zone M tail (world/db.c:7215-7314) creates/binds without a keeper
+  checkpoint;original boot force2/event warm force0 are callsite facts,not retained
+  replay provenance. Ephemeral boot pointer set and replay cold do not replace it.
+- Ordinary SQL save (sql/sql_player.c:9743,9825) can insert via upsert;existing-row
+  revision increment is distinct from the sealed existing-row accounted checkpoint.
+  Flat save/replace requires an existing row;repository establish493 creates the
+  whole absent catalog and is not an append-one-keeper birth API. Bounded source
+  caller searches find only declaration/definition for establish/flat dirty helper.
+- Direct trade saves,game-clock dirty saves,forced shutdown/copyover are current
+  triggers. Failed-save60-900s backoff does not define first-birth checkpoint timing.
+  Flat-primary legacy dirty-save dispatch returns immediately;do not infer a flat
+  checkpoint from a SQL dirty flag. Restore marks dirty but does not advance the
+  durable revision by itself.
+- Earlier reported approved policy restores saved cash/stock for original boot,
+  no warm catalog overlay/union. Saved BEFORE metadata does not select exact AFTER
+  revision/clock or authenticate original producer disposition for cold replay.
+The primary must choose whether birth establishes first checkpoint or preserves
+normal timing,then supply authentic original retained boot/warm carrier bound to
+same operation/source/attempt and exact BEFORE/AFTER cash/stock/revision/clock/
+atomic-result/recovery contract. No policy choice,new clock/field/format/union/
+stock overwrite or row-ID requirement is introduced. Private overlap/adoption
+unknown;no adoption wait. Both selected fact review and prior component reviews
+are complete at scope;no new independent task selected absent changed inputs.
+Preserve isolated WTs/packets;native/root Goals BLOCKED/unfinished,heartbeatACTIVE.
 The earlier primary07c0e0398 report remains historical below; it reports private
 ordinary NMB4/MBR4 SQL storage/repository
 dispatch and flat boot-template/procedure/reload helpers at candidated9eaa45b:
