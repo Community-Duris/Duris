@@ -269,6 +269,29 @@ Original reviewer reference-search correction is retained in the private report;
 no worker evidence or provider changed. Root supplemental-review.json records
 index/report identities; sealed private review packet remains on D:.
 
+Latest primaryab67bad7e079245128c4de04a82beed0df2a2e9e adds the64-line
+[Smith capture/terminal cold source report](../SMITH_CAPTURE_AND_TERMINAL_COLD_SOURCE_INTEGRATION_2026-10-08.md),read in full.
+Private673ef5eb now reports completed-present AND missing-body terminal reset
+continuation;this supersedes earlier missing-body source-work status only.
+Current session/receipt/full graph/custody and complete cache/native absence
+precede genuine frozen-image construction;original BODY/RNG/callback/placement
+are not rewritten/rerun. Cold factories join pending census;fresh proof precedes
+ACK/release. Refusal may retain partial allocation/bookkeeping;partial/foreign/
+started-unreturned cuts hold. No historical global chronology format is added.
+Smith capture now reports required runtime-index authentication BEFORE pointer
+reads,retaining original bounded selection/forest/fee facts without effects or
+operation/save authority.204 selected paths/165 source files;producer not compiled
+or registered,payload17 unsupported and active Smith guard CLOSED. Shared output/
+command/SQL-flat participant/publication/recovery/ACK owner remains incomplete.
+Reported valid read_object has no normal returned-null constructor branch;
+invalid-Rnum boundary is distinct. Do not invent a constructor-failure phase or
+use accounting refusal to authorize legacy command='!' mutation. Original reset
+cursor/dispatcher/unfinished-prefix and special/foreign-target/flat routes remain.
+All execution deferred;maintained src/tests/migrations unchanged/private source
+unavailable. No genuine new side fixture/interface follows;closed preparation and
+precise dependency queue remain,without duplicate Smith capture or recovery owner
+work. GoalsBLOCKED/unfinished;heartbeatACTIVE,overall qualification still open.
+
 Latest primary138c379e42940cdfdc0d077054b35b76f5bd2016 adds the63-line
 [Cold restoration scope/Smith value handoff](../COLD_RESTORE_SCOPE_AND_SMITH_VALUE_HANDOFF_2026-10-08.md),read in full.
 Candidate remains private9a7faa28;no public capability or execution advance.

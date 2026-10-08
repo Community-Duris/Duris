@@ -1875,3 +1875,28 @@ clock is authorized. Completed-present/startup adoption is separately reviewed b
 primary;missing-body recovery remains open. Current preparation reviews/queue
 below remain valid;no new side assignment on unchanged public source/fixtures.
 All major-plan execution deferred;GoalsBLOCKED/unfinished,heartbeatACTIVE.
+
+
+Smith capture/terminal cold source reassessment - 2026-10-08:
+Latest primaryab67bad7e079245128c4de04a82beed0df2a2e9e adds the64-line
+[Smith capture/terminal cold source report](../SMITH_CAPTURE_AND_TERMINAL_COLD_SOURCE_INTEGRATION_2026-10-08.md),read in full.
+Private673ef5eb now reports completed-present AND missing-body terminal reset
+continuation;this supersedes earlier missing-body source-work status only.
+Current session/receipt/full graph/custody and complete cache/native absence
+precede genuine frozen-image construction;original BODY/RNG/callback/placement
+are not rewritten/rerun. Cold factories join pending census;fresh proof precedes
+ACK/release. Refusal may retain partial allocation/bookkeeping;partial/foreign/
+started-unreturned cuts hold. No historical global chronology format is added.
+Smith capture now reports required runtime-index authentication BEFORE pointer
+reads,retaining original bounded selection/forest/fee facts without effects or
+operation/save authority.204 selected paths/165 source files;producer not compiled
+or registered,payload17 unsupported and active Smith guard CLOSED. Shared output/
+command/SQL-flat participant/publication/recovery/ACK owner remains incomplete.
+Reported valid read_object has no normal returned-null constructor branch;
+invalid-Rnum boundary is distinct. Do not invent a constructor-failure phase or
+use accounting refusal to authorize legacy command='!' mutation. Original reset
+cursor/dispatcher/unfinished-prefix and special/foreign-target/flat routes remain.
+All execution deferred;maintained src/tests/migrations unchanged/private source
+unavailable. No genuine new side fixture/interface follows;closed preparation and
+precise dependency queue remain,without duplicate Smith capture or recovery owner
+work. GoalsBLOCKED/unfinished;heartbeatACTIVE,overall qualification still open.
