@@ -16,8 +16,12 @@ and [canonical handoff](domain-separation/AUDITOR_PROVIDER_RECIPE_HANDOFF_2026-1
 close the optional one-file retirement/native-cost/native-give builder repair.
 Code1793deb8 alone on exacta539 primary links through the original maintained
 builder; all source/packet/ELF/compiler inputs and library/symbol pins authenticate.
-Current primary preimage matches and standalone patch check passes. Code adoption
-remains optional/unclaimed. Zero native runtime cases; original failure/custody
+Primary bf1aaad3786015b121112b23c5ee587929105de9 now imports the exact reviewed
+builder body, as recorded in [primary integration evidence](PLAN5_OPERATOR_RECIPE_PRIMARY_INTEGRATION_2026-10-07.md).
+Coordinator verifies postimage blob471ec432f9185d7b9668fced506060e60ebcc30c and
+SHA25639fb56b06201ec0dbb0ce3c6bfea0eac02cc506c12dd4615ac4b53066d4a1ddf,
+with unchanged production and migration trees. Adoption is now published;
+primary has not repeated the link or run runtime cases. Original failure/custody
 success stay separate. Full original major-plan/runtime gates remain required.
 
 ## Shopkeeper recipe preservation independently checked - 2026-10-07

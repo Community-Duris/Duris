@@ -587,8 +587,17 @@ files/full6491 export/actual ELF, all677 actual compiler inputs/63 depfiles,
 all13 toolchain/library pins/seven runtime pairs and symbol closure authenticate.
 Original failure and passing custody remain separate, unchanged and unrepeated.
 No selected implementation/build/review/handoff remains pending at this scope.
-Primary code import is optional/unclaimed; current builder preimage stays exact.
-No new runtime case, authority/testdriver/manifest edit or adoption wait follows.
+Primary bf1aaad3786015b121112b23c5ee587929105de9 now publishes the exact reviewed
+builder import and [integration disposition](../PLAN5_OPERATOR_RECIPE_PRIMARY_INTEGRATION_2026-10-07.md).
+Coordinator authenticates full builder body equality to code1793deb8, postimage
+blob471ec432f9185d7b9668fced506060e60ebcc30c and
+SHA25639fb56b06201ec0dbb0ce3c6bfea0eac02cc506c12dd4615ac4b53066d4a1ddf.
+The three-node diff is exact; production src833d3085815b396861ad18a77635412212381e4b
+and migrations7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2 remain unchanged.
+This supersedes the earlier unclaimed adoption disposition. Primary reports no
+repeated link or runtime execution. No new quest/native authority interface,
+fixture, selected sidework or worker wake follows from this recipe-only import.
+No runtime qualification or broader completion is inferred; retain event monitoring.
 
 Published d3ec3b29260fe923059cb9038d1c42e54a00a1f6 adds documentation only for
 private fresh activation-consumer preparation: owned RR read cut, legacy v1
