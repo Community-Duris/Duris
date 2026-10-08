@@ -167,3 +167,19 @@ provides only a synchronous guarded borrow before listeners/callbacks/input and
 revokes it before release. The source SQL normalization/independent verifier and
 activation consumer are still required; no raw census or terminal DTO is authority.
 Production accounting stays inactive; all cross-stream release gates remain open.
+
+## Reviewed retained-runtime return proof interface - 2026-10-07
+
+The common private97/23/5 candidate preserves the original terminal/cold-world
+interfaces above and registers all52 selected production providers once. A real
+pure auction forest provider replaces the mixed-TU dependency without changing
+flags, fixture cases or function semantics; native linkage is still unproven.
+Adopted runtime rollback retains original SQL/local/coordinator exclusion. An
+uncertain attempted COMMIT cannot become a known abort through later ROLLBACK.
+The private lifecycle owner now freshly authenticates SQL selection and complete
+current wallet/bank mappings on the original retained session, proves read cleanup,
+and compares the unchanged installed regular projection. No carried receipt,
+finished boot selection or DTO grants return authority. Actual return/resumption,
+committed projection installation and full activation consumer remain unwired.
+Source/format review only; no compiler, engine, migration, recovery or gameplay
+execution. Independent Plan5 readers/audit/backup/release ownership is unchanged.

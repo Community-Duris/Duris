@@ -1,53 +1,57 @@
 # Finish accounting implementation plan
 
-## Reviewed authenticated cold publication and initialized-world owner - 2026-10-07
+## Reviewed retained runtime abort and build integration - 2026-10-07
 
-Private `tmp/lifecycle-reset-cold-world-candidate-primary-20261007` composes
-92 production files, 23 unchanged original fixtures and five private schema/
-manifest files on maintained996ce9ebb. All selected pins preserve the complete
-predecessor. Independent source review and touched formatting pass; compiler,
-native, SQL, migrations, gameplay, cold recovery and fault execution are unrun.
+Private `tmp/lifecycle-reset-abort-proof-candidate-primary-20261007` composes
+97 production files, 23 unchanged original fixtures and five private schema/
+manifest files on maintained3bcc4650a. Candidate SHA-256 is
+`604cbd1b79c83b9c45add9b7b653b27531464e945fb39093d2e470ababbb2f10`.
+Independent source review and changed-line formatting/token preservation pass.
+Compiler, native, SQL, migration, gameplay, fault and recovery execution are unrun.
+These private sources have not been imported into the maintained production tree.
 
-The cold creation owner independently authenticates the original locked SQL
-session, current full graph and genuine original terminal ZRR1 body. It retains
-factory stages before native consumption, rebuilds only recorded returned
-services through the original helper, and proves room placement and exact cache
-state before releasing completed metadata. Missing terminal evidence refuses.
-The caller retains uncertain/admitted stages for the process lifetime and stops
-before legacy recovery. Review corrected classification loss on failed reads,
-calling the driver after classification refusal, and ambiguous START cleanup;
-enumeration and root reads now use the existing exact-session cleanup owner.
+The original auction forest helper is now a real separate pure production
+provider. Original function bodies, public declarations and the remaining native
+publication body are preserved. The unchanged original fixture recipe does not
+use a fake provider or new linker flags. Fifteen missing real production objects
+are registered; all52 selected production C files occur once. Existing flags,
+rules, dependency generation and profiles are preserved. Full native linkage
+remains unproven; other mixed production dependencies still need source closure.
 
-Terminal retention authenticates the full original SQL root/TIR before locking,
-accepts NULL-first or byte-identical writes, and never commits, retries or ACKs.
-Private0065 gains a nullable original terminal body with guarded predecessor/
-successor validation. Raw capture preserves NULL/binary bytes and correlates
-the original command/TIR. Storage permits32MiB; the original raw single-cell
-cap1MiB remains enforced. Neither storage nor pure proof grants current authority.
+The adopted runtime cleanup mode retains the original SQL session, boot/writer
+locks, local gate and genuine coordinator lease through known rollback. Genuine
+committed publication and known abort can transfer the same fences to the empty
+lifetime guard. A marker set before adopted COMMIT prevents ordinary rollback,
+private aborted return and known-abort validation after an uncertain COMMIT.
+A later successful ROLLBACK cannot disprove that COMMIT. Pre-COMMIT START/rollback
+recovery remains available; ordinary maintenance behavior is preserved.
 
-Actual successful game_loop initialization now has a private owning census seam
-before listener creation/readiness/input, after the exact failed-copyover decision.
-Early copyover admission remains intact. Late selected capture reacquires genuine
-coordinator/writer/session exclusion, drains the actual durable outbox and accepted
-saves, then checks fresh readiness/ownership epoch. Review corrected the missing
-outbox drain and listener ordering. The capability is revoked before callbacks;
-inactive/NO_MYSQL capture refusal preserves startup and grants no SQL/world permit.
-The synchronous activation/normalization/independent verifier consumer is not wired.
+Private known-abort verification now authenticates a fresh RR SQL selection,
+installation, activation, baseline/opening and full current mappings on that
+original retained session. The original finished selection supplies expected
+identities only. Existing transaction cleanup is registered before SET/START;
+explicit original-session ROLLBACK and idle proof precede a complete comparison
+of the still-installed regular wallet/bank projection. Counts, unique canonical
+locators, all account-key fields, identity and unchanged atomic incarnation are
+checked. This immediate private check does not install policy, release exclusion,
+reopen admission or create a reusable return permit. Actual return/resume and
+committed projection publication are still unwired.
 
-A private atomic runtime-to-maintenance transfer preserves the original guard,
-authority ID, SQL session, boot/writer locks and local exclusion while converting
-the actual reservation to a genuine cutover lease without reopening admission.
-Actual activation, retained rollback/runtime return and projection-authenticated
-resume remain open. No epoch is selected by these new source changes.
+The accepted cold reset owner, nullable original terminal storage/raw proof,
+exact-session SQL recovery caller and successful pre-listener full-world census
+remain in the common candidate. Original budgets and32MiB storage/1MiB raw-cell
+boundaries remain. The census drains actual accepted outbox/saves and revokes its
+private borrow before callbacks. No epoch is selected by these source changes.
 
-The original full-provider recipe successor preserves cases, flags, macros and
-engine controls. Source tracing found a genuine mixed production-TU dependency:
-the auction forest helper pulls native output and a second main. Extraction of
-the real pure provider is underway; no fake provider or linker flag is substituted.
-Actual O producer/live service context/terminal transfer, complete money/artifact
-recovery, flatfile parity, schema registration/fingerprints and all major-plan/
-R1-R8 qualification remain open. Inactive behavior and safety gates stay intact.
-This source checkpoint closes no release gate; coverage remains incomplete.
+Parallel actual O producer tracing confirmed genuine P selection is world-global
+newest-constructor lookup, potentially across intervening commands/owners. Roots
+must retain original ordering through the complete reset boundary. A caller-owned
+original source/factory construction slice is underway, not an admissible forest.
+Whole-forest ownership, real room nesting/placement services, terminal transfer,
+artifact/progressed money recovery, flat parity, measured schema fingerprints,
+activation/normalization/independent verifier integration and original major-plan/
+R1-R8 qualification remain open. Inactive behavior and safety gates stay intact;
+this checkpoint closes no release gate and coverage remains incomplete.
 
 ## Reviewed creation census and current coin heads - 2026-10-07
 
