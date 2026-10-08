@@ -282,6 +282,26 @@ class GenerationTests(Fixture):
         self.assertEqual(backup.status(self.p, require_drill=True)["result"], "ok")
 
 
+    def test_manifest_requires_an_exact_version_one_object(self):
+        for mode in sorted(backup.MODES):
+            generation = self.create(mode)
+            manifest = generation / "manifest.json"
+            valid = backup.read_json(manifest)
+            self.assertEqual(backup.verify(generation), valid)
+            malformed = [None, False, 1, 1.0, "private-manifest-alias", [], sorted(valid)]
+            malformed += [dict(valid, version=value)
+                          for value in (True, False, 1.0, "1", None, 0, 2, [], {})]
+            malformed += [{key: value for key, value in valid.items() if key != "version"}]
+            for value in malformed:
+                with self.subTest(mode=mode, manifest=value):
+                    backup.write_json(manifest, value)
+                    before = backup.inventory(generation)
+                    with self.assertRaisesRegex(backup.BackupError, "^invalid_generation_manifest$"):
+                        backup.verify(generation)
+                    self.assertEqual(backup.inventory(generation), before)
+            backup.write_json(manifest, valid)
+            self.assertEqual(backup.verify(generation), valid)
+
     def test_full_manifest_and_checksum_tamper_both_modes(self):
         for mode in sorted(backup.MODES):
             with self.subTest(mode=mode):
@@ -752,6 +772,49 @@ class RestoreTests(Fixture):
         guard = mock.patch.object(restore, "restore_capacity")
         guard.start()
         self.addCleanup(guard.stop)
+    def test_bad_generation_manifest_refuses_before_candidate_or_service(self):
+        ledger = self.ledger()
+        live = backup.inventory(self.base / "live", exclude_locks=True)
+        journals = backup.inventory(self.base / "journals", exclude_locks=True)
+        ledger_hash = backup.digest(ledger)
+        for mode in sorted(backup.MODES):
+            generation = self.create(mode)
+            manifest = generation / "manifest.json"
+            valid = backup.read_json(manifest)
+            malformed = [None, False, 1, 1.0, "private-manifest-alias", [], sorted(valid)]
+            malformed += [dict(valid, version=value)
+                          for value in (True, False, 1.0, "1", None, 0, 2, [], {})]
+            malformed += [{key: value for key, value in valid.items() if key != "version"}]
+            for value in malformed:
+                with self.subTest(mode=mode, manifest=value):
+                    backup.write_json(manifest, value)
+                    before = backup.inventory(generation)
+                    with mock.patch.object(restore, "service_load") as service, \
+                         mock.patch.object(restore, "private_database") as database, \
+                         mock.patch.object(backup, "run") as run:
+                        with self.assertRaisesRegex(backup.BackupError, "^invalid_generation_manifest$"):
+                            restore.restore(self.p, generation.name, ledger)
+                        stdout, stderr = io.StringIO(), io.StringIO()
+                        command = ["backup", "--policy", "/synthetic/policy", "restore",
+                                   "--generation", generation.name, "--tombstones", str(ledger)]
+                        with mock.patch.object(backup, "policy_load", return_value=self.p), \
+                             mock.patch.object(sys, "argv", command), \
+                             contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                            self.assertEqual(backup.main(), 1)
+                        self.assertEqual(stdout.getvalue(), "")
+                        self.assertEqual(json.loads(stderr.getvalue()),
+                                         dict(event="restore", result="failed", code="invalid_generation_manifest"))
+                        service.assert_not_called()
+                        database.assert_not_called()
+                        run.assert_not_called()
+                    self.assertFalse(list(self.p["restore_root"].glob("candidate-*")))
+                    self.assertEqual(backup.inventory(generation), before)
+                    self.assertEqual(backup.inventory(self.base / "live", exclude_locks=True), live)
+                    self.assertEqual(backup.inventory(self.base / "journals", exclude_locks=True), journals)
+                    self.assertEqual(backup.digest(ledger), ledger_hash)
+            backup.write_json(manifest, valid)
+            self.assertEqual(backup.verify(generation), valid)
+
     def test_tombstone_preflight_fails_closed(self):
         captured = int(time.time()) - 10
         restore.tombstone_preflight(self.ledger(), self.p, captured)

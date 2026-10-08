@@ -2441,3 +2441,34 @@ original native provider/UID-owner/baseline handoffs, private combined candidate
 genuine producers/opening/player/route/fault/load acceptance and Plan5/R1–R8/
 release remain open. No activation, autocorrection, production write, primary
 push, deployment or merge.
+
+
+## Generation-manifest envelope — 2026-10-08
+
+Same local/remote codex/accounting-plan5; base0ab16c81cab39c318acc880ca71d1e75fc075731.
+Result is the containing commit, verified in delivery/result.json; all seven
+prior tips remain. Existing verify now requires an object with exact integer
+version1; true/1.0 aliases and nonobjects refuse invalid_generation_manifest.
+Two new existing-module methods prove34 verify,34 restore and34 CLI refusals
+before candidate/service/private-DB/native work, preserving all source bodies.
+No format/schema/shared/native/recipe or retention-policy change.
+
+Frozen primary315bf5ac7a5e21af061b8e1d643a50e9cdb74a47 plus27 overlays:tree8b6b40d9caeec860d0cc5cce576529f3183bd417;
+native833d3085815b396861ad18a77635412212381e4b;migrations7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2/head64.
+This explicitly includes unchanged prior tombstone fix c373f04fac0ef14f734bc086c1cef01246dc70fe,
+restore blob23b17a3d158ac455105de1cd1303561dcc028ad8, still absent from primary.
+Integrate/preserve that owned commit alongside this one. Earlier24-overlay
+results keep their recorded scope. Complete filesystem modules60 PASS/zero skips;34 additional actual CLI
+refusals use the real policy parser/dedicated mount,without candidates or source
+changes (modeled dump bytes).
+Whole12 native module11 PASS/one unchanged original fixture-link failure/zero
+errors/skips,ten actual service boots and23 qualifications per SQL engine.
+Same seven missing symbols/nine unreached controls remain primary-owned; no
+relaxed recipe or green relabel. Both maintained servers are authenticated reuse.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/generation-envelope-20261008;
+seale6da9fb7611db292cac54954c0682be22cd7646eed7a24e79ab17ada699634fb. Full report PLAN5_GENERATION_MANIFEST_ENVELOPE_2026-10-08.md
+is curator-ready input; primary-local notebook nonblocking, application/ack
+unclaimed. Genuine native/provider/UID-owner/baseline/combined/producers/opening/
+player/route/fault/load and Plan5/R1–R8/release gates remain. No activation,
+autocorrection, production write, primary push, deployment or merge.
