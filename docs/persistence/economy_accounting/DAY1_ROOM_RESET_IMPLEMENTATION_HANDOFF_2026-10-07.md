@@ -1,57 +1,117 @@
 # Required room-floor reset producer: implementation handoff - 2026-10-07
 
-## Reviewed retained runtime abort and build integration - 2026-10-07
+## Reviewed warm forest and SHOP proof prerequisites - 2026-10-08
 
-Private `tmp/lifecycle-reset-abort-proof-candidate-primary-20261007` composes
-97 production files, 23 unchanged original fixtures and five private schema/
-manifest files on maintained3bcc4650a. Candidate SHA-256 is
-`604cbd1b79c83b9c45add9b7b653b27531464e945fb39093d2e470ababbb2f10`.
-Independent source review and changed-line formatting/token preservation pass.
-Compiler, native, SQL, migration, gameplay, fault and recovery execution are unrun.
-These private sources have not been imported into the maintained production tree.
+Private `tmp/lifecycle-shop-materialization-candidate-primary-20261008` composes
+115 production files, 23 unchanged original fixtures and five unchanged schema/
+manifest files on maintained4b5b90646. Candidate SHA256:
+`c833d941d8f57c580b3d2fc37c1015bef97a08d114cc418a3984e7bc5333aeff`.
+All 63 selected C providers register once; original flags/rules and the prior
+sole PC-provider Makefile addition stay. Two newer documentation-only remote
+commits are preserved on a new linear review branch in the same worktree, with
+all three unrelated changes preserved; no merge was performed.
 
-The original auction forest helper is now a real separate pure production
-provider. Original function bodies, public declarations and the remaining native
-publication body are preserved. The unchanged original fixture recipe does not
-use a fake provider or new linker flags. Fifteen missing real production objects
-are registered; all52 selected production C files occur once. Existing flags,
-rules, dependency generation and profiles are preserved. Full native linkage
-remains unproven; other mixed production dependencies still need source closure.
+Plan3 dormant warm registry retains multiple genuine O roots, reserved UIDs,
+once-created P children and complete selected-root ownership wrappers. Genuine
+constructor chronology rejects foreign/incomplete winners without fallback;
+sealing captures complete actual forests, original recipes/bindings and zero or
+nested coin literals. Actual cursor/S boundary, P-before-O scope, aggregate CCC
+reservation, current season/room SQL cut, admission/adoption and real comm/
+publication/recovery wiring remain missing. Local retained-size checks grant no
+coordinator budget authority. Active O refusal stays; no partial gate is lifted.
 
-The adopted runtime cleanup mode retains the original SQL session, boot/writer
-locks, local gate and genuine coordinator lease through known rollback. Genuine
-committed publication and known abort can transfer the same fences to the empty
-lifetime guard. A marker set before adopted COMMIT prevents ordinary rollback,
-private aborted return and known-abort validation after an uncertain COMMIT.
-A later successful ROLLBACK cannot disprove that COMMIT. Pre-COMMIT START/rollback
-recovery remains available; ordinary maintenance behavior is preserved.
+Plan4 now has original-codec current keeper reads under the actual borrowed lock,
+pure canonical complete proposed keeper/custody reads and actual participant
+clocks, including inactive custody history. Current reads neither reacquire nor
+recover. Proposed values grant no storage authority. A narrow typed SHOP storage
+friend adds no route permission. Keeper/custody source reviews pass; custody
+and friendship changes reconstruct predecessors byte-for-byte. Warm/keeper/
+materialization preservation is lexical or newline-normalized where recorded.
 
-Private known-abort verification now authenticates a fresh RR SQL selection,
-installation, activation, baseline/opening and full current mappings on that
-original retained session. The original finished selection supplies expected
-identities only. Existing transaction cleanup is registered before SET/START;
-explicit original-session ROLLBACK and idle proof precede a complete comparison
-of the still-installed regular wallet/bank projection. Counts, unique canonical
-locators, all account-key fields, identity and unchanged atomic incarnation are
-checked. This immediate private check does not install policy, release exclusion,
-reopen admission or create a reusable return permit. Actual return/resume and
-committed projection publication are still unwired.
+The accounted materialization owner invokes original staging once with exact
+shared STOREITEM/generated-key AFTER literals, privately normalizes its actual
+returned catalog and verifies complete current/projected player custody forests
+including UID-zero legacy pets. Strong paired outputs retain real saved revision,
+status, pets and unrelated fields. V6 target storage keeps original persisted
+weight; v7/v8 verify recorded original weight facts, and v8 verifies full BEFORE/
+AFTER role bindings. The existing players journal participant is identified for
+atomic target persistence, but the typed backend's canonical result/root/receipt
+and full player participant source is still under review and is NOT composed.
+Actual producer hold/save-drain, dispatch/publication/ACK and native parity remain
+open. A borrowed authority lock alone does not prove stale queued saves absent.
 
-The accepted cold reset owner, nullable original terminal storage/raw proof,
-exact-session SQL recovery caller and successful pre-listener full-world census
-remain in the common candidate. Original budgets and32MiB storage/1MiB raw-cell
-boundaries remain. The census drains actual accepted outbox/saves and revokes its
-private borrow before callbacks. No epoch is selected by these source changes.
+The keeper cash discrepancy is an actual cross-owner blocker: old birth images
+create finite native wallets, while shared SHOP posts player to sink/issuance;
+current shop cash changes do not advance the native cash image. Lifecycle also
+opens shop rows as treasury. Keep the existing shared-system policy. A positive,
+authenticated shared-keeper classification/current-image owner and historical
+wallet/treasury transition are required; do not ignore NPC mismatches, infer
+classification from VNUM/shop tag or rewrite historical postings/results. Original
+NBC1-3/MBR1 meanings remain; shop ID zero is valid. Gates remain closed.
 
-Parallel actual O producer tracing confirmed genuine P selection is world-global
-newest-constructor lookup, potentially across intervening commands/owners. Roots
-must retain original ordering through the complete reset boundary. A caller-owned
-original source/factory construction slice is underway, not an admissible forest.
-Whole-forest ownership, real room nesting/placement services, terminal transfer,
-artifact/progressed money recovery, flat parity, measured schema fingerprints,
-activation/normalization/independent verifier integration and original major-plan/
-R1-R8 qualification remain open. Inactive behavior and safety gates stay intact;
-this checkpoint closes no release gate and coverage remains incomplete.
+Formatting, final pins, predecessor preservation and independent source reviews
+pass. Compiler/native/SQL/migration/gameplay/fault/recovery checks for this source
+batch remain UNEXECUTED, deferred to the major-plan candidate. This published
+documentation checkpoint does not publish/qualify the private implementation.
+Originless NPC opening, full item correspondence, room producer, activation/
+committed publication, Plan5 integration and all applicable R1-R8 remain open.
+Coverage/release readiness and the declined inactive spell path stay unchanged.
+
+## Reviewed NPC current money and mobile P selector - 2026-10-08
+
+Private `tmp/lifecycle-npc-money-candidate-primary-20261008` composes the
+independently reviewed mobile P selector, addressed-NPC current-money comparison
+and genuine retained-session consumer on maintainedab56edfc9. Candidate SHA256:
+`2b09c85daa4f824b201a5ebbfe7ff21360613f4838f819f390eaca78a76d04b8`.
+Scope remains 111 production files, 23 unchanged original fixtures and five
+unchanged schema/manifest files; all 61 selected C providers register once.
+The prior sole PC-provider Makefile addition remains unchanged. Source review,
+changed-line formatting, exact pins and predecessor reconstruction pass.
+Compiler/native/SQL/migration/gameplay/fault/recovery checks remain unexecuted.
+Source stays private pending major-plan qualification; published checkpoint
+documents do not constitute an implementation or release qualification claim.
+
+Plan2 primary comparison now reparses every native raw6 row and original canonical
+image rather than trusting cached decoded fields. It joins the full148-byte
+body/cash/current-image reference with authenticated mapping identity, native UID,
+lineage, historical birth epoch and creating operation. Current cash revision and
+all four denominations must agree. Mapping ID and native UID remain distinct even
+when numerically equal. Complete issue counts retain missing/duplicate/mixed or
+unknown values, originless first-opening NPCs, retired history and unloaded
+authenticated lifetimes; diagnostic truncation never hides an acceptance defect.
+Review corrected a too-strict image check to the original scalar20/20/20/3/20
+bounds and existing 4MiB native-image allowance. No source policy is widened.
+
+The actual initialized verifier borrow calls the existing native-wallet mapping
+verifier once after complete raw capture. Original birth inbox authentication
+still precedes native mapping/current-row locks. Its already-authenticated current
+lifetime vector moves only after all original mapping validation succeeds and
+stays owned beside raw sources through the synchronous callback. Derived metadata
+uses existing DTO ceilings; cumulative native raw counters are not counted twice.
+The independent view additionally borrows a const lifetime span and primary NPC
+report. Every primary NPC defect gates the callback. Full raw evidence, original
+limits, owner revalidation, savepoint cleanup/failure latch and abort ownership stay.
+
+Plan3 actual mobile P lookup now selects by authentic constructor chronology;
+pending winners require the exact current birth/stage/UID/prototype/zone owner.
+Foreign or incomplete winners refuse without an older fallback. Authentic absence
+remains distinct. Lookup or nest refusal uses the real blocked-birth/finish/return
+path before command success, retaining once-constructed work and original choices.
+Inactive lookup/nesting and admission/O/spell gates stay. Retained refusal is not
+resumable replay and does not supply foreign custody or a complete room producer.
+
+Earlier PC/shared-bank comparison and signed-byte bank context repair, genuine
+constructor/six native-prepend hooks, full flat collector save-hold/lock/receipt/
+publication/ACK source, retained verifier cleanup and P-child capture remain.
+SQL collector owner/callback bodies are preserved; dispatcher SQL-selected source
+is line-ending-normalized equal, not raw-byte equal. All remain unqualified.
+
+Originless NPC opening and complete item correspondence, retained warm room roots/
+forest/source/custody/current SQL cut/admission/adoption/comm readiness/recovery,
+independent Plan5 callback, first inactive installation and actual activation/
+committed publication, both-backend major-plan journeys and full R1-R8 remain open.
+Coverage/release gates stay closed; current inactive behavior and declined spell
+path remain unchanged. Warm registry implementation is separate and not composed.
 
 ## Reviewed creation census and current coin heads - 2026-10-07
 

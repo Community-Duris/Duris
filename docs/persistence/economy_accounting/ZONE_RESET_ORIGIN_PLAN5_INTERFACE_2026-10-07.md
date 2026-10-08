@@ -168,18 +168,47 @@ revokes it before release. The source SQL normalization/independent verifier and
 activation consumer are still required; no raw census or terminal DTO is authority.
 Production accounting stays inactive; all cross-stream release gates remain open.
 
-## Reviewed retained-runtime return proof interface - 2026-10-07
+## Reviewed same-cut NPC lifetime interface - 2026-10-08
 
-The common private97/23/5 candidate preserves the original terminal/cold-world
-interfaces above and registers all52 selected production providers once. A real
-pure auction forest provider replaces the mixed-TU dependency without changing
-flags, fixture cases or function semantics; native linkage is still unproven.
-Adopted runtime rollback retains original SQL/local/coordinator exclusion. An
-uncertain attempted COMMIT cannot become a known abort through later ROLLBACK.
-The private lifecycle owner now freshly authenticates SQL selection and complete
-current wallet/bank mappings on the original retained session, proves read cleanup,
-and compares the unchanged installed regular projection. No carried receipt,
-finished boot selection or DTO grants return authority. Actual return/resumption,
-committed projection installation and full activation consumer remain unwired.
-Source/format review only; no compiler, engine, migration, recovery or gameplay
-execution. Independent Plan5 readers/audit/backup/release ownership is unchanged.
+Shared private111/23/5 retains the actual synchronous world/full raw SQL borrow,
+original session/slot/save epoch/closed outbox/request/evidence authentication,
+world-first residual limits and verifier rollback/release/failure latch. The
+borrowed activation view now adds `native_wallets` (const lifetime span) and
+`npc_money` (const primary report), beside existing `pc_money` and raw providers.
+
+The actual original mapping verifier authenticates historical native birth inboxes
+before current locks, once inside this borrow after raw capture. It moves current
+lifetime metadata only after complete validation. Root retains those exact values;
+they expire with the raw borrow and grant no authority. Historical birth epoch and
+current cash/revision are distinct. Primary NPC comparison reparses raw6 images and
+joins complete references/current denominations/UID/mapping/lineage/origin metadata.
+Missing/duplicate/mixed/unknown findings and originless NPCs gate acceptance using
+complete counts; unloaded lifetimes and retired history remain explicit.
+
+Independent Plan5 must inspect original raw sources and perform its own full
+money/item/forest reconciliation; primary reports never replace independent proof.
+Native catalog is one all-row six-column table, not six providers. Its original
+scalar bounds and 4MiB canonical-image allowance remain; cumulative raw totals are
+not added twice. Originless opening/full item join, initial inactive installation,
+actual independent callback/activation and committed publication remain missing.
+
+The actual mobile P caller now distinguishes authentic absence from unavailable/
+unsupported chronology and retains lookup/nest refusal before command success.
+Cross-owner custody/full room producer remains open. Six native prepend hooks and
+flat collector admission/save-hold/publication/ACK source remain composed. SQL
+collector bodies are preserved; dispatch equality is line-ending-normalized only.
+All source is unrun. No Plan5 audit/backup/release ownership or coverage gate changes.
+
+## Reviewed warm forest and SHOP staging prerequisites - 2026-10-08
+
+Private115 source candidate c833d941d8f57c580b3d2fc37c1015bef97a08d114cc418a3984e7bc5333aeff
+retains the existing full initialized activation view/raw6/lifetime/PC/NPC contracts.
+Warm room forests and canonical keeper/custody/proposed player proof helpers are
+source-reviewed prerequisites, not source admission or independent audit results.
+Typed SHOP backend/atomic original player journal staging is still under review,
+not composed or executed. Real producer hold/save-drain and all major-plan/native/
+recovery qualification stay open. The root owns positive shared-keeper current
+projection and historical wallet/treasury namespace transition; Plan5 must retain
+full raw/current cash disagreement findings until that owner is complete. No
+prototype/tag inference, missing-row filtering or historical rewrite is allowed.
+Plan5 independence, audit/backup/release ownership and original gates remain.
