@@ -124,3 +124,28 @@ Qualification still needs real current/historical book transitions, duplicate
 descendants, foreign event references, missing/malformed origins, restitution
 conflicts and later pickup/drop coexistence in the original both-engine batch.
 No compiler, native, SQL or recovery execution is claimed for this successor.
+
+## Original native terminal-service handoff remains required
+
+The reviewed private84 source candidate adds canonical ZRR1 recovery observations
+and a separately typed coordinator owner. It does not change the five schema
+files or add terminal-service retention to ZRO1/0065. The original command and
+economic TIR48 alone do not establish returned constructor callbacks after native
+journal retirement. The actual original terminal service body must transfer
+durably before journal retirement and room/item advancement fences are released.
+
+The ongoing private retention slice uses a BODY-only observation contract:
+present/original/context/canonical bytes, with missing terminal evidence unknown.
+It must never invent envelope phase, revision, process generation or delivery
+authority on read. Only the actual private world owner and pinned terminal
+transfer may write it after authentic original root/command/receipt proof.
+The proposed nullable terminal column and guarded private schema65 successor
+are still implementation work, not an installed or qualified storage contract.
+Any eventual raw census must retain that complete NULL/binary column and charge
+it against the original cumulative and single-cell limits. Plan5 independent
+audit, backup/restore and release qualification ownership remain unchanged.
+
+Accepted source pins: factory d3d2f271/5abff8c2/5eb52ca5, ZRR1 c35c145f8/hc9d42736,
+coordinator c2766334/h6b74ca59/journal0e4aac52 and room owner a46a5e58/h0957c6e.
+The public creation adapter remains gated. This source checkpoint does not prove
+physical publication, service success, native qualification or release readiness.
