@@ -2145,3 +2145,31 @@ original-attempt/pet correction candidate remains separately unexecuted. Shared
 notebook is primary-local/nonblocking; this additive curator handoff does not
 claim application, adoption or acknowledgement. Original full Plan5/R1–R8,
 combined backup/restore/recovery/writer/player/load and activation gates remain.
+
+
+## Current64 original canonical/fork suite qualified — 2026-10-08
+
+[PLAN5_CURRENT64_CANONICAL_AND_FORK_MIGRATION_QUALIFICATION_2026-10-08.md](PLAN5_CURRENT64_CANONICAL_AND_FORK_MIGRATION_QUALIFICATION_2026-10-08.md) records the complete unchanged original schema/fork
+suite against published primary `58c8e89e6a642dcc4aec1528cba99c50b99816fb`, complete tree
+`3316f9e9b26439e4c2bd474441cebc867e4c2d87`; native833d3085/migrations7e06717b,
+no owned overlays or contract updates. Base `14096e6dd04509d92c632d17caf400dc1483af22`,
+sole branch `codex/accounting-plan5`; this report's containing commit is the result.
+Actual MariaDB10.11.14 and MySQL8.0.46 PASS/exit0, respectively93.466087 and
+78.156727 seconds. All six canonical/staging45/master31 profiles reach64 with
+original prefixes, receipts, descriptions and seeded runtime payload preserved;
+reruns, duplicate guard and original actual session/lock/CAS/cancellation/output/
+timeout faults pass. Shell and actual compiled boot/restore-history consumers
+each record12 accepted/20 refused cuts across both engines; zero skips.
+
+Only the report and this additive handoff change. Shared fixtures/migrations/native
+contracts remain exact; no new interface fields or application request. Raw
+`D:/Dev/Tests/Duris/accounting-plan5/current64-upgrade-20261008`, seal
+`feb2b96d7a9bd73aa0b82b0795676ebfbae6c11bebd00b35e2415d5280a06d8b` (2658 files/828670844 bytes), with
+post-push remote/ancestry/raw-hash receipt. Master prefix uses the original current
+bootstrap default, not a captured historical dump. Full server boot, character/
+economic baselines, retained nonempty56-to64 roots, original legacy shell path,
+combined restore/recovery and actual player/producer/load qualification remain.
+Existing flat auction fixture and room UID/provider handoffs stay open. Private
+128-file candidate stays separately unexecuted; full Plan5/R1–R8/release/activation
+remain unqualified. Notebook remains primary-local/nonblocking; curator adoption
+and acknowledgement are unclaimed.
