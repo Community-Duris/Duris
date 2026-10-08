@@ -61,9 +61,27 @@ def watched_item_uids(values):
     return sorted(uids)
 
 
+def watched_mapping_ids(values):
+    """Explicit schema IDs, independent of native UIDs; never mapping authority."""
+    ids = set()
+    for mapping_id in values:
+        # Mapping IDs are SQL BIGINT UNSIGNED, not native allocator IDs.
+        if type(mapping_id) is not int or not 0 < mapping_id < 2**64:
+            raise ValueError("watched mapping ID must be an unsigned SQL ID (1 through UINT64_MAX)")
+        if mapping_id in ids:
+            raise ValueError("duplicate watched mapping ID")
+        if len(ids) >= MAX_ROWS:
+            raise ValueError("watched mapping ID selection exceeds quest cut row limit")
+        ids.add(mapping_id)
+    return sorted(ids)
+
+
 def capture(connection, case_id, pid, mobile_ids, operations, meta, *, legacy_no_epoch=False,
-            item_uids=()):
+            item_uids=(), mapping_ids=()):
     item_uids = watched_item_uids(item_uids)
+    mapping_ids = watched_mapping_ids(mapping_ids)
+    if legacy_no_epoch and mapping_ids:
+        raise ValueError("legacy capture cannot observe active-lineage mapping inputs")
     if pid <= 0 or any(value <= 0 for value in mobile_ids):
         raise ValueError("actual positive player/mobile identity required")
     terms = blocks(case_id)
@@ -80,6 +98,8 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta, *, legacy_no
                   "economic_accounting_item_reference",
                   "economic_accounting_operation", "critical_operation_inbox", "economic_accounting_coin_posting",
                   "economic_accounting_source_claim", "economic_accounting_account_effect")
+        if mapping_ids:
+            tables += ("economic_account_mapping", "economic_lineage_state")
         engines = selected(cursor, "SELECT TABLE_NAME AS table_name,ENGINE AS engine FROM information_schema.tables "
                            "WHERE table_schema=DATABASE() AND table_name IN (" + placeholders(tables) + ")",
                            tables)
@@ -102,6 +122,21 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta, *, legacy_no
                   "epochs": epochs}
         result["snapshot"] = selected(cursor,
             "SELECT @@in_transaction AS in_transaction,@@tx_isolation AS isolation_level")
+        if mapping_ids:
+            # Retain wrong-lineage/backend/locator and retired rows verbatim.
+            # Explicit selection is observation, not the owner's locked borrow.
+            result["account_mappings"] = selected(cursor,
+                "SELECT mapping_id,lineage,account_kind,context_id,backend_kind,locator_kind,native_id,"
+                "active_native_id,creating_operation_id,retiring_operation_id,revision "
+                "FROM economic_account_mapping WHERE mapping_id IN (" + placeholders(mapping_ids) +
+                ") ORDER BY mapping_id", tuple(mapping_ids))
+            result["lineage_head"] = selected(cursor,
+                "SELECT lineage,active_epoch,revision FROM economic_lineage_state WHERE lineage=%s",
+                (identity(meta["lineage"]),))
+            result["meta"]["watched_mapping_ids"] = mapping_ids
+            result["meta"]["missing_mapping_ids"] = sorted(set(mapping_ids) -
+                {entry["mapping_id"] for entry in result["account_mappings"]})
+            result["meta"]["mapping_observation_authenticated"] = False
         result["legacy_migration_markers"] = selected(cursor, "SELECT migration_name FROM mud_schema_migrations ORDER BY migration_name")
         result["migrations"] = selected(cursor, "SELECT migration_id,sequence_number,apply_checksum,verify_checksum,"
             "compatibility,runner_version FROM mud_schema_history ORDER BY sequence_number")
@@ -191,6 +226,11 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta, *, legacy_no
             ("mobile_instance_id IN (" + placeholders(mobile_ids) + ")" if mobile_ids else "1=0") +
             " ORDER BY mobile_instance_id", tuple(mobile_ids))
         native_ids = set(operations)
+        if mapping_ids:
+            for entry in result["account_mappings"]:
+                native_ids.add(entry["creating_operation_id"])
+                if entry["retiring_operation_id"] is not None:
+                    native_ids.add(entry["retiring_operation_id"])
         native_ids.update(entry["birth_operation"] for entry in result["birth_origins"])
         for name in ("ownership_events", "currency"):
             native_ids.update(entry["operation_id"] for entry in result[name])
@@ -219,6 +259,15 @@ def capture(connection, case_id, pid, mobile_ids, operations, meta, *, legacy_no
             economic_ids = set(native_ids) | {entry["operation_id"] for entry in result["item_references"]}
             binary_ids = tuple(identity(value) for value in sorted(economic_ids))
             clause = "operation_id IN (" + placeholders(binary_ids) + ")"
+            if mapping_ids:
+                # Mapping lifetimes may introduce additional receipt payloads.
+                # Preflight those buffered BLOBs in this same snapshot as well.
+                size = selected(cursor, "SELECT CAST(COALESCE(SUM(OCTET_LENGTH(result_payload)),0) AS UNSIGNED) "
+                    "AS size,COUNT(*) AS row_count FROM critical_operation_inbox WHERE " + clause,
+                    binary_ids)[0]
+                blob_bytes += int(size["size"])
+                if int(size["row_count"]) > MAX_ROWS or blob_bytes * 2 > MAX_BYTES:
+                    raise ValueError("combined native/mapping receipt BLOB budget exceeded")
             result["operations"] = selected(cursor,
                 "SELECT operation_id,lineage,epoch,original_operation_id,reason,source_event,outcome,result_code,"
                 "writer_id,policy_version,compiler_version,intent_digest,domain_digest,plan_digest,posting_count,"
@@ -262,6 +311,8 @@ def main():
     parser.add_argument("--mobile-instance", type=int, nargs="*", default=[])
     parser.add_argument("--item-uid", type=int, nargs="+", action="extend", default=[],
                         help="explicit observed item UIDs across cuts; bounded, distinct, no forest/authority proof")
+    parser.add_argument("--mapping-id", type=int, nargs="+", action="extend", default=[],
+                        help="explicit observed SQL mapping IDs and lineage head; bounded, distinct, unauthenticated")
     parser.add_argument("--operation", nargs="*", default=[])
     parser.add_argument("--lineage")
     parser.add_argument("--epoch")
@@ -274,6 +325,9 @@ def main():
     args = parser.parse_args()
     try:
         item_uids = watched_item_uids(args.item_uid)
+        mapping_ids = watched_mapping_ids(args.mapping_id)
+        if args.legacy_no_epoch and mapping_ids:
+            raise ValueError("legacy capture cannot observe active-lineage mapping inputs")
         if os.environ.get("TEST_DB_DISPOSABLE") != "1" or os.environ.get("TEST_DB_HOST") != "127.0.0.1":
             raise ValueError("explicit loopback disposable authority required")
         if not re.fullmatch(r"(?:quest_journey_test_[0-9a-f]{12}|(?:quest_accounting|native_quest_publication)_test_[0-9a-f]{16})", args.database):
@@ -304,7 +358,7 @@ def main():
                 connect_timeout=5, read_timeout=10, write_timeout=5)
             try:
                 cut = capture(connection, args.case, args.pid, args.mobile_instance, args.operation, meta,
-                              legacy_no_epoch=args.legacy_no_epoch, item_uids=item_uids)
+                              legacy_no_epoch=args.legacy_no_epoch, item_uids=item_uids, mapping_ids=mapping_ids)
             finally:
                 connection.close()
         except pymysql.MySQLError as error:
