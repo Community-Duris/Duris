@@ -208,6 +208,42 @@ def clean_snapshot():
     })
 
 
+def bind_unchanged_witness(operation, row):
+    """Author one explicit unchanged UID in both synthetic EAP1 forests."""
+    value = bytes.fromhex(operation['canonical_plan'])
+    counts = list(struct.unpack_from('<6I', value, 216))
+    offset, sections = 256, []
+    for count, width in zip(counts, (120, 48, 32, 64, 64, 128)):
+        sections.append([value[offset+i*width:offset+(i+1)*width] for i in range(count)])
+        offset += count*width
+    state = {'live': 1, 'tombstone': 2, 'quarantined': 3}[row['state']]
+    witness = struct.pack('<QBB6xQQQQQH6x', row['uid'], row['owner'][0], state,
+                          *row['owner'][1:], row['root'], row['parent'] or 0,
+                          row['revision'], row.get('equipment_slot', 0))
+    for index in (3, 4):
+        sections[index].append(witness)
+        sections[index].sort(key=lambda entry: int.from_bytes(entry[:8], 'little'))
+        counts[index] += 1
+    header = bytearray(value[:256]);struct.pack_into('<6I', header, 216, *counts)
+    encoded = bytes(header) + b''.join(entry for section in sections for entry in section)
+    operation.update(canonical_plan=encoded.hex(), plan_digest=hashlib.sha256(encoded).hexdigest(),
+                     before_witness_count=counts[3], after_witness_count=counts[4])
+
+def item_unchanged_witness_snapshot(scope, state, plan_state=None):
+    s = clean_snapshot();s['item_origins'][0].update(root=82, parent=82)
+    row = dict(s['item_origins'][0], uid=82, root=82, parent=None, revision=1, state=state)
+    s['item_origins'].append(dict(row, revision=0 if scope=='history' else 1))
+    s['native']['items'].append(copy.deepcopy(row))
+    if scope == 'history':
+        prior = dict(row, operation_id='66'*16, event_index=0, before_revision=0,
+                     from_owner=row['owner'], from_equipment_slot=0,to_equipment_slot=0,
+                     action='move',operation_outcome='committed',referenced=False)
+        s['native']['uid_history_events']=[prior]
+    bind_original_plans(s)
+    bind_unchanged_witness(s['operations'][0],dict(row,state=state if plan_state is None else plan_state))
+    return s
+
+
 def item_preimage_snapshot(scope, value):
     """Synthetic captured opening/history with an explicitly authored EAP1."""
     snapshot = clean_snapshot()
@@ -3087,6 +3123,63 @@ class ReconciliationTests(unittest.TestCase):
                                                owner=[8, 0, 0])
         snapshot["native"]["items"][0].update(state="tombstone", owner=[8, 0, 0])
         self.assertIn("duplicate_item_retirement", self.codes(snapshot))
+
+    def test_original_item_plan_unchanged_witness_binds_opening_and_history(self):
+        for scope in ("opening", "history"):
+            for state in ("live", "quarantined"):
+                healthy = item_unchanged_witness_snapshot(scope, state)
+                auditor = Reconciler()
+                self.assertEqual(auditor.audit(healthy)["exception_counts"], {})
+                self.assertEqual(auditor.original_plans_verified, 1)
+                snapshot = item_unchanged_witness_snapshot(scope, state,
+                    "quarantined" if state == "live" else "live")
+                before = copy.deepcopy(snapshot)
+                with self.subTest(scope=scope, state=state):
+                    auditor = Reconciler()
+                    self.assertEqual(auditor.audit(snapshot)["exception_counts"], {"original_plan_preimage_mismatch": 1})
+                    self.assertEqual(auditor.original_plans_verified, 0)
+                    self.assertEqual(snapshot, before)
+
+    def test_original_item_plan_unchanged_witness_preserves_unknown_history(self):
+        snapshot = item_unchanged_witness_snapshot("opening", "live")
+        snapshot["item_origins"].pop()
+        before = copy.deepcopy(snapshot)
+        auditor = Reconciler()
+        self.assertEqual(auditor.audit(snapshot)["exception_counts"], {"unknown_legacy_origin": 1})
+        self.assertEqual(auditor.original_plans_verified, 1)
+        self.assertEqual(snapshot, before)
+
+    def test_original_item_plan_unchanged_witness_cli_is_global_and_read_only(self):
+        for scope in ("opening", "history"):
+            for state in ("live", "quarantined"):
+                snapshot = item_unchanged_witness_snapshot(scope, state,
+                    "quarantined" if state == "live" else "live")
+                snapshot["operations"][0]["personal_alias"] = "private-companion"
+                with tempfile.TemporaryDirectory(prefix="item-unchanged-witness-") as folder:
+                    path = Path(folder) / "snapshot.json"
+                    payload = json.dumps(snapshot, sort_keys=True).encode()
+                    path.write_bytes(payload)
+                    for name in ("exceptions", "provenance"):
+                        for limit in (0, 1, 100):
+                            command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                       str(path), "--view", name, "--limit", str(limit)]
+                            if name == "provenance":
+                                command += ["--uid", "82"]
+                            result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                            with self.subTest(scope=scope, state=state, name=name, limit=limit):
+                                self.assertEqual((result.returncode, result.stderr), (1, ""))
+                                value = json.loads(result.stdout)
+                                if name == "exceptions":
+                                    self.assertEqual(value["exception_counts"], {"original_plan_preimage_mismatch": 1})
+                                    self.assertEqual(value["checked"]["original_plans_verified"], 0)
+                                    self.assertLessEqual(len(value["exceptions"]), limit)
+                                else:
+                                    self.assertEqual(value["coverage"]["exception_count"], 1)
+                                    self.assertEqual((value["count"], len(value["rows"])),
+                                                     (int(scope == "history"), min(int(scope == "history"), limit)))
+                                self.assertNotIn("private-companion", result.stdout)
+                                self.assertEqual(path.read_bytes(), payload)
+                                self.assertEqual(json.dumps(snapshot, sort_keys=True).encode(), payload)
 
     def test_original_item_plan_preimage_binds_opening_and_retained_positions(self):
         for scope, values in (("opening-state", ("live", "quarantined")),

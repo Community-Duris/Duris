@@ -2657,3 +2657,30 @@ opening/recovery/ACK/combined/activation/Plan 5/R1-R8/release gates stay open.
 Report PLAN5_ITEM_PLAN_PREIMAGES_2026-10-08.md. Curator-ready input; primary-local
 notebook nonblocking; application/ack unclaimed. No activation, autocorrection,
 production access, primary push, deployment or merge.
+
+
+### Unchanged original item witnesses - 2026-10-08
+
+Owned base 9d64fd0942f98a792f08ba88c0bd9139410ed8e1; result containing commit,
+remote codex/accounting-plan5 verified in unchanged-witnesses-20261008/delivery/result.json.
+Four false-clean native-valid capsules established: unchanged container82 differs
+from captured opening/history in either state direction; only81 has an event.
+Existing preimage finding now covers all initial witnesses and all prior event
+preimages. Missing history stays unknown; no new schema or interface request.
+Three new methods: old reader 28 failed subtests/zero errors; exact final 02 has
+415 loaded / 397 PASS / 18 existing opt-in skips across 16 modules. Both full partial
+SQL runners PASS: 12 probes/72 CLI per engine, 47 tables unchanged. New healthy/
+damaged witness capsules use saved captures only; no native producer claim.
+Original canonical02 PASS both 0064 engines,3026 cases/109 cuts/90 refusals/58
+full-entry per engine. All final checks share exact tree 66daf1c32d457df9758d0a4e04a1f2eabdc7b492 on primary
+3ef54e021d22f931de1d5255dde02fffbaf7f310,27 overlays / native 833d / migrations 7e06. 48 exact native round trips
+use authenticated probes. Six CLI measurements at 100,000 openings/near 32MiB,
+limits0/1/100 and matching/damaged witness pass original 30s/256MiB controls;
+99,998 missing native-item findings remain visible. Synthetic/component only.
+Raw seal 6b8d77048899f240d3d0cfcfba73f8f305d6cbae31373b60513a810b13a91f7a;1721 files/1030153869 bytes/1356 regular build files.
+All seven task containers stopped/no OOM/live children. Primary owns registration/
+import; earlier branch tips/tombstone/endpoint/history/preimage fixes preserved.
+Full backup/native recipe,genuine producer/opening/recovery/ACK/combined/activation/
+Plan5/R1-R8/release gates stay open. Report PLAN5_UNCHANGED_ITEM_WITNESSES_2026-10-08.md.
+Curator-ready input; primary-local notebook nonblocking; application/ack unclaimed.
+No activation,autocorrection,production access,primary push,deployment or merge.

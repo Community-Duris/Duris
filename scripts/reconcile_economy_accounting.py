@@ -1987,13 +1987,12 @@ class Reconciler:
         import struct
         from economic_restore_evidence import MAX_PLAN, decode_plan
 
-        wanted = {row["uid"] for row in tables["item_references"] if type(row.get("uid")) is int}
         preimages = defaultdict(list)
         for rows, slot_field in ((tables["item_origins"], "equipment_slot"),
                                  (tables["ownership_events"], "to_equipment_slot"),
                                  (history if isinstance(history, list) else (), "to_equipment_slot")):
             for row in rows:
-                if (not isinstance(row, dict) or row.get("uid") not in wanted or
+                if (not isinstance(row, dict) or
                         not valid_item_custody_position(row, row.get("origin") == "creation",
                                                        equipment_field=slot_field)):
                     continue
@@ -2096,7 +2095,8 @@ class Reconciler:
             check(same_projection(custody, expected),
                   "original_plan_custody_mismatch")
             preimage_valid = True
-            for _, _, uid, old, _ in plan["events"]:
+            before_positions = list(plan["before"].items()) + [(uid, old) for _, _, uid, old, _ in plan["events"]]
+            for uid, old in before_positions:
                 # Creation's zero wire position has a UID-named logical opening.
                 expected = {"root": uid if old[1] == 0 else old[4], "parent": old[5] or None,
                             "owner": [old[0], old[2], old[3]], "revision": old[6],

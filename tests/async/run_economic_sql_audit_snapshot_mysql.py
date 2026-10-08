@@ -727,7 +727,7 @@ def verify_compound_item_actions(owner, reader, snapshot):
 def verify_collector_quarantine_views(owner, reader, snapshot):
     """Retain collector quarantine without guessing other system custody."""
     from _plan5_equipment_restore import Connection, inventory
-    from test_reconcile_economy_accounting import bind_original_plans
+    from test_reconcile_economy_accounting import bind_original_plans, bind_unchanged_witness
 
     output = ROOT / "bin/tests/plan5-collector-quarantine" / uuid.uuid4().hex
     output.mkdir(parents=True)
@@ -832,7 +832,7 @@ def verify_collector_quarantine_views(owner, reader, snapshot):
                 capsule.mkdir()
                 (capsule / "canonical-plan.eap").write_bytes(bytes.fromhex(modeled["canonical_plan"]))
                 (capsule / "healthy-snapshot.json").write_text(json.dumps(bound, sort_keys=True))
-                for damage in ("selected-only", "history-and-native", "lineage-only", "lineage-and-native", "original-preimage"):
+                for damage in ("selected-only", "history-and-native", "lineage-only", "lineage-and-native", "original-preimage", "unchanged-witness"):
                     damaged = copy.deepcopy(bound)
                     alternate = "live" if expected_state == "quarantined" else "quarantined"
                     if damage in ("selected-only", "history-and-native"):
@@ -860,20 +860,37 @@ def verify_collector_quarantine_views(owner, reader, snapshot):
                             if row["operation_id"] == quarantine_root.hex():
                                 for field in ("canonical_plan", "plan_digest"):
                                     row[field] = wrong_plan[field]
+                    if damage == "unchanged-witness":
+                        witness = next(row for row in bound["item_origins"] if row["uid"] == 82)
+                        healthy_root = copy.deepcopy(modeled)
+                        bind_unchanged_witness(healthy_root, witness)
+                        control = copy.deepcopy(bound)
+                        for row in control["operations"]:
+                            if row["operation_id"] == quarantine_root.hex():
+                                row.update(healthy_root)
+                        assert Reconciler().audit(control)["exception_counts"] == bound_counts
+                        wrong_plan = copy.deepcopy(modeled)
+                        bind_unchanged_witness(wrong_plan, dict(witness, state="quarantined"))
+                        for row in damaged["operations"]:
+                            if row["operation_id"] == quarantine_root.hex():
+                                row.update(wrong_plan)
                     damaged_counts = dict(bound_counts)
                     if damage in ("selected-only", "history-and-native"):
                         damaged_counts["original_plan_custody_mismatch"] = damaged_counts.get("original_plan_custody_mismatch", 0) + 1
                     if damage in ("selected-only", "lineage-only", "lineage-and-native"):
                         damaged_counts["conflicting_uid_history_projection"] = 1
-                    if damage == "original-preimage":
+                    if damage in ("original-preimage", "unchanged-witness"):
                         damaged_counts["original_plan_preimage_mismatch"] = 1
                     if damage == "lineage-only":
                         damaged_counts["stale_native_item"] = damaged_counts.get("stale_native_item", 0) + 1
                     assert Reconciler().audit(damaged)["exception_counts"] == damaged_counts
                     probe = capsule / damage
                     probe.mkdir()
-                    if damage == "original-preimage":
+                    if damage in ("original-preimage", "unchanged-witness"):
                         (probe / "canonical-plan.eap").write_bytes(bytes.fromhex(wrong_plan["canonical_plan"]))
+                    if damage == "unchanged-witness":
+                        (probe / "healthy-canonical-plan.eap").write_bytes(bytes.fromhex(healthy_root["canonical_plan"]))
+                        (probe / "healthy-snapshot.json").write_text(json.dumps(control, sort_keys=True))
                     saved = probe / "snapshot.json"
                     payload = json.dumps(damaged, sort_keys=True).encode()
                     saved.write_bytes(payload)

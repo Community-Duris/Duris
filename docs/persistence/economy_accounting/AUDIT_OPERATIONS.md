@@ -1472,3 +1472,12 @@ verified original plan. Creation uses its UID-named logical opening. Missing
 history remains unknown under existing coverage findings; no arbitrary copy is
 chosen when captures disagree. The finding remains global at every output limit
 and performs no correction. See [exact source, native and disposable-SQL evidence](PLAN5_ITEM_PLAN_PREIMAGES_2026-10-08.md).
+
+
+Original-plan preimage checks include every initial item witness, including an
+unchanged container or other UID without an item event/reference. A contradiction
+with a known captured opening or prior-history position produces the existing
+`original_plan_preimage_mismatch` once per operation and leaves that plan
+unverified. Intermediate event preimages remain checked. Missing history stays
+unknown; the reader performs no correction. See [unchanged-witness regression,
+native, SQL and bounded-index evidence](PLAN5_UNCHANGED_ITEM_WITNESSES_2026-10-08.md).
