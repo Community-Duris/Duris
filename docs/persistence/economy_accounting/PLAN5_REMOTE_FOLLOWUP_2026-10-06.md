@@ -1920,3 +1920,31 @@ primary adoption not claimed. Full saved/handoff/modern recovery, world census,
 writer/origin authority, nativeEAB2/retention/upgrades/original major-plan/native/
 gameplay/fault/combined-candidate and R1–R8/release gates stay open. Accounting
 inactive; wallet-root exclusion and declined inactive spell path preserved.
+
+
+## Plan5 saved-ground full-world native recovery — 2026-10-08
+
+Same remote `codex/accounting-plan5`, base 7764b7b91ed8c4a1f56d8fd16eb6c15ae7fddcd6.
+[Exact qualification report](PLAN5_SAVED_GROUND_NATIVE_RECOVERY_2026-10-08.md).
+Tested primary 9360e120f0f966b431b56da6083f3206285690f1, tree b9ab0c3a3ea2c6a45cf2cfb286c8eb7473e31f8c; native
+833d3085815b396861ad18a77635412212381e4b, migrations 7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2/canonical64.
+Test fix 3b51d3b2c3aa54ca610f5e329651085de214c935; only recovery test, report and additive follow-up changed.
+Complete real SQL server matched all1318 repository/28 external compiler inputs.
+The stale concurrent-child visibility assertion now requires conflict refusal,
+unchanged evidence retention and a genuinely changed SQL ID. MariaDB
+and MySQL each pass18 current invocations/21 cases: eight real crash boundaries,
+four tamper controls, concurrent source/child replacement, malformed-child repair,
+SQL insert refusal/retry and nested metadata through two cold restarts. Zero skips.
+Historical loss expectation fails because current native retained its destination;
+two original concurrent-child failures also preserved. Both complete corrected
+matrix batches pass separately; no failed batch is relabelled.
+All 111 server processes terminal; 8 actual DB daemons exit0;
+172 read-only SQL cuts and independent receipt comparisons retained.
+Evidence D:/Dev/Tests/Duris/accounting-plan5/saved-recovery-20261007, with raw source,
+world, native/SQL logs, private copies, setup failures, seal and delivery receipt.
+No shared interface/source change, authority grant or release promotion. Native
+saved/runtime capture and cross-provider authority, nativeEAB2, retention/erasure/
+upgrades/original major-plan/combined candidate and R1–R8 remain open. Curator-ready
+packet; primary-local notebook nonblocking, acknowledgement/application/adoption
+not claimed. Accounting inactive; wallet roots and declined inactive spell path
+preserved. Progress; full goal active.
