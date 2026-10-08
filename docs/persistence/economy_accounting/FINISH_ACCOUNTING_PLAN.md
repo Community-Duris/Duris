@@ -1,13 +1,14 @@
 # Finish accounting implementation plan
 
-## Warm room and craft shared source joined - 2026-10-08
+## Complete original refining source joined - 2026-10-08
 
-[Current source integration](WARM_ROOM_CRAFT_SHARED_SOURCE_INTEGRATION_2026-10-08.md) records private candidate
-`a685497619fca69938eb010fbee4fda2aabc2005ccbdf827feaea5b91e55d0c5`:original warm command
-preparation,shared budget exit fixes,canonical original placement recipe and pure
-craft wallet mapping are source-reviewed and composed. Full refining is under
-independent review; original reset dispatch/replay/ACK and special effects remain.
-Execution is deferred; Plans2-4/Plan5/R1-R8/activation completion is unproven.
+[Current source integration](COMPLETE_REFINING_SOURCE_INTEGRATION_2026-10-08.md) records private candidate
+`39a35e59e83b94fbed3e96138dded14dfeb807eba256489976940f88874b46cc`:full original refining
+fee/input/outcome,SQL/flat compound participant,retained publication/replay and
+notification are source-reviewed and joined with fresh PC wallet admission and
+the warm reset/shared source. Craft/Forge is under review; Smith and full reset
+dispatch/replay/ACK/special effects remain. Major-plan execution is deferred;
+full Plans2-4/Plan5/R1-R8/activation qualification remains unproven.
 
 ## Watched-item capture sidework reviewed - 2026-10-08
 
