@@ -2073,3 +2073,56 @@ readiness;these assignments prepare later implementation and checks only.
 Root evidence D: coordinator-smith-maintained-profile-reassessment-20261008/
 reassessment.json. Both deliveries/reviews are PENDING. Actual native Goals remain
 BLOCKED/unfinished;heartbeatACTIVE and all original finish-line controls remain.
+
+## Smith correspondence and retention deltas independently reviewed - 2026-10-08
+
+Both bounded PRIVATE deliveries now PASS independent source/design/acceptance
+review at published4e26a569489f86ffefe2444570c658c7284f3727. Architecture note
+14,009 bytes SHA2566bdcaef291202c4f4ea226e7c36fd848e7a8650f7e2e7502139fbc51ec8ec29f;
+PINS20,029 bytes SHA256aca1f1ad0394ced6d5fc372786ef14a3b666aa96085779f2808b344c0e2a1f5e;
+INDEX SHA256b404c21396c4ba00888c3971d415f6586b7643f2a6936e0680ae735a9b7c3021.
+Root authenticates eight connected source bodies,two scope documents,27 pin
+groups/49 exact ranges and all three indexed artifacts. Quest delta17,754 bytes
+SHA256f354cb761c652d6e1506353eb75fa8396a382c9fc7a67b5071efb1e17cc18a98;
+all14 embedded source/test/doc/baseline pins authenticate. Both closed blueprint
+files retain original bytes/hashes. Worker worktrees remain clean at5c53e1e977
+and2c82835ec. Private artifacts stay on D:;only review/coordination is published.
+
+Source-grounded implementation benefit:
+
+- Retained original capture mask O,repository application/completion mask A and
+  revision-claimed mask Q are separate. Receipt-free initial dispatch/promotion
+  narrows A to Q;receipt-bearing saves preserve O. Direct undispatched replacement
+  preserves the incoming mask. A static older-SKILLS ACK/newer-Smith capture
+  sequence explains genuine surplus O;this is source reasoning,not an executed
+  native case. Repository already_applied checks revision/applicable receipts,
+  not every ordinary original row. Journal retirement,revision ACK and clean
+  Smith readiness remain separate. Any future consumer using surplus components
+  as persistence before-images needs their genuine fresh SQL/owner cross-proof.
+- Queue ownership precedes retained-body installation;newer compatible replacement
+  includes receipt merges and clears ACK,equal/older coalescing preserves prior
+  body/revision. Capacity charges allocated original-buffer capacity,not encoded
+  length;the predicate does not bound peak temporary preparation allocation.
+  Reported begin refusal may have already written token_out;escaping request
+  exceptions retain pending original policy. Checkpoint cancellation does not
+  erase already-owned queue/journal work,and held cancellation stays refused.
+- Canonical decode/PID/revision/filter/level checks and fallible work precede held
+  output moves. Future refusal checks use separate sentinel outputs. The existing
+  SQL fixture's barrier and coalescing counters concern worker execution,not
+  deterministic pending_append replacement;its receipt leaves are empty. Its
+  allocator failure needs phase calibration. Extracted enqueue/codec/worker tests
+  cannot establish Smith private-owner acceptance. No legal original owner exists
+  in published source,so no callable Smith case or executable command is claimed.
+
+Root reads the full notes and compares critical actual worker/revision/repository/
+journal/queue/capacity/held-output and fixture cuts. No new maintained defect or
+contradictory genuine consumer is established. Full physical/fresh SQL/native
+history/economics/publication/recovery and guarded ACK remain external. Root proof:
+D: coordinator-smith-retention-deltas-review-20261008/review.json. The initial
+read-back encoding refusal is retained and corrected before PASS;no compiler,
+product test,server or DB ran. Primary major-plan qualification deferral stays.
+Both bounded investigations/reviews are CLOSED;dependent native implementation
+remains BLOCKED. Reassess when genuine compound/persistence/export,authentic
+pending-append/receipt,measured original-buffer capacity or calibrated legal
+failure observations become available. No new task on these unchanged inputs;
+no adoption wait,actual Goal resumption or broader completion. HeartbeatACTIVE.
