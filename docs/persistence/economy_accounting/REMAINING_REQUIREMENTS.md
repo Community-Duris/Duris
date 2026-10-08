@@ -1,15 +1,15 @@
 # Double-entry economy: remaining requirements
 
-## Craft/Forge and warm reset census source joined - 2026-10-08
+## Terminal cold recovery and corrected Smith capture joined - 2026-10-08
 
-[Current source integration](CRAFT_FORGE_WARM_CENSUS_SOURCE_INTEGRATION_2026-10-08.md)
-records private candidate `9a7faa28058820cbe3d6ff53cd999a3b39a9dd67377a30980c4f8bb9402ee791`:
-ordinary Craft/Forge frozen progression/cold notification, corrected warm driver
-and checked genuine pending-item census are source-reviewed and joined with
-complete refining/Plan5 source. All201 selected paths/162 source files authenticate.
-Smith, original reset retry/constructor witness/cold restoration/special routes and
-major-plan execution remain open. Maintained implementation is not promoted;
-Plans2-4/combined Plan5/R1-R8/activation/full release remain unproven.
+[Current source integration](SMITH_CAPTURE_AND_TERMINAL_COLD_SOURCE_INTEGRATION_2026-10-08.md)
+records private candidate `673ef5eb485dc6842d550b17127ffb0745464d2a2bd25b85f36e2640cced2e99`:
+completed-present and full-missing-body terminal cold recovery are source-reviewed
+and joined. Corrected pure Smith capture validates indexed lifetimes before native
+pointer dereferences. Actual204 selected paths/165 source files authenticate.
+Smith executable owner/registration, original reset cursor and unfinished-prefix/
+special routes and major-plan execution remain open. Maintained source is not
+promoted; Plans2-4/combined Plan5/R1-R8/activation/full release remain unproven.
 
 ## Immutable cold movement and Plan5 source joined - 2026-10-08
 
