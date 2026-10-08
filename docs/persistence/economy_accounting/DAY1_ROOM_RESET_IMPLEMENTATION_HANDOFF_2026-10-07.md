@@ -1,15 +1,19 @@
 # Required room-floor reset producer: implementation handoff - 2026-10-07
 
-## Terminal cold recovery and corrected Smith capture joined - 2026-10-08
+## Original Smith grant/accounting and reset recovery source joined - 2026-10-08
 
-[Current source integration](SMITH_CAPTURE_AND_TERMINAL_COLD_SOURCE_INTEGRATION_2026-10-08.md)
-records private candidate `673ef5eb485dc6842d550b17127ffb0745464d2a2bd25b85f36e2640cced2e99`:
-completed-present and full-missing-body terminal cold recovery are source-reviewed
-and joined. Corrected pure Smith capture validates indexed lifetimes before native
-pointer dereferences. Actual204 selected paths/165 source files authenticate.
-Smith executable owner/registration, original reset cursor and unfinished-prefix/
-special routes and major-plan execution remain open. Maintained source is not
-promoted; Plans2-4/combined Plan5/R1-R8/activation/full release remain unproven.
+[Current source integration](SMITH_GRANT_ACCOUNTING_AND_RESET_RECOVERY_SOURCE_INTEGRATION_2026-10-08.md)
+records private candidate `3fc1241b986986c7a50f57397665e5cb35f6a17d2883b3388f2c52d77f71dd53`:
+corrected Smith codec, once-only factory output, actual indexed PC grant facts,
+full-image transform and typed fee/custody compiler are source-reviewed and joined.
+Original runtime R_num grouping and generated-key rules are preserved. Reset cold
+pending/known/present cuts and authentic post-S pure preparation include reviewed
+retry corrections. Actual207 selected paths/168 source files authenticate; Smith
+producer is registered once. Full Smith command/fence/source/save/combined SQL-flat/
+physical publication/recovery ACK, original pre-S reset cursor/front door and
+special/flat routes remain. All execution is deferred to actual major-plan readiness.
+Maintained implementation is not promoted; fullPlans2-4/combinedPlan5/R1-R8 and
+activation/release are unproven. Original Plan1 acceptance retains its historical scope.
 
 ## Immutable cold movement and Plan5 source joined - 2026-10-08
 
