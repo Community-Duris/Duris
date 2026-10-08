@@ -2009,3 +2009,38 @@ verified remote and ancestor/clean-worktree checks. This is the curator packet
 for the primary's nonblocking local notebook; application/adoption is unclaimed.
 Complete modern room raw capture/proof/graph audit, both native SQL journeys,
 the primary private 111-file candidate, callback installation and full R1-R8 remain open.
+
+
+## Independent modern room-item SQL custody diagnostics - 2026-10-08
+
+[Exact source, commands, failures, limits and handoffs](PLAN5_SQL_ROOM_ITEM_CUSTODY_2026-10-08.md).
+Same remote/worktree `codex/accounting-plan5`, owned base11e874facd842ad0cf89df04a1ba6c14b0028421,
+fix11d88805da5843eb463f5c12c1112ab0bcb3806c. Five owned Python/test files; no shared source/schema/
+registry edits. All earlier branch follow-ups and seven ancestors remain.
+Primary84a435c3deca43258c0c804ec16cc964197c2aea; composed06d34b078ce2ee685ea134e4b855a97f3558cc71;
+native833d3085815b396861ad18a77635412212381e4b; canonical647e06717b85ea7a5e27a1096fdb9cd9f124bd60c2.
+
+Both-engine predecessor RED establishes invisible truncation/trailing/all-payload
+loss. Independent bounded raw bytes/bindings/current graphs/season/clock/census
+diagnostics now expose them. A second RED proves malformed duplicate proof loss;
+the complete raw cardinality fix and whole-graph budgets pass. Existing coin
+decoding keeps its original rules. Runtime and retained-root authority explicitly
+remain unqualified, including deliberately synthetic canonical storage roots.
+
+Final network-none checks04 exit0/266.979665579s,795 commands:
+7 room methods zero skips (both actual canonical engines and ASan/UBSan native
+capture helper),55 origins,131 reconciler and10 saved pass; seven old opt-ins
+skip. Both complete synthetic whole exporters pass38 missing/MyISAM controls
+each. Thirty read-only provider cuts plus four FK-refused observations retain
+unchanged full databases and complete counts. Four private service daemons exit0.
+Earlier fixture/FK/recorder failures and actual cardinality RED stay preserved.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/room-audit-20261008; seal SHA256
+5528e7983ed3009da2d6f419d88b5c389fbdb98a074c710aa4c164f92583411f,7,227 files/3,304,746,568 bytes,zero copied links/reparse points.
+Delivery records exact publication/remote/clean tree/all ancestors and rechecks
+every sealed body. Primary registry request and original shared room seed closure
+remain narrow handoffs. Full original native cold boots, retained-root/callback/
+census/retention/backup/upgrades/major-plan/combined-release/R1-R8 remain open.
+Primary private115 remains unrun and separately owned. Accounting inactive;
+wallet roots/declined spell path preserved. Curator-ready; local notebook
+nonblocking, application/acknowledgement/adoption unclaimed. Full goal active.
