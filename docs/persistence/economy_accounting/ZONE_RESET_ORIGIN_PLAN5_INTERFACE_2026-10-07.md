@@ -149,3 +149,21 @@ Accepted source pins: factory d3d2f271/5abff8c2/5eb52ca5, ZRR1 c35c145f8/hc9d427
 coordinator c2766334/h6b74ca59/journal0e4aac52 and room owner a46a5e58/h0957c6e.
 The public creation adapter remains gated. This source checkpoint does not prove
 physical publication, service success, native qualification or release readiness.
+
+## Reviewed original terminal and full-world interfaces - 2026-10-07
+
+The private92 candidate includes source-reviewed nullable terminal context in
+0065, same-session original-body retention, fifth raw origin column and pure
+full-command/TIR correlation. NULL remains unknown; byte-identical replay cannot
+rewrite original delivery metadata. Storage cap32MiB and unchanged raw cell cap
+1MiB are separate enforced boundaries. Matching Plan5 engine/restore readers and
+real migration/backup/recovery qualification remain the independent owner's work.
+
+The cold owner consumes only an authenticated original locked root plus actual
+terminal service body, preserving removed descendants as history. A complete
+owning world census includes rooms/bodies/descriptors/items/global order and signed
+cash, with banks retained separately as projections. The actual late boot owner
+provides only a synchronous guarded borrow before listeners/callbacks/input and
+revokes it before release. The source SQL normalization/independent verifier and
+activation consumer are still required; no raw census or terminal DTO is authority.
+Production accounting stays inactive; all cross-stream release gates remain open.
