@@ -609,6 +609,24 @@ quest authority fixture is published by those reports. Actual continuing Goals
 stay blocked and unfinished; local toolchain/link success cannot repair the
 primary host or satisfy original full project qualification/completion.
 
+Published b6ac1239642565c5f8812a162079f1a173524e3c adds documentation only for
+[source-reviewed private cache correspondence](../PERSISTED_PROVIDER_UNION_PRIMARY_HANDOFF_2026-10-07.md)
+and [required day-one room reset production](../DAY1_ROOM_RESET_IMPLEMENTATION_HANDOFF_2026-10-07.md).
+Its private candidate has51 production/23 original-fixture files; cache count,
+owner-clock and same-cut publication successors are reported source-reviewed,
+not compiled or executed. Coordinator verifies the published production and
+migration trees remain unchanged. No private candidate body or usable fixture
+interface is published, so no execution proof transfers to the maintained tree.
+The required original O room-floor producer is still refused under active
+accounting. The maintained actual-reset fixture explicitly runs inactive mode.
+Shared actorless issuance, supply policy, reset-event identity and same-root
+room literal/coin custody/recovery remain with primary. A bounded producer owner
+can start only after those narrow owner contracts are available, as the primary
+handoff requires; neither local side chat owns that shared implementation now.
+Originless NPC cash still requires witnessed durable lifetimes. These are precise
+publication triggers for reassessment, not a fabricated player authority,
+complete-world proof, new worker assignment or completion/resumption signal.
+
 No independent domain or quest implementation is currently selected. Watch for
 the table's real source/interface/fixture publications, then reserve a connected
 case or operation for the appropriate existing chat. Preparation can begin once
