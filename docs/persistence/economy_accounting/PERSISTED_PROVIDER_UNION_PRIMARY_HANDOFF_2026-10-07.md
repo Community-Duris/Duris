@@ -1,5 +1,63 @@
 # Persisted provider union: primary source handoff - 2026-10-07
 
+## Reviewed ordinary world and flat cold census - 2026-10-08
+
+Private `tmp/lifecycle-ordinary-world-cold-census-candidate-primary-20261008`
+SHA256 `4c9182212e2aaf750afa070fb843d415a06c77e6773aae89a7882de9ce04d000` integrates five additional independently source-accepted
+slices on the previous147 candidate: ordinary published-world owner7bfa,
+actual SQL reader406, corrected cash observer985, corrected full original
+forest reader0cfe and cold world wrapper690e. There are148 production files,
+23 unchanged original fixtures, five unchanged schema/manifest inputs and80
+selected C providers registered once. Makefile stays byte-exact with its six
+original additions. All592 new actual dependency records authenticate.
+Composition b37964/066185 preserves both new docs-only remote advances and
+the three unrelated local changes. No merge, rebase or force push is used.
+
+Ordinary published-world selection uses the full genuine original NMB4/NBC4/
+264-byte MBR4 terminal attachment and immutable origin. Its actual SQL reader
+selects matching recovery, retained result and origin locks before/after the
+existing mapping/native/custody cuts. Historical policy stays explicit; shared
+and corrupt/ambiguous evidence do not downgrade to a historical constructor.
+The native world owner stays SQL-free under its original idle-session token.
+
+The cold physical helper now verifies authentic BEFORE or CURRENT keeper cash
+from the caller's real retained cash stage, rather than requiring CURRENT before
+effects. Original configured-body, bounded catalog, PC/pet and NORENT predicates
+remain. The flat forest counterpart reconstructs complete original ordered
+BEFORE bytes from actual CURRENT parent UIDs and original selected literals.
+Independent review caught a type mismatch and an inherited target-UID0 lookup;
+corrected0cfe uses the validated account string and reverses target weight only
+for an actual destination, in BOTH new flat and original SQL cold readers.
+Rejected7e5e/a46 and superseded5d remain preserved as rejected ancestors.
+
+The new SQL-free world wrapper authenticates canonical retained payload/PID and
+the complete manifest/selected UID union, then invokes the original bounded
+world/descriptor/UID/selected/target observer. Strict absent-body requests empty
+only their request spans; full authoritative forests remain retained. Strict
+proof requires actual presence/absence, all locations and present-owner forest
+matches. Relaxed observation retains genuine BEFORE/detached mismatch flags.
+Flat item IDs remain -1; no SQL row, runtime identity or returned handler is
+fabricated. Root must still join full command/receipt/source/pet/money/target-
+phase proof in the genuine native callback; helper success cannot publish/ACK.
+
+The existing approved reset/restore behavior resolves shared keeper gameplay:
+cold restoration replaces the reset keeper with saved cash/stock; warm reset
+does not overlay the catalog or union live inventories. No new historical keeper
+row-ID lifetime requirement is introduced. A parallel owner implements a two-
+phase borrowed-session SHOP reader: keeper/SHOP owner before native-ID locks,
+then full existing custody/physical/sidecars after the root's original ascending
+native locks. No native-mobile custody owner, wallet, AFTER clock or CAS is
+invented. Atomic birth storage/result/recovery and publication remain unfinished.
+
+Complete cold effects/enrollment/budget/guarded ACK, boot wiring, admission,
+opening correspondence, shared keeper atomic storage, activation and combined
+Plan5 qualification remain open. UID-zero legacy pet absence remains unresolved
+when the genuine player is absent; VNUM/order cannot supply an identity proof.
+Compiler/native/SQL/gameplay/persistence/recovery tests remain UNEXECUTED under
+the user's major-plan deferral. This milestone publishes documentation only;
+implementation stays private/unqualified. No Plan2-5/R1-R8/release completion is
+claimed, and inactive-accounting/declined-spell/activation safety gates stay intact.
+
 ## Integrated ordinary birth owners and restored flat outer - 2026-10-08
 
 Private `tmp/lifecycle-ordinary-origin-restored-outer-candidate-primary-20261008`
