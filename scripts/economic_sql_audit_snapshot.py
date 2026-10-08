@@ -1309,6 +1309,18 @@ def read_locker_custody(cursor) -> dict:
     return collections
 
 
+def read_siege_custody(cursor) -> dict:
+    """Retain every legacy siege row without claiming runtime admission."""
+    cursor.execute("SELECT COUNT(*) AS rows_total FROM siege_items")
+    bound = cursor.fetchone()
+    if bound is None or bound["rows_total"] > MAX_ROWS:
+        raise ExportError("siege custody source exceeds audit bounds")
+    rows = list(bounded(cursor, "SELECT id AS item_id,room_vnum,container_id AS parent_id,"
+                        "obj_uid AS uid,vnum,quantity,weight,extra_flags,item_type,"
+                        "value0,value1,value2,value3 FROM siege_items ORDER BY id"))
+    return {"siege_items": rows, "siege_custody_coverage": dict(items=len(rows))}
+
+
 def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     # Both native-item and mapping projections can return payload bytes. Bound
     # them before either buffered SELECT, including repeated mapping joins.
@@ -1335,6 +1347,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     native.update(read_player_custody(cursor))
     native.update(read_corpse_custody(cursor))
     native.update(read_locker_custody(cursor))
+    native.update(read_siege_custody(cursor))
     native["ship_coffers"], native["ship_coffer_coverage"] = read_ship_coffers(cursor)
     native["guild_treasuries"], native["guild_treasury_coverage"] = read_guild_treasuries(cursor)
     gaps = ["ship_coffer_lifetime_origin_revision_and_writer_qualification",
@@ -1347,6 +1360,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             "player_pet_prototype_full_runtime_payload_hold_and_retained_death_history",
             "corpse_prototype_full_payload_catalog_revision_artifact_and_lifecycle_history",
             "locker_prototype_full_payload_access_history_and_account_runtime_authority",
+            "siege_runtime_admission_full_payload_and_other_room_physical_authority",
             "unattributed_ownership_history",
             "unreferenced_uid_events_without_native_or_baseline_anchors",
             "unresolved_post_baseline_account_origins",
@@ -1703,9 +1717,9 @@ def capture(connection, lineage: bytes, epoch: bytes) -> dict:
             "'auction_money_pickups','auction_item_custody','auction_item_pickups',"
             "'shopkeepers','shopkeeper_items','player_items','player_pets','player_pet_items',"
             "'corpses','corpse_items','lockers','private_chests','locker_items',"
-            "'account_lockers','locker_chests','account_locker_items','ships','guilds')")
+            "'account_lockers','locker_chests','account_locker_items','siege_items','ships','guilds')")
         engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
-        if len(engines) != 33 or any(engine != "InnoDB" for engine in engines.values()):
+        if len(engines) != 34 or any(engine != "InnoDB" for engine in engines.values()):
             raise ExportError("SQL audit source is missing or not InnoDB")
         has_realized_price = realized_price_column_available(cursor)
         evidence = read_evidence(cursor, lineage, epoch, has_realized_price)

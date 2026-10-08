@@ -340,7 +340,7 @@ class Reconciler:
                 elif field in ("uid", "parent_uid", "child_index", "line_index", "source_slot",
                                "net_copper", "ship_id", "guild_id", "auction_id", "slot",
                                "keeper_id", "shop_id", "item_id",
-                               "pid", "pet_id", "corpse_id", "locker_id", "chest_id",
+                               "pid", "pet_id", "corpse_id", "locker_id", "chest_id", "room_vnum",
                                "identity_kind", "identity_id") and type(value) is int:
                     safe[field] = value
                 elif field == "table" and isinstance(value, str) and (value in TABLES or value in ORPHAN_EVIDENCE_SOURCES):
@@ -681,6 +681,7 @@ class Reconciler:
         self.audit_player_custody(snapshot.get("backend"), native, native_items)
         self.audit_corpse_custody(snapshot.get("backend"), native, native_items)
         self.audit_locker_custody(snapshot.get("backend"), native, native_items)
+        self.audit_siege_custody(snapshot.get("backend"), native, native_items)
         self.audit_uid_scope_coverage(snapshot.get("backend"), native,
                                       item_origins, native_items, references)
         self.audit_unattributed_uid_history(snapshot.get("backend"), native)
@@ -1593,6 +1594,107 @@ class Reconciler:
             owner = current.get("owner", [None])
             if current.get("state") == "live" and owner[0] == 5 and current["uid"] not in physical[tuple(owner)]:
                 self.emit("locker_uid_missing_physical", uid=current["uid"])
+
+    def audit_siege_custody(self, backend: str, native: dict, items: dict) -> None:
+        """Check raw siege correspondence; room ownership alone is not source identity."""
+        coverage = native.get("siege_custody_coverage")
+        if coverage is None and "siege_items" not in native:
+            if backend == "sql_partial":
+                self.emit("missing_siege_custody_coverage", scope="snapshot")
+            return
+        rows = self.table(native, "siege_items")
+        if (not isinstance(coverage, dict) or set(coverage) != {"items"} or
+                type(coverage["items"]) is not int or coverage["items"] != len(rows)):
+            raise SnapshotError("invalid siege custody coverage")
+
+        def integer(row, field, low, high, nullable=False):
+            value = row.get(field)
+            if field not in row or (value is not None or not nullable) and (
+                    type(value) is not int or not low <= value <= high):
+                raise SnapshotError("invalid siege custody " + field)
+
+        for row in rows:
+            for field, low, high, nullable in (
+                    ("item_id", 1, 2**32-1, False), ("room_vnum", -2**31, 2**31-1, False),
+                    ("parent_id", 0, 2**32-1, True), ("uid", 0, 2**64-1, True),
+                    ("vnum", -2**31, 2**31-1, False), ("quantity", 0, 65535, True),
+                    ("weight", -2**31, 2**31-1, True), ("extra_flags", 0, 2**64-1, True),
+                    ("item_type", -128, 127, True)):
+                integer(row, field, low, high, nullable)
+            for index in range(4):
+                integer(row, "value"+str(index), -2**31, 2**31-1, True)
+        if rows:
+            # Public capture includes these retained rows, but no current siege
+            # hydrator/admission contract establishes them as runtime authority.
+            self.emit("siege_runtime_authority_unqualified", scope="snapshot")
+        row_counts = Counter(row["item_id"] for row in rows)
+        row_index = self.index(rows, ("item_id",), "siege_duplicate_physical_row")
+        uid_counts = Counter(row["uid"] for row in rows if row["uid"])
+        competing = {row.get("uid") for name in ("player_items", "pet_items", "shop_items",
+                     "corpse_items", "locker_items", "account_locker_items")
+                     if name in native for row in self.table(native, name)
+                     if type(row.get("uid")) is int and row["uid"] > 0 and
+                     (name != "player_items" or row.get("item_type") != 20 or row.get("parent_id"))}
+        if "auction_roots" in native:
+            competing.update(row["uid"] for row in self.table(native, "auction_roots")
+                             if row.get("claimed") is False and
+                             type(row.get("uid")) is int and row["uid"] > 0)
+        literals, position_cache = live_coin_literals(native, items), {}
+        for row in rows:
+            uid = row["uid"]
+            detail = dict(item_id=row["item_id"], room_vnum=row["room_vnum"])
+            if row["room_vnum"] <= 0:
+                self.emit("siege_room_identity_unknown", **detail)
+            if row["vnum"] <= 0:
+                self.emit("siege_item_vnum_invalid", **detail)
+            if row["quantity"] != 1:
+                self.emit("siege_unsupported_quantity", **detail)
+            if row["weight"] is None or row["extra_flags"] is None or row["item_type"] is None:
+                self.emit("siege_prototype_literal_unknown", **detail)
+            if not uid:
+                self.emit("siege_legacy_uid_unknown", **detail)
+            elif uid_counts[uid] != 1 or uid in competing:
+                self.emit("siege_duplicate_physical_uid", uid=uid)
+            # Bound by the complete audited row count, not an invented native
+            # loader depth. Siege has no qualified loader in this source.
+            root, parent, error = physical_item_position(row_index[(row["item_id"],)], row_index,
+                row_counts, "room_vnum", max_depth=MAX_ROWS+1, position_cache=position_cache)
+            if error:
+                self.emit("siege_item_"+error, **detail)
+            money = row["vnum"] == 3 or row["item_type"] == 20
+            values = [row["value"+str(index)] for index in range(4)]
+            if money:
+                if any(value is None for value in values):
+                    self.emit("siege_coin_value_unknown", **detail)
+                elif any(value < 0 for value in values):
+                    self.emit("siege_negative_coin_value", **detail)
+            if not uid:
+                continue
+            current = items.get((uid,))
+            if current is None:
+                self.emit("siege_uid_unadmitted", uid=uid)
+                continue
+            if current.get("state") != "live":
+                self.emit("siege_projection_inactive_uid", uid=uid)
+                continue
+            if row["room_vnum"] <= 0 or current.get("owner") != [3, row["room_vnum"], 0]:
+                self.emit("siege_item_owner_mismatch", uid=uid)
+                continue
+            integer(current, "vnum", -2**31, 2**31-1)
+            if current["vnum"] != row["vnum"]:
+                self.emit("siege_item_vnum_mismatch", uid=uid)
+            if root is not None and (current.get("root") != root or
+                    (current.get("parent") or None) != (parent or None)):
+                self.emit("siege_item_topology_mismatch", uid=uid)
+            if current.get("equipment_slot", 0):
+                self.emit("siege_item_equipment_mismatch", uid=uid)
+            if money:
+                if uid not in literals:
+                    self.emit("siege_coin_payload_unknown", uid=uid)
+                elif literals[uid] != values:
+                    self.emit("siege_coin_literal_mismatch", uid=uid)
+        # A live room UID may come from saved_items or exact modern payloads;
+        # absence from siege alone cannot prove missing room physical authority.
 
     def audit_original_plans(self, tables: dict, by_op: dict, ownership: dict) -> None:
         """Bind projections to retained EAP1 bytes, independently of mutation code.
