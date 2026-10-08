@@ -152,6 +152,13 @@ reset-event and same-root room-recovery dependencies. Shared seams remain root
 owned. Stopped maintenance must use actual completed loading/recovery under its
 original fence; runtime admission/boot flags are not initialized-world evidence.
 
+The newer private `tmp/lifecycle-reset-contract-candidate-primary-20261007`
+contains61 production/23 original fixture files: every prior51/23 body remains,
+with source-reviewed reset wire, private invocation/preparation and pure issuance
+contracts. The room handoff records actual pins, the mixed-zero posting fix and
+the still-required atomic producer/cold/publication paths. This preparation grants
+no new admission, initialized-world or activation authority; native gates remain.
+
 Actual maintained lifecycle install still uses source2-only capture/normalization
 at economic_sql_accounting_lifecycle_transaction.c1771, while current holdings/
 activate_verified use source2-only capture at1641/1969. The accepted union is
