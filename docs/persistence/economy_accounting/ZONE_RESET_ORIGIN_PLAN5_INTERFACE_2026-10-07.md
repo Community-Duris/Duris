@@ -187,7 +187,9 @@ complete counts; unloaded lifetimes and retired history remain explicit.
 
 Independent Plan5 must inspect original raw sources and perform its own full
 money/item/forest reconciliation; primary reports never replace independent proof.
-Native catalog is one all-row six-column table, not six providers. Its original
+Native `quest_mobile_native` is one all-row table with five physical columns.
+Its reader selects six fields, including canonical-image length; this is not
+six providers. Its original
 scalar bounds and 4MiB canonical-image allowance remain; cumulative raw totals are
 not added twice. Originless opening/full item join, initial inactive installation,
 actual independent callback/activation and committed publication remain missing.
