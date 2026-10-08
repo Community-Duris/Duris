@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 					"met NPC was missing");
 		}
 		require(catalog.story_mappings.size() == 232 &&
-				tracker.summary_for(7, 42).total == 1518,
+				tracker.summary_for(7, 42).total == 1519,
 			"native story projection disagreed with the complete source audit");
 		auto file_catalog = raw_catalog;
 		require(zone_story_quest_story::load(
@@ -255,7 +255,7 @@ int main(int argc, char **argv)
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
 										    660, 2) == 0 &&
 				zone_story_quest_catalog::eligible_definition_count(file_catalog,
-										    777, 2) == 5,
+										    777, 2) == 6,
 			"complete Alatorin/Newhaven/Faerie/Verspin/Ship Yards/Ultarium/Surface sidecars failed the native file loader");
 		const auto story_for = [&](const char *area, const char *id) -> const auto &
 		{
@@ -3316,6 +3316,7 @@ int main(int argc, char **argv)
 		const auto &hall_armor = story_for("hall", "xamael-platemail-of-awe");
 		const auto &hall_child = story_for("hall", "child-dagger-for-letter");
 		const auto &hall_letter = story_for("hall", "lost-aberrate-letter-for-hair");
+		const auto &hall_elder = story_for("hall", "seltran-hair-for-ore");
 		service supplied_hall(catalog);
 		require(supplied_hall.discover_zone(7, 42, 777, 77700, 100, "arrival") ==
 					result::applied &&
@@ -3367,6 +3368,7 @@ int main(int argc, char **argv)
 			supplies.carried[item] = 2;
 		for (const auto item : { 77720, 77750 })
 			supplies.carried[item] = 1;
+		supplies.carried[77747] = 1;
 		journal = supplied_hall.render_journal(7, 42, 777, 10, 1, 103, false, false,
 						       &supplies);
 		require(hall_section(hall_belt).find("[Ready now] " + hall_belt.steps[4].text) !=
@@ -3384,6 +3386,12 @@ int main(int argc, char **argv)
 					std::string::npos &&
 				hall_section(hall_letter)
 						.find("[Pending] " + hall_letter.steps[0].text) !=
+					std::string::npos &&
+				hall_section(hall_elder)
+						.find("[Ready now] " + hall_elder.steps[1].text) !=
+					std::string::npos &&
+				hall_section(hall_elder)
+						.find("[Pending] " + hall_elder.steps[0].text) !=
 					std::string::npos &&
 				supplied_hall.serialize_state() == hall_before &&
 				supplied_hall.progress_for_zone(7, 42, 777).completed == 0,
@@ -3404,11 +3412,15 @@ int main(int argc, char **argv)
 		for (const auto &exclusion : hall_map.exclusions)
 			record(supplied_hall, exclusion.first, exclusion.first.c_str(), 777, 77906);
 		require(supplied_hall.progress_for_zone(7, 42, 777).completed == 0 &&
-				supplied_hall.progress_for_zone(7, 42, 777).total == 5,
-			"Hall support or elder refusal/shadowed receipts earned achievements");
+				supplied_hall.progress_for_zone(7, 42, 777).total == 6,
+			"Hall support or historical elder refusal receipts earned achievements");
+		record(supplied_hall, hall_elder.contracts.front(), "hall-supplied-hair", 777,
+		       77906);
+		require(supplied_hall.progress_for_zone(7, 42, 777).completed == 1,
+			"Hall supplied hair required the earlier letter receipt or a rescue");
 		record(supplied_hall, hall_letter.contracts.front(), "hall-supplied-letter", 777,
 		       77916);
-		require(supplied_hall.progress_for_zone(7, 42, 777).completed == 1,
+		require(supplied_hall.progress_for_zone(7, 42, 777).completed == 2,
 			"Hall supplied letter required personal dagger recovery or the child receipt");
 		service recovered_hall(catalog);
 		require(recovered_hall.deserialize_state(supplied_hall.serialize_state(), &error),
@@ -3420,8 +3432,8 @@ int main(int argc, char **argv)
 				       777, 77908);
 		service restored_hall(catalog);
 		require(restored_hall.deserialize_state(recovered_hall.serialize_state(), &error) &&
-				restored_hall.progress_for_zone(7, 42, 777).completed == 5 &&
-				restored_hall.progress_for_zone(7, 42, 777).total == 5 &&
+				restored_hall.progress_for_zone(7, 42, 777).completed == 6 &&
+				restored_hall.progress_for_zone(7, 42, 777).total == 6 &&
 				restored_hall.progress_for_zone(7, 42, 183).completed == 0,
 			"Hall historical recovery merged outcomes, counted exclusions or credited foreign dagger ownership");
 

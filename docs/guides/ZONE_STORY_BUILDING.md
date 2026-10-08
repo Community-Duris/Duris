@@ -78,15 +78,23 @@ notes naming zone/interaction, player trigger, before/after, proof and limits.
 A journal correction or planned recipe change is not a shipped native repair.
 
 The Hall's [source dossier](../design/zone-stories/THE_HALL_OF_THE_ANCIENTS.md)
-shows a second class of mismatch: the loader prepends identical elder offerings,
-so the consuming refusal shadows the ore reward. Both remain excluded until
-eligibility is deliberately repaired; an item graph cannot infer a saved-son
-condition. Sixteen belt ingredients exceed the current fourteen-root offering
-limit, and one-copy source caps conflict with repeated quantities. Optional
-current-material checks must explain these blockers without enabling a recipe.
-Keep actual ten-item armor terms, including one potion, separate from the
-two-sample dialogue. Review exact source budgets and receipt rebinding before
-changing native balance or limits.
+shows a contract-ordering defect: the loader prepended an identical hair
+refusal before Seltran's ore reward. The owner confirmed the hair hand-in;
+[00bda98d3](https://github.com/Community-Duris/Duris/commit/00bda98d3) reorders the entries so the existing completion dialogue,
+ore reward and departure run. Both canonical identities remain intact; the
+historical nonreward contract stays excluded and does not become a reward.
+An item graph cannot infer a saved-son condition; none is required.
+
+Scarce materials may require several zone resets. Scarcity and competing
+consumers do not establish a broken quest or permanent exclusive outcomes.
+Each distinct final outcome is an earnable achievement, including Hall's belt
+and armor separately. Qualify actual obtainable quantities before proposing
+a supply repair, preserving existing balanced inputs, prices and rewards.
+Sixteen belt ingredients exceed the current fourteen-root offering limit:
+plan safe backend support without reducing the recipe. Optional material checks
+explain preparation without bypassing that guard. Keep actual ten-item armor
+terms, including one potion, authoritative over the two-sample dialogue; a
+later dialogue correction needs its own clear repair/news record.
 
 Custom death-spawn guardians need atomic actor/item/source-episode lineage.
 A spawned potion in current custody does not prove a personal first recovery;
