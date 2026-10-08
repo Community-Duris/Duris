@@ -45,8 +45,11 @@ returned with an explanation; those responses are not successful gardening.
 The garden route requires belt 13521 **equipped at the waist**, not merely carried.
 Tryve (13504) is reset in room 13556 with that belt at slot 13. No Q contract
 or conversation awards it. The journal must say the gardener wears it rather
-than promise a friendly belt exchange. Review combat/theft/transfer admission
-before prescribing a personal acquisition route.
+than promise a friendly belt exchange. The owner clarified on October 8, 2026
+that mortal players have no active steal skill: the existing source route is
+killing the gardener and looting the belt, and that challenge is intentional.
+A supplied belt is equally valid for access and the intended achievement;
+do not add a personal-kill requirement or a friendly award as a journal repair.
 
 `gardener_block` guards these source-room/direction pairs:
 
@@ -65,9 +68,20 @@ plant's exchange. The daisy plant reset is in room 13588, and the other seven
 acceptable plant kinds are in the garden rooms. Do not infer that all eight
 alternatives require exactly the same path.
 
-Future history: optional learned request, successful guarded movement, personal
-plant recovery under an explicit source policy, and the existing terminal receipt.
-The first three are currently untracked. A read or a failed movement earns nothing.
+Builder decision, October 8, 2026: the fuller flower achievement should record
+obtaining belt 13521 by any accepted acquisition route, wearing it at the waist,
+and the accepted plant delivery. Delivery remains valid before either belt
+milestone. Acquisition and wear are retained historical facts, not requirements
+to still possess or wear the belt when delivering; delivery-first completion is
+also valid once the other facts are recorded. Each character must obtain and
+wear it. A personal gardener kill, first original-source recovery or successful
+garden crossing is not an additional required achievement objective.
+
+Durable acquisition/wear events and separate aggregate achievement eligibility
+remain implementation work; the current sidecar equipment check is live
+preparation only. Learned dialogue, accepted guarded movement and personal plant
+recovery remain possible optional extensions requiring their own reviewed rules.
+A journal read or failed movement does not record an accomplished action.
 
 ### The archers' missing arrows
 
@@ -188,7 +202,7 @@ occurrence identity independently of destination and giver/story ownership.
 | ZSQ-RESET-AUTHORITY | `reset_zone` refuses O/P/G/E and other item-producing reset commands while accounting is active. Fresh-world garden supplies, belt, arrows, and sprite ingredients therefore cannot be assumed to exist. This is an intentional authority guard, not proof that the legacy area was broken in its original mode. | Add an accounting-backed reset generation with stable command/occurrence identity, exact UID/custody results, nested dependencies, and replay. Test room, container, and NPC equipment sources, failed commit, duplicate reset, and cold restart before the active flower journey. |
 | ZSQ-ANIMAL-LIFECYCLE | Fresh creation and rotten replacement use direct `read_object`/placement/extraction and carry no story-specific committed lineage. Carried rotten publication can be refused by active ownership authority. | Qualify creation and retirement as one source/transform operation, preserving placement and freshness. Test room/carried/nested decay, restart deadlines, failure, and direct recovery versus gifts. Do not award source credit merely because the object exists. |
 | ZSQ-OPTIONAL-PREPARATION | The old journal suggested obtaining the belt even when a valid plant was supplied. | Fixed in schema 3 presentation: optional equipment preparation stays visible and does not take `Next:` precedence. Native acceptance and receipt identity are unchanged. Conditional subrecipes and all-stage campaigns remain separate work. |
-| ZSQ-TWIN-TERMS | Hanson prose disagrees with executable fees and meat counts for several animals; Marja quotes 20 gold for a backpack but charges 10. Farlindel's and Hanson's prices intentionally differ in some contracts. | Record every actual term (above); obtain a deliberate world-content decision before changing prose or prices. Treat price differences as alternatives, not automatically defects. Add exact reward/fee regressions for any chosen repair. |
+| ZSQ-TWIN-TERMS | Hanson prose disagrees with executable fees and meat counts for several animals; Marja quotes 20 gold for a backpack but charges 10. Farlindel's and Hanson's prices intentionally differ in some contracts. | Owner decision, October 8: align conflicting dialogue with existing executable terms and preserve prices, quantities and reward balance. Treat differences between NPC prices as alternatives. Actual text corrections remain a separately identified fix with exact term checks and PR/news wording. |
 | ZSQ-MIXED-OFFERING | All tanning and clothing require item-plus-currency offerings, outside current durable offering support. | Implement one atomic input/payment/reward/evidence transaction; test every distinct count, missing coin/item, group policy, replay, and preserved UIDs. Keep honest unavailability messages until then. |
 | ZSQ-LEARNED-LORE | Showing an `ask` command is not proof its response ran. | Dispatch canonical accepted topics after native success; persist idempotently. Repeated aliases, greetings, unavailable NPCs, and failed saves must not invent history. |
 

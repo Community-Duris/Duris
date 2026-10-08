@@ -131,11 +131,19 @@ no saved-son condition that distinguishes these contracts.
 
 The current journal preserves both native identities as exclusions, explains
 the hair lead at the elder and letter recipient, and does not promise ore or a
-reunion. A deliberate repair should choose whether hair alone is valid proof,
-whether refusal must preserve it, and whether a real rescue event is required.
-Merely reversing order would expose ore while still failing to implement any
-saved-son prerequisite. Any binding change must preserve frozen original
-receipts and requalify source/campaign ownership and content revision.
+reunion. The owner clarified on October 8, 2026 that this zone intentionally
+requires a choice of a single outcome, and that there is no general mechanic
+for saving an NPC. Preserve intended exclusive alternatives; do not require
+both, add a rescue prerequisite, or treat the absence of rescue state as a defect.
+
+The exact intended choice still needs identification. The identical hair terms
+and first-match ordering above remain executable evidence; they do not by
+themselves identify a player-selectable branch. Qualify the intended selection
+mechanism before proposing a change. Do not reverse ordering, refund consumed
+proof or expose the ore reward on an inferred rescue/balance premise. Any actual
+binding repair must preserve frozen original receipts and requalify ownership
+and content revision. Conflicting dialogue should match the selected existing
+mechanics by default, preserving native prices, quantities and rewards.
 
 ## Access, death sources and effects
 
@@ -221,16 +229,16 @@ Do not announce any proposal below as completed.
 
 | Finding | Balanced repair/integration proposal | Required proof |
 | --- | --- | --- |
-| Elder refusal shadows ore and consumes identical proof | Builder selects hair acceptance, refusal retention and a real saved-son condition if intended; preserve historical terms | Fresh refusal/success, actor/recipient episodes, frozen receipt recovery/rebinding, no duplicate output or invented rescue |
+| Elder refusal shadows ore and consumes identical proof | Preserve the owner's intended one-outcome choice; identify its exact alternatives and selection mechanism before any repair. No invented saved-NPC condition, automatic proof refund or reward reordering | Intended exclusive branch, fresh actual outcomes, actor/recipient episodes, frozen receipt recovery/rebinding, no duplicate or simultaneous alternative credit |
 | Belt exceeds durable limit; repeated sources have cap one | Select intended recipe and supply budgets, or qualify a shared limit increase; retain separate item identities | Exact sixteen-root allocation or revised recipe, failure/retry/recovery, competing consumers, ordinary episode replenishment |
 | Gear chance-ten O declaration conflicts with normal O reset | Select intended rarity mechanism or source, avoiding an unannounced balance increase | Fresh ordinary and boot/forced branches, capped persistence and accepted ground acquisition |
-| Armor dialogue requests two potions; recipe uses one and two unmentioned ebony shards | Decide current recipe or revised intended recipe, then align material names and dialogue | Exact quantities/identities and output, proof no unrelated potion/book/shard fits, fee/recipe receipt compatibility |
+| Armor dialogue requests two potions; recipe uses one and two unmentioned ebony shards | Owner default: correct dialogue to the actual recipe, preserving its quantities, kinds and reward balance. A demonstrated mechanical defect is a separate repair | Exact quantities/identities and output, proof no unrelated potion/book/shard fits, fee/recipe receipt compatibility |
 | Collector source creates guardian/item non-atomically | Qualify a transaction-backed death source and failed-load cleanup; attribute exact episode before first-source credit | Failed spawn/item/place, accepted grant, personal pickup versus gift, restart and replay |
 | Cathedral GET attempt mutates doors before pickup | Select accepted coin settlement or a deliberately documented attempt switch; repair target/ordering explicitly | Failed/unrelated GET, actual pile identity, money settlement, multiplayer races, return-door recovery and reset |
 | Death callback flag is armed after load | Qualify first-call/early-kill behavior before deciding initialization change | Loaded and recovered mobs, death before periodic dispatch, correct escape-door state |
 | Holding-room sources and disappearing recipients | Define reachable movement, reset generation and retirement policy | Current actor/source UID/location, source creation and repeatable journey, no encounter manufactured by a receipt |
 | Keys, traps, portals and defensive equipment | Add accepted unlock/open/travel/effect adapters only where a selected story requires them | Wrong/same-name key, failed movement, protection/phantasmal exceptions, trap/effect success, post-restart state |
-| Family, shadow and dragon narratives have no campaign terminal | Keep independent outcomes; builder can author an explicit all-stage closure with eligibility policy | Supplied versus personal paths, branch/episode ownership, required predecessor history and supported durable terminal |
+| Family, shadow and dragon narratives have no campaign terminal | Preserve accepted outcomes and intended exclusive choices. Add no saved-NPC requirement; any later campaign endpoint needs explicit authorship and compatible branch policy | Supplied versus personal paths, exclusive branch/episode ownership, supported durable terminal without requiring all alternatives |
 
 Static extraction reveals contracts, prototypes, aliases, locations, counts,
 caps and dispatch mismatches. It cannot infer a saved son, choose balanced

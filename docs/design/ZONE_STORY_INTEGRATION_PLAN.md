@@ -9,6 +9,43 @@ The [October 7 accounting integration checkpoint](ZONE_STORY_ACCOUNTING_SYNC.md)
 records the updated accounting base, preserved journals, reward wire-format
 compatibility, and migration-history transition limits for research databases.
 
+**Builder policy decisions — October 8, 2026**
+
+The owner's clarification establishes these defaults for deeper integration:
+
+- Preserve existing balanced native inputs, fees, quantities and rewards. When
+  dialogue conflicts with executable terms, correct the dialogue to match those
+  terms by default. A demonstrated mechanical defect remains a separate repair;
+  do not infer a balance change or new gameplay prerequisite from prose alone.
+- Separate a successful native exchange from completion of its fuller zone
+  achievement. Extra achievement milestones must not become native admission
+  rules. Record each fact independently so valid delivery and reward settlement
+  remain available before the achievement's other milestones are satisfied.
+- For Twin Towers flowers, the fuller achievement includes obtaining exact belt
+  13521, actually wearing it at the waist, and the accepted Alvinar delivery.
+  Acquisition method is unrestricted: supplied, traded or looted belts qualify.
+  Do not require a personal gardener kill or original-source provenance. Each
+  character must obtain and wear it; a party member's kill or equipment alone
+  does not establish those facts. Recorded milestones survive giving away or
+  removing the belt and may be completed in either order relative to delivery.
+- The gardener's current kill-and-loot challenge is intentional. Mortal players
+  have no active steal skill and there is no friendly belt-award exchange. Explain
+  the belt's access function progressively without removing that challenge or
+  adding another acquisition route as a journal repair. Current possession and
+  live equipment projection already exist; durable acquisition/wear milestones
+  and separate aggregate achievement eligibility still require implementation.
+- Preserve intended mutually exclusive outcomes, including the Hall of the
+  Ancients. Do not demand all alternatives for completion or invent a saved-NPC
+  condition. There is no general saving-NPC mechanic to bind here. The precise
+  intended choice still needs identification; the observed identical-input elder
+  response ordering remains a bounded contract-selection question, not authority
+  to reverse it, add a rescue system, refund consumed proof or change rewards.
+
+These decisions update the plan and source dossiers. They do not implement new
+events, alter journal credit totals, change native content or qualify live play.
+Any later actual dialogue or gameplay repair retains a clearly identified fix
+commit and prominent PR/news wording.
+
 The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
 Twin Towers, Plains of Life, Ailvio, Braddistock, Breale, Abandoned Elven
