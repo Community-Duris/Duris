@@ -4,8 +4,11 @@
 
 [Independent reader review](quest-prep/WATCHED_UID_CAPTURE_REVIEW_2026-10-08.md)
 records exact optional code/handoff and coordinator-executed focused results.
-Quest prep next prepares a separate native NPC cost assertion and rejection
-controls. [Currency acceptance design review](domain-separation/PREPARATION_BUNDLES_REVIEW_2026-10-08.md)
+[NPC-cost assertion review](quest-prep/NATIVE_NPC_COST_ASSERTION_REVIEW_2026-10-08.md)
+passes the additive captured-agreement oracle and focused controls; quest prep
+next implements separate QP03 temporal retirement/replacement assertions.
+Mapping/projector/physical and chronological native proof remain external.
+[Currency acceptance design review](domain-separation/PREPARATION_BUNDLES_REVIEW_2026-10-08.md)
 passes blueprinta24454539; architecture next maps ordinary item-custody/subtree
 authority boundaries for later domain separation. Native C01 execution still
 requires its genuine active fixture and phase witness. Owned-pack availability

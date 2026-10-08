@@ -75,11 +75,15 @@ with coordinator-executed 19 reader tests, 17 unchanged assertion tests and 14
 preimage compatibility cases. This is incremental owned-pack unit evidence,
 not SQL/native acceptance or primary adoption. Exact dependencies remain explicit.
 
-Quest prep next owns only a new native NPC cost assertion module, focused test
-and handoff, with paths and controls in that review. It checks QP02 original
-native cash/economic agreement without a second player debit and preserves all
-existing oracles. Native mapping/publication authentication and authentic paid
-setup remain unavailable; no owner or authority is invented. Currency blueprint
+[Independent NPC-cost assertion review](../quest-prep/NATIVE_NPC_COST_ASSERTION_REVIEW_2026-10-08.md)
+passes code0965b74a8/handoff6366b7ee5: coordinator executes nine new modeled oracle
+methods and 17 unchanged controls. Captured agreement does not authenticate mapping,
+frozen projection or native publication. Quest prep next owns a separate temporal
+QP03 assertion module, focused test and handoff, with exact paths/limits in that
+review. Original A terminal evidence precedes observed later B birth and stable
+stale retry; selected-row absence is never global absence/retirement proof.
+Existing oracles remain intact. Native mapping/publication, genuine D/chronology,
+full census and authentic paid setup remain unavailable. Currency blueprint
 a24454539 now passes preparation review in PREPARATION_BUNDLES_REVIEW_2026-10-08.md.
 Architecture next owns ITEM_CUSTODY_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md: ordinary
 carried/room moves and one complete container subtree, existing writer/native
