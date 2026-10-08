@@ -2257,3 +2257,38 @@ separately unexecuted. Curator-ready, primary-local notebook nonblocking;
 adoption/application/acknowledgement unclaimed. Genuine native/player/source/
 backup/restore/retention/load and full release gates remain. Inactive behavior,
 wallet exclusions and declined spell path stay. Goal active.
+
+
+## Current64 managed SQL partial-claim restore qualified — 2026-10-08
+
+[PLAN5_CURRENT64_MANAGED_SQL_CLAIM_RESTORE_2026-10-08.md](PLAN5_CURRENT64_MANAGED_SQL_CLAIM_RESTORE_2026-10-08.md) records 2 complete existing SQL managed tests PASS/zero skips at
+published primary `fb641bb56ae719758756d4bd1a575df48fbe5ef7` plus 20 exact owned overlays, composed tree
+`ea474d880e905da1c3787c6cab09092613a8fc9d`, native833d3085/migrations7e06717b/canonical 64. Sole branch/worktree
+codex/accounting-plan5 stays; base `c4ff10c8d62d0fc4a13c0f08d782a2d597539ef5`, containing report commit is
+result. All seven earlier branch tips/follow-ups and 20 tested owned blobs remain.
+Only report/this additive handoff changes; no new shared interface/schema/native/
+producer/coordinator/registry/activation edit or request. Qualified owned integration
+and dependency set still needs primary import/combined qualification; no adoption
+is claimed.
+
+Real MariaDB 10.11.14/MySQL 8.0.46 each full-dump/import into fresh TCP-disabled
+private daemons, verify 3 native roots/2 sources/1 partial allocation/residual 6,
+boot actual authenticated current SQL server, and refuse all 3 corrupt claim imports
+before service boot. Fourteen identical-per-engine SELECT-only authority cuts,
+6 independent pending_claim refusals, 20 UPDATE1142 denials, 2 accepted/6 refused
+managed restores and2 actual boots. Original account/value/revision/history/opening/
+checksum controls remain. Both restore recipes build unchanged with original flags;
+native SQL/client-free capsule outputs agree under ASan/UBSan. Servers are reused
+with every current source and image dependency reauthenticated, not rebuilt.
+This closes previously unexecuted managed SQL claim additions; modeled inactive
+allocations are not producer/source/opening or actual-player qualification.
+
+Raw `D:/Dev/Tests/Duris/accounting-plan5/current64-managed-claims-20261008`, seal `a5796a10cdb2ad4bf634ec1408f111f17bed8ad047402c0df4f2971bd93b2e1c` (197 files/
+1139554681 bytes), source/raw metadata/bodies/dumps/receipts/logs/argv/guards retained.
+Post-push receipt binds result/remote/all 20 overlays/all seven tips/every sealed body.
+Both owned containers and child processes stop. Other10 module tests are unselected;
+full combined 12 and private 134-file candidate remain unqualified. Earlier flat
+auction, room UID/provider and original full baseline/head64 requests stay. Primary-
+local notebook nonblocking; curator application/adoption/acknowledgement unclaimed.
+Full Plan 5/R1–R8/producer/native/player/recovery/load/coverage/release gates remain;
+inactive behavior/wallet exclusions/declined spell path stay. Goal active.
