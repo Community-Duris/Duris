@@ -2922,3 +2922,26 @@ All earlier follow-up content remains exact. Curator-ready; notebook nonblocking
 application/import/ack unclaimed. Full combined/producer/gameplay/opening/retention
 budgets/activation/Plan5/R1–R8/release stay open. No production/autocorrection/
 deploy/merge/primary push/cross-chat message.
+
+
+## 2026-10-08: durable restore erasure interface and refusal qualification
+
+Sole local/remote codex/accounting-plan5; base 499cb45c4bdcc98b18cc7eb89ce8238d5acd839d; result is this containing
+commit. Post-push receipt: D:/Dev/Tests/Duris/accounting-plan5/erasure-handoff-20261008/delivery/result.json. Documentation-only
+slice; all 27 overlay blobs and shared/native/schema bodies stay unchanged.
+Refreshed primary b55c688ec1790dbd86228ac1188bc579a543d474; composed source b4c3c8e14783a76a8e492579064044f158530d6f;
+archive f5d1f663cc0c76aa77d654e44de6803b1f83209f8be564523a1b7a4e8112867c. Twelve original synthetic erasure/restore-refusal
+methods PASS, zero skips. Current canonical inspection: 281 retained stores,
+blocked_by_policy. No native build/service/database/migration/real adapter runs.
+Exact fields, invariants, consumers and native/disposable acceptance request:
+PLAN5_ERASURE_PROPAGATION_INTERFACE_2026-10-08.md. Both nonempty external-ledger
+and SQL generation guards stay; durable six-source propagation is not supplied
+by the in-memory filter. Preserve generation-name versus digest distinction and
+non-personal economic identity; no schema/format or policy change installed.
+Current composed source differs from prior by eight docs only; unchanged original
+fixture/provider bindings retain the seven-symbol/nine-control link gate.
+Raw seal f849b656301d63a0d5545143dff9bab03865aa152cee9eaa4d4b0d5b8895a629. Existing 17 audit opt-ins and full native/producer/player/
+opening/cutover/erasure/retention/workload/combined Plan5/R1-R8/release gates stay
+open. Prior follow-up prefix remains exact. Curator-ready; primary-local notebook
+nonblocking; application/import/ack unclaimed. No primary push, cross-chat message,
+activation, production, autocorrection, merge or deployment.
