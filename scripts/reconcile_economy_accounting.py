@@ -926,6 +926,23 @@ class Reconciler:
         self.audit_items(ownership, references, item_origins, native_items,
                          {row.get("uid") for row in (native.get("uid_history_events") or [])
                           if isinstance(row, dict)})
+        history = native.get("uid_history_events")
+        if isinstance(history, list):
+            for event in history:
+                if not isinstance(event, dict):
+                    continue
+                selected = ownership.get((event.get("operation_id"), event.get("event_index")))
+                if selected is None:
+                    continue
+                # Both captures name the same native ledger row. Unknown historical
+                # fields stay unknown; recorded positions must not contradict.
+                fields = ("uid", "before_revision", "revision", "root", "parent", "owner", "state", "action") + tuple(
+                    field for field in ("from_owner", "from_equipment_slot", "to_equipment_slot")
+                    if field in selected and field in event)
+                if not same_projection([selected.get(field) for field in fields],
+                                       [event.get(field) for field in fields]):
+                    self.emit("conflicting_uid_history_projection", operation_id=event["operation_id"],
+                              event_index=event["event_index"], uid=selected.get("uid"))
         self.audit_original_plans(tables, by_op, ownership)
         return {"exception_count": sum(self.counts.values()), "exception_counts": dict(sorted(self.counts.items())),
                 "exceptions": self.exceptions, "truncated": sum(self.counts.values()) > len(self.exceptions),

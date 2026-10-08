@@ -1452,3 +1452,13 @@ origins and unattributed history retain their existing coverage findings; the
 reader does not invent an origin for them. Finding totals apply to every view
 and remain complete at detail limits 0, 1 and 100. See
 [the previous-owner defect, exact checks and curator handoff](PLAN5_ITEM_PREVIOUS_OWNER_HISTORY_2026-10-08.md).
+
+
+The independent reader compares selected-epoch and lineage copies of the same
+native ownership event at `(operation_id,event_index)`. Conflicting UID, revision,
+topology, owner, state or action produces `conflicting_uid_history_projection`;
+previous owner/equipment fields are compared when recorded in both. Historical
+omission stays unknown. This finding is global at every output limit, identifies
+the operation and selected UID, and preserves both captured rows in provenance.
+It performs no correction. Selected EAP authentication and history agreement are
+separate checks. See [exact regression, SQL/native evidence and integration gates](PLAN5_UID_HISTORY_PROJECTIONS_2026-10-08.md).

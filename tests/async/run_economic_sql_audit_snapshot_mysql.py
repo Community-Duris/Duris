@@ -673,6 +673,8 @@ def verify_compound_item_actions(owner, reader, snapshot):
                 else:
                     expected_projection_counts = dict(expected_counts)
                     expected_projection_counts["invalid_item_supply_state"] = expected_projection_counts.get("invalid_item_supply_state", 0) + 1
+                    if damage == "selected-move":
+                        expected_projection_counts["conflicting_uid_history_projection"] = 1
                     assert Reconciler().audit(damaged)["exception_counts"] == expected_projection_counts
                     names = ("exceptions", "provenance")
                 for name in names:
@@ -830,21 +832,28 @@ def verify_collector_quarantine_views(owner, reader, snapshot):
                 capsule.mkdir()
                 (capsule / "canonical-plan.eap").write_bytes(bytes.fromhex(modeled["canonical_plan"]))
                 (capsule / "healthy-snapshot.json").write_text(json.dumps(bound, sort_keys=True))
-                for damage in ("selected-only", "history-and-native"):
+                for damage in ("selected-only", "history-and-native", "lineage-only", "lineage-and-native"):
                     damaged = copy.deepcopy(bound)
                     alternate = "live" if expected_state == "quarantined" else "quarantined"
-                    for row in damaged["ownership_events"]:
-                        if row["operation_id"] == quarantine_root.hex():
-                            row["state"] = alternate
-                    if damage == "history-and-native":
+                    if damage in ("selected-only", "history-and-native"):
+                        for row in damaged["ownership_events"]:
+                            if row["operation_id"] == quarantine_root.hex():
+                                row["state"] = alternate
+                    if damage != "selected-only":
                         for row in damaged["native"]["uid_history_events"]:
                             if row["operation_id"] == quarantine_root.hex():
                                 row["state"] = alternate
+                    if damage in ("history-and-native", "lineage-and-native"):
                         for row in damaged["native"]["items"]:
                             if row["uid"] == 84:
                                 row["state"] = alternate
                     damaged_counts = dict(bound_counts)
-                    damaged_counts["original_plan_custody_mismatch"] = damaged_counts.get("original_plan_custody_mismatch", 0) + 1
+                    if damage in ("selected-only", "history-and-native"):
+                        damaged_counts["original_plan_custody_mismatch"] = damaged_counts.get("original_plan_custody_mismatch", 0) + 1
+                    if damage != "history-and-native":
+                        damaged_counts["conflicting_uid_history_projection"] = 1
+                    if damage == "lineage-only":
+                        damaged_counts["stale_native_item"] = damaged_counts.get("stale_native_item", 0) + 1
                     assert Reconciler().audit(damaged)["exception_counts"] == damaged_counts
                     probe = capsule / damage
                     probe.mkdir()

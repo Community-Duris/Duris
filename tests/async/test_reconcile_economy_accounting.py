@@ -3053,6 +3053,120 @@ class ReconciliationTests(unittest.TestCase):
         snapshot["native"]["items"][0].update(state="tombstone", owner=[8, 0, 0])
         self.assertIn("duplicate_item_retirement", self.codes(snapshot))
 
+    def test_uid_history_projection_conflicts_with_selected_state_owner_and_slot(self):
+        for initial, field, alternate in (("live", "state", "quarantined"),
+                                           ("quarantined", "state", "live"),
+                                           ("live", "owner", [1, 8, 0]),
+                                           ("live", "to_equipment_slot", 1)):
+            for native_changed in (False, True):
+                snapshot = clean_snapshot()
+                snapshot["ownership_events"][0]["state"] = initial
+                snapshot["native"]["items"][0]["state"] = initial
+                bind_original_plans(snapshot)
+                event = copy.deepcopy(snapshot["ownership_events"][0])
+                event.update(operation_outcome="committed", referenced=False)
+                snapshot["native"]["uid_history_events"] = [event]
+                self.assertEqual(Reconciler().audit(snapshot)["exception_counts"], {})
+                event[field] = copy.deepcopy(alternate)
+                if native_changed:
+                    native_field = "equipment_slot" if field == "to_equipment_slot" else field
+                    snapshot["native"]["items"][0][native_field] = copy.deepcopy(alternate)
+                original = copy.deepcopy(snapshot)
+                with self.subTest(initial=initial, field=field, native_changed=native_changed):
+                    auditor = Reconciler()
+                    expected = {"conflicting_uid_history_projection": 1}
+                    if not native_changed:
+                        expected["stale_native_item"] = 1
+                    self.assertEqual(auditor.audit(snapshot)["exception_counts"], expected)
+                    # The selected capsule still authenticates its own projection;
+                    # conflicting history is separate evidence and never repaired.
+                    self.assertEqual(auditor.original_plans_verified, 1)
+                    self.assertEqual(view(snapshot, {}, "provenance", 100, uid=81)["count"], 2)
+                    self.assertEqual(snapshot, original)
+
+    def test_uid_history_projection_compares_full_record_at_native_event_key(self):
+        cases = ({"uid": 82}, {"before_revision": 2, "revision": 3}, {"root": 82},
+                 {"parent": 82}, {"owner": [1, 8, 0]}, {"state": "quarantined"},
+                 {"action": "create"}, {"from_owner": [2, 9, 0]},
+                 {"from_equipment_slot": 1}, {"to_equipment_slot": 1})
+        for changes in cases:
+            snapshot = clean_snapshot()
+            event = copy.deepcopy(snapshot["ownership_events"][0])
+            event.update(operation_outcome="committed", referenced=False, **changes)
+            snapshot["native"]["uid_history_events"] = [event]
+            original = copy.deepcopy(snapshot)
+            with self.subTest(changes=changes):
+                report = Reconciler().audit(snapshot)
+                self.assertEqual(report["exception_counts"].get("conflicting_uid_history_projection"), 1)
+                finding = [row for row in report["exceptions"]
+                           if row["code"] == "conflicting_uid_history_projection"]
+                self.assertEqual(finding, [{"code": "conflicting_uid_history_projection",
+                                           "operation_id": LEGACY, "uid": 81}])
+                self.assertEqual(snapshot, original)
+        # A retained event at another native key has no overlapping projection.
+        for changes in ({"operation_id": "66" * 16}, {"event_index": 1}):
+            snapshot = clean_snapshot()
+            event = copy.deepcopy(snapshot["ownership_events"][0])
+            event.update(operation_outcome="committed", referenced=False, **changes)
+            snapshot["native"]["uid_history_events"] = [event]
+            self.assertNotIn("conflicting_uid_history_projection", Reconciler().audit(snapshot)["exception_counts"])
+
+    def test_uid_history_projection_keeps_historical_omission_unknown(self):
+        for field in ("from_owner", "from_equipment_slot", "to_equipment_slot"):
+            for selected_missing in (False, True):
+                snapshot = clean_snapshot()
+                event = copy.deepcopy(snapshot["ownership_events"][0])
+                event.update(operation_outcome="committed", referenced=False)
+                snapshot["native"]["uid_history_events"] = [event]
+                del (snapshot["ownership_events"][0] if selected_missing else event)[field]
+                original = copy.deepcopy(snapshot)
+                with self.subTest(field=field, selected_missing=selected_missing):
+                    report = Reconciler().audit(snapshot)
+                    self.assertNotIn("conflicting_uid_history_projection", report["exception_counts"])
+                    self.assertEqual(snapshot, original)
+
+        # Preserve the existing malformed-container finding without dereferencing
+        # rows that the lineage validator has already refused.
+        for history in ([None], ["private-history"], {"invalid": "history"}):
+            snapshot = clean_snapshot()
+            snapshot["native"]["uid_history_events"] = history
+            self.assertEqual(Reconciler().audit(snapshot)["exception_counts"], {"missing_lineage_uid_history": 1})
+
+    def test_uid_history_projection_cli_preserves_conflicts_and_limits(self):
+        for field, alternate in (("state", "quarantined"), ("owner", [1, 8, 0]),
+                                  ("to_equipment_slot", 1)):
+            snapshot = clean_snapshot()
+            event = copy.deepcopy(snapshot["ownership_events"][0])
+            event.update(operation_outcome="committed", referenced=False, personal_alias="private-history")
+            event[field] = alternate
+            snapshot["native"]["uid_history_events"] = [event]
+            native_field = "equipment_slot" if field == "to_equipment_slot" else field
+            snapshot["native"]["items"][0][native_field] = copy.deepcopy(alternate)
+            with tempfile.TemporaryDirectory(prefix="uid-history-projection-") as folder:
+                path = Path(folder) / "snapshot.json"
+                payload = json.dumps(snapshot, sort_keys=True).encode()
+                path.write_bytes(payload)
+                for name in ("exceptions", "provenance"):
+                    for limit in (0, 1, 100):
+                        command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                   str(path), "--view", name, "--limit", str(limit)]
+                        if name == "provenance":
+                            command += ["--uid", "81"]
+                        result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                        with self.subTest(field=field, name=name, limit=limit):
+                            self.assertEqual((result.returncode, result.stderr), (1, ""))
+                            value = json.loads(result.stdout)
+                            if name == "provenance":
+                                self.assertEqual(value["coverage"]["exception_count"], 1)
+                                self.assertEqual((value["count"], len(value["rows"])), (2, min(2, limit)))
+                            else:
+                                self.assertEqual(value["exception_counts"], {"conflicting_uid_history_projection": 1})
+                                self.assertEqual([row["code"] for row in value["exceptions"]],
+                                                 ["conflicting_uid_history_projection"][:limit])
+                            self.assertNotIn("private-history", result.stdout)
+                            self.assertEqual(path.read_bytes(), payload)
+                            self.assertEqual(json.dumps(snapshot, sort_keys=True).encode(), payload)
+
     def test_original_item_plan_binds_live_and_quarantined_state(self):
         for state in ("live", "quarantined"):
             for native_changed in (False, True):
@@ -3090,7 +3204,7 @@ class ReconciliationTests(unittest.TestCase):
             with self.subTest(state=state):
                 auditor = Reconciler()
                 self.assertEqual(auditor.audit(snapshot)["exception_counts"],
-                                 {"original_plan_custody_mismatch": 1})
+                                 {"original_plan_custody_mismatch": 1, "conflicting_uid_history_projection": 1})
                 self.assertEqual(auditor.original_plans_verified, 0)
                 self.assertEqual(snapshot, original)
 

@@ -2602,3 +2602,29 @@ It explicitly lacks raw peer composed archives and compiler/native/SQL/gameplay/
 recovery qualification. It neither imports nor qualifies later endpoint-state
 fix 99c4ce0dc. Published executable composition, shared gates and full Plan5/release
 remain open. Curator-ready input only; primary-local notebook still nonblocking.
+
+
+### Conflicting selected/lineage ownership projections - 2026-10-08
+
+Owned base d0fb98edb34f351442ea4ec397499461bf808eff; result containing commit,
+verified on remote codex/accounting-plan5 in history-projections-20261008/delivery/result.json.
+Four false-clean lineage/current state/owner/equipment substitutions established;
+existing reader now compares common positions at original native event key.
+Four new methods: old reader36 failed subtests/zero errors; final16 modules408
+loaded/390PASS/18 original opt-in skips. First fixed run10 erroneous expected
+exception-identifier assertions preserved; old selected-only SQL expectation
+failure also retained; both corrected without schema change.
+Both complete partial-SQL runners PASS, eight probes/48 CLI checks per engine,
+47 tables unchanged across reads. Original complete canonical native suite on
+source03 PASS both0064 engines,3026 cases/109 cuts/90 refusals/58 full entry per
+engine. Final05 differs in two test expectation files; all production/actual canonical
+inputs exact; component04 inputs equal05.24 native round trips use authenticated probes, not fresh builds.
+Exact source05 2fa21977d57af9b5eb228f2ea420b822d1d8b788; primary 5a775b3eb6e5f859e8225bd5129216c97c8fcbcc;27 overlays/native833d/migrations7e06.
+Raw seal 1a2d4b31ba3ca99373dde0f130e5ab3bdd6584402c4e3b21ef2229d712e64860;1959 files/1858409855 bytes/1542 build files.
+All eight containers stopped/no OOM/live children. No shared interface request;
+primary retains registration/candidate import. Prior endpoint/tombstone/seven
+branch tips preserved; full backup/native recipe, genuine producer/opening/
+recovery/ACK and original-plan preimage/combined/activation/Plan5/R1-R8/release
+gates stay open. Full report PLAN5_UID_HISTORY_PROJECTIONS_2026-10-08.md.
+Curator-ready input; primary-local notebook nonblocking, application/ack unclaimed.
+No activation, autocorrection, production access, primary push, deployment or merge.
