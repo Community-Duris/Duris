@@ -67,6 +67,26 @@ meaningful unblock evidence or needed user resumption. Pause the Goal only when
 the user requests it. This does not promise uninterrupted execution in the
 absence of available work or override platform Goal-state controls.
 
+## Reviewed broader preparation and next deliveries - 2026-10-08
+
+This current queue supersedes the completed two-document assignments below.
+[Independent bundle review](PREPARATION_BUNDLES_REVIEW_2026-10-08.md) authenticates
+currency boundary commit6da1fbd836e4e46b5f65630035f639c4c30ad792 and quest blueprint
+commit4e78ff44b7216c8336c063d61b97ff3f370d255c, with exact remote document links,
+source pins, proof limits and next owned paths. Both PASS as preparation; no
+native acceptance or primary adoption is claimed.
+
+Architecture now prepares CURRENCY_NATIVE_ACCEPTANCE_BLUEPRINT_2026-10-08.md,
+using the accepted map to specify authentic ATM/shared-bank and compound coin
+setup, cuts and assertions. Quest prep now implements a bounded explicit-observed-
+UID extension to its own read-only capture helper plus focused reader tests and
+handoff. It retains moved/destroyed foreign-VNUM descendants in later evidence
+without creating native authority or claiming a complete forest. Exact ownership,
+controls and qualification are in the review. Native execution remains dependent
+on real primary owner/world inputs. These finite tasks proceed under broadened
+user authorization; actual continuing native Goals remain BLOCKED and heartbeat
+ACTIVE. Reassess useful next work at each handoff without repeating inventories.
+
 ## Broadened coordination under explicit user direction - 2026-10-08
 
 This section supersedes any narrower reading that limits useful sidework to

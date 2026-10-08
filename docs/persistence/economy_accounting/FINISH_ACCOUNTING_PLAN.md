@@ -1,5 +1,16 @@
 # Finish accounting implementation plan
 
+## Reviewed preparation handoffs and current sidework - 2026-10-08
+
+[Independent preparation review](domain-separation/PREPARATION_BUNDLES_REVIEW_2026-10-08.md)
+links the exact published currency authority map and QP02/QP03 native blueprint.
+Both are source-grounded preparation, not implementation, native qualification
+or adopted primary code. Architecture next specifies currency native acceptance;
+quest prep implements its owned bounded read-only watched-UID capture extension
+and focused tests. The review/charter records exact paths, preserved controls,
+missing native inputs and disposition. No primary/Plan5 ownership or release
+gate changes, adoption waits, production action or private artifacts are added.
+
 ## Broadened independent preparation - 2026-10-08
 
 The user directs coordination to include useful domain design, native acceptance/
