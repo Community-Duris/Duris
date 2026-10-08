@@ -218,7 +218,8 @@ def restore(p, generation_name, tombstones, drill=False):
             backup.lock(p["restore_root"] / ".restore.lock", wait=backup.LOCK_WAIT_SECONDS):
         if drill and (p["root"] / "drill.json").exists():
             receipt = backup.read_json(p["root"] / "drill.json")
-            if time.time() - receipt.get("completed", 0) < p["drill_seconds"]:
+            age = backup.drill_completion_age(receipt)
+            if age is not None and receipt.get("result") == "qualified" and age < p["drill_seconds"]:
                 return {"event": "drill", "result": "not_due"}
         items = backup.generations(p["root"])
         backup.require(items, "no_verified_generation")

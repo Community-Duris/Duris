@@ -2736,3 +2736,23 @@ primary-local notebook nonblocking, application/import/ack unclaimed. Shared
 provider/UID-owner/original-backup, genuine producer/opening/player/route/recovery/
 fault/load/ACK/private-combined/activation/Plan5/R1-R8/release gates remain open.
 No production write, autocorrection, activation, deployment, merge or primary push.
+
+
+## 2026-10-08: restore-drill receipt qualification
+
+Same sole remote/local `codex/accounting-plan5`; base 66a6bc1dd5f4f4bdaf1666df2419a51a10937ad6.
+Result is this containing commit; exact result/remote/clean/ancestry/rehash receipt
+is `D:/Dev/Tests/Duris/accounting-plan5/drill-receipt-20261008/delivery/result.json`. Failed, future and fractional receipts
+previously deferred real drills. One completion-age helper gates both consumers;
+only qualified current exact-integer evidence can defer a drill. No new receipt
+field/schema/shared interface. Two new methods RED18 failures/18 errors; both
+complete filesystem modules PASS62/zero skips. Actual status CLI38 calls (36
+refusals/two controls), two original SQL methods PASS, six new real drill restores
+and six not-due repeats, eight server game-loop boots on MariaDB10.11.14/MySQL8.0.46.
+Final composed tree 51f484cf3fd2d1460cc3cdc95cf30ba22604e606; primary ba319959eec7305a7e68a60dce3d24accbf29408; native/schema unchanged.
+Raw seal 2f800f18e05c0f39b84502a63fa3ba247c3e47dd245838fe01f289c208ff1e10. Report PLAN5_DRILL_RECEIPT_QUALIFICATION_2026-10-08.md retains
+exact source/commands/native/engine/skip scope. Original12-case module/shared
+provider defect, genuine producers/opening/routes/recovery/fault/load/ACK/private
+combined/activation/Plan5/R1–R8/release remain open. Curator-ready; notebook
+nonblocking; application/import/ack unclaimed. No activation/production write/
+autocorrection/deploy/merge/primary push or cross-chat message.

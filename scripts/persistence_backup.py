@@ -801,6 +801,14 @@ def backup(p, mode):
                 remove_owned(root, stage)
 
 
+def drill_completion_age(receipt):
+    if type(receipt) is not dict or type(receipt.get("completed")) is not int:
+        return None
+    now = int(time.time())
+    completed = receipt["completed"]
+    return now - completed if 0 <= completed <= now else None
+
+
 def status(p, require_drill=False):
     root = p["root"]
     secure_path(root, True)
@@ -840,9 +848,10 @@ def status(p, require_drill=False):
             require(receipt.get("replica") == "transport_and_readback_verified", "replica_not_verified")
         drill_path = root / "drill.json"
         drill = read_json(drill_path) if drill_path.exists() else {}
-        drill_age = int(time.time()) - drill.get("completed", 0)
+        drill_age = drill_completion_age(drill)
         if require_drill:
-            require(drill.get("result") == "qualified" and 0 <= drill_age <= p["drill_seconds"],
+            require(drill_age is not None and drill.get("result") == "qualified" and
+                    drill_age <= p["drill_seconds"],
                     "restore_drill_missing_or_overdue")
         return {"event": "status", "drill_age_seconds": drill_age if drill else None, "result": "ok", "age_seconds": age,
                 "bytes": size, "free_bytes": free, "generations": len(items),

@@ -282,6 +282,31 @@ class GenerationTests(Fixture):
         self.assertEqual(backup.status(self.p, require_drill=True)["result"], "ok")
 
 
+    def test_required_drill_receipt_rejects_malformed_completion(self):
+        now = int(time.time())
+        with mock.patch.object(backup.time, "time", return_value=now):
+            generation = self.create()
+            before = backup.inventory(generation)
+            receipt = self.p["root"] / "drill.json"
+            malformed = [None, False, 1, "private-drill-alias", [], {},
+                         {"result": "qualified"}]
+            malformed += [dict(result="qualified", completed=value) for value in
+                          (None, True, False, float(now), "1", [], {}, -1, now + 1,
+                           float("nan"), float("inf"))]
+            for value in malformed:
+                with self.subTest(receipt=value):
+                    backup.write_json(receipt, value)
+                    receipt_hash = backup.digest(receipt)
+                    with self.assertRaisesRegex(backup.BackupError,
+                                                "^restore_drill_missing_or_overdue$"):
+                        backup.status(self.p, require_drill=True)
+                    self.assertIsNone(backup.status(self.p)["drill_age_seconds"])
+                    self.assertEqual(backup.digest(receipt), receipt_hash)
+                    self.assertEqual(backup.inventory(generation), before)
+            for age in (0, self.p["drill_seconds"]):
+                backup.write_json(receipt, dict(result="qualified", completed=now - age))
+                self.assertEqual(backup.status(self.p, require_drill=True)["drill_age_seconds"], age)
+
     def test_manifest_requires_an_exact_version_one_object(self):
         for mode in sorted(backup.MODES):
             generation = self.create(mode)
@@ -772,6 +797,65 @@ class RestoreTests(Fixture):
         guard = mock.patch.object(restore, "restore_capacity")
         guard.start()
         self.addCleanup(guard.stop)
+    def test_drill_only_defers_for_current_qualified_integer_receipt(self):
+        now = int(time.time())
+        with mock.patch.object(backup.time, "time", return_value=now):
+            generation = self.create()
+            before = backup.inventory(generation)
+            ledger = self.ledger()
+            ledger_hash = backup.digest(ledger)
+            live = backup.inventory(self.base / "live", exclude_locks=True)
+            journals = backup.inventory(self.base / "journals", exclude_locks=True)
+            path = self.p["root"] / "drill.json"
+            invalid = [None, False, 1, "private-drill-alias", [], {},
+                       {"result": "qualified"}, {"completed": now}]
+            invalid += [dict(result=value, completed=now) for value in
+                        (None, "failed", "not_due", True, [], {})]
+            invalid += [dict(result="qualified", completed=value) for value in
+                        (None, True, False, float(now), "1", [], {}, -1, now + 1,
+                         float("nan"), float("inf"), now - self.p["drill_seconds"],
+                         now - self.p["drill_seconds"] - 1)]
+            for value in invalid:
+                with self.subTest(receipt=value):
+                    backup.write_json(path, value)
+                    receipt_hash = backup.digest(path)
+                    with mock.patch.object(backup, "generations", side_effect=
+                                           backup.BackupError("synthetic_generation_check_reached")) as generations, \
+                         mock.patch.object(restore, "service_load") as service, \
+                         mock.patch.object(restore, "private_database") as database, \
+                         mock.patch.object(backup, "run") as run:
+                        with self.assertRaisesRegex(backup.BackupError,
+                                                    "^synthetic_generation_check_reached$"):
+                            restore.restore(self.p, None, ledger, drill=True)
+                        self.assertEqual(generations.call_count, 1)
+                        stdout, stderr = io.StringIO(), io.StringIO()
+                        command = ["backup", "--policy", "/synthetic/policy", "drill",
+                                   "--tombstones", str(ledger)]
+                        with mock.patch.object(backup, "policy_load", return_value=self.p), \
+                             mock.patch.object(sys, "argv", command), \
+                             contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                            self.assertEqual(backup.main(), 1)
+                        self.assertEqual(json.loads(stderr.getvalue()), dict(event="drill",
+                                         result="failed", code="synthetic_generation_check_reached"))
+                        self.assertEqual(stdout.getvalue(), "")
+                        service.assert_not_called()
+                        database.assert_not_called()
+                        run.assert_not_called()
+                    self.assertEqual(backup.digest(path), receipt_hash)
+                    self.assertEqual(backup.inventory(generation), before)
+                    self.assertEqual(backup.digest(ledger), ledger_hash)
+                    self.assertEqual(backup.inventory(self.base / "live", exclude_locks=True), live)
+                    self.assertEqual(backup.inventory(self.base / "journals", exclude_locks=True), journals)
+                    self.assertFalse(list(self.p["restore_root"].glob("candidate-*")))
+            for age in (0, self.p["drill_seconds"] - 1):
+                backup.write_json(path, dict(result="qualified", completed=now - age))
+                receipt_hash = backup.digest(path)
+                with mock.patch.object(backup, "generations") as generations:
+                    self.assertEqual(restore.restore(self.p, None, ledger, drill=True),
+                                     dict(event="drill", result="not_due"))
+                    generations.assert_not_called()
+                self.assertEqual(backup.digest(path), receipt_hash)
+
     def test_bad_generation_manifest_refuses_before_candidate_or_service(self):
         ledger = self.ledger()
         live = backup.inventory(self.base / "live", exclude_locks=True)
