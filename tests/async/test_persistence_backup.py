@@ -509,6 +509,70 @@ class GenerationTests(Fixture):
         self.assertEqual(backup.inventory(newest), contents)
         self.assertEqual(len(backup.generations(self.p["root"])), 2)
 
+    def test_schedule_requires_nonfuture_integer_completion(self):
+        now = int(time.time())
+        with mock.patch.object(backup.time, "time", return_value=now):
+            generation = self.create()
+            before = backup.inventory(generation)
+            receipt = backup.digest(self.p["root"] / "status.json")
+            path = self.p["root"] / "schedule.json"
+            malformed = [None, False, 1, 1.0, "private-schedule-alias", [], {},
+                         {"unexpected": now}]
+            malformed += [dict(completed=value) for value in
+                          (None, True, False, float(now), "1", [], {}, -1, now + 1,
+                           float("nan"), float("inf"))]
+            for value in malformed:
+                with self.subTest(receipt=value):
+                    backup.write_json(path, value)
+                    schedule_hash = backup.digest(path)
+                    with mock.patch.object(backup, "backup", return_value=dict(result="ok")) as capture, \
+                         mock.patch.object(backup, "status", return_value=dict(result="ok")) as health:
+                        result, stdout, stderr = self.scheduled()
+                        self.assertEqual(result, 1)
+                        self.assertEqual(stdout, "")
+                        self.assertEqual(json.loads(stderr),
+                                         dict(event="schedule", result="failed", code="invalid_schedule_receipt"))
+                        capture.assert_not_called()
+                        health.assert_not_called()
+                    self.assertEqual(backup.digest(path), schedule_hash)
+                    self.assertEqual(backup.digest(self.p["root"] / "status.json"), receipt)
+                    self.assertEqual(backup.inventory(generation), before)
+
+    def test_schedule_preserves_due_boundary_and_failure_receipt(self):
+        now = int(time.time())
+        for mode in sorted(backup.MODES):
+            with mock.patch.dict(os.environ, {"PERSISTENCE_MODE": mode}), \
+                 mock.patch.object(backup.time, "time", return_value=now):
+                for index, (completed, due) in enumerate(((None, True), (0, True),
+                        (now - self.p["schedule_seconds"], True),
+                        (now - self.p["schedule_seconds"] + 1, False), (now, False))):
+                    with self.subTest(mode=mode, completed=completed):
+                        self.p["root"] = self.base / ("cadence-" + mode + "-" + str(index))
+                        generation = self.create(mode)
+                        before = backup.inventory(generation)
+                        path = self.p["root"] / "schedule.json"
+                        if completed is not None:
+                            backup.write_json(path, dict(completed=completed))
+                        result, stdout, stderr = self.scheduled()
+                        self.assertEqual((result, stderr), (0, ""))
+                        self.assertEqual(json.loads(stdout)["result"], "ok")
+                        self.assertEqual(len(backup.generations(self.p["root"])), 2 if due else 1)
+                        self.assertEqual(backup.read_json(path)["completed"], now if due else completed)
+                        self.assertEqual(backup.inventory(generation), before)
+                self.p["root"] = self.base / ("failed-cadence-" + mode)
+                generation = self.create(mode)
+                before = backup.inventory(generation)
+                path = self.p["root"] / "schedule.json"
+                backup.write_json(path, dict(completed=now - self.p["schedule_seconds"]))
+                schedule_hash = backup.digest(path)
+                with mock.patch.object(backup, "backup", side_effect=backup.BackupError("synthetic_capture_failure")):
+                    result, stdout, stderr = self.scheduled()
+                self.assertEqual((result, stdout), (1, ""))
+                self.assertEqual(json.loads(stderr),
+                                 dict(event="schedule", result="failed", code="synthetic_capture_failure"))
+                self.assertEqual(backup.digest(path), schedule_hash)
+                self.assertEqual(backup.inventory(generation), before)
+
     def test_next_scheduled_call_resumes_only_verified_publications_then_captures_again(self):
         for failed_stage in ("after_publish", "after_verify", "before_rotation", "prune_complete",
                              "status_write"):

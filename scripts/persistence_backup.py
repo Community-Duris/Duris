@@ -921,8 +921,14 @@ def main():
             mkdir(p["root"])
             with lock(p["root"] / ".schedule.lock", wait=LOCK_WAIT_SECONDS):
                 receipt_path = p["root"] / "schedule.json"
-                last = read_json(receipt_path).get("completed", 0) if receipt_path.exists() else 0
-                if time.time() - last >= p["schedule_seconds"]:
+                now = int(time.time())
+                last = 0
+                if receipt_path.exists():
+                    receipt = read_json(receipt_path)
+                    require(type(receipt) is dict and type(receipt.get("completed")) is int and
+                            0 <= receipt["completed"] <= now, "invalid_schedule_receipt")
+                    last = receipt["completed"]
+                if now - last >= p["schedule_seconds"]:
                     result = backup(p, os.environ.get("PERSISTENCE_MODE", "mariadb-primary"))
                     if result.get("result") == "replication_pending":
                         raise BackupError("replication_pending")

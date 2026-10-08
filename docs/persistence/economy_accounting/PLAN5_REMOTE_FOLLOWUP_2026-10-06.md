@@ -2775,3 +2775,24 @@ genuine producers/opening/routes/recovery/fault/load/ACK/private combined/
 activation/Plan5/R1–R8/release remain open. Curator-ready; notebook nonblocking;
 application/import/ack unclaimed. No production/activation/autocorrection/deploy/
 merge/primary push or cross-chat message.
+
+
+## 2026-10-08: schedule-receipt validation
+
+Same sole remote/local `codex/accounting-plan5`; base 5e6a63ab847163852359351ca683152a4bbff992. Result is
+this containing commit; exact remote/clean/ancestry/rehash receipt:
+`D:/Dev/Tests/Duris/accounting-plan5/schedule-receipt-20261008/delivery/result.json`. Future/nonfinite/fractional receipt
+completion falsely deferred captures; non-object receipts raised uncontrolled
+errors. Existing completed field now requires nonfuture exact integer; fixed
+owned invalid_schedule_receipt exit 1 before capture/pruning/health, no shared
+schema/interface request. RED 13 failures/6 errors; final 65 filesystem PASS/zero
+skips, actual CLI 40/38 refusals, two original SQL methods PASS plus two actual
+scheduled captures/eight invalid receipts/four recent controls; two game-loop
+boots on MariaDB10.11.14/MySQL8.0.46. Composed tree 79b7d17ba7e508d7d691f7e8daffd582b1c05230; primary
+e62269e48aebcab906256908cf97a65dc4ffb5a4; raw seal e18f9d20cbdca091d919dd63585a4f3fac63d9ce2cc157aef02cbb499acc4354. Full report
+PLAN5_SCHEDULE_RECEIPT_QUALIFICATION_2026-10-08.md retains exact source/commands/
+native/engine/consumer/scope. Full original backup recipe issue, genuine producer/
+opening/routes/recovery/fault/load/ACK/private combined/activation/Plan5/R1–R8/
+release remain open. Curator-ready; notebook nonblocking; application/import/ack
+unclaimed. No production/activation/autocorrection/deploy/merge/primary push or
+cross-chat message.
