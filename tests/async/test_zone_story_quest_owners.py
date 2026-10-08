@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+from _paths import extract_function
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -88,7 +89,11 @@ assert len(church["requests"]) == 4 and len(kelek["requests"]) == 1
 assert [b["body"][0] for b in church["dialogue"]] == ["paladin paladins~", "hello hi~", "initiation~"]
 assert [b["body"][0] for b in kelek["dialogue"]] == ["mithril~"]
 assert catalog_tool.report_for(catalog)["eligible_by_zone"]["878"] == 4
-assert "zone_for_completion(completion)" in (ROOT / "src/world/quest.c").read_text()
+capture = " ".join(extract_function("quest.c", "static bool capture_quest_offering_continuation(").split())
+assert "original_definition ? original_definition : zone_story_quest_production::definition_id_for(completion)" in capture
+assert "zone_story_quest_production::runtime_catalog().definitions" in capture
+assert "if (definition.definition_id == *definition_id) { zone_number = definition.zone_number; break; }" in capture
+assert "zone_number < 0" in capture
 runtime = (ROOT / "src/world/zone_story_quest_runtime.c").read_text()
 for name in ("record_authoritative_completion", "record_legacy_completion"):
     body = runtime.split("bool " + name + "(", 1)[1].split("\n}", 1)[0]
