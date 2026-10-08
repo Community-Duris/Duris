@@ -1,60 +1,48 @@
 # Double-entry economy: remaining requirements
 
-## Reviewed initialized cutover caller and ordinary room nesting - 2026-10-07
+## Reviewed retained full-source verification and P-child capture - 2026-10-08
 
-Private `tmp/lifecycle-reset-cutover-nesting-candidate-primary-20261007` composes
-102 production files, 23 unchanged original fixtures and five unchanged private
-schema/manifest files on maintained9360e120f. Candidate SHA-256 is
-`5721d293aaa8878723fd4a0b2e9282b205f05c30b976d83cb47bbb55a0aa0682`.
-All 55 selected production C providers are registered once. The production
-Makefile, rules, flags and original fixture/schema pins are unchanged from the
-previous shared candidate. Independent source review and changed-line formatting,
-token and original-body preservation checks pass. Compiler, native, SQL,
-migrations, gameplay, fault and recovery execution remain unrun. Implementation
-is retained in the private source candidate, not imported into production Git.
+Private `tmp/lifecycle-reset-initialized-verification-candidate-primary-20261008`
+composes 103 production files, 23 unchanged original fixtures and five unchanged
+schema/manifest files on maintained7f1b13a8f. Candidate SHA-256 is
+`c02692ce50f35a83a0ddca7c108b4b0820539016a129498dca780f4afed733fc`.
+All 55 selected C providers remain registered once; Makefile, flags, fixtures and
+schema pins are unchanged. Two read-only reviews and changed-line formatting/token
+preservation accept the corrected six-file verification seam. Original strict
+capture reconstructs exactly; inactive fallback, public activation/exact retry
+and genuine abort bodies remain byte-exact. Compiler, native, SQL, migrations,
+gameplay, fault and recovery execution remain unrun. C++ stays in the private
+candidate until major-plan integration and qualification; this is a source checkpoint.
 
-The actual initialized-world/SQL boot owners now contain the private cutover
-caller. It attaches its real transaction slot and retains the exact save-ownership
-epoch while the genuine boot capability is still valid, then revokes that
-capability before moving the original writer/coordinator fences into maintenance.
-Failed begin distinguishes a still-held promoted guard from an actual transferred
-transaction, including failed START, using real session ownership. It retains the
-same capability/session instead of releasing or reacquiring exclusion.
+The actual selected-runtime cutover owner can synchronously lend the SAME retained
+initialized world alongside owning raw physical/source2, five-table room, creation
+and native catalog captures. Exact transaction slot/session, selected installation,
+request hash, activation evidence, original save epoch and closed outbox bind the
+borrow before and after use. World rows/cells/bytes are checked and subtracted
+before SQL reads; every provider keeps the original aggregate and single-cell limits.
+Indexed correspondence retains its owning raw sources until the callback returns.
+This data-only interface gives Plan5 access to raw evidence for independent work;
+reports, route counts and digests are not a full-world proof or activation permit.
 
-Known pre-COMMIT abort follows original rollback, fresh selected-epoch/baseline
-and full installed wallet/bank projection authentication, atomic coordinator/guard
-return, another fresh returned-guard projection read, original writer restoration
-and staged cleanup. Every retry checks the original save epoch and closed outbox;
-the prior read/receipt is never a return permit. Ordinary world cleanup routes the
-revoked cutover state only through that actual abort owner. Shutdown retains
-unresolved transferred fences. The existing ambiguous-COMMIT restriction remains.
-This private caller does not invoke activation, install policy or select an epoch;
-the actual normalizer/independent Plan5 verifier/committed publication consumer
-remains unwired and needs the original major-plan qualification.
+Review found and fixed a savepoint cleanup defect: every returned verifier result
+now follows rollback-to, release and actual-owner validation before propagation.
+Any failed verification latches further borrow/verification closed, including
+cleanup failure, while the genuine retained abort and fence-return paths remain
+available. Failed begin/COMMIT restrictions and original inactive policy are unchanged.
 
-Ordinary detached room nesting now authenticates genuine successfully prepared
-factory stages, the complete bounded reciprocal tree, prototype/UID ownership and
-absence from live world before mutation. It preserves original sibling grouping
-and signed weight propagation without callbacks/activity/dirty tails. Unpublished
-detach retains authentic cleanup ownership. Reducing targets refuse before
-mutation and still require the original shell-probe lifecycle. Failed retained
-construction cannot pass the private preparation-completed check. Removing the
-narrow additions reconstructs the original factory/handler bodies exactly.
+Genuine P-child construction is also composed. It captures prototype/target/chance
+from the actual P command and retains allocator UID, literal/recipe/bindings and
+cleanup ownership exactly once within the authentic retained O scope. That scope
+does not select a P parent or claim its source. Artifact/target/respawn/load ordering,
+P without a captured O, shared room/mobile/live chronology, cross-owner transfer,
+complete forest sealing/current CAS/publication and real producer registration
+remain open. The separate chronology implementation stream is in progress.
 
-SQL-only immutable type22 support now calls the canonical zone-reset decoder;
-malformed commands and NO_MYSQL refuse, and the flatfile allowlist is byte-exact.
-This is command-component support, not producer/source admission. The active O
-skip, generic native-transport submission refusal and missing reset validators
-keep production closed. No duplicate outbox framework or source-policy widening
-is needed. Actual reset restore/completion/pulse/readiness adapters remain missing.
-
-Whole-reset P target chronology and cross-owner handoffs, complete forest sealing,
-authentic reducing shell, hot room placement/current season-room CAS, terminal
-publication/recovery, progressed money/artifact recovery, flat parity, measured
-schema fingerprints, full normalizer/verifier consumer and R1-R8 qualification
-remain open. Existing coverage/release gates and inactive behavior are unchanged.
-The separate producer stream is preparing genuine unselected P construction;
-its artifact/target/respawn/load ordering cannot be replaced by an assumed parent.
+Complete primary live/persisted money and forest correspondence, NPC opening money,
+initial inactive installation/epoch policy, independent Plan5 callback registration,
+actual activation/committed projection publication, reset recovery/readiness,
+progressed money/artifact recovery, flat parity, measured schema fingerprints and
+full R1-R8 qualification remain required. No coverage or release gate is promoted.
 
 ## Reviewed creation census and current coin heads - 2026-10-07
 
