@@ -1756,3 +1756,31 @@ remaining serialized-template/coin gap. No shared files or activation change.
 Notebook application/acknowledgement and primary adoption are not claimed or
 blocking. Full physical/origin/EAB2/retention/upgrade/player/fault/load and combined
 release gates remain open; no full Plan5/R1–R8 completion is claimed.
+
+
+## SQL persisted shop forest custody — 2026-10-07
+
+Completed independent reader slice; curator-ready [exact report](PLAN5_SQL_SHOP_FOREST_CUSTODY_2026-10-07.md).
+Branch `codex/accounting-plan5`, base `fbecf592e4c3b424c8e7f4d83538db0bf01143ef`, code `a27e5fe58ed054bd1ea8e976b3e1a22ff6d3e9aa`; the following
+documentation publication commit and remote are recorded in the post-push
+delivery record. Prior branch work and all seven consolidated tips are preserved.
+
+Whole physical shop capture now retains orphan/legacy rows and independently
+maps logical shop ownership, row-ID topology and reverse live UID coverage.
+Four authenticated predecessor false-clears now produce bounded findings with
+unchanged input. Seven new reader methods pass with zero skips; 38 genuine
+source cuts pass on fresh canonical64 MariaDB/MySQL. Complete existing SQL
+exporter runners pass on both engines. Reconciler/origin modules execute 131/55
+methods with six existing skips explicitly listed. Whole run 133.460695803s
+under 900s, 829 commands; all private DBs stop normally.
+
+Tested primary `6d2bd242df08fbd74c97f9ae5a2dd1617ad8c1c9`, composition `71c4a0ccf8de091c14ef3d1815423877741896fb`,
+native `833d3085815b396861ad18a77635412212381e4b`, migrations `7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2`.
+Evidence `D:/Dev/Tests/Duris/accounting-plan5/sql-shop-20261007/`; build cuts
+`D:/Dev/Builds/Duris/accounting-plan5-sql-shop-20261007/green03/bin/tests/sql-shop-custody/`.
+Both original failed attempts are retained. See the report for exact commands,
+blobs, native capture's equipment/quantity limitation and optional shared-field
+handoff. No shared implementation changed. Full shop literals/history, other
+forests, native lifecycle/upgrade/retention/gameplay/load and combined release
+remain open. Notebook is nonblocking; no application/adoption claim. No
+activation, deployment, production mutation or auto-correction. Goal stays active.
