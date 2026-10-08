@@ -271,7 +271,7 @@ def run(server: Path) -> None:
                                     assert len(pid_rows) == 1
                                     pid = pid_rows[0]["pid"]
                                     cursor.execute("SELECT sequence_number,migration_id FROM " + schema + ".mud_schema_history ORDER BY sequence_number DESC LIMIT 1")
-                                    assert cursor.fetchone() == {"sequence_number": 62, "migration_id": "0062_economic_pending_claim_consumption"}
+                                    assert cursor.fetchone() == {"sequence_number": 64, "migration_id": "0064_auction_custody_history"}
                                     if not state["seeded"]:
                                         cursor.execute("CREATE USER '" + reader_name + "'@'localhost' IDENTIFIED BY %s", (reader_password,))
                                         cursor.execute("GRANT SELECT ON " + schema + ".* TO '" + reader_name + "'@'localhost'")
