@@ -568,21 +568,26 @@ bodies are unchanged. Shared baseline/record headers change, so the earlier
 506b54c99 lifecycle execution cannot be relabeled as this new component closure.
 All native lifecycle/install/complete-world and final qualification gates remain.
 
-One new finite architecture investigation is selected on exact a53977fe2: prove
-the reachable maintained provider closure of the new dedicated custody fixture
-and reused original operator builder. The fixture includes item_transfer_command
-but lacks several providers restored in the preceding shopkeeper repairs; the
-operator builder also lacks retirement/native-cost/native-give providers. These
-omissions are a question, not a demonstrated link failure: original GC can discard
-unreachable functions. Preserve original recipes/flags/stubs/assertions/budgets;
-identify actual reached symbols and minimal real provider nodes before proposing
-an edit. No maintained file change is approved. No broad suite/full Make, service
-restart, DB work or known-environment failed-link retry is assigned. Native/runtime
-qualification stays separate. Use new D: task evidence and preserve existing jobs,
-worktrees and packets. Architecture must return exact source/preimage/reachability
-and any original diagnostic/private feasibility evidence for boundary review, or
-an exact sufficiency finding without manufactured implementation. Actual continuing
-Goal status remains blocked; finite useful investigation is not fake resumption.
+Architecture investigation7d03a836613d4fd079c9c3cd5fb9c76aae034087 has
+[independent three-node boundary approval](AUDITOR_PROVIDER_BOUNDARY_REVIEW_2026-10-07.md).
+The original custody recipe links unchanged (387.414840 seconds) and needs no
+expansion. The original maintained operator link fails (204.836412 seconds) on
+nine reached references supplied by retirement/native-cost/native-give providers.
+Coordinator authenticates all6524 packet files/full6491 Git export, original
+AST-derived commands/GC/900-second outer budgets, actual custody ELF/symbols,
+source call paths, all13 local toolchain/library pins and proposed59->62 node diff.
+
+Finite architecture implementation is now approved only for those three SOURCES
+nodes in scripts/build_restore_qualifier.py, preserving all other AST/flags/options.
+Qualify the actual committed one-file patch alone on fresh exact a53977fe2 full
+export, compile-only original builder with original900-second outer bound and
+fresh D: evidence; retain original failure and do not rerun passing custody.
+Publish exact code/import/ELF/dependency/terminal handoff for final root review.
+Implementation/repaired link/final review remain pending. No native cases, full
+Make, DB, service restart, additional providers, maintained testdriver/manifest
+or shared authority edits are approved. Local Ubuntu22 toolchain availability is
+independently observed; it does not repair the primary's separate host. Actual
+continuing Goals stay blocked; finite useful work is not automatic resumption.
 
 No independent domain or quest implementation is currently selected. Watch for
 the table's real source/interface/fixture publications, then reserve a connected
