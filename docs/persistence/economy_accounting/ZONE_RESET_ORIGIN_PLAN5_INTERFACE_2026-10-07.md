@@ -198,3 +198,17 @@ Cross-owner custody/full room producer remains open. Six native prepend hooks an
 flat collector admission/save-hold/publication/ACK source remain composed. SQL
 collector bodies are preserved; dispatch equality is line-ending-normalized only.
 All source is unrun. No Plan5 audit/backup/release ownership or coverage gate changes.
+
+## Reviewed warm forest and SHOP staging prerequisites - 2026-10-08
+
+Private115 source candidate c833d941d8f57c580b3d2fc37c1015bef97a08d114cc418a3984e7bc5333aeff
+retains the existing full initialized activation view/raw6/lifetime/PC/NPC contracts.
+Warm room forests and canonical keeper/custody/proposed player proof helpers are
+source-reviewed prerequisites, not source admission or independent audit results.
+Typed SHOP backend/atomic original player journal staging is still under review,
+not composed or executed. Real producer hold/save-drain and all major-plan/native/
+recovery qualification stay open. The root owns positive shared-keeper current
+projection and historical wallet/treasury namespace transition; Plan5 must retain
+full raw/current cash disagreement findings until that owner is complete. No
+prototype/tag inference, missing-row filtering or historical rewrite is allowed.
+Plan5 independence, audit/backup/release ownership and original gates remain.

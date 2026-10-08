@@ -23,6 +23,63 @@ worktrees and one owned document each, preserving active primary/Plan5 ownership
 Missing native/private inputs block dependent execution, not all preparation.
 Source/design evidence does not close original implementation or release gates.
 
+## Reviewed warm forest and SHOP proof prerequisites - 2026-10-08
+
+Private `tmp/lifecycle-shop-materialization-candidate-primary-20261008` composes
+115 production files, 23 unchanged original fixtures and five unchanged schema/
+manifest files on maintained4b5b90646. Candidate SHA256:
+`c833d941d8f57c580b3d2fc37c1015bef97a08d114cc418a3984e7bc5333aeff`.
+All 63 selected C providers register once; original flags/rules and the prior
+sole PC-provider Makefile addition stay. Two newer documentation-only remote
+commits are preserved on a new linear review branch in the same worktree, with
+all three unrelated changes preserved; no merge was performed.
+
+Plan3 dormant warm registry retains multiple genuine O roots, reserved UIDs,
+once-created P children and complete selected-root ownership wrappers. Genuine
+constructor chronology rejects foreign/incomplete winners without fallback;
+sealing captures complete actual forests, original recipes/bindings and zero or
+nested coin literals. Actual cursor/S boundary, P-before-O scope, aggregate CCC
+reservation, current season/room SQL cut, admission/adoption and real comm/
+publication/recovery wiring remain missing. Local retained-size checks grant no
+coordinator budget authority. Active O refusal stays; no partial gate is lifted.
+
+Plan4 now has original-codec current keeper reads under the actual borrowed lock,
+pure canonical complete proposed keeper/custody reads and actual participant
+clocks, including inactive custody history. Current reads neither reacquire nor
+recover. Proposed values grant no storage authority. A narrow typed SHOP storage
+friend adds no route permission. Keeper/custody source reviews pass; custody
+and friendship changes reconstruct predecessors byte-for-byte. Warm/keeper/
+materialization preservation is lexical or newline-normalized where recorded.
+
+The accounted materialization owner invokes original staging once with exact
+shared STOREITEM/generated-key AFTER literals, privately normalizes its actual
+returned catalog and verifies complete current/projected player custody forests
+including UID-zero legacy pets. Strong paired outputs retain real saved revision,
+status, pets and unrelated fields. V6 target storage keeps original persisted
+weight; v7/v8 verify recorded original weight facts, and v8 verifies full BEFORE/
+AFTER role bindings. The existing players journal participant is identified for
+atomic target persistence, but the typed backend's canonical result/root/receipt
+and full player participant source is still under review and is NOT composed.
+Actual producer hold/save-drain, dispatch/publication/ACK and native parity remain
+open. A borrowed authority lock alone does not prove stale queued saves absent.
+
+The keeper cash discrepancy is an actual cross-owner blocker: old birth images
+create finite native wallets, while shared SHOP posts player to sink/issuance;
+current shop cash changes do not advance the native cash image. Lifecycle also
+opens shop rows as treasury. Keep the existing shared-system policy. A positive,
+authenticated shared-keeper classification/current-image owner and historical
+wallet/treasury transition are required; do not ignore NPC mismatches, infer
+classification from VNUM/shop tag or rewrite historical postings/results. Original
+NBC1-3/MBR1 meanings remain; shop ID zero is valid. Gates remain closed.
+
+Formatting, final pins, predecessor preservation and independent source reviews
+pass. Compiler/native/SQL/migration/gameplay/fault/recovery checks for this source
+batch remain UNEXECUTED, deferred to the major-plan candidate. This published
+documentation checkpoint does not publish/qualify the private implementation.
+Originless NPC opening, full item correspondence, room producer, activation/
+committed publication, Plan5 integration and all applicable R1-R8 remain open.
+Coverage/release readiness and the declined inactive spell path stay unchanged.
+
 ## Reviewed NPC current money and mobile P selector - 2026-10-08
 
 Private `tmp/lifecycle-npc-money-candidate-primary-20261008` composes the
