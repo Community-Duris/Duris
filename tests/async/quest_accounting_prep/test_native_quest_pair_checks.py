@@ -137,6 +137,50 @@ class PairAgreementTests(unittest.TestCase):
         failure = attempt(cut, pair, result="io_failure")
         adapter.assert_qp03_pair_retirement(cut, cut, pair, [failure, success])
 
+    def test_terminal_success_with_complete_empty_postimage(self):
+        pair = modeled_pair()
+        cut = modeled_cut(pair)
+        observed = attempt(cut, pair)
+        observed["postimage"] = dict(bytes=0, sha256=hashlib.sha256(b"").hexdigest(), complete=True)
+        result = adapter.assert_qp03_pair_retirement(cut, cut, pair, [observed])
+        self.assertEqual(result["observations"], 1)
+        self.assertEqual(result["external_proof_required"], adapter.EXTERNAL)
+
+    def test_empty_postimage_uncertain_retry_success_and_latch(self):
+        pair = modeled_pair()
+        cut = modeled_cut(pair)
+        uncertain = attempt(cut, pair, result="append_uncertain")
+        success = attempt(cut, pair, 2)
+        for observed in (uncertain, success):
+            observed["postimage"] = dict(bytes=0, sha256=hashlib.sha256(b"").hexdigest(), complete=True)
+        repeat = copy.deepcopy(success)
+        repeat.update(sequence=3, kind="latched_repeat", journal_result=None, terminal_pair_attempted=False)
+        result = adapter.assert_qp03_pair_retirement(cut, cut, pair, [uncertain, success, repeat])
+        self.assertEqual(result["observations"], 3)
+        self.assertEqual(result["external_proof_required"], adapter.EXTERNAL)
+
+    def test_empty_postimage_requires_canonical_digest_complete_and_integer_bounds(self):
+        pair = modeled_pair()
+        cut = modeled_cut(pair)
+        for changed in (dict(sha256="33" * 32), dict(sha256="00" * 32), dict(complete=False),
+                        dict(bytes=-1), dict(bytes=False), dict(bytes=True), dict(bytes=0.0), dict(bytes=2**64)):
+            observed = attempt(cut, pair)
+            observed["postimage"] = dict(bytes=0, sha256=hashlib.sha256(b"").hexdigest(), complete=True)
+            observed["postimage"].update(changed)
+            with self.subTest(changed=changed), self.assertRaisesRegex(checks.CutError, "postimage"):
+                adapter.assert_qp03_pair_retirement(cut, cut, pair, [observed])
+
+    def test_empty_postimage_retry_cannot_change_complete_image_in_either_direction(self):
+        pair = modeled_pair()
+        cut = modeled_cut(pair)
+        for empty_first in (True, False):
+            uncertain = attempt(cut, pair, result="append_uncertain")
+            success = attempt(cut, pair, 2)
+            (uncertain if empty_first else success)["postimage"] = dict(
+                bytes=0, sha256=hashlib.sha256(b"").hexdigest(), complete=True)
+            with self.subTest(empty_first=empty_first), self.assertRaisesRegex(checks.CutError, "changed complete attempted postimage"):
+                adapter.assert_qp03_pair_retirement(cut, cut, pair, [uncertain, success])
+
     def test_exact_original_sql_and_obligation_links_required(self):
         pair = modeled_pair()
         cut = modeled_cut(pair)

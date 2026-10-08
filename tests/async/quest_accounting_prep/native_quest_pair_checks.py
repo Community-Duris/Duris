@@ -212,7 +212,8 @@ def _retirement(before, after, pair, attempts):
              number(observed["sequence"]) and observed["sequence"] > prior_sequence, "wrong terminal attempt/order")
         prior_sequence = observed["sequence"]
         postimage = observed["postimage"]
-        need(number(postimage["bytes"]) and hex_value(postimage["sha256"], 64) and
+        need(number(postimage["bytes"], zero=True) and hex_value(postimage["sha256"], 64) and
+             (postimage["bytes"] != 0 or postimage["sha256"] == hashlib.sha256(b"").hexdigest()) and
              exact_bool(postimage["complete"], True), "whole original attempted postimage missing")
         need(expected_postimage is None or postimage == expected_postimage, "uncertain retry changed complete attempted postimage")
         expected_postimage = postimage
