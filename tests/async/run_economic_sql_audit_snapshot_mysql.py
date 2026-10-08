@@ -136,6 +136,10 @@ TABLES = (
     "obj_uid BIGINT UNSIGNED NULL,vnum INT,equip_slot TINYINT NULL,quantity SMALLINT UNSIGNED NULL,"
     "item_type TINYINT NULL,value0 INT NULL,value1 INT NULL,value2 INT NULL,value3 INT NULL) ENGINE=InnoDB",
     "CREATE TABLE player_pets (id INT UNSIGNED,owner_pid INT UNSIGNED,pet_uid BIGINT UNSIGNED NULL) ENGINE=InnoDB",
+    "CREATE TABLE corpses (id INT,value3 INT NULL,save_id BIGINT,corpse_revision BIGINT UNSIGNED,room_vnum INT NULL) ENGINE=InnoDB",
+    "CREATE TABLE corpse_items (id INT UNSIGNED,corpse_id INT,container_id INT UNSIGNED NULL,obj_uid BIGINT UNSIGNED NULL,"
+    "vnum INT,quantity SMALLINT UNSIGNED NULL,weight INT NULL,extra_flags BIGINT UNSIGNED NULL,"
+    "value0 INT NULL,value1 INT NULL,value2 INT NULL,value3 INT NULL) ENGINE=InnoDB",
     "CREATE TABLE player_pet_items (id INT UNSIGNED,pet_id INT UNSIGNED,container_id INT UNSIGNED NULL,"
     "obj_uid BIGINT UNSIGNED NULL,vnum INT,equip_slot TINYINT NULL,item_type TINYINT NULL,"
     "value0 INT NULL,value1 INT NULL,value2 INT NULL,value3 INT NULL) ENGINE=InnoDB",
@@ -1314,7 +1318,7 @@ try:
             # original-plan authentication is covered by the canonical SQL class.
             assert report["checked"]["original_plans_verified"] == 0
             assert report["exception_counts"] == expected_exceptions, report
-            for table in ("player_items", "player_pets", "player_pet_items"):
+            for table in ("player_items", "player_pets", "player_pet_items", "corpses", "corpse_items"):
                 for alteration, restoration in (
                         (f"RENAME TABLE {table} TO {table}_hidden", f"RENAME TABLE {table}_hidden TO {table}"),
                         (f"ALTER TABLE {table} ENGINE=MyISAM", f"ALTER TABLE {table} ENGINE=InnoDB")):
@@ -1322,7 +1326,7 @@ try:
                         cursor.execute(alteration)
                     try:
                         capture(audit, LINEAGE, EPOCH)
-                        raise AssertionError("missing/nontransactional player custody source passed capture")
+                        raise AssertionError("missing/nontransactional physical custody source passed capture")
                     except exporter.ExportError:
                         pass
                     finally:
@@ -2058,6 +2062,8 @@ try:
                                    "VALUES (400,7,84,1,0,1,1)")
                     writer.execute("INSERT INTO player_pet_items(id,pet_id,obj_uid,vnum,equip_slot,item_type) "
                                    "VALUES (400,51,84,1,0,1)")
+                    writer.execute("INSERT INTO corpses VALUES (5,7,9,1,10)")
+                    writer.execute("INSERT INTO corpse_items VALUES (400,5,NULL,84,1,1,1,0,0,0,0,0)")
                 return origins
 
             with mock.patch.object(exporter, "read_origins_in_transaction",
@@ -2086,6 +2092,11 @@ try:
                 assert len(later_auctions[name]) == 1 and later_auctions[name][0]["item_id"] == 400
                 assert later_auctions[name][0]["uid"] == 84
             assert later_auctions["player_custody_coverage"] == dict(players=3,pets=1,items=1,pet_items=1)
+            assert fenced["native"]["corpses"] == fenced["native"]["corpse_items"] == []
+            assert later_auctions["corpses"] == [{"corpse_id":5,"pid":7,"save_id":9,"revision":1,"room_vnum":10}]
+            assert later_auctions["corpse_items"] == [{"item_id":400,"corpse_id":5,"parent_id":None,"uid":84,
+                "vnum":1,"quantity":1,"weight":1,"extra_flags":0,"value0":0,"value1":0,"value2":0,"value3":0}]
+            assert later_auctions["corpse_custody_coverage"] == dict(corpses=1,items=1)
             with setup.cursor() as cursor:
                 cursor.execute("UPDATE player_data SET copper=2 WHERE pid=7")
                 cursor.execute("DELETE FROM ships")
@@ -2098,6 +2109,8 @@ try:
                 cursor.execute("DELETE FROM player_pet_items")
                 cursor.execute("DELETE FROM player_items")
                 cursor.execute("DELETE FROM player_pets")
+                cursor.execute("DELETE FROM corpse_items")
+                cursor.execute("DELETE FROM corpses")
             with tempfile.TemporaryDirectory(prefix="duris-sql-audit-") as directory:
                 output = Path(directory) / "partial.json"
                 command = [sys.executable, str(ROOT / "scripts/economic_sql_audit_snapshot.py"),

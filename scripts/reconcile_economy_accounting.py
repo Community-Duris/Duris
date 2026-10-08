@@ -238,30 +238,77 @@ def pending_claim_consumptions(native: dict) -> list[dict] | None:
 
 
 def physical_item_position(row: dict, index: dict, counts: Counter, group_field: str,
-                           invalid_uids: tuple = (None, 0)) -> tuple:
+                           invalid_uids: tuple = (None, 0), max_depth: int = 32,
+                           position_cache: dict | None = None) -> tuple:
     """Resolve bounded physical row-ID topology; never guess missing identities."""
-    cursor, seen, parent_uid = row, set(), None
-    for depth in range(33):
-        if depth == 32:
+    cursor, seen, path, parent_uid = row, set(), [], None
+
+    def finish(root, error=None, tail_depth=0):
+        if position_cache is not None:
+            for offset, entry in enumerate(path):
+                position_cache[entry["item_id"]] = (root, len(path)-offset+tail_depth, error)
+        return (None, None, error) if error else (root, parent_uid, None)
+
+    for depth in range(max_depth + 1):
+        if depth == max_depth:
+            if position_cache is not None and cursor["item_id"] in seen:
+                return finish(None, "parent_cycle")
             return None, None, "depth_exceeds_native_limit"
         item_id = cursor["item_id"]
         if counts[item_id] != 1:
-            return None, None, "ambiguous_parent"
+            return finish(None, "ambiguous_parent")
         if item_id in seen:
-            return None, None, "parent_cycle"
+            return finish(None, "parent_cycle")
         seen.add(item_id)
         if cursor["uid"] in invalid_uids:
-            return None, None, "ancestor_uid_unknown" if cursor is not row else None
+            return finish(None, "ancestor_uid_unknown") if cursor is not row else (None, None, None)
+        cached = position_cache.get(item_id) if position_cache is not None else None
+        if cached is not None:
+            root, tail_depth, error = cached
+            if not error and depth+tail_depth > max_depth:
+                return None, None, "depth_exceeds_native_limit"
+            if not error and cursor is row and row["parent_id"]:
+                parent_uid = index[(row["parent_id"],)]["uid"]
+            return finish(root, error, tail_depth)
+        path.append(cursor)
         if not cursor["parent_id"]:
-            return cursor["uid"], parent_uid, None
+            return finish(cursor["uid"])
         parent = index.get((cursor["parent_id"],))
         if parent is None:
-            return None, None, "parent_missing"
+            return finish(None, "parent_missing")
         if parent[group_field] != row[group_field]:
-            return None, None, "parent_foreign_owner"
+            return finish(None, "parent_foreign_owner")
         if cursor is row:
             parent_uid = parent["uid"]
         cursor = parent
+
+
+def live_coin_literals(native: dict, items: dict) -> dict:
+    """Unique decoded literals only; numeric aliases cannot establish authority."""
+    piles = native.get("coin_piles", [])
+    if not isinstance(piles, list) or len(piles) > MAX_ROWS or any(not isinstance(row, dict) for row in piles):
+        raise SnapshotError("invalid inline coin rows")
+    literals, counts = {}, Counter()
+    for pile in piles:
+        owner = pile.get("owner")
+        if (type(pile.get("uid")) is not int or not 0 < pile["uid"] < 2**64 or
+                not unsigned_revision(pile.get("revision")) or
+                not isinstance(owner, list) or len(owner) != 3 or
+                type(owner[0]) is not int or not 0 <= owner[0] <= 12 or
+                any(type(value) is not int or not 0 <= value < 2**64 for value in owner[1:]) or
+                pile.get("state") not in ("live", "tombstone", "quarantined")):
+            raise SnapshotError("invalid inline coin identity")
+        counts[pile["uid"]] += 1
+        amounts = pile.get("amounts")
+        if amounts is None:
+            continue
+        vector(amounts)
+        current = items.get((pile["uid"],))
+        if (all(0 <= value <= 2**31-1 for value in amounts) and current is not None and
+                current.get("state") == pile["state"] == "live" and current.get("owner") == owner and
+                current.get("revision") == pile["revision"]):
+            literals[pile["uid"]] = amounts
+    return {uid: amounts for uid, amounts in literals.items() if counts[uid] == 1}
 
 
 class Reconciler:
@@ -293,7 +340,7 @@ class Reconciler:
                 elif field in ("uid", "parent_uid", "child_index", "line_index", "source_slot",
                                "net_copper", "ship_id", "guild_id", "auction_id", "slot",
                                "keeper_id", "shop_id", "item_id",
-                               "pid", "pet_id",
+                               "pid", "pet_id", "corpse_id",
                                "identity_kind", "identity_id") and type(value) is int:
                     safe[field] = value
                 elif field == "table" and isinstance(value, str) and (value in TABLES or value in ORPHAN_EVIDENCE_SOURCES):
@@ -632,6 +679,7 @@ class Reconciler:
         self.audit_coin_pile_mappings(snapshot.get("backend"), native,
                                       native_holdings, native_items, lineage)
         self.audit_player_custody(snapshot.get("backend"), native, native_items)
+        self.audit_corpse_custody(snapshot.get("backend"), native, native_items)
         self.audit_uid_scope_coverage(snapshot.get("backend"), native,
                                       item_origins, native_items, references)
         self.audit_unattributed_uid_history(snapshot.get("backend"), native)
@@ -1164,30 +1212,7 @@ class Reconciler:
                 self.emit("player_pet_missing_player", pet_id=pet["pet_id"])
         # A decoded, matching live player coin payload is independent physical
         # reconstruction authority. A merely labeled or mismatched pile is not.
-        piles = native.get("coin_piles", [])
-        if not isinstance(piles, list) or len(piles) > MAX_ROWS or any(not isinstance(row, dict) for row in piles):
-            raise SnapshotError("invalid player inline coin rows")
-        inline, pile_counts = {}, Counter()
-        for pile in piles:
-            integer(pile, "uid", 1, 2**64-1)
-            integer(pile, "revision", 0, 2**64-1)
-            owner = pile.get("owner")
-            if (not isinstance(owner, list) or len(owner) != 3 or
-                    type(owner[0]) is not int or not 0 <= owner[0] <= 12 or
-                    any(type(value) is not int or not 0 <= value < 2**64 for value in owner[1:]) or
-                    pile.get("state") not in ("live", "tombstone", "quarantined")):
-                raise SnapshotError("invalid player inline coin identity")
-            pile_counts[pile["uid"]] += 1
-            amounts = pile.get("amounts")
-            if amounts is not None:
-                vector(amounts)
-                current = items.get((pile["uid"],))
-                if (all(type(value) is int and 0 <= value <= 2**31-1 for value in amounts) and
-                        current is not None and current.get("state") == "live" and
-                        pile.get("state") == "live" and current.get("owner") == pile.get("owner") and
-                        current.get("revision") == pile.get("revision")):
-                    inline[pile["uid"]] = amounts
-        inline = {uid: amounts for uid, amounts in inline.items() if pile_counts[uid] == 1}
+        inline = live_coin_literals(native, items)
         observed, physical, slots = set(), defaultdict(set), set()
         totals = Counter(row["pid"] for row in player_rows)
         totals.update(pet_index[(row["pet_id"],)]["pid"] for row in pet_rows
@@ -1281,6 +1306,149 @@ class Reconciler:
                 continue
             if current["uid"] not in physical[tuple(owner)]:
                 self.emit("player_uid_missing_physical", uid=current["uid"])
+
+    def audit_corpse_custody(self, backend: str, native: dict, items: dict) -> None:
+        """Compare corpse physical facts without invoking disposal or repair."""
+        coverage = native.get("corpse_custody_coverage")
+        if coverage is None and "corpses" not in native and "corpse_items" not in native:
+            if backend == "sql_partial":
+                self.emit("missing_corpse_custody_coverage", scope="snapshot")
+            return
+        corpses, rows = self.table(native, "corpses"), self.table(native, "corpse_items")
+        if (not isinstance(coverage, dict) or coverage != dict(corpses=len(corpses), items=len(rows)) or
+                any(type(value) is not int for value in coverage.values()) or
+                sum(coverage.values()) > MAX_ROWS):
+            raise SnapshotError("invalid corpse custody coverage")
+
+        def integer(row, field, low, high, nullable=False):
+            value = row.get(field)
+            if field not in row or (value is not None or not nullable) and (
+                    type(value) is not int or not low <= value <= high):
+                raise SnapshotError("invalid corpse custody " + field)
+
+        for row in corpses:
+            integer(row, "corpse_id", 1, 2**31-1)
+            integer(row, "pid", -2**31, 2**31-1, True)
+            integer(row, "save_id", -2**63, 2**63-1)
+            integer(row, "revision", 0, 2**64-1)
+            integer(row, "room_vnum", -2**31, 2**31-1, True)
+        for row in rows:
+            for field, low, high, nullable in (
+                    ("item_id", 1, 2**32-1, False), ("corpse_id", -2**31, 2**31-1, False),
+                    ("parent_id", 0, 2**32-1, True), ("uid", 0, 2**64-1, True),
+                    ("vnum", -2**31, 2**31-1, False), ("quantity", 0, 65535, True),
+                    ("weight", -2**31, 2**31-1, True), ("extra_flags", 0, 2**64-1, True)):
+                integer(row, field, low, high, nullable)
+            for index in range(4):
+                integer(row, "value"+str(index), -2**31, 2**31-1, True)
+        corpse_counts = Counter(row["corpse_id"] for row in corpses)
+        corpse_index = self.index(corpses, ("corpse_id",), "corpse_duplicate_id")
+        owners = {}
+        for corpse in corpses:
+            detail = {"corpse_id": corpse["corpse_id"]}
+            if (not corpse["pid"] or corpse["pid"] < 0 or not 0 < corpse["save_id"] <= 2**31-1):
+                self.emit("corpse_identity_unknown", **detail)
+                continue
+            owner_id = (corpse["pid"] << 32) | corpse["save_id"]
+            if owner_id in owners:
+                self.emit("corpse_duplicate_owner_identity", **detail)
+            owners[owner_id] = corpse["corpse_id"]
+            if not corpse["revision"]:
+                self.emit("corpse_revision_unknown", **detail)
+            if corpse["room_vnum"] is None:
+                self.emit("corpse_room_unknown", **detail)
+        owner_counts = Counter((row["pid"], row["save_id"]) for row in corpses)
+        row_counts = Counter(row["item_id"] for row in rows)
+        groups = Counter(row["corpse_id"] for row in rows)
+        row_index = self.index(rows, ("item_id",), "corpse_duplicate_physical_row")
+        self.index([row for row in rows if row["uid"]], ("uid",), "corpse_duplicate_physical_uid")
+        physical, money = defaultdict(set), defaultdict(lambda: [0,0,0,0])
+        coin_literals = live_coin_literals(native, items)
+        position_cache, kind_cache = {}, {}
+        for corpse_id, count in groups.items():
+            if count > 3000:
+                self.emit("corpse_item_count_exceeds_native_limit", corpse_id=corpse_id)
+        for row in rows:
+            uid, corpse_id = row["uid"], row["corpse_id"]
+            detail = {"item_id": row["item_id"], "corpse_id": corpse_id}
+            corpse = corpse_index.get((corpse_id,))
+            owner = None
+            if corpse is None:
+                self.emit("corpse_item_missing_corpse", **detail)
+            elif (corpse_counts[corpse_id] != 1 or not corpse["pid"] or corpse["pid"] < 0 or
+                    not 0 < corpse["save_id"] <= 2**31-1 or
+                    owner_counts[(corpse["pid"], corpse["save_id"])] != 1):
+                self.emit("corpse_item_ambiguous_identity", **detail)
+            else:
+                owner = [4, (corpse["pid"] << 32) | corpse["save_id"], 0]
+            if row["quantity"] != 1:
+                self.emit("corpse_unsupported_quantity", **detail)
+            if row["vnum"] <= 0:
+                self.emit("corpse_item_vnum_invalid", **detail)
+            if row["weight"] is None or row["extra_flags"] is None:
+                self.emit("corpse_physical_literal_unknown", **detail)
+            values = [row["value"+str(index)] for index in range(4)]
+            if any(value is None for value in values):
+                self.emit("corpse_value_unknown", **detail)
+            elif any(value < 0 for value in values):
+                self.emit("corpse_negative_value", **detail)
+            elif row["vnum"] == 3:
+                for index, value in enumerate(values):
+                    money[corpse_id][index] += value
+            if not uid:
+                self.emit("corpse_legacy_uid_unknown", **detail)
+            root, parent, error = (None, None, None) if groups[corpse_id] > 3000 else physical_item_position(
+                row, row_index, row_counts, "corpse_id", max_depth=3000, position_cache=position_cache)
+            if error:
+                self.emit("corpse_item_"+error, **detail)
+            if root is not None:
+                ancestor = row_index.get((row["parent_id"],))
+                ancestors = []
+                for _ in range(3000):
+                    if ancestor is None or ancestor["item_id"] in kind_cache:
+                        break
+                    ancestors.append(ancestor)
+                    ancestor = row_index.get((ancestor["parent_id"],))
+                kinds = kind_cache.get(ancestor["item_id"], 0) if ancestor else 0
+                for entry in reversed(ancestors):
+                    kinds |= (1 if entry["vnum"] == 3 else 0) | (2 if (entry["extra_flags"] or 0) & 524288 else 0)
+                    kind_cache[entry["item_id"]] = kinds
+                if (kinds & 1 or row["extra_flags"] is not None and
+                        not row["extra_flags"] & 524288 and kinds & 2):
+                    self.emit("corpse_item_invalid_ancestor_kind", **detail)
+            if not uid:
+                continue
+            current = items.get((uid,))
+            if current is None:
+                self.emit("corpse_uid_unadmitted", uid=uid)
+                continue
+            if current.get("state") != "live":
+                self.emit("corpse_projection_inactive_uid", uid=uid)
+                continue
+            if current.get("owner") != owner:
+                self.emit("corpse_item_owner_mismatch", uid=uid)
+                continue
+            physical[tuple(owner)].add(uid)
+            integer(current, "vnum", -2**31, 2**31-1)
+            if current.get("vnum") != row["vnum"]:
+                self.emit("corpse_item_vnum_mismatch", uid=uid)
+            if root is not None and (current.get("root") != root or
+                                     (current.get("parent") or None) != (parent or None)):
+                self.emit("corpse_item_topology_mismatch", uid=uid)
+            if current.get("equipment_slot", 0):
+                self.emit("corpse_item_equipment_mismatch", uid=uid)
+            if row["vnum"] == 3:
+                if uid not in coin_literals:
+                    self.emit("corpse_coin_payload_unknown", uid=uid)
+                elif coin_literals[uid] != values:
+                    self.emit("corpse_coin_literal_mismatch", uid=uid)
+        for corpse_id, values in money.items():
+            if any(value > 2**31-1 for value in values):
+                self.emit("corpse_coin_sum_overflow", corpse_id=corpse_id)
+        for current in items.values():
+            owner = current.get("owner", [None])
+            if current.get("state") == "live" and owner[0] == 4 and current["uid"] not in physical[tuple(owner)]:
+                self.emit("corpse_uid_missing_physical", uid=current["uid"])
 
     def audit_original_plans(self, tables: dict, by_op: dict, ownership: dict) -> None:
         """Bind projections to retained EAP1 bytes, independently of mutation code.

@@ -1268,6 +1268,22 @@ def read_player_custody(cursor) -> dict:
                 items=len(collections[0]), pet_items=len(collections[1]))}
 
 
+def read_corpse_custody(cursor) -> dict:
+    """Keep numeric corpse identity and every physical row in the same cut."""
+    cursor.execute("SELECT (SELECT COUNT(*) FROM corpses)+"
+                   "(SELECT COUNT(*) FROM corpse_items) AS rows_total")
+    bound = cursor.fetchone()
+    if bound is None or bound["rows_total"] > MAX_ROWS:
+        raise ExportError("corpse custody source exceeds audit bounds")
+    corpses = list(bounded(cursor, "SELECT id AS corpse_id,value3 AS pid,save_id,"
+        "corpse_revision AS revision,room_vnum FROM corpses ORDER BY id"))
+    rows = list(bounded(cursor, "SELECT id AS item_id,corpse_id,container_id AS parent_id,"
+        "obj_uid AS uid,vnum,quantity,weight,extra_flags,value0,value1,value2,value3 "
+        "FROM corpse_items ORDER BY id"))
+    return {"corpses": corpses, "corpse_items": rows,
+            "corpse_custody_coverage": dict(corpses=len(corpses), items=len(rows))}
+
+
 def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     # Both native-item and mapping projections can return payload bytes. Bound
     # them before either buffered SELECT, including repeated mapping joins.
@@ -1292,6 +1308,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     native.update(read_auction_custody(cursor))
     native.update(read_shop_custody(cursor))
     native.update(read_player_custody(cursor))
+    native.update(read_corpse_custody(cursor))
     native["ship_coffers"], native["ship_coffer_coverage"] = read_ship_coffers(cursor)
     native["guild_treasuries"], native["guild_treasury_coverage"] = read_guild_treasuries(cursor)
     gaps = ["ship_coffer_lifetime_origin_revision_and_writer_qualification",
@@ -1302,6 +1319,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             "auction_template_prototype_coin_literals_history_and_legacy_identity",
             "shop_prototype_runtime_payload_coin_literals_and_enrollment_history",
             "player_pet_prototype_full_runtime_payload_hold_and_retained_death_history",
+            "corpse_prototype_full_payload_catalog_revision_artifact_and_lifecycle_history",
             "unattributed_ownership_history",
             "unreferenced_uid_events_without_native_or_baseline_anchors",
             "unresolved_post_baseline_account_origins",
@@ -1656,9 +1674,10 @@ def capture(connection, lineage: bytes, epoch: bytes) -> dict:
             "'critical_operation_inbox','player_data',"
             "'account_banks','item_current_owner','item_ownership_ledger','auctions',"
             "'auction_money_pickups','auction_item_custody','auction_item_pickups',"
-            "'shopkeepers','shopkeeper_items','player_items','player_pets','player_pet_items','ships','guilds')")
+            "'shopkeepers','shopkeeper_items','player_items','player_pets','player_pet_items',"
+            "'corpses','corpse_items','ships','guilds')")
         engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
-        if len(engines) != 25 or any(engine != "InnoDB" for engine in engines.values()):
+        if len(engines) != 27 or any(engine != "InnoDB" for engine in engines.values()):
             raise ExportError("SQL audit source is missing or not InnoDB")
         has_realized_price = realized_price_column_available(cursor)
         evidence = read_evidence(cursor, lineage, epoch, has_realized_price)
