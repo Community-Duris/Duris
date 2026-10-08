@@ -269,37 +269,50 @@ Original reviewer reference-search correction is retained in the private report;
 no worker evidence or provider changed. Root supplemental-review.json records
 index/report identities; sealed private review packet remains on D:.
 
-Current prioritized queue: (1)shared-owner capacity decision and fix-specific
-integrated real DB proof when published,(2)genuine native source/owner/save/ACK/
-current/cold interfaces and original journeys. No remaining selected review or
-independent implementation is currently actionable. Primary owns shared writer/
-transaction/recovery/capacity policy;private overlap and adoption remain unknown.
-Both existing side chats retain completed work and precise native dependencies.
-Do not fabricate interfaces,repeat completed nine-domain maps/inventories or add
-helpers to fill idle time. Reassess at real source/contract/fixture publication,
-retain event monitoring and isolated worktrees. Both actual native Goals and
-root Goal remain BLOCKED/unfinished;heartbeat ACTIVE. This exhausted current
-independent queue is not overall completion or a pause instruction.
-Genuine save/current-proof/restart owners still block pickup production wiring.
-Latest primary0433eae8d reports private candidate7108537e:150 production/81C,
-12 additional native source slices/1643 dependency records plus11 audit/restore
-paths/44 Python dependencies. Original108 central rows remain with three offline
-rows/29 added required methods. Source-joined Plan5 history/backup guards are
-not execution qualification of this smaller candidate; peer composed archives
-remain unavailable. Original reachable immutable working forests/canonical
-six-leg flow and full actual allocation charge are reported. Scalar next phase
-advances immediately after normally returned successful effect before post-
-effect recensus; a refusing census retains advanced expectation. Helper does
-not wire effects or counters. Full native caller/registration/reload/effects/
-money/custody/final ACK/shared atomic birth/result/recovery/opening/admission
-remain unfinished; UID-zero pet absence unknown for absent player. Public source/
-migrations/tests unchanged; compiler/native/SQL/gameplay/persistence/recovery
-remain UNEXECUTED under major-plan deferral. No private source/interface is
-observable here; actual native Goals stay BLOCKED while independent prep runs.
-Prior3c01b754d a226828c cold enrollment/current-holder budget and e6221a016
-4c918221 world/cash/full original forest/wrapper reports remain historical.
-Reset policy reported there replaces saved keeper cash/stock on cold restore;
-warm reset does not union/overlay and introduces no new historical row-ID rule.
+Current prioritized queue: (1)one bounded architecture PRIVATE source-fact brief
+for newly explicit shared-keeper checkpoint/provenance decisions,(2)shared-owner
+history capacity decision and fix-specific integrated real DB proof when published,
+(3)genuine native source/owner/save/ACK/current/cold interfaces and original journeys.
+Quest has no newly executable native case;public maintained source is unchanged.
+No maps/helpers are reopened to fill time. Both actual native Goals and root Goal
+remain BLOCKED/unfinished;heartbeat ACTIVE. This is not overall completion/pause.
+
+Latest primary81dcda9ca0913508e664451165b7e70c82d58540 reports privatea753f4b6:
+complete original flat cold publication owner,client-free canonicalv8 SHOP driver
+and ordinary canonical NMB4 admission source-joined.189 selected files retain150
+production,23 original fixtures,five schema and11 audit/restore paths;81 C providers.
+Reported full cold source authenticates232 dependencies,ordinary6,driver9. Actual
+same-allocator off-map node and original complete allocation charge require later
+selected ABI/build proof. Inherited Plan5 has44 Python dependencies,108 prior rows
+plus three offline rows/29 added methods. Public src/migrations/tests unchanged;
+compiler/unit/native/SQL/gameplay/persistence/recovery/performance UNEXECUTED under
+major-plan deferral. Private source unavailable;no execution or adoption inferred.
+Never-admitted absence/refusal/hold cleanup and UID-zero absent-player pet remain
+closed/unknown. Shared keeper atomic birth remains open: first-ever saved keeper
+row needs decision whether birth is first checkpoint or original timing stays;
+existing-row AFTER needs original retained boot-versus-warm producer disposition.
+Replay cold flag is not provenance. No inventory union/stock overwrite/checkpoint
+clock/wallet/counter is invented. Original Plans2-4/combinedPlan5/R1-R8 unfinished.
+Prior0433eae8d7108537e immutable working forest/Plan5 source integration and
+3c01b754da226828c/e6221a0164c918221 source reports remain historical. Earlier
+reported reset policy replaces saved keeper cash/stock on cold restore,does not
+union/overlay warm reset and adds no new historical row-ID rule.
+
+Architecture now owns ONE PRIVATE keeper-checkpoint-provenance-facts-20261008
+packet:concise FACTS.txt,exact source pins/anchors and first-row/existing-row versus
+original boot/warm table. Benefit: reduce evidence lookup for the primary's two
+newly explicit owner decisions,without duplicating its shared implementation.
+Available inputs:81dc handoff,closed SHOP map5c53e1e97,maintained boot/reset/native
+mobile tail,core/files save/restore,SQL keeper checkpoint,flat keeper save/restore/
+repository and save-policy callers. Reuse old findings;inspect only needed paths.
+Trace actual checkpoint triggers/refusals/revision/cash/stock facts,identify
+precise unavailable private producer/retained-proof inputs and stop at source
+limits. No policy choice,new clock/field/format/cold-as-provenance or DB/native
+qualification. No new committed docs/tests/code/patch/prototype,shared authorities/
+Plan5/private import/build/server/DB/native batch. One bounded private D: delivery,
+existing isolated WT/completed packets preserved. Root reviews before publishing
+useful optional source-supported owner handoff;no adoption wait. Missing private
+inputs block dependent implementation,not this narrow fact preparation.
 The earlier primary07c0e0398 report remains historical below; it reports private
 ordinary NMB4/MBR4 SQL storage/repository
 dispatch and flat boot-template/procedure/reload helpers at candidated9eaa45b:

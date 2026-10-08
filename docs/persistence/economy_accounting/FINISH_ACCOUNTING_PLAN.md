@@ -127,18 +127,18 @@ No appropriate shared prepared writer API is available. This is an optional owne
 recommendation; no production implementation,adoption wait or new policy authorized.
 Column/packet/native escaping/C-string limits require distinct owner qualification;
 retain original preguard and historical capacity proof. Architecture completed
-the supplemental runtime review without duplicate build/run. No new independent
-implementation is selected until genuine owner/source/fixture inputs change.
-Pickup still needs genuine save/current-proof/restart owners. Latest primary
-0433eae8d reports private7108537e:150 production/81C,12 new native source slices/
-1643 dependency records plus11 audit/restore paths/44 Python dependencies.
-Original108 central rows plus three offline rows/29 added methods are source-
-joined. Cold immutable working forests and post-effect scalar-phase advance
-precede fresh census by report. Full native caller/registration/reload/effects/
-money/custody/ACK/shared atomic birth/opening/admission remain unfinished.
-Peer overlay qualification does not cover this smaller composition. Public
-src/migrations/tests unchanged;compiler/native/SQL/gameplay/recovery UNEXECUTED
-under major-plan deferral. Private source remains unavailable/unqualified.
+the supplemental runtime review without duplicate build/run. New primary81dcda9ca
+reports privatea753f4b6 complete cold owner/client-free v8 SHOP driver/ordinary
+NMB4 admission source join:189 selected files,81 C providers. Public src/tests/
+migrations unchanged;all execution remains deferred. Never-admitted disposition,
+shared keeper atomic birth and original AFTER provenance remain open. First-ever
+saved-row checkpoint timing and original retained boot-versus-warm disposition
+need owner decisions;replay cold is not provenance. Architecture now prepares
+one PRIVATE focused maintained-source fact brief for those two decisions,using
+closed SHOP map and actual save/restore/reset callers. No policy/implementation
+or new checkpoint clock authorized. Quest native dependencies unchanged. Prior
+0433 Plan5/immutable-forest report remains historical;no private source/adoption
+or integrated qualification observable. GoalBLOCKED/heartbeatACTIVE unchanged.
 Supported
 client-free flat routing already exists; SQL-enabled flat routing is not required.
 Native C01 execution still

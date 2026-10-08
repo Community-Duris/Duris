@@ -1639,3 +1639,21 @@ selected while published source remains unchanged. Shared-owner capacity policy/
 fix-specific real DB proof and genuine native current/save/ACK/cold/owner fixtures
 retain their owners. All selected reviews/handoffs now resolved at declared scope;
 this is not primary Plans1-5/R1-R8 completion. GoalBLOCKED/heartbeatACTIVE.
+
+
+New primary cold-owner source report and narrow decision preparation - 2026-10-08:
+81dcda9ca0913508e664451165b7e70c82d58540 is documentation-only;full59-line handoff
+read. Privatea753f4b6 reports complete cold publication/client-free v8 driver/
+ordinary NMB4 admission joined,189 selected files/81 C providers. All execution
+remains deferred and actual private bodies unavailable. Existing original ABI/
+allocation charge,never-admitted cleanup/shared keeper birth/provenance and full
+qualification stay open. Public src/migrations/tests trees are unchanged.
+Newly explicit decisions are first-ever saved-row checkpoint timing and retained
+original boot-versus-warm producer evidence for existing-row AFTER;replay cold
+flag does not supply provenance. Architecture now prepares one private concise
+source-fact brief/pins/table from actual maintained save/restore/reset callers,
+reusing closed SHOP map. No policy/clock/field/production correction or duplicate
+native implementation is authorized. Root review/publication pending. Quest's
+native current/save/ACK/cold/owner prerequisites remain unavailable;no duplicate
+QP02/QP03 map or runner assigned. Selected runtime reviews remain closed. Actual
+GoalBLOCKED/heartbeatACTIVE,broader primary finish line remains unresolved.
