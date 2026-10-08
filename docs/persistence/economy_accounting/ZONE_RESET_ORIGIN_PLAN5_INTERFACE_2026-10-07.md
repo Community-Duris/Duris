@@ -212,3 +212,14 @@ projection and historical wallet/treasury namespace transition; Plan5 must retai
 full raw/current cash disagreement findings until that owner is complete. No
 prototype/tag inference, missing-row filtering or historical rewrite is allowed.
 Plan5 independence, audit/backup/release ownership and original gates remain.
+
+## Reviewed typed flat SHOP proof integration - 2026-10-08
+
+Private119 candidate24e0d474f8f4a110892629be08d2cfcad1dbfb22cca7347a099b7b6043b86264
+now composes complete v6/v7/v8 native/accounting one-journal execution plus separate
+immutable/current borrowed proofs and the original players-store target participant.
+Canonical denial and valid final-revision predicates match original contracts.
+Source-only acceptance; original initialized raw/lifetime/primary views unchanged.
+Real hold/save-drain/producer/dispatch/publication/ACK/recovery and authenticated
+keeper namespace transition remain open. Plan5 independent audit/backup/release
+ownership and original major-plan/R1-R8 qualification remain unchanged.
