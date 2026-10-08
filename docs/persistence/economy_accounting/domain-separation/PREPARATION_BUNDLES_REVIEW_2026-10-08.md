@@ -381,3 +381,59 @@ Coordinator authentication and replay records are private under
 Quest's corrected original-pair component separately passes review and advances
 to a fee-only owner boundary reservation. Actual native Goals remain BLOCKED;
 heartbeat ACTIVE and the broader published primary finish line unresolved.
+
+## Fee-only quest boundary reviewed; value component next
+
+PASS for source/design scope at sole-document commit
+`ee981c97ac48f6c6a3a5dfb82cbbd8b13177e31e`.
+[Exact fee-only owner boundary](https://github.com/Community-Duris/Duris/blob/ee981c97ac48f6c6a3a5dfb82cbbd8b13177e31e/docs/persistence/economy_accounting/quest-prep/NATIVE_QUEST_FEE_ONLY_OWNER_BOUNDARY_2026-10-08.md)
+has SHA256 `fe4b8d0259f8bf707800b6c6d9d53beea6c61b5d79cde0b725df22b2df89c3a1`.
+Coordinator read all 209 lines; independently authenticated 32 pinned bodies,
+46 exact source anchors, 46 source links, three relative context links and the
+preserved catalog digest, with sole-file/whitespace checks. Relevant trigger,
+shape, parent binding, fee transition, original receipt/pair/ACK, financial row,
+historical owner and session cleanup paths agree with the documented boundaries.
+Private review evidence: `D:\Dev\Temp\coordinator-fee-boundary-review-20261008`.
+No compiled provider, SQL, journal or native journey ran for this design review.
+
+The distinction is useful: a fee-only child consumes zero roots but depends on
+a real original v12 item-acceptance parent and typed48 receipt. Its own carrier
+is v14/NQF2, continuation v6/QRF6 and result canonical64-byte NFR1. The source
+binds the fee operation and pre-charge mobile revision; parent sequence binding
+allows at least parent revision+1, not equality only. The actual zero-root
+shape, cash projection, historical verification, held publication, physical
+ACK, reward ACK and guarded retirement already have production owners. Existing
+QP02 item-plus-cost assertions and the non-fee QP03 reader are not fee coverage.
+
+Gorblag70023/room70029 has a real production C5/one70018/no-XP/no-D branch.
+Its prototype cash is zero. Genuine funded lifetime and triggering item-parent
+reachability remain unproven; a source candidate is not a runnable native fixture.
+Acknowledged fee shape rejects disappearance. No positive D fixture or bypass
+is supplied by coin-only definitions that contain D. Public primary source and
+migrations remain unchanged; private primary progress is not qualified here.
+
+Next one bounded quest delivery owns only
+`tests/async/quest_accounting_prep/native_quest_fee_owner_boundary_test.cpp`,
+`tests/async/quest_accounting_prep/test_native_quest_fee_owner_boundary.py` and
+`quest-prep/NATIVE_QUEST_FEE_COMPONENT_HANDOFF_2026-10-08.md`.
+Link real cost/native-mobile transition, continuation/result, context/pair/feeACK
+providers and their reachable dependencies on the exact public primary. No copied
+codec, extracted provider, replacement owner or accepting authority/SQL/export
+double; disclose inert fixture scaffolding and actual unavailable link dependencies.
+
+Qualify modeled valid and damaged original parent/child, encoded empty and
+unrelated complete forests, source/identity/slot/sequence, typed48 and NFR1
+clocks/size/padding, cash change/order/overflow, receipt/checkpoint/ACK, zero-root
+shape and stored reward terms. Preserve legitimate inequality, nonpositive and
+insufficient outcomes and provider-defined output guarantees. Coherent value
+agreement cannot authenticate a supplied report. Use original strict C++20,
+ASan/UBSan/deadline controls and task-specific D: source/build/artifact pins.
+Keep all prior tests and shared production/owners/export/driver/schema/registries
+intact. No SQL/live journal/native gameplay/full build/operational or Plan5 batch
+is assigned. Authentic exports, setup, world/custody census and actual guarded
+publication/ACK/retirement remain native qualification dependencies.
+
+Architecture's 49-case auction observer component remains in active qualification;
+its live jobs and worktree are preserved. No new architecture assignment or
+primary adoption wait is imposed. Actual native Goals remain BLOCKED, heartbeat
+ACTIVE, and broad primary Plans1-5/R1-R8 completion remains unresolved.
