@@ -2869,3 +2869,29 @@ preserved. Curator-ready notebook input; notebook nonblocking; application/impor
 ack unclaimed. Full combined/gameplay/producer/opening/retention/activation/Plan5/
 R1–R8/release stays unqualified. No production/autocorrection/deploy/merge/primary
 push/cross-chat message.
+
+
+## 2026-10-08: opened metadata guards and bounded reads
+
+Sole local/remote codex/accounting-plan5; owned base f7203b4c438b35da1f1d1fcf3267d3e740a65ada. Result is
+this containing commit; exact post-push remote/clean/ancestry/rehash receipt:
+D:/Dev/Tests/Duris/accounting-plan5/metadata-input-20261008/delivery/result.json. Old metadata reader accepted over-cap growth,
+weakened permissions, hardlinks, symlink/foreign-owner replacement after original
+path checks; FIFO replacement blocked. Existing read_json now opens once with
+nofollow/nonblock, rechecks original descriptor guards and bounds actual bytes,
+preserving text/strict JSON interpretation, fixed diagnostics and finally-close.
+No policy/schema/shared interface or mutation/audit coupling change. RED six
+failures/one timeout; final 68 filesystem/review PASS with zero skips. CLI 60 calls:
+56 refused races/four controls; eight parser/boundary controls PASS. Both original
+SQL restore methods and original flatfile pending replay/account-player-domain
+load/boot journey PASS: three real boots, four original fixture compile/link
+calls. Both fresh SQL sources observe 84 metadata race refusals without new
+capture/candidate/selected-claim mutation, then two normal full captures PASS.
+Original qualifiers: 50 calls/22 expected fault refusals. Source 3a7fe631eefeb0d5864b3e3419f72dac11e0e31e,
+primary a7dbc54cadf576330529a0e126d61052161ea255, native/schema exact; seal ade3527dd06ba8d6ea760ec8ff4c57629d1c0c3ae1e7a7d800217506e4102f88. Complete scope,
+commands, backends, hashes, reuse bindings and remaining gates:
+PLAN5_METADATA_INPUT_QUALIFICATION_2026-10-08.md. All prior follow-up content stays
+exact. Curator-ready; notebook nonblocking; application/import/ack unclaimed.
+Complete original module/shared native boundaries/full producer-gameplay-opening/
+retention/combined candidate/Plan5/R1–R8/release remain open. No activation,
+production/autocorrection/deploy/merge/primary push/cross-chat message.

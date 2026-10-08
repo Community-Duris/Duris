@@ -8,9 +8,11 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import errno
 import fcntl
 import gzip
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -107,8 +109,27 @@ def overlaps(a, b):
 
 def read_json(path):
     secure_path(path, False)
-    require(path.stat().st_size <= 32 * 1024 * 1024, "metadata_too_large")
-    with path.open() as stream:
+    limit = 32 * 1024 * 1024
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except OSError as error:
+        if error.errno == errno.ELOOP:
+            raise BackupError("symlink_rejected") from error
+        raise
+    try:
+        info = os.fstat(fd)
+        require(info.st_uid in {0, os.getuid()}, "unexpected_owner")
+        require(info.st_uid == os.getuid() and not info.st_mode & 0o077,
+                "require_owner_only")
+        require(stat.S_ISREG(info.st_mode) and info.st_nlink == 1, "unexpected_file_type")
+        require(info.st_size <= limit, "metadata_too_large")
+        with os.fdopen(fd, "rb", closefd=False) as stream:
+            data = stream.read(limit + 1)
+    finally:
+        os.close(fd)
+    require(len(data) <= limit, "metadata_too_large")
+    with io.TextIOWrapper(io.BytesIO(data)) as stream:
+        del data
         return json.load(stream, object_pairs_hook=strict_json)
 
 

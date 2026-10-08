@@ -874,6 +874,91 @@ class GenerationTests(Fixture):
         self.assertTrue(orphan.is_dir())
 
 class CapacityAndInputTests(Fixture):
+    def test_metadata_growth_after_size_observation_is_bounded(self):
+        path = self.base / "metadata.json"
+        path.write_bytes(b"{}")
+        path.chmod(0o600)
+        original_secure = backup.secure_path
+        original_stat, original_fstat = Path.stat, os.fstat
+        identity = original_stat(path)
+        armed, grown = [], []
+        def secure_then_arm(selected, directory=None):
+            result = original_secure(selected, directory)
+            if selected == path:
+                armed.append(True)
+            return result
+        def grow():
+            if armed and not grown:
+                with path.open("ab") as writer:
+                    writer.write(b" " * (32 * 1024 * 1024 - 1))
+                grown.append(True)
+        def stat_then_grow(selected, *args, **kwargs):
+            result = original_stat(selected, *args, **kwargs)
+            if selected == path:
+                grow()
+            return result
+        def fstat_then_grow(fd):
+            result = original_fstat(fd)
+            if (result.st_dev, result.st_ino) == (identity.st_dev, identity.st_ino):
+                grow()
+            return result
+        with mock.patch.object(backup, "secure_path", secure_then_arm), \
+             mock.patch.object(Path, "stat", stat_then_grow), \
+             mock.patch.object(os, "fstat", fstat_then_grow):
+            with self.assertRaisesRegex(backup.BackupError, "^metadata_too_large$"):
+                backup.read_json(path)
+        self.assertTrue(grown)
+        self.assertEqual(path.read_bytes(), b"{}" + b" " * (32 * 1024 * 1024 - 1))
+
+    def test_metadata_open_rechecks_guards_after_path_validation(self):
+        import subprocess
+        child = self.base / "metadata-child.py"
+        child.write_text("""from pathlib import Path
+import json,os,sys
+sys.path.insert(0,sys.argv[1]);import persistence_backup as backup
+path=Path(sys.argv[2]);case=sys.argv[3];path.write_bytes(b'{}');path.chmod(0o600)
+backing=path.with_name('private-backing');backing.write_bytes(b'{}');backing.chmod(0o600)
+original=backup.secure_path;changed=[];before=[]
+def secure_then_change(selected,directory=None):
+    result=original(selected,directory)
+    if selected==path and not changed:
+        if case=='permissions':path.chmod(0o644)
+        elif case=='hardlink':os.link(path,path.with_name('private-hardlink'))
+        elif case=='owner':os.chown(path,1,-1)
+        else:
+            path.unlink()
+            if case=='symlink':path.symlink_to(backing)
+            elif case=='directory':path.mkdir(mode=0o700)
+            elif case=='fifo':os.mkfifo(path,0o600)
+        changed.append(True);info=path.lstat()
+        before[:]=[(info.st_mode,info.st_ino,info.st_nlink,info.st_size,info.st_uid)]
+    return result
+backup.secure_path=secure_then_change;code='accepted'
+fds=len(list(Path('/proc/self/fd').iterdir()))
+try:backup.read_json(path)
+except backup.BackupError as error:code=str(error)
+except OSError:code='operation_failed'
+info=path.lstat()
+assert before==[(info.st_mode,info.st_ino,info.st_nlink,info.st_size,info.st_uid)]
+assert fds==len(list(Path('/proc/self/fd').iterdir()))
+print(json.dumps({'code':code}));sys.exit(0 if code=='accepted' else 2)
+""")
+        cases = [("permissions", "require_owner_only"), ("hardlink", "unexpected_file_type"),
+                 ("symlink", "symlink_rejected"), ("directory", "unexpected_file_type"),
+                 ("fifo", "unexpected_file_type")]
+        if os.getuid() == 0:
+            cases.append(("owner", "unexpected_owner"))
+        for case, expected in cases:
+            with self.subTest(case=case):
+                folder = self.base / case
+                folder.mkdir(mode=0o700)
+                result = subprocess.run([sys.executable, str(child), str(ROOT / "scripts"),
+                                         str(folder / "metadata.json"), case],
+                                        capture_output=True, text=True, timeout=2, check=False)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertEqual(result.stderr, "")
+                self.assertEqual(json.loads(result.stdout), {"code": expected})
+
     def test_restore_capacity_requires_dedicated_mount(self):
         backup.mkdir(self.p["restore_root"])
         with self.assertRaisesRegex(backup.BackupError, "dedicated_restore_filesystem"):
