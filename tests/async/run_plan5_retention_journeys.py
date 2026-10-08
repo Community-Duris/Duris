@@ -93,6 +93,8 @@ int main(int argc,char **argv) {
                "src/economy/economic_accounting_intent.c", "src/persistence/critical_command.c",
                "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/item/craft_pouch_mutation.c",
                "src/economy/shop_trade_recovery_manifest.c",
+               "src/item/lockpick_retirement_continuation.c", "src/economy/native_quest_cost.c",
+               "src/economy/native_quest_coin_give.c",
                "src/combat/chaos_pouch_ledger.c", "src/player/player_snapshot_codec.c"]
     result = {}
     for mode in ("sql", "flatfile"):
