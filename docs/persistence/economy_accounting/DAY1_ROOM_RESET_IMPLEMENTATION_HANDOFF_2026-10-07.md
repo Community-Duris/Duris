@@ -47,3 +47,34 @@ Fresh opening still needs a separate witnessed lifetime for originless NPC cash.
 The existing persisted holdings reader and later typed-birth wallet locker do
 not adopt those NPCs. Runtime IDs or VNUMs cannot substitute for durable lifetimes;
 unknown historical origin must remain explicit in reconciliation.
+
+## Shared reset contracts implemented privately - 2026-10-07
+
+Private `tmp/lifecycle-reset-contract-candidate-primary-20261007` now composes
+61 production and23 original fixture files. All earlier 51/23 bodies remain
+exact. Six shared contracts, two command-codec files and two accounting-compiler
+files have independent source acceptance; no native source is imported or run.
+
+The appended command type22/writer16 freezes the actual invocation/slot,
+operation, zone/room, season/revision, complete literal forest, original factory
+recipes and exact coin denominations. Private producer-only source capture shares
+the existing lazy reset invocation with `M`, including `O` before the first `M`.
+Private authority preparation borrows the installed SQL lineage/epoch. Generic
+player creation, legacy execution and current admission remain unchanged.
+
+The pure compiler creates room custody at revision1 and actual UID-held pile
+issuance with balanced denomination legs. Known zero retains its ordinary pile
+effect without an unused virtual account. Source review found and corrected
+posting-index gaps when zero piles precede or separate positive piles; the
+corrected compiler is `5b397f56`. Canonical command codec is `728a9ce0`.
+Formatting passes; original shared-file newline conventions are retained.
+
+The complete producer is still missing: original decisions/construction,
+authenticated SQL/flat root and source claim, room/coin/artifact literal retention,
+current and historical cold readers, guarded publication/replay/ACK and original
+qualification. Room coin cold proof currently authenticates only wallet-transfer
+roots; room item cold proof authenticates player drops and excludes artifacts.
+Those need explicit creation branches under the new root, preserving old routes.
+No new schema, source-policy waiver or production CLI is indicated. Planned
+component controls include zero-before-positive, zero-between-positive, all-zero
+and positive outputs; they remain unexecuted with the major-plan qualification.
