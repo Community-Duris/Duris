@@ -145,7 +145,9 @@ TABLES = (
     "obj_blob_str LONGBLOB) ENGINE=InnoDB",
     "CREATE TABLE auction_money_pickups (pid BIGINT,money BIGINT,"
     "claim_revision BIGINT UNSIGNED) ENGINE=InnoDB",
-    "CREATE TABLE shopkeepers (id BIGINT,cash BIGINT,shop_revision BIGINT UNSIGNED) ENGINE=InnoDB",
+    "CREATE TABLE shopkeepers (id BIGINT,cash BIGINT,shop_revision BIGINT UNSIGNED,shop_id INT DEFAULT 0) ENGINE=InnoDB",
+    "CREATE TABLE shopkeeper_items (id INT UNSIGNED,shopkeeper_id INT,container_id INT UNSIGNED NULL,"
+    "obj_uid BIGINT UNSIGNED NULL,vnum INT,equip_slot TINYINT NULL,quantity SMALLINT UNSIGNED NULL) ENGINE=InnoDB",
     "CREATE TABLE ships (id INT NOT NULL PRIMARY KEY,money INT NULL) ENGINE=InnoDB",
     "CREATE TABLE guilds (id INT UNSIGNED NOT NULL PRIMARY KEY,"
     "copper INT UNSIGNED NOT NULL,silver INT UNSIGNED NOT NULL,"
@@ -1029,7 +1031,7 @@ try:
             cursor.execute("INSERT INTO auctions(id,status,cur_price,auction_revision,winning_bidder_pid,obj_blob_str) "
                            "VALUES (5,'REMOVED',123,1,7,X'78')")
             cursor.execute("INSERT INTO auction_money_pickups VALUES (7,250,1)")
-            cursor.execute("INSERT INTO shopkeepers VALUES (3,500,1)")
+            cursor.execute("INSERT INTO shopkeepers(id,cash,shop_revision) VALUES (3,500,1)")
             cursor.execute(ITEM_INSERT +
                            "(81,81,NULL,1,7,0,2,1,1,NULL),"
                            "(82,82,NULL,1,7,0,1,1,3,%s),"
@@ -2019,6 +2021,8 @@ try:
                     writer.execute("INSERT INTO auction_item_custody(auction_id,slot,item_uid,item_revision,vnum,obj_blob) "
                                    "VALUES (5,0,84,1,1,X'78')")
                     writer.execute("INSERT INTO auction_item_pickups VALUES (1,7,1,0,X'78')")
+                    writer.execute("UPDATE shopkeepers SET shop_id=77 WHERE id=3")
+                    writer.execute("INSERT INTO shopkeeper_items VALUES (400,3,NULL,84,0,0,1)")
                 return origins
 
             with mock.patch.object(exporter, "read_origins_in_transaction",
@@ -2036,6 +2040,11 @@ try:
             later_auctions = capture(audit, LINEAGE, EPOCH)["native"]
             assert later_auctions["auction_listings"][0]["vnum"] == 1
             assert len(later_auctions["auction_roots"]) == len(later_auctions["auction_legacy_pickups"]) == 1
+            assert fenced["native"]["shop_keepers"] == [{"keeper_id":3,"shop_id":0}]
+            assert fenced["native"]["shop_items"] == []
+            assert later_auctions["shop_keepers"] == [{"keeper_id":3,"shop_id":77}]
+            assert later_auctions["shop_items"] == [{"item_id":400,"keeper_id":3,"parent_id":None,
+                "uid":84,"vnum":0,"equipment_slot":0,"quantity":1}]
             with setup.cursor() as cursor:
                 cursor.execute("UPDATE player_data SET copper=2 WHERE pid=7")
                 cursor.execute("DELETE FROM ships")
@@ -2043,6 +2052,8 @@ try:
                 cursor.execute("UPDATE auctions SET obj_vnum=0 WHERE id=5")
                 cursor.execute("DELETE FROM auction_item_custody")
                 cursor.execute("DELETE FROM auction_item_pickups")
+                cursor.execute("DELETE FROM shopkeeper_items")
+                cursor.execute("UPDATE shopkeepers SET shop_id=0 WHERE id=3")
             with tempfile.TemporaryDirectory(prefix="duris-sql-audit-") as directory:
                 output = Path(directory) / "partial.json"
                 command = [sys.executable, str(ROOT / "scripts/economic_sql_audit_snapshot.py"),

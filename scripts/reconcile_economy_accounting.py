@@ -265,6 +265,7 @@ class Reconciler:
                     safe[field] = value
                 elif field in ("uid", "parent_uid", "child_index", "line_index", "source_slot",
                                "net_copper", "ship_id", "guild_id", "auction_id", "slot",
+                               "keeper_id", "shop_id", "item_id",
                                "identity_kind", "identity_id") and type(value) is int:
                     safe[field] = value
                 elif field == "table" and isinstance(value, str) and (value in TABLES or value in ORPHAN_EVIDENCE_SOURCES):
@@ -595,6 +596,7 @@ class Reconciler:
         native_holdings = self.index(holdings, ("account_key",), "duplicate_native_holding")
         native_items = self.index(items, ("uid",), "duplicate_native_uid")
         self.audit_auction_custody(snapshot.get("backend"), native, native_items)
+        self.audit_shop_custody(snapshot.get("backend"), native, native_items)
         self.audit_mapping_creations(snapshot.get("backend"), lineage, native, origins,
                                      operations, effects, epoch)
         self.audit_pending_claim_consumers(snapshot.get("backend"), lineage, native,
@@ -959,6 +961,140 @@ class Reconciler:
             if (item.get("state") != "tombstone" and item.get("owner", [None])[0] == 6 and
                     item["uid"] not in live_uids):
                 self.emit("auction_uid_missing_unclaimed_root", uid=item["uid"])
+
+    def audit_shop_custody(self, backend: str, native: dict, items: dict) -> None:
+        """Compare persisted shop forests with UID metadata, independently.
+
+        Physical container IDs are row IDs, never UIDs. A keeper's native owner
+        ID is its logical shop_id + 1, never its database primary key. Legacy
+        NULL/zero UIDs remain unknown; this comparison grants no enrollment,
+        prototype, literal payload, or historical origin authority.
+        """
+        names = ("shop_keepers", "shop_items")
+        coverage = native.get("shop_custody_coverage")
+        if coverage is None and all(name not in native for name in names):
+            if backend == "sql_partial":
+                self.emit("missing_shop_custody_coverage", scope="snapshot")
+            return
+        keepers, rows = (self.table(native, name) for name in names)
+        expected = {"keepers": len(keepers), "items": len(rows)}
+        if (not isinstance(coverage, dict) or coverage != expected or
+                any(type(value) is not int for value in coverage.values()) or
+                sum(coverage.values()) > MAX_ROWS):
+            raise SnapshotError("invalid shop custody coverage")
+
+        def integer(row, field, low, high, nullable=False):
+            value = row.get(field)
+            if field not in row or (value is not None or not nullable) and (
+                    type(value) is not int or not low <= value <= high):
+                raise SnapshotError("invalid shop custody " + field)
+
+        for row in keepers:
+            integer(row, "keeper_id", 1, 2**31-1)
+            integer(row, "shop_id", -2**31, 2**31-1)
+        for row in rows:
+            for field, low, high, nullable in (
+                    ("item_id", 1, 2**32-1, False), ("keeper_id", -2**31, 2**31-1, False),
+                    ("parent_id", 0, 2**32-1, True), ("uid", 0, 2**64-1, True),
+                    ("vnum", -2**31, 2**31-1, False), ("equipment_slot", -128, 127, True),
+                    ("quantity", 0, 65535, False)):
+                integer(row, field, low, high, nullable)
+        keeper_ids = Counter(row["keeper_id"] for row in keepers)
+        shop_ids = Counter(row["shop_id"] for row in keepers)
+        row_ids = Counter(row["item_id"] for row in rows)
+        keeper_index = self.index(keepers, ("keeper_id",), "shop_duplicate_keeper")
+        self.index(keepers, ("shop_id",), "shop_duplicate_logical_id")
+        row_index = self.index(rows, ("item_id",), "shop_duplicate_row")
+        self.index([row for row in rows if row["uid"]], ("uid",), "shop_duplicate_uid")
+        for keeper in keepers:
+            if keeper["shop_id"] < 0:
+                self.emit("shop_logical_identity_invalid", keeper_id=keeper["keeper_id"])
+        groups = Counter(row["keeper_id"] for row in rows)
+        for keeper_id, count in groups.items():
+            if count > 4096:
+                self.emit("shop_item_count_exceeds_native_limit", keeper_id=keeper_id)
+        physical = defaultdict(set)
+        for row in rows:
+            uid, keeper_id = row["uid"], row["keeper_id"]
+            detail = {"item_id": row["item_id"], "keeper_id": keeper_id}
+            keeper = keeper_index.get((keeper_id,))
+            if keeper is None:
+                self.emit("shop_item_missing_keeper", **detail)
+            elif keeper_ids[keeper_id] != 1 or shop_ids[keeper["shop_id"]] != 1:
+                self.emit("shop_item_ambiguous_keeper", **detail)
+                keeper = None
+            if not uid:
+                self.emit("shop_legacy_uid_unknown", **detail)
+            elif uid == 2**64-1:
+                self.emit("shop_uid_sentinel_invalid", uid=uid, **detail)
+            slot = row["equipment_slot"]
+            if slot is None or not 0 <= slot <= 43 or row["parent_id"] and slot:
+                self.emit("shop_item_equipment_invalid", **detail)
+            if row["quantity"] != 1:
+                self.emit("shop_item_quantity_invalid", **detail)
+            if row["vnum"] < 0:
+                self.emit("shop_item_vnum_invalid", **detail)
+            # Resolve at most the native 32 rows on each root-to-leaf path.
+            # Ambiguous IDs, cross-keeper links and unadmitted ancestors never
+            # become a guessed root or parent UID.
+            cursor, seen, root_uid, parent_uid = row, set(), None, None
+            for depth in range(33):
+                if depth == 32:
+                    self.emit("shop_item_depth_exceeds_native_limit", **detail)
+                    break
+                item_id = cursor["item_id"]
+                if row_ids[item_id] != 1:
+                    self.emit("shop_item_ambiguous_parent", **detail)
+                    break
+                if item_id in seen:
+                    self.emit("shop_item_parent_cycle", **detail)
+                    break
+                seen.add(item_id)
+                if not cursor["uid"] or cursor["uid"] == 2**64-1:
+                    if cursor is not row:
+                        self.emit("shop_item_ancestor_uid_unknown", **detail)
+                    break
+                if not cursor["parent_id"]:
+                    root_uid = cursor["uid"]
+                    break
+                parent = row_index.get((cursor["parent_id"],))
+                if parent is None:
+                    self.emit("shop_item_parent_missing", **detail)
+                    break
+                if parent["keeper_id"] != keeper_id:
+                    self.emit("shop_item_parent_foreign_keeper", **detail)
+                    break
+                if cursor is row:
+                    parent_uid = parent["uid"]
+                cursor = parent
+            if not uid or uid == 2**64-1:
+                continue
+            if keeper is not None and keeper["shop_id"] >= 0:
+                physical[keeper["shop_id"]+1].add(uid)
+            current = items.get((uid,))
+            if current is None:
+                self.emit("shop_uid_unadmitted", uid=uid, **detail)
+                continue
+            if current.get("state") != "live":
+                self.emit("shop_uid_not_active", uid=uid)
+            if keeper is not None and keeper["shop_id"] >= 0 and current.get("owner") != [9, keeper["shop_id"]+1, 0]:
+                self.emit("shop_item_owner_mismatch", uid=uid)
+            if root_uid is not None and (current.get("root") != root_uid or
+                                        (current.get("parent") or None) != (parent_uid or None)):
+                self.emit("shop_item_topology_mismatch", uid=uid)
+            integer(current, "vnum", -2**31, 2**31-1)
+            if current["vnum"] != row["vnum"]:
+                self.emit("shop_item_vnum_mismatch", uid=uid)
+            if current.get("equipment_slot") != slot:
+                self.emit("shop_item_equipment_mismatch", uid=uid)
+        owners = {row["shop_id"]+1 for row in keepers if row["shop_id"] >= 0}
+        for current in items.values():
+            owner = current.get("owner", [None])
+            if current.get("state") == "live" and owner[0] == 9:
+                if owner[1] not in owners or owner[2] != 0:
+                    self.emit("shop_uid_unknown_keeper", uid=current["uid"])
+                elif current["uid"] not in physical[owner[1]]:
+                    self.emit("shop_uid_missing_physical", uid=current["uid"])
 
     def audit_original_plans(self, tables: dict, by_op: dict, ownership: dict) -> None:
         """Bind projections to retained EAP1 bytes, independently of mutation code.
