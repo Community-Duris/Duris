@@ -1,44 +1,53 @@
 # Finish accounting implementation plan
 
-## Reviewed reset publication and recovery context - 2026-10-07
+## Reviewed authenticated cold publication and initialized-world owner - 2026-10-07
 
-Private `tmp/lifecycle-reset-publication-candidate-primary-20261007` composes
-84 production files, 23 unchanged original fixtures and five unchanged schema
-files on maintained02df3a70f. Independent source review and touched formatting
-pass. Composition33d4a0 verifies every pin and preserves the complete predecessor.
-No compilation, native, SQL, migration, gameplay or recovery execution occurred.
+Private `tmp/lifecycle-reset-cold-world-candidate-primary-20261007` composes
+92 production files, 23 unchanged original fixtures and five private schema/
+manifest files on maintained996ce9ebb. All selected pins preserve the complete
+predecessor. Independent source review and touched formatting pass; compiler,
+native, SQL, migrations, gameplay, cold recovery and fault execution are unrun.
 
-The actual factory can preflight a complete detached forest, aggregate prototype
-counts, observe every selected UID/root/parent cache claim, then atomically hydrate
-the cache before callback-free global publication. All metadata remains owned for
-real service steps. Review corrected malformed root locations, foreign-parent
-cache claims and partial metadata cleanup. Original publish/release/drop bodies,
-flatfile template work and the complete active-cache census are preserved.
+The cold creation owner independently authenticates the original locked SQL
+session, current full graph and genuine original terminal ZRR1 body. It retains
+factory stages before native consumption, rebuilds only recorded returned
+services through the original helper, and proves room placement and exact cache
+state before releasing completed metadata. Missing terminal evidence refuses.
+The caller retains uncertain/admitted stages for the process lifetime and stops
+before legacy recovery. Review corrected classification loss on failed reads,
+calling the driver after classification refusal, and ambiguous START cleanup;
+enumeration and root reads now use the existing exact-session cleanup owner.
 
-ZRR1 retains the full original type22 command, ordered UID/recipe progress and
-exact TIR48 with room revision r+1. Its independent codec checks binding, native
-batch publication, original factory services, room placement and final current
-cache proof. The private coordinator requires all five domain validators, exact
-current completion/generation/context CAS, and keeps room/item fences through
-phase2 until authentic terminal evidence transfers durably and the journal retires.
-Generic submission, replay and ACK cannot bypass the typed owner.
+Terminal retention authenticates the full original SQL root/TIR before locking,
+accepts NULL-first or byte-identical writes, and never commits, retries or ACKs.
+Private0065 gains a nullable original terminal body with guarded predecessor/
+successor validation. Raw capture preserves NULL/binary bytes and correlates
+the original command/TIR. Storage permits32MiB; the original raw single-cell
+cap1MiB remains enforced. Neither storage nor pure proof grants current authority.
 
-The creation-only cold adapter authenticates recipes and constructs the complete
-current forest, including zero/nested money. Its public entry still stages and
-refuses pending the genuine world-context driver; artifacts remain excluded.
-Original rebuild_enrollment already restores a recorded service prefix after
-actual enrollment validation/rebuild; no new prefix setter is required.
+Actual successful game_loop initialization now has a private owning census seam
+before listener creation/readiness/input, after the exact failed-copyover decision.
+Early copyover admission remains intact. Late selected capture reacquires genuine
+coordinator/writer/session exclusion, drains the actual durable outbox and accepted
+saves, then checks fresh readiness/ownership epoch. Review corrected the missing
+outbox drain and listener ordering. The capability is revoked before callbacks;
+inactive/NO_MYSQL capture refusal preserves startup and grants no SQL/world permit.
+The synchronous activation/normalization/independent verifier consumer is not wired.
 
-Two independent implementation slices continue: durable original terminal-service
-retention and the owning full-world census. Successful initialization belongs
-after copyover/Redis/reconciliation and failed-copyover refusal in game_loop,
-before transport readiness/world input. The runtime-to-maintenance activation
-ownership handoff remains required; activity-ready/game_booted flags do not prove it.
-Actual O producer/admission/publication/ACK, full money/artifact recovery, flatfile
-parity, schema registration/fingerprints and original major-plan/R1-R8 qualification
-remain open. Inactive behavior and safety gates stay; no release gate is closed.
+A private atomic runtime-to-maintenance transfer preserves the original guard,
+authority ID, SQL session, boot/writer locks and local exclusion while converting
+the actual reservation to a genuine cutover lease without reopening admission.
+Actual activation, retained rollback/runtime return and projection-authenticated
+resume remain open. No epoch is selected by these new source changes.
 
-
+The original full-provider recipe successor preserves cases, flags, macros and
+engine controls. Source tracing found a genuine mixed production-TU dependency:
+the auction forest helper pulls native output and a second main. Extraction of
+the real pure provider is underway; no fake provider or linker flag is substituted.
+Actual O producer/live service context/terminal transfer, complete money/artifact
+recovery, flatfile parity, schema registration/fingerprints and all major-plan/
+R1-R8 qualification remain open. Inactive behavior and safety gates stay intact.
+This source checkpoint closes no release gate; coverage remains incomplete.
 
 ## Reviewed creation census and current coin heads - 2026-10-07
 
