@@ -1,5 +1,13 @@
 # Experimental accounting review checkpoint
 
+## Complete flat cold owner and driver source joined - 2026-10-08
+
+[Current source integration](FULL_FLAT_COLD_DRIVER_SOURCE_INTEGRATION_2026-10-08.md) records private candidate
+`a753f4b6bc2ba2be40487c8012bc7eb7c5cdb8e2e53bf93cb512bec30d2ad0ff`:complete original cold
+publication,client-free v8 driver and ordinary NMB4 admission are source-reviewed
+and composed. Execution remains deferred;never-admitted disposition,shared keeper
+atomic provenance,activation and full Plans2-4/Plan5/R1-R8 qualification remain.
+
 ## Immutable cold movement and Plan5 source joined - 2026-10-08
 
 [Source integration handoff](COLD_WORKING_PLAN5_SOURCE_INTEGRATION_2026-10-08.md)
