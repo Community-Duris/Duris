@@ -99,20 +99,22 @@ closed R1 journeys and maintained progression/ACK fixtures; no new craft runner.
 SHOP map5c53e1e97 now PASS source/design review:3,455 public bodies/43 body pins/
 109 anchors/18 links/13 ordering checks/15 artifacts and standalone patch verified.
 Compound custody,wallet,keeper stock/cash and physical-before-completion/recovery
-remain one original operation. No new SHOP runner is reserved. Architecture next
-owns supplemental PRIVATE review of published capacity code/object/call/observation
-proof; design packet already PASS15 bodies/70 anchors/ten digit widths. No new
-committed map/code path,duplicate build or primary wait. Native Goal stays BLOCKED.
+remain one original operation. No new SHOP runner is reserved. Architecture's
+supplemental PRIVATE capacity review now PASS:46 pinned artifacts/12 review
+artifacts authenticated,independent final-call/harness/logger and12-case checks.
+Architecture next owns one PRIVATE minimal shared-owner remediation reservation:
+source-supported dynamic explicit-length existing trace path versus an existing
+appropriate prepared API only. No implementation,new committed doc/test or wait.
 Pickup still needs genuine save/current-proof/restart owners. Latest primary
-3c01b754d reports private cold-holder candidatea226828c:150 production/81C,
-11 new source-accepted slices/1480 new dependency records. Earlier e6221a016
-reports private4c918221/148 production/80C world/cold readers. Boot seal,original
-SHOP BEFORE reader,selected literal graph/cash/world and once-only enrollment/
-retained capacity are source claims. Full future-transition charge/effects/
-publication/guarded ACK/registration/replay/shared atomic birth/opening/Plan5
-remain incomplete. UID-zero pet absence is unresolved for absent player.
-Public src/migrations/tests unchanged;compiler/native/SQL/gameplay/persistence/
-recovery UNEXECUTED under major-plan deferral. Private code unavailable/unqualified.
+0433eae8d reports private7108537e:150 production/81C,12 new native source slices/
+1643 dependency records plus11 audit/restore paths/44 Python dependencies.
+Original108 central rows plus three offline rows/29 added methods are source-
+joined. Cold immutable working forests and post-effect scalar-phase advance
+precede fresh census by report. Full native caller/registration/reload/effects/
+money/custody/ACK/shared atomic birth/opening/admission remain unfinished.
+Peer overlay qualification does not cover this smaller composition. Public
+src/migrations/tests unchanged;compiler/native/SQL/gameplay/recovery UNEXECUTED
+under major-plan deferral. Private source remains unavailable/unqualified.
 Supported
 client-free flat routing already exists; SQL-enabled flat routing is not required.
 Native C01 execution still

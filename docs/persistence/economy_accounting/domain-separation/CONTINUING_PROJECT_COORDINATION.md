@@ -248,37 +248,49 @@ Architecture private capacity design packet now PASS root review:15 raw bodies/
 Fixed query295 bytes plus revision digits plus escaped C-string length; complete
 65535 fits/65536 refuses. Reached genuine versus controlled providers and final
 called trace binding obligations are explicit. No component/native execution.
-Architecture now owns ONE supplemental PRIVATE implementation/artifact review of
-published code1e8e977a5/handoff2eb2fedd6,using original packet/worker retained
-objects/ELFs/counters/query/logs. Check source closure,only-binding mutation,
-final call/owning harness object,genuine logit and actual12 observations/limits.
-Do not duplicate root's fresh component run or turn suggested extra controls
-into a manufactured family. Separate D: review/index/disposition only; no new
-committed code/map or worker-proof mutation. Current scope is actual artifacts,
-not design acceptance of absent code. Root's independent component review PASS
-already stands; supplemental packet final authentication pending. Actual native
-Goal BLOCKED; preserve tasks/jobs/isolated WT and broad primary finish line.
+Architecture supplemental PRIVATE implementation/artifact review now PASS:
+46 exact pins/12 indexed review files authenticated; independently decoded final
+qry call/harness owner/genuine logger and24 recorded observations match. No new
+build/execution. Original artifact/SQL-double limits remain; no required defect.
+Architecture next owns ONE short PRIVATE shared-owner capacity remediation
+reservation/recommendation. Benefit: a minimal owner implementation choice for
+qualified whole-history formatting limit without another source investigation.
+Use actual repository/sql.c/sql.h/sql_player.c and accepted capacity proof.
+Compare at most two source-supported options: dynamically built complete escaped
+UPSERT through existing explicit-length sql_trace_exec_at versus an appropriate
+EXISTING prepared API only if actually available. Preserve singleton/version/
+revision/timestamp/whole-state semantics,RAII/ENOMEM/errors,source-site/label/
+drain/session/exclusion/observability. Distinguish formatter cap,MEDIUMTEXT byte
+cap,packet/connection/escaping limits and actual C-string behavior; no guessed
+DB maxima or silent policy change. State exact affected paths/functions,
+recommended narrow choice,unavailable dependencies and focused qualification.
+Historical capacity fixture remains baseline; any future fix-specific expectation
+must be separate and cannot rewrite earlier PASS/weaken refusal controls.
+One D: private artifact/concise disposition; NO production edit,prototype/patch,
+new committed doc/test/helper/schema/authority/format or server/DB/native/broad
+build. This is a proposed owner change,not implementation authorization/adoption
+requirement; private overlap/adoption unknown. Return precise dependency if no
+minimal path. Reuse reviews,one active delivery,isolated WT/GoalBLOCKED preserved.
 Genuine save/current-proof/restart owners still block pickup production wiring.
-Latest primary3c01b754d reports private cold-holder candidatea226828c:150 production/
-81C,11 new source-accepted slices/1480 dependency records on previous147 base.
-Source claims include post-assignment boot seal,borrowed-session SHOP BEFORE,
-complete unpublished selected literal graph/actual allocation measurement,
-authentic restored outer/current/world/cash cut/once-only enrollment and exact
-current holder capacity. Original32MiB charge remains; full future-transition
-charge/effects/publication/guarded ACK/registration/replay still unfinished.
-Shared native-ID locks/atomic SHOP-native writes/full264MBR4/result/recovery,
-opening/shared keeper atomic storage/combinedPlan5 remain root-owned. UID-zero
-pet absence stays unresolved for absent player. Peer Plan5 fixes do not qualify
-this private candidate. Compiler/native/SQL/gameplay/persistence/recovery remain
-UNEXECUTED under major-plan deferral; public src/migrations/tests unchanged.
-Earlier e6221a016 reports private4c918221/148 production/80C,592 dependencies:
-ordinary world/SQL readers,corrected BEFORE-or-CURRENT cash/full original forest
-and SQL-free cold wrapper. Reported original reset policy: cold replacement of
-keeper cash/stock,warm reset does not overlay/union; no new historical row-ID
-requirement. Full native caller still joins command/receipt/source/pet/money/
-target-phase proof. These are documentation-only reports,not inspected private
-code or executable sideworker interfaces. Prior fc8 ordinary birth/outer48570aec
-report remains historical and does not qualify source or execution here.
+Latest primary0433eae8d reports private candidate7108537e:150 production/81C,
+12 additional native source slices/1643 dependency records plus11 audit/restore
+paths/44 Python dependencies. Original108 central rows remain with three offline
+rows/29 added required methods. Source-joined Plan5 history/backup guards are
+not execution qualification of this smaller candidate; peer composed archives
+remain unavailable. Original reachable immutable working forests/canonical
+six-leg flow and full actual allocation charge are reported. Scalar next phase
+advances immediately after normally returned successful effect before post-
+effect recensus; a refusing census retains advanced expectation. Helper does
+not wire effects or counters. Full native caller/registration/reload/effects/
+money/custody/final ACK/shared atomic birth/result/recovery/opening/admission
+remain unfinished; UID-zero pet absence unknown for absent player. Public source/
+migrations/tests unchanged; compiler/native/SQL/gameplay/persistence/recovery
+remain UNEXECUTED under major-plan deferral. No private source/interface is
+observable here; actual native Goals stay BLOCKED while independent prep runs.
+Prior3c01b754d a226828c cold enrollment/current-holder budget and e6221a016
+4c918221 world/cash/full original forest/wrapper reports remain historical.
+Reset policy reported there replaces saved keeper cash/stock on cold restore;
+warm reset does not union/overlay and introduces no new historical row-ID rule.
 The earlier primary07c0e0398 report remains historical below; it reports private
 ordinary NMB4/MBR4 SQL storage/repository
 dispatch and flat boot-template/procedure/reload helpers at candidated9eaa45b:
