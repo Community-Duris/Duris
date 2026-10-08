@@ -2219,3 +2219,41 @@ ready; primary-local notebook nonblocking, application/adoption/acknowledgement
 unclaimed. Combined native/gameplay/source/coverage/backup/restore/recovery/load
 and full original acceptance remain open; wallet exclusions/declined inactive
 spell path remain. Goal active.
+
+
+## Original legacy migration wrapper qualified — 2026-10-08
+
+[PLAN5_ORIGINAL_LEGACY_WRAPPER_QUALIFICATION_2026-10-08.md](PLAN5_ORIGINAL_LEGACY_WRAPPER_QUALIFICATION_2026-10-08.md) records both complete unchanged original wrapper passes against
+published primary `aa1613f5b3378cd253a046813e3c0de525206de7`, pure tree `a7fe97479e67dd020c76cfb1a560548c030394ca` with zero overlays;
+native 833d3085 / migrations 7e06717b / canonical 64. Sole worktree/remote branch remains
+codex/accounting-plan5, base `5a95cf0579b63f2855e2cc4148400b894550c1e4`; containing report commit is the
+result. All seven earlier branch tips and 19 owned code blobs/follow-ups remain.
+Only report/this additive handoff edits; no shared interface/schema/native/test/
+producer/coordinator/registry/activation changes or new application request.
+
+Real MariaDB 10.11.14 and MySQL 8.0.46 each run the full documented legacy driver,
+reach 64 before separate replay, preserve extension/runtime+archived reboot rows,
+refuse damaged adopted schema and missing baseline/history without fallback DDL,
+pass locker replay/persistence metadata/full bootstrap equivalence and complete
+shell runtime compatibility. Four final schema profiles each retain 64 receipts.
+Original wrappers exit 0. Both external observers then exit 1 on uppercase/lowercase
+missing-container wording after original cleanup succeeds. Raw failures stay;
+separate read-only absence checks and a then-running owned-runner presence control
+PASS. No observer status is relabeled, no migration repeat or assertion relaxation.
+Original Redis step is disabled; zero eligible characters/full service boots.
+Checked-in legacy baseline is a fixture, not captured production data or a real
+player journey. Full combined Plan 5/R1–R8/release stays unqualified.
+
+Docker CLI is extracted from the authenticated existing Desktop ISO, no tool
+install/download or WSL-setting change. Original namespace guard remains; digest-
+pinned existing MySQL/MariaDB images share only each network-disabled runner.
+Raw `D:/Dev/Tests/Duris/accounting-plan5/legacy-wrapper-20261008`, seal
+`eeb933813093a24833173f91fb54072ee2333a21bb51be2375829182c0703526` (133 files/307986250 bytes); logical dumps,
+receipts/native rows, logs/xtrace/argv/source+image+CLI identities and cleanup
+correction evidence retained. Post-push receipt binds result/remote/all seven tips/
+19 owned blobs/every sealed body. Earlier full baseline/provider/head64, flat
+auction and room UID/provider requests remain; private 128-file candidate stays
+separately unexecuted. Curator-ready, primary-local notebook nonblocking;
+adoption/application/acknowledgement unclaimed. Genuine native/player/source/
+backup/restore/retention/load and full release gates remain. Inactive behavior,
+wallet exclusions and declined spell path stay. Goal active.
