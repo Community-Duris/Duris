@@ -246,3 +246,92 @@ stage are now owned independently; actual commit/uncertainty/producer freeze/
 publication/ACK remain root-owned and open. Shared keeper cash classification,
 historical transition, complete opening/item correspondence, activation, Plan5
 and full R1-R8 qualification remain open. Gates/inactive behavior stay unchanged.
+
+## Reviewed complete flat source checkpoint retention - 2026-10-08
+
+Private `tmp/lifecycle-flat-shop-retained-source-candidate-primary-20261008`
+integrates the accepted keeper stage, real save-holder, recovery-free current
+authority/money and full native player-cut providers, then their independently
+reviewed whole-catalog/custody/budget successors. Full candidate SHA256:
+`4f73b841dfdf8c149ca9afff403c30c20c15a728accf8d54a891e0f366473c9e`.
+It retains 126 production files, 23 unchanged original fixtures, five unchanged
+schema/manifest files and 68 selected C providers registered once. Only the new
+native checkpoint object was added; removing that line reconstructs the former
+Makefile byte-for-byte, with original rules/flags unchanged. Authenticated
+documentation-only remote updates are preserved on a new linear review branch
+in the same worktree; all three unrelated changes remain unchanged.
+
+The flat holder owns the actual queued and successfully acknowledged STATUS/EQ/
+INV body, real revision, pinned selected root/mapping and early original save
+exclusion. SQL tokens do not select it. Current authority/money/native readers
+borrow the same genuine root lock without recovering or reacquiring during a
+source cut. Full current-file PC plus original UID-zero legacy-pet forests match
+every active player-owner custody row exactly; modern pets retain their separate
+namespace. Real item revisions and owner clock, including zero, stay. Retained
+coin payload compares the complete canonical body after topology/position proof.
+Fresh full runtime/pet/NORENT correspondence remains the native caller's duty.
+
+The private keeper stage indexes original items once and keeps original custody/
+coin rules. Exact complete CURRENT catalog bytes now retain the real header clock,
+historical version and every unrelated keeper for same-attempt BEFORE/AFTER proof.
+The original shared 32 MiB literal budget charges full retained native preparation
+once; no extra budget or larger cap exists. The actual owner must calculate all
+retained structures/dynamic bodies before strong stage transfer. Native handoff
+requires this real reservation and consumes the original hold marker once.
+
+Independent source review, changed-line formatting and stated full predecessor
+preservation checks pass. Compiler/native/gameplay/SQL/persistence/recovery remain
+UNEXECUTED under major-plan deferral; this publication records private source
+integration, not published code or qualification. Supported client-free flat worker
+and replay already use the genuine flat owner; SQL-client flat mode is unsupported.
+Original flat producer preparation/retained-attempt ownership is implementing
+independently. Native source/runtime/keeper identity, once-only commit/uncertainty/
+readback, complete command freeze/submission/publication/ACK and cold recovery
+remain open. Plan3 full factory/admission/source-CAS/budget/adoption/pulse/recovery,
+shared keeper classification/current-image/historical transition, complete opening/
+item correspondence, activation, Plan5 and all R1-R8 qualification remain open.
+Original gates, inactive behavior and declined spell path remain unchanged.
+
+## Reviewed original flat attempt and equipped-pet compatibility - 2026-10-08
+
+Private `tmp/lifecycle-flat-shop-original-attempt-candidate-primary-20261008`
+integrates independently accepted original preparation/retention, full modern-pet
+source cuts and matching complete flat SHOP backend position correction.
+Candidate SHA256 `bd4d4a56c71cbabe2ecc8b56880e2046a856905f458cfdfb164ea4409a255ffe`:
+128 production files, 23 unchanged original fixtures, five unchanged schema/manifest
+inputs and 68 selected C providers registered once; Makefile is unchanged.
+Incoming coordinator documentation and all three unrelated local changes remain.
+
+The failure was concrete: native pet equipped roots use slot+1, while original
+flat pet custody uses slot zero. The earlier source cut and SHOP backend incorrectly
+equated them, refusing genuine equipped legacy and modern pets. Authentic native
+forest roles now keep PC/keeper equality and independently validate each pet's
+original native positions and zero custody slot. Full bodies, owner namespaces,
+UID/tree consumption, revisions/clocks, coin proof and original aggregate PC/legacy
+codec byte/object/depth limits stay. Earlier acceptance of that predicate is
+superseded by this corrected source; no schema, policy or stored data changes.
+
+The distinct flat preparation owns the actual original queued/acknowledged player
+snapshot, early held generation, selection and full source stage. Complete nested
+retained allocations, including modern-pet custody/coin buffers and whole catalogs,
+are charged to the existing shared 32 MiB limit before stage transfer. Its exact
+irreversible marker precedes the native attempt; retries retain the same stage and
+first outcome. Attempted cancellation/reissue refuses. Only a private same-stage
+proof from the genuine native owner can resolve AFTER or terminal unpublished BEFORE.
+Original SQL owner/driver bodies and production/inactive safety gates stay.
+
+Source review also corrects an unnecessary work item: original persistence mode
+explicitly rejects flatfile-primary in SQL-client builds. The supported client-free
+build already selects the genuine flat owner for both worker and journal replay.
+No new SQL-client flat route is required or enabled; SQL ACK cannot prove flat data.
+
+Independent source review, changed-line formatting and full predecessor preservation
+pass. Compiler/native/SQL/gameplay/persistence/recovery remain UNEXECUTED under the
+user's major-plan cadence; this is private source integration, not published code
+or runtime qualification. The genuine once-only native source provider and complete
+runtime/keeper identity, uncertainty/readback, command freezing/submission/publication/
+ACK and cold recovery remain open. Plan3 factory/admission/source-CAS/budget/adoption/
+pulse/recovery, shared keeper classification/current-image/historical transition,
+full opening/item correspondence, activation, Plan5 and R1-R8 qualification stay open.
+Original Plan1 independent acceptance retains its recorded scope; no full implementation
+or release gate is promoted. The declined inactive spell path remains unchanged.
