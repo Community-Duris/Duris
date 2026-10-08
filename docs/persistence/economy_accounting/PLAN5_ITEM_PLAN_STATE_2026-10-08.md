@@ -13,8 +13,10 @@ This closes the endpoint comparison defect; full Plan5/release remain incomplete
 - Local/remote branch: `codex/accounting-plan5`; no branch switch.
 - Worktree: `C:/Users/alexa/.codex/worktrees/accounting-plan5/NewDuris Max`.
 - Owned base: `50acfeeb9d67ea7284cdfd3053bb9d69cba7381c`.
-- Result: this containing commit, with its exact SHA, remote equality and clean
-  worktree verified after push in `D:/Dev/Tests/Duris/accounting-plan5/item-plan-state-20261008/delivery/result.json`.
+- Code result: `99c4ce0dc2bbce6b70ab6bb1c411331ae888e824`, with remote equality
+  and clean worktree verified in `D:/Dev/Tests/Duris/accounting-plan5/item-plan-state-20261008/delivery/result.json`.
+- Additive documentation refresh result: its containing commit, recorded with
+  exact remote equality in the same evidence root's `delivery-doc-refresh/result.json`.
 - Owned code: `scripts/reconcile_economy_accounting.py`, only `audit_original_plans`;
   `tests/async/test_reconcile_economy_accounting.py`, three methods; and the existing
   `tests/async/run_economic_sql_audit_snapshot_mysql.py`, only
@@ -40,8 +42,13 @@ class methods when updating maintained registration:
 ## Exact source and defect proof
 
 All freezes use published primary `e6221a016ba8af26451831f1f4ec07ea264cf115` plus
-27 owned overlays, including the prior backup/tombstone fixes. The delivery
-refresh matches it. Native tree `833d3085815b396861ad18a77635412212381e4b`;
+27 owned overlays, including the prior backup/tombstone fixes. The qualification
+refresh matches it. The first post-push delivery observes primary
+`d9d98b6c1b30b2ff8f0a901db5f1c35ecf27c0b1`: nine documentation paths changed,
+with every actual test input unchanged. Its exact patch is retained in the
+first delivery receipt. Later delivery refreshes are recorded by their receipt,
+not presumed equal to this frozen qualification. Native tree
+`833d3085815b396861ad18a77635412212381e4b`;
 migrations `7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2`; canonical head
 `0064_auction_custody_history`. The branch's historical native source is not
 substituted for the published native source in Linux qualification. Required
@@ -182,6 +189,16 @@ published combined candidate, activation-owner qualification, Plan5/R1-R8 and
 release completion remain open. Whole-server builds/gameplay boots are not rerun
 for this Python-only endpoint-comparison change. Private primary preparation is
 not substituted for published executable evidence.
+
+The post-push primary checkpoint `COLD_WORKING_PLAN5_SOURCE_INTEGRATION_2026-10-08.md`
+records private source-accepted backup/history packets through peer 50acfeeb9.
+Its narrower SQL diagnostic composition is explicit. It says the peer raw composed
+archives are unavailable locally and no compiler/native/SQL/gameplay/recovery
+qualification occurred. That note does not import or qualify endpoint-state
+commit 99c4ce0dc, which is later than its named peer endpoint. Published primary
+source remains unchanged; its independently tested combined candidate is still
+required. This is a source-integration acknowledgment with the stated private
+scope, not curator application or release acceptance.
 
 This report and additive remote follow-up are curator-ready notebook input;
 primary-local notebook nonblocking, curator application/ack unclaimed. Inactive

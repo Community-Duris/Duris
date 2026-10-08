@@ -2587,3 +2587,18 @@ activation/Plan5/R1-R8/release remain open, along with continued independent his
 preimage review. Primary-local notebook nonblocking; curator-ready input,
 application/ack unclaimed. No production write, autocorrection, activation,
 primary push, deployment or merge.
+
+
+### Post-push primary refresh for endpoint state
+
+Code result 99c4ce0dc2bbce6b70ab6bb1c411331ae888e824 is verified on the expected
+remote in item-plan-state-20261008/delivery/result.json. That receipt observes
+primary d9d98b6c1b30b2ff8f0a901db5f1c35ecf27c0b1: nine documentation changes, all native/migration/
+actual tested inputs unchanged. This additive docs commit records its own exact
+result/remote in delivery-doc-refresh/result.json; the code/test blobs stay exact.
+Primary's new cold-working/Plan5 note source-accepts private packets through the
+earlier peer 50acfeeb9, with a deliberately narrower SQL diagnostic composition.
+It explicitly lacks raw peer composed archives and compiler/native/SQL/gameplay/
+recovery qualification. It neither imports nor qualifies later endpoint-state
+fix 99c4ce0dc. Published executable composition, shared gates and full Plan5/release
+remain open. Curator-ready input only; primary-local notebook still nonblocking.
