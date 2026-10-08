@@ -1225,3 +1225,66 @@ checkpoint,ACK,cold and private primary source remain dependent external inputs.
 Actual native Goals remain BLOCKED; heartbeat stays ACTIVE. Published primary is
 still07c0e0398's private source report with public source/migrations/tests unchanged.
 Required primary Plans1-5/R1-R8 qualification and owner completion remain open.
+
+
+## Story-history boundary reviewed; actual runtime reentry component reserved
+
+PASS source/design review of sole-document delivery
+`79105dcd50a05b9020ca7fd046b06b5d39f6ba00`, parent
+`1c90a27fabfcf7b2cfbdf4bc0459996a175aea28`.
+[Story-history recovery boundary](https://github.com/Community-Duris/Duris/blob/79105dcd50a05b9020ca7fd046b06b5d39f6ba00/docs/persistence/economy_accounting/quest-prep/QUEST_STORY_HISTORY_RECOVERY_BOUNDARY_2026-10-08.md)
+pins public0e13d0fb4 and unchanged source/migration/test trees versus07c0e0398.
+Coordinator read the entire document and the actual runtime reconstruction/
+save-failure restore,feature full-byte deduplication,flat state/store rename-fsync
+and SQL formatter boundaries. Independent authentication passes42 public bodies,
+four prep dependencies,42 source anchors,15 coverage excerpts,three document
+links and53 indexed artifacts. Exact sole changed path,committed body and clean
+worktree verified. Source/design only: zero component/native tests executed.
+Private review proof: `D:\Dev\Temp\coordinator-recovery-boundary-review-20261008`.
+
+Current story runtime reconstructs a transaction using current season and
+definition revision despite the original retained key. Full-byte equality and
+current eligibility mean changed season/revision/removal can reject a retry.
+The singleton story document is separate from economic/XP/native ACK authority.
+Actual flat rename precedes directory sync; a false save and newly visible valid
+state can coexist. Runtime attempts prior-memory deserialization without checking
+its result,which cannot resolve provider outcome. SQL's16MiB repository input
+guard also does not bypass its65,536-byte escaped-query formatting buffer.
+Erasure removes group transaction facts involving one PID while peer aggregate
+credit can survive. None of these source observations is an executed fault,
+authorized policy change or primary defect qualification.
+
+Reuse the eight cited maintained test scopes. The nonduplicate next delivery is
+one actual-runtime story reentry component family,owned only in:
+
+- `tests/async/quest_accounting_prep/story_history_runtime_reentry.cpp`
+- `tests/async/quest_accounting_prep/test_story_history_runtime_reentry.py`
+- `quest-prep/QUEST_STORY_HISTORY_RUNTIME_REENTRY_HANDOFF_2026-10-08.md`
+
+Use actual runtime,production catalog,feature/tracking/catalog and flat state/
+store/authority providers with existing mode/root/season APIs and minimal booted
+Q/index globals. Healthy S1 record/replay controls retain one exact original T
+fact. On a fresh authority,inject exactly one directory-fsync error only after
+successful rename of the target story file. Require false runtime return,healthy
+prior-memory restore and visible valid new S1 authority. Disable injection and
+reload through actual bootstrap/load; retry original fields/key under S2 must
+conflict with no second fact or authority change. Manual values and actual file/
+serialized-state identities are the oracle. Disclose syscall interposition and
+SQL-only link stubs; do not replace executed story/flat/runtime implementations.
+No extra erasure,SQL-size,allocation or native family is assigned.
+
+Future qualification uses maintained strict warning/sanitizer profiles,bounded
+compiler/execution commands,retained timeout/nonzero streams,exact whole-provider/
+dependency/tool/library/binary pins and D: task-specific artifacts/evidence.
+Preserve failures and filesystem/mount limits; metadata constraints must not be
+weakened to accommodate DrvFS. Same-process reload proves no power-loss survival,
+cold-process recovery,SQL behavior or native quest/save/obligation ACK completion.
+If genuine linking/execution needs prohibited changes,return exact dependency.
+No production/existing test/capture/decoder/schema/registry/shared driver/Plan5/
+FINISH/canonical handoff edit,server/SQL/migration/journal/native/broad batch,new
+authority/format/original-season policy/reward or ACK correction is authorized.
+No primary adoption wait. Architecture's recipe boundary map remains in flight;
+preserve it and review its exact completed publication before assigning its next
+slice. Actual native Goals remain BLOCKED; heartbeat ACTIVE and broader primary
+completion/qualification remains unproved. No new public primary source advance
+was observed at this check.

@@ -40,9 +40,14 @@ Group-XP code306008c1b/handoff1c90a27fa now PASS captured-agreement review:
 three owned bodies,10 public bodies,13 dependencies,19 excerpts/34 artifacts
 authenticated. Owner receipt/mask checks are local to the owner observation;
 independent per-PID cuts prove no common-time census/ACK schedule/native authority.
-Quest next owns QUEST_STORY_HISTORY_RECOVERY_BOUNDARY_2026-10-08.md: retained
-original tracking identity versus current season/catalog revision and save/load
-uncertainty. Reuse existing completion/history tests; source/design only.
+Story-history map79105dcd5 now PASS source/design review:42 public bodies/four
+dependencies/42 source anchors/15 coverage excerpts/three links/53 artifacts
+authenticated. Original key versus current season/revision,whole-state authority,
+post-rename save uncertainty and erasure/aggregate distinction remain explicit.
+Quest next owns story_history_runtime_reentry.cpp/test and
+QUEST_STORY_HISTORY_RUNTIME_REENTRY_HANDOFF_2026-10-08.md: real runtime/flat
+post-rename failure,memory restore,authority reload and original-key S2 retry.
+Component only; no crash durability,SQL/native completion/ACK/cold proof.
 Gorblag is a source candidate; funded/item-parent native reachability is unproven.
 Genuine owner export, physical D/chronology and native qualification remain
 external dependencies.

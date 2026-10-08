@@ -127,20 +127,34 @@ compatibility controls PASS. Full original multi-recipient XP tuples and local
 owner receipt/mask agreement remain separate from effective XP,owner authority,
 common-time world and ACK schedule. Newer owner ACK may coexist with older peer
 observation; coherent fabricated exports prove at most supplied agreement.
-Quest next owns only QUEST_STORY_HISTORY_RECOVERY_BOUNDARY_2026-10-08.md.
-Benefit: prepare original story tracking identity/history recovery across catalog,
-definition revision and season drift. Trace actual record_authoritative_completion,
-tracker replay equality,current lookup and SQL/flat history save/load/erasure.
-Reuse completion/context maps and existing story tests; no repeated inventory.
-Separate prior-memory restoration after save failure from authority uncertainty,
-including flat rename followed by failed directory sync. No executed fault claimed.
-Doc-only exact source/blob/anchor/link/design review/private evidence on D:.
-No production/helper/test/capture/decoder/schema/registry/shared driver/Plan5/
-FINISH/canonical handoff edit or build/DB/server/journal/native/broad run.
-Original coherent participant/current-world/save/checkpoint/ACK/cold and private
-primary source remain external. One bounded delivery; existing native Goal stays
-BLOCKED. If existing proof covers the proposed gap, return exact coverage rather
-than manufacture a document. Existing oracles
+Story-history map79105dcd5 now PASS source/design review:sole doc/42 public bodies/
+four dependencies/42 anchors/15 coverage excerpts/three links/53 artifacts checked.
+Original retained key versus current season/catalog revision and full-byte replay,
+whole-service state versus per-player saves,post-rename failure versus memory
+restoration and erasure versus retained peer credit remain distinct. No test ran.
+Quest next owns only story_history_runtime_reentry.cpp,
+test_story_history_runtime_reentry.py and
+QUEST_STORY_HISTORY_RUNTIME_REENTRY_HANDOFF_2026-10-08.md.
+Benefit: actual-provider evidence for one recovery integration boundary. Use real
+runtime/production catalog/feature/tracking/catalog and flat state/store/authority
+providers,existing mode/root/season APIs and minimal booted Q/index globals.
+One component family: healthy S1 original key/replay; exact target story-file
+rename then one-shot directory fsync failure,false return,healthy prior-memory
+restore and newly visible valid S1 file; disable injection,actual bootstrap/load,
+same original fields/key under S2 conflict with no second fact/authority change.
+Assert actual original T facts/file and serialized state identities. Syscall
+interposition and SQL-only link stubs must be disclosed; no executed provider
+replacement. Same-process readback/reload proves no crash durability/cold journey.
+Focused strict sanitizer profiles,bounded commands/timeout/nonzero diagnostics,
+whole-provider/dependency/tool/binary pins and private proof on D:. Preserve failed
+attempts and filesystem limitations; do not weaken metadata controls for DrvFS.
+No production/existing test/capture/decoder/schema/registry/shared driver/Plan5/
+FINISH/canonical handoff edit or server/SQL/migration/journal/native/broad batch.
+No new persistence format,original-season policy or reward/ACK correction. Exact
+unavailable link/runtime dependencies stop only dependent execution; original
+native participant/world/save/checkpoint/ACK/cold/private source stays external.
+Native Goal remains BLOCKED; one bounded active delivery,primary has no adoption
+wait. Architecture recipe boundary document remains active and review pending. Existing oracles
 remain intact. Native mapping/
 publication, genuine D/chronology, full census, original owner exports and
 authentic paid setup remain unavailable. Currency blueprint
