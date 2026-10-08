@@ -2684,3 +2684,31 @@ Full backup/native recipe,genuine producer/opening/recovery/ACK/combined/activat
 Plan5/R1-R8/release gates stay open. Report PLAN5_UNCHANGED_ITEM_WITNESSES_2026-10-08.md.
 Curator-ready input; primary-local notebook nonblocking; application/ack unclaimed.
 No activation,autocorrection,production access,primary push,deployment or merge.
+
+
+## 2026-10-08: supplied UID history envelopes
+
+Same sole local/remote `codex/accounting-plan5`; owned base a8f4a57da6d208d9faa7f31bab1ee940752ecad2.
+Result is the containing commit; exact result/remote/clean/ancestry/rehash receipt:
+`D:/Dev/Tests/Duris/accounting-plan5/history-envelopes-20261008/delivery/result.json`.
+Seven false-clean supplied-unattributed cases established with unchanged native
+capsule; invalid lineage indexing/view failures separately reproduced. Existing
+reader now checks supplied rows before optional coverage, preserves known unlinked
+events/missing SQL coverage, strictly refuses malformed unattributed input, and
+retains existing lineage findings in all bounded views. No shared interface/schema
+request. Four regressions red 95 subtest failures/six old errors, final four PASS;
+16 modules 419 loaded/401 PASS/18 original skips; both complete disposable-SQL runners
+pass, new four saved-capture cases/84 CLI per engine/47 tables unchanged. Original
+canonical method freshly passes both current64 engines (3026/1054 decoder decisions,
+109 cuts/90 refusals/58 full-entry per engine). One identical capsule/two authenticated
+native codec runs per model stage; 90 CLI per stage. Final composed tree 0b07878b22f2ab1410caa2837d5e7cc5ec25c5d2,
+primary 960ddd80c1acba5611677270f0156675d6d020ff; raw seal b399daaef38b12bf52476ec432c866fcc703923fc23aa77f39729e7aecdbd428.
+Full report PLAN5_UID_HISTORY_ENVELOPES_2026-10-08.md. Curator-ready input;
+primary-local notebook nonblocking, application/import/ack unclaimed.
+Retained checks02/checks03 were new SQL expectation failures (lost creation
+witness and tuple/JSON representation), corrected only in the new test. Final
+sql04 both-engine full runners pass; full unit inputs from checks03 and canonical/
+focused/codec02 inputs unchanged. Production reader unchanged since source02. Shared
+provider/UID-owner/original-backup, genuine producers/opening/player/routes/
+recovery/fault/load/ACK/private-combined/activation/Plan5/R1-R8/release remain open.
+No production write, autocorrection, activation, deployment, merge or primary push.

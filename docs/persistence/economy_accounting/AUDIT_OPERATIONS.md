@@ -1481,3 +1481,14 @@ with a known captured opening or prior-history position produces the existing
 unverified. Intermediate event preimages remain checked. Missing history stays
 unknown; the reader performs no correction. See [unchanged-witness regression,
 native, SQL and bounded-index evidence](PLAN5_UNCHANGED_ITEM_WITNESSES_2026-10-08.md).
+
+
+Supplied unattributed UID history is always examined, even when optional coverage
+is absent. A known unlinked event reports `unattributed_ownership_event`; malformed
+supplied history refuses reconciliation (CLI exit2, empty stdout, fixed diagnostic).
+SQL-partial capture also reports missing history coverage. Invalid lineage-history
+envelopes retain `missing_lineage_uid_history` through every bounded operator
+view (CLI exit1), without indexing invalid collections or exposing their content.
+Optional absent history outside SQL-partial capture remains optional. These
+checks are read-only and perform no correction. See [the defect, exact source,
+native/SQL results and curator handoff](PLAN5_UID_HISTORY_ENVELOPES_2026-10-08.md).

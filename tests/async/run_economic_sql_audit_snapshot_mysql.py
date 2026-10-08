@@ -1317,6 +1317,91 @@ def verify_previous_owner_history(owner, audit, snapshot):
         select_only=True,modeled_partial_sql=True,producer_qualified=False,release_qualified=False),sort_keys=True),flush=True)
 
 
+def verify_uid_history_envelopes(owner, snapshot):
+    """Damage saved SELECT-only history envelopes without changing SQL authority."""
+    from _plan5_equipment_restore import inventory
+    before = inventory(owner)
+    original = json.dumps(snapshot, sort_keys=True).encode()
+    baseline_counts = Reconciler().audit(snapshot)["exception_counts"]
+    assert baseline_counts["unattributed_ownership_event"] == 1
+    output = ROOT / "bin/tests/plan5-history-envelopes" / uuid.uuid4().hex
+    output.mkdir(parents=True)
+    operation_id = snapshot["operations"][0]["operation_id"]
+    records = []
+    cases = (("lineage-scalar", "uid_history_events", 1, False, "missing_lineage_uid_history"),
+             ("lineage-row", "uid_history_events", [None], False, "missing_lineage_uid_history"),
+             ("unattributed-without-coverage", None, None, True, "missing_unattributed_uid_history"),
+             ("unattributed-malformed", "unattributed_uid_events", [None], True, None))
+    for label, field, value, remove_coverage, finding in cases:
+        cut = copy.deepcopy(snapshot)
+        if field is not None:
+            cut["native"][field] = value
+        if remove_coverage:
+            del cut["native"]["unattributed_uid_event_coverage"]
+        payload = json.dumps(cut, sort_keys=True).encode()
+        target = output / label
+        target.mkdir()
+        path = target / "snapshot.json"
+        path.write_bytes(payload)
+        expected = None if finding is None else {**baseline_counts, finding: 1}
+        if field == "uid_history_events":
+            # Losing UID86's retained creation removes its anchored owner check.
+            assert baseline_counts["missing_item_owner_evidence"] == 2
+            expected["missing_item_creation"] = 1
+            expected["missing_item_owner_evidence"] -= 1
+        if expected is None:
+            try:
+                Reconciler().audit(cut)
+            except SnapshotError as error:
+                assert str(error) == "invalid or oversized unattributed UID history"
+            else:
+                raise AssertionError("malformed supplied history was accepted")
+        else:
+            report = Reconciler().audit(cut)
+            assert report["exception_counts"] == expected, (label, report)
+        commands = []
+        for name in ("exceptions", "holdings", "provenance", "operation", "supply", "prices", "routes"):
+            for limit in (0, 1, 100):
+                command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                           str(path), "--view", name, "--limit", str(limit)]
+                if name == "provenance":
+                    command += ["--uid", "86"]
+                elif name == "operation":
+                    command += ["--operation-id", operation_id]
+                result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                assert result.returncode == (2 if expected is None else 1), (label, name, result.stderr)
+                if expected is None:
+                    assert not result.stdout
+                    assert result.stderr == "reconciliation failed: invalid or oversized unattributed UID history\n"
+                else:
+                    assert not result.stderr, result.stderr
+                    value = json.loads(result.stdout)
+                    expected_output = view(cut, Reconciler(limit).audit(cut), name, limit,
+                                           uid=86 if name == "provenance" else None,
+                                           operation_id=operation_id if name == "operation" else None)
+                    # Native denomination vectors are tuples in the view API.
+                    assert value == json.loads(json.dumps(expected_output))
+                    if name == "exceptions":
+                        assert value["exception_counts"] == expected
+                    else:
+                        assert value["coverage"]["exception_count"] == sum(expected.values())
+                    assert len(value.get("rows", value.get("exceptions", []))) <= limit
+                assert path.read_bytes() == payload
+                commands.append(dict(command=command, exit=result.returncode,
+                                     stdout=result.stdout, stderr=result.stderr))
+        assert json.dumps(cut, sort_keys=True).encode() == payload
+        records.append(dict(label=label, exception_counts=expected, commands=commands))
+    assert json.dumps(snapshot, sort_keys=True).encode() == original
+    assert inventory(owner) == before
+    (output / "authority-before.json").write_text(json.dumps(before, sort_keys=True) + "\n")
+    (output / "authority-after.json").write_text(json.dumps(before, sort_keys=True) + "\n")
+    (output / "results.json").write_text(json.dumps(records, indent=2) + "\n")
+    print("UID_HISTORY_ENVELOPES_SQL_QUALIFIED " + json.dumps(dict(
+        probes=len(records), cli=sum(len(row["commands"]) for row in records),
+        authority_tables_unchanged=len(before), damage_authored_in_saved_capture_only=True,
+        partial_sql_model=True, automatic_correction=False, genuine_producer_claim=False)), flush=True)
+
+
 def verify_historical_item_positions(owner, audit, snapshot):
     """Modeled nonselected history; no source admission or producer claim."""
     from _plan5_equipment_restore import Connection, inventory
@@ -2410,6 +2495,7 @@ try:
                     assert output.read_bytes() == before_cli
             assert json.dumps(historical_uid_snapshot, sort_keys=True) == before_provenance
             assert capture(audit, LINEAGE, EPOCH) == historical_uid_snapshot
+            verify_uid_history_envelopes(setup, historical_uid_snapshot)
             print("UID provenance: prior-epoch creation and unattributed retirement are "
                   "visible through SELECT-only export/CLI; bounded counts and unchanged "
                   "authority passed", flush=True)

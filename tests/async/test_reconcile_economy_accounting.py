@@ -3124,6 +3124,97 @@ class ReconciliationTests(unittest.TestCase):
         snapshot["native"]["items"][0].update(state="tombstone", owner=[8, 0, 0])
         self.assertIn("duplicate_item_retirement", self.codes(snapshot))
 
+    def test_uid_history_invalid_envelopes_preserve_the_global_finding(self):
+        for history in (1, True, "private-history", {"invalid": "private-history"}, [None], ["private-history"]):
+            snapshot = clean_snapshot()
+            snapshot["native"]["uid_history_events"] = history
+            before = copy.deepcopy(snapshot)
+            with self.subTest(history=history):
+                for limit in (0, 1, 100):
+                    report = Reconciler(limit).audit(snapshot)
+                    self.assertEqual(report["exception_counts"], {"missing_lineage_uid_history": 1})
+                    output = view(snapshot, report, "provenance", limit, uid=81)
+                    self.assertEqual(output["coverage"]["exception_count"], 1)
+                    self.assertEqual((output["count"], len(output["rows"])), (1, min(1, limit)))
+                    self.assertNotIn("private-history", json.dumps(output))
+                    self.assertEqual(snapshot, before)
+
+    def test_unattributed_uid_rows_are_examined_without_optional_coverage(self):
+        event = dict(operation_id="88" * 16, event_index=0, uid=86, before_revision=1,
+                     revision=2, root=86, parent=None, owner=[8, 0, 0], state="tombstone", action="destroy")
+        for coverage in (None, {"uids": 1, "events": 1}):
+            snapshot = clean_snapshot()
+            snapshot["native"]["unattributed_uid_events"] = [event]
+            if coverage is not None:
+                snapshot["native"]["unattributed_uid_event_coverage"] = coverage
+            before = copy.deepcopy(snapshot)
+            with self.subTest(coverage=coverage):
+                report = Reconciler().audit(snapshot)
+                self.assertEqual(report["exception_counts"], {"unattributed_ownership_event": 1})
+                self.assertEqual(snapshot, before)
+        for events in (None, []):
+            snapshot = clean_snapshot()
+            snapshot["native"]["unattributed_uid_events"] = events
+            self.assertEqual(Reconciler().audit(snapshot)["exception_counts"], {})
+        snapshot = clean_snapshot()
+        snapshot["native"]["unattributed_uid_event_coverage"] = {"uids": 1, "events": 1}
+        self.assertEqual(Reconciler().audit(snapshot)["exception_counts"], {"missing_unattributed_uid_history": 1})
+
+    def test_unattributed_uid_malformed_rows_refuse_before_missing_coverage_return(self):
+        for history in (1, True, "private-history", {}, [None], ["private-history"]):
+            for coverage in (None, {"uids": 1, "events": 1}):
+                snapshot = clean_snapshot()
+                snapshot["native"]["unattributed_uid_events"] = history
+                if coverage is not None:
+                    snapshot["native"]["unattributed_uid_event_coverage"] = coverage
+                before = copy.deepcopy(snapshot)
+                with self.subTest(history=history, coverage=coverage):
+                    with self.assertRaisesRegex(SnapshotError, "invalid or oversized unattributed UID history"):
+                        Reconciler().audit(snapshot)
+                    self.assertEqual(snapshot, before)
+
+    def test_uid_history_envelope_cli_is_global_bounded_and_read_only(self):
+        event = dict(operation_id="88" * 16, event_index=0, uid=86, before_revision=1,
+                     revision=2, root=86, parent=None, owner=[8, 0, 0], state="tombstone", action="destroy")
+        cases = (("uid_history_events", 1, {"missing_lineage_uid_history": 1}),
+                 ("uid_history_events", [None], {"missing_lineage_uid_history": 1}),
+                 ("unattributed_uid_events", [event], {"unattributed_ownership_event": 1}),
+                 ("unattributed_uid_events", [None], None),
+                 ("unattributed_uid_events", {"invalid": "private-history"}, None))
+        for field, history, counts in cases:
+            snapshot = clean_snapshot()
+            snapshot["native"][field] = history
+            snapshot["operations"][0]["personal_alias"] = "private-history"
+            with tempfile.TemporaryDirectory(prefix="uid-history-envelope-") as folder:
+                path = Path(folder) / "snapshot.json"
+                payload = json.dumps(snapshot, sort_keys=True).encode()
+                path.write_bytes(payload)
+                for name in ("exceptions", "holdings", "provenance", "operation", "supply", "prices", "routes"):
+                    for limit in (0, 1, 100):
+                        command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                   str(path), "--view", name, "--limit", str(limit)]
+                        if name == "provenance":
+                            command += ["--uid", "81"]
+                        elif name == "operation":
+                            command += ["--operation-id", OP]
+                        result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                        with self.subTest(field=field, history=history, name=name, limit=limit):
+                            self.assertEqual(result.returncode, 2 if counts is None else 1)
+                            if counts is None:
+                                self.assertEqual(result.stdout, "")
+                                self.assertEqual(result.stderr, "reconciliation failed: invalid or oversized unattributed UID history\n")
+                            else:
+                                self.assertEqual(result.stderr, "")
+                                value = json.loads(result.stdout)
+                                if name == "exceptions":
+                                    self.assertEqual(value["exception_counts"], counts)
+                                else:
+                                    self.assertEqual(value["coverage"]["exception_count"], sum(counts.values()))
+                                self.assertLessEqual(len(value.get("rows", value.get("exceptions", []))), limit)
+                            self.assertNotIn("private-history", result.stdout + result.stderr)
+                            self.assertEqual(path.read_bytes(), payload)
+                            self.assertEqual(json.dumps(snapshot, sort_keys=True).encode(), payload)
+
     def test_original_item_plan_unchanged_witness_binds_opening_and_history(self):
         for scope in ("opening", "history"):
             for state in ("live", "quarantined"):

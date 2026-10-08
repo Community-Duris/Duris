@@ -923,10 +923,10 @@ class Reconciler:
         self.audit_accounts(lineage, operations, by_account, origins, native_holdings, posting_deltas)
         self.audit_mapping_retirements(lineage, epoch, snapshot.get("backend"), operations,
                                        by_account, origins, native, native_holdings)
-        self.audit_items(ownership, references, item_origins, native_items,
-                         {row.get("uid") for row in (native.get("uid_history_events") or [])
-                          if isinstance(row, dict)})
         history = native.get("uid_history_events")
+        self.audit_items(ownership, references, item_origins, native_items,
+                         {row.get("uid") for row in (history if isinstance(history, list) else [])
+                          if isinstance(row, dict)})
         if isinstance(history, list):
             for event in history:
                 if not isinstance(event, dict):
@@ -3266,14 +3266,17 @@ class Reconciler:
     def audit_unattributed_uid_history(self, backend: object, native: dict) -> None:
         events = native.get("unattributed_uid_events")
         coverage = native.get("unattributed_uid_event_coverage")
-        if events is None or coverage is None:
-            if backend == "sql_partial":
+        if events is None:
+            if backend == "sql_partial" or coverage is not None:
                 self.emit("missing_unattributed_uid_history", scope="snapshot")
             return
         if (not isinstance(events, list) or len(events) > MAX_ROWS or
                 any(not isinstance(row, dict) for row in events)):
             raise SnapshotError("invalid or oversized unattributed UID history")
-        if (not isinstance(coverage, dict) or set(coverage) != {"uids", "events"} or
+        if coverage is None:
+            if backend == "sql_partial":
+                self.emit("missing_unattributed_uid_history", scope="snapshot")
+        elif (not isinstance(coverage, dict) or set(coverage) != {"uids", "events"} or
                 any(type(value) is not int or not 0 <= value < 2**63
                     for value in coverage.values()) or coverage["events"] != len(events) or
                 coverage["uids"] != len({row.get("uid") for row in events})):
@@ -3802,10 +3805,11 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
                  **{field: item_equipment_slot(row, field)
                     for field in ("from_equipment_slot", "to_equipment_slot")
                     if field in row and valid_item_equipment_slot(row[field])}}
-                for row in (snapshot["ownership_events"] +
-                            (snapshot["native"].get("uid_history_events") or []) +
-                            (snapshot["native"].get("unattributed_uid_events") or []))
-                if type(row.get("uid")) is int and row["uid"] == uid
+                for collection in (snapshot["ownership_events"],
+                                   snapshot["native"].get("uid_history_events"),
+                                   snapshot["native"].get("unattributed_uid_events"))
+                if isinstance(collection, list) for row in collection
+                if isinstance(row, dict) and type(row.get("uid")) is int and row["uid"] == uid
                 and isinstance(row.get("operation_id"), str)
                 and HEX_ID.fullmatch(row["operation_id"]) and type(row.get("event_index")) is int
                 and type(row.get("revision")) is int and type(row.get("root")) is int
