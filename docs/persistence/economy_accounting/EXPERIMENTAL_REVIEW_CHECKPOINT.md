@@ -1,5 +1,19 @@
 # Experimental accounting review checkpoint
 
+## Maintained Smith save-profile code milestone - 2026-10-08
+
+[Source milestone](SMITH_MAINTAINED_SAVE_PROFILE_2026-10-08.md) applies the narrowly
+reviewed private SQL Smith profile and exact queued/coalesced body retention to
+maintained `player_save_pipeline.h/.c`. Actual body capacity uses the original
+32 MiB checkpoint limit. Independent source review authenticated both maintained
+preimages, 103 providers and 14 forward/inverse deltas; root application preserved
+all three unrelated local changes. Original component policies and inactive spell
+behavior remain intact. No route activation, held release or submission is added.
+The body proves original enqueue/journal capture, not every component's application
+by the recorded ACK. Compilation/runtime/recovery execution remains deferred until
+major-plan readiness. Full Smith integration and Plans 2-4/Plan 5/R1-R8 remain open;
+the broader private candidate remains unpromoted.
+
 ## Original Smith save/command and reset cursor source joined - 2026-10-08
 
 [Current source integration](SMITH_SAVE_COMMAND_AND_RESET_CURSOR_SOURCE_INTEGRATION_2026-10-08.md)

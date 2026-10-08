@@ -22,6 +22,7 @@ typedef struct obj_data *P_obj;
 struct player_quest_xp_receipt_snapshot;
 struct player_spell_effect_receipt_snapshot;
 struct player_item_snapshot;
+struct player_snapshot;
 class collector_purchase_publication_owner;
 
 constexpr size_t PLAYER_SAVE_PIPELINE_MAX_SNAPSHOTS = 256;
@@ -190,6 +191,44 @@ bool player_save_pipeline_shop_checkpoint_hold(const player_shop_checkpoint_toke
 bool player_save_pipeline_shop_checkpoint_release(const player_shop_checkpoint_token &token,
 						  const critical_operation_id &operation_id);
 bool player_save_pipeline_shop_checkpoint_cancel(const player_shop_checkpoint_token &token);
+
+// A separate SQL Smith readiness profile. Root zero selects no PC input tree;
+// the original checkpoint retains the acknowledged filtered EQ/INV and STATUS
+// level. Complete physical PC images, runtime grant grouping and wallet/native
+// authority are independently frozen by the original Smith owner.
+struct player_smith_checkpoint_token
+{
+	int32_t pid = 0;
+	uint64_t actor_runtime_id = 0, root_uid = 0, generation = 0;
+	bool operator==(const player_smith_checkpoint_token &) const = default;
+};
+struct player_smith_checkpoint_stage
+{
+	player_revision_t save_revision = 0;
+	uint32_t level = 0;
+};
+class smith_native_compound_owner;
+class player_save_smith_checkpoint_owner final
+{
+    private:
+	friend class smith_native_compound_owner;
+	static player_literal_inventory_state begin(P_char, uint64_t original_runtime,
+						    int room_vnum, player_smith_checkpoint_token *);
+	static player_literal_inventory_state poll(const player_smith_checkpoint_token &, P_char,
+						   player_smith_checkpoint_stage * = nullptr);
+	static bool hold(const player_smith_checkpoint_token &, const critical_operation_id &);
+	// Only an unheld pre-admission checkpoint can be cancelled here. Held
+	// publication/recovery release remains closed until its full owner exists.
+	static bool cancel(const player_smith_checkpoint_token &);
+	// Optional original body is the exact queued/coalesced snapshot whose real
+	// worker ACK supplied the recorded revision. Preserves its captured component
+	// mask and receipts; never recreates uncaptured components or a full physical
+	// PC forest. No submission, release, source or publication capability follows.
+	static bool observe_held(const player_smith_checkpoint_token &, P_char,
+				 const critical_operation_id &, player_smith_checkpoint_stage *,
+				 std::vector<player_item_snapshot> * = nullptr,
+				 player_snapshot *original_acknowledged_body = nullptr) noexcept;
+};
 
 class shop_trade_preparation_owner;
 class shop_trade_native_publication_owner;

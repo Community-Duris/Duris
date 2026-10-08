@@ -1,5 +1,15 @@
 # Double-entry economy: remaining requirements
 
+## Maintained Smith save-profile code milestone - 2026-10-08
+
+[Source milestone](SMITH_MAINTAINED_SAVE_PROFILE_2026-10-08.md) records the narrow
+maintained Smith profile and original queued/coalesced save-body retention.
+Independent source review passed with original bounds/component policies intact;
+this establishes no full physical/save cross-proof, commit, publication or guarded
+ACK. Full Smith integration, Plans 2-4, combined Plan 5 and R1-R8 remain unfinished.
+Compiler/runtime/recovery checks remain deferred until actual major-plan readiness;
+no acceptance or release gate is waived. The broader private candidate is unpromoted.
+
 ## Original Smith save/command and reset cursor source joined - 2026-10-08
 
 [Current source integration](SMITH_SAVE_COMMAND_AND_RESET_CURSOR_SOURCE_INTEGRATION_2026-10-08.md)

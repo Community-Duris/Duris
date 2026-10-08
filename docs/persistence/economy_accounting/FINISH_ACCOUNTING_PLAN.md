@@ -1,5 +1,16 @@
 # Finish accounting implementation plan
 
+## Maintained Smith save-profile code milestone - 2026-10-08
+
+[Source milestone](SMITH_MAINTAINED_SAVE_PROFILE_2026-10-08.md) applies the separate
+private SQL Smith readiness profile and exact original queued/coalesced save body
+to maintained source. Independent persistence source review passed; the existing
+32 MiB capacity limit, component policies, inactive behavior and activation gates
+remain intact. Root still owns full Smith admission, SQL/flat persistence,
+physical/save/native-history cross-proof, original effects and guarded ACK. The
+larger private candidate remains unpromoted. Major-plan executable qualification
+is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
+
 ## Original Smith save/command and reset cursor source joined - 2026-10-08
 
 [Current source integration](SMITH_SAVE_COMMAND_AND_RESET_CURSOR_SOURCE_INTEGRATION_2026-10-08.md)

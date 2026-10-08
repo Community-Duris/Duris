@@ -140,6 +140,7 @@ enum class literal_checkpoint_profile : uint8_t
 	native_quest,
 	held_retirement,
 	auction,
+	smith,
 };
 
 struct literal_inventory_checkpoint
@@ -216,10 +217,13 @@ bool literal_inventory_capacity_locked(size_t incoming_bytes,
 		if (checkpoint.payload.size() > PLAYER_SAVE_PIPELINE_MAX_BYTES - incoming_bytes)
 			return false;
 		incoming_bytes += checkpoint.payload.size();
-		if (checkpoint.original_shop_body.size() >
-		    PLAYER_SAVE_PIPELINE_MAX_BYTES - incoming_bytes)
+		const size_t original_body_bytes =
+			checkpoint.profile == literal_checkpoint_profile::smith ?
+				checkpoint.original_shop_body.capacity() :
+				checkpoint.original_shop_body.size();
+		if (original_body_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES - incoming_bytes)
 			return false;
-		incoming_bytes += checkpoint.original_shop_body.size();
+		incoming_bytes += original_body_bytes;
 		for (const auto *body :
 		     { &checkpoint.original_native_quest_before,
 		       &checkpoint.original_native_quest_after,
@@ -342,6 +346,7 @@ player_component_mask_t literal_checkpoint_components(const literal_inventory_ch
 	if (slot.profile == literal_checkpoint_profile::held_retirement)
 		return HELD_RETIREMENT_CHECKPOINT_COMPONENTS;
 	return slot.profile == literal_checkpoint_profile::shop ||
+			       slot.profile == literal_checkpoint_profile::smith ||
 			       slot.profile == literal_checkpoint_profile::auction ||
 			       slot.native_money_only ?
 		       SHOP_CHECKPOINT_COMPONENTS :
@@ -454,10 +459,29 @@ bool literal_checkpoint_blob(const player_snapshot &snapshot,
 		       native_quest_checkpoint_blob(snapshot, blob);
 	}
 	if (checkpoint.profile == literal_checkpoint_profile::shop ||
+	    checkpoint.profile == literal_checkpoint_profile::smith ||
 	    checkpoint.profile == literal_checkpoint_profile::auction)
 		return economic_gameplay_authority::active_regular_sql() &&
 		       shop_checkpoint_blob(snapshot, blob);
 	return literal_inventory_blob(snapshot, checkpoint.token.root_uid, blob);
+}
+
+// The original Smith carrier is captured at the actual queue ownership cut.
+// Other profiles keep their existing enqueue/capture policy and exact bodies.
+bool prepare_smith_enqueue_locked(const literal_inventory_checkpoint *slot,
+				  const player_snapshot &snapshot, std::vector<uint8_t> *body)
+{
+	if (!slot || slot->profile != literal_checkpoint_profile::smith)
+		return true;
+	if (!body || slot->held || !snapshot.revision ||
+	    (snapshot.components & SHOP_CHECKPOINT_COMPONENTS) != SHOP_CHECKPOINT_COMPONENTS ||
+	    player_snapshot_encode(snapshot, body) != player_snapshot_codec_result::ok)
+		return false;
+	const size_t bytes = slot->payload.size();
+	if (bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
+	    body->capacity() > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+		return false;
+	return literal_inventory_capacity_locked(bytes + body->capacity(), slot);
 }
 
 void note_literal_enqueue_locked(literal_inventory_checkpoint *checkpoint,
@@ -1249,9 +1273,14 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot, resident_
 			++health.overloads;
 			return player_save_pipeline_result::overloaded;
 		}
+		std::vector<uint8_t> smith_checkpoint_body;
+		if (!prepare_smith_enqueue_locked(literal, snapshot, &smith_checkpoint_body))
+			return player_save_pipeline_result::capture_failed;
 		retained_bytes =
 			retained_bytes - queued.encoded_size_bound + snapshot.encoded_size_bound;
 		retained = retained_snapshot(std::move(snapshot), std::move(residence));
+		if (literal && literal->profile == literal_checkpoint_profile::smith)
+			literal->original_shop_body = std::move(smith_checkpoint_body);
 		note_literal_enqueue_locked(literal, literal_revision);
 		++health.coalesced;
 		update_depth_locked();
@@ -1267,6 +1296,9 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot, resident_
 		++health.overloads;
 		return player_save_pipeline_result::overloaded;
 	}
+	std::vector<uint8_t> smith_checkpoint_body;
+	if (!prepare_smith_enqueue_locked(literal, snapshot, &smith_checkpoint_body))
+		return player_save_pipeline_result::capture_failed;
 	retained_bytes += snapshot.encoded_size_bound;
 	try
 	{
@@ -1278,6 +1310,8 @@ player_save_pipeline_result enqueue_snapshot(player_snapshot snapshot, resident_
 		++health.overloads;
 		return player_save_pipeline_result::overloaded;
 	}
+	if (literal && literal->profile == literal_checkpoint_profile::smith)
+		literal->original_shop_body = std::move(smith_checkpoint_body);
 	note_literal_enqueue_locked(literal, literal_revision);
 	++health.captured;
 	update_depth_locked();
@@ -1508,6 +1542,7 @@ static player_save_pipeline_result checkpoint_dirty_with_quest_xp(
 		{
 			if (literal->held || literal->token.actor_runtime_id != ch->runtime_id ||
 			    ((literal->profile == literal_checkpoint_profile::shop ||
+			      literal->profile == literal_checkpoint_profile::smith ||
 			      literal->profile == literal_checkpoint_profile::auction ||
 			      literal->profile == literal_checkpoint_profile::native_quest ||
 			      literal->profile == literal_checkpoint_profile::held_retirement) &&
@@ -2191,6 +2226,317 @@ bool player_save_shop_checkpoint_owner::observe_held(
 		    slot->acknowledged_revision != slot->captured_revision ||
 		    append_inflight_pid == token.pid || any_snapshot_is_retained_locked(token.pid))
 			return false;
+		// Unrelated dirty STATUS marks may advance while the native operation is held.
+		// Frozen inventory/level and the actual acknowledged save revision must match.
+		// This exact current body was compared to the original held slot.
+		// Copying values exposes no execution hold or ACK capability.
+		if (items_out)
+			*items_out = std::move(captured.items);
+		*output = { slot->acknowledged_revision, slot->level };
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+namespace
+{
+player_literal_inventory_token smith_checkpoint_identity(const player_smith_checkpoint_token &token)
+{
+	return { token.pid, token.actor_runtime_id, token.root_uid, token.generation };
+}
+bool smith_actor_matches(const player_smith_checkpoint_token &token, P_char actor)
+{
+	// Resolve the original generation before any remembered actor dereference.
+	return !token.root_uid && token.actor_runtime_id &&
+	       find_character_by_runtime_id(token.actor_runtime_id) == actor &&
+	       shop_actor_matches({ token.pid, token.actor_runtime_id, 0, token.generation },
+				  actor) &&
+	       !actor->only.pc->load_degraded_components;
+}
+}
+
+player_literal_inventory_state
+player_save_smith_checkpoint_owner::begin(P_char actor, uint64_t original_runtime, int room_vnum,
+					  player_smith_checkpoint_token *token_out)
+{
+	P_obj root = nullptr; // Smith consumes NPC stock, never a PC carried root.
+
+#ifdef __NO_MYSQL__
+	(void)actor;
+	(void)original_runtime;
+	(void)root;
+	(void)room_vnum;
+	(void)token_out;
+	return player_literal_inventory_state::refused;
+#else
+	if (!nevent_is_game_thread() || !actor || !token_out || !original_runtime ||
+	    find_character_by_runtime_id(original_runtime) != actor ||
+	    actor->runtime_id != original_runtime || !IS_PC(actor) || !actor->only.pc ||
+	    GET_PID(actor) <= 0 || !actor->runtime_id ||
+	    find_character_by_runtime_id(actor->runtime_id) != actor ||
+	    !economic_gameplay_authority::active_regular_sql() ||
+	    (root && (!root->obj_uid || !OBJ_CARRIED_BY(root, actor))) ||
+	    IS_SET(actor->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED) ||
+	    player_save_journal_pid_quarantined(GET_PID(actor)))
+		return player_literal_inventory_state::refused;
+	const uint64_t root_uid = root ? root->obj_uid : 0;
+	player_snapshot captured;
+	std::vector<uint8_t> blob;
+	uint32_t level = 0;
+	if (player_snapshot_capture_literal_inventory(actor, 1, SHOP_CHECKPOINT_COMPONENTS,
+						      RENT_CRASH, room_vnum, root_uid, &captured) !=
+		    player_snapshot_capture_result::ok ||
+	    !shop_checkpoint_blob(captured, &blob, &level))
+		return player_literal_inventory_state::refused;
+	player_smith_checkpoint_token token;
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		if (!economic_gameplay_authority::active_regular_sql() || !health.initialized ||
+		    stop_requested || !accepting || !health.replay_complete ||
+		    health.replay_blocked || find_target_save_login_fence_locked(GET_PID(actor)) ||
+		    find_terminal_fence_locked(GET_PID(actor)))
+			return player_literal_inventory_state::refused;
+		if (auto *existing = find_literal_inventory_locked(GET_PID(actor)))
+		{
+			if (existing->profile != literal_checkpoint_profile::smith ||
+			    existing->token.actor_runtime_id != actor->runtime_id ||
+			    existing->token.root_uid != root_uid || existing->payload != blob ||
+			    existing->held)
+				return player_literal_inventory_state::refused;
+			*token_out = { existing->token.pid, existing->token.actor_runtime_id,
+				       existing->token.root_uid, existing->token.generation };
+			return player_literal_inventory_state::pending;
+		}
+		if (literal_inventory_generation == std::numeric_limits<uint64_t>::max())
+			return player_literal_inventory_state::refused;
+		literal_inventory_checkpoint *slot = nullptr;
+		for (auto &candidate : literal_inventory_checkpoints)
+			if (!candidate.token.pid)
+			{
+				slot = &candidate;
+				break;
+			}
+		if (!slot || !literal_inventory_capacity_locked(blob.size()))
+			return player_literal_inventory_state::refused;
+		token = { GET_PID(actor), actor->runtime_id, root_uid,
+			  ++literal_inventory_generation };
+		slot->profile = literal_checkpoint_profile::smith;
+		slot->level = level;
+		slot->token = smith_checkpoint_identity(token);
+		slot->payload = std::move(blob);
+	}
+	// Make the installed original slot recoverable before enqueue can throw.
+	*token_out = token;
+	player_save_pipeline_result queued;
+	try
+	{
+		queued = player_save_pipeline_request(actor, SHOP_CHECKPOINT_COMPONENTS, RENT_CRASH,
+						      room_vnum);
+	}
+	catch (...)
+	{
+		// Queue outcome is unresolved. Original token and frozen save policy remain.
+		return player_literal_inventory_state::pending;
+	}
+	if (queued != player_save_pipeline_result::queued &&
+	    queued != player_save_pipeline_result::coalesced)
+	{
+		player_save_smith_checkpoint_owner::cancel(token);
+		return player_literal_inventory_state::refused;
+	}
+	*token_out = token;
+	return player_literal_inventory_state::pending;
+#endif
+}
+
+player_literal_inventory_state
+player_save_smith_checkpoint_owner::poll(const player_smith_checkpoint_token &token, P_char actor,
+					 player_smith_checkpoint_stage *stage_out)
+{
+#ifdef __NO_MYSQL__
+	(void)token;
+	(void)actor;
+	(void)stage_out;
+	return player_literal_inventory_state::refused;
+#else
+	if (!nevent_is_game_thread() || token.root_uid)
+		return player_literal_inventory_state::refused;
+	const auto identity = smith_checkpoint_identity(token);
+	{
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		const auto *literal = find_literal_inventory_locked(token.pid);
+		if (!literal || literal->profile != literal_checkpoint_profile::smith ||
+		    literal->token != identity || literal->held)
+			return player_literal_inventory_state::refused;
+	}
+	if (!economic_gameplay_authority::active_regular_sql() ||
+	    !smith_actor_matches(token, actor) || player_save_journal_pid_quarantined(token.pid))
+	{
+		player_save_smith_checkpoint_owner::cancel(token);
+		return player_literal_inventory_state::refused;
+	}
+	player_snapshot captured;
+	std::vector<uint8_t> blob;
+	if (player_snapshot_capture_literal_inventory(
+		    actor, 1, SHOP_CHECKPOINT_COMPONENTS, RENT_CRASH, NOWHERE, token.root_uid,
+		    &captured) != player_snapshot_capture_result::ok ||
+	    !shop_checkpoint_blob(captured, &blob))
+	{
+		player_save_smith_checkpoint_owner::cancel(token);
+		return player_literal_inventory_state::refused;
+	}
+	if (player_save_worker_pid_pending(token.pid))
+		return player_literal_inventory_state::pending;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	auto *literal = find_literal_inventory_locked(token.pid);
+	if (!literal || literal->profile != literal_checkpoint_profile::smith ||
+	    literal->token != identity || literal->held)
+		return player_literal_inventory_state::refused;
+	if (literal->payload != blob)
+	{
+		*literal = {};
+		return player_literal_inventory_state::refused;
+	}
+	player_revision_snapshot revision = {};
+	if (!player_revision_snapshot_copy(token.pid, &revision) || revision.overflowed)
+		return player_literal_inventory_state::refused;
+	if (literal->original_shop_body.empty() || !literal->captured_revision ||
+	    literal->acknowledged_revision != literal->captured_revision ||
+	    revision.current_revision != literal->captured_revision ||
+	    revision.acknowledged_revision != literal->captured_revision ||
+	    revision.dirty_components || revision.unacknowledged_components ||
+	    revision.queued_components || revision.inflight_components ||
+	    append_inflight_pid == token.pid || any_snapshot_is_retained_locked(token.pid))
+		return player_literal_inventory_state::pending;
+	if (stage_out)
+		*stage_out = { literal->acknowledged_revision, literal->level };
+	return player_literal_inventory_state::database_acknowledged;
+#endif
+}
+
+bool player_save_smith_checkpoint_owner::hold(const player_smith_checkpoint_token &token,
+					      const critical_operation_id &operation_id)
+{
+#ifdef __NO_MYSQL__
+	(void)token;
+	(void)operation_id;
+	return false;
+#else
+	if (!nevent_is_game_thread() || token.root_uid ||
+	    std::all_of(operation_id.bytes.begin(), operation_id.bytes.end(),
+			[](uint8_t byte) { return !byte; }) ||
+	    player_save_smith_checkpoint_owner::poll(
+		    token, find_character_by_runtime_id(token.actor_runtime_id)) !=
+		    player_literal_inventory_state::database_acknowledged ||
+	    player_save_worker_pid_pending(token.pid))
+		return false;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	auto *literal = find_literal_inventory_locked(token.pid);
+	player_revision_snapshot revision = {};
+	if (!economic_gameplay_authority::active_regular_sql() || !health.initialized ||
+	    stop_requested || !accepting || !health.replay_complete || health.replay_blocked ||
+	    find_terminal_fence_locked(token.pid) ||
+	    find_target_save_login_fence_locked(token.pid) || !literal ||
+	    literal->profile != literal_checkpoint_profile::smith ||
+	    literal->token != smith_checkpoint_identity(token) || literal->held ||
+	    !literal->captured_revision ||
+	    literal->acknowledged_revision != literal->captured_revision ||
+	    !player_revision_snapshot_copy(token.pid, &revision) || revision.overflowed ||
+	    revision.current_revision != literal->captured_revision ||
+	    revision.acknowledged_revision != literal->captured_revision ||
+	    revision.dirty_components || revision.unacknowledged_components ||
+	    revision.queued_components || revision.inflight_components ||
+	    append_inflight_pid == token.pid || any_snapshot_is_retained_locked(token.pid))
+		return false;
+	literal->operation_id = operation_id;
+	literal->held = true;
+	return true;
+#endif
+}
+
+bool player_save_smith_checkpoint_owner::cancel(const player_smith_checkpoint_token &token)
+{
+	if (!nevent_is_game_thread() || token.root_uid || token.pid <= 0 ||
+	    !token.actor_runtime_id || !token.generation)
+		return false;
+	std::lock_guard<std::mutex> lock(pipeline_mutex);
+	auto *literal = find_literal_inventory_locked(token.pid);
+	// Poll may already have cancelled this unheld checkpoint on a changed body.
+	// Absence consumes no save/publication reservation and grants no ACK authority.
+	if (!literal)
+		return true;
+	if (literal->profile != literal_checkpoint_profile::smith ||
+	    literal->token != smith_checkpoint_identity(token) || literal->held)
+		return false;
+	*literal = {};
+	return true;
+}
+
+bool player_save_smith_checkpoint_owner::observe_held(
+	const player_smith_checkpoint_token &token, P_char actor,
+	const critical_operation_id &operation, player_smith_checkpoint_stage *output,
+	std::vector<player_item_snapshot> *items_out,
+	player_snapshot *original_acknowledged_body) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)token;
+	(void)actor;
+	(void)operation;
+	(void)output;
+	(void)items_out;
+	(void)original_acknowledged_body;
+	return false;
+#else
+	if (!output || !nevent_is_game_thread() || token.root_uid ||
+	    !economic_gameplay_authority::active_regular_sql() ||
+	    !smith_actor_matches(token, actor) || player_save_journal_pid_quarantined(token.pid) ||
+	    player_save_worker_pid_pending(token.pid))
+		return false;
+	try
+	{
+		player_snapshot captured;
+		std::vector<uint8_t> blob;
+		uint32_t level = 0;
+		if (player_snapshot_capture_literal_inventory(
+			    actor, 1, SHOP_CHECKPOINT_COMPONENTS, RENT_CRASH, NOWHERE,
+			    token.root_uid, &captured) != player_snapshot_capture_result::ok ||
+		    !shop_checkpoint_blob(captured, &blob, &level))
+			return false;
+		std::lock_guard<std::mutex> lock(pipeline_mutex);
+		const auto *slot = find_literal_inventory_locked(token.pid);
+		if (!health.initialized || stop_requested || !accepting ||
+		    !health.replay_complete || health.replay_blocked ||
+		    find_terminal_fence_locked(token.pid) ||
+		    find_target_save_login_fence_locked(token.pid) || !slot ||
+		    slot->profile != literal_checkpoint_profile::smith ||
+		    slot->token != smith_checkpoint_identity(token) || !slot->held ||
+		    slot->restored_sql_drop || slot->operation_id.bytes != operation.bytes ||
+		    slot->payload != blob || slot->level != level || !slot->captured_revision ||
+		    slot->acknowledged_revision != slot->captured_revision ||
+		    append_inflight_pid == token.pid || any_snapshot_is_retained_locked(token.pid))
+			return false;
+		player_snapshot acknowledged;
+		std::vector<uint8_t> canonical, acknowledged_blob;
+		uint32_t acknowledged_level = 0;
+		if (slot->original_shop_body.empty() ||
+		    player_snapshot_decode(slot->original_shop_body.data(),
+					   slot->original_shop_body.size(),
+					   &acknowledged) != player_snapshot_codec_result::ok ||
+		    acknowledged.pid != token.pid ||
+		    acknowledged.revision != slot->acknowledged_revision ||
+		    !shop_checkpoint_blob(acknowledged, &acknowledged_blob, &acknowledged_level) ||
+		    acknowledged_blob != slot->payload || acknowledged_level != slot->level ||
+		    player_snapshot_encode(acknowledged, &canonical) !=
+			    player_snapshot_codec_result::ok ||
+		    canonical != slot->original_shop_body)
+			return false;
+		static_assert(std::is_nothrow_move_assignable_v<player_snapshot>);
+		if (original_acknowledged_body)
+			*original_acknowledged_body = std::move(acknowledged);
 		// Unrelated dirty STATUS marks may advance while the native operation is held.
 		// Frozen inventory/level and the actual acknowledged save revision must match.
 		// This exact current body was compared to the original held slot.
