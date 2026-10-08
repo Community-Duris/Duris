@@ -132,6 +132,13 @@ TABLES = (
     "source_operation_id BINARY(16),source_slot INT,amount BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE player_data (pid BIGINT,copper BIGINT,silver BIGINT,gold BIGINT,platinum BIGINT,"
     "wallet_revision BIGINT UNSIGNED) ENGINE=InnoDB",
+    "CREATE TABLE player_items (id INT UNSIGNED,pid INT UNSIGNED,container_id INT UNSIGNED NULL,"
+    "obj_uid BIGINT UNSIGNED NULL,vnum INT,equip_slot TINYINT NULL,quantity SMALLINT UNSIGNED NULL,"
+    "item_type TINYINT NULL,value0 INT NULL,value1 INT NULL,value2 INT NULL,value3 INT NULL) ENGINE=InnoDB",
+    "CREATE TABLE player_pets (id INT UNSIGNED,owner_pid INT UNSIGNED,pet_uid BIGINT UNSIGNED NULL) ENGINE=InnoDB",
+    "CREATE TABLE player_pet_items (id INT UNSIGNED,pet_id INT UNSIGNED,container_id INT UNSIGNED NULL,"
+    "obj_uid BIGINT UNSIGNED NULL,vnum INT,equip_slot TINYINT NULL,item_type TINYINT NULL,"
+    "value0 INT NULL,value1 INT NULL,value2 INT NULL,value3 INT NULL) ENGINE=InnoDB",
     "CREATE TABLE account_banks (id BIGINT,bank_copper BIGINT,bank_silver BIGINT,bank_gold BIGINT,"
     "bank_platinum BIGINT,bank_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE auctions (id BIGINT,status VARCHAR(16),cur_price BIGINT,"
@@ -529,6 +536,7 @@ def verify_compound_item_actions(owner, reader, snapshot):
             expected_counts = dict(original_counts)
             if phase != "craft-creation":
                 expected_counts["missing_original_plan"] += 1
+                expected_counts["player_uid_missing_physical"] = 1
             assert report["exception_counts"] == expected_counts, report
             assert captured["complete"] is False and captured["backend"] == "sql_partial"
             origin = next(row for row in captured["item_origins"] if row["uid"] == 84)
@@ -587,6 +595,7 @@ def verify_collector_quarantine_views(owner, reader, snapshot):
     initial = inventory(owner)
     expected_counts = dict(Reconciler().audit(snapshot)["exception_counts"])
     expected_counts["missing_original_plan"] += 1
+    expected_counts["player_uid_missing_physical"] = 1
     quarantine_root = bytes.fromhex("c8" * 16)
     with owner.cursor() as cursor:
         cursor.execute("SELECT * FROM item_ownership_ledger WHERE operation_id=%s AND event_index=0", (creation_root,))
@@ -1295,6 +1304,7 @@ try:
             # native columns cannot supply their authenticated opening slots.
             expected_exceptions = {"evidence_loss": 1,
                                    "auction_legacy_listing_identity_unknown": 1,
+                                   "player_uid_missing_physical": 2,
                                    "missing_item_equipment_evidence": 3,
                                    "unmapped_native_wallet": 1,
                                    "unauthorized_mapping_creation": 1,
@@ -1304,6 +1314,21 @@ try:
             # original-plan authentication is covered by the canonical SQL class.
             assert report["checked"]["original_plans_verified"] == 0
             assert report["exception_counts"] == expected_exceptions, report
+            for table in ("player_items", "player_pets", "player_pet_items"):
+                for alteration, restoration in (
+                        (f"RENAME TABLE {table} TO {table}_hidden", f"RENAME TABLE {table}_hidden TO {table}"),
+                        (f"ALTER TABLE {table} ENGINE=MyISAM", f"ALTER TABLE {table} ENGINE=InnoDB")):
+                    with setup.cursor() as cursor:
+                        cursor.execute(alteration)
+                    try:
+                        capture(audit, LINEAGE, EPOCH)
+                        raise AssertionError("missing/nontransactional player custody source passed capture")
+                    except exporter.ExportError:
+                        pass
+                    finally:
+                        with setup.cursor() as cursor:
+                            cursor.execute(restoration)
+                    assert capture(audit, LINEAGE, EPOCH) == snapshot
             verify_quarantined_coin_views(setup, audit, snapshot, expected_exceptions)
             # Matching root/claim values can still be invalid native S48
             # identities, including retained roots outside the selected epoch.
@@ -1680,6 +1705,7 @@ try:
                                (duplicate_uid_root,))
                 writer.execute("UPDATE item_current_owner SET state=2,owner_type=8,"
                                "owner_id=0 WHERE item_uid=84")
+            expected_exceptions["player_uid_missing_physical"] = 1
             assert Reconciler().audit(capture(audit, LINEAGE, EPOCH))["exception_counts"] == \
                 expected_exceptions
             revived_uid_root = bytes.fromhex("e7" * 16)
@@ -1699,6 +1725,7 @@ try:
                 writer.execute("UPDATE item_current_owner SET item_revision=3,state=1,"
                                "owner_type=1,owner_id=7 WHERE item_uid=84")
             expected_exceptions["missing_original_plan"] = 5
+            expected_exceptions["player_uid_missing_physical"] = 2
             revived_uid_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
             assert revived_uid_report["exception_counts"] == {
                 **expected_exceptions, "resurrected_item_uid": 1}, revived_uid_report
@@ -1714,7 +1741,8 @@ try:
                                "owner_id=0 WHERE item_uid=84")
             duplicate_retirement_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
             assert duplicate_retirement_report["exception_counts"] == {
-                **expected_exceptions, "duplicate_item_retirement": 1}, duplicate_retirement_report
+                **expected_exceptions, "player_uid_missing_physical": 1,
+                "duplicate_item_retirement": 1}, duplicate_retirement_report
             with setup.cursor() as writer:
                 for table in ("economic_accounting_operation", "critical_operation_inbox",
                               "economic_accounting_source_claim", "economic_accounting_item_reference",
@@ -1737,13 +1765,15 @@ try:
                                     for uid in range(deep_first, deep_last + 1)])
             deep_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
             assert deep_report["exception_counts"] == {
-                **expected_exceptions, "unknown_legacy_origin": deep_count}, deep_report
+                **expected_exceptions, "unknown_legacy_origin": deep_count,
+                "player_uid_missing_physical": deep_count + 2}, deep_report
             with setup.cursor() as writer:
                 writer.execute("UPDATE item_current_owner SET parent_item_uid=%s WHERE item_uid=%s",
                                (deep_first, deep_last))
             cycle_report = Reconciler().audit(capture(audit, LINEAGE, EPOCH))
             assert cycle_report["exception_counts"] == {
                 **expected_exceptions, "unknown_legacy_origin": deep_count,
+                "player_uid_missing_physical": deep_count + 2,
                 "cyclic_native_topology": deep_count}, cycle_report
             with setup.cursor() as writer:
                 writer.execute("DELETE FROM item_current_owner WHERE item_uid BETWEEN %s AND %s",
@@ -2023,6 +2053,11 @@ try:
                     writer.execute("INSERT INTO auction_item_pickups VALUES (1,7,1,0,X'78')")
                     writer.execute("UPDATE shopkeepers SET shop_id=77 WHERE id=3")
                     writer.execute("INSERT INTO shopkeeper_items VALUES (400,3,NULL,84,0,0,1)")
+                    writer.execute("INSERT INTO player_pets VALUES (51,7,900)")
+                    writer.execute("INSERT INTO player_items(id,pid,obj_uid,vnum,equip_slot,quantity,item_type) "
+                                   "VALUES (400,7,84,1,0,1,1)")
+                    writer.execute("INSERT INTO player_pet_items(id,pet_id,obj_uid,vnum,equip_slot,item_type) "
+                                   "VALUES (400,51,84,1,0,1)")
                 return origins
 
             with mock.patch.object(exporter, "read_origins_in_transaction",
@@ -2045,6 +2080,12 @@ try:
             assert later_auctions["shop_keepers"] == [{"keeper_id":3,"shop_id":77}]
             assert later_auctions["shop_items"] == [{"item_id":400,"keeper_id":3,"parent_id":None,
                 "uid":84,"vnum":0,"equipment_slot":0,"quantity":1}]
+            assert fenced["native"]["player_pets"] == fenced["native"]["player_items"] == fenced["native"]["pet_items"] == []
+            assert later_auctions["player_pets"] == [{"pet_id":51,"pid":7,"pet_uid":900}]
+            for name in ("player_items", "pet_items"):
+                assert len(later_auctions[name]) == 1 and later_auctions[name][0]["item_id"] == 400
+                assert later_auctions[name][0]["uid"] == 84
+            assert later_auctions["player_custody_coverage"] == dict(players=3,pets=1,items=1,pet_items=1)
             with setup.cursor() as cursor:
                 cursor.execute("UPDATE player_data SET copper=2 WHERE pid=7")
                 cursor.execute("DELETE FROM ships")
@@ -2054,6 +2095,9 @@ try:
                 cursor.execute("DELETE FROM auction_item_pickups")
                 cursor.execute("DELETE FROM shopkeeper_items")
                 cursor.execute("UPDATE shopkeepers SET shop_id=0 WHERE id=3")
+                cursor.execute("DELETE FROM player_pet_items")
+                cursor.execute("DELETE FROM player_items")
+                cursor.execute("DELETE FROM player_pets")
             with tempfile.TemporaryDirectory(prefix="duris-sql-audit-") as directory:
                 output = Path(directory) / "partial.json"
                 command = [sys.executable, str(ROOT / "scripts/economic_sql_audit_snapshot.py"),

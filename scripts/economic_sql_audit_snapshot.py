@@ -1245,6 +1245,29 @@ def read_shop_custody(cursor) -> dict:
             "shop_custody_coverage": {"keepers": len(keepers), "items": len(rows)}}
 
 
+def read_player_custody(cursor) -> dict:
+    """Retain physical player/pet projections independently of UID authority."""
+    cursor.execute("SELECT (SELECT COUNT(*) FROM player_data)+"
+                   "(SELECT COUNT(*) FROM player_items)+(SELECT COUNT(*) FROM player_pets)+"
+                   "(SELECT COUNT(*) FROM player_pet_items) AS rows_total")
+    bound = cursor.fetchone()
+    if bound is None or bound["rows_total"] > MAX_ROWS:
+        raise ExportError("player custody source exceeds audit bounds")
+    players = bounded(cursor, "SELECT pid FROM player_data ORDER BY pid")
+    pets = bounded(cursor, "SELECT id AS pet_id,owner_pid AS pid,pet_uid FROM player_pets ORDER BY id")
+    collections = []
+    for table, owner, quantity in (("player_items", "pid", "quantity"),
+                                   ("player_pet_items", "pet_id", "1 AS quantity")):
+        collections.append(list(bounded(cursor,
+            f"SELECT id AS item_id,{owner},container_id AS parent_id,obj_uid AS uid,vnum,"
+            f"equip_slot AS equipment_slot,{quantity},item_type,"
+            f"value0,value1,value2,value3 FROM {table} ORDER BY id")))
+    return {"player_ids": list(players), "player_pets": list(pets),
+            "player_items": collections[0], "pet_items": collections[1],
+            "player_custody_coverage": dict(players=len(players), pets=len(pets),
+                items=len(collections[0]), pet_items=len(collections[1]))}
+
+
 def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     # Both native-item and mapping projections can return payload bytes. Bound
     # them before either buffered SELECT, including repeated mapping joins.
@@ -1268,6 +1291,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
               "coin_pile_mappings": [], "pending_claim_sources": []}
     native.update(read_auction_custody(cursor))
     native.update(read_shop_custody(cursor))
+    native.update(read_player_custody(cursor))
     native["ship_coffers"], native["ship_coffer_coverage"] = read_ship_coffers(cursor)
     native["guild_treasuries"], native["guild_treasury_coverage"] = read_guild_treasuries(cursor)
     gaps = ["ship_coffer_lifetime_origin_revision_and_writer_qualification",
@@ -1277,6 +1301,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             "pending_claim_consumer_completeness_and_legacy_coverage",
             "auction_template_prototype_coin_literals_history_and_legacy_identity",
             "shop_prototype_runtime_payload_coin_literals_and_enrollment_history",
+            "player_pet_prototype_full_runtime_payload_hold_and_retained_death_history",
             "unattributed_ownership_history",
             "unreferenced_uid_events_without_native_or_baseline_anchors",
             "unresolved_post_baseline_account_origins",
@@ -1631,9 +1656,9 @@ def capture(connection, lineage: bytes, epoch: bytes) -> dict:
             "'critical_operation_inbox','player_data',"
             "'account_banks','item_current_owner','item_ownership_ledger','auctions',"
             "'auction_money_pickups','auction_item_custody','auction_item_pickups',"
-            "'shopkeepers','shopkeeper_items','ships','guilds')")
+            "'shopkeepers','shopkeeper_items','player_items','player_pets','player_pet_items','ships','guilds')")
         engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
-        if len(engines) != 22 or any(engine != "InnoDB" for engine in engines.values()):
+        if len(engines) != 25 or any(engine != "InnoDB" for engine in engines.values()):
             raise ExportError("SQL audit source is missing or not InnoDB")
         has_realized_price = realized_price_column_available(cursor)
         evidence = read_evidence(cursor, lineage, epoch, has_realized_price)
