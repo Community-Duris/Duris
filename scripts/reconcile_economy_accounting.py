@@ -340,7 +340,7 @@ class Reconciler:
                 elif field in ("uid", "parent_uid", "child_index", "line_index", "source_slot",
                                "net_copper", "ship_id", "guild_id", "auction_id", "slot",
                                "keeper_id", "shop_id", "item_id",
-                               "pid", "pet_id", "corpse_id",
+                               "pid", "pet_id", "corpse_id", "locker_id", "chest_id",
                                "identity_kind", "identity_id") and type(value) is int:
                     safe[field] = value
                 elif field == "table" and isinstance(value, str) and (value in TABLES or value in ORPHAN_EVIDENCE_SOURCES):
@@ -680,6 +680,7 @@ class Reconciler:
                                       native_holdings, native_items, lineage)
         self.audit_player_custody(snapshot.get("backend"), native, native_items)
         self.audit_corpse_custody(snapshot.get("backend"), native, native_items)
+        self.audit_locker_custody(snapshot.get("backend"), native, native_items)
         self.audit_uid_scope_coverage(snapshot.get("backend"), native,
                                       item_origins, native_items, references)
         self.audit_unattributed_uid_history(snapshot.get("backend"), native)
@@ -1449,6 +1450,149 @@ class Reconciler:
             owner = current.get("owner", [None])
             if current.get("state") == "live" and owner[0] == 4 and current["uid"] not in physical[tuple(owner)]:
                 self.emit("corpse_uid_missing_physical", uid=current["uid"])
+
+    def audit_locker_custody(self, backend: str, native: dict, items: dict) -> None:
+        """Compare raw locker namespaces; retained account rows grant no runtime proof."""
+        names = ("lockers", "private_chests", "locker_items", "account_lockers",
+                 "locker_chests", "account_locker_items")
+        coverage = native.get("locker_custody_coverage")
+        if coverage is None and all(name not in native for name in names):
+            if backend == "sql_partial":
+                self.emit("missing_locker_custody_coverage", scope="snapshot")
+            return
+        collections = {name: self.table(native, name) for name in names}
+        if (not isinstance(coverage, dict) or coverage != {name: len(collections[name]) for name in names} or
+                any(type(value) is not int for value in coverage.values()) or sum(coverage.values()) > MAX_ROWS):
+            raise SnapshotError("invalid locker custody coverage")
+
+        def integer(row, field, low, high, nullable=False):
+            value = row.get(field)
+            if field not in row or (value is not None or not nullable) and (
+                    type(value) is not int or not low <= value <= high):
+                raise SnapshotError("invalid locker custody " + field)
+
+        observed, physical = set(), defaultdict(set)
+        literals = live_coin_literals(native, items)
+        for account, locker_table, chest_table, item_table in (
+                (False, "lockers", "private_chests", "locker_items"),
+                (True, "account_lockers", "locker_chests", "account_locker_items")):
+            lockers, chests, rows = (collections[name] for name in (locker_table, chest_table, item_table))
+            for locker in lockers:
+                integer(locker, "locker_id", 1, 2**32-1)
+                integer(locker, "racewar", -128, 127, True)
+                if locker["racewar"] is None:
+                    self.emit("locker_side_unknown", locker_id=locker["locker_id"])
+                if not account:
+                    for field in ("owner_pid", "owner_assoc_id"):
+                        integer(locker, field, -2**31, 2**31-1, True)
+                    if sum(value is not None and value > 0 for value in
+                           (locker["owner_pid"], locker["owner_assoc_id"])) != 1:
+                        self.emit("locker_owner_identity_unknown", locker_id=locker["locker_id"])
+            for chest in chests:
+                integer(chest, "chest_id", 1, 2**32-1)
+                integer(chest, "locker_id", 0, 2**32-1)
+                integer(chest, "is_public", -128, 127, True)
+            for row in rows:
+                for field, low, high, nullable in (
+                        ("item_id", 1, 2**32-1, False), ("chest_id", 0, 2**32-1, not account),
+                        ("parent_id", 0, 2**32-1, True), ("uid", 0, 2**64-1, True),
+                        ("vnum", -2**31, 2**31-1, False), ("quantity", 0, 65535, True),
+                        ("weight", -2**31, 2**31-1, True), ("extra_flags", 0, 2**64-1, True)):
+                    integer(row, field, low, high, nullable)
+                if not account:
+                    integer(row, "locker_id", 0, 2**32-1)
+                    integer(row, "item_type", -128, 127, True)
+                for index in range(4):
+                    integer(row, "value"+str(index), -2**31, 2**31-1, True)
+            locker_counts = Counter(row["locker_id"] for row in lockers)
+            self.index(lockers, ("locker_id",), "locker_duplicate_id")
+            chest_counts = Counter(row["chest_id"] for row in chests)
+            chest_index = self.index(chests, ("chest_id",), "locker_duplicate_chest_id")
+            public = Counter(row["locker_id"] for row in chests if row["is_public"] == 1)
+            for locker in lockers:
+                if public[locker["locker_id"]] != 1:
+                    self.emit("locker_public_chest_ambiguous", locker_id=locker["locker_id"])
+            for chest in chests:
+                if chest["locker_id"] not in locker_counts:
+                    self.emit("locker_chest_missing_locker", chest_id=chest["chest_id"])
+                if chest["is_public"] not in (0, 1):
+                    self.emit("locker_chest_policy_unknown", chest_id=chest["chest_id"])
+            row_counts = Counter(row["item_id"] for row in rows)
+            positions = [dict(row, custody_group=(row.get("locker_id"), row["chest_id"])) for row in rows]
+            row_index = self.index(positions, ("item_id",), "locker_duplicate_physical_row")
+            position_cache = {}
+            if account and rows:
+                self.emit("locker_account_runtime_authority_unqualified", scope="snapshot")
+            for row in rows:
+                uid, chest_id = row["uid"], row["chest_id"]
+                detail = {"item_id": row["item_id"], "chest_id": chest_id}
+                chest = chest_index.get((chest_id,))
+                locker_id = chest["locker_id"] if account and chest else row.get("locker_id")
+                owner = None
+                if chest is None:
+                    self.emit("locker_legacy_chest_unknown" if not chest_id else "locker_item_missing_chest", **detail)
+                elif (chest_counts[chest_id] != 1 or locker_counts[locker_id] != 1 or
+                        chest["locker_id"] != locker_id):
+                    self.emit("locker_item_ambiguous_chest", **detail)
+                else:
+                    # The historical account baseline uses [5,chest_id,0].
+                    # It is distinct from active locker/chest custody and remains unqualified.
+                    owner = [5, chest_id, 0] if account else [5, locker_id, chest_id]
+                if row["quantity"] != 1:
+                    self.emit("locker_unsupported_quantity", **detail)
+                if row["vnum"] <= 0:
+                    self.emit("locker_item_vnum_invalid", **detail)
+                if row["weight"] is None or row["extra_flags"] is None:
+                    self.emit("locker_prototype_literal_unknown", **detail)
+                if not account and row["item_type"] is None:
+                    self.emit("locker_item_type_unknown", **detail)
+                if not uid:
+                    self.emit("locker_legacy_uid_unknown", **detail)
+                elif uid in observed:
+                    self.emit("locker_duplicate_physical_uid", uid=uid)
+                observed.add(uid)
+                # Both loader root calls start at depth zero and refuse depth >64.
+                root, parent, error = physical_item_position(row_index[(row["item_id"],)], row_index, row_counts, "custody_group",
+                    max_depth=65, position_cache=position_cache)
+                if error:
+                    self.emit("locker_item_"+error, **detail)
+                money = row["vnum"] == 3 or not account and row["item_type"] == 20
+                values = [row["value"+str(index)] for index in range(4)]
+                if money:
+                    if any(value is None for value in values):
+                        self.emit("locker_coin_value_unknown", **detail)
+                    elif any(value < 0 for value in values):
+                        self.emit("locker_negative_coin_value", **detail)
+                if not uid:
+                    continue
+                current = items.get((uid,))
+                if current is None:
+                    self.emit("locker_uid_unadmitted", uid=uid)
+                    continue
+                if current.get("state") != "live":
+                    self.emit("locker_projection_inactive_uid", uid=uid)
+                    continue
+                if current.get("owner") != owner:
+                    self.emit("locker_item_owner_mismatch", uid=uid)
+                    continue
+                physical[tuple(owner)].add(uid)
+                integer(current, "vnum", -2**31, 2**31-1)
+                if current["vnum"] != row["vnum"]:
+                    self.emit("locker_item_vnum_mismatch", uid=uid)
+                if root is not None and (current.get("root") != root or
+                        (current.get("parent") or None) != (parent or None)):
+                    self.emit("locker_item_topology_mismatch", uid=uid)
+                if current.get("equipment_slot", 0):
+                    self.emit("locker_item_equipment_mismatch", uid=uid)
+                if money:
+                    if uid not in literals:
+                        self.emit("locker_coin_payload_unknown", uid=uid)
+                    elif literals[uid] != values:
+                        self.emit("locker_coin_literal_mismatch", uid=uid)
+        for current in items.values():
+            owner = current.get("owner", [None])
+            if current.get("state") == "live" and owner[0] == 5 and current["uid"] not in physical[tuple(owner)]:
+                self.emit("locker_uid_missing_physical", uid=current["uid"])
 
     def audit_original_plans(self, tables: dict, by_op: dict, ownership: dict) -> None:
         """Bind projections to retained EAP1 bytes, independently of mutation code.

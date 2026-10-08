@@ -1284,6 +1284,31 @@ def read_corpse_custody(cursor) -> dict:
             "corpse_custody_coverage": dict(corpses=len(corpses), items=len(rows))}
 
 
+def read_locker_custody(cursor) -> dict:
+    """Keep both SQL locker namespaces raw; never merge equal numeric IDs."""
+    names = ("lockers", "private_chests", "locker_items", "account_lockers",
+             "locker_chests", "account_locker_items")
+    cursor.execute("SELECT " + "+".join("(SELECT COUNT(*) FROM " + name + ")" for name in names) +
+                   " AS rows_total")
+    bound = cursor.fetchone()
+    if bound is None or bound["rows_total"] > MAX_ROWS:
+        raise ExportError("locker custody source exceeds audit bounds")
+    collections = {}
+    for table in ("lockers", "account_lockers"):
+        fields = "id AS locker_id,racewar" + (",owner_pid,owner_assoc_id" if table == "lockers" else "")
+        collections[table] = list(bounded(cursor, "SELECT " + fields + " FROM " + table + " ORDER BY id"))
+    for table in ("private_chests", "locker_chests"):
+        collections[table] = list(bounded(cursor, "SELECT id AS chest_id,locker_id,is_public FROM " + table + " ORDER BY id"))
+    for table in ("locker_items", "account_locker_items"):
+        fields = "id AS item_id," + ("locker_id," if table == "locker_items" else "")
+        fields += "chest_id,container_id AS parent_id,obj_uid AS uid,vnum,quantity,weight,extra_flags,"
+        fields += "item_type," if table == "locker_items" else ""
+        fields += "value0,value1,value2,value3"
+        collections[table] = list(bounded(cursor, "SELECT " + fields + " FROM " + table + " ORDER BY id"))
+    collections["locker_custody_coverage"] = {name: len(collections[name]) for name in names}
+    return collections
+
+
 def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     # Both native-item and mapping projections can return payload bytes. Bound
     # them before either buffered SELECT, including repeated mapping joins.
@@ -1309,6 +1334,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     native.update(read_shop_custody(cursor))
     native.update(read_player_custody(cursor))
     native.update(read_corpse_custody(cursor))
+    native.update(read_locker_custody(cursor))
     native["ship_coffers"], native["ship_coffer_coverage"] = read_ship_coffers(cursor)
     native["guild_treasuries"], native["guild_treasury_coverage"] = read_guild_treasuries(cursor)
     gaps = ["ship_coffer_lifetime_origin_revision_and_writer_qualification",
@@ -1320,6 +1346,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             "shop_prototype_runtime_payload_coin_literals_and_enrollment_history",
             "player_pet_prototype_full_runtime_payload_hold_and_retained_death_history",
             "corpse_prototype_full_payload_catalog_revision_artifact_and_lifecycle_history",
+            "locker_prototype_full_payload_access_history_and_account_runtime_authority",
             "unattributed_ownership_history",
             "unreferenced_uid_events_without_native_or_baseline_anchors",
             "unresolved_post_baseline_account_origins",
@@ -1675,9 +1702,10 @@ def capture(connection, lineage: bytes, epoch: bytes) -> dict:
             "'account_banks','item_current_owner','item_ownership_ledger','auctions',"
             "'auction_money_pickups','auction_item_custody','auction_item_pickups',"
             "'shopkeepers','shopkeeper_items','player_items','player_pets','player_pet_items',"
-            "'corpses','corpse_items','ships','guilds')")
+            "'corpses','corpse_items','lockers','private_chests','locker_items',"
+            "'account_lockers','locker_chests','account_locker_items','ships','guilds')")
         engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
-        if len(engines) != 27 or any(engine != "InnoDB" for engine in engines.values()):
+        if len(engines) != 33 or any(engine != "InnoDB" for engine in engines.values()):
             raise ExportError("SQL audit source is missing or not InnoDB")
         has_realized_price = realized_price_column_available(cursor)
         evidence = read_evidence(cursor, lineage, epoch, has_realized_price)
