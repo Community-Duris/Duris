@@ -111,6 +111,20 @@ int main(int argc, char **argv) {
     assert(admitted.roots[0] == hair.obj_uid && admitted.reward_count == 1);
     assert(admitted.rewards[0].type == QUEST_GOAL_ITEM &&
            admitted.rewards[0].number == 77719);
+    // Capture the retained refusal's actual terms, then simulate its old slot
+    // zero. Recovery must use its frozen empty rewards, not today's slot zero.
+    quest_durable_context refusal_context;
+    memcpy(&refusal_context, saved_context, sizeof(refusal_context));
+    refusal_context.completion_index = 1;
+    item_transfer_continuation refusal_encoded;
+    assert(capture_quest_offering_continuation(&mob, &actor, quester_id, 1,
+                                              completion->next, refusal_context,
+                                              &refusal_encoded));
+    quest_reward_continuation historical_refusal;
+    assert(quest_reward_continuation_decode(refusal_encoded.data.data(),
+                                           refusal_encoded.data.size(), &historical_refusal));
+    assert(historical_refusal.reward_count == 0);
+    historical_refusal.completion_index = 0;
     item_transfer_result result; result.operation_id.bytes[0] = 71;
     assert(publish_quest_offering({}, &actor, false, result, 0, saved_context, saved_size));
     complete_quest_offering(&actor, false, result, 0, saved_context, saved_size);
@@ -128,6 +142,9 @@ int main(int argc, char **argv) {
     // Retrying the same frozen reward after its grant acknowledgment is idempotent.
     quest_reward_recover_pending(&actor, result.operation_id, admitted, 0, 1);
     assert(queued_grants.size() == 1);
+    critical_operation_id historical_operation; historical_operation.bytes[0] = 72;
+    quest_reward_recover_pending(&actor, historical_operation, historical_refusal);
+    assert(queued_grants.size() == 1 && acked == 3 && retired == 1 && dialogue.size() == 2);
 }
 '''
 

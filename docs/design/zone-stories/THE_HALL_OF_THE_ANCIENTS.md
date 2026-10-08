@@ -146,6 +146,11 @@ stays excluded. Historical refusal receipts are not retroactively rewarded.
 Journal revision two binds the positive definition as its sixth achievement,
 with optional letter history/current hair guidance and no new daily candidate.
 
+The [focused regression](../../../tests/async/test_hall_seltran.py) also captures
+the retained refusal's actual empty reward terms, restores its old slot-zero
+index and verifies recovery issues no ore after the reorder. The separate
+journal fixture confirms its historical receipt still earns no achievement.
+
 No NPC rescue state, king kill, reunion, belt crafting or armor crafting is
 required for this hand-in. Scarcity may require choosing which commission to
 pursue first and gathering more materials on later resets. Each distinct final
