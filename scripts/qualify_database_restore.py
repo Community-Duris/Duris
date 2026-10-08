@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Complete migration-history and aggregate value-domain restore verification."""
+import json
 import os
 import sys
 import migration_runner as migrations
@@ -347,7 +348,12 @@ def main():
         require_currency_revision_history(executor)
         require_currency_values(executor)
         require_economic_evidence_integrity(executor)
-        print('{"history":"ok","reconciliation":"ok"}')
+        from economic_room_restore_evidence import require_room_item_integrity
+        room = require_room_item_integrity(executor)
+        result = {"history": "ok", "reconciliation": "ok"}
+        if room:
+            result["room_item_diagnostics"] = room
+        print(json.dumps(result, separators=(",", ":")))
     finally:
         executor.release_lock()
 

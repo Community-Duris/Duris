@@ -23,7 +23,7 @@ from economic_sql_audit_origins import (ITEM_STATES, OriginError, baseline_proje
                                        identity, read_origins_in_transaction)
 from reconcile_economy_accounting import (MAX_INPUT_BYTES, MAX_ROWS, ORPHAN_EVIDENCE_SOURCES,
                                           REGISTRY_PATH, TABLES)
-from economic_item_payload_audit import PayloadError, decode_single_item
+from economic_item_payload_audit import PROOF_NUMBERS, PayloadError, decode_single_item
 
 MAX_ITEM_PAYLOAD_BYTES = 4 * 1024 * 1024
 MAX_ITEM_ROWS = 8192
@@ -1414,29 +1414,42 @@ ROOM_PROOF_FROM = (
     "LEFT JOIN economic_accounting_operation o ON o.operation_id=p.operation_id")
 
 
-def read_room_item_custody(cursor) -> dict:
+def read_room_item_custody(cursor, *, select_rows=None) -> dict:
     """Borrow one consistent read-only cut; keep missing bindings and descendants."""
+    def select(query, columns, binary=()):
+        if select_rows is not None:
+            return select_rows(query, columns, binary)
+        return list(bounded(cursor, query))
+
     members_from = " FROM item_current_owner own WHERE own.root_item_uid IN (" + ROOM_CANDIDATES_SQL + ")"
-    cursor.execute("SELECT (SELECT COUNT(*) FROM sql_room_item_payload)+"
+    preflight = ("SELECT (SELECT COUNT(*) FROM sql_room_item_payload)+"
         "(SELECT COUNT(*)" + ROOM_PROOF_FROM + ")+"
         "(SELECT COUNT(*) FROM (" + ROOM_CANDIDATES_SQL + ") candidates)+"
         "(SELECT COUNT(*)" + members_from + ")+"
         "(SELECT COUNT(*) FROM season_reset_state) AS rows_total,"
         "(SELECT COALESCE(SUM(OCTET_LENGTH(payload)),0) FROM sql_room_item_payload) AS payload_bytes,"
         "(SELECT COALESCE(MAX(OCTET_LENGTH(payload)),0) FROM sql_room_item_payload) AS max_payload_bytes")
-    bounds = cursor.fetchone()
+    if select_rows is None:
+        cursor.execute(preflight)
+        bounds = cursor.fetchone()
+    else:
+        values = select(preflight, ("rows_total", "payload_bytes", "max_payload_bytes"))
+        bounds = values[0] if len(values) == 1 else None
     if (bounds is None or bounds["rows_total"] > MAX_ROWS or
             bounds["payload_bytes"] > MAX_INPUT_BYTES//2 or bounds["max_payload_bytes"] > 131072):
         raise ExportError("room item sources exceed audit bounds")
-    payloads = list(bounded(cursor, "SELECT item_uid AS uid,item_revision AS revision,payload_version,"
+    payloads = select("SELECT item_uid AS uid,item_revision AS revision,payload_version,"
         "operation_id,season_epoch,OCTET_LENGTH(payload) AS payload_bytes,SUBSTRING(payload,1,131073) AS payload "
-        "FROM sql_room_item_payload ORDER BY item_uid,item_revision"))
+        "FROM sql_room_item_payload ORDER BY item_uid,item_revision",
+        ("uid", "revision", "payload_version", "operation_id", "season_epoch", "payload_bytes", "payload"),
+        ("operation_id", "payload"))
     for row in payloads:
         if not isinstance(row["payload"], bytes) or len(row["payload"]) != row["payload_bytes"]:
             raise ExportError("invalid room item payload source")
         row["payload"] = row["payload"].hex()
         row["operation_id"] = hex_id(row["operation_id"])
-    proofs = list(bounded(cursor, "SELECT p.item_uid AS uid,p.item_revision AS revision,"
+    operations = ("reference_operation", "legacy_operation", "ledger_operation", "inbox_operation", "root_operation")
+    proofs = select("SELECT p.item_uid AS uid,p.item_revision AS revision,"
         "r.operation_id AS reference_operation,r.item_uid AS reference_uid,r.before_revision,r.after_revision,r.child_index,"
         "r.legacy_operation_id AS legacy_operation,l.operation_id AS ledger_operation,l.item_uid AS ledger_uid,"
         "l.root_item_uid AS ledger_root,l.parent_item_uid AS ledger_parent,l.item_revision AS ledger_revision,"
@@ -1444,19 +1457,22 @@ def read_room_item_custody(cursor) -> dict:
         "l.to_owner_type AS to_type,l.to_owner_id AS to_id,l.to_owner_context_id AS to_context,l.reason_type,l.reason_id,"
         "i.operation_id AS inbox_operation,i.command_type,i.schema_version,i.status,i.result_code,i.failure_stage,"
         "o.operation_id AS root_operation,o.outcome,o.result_code AS operation_result" + ROOM_PROOF_FROM +
-        " ORDER BY p.item_uid,p.item_revision,r.event_index"))
+        " ORDER BY p.item_uid,p.item_revision,r.event_index", ("uid", "revision", *operations, *PROOF_NUMBERS), operations)
     for row in proofs:
-        for field in ("reference_operation", "legacy_operation", "ledger_operation", "inbox_operation", "root_operation"):
+        for field in operations:
             row[field] = hex_id(row[field])
-    roots = list(bounded(cursor, ROOM_CANDIDATES_SQL + " ORDER BY own.root_item_uid"))
-    members = list(bounded(cursor, "SELECT own.item_uid AS uid,own.root_item_uid AS root,own.parent_item_uid AS parent,"
+    roots = select(ROOM_CANDIDATES_SQL + " ORDER BY own.root_item_uid", ("root",))
+    members = select("SELECT own.item_uid AS uid,own.root_item_uid AS root,own.parent_item_uid AS parent,"
         "own.owner_type,own.owner_id,own.owner_context_id AS owner_context,own.item_revision AS revision,"
         "own.vnum,own.state,own.equipment_slot,"
         "(SELECT revision FROM item_owner_revision rev WHERE rev.owner_type=own.owner_type AND "
         "rev.owner_id=own.owner_id AND rev.owner_context_id=own.owner_context_id) AS owner_revision,"
         "(SELECT COUNT(*) FROM saved_items saved WHERE saved.obj_uid=own.item_uid) AS saved_duplicates" +
-        members_from + " ORDER BY own.root_item_uid,own.item_uid"))
-    seasons = list(bounded(cursor, "SELECT state_id,season_epoch,reset_status FROM season_reset_state ORDER BY state_id"))
+        members_from + " ORDER BY own.root_item_uid,own.item_uid",
+        ("uid", "root", "parent", "owner_type", "owner_id", "owner_context", "revision", "vnum", "state",
+         "equipment_slot", "owner_revision", "saved_duplicates"))
+    seasons = select("SELECT state_id,season_epoch,reset_status FROM season_reset_state ORDER BY state_id",
+                     ("state_id", "season_epoch", "reset_status"))
     return dict(room_item_payloads=payloads, room_item_proofs=proofs, room_item_roots=roots,
         room_item_members=members, room_item_seasons=seasons, room_item_custody_coverage=dict(version=1,
             payloads=len(payloads), proofs=len(proofs), roots=len(roots), members=len(members), seasons=len(seasons),
