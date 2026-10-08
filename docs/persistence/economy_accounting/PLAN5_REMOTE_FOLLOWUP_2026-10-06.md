@@ -2895,3 +2895,30 @@ exact. Curator-ready; notebook nonblocking; application/import/ack unclaimed.
 Complete original module/shared native boundaries/full producer-gameplay-opening/
 retention/combined candidate/Plan5/R1–R8/release remain open. No activation,
 production/autocorrection/deploy/merge/primary push/cross-chat message.
+
+
+## 2026-10-08: remaining original backup/restore methods
+
+Sole local/remote codex/accounting-plan5; owned base e790f37207b37adbfad0bbbbde56b817a1abd367; result is
+this containing commit. Post-push exact remote/clean/ancestry/rehash receipt:
+D:/Dev/Tests/Duris/accounting-plan5/remaining-restore-20261008/delivery/result.json. Documentation-only slice; all production,
+test/shared recipe bodies and 27 overlays stay exact. Eight new original native
+methods PASS, zero skips: private foreign checkout, spell/locker receipts,
+bank interruptions, first-snapshot WAL, corrupt-WAL quarantine, lazy catalogs and
+lifecycle capture/restart/retention. Eight new game-loop observations; five fresh
+original fixture compile/link calls/eight toolchain queries. Retention preserves
+inactive history, drains/replays native journals/transactions, qualifies second
+cold boot's exact UID reservation, prunes only the unretained generation and
+refuses required-receipt loss/corruption before boot. Source capture/lifecycle
+installation stay explicitly unexecuted with modeled origins. Rehashed prior
+1,896 sealed files bind three reused original SQL/flat passes to identical source
+3a7fe631eefeb0d5864b3e3419f72dac11e0e31e: 11 distinct original methods, full 12-case module unqualified.
+Same prior strict fixture link blocks seven symbols/nine missing-file controls;
+current recipe/native/header inputs are exact, no unchanged failed build rerun.
+Narrow genuine-provider shared-owner handoff is retained in the complete report
+PLAN5_BACKUP_RESTORE_REMAINING_QUALIFICATION_2026-10-08.md; no schema/interface
+change requested. Tested primary a7dbc54cadf576330529a0e126d61052161ea255; seal c95d38aa78f6e265eacfc277ab009518d14e4824ecaed67083c8fff6e615b5dc.
+All earlier follow-up content remains exact. Curator-ready; notebook nonblocking;
+application/import/ack unclaimed. Full combined/producer/gameplay/opening/retention
+budgets/activation/Plan5/R1–R8/release stay open. No production/autocorrection/
+deploy/merge/primary push/cross-chat message.
