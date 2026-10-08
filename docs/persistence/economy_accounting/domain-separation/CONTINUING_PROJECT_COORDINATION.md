@@ -269,6 +269,22 @@ Original reviewer reference-search correction is retained in the private report;
 no worker evidence or provider changed. Root supplemental-review.json records
 index/report identities; sealed private review packet remains on D:.
 
+Latest primary7c863e1e299f5dbc9a8c42ba18c8714078bf5698 adds the98-line
+[Smith save/command/reset cursor report](../SMITH_SAVE_COMMAND_AND_RESET_CURSOR_SOURCE_INTEGRATION_2026-10-08.md),read in full.
+Privateda38626ce29f9fd5d0272309fb66bd6b02022ed41e6063b749d478b87b6377ba reports
+208 paths/169 source files:exact Smith fence/schema validation,original retained
+reset cursor with narrowly earned P-target retry,and distinct SQL Smith save profile.
+Reported genuine worker ACK/components/revision/token-operation/filtered inventory/
+level are separate from fresh current SQL save/wallet and full physical NORENT
+forest. Held observation permits unrelated dirty STATUS;no held release/submission/
+publication/guarded ACK or flat/cold parity follows. Original actors/factory lifetimes
+and DB decisions bind cursor;active O stays closed,uncertain effects do not retry.
+Smith participant and pre-S preparation continue under primary ownership. Full
+source/history/carrier/budget/combined SQL-flat/publication/recovery/ACK and special
+routes remain incomplete. All execution NOT RUN;public src/tests/migrations
+unchanged/private implementation unavailable. New reported readiness distinctions
+support bounded acceptance preparation below,not executable native qualification.
+
 Latest primary74fb857fb79287f343c4246d8a90d6c2eb4ab9f9 adds the102-line
 [Smith grant/reset recovery source report](../SMITH_GRANT_ACCOUNTING_AND_RESET_RECOVERY_SOURCE_INTEGRATION_2026-10-08.md),read in full.
 Private3fc1241b986986c7a50f57397665e5cb35f6a17d2883b3388f2c52d77f71dd53 reports
@@ -436,21 +452,31 @@ Implementation inputs from actual public src833d3085:
   policy,controlled CHARACTER falling and extracted retained restoration;none
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
-Current prioritized queue: (1)primary accessible integrated special-placement
-owner/stage/registry and original O/source/replay/save/ACK observations;(2)genuine
-SHOP original refused held-owner fixture/legal late-consumption refusal and fences
-at entry;(3)keeper first-checkpoint/original boot-warm disposition;(4)history capacity
-fix-specific real DB proof;(5)remaining native interfaces/original journeys.
-Architecture bounded special facts and keeper brief are CLOSED;quest cancellation
-feasibility is CLOSED. No new independent assignment selected on unchanged inputs.
-The conditional special-route acceptance requires original branch/RNG chronology,
-authentic graph/UID/survival/current custody and effect/persistence/event outcomes,
-once-only returned/interrupted continuation and genuine guarded ACK. Private
-candidate/new owner interfaces and execution remain unavailable. No maintained
-code/test/doc/patch or build/test/DB/server/native execution occurred in the fact
-review. Preserve worktrees/sealed proofs;reassess changed source/owner/fixture
-inputs without duplicating primary/Plan5 or reopening completed maps. GoalsBLOCKED/
-unfinished;heartbeatACTIVE,no adoption wait or overall completion/pause.
+Current prioritized queue: (1)quest ONE PRIVATE smith-save-ack-cross-proof-
+blueprint-20261008 packet,SMITH_SAVE_ACK_CROSS_PROOF_BLUEPRINT.txt plus pins;
+(2)primary accessible integrated special-placement owner/stage/registry and original
+O/source/replay/save/ACK observations;(3)genuine SHOP refused held-owner fixture/
+legal late-consumption refusal/fences at entry;(4)keeper first-checkpoint/original
+boot-warm disposition;(5)history capacity fix-specific DB proof/native journeys.
+Quest prepares one smallest future Smith save ACK/full-physical cross-proof case
+and compact authentic observation/assertion table. Benefit:separate actual filtered
+worker save proof from physical carried/equipment/NORENT forest and fresh SQL wallet/
+row authority. Available:new reported profile plus prior Smith docs,actual public
+pipeline/worker/snapshot filters/component/revision/queue/actor lifetime semantics,
+existing save-focused tests and quest read-only capture/assertions. Distinguish
+maintained source versus reported private profile;no invented callable interface.
+Cover original token/operation/generation/ACK,filtered inventory/level,legitimate
+STATUS dirtiness,coalescing/replacement refusal and separate fresh proof;root UID0/
+NPC inputs/variable PC fee and no SHOP slot reuse stay explicit. Existing helper
+limitations/future owned reader edits require authentic observations. No generic
+owner design,broad inventory,journal-authority substitute or unchanged-global-state
+assertion. Private profile/Smith17 codec/atomic owner/native execution remain
+unavailable dependent inputs. One private D: packet only,no maintained code/test/
+doc/patch/import/build/test/server/DB/native run. Root review precedes publication
+or next task. Primary retains its existing implementation streams and Plan5;
+architecture special facts/keeper brief and quest cancellation feasibility remain
+CLOSED. Preserve worktrees/sealed proofs;actual GoalsBLOCKED/unfinished,heartbeat
+ACTIVE,no adoption wait or overall completion/pause.
 
 Latest primary960ddd80c1acba5611677270f0156675d6d020ff reports private6641083b:
 full original live-flat refusal cleanup and retained SHOP coordinator cancellation
