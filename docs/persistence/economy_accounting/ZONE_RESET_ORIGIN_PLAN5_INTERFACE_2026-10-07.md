@@ -168,28 +168,30 @@ revokes it before release. The source SQL normalization/independent verifier and
 activation consumer are still required; no raw census or terminal DTO is authority.
 Production accounting stays inactive; all cross-stream release gates remain open.
 
-## Reviewed synchronous full-source verification interface - 2026-10-08
+## Reviewed raw source and primary PC money interfaces - 2026-10-08
 
-Shared private103/23/5 contains `economic_sql_initialized_activation_view.h`.
-Its synchronous callback receives the exact retained initialized world, complete
-owning physical/source2, five raw room tables, creation packet and persisted
-correspondence including all-row raw native catalog/history. References expire
-on return. Independently inspect raw providers and full live/persisted money/forest
-correspondence; primary reports/digests/route counts grant no authority. The original
-source2 framing remains intact. Original aggregate limits include the world first;
-SQL receives only the checked residual, with unchanged single-cell allowance.
+Shared private111/23/5 preserves the synchronous genuine world/full raw SQL borrow,
+original session/slot/save epoch/closed outbox/request/evidence authentication,
+world-first residual limits and verifier rollback/release/failure latch. The borrowed
+activation view additionally has a const `pc_money` primary comparison report.
+It is derived from the original raw source2 with canonical account identities,
+complete defect counts, once-per-shared-bank comparison and explicit unloaded
+holdings. Independent Plan5 must still inspect raw providers and perform its own
+full money/item/forest audit; primary reports and digests grant no authority.
 
-The actual selected-runtime owner authenticates its original session/transaction
-slot/save epoch/closed outbox and request/current activation evidence around the
-borrow. Callback refusal now still rolls back/releases the verifier savepoint and
-validates the owner. Any verification error prevents another borrow/verification;
-genuine retained abort remains available. No cached result, independent callback
-implementation/registration, activation, initial install or committed publication
-is supplied by this component. Native/SQL fault qualification remains unrun.
+Two lifecycle bank clamps now agree with existing nonnegative signed-TINYINT
+bank storage/normalization/projection, including genuine Evil2; no schema or policy
+domain is narrowed. Current NPC money/opening and complete item correspondence
+remain missing. Initial inactive installation, actual independent callback/activation
+and committed publication are still unwired; no permit/result is cached.
 
-Genuine unselected P-child capture retains actual P command/UID/constructor/literal
-and original cleanup ownership, without choosing or claiming a parent. Shared
-target chronology/foreign transfer/complete forest publication and actual reset
-restore/completion/pulse/readiness remain open. The existing reset origin/storage
-contracts and separate Plan5 audit/backup/restore/release ownership are unchanged.
-All 55 C providers register once; Makefile, fixtures/schema and policy stay intact.
+Constructor chronology preserves authentic order and cleanup. All six genuine
+native prepend hooks are source-reviewed and composed; pure checks precede
+original mutation and nonallocating observation precedes each genuine prepend.
+Actual P selectors/source-custody handoffs remain open. Hooks do not qualify routes.
+Flat NO_MYSQL singleton collector purchase has real admission/save-hold/publication/
+guarded ACK source wiring. Its full historical receipt is separate from current
+catalog/bank clocks, and the outer original-root lock survives post-census/ACK.
+SQL bodies are preserved; dispatch equality is line-ending-normalized only.
+All source slices remain unrun. No independent Plan5 audit/backup/restore ownership
+changes or coverage/release gate promotions. Full major-plan qualification remains.

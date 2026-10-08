@@ -1,48 +1,61 @@
 # Finish accounting implementation plan
 
-## Reviewed retained full-source verification and P-child capture - 2026-10-08
+## Reviewed PC money, reset chronology and flat collector owners - 2026-10-08
 
-Private `tmp/lifecycle-reset-initialized-verification-candidate-primary-20261008`
-composes 103 production files, 23 unchanged original fixtures and five unchanged
-schema/manifest files on maintained7f1b13a8f. Candidate SHA-256 is
-`c02692ce50f35a83a0ddca7c108b4b0820539016a129498dca780f4afed733fc`.
-All 55 selected C providers remain registered once; Makefile, flags, fixtures and
-schema pins are unchanged. Two read-only reviews and changed-line formatting/token
-preservation accept the corrected six-file verification seam. Original strict
-capture reconstructs exactly; inactive fallback, public activation/exact retry
-and genuine abort bodies remain byte-exact. Compiler, native, SQL, migrations,
-gameplay, fault and recovery execution remain unrun. C++ stays in the private
-candidate until major-plan integration and qualification; this is a source checkpoint.
+Private `tmp/lifecycle-native-order-hooks-candidate-primary-20261008` composes
+111 production files, 23 unchanged original fixtures and five unchanged schema/
+manifest files on maintained9fe5e2022. Candidate SHA-256 is
+`7bb4c58150d14dcf57148080127b080219436c4b91575a4addbf12d9c2e97351`.
+All 61 selected C providers register once. The sole Makefile change adds the real
+PC money provider; removing that line reconstructs the prior Makefile exactly.
+Build rules, flags, original fixtures and schema pins stay. Independent source
+reviews and changed-line formatting/token preservation pass. Compiler, native,
+SQL, migration, gameplay, fault and recovery execution remain unrun. C++ stays
+in the private candidate pending major-plan qualification; this is a source checkpoint.
 
-The actual selected-runtime cutover owner can synchronously lend the SAME retained
-initialized world alongside owning raw physical/source2, five-table room, creation
-and native catalog captures. Exact transaction slot/session, selected installation,
-request hash, activation evidence, original save epoch and closed outbox bind the
-borrow before and after use. World rows/cells/bytes are checked and subtracted
-before SQL reads; every provider keeps the original aggregate and single-cell limits.
-Indexed correspondence retains its owning raw sources until the callback returns.
-This data-only interface gives Plan5 access to raw evidence for independent work;
-reports, route counts and digests are not a full-world proof or activation permit.
+Plan2 source now compares genuine captured PC wallet cash/revisions and bank
+projections against the retained raw SQL cut inside the actual cutover borrow.
+Canonical account keys follow existing ASCII/50-byte authority rules; raw evidence
+and indices survive. Shared banks compare once without summing projections;
+disconnected identities, conflicts and unloaded SQL holdings remain explicit.
+All issue counts gate the callback, regardless of stored diagnostic truncation.
+The same owning raw world/providers plus const primary money report survive through
+the independent callback. This is PC money correspondence, not NPC/item completeness.
+Source review also proves and corrects both lifecycle binary bank clamps: actual
+bank writers store GET_RACEWAR (including Evil2), while storage/normalization and
+gameplay projection use nonnegative signed-TINYINT context. Both readers now use
+INT8_MAX, preserving negative rejection and nonbank context0. No schema change.
 
-Review found and fixed a savepoint cleanup defect: every returned verifier result
-now follows rollback-to, release and actual-owner validation before propagation.
-Any failed verification latches further borrow/verification closed, including
-cleanup failure, while the genuine retained abort and fence-return paths remain
-available. Failed begin/COMMIT restrictions and original inactive policy are unchanged.
+Plan3 constructor-owned chronology observes the genuine detached prepend-equivalent
+cut before callbacks, completed versus retained-failed factories, actual ordinary
+prepend/extraction and successful disposal. Hot publication reconciles the original
+position while preserving other live order; cold restoration keeps actual prepend.
+The redundant pending-times-live alias scan is removed because complete validated
+loops require incompatible states on the same pointer. Runtime obj_data grows;
+explicit persisted field encoders stay unchanged. Six genuine native prepends now
+have reviewed observation hooks: auction, SQL/flat coin, ordinary drop, published
+mobile and cold shop. Each checks the authentic cut/fresh body/ordinal capacity
+before binding, hydration or consumption; the nonallocating observer runs just
+before original prepend. Cold bodies retain original order, hot bodies cannot
+receive a second ordinal. Actual P selectors and source/custody handoffs remain
+open; source hooks do not qualify writer coverage or complete reset wiring.
 
-Genuine P-child construction is also composed. It captures prototype/target/chance
-from the actual P command and retains allocator UID, literal/recipe/bindings and
-cleanup ownership exactly once within the authentic retained O scope. That scope
-does not select a P parent or claim its source. Artifact/target/respawn/load ordering,
-P without a captured O, shared room/mobile/live chronology, cross-owner transfer,
-complete forest sealing/current CAS/publication and real producer registration
-remain open. The separate chronology implementation stream is in progress.
+Plan4 flat singleton collector purchase now connects exact NO_MYSQL schema2
+admission/dispatch, genuine live/cold player-save holds, native online/offline
+publication and guarded ACK. The outer attempt holds the actual selected-root lock
+from inside the callback, after covered-save observation, through post-census/journal
+checkpoint/exact hold consumption. Immutable full receipt proof stays separate
+from current bank/catalog clocks; rejected outcomes invoke no materializer. Failed
+materializer/conflict/ACK stays held. Schema1, other collector exclusions and SQL
+owner/callback bodies stay. Dispatch SQL-selected source is line-ending-normalized
+equal (CRLF became LF), not raw-byte equal. Native journeys remain unqualified.
 
-Complete primary live/persisted money and forest correspondence, NPC opening money,
-initial inactive installation/epoch policy, independent Plan5 callback registration,
-actual activation/committed projection publication, reset recovery/readiness,
-progressed money/artifact recovery, flat parity, measured schema fingerprints and
-full R1-R8 qualification remain required. No coverage or release gate is promoted.
+Earlier same-session cutover/revocation/known-abort cleanup, verifier savepoint
+cleanup/failure latch and genuine P-child capture remain composed. NPC opening and
+current cash, full item forest correspondence, initial inactive installation/epoch
+policy, independent Plan5 callback/activation/committed publication, reset forest/
+CAS/recovery/readiness, flat parity and full R1-R8 major-plan qualification remain
+required. Existing inactive behavior and release/coverage safety gates stay closed.
 
 ## Reviewed creation census and current coin heads - 2026-10-07
 
