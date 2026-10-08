@@ -870,3 +870,84 @@ deferral. Public src/migrations/tests trees unchanged. Atomic birth-to-SHOP,phys
 publication/terminal disposition/cold/driver/admission and original broad primary
 requirements remain. Actual Goal stays BLOCKED; heartbeat ACTIVE; no finish-line
 or owner completion is inferred.
+
+
+## Gambling and world-service boundaries reviewed; focused acceptance next
+
+PASS source/design reviews at gambling
+`d5cd32e827e28dabef6d8878d510a7c3565e86a7` and world-service
+`04731d7e4a0893c5ceb9afaae8c92407d4871717`.
+[Exact gambling map](https://github.com/Community-Duris/Duris/blob/d5cd32e827e28dabef6d8878d510a7c3565e86a7/docs/persistence/economy_accounting/domain-separation/GAMBLING_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md)
+and [exact world-service map](https://github.com/Community-Duris/Duris/blob/04731d7e4a0893c5ceb9afaae8c92407d4871717/docs/persistence/economy_accounting/quest-prep/WORLD_QUEST_SERVICE_AUTHORITY_BOUNDARY_2026-10-08.md)
+are one-document optional bundles, with exact source/dependency and proposed
+acceptance boundaries. Primary adoption is unknown. Neither executes a journey.
+
+Coordinator read both complete documents and relevant original native/service/
+share/authority/ACK/refund/birth/plan/schema bodies. Gambling:3,069 public source/
+migration/test blobs,12 additional references,38 appendix body pins,94 anchors,
+six preserved links and26 indexed artifacts independently authenticated. Quest:
+40 public bodies,44 immutable anchors,four preserved links,seven predicate
+excerpts and49 indexed artifacts authenticated. Exact sole-file parents/diffs,
+remote pins and source-tree agreement verified. Review proof:
+`D:\Dev\Temp\coordinator-boundary-maps-review-20261008`.
+
+Gambling retains active refusal before pointer access; inactive timer/Hand pointers
+do not retain authenticated table/participant/round identity. Generic PC wallet
+debit may canonicalize denominations, unlike the single-denomination stake plan.
+SQL operation reason constraint1..42 does not cover C++ loss45/interruption46;
+no compatible later immutable migration was found. No double-down/natural3:2
+payout exists in this provider. All remain primary route/policy/schema/lifetime
+dependencies, not newly enabled behavior or fixes.
+
+Architecture now owns one actual-provider hand-score/legal-card-ownership
+acceptance: tests/async/test_blackjack_hand_native_values.py,
+blackjack_hand_native_values_harness.cpp and
+domain-separation/BLACKJACK_HAND_NATIVE_VALUES_HANDOFF_2026-10-08.md. Benefit:
+protect deterministic card/ace/count behavior used by original hit and dealer
+settlement during future domain separation. Freeze/export current public
+cardgames.c/header; compile the complete real TU, use genuine public Card/Hand
+operations with independent manual legal-card expectations and tracked single
+ownership through Fold/transfer/destruction. No copied body,access trick,RNG/
+money/coordinator stub or fake participant. Uncalled table/shuffle/settlement
+must remain excluded. Whole-provider closure remains unexecuted; genuine missing
+live dependencies require bounded reassessment, not substituted authority.
+Fresh strict O1/Og ASan/leak/UBSan, bounded commands/nonzero-timeout diagnostics,
+exact compiler/tools/libs/headers/ELF/artifacts and handoff on distinct D: paths.
+Only focused test builds; no production/shared driver/schema/Plan5/full server/
+broad/DB/journal/native work. Closed R2/Collector tests remain intact.
+
+World-service map preserves public12-byte context versus separate prep attempt
+guard, active generic debit/refund refusal and original ACK-before-business-
+callback boundary. A reset/share replacement is conditional on positive sharing,
+authentic consent/level/quota/history and original delayed-owner export; default
+shares0 is unavailable. Quietus late direct assignment differs from Woodseer
+shop wrapping. Genuine service admission/lifecycle,original delay/release,
+retained attempt/PID/runtime/receipt and debit-linked restitution/held obligation
+remain the four native prerequisites. Existing tests do not establish them.
+
+Quest now owns optional world_quest_task_checks.py,test_world_quest_task_checks.py
+and quest-prep/WORLD_QUEST_TASK_ASSERTION_HANDOFF_2026-10-08.md. Concrete gap:
+existing refunded(before,after,fee) compares the whole original player row; the
+reviewed journey needs A/reset/B/final and all14 replacement task fields stable
+while financial restitution may canonicalize denominations. Add a source-shaped
+captured task-only assertion, reuse TASK_COLUMNS/maintained validation, preserve
+existing capture/defaults/oracles. Observe unique same player,original watermark
+through reset,newer active B,complete B task/history/XP agreement; legitimate
+reset/share changes are separate. Wallet/receipt/refund/original-operation proof
+stays with financial checks. Tests distinguish all task fields,type/missing/
+duplicate/watermark/XP/history corruption,canonical-wallet compatibility,input
+preservation and coherent-forgery limits. No owner/timeline/world/GMCP/ACK/cold
+authentication follows. Existing SQL-shaped cuts and modeled builders/source are
+available; native prerequisites remain absent. One three-file delivery with
+focused bounded modeled/compatibility tests and pins, no production/capture/
+shared driver/schema/registry/Plan5/DB/server/build/native work. If equivalent
+existing coverage is found, reuse it and do not duplicate a helper.
+
+Current prioritized queue has one active implementation per chat as above;
+native publication/stale-service/atomic birth journeys retain exact owner gates.
+New primary78d71393e corrects Plan5 terminology only: quest_mobile_native has
+five physical columns,while its reader selects six fields including image length;
+neither means six providers. Original Plan5 controls remain unchanged. Public
+src/migrations/tests trees are unchanged. Latest private implementation report
+remains e3e82a92d/a41d13a7, source-review only and execution deferred. Actual native
+Goals remain BLOCKED, heartbeat ACTIVE and original broader finish line unresolved.

@@ -108,13 +108,17 @@ binding comparisons exact. No SQL/native/owner qualification. Live-wallet option
 join1945e9152/handoffbe14bedc0 now PASS modeled review:two bodies/six public blobs/
 13 unchanged dependencies/12 artifacts authenticated;14 focused tests independently
 PASS. Key/mapping/native/head agreement and coherent-forgery limits stay explicit;
-original owner/world/publication proof remains external. Quest next owns only
-WORLD_QUEST_SERVICE_AUTHORITY_BOUNDARY_2026-10-08.md: actual dynamic QP04/QP07
-attempt/payment/callback/task/refund/save/recovery owners and source-supported
-delayed cross-actor schedule, reusing completed observations/fixes. Reserve one
-useful nonduplicate acceptance slice only with exact inputs/controls/dependencies.
-No production/test/shared owner or driver edit; missing genuine setup/delayed
-charge/refund/held/current-world exports remain explicit in the review. Existing oracles
+original owner/world/publication proof remains external. World-service map04731d7e4
+now PASS source/design review:40 bodies/44 anchors/four links/seven excerpts/49
+artifacts authenticated. Default share0,unsupported active debit/refund and genuine
+service/delay/lifetime/restitution owner dependencies remain explicit. Quest next
+owns only world_quest_task_checks.py,test_world_quest_task_checks.py and
+WORLD_QUEST_TASK_ASSERTION_HANDOFF_2026-10-08.md: optional captured A/reset/B/final
+agreement and all14 B task fields/history/XP preservation. Financial checks retain
+wallet/refund/receipt ownership; no change to existing capture/oracles/defaults.
+Complete native task domains must be source-grounded; coherent fabricated cuts
+prove no owner/world/timeline/payment/ACK/cold authority. No production/shared
+driver/schema/registry/Plan5 or existing test edit; no DB/server/native run. Existing oracles
 remain intact. Native mapping/
 publication, genuine D/chronology, full census, original owner exports and
 authentic paid setup remain unavailable. Currency blueprint
@@ -141,13 +145,19 @@ tests/2,816 source blobs/12 providers/431 artifacts authenticated;82 O1+82 Og
 cases independently PASS with538 dependency inputs/profile and tool/library pins
 unchanged. Actual capture/codec/custody/command only; no detach/SQL/publication/
 ACK/save/cold proof. Eligibility/owner-clock/duplicate-UID limits remain explicit.
-Architecture next owns only GAMBLING_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md:
-source-grounded blackjack round/state/frozen outcome/stake/settlement/interruption
-ownership and one useful nonduplicate future acceptance/extraction reservation.
-Reuse R2 and existing accounting tests; preserve active refusal. Public inputs are
-available; original admitted round/native publisher/held/current-world/recovery
-and private primary bodies stay unavailable. No production/test/shared owner/
-driver/quest/Plan5 edit or build/DB/journal/server/native run is assigned.
+Gambling mapd5cd32e82 now PASS source/design review:3,069 archived public blobs/
+12 references/38 body pins/94 anchors/six links/26 artifacts authenticated. Actual
+round/participant lifetime,debit-stake denomination and SQL reason45/46 constraint
+dependencies remain explicit. Architecture next owns only
+test_blackjack_hand_native_values.py,blackjack_hand_native_values_harness.cpp and
+BLACKJACK_HAND_NATIVE_VALUES_HANDOFF_2026-10-08.md: complete real cardgames.c/header
+provider,manual score/count expectations and legal Card/Hand allocation/Fold/
+transfer/destruction. Focused strict O1/Og ASan/UBSan with bounded commands and
+exact source/dependency/tool/ELF/artifact pins; provider closure unexecuted.
+No copied body/access trick/accepting money or RNG stub; uncalled table/shuffle/
+settlement excluded. No active wager/payout/native publication proof. Preserve R2
+and active refusal; no production/shared owner/driver/quest/Plan5 edit or full
+server/broad tests/DB/journal/server/native run is assigned.
 Genuine save/current-proof/restart owners still block pickup production wiring.
 Primarye3e82a92d now reports private role-aware prospective birth accounting/
 MBR4 results and genuine live publication capacity charging over the reviewed

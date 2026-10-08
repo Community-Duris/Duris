@@ -25,10 +25,13 @@ query/binding comparisons, two bodies/three source pins/14 artifacts authenticat
 Live-wallet join1945e9152/handoffbe14bedc0 now PASS modeled review:14 focused tests
 independently PASS;two bodies/six blobs/13 dependencies/12 artifacts authenticated.
 No owner/world/publication authentication; defaults/oracles/shared authority intact.
-Quest next owns WORLD_QUEST_SERVICE_AUTHORITY_BOUNDARY_2026-10-08.md: actual dynamic
-QP04/QP07 attempt/payment/callback/task/refund/save/recovery boundaries and delayed
-cross-actor reachability, reusing completed calibration/fixes. Missing genuine
-setup/delayed-charge/refund/held/current-world owners stay explicit; no shared edit.
+World-service map04731d7e4 now PASS source/design review:40 bodies/44 anchors/
+four links/seven excerpts/49 artifacts authenticated. Active generic debit/refund
+remain unsupported; default share0 and authentic delay/refund/lifetime owners absent.
+Quest next owns optional world_quest_task_checks.py/test and
+WORLD_QUEST_TASK_ASSERTION_HANDOFF_2026-10-08.md: captured A/reset/B/final,all14 B
+task fields/history/XP stable while separate financial checks own wallet changes.
+Existing capture/oracles stay exact; no owner/world/receipt/timeline authentication.
 Gorblag is a source candidate; funded/item-parent native reachability is unproven.
 Genuine owner export, physical D/chronology and native qualification remain
 external dependencies.
@@ -49,9 +52,12 @@ five links authenticated. Collector capture463fd659a now PASS actual-provider
 review:2,816 source blobs/two test bodies/12 providers/431 artifacts authenticated;
 82 O1+82 Og cases independently PASS,538 dependency inputs/profile unchanged.
 Capture/codec/custody/command only; detach/SQL/publication/ACK/save/cold unexecuted.
-Architecture next owns GAMBLING_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md: actual
-blackjack round/state/random outcome/stake/settlement/interruption ownership,
-reuse R2 and existing accounting tests, preserve active guard. One document only.
+Gambling mapd5cd32e82 now PASS source/design review:3,069 blobs/12 references/
+38 pins/94 anchors/six links/26 artifacts authenticated. Native round/participant,
+debit-stake denomination and SQL reason45/46 dependencies stay explicit.
+Architecture next owns test_blackjack_hand_native_values.py,C++ harness and
+BLACKJACK_HAND_NATIVE_VALUES_HANDOFF_2026-10-08.md: genuine whole-provider hand
+scoring/legal card ownership acceptance only; no active route/payout authority.
 Pickup still needs genuine save/current-proof/restart owners. Primarye3e82a92d
 reports private role-aware birth accounting/MBR4 result and live publication budget
 at candidatea41d13a7/140 production files/75 C providers; public source unchanged
