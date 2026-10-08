@@ -2077,6 +2077,33 @@
       ]
     },
     {
+      "id": "flatfile_custody_audit",
+      "path": "tests/async/test_flatfile_custody_audit.py",
+      "provider": "offline",
+      "engines": [
+        "once"
+      ],
+      "mode": "script",
+      "required_cases": [
+        "script"
+      ],
+      "arguments": [
+        "--native-source",
+        "."
+      ],
+      "environment": {},
+      "timeout_seconds": 900,
+      "covers": [
+        "test_flatfile_custody_audit.py"
+      ],
+      "required_markers": [
+        "shopkeeper custody: 57 format cases, 38 findings, 14 boundaries passed",
+        "locker custody: 87 format cases, 37 findings, 14 boundaries passed",
+        "independent custody catalog: 133 native/operator cases passed",
+        "world custody: 59 format cases, 37 finding cases and 14 boundaries passed"
+      ]
+    },
+    {
       "id": "flatfile_restore_baseline_markers",
       "path": "tests/async/test_flatfile_restore_baseline_markers.py",
       "provider": "offline",

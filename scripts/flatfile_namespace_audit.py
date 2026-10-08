@@ -23,7 +23,7 @@ MAX_METADATA_BYTES = 4 * 1024 * 1024
 MAX_PROGRESS_BYTES = 32768
 LABEL = "flatfile namespace progress"
 FAMILIES = {"authority_metadata", "common_index", "common_segment", "baseline_head",
-            "baseline_reservations", "baseline_witness", "lifecycle_receipt", "source_claim", "ignored", "invalid"}
+            "baseline_reservations", "baseline_witness", "lifecycle_receipt", "source_claim", "pile_head", "ignored", "invalid"}
 CODES = {"flatfile_namespace_capture_refused", "flatfile_namespace_context_refused",
          "flatfile_namespace_page_refused", "flatfile_namespace_file_invalid", "flatfile_namespace_file_refused"}
 require, identity, digest, integer = pages.require, pages.identity, pages.digest, pages.integer
