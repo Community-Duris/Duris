@@ -200,7 +200,10 @@ TABLES = (
     "source_row_count INT UNSIGNED,source_id_digest BINARY(32),destination_root_id INT UNSIGNED,"
     "destination_key VARCHAR(100) COLLATE utf8mb4_unicode_ci,retired_at TIMESTAMP NULL,"
     "source_payload_digest BINARY(32) NULL,destination_payload_digest BINARY(32) NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
-    "CREATE TABLE sql_room_item_payload (item_uid BIGINT UNSIGNED) ENGINE=InnoDB",
+    "CREATE TABLE sql_room_item_payload (item_uid BIGINT UNSIGNED,item_revision BIGINT UNSIGNED,"
+    "payload_version SMALLINT UNSIGNED,operation_id BINARY(16),season_epoch BIGINT UNSIGNED,payload MEDIUMBLOB) ENGINE=InnoDB",
+    "CREATE TABLE item_owner_revision (owner_type TINYINT UNSIGNED,owner_id BIGINT UNSIGNED,"
+    "owner_context_id BIGINT UNSIGNED,revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE siege_items (id INT UNSIGNED,room_vnum INT,container_id INT UNSIGNED NULL,obj_uid BIGINT UNSIGNED NULL,"
     "vnum INT,quantity SMALLINT UNSIGNED NULL,weight INT NULL,extra_flags BIGINT UNSIGNED NULL,item_type TINYINT NULL,"
     "value0 INT NULL,value1 INT NULL,value2 INT NULL,value3 INT NULL) ENGINE=InnoDB",
@@ -1390,7 +1393,7 @@ try:
             assert report["checked"]["original_plans_verified"] == 0
             assert report["exception_counts"] == expected_exceptions, report
             for table in ("player_items", "player_pets", "player_pet_items", "corpses", "corpse_items",
-                          "lockers", "private_chests", "locker_items", "account_lockers", "locker_chests", "account_locker_items", "siege_items", "saved_items", "saved_item_recovery_handoff", "sql_room_item_payload", "saved_item_affects", "saved_item_extra_descr", "season_reset_state"):
+                          "lockers", "private_chests", "locker_items", "account_lockers", "locker_chests", "account_locker_items", "siege_items", "saved_items", "saved_item_recovery_handoff", "sql_room_item_payload", "saved_item_affects", "saved_item_extra_descr", "season_reset_state", "item_owner_revision"):
                 for alteration, restoration in (
                         (f"RENAME TABLE {table} TO {table}_hidden", f"RENAME TABLE {table}_hidden TO {table}"),
                         (f"ALTER TABLE {table} ENGINE=MyISAM", f"ALTER TABLE {table} ENGINE=InnoDB")):

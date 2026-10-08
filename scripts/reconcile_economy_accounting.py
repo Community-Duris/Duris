@@ -683,6 +683,7 @@ class Reconciler:
         self.audit_locker_custody(snapshot.get("backend"), native, native_items)
         self.audit_siege_custody(snapshot.get("backend"), native, native_items)
         self.audit_saved_ground_custody(snapshot.get("backend"), native, native_items)
+        self.audit_room_item_custody(snapshot.get("backend"), native)
         self.audit_uid_scope_coverage(snapshot.get("backend"), native,
                                       item_origins, native_items, references)
         self.audit_unattributed_uid_history(snapshot.get("backend"), native)
@@ -1696,6 +1697,17 @@ class Reconciler:
                     self.emit("siege_coin_literal_mismatch", uid=uid)
         # A live room UID may come from saved_items or exact modern payloads;
         # absence from siege alone cannot prove missing room physical authority.
+
+    def audit_room_item_custody(self, backend, native) -> None:
+        from economic_item_payload_audit import PayloadError, ROOM_COLLECTIONS, audit_room_items
+        if not any(name in native for name in (*ROOM_COLLECTIONS, "room_item_custody_coverage")):
+            if backend in ("sql", "sql_partial"):
+                self.emit("missing_room_item_custody_coverage", scope="snapshot")
+            return
+        try:
+            audit_room_items(native, self.emit, MAX_ROWS, MAX_INPUT_BYTES)
+        except PayloadError as error:
+            raise SnapshotError(str(error)) from error
 
     def audit_saved_ground_handoffs(self, native, rows, receipts, integer) -> None:
         """Diagnose current recovery preconditions; never grant runtime authority."""

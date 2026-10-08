@@ -23,6 +23,7 @@ from economic_sql_audit_origins import (ITEM_STATES, OriginError, baseline_proje
                                        identity, read_origins_in_transaction)
 from reconcile_economy_accounting import (MAX_INPUT_BYTES, MAX_ROWS, ORPHAN_EVIDENCE_SOURCES,
                                           REGISTRY_PATH, TABLES)
+from economic_item_payload_audit import PayloadError, decode_single_item
 
 MAX_ITEM_PAYLOAD_BYTES = 4 * 1024 * 1024
 MAX_ITEM_ROWS = 8192
@@ -66,85 +67,17 @@ def coin_source_sql(alias: str = "") -> str:
 
 
 def decode_coin_payload(blob: bytes, expected_uid: int, expected_vnum: int = COIN_VNUM) -> list[int]:
-    """Decode denomination values from the bounded player-item snapshot codec."""
-    if not isinstance(blob, bytes) or not blob or len(blob) > MAX_ITEM_PAYLOAD_BYTES:
-        raise ExportError("invalid coin-pile payload size")
-    offset = 0
-
-    def number(code: str) -> int:
-        nonlocal offset
-        size = struct.calcsize("<" + code)
-        if offset > len(blob) or size > len(blob) - offset:
-            raise ExportError("truncated coin-pile payload")
-        result = struct.unpack_from("<" + code, blob, offset)[0]
-        offset += size
-        return result
-
-    def skip_string() -> None:
-        nonlocal offset
-        length = number("I")
-        if length > 4096 or offset > len(blob) or length > len(blob) - offset:
-            raise ExportError("invalid coin-pile item string")
-        offset += length
-
-    count = number("I")
-    if count != 1:
-        raise ExportError("coin-pile payload must contain exactly one item")
-    # The native decoder shares one row budget across the item and every
-    # nested vector, including spell rows across separate descriptions.
-    remaining_rows = MAX_ITEM_ROWS - count
-
-    def row_count() -> int:
-        nonlocal remaining_rows
-        count = number("I")
-        if count > remaining_rows:
-            raise ExportError("coin-pile nested row count exceeds limit")
-        remaining_rows -= count
-        return count
-
-    parent = number("i")
-    number("h")  # equipment slot
-    uid = number("Q")
-    number("q")  # generated key
-    vnum = number("i")
-    item_type = number("b")
-    number("B")  # string mask
-    for _ in range(4):
-        skip_string()
-    values = [number("i") for _ in range(8)]
-    for _ in range(6):
-        number("q")  # timers
-    for _ in range(5):
-        number("I")  # flags
-    number("i")  # weight
-    number("b")  # material
-    number("i")  # cost
-    number("h")  # condition
-    number("h")  # craftsmanship
-    for _ in range(5):
-        number("Q")  # bitvectors
-    for _ in range(8):
-        number("h")  # fixed affects
-    dynamic_count = row_count()
-    for _ in range(dynamic_count):
-        number("h")
-        number("h")
-        number("Q")
-    description_count = row_count()
-    for _ in range(description_count):
-        skip_string()
-        skip_string()
-        if number("B") > 1:
-            raise ExportError("invalid coin-pile spellbook flag")
-        spell_count = row_count()
-        for _ in range(spell_count):
-            number("i")
-    if offset != len(blob) or uid != expected_uid or parent != -1 or \
-            type(expected_vnum) is not int or not 0 < expected_vnum <= 2**31 - 1 or \
-            vnum != expected_vnum or \
-            item_type != ITEM_MONEY or any(amount < 0 for amount in values[:4]):
+    """Decode denomination values using the independent bounded item reader."""
+    try:
+        item = decode_single_item(blob, "coin-pile")
+    except PayloadError as error:
+        raise ExportError(str(error)) from error
+    if (item["uid"] != expected_uid or item["parent"] != -1 or
+            type(expected_vnum) is not int or not 0 < expected_vnum <= 2**31 - 1 or
+            item["vnum"] != expected_vnum or item["item_type"] != ITEM_MONEY or
+            any(amount < 0 for amount in item["values"][:4])):
         raise ExportError("coin-pile payload identity or values are invalid")
-    return values[:4]
+    return item["values"][:4]
 
 
 def realized_price_column_available(cursor) -> bool:
@@ -1461,6 +1394,75 @@ def read_saved_ground_custody(cursor) -> dict:
             **read_saved_ground_payloads(cursor, rows)}
 
 
+ROOM_CANDIDATES_SQL = (
+    "SELECT DISTINCT own.root_item_uid AS root FROM item_current_owner own "
+    "JOIN season_reset_state season ON season.state_id=1 AND season.reset_status='active' AND season.season_epoch>0 "
+    "WHERE own.owner_type=3 AND own.state=1 AND (EXISTS(SELECT 1 FROM sql_room_item_payload p "
+    "WHERE p.item_uid=own.item_uid AND p.season_epoch=season.season_epoch) OR "
+    "(NOT EXISTS(SELECT 1 FROM sql_room_item_payload history WHERE history.item_uid=own.item_uid) AND "
+    "EXISTS(SELECT 1 FROM item_ownership_ledger l JOIN critical_operation_inbox i ON i.operation_id=l.operation_id "
+    "JOIN economic_accounting_operation o ON o.operation_id=l.operation_id WHERE l.item_uid=own.item_uid "
+    "AND l.root_item_uid=own.root_item_uid AND l.to_owner_type=3 AND l.to_owner_id=own.owner_id "
+    "AND l.to_owner_context_id=0 AND l.from_owner_type=1 AND l.from_owner_id>0 AND l.from_owner_context_id=0 "
+    "AND l.reason_type=6 AND l.reason_id=own.owner_id AND i.command_type=5 AND i.schema_version=2 "
+    "AND i.status=1 AND i.result_code=0 AND i.failure_stage=0 AND o.outcome=1 AND o.result_code=0)))")
+ROOM_PROOF_FROM = (
+    " FROM sql_room_item_payload p LEFT JOIN economic_accounting_item_reference r "
+    "ON r.operation_id=p.operation_id AND r.item_uid=p.item_uid "
+    "LEFT JOIN item_ownership_ledger l ON l.operation_id=r.legacy_operation_id AND l.event_index=r.legacy_event_index "
+    "LEFT JOIN critical_operation_inbox i ON i.operation_id=p.operation_id "
+    "LEFT JOIN economic_accounting_operation o ON o.operation_id=p.operation_id")
+
+
+def read_room_item_custody(cursor) -> dict:
+    """Borrow one consistent read-only cut; keep missing bindings and descendants."""
+    members_from = " FROM item_current_owner own WHERE own.root_item_uid IN (" + ROOM_CANDIDATES_SQL + ")"
+    cursor.execute("SELECT (SELECT COUNT(*) FROM sql_room_item_payload)+"
+        "(SELECT COUNT(*)" + ROOM_PROOF_FROM + ")+"
+        "(SELECT COUNT(*) FROM (" + ROOM_CANDIDATES_SQL + ") candidates)+"
+        "(SELECT COUNT(*)" + members_from + ")+"
+        "(SELECT COUNT(*) FROM season_reset_state) AS rows_total,"
+        "(SELECT COALESCE(SUM(OCTET_LENGTH(payload)),0) FROM sql_room_item_payload) AS payload_bytes,"
+        "(SELECT COALESCE(MAX(OCTET_LENGTH(payload)),0) FROM sql_room_item_payload) AS max_payload_bytes")
+    bounds = cursor.fetchone()
+    if (bounds is None or bounds["rows_total"] > MAX_ROWS or
+            bounds["payload_bytes"] > MAX_INPUT_BYTES//2 or bounds["max_payload_bytes"] > 131072):
+        raise ExportError("room item sources exceed audit bounds")
+    payloads = list(bounded(cursor, "SELECT item_uid AS uid,item_revision AS revision,payload_version,"
+        "operation_id,season_epoch,OCTET_LENGTH(payload) AS payload_bytes,SUBSTRING(payload,1,131073) AS payload "
+        "FROM sql_room_item_payload ORDER BY item_uid,item_revision"))
+    for row in payloads:
+        if not isinstance(row["payload"], bytes) or len(row["payload"]) != row["payload_bytes"]:
+            raise ExportError("invalid room item payload source")
+        row["payload"] = row["payload"].hex()
+        row["operation_id"] = hex_id(row["operation_id"])
+    proofs = list(bounded(cursor, "SELECT p.item_uid AS uid,p.item_revision AS revision,"
+        "r.operation_id AS reference_operation,r.item_uid AS reference_uid,r.before_revision,r.after_revision,r.child_index,"
+        "r.legacy_operation_id AS legacy_operation,l.operation_id AS ledger_operation,l.item_uid AS ledger_uid,"
+        "l.root_item_uid AS ledger_root,l.parent_item_uid AS ledger_parent,l.item_revision AS ledger_revision,"
+        "l.from_owner_type AS from_type,l.from_owner_id AS from_id,l.from_owner_context_id AS from_context,"
+        "l.to_owner_type AS to_type,l.to_owner_id AS to_id,l.to_owner_context_id AS to_context,l.reason_type,l.reason_id,"
+        "i.operation_id AS inbox_operation,i.command_type,i.schema_version,i.status,i.result_code,i.failure_stage,"
+        "o.operation_id AS root_operation,o.outcome,o.result_code AS operation_result" + ROOM_PROOF_FROM +
+        " ORDER BY p.item_uid,p.item_revision,r.event_index"))
+    for row in proofs:
+        for field in ("reference_operation", "legacy_operation", "ledger_operation", "inbox_operation", "root_operation"):
+            row[field] = hex_id(row[field])
+    roots = list(bounded(cursor, ROOM_CANDIDATES_SQL + " ORDER BY own.root_item_uid"))
+    members = list(bounded(cursor, "SELECT own.item_uid AS uid,own.root_item_uid AS root,own.parent_item_uid AS parent,"
+        "own.owner_type,own.owner_id,own.owner_context_id AS owner_context,own.item_revision AS revision,"
+        "own.vnum,own.state,own.equipment_slot,"
+        "(SELECT revision FROM item_owner_revision rev WHERE rev.owner_type=own.owner_type AND "
+        "rev.owner_id=own.owner_id AND rev.owner_context_id=own.owner_context_id) AS owner_revision,"
+        "(SELECT COUNT(*) FROM saved_items saved WHERE saved.obj_uid=own.item_uid) AS saved_duplicates" +
+        members_from + " ORDER BY own.root_item_uid,own.item_uid"))
+    seasons = list(bounded(cursor, "SELECT state_id,season_epoch,reset_status FROM season_reset_state ORDER BY state_id"))
+    return dict(room_item_payloads=payloads, room_item_proofs=proofs, room_item_roots=roots,
+        room_item_members=members, room_item_seasons=seasons, room_item_custody_coverage=dict(version=1,
+            payloads=len(payloads), proofs=len(proofs), roots=len(roots), members=len(members), seasons=len(seasons),
+            payload_bytes=int(bounds["payload_bytes"])))
+
+
 def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     # Both native-item and mapping projections can return payload bytes. Bound
     # them before either buffered SELECT, including repeated mapping joins.
@@ -1489,6 +1491,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     native.update(read_locker_custody(cursor))
     native.update(read_siege_custody(cursor))
     native.update(read_saved_ground_custody(cursor))
+    native.update(read_room_item_custody(cursor))
     native["ship_coffers"], native["ship_coffer_coverage"] = read_ship_coffers(cursor)
     native["guild_treasuries"], native["guild_treasury_coverage"] = read_guild_treasuries(cursor)
     gaps = ["ship_coffer_lifetime_origin_revision_and_writer_qualification",
@@ -1861,9 +1864,9 @@ def capture(connection, lineage: bytes, epoch: bytes) -> dict:
             "'corpses','corpse_items','lockers','private_chests','locker_items',"
             "'account_lockers','locker_chests','account_locker_items','siege_items','ships','guilds',"
             "'saved_items','saved_item_recovery_handoff','sql_room_item_payload',"
-            "'saved_item_affects','saved_item_extra_descr','season_reset_state')")
+            "'saved_item_affects','saved_item_extra_descr','season_reset_state','item_owner_revision')")
         engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
-        if len(engines) != 40 or any(engine != "InnoDB" for engine in engines.values()):
+        if len(engines) != 41 or any(engine != "InnoDB" for engine in engines.values()):
             raise ExportError("SQL audit source is missing or not InnoDB")
         has_realized_price = realized_price_column_available(cursor)
         evidence = read_evidence(cursor, lineage, epoch, has_realized_price)
