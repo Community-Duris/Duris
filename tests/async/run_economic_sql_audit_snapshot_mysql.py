@@ -832,14 +832,14 @@ def verify_collector_quarantine_views(owner, reader, snapshot):
                 capsule.mkdir()
                 (capsule / "canonical-plan.eap").write_bytes(bytes.fromhex(modeled["canonical_plan"]))
                 (capsule / "healthy-snapshot.json").write_text(json.dumps(bound, sort_keys=True))
-                for damage in ("selected-only", "history-and-native", "lineage-only", "lineage-and-native"):
+                for damage in ("selected-only", "history-and-native", "lineage-only", "lineage-and-native", "original-preimage"):
                     damaged = copy.deepcopy(bound)
                     alternate = "live" if expected_state == "quarantined" else "quarantined"
                     if damage in ("selected-only", "history-and-native"):
                         for row in damaged["ownership_events"]:
                             if row["operation_id"] == quarantine_root.hex():
                                 row["state"] = alternate
-                    if damage != "selected-only":
+                    if damage in ("history-and-native", "lineage-only", "lineage-and-native"):
                         for row in damaged["native"]["uid_history_events"]:
                             if row["operation_id"] == quarantine_root.hex():
                                 row["state"] = alternate
@@ -847,16 +847,33 @@ def verify_collector_quarantine_views(owner, reader, snapshot):
                         for row in damaged["native"]["items"]:
                             if row["uid"] == 84:
                                 row["state"] = alternate
+                    if damage == "original-preimage":
+                        preimage_fixture = copy.deepcopy(fixture)
+                        # Change the retained before-position only. Captured ledger,
+                        # opening, lineage and native authority remain untouched.
+                        for row in preimage_fixture["ownership_events"]:
+                            if row["uid"] == 84 and row["revision"] == 1:
+                                row["state"] = "quarantined"
+                        bind_original_plans(preimage_fixture)
+                        wrong_plan = preimage_fixture["operations"][0]
+                        for row in damaged["operations"]:
+                            if row["operation_id"] == quarantine_root.hex():
+                                for field in ("canonical_plan", "plan_digest"):
+                                    row[field] = wrong_plan[field]
                     damaged_counts = dict(bound_counts)
                     if damage in ("selected-only", "history-and-native"):
                         damaged_counts["original_plan_custody_mismatch"] = damaged_counts.get("original_plan_custody_mismatch", 0) + 1
-                    if damage != "history-and-native":
+                    if damage in ("selected-only", "lineage-only", "lineage-and-native"):
                         damaged_counts["conflicting_uid_history_projection"] = 1
+                    if damage == "original-preimage":
+                        damaged_counts["original_plan_preimage_mismatch"] = 1
                     if damage == "lineage-only":
                         damaged_counts["stale_native_item"] = damaged_counts.get("stale_native_item", 0) + 1
                     assert Reconciler().audit(damaged)["exception_counts"] == damaged_counts
                     probe = capsule / damage
                     probe.mkdir()
+                    if damage == "original-preimage":
+                        (probe / "canonical-plan.eap").write_bytes(bytes.fromhex(wrong_plan["canonical_plan"]))
                     saved = probe / "snapshot.json"
                     payload = json.dumps(damaged, sort_keys=True).encode()
                     saved.write_bytes(payload)

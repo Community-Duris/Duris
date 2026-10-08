@@ -943,7 +943,7 @@ class Reconciler:
                                        [event.get(field) for field in fields]):
                     self.emit("conflicting_uid_history_projection", operation_id=event["operation_id"],
                               event_index=event["event_index"], uid=selected.get("uid"))
-        self.audit_original_plans(tables, by_op, ownership)
+        self.audit_original_plans(tables, by_op, ownership, native.get("uid_history_events"))
         return {"exception_count": sum(self.counts.values()), "exception_counts": dict(sorted(self.counts.items())),
                 "exceptions": self.exceptions, "truncated": sum(self.counts.values()) > len(self.exceptions),
                 "checked": {name: len(tables[name]) for name in TABLES} |
@@ -1977,7 +1977,7 @@ class Reconciler:
                     self.emit("saved_ground_coin_literal_mismatch", uid=uid)
         # No reverse absence inference until all room source families qualify.
 
-    def audit_original_plans(self, tables: dict, by_op: dict, ownership: dict) -> None:
+    def audit_original_plans(self, tables: dict, by_op: dict, ownership: dict, history: object) -> None:
         """Bind projections to retained EAP1 bytes, independently of mutation code.
 
         Every committed root needs its original plan, including model fixtures.
@@ -1986,6 +1986,18 @@ class Reconciler:
         """
         import struct
         from economic_restore_evidence import MAX_PLAN, decode_plan
+
+        wanted = {row["uid"] for row in tables["item_references"] if type(row.get("uid")) is int}
+        preimages = defaultdict(list)
+        for rows, slot_field in ((tables["item_origins"], "equipment_slot"),
+                                 (tables["ownership_events"], "to_equipment_slot"),
+                                 (history if isinstance(history, list) else (), "to_equipment_slot")):
+            for row in rows:
+                if (not isinstance(row, dict) or row.get("uid") not in wanted or
+                        not valid_item_custody_position(row, row.get("origin") == "creation",
+                                                       equipment_field=slot_field)):
+                    continue
+                preimages[(row["uid"], row["revision"])].append((row, slot_field))
 
         total = 0
         for operation in tables["operations"]:
@@ -2083,6 +2095,17 @@ class Reconciler:
                         for _, _, uid, old, new in plan["events"]]
             check(same_projection(custody, expected),
                   "original_plan_custody_mismatch")
+            preimage_valid = True
+            for _, _, uid, old, _ in plan["events"]:
+                # Creation's zero wire position has a UID-named logical opening.
+                expected = {"root": uid if old[1] == 0 else old[4], "parent": old[5] or None,
+                            "owner": [old[0], old[2], old[3]], "revision": old[6],
+                            "state": ("absent", "live", "tombstone", "quarantined")[old[1]]}
+                for prior, slot_field in preimages.get((uid, old[6]), ()):
+                    if (not same_projection([prior.get(field) for field in expected], list(expected.values())) or
+                            (slot_field in prior and item_equipment_slot(prior, slot_field) != old[7])):
+                        preimage_valid = False
+            check(preimage_valid, "original_plan_preimage_mismatch")
             if valid:
                 self.original_plans_verified += 1
 

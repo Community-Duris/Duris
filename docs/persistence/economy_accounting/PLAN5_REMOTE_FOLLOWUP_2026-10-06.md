@@ -2628,3 +2628,32 @@ recovery/ACK and original-plan preimage/combined/activation/Plan5/R1-R8/release
 gates stay open. Full report PLAN5_UID_HISTORY_PROJECTIONS_2026-10-08.md.
 Curator-ready input; primary-local notebook nonblocking, application/ack unclaimed.
 No activation, autocorrection, production access, primary push, deployment or merge.
+
+
+### Original item-plan starting positions - 2026-10-08
+
+Owned base 9dd3a8da2286a14a8d17d007c4162d6864a0e7f4; result containing commit,
+verified on remote codex/accounting-plan5 in item-preimages-20261008/delivery/result.json.
+Six false-clean valid-capsule substitutions established (opening state/topology,
+retained state, both directions). Reader now compares before-position with every
+available valid opening/selected/lineage candidate at UID/revision. Contradiction
+adds original_plan_preimage_mismatch once per root/unverified plan; missing history
+stays unknown, creation retains its UID-named logical opening. No mutation import.
+Four new regressions: old reader 44 failed subtests/zero errors; final 16 modules 412
+loaded / 394PASS / 18 existing opt-in skips. Earlier broader run's two older expected
+owner-history outcomes retained as failed checks02, then updated without removing
+old findings. Both full partial-SQL runners PASS:10 probes / 60 CLI checks per engine,
+47 tables unchanged. New wrong-before capsule is authored into saved capture only,
+not claimed recaptured through SQL. Original canonical02 PASS both 0064 engines,
+3026 cases/109 cuts/90 refusals/58 full-entry per engine. Final 03 differs only in
+two older unit expectations; actual reader/native/SQL/canonical inputs are exact.
+40 final native round trips use authenticated probes, no fresh whole-server build.
+Exact final tree cd14b6afa5646448745d54703f6785d86bc31e3c; primary 5990082efc2e3c0e4deffac9791d3e8e982c9733;27 overlays / native 833d / migrations 7e06.
+Raw seal 8b0eebd45e540dbd477037d79e9c755c2c6d8442f9e78023518ecc57602df616;1781 files/1328099087 bytes/1317 regular build files.
+All eight containers stopped/no OOM/live recorded children. No shared interface
+request; primary owns shared registration/import. Earlier branch tips/tombstone/
+endpoint/history fixes preserved. Full backup/native recipe, genuine producer/
+opening/recovery/ACK/combined/activation/Plan 5/R1-R8/release gates stay open.
+Report PLAN5_ITEM_PLAN_PREIMAGES_2026-10-08.md. Curator-ready input; primary-local
+notebook nonblocking; application/ack unclaimed. No activation, autocorrection,
+production access, primary push, deployment or merge.

@@ -1462,3 +1462,13 @@ omission stays unknown. This finding is global at every output limit, identifies
 the operation and selected UID, and preserves both captured rows in provenance.
 It performs no correction. Selected EAP authentication and history agreement are
 separate checks. See [exact regression, SQL/native evidence and integration gates](PLAN5_UID_HISTORY_PROJECTIONS_2026-10-08.md).
+
+
+The independent reader binds each retained EAP1 item before-position to all valid
+captured opening and prior selected/lineage positions at the same UID/revision.
+Contradictory root, parent, owner, state or recorded equipment produces
+`original_plan_preimage_mismatch` and prevents that operation from counting as a
+verified original plan. Creation uses its UID-named logical opening. Missing
+history remains unknown under existing coverage findings; no arbitrary copy is
+chosen when captures disagree. The finding remains global at every output limit
+and performs no correction. See [exact source, native and disposable-SQL evidence](PLAN5_ITEM_PLAN_PREIMAGES_2026-10-08.md).

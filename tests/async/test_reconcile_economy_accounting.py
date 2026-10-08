@@ -208,6 +208,41 @@ def clean_snapshot():
     })
 
 
+def item_preimage_snapshot(scope, value):
+    """Synthetic captured opening/history with an explicitly authored EAP1."""
+    snapshot = clean_snapshot()
+    if scope == "opening-state":
+        snapshot["item_origins"][0]["state"] = value
+    elif scope == "opening-topology":
+        origin = snapshot["item_origins"][0]
+        if value:
+            origin.update(root=82, parent=82)
+        second = dict(origin, uid=82, root=82, parent=None, state="live")
+        snapshot["item_origins"].append(second)
+        snapshot["native"]["items"].append(dict(second, revision=2))
+        snapshot["ownership_events"].append(dict(snapshot["ownership_events"][0], event_index=1,
+            uid=82, root=82, parent=None, owner=[2, 8, 0], from_owner=[2, 8, 0]))
+        snapshot["item_references"].append(dict(snapshot["item_references"][0], event_index=1,
+            uid=82, legacy_event_index=1))
+        snapshot["operations"][0]["item_event_count"] = 2
+    elif scope == "retained-state":
+        event = snapshot["ownership_events"][0]
+        event.update(before_revision=2, revision=3)
+        snapshot["item_references"][0].update(before_revision=2, after_revision=3)
+        snapshot["native"]["items"][0]["revision"] = 3
+        prior = dict(event, operation_id="66" * 16, before_revision=1, revision=2,
+                     owner=[2, 8, 0], from_owner=[2, 8, 0], state=value)
+        snapshot["ownership_events"].append(prior)
+        bind_original_plans(snapshot)
+        snapshot["ownership_events"].remove(prior)
+        snapshot["native"]["uid_history_events"] = [
+            dict(row, operation_outcome="committed", referenced=False) for row in (prior, event)]
+        return snapshot
+    else:
+        raise AssertionError("unknown synthetic preimage scope")
+    return bind_original_plans(snapshot)
+
+
 def zero_net_snapshot(revision=1):
     """Synthetic referenced ordinary effect; native parity is qualified separately."""
     snapshot = clean_snapshot()
@@ -495,8 +530,8 @@ class ItemOwnerHistoryTests(unittest.TestCase):
             before = copy.deepcopy(snapshot)
             for limit in (0, 1, 100):
                 report = Reconciler(limit).audit(snapshot)
-                self.assertEqual(report["checked"]["original_plans_verified"], 1)
-                self.assertEqual(report["exception_counts"], {"broken_item_owner_history": 1})
+                self.assertEqual(report["checked"]["original_plans_verified"], 0)
+                self.assertEqual(report["exception_counts"], {"broken_item_owner_history": 1, "original_plan_preimage_mismatch": 1})
             self.assertEqual(snapshot, before)
 
     def test_every_recorded_previous_owner_matches_the_preceding_state(self):
@@ -565,8 +600,8 @@ class ItemOwnerHistoryTests(unittest.TestCase):
                     result=subprocess.run(command,capture_output=True,text=True,timeout=30)
                     self.assertEqual(result.returncode,1,result.stderr)
                     self.assertEqual(result.stderr,"");value=json.loads(result.stdout)
-                    if name=="exceptions":self.assertEqual(value["exception_counts"],{"broken_item_owner_history":1})
-                    else:self.assertEqual(value["coverage"]["exception_count"],1)
+                    if name=="exceptions":self.assertEqual(value["exception_counts"],{"broken_item_owner_history":1,"original_plan_preimage_mismatch":1})
+                    else:self.assertEqual(value["coverage"]["exception_count"],2)
                     self.assertLessEqual(len(value.get("rows",value.get("exceptions",[]))),limit)
                     self.assertEqual(path.read_bytes(),payload)
 
@@ -3052,6 +3087,100 @@ class ReconciliationTests(unittest.TestCase):
                                                owner=[8, 0, 0])
         snapshot["native"]["items"][0].update(state="tombstone", owner=[8, 0, 0])
         self.assertIn("duplicate_item_retirement", self.codes(snapshot))
+
+    def test_original_item_plan_preimage_binds_opening_and_retained_positions(self):
+        for scope, values in (("opening-state", ("live", "quarantined")),
+                              ("opening-topology", (False, True)),
+                              ("retained-state", ("live", "quarantined"))):
+            for index, value in enumerate(values):
+                snapshot = item_preimage_snapshot(scope, value)
+                healthy = Reconciler()
+                self.assertEqual(healthy.audit(snapshot)["exception_counts"], {})
+                self.assertEqual(healthy.original_plans_verified, 1)
+                alternate = item_preimage_snapshot(scope, values[1 - index])["operations"][0]
+                for field in ("canonical_plan", "plan_digest"):
+                    snapshot["operations"][0][field] = alternate[field]
+                original = copy.deepcopy(snapshot)
+                with self.subTest(scope=scope, value=value):
+                    auditor = Reconciler()
+                    self.assertEqual(auditor.audit(snapshot)["exception_counts"], {"original_plan_preimage_mismatch": 1})
+                    self.assertEqual(auditor.original_plans_verified, 0)
+                    self.assertEqual(snapshot, original)
+
+    def test_original_item_plan_preimage_preserves_creation_and_unknown_history(self):
+        for snapshot in (clean_snapshot(), creation_snapshot()):
+            auditor = Reconciler()
+            self.assertEqual(auditor.audit(snapshot)["exception_counts"], {})
+            self.assertEqual(auditor.original_plans_verified, 1)
+        cases = []
+        snapshot = clean_snapshot()
+        del snapshot["item_origins"][0]["equipment_slot"]
+        cases.append((snapshot, "missing_item_equipment_evidence"))
+        snapshot = clean_snapshot()
+        snapshot["item_origins"] = []
+        cases.append((snapshot, "unknown_legacy_origin"))
+        snapshot = item_preimage_snapshot("retained-state", "live")
+        snapshot["native"]["uid_history_events"].pop(0)
+        cases.append((snapshot, "broken_uid_history"))
+        for snapshot, expected in cases:
+            original = copy.deepcopy(snapshot)
+            with self.subTest(expected=expected):
+                report = Reconciler().audit(snapshot)
+                self.assertEqual(report["exception_counts"], {expected: 1})
+                self.assertEqual(snapshot, original)
+
+    def test_original_item_plan_preimage_checks_every_captured_candidate(self):
+        snapshot = item_preimage_snapshot("retained-state", "live")
+        prior = copy.deepcopy(snapshot["native"]["uid_history_events"][0])
+        prior.update(operation_id="77" * 16, state="quarantined")
+        snapshot["native"]["uid_history_events"].append(prior)
+        for reverse in (False, True):
+            if reverse:
+                snapshot["native"]["uid_history_events"].reverse()
+            original = copy.deepcopy(snapshot)
+            with self.subTest(reverse=reverse):
+                auditor = Reconciler()
+                report = auditor.audit(snapshot)
+                self.assertEqual(report["exception_counts"].get("original_plan_preimage_mismatch"), 1)
+                self.assertEqual(auditor.original_plans_verified, 0)
+                self.assertEqual(snapshot, original)
+
+    def test_original_item_plan_preimage_cli_is_global_bounded_and_read_only(self):
+        for scope, values in (("opening-state", ("live", "quarantined")),
+                              ("opening-topology", (False, True)),
+                              ("retained-state", ("live", "quarantined"))):
+            for index, value in enumerate(values):
+                snapshot = item_preimage_snapshot(scope, value)
+                alternate = item_preimage_snapshot(scope, values[1 - index])["operations"][0]
+                for field in ("canonical_plan", "plan_digest"):
+                    snapshot["operations"][0][field] = alternate[field]
+                snapshot["operations"][0]["personal_alias"] = "private-preimage"
+                with tempfile.TemporaryDirectory(prefix="item-plan-preimage-") as folder:
+                    path = Path(folder) / "snapshot.json"
+                    payload = json.dumps(snapshot, sort_keys=True).encode()
+                    path.write_bytes(payload)
+                    for name in ("exceptions", "provenance"):
+                        for limit in (0, 1, 100):
+                            command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                       str(path), "--view", name, "--limit", str(limit)]
+                            if name == "provenance":
+                                command += ["--uid", "81"]
+                            result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                            with self.subTest(scope=scope, value=value, name=name, limit=limit):
+                                self.assertEqual((result.returncode, result.stderr), (1, ""))
+                                output = json.loads(result.stdout)
+                                if name == "exceptions":
+                                    self.assertEqual(output["exception_counts"], {"original_plan_preimage_mismatch": 1})
+                                    self.assertEqual(output["checked"]["original_plans_verified"], 0)
+                                    self.assertEqual([row["code"] for row in output["exceptions"]],
+                                                     ["original_plan_preimage_mismatch"][:limit])
+                                else:
+                                    self.assertEqual(output["coverage"]["exception_count"], 1)
+                                    count = 2 if scope == "retained-state" else 1
+                                    self.assertEqual((output["count"], len(output["rows"])), (count, min(count, limit)))
+                                self.assertNotIn("private-preimage", result.stdout)
+                                self.assertEqual(path.read_bytes(), payload)
+                                self.assertEqual(json.dumps(snapshot, sort_keys=True).encode(), payload)
 
     def test_uid_history_projection_conflicts_with_selected_state_owner_and_slot(self):
         for initial, field, alternate in (("live", "state", "quarantined"),
