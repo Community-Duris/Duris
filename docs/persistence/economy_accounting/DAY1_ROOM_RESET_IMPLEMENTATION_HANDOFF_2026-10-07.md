@@ -1,5 +1,29 @@
 # Required room-floor reset producer: implementation handoff - 2026-10-07
 
+## Immutable cold movement and Plan5 source joined - 2026-10-08
+
+[Source integration handoff](COLD_WORKING_PLAN5_SOURCE_INTEGRATION_2026-10-08.md)
+records private candidate `7108537ee60f94cfefdfef5dca8a627c0ef3a73844ac3c228301c0cf952389d0`:150 production files,23 unchanged original
+fixtures,five unchanged schema inputs and11 additional audit/restore paths.
+All81 selected C providers remain registered once;12 additional native source
+slices authenticate1643 dependency records. The Plan5 source closure has44
+Python dependencies;108 existing central rows are preserved,with three new
+offline rows and29 added required methods. Composition2d9642 changes no
+maintained implementation; compiler/native/SQL/gameplay/recovery remain unrun.
+
+Cold movement now retains genuine reachable immutable PC/keeper/target forests
+before its full charge. Actual native pointers/R_num/NORENT ordering and full
+BEFORE/AFTER bindings are preserved. Scalar phase advances immediately after a
+normally returned successful original effect,BEFORE post-effect recensus; a
+refusing recensus retains that next expectation. Original full caller,registration,
+reload/effects/money/custody/final ACK and shared keeper atomic writes remain open.
+Independent Plan5 previous-owner/position/provenance/zero-net/action fixes and
+exact backup/tombstone object/version guards are source-joined. Peer27-overlay
+tests do not qualify this smaller candidate. Major-plan execution remains deferred;
+inactive accounting,declined spell path,32MiB budget and activation gates stay.
+Original Plan1 acceptance keeps its recorded scope;fullPlans2-4,combinedPlan5,
+R1-R8 and release completion are unproven. The goal remains active.
+
 ## Flat cold enrollment and exact retained capacity - 2026-10-08
 
 Private `tmp/lifecycle-shared-shop-reader-cold-holder-candidate-primary-20261008`
