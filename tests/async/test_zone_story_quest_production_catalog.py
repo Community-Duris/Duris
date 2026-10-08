@@ -10867,7 +10867,8 @@ read_note=info.split('void do_read(',1)[1].split('void do_examine(',1)[0]
 assert 'at %s' in read_note and 'do_look(ch, buf, -4);' in read_note
 assert 'arg2, tmp_object->ex_description' in info
 reset=(ROOT/'src/world/db.c').read_text(encoding='utf8').split("case 'P': /* object to object */",1)[1].split("case 'G':",1)[0]
-assert 'obj_to = get_obj_num(ZCMD.arg3);' in reset and 'obj_to_obj(obj, obj_to);' in reset
+assert re.search(r'obj_to\s*=\s*native_sql_reset\s*\?\s*quest_mobile_native_birth_owner::\s*original_object\(ZCMD.arg3\)\s*:\s*get_obj_num\(ZCMD.arg3\);', reset)
+assert re.search(r'if \(native_sql_reset\)\s*quest_mobile_native_birth_owner::nest\(\s*obj, obj_to, mob\);\s*else\s*obj_to_obj\(obj, obj_to\);', reset)
 handler=(ROOT/'src/world/handler.c').read_text(encoding='utf8').split('P_obj get_obj_num(',1)[1].split('P_char get_char_room(',1)[0]
 assert 'for (i = object_list; i; i = i->next)' in handler and 'i->R_num == nr' in handler
 innate=(ROOT/'src/classes/innates.c').read_text(encoding='utf8')
