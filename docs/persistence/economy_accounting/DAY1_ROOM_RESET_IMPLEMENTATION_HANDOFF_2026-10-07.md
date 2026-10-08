@@ -1,57 +1,56 @@
 # Required room-floor reset producer: implementation handoff - 2026-10-07
 
-## Reviewed retained runtime abort and build integration - 2026-10-07
+## Reviewed runtime return and retained real-root construction - 2026-10-07
 
-Private `tmp/lifecycle-reset-abort-proof-candidate-primary-20261007` composes
-97 production files, 23 unchanged original fixtures and five private schema/
-manifest files on maintained3bcc4650a. Candidate SHA-256 is
-`604cbd1b79c83b9c45add9b7b653b27531464e945fb39093d2e470ababbb2f10`.
-Independent source review and changed-line formatting/token preservation pass.
-Compiler, native, SQL, migration, gameplay, fault and recovery execution are unrun.
-These private sources have not been imported into the maintained production tree.
+Private `tmp/lifecycle-reset-runtime-return-root-candidate-primary-20261007`
+composes99 production files, 23 unchanged original fixtures and five private
+schema/manifest files on maintainedaf425e28e. Candidate SHA-256 is
+`a91ff6cf48d3920150fcc08893afded3803874d6b3b33f6da9247f661f59ef5a`.
+All53 selected production C providers are registered once with existing rules
+and flags. Reviewed slices and changed-line formatting/token checks pass;
+compiler, native, SQL, migrations, gameplay, fault and recovery remain unrun.
+The source implementation remains private, not imported into production Git.
 
-The original auction forest helper is now a real separate pure production
-provider. Original function bodies, public declarations and the remaining native
-publication body are preserved. The unchanged original fixture recipe does not
-use a fake provider or new linker flags. Fifteen missing real production objects
-are registered; all52 selected production C files occur once. Existing flags,
-rules, dependency generation and profiles are preserved. Full native linkage
-remains unproven; other mixed production dependencies still need source closure.
+The original adopted COMMIT-attempt restriction and fresh known-abort SQL/full
+wallet-bank projection checks remain. Reverse writer ownership now validates the
+returned genuine maintenance guard, same idle SQL session/named locks, empty
+original writer and strict actual reservation readiness, then nonthrowingly moves
+the held local gate/writer metadata back. Boot lock/session/authority are preserved.
 
-The adopted runtime cleanup mode retains the original SQL session, boot/writer
-locks, local gate and genuine coordinator lease through known rollback. Genuine
-committed publication and known abort can transfer the same fences to the empty
-lifetime guard. A marker set before adopted COMMIT prevents ordinary rollback,
-private aborted return and known-abort validation after an uncertain COMMIT.
-A later successful ROLLBACK cannot disprove that COMMIT. Pre-COMMIT START/rollback
-recovery remains available; ordinary maintenance behavior is preserved.
+Coordinator return atomically restores the original genuine lifecycle reservation
+while admission stays closed. Its original accepting policy is retained internally;
+generic lease release/finish cannot bypass runtime-origin return. Actual late-cut
+acquisition mints only a restrictive initialized-owner marker. Explicit quiesce
+suppresses reopening before promotion, during adoption and after reverse transfer;
+ordinary and early-recovery reservation behavior is preserved. Exact owner cleanup
+checks readiness before releasing the reservation, without an unowned readback gap.
 
-Private known-abort verification now authenticates a fresh RR SQL selection,
-installation, activation, baseline/opening and full current mappings on that
-original retained session. The original finished selection supplies expected
-identities only. Existing transaction cleanup is registered before SET/START;
-explicit original-session ROLLBACK and idle proof precede a complete comparison
-of the still-installed regular wallet/bank projection. Counts, unique canonical
-locators, all account-key fields, identity and unchanged atomic incarnation are
-checked. This immediate private check does not install policy, release exclusion,
-reopen admission or create a reusable return permit. Actual return/resume and
-committed projection publication are still unwired.
+Initialized-world cleanup now retries the real writer-release obligation even
+after its confirmation was invalidated by failed SQL cleanup, and skips completed
+writer/reservation stages. The capability is revoked exactly once; cleanup_pending
+can retry without reissuing or borrowing it, and completed cleanup is idempotent.
+Original outbox/save resumption follows completed exclusion cleanup. Actual adopted
+activation/abort caller and private pre-promotion revocation are still unwired;
+these helpers neither select an epoch nor grant projection authority.
 
-The accepted cold reset owner, nullable original terminal storage/raw proof,
-exact-session SQL recovery caller and successful pre-listener full-world census
-remain in the common candidate. Original budgets and32MiB storage/1MiB raw-cell
-boundaries remain. The census drains actual accepted outbox/saves and revokes its
-private borrow before callbacks. No epoch is selected by these source changes.
+Real O-root preparation captures the authentic invocation/slot/room, actual
+allocator UID, detached factory, literal/recipe/binding and original load decision.
+Artifacts/corpses stay with their separate owner before the load roll. Review found
+that an ignored inner factory cleanup failure could lose its native owner. A narrow
+private retaining variant now transfers surviving failed factory state into the
+caller-owned handle; held_refusal persists until genuine cleanup. The original
+prepare wrapper shares the exact original constructor body with unchanged policy.
+No root is sealed/admissible and actual O/P dispatch remains unchanged.
 
-Parallel actual O producer tracing confirmed genuine P selection is world-global
-newest-constructor lookup, potentially across intervening commands/owners. Roots
-must retain original ordering through the complete reset boundary. A caller-owned
-original source/factory construction slice is underway, not an admissible forest.
-Whole-forest ownership, real room nesting/placement services, terminal transfer,
-artifact/progressed money recovery, flat parity, measured schema fingerprints,
-activation/normalization/independent verifier integration and original major-plan/
-R1-R8 qualification remain open. Inactive behavior and safety gates stay intact;
-this checkpoint closes no release gate and coverage remains incomplete.
+The accepted cold reset/terminal SQL/raw proof, source union, owning pre-listener
+census and real pure auction forest provider remain. All original budgets and
+32MiB terminal storage/1MiB raw-cell bounds stay. Whole-reset P target chronology,
+cross-owner construction order, genuine room nesting/reducing-shell and hot placement,
+current season/room CAS, complete terminal/publication, progressed money/artifact
+recovery, flat parity, measured schema fingerprints, full normalization/independent
+verifier consumer and original major-plan/R1-R8 qualification remain open. A separate
+room-nesting successor is under construction. Inactive behavior, active O skip and
+all safety gates remain; no release gate or inventory coverage is promoted.
 
 ## Reviewed creation census and current coin heads - 2026-10-07
 
