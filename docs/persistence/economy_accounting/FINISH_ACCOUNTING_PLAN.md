@@ -1,5 +1,19 @@
 # Finish accounting implementation plan
 
+## Smith flat readiness and original room-P source joined - 2026-10-08
+
+[Source integration](SMITH_FLAT_READINESS_AND_ROOM_P_SOURCE_INTEGRATION_2026-10-08.md)
+records private candidate `ebffee52d75111bdc0fba8b8c65b6d343b3c9f02f8609d36b66f34064d4f6305`.
+Smith flat readiness uses the original queue/writer/ACK/hold. Room-P retains the
+actual quota, child and target through known-pure preparation refusal and consumes
+real terminal outcomes once. Paired and caller source reviews passed; all209
+selected bodies and unrelated WIP authenticate. Inactive/mobile-P/O and activation
+guards are preserved. The candidate remains unpromoted; the narrow maintained
+flat save-profile port continues separately. Compiler/native/gameplay/persistence/
+recovery execution stays deferred until major-plan readiness. Full Smith/shared
+birth, Plans2-4/combinedPlan5/R1-R8/release remain incomplete. Original Plan1
+acceptance keeps its recorded scope. The goal remains active.
+
 ## Smith flat save and original O cursor source joined - 2026-10-08
 
 [Source integration](SMITH_FLAT_SAVE_AND_ORIGINAL_O_CURSOR_SOURCE_INTEGRATION_2026-10-08.md)
