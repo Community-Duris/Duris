@@ -146,6 +146,13 @@ or new clock authorized;quest prerequisites unchanged. No next independent task
 is selected until actual owner/source/fixture inputs change. Prior
 0433 Plan5/immutable-forest report remains historical;no private source/adoption
 or integrated qualification observable. GoalBLOCKED/heartbeatACTIVE unchanged.
+Concurrentba319959e source-joins complete original refining/private39a35e59:
+full compound fee/material/outcome,original single roll and retained notification;
+200 selected paths/161 source files. This supersedes the prior pending-refining
+status below only at reported source scope;all execution remains deferred and
+public implementation unchanged. Special room effects and architecture private
+fact preparation remain open;remaining Craft/Forge/Smith/native/Plan5/R1-R8 and
+activation are not completed by the source join.
 Latest7110f2ba7 reports privatea6854976 warm prefix/budget/placement/pure craft
 mapping source join;190 paths/151 source paths,all execution deferred and public
 src/tests/migrations unchanged. Full refining remains under primary independent

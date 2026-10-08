@@ -1748,3 +1748,27 @@ stage/registry/producer/replay/ACK and execution are unavailable dependencies.
 No maintained code/test/doc/patch,format/policy design,private import/build/test/
 server/DB/native run. Root independent review pending;quest prior feasibility and
 keeper facts closed,preserved. GoalsBLOCKED/heartbeatACTIVE,overall unfinished.
+
+
+Concurrent primaryba319959eec7305a7e68a60dce3d24accbf29408 now supersedes the
+pending-refining disposition below with the55-line
+[Complete refining source report](../COMPLETE_REFINING_SOURCE_INTEGRATION_2026-10-08.md),read in full.
+Private39a35e59e83b94fbed3e96138dded14dfeb807eba256489976940f88874b46cc source-
+joins full retained refining and fresh regular PC wallet admission:two matching
+materials/all eligible ore,last-ore chance adjustment,original50,000 copper fee
+unless ore count is exactly one,one frozen roll. Intended failure consumes inputs/
+fee without output;technical failure rolls compound work back;retry selects/rolls
+nothing again. Paid/freev3 authenticates ordered inputs/full native wallet vectors/
+revision0;schema2 retains its historical context. SQL fee financial rows and item
+retirement/issuance share original transaction;client-free flat after-images share
+original journal root. Publication/cold use retained outcome;post-ACK notification
+retains consumed names and once-only continuation,with no XP/progression receipt.
+Reported284 provider pins/62 forward-inverse changes,200 paths/161 source files;
+inactive path/v1-v2/schema/queues/bounds/fixtures preserved. All compiler/unit/native/
+SQL/gameplay/persistence/recovery/performance execution remains UNEXECUTED and
+public source unchanged;private composition/adoption unknown. Remaining Craft/
+Forge/Smith and frozen-notch/cold notification,reset dispatch/replay/ACK/special
+room effects,keeper/activation/Plan5/R1-R8 remain. Special placement preparation
+assignment remains useful and unchanged;quest native dependencies remain blocked.
+Normal merge preserves concurrent primary guidance without force/reset.
+
