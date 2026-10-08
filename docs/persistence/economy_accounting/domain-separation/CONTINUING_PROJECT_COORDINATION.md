@@ -96,11 +96,18 @@ PREPARATION_BUNDLES_REVIEW_2026-10-08.md:32 bodies,46 anchors/links and three
 context links authenticated. The v14/v6 zero-root child depends on its real v12
 acceptance parent; existing QP02 item-plus-cost/non-fee QP03 are distinct. Gorblag
 is a source candidate only; funded/item-parent reachability remains unproven.
-Quest next owns native_quest_fee_owner_boundary_test.cpp, its focused Python
-wrapper and NATIVE_QUEST_FEE_COMPONENT_HANDOFF_2026-10-08.md, at exact prep paths
-in that review: actual providers and modeled value/receipt/transition/ACK controls,
-no copied authority or native qualification. Exact available inputs, unavailable
-original exports/setup/census, collision limits and qualification remain explicit. Existing oracles
+Fee componentb478374e0/handoff20970bf1e now PASS actual-provider/model review:
+2,818 public blobs, both committed test bodies,155 artifacts,23 direct inputs and
+63 original compiler/link commands authenticated; unchanged original context and
+103 fee controls independently PASS without sanitizer diagnostics. Exact modeled
+terms, retained fixture corrections and native/SQL/owner/journal limits remain in
+that review. Quest next owns only optional observed mapping/lineage-head capture
+in capture_quest_cut.py, test_capture_quest_cut.py and
+OBSERVED_MAPPING_CAPTURE_HANDOFF_2026-10-08.md. Public schema/reader inputs are
+available; preserve defaults, legacy/bounds/read-only/rollback guards and literal
+missing/foreign/retired observations. No inferred mapping, private role grammar,
+authority/oracle/schema/shared owner or native qualification is added. The review
+records precise benefit, controls, collisions and unavailable genuine interfaces. Existing oracles
 remain intact. Native mapping/
 publication, genuine D/chronology, full census, original owner exports and
 authentic paid setup remain unavailable. Currency blueprint
@@ -120,12 +127,17 @@ profile authenticated; coordinator reran49 O1+49 Og cases without diagnostics.
 Correction12 artifacts and actual timeout/nonzero diagnostics pass; harness/
 providers/commands unchanged. Import includes the correction. This is observer/
 capture acceptance, not SQL/publication/ACK/save/cold qualification.
-Architecture next owns only COLLECTOR_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md:
-actual enrollment/claim/collection/purchase/expiry, catalog/custody/money/time,
-original receipt/current proof/native/recovery boundaries and one useful future
-reservation. Reuse R0 and existing pure preparations; exact available inputs,
-unavailable private owner/driver, collision and qualification limits are in that
-review. No production/test/shared owner/quest edit or active runner is assigned.
+Collector mapb49a8612b now PASS source/design review there:3,069 archived public
+blobs,54 cited body pins,88 anchors and five links authenticated; no native run.
+Architecture next owns only test_collector_collection_native_capture.py,
+collector_collection_native_capture_harness.cpp and
+COLLECTOR_COLLECTION_NATIVE_CAPTURE_HANDOFF_2026-10-08.md: actual whole capture/
+codec/custody/command providers, manual full-root/singleton expectations and
+focused strict sanitizer qualification. Preserve R0 and ordinary capture masks;
+characterize missing-owner projection initialization separately. Exact provider
+closure remains unproven; genuine native/shutdown/current-proof/save owners stay
+unavailable. The review states controls/collisions; no production/shared runner/
+owner/quest edit, DB/journal/server or native journey is assigned.
 Genuine save/current-proof/restart owners still block pickup production wiring.
 Primary31ad6ae72 publishes private retained flat-submission/prospective NBC4/NMB4
 cash-role progress, candidatebe8942cd/134 production files/72 C providers, and

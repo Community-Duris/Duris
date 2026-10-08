@@ -515,3 +515,151 @@ accounting/native-image participants, birth/admission/room integration, complete
 opening/shared-keeper history, activation, Plan5 and R1-R8 remain primary obligations.
 Quest fee component stays independently active. Actual native Goals remain BLOCKED,
 heartbeat ACTIVE and the broader published primary finish line unresolved.
+
+## Native quest fee component reviewed; optional mapping capture next
+
+PASS for actual-provider modeled-value acceptance at code
+`b478374e0c9b17a999ff6377c919d6a5e56fc2a7` and handoff
+`20970bf1e273df61e84b7e3c90aa61c9def15679`.
+[Exact component handoff](https://github.com/Community-Duris/Duris/blob/20970bf1e273df61e84b7e3c90aa61c9def15679/docs/persistence/economy_accounting/quest-prep/NATIVE_QUEST_FEE_COMPONENT_HANDOFF_2026-10-08.md)
+and [C++ fixture](https://github.com/Community-Duris/Duris/blob/b478374e0c9b17a999ff6377c919d6a5e56fc2a7/tests/async/quest_accounting_prep/native_quest_fee_owner_boundary_test.cpp)
+plus its adjacent Python runner form the optional three-file bundle. Import the
+code and handoff into a compatible published-primary/owned-prep composition;
+do not import the prep branch's older production tree. Primary adoption is unknown.
+
+Coordinator read the complete fixture, wrapper and final handoff. Independently
+authenticated all 2,818 public Git blobs from candidatecda8aa6f6, both exact
+committed test bodies, all155 indexed artifacts and23 direct receipt inputs.
+The public source/migration trees match current primary20510d07da. Checked63
+original compiler/link argv records: unchanged strict C++20/O1/Werror/ASan/UBSan
+flags, assertions enabled,600-second bounds, all exit0. The unchanged original
+context fixture and separate fee fixture link17 whole production providers;
+only the original context fixture uses its unchanged delegating allocator wrapper.
+No copied provider, accepting SQL/owner double or generated fixture supplies proof.
+
+Independently replayed both authenticated final executables on Ubuntu22.04 with
+the original20-second bounds, leak-detecting ASan and halt/stacktrace UBSan:
+original context PASS, all103 named fee controls PASS, exit0 and empty stderr.
+Direct inputs stayed unchanged. ELF SHA256 pins are
+`dbd89c987757cf988ebea43612f15223e9316e84d67464464d1247e83714f1d0` and
+`f5fb4bde63eb1a0a88f64f4299334ba9d03463a4b15fe48f9c74d2814792a1db`.
+Final receipt SHA256 is
+`11e82aa452a9cf263c6b608c5e48865ebf1370130685160f913fbb374d3b51ed`;
+artifact index SHA256 is
+`8749ce91da50b4bef9acd3515d6999790e7824742d0f083934a55c483af431b2`.
+Private coordinator records: `D:\Dev\Temp\coordinator-fee-component-review-20261008`.
+No rebuild was repeated after authenticating the final qualified bytes.
+
+Actual providers validate modeled v12 parent/v14 zero-root fee child, NQF2
+payload/NQR5 recovery attachment, v6/QRF6 rewards, typed48 parent and NFR1 fee
+receipts, full frozen child correlation, exact denomination/revision transitions,
+legitimate sequence inequality, unrelated/encoded-empty forests, mixed rewards,
+nonpositive/insufficient outcomes, corruption/output preservation, ACK value
+compatibility and captured/in-progress recovery refusals. Earlier cache refusal
+and two owned fixture expectation failures remain retained. Parent self-correlation
+and distinct payload/attachment tags were corrected without changing providers.
+
+This is explicitly component/model evidence. Synthetic C25/two-item/C17/group-XP/
+skill terms are not Gorblag's actual C5/one-item/no-XP recipe. Coherent supplied
+reports remain unauthenticated. No SQL/journal access, genuine native birth,
+funding/triggering acceptance, same-cut world/custody proof, physical publication,
+ACK execution, paired retirement or cold journey is qualified. Those original
+owners/setup remain dependencies; no primary/Plan5 obligation or gate changes.
+
+Next one bounded quest delivery owns only existing
+`tests/async/quest_accounting_prep/capture_quest_cut.py`,
+`tests/async/quest_accounting_prep/test_capture_quest_cut.py` and
+`quest-prep/OBSERVED_MAPPING_CAPTURE_HANDOFF_2026-10-08.md`.
+The accepted QP02/QP03 blueprint identifies missing mapping and lineage-head
+observations. Add optional explicit observed mapping-ID selection to collect
+literal lifetime/backend/locator/context/lineage/native/active-native/creating/
+retiring/revision rows and selected lineage head inside the existing read-only
+RR cut. Maintained public economic_account_mapping/economic_lineage_state schema
+and owned reader/cursor tests are available. This removes manual evidence assembly,
+without resolving or authenticating mapping authority or changing existing oracles.
+
+Preserve default output, legacy guards, row/aggregate-byte/BLOB budgets, bound
+parameters, opted-in transactional engine checks, rollback, disposable CLI guards
+and exclusive output. Record explicit selected/missing observations; do not infer
+mapping IDs from mobile UIDs, invent balances/private role grammar, seed rows or
+filter away foreign/retired values to manufacture acceptance. Include historical
+creating/retiring receipt observation only where the actual bounded reader supports
+it. Unit controls cover actual SQL/bindings, default compatibility, NULL/missing,
+original/retired/replacement and foreign literals, equal numeric IDs without
+inference, malformed/duplicate/overflow/budget selection, engine/read/rollback failure.
+These are reader-unit controls, not executed SQL or native acceptance.
+
+Genuine owner-authenticated same-cut cash/mapping borrow, live setup/holds,
+funding/publication/ACK/D/retirement/cold and private primary source remain
+unavailable. No production/shared authority/schema/driver/registry/Plan5 change,
+DB/server/build/native journey or broad rerun is assigned. Architecture's Collector
+map remains active in its isolated worktree. Actual native Goals remain BLOCKED,
+heartbeat ACTIVE and broader Plans1-5/R1-R8 completion unresolved.
+
+## Collector boundary reviewed; actual-provider capture acceptance next
+
+PASS source/design review for sole-document commit
+`b49a8612bc189436a4a4d0a6f3be997c4d6c2b4b` on
+`codex/collector-domain-authority-20261008`.
+[Exact Collector boundary map](https://github.com/Community-Duris/Duris/blob/b49a8612bc189436a4a4d0a6f3be997c4d6c2b4b/docs/persistence/economy_accounting/domain-separation/COLLECTOR_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md)
+authenticates source at primary31ad6ae72 and distinguishes public SQL/flat source,
+closed R0 preparation and reported private candidate contracts.
+
+Coordinator read the complete548-line map and independently authenticated all
+3,069 archived source/migration/test blobs,54 declared source/preparation body
+pins,88 explicit line anchors and five preserved preparation links. Checked real
+capture/root topology, command validation, owner-revision initialization,
+singleton custody update, ordinary versus literal capture and public flat
+publication refusals. Private coordinator evidence:
+`D:\Dev\Temp\coordinator-collector-map-review-20261008`.
+No compilation, regression, SQL, server, journal or native journey was executed
+for this document review.
+
+The map traces actual enrollment/acquisition invalidation, collection/listing/
+purchase/expiry, time/price/capacity/wallet-bank facts, complete original root
+fences, singleton acquisition/child release, catalog projection, compound commit,
+retained receipt versus fresh locked proof, materialization/save/ACK/retry/cold
+ownership. It preserves closed R0 and does not infer adoption. Missing valid
+destination owner-revision lookup can initialize a zero runtime projection;
+that existing behavior is separate from durable custody/authority. Public flat
+storage readers do not supply the still-unavailable active publication path.
+
+Next one bounded architecture delivery owns only
+`tests/async/test_collector_collection_native_capture.py`,
+`tests/async/collector_collection_native_capture_harness.cpp` and
+`domain-separation/COLLECTOR_COLLECTION_NATIVE_CAPTURE_HANDOFF_2026-10-08.md`.
+The existing collection harness replaces snapshot capture/codec/custody lookup;
+the useful gap is genuine-provider capture acceptance, not repeated arithmetic
+or another facade. Use exact public primary (current20510d07da has unchanged
+source trees), whole collection adapter/policy, ordinary capture/codec, custody
+runtime/identity, command validation and actual eligibility dependency closure.
+Public sources are available; minimal compiler/link closure remains to be proven.
+Preserve old runners and R0. Record synthetic graph/prototype/global setup and
+inert diagnostic/game-thread seams. No copied capture/codec/registry/revision/
+identity/eligibility provider or accepting authority double may establish a pass.
+
+Require independent manual complete UID-sorted source-root fences and manually
+authored ordinary singleton expectations encoded by the real codec. Cover room/
+PC-corpse roots, root/nested selection, descendants/siblings/nonmonotonic UIDs,
+weight/masks/properties/strings/affects, command roundtrip, stale full-root facts,
+duplicate/cycle/identity/reciprocity and literal corruption, pre-prepare eligibility
+and custody, legal bounds/revision refusals, deterministic repeat and strong outputs.
+Preseed owner clocks for unchanged-state controls; separately characterize the
+actual missing-owner zero-revision initialization. Distinguish native selected-UID
+census from command duplicate-row validation and ordinary omitted fields from
+literal persistence; do not invent unrelated global census or rechecked eligibility.
+
+Use focused strict C++20/Werror O1/Og ASan/UBSan where supported, exact source/
+provider/dependency/compiler/binary pins, bounded compile/link/probe/runtime and
+retained timeout/nonzero partial diagnostics in isolated D: storage. No production,
+shared authority/runner/driver/schema/registry/coverage/Plan5 or quest changes;
+no server build, DB/journal/server, broad batch or native journey. Uncalled detach
+may be section excluded only with an explicit limit. Genuine provider failure
+must be reported without replacement or shared repair.
+
+This qualifies capture/codec/custody/command only if executed. Durable mutation,
+compound purchase, SQL authority, detach, physical publication/save/ACK/replay/
+cold still depend on exact original compatible native/shutdown driver, current
+proof and save owners; private439/be8942cd bodies remain unavailable. Quest's
+optional observed mapping capture remains independently active. Both continuing
+native Goals remain BLOCKED; heartbeat ACTIVE and broader completion unchanged.

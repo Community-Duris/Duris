@@ -15,9 +15,14 @@ modeled-join review:33 reader controls and18+17+13 assertion methods independent
 PASS. The original failed review is retained; import includes the correction.
 Fee-only boundaryee981c97a now PASS source/design review in the preparation
 review below:32 bodies,46 anchors/links and three context links authenticated.
-Quest next implements only its reserved native_quest_fee_owner_boundary_test.cpp,
-focused Python wrapper and component handoff: actual providers, modeled zero-root
-v14/v6 carrier with real v12 parent semantics, cash/receipt/transition/ACK controls.
+Fee componentb478374e0/handoff20970bf1e now PASS actual-provider/model review:
+2,818 public blobs/two committed tests/155 artifacts/23 inputs/63 compiler commands
+authenticated; unchanged original context and103 fee controls independently PASS
+under original ASan/UBSan bounds. Native/SQL/owner/journal qualification is false.
+Quest next owns optional explicit mapping-row/lineage-head capture and reader tests
+plus OBSERVED_MAPPING_CAPTURE_HANDOFF_2026-10-08.md. Public schema is available;
+preserve default/legacy/read-only/budget/rollback guards and literal observations.
+No inferred mapping, private role grammar, shared authority or oracle change.
 Gorblag is a source candidate; funded/item-parent native reachability is unproven.
 Genuine owner export, physical D/chronology and native qualification remain
 external dependencies.
@@ -32,10 +37,13 @@ seven links authenticated. Observer component3c3eb67b8 plus required deadline co
 coordinator authenticates2,816 source files/203 original artifacts/521 inputs per
 profile and reruns49 O1+49 Og controls without diagnostics; correction12 artifacts
 and timeout/nonzero checks pass. Import both commits. This is observer/capture
-acceptance, not SQL/publication/ACK/save/cold qualification. Architecture next owns
-only COLLECTOR_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md: reuse R0/pure preparation
-and trace actual lifecycle/catalog/custody/financial/native/recovery boundaries.
-No production/shared owner edit is assigned. Pickup still needs genuine save/
+acceptance, not SQL/publication/ACK/save/cold qualification. Collector mapb49a8612b
+now PASS source/design review:3,069 public archive blobs/54 body pins/88 anchors/
+five links authenticated. Architecture next owns only its new collection native
+capture Python/C++ tests and COLLECTOR_COLLECTION_NATIVE_CAPTURE_HANDOFF_2026-10-08.md:
+actual providers/manual root and singleton expectations, ordinary masks and
+focused sanitizer qualification; provider closure still unproven. Preserve R0,
+shared owners/runners and original native dependencies. No production edit is assigned. Pickup still needs genuine save/
 current-proof/restart owners. Primary31ad6ae72 reports private retained flat-submit/
 NBC4/NMB4 cash-role progress at candidatebe8942cd/134 production files; public
 source is unchanged and native qualification unexecuted. Supported
