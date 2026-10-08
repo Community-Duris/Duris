@@ -22,11 +22,13 @@ under original ASan/UBSan bounds. Native/SQL/owner/journal qualification is fals
 Optional mapping capture2e85d59b1/handoff9905d55da now PASS reader-unit review:
 32 updated + unchanged19 tests independently PASS; six exact default/legacy output/
 query/binding comparisons, two bodies/three source pins/14 artifacts authenticated.
-Quest next owns optional native_wallet_mapping_checks.py/test and
-NATIVE_WALLET_MAPPING_ASSERTION_HANDOFF_2026-10-08.md: explicit captured live-wallet
-key/mapping/native/head consistency, maintained grammar and source predicates.
-Defaults/oracles/shared authority stay intact; no mapping authentication, inferred
-identity/private role grammar or invented retired/D contract is added.
+Live-wallet join1945e9152/handoffbe14bedc0 now PASS modeled review:14 focused tests
+independently PASS;two bodies/six blobs/13 dependencies/12 artifacts authenticated.
+No owner/world/publication authentication; defaults/oracles/shared authority intact.
+Quest next owns WORLD_QUEST_SERVICE_AUTHORITY_BOUNDARY_2026-10-08.md: actual dynamic
+QP04/QP07 attempt/payment/callback/task/refund/save/recovery boundaries and delayed
+cross-actor reachability, reusing completed calibration/fixes. Missing genuine
+setup/delayed-charge/refund/held/current-world owners stay explicit; no shared edit.
 Gorblag is a source candidate; funded/item-parent native reachability is unproven.
 Genuine owner export, physical D/chronology and native qualification remain
 external dependencies.
@@ -48,9 +50,11 @@ capture Python/C++ tests and COLLECTOR_COLLECTION_NATIVE_CAPTURE_HANDOFF_2026-10
 actual providers/manual root and singleton expectations, ordinary masks and
 focused sanitizer qualification; provider closure still unproven. Preserve R0,
 shared owners/runners and original native dependencies. No production edit is assigned. Pickup still needs genuine save/
-current-proof/restart owners. Primary31ad6ae72 reports private retained flat-submit/
-NBC4/NMB4 cash-role progress at candidatebe8942cd/134 production files; public
-source is unchanged and native qualification unexecuted. Supported
+current-proof/restart owners. Primary257190ac1 reports private flat CURRENT/BEFORE/
+cache publication/original held-body/guarded ACK progress at candidate06f8c714/
+136 production files; public source unchanged and native qualification unexecuted.
+Physical effects/cold registration/recovery/producer/admission and original broad
+requirements remain; private source/contract availability is not inferred. Supported
 client-free flat routing already exists; SQL-enabled flat routing is not required.
 Native C01 execution still
 requires its genuine active fixture and phase witness. Owned-pack availability

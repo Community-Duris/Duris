@@ -727,3 +727,70 @@ paired retirement/cold and private primary source remain dependencies. Collector
 capture component is still independently probing genuine provider closure; preserve
 its live work. Actual native Goals remain BLOCKED, heartbeat ACTIVE and broader
 primary Plans1-5/R1-R8 qualification/owner completion remain unresolved.
+
+## Live-wallet captured agreement reviewed; dynamic service boundary next
+
+PASS modeled optional join review at code
+`1945e9152b460d759669b55c3485f7643ccc64c5` and handoff
+`be14bedc0627e82fa235025d22636cd94ec5a9f4`.
+[Exact live-wallet handoff](https://github.com/Community-Duris/Duris/blob/be14bedc0627e82fa235025d22636cd94ec5a9f4/docs/persistence/economy_accounting/quest-prep/NATIVE_WALLET_MAPPING_ASSERTION_HANDOFF_2026-10-08.md)
+and [optional helper](https://github.com/Community-Duris/Duris/blob/1945e9152b460d759669b55c3485f7643ccc64c5/tests/async/quest_accounting_prep/native_wallet_mapping_checks.py)
+plus its focused test are the three-file compatible owned bundle. No existing
+capture/cost/temporal/pair/default assertion opts in or changes. Adoption is unknown.
+
+Coordinator read the complete helper/test/handoff and authenticated two committed
+bodies, six exact public source blobs,13 unchanged helper/builder/decoder inputs
+and all12 indexed artifacts. Independently executed all14 focused tests under a
+60-second bound on Windows Python3.12: PASS; inputs unchanged. Public source blobs
+also match primary257190ac1. Private records:
+`D:\Dev\Temp\coordinator-wallet-join-review-20261008`.
+
+The helper joins explicit observed wallet key/selected mapping/current head with
+the maintained native-image grammar and original birth row links. Native wallet
+locator7/context12/backend1 and zero LIVE mapping revision follow public source.
+Historical birth epoch remains distinct from current epoch. Tests demonstrate
+additive use for all three paid QP02 contracts, pre-D original A and live B;
+original paid/temporal results stay equal. Independent row/key/selection/native/
+head/source/type/bounds changes refuse without mutation; unrelated retired or
+foreign observations remain literal. A coherent forged packet still passes only
+value agreement, explicitly returning owner_authenticated=false and
+world_publication_proven=false with exact required external proof. Opaque carrier/
+receipt bytes are not decoded or authenticated; selected retirement is unsupported.
+No SQL/server/journal/build/native journey or original-owner capability is supplied.
+
+Next one bounded quest source/design delivery owns only
+`quest-prep/WORLD_QUEST_SERVICE_AUTHORITY_BOUNDARY_2026-10-08.md`.
+Reuse completed bartender/QP07 fix and continuing reconciliation; trace actual
+dynamic QP04/QP07 creation/target selection, map purchase, completion, abandon/
+share/retirement and failed/stale-service restitution. Connect real ASK/shop
+dispatch/runtime policy to original attempt/generation/PID/body, admitted currency
+operation/receipt/callback, captured fee/outcome, native task/history/item effects,
+save/ACK/replay/cold owners. Distinguish deterministic preparation, runtime/random
+observation and transaction/publication capabilities; preserve legacy/active limits,
+busy gate and generic active refund refusal. No new refund owner or state machine.
+
+Determine source-supported cross-actor delayed replacement reachability under
+unmodified share/ask/busy rules. Conditional or unavailable schedules remain
+explicit; no forced state/direct callbacks/synthetic activation. Reserve one
+nonduplicate future acceptance/refactor slice only where a real gap exists, with
+exact proposed paths/setup/schedule/original receipts/manual expectations/fault
+cuts/provider and owner-hook prerequisites. Public source/schema and accepted
+normal legacy observations are available. Active lifecycle/route admission,
+genuine delayed-charge/refund/held recovery/current-world exports and private
+primary code remain unavailable. Sole document with exact blob/anchor/link/design
+review; no production/test/shared owner/driver/schema/registry/Plan5 change or
+build/DB/server/journal/native/broad rerun. Existing Collector component remains
+active sealing its own actual-provider evidence and is not restarted.
+
+New primary257190ac1 reports private flat CURRENT/never-admitted BEFORE readers,
+cache publication and corrected original held-body/guarded ACK integration at
+candidate06f8c714/136 production files/73 C providers. Original owner borrowing
+replaces nested tickets, partial hydration retains holds/retry, and exact local
+post-ACK cleanup survives unrelated global integrity poisoning. Private source
+review/formatting is reported; compiler/native/SQL/gameplay/persistence/recovery
+remain UNEXECUTED by major-plan deferral. Public source/migrations are unchanged.
+Physical callback/retained effects/terminal disposition/cold registration/recovery/
+producer/admission, role-aware accounting/results, birth-to-SHOP atomic ownership,
+opening/shared-keeper history, activation/Plan5/R1-R8 remain primary obligations.
+No reported contract is treated as an available API or executed proof. Actual
+native Goals remain BLOCKED, heartbeat ACTIVE and broader finish line unresolved.

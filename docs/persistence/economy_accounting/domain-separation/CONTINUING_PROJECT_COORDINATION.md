@@ -104,14 +104,17 @@ terms, retained fixture corrections and native/SQL/owner/journal limits remain i
 that review. Optional mapping capture2e85d59b1/handoff9905d55da now PASS reader-unit
 review:two committed bodies/three source pins/14 artifacts authenticated;32 updated
 and unchanged19 original tests independently PASS, six default/legacy output/query/
-binding comparisons exact. No SQL/native/owner qualification. Quest next owns only
-native_wallet_mapping_checks.py, test_native_wallet_mapping_checks.py and
-NATIVE_WALLET_MAPPING_ASSERTION_HANDOFF_2026-10-08.md: optional captured live-wallet
-key/mapping/native/head agreement using maintained grammar/source predicates.
-No default gate or accepted oracle change, owner authentication, inferred mapping,
-private role grammar or invented retired/D contract. Existing source/cut builders
-are available; genuine native owner/setup/current proof remain unavailable. The
-review records precise benefit, controls, collision and qualification limits. Existing oracles
+binding comparisons exact. No SQL/native/owner qualification. Live-wallet optional
+join1945e9152/handoffbe14bedc0 now PASS modeled review:two bodies/six public blobs/
+13 unchanged dependencies/12 artifacts authenticated;14 focused tests independently
+PASS. Key/mapping/native/head agreement and coherent-forgery limits stay explicit;
+original owner/world/publication proof remains external. Quest next owns only
+WORLD_QUEST_SERVICE_AUTHORITY_BOUNDARY_2026-10-08.md: actual dynamic QP04/QP07
+attempt/payment/callback/task/refund/save/recovery owners and source-supported
+delayed cross-actor schedule, reusing completed observations/fixes. Reserve one
+useful nonduplicate acceptance slice only with exact inputs/controls/dependencies.
+No production/test/shared owner or driver edit; missing genuine setup/delayed
+charge/refund/held/current-world exports remain explicit in the review. Existing oracles
 remain intact. Native mapping/
 publication, genuine D/chronology, full census, original owner exports and
 authentic paid setup remain unavailable. Currency blueprint
@@ -143,16 +146,18 @@ closure remains unproven; genuine native/shutdown/current-proof/save owners stay
 unavailable. The review states controls/collisions; no production/shared runner/
 owner/quest edit, DB/journal/server or native journey is assigned.
 Genuine save/current-proof/restart owners still block pickup production wiring.
-Primary31ad6ae72 publishes private retained flat-submission/prospective NBC4/NMB4
-cash-role progress, candidatebe8942cd/134 production files/72 C providers, and
-blockers; public native source/migrations remain unchanged. Source-review fixes
-cover prior-journal drain, foreign UID census, client-free keeper transforms and
-decoded retention budget. Those private contracts are reported, not available
-or executed qualification here. Supported client-free flat worker/replay
-selection already exists; SQL-client builds reject flatfile-primary. No new
-SQL-enabled flat route is required. Reported source review is not executed
-compiler/native/gameplay/recovery proof; original dispatch/producer/once-only
-commit/publication/ACK/cold and broad primary requirements remain open.
+Primary257190ac1 now reports private flat CURRENT/never-admitted BEFORE readers,
+cache publication/original held-body/guarded ACK integration, candidate06f8c714/
+136 production files/73 C providers. Original reservation borrow avoids nested
+tickets; partial hydration preserves retry/holds and original post-ACK cleanup
+survives unrelated integrity poisoning. Private source-review/formatting only;
+compiler/native/SQL/gameplay/persistence/recovery remain UNEXECUTED by major-plan
+deferral. Public source/migrations are unchanged. No private API or executed proof
+is available here. Supported client-free flat routing already exists; no new
+SQL-enabled flat route is required. Physical callback/retained effects/terminal
+disposition/cold registration/recovery/producer/admission, role-aware accounting/
+results, birth-to-SHOP atomic ownership, opening/shared-keeper history, activation,
+Plan5 and R1-R8 remain primary obligations.
 No shared owner,
 Plan5 audit or primary rewrite is assigned. Actual native Goals remain BLOCKED;
 heartbeat ACTIVE and broader primary finish line unchanged.
