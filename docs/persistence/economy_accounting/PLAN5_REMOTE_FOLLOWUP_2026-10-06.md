@@ -2321,3 +2321,29 @@ notebook input; primary-local shared notebook is nonblocking. Application,
 acknowledgement, combined candidate, genuine producers/opening/player journeys,
 full 12-case backup module, Plan5/R1–R8 and release are not claimed. No activation,
 autocorrection, production access, primary push, deployment or merge.
+
+
+## Previous-owner dependent expectations — 2026-10-08
+
+Same remote codex/accounting-plan5, base 8c1c77f646ada5aca6b703218cb8f76b4bfae62c; result is the
+containing commit, verified by delivery/result.json. All seven earlier tips stay.
+The previous focused run omitted equipment/child dependent expectations. The
+healthy equipment model now declares its known owner; a new test proves genuine
+omission and simultaneous missing-equipment evidence remain separate. The child
+Boolean context case now expects strict refusal; valid mismatch cases stay.
+Production readers, native/schema/recipes and all shared owners remain unchanged.
+
+Final primary ab8153878563a9e5d5c44f273423cf0290b5d449, composition a470a00486c7eabc2baf28654c3c0f0adf790493,
+native 833d3085815b396861ad18a77635412212381e4b, migrations 7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2.
+Sixteen modules: 383 loaded, 365 PASS/18 original opt-in skips; all original
+12 near-limit workloads execute. Initial RED and failed child expectation stage
+are retained. Earlier both-engine SQL/canonical results remain bound only to
+identical consumed inputs, not rerun. Full report and exact skip/evidence scope:
+PLAN5_PREVIOUS_OWNER_DEPENDENT_TESTS_2026-10-08.md.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/owner-dependent-20261008;
+seal 8b546ef34bd63be231654b48c78e84b03bf368692ed8545610c9d5b01b46ddc5. Curator-ready input; local shared notebook nonblocking.
+Application/acknowledgement, full original native paths, whole backup suite,
+producers/opening/player/fault/load journeys, combined candidate, Plan5/R1–R8
+and release remain unclaimed. No activation, autocorrection, production write,
+primary push, deployment or merge.

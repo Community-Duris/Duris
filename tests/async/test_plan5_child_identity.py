@@ -353,10 +353,17 @@ class ChildIdentityTests(unittest.TestCase):
         snapshot['effects'][0]['before_revision'] = 0
         self.check(snapshot, 'original_plan_account_mismatch')
         for field, value in (('from_owner', [1,7,0]), ('from_equipment_slot', True),
-                             ('from_owner', [2,8,False]), ('to_equipment_slot', 1)):
+                             ('to_equipment_slot', 1)):
             snapshot = identity_snapshot()
             snapshot['ownership_events'][0][field] = value
             self.check(snapshot, 'original_plan_custody_mismatch')
+        snapshot = identity_snapshot()
+        snapshot['ownership_events'][0]['from_owner'] = [2, 8, False]
+        before = copy.deepcopy(snapshot)
+        for limit in (0, 1, 100):
+            with self.assertRaisesRegex(SnapshotError, 'invalid item previous owner'):
+                Reconciler(limit).audit(snapshot)
+            self.assertEqual(snapshot, before)
         for name, field, code in (('postings', 'event_index', 'original_plan_posting_mismatch'),
                                   ('item_references', 'line_index', 'original_plan_item_mismatch')):
             snapshot = identity_snapshot()

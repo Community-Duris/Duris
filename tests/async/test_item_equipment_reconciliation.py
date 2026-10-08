@@ -28,6 +28,7 @@ def baseline():
 def history():
     return [dict(position(slot=after), operation_id=('%032x' % index), event_index=0,
                  before_revision=2 + index, revision=3 + index, action='move',
+                 from_owner=[1, 7, 0],
                  from_equipment_slot=before, to_equipment_slot=after,
                  operation_epoch='22' * 16, operation_outcome='committed', referenced=False)
             for index, before, after in ((1, 5, 6), (2, 6, 7))]
@@ -87,6 +88,19 @@ class ItemEquipmentTests(unittest.TestCase):
         del snapshot['item_origins'][0]['equipment_slot']
         del snapshot['native']['items'][0]['equipment_slot']
         self.assertEqual(Reconciler().audit(snapshot)['exception_count'], 0)
+
+    def test_missing_owner_evidence_remains_separate_from_equipment_history(self):
+        for lineage in (False, True):
+            rows = history()
+            for row in rows:
+                del row['from_owner']
+            original = copy.deepcopy(rows)
+            self.assertEqual(audit_history(rows, dict(position(slot=7), revision=5), lineage),
+                             {'missing_item_owner_evidence': 1})
+            self.assertEqual(rows, original)
+            del rows[0]['to_equipment_slot']
+            self.assertEqual(audit_history(rows, dict(position(slot=7), revision=5), lineage),
+                             {'missing_item_owner_evidence': 1, 'missing_item_equipment_evidence': 1})
 
     def test_equipment_scalars_require_exact_unsigned_sixteen_bit_integers(self):
         for value in (True, 5.0, '5', None, -1, 65536):
