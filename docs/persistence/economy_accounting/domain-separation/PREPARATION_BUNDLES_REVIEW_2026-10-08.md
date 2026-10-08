@@ -1771,4 +1771,3 @@ Forge/Smith and frozen-notch/cold notification,reset dispatch/replay/ACK/special
 room effects,keeper/activation/Plan5/R1-R8 remain. Special placement preparation
 assignment remains useful and unchanged;quest native dependencies remain blocked.
 Normal merge preserves concurrent primary guidance without force/reset.
-
