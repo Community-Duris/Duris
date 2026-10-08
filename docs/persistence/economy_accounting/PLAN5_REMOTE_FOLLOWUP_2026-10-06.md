@@ -2969,3 +2969,29 @@ erasure/combined/coverage/release gates are not waived. No new shared interface
 or schema change. Prior follow-up prefix exact; curator-ready; local notebook
 nonblocking; application/import/ack unclaimed. No primary push, activation,
 production/autocorrection/deploy/merge/cross-chat message.
+
+
+## 2026-10-08: current published release gates and exact shared metadata request
+
+Sole local/remote codex/accounting-plan5; base 4f65467b326a73982e2355b3f2db4846760cdaf5; result is this
+containing commit. Post-push receipt: D:/Dev/Tests/Duris/accounting-plan5/release-gates-20261008/delivery/result.json.
+Documentation-only; all 27 overlays and shared/native/schema bodies unchanged.
+Refreshed primary 7c863e1e299f5dbc9a8c42ba18c8714078bf5698; composed tree 6c1d1edeb3429aecc31e7760ec1fb108c78d99d1; archive
+55469532659ab0c79b7c1cfe1ed100b8d81a23f42b0f307251ec25fb39e9a7b0. Original source-only modules: 73 methods, 72 PASS,
+1 provenance FAIL, zero errors/skips. Default contract CLI exit 0; release CLI
+exit 1 (no executable evidence); matrix --check exit 1. Collection exit 0 is not
+all-green qualification. No native build/server/database/migration/gameplay run.
+All 242 source-pin paths equal primary Git/archive bytes; 210 hashes match and
+all 32 mismatches equal current CRLF renderings. Exact LF values, consumers,
+invariants, owner repair and tests: PLAN5_RELEASE_GATE_METADATA_HANDOFF_2026-10-08.md.
+Only computed matrix differences are three source.definition_lines arrays:
+backup.capture 714 to 741, backup.retention 496 to 518, restore.qualification
+212 to 214. Evidence-only matrix is not installed; primary owns both repairs.
+926 inventory routes and zero unmapped lexical sites do not prove semantic
+coverage; 788 release blockers remain under existing policies. Nine original
+audit opt-ins, genuine-provider/head64 repair, erasure adapter, actual producer/
+player, full recovery/retention/remote custody, workloads and combined R1–R8/
+Plan5/release gates remain. No new schema/interface. Raw seal 7440a4937818e84549a9a1c8b185cffd43c2030bb857747ece72a563af05f5f9.
+Prior follow-up prefix exact; curator-ready; primary-local notebook nonblocking;
+application/import/ack unclaimed. No primary push, activation, production,
+autocorrection, deploy, merge or cross-chat message.
