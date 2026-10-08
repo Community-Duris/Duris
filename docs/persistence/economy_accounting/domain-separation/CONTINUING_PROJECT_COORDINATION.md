@@ -269,6 +269,32 @@ Original reviewer reference-search correction is retained in the private report;
 no worker evidence or provider changed. Root supplemental-review.json records
 index/report identities; sealed private review packet remains on D:.
 
+Latest primary73e441704fe30a907d53746838f154533b55b292 publishes
+[Craft/Forge and warm census source integration](../CRAFT_FORGE_WARM_CENSUS_SOURCE_INTEGRATION_2026-10-08.md),read in full.
+Private9a7faa28058820cbe3d6ff53cd999a3b39a9dd67377a30980c4f8bb9402ee791 joins
+ordinary Craft/Forge v4 frozen native-skill BEFORE/notch decision and actual cold
+skill hydration,once-only progression/notification;inactive and historicalv1/v2/v3
+retain their paths. Original asynchronous RNG interleaving is expressly not claimed
+identical. Warm final-world proof clears creation flags before retirement;metadata
+release avoids old object pointers. Original same-zone pending queue remains.
+Recorded falling outcome is now prospectively refused before command/effects,
+retaining draw/forest;this is NOT implemented falling acceptance. Genuine census
+reports unpublished root/selected/unselected handles once,published via obj_index;
+ambiguity/off-thread preserves output. Checked UINT_MAX refusal/six int64 quota
+comparisons preserve force/inactive behavior.201 paths/162 source files are source
+composition counts,not coverage. All execution UNEXECUTED;public src833d3085/tests
+790f367a/migrations7e06717b unchanged;private source/adoption unavailable.
+
+Newly explicit dependent work:Smith authentic NPC-input/player-output/variable-fee
+compound owner;reset same-slot retry,returned-constructor failure witness,cold
+reconstruction/factory census,full active O/P and special placement. Existing
+reviewed craft/item/paid-service and special-placement preparation remains useful;
+this docs-only advance exposes no genuine new native fixture/interface or public
+v4 implementation for independent execution. Do not repeat those maps or construct
+substitute owners. Current prioritized queue below retains exact dependencies;
+both chats' bounded deliveries stay CLOSED with no new assignment. GoalsBLOCKED/
+unfinished;heartbeatACTIVE;overall Plans2-4/Plan5/R1-R8/activation remain open.
+
 Concurrent primaryba319959eec7305a7e68a60dce3d24accbf29408 now supersedes the
 pending-refining disposition below with the55-line
 [Complete refining source report](../COMPLETE_REFINING_SOURCE_INTEGRATION_2026-10-08.md),read in full.
