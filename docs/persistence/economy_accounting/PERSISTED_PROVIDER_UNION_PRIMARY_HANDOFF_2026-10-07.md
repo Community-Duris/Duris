@@ -70,7 +70,7 @@ No unqualified native production source or migration is imported.
 ### Fresh activation consumer source successor
 
 The private lifecycle successor now consumes the complete persisted union as a
-fresh-install/fresh-activation prerequisite. Its final formatted source is
+fresh-install/fresh-activation prerequisite. Its initial formatted source is
 `f8a658bc1c3c56fd9a8736cb79a9294e1044d25aca1921fae3dd949124cb16b9`
 in `tmp/lifecycle-legacy-consumer-primary-20261007`. Independent source review
 accepted its preformat `dc971524`; touched-range formatting passed and preserved
@@ -106,6 +106,51 @@ participant. Fresh census must enumerate all current actors, objects and native
 rows; boot-recovery selection and historical origin authentication cannot stand
 in for that evidence. A maintenance fence alone does not prove world loading.
 Those consumers and their original full-world controls remain required.
+
+The latest integrated private candidate is
+`tmp/lifecycle-cache-candidate-primary-20261007`:51 production files and23
+original fixture files. The source-reviewed native SQL catalog preserves all
+current/retired/malformed rows, shares original budgets, and borrows original
+custody/clocks/equipment. Fresh lifecycle capture now joins exact native matches
+before complete unmatched/multiple refusal. Its formatted source is `ff990ecf`.
+Historical unknown cash and origin do not become new item-admission gates.
+
+The complete runtime cache/world value report is source-reviewed and formatted;
+typed overloads support the actual idle maintenance guard and transferred
+cutover owner, with validation before and after observation. Original runtime
+clock semantics, terminal native clocks and historical descendants are retained.
+The original cache test has additive component controls and a genuine event
+provider; it remains unexecuted. The original native publication harness now
+captures EPH1, room and native catalog after every successful publication check
+in its same RR cut, including reconnect-disabled recovery. Source review found
+and corrected that missing capture. Original bodies/flags/budgets are retained;
+contradiction/history/terminal-clock controls remain seeded component evidence.
+They are not admitted birth, initialized-world or activation proof. Initialization,
+complete live/runtime/persisted correspondence and original major-plan native
+qualification remain unfinished. Source composition does not replace a gate.
+
+The root-owned fresh-cache consumer is source-reviewed and touched-range
+formatted in `tmp/lifecycle-runtime-cache-consumer-primary-20261007` (lifecycle
+`7e8b2013`). It reads every active runtime cache row and genuine current owner
+clock against the same persisted cut, refusing complete mismatches; older item
+publication clocks remain valid. Final independent source review accepted the
+actual eight helper, consumer and original-fixture bodies. Duplicate persisted
+UIDs retain the complete active-cache count on every row without a Cartesian
+product; the earlier count-reporting defect is corrected (`19dadc4c`). Complete
+findings still refuse duplicate or missing correspondence. Offline holdings missing
+cache remain observations. Original lifecycle fixture gains genuine game-thread
+binding and three real recipe providers; all prior controls remain. No compilation,
+native/SQL execution or full-world gate completion is claimed. The original
+runtime fixture successor (`b0ebbb34`) preserves both complete predecessor
+control sets; the room successor (`580706e0`) preserves its original controls.
+Primary composition verifies every selected body and unchanged predecessor,
+and records the complete 51/23 pin map in the private `CANDIDATE.json`.
+
+[Required day-one room reset work](DAY1_ROOM_RESET_IMPLEMENTATION_HANDOFF_2026-10-07.md)
+identifies the still-refused `O` producer and its exact actorless issuance,
+reset-event and same-root room-recovery dependencies. Shared seams remain root
+owned. Stopped maintenance must use actual completed loading/recovery under its
+original fence; runtime admission/boot flags are not initialized-world evidence.
 
 Actual maintained lifecycle install still uses source2-only capture/normalization
 at economic_sql_accounting_lifecycle_transaction.c1771, while current holdings/

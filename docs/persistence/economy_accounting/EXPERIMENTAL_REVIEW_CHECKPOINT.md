@@ -1,5 +1,18 @@
 # Experimental accounting review checkpoint
 
+## Fresh runtime-cache correspondence source composed - 2026-10-07
+
+[Primary source handoff](PERSISTED_PROVIDER_UNION_PRIMARY_HANDOFF_2026-10-07.md)
+records the reviewed private 51-production/23-original-fixture candidate. The
+cache consumer reads genuine current owner clocks; duplicate persisted UIDs
+retain correct cache counts and complete refusal findings. Both predecessor
+fixture control sets remain. This is source review/composition, not execution.
+[Required room reset work](DAY1_ROOM_RESET_IMPLEMENTATION_HANDOFF_2026-10-07.md)
+identifies actorless issuance and same-root room recovery still to implement.
+Initialized-world correspondence, original native/both-engine/gameplay/recovery
+qualification and full R1-R8 release remain open. No policy or safety gate changes.
+
+
 ## Fresh activation consumer source reviewed - 2026-10-07
 
 [Source handoff](PERSISTED_PROVIDER_UNION_PRIMARY_HANDOFF_2026-10-07.md) records
