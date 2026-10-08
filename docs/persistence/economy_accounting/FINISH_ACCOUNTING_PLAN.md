@@ -1,5 +1,17 @@
 # Finish accounting implementation plan
 
+## Broadened independent preparation - 2026-10-08
+
+The user directs coordination to include useful domain design, native acceptance/
+fixture blueprints, dependency reduction and integration review alongside code
+and qualification. [The current coordination charter](domain-separation/CONTINUING_PROJECT_COORDINATION.md)
+records exact ownership and review conditions. Architecture prepares a concrete
+currency/banking authority-boundary dossier; quest prep prepares authentic QP02/
+QP03 native setup, fault-cut and assertion blueprints. Both use existing isolated
+worktrees and one owned document each, preserving active primary/Plan5 ownership.
+Missing native/private inputs block dependent execution, not all preparation.
+Source/design evidence does not close original implementation or release gates.
+
 ## Reviewed NPC current money and mobile P selector - 2026-10-08
 
 Private `tmp/lifecycle-npc-money-candidate-primary-20261008` composes the

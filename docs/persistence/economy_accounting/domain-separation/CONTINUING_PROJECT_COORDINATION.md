@@ -67,6 +67,43 @@ meaningful unblock evidence or needed user resumption. Pause the Goal only when
 the user requests it. This does not promise uninterrupted execution in the
 absence of available work or override platform Goal-state controls.
 
+## Broadened coordination under explicit user direction - 2026-10-08
+
+This section supersedes any narrower reading that limits useful sidework to
+immediately executable code. The user explicitly directs broader coordination.
+Consider code implementation and qualification, source-grounded domain design,
+acceptance/fixture blueprints, dependency reduction, integration preparation and
+independent review. A missing private body or native execution prerequisite
+blocks that dependent step; it does not block all useful preparation.
+
+Every selected task names a concrete output, the future implementation effort it
+removes, actual available inputs, precise missing prerequisites, owned paths and
+collision limits, and the review or execution needed for its stated claim.
+Reuse completed inventory/research instead of republishing summaries. Design
+proposals must trace real maintained operations and preserve existing behavior;
+fixture blueprints must identify authentic setup, fault cuts and assertions.
+Reported private contracts can inform preparation but cannot become invented APIs
+or proof of adoption, runtime acceptance or qualification. No duplicated primary
+or Plan5 authority, producer, audit or backup implementation is authorized.
+
+Maintain an evolving prioritized queue across these work types. Preserve each
+live job and keep one bounded active delivery per chat. At a handoff, review its
+actual output, inspect meaningful primary advances and select the next useful
+independent step, including preparation when implementation must wait. Do not
+manufacture documents, repeat unchanged inventories/tests or reopen passed work
+to fill idle time. If no useful independent step exists, retain exact dependencies
+and event monitoring. Deliveries do not change the original finish line or
+native Goal status; no false resumption/completion or adoption waits follow.
+
+Current architecture preparation is the currency/banking authority-boundary
+dossier. Quest preparation owns a QP02/QP03 native-journey blueprint: authentic
+setup/call-site/fault-cut/assertion/receipt mapping for paid/unpaid leatherworker
+selection and original/replacement disappearing recipient. The new blueprint
+must add executable-test design detail beyond existing CASES/reassessment,
+separating historical origin/current state and economic commit/publication/ACK.
+Both deliver one owned document for independent review; no production/test edits
+or broad/native/server/DB runs are selected by these preparation assignments.
+
 ## Current candidate and first continuing assignments
 
 Observed accounting candidate `275df7f626e12cb396a22da34317a4e7f355e9a1` includes
@@ -640,7 +677,9 @@ candidate import, native qualification or a duplicate Plan5/primary task.
 Private Plan2/census/NPC/reset successors are reported contracts only. Complete
 maintained-source analysis despite precise private unknowns; hand off one useful
 published document for independent review. The full continuing Goal remains
-blocked and unfinished. Quest work still awaits its recorded genuine interfaces.
+blocked and unfinished. Quest native execution still awaits its recorded genuine
+interfaces; its separately owned QP02_QP03_NATIVE_JOURNEY_BLUEPRINT_2026-10-08.md
+preparation now proceeds from maintained source and reported contract evidence.
 
 No new independent domain or quest code implementation is currently selected.
 Preparation above proceeds now; watch for the table's real source/interface/
