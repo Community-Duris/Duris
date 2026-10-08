@@ -137,7 +137,9 @@ assert "grant_epic_skills_without_specialization" in EPIC_HEADER
 assert "if (chaos_mode && !chaos_starter_epic_skills_enabled())" in GUILD
 
 assert "chaos_starter_reward" in EPIC_COMMAND
-assert "reason <= epic_reason_type::chaos_starter_reward" in EPIC_CODEC
+# The codec admits every reason up to the newest, bank_level_forfeit.
+assert "chaos_starter_reward,\n\tbank_level_forfeit," in EPIC_COMMAND
+assert "reason <= epic_reason_type::bank_level_forfeit" in EPIC_CODEC
 assert "chaos_starter_reward" in CURRENCY_COMMAND
 assert "reason <= currency_reason_type::corpse_lifecycle" in CURRENCY_CODEC
 
