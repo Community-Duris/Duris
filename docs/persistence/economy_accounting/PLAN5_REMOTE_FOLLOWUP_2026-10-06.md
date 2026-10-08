@@ -1649,3 +1649,36 @@ The report/seal/delivery remain curator-ready and nonblocking. No native/shared
 schema edits, activation, production mutation, audit correction or cross-chat
 notification occur. Full census, original V2 install, genuine producer/player
 journeys, both-engine upgrade/retention and full R1–R8 remain open.
+
+## Current player/pet literal custody audit — 2026-10-07
+
+Same local/remote `codex/accounting-plan5`; all seven earlier tips remain
+ancestors. Code base `05092810201d73342ea4b296550e473a389b54d1`, result
+`1691c3e1c7edf314c1cc26d82e6267e1d8af7b14`.
+[Exact source and evidence](PLAN5_PLAYER_PET_CUSTODY_QUALIFICATION_2026-10-07.md)
+adds a pure complete player snapshot decoder and read-only custody command,
+reusing item parsing with the native whole-snapshot budgets. Current player/pet
+UIDs, owners, topology, equipment and retained coin bytes compare in both
+directions; legacy missing fields are explicit. Wallet roots remain excluded;
+death observations confer no current ownership and private strings are not
+exported. No native implementation, migration or shared contract is edited.
+
+The complete original custody driver passes twice: first with the recorded
+three-provider proposal, then on current published primary `71e421d12` plus the
+five exact owned blobs and the unmodified canonical owner builder `1793deb8`.
+Final tested tree `0686bb7202afff2df7b9f5c9397be98a9ac459f2` has native tree
+`833d3085` and canonical-64 migration tree `7e06717b`. The final original builder
+executes with zero compiler source proposals. Each whole run preserves all
+original family cases and passes 95 player/pet formats, 45 finding scenarios
+at three limits and 18 boundaries, zero skips. Four baseline omission controls,
+real native encoder/reader comparisons, source fences and copied evidence are
+retained under `D:/Dev/Tests/Duris/accounting-plan5/player-20261007/`.
+Final observer elapsed time is 309.869196 seconds; all owned runs are terminal.
+
+Five code files plus this report/follow-up are the owned slice. Shared builder
+adoption and component classification stay with the primary; no API/schema
+change or notebook acknowledgement is requested as a work prerequisite.
+Report/seal/delivery are curator-ready for the nonblocking primary-local
+notebook. No database is started in this flat-file-only slice. Complete census,
+genuine journeys, original native V2 install, erasure/retention continuity,
+both-engine upgrades and combined full Plans/R1–R8/release remain open.
