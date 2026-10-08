@@ -2,7 +2,7 @@
 
 Date: October 7, 2026. Branch: `codex/discovered-zone-dailies`.
 Accounting source: `experimental-accounting` at
-`6d2bd242df08fbd74c97f9ae5a2dd1617ad8c1c9`.
+`02df3a70f4300dc30feb3163f441e9541224cb01`.
 The source build anchor is `99b2a13a4141e8d36ac0f695e9e31d556139b5d6`;
 the subsequent upstream commits change only accounting documentation.
 Previous research head: `8e4b6d9222259f187c62b64cf794df80ceed910d`.
