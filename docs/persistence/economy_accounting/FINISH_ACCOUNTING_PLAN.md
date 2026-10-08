@@ -5,8 +5,11 @@
 [Independent reader review](quest-prep/WATCHED_UID_CAPTURE_REVIEW_2026-10-08.md)
 records exact optional code/handoff and coordinator-executed focused results.
 Quest prep next prepares a separate native NPC cost assertion and rejection
-controls; architecture's currency acceptance blueprint continues. Owned-pack
-availability does not establish import or native qualification. Same-cut mapping,
+controls. [Currency acceptance design review](domain-separation/PREPARATION_BUNDLES_REVIEW_2026-10-08.md)
+passes blueprinta24454539; architecture next maps ordinary item-custody/subtree
+authority boundaries for later domain separation. Native C01 execution still
+requires its genuine active fixture and phase witness. Owned-pack availability
+does not establish import or native qualification. Same-cut mapping,
 physical publication, authentic setup and existing primary/Plan5 requirements
 remain; no shared authority, owner implementation or release gate is changed.
 

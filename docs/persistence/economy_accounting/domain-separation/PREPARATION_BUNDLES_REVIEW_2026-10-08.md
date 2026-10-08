@@ -101,3 +101,69 @@ Each chat retains its existing isolated worktree and one bounded active delivery
 New scratch/evidence belongs on D:. Neither delivery creates a primary adoption
 wait, changes required accounting acceptance, or closes Plans1-5/R1-R8. Primary
 completion and owner disposition remain unobserved.
+
+## Currency native acceptance blueprint review and successor
+
+Disposition: PASS for source-grounded acceptance design at published
+`a24454539b3c8dc223f06241efc90104c9573ee0`.
+[Exact currency blueprint](https://github.com/Community-Duris/Duris/blob/a24454539b3c8dc223f06241efc90104c9573ee0/docs/persistence/economy_accounting/domain-separation/CURRENCY_NATIVE_ACCEPTANCE_BLUEPRINT_2026-10-08.md)
+is Git blob `15bcec8b8631c46b89f1cc07790f71a2857041bb`, SHA256
+`8cf4eb91e200c35be172493ffa05387721402c43602e008b006e4d0361d8e960`.
+Exactly one assigned document, 337 lines, was added. The coordinator independently
+read it, authenticated all 36 appendix blobs against their specified trees,
+resolved all three links against Git, checked the sole-path diff/whitespace, and
+compared critical ATM-world, flat-admission, denomination and partial-pickup claims
+with actual maintained code. Worker-reported anchor checks remain source
+validation; no native, SQL, server, build or crash/recovery execution occurred.
+
+The nine cases select C01 first: real registered `deposit 1 copper` followed by
+save/logout/relogin and cold reload, with exact initial funding/ATM identity,
+root/receipt, denomination/revision, publication/ACK and reload evidence. Later
+cases specify all/refusal, shared bank, offline/morph, lost reply, compound coin,
+partial pile, cold ACK and enrollment. Genuine initialized active fixture,
+funded lifetimes and native phase witness remain unavailable, so no runner is
+reserved for implementation. Test-only fault wrappers are not server hooks.
+Flat typed-coin central admission remains closed despite compound components.
+
+The blueprint preserves distinctions essential to a valid test: submission is
+not payment; retained rejection can add receipt metadata; shared-bank gating may
+defer input rather than immediately reject it; coin round trips preserve value
+while denomination counts can change; partial pickup has no invented quantity
+syntax; enrollment and coin pickup have different operation IDs. Its concrete
+partial-capacity example is conditional, not an authentic funding recipe.
+
+Primary's newer `84a435c3deca43258c0c804ec16cc964197c2aea` checkpoint publishes
+private warm/SHOP progress only. Public native source/migration bodies remain
+unchanged. Neither this blueprint nor those reports closes its unavailable
+fixture, execution or primary-owner requirements. Preserve this completed
+blueprint and the existing map; revisit the C01 runner when actual inputs arrive.
+
+### Next bounded architecture delivery
+
+Architecture now owns one document:
+`domain-separation/ITEM_CUSTODY_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md`.
+This advances the next domain's future separation rather than inventing a native
+runner with missing inputs. Scope ordinary carried-to-room-to-carried item moves
+and one complete container subtree, with compound item/money and quest/shop
+boundaries identified only where they constrain that facade. Reuse the existing
+operation inventory, R0-R14 preparations and currency map; do not reproduce them.
+
+Trace actual command/capture, complete UID/parent/root/current custody and
+revision facts, durable writer/transaction ownership, native graph publication,
+ACK/save-hold and cold recovery. Map DB-authoritative state versus RAM projection
+and identify the smallest later facade boundary that reuses existing preparation
+and SQL/flat roots, preserves complete forest and compound atomicity, and avoids
+normal saves overwriting current authority. Proposals are design, not callable
+APIs or RAM authority. State current backend and producer limits, existing test
+coverage, exact missing interfaces, ownership/collision risks and the first useful
+implementation/test slice when inputs exist. Distinguish reported private warm/
+SHOP contracts from published source and actual qualification.
+
+No code/test edit, producer/authority/observer, Plan5 audit or runtime action is
+assigned. Authenticate exact source bodies and citations, validate links and the
+sole-file diff, then publish one document and concise handoff in the existing
+architecture branch/worktree. Its benefit is an implementation-ready ownership
+and integration boundary for a second game domain. Quest owns its separate NPC
+cost assertion delivery. Review each handoff before selecting a successor; native
+execution dependencies block only their dependent step. Existing native Goals
+remain BLOCKED and heartbeat ACTIVE; broader project completion is unproved.

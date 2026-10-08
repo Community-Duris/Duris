@@ -79,8 +79,12 @@ Quest prep next owns only a new native NPC cost assertion module, focused test
 and handoff, with paths and controls in that review. It checks QP02 original
 native cash/economic agreement without a second player debit and preserves all
 existing oracles. Native mapping/publication authentication and authentic paid
-setup remain unavailable; no owner or authority is invented. Architecture's
-currency acceptance blueprint remains active in its existing isolated worktree.
+setup remain unavailable; no owner or authority is invented. Currency blueprint
+a24454539 now passes preparation review in PREPARATION_BUNDLES_REVIEW_2026-10-08.md.
+Architecture next owns ITEM_CUSTODY_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md: ordinary
+carried/room moves and one complete container subtree, existing writer/native
+publication/ACK/recovery ownership, and the smallest later DB-authoritative
+facade boundary. No code or native runner with missing fixture inputs is reserved.
 Primary84a435c3d publishes only documentation of private warm/SHOP progress and
 blockers; public native source/migrations remain unchanged. No shared owner,
 Plan5 audit or primary rewrite is assigned. Actual native Goals remain BLOCKED;
