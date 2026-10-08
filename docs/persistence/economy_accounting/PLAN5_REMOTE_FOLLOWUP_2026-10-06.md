@@ -2378,3 +2378,35 @@ unexecuted/unqualified. Shared recipe/UID-owner handoffs, whole backup suite,
 producers/opening/player/fault/load journeys, combined candidate, Plan5/R1–R8
 and release remain open. No activation, autocorrection, production write,
 primary push, deployment or merge.
+
+
+## Current64 complete backup-module execution — 2026-10-08
+
+Same remote codex/accounting-plan5; base d4267e6f3018e48c0b76cf2a609723f81fd9ce92.
+Result is the containing commit, verified in delivery/result.json; all seven
+prior tips remain. This report/follow-up only, no code or shared recipe changes.
+Frozen primary740b2f219b09a103db2104d5d6e36765d7a5b8f1 plus24 owned overlays:
+tree2bc218c3c71eb32d3b0e8c029a3a2176b645c4d0; native833d3085815b396861ad18a77635412212381e4b;
+migrations7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2/head64. Prior Plan5 lifecycle/
+claim additions are explicit; nine critical shared native recipes/fixtures equal
+primary. Both754-unit servers are exact dependency-authenticated reuse.
+
+Complete12-case module runs:11 PASS,one fixture-link failure,zero errors/skips;
+ten actual isolated service boots, both SQL engines and eight flat boots. Per
+SQL engine23 qualification calls:12 accepted/11 expected refusals. Lifecycle
+retention, WAL recovery/quarantine, bank/domain replay, locker/spell receipts,
+foreign-owned boot, lazy-catalog refusal and both dump/import journeys pass.
+Stage terminal exit1 is preserved; no restart or green relabel. The economic-
+record-loss case fails linking seven decoder symbols before its nine missing-
+file controls. Genuine provider closure remains primary-owned, with original
+strict/SAN/no-GC recipe intact. Exact provider/input/command handoff is in
+PLAN5_CURRENT64_FULL_BACKUP_MODULE_HANDOFF_2026-10-08.md.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/full-backup-20261008;
+seal1f9ab251ecab1e7f0ff9ba679291d141d2b47837c4e33833d4410f10734f3a8a.
+Full module, genuine producer/opening/player/route/fault/load acceptance and
+Plan5/R1–R8/release stay unqualified. New primary07c0e0398 is docs only; private
+143-file d9eaa45b candidate remains native/SQL/recovery-unexecuted. Curator-ready
+notebook input, primary-local notebook nonblocking; application/acknowledgement
+not claimed. No activation, autocorrection, production write, primary push,
+deployment or merge.
