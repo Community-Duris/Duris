@@ -8914,7 +8914,8 @@ assert all("case '"+c+"':" in guard for c in 'BCAOPGE')
 # Accounting may publish native-owned NPC inventory/equipment through its
 # retained reset owner; ordinary room/object resets still fail closed.
 assert 'const bool native_sql_reset = economic_gameplay_authority::active_regular_sql();' in db
-assert re.search(r"economic_gameplay_authority::active\(\)\s*&&\s*reset_command_issues_item\(ZCMD.command\)\s*&&\s*!\(native_sql_reset\s*&&\s*\(ZCMD.command == 'G' \|\| ZCMD.command == 'E' \|\| ZCMD.command == 'P'\)\s*&&\s*quest_mobile_native_birth_owner::owns\(mob\)\)\)\s*\{\s*last_cmd = 0;\s*continue;", db)
+native_reset_item_gate = re.search(r"economic_gameplay_authority::active\(\)\s*&&\s*reset_command_issues_item\(ZCMD.command\)\s*&&\s*!\(native_sql_reset\s*&&\s*\(ZCMD.command == 'G' \|\| ZCMD.command == 'E' \|\| ZCMD.command == 'P'\)\s*&&\s*quest_mobile_native_birth_owner::owns\(mob\)\)\)\s*\{\s*last_cmd = 0;\s*continue;", db) is not None
+assert native_reset_item_gate
 units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==196];assert len(units)==8 and all(u['achievement'] and u['daily_candidate'] for u in units)
 guidance=' '.join(mapping['orientation']+[c['description'] for c in mapping['contacts']]+[s['summary'] for s in mapping['stories']]).lower()
 for phrase in ('echoed to the room','same visible name','two tribute','timed-heart','potential dailies','active, ready accounting'):assert phrase in guidance,phrase
@@ -9024,7 +9025,7 @@ for item,mob,where in ((71228,71248,71326),(87588,87602,87673)):
 assert 'necklace' in inventory_items[71248]['name'].lower() and 'bodyguard' in inventory_mobs[71248]['name'].lower()
 assert not any(re.match(r'[OPGE]\s+-?\d+\s+(?:9106|9107|9117|9118|9119|9120)\s',line) for area in catalog_module.zone_registry(ROOT) if area['source_area']!='mount' for line in (ROOT/'areas/zon'/(area['source_area']+'.zon')).read_text().splitlines())
 guard=db[db.index('static bool reset_command_issues_item('):db.index('/* execute the reset command table')]
-assert all("case '"+c+"':" in guard for c in 'AOPGE') and re.search(r'economic_gameplay_authority::active\(\)\s*&&\s*reset_command_issues_item\(ZCMD.command\)\)\s*\{\s*last_cmd = 0;\s*continue;',db)
+assert all("case '"+c+"':" in guard for c in 'AOPGE') and native_reset_item_gate
 units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==91]
 assert len(units)==3 and all(u['achievement'] and u['daily_candidate'] for u in units)
 guidance=' '.join(mapping['orientation']+[c['description'] for c in mapping['contacts']]+[s['summary'] for s in mapping['stories']]).lower()
@@ -9136,7 +9137,7 @@ assert '.func.mob)(k, ch, cmd, arg)' in dispatch and '.qst_func)(k, ch, cmd, arg
 read_command=(ROOT/'src/cmd/actinf.c').read_text();read_command=read_command[read_command.index('void do_read('):read_command.index('void do_read(')+500]
 assert 'do_look' in read_command and 'SKILL_EMPOWER_SONG' not in read_command
 guard=db[db.index('static bool reset_command_issues_item('):db.index('/* execute the reset command table')]
-assert all("case '"+c+"':" in guard for c in 'AOPGE') and re.search(r'economic_gameplay_authority::active\(\)\s*&&\s*reset_command_issues_item\(ZCMD.command\)\)\s*\{\s*last_cmd = 0;\s*continue;',db)
+assert all("case '"+c+"':" in guard for c in 'AOPGE') and native_reset_item_gate
 units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==995]
 assert len(units)==3 and all(u['achievement'] and u['daily_candidate'] for u in units)
 guidance=' '.join(mapping['orientation']+[c['description'] for c in mapping['contacts']]+[s['summary'] for s in mapping['stories']]).lower()
@@ -9250,7 +9251,7 @@ outside=inventory_module.area_evidence(ROOT,'caves_skelenak')
 assert [(r['block']['line'],r['block']['giver_vnum'],r['block']['receive'],r['block']['disappear']) for r in outside['requests'] if r['block']['give']==[('I',26438)]]==[(155,4038,[('I',4029)],False)]
 guard=db[db.index('static bool reset_command_issues_item('):db.index('/* execute the reset command table')]
 assert all("case '"+c+"':" in guard for c in 'AOPGE')
-assert re.search(r'economic_gameplay_authority::active\(\)\s*&&\s*reset_command_issues_item\(ZCMD.command\)\)\s*\{\s*last_cmd = 0;\s*continue;',db)
+assert native_reset_item_gate
 capture=(ROOT/'src/player/player_snapshot_capture.c').read_text()
 assert 'ownership.state == item_custody_state::active' in capture and 'omit_norent && IS_SET(object->extra_flags, ITEM_NORENT) && !active_durable_custody' in capture
 units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==264]
@@ -9346,7 +9347,7 @@ assert 'cmd == CMD_NONE' in ambient and 'QC_ACTION' in ambient and 'TO_ROOM' in 
 assert 'zone_story_quest_runtime::encountered' in quest
 guard=db[db.index('static bool reset_command_issues_item('):db.index('/* execute the reset command table')]
 assert all("case '"+c+"':" in guard for c in 'AOPGE') and 'reset_command_issues_item(ZCMD.command)' in db
-assert re.search(r'economic_gameplay_authority::active\(\)\s*&&\s*reset_command_issues_item\(ZCMD.command\)\)\s*\{\s*last_cmd = 0;\s*continue;',db)
+assert native_reset_item_gate
 assert re.search(r'state\s*&=\s*3;',db) and 'ZCMD.arg3 & 0x04' in db and 'EX_SECRET' in db
 unlock=moves[moves.index('void do_unlock('):moves.index('void do_pick(')]
 assert unlock.index('REMOVE_BIT(obj->value[1], CONT_LOCKED)')<unlock.index('break_key(ch, key_obj)') and 'number(0, 99) < key_obj->value[1]' in unlock
@@ -9437,7 +9438,7 @@ assert 'completion = completion->next, ++completion_index' in durable and 'used 
 assert 'qcp->next = quest_index[number_of_quests].quest_complete;' in quest
 guard=db[db.index('static bool reset_command_issues_item('):db.index('/* execute the reset command table')]
 assert all("case '"+c+"':" in guard for c in 'AOPGE') and 'reset_command_issues_item(ZCMD.command)' in db
-assert re.search(r'economic_gameplay_authority::active\(\)\s*&&\s*reset_command_issues_item\(ZCMD.command\)\)\s*\{\s*last_cmd = 0;\s*continue;',db)
+assert native_reset_item_gate
 assert 'mob = last_mob = tmp_mob = last_mob_followable = NULL;' in db and 'add_follower(mob, last_mob_followable)' in db
 assert 'EX_PICKPROOF' in db and 'REMOVE_BIT(k->extra_flags, ITEM_SECRET)' in search_source
 unlock=moves[moves.index('void do_unlock('):moves.index('void do_pick(')]
