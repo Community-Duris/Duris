@@ -276,3 +276,54 @@ DB/server/migration/operational batch or old-control rewrite is assigned. The
 benefit is an importable executable characterization for future owner changes,
 not closure of active pickup recovery. Actual native Goals remain BLOCKED;
 heartbeat ACTIVE and broader completion audit unresolved.
+
+## Maintained pickup component reviewed; auction boundary next
+
+PASS at historical component scope for the optional two-file delivery
+`f70d1147d9d23e5325399c1508ab29a904f3cb06`.
+[Exact maintained test](https://github.com/Community-Duris/Duris/blob/f70d1147d9d23e5325399c1508ab29a904f3cb06/tests/async/test_ordinary_pickup_publication_runtime.py)
+is blob `c788c948d340ba0dba03c70776d74faa2d04063a`, SHA256
+`b3a2a62c28f194661e7b73c20acb9d83b01ac44196c83138c14d76b0ebb4be1b`.
+[Exact component handoff](https://github.com/Community-Duris/Duris/blob/f70d1147d9d23e5325399c1508ab29a904f3cb06/docs/persistence/economy_accounting/domain-separation/ORDINARY_PICKUP_COMPONENT_HANDOFF_2026-10-08.md)
+records the published-primary execution and older-base incompatibility.
+
+Coordinator read the complete 309-line wrapper and 252-line handoff; authenticated
+27 direct blob/hash inputs, 30 indexed artifacts and all 2,816 existing candidate
+files, with the exact new test as its sole addition. The wrapper's guarded
+`build_program` independently produces the byte-identical reviewed component
+SHA256 `d7cb458b1fa7f9598dcdfea5cd98326fc1186391a9e4e9310530701a12ad623c`.
+The authenticated worker compile passes in 441.994 seconds under strict original
+C++20/ASan/UBSan controls. Coordinator reran the unchanged qualified binary
+`6f5d0d52521cc749be72b8bc9020bf98b360fb5164008eb9dabf355b46b572b4`
+for all eight controls in fresh owner-only tmpfs journals: PASS without diagnostics.
+No full recompile was repeated; generated source/provider proof and actual compile
+evidence were authenticated. Coordinator receipts remain privately on D: under
+`coordinator-pickup-test-review-20261008`.
+
+Inactive/schema1/apply/snapshot/native doubles and tmpfs durability limits remain
+part of the accepted claim. This is a characterization, not desired production
+retention or active/native/recovery qualification. Original tests and production
+are unchanged. Import the exact two-file patch into the reviewed published-primary
+source lineage. The older R0-R14 base correctly refuses before compilation:
+three required providers are absent and eight differ. Matching callbacks and the
+old harness do not establish runtime compatibility. Primary adoption is unknown.
+
+The next one bounded architecture delivery is
+`AUCTION_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md` only. Reuse existing inventory
+and post-R14 findings; do not duplicate already-pure auction accounting plans.
+Trace actual bid/outbid/buy-now and linked listing/settlement/money/item claims:
+listing clocks/status/time/price, bidder/previous-winner/seller, wallet/bank/escrow/
+refund/claim endpoints, complete custody, original frozen outcomes, current proof,
+native publication/save/ACK and replay ownership. Identify precise owned facts,
+remaining capture/lock dependencies and a narrow future refactor or acceptance
+reservation with exact paths, controls, available inputs and unavailable original
+owner evidence. Preserve compound atomicity and original writers/recovery owners.
+
+Only the document and private D: source investigation are assigned. No production,
+test, shared owner/export, driver, registry/schema, Plan5 or operational edit;
+no DB/server/migration/native build or broad qualification. Its benefit is a
+source-grounded domain/integration boundary beyond the inventory, not a new facade.
+Quest's pair adapter remains active. Primary52b3dd103 reports private complete
+flat SHOP checkpoint retention progress at candidate4f73b841, 126 production files;
+public source/migrations remain unchanged and native qualification unexecuted.
+Original native Goals remain BLOCKED, heartbeat ACTIVE and broad finish unresolved.

@@ -97,15 +97,21 @@ Item-custody mapf4d38f4eb now passes source/design review in the same preparatio
 review. Pickup reservation0be75e3cb now passes source/component review there:
 58 blobs and 34 evidence artifacts authenticated, eight inactive component
 controls independently rerun with unchanged binary and disclosed doubles/tmpfs
-journal limits. Architecture next owns only new
-tests/async/test_ordinary_pickup_publication_runtime.py and
-ORDINARY_PICKUP_COMPONENT_HANDOFF_2026-10-08.md: preserve this executable
-characterization with old controls unchanged. Genuine save/current-proof/restart
-owners still block production retention wiring. No production/shared owner edit
-or active native runner is assigned.
-Primarya9807ef27 publishes private reset dispatcher/flat SHOP projection progress
-and blockers; public native source/migrations remain unchanged. Its reported
-formatting/source review is not executed compiler/native/gameplay/recovery proof.
+journal limits. Maintained componentf70d1147d now passes review there: exact wrapper
+generation, 27 direct inputs, 2816 existing candidate files and 30 evidence
+artifacts authenticated; eight qualified-binary controls independently pass.
+Import targets published primary, not the incompatible older R0-R14 source base.
+Architecture next owns AUCTION_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md only:
+source-grounded bid/outbid/buy-now and linked claim/state/effect ownership,
+existing pure preparations, exact remaining capture/current-proof/native/recovery
+dependencies and a narrow future reservation. No production/test/shared-owner
+edit or active native runner is assigned. Genuine save/current-proof/restart
+owners still block pickup production wiring.
+Primary52b3dd103 publishes private complete flat SHOP source checkpoint retention
+progress, candidate4f73b841/126 production files, and blockers; public native
+source/migrations remain unchanged. Reported source review is not executed
+compiler/native/gameplay/recovery proof; original dispatch/producer/once-only
+commit/publication/ACK/cold and broad primary requirements remain open.
 No shared owner,
 Plan5 audit or primary rewrite is assigned. Actual native Goals remain BLOCKED;
 heartbeat ACTIVE and broader primary finish line unchanged.

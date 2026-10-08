@@ -16,10 +16,13 @@ D/chronology and native qualification remain external dependencies.
 [Preparation review](domain-separation/PREPARATION_BUNDLES_REVIEW_2026-10-08.md)
 passes currency blueprinta24454539, item mapf4d38f4eb and pickup reservation
 0be75e3cb. Eight inactive pickup component controls independently pass with
-unchanged binary, disclosed doubles and tmpfs journal limits. Architecture next
-owns only new test_ordinary_pickup_publication_runtime.py and its component
-handoff; original controls stay intact. Production pickup wiring still needs
-genuine save/current-proof/restart owners. No shared owner edit is assigned.
+unchanged binary, disclosed doubles and tmpfs journal limits. Maintained test
+f70d1147d also passes wrapper/input/artifact review and eight independent binary
+controls; import requires the published-primary lineage, not older R0-R14.
+Architecture next owns AUCTION_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md only,
+tracing actual bid/escrow/refund/claim/custody/native/recovery boundaries and a
+narrow future reservation. Production pickup wiring still needs genuine
+save/current-proof/restart owners. No shared owner edit is assigned.
 Native C01 execution still
 requires its genuine active fixture and phase witness. Owned-pack availability
 does not establish import or native qualification. Same-cut mapping,
