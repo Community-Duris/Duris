@@ -1,5 +1,14 @@
 # Persisted provider union: primary source handoff - 2026-10-07
 
+## Original flat refusal and retained cancellation source joined - 2026-10-08
+
+[Current source integration](FLAT_SHOP_ORIGINAL_REFUSAL_SOURCE_INTEGRATION_2026-10-08.md) records private candidate
+`6641083bd523f9acebbd9618f5ef01816ef40fc2f12635a4b0f03242581d1ac5`:complete original live
+flat refusal cleanup and hold-consumption-before-fence-release join the cold
+owner/driver and ordinary NMB4 admission. Execution remains deferred; notification
+continuations,shared keeper provenance,remaining producers,activation and full
+Plans2-4/Plan5/R1-R8 qualification remain. Source review is not runtime acceptance.
+
 ## Immutable cold movement and Plan5 source joined - 2026-10-08
 
 [Source integration handoff](COLD_WORKING_PLAN5_SOURCE_INTEGRATION_2026-10-08.md)
