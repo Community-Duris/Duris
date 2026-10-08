@@ -11,10 +11,12 @@ native Goal remains **BLOCKED**; this delivery does not resume or complete it.
 ## Delivery and pins
 
 - Preserved prep parent: `7e861c68fbe70f19d574504e21c451326f955efd`.
-- New code/test commit: `0ee2549cd0ddf9a8efb6315a65dd99e0fff43c69`
+- Original code/test commit: `0ee2549cd0ddf9a8efb6315a65dd99e0fff43c69`
   (four new files only).
-- This separate handoff commit follows that code commit on
-  `origin/codex/accounting-quest-prep`; its exact SHA accompanies publication.
+- Original handoff: `3da182fee63b064c02756c7049905eebee23e84d`.
+- Required additive Python correction: `adf64fcf432b2787d98a1a42c44e385141e74680`;
+  apply it before using the original assertion. The separate corrected handoff
+  follows on `origin/codex/accounting-quest-prep`; its exact SHA accompanies publication.
 - Reviewed/tested primary candidate: `df0570c5456d4d747ca1320ce958c1db52bb08fd`.
 - Publication refresh fetched `9c49043a5361d9a0f5de978bb473f8ff57b72fd9`.
   Its source, migrations, production AREA/QST and maintained fixture/build-helper
@@ -101,6 +103,8 @@ The modeled joins require:
   full attempted postimage size/digest and explicit complete-image observation,
   guarded coordinator return, retained contexts and uncertainty disposition.
   An uncertain retry keeps the exact pair, generation and whole postimage.
+  A complete zero-byte image is valid only with the canonical SHA256 of empty
+  bytes, while retaining every other original evidence/authority requirement.
 - Successful return sets retired and removes both actual contexts. A latched
   repeat carries verification from that successful sequence, has no new pair
   attempt and no journal result. Absence, journal OK or an ACK row alone fails.
@@ -191,11 +195,11 @@ It excludes dynamic bartender quests and supplies no native runtime proof.
 
 | Executed check | Result and scope |
 | --- | --- |
-| New Python agreement suite | **14 tests PASS**, modeled inputs only; `python-agreement-delivery.log`. |
+| Original Python agreement suite | **14 tests PASS** at `0ee2549cd`, modeled inputs only; later correctness review failed on a valid empty image. Superseded by the 18-test correction below. |
 | Actual sanitized native component/reader | **33 reader invocations PASS**: 3 accepted original-value cuts, 30 strong refusals, plus the complete maintained context-test controls; `qualification-delivery.log`. |
 | Unchanged cut oracle suite | **17 tests PASS**, modeled/component scope retained; `unchanged-cut-controls.log`. |
 | Unchanged temporal retirement suite | **13 tests PASS**, modeled agreement scope retained; `unchanged-retirement-controls.log`. |
-| Owned bytes | All four committed files exactly match the D: candidate bytes, including Git blob identity; `owned-input-proof.json`. |
+| Original owned bytes | All four files at `0ee2549cd` exactly match the original D: candidate bytes, including Git blob identity; `owned-input-proof.json`. The two corrected Python files use a separate composition below. |
 | Formatting/syntax/whitespace | Maintained C++ formatting/check, Python syntax and staged whitespace checks PASS. |
 
 Final component directory, relative to the qualification root:
@@ -233,8 +237,61 @@ Retained initial failures remain visible:
 
 No earlier failed/intermediate binary is substituted for the published code.
 
-Cherry-pick the code commit into the reviewed primary source or a compatible
-descendant, then this handoff commit. Preserve consumed earlier prep bundles.
+## Additive zero-postimage correction and failed review
+
+Coordinator review of `0ee2549cd`/`3da182fee` independently passed the original
+14 modeled tests but found a genuine assertion defect: `_retirement` required
+positive postimage bytes. The maintained journal can delete its only two
+records, producing an exact complete empty image. Its source at primary
+`cda8aa6f65c72121e92d7c07efae7e91164d1050`, journal blob
+`a64124327c421ff928597619600597b534fbc600`, confirms this in
+[rewrite650–695](https://github.com/Community-Duris/Duris/blob/cda8aa6f65c72121e92d7c07efae7e91164d1050/src/persistence/critical_command_journal.c#L650)
+and [confirmation477–493](https://github.com/Community-Duris/Duris/blob/cda8aa6f65c72121e92d7c07efae7e91164d1050/src/persistence/critical_command_journal.c#L477).
+That primary retains the public source/migration trees pinned above; no
+qualification of its private candidate follows from this source comparison.
+
+Correction `adf64fcf432b2787d98a1a42c44e385141e74680` changes only the owned
+assertion and its Python tests. Size must be an exact integer in `[0, 2**64)`;
+zero requires `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+Complete-image, nonempty-image, exact retry, original receipt/ACK/session,
+guarded coordinator/retired-latch and external authority requirements remain.
+Zero bytes do not establish retirement or authorize journal absence by themselves.
+
+Four added methods cover empty terminal success; uncertain retry to success
+and latched repeat; wrong empty digest/incomplete image/negative, boolean,
+float and overflow sizes; and changed retries in both empty/nonempty directions.
+Before the assertion fix, the 18-test suite was **RED: 2 errors and 2 failed
+subcases**. After the fix, **all 18 tests PASS** on Windows Python and in a
+fresh Ubuntu composition of the public primary's helpers plus the owned pack.
+
+Evidence root: `D:\Dev\Temp\qp03-empty-postimage-fix-20261008`.
+Actual commands:
+
+```sh
+# Existing prep worktree, Windows Python; both red and green logs retained.
+python tests/async/quest_accounting_prep/test_native_quest_pair_checks.py
+# Fresh D: public-primary composition, Ubuntu-22.04, TMPDIR=/mnt/d/Dev/Temp.
+python3 tests/async/quest_accounting_prep/test_native_quest_pair_checks.py
+```
+
+Logs are `before-fix.log`, `after-fix-windows.log`, `after-fix-wsl.log`.
+The correction `receipt.json` pins both committed Python files against that
+composition, the log digests and retained native receipt. Its SHA256 is
+`dcc88ca00b74eabb56d33f1a7e1534eb1e129d35709085dfe3f6d91f47a4958d`;
+the exact byte check is retained as `verify_correction.py` in the same root.
+No C++ or broad unchanged test rerun was required for this Python-only patch.
+The original reader/wrapper blobs remain respectively
+`70f1bb37f8b4505170eba06e0d4c5724495bd42b` and
+`1bb3b2aa4cae466e59efedd3cd2f87e0f8fa1c24`. The original native receipt/ELF
+pins above are unchanged and qualify the original reader execution only;
+its recorded Python dependency hashes are those at `0ee2549cd`, not a claimed
+rerun of this correction. The old failed review remains part of this delivery.
+No native-proof, owner-execution or primary-adoption claim is made.
+
+Cherry-pick the original code, additive correction, then the corrected handoff
+into the reviewed primary or a compatible descendant. If the original bundle
+is already present, apply only the correction and updated handoff. Preserve
+consumed earlier prep bundles.
 Re-run the focused commands after a material source/provider change; do not
 merge the prep branch's older production tree over the primary candidate.
 
