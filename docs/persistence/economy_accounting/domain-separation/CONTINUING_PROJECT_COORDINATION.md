@@ -269,6 +269,26 @@ Original reviewer reference-search correction is retained in the private report;
 no worker evidence or provider changed. Root supplemental-review.json records
 index/report identities; sealed private review packet remains on D:.
 
+Latest primary74fb857fb79287f343c4246d8a90d6c2eb4ab9f9 adds the102-line
+[Smith grant/reset recovery source report](../SMITH_GRANT_ACCOUNTING_AND_RESET_RECOVERY_SOURCE_INTEGRATION_2026-10-08.md),read in full.
+Private3fc1241b986986c7a50f57397665e5cb35f6a17d2883b3388f2c52d77f71dd53 reports
+207 paths/168 source files:registered pure producer,corrected Smith17 native-literal/
+DFS codec,retained original output-property preparation,full-image/input-parent
+translation,physical PC/NORENT observation and typed variable-fee/event compilation.
+Required actual R_num grouping/zero-key correction and indexed-PC-before-read are
+reported;friend access alone is not genuine preparation authority. Observation/
+compilation grant no source/admission/save/publication/transaction/ACK capability.
+Cold pre-batch/returned-prefix and post-S continuation source joins retain original
+returns before fallible checks;present-prefix ready latch requires authentic
+same-process adoption/fresh proof and does not authorize unknown cold intent.
+Original reset front-door/cursor is already independently in progress;do not
+assign duplicate work. Smith source/save/historical carrier,budget/fences,atomic
+SQL/flat,fee/grant/extraction publication,recovery/ACK and special reset routes
+remain open. All execution NOT RUN;public src/tests/migrations unchanged/private
+source unavailable. Existing reviewed maps/facts and conditional acceptance remain;
+no new genuine fixture/interface supports a side assignment. GoalsBLOCKED/
+unfinished;heartbeatACTIVE,overall Plans2-4/Plan5/R1-R8/release incomplete.
+
 Latest primaryab67bad7e079245128c4de04a82beed0df2a2e9e adds the64-line
 [Smith capture/terminal cold source report](../SMITH_CAPTURE_AND_TERMINAL_COLD_SOURCE_INTEGRATION_2026-10-08.md),read in full.
 Private673ef5eb now reports completed-present AND missing-body terminal reset
