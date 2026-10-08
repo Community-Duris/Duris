@@ -1144,3 +1144,84 @@ original qualification remain incomplete. Public source/migrations/tests unchang
 compiler/native/SQL/gameplay/persistence/recovery UNEXECUTED by major-plan deferral.
 No new paidservice/quest API or owner proof is exposed. Actual Goals remain BLOCKED,
 heartbeat ACTIVE and broader required primary/sidework finish line unresolved.
+
+
+## Source-contract and group-XP checks reviewed; recovery seams next
+
+Independent review passes the optional paid-service source-contract bundle
+`3aaa617970aeae123bffe024520bc79dd81195eb` (parent
+`9b90753c442818ae9d0c3082c1b4134623987699`).
+[Exact two-file handoff](https://github.com/Community-Duris/Duris/blob/3aaa617970aeae123bffe024520bc79dd81195eb/docs/persistence/economy_accounting/domain-separation/PAID_REPAIR_SMITH_SOURCE_CONTRACT_HANDOFF_2026-10-08.md)
+records the maintained smith test and its original comparison scope. Coordinator
+authenticated 2,817 frozen public bodies, archive/preimage, both committed bodies,
+owned provider/reference pins and 63 indexed artifacts. Fresh original, updated
+public and updated owned runs each pass two tests. All 37 deliberate mutations
+replay identically: 31 source negatives cover all 21 predicates, three writer
+inventory negatives and three parser negatives reject. Nine successive whitespace/
+comment controls preserve tokens and pass. Independent nonzero7/timeout124 controls
+retain partial diagnostics. The original ambiguous-NULL failure is preserved;
+the final predicate identifies the actual unconditional disabled-selector return.
+Proof: `D:\Dev\Temp\coordinator-service-contract-review-20261008`.
+
+Complete selected function parsing replaces the earlier fixed-length window;
+original debit/create/grant/retire, failure refund and writer checks remain.
+Active refusal, keeper/customer identity and custody, prepayment repair effects,
+disabled gem and queued-grant versus completion predicates are source snapshot
+facts. Lexer/order checks do not prove full control-flow equivalence or runtime
+compound atomicity; selected legacy hazards are not permanent desired behavior.
+No native/C++/SQL/backend/gameplay/save/ACK/cold qualification was performed.
+
+Independent review also passes group-XP assertion code
+`306008c1b51560bd5bcad943d9fac5d026603432` and handoff
+`1c90a27fabfcf7b2cfbdf4bc0459996a175aea28`.
+[Exact three-file handoff](https://github.com/Community-Duris/Duris/blob/1c90a27fabfcf7b2cfbdf4bc0459996a175aea28/docs/persistence/economy_accounting/quest-prep/QUEST_REWARD_XP_ASSERTION_HANDOFF_2026-10-08.md)
+publishes one optional helper, its focused test and scope. Coordinator read all
+three bodies, authenticated 10 public bodies,13 unchanged dependencies,19 source
+excerpts and34 indexed artifacts, and independently ran23 focused tests plus
+the unchanged legacy custody/XP and dynamic refund controls through WSL.
+All pass with inputs unchanged. The earlier Windows fcntl setup failure remains
+retained. Proof: `D:\Dev\Temp\coordinator-group-xp-review-20261008`.
+
+The helper compares the selected original operation's complete supplied v5/v6
+XP tuples and strict bindings, with bounded PIDs/slots/amounts, rectangular awards,
+duplicates/conflicts, local owner XP mask and acknowledgment prerequisites.
+Actual decoder enforces party_size equals credited_count; no new exported field
+is invented. Unrelated operations may coexist. Independently timed recipient
+observations cannot establish a common snapshot or peer-before-owner ACK schedule:
+a newer owner acknowledgment with an older peer observation deliberately passes.
+Coherent fabricated exports, including a coherently removed whole slot, prove
+only supplied agreement. Effective XP, literal decoding/authentication, original
+owner/world authority, native chronology, receipt/save/ACK/cold remain external.
+
+Architecture now owns one new doc only:
+`domain-separation/CRAFT_RECIPE_COMPLETION_AUTHORITY_BOUNDARY_2026-10-08.md`.
+Prepare the existing recipe transaction/pouch/progression authority seam, using
+actual submission/completion/continuation/pouch/movement/progression/save/backend
+providers. Capture original participant/input/output identity and frozen recipe/
+XP/pouch terms versus current lookup/config; separate reservation,publication,
+business completion, durable receipt,save acknowledgment and recovery. Reuse
+closed R1 implementation48cdf9cb/handoff4f7fa384, material proof and accepted SQL/
+flat recipe journeys. No re-extraction or requalification; at most one distinct
+future acceptance reservation, only if source supports it. If already covered,
+return precise existing proof/dependency instead of manufacturing a document.
+
+Quest now owns one new doc only:
+`quest-prep/QUEST_STORY_HISTORY_RECOVERY_BOUNDARY_2026-10-08.md`.
+Prepare retained original story tracking identity versus current season/catalog/
+definition revision, tracker replay equality and SQL/flat save/load/erasure.
+Reuse accepted completion/context maps and existing story suites. Prior-memory
+restoration after failed save is distinct from a durable authority outcome;
+actual flat rename/directory-sync ordering needs explicit uncertainty treatment.
+This is source-supported reasoning, not an executed fault. No original-season
+policy or new history authority is assigned. Return exact existing coverage if
+there is no distinct implementation-preparation gap.
+
+Both bounded assignments use existing isolated worktrees and D: private evidence,
+exact source/blob/anchor/link/design review and no adoption wait. No production,
+test,helper,capture,decoder,registry,schema,shared driver,Plan5,FINISH or canonical
+handoff edits; no build/DB/server/journal/native/broad execution or new authority/
+format/RAM switch. Original coherent participants/current world,publisher,save,
+checkpoint,ACK,cold and private primary source remain dependent external inputs.
+Actual native Goals remain BLOCKED; heartbeat stays ACTIVE. Published primary is
+still07c0e0398's private source report with public source/migrations/tests unchanged.
+Required primary Plans1-5/R1-R8 qualification and owner completion remain open.

@@ -120,18 +120,27 @@ Reward-completion mapd4d048c29 now PASS source/design review:31 public bodies/
 10 prep dependencies/48 anchors/six links/42 artifacts authenticated. Static
 original obligation/XP save receipts,ACK and pair retirement remain distinct
 from dynamic in-memory progression/history/reset after physical item publication.
-Quest next owns only quest_reward_xp_checks.py,test_quest_reward_xp_checks.py and
-QUEST_REWARD_XP_ASSERTION_HANDOFF_2026-10-08.md: optional captured original full
-multi-recipient frozen-XP tuple agreement,using existing decoder/cut conventions.
-Strict original operation/PID/slot/amount/types/domain/metadata,selected-operation
-rows and explicit missing evidence; foreign unrelated operations may coexist.
-Independent cuts prove no common-time census or ACK ordering; coherent fabricated
-packs pass at most agreement with owner/native/timeline proof false. No effective
-XP calculation,new decoder,legacy Kord widening or existing capture/assertion edit.
-Focused modeled checks plus smallest unchanged compatibility control on D: only.
-Genuine group/setup/original lifecycle/coherent-world/save/ACK/cold remains external;
-no production/shared driver/schema/registry/Plan5/FINISH/canonical handoff edit or
-SQL/build/server/journal/native/broad run. Final implementation review pending. Existing oracles
+Group-XP code306008c1b/handoff1c90a27fa now PASS captured-agreement review:
+three owned bodies,10 public bodies,13 unchanged dependencies,19 source excerpts
+and34 indexed artifacts authenticated. Fresh23 focused tests and two unchanged
+compatibility controls PASS. Full original multi-recipient XP tuples and local
+owner receipt/mask agreement remain separate from effective XP,owner authority,
+common-time world and ACK schedule. Newer owner ACK may coexist with older peer
+observation; coherent fabricated exports prove at most supplied agreement.
+Quest next owns only QUEST_STORY_HISTORY_RECOVERY_BOUNDARY_2026-10-08.md.
+Benefit: prepare original story tracking identity/history recovery across catalog,
+definition revision and season drift. Trace actual record_authoritative_completion,
+tracker replay equality,current lookup and SQL/flat history save/load/erasure.
+Reuse completion/context maps and existing story tests; no repeated inventory.
+Separate prior-memory restoration after save failure from authority uncertainty,
+including flat rename followed by failed directory sync. No executed fault claimed.
+Doc-only exact source/blob/anchor/link/design review/private evidence on D:.
+No production/helper/test/capture/decoder/schema/registry/shared driver/Plan5/
+FINISH/canonical handoff edit or build/DB/server/journal/native/broad run.
+Original coherent participant/current-world/save/checkpoint/ACK/cold and private
+primary source remain external. One bounded delivery; existing native Goal stays
+BLOCKED. If existing proof covers the proposed gap, return exact coverage rather
+than manufacture a document. Existing oracles
 remain intact. Native mapping/
 publication, genuine D/chronology, full census, original owner exports and
 authentic paid setup remain unavailable. Currency blueprint
@@ -171,17 +180,29 @@ Paid-service map9b90753c4 now PASS source/design review:3,575 public bodies/eigh
 references/33 pins/110 anchors/12 links/38 artifacts authenticated. Active refusal,
 prepayment repair effects,keeper ore/customer return/menu bound,disabled gem and
 queued-grant versus completion/no business callback remain explicit source facts.
-Architecture next owns only existing test_smith_tradeskill_contract.py and
-PAID_REPAIR_SMITH_SOURCE_CONTRACT_HANDOFF_2026-10-08.md. Retain original debit/
-creation/grant/retirement,refund and writer checks; label source-order scope,
-whole-function parsing and meaningful guard/order/failure predicates. Source
-mutations must reject removed guarantees; harmless formatting should remain valid.
-Observed legacy hazards require explicit future owner-reviewed behavior decisions,
-not permanent buggy policy. Source checks prove no compound runtime atomicity.
-Focused bounded Python and exact two-path review/private evidence on D: only;
-no production/capture/shared driver/schema/registry/Plan5/FINISH/canonical handoff
-edit or build/DB/server/journal/native/broad run. Genuine retained participant,
-current world/publisher/save/ACK/cold remains external. Final review pending.
+Paid-service source-contract3aaa61797 now PASS independent review:exact two-path
+publication,2,817 public bodies/63 indexed artifacts and references authenticated.
+Original/public/owned two-test controls independently PASS; all37 negative
+mutations and nine formatting controls replay identically. Nonzero7/timeout124
+logging retains partial streams. Original ambiguous-NULL failure stays retained.
+Source predicates prove no runtime atomicity; legacy hazards remain comparison
+facts subject to explicit future owner-reviewed behavior decisions.
+Architecture next owns only CRAFT_RECIPE_COMPLETION_AUTHORITY_BOUNDARY_2026-10-08.md.
+Benefit: implementation-ready recipe transaction/pouch/progression authority seam.
+Available actual crafting submission/completion,continuation,pouch,item movement,
+progression/save hooks/backend receipt providers and maintained tests are inputs.
+Reuse closed R1 implementation48cdf9cb/handoff4f7fa384 and accepted SQL/flat recipe
+journeys; do not repeat material math or reopen/requalify the completed bundle.
+Trace captured original actor/input/output UIDs,recipe/discipline/XP,pouch terms,
+reservation/refusal,physical publication,business completion,retained operation
+receipt versus current config/lookup,live projection,saved receipt acknowledgment,
+replay/copyover/cold and backend uncertainty. At most one real nonduplicate future
+acceptance reservation; return existing coverage if there is no distinct gap.
+One doc only,exact source/blob/anchor/link/design checks/private proof on D:.
+No production/test/capture/decoder/schema/registry/shared driver/Plan5/FINISH/
+canonical handoff edit,new authority/format/RAM switch or compiler/DB/server/
+journal/native/broad run. Genuine original participant/current-world/publisher/
+save/ACK/cold and private-source dependencies remain external; native Goal BLOCKED.
 Genuine save/current-proof/restart owners still block pickup production wiring.
 Latest primary07c0e0398 reports private ordinary NMB4/MBR4 SQL storage/repository
 dispatch and flat boot-template/procedure/reload helpers at candidated9eaa45b:

@@ -35,9 +35,14 @@ history/XP preserved; financial/owner/world/timeline proof remains external.
 Reward-completion mapd4d048c29 now PASS source/design review:31 public bodies/
 10 dependencies/48 anchors/six links/42 artifacts authenticated. Original static
 obligation/XP-save versus dynamic in-memory business completion remains explicit.
-Quest next owns quest_reward_xp_checks.py/test and QUEST_REWARD_XP_ASSERTION_HANDOFF:
-optional captured original multi-recipient frozen-XP tuple agreement only.
-Independent per-PID cuts prove no common-time census/ACK schedule/native authority.
+Group-XP code306008c1b/handoff1c90a27fa now PASS captured-agreement review:
+23 focused tests and two unchanged compatibility controls independently pass;
+three owned bodies,10 public bodies,13 dependencies,19 excerpts/34 artifacts
+authenticated. Owner receipt/mask checks are local to the owner observation;
+independent per-PID cuts prove no common-time census/ACK schedule/native authority.
+Quest next owns QUEST_STORY_HISTORY_RECOVERY_BOUNDARY_2026-10-08.md: retained
+original tracking identity versus current season/catalog revision and save/load
+uncertainty. Reuse existing completion/history tests; source/design only.
 Gorblag is a source candidate; funded/item-parent native reachability is unproven.
 Genuine owner export, physical D/chronology and native qualification remain
 external dependencies.
@@ -66,10 +71,14 @@ sanitizer cases;2,816 public blobs/three committed paths/394 artifacts verified.
 Selected genuine score/legal ownership only; no wager/publication/recovery proof.
 Paid-service map9b90753c4 now PASS source/design review:3,575 public bodies/
 eight references/33 pins/110 anchors/12 links/38 artifacts authenticated.
-Architecture next owns existing test_smith_tradeskill_contract.py plus
-PAID_REPAIR_SMITH_SOURCE_CONTRACT_HANDOFF_2026-10-08.md: preserve true original
-order/writer checks,whole-function guards/failure scope and negative sensitivity.
-Source-contract only; observed legacy hazards are not permanent desired policy.
+Paid-service source-contract3aaa61797 now PASS independent review:2,817 public
+bodies/63 artifacts authenticated; original/public/owned two-test controls pass.
+All37 deliberate mutations reject and nine formatting controls pass; logging
+nonzero/timeout retention passes. This proves source predicates, not runtime
+compound atomicity. Observed legacy hazards are not permanent desired policy.
+Architecture next owns CRAFT_RECIPE_COMPLETION_AUTHORITY_BOUNDARY_2026-10-08.md:
+original recipe/input/output/pouch terms and progression/save/ACK/recovery owners.
+Reuse closed R1 math/journeys; one distinct source/design seam, no requalification.
 Pickup still needs genuine save/current-proof/restart owners. Primary07c0e0398
 reports private ordinary birth storage/repository/flat cold helpers at d9eaa45b/
 143 production/77 C providers. Typed NMB4/full264-byte MBR4 and known-zero revision1
