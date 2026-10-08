@@ -115,15 +115,23 @@ service/delay/lifetime/restitution owner dependencies remain explicit. Task
 assertion0aeeed7f9/handofff9c7f6d33 now PASS captured-agreement review:19 focused
 and unchanged refund test independently PASS;two bodies/seven public blobs/12
 unchanged dependencies/19 artifacts authenticated. Full14 B task/history/XP scope
-and coherent-forgery/financial/native limits remain explicit. Quest next owns only
-QUEST_REWARD_COMPLETION_AUTHORITY_BOUNDARY_2026-10-08.md: actual static obligation/
-XP-entitlement and dynamic item-completion business owners,identity/outcome/
-history/reset/save/terminal ACK/replay/cold. Reuse accepted cases/maps; no recipe/
-fee/pair re-inventory or repeated runtime batch. One nonduplicate future slice
-only if available source/provider inputs support it. Genuine original lifecycle/
-retained business/current-world/checkpoint/cold exports remain dependencies.
-Document-only source/blob/anchor/link/design checks; no production/test/capture/
-shared driver/schema/registry/Plan5/canonical handoff edit or build/DB/native run. Existing oracles
+and coherent-forgery/financial/native limits remain explicit.
+Reward-completion mapd4d048c29 now PASS source/design review:31 public bodies/
+10 prep dependencies/48 anchors/six links/42 artifacts authenticated. Static
+original obligation/XP save receipts,ACK and pair retirement remain distinct
+from dynamic in-memory progression/history/reset after physical item publication.
+Quest next owns only quest_reward_xp_checks.py,test_quest_reward_xp_checks.py and
+QUEST_REWARD_XP_ASSERTION_HANDOFF_2026-10-08.md: optional captured original full
+multi-recipient frozen-XP tuple agreement,using existing decoder/cut conventions.
+Strict original operation/PID/slot/amount/types/domain/metadata,selected-operation
+rows and explicit missing evidence; foreign unrelated operations may coexist.
+Independent cuts prove no common-time census or ACK ordering; coherent fabricated
+packs pass at most agreement with owner/native/timeline proof false. No effective
+XP calculation,new decoder,legacy Kord widening or existing capture/assertion edit.
+Focused modeled checks plus smallest unchanged compatibility control on D: only.
+Genuine group/setup/original lifecycle/coherent-world/save/ACK/cold remains external;
+no production/shared driver/schema/registry/Plan5/FINISH/canonical handoff edit or
+SQL/build/server/journal/native/broad run. Final implementation review pending. Existing oracles
 remain intact. Native mapping/
 publication, genuine D/chronology, full census, original owner exports and
 authentic paid setup remain unavailable. Currency blueprint
@@ -159,20 +167,35 @@ paths/394 artifacts and371 dependency inputs/tools/libraries per profile. Fresh
 independent strict ASan/UBSan builds execute67 O1+67 Og with no diagnostics.
 Nonzero7/timeout124 partial retention independently PASS. Failed first symbol
 check stays retained; no wager/admission/publication/recovery proof is supplied.
-Architecture next owns only PAID_REPAIR_SMITH_AUTHORITY_BOUNDARY_2026-10-08.md:
-actual repair/smith command/procedure gates,original actor/keeper identity,item/
-ore selection and pre-payment effects,currency/gem exchange,frozen template/RNG,
-output custody/admission,refund/retirement and completion/save/ACK/replay/cold.
-Reuse closed price/material math and R1 recipe proof; no reextraction/requalification.
-One smallest nonduplicate future acceptance reservation only if real providers
-support it. Public source/schema/tests available; private source and original
-retained participant/current world/publisher/ACK/cold drivers remain dependencies.
-One doc only,exact source/blob/anchor/link/design review on D:. No production/test/
-capture/shared driver/schema/registry/Plan5/finish-plan/canonical handoff edit or
-build/DB/server/native/broad run. No new authority/context/format/policy or RAM
-switch; preserve actual refusal,ordering and all closed bundles.
+Paid-service map9b90753c4 now PASS source/design review:3,575 public bodies/eight
+references/33 pins/110 anchors/12 links/38 artifacts authenticated. Active refusal,
+prepayment repair effects,keeper ore/customer return/menu bound,disabled gem and
+queued-grant versus completion/no business callback remain explicit source facts.
+Architecture next owns only existing test_smith_tradeskill_contract.py and
+PAID_REPAIR_SMITH_SOURCE_CONTRACT_HANDOFF_2026-10-08.md. Retain original debit/
+creation/grant/retirement,refund and writer checks; label source-order scope,
+whole-function parsing and meaningful guard/order/failure predicates. Source
+mutations must reject removed guarantees; harmless formatting should remain valid.
+Observed legacy hazards require explicit future owner-reviewed behavior decisions,
+not permanent buggy policy. Source checks prove no compound runtime atomicity.
+Focused bounded Python and exact two-path review/private evidence on D: only;
+no production/capture/shared driver/schema/registry/Plan5/FINISH/canonical handoff
+edit or build/DB/server/journal/native/broad run. Genuine retained participant,
+current world/publisher/save/ACK/cold remains external. Final review pending.
 Genuine save/current-proof/restart owners still block pickup production wiring.
-Primaryf679ee312 now reports private reviewed live-flat-shop physical publisher,
+Latest primary07c0e0398 reports private ordinary NMB4/MBR4 SQL storage/repository
+dispatch and flat boot-template/procedure/reload helpers at candidated9eaa45b:
+143 production files/77 C providers,23 unchanged fixtures/five schema inputs.
+Original receipt authenticates NMB4/full264-byte MBR4;known-zero revision1 and
+historical formats retained. Shared keeper roles refuse. Flat staged helpers
+preserve original sealed catalog/backend/proclib uncertainty; actual cold wiring,
+slot/budget/full present-or-absent census/effects/cleanup/ACK remain incomplete.
+Recovery/terminal codecs and origin/current lifetime readers are still owned
+elsewhere. Source/admission/physical publication/shared atomic/opening/Plan5/R1-R8
+and compiler/native/SQL/gameplay/persistence/recovery qualification remain open.
+Public source/migrations/tests unchanged; this is a private source report only.
+The prior primaryf679ee312 report remains historical context below; it reports
+private reviewed live-flat-shop physical publisher,
 candidate87c253f4/140 production files/75 C providers. Actual outer held-save/READY
 source and original v8 command bind receipt/CURRENT,literal UID/target/keeper/pet
 census,custody and retained allocation charge under unchanged32MiB. Fresh current/

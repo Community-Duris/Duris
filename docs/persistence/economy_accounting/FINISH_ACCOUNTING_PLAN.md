@@ -32,9 +32,12 @@ Task assertion0aeeed7f9/handofff9c7f6d33 now PASS captured-agreement review:
 19 focused + unchanged refund test independently PASS;two bodies/seven public
 blobs/12 unchanged dependencies/19 artifacts authenticated. All14 B task fields/
 history/XP preserved; financial/owner/world/timeline proof remains external.
-Quest next owns QUEST_REWARD_COMPLETION_AUTHORITY_BOUNDARY_2026-10-08.md: original
-item publication versus XP/epic/history/task/save/ACK/recovery completion owners,
-reuse existing accepted cases and identify one nonduplicate future slice. Doc only.
+Reward-completion mapd4d048c29 now PASS source/design review:31 public bodies/
+10 dependencies/48 anchors/six links/42 artifacts authenticated. Original static
+obligation/XP-save versus dynamic in-memory business completion remains explicit.
+Quest next owns quest_reward_xp_checks.py/test and QUEST_REWARD_XP_ASSERTION_HANDOFF:
+optional captured original multi-recipient frozen-XP tuple agreement only.
+Independent per-PID cuts prove no common-time census/ACK schedule/native authority.
 Gorblag is a source candidate; funded/item-parent native reachability is unproven.
 Genuine owner export, physical D/chronology and native qualification remain
 external dependencies.
@@ -61,16 +64,19 @@ debit-stake denomination and SQL reason45/46 dependencies stay explicit.
 Hand acceptancec20288ff9 now PASS independent review:67 O1+67 Og fresh strict
 sanitizer cases;2,816 public blobs/three committed paths/394 artifacts verified.
 Selected genuine score/legal ownership only; no wager/publication/recovery proof.
-Architecture next owns PAID_REPAIR_SMITH_AUTHORITY_BOUNDARY_2026-10-08.md: actual
-selection/pre-payment effects,currency/gem/material/output custody and original
-completion/save/ACK/recovery owners beyond closed price math. Source/design only.
-Pickup still needs genuine save/current-proof/restart owners. Primaryf679ee312
-reports private live-flat-shop publication at candidate87c253f4/140 production/
-75 C providers: original held/READY source,census/capacity/current/guarded ACK and
-manifest-preserving intermediate forest correction. Public source unchanged and
-compiler/native/SQL/gameplay/persistence/recovery unexecuted. Passive restored-flat
-cold owner/boot counterparts,atomic birth/driver/admission and broad gates remain.
-Supported
+Paid-service map9b90753c4 now PASS source/design review:3,575 public bodies/
+eight references/33 pins/110 anchors/12 links/38 artifacts authenticated.
+Architecture next owns existing test_smith_tradeskill_contract.py plus
+PAID_REPAIR_SMITH_SOURCE_CONTRACT_HANDOFF_2026-10-08.md: preserve true original
+order/writer checks,whole-function guards/failure scope and negative sensitivity.
+Source-contract only; observed legacy hazards are not permanent desired policy.
+Pickup still needs genuine save/current-proof/restart owners. Primary07c0e0398
+reports private ordinary birth storage/repository/flat cold helpers at d9eaa45b/
+143 production/77 C providers. Typed NMB4/full264-byte MBR4 and known-zero revision1
+retain original owners;shared keeper roles refuse. Actual boot wiring/cold slot/
+budget/full census/cleanup/ACK,source/admission/physical publication/shared atomic
+and broad gates remain. Public source unchanged;compiler/native/SQL/gameplay/
+persistence/recovery unexecuted. Supported
 client-free flat routing already exists; SQL-enabled flat routing is not required.
 Native C01 execution still
 requires its genuine active fixture and phase witness. Owned-pack availability

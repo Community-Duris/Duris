@@ -1073,3 +1073,74 @@ capture/shared driver/schema/registry/Plan5/FINISH/canonical handoff edit or bui
 DB/server/native/broad run. No new authority/context/format/policy/RAM switch.
 Quest separately owns reward-completion boundary. Actual native Goals remain
 BLOCKED;heartbeat ACTIVE and broad required primary finish line unresolved.
+
+
+## Paid-service and quest-completion maps reviewed; bounded assertions next
+
+PASS source/design review of paid-service map
+`9b90753c442818ae9d0c3082c1b4134623987699` and reward-completion map
+`d4d048c29ce8cc05ddf7c820fe6384cbd7ed014d`.
+[Paid repair/smith boundary](https://github.com/Community-Duris/Duris/blob/9b90753c442818ae9d0c3082c1b4134623987699/docs/persistence/economy_accounting/domain-separation/PAID_REPAIR_SMITH_AUTHORITY_BOUNDARY_2026-10-08.md)
+authenticates3,575 public bodies,eight references,33 body pins,110 anchors,12
+links/sections and38 indexed artifacts. Coordinator read complete341-line map
+and relevant real repair/smith/grant/queue/random providers. Actual repair may
+change attack type before unpaid/full/ruined refusal; gem routes are disabled;
+smith selects keeper ore and returns it to customer,uses lookup index as menu
+bound and retires ore after grant submission without business completion callback.
+These source hazards are not runtime qualification or authorized behavior fixes.
+[Quest completion boundary](https://github.com/Community-Duris/Duris/blob/d4d048c29ce8cc05ddf7c820fe6384cbd7ed014d/docs/persistence/economy_accounting/quest-prep/QUEST_REWARD_COMPLETION_AUTHORITY_BOUNDARY_2026-10-08.md)
+authenticates31 public bodies,10 prep dependencies,48 immutable anchors,six links
+and42 indexed artifacts. Coordinator read full map and actual reward recovery/
+save receipt/ACK SQL,dynamic callback and decoder/capture shapes. Static item
+handoff,original XP entitlement/save receipt,obligation ACK and pair retirement
+are distinct. Dynamic reset ordinarily rejects duplicate old callbacks but does
+not supply durable business recovery after an earlier partial cut. No fault or
+native journey ran. Private review proof:
+`D:\Dev\Temp\coordinator-service-completion-review-20261008`.
+
+Next architecture owns exactly existing
+`tests/async/test_smith_tradeskill_contract.py` plus new
+`domain-separation/PAID_REPAIR_SMITH_SOURCE_CONTRACT_HANDOFF_2026-10-08.md`.
+Future benefit: remove misleading atomic-runtime claims and retain real source
+guard/order/failure guarantees for conversion review. Preserve original debit<
+creation<grant<retirement,refund and writer classification; complete function
+parsing replaces4500-character window. Add meaningful service/direct refusal,
+detachment/payment,repair prepayment effects,disabled gem and no-business-callback
+predicates with exact negative sensitivity and harmless-formatting controls.
+Observed legacy bugs are snapshot facts; intentional primary fixes require explicit
+contract/comparison review instead of permanently freezing those bugs as policy.
+Original full-source preimages,focused bounded Python/retained diagnostics and
+exact two-path review on D:. No C++/DB/server/journal/native/broad qualification,
+production/shared authority/driver/schema/registry/Plan5/FINISH/capture edits.
+Original native participants/outcomes/receipts/save/publisher/ACK/cold remain
+unavailable. No shared authority,transaction or runtime format is introduced.
+
+Next quest owns exactly new `quest_accounting_prep/quest_reward_xp_checks.py`,
+`test_quest_reward_xp_checks.py` and
+`quest-prep/QUEST_REWARD_XP_ASSERTION_HANDOFF_2026-10-08.md`. Future benefit:
+ready captured-agreement assertion for original full frozen multi-recipient XP
+awards and per-recipient entitlement observations in a later genuine group journey.
+Use existing maintained decoder/full xp_awards export/cut binding helpers. Exact
+selected original op/PID/slot/amount/types/bounds/full tuples and local disposition;
+reject missing/extra/duplicate/conflicting relevant rows while unrelated original
+operations may coexist. Do not equate party_size with credited_count or compute
+effective XP. Independent per-PID cuts cannot prove common-time census,ACK ordering
+or peer-before-owner schedule; a coherence label authenticates none of those.
+Coherent forged packs prove at most captured agreement with authority/native/
+timeline flags false. No existing solo Kord policy/decoder/capture/assertion edits.
+Focused modeled negatives/positive multiple-recipient and multiple-slot controls,
+input immutability and smallest unchanged compatibility check; exact three-file
+publication/proof for independent review. No SQL/build/server/journal/native/broad
+run or production/shared driver/schema/registry/Plan5/FINISH/canonical handoff edit.
+Authentic group setup/coherent-world/original receipt/save/ACK/cold remain external.
+
+Latest public primary07c0e0398 reports private candidated9eaa45b/143 production/
+77 C providers: ordinary NMB4/MBR4 SQL storage/repository and flat boot/procedure/
+reload staged helpers,source reviews only. Original typed full264-byte receipt,
+known-zero revision1,historical formats and shared keeper refusal are preserved.
+Actual cold wiring/slot/allocation/full absent-or-present census/terminal ACK,
+ordinary source/admission/publication,shared atomic keeper storage/opening and
+original qualification remain incomplete. Public source/migrations/tests unchanged;
+compiler/native/SQL/gameplay/persistence/recovery UNEXECUTED by major-plan deferral.
+No new paidservice/quest API or owner proof is exposed. Actual Goals remain BLOCKED,
+heartbeat ACTIVE and broader required primary/sidework finish line unresolved.
