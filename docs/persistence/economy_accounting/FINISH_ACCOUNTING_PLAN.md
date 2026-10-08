@@ -28,10 +28,13 @@ No owner/world/publication authentication; defaults/oracles/shared authority int
 World-service map04731d7e4 now PASS source/design review:40 bodies/44 anchors/
 four links/seven excerpts/49 artifacts authenticated. Active generic debit/refund
 remain unsupported; default share0 and authentic delay/refund/lifetime owners absent.
-Quest next owns optional world_quest_task_checks.py/test and
-WORLD_QUEST_TASK_ASSERTION_HANDOFF_2026-10-08.md: captured A/reset/B/final,all14 B
-task fields/history/XP stable while separate financial checks own wallet changes.
-Existing capture/oracles stay exact; no owner/world/receipt/timeline authentication.
+Task assertion0aeeed7f9/handofff9c7f6d33 now PASS captured-agreement review:
+19 focused + unchanged refund test independently PASS;two bodies/seven public
+blobs/12 unchanged dependencies/19 artifacts authenticated. All14 B task fields/
+history/XP preserved; financial/owner/world/timeline proof remains external.
+Quest next owns QUEST_REWARD_COMPLETION_AUTHORITY_BOUNDARY_2026-10-08.md: original
+item publication versus XP/epic/history/task/save/ACK/recovery completion owners,
+reuse existing accepted cases and identify one nonduplicate future slice. Doc only.
 Gorblag is a source candidate; funded/item-parent native reachability is unproven.
 Genuine owner export, physical D/chronology and native qualification remain
 external dependencies.
@@ -55,14 +58,19 @@ Capture/codec/custody/command only; detach/SQL/publication/ACK/save/cold unexecu
 Gambling mapd5cd32e82 now PASS source/design review:3,069 blobs/12 references/
 38 pins/94 anchors/six links/26 artifacts authenticated. Native round/participant,
 debit-stake denomination and SQL reason45/46 dependencies stay explicit.
-Architecture next owns test_blackjack_hand_native_values.py,C++ harness and
-BLACKJACK_HAND_NATIVE_VALUES_HANDOFF_2026-10-08.md: genuine whole-provider hand
-scoring/legal card ownership acceptance only; no active route/payout authority.
-Pickup still needs genuine save/current-proof/restart owners. Primarye3e82a92d
-reports private role-aware birth accounting/MBR4 result and live publication budget
-at candidatea41d13a7/140 production files/75 C providers; public source unchanged
-and native qualification unexecuted. Atomic birth-to-SHOP,physical publication/
-cold/driver/admission and original broad requirements remain. Supported
+Hand acceptancec20288ff9 now PASS independent review:67 O1+67 Og fresh strict
+sanitizer cases;2,816 public blobs/three committed paths/394 artifacts verified.
+Selected genuine score/legal ownership only; no wager/publication/recovery proof.
+Architecture next owns PAID_REPAIR_SMITH_AUTHORITY_BOUNDARY_2026-10-08.md: actual
+selection/pre-payment effects,currency/gem/material/output custody and original
+completion/save/ACK/recovery owners beyond closed price math. Source/design only.
+Pickup still needs genuine save/current-proof/restart owners. Primaryf679ee312
+reports private live-flat-shop publication at candidate87c253f4/140 production/
+75 C providers: original held/READY source,census/capacity/current/guarded ACK and
+manifest-preserving intermediate forest correction. Public source unchanged and
+compiler/native/SQL/gameplay/persistence/recovery unexecuted. Passive restored-flat
+cold owner/boot counterparts,atomic birth/driver/admission and broad gates remain.
+Supported
 client-free flat routing already exists; SQL-enabled flat routing is not required.
 Native C01 execution still
 requires its genuine active fixture and phase witness. Owned-pack availability

@@ -951,3 +951,125 @@ neither means six providers. Original Plan5 controls remain unchanged. Public
 src/migrations/tests trees are unchanged. Latest private implementation report
 remains e3e82a92d/a41d13a7, source-review only and execution deferred. Actual native
 Goals remain BLOCKED, heartbeat ACTIVE and original broader finish line unresolved.
+
+
+## Replacement task assertion reviewed; reward-completion boundary next
+
+PASS captured task/history/XP agreement review at code
+`0aeeed7f92611947dd59f272c5799bd6fe752d0d` and handoff
+`f9c7f6d33f162bc58083b037f39697f2513ff356`.
+[Exact three-file task assertion handoff](https://github.com/Community-Duris/Duris/blob/f9c7f6d33f162bc58083b037f39697f2513ff356/docs/persistence/economy_accounting/quest-prep/WORLD_QUEST_TASK_ASSERTION_HANDOFF_2026-10-08.md)
+is optional; primary adoption is unknown. Coordinator read complete helper/test/
+handoff,authenticated two committed bodies,seven public source blobs,twelve
+unchanged dependencies and19 indexed artifacts. Independently executed19 focused
+modeled tests and the unchanged original financial-refund test under60s bounds:
+PASS. Qualified/committed inputs stay unchanged. Private review proof:
+`D:\Dev\Temp\coordinator-world-task-review-20261008`.
+
+Explicit request/reset/replacement/completed cuts require one same observed
+player,complete signed32 task fields,positive original start preserved through
+source-shaped reset and a strictly newer unfinished active B. All14 B fields,
+signed64 captured XP and literal JSON history remain exact across completion.
+Same-target/newer B and canonicalized wallet pass only task agreement; arbitrary
+unvalidated finance/item/affect changes also cannot produce financial/native
+PASS. Coherent fabricated source/binary/schema observations remain unauthenticated.
+Existing capture,refund,case/default/oracle code is unchanged. Native timeline,
+map availability,positive-share/donor eligibility,lifetimes,original receipt/
+restitution,physical publication/items/affects/GMCP/save/hold/ACK/cold/retirement
+remain explicit external proof. No SQL/build/server/journal/native journey ran.
+
+Next quest source/design delivery owns only
+`quest-prep/QUEST_REWARD_COMPLETION_AUTHORITY_BOUNDARY_2026-10-08.md`.
+Concrete distinct gap: which original owner still owes progression/history/task
+completion after reward-item admission/publication. Trace static NPC quest
+completion/obligation/XP-entitlement and dynamic world-quest item callback enough
+to distinguish original player/actor/goal/source binding,captured versus recomputed
+XP/epic/random/level-cap outcomes,item custody/publication versus business effects,
+entitlement ACK/history/reset/save/disconnect/lost callback/replay/cold. Do not
+mistake item receipt for full quest completion or create a new context/owner/
+state machine/reward policy. Reuse QP01/05/06/Kord legacy XP and accepted QP02/03/
+fee/pair records; no recipe/fee-format/math inventory or completed job rerun.
+
+Future benefit is an implementation-ready completion boundary and one smallest
+nonduplicate acceptance/owned-input reservation only if actual provider/input
+facts support it: exact proposed paths,manual expectations,genuine setup/schedule/
+fault cuts and original export dependencies. Public source/schema/tests and old
+scoped records are available; authentic active lifecycle/retained business/current
+world/checkpoint/ACK/cold driver and private primary remain unavailable unless
+published bodies prove otherwise. Sole new doc,exact source/blob/anchor/link/design
+review on D:,no production/test/capture/shared driver/schema/registry/Plan5/finish
+plan/canonical HANDOFF edit or build/DB/server/journal/native/broad test. If already
+fully covered, reuse exact existing sections and do not manufacture a duplicate.
+
+Architecture's hand-only acceptancec20288ff9 now passes final independent review
+below. Its next sole task is the paid repair/smith source/design boundary; all
+closed bundles and original failed attempts remain preserved.
+
+New primaryf679ee312 reports private live-flat-shop physical publication at
+candidate87c253f4/140 production files/75 C providers, original held/READY source,
+full census/custody/capacity and guarded ACK. Its intermediate carrying-to-nesting
+correction preserves the frozen v8 command/manifest by deriving actual temporary
+forest from original authenticated AFTER and retained BEFORE values. Source-only
+review/formatting/50 dependency checks reported; compiler/native/SQL/gameplay/
+persistence/recovery UNEXECUTED by major-plan deferral. Source remains private;
+public src/migrations/tests unchanged. Passive restored-flat owner/slot/census/
+boot counterparts,cold/driver/admission,birth CAS/atomic storage/source factory,
+opening/keeper history,activation/Plan5/R1-R8 remain. No new quest interface or
+finished qualification follows. Actual native Goals stay BLOCKED,heartbeat ACTIVE,
+broader primary and selected-sidework finish line unresolved.
+
+
+## Blackjack Hand acceptance reviewed; paid repair/smith boundary next
+
+PASS selected genuine Hand scoring and legal ownership review at
+`c20288ff9f96c30f96c1721de8b8a8935d415ba8`, parent
+`d5cd32e827e28dabef6d8878d510a7c3565e86a7`.
+[Exact three-file handoff](https://github.com/Community-Duris/Duris/blob/c20288ff9f96c30f96c1721de8b8a8935d415ba8/docs/persistence/economy_accounting/domain-separation/BLACKJACK_HAND_NATIVE_VALUES_HANDOFF_2026-10-08.md)
+is optional; primary adoption remains unknown. Coordinator read complete runner,
+harness,handoff and genuine cardgames.c/h. Independently authenticated all2,816
+original public blobs/archive/both exports,three committed paths and394 indexed
+artifacts; both retained final profiles'371 compiler inputs,tool/library and
+artifact hashes,77 bounded successful command records and exact67 case logs.
+Fresh independent O1/Og builds each PASS67/67 under unchanged strict C++20/Werror/
+ASan/UBSan/leak recipe,with empty diagnostics. Independent exact logging-helper
+exit7 and timeout124/partial-output controls PASS. Private review proof:
+`D:\Dev\Temp\coordinator-blackjack-review-20261008`.
+
+Literal52 legal-card scores,empty and14 manual prefix scenarios exercise repeated
+score/count,independent live hands,Fold/head/empty,public ReceiveCard transfer,
+source destruction before destination and genuine final cleanup. Full production
+provider compiles; uncalled table/shuffle/dealer/cards-object executable sections
+are discarded. Function-qualified ASan-retained static data are disclosed; no
+Deck construction,accepting stub,protected-field access or copied scorer is used.
+Initial overly broad symbol-check failure remains retained. This qualifies only
+selected genuine Hand operations. Wager/admission,original participant/round/RNG/
+current-world identity,compound custody/money,publication/ACK/cold remain open.
+Neither prototype score PASS nor link success changes those authorities.
+
+Next sole architecture delivery is
+`domain-separation/PAID_REPAIR_SMITH_AUTHORITY_BOUNDARY_2026-10-08.md`.
+Future benefit: implementation-ready native selection/compound effect boundary
+beyond completed price/material calculations. Public shopping_repair/shop_keeper/
+refusal and smith/forge_create/grant_tradeskill_item plus required genuine currency/
+gem/item/save/critical-command providers are available. Reuse R1 recipe/R2currency/
+other completed extractions; do not re-inventory or requalify their math/journeys.
+Trace actual command/procedure reachability,original actor/keeper,item/ore selection,
+pre-payment effects,frozen template/config/price/RNG,currency/gem exchange,output
+UID/admission,post-payment failure/refund/material retirement and original business
+completion/save/ACK/replay/cold. Source observations needing care include repair
+weapon attack-type writes before payment and smith scanning keeper ch->carrying
+while comments describe player pl,detaching ore before debit and returning to pl
+on refusal. These are source behavior to record,not authority to silently repair.
+Text-order contracts alone do not prove native atomicity. Distinguish durable
+recipe-craft continuation from legacy smith without reopening closed R1.
+
+Select one smallest useful nonduplicate future acceptance/owned-input reservation
+only if real providers support it: exact paths/manual expectations/setup/schedule/
+fault cuts and original owner input requirements. Public source/schema/tests and
+accepted bundles are available; private primary/original retained participant/
+current world/publisher/ACK/cold drivers remain unavailable unless published.
+One doc only,exact source/blob/anchor/link/design proof on D:,no production/test/
+capture/shared driver/schema/registry/Plan5/FINISH/canonical handoff edit or build/
+DB/server/native/broad run. No new authority/context/format/policy/RAM switch.
+Quest separately owns reward-completion boundary. Actual native Goals remain
+BLOCKED;heartbeat ACTIVE and broad required primary finish line unresolved.

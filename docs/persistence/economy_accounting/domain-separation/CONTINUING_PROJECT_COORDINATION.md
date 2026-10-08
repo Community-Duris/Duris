@@ -111,14 +111,19 @@ PASS. Key/mapping/native/head agreement and coherent-forgery limits stay explici
 original owner/world/publication proof remains external. World-service map04731d7e4
 now PASS source/design review:40 bodies/44 anchors/four links/seven excerpts/49
 artifacts authenticated. Default share0,unsupported active debit/refund and genuine
-service/delay/lifetime/restitution owner dependencies remain explicit. Quest next
-owns only world_quest_task_checks.py,test_world_quest_task_checks.py and
-WORLD_QUEST_TASK_ASSERTION_HANDOFF_2026-10-08.md: optional captured A/reset/B/final
-agreement and all14 B task fields/history/XP preservation. Financial checks retain
-wallet/refund/receipt ownership; no change to existing capture/oracles/defaults.
-Complete native task domains must be source-grounded; coherent fabricated cuts
-prove no owner/world/timeline/payment/ACK/cold authority. No production/shared
-driver/schema/registry/Plan5 or existing test edit; no DB/server/native run. Existing oracles
+service/delay/lifetime/restitution owner dependencies remain explicit. Task
+assertion0aeeed7f9/handofff9c7f6d33 now PASS captured-agreement review:19 focused
+and unchanged refund test independently PASS;two bodies/seven public blobs/12
+unchanged dependencies/19 artifacts authenticated. Full14 B task/history/XP scope
+and coherent-forgery/financial/native limits remain explicit. Quest next owns only
+QUEST_REWARD_COMPLETION_AUTHORITY_BOUNDARY_2026-10-08.md: actual static obligation/
+XP-entitlement and dynamic item-completion business owners,identity/outcome/
+history/reset/save/terminal ACK/replay/cold. Reuse accepted cases/maps; no recipe/
+fee/pair re-inventory or repeated runtime batch. One nonduplicate future slice
+only if available source/provider inputs support it. Genuine original lifecycle/
+retained business/current-world/checkpoint/cold exports remain dependencies.
+Document-only source/blob/anchor/link/design checks; no production/test/capture/
+shared driver/schema/registry/Plan5/canonical handoff edit or build/DB/native run. Existing oracles
 remain intact. Native mapping/
 publication, genuine D/chronology, full census, original owner exports and
 authentic paid setup remain unavailable. Currency blueprint
@@ -148,32 +153,42 @@ ACK/save/cold proof. Eligibility/owner-clock/duplicate-UID limits remain explici
 Gambling mapd5cd32e82 now PASS source/design review:3,069 archived public blobs/
 12 references/38 body pins/94 anchors/six links/26 artifacts authenticated. Actual
 round/participant lifetime,debit-stake denomination and SQL reason45/46 constraint
-dependencies remain explicit. Architecture next owns only
-test_blackjack_hand_native_values.py,blackjack_hand_native_values_harness.cpp and
-BLACKJACK_HAND_NATIVE_VALUES_HANDOFF_2026-10-08.md: complete real cardgames.c/header
-provider,manual score/count expectations and legal Card/Hand allocation/Fold/
-transfer/destruction. Focused strict O1/Og ASan/UBSan with bounded commands and
-exact source/dependency/tool/ELF/artifact pins; provider closure unexecuted.
-No copied body/access trick/accepting money or RNG stub; uncalled table/shuffle/
-settlement excluded. No active wager/payout/native publication proof. Preserve R2
-and active refusal; no production/shared owner/driver/quest/Plan5 edit or full
-server/broad tests/DB/journal/server/native run is assigned.
+dependencies remain explicit. Hand acceptancec20288ff9 now PASS selected genuine score/legal ownership review:
+coordinator authenticates2,816 public blobs/archive/both exports,three committed
+paths/394 artifacts and371 dependency inputs/tools/libraries per profile. Fresh
+independent strict ASan/UBSan builds execute67 O1+67 Og with no diagnostics.
+Nonzero7/timeout124 partial retention independently PASS. Failed first symbol
+check stays retained; no wager/admission/publication/recovery proof is supplied.
+Architecture next owns only PAID_REPAIR_SMITH_AUTHORITY_BOUNDARY_2026-10-08.md:
+actual repair/smith command/procedure gates,original actor/keeper identity,item/
+ore selection and pre-payment effects,currency/gem exchange,frozen template/RNG,
+output custody/admission,refund/retirement and completion/save/ACK/replay/cold.
+Reuse closed price/material math and R1 recipe proof; no reextraction/requalification.
+One smallest nonduplicate future acceptance reservation only if real providers
+support it. Public source/schema/tests available; private source and original
+retained participant/current world/publisher/ACK/cold drivers remain dependencies.
+One doc only,exact source/blob/anchor/link/design review on D:. No production/test/
+capture/shared driver/schema/registry/Plan5/finish-plan/canonical handoff edit or
+build/DB/server/native/broad run. No new authority/context/format/policy or RAM
+switch; preserve actual refusal,ordering and all closed bundles.
 Genuine save/current-proof/restart owners still block pickup production wiring.
-Primarye3e82a92d now reports private role-aware prospective birth accounting/
-MBR4 results and genuine live publication capacity charging over the reviewed
-CURRENT/cache/held/guarded-ACK source, candidatea41d13a7/140 production files/
-75 C providers. Ordinary birth retains original NMB3 cash effects; shared SHOP
-stock creates no cash/wallet and binds supplied participant values. Structural
-correlation does not create custody/CAS/current-storage authority. Original
-publication owner can charge actual retained allocations once under32MiB; byte
-accounting does not confer native/cancel/publication/ACK authority. Private source
-review/formatting only; compiler/native/SQL/gameplay/persistence/recovery remain
-UNEXECUTED by major-plan deferral. Public source/migrations are unchanged. No
-private API or executed proof is available here. Atomic birth-to-SHOP custody/
-mapping participant,physical publication/terminal disposition/cold/driver/admission,
-source factory/room O/P,opening/shared-keeper history,activation/Plan5/R1-R8 remain.
-Supported client-free flat routing already exists; no new SQL-enabled flat route
-is required.
+Primaryf679ee312 now reports private reviewed live-flat-shop physical publisher,
+candidate87c253f4/140 production files/75 C providers. Actual outer held-save/READY
+source and original v8 command bind receipt/CURRENT,literal UID/target/keeper/pet
+census,custody and retained allocation charge under unchanged32MiB. Fresh current/
+money/census precedes guarded ACK. Correction8de9aeab derives an intermediate
+carried forest from authenticated AFTER literals and retained BEFORE PC values,
+preserving the frozen command/manifest. Private source review/formatting and50
+live dependency checks reported; compiler/native/SQL/gameplay/persistence/recovery
+remain UNEXECUTED by major-plan deferral. Public source/migrations unchanged.
+Cold still needs a distinct passive restored-flat slot,original publication owner/
+capacity/consume,absent-owner/pet census and flat boot/procedure/reload counterparts.
+Attempted native holds survive never-admitted outcomes until genuine terminal
+cleanup. Full cold/driver/admission,birth CAS/atomic storage/source factory,opening/
+keeper history,activation/Plan5/R1-R8 remain. Ordinary NMB4 backend work is separate
+from unfinished shared atomic participation. No private API or execution proof
+is available here. Supported client-free flat routing already exists; no new
+SQL-enabled flat route is required.
 No shared owner,
 Plan5 audit or primary rewrite is assigned. Actual native Goals remain BLOCKED;
 heartbeat ACTIVE and broader primary finish line unchanged.
