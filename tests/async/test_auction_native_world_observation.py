@@ -802,6 +802,17 @@ def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def run_logged(command, log_path, timeout, **kwargs):
+    """Retain diagnostics, including partial output when a child times out."""
+    with log_path.open("w") as log:
+        try:
+            return subprocess.run(command, stdout=log, stderr=subprocess.STDOUT,
+                                  timeout=timeout, **kwargs)
+        except subprocess.TimeoutExpired:
+            log.write("\nTIMEOUT after " + str(timeout) + " seconds\n")
+            return subprocess.CompletedProcess(command, 124)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-root", type=Path, default=ROOT)
@@ -816,9 +827,8 @@ def main():
     harness = output / "driver.cpp"
     harness.write_text(HARNESS, encoding="utf-8")
     compiler = shlex.split(os.environ.get("CXX", "g++"))
-    version = subprocess.run(compiler + ["--version"], check=True, text=True,
-                             capture_output=True).stdout
-    (output / "compiler-version.txt").write_text(version)
+    result = run_logged(compiler + ["--version"], output / "compiler-version.txt", 20)
+    assert result.returncode == 0, str(output / "compiler-version.txt")
     compiler_path = Path(shutil.which(compiler[0])).resolve()
     (output / "compiler-pin.json").write_text(json.dumps(
         {"path": str(compiler_path), "sha256": sha256(compiler_path)}, indent=2))
@@ -837,10 +847,9 @@ def main():
         command = compiler + flags + ["-MD", "-MF", str(output / (str(index) + ".d")),
                                       "-c", str(source), "-o", str(obj)]
         start = time.monotonic()
-        with (output / (str(index) + "-compile.log")).open("w") as log:
-            result = subprocess.run(command, cwd=root, stdout=log, stderr=subprocess.STDOUT)
+        result = run_logged(command, output / (str(index) + "-compile.log"), 900, cwd=root)
         return {"command": command, "returncode": result.returncode,
-                "seconds": time.monotonic() - start}
+                "seconds": time.monotonic() - start, "timeout_seconds": 900}
 
     # These are independent compilation jobs, not substitute providers.
     with ThreadPoolExecutor(max_workers=3) as pool:
@@ -861,14 +870,13 @@ def main():
                                             for i in range(len(units))] + [
         "-Wl,--gc-sections", "-Wl,-Map=" + str(output / "link.map"),
         "-lcrypto", "-pthread", "-o", str(executable)]
-    with (output / "link.log").open("w") as log:
-        result = subprocess.run(link, cwd=root, stdout=log, stderr=subprocess.STDOUT)
+    result = run_logged(link, output / "link.log", 120, cwd=root)
     (output / "link-command.json").write_text(json.dumps(
-        {"command": link, "returncode": result.returncode}, indent=2))
+        {"command": link, "returncode": result.returncode, "timeout_seconds": 120}, indent=2))
     assert result.returncode == 0, str(output)
-    libraries = subprocess.run(["ldd", str(executable)], check=True, text=True,
-                               capture_output=True).stdout
-    (output / "shared-libraries.txt").write_text(libraries)
+    result = run_logged(["ldd", str(executable)], output / "shared-libraries.txt", 20)
+    assert result.returncode == 0, str(output / "shared-libraries.txt")
+    libraries = (output / "shared-libraries.txt").read_text()
     library_pins = {}
     for line in libraries.splitlines():
         fields = line.split()
@@ -880,13 +888,12 @@ def main():
                        UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1")
     runs = []
     for case in CASES:
-        result = subprocess.run([str(executable), case], cwd=root, env=environment,
-                                text=True, capture_output=True, timeout=90)
-        (output / (case + ".log")).write_text(result.stdout + result.stderr)
+        log_path = output / (case + ".log")
+        result = run_logged([str(executable), case], log_path, 90, cwd=root, env=environment)
         runs.append({"case": case, "returncode": result.returncode})
         (output / "runs.json").write_text(json.dumps(runs, indent=2))
-        assert result.returncode == 0 and result.stdout.startswith("PASS " + case + " "), (
-            case, result.stdout, result.stderr, str(output))
+        assert result.returncode == 0 and log_path.read_text().startswith("PASS " + case + " "), (
+            case, str(log_path), str(output))
     assert all(sha256(Path(path)) == digest for path, digest in pins.items())
     artifacts = {path.name: sha256(path) for path in sorted(output.iterdir()) if path.is_file()}
     (output / "artifact-pins.json").write_text(json.dumps(artifacts, indent=2))

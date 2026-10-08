@@ -126,7 +126,11 @@ linking and `-D__NO_MYSQL__`. Runtime used
 | `acceptance-v2-O1` | 49/49 PASS | 521 | `2dcd4db546944cbbb77cd285b7bfad642b09481a97e9e669c1a4cadfbde654b1` | `b1f5674fe4447809ab1f86785453fbfefd08ac14536e22b8b8e05b7fe4b92503` |
 | `acceptance-v2-Og` | 49/49 PASS | 521 | `4fb9b0abcdf83973cd8952e7103d0fdb69e655d617c4e538fed2a97e33a8372a` | `fd7cb5d7e2b28a6b2063944af69f52994321e729c4f1acaf407e9e55c08820c4` |
 
-The final script SHA256 is `059c52690344659bbfb77ed6b2a51416bfb64de24e9f15060648f261af80cbe5`; its Git blob is `51c1e091c89c5d063a396d730451bcd7fa9e37a4`.
+The original executed runner at `3c3eb67b8253ec2b4d16524a040e4904fe0ee517`
+has SHA256 `059c52690344659bbfb77ed6b2a51416bfb64de24e9f15060648f261af80cbe5`
+and Git blob `51c1e091c89c5d063a396d730451bcd7fa9e37a4`. Its qualified builds
+and manifests above remain original evidence. The current runner has the
+deadline correction and separate pin recorded below.
 Both generated harnesses are SHA256 `579bd235ff056297109c41213687a443369b8d95dbfa671eccfa898a2689cb7e`. The original existing
 `test_auction_ownership_publication.py` remains blob
 `22e4f597390d5161f3ae7a4aacedf5dd46d41779`, SHA256 `463509432c746d91df41dc514bbdca8851beff7b8704bbeff1fc611f69ded8ac`,
@@ -156,11 +160,64 @@ selected production translation units were compiled in both focused profiles.
 No full burn-in, CI wait, SQL/database operation, server boot, gameplay login or
 save/recovery qualification was performed.
 
+## Focused subprocess deadline correction
+
+Coordinator review found that the original runner bounded runtime cases but
+omitted deadlines for compilation, linking, compiler-version and library probes.
+The corrected runner adds these explicit subprocess deadlines:
+
+| Operation | Deadline |
+| --- | --- |
+| Each translation-unit compilation | 900 seconds |
+| Link | 120 seconds |
+| Compiler-version probe | 20 seconds |
+| `ldd` probe | 20 seconds |
+| Each runtime case | 90 seconds, preserved |
+
+The longest measured original compile was 70.705 seconds at `-O1`; the longest
+at `-Og` was 36.020 seconds. The correction's real version and library probes
+completed in 0.0033 and 0.0675 seconds. Original link timings were not separately
+recorded; the link deadline is 120 seconds. Compile/link command records now
+include their timeout metadata.
+
+One logging helper writes stdout/stderr directly to the existing operation log,
+retains partial output on timeout, appends a deadline diagnostic, and returns
+failure code 124. Nonzero child exits retain their own exit codes and diagnostics.
+Compile, link and runtime failures are recorded before the runner refuses; probe
+failures name their retained log. Existing output directories remain protected.
+
+The corrected runner SHA256 is
+`5dd7406cff0fcbeb15ac1badb503f0314c3958becccd79784134e9f101b242b4`, Git blob
+`dd96f82afd85c87b842acb79f31fcaee1de95559`. Python syntax/import checks pass.
+The compatibility proof verifies byte-identical `HARNESS`, `SOURCES`, `CASES`,
+flags, compiler/compile/link command-construction expressions, unit ordering and
+runtime environment. All eleven provider hashes and both ELF pins above remain
+unchanged. All 203 original evidence files were reauthenticated without changes;
+the archived candidate runner was deliberately preserved with its original hash.
+
+Correction evidence is under
+`D:\Dev\Temp\auction-world-observation-20261008\deadline-correction`.
+`compatibility-proof.json` is SHA256
+`d6a40c055c0e02b82e270ff96ce73b339f4e32cf74bb5ec97ecc7db1d58424a8`.
+Its separate `evidence-index.json` authenticates 12 correction evidence files,
+SHA256 `dd8c74917aef31780dcb1846ff28743f3aacd1d9305e432a8063fc5c3d0c4c88`.
+The evidence includes the corrected runner, verification script, real successful,
+nonzero and timeout subprocess logs, probe logs and three retained-ELF controls.
+A child that emitted partial output then slept timed out after 0.305 seconds
+under a 0.3-second test deadline, preserving its output and timeout diagnostic.
+`replacement_body`, `bounds` and `byte_budget` all passed through the corrected
+logging helper using the original `-O1` ASan/UBSan ELF and 90-second deadline.
+
+This correction changes Python orchestration only. No C++ rebuild or broad case
+replay was performed for it; the 49/49 results above retain their original runner
+and binary qualification labels. Coordinator independent final-binary replay
+and acceptance remain separate from this compatibility proof.
+
 ## Reproduction and interpretation
 
 Export `src` and `tests/async` from exact primary `cda8aa6f...`, verify the tree
-pins above, and copy the delivered test into that export. The following is the
-executed WSL recipe; use fresh output directories for subsequent invocations:
+pins above. The following is the original executed WSL recipe, using the
+preserved original runner and qualified output directories:
 
 ```bash
 export CXX=g++-12
@@ -168,6 +225,14 @@ export TMPDIR=/mnt/d/Dev/Temp/auction-world-observation-20261008/compiler-temp
 export BIN_ROOT=/mnt/d/Dev/Builds/Duris/auction-world-observation-20261008/bin
 python3 /mnt/d/Dev/Temp/auction-world-observation-20261008/candidate/tests/async/test_auction_native_world_observation.py --optimization O1 --build-dir "$BIN_ROOT/acceptance-v2-O1"
 python3 /mnt/d/Dev/Temp/auction-world-observation-20261008/candidate/tests/async/test_auction_native_world_observation.py --optimization Og --build-dir "$BIN_ROOT/acceptance-v2-Og"
+```
+
+For a new build with the corrected runner, use the delivered repository test
+or its authenticated correction copy and select the original export explicitly;
+the default output name under `BIN_ROOT` creates a fresh directory:
+
+```bash
+python3 /mnt/d/Dev/Temp/auction-world-observation-20261008/deadline-correction/runner.py --source-root /mnt/d/Dev/Temp/auction-world-observation-20261008/candidate --optimization O1
 ```
 
 `--source-root` selects a separately exported tree when the test lives elsewhere.
