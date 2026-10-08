@@ -1,5 +1,62 @@
 # Persisted provider union: primary source handoff - 2026-10-07
 
+## Reviewed actual reset dispatcher and flat SHOP projection - 2026-10-08
+
+Private `tmp/lifecycle-native-dispatch-shop-projection-candidate-primary-20261008`
+integrates seven independently reviewed successor files into the full existing
+119-production/23-original-fixture/five-schema candidate. Candidate SHA256:
+`55f9bf80794eb274d69d49e7a265627c39f2643abe5e9d557741d0c74c44521b`.
+Real reset entry/continue/tail/S/abort observations now prove command order and
+last_cmd without moving original decisions; current O/P execution and earlier
+held-stage identity are separate. P-before-O uses the real invocation and no
+invented O receipt. UUID refusal stays once-only; aborted factories remain held.
+The explicit selected-flat SHOP observer validates installed regular PID/bank
+mappings and the original racewar context, rechecks the same atomic projection,
+and preserves output on refusal. Original SQL observers/installers stay.
+
+Changed-line formatting, whole predecessor preservation and independent source
+review pass; compiler/native/gameplay/SQL/persistence/recovery remain UNEXECUTED.
+The actual O/P factory/admission/source-CAS/budget/adoption/publication/recovery
+route stays incomplete. Genuine flat player hold/drain and keeper checkpoint
+stage are now owned independently; actual commit/uncertainty/producer freeze/
+publication/ACK remain root-owned and open. Shared keeper cash classification,
+historical transition, complete opening/item correspondence, activation, Plan5
+and full R1-R8 qualification remain open. Gates/inactive behavior stay unchanged.
+
+## Reviewed typed flat SHOP storage and proof - 2026-10-08
+
+Private `tmp/lifecycle-flat-shop-backend-candidate-primary-20261008` composes
+119 production files, 23 unchanged original fixtures and five unchanged schema/
+manifest files on maintained84a435c3d. Candidate SHA256:
+`24e0d474f8f4a110892629be08d2cfcad1dbfb22cca7347a099b7b6043b86264`.
+All 65 selected C providers register once. The actual new SHOP object is added
+once using unchanged original rules/flags; removing only that line reconstructs
+the previous Makefile byte-for-byte. Original native repository bodies remain.
+
+Independently reviewed typed flat SHOP execution now preserves full v6/v7/v8
+command hashes and stages native keeper/custody/wallet/materialization, original
+immutable receipt, source claim and accounting root in one original authority
+journal. Recorded target weight uses the existing original players-store journal
+participant and original file codec; genuine saved revision/components/unrelated
+fields stay. V6 target storage keeps original SQL semantics; v7/v8 require their
+actual weight facts, and v8 checks complete role-bound BEFORE/AFTER forests.
+Retained original proof and current cash/whole forests are separate borrowed-lock
+readers. Original receipts compare outcome/error/stage/revision/result and all
+trailing completion bytes. Review corrected rejected-result shape to original
+SQL/flat semantics and removed an unsupported global maximum-revision exclusion;
+original mutation overflow checks stay, allowing valid MAX-1 to MAX after-images.
+
+Exact pins, changed-line formatting, original-prefix/predecessor preservation and
+independent source review pass. Compiler/native/gameplay/SQL/persistence/crash/
+restart checks remain UNEXECUTED in this batch. This is private source integration,
+not a published code or native qualification claim. Real producer hold/save-drain,
+flat dispatch/native publication/ACK and recovery remain missing; root lock alone
+does not exclude stale queued saves. Plan3 authentic dispatch/scope and Plan4
+producer/checkpoint source work now run independently on bounded owned files.
+Shared keeper classification/current-image and historical mapping transition,
+NPC opening/full item correspondence/activation/Plan5/all R1-R8 remain open.
+Admission, coverage/release, inactive behavior and declined spell gates stay.
+
 ## Reviewed warm forest and SHOP proof prerequisites - 2026-10-08
 
 Private `tmp/lifecycle-shop-materialization-candidate-primary-20261008` composes

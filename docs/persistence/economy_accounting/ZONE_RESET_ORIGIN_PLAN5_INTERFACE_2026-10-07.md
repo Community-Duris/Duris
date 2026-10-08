@@ -212,3 +212,37 @@ projection and historical wallet/treasury namespace transition; Plan5 must retai
 full raw/current cash disagreement findings until that owner is complete. No
 prototype/tag inference, missing-row filtering or historical rewrite is allowed.
 Plan5 independence, audit/backup/release ownership and original gates remain.
+
+## Reviewed typed flat SHOP proof integration - 2026-10-08
+
+Private119 candidate24e0d474f8f4a110892629be08d2cfcad1dbfb22cca7347a099b7b6043b86264
+now composes complete v6/v7/v8 native/accounting one-journal execution plus separate
+immutable/current borrowed proofs and the original players-store target participant.
+Canonical denial and valid final-revision predicates match original contracts.
+Source-only acceptance; original initialized raw/lifetime/primary views unchanged.
+Real hold/save-drain/producer/dispatch/publication/ACK/recovery and authenticated
+keeper namespace transition remain open. Plan5 independent audit/backup/release
+ownership and original major-plan/R1-R8 qualification remain unchanged.
+
+## Reviewed actual reset dispatcher and flat SHOP projection - 2026-10-08
+
+Private `tmp/lifecycle-native-dispatch-shop-projection-candidate-primary-20261008`
+integrates seven independently reviewed successor files into the full existing
+119-production/23-original-fixture/five-schema candidate. Candidate SHA256:
+`55f9bf80794eb274d69d49e7a265627c39f2643abe5e9d557741d0c74c44521b`.
+Real reset entry/continue/tail/S/abort observations now prove command order and
+last_cmd without moving original decisions; current O/P execution and earlier
+held-stage identity are separate. P-before-O uses the real invocation and no
+invented O receipt. UUID refusal stays once-only; aborted factories remain held.
+The explicit selected-flat SHOP observer validates installed regular PID/bank
+mappings and the original racewar context, rechecks the same atomic projection,
+and preserves output on refusal. Original SQL observers/installers stay.
+
+Changed-line formatting, whole predecessor preservation and independent source
+review pass; compiler/native/gameplay/SQL/persistence/recovery remain UNEXECUTED.
+The actual O/P factory/admission/source-CAS/budget/adoption/publication/recovery
+route stays incomplete. Genuine flat player hold/drain and keeper checkpoint
+stage are now owned independently; actual commit/uncertainty/producer freeze/
+publication/ACK remain root-owned and open. Shared keeper cash classification,
+historical transition, complete opening/item correspondence, activation, Plan5
+and full R1-R8 qualification remain open. Gates/inactive behavior stay unchanged.
