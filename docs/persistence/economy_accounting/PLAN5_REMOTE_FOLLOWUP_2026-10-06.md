@@ -1978,3 +1978,34 @@ the report; source remains unpublished/unrun. Primary-local notebook nonblocking
 curator application/acknowledgement/adoption not claimed. Full Plan5/R1–R8,
 complete current/runtime/collector/origin/backup/retention/upgrade/combined release
 gates remain open. Accounting inactive; wallet roots/declined spell path stay.
+
+## Modern room observer and original seed dependency follow-up — 2026-10-08
+
+[The exact current-source qualification and shared handoff](PLAN5_ROOM_OBSERVER_BUILD_AND_SEED_HANDOFF_2026-10-08.md)
+continues every earlier branch follow-up on the same remote
+`codex/accounting-plan5`, from owned base
+`d1d942897e5bb1a19c8c12f2a0d1db311c37bf0b`. All seven preserved branch tips
+remain ancestors. Refreshed primary `86bef1dba` and 11 explicit owned overlays yield
+tree `a130c2d8588e0721e21ed909957ed87c72bca5be`, native tree
+`833d3085815b396861ad18a77635412212381e4b`, canonical64 migration tree
+`7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2`.
+
+The fresh complete production-profile SQL server with the existing recovery
+observer builds 754 units/objects with zero warnings/errors in 482.752s.
+Three original component scripts pass with ASan/UBSan where applicable, including
+22 journey parser negative cases. The original real-pool room seed link fails:
+41 exact unresolved symbols map to 21 actual maintained provider source files.
+No qualified seed, SQL service, cold boot or planned audit negative-control cut
+is produced. The primary owns the shared recipe closure request; its original
+assertions/flags/budgets remain intact. The report distinguishes the initial
+invalid Make backend argument and composite build failure from passing stages.
+
+Raw evidence is under
+`D:/Dev/Tests/Duris/accounting-plan5/room-recovery-20261008/`;
+seal SHA256 `3fe6f4a440aad9afc1a81c578566c5ec27a5dcf0da5a4c6b56a6e68fe59904b1`
+binds 1,620 files/1,934,757,548 bytes, with all containers stopped and no copied
+links/reparse points. Post-push `delivery/result.json` records the result commit,
+verified remote and ancestor/clean-worktree checks. This is the curator packet
+for the primary's nonblocking local notebook; application/adoption is unclaimed.
+Complete modern room raw capture/proof/graph audit, both native SQL journeys,
+the primary private 111-file candidate, callback installation and full R1-R8 remain open.
