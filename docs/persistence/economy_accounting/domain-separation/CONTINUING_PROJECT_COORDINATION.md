@@ -269,16 +269,51 @@ Original reviewer reference-search correction is retained in the private report;
 no worker evidence or provider changed. Root supplemental-review.json records
 index/report identities; sealed private review packet remains on D:.
 
-Current prioritized queue: (1)shared-keeper first-checkpoint decision/authentic
-original retained boot-versus-warm disposition,(2)shared-owner history capacity
-decision/fix-specific integrated real DB proof,(3)genuine native source/owner/save/
-ACK/current/cold interfaces and original journeys. Narrow fact preparation is
-reviewed/closed;next implementation retains shared owners and missing inputs.
-Quest has no newly executable native case;public maintained source is unchanged.
+Current prioritized queue: (1)quest PRIVATE genuine SHOP cancellation hold-
+consumption refusal feasibility,(2)shared-keeper first-checkpoint decision and
+authentic retained original boot/warm disposition,(3)shared-owner history capacity
+fix-specific real DB proof,(4)genuine native source/owner/save/ACK/current/cold
+interfaces/original journeys. Keeper fact preparation stays reviewed/closed;
+architecture has no new independent task. Public maintained source unchanged;
+quest source/fixture feasibility is preparation,not a newly executable native case.
 No maps/helpers are reopened to fill time. Both actual native Goals and root Goal
 remain BLOCKED/unfinished;heartbeat ACTIVE. This is not overall completion/pause.
 
-Latest primary81dcda9ca0913508e664451165b7e70c82d58540 reports privatea753f4b6:
+Latest primary960ddd80c1acba5611677270f0156675d6d020ff reports private6641083b:
+full original live-flat refusal cleanup and retained SHOP coordinator cancellation
+ordering joined on prior complete cold owner/driver.189 paths/81 C providers stay;
+213 refusal dependency hashes/13 hunks and120 coordinator records/nine hunks are
+reported source proof,not execution. Across five successor packets580 dependency
+records are nonunique. Original operation/refusal/fences remain until hold
+consumption succeeds;callback/consumption stay outside coordinator mutex. Full
+original source/slot/reservation/frozen BEFORE/money/pet/world/custody and both
+receipt absences are required. Started/unreturned extraction remains closed;
+returned marker precedes recensus. Notification is separately retained and cannot
+be erased by disappearance or guessed returned. Public src/tests/migrations
+unchanged;compiler/unit/native/SQL/gameplay/persistence/recovery/performance
+UNEXECUTED. Private source/adoption unknown;full qualification/keeper decisions/
+remaining producers/opening/activation remain incomplete.
+
+Quest now owns ONE PRIVATE shop-cancellation-hold-consumption-feasibility-20261008
+packet:concise FEASIBILITY.txt plus exact source/test/owner pins. Benefit: prepare
+one genuine connected regression reservation for the newly reported ordering fix,
+without duplicating implementation. Available:actual critical coordinator SHOP/
+auction cancellation,pipeline restored-publication owner/consume and existing
+generic coordinator/publication/physical fixtures. Inspect whether EXISTING genuine
+APIs can establish authentic SHOP never-admitted command/refusal/reservation/hold,
+successful cleanup then refused hold consumption,observable original fence/retry/
+hold state with no completed/journal/execution-receipt fabrication. Generic current
+test uses type::test and has no SHOP cancellation call;private constructor is a
+real ownership limit. Do not fabricate authority through true cleanup stubs,fake
+holds,friend/public-macro hacks,extracted functions or provider replacements.
+No maintained code/test/doc/patch,private source import,build/component/server/DB/
+native/broad execution now. If genuine closure is absent,return exact missing
+setup/owner dependency and future acceptance outline,not forced harness/source-
+only PASS. One private bounded D: delivery;root reviews before later assignment.
+Native Goal stays BLOCKED/unfinished,isolated WT/closed packets preserved,no
+adoption wait. Architecture keeper facts remain closed;shared decisions external.
+
+Prior primary81dcda9ca0913508e664451165b7e70c82d58540 reports privatea753f4b6:
 complete original flat cold publication owner,client-free canonicalv8 SHOP driver
 and ordinary canonical NMB4 admission source-joined.189 selected files retain150
 production,23 original fixtures,five schema and11 audit/restore paths;81 C providers.
