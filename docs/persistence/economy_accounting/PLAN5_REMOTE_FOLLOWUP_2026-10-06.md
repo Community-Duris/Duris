@@ -2080,3 +2080,36 @@ register opt-in and continue original shared room-seed closure. Native runtime,
 retained original payload, original cold journeys, full census/retention/backup/
 upgrades/combined-release/R1-R8 remain open. The private 119-file candidate remains unrun; inactive
 behavior/wallet exclusions/declined spell path stay. Full goal active.
+
+
+## Original room seed transitive closure and UID owner - 2026-10-08
+
+[Exact compile, complete signatures, source pins and primary request](PLAN5_ROOM_SEED_TRANSITIVE_AND_UID_OWNER_HANDOFF_2026-10-08.md).
+Same remote/worktree `codex/accounting-plan5`; base `6f6266f77d8b6ba86ef27ce2015888322221b6b2`.
+Primary `0588f178c64d88668b86f2889ea0e77937f0b4df`, composition `13c71b0f5fe5b92fca428a7ba13e5bc1751844c0`,
+native `833d3085815b396861ad18a77635412212381e4b`, canonical64 migrations `7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2`.
+Only report/follow-up edits; no shared native recipe, original fixture or source edit.
+All earlier branch work/follow-ups and seven preserved ancestors continue here.
+
+A fresh proposed compile adds exactly the earlier 21 real first-level providers
+while preserving every original compiler flag, define, wrapper, fixture body and
+600-second budget. Exit1/286.580s exposes 22 transitive unresolved functions
+mapped to 11 further actual providers, plus duplicate next_obj_uid storage in the
+original item harness and real world/db.c (including the ASan ODR symbol).
+No eligible seed, SQL service or cold boot results. This narrows the primary-owned
+single UID definition and complete real-provider/input-map repair. Full original
+item/room/retained-verifier/both-engine cold journey controls remain required.
+
+Read-only reuse proof binds all 1318 server repository dependencies and 2645
+archived world inputs; existing observer/world artifacts match the prior seal.
+External dependencies/toolchain remain required before any reuse. This is no new
+build/runtime pass. No stubs, relaxed assertions or competing UID owner is added.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/room-seed-closure-20261008;
+seal SHA256 `13da2fb8fae62a421f98cc1c675da1db6f9f7a64474d3576873bd1844ebbe1cf`, 30 files/299316519 bytes.
+Post-push delivery verifies exact result/remote, clean tree, all 18 overlays/seven
+ancestors and every sealed body. Curator-ready; primary-local notebook nonblocking;
+application/acknowledgement/adoption unclaimed. Earlier room structural fixes stay
+qualified at their pins; genuine native room/retained-payload/runtime/combined
+release gates remain open. Current canonical64 retention is independent next work.
+Accounting inactive; wallet exclusions and declined spell path stay. Goal active.
