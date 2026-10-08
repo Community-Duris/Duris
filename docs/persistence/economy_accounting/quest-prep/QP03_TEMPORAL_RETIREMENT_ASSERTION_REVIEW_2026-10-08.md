@@ -82,3 +82,49 @@ migration/native build or broad qualification batch is assigned. No private byte
 belong in Git. Architecture's ordinary pickup reservation continues independently.
 Actual native Goals remain BLOCKED, heartbeat ACTIVE and the broader primary
 completion audit unresolved.
+
+## Held-pair reservation independently reviewed
+
+PASS for source/design scope at sole-document commit
+`7e861c68fbe70f19d574504e21c451326f955efd`.
+[Exact held-pair reservation](https://github.com/Community-Duris/Duris/blob/7e861c68fbe70f19d574504e21c451326f955efd/docs/persistence/economy_accounting/quest-prep/QP03_HELD_PAIR_PROOF_RESERVATION_2026-10-08.md)
+has SHA256 `ac6613b0443ac5132a9ad0431e4946eb3a1d82425070034365d56701d34bc994`.
+Read the complete reservation; independently authenticated all 36 declared blobs,
+18 pinned source links, 49 manifest source/dependency bodies and 21 exact anchors.
+The sole-file diff/whitespace checks pass. Source inspection confirms pure pair
+validation, guarded publication hold consumption, private retirement checks and
+journal initialization with write/create flags. No native execution is claimed.
+
+The H/P/A/J/T cuts preserve distinct publication ACK/hold consumption, reward
+obligation ACK, original receipt verification, same-session confirmed cleanup,
+exact pair/whole attempted postimage, guarded transition result and original
+retired latch. Phase2, an acknowledged row, journal OK or missing frames alone
+cannot establish the guarded terminal success. The required owner-observed export
+is explicitly unavailable, and the proposed passive reader is not such an export.
+No offline/live journal parser, copied codec or new authority is appropriate.
+
+Next one bounded owned implementation: `read_native_quest_pair.cpp`,
+`native_quest_pair_checks.py`, `test_native_quest_pair_checks.py`, and, if needed,
+`test_read_native_quest_pair.py`, all under `tests/async/quest_accounting_prep`,
+plus `QP03_HELD_PAIR_ADAPTER_HANDOFF_2026-10-08.md` under this directory.
+Decode only original non-fee terminal QP03 command/attachment values using actual
+maintained decoders/providers. Bound immutable regular-file inputs and output;
+reject trailing/corrupt/noncanonical forms. No owner capability or accepting
+stub may satisfy link closure. Treat phase1 held decode and phase2 structural
+pair validation separately; carrier fields supply values, not physical authority.
+
+Implement modeled observation joins over the reserved inputs and unchanged SQL
+cuts, preserving exact identities through uncertainty and legitimate later reward
+movement. Every successful result retains external export authenticity, actual
+owner execution, D physical/census and chronological proof requirements. Test the
+meaningful refusal joins and reader bounds without duplicating existing pure
+codec tests. An internally coherent forged report cannot authenticate itself.
+Resolve actual reader link dependencies under maintained compiler/sanitizer/time
+controls with task-specific D: outputs and private composed source. Freeze exact
+code/handoff/source/import pins and executed versus modeled evidence.
+
+No production/shared export/driver/schema/registry/capture/old-oracle edit, live
+journal, native/gameplay/DB/server/migration/full-build batch or Plan5 duplication
+is assigned. This removes future decoding and assertion integration work while
+genuine owner export and successful native D remain prerequisites. Actual native
+Goal status stays BLOCKED; heartbeat ACTIVE and broad finish line unchanged.

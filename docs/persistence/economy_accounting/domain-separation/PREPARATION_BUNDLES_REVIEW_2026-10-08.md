@@ -221,3 +221,58 @@ Those changes are preserved. Public source/migration trees are still identical;
 producer/save-drain/dispatch/publication/ACK/recovery and shared keeper classification
 remain reported dependencies, with major qualification unexecuted. The pickup
 investigation does not modify or duplicate that private owner work.
+
+## Ordinary pickup reservation independently reviewed
+
+PASS for the source-backed conditional reservation at
+`0be75e3cb9057f72939d7def11a3727eec337233`.
+[Exact pickup investigation](https://github.com/Community-Duris/Duris/blob/0be75e3cb9057f72939d7def11a3727eec337233/docs/persistence/economy_accounting/domain-separation/ORDINARY_PICKUP_PUBLICATION_RESERVATION_2026-10-08.md)
+is the sole added path, SHA256
+`61c6793ca6c945763f1157f5c8ff59f2f59f350ba849117c72adbbc4b0ea020a`.
+Coordinator read the complete document, authenticated all 58 declared blobs,
+two pinned remote links, 34 indexed private evidence artifacts, 22 source-input
+hashes and both unchanged extracted callback hashes. Sole-file/whitespace checks
+pass. Actual movement tail, room-source restore restrictions and source ownership
+agree with the stated finding. Current primary source/migrations remain unchanged.
+
+Independently executed the authenticated unchanged component binary SHA256
+`04f20f0468b0cee7017562fc83a7433456cbebfd4d29ad095a20f2411bb10060`
+in eight new owner-only tmpfs journals, with ASan leak detection/halt and UBSan
+halt/stacktrace enabled. Success, terminal-outcome branch, missing actor/readiness,
+same-PID replacement, stale topology, rejected placement, throw-before and
+throw-after controls all PASS without diagnostics. Original artifacts remain
+untouched; coordinator receipts are under
+`D:\Dev\Temp\coordinator-reservation-review-20261008`.
+
+This rerun qualifies inactive component ownership mechanics only. SQL execution,
+snapshot capture and native placement are doubled; no active intent is accepted.
+Terminal-outcome branch is not a canonical SQL rejection receipt. Tmpfs journal
+checks do not establish disk durability/restart. Missing actors and registry
+failure retain real protections, and authoritative player load can recover
+durable custody. The source-supported erased callback continuation is not a
+claim of permanent item loss or an executed production failure.
+
+Production wiring remains deferred to genuine save drain/hold, current locked
+custody/materialization and receipt proof, permitted body/load/restart ownership
+and native qualification. A flag-only change cannot own room-source recovery.
+The seven proposed production paths and active journey are conditional; no
+production change is authorized by this review.
+
+The next bounded architecture delivery preserves the useful component as a new
+isolated `tests/async/test_ordinary_pickup_publication_runtime.py`, with
+`domain-separation/ORDINARY_PICKUP_COMPONENT_HANDOFF_2026-10-08.md`. This refines
+the proposed append into a separate test so original retention controls remain
+byte-identical and the new slice runs independently. Reuse the existing literal
+harness without executing its top-level runner, unchanged maintained callback
+extraction and real shared providers; retain every double/proof label and all
+eight meaningful controls. No new owner or copied authority is supplied.
+
+Qualify on a private composed current-primary candidate and assess the preserved
+R0-R14 base, without changing production in either. Use task-specific D: builds/
+evidence, original strict compiler/sanitizer/deadline controls and owner-only
+POSIX journals; a disclosed tmpfs execution exception grants no disk proof.
+Freeze source/test/import preimages and exact commands/results. No full native,
+DB/server/migration/operational batch or old-control rewrite is assigned. The
+benefit is an importable executable characterization for future owner changes,
+not closure of active pickup recovery. Actual native Goals remain BLOCKED;
+heartbeat ACTIVE and broader completion audit unresolved.

@@ -8,16 +8,18 @@ records exact optional code/handoff and coordinator-executed focused results.
 passes the additive captured-agreement oracle and focused controls.
 [Temporal QP03 review](quest-prep/QP03_TEMPORAL_RETIREMENT_ASSERTION_REVIEW_2026-10-08.md)
 passes code826c30f20/handofff023c9fda with 13 new modeled methods and 17 unchanged
-controls independently executed. Quest prep next reserves the smallest safe
-original parent/child held/publication/ACK/pair-retirement evidence boundary
-in QP03_HELD_PAIR_PROOF_RESERVATION_2026-10-08.md; no maintained implementation
-is assigned before review. Mapping/projector/physical and chronological native
-proof remain external. Primarya9807ef27 reports further private reset/SHOP
-progress; public source/migrations and unexecuted native qualification remain.
-[Currency acceptance design review](domain-separation/PREPARATION_BUNDLES_REVIEW_2026-10-08.md)
-passes blueprinta24454539 and item-custody mapf4d38f4eb. Architecture next traces
-the ordinary pickup publication retention gap and proposes an exact reservation,
-with private feasibility only; no shared owner or maintained code edit is approved.
+controls independently executed. Held-pair reservation7e861c68f also passes
+source/design review there. Quest prep next implements its bounded owned
+original-pair value reader and modeled held/retirement joins, with focused tests
+and QP03_HELD_PAIR_ADAPTER_HANDOFF_2026-10-08.md. Genuine owner export, physical
+D/chronology and native qualification remain external dependencies.
+[Preparation review](domain-separation/PREPARATION_BUNDLES_REVIEW_2026-10-08.md)
+passes currency blueprinta24454539, item mapf4d38f4eb and pickup reservation
+0be75e3cb. Eight inactive pickup component controls independently pass with
+unchanged binary, disclosed doubles and tmpfs journal limits. Architecture next
+owns only new test_ordinary_pickup_publication_runtime.py and its component
+handoff; original controls stay intact. Production pickup wiring still needs
+genuine save/current-proof/restart owners. No shared owner edit is assigned.
 Native C01 execution still
 requires its genuine active fixture and phase witness. Owned-pack availability
 does not establish import or native qualification. Same-cut mapping,

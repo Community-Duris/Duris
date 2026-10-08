@@ -83,20 +83,26 @@ frozen projection or native publication.
 passes code826c30f20/handofff023c9fda with coordinator-executed 13 new modeled
 methods and 17 unchanged controls. Original A terminal evidence precedes observed
 later B birth and stable stale retry; selected-row absence is never global
-absence/retirement proof. Quest prep next owns only
-QP03_HELD_PAIR_PROOF_RESERVATION_2026-10-08.md and private feasibility: exact
-original parent/child inputs, safe maintained read-only decoding/export boundary,
-held/publication/ACK/pair-retirement cuts and minimal owned assertion reservation.
-No maintained implementation is assigned before review. Existing oracles remain
-intact. Native mapping/publication, genuine D/chronology, full census, original
-owner exports and authentic paid setup remain unavailable. Currency blueprint
+absence/retirement proof. Held-pair reservation7e861c68f now passes independent
+source/design review in the same review document: 36 declared blobs, 49 source
+bodies and 21 exact anchors authenticated. Quest prep next implements the owned
+read_native_quest_pair.cpp/native_quest_pair_checks.py/focused tests and
+QP03_HELD_PAIR_ADAPTER_HANDOFF_2026-10-08.md, under exact paths/limits in that
+review. This passive value reader and modeled observation joins supply no owner
+export or native authority. Existing oracles remain intact. Native mapping/
+publication, genuine D/chronology, full census, original owner exports and
+authentic paid setup remain unavailable. Currency blueprint
 a24454539 now passes preparation review in PREPARATION_BUNDLES_REVIEW_2026-10-08.md.
 Item-custody mapf4d38f4eb now passes source/design review in the same preparation
-review. Architecture next owns ORDINARY_PICKUP_PUBLICATION_RESERVATION_2026-10-08.md
-and private feasibility only: trace actual ordinary get retention/callback/ACK/
-save behavior, check whether an existing owner closes the source-visible gap,
-and propose the smallest exact boundary with original proof and collision limits.
-No maintained source/test change, owner rewrite or native runner is reserved.
+review. Pickup reservation0be75e3cb now passes source/component review there:
+58 blobs and 34 evidence artifacts authenticated, eight inactive component
+controls independently rerun with unchanged binary and disclosed doubles/tmpfs
+journal limits. Architecture next owns only new
+tests/async/test_ordinary_pickup_publication_runtime.py and
+ORDINARY_PICKUP_COMPONENT_HANDOFF_2026-10-08.md: preserve this executable
+characterization with old controls unchanged. Genuine save/current-proof/restart
+owners still block production retention wiring. No production/shared owner edit
+or active native runner is assigned.
 Primarya9807ef27 publishes private reset dispatcher/flat SHOP projection progress
 and blockers; public native source/migrations remain unchanged. Its reported
 formatting/source review is not executed compiler/native/gameplay/recovery proof.
