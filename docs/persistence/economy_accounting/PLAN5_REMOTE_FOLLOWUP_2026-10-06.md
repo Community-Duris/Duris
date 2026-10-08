@@ -2347,3 +2347,34 @@ Application/acknowledgement, full original native paths, whole backup suite,
 producers/opening/player/fault/load journeys, combined candidate, Plan5/R1–R8
 and release remain unclaimed. No activation, autocorrection, production write,
 primary push, deployment or merge.
+
+
+## Historical item-position validation — 2026-10-08
+
+Same local/remote codex/accounting-plan5, base194e31e7ce57d7217c9a001e1964f1aa4b0435db;
+result is the containing commit, verified in delivery/result.json. All seven
+prior tips stay ancestors. Existing position grammar now checks each selected,
+lineage and unattributed history event, including intermediate positions before
+a valid final state. Existing to_equipment_slot is authoritative; omitted slots
+remain unknown. invalid_item_history_position counts one legacy event once across
+projections. No shared interface/schema/native/recipe or mutation change.
+
+Exact frozen primary e8d03ff50fe3ace010b56a27c1fc4c2a840511f2 plus24 owned overlays:
+tree3268bd291451c2d3ae563321ef6ce0bc617e4a0e; native833d3085815b396861ad18a77635412212381e4b;
+migrations7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2/head64. Complete16 reader modules:
+388 loaded,370 PASS/18 original opt-in skips. Both complete original SQL runners
+PASS, each10 new cuts/60 CLI checks with47 tables unchanged. Complete original
+native/canonical coin-restore test PASS/zero skips, both modes/engines,3026 decoder
+cases and109 canonical cuts/90 refusals per engine. Original12 budget workloads
+and six new100000-event near32MiB history workloads PASS within30s/256MiB. RED and
+initial expectation failures stay retained. No skipped native method is claimed.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/history-position-20261008;
+seal a687aa0723a3ebd9cf38dec623d3474cdc3f3501e5a1c9518a219e0e46991b90.
+Full report PLAN5_HISTORICAL_ITEM_POSITION_2026-10-08.md is curator-ready notebook
+input; primary-local shared notebook is nonblocking. Application/acknowledgement
+is not claimed. Primaryf679ee312 changes docs only; latest private87c253f4 remains
+unexecuted/unqualified. Shared recipe/UID-owner handoffs, whole backup suite,
+producers/opening/player/fault/load journeys, combined candidate, Plan5/R1–R8
+and release remain open. No activation, autocorrection, production write,
+primary push, deployment or merge.

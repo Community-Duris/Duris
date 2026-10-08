@@ -372,6 +372,22 @@ items must be live, have no parent, and belong to a player or native mobile;
 mobile slots are limited to43. Malformed history slots produce
 `invalid_item_equipment_slot` without masking original-capsule mismatch findings.
 
+Every captured selected, lineage and unattributed ownership event also receives
+an independent resulting-position check, including intermediate revisions before
+a valid final row. A root/parent, owner identity/context or state/equipment
+combination rejected by native grammar produces `invalid_item_history_position`.
+The event's
+`to_equipment_slot` supplies the resulting slot; an unrelated `equipment_slot`
+field cannot replace it. Existing anchored equipment-transition checks also
+retain `invalid_item_equipment_slot` for invalid present result-slot scalars.
+Omitted historical slots remain
+unknown and retain the existing missing-equipment coverage rules. Unknown origins
+and unattributed history do not suppress this position check. A legacy event
+projected in multiple collections counts this finding once by operation ID,
+event index and UID. It reports only UID/operation ID and never changes authority.
+This validates each recorded native position; it does not reconstruct an absent
+historical forest or establish complete source/producer coverage.
+
 EAB1 equipment omission remains unknown. When other projections record a slot,
 an omitted required opening/history/current slot produces one
 `missing_item_equipment_evidence` per UID. No omitted historical slot is filled

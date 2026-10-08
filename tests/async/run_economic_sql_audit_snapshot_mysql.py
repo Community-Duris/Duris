@@ -1027,6 +1027,117 @@ def verify_previous_owner_history(owner, audit, snapshot):
         select_only=True,modeled_partial_sql=True,producer_qualified=False,release_qualified=False),sort_keys=True),flush=True)
 
 
+def verify_historical_item_positions(owner, audit, snapshot):
+    """Modeled nonselected history; no source admission or producer claim."""
+    from _plan5_equipment_restore import Connection, inventory
+    roots = (uuid.uuid4().bytes, uuid.uuid4().bytes)
+    ghost = uuid.uuid4().bytes
+    other_epoch = bytes.fromhex("66" * 16)
+    initial = inventory(owner)
+    baseline_counts = Reconciler().audit(snapshot)["exception_counts"]
+    output = ROOT / "bin/tests/plan5-history-positions" / uuid.uuid4().hex
+    output.mkdir(parents=True)
+    records = []
+
+    def sample(label, expected):
+        before = inventory(owner)
+        connection = Connection(audit)
+        cut = capture(connection, LINEAGE, EPOCH)
+        assert connection.rollbacks == connection.observer.closes == 1
+        report = Reconciler().audit(cut)
+        assert report["exception_counts"] == expected, report
+        target = output / label
+        target.mkdir()
+        path = target / "snapshot.json"
+        payload = json.dumps(cut, sort_keys=True).encode()
+        path.write_bytes(payload)
+        commands = []
+        for limit in (0, 1, 100):
+            for name in ("exceptions", "provenance"):
+                command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                           str(path), "--view", name, "--limit", str(limit)]
+                if name == "provenance":
+                    command += ["--uid", "84"]
+                result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                assert result.returncode == 1 and not result.stderr, result.stderr
+                assert json.loads(result.stdout) == view(cut, Reconciler(limit).audit(cut), name, limit, uid=84)
+                assert path.read_bytes() == payload
+                commands.append(dict(command=command, exit=result.returncode))
+                (target / (name + "-" + str(limit) + ".json")).write_text(result.stdout)
+        assert inventory(owner) == before
+        for name in ("before", "after"):
+            (target / ("authority-" + name + ".json")).write_text(json.dumps(before, sort_keys=True) + "\n")
+        (target / "queries.json").write_text(json.dumps(connection.observer.queries) + "\n")
+        records.append(dict(label=label, exception_counts=expected, commands=commands,
+            query_count=len(connection.observer.queries), authority_tables_unchanged=len(before),
+            rollback_calls=1, cursor_close_calls=1))
+
+    try:
+        with owner.cursor() as cursor:
+            for index, operation in enumerate(roots):
+                cursor.execute(ROOT_INSERT + "(%s,%s,%s,NULL,32,1,0,NULL,0,0,0,1,NULL)",
+                               (operation, LINEAGE, other_epoch))
+                cursor.execute("INSERT INTO critical_operation_inbox (operation_id,status,result_code) "
+                               "VALUES (%s,1,0)", (operation,))
+                cursor.execute(REFERENCE_INSERT + "(%s,0,0,84,%s,%s,%s,0)",
+                               (operation, index + 1, index + 2, operation))
+                cursor.execute(LEDGER_INSERT + "(%s,0,84,84,NULL,1,7,0,%s,%s,1)",
+                               (operation, index + 2, index + 1))
+                cursor.execute("UPDATE item_ownership_ledger SET from_owner_type=1,from_owner_id=7,"
+                               "from_owner_context_id=0 WHERE operation_id=%s", (operation,))
+            cursor.execute("UPDATE item_current_owner SET item_revision=3 WHERE item_uid=84")
+        variants = (("healthy", 84, None, [1, 7, 0], 0, False, False),
+                    ("wrong-root", 99, None, [1, 7, 0], 0, True, False),
+                    ("self-parent", 84, 84, [1, 7, 0], 0, True, False),
+                    ("missing-owner-id", 84, None, [1, 0, 0], 0, True, False),
+                    ("shop-context", 84, None, [10, 7, 1], 0, True, False),
+                    ("pet-context", 84, None, [11, 7, 0], 0, True, False),
+                    ("mobile-equipment", 84, None, [12, 7, 0], 44, True, False),
+                    ("known-unowned", 84, None, [7, 0, 0], 0, False, False),
+                    ("selected-overlap", 99, None, [1, 7, 0], 0, True, True))
+        for label, root, parent, previous, slot, invalid, selected in variants:
+            with owner.cursor() as cursor:
+                cursor.execute("UPDATE item_ownership_ledger SET root_item_uid=%s,parent_item_uid=%s,"
+                               "to_owner_type=%s,to_owner_id=%s,to_owner_context_id=%s,to_equipment_slot=%s "
+                               "WHERE operation_id=%s", (root, parent, *previous, slot, roots[0]))
+                cursor.execute("UPDATE item_ownership_ledger SET from_owner_type=%s,from_owner_id=%s,"
+                               "from_owner_context_id=%s,from_equipment_slot=%s WHERE operation_id=%s",
+                               (*previous, slot, roots[1]))
+                cursor.execute("UPDATE economic_accounting_operation SET epoch=%s WHERE operation_id=%s",
+                               (EPOCH if selected else other_epoch, roots[0]))
+            expected = dict(baseline_counts)
+            if invalid:
+                expected["invalid_item_history_position"] = 1
+            if selected:
+                expected["missing_original_plan"] += 1
+            sample(label, expected)
+        with owner.cursor() as cursor:
+            cursor.execute("UPDATE economic_accounting_operation SET epoch=%s WHERE operation_id=%s",
+                           (other_epoch, roots[0]))
+            cursor.execute("UPDATE item_ownership_ledger SET root_item_uid=84 WHERE operation_id=%s", (roots[0],))
+            cursor.execute(LEDGER_INSERT + "(%s,0,84,99,NULL,1,7,0,4,3,1)", (ghost,))
+            cursor.execute("UPDATE item_ownership_ledger SET from_owner_type=1,from_owner_id=7,"
+                           "from_owner_context_id=0 WHERE operation_id=%s", (ghost,))
+        sample("unattributed-invalid", {**baseline_counts, "invalid_item_history_position": 1,
+            "ambiguous_lineage_ownership_uid": 1, "unattributed_ownership_event": 1})
+    finally:
+        with owner.cursor() as cursor:
+            for operation in (*roots, ghost):
+                for table in ("economic_accounting_item_reference", "item_ownership_ledger",
+                              "critical_operation_inbox", "economic_accounting_operation"):
+                    cursor.execute("DELETE FROM " + table + " WHERE operation_id=%s", (operation,))
+            cursor.execute("UPDATE item_current_owner SET item_revision=1 WHERE item_uid=84")
+    assert inventory(owner) == initial and capture(audit, LINEAGE, EPOCH) == snapshot
+    result = dict(cuts=10, invalid_cuts=8, healthy_cuts=2, cli_checks=60,
+                  selected_lineage_count_once=True, unattributed_checked=True,
+                  authority_unchanged=True, source_restored=True, select_only=True,
+                  modeled_partial_sql=True, producer_qualified=False, release_qualified=False,
+                  output=str(output), records=records)
+    (output / "result.json").write_text(json.dumps(result, indent=2) + "\n")
+    print("HISTORICAL_ITEM_POSITIONS " + json.dumps({key:value for key,value in result.items()
+          if key != "records"}, sort_keys=True), flush=True)
+
+
 admin = pymysql.connect(**settings)
 try:
     with admin.cursor() as cursor:
@@ -1194,6 +1305,7 @@ try:
             snapshot = capture(audit, LINEAGE, EPOCH)
             assert snapshot["complete"] is False and snapshot["quiescent"] is True
             verify_previous_owner_history(setup, audit, snapshot)
+            verify_historical_item_positions(setup, audit, snapshot)
             verify_area_coin_views(setup, audit, snapshot)
             verify_compound_item_actions(setup, audit, snapshot)
             verify_collector_quarantine_views(setup, audit, snapshot)

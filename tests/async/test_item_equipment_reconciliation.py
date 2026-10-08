@@ -49,6 +49,80 @@ def audit_history(rows, current, lineage):
     return auditor.counts
 
 
+class ItemHistoryPositionTests(unittest.TestCase):
+    def test_invalid_intermediate_positions_are_not_hidden_by_a_valid_final_row(self):
+        changes = ({'root': 99}, {'parent': 81}, {'owner': [1, 0, 0]},
+                   {'owner': [7, 1, 0]}, {'owner': [10, 7, 1]},
+                   {'owner': [11, 7, 0]}, {'owner': [12, 7, 1]})
+        for change in changes:
+            for lineage in (False, True):
+                rows = history()
+                rows[0].update(to_equipment_slot=0, **change)
+                rows[1].update(from_equipment_slot=0, from_owner=rows[0]['owner'])
+                original = copy.deepcopy(rows)
+                with self.subTest(change=change, lineage=lineage):
+                    self.assertEqual(audit_history(rows, dict(position(slot=7), revision=5), lineage),
+                                     {'invalid_item_history_position': 1})
+                    self.assertEqual(rows, original)
+
+    def test_resulting_slot_uses_the_event_projection_and_preserves_unknown(self):
+        rows = history()
+        rows[0].update(owner=[12, 7, 0], equipment_slot=0, to_equipment_slot=44)
+        rows[1].update(from_owner=[12, 7, 0], from_equipment_slot=44)
+        for lineage in (False, True):
+            self.assertEqual(audit_history(rows, dict(position(slot=7), revision=5), lineage),
+                             {'invalid_item_history_position': 1})
+        del rows[0]['to_equipment_slot']
+        for lineage in (False, True):
+            self.assertEqual(audit_history(rows, dict(position(slot=7), revision=5), lineage),
+                             {'missing_item_equipment_evidence': 1})
+
+    def test_unanchored_and_unattributed_invalid_events_are_still_checked(self):
+        rows = history();rows[0]['root'] = 99
+        reader = Reconciler()
+        reader.audit_lineage_uid_history('disposable', dict(uid_history_events=rows), {}, {})
+        self.assertEqual(reader.counts['invalid_item_history_position'], 1)
+        self.assertEqual(reader.counts['unknown_legacy_origin'], 1)
+        reader = Reconciler()
+        reader.audit_unattributed_uid_history('disposable', dict(unattributed_uid_events=rows,
+            unattributed_uid_event_coverage=dict(uids=1, events=2)))
+        self.assertEqual(dict(reader.counts), {'invalid_item_history_position': 1,
+                                             'unattributed_ownership_event': 2})
+
+    def test_selected_and_lineage_projections_count_a_bad_legacy_event_once(self):
+        snapshot = baseline();rows = history();rows[0]['root'] = 99
+        snapshot['ownership_events'] = copy.deepcopy(rows)
+        snapshot['native'].update(items=[dict(position(slot=7), revision=5)], uid_history_events=rows)
+        original = copy.deepcopy(snapshot)
+        for limit in (0, 1, 100):
+            result = Reconciler(limit).audit(snapshot)
+            self.assertEqual(result['exception_counts'].get('invalid_item_history_position', 0), 1)
+            self.assertLessEqual(len(result['exceptions']), limit)
+            self.assertEqual(snapshot, original)
+
+    def test_full_cli_refuses_invalid_history_at_every_view_and_limit(self):
+        import subprocess
+        import tempfile
+        snapshot = baseline();rows = history();rows[0]['root'] = 99
+        rows[0]['personal_alias'] = 'private-history-alias'
+        snapshot['native'].update(items=[dict(position(slot=7), revision=5)], uid_history_events=rows)
+        with tempfile.TemporaryDirectory(prefix='history-position-') as folder:
+            path = Path(folder)/'snapshot.json';payload=json.dumps(snapshot).encode();path.write_bytes(payload)
+            for name in ('exceptions', 'holdings', 'provenance', 'operation', 'supply', 'prices', 'routes'):
+                for limit in (0, 1, 100):
+                    command=[sys.executable,str(ROOT/'scripts/reconcile_economy_accounting.py'),str(path),
+                             '--view',name,'--limit',str(limit)]
+                    if name=='provenance':command += ['--uid','81']
+                    if name=='operation':command += ['--operation-id','%032x' % 1]
+                    result=subprocess.run(command,capture_output=True,text=True,timeout=30)
+                    self.assertEqual((result.returncode,result.stderr),(1,''))
+                    value=json.loads(result.stdout)
+                    if name=='exceptions':self.assertEqual(value['exception_counts'],{'invalid_item_history_position':1})
+                    else:self.assertEqual(value['coverage']['exception_count'],1)
+                    self.assertNotIn('private-history',result.stdout)
+                    self.assertEqual(path.read_bytes(),payload)
+
+
 class ItemEquipmentTests(unittest.TestCase):
     def test_baseline_slot_only_drift_is_stale_native_authority(self):
         snapshot = baseline()
@@ -116,8 +190,11 @@ class ItemEquipmentTests(unittest.TestCase):
                     with self.subTest(value=value, lineage=lineage, field=field):
                         rows = history()
                         rows[0][field] = value
+                        expected = {'invalid_item_equipment_slot': 1, 'missing_item_equipment_evidence': 1}
+                        if field == 'to_equipment_slot':
+                            expected['invalid_item_history_position'] = 1
                         self.assertEqual(audit_history(rows, dict(position(slot=7), revision=5), lineage),
-                                         {'invalid_item_equipment_slot': 1, 'missing_item_equipment_evidence': 1})
+                                         expected)
 
     def test_valid_slot_boundaries_and_combined_drift_count_once(self):
         for value in (0, 65535):
