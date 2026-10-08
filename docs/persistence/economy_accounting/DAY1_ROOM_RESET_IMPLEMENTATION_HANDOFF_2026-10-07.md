@@ -1,5 +1,52 @@
 # Required room-floor reset producer: implementation handoff - 2026-10-07
 
+## Reviewed flat CURRENT readers, cache publication and live guarded ACK - 2026-10-08
+
+Private `tmp/lifecycle-flat-shop-publication-candidate-primary-20261008` integrates
+the accepted full CURRENT/never-admitted BEFORE readers, flat runtime-cache
+publisher and corrected original live held-body/guarded publication-ACK owner.
+Candidate SHA256 `06f8c714cad027bd34aae137411e14b9dcf15f1a2460b8030504dc2994e75b3e`: 136 production files,
+23 unchanged original fixtures, five unchanged schema/manifest inputs and 73
+selected C providers registered once. The previous candidate's Makefile is exact;
+its four added object lines and all original flags/rules remain. Incoming remote
+coordinator documentation and all three unrelated local changes are preserved.
+
+The borrowed-root BEFORE reader requires full original player-domain recovery,
+authentic accounting/native receipt absence, exact identity/mapping/money/save
+ACK/level/racewar/native-custody and complete v8 BEFORE bindings. Missing required
+accounting indexes refuse; the original optional native trade catalog can be
+absent and yield ENOENT. Absence grants no cancellation or attempted-hold release.
+Modern pets retain their own namespace and actual zero-valid clock, including
+empty forests. Full durable catalog and cache UID/root/parent/owner-wide census
+precede hydration. Only exact original selected BEFORE witnesses authorize cache
+transitions; target/stock/other item fields must match CURRENT. Existing 8192-UID
+observer bounds are retained via sorted chunks. A false publication result can
+follow successful item-batch hydration; hold and retry obligations must survive.
+
+The private flat held-body accessor derives the actual original command and
+queued/ACKed full snapshot from the genuine publication owner. Independent review
+found and corrected nested-ticket acquisition: the callback now borrows that
+actual owner/reservation, without recapturing AFTER or reacquiring its root lock.
+The live wrapper uses the genuine flat covered-snapshot observer, ordinary journal
+census and existing coordinator's exact command/receipt guarded ACK, or complete
+retained refusal before synchronous native cleanup. Coordinator entry occurs after
+pipeline/leaf locks. Another correction preserves the original exact local cleanup
+after durable ACK even if a different PID later poisons global integrity. Only
+that private acknowledged owner can consume the exact flat slot/command/epoch/
+generation/hold and issue the original deferred-save/replay wakeup.
+
+Final corrected slices pass independent source review, changed-line formatting,
+complete predecessor and dependency checks. Compiler/native/SQL/gameplay/
+persistence/recovery remain UNEXECUTED under user major-plan deferral. This is a
+documentation-only milestone; private implementation is unqualified. The genuine
+physical callback/retained effects/terminal native disposition/cold registration
+and recovery/producer driver/admission remain unfinished. Role-aware NBC4
+accounting/MBR4 result source is separately pending independent review; genuine
+birth-to-SHOP CAS/atomic native-image+SHOP ownership, source factory/room O/P,
+opening correspondence, shared keeper historical transition, activation, Plan5
+and full R1-R8 acceptance remain. Original inactive/declined spell/production
+safety gates stay; original Plan1 independent acceptance retains its scope.
+
 ## Reviewed native flat source, frozen submission and prospective cash role - 2026-10-08
 
 Private `tmp/lifecycle-flat-shop-retained-submission-candidate-primary-20261008`
