@@ -58,7 +58,7 @@ SQL/persistence/recovery/performance execution ran. Active O guard stays closed.
 
 Smith still needs its authentic NPC-input/player-output compound root, variable
 player fee, factory/publication/replay owner. Reset needs original same-slot retry
-state, actual returned-constructor failure witness, cold reconstruction chronology,
+state, actual returned-constructor failure witness, authentic cold restoration,
 full active O/P integration and special placement effects. Cold-created factories
 must join the same census. Shared keeper birth provenance decisions remain open.
 Original Plan1 acceptance retains its recorded scope; full Plans2-4, combined

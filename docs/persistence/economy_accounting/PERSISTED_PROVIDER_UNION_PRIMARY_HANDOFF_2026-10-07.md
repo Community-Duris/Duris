@@ -7,7 +7,7 @@ records private candidate `9a7faa28058820cbe3d6ff53cd999a3b39a9dd67377a30980c4f8
 ordinary Craft/Forge frozen progression/cold notification, corrected warm driver
 and checked genuine pending-item census are source-reviewed and joined with
 complete refining/Plan5 source. All201 selected paths/162 source files authenticate.
-Smith, original reset retry/constructor witness/cold chronology/special routes and
+Smith, original reset retry/constructor witness/cold restoration/special routes and
 major-plan execution remain open. Maintained implementation is not promoted;
 Plans2-4/combined Plan5/R1-R8/activation/full release remain unproven.
 
