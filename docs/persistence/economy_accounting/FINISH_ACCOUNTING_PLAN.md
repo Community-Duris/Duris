@@ -49,11 +49,17 @@ component review/replay:1,334 src bodies,1,606 artifacts/468 dependencies per
 original/fresh run authenticated. Fresh O1 CONTROL and Og ASan/UBSan PASS with
 five target renames/one injection each; exact stage/file bytes match. This is
 same-process tmpfs readback/reload,not crash durability or SQL/native reward/ACK.
-Quest next owns story_history_sql_capacity.cpp/test and
-QUEST_STORY_HISTORY_SQL_CAPACITY_HANDOFF_2026-10-08.md: real complete SQL state
-save through actual MySQL qry_at and65536-byte formatter with disclosed SQL-only
-DB/escape/trace doubles. Assert full-query max-fit/first-overflow/refusal before
-trace; no DB service,production capacity fix or native/transaction qualification.
+SQL-capacity code1e8e977a5/handoff2eb2fedd6 now PASS independent component review:
+1,334 src bodies,1,634 artifacts/560 inputs per original/fresh run authenticated;
+fresh O1 CONTROL/Og ASanUBSan all12 observations/profile PASS. Full SQL/repository/
+logging TUs execute,only trace binding changes. Revision7 identity ASCII65,239
+bytes fits;65,240 refuses before trace. SQL escape/trace/DB are explicit doubles;
+no actual MySQL escaping/execution/transaction/native durability qualification.
+Quest next owns story_history_sql_runtime_rollback.cpp/test and
+QUEST_STORY_HISTORY_SQL_RUNTIME_ROLLBACK_HANDOFF_2026-10-08.md: actual valid
+service serialization plus real runtime completion/SQL formatter refusal and
+exact prior-memory restoration/repeated-key control. One component family; no
+arbitrary padding,giant native names,fake tracker,capacity fix or native proof.
 Gorblag is a source candidate; funded/item-parent native reachability is unproven.
 Genuine owner export, physical D/chronology and native qualification remain
 external dependencies.
@@ -94,19 +100,19 @@ SHOP map5c53e1e97 now PASS source/design review:3,455 public bodies/43 body pins
 109 anchors/18 links/13 ordering checks/15 artifacts and standalone patch verified.
 Compound custody,wallet,keeper stock/cash and physical-before-completion/recovery
 remain one original operation. No new SHOP runner is reserved. Architecture next
-owns PRIVATE independent SQL-story capacity/oracle review for the quest component;
-no new committed map/code path and no worker wait. Real query/repository bodies,
-escaped-byte/C-string limits and exact oracles supply available independent work.
+owns supplemental PRIVATE review of published capacity code/object/call/observation
+proof; design packet already PASS15 bodies/70 anchors/ten digit widths. No new
+committed map/code path,duplicate build or primary wait. Native Goal stays BLOCKED.
 Pickup still needs genuine save/current-proof/restart owners. Latest primary
-fc8a8961b reports private ordinary birth/restored outer candidate48570aec:
-147 production/79C,nine reviewed slices/13 overrides,809 dependency records/
-22 predecessor bindings. Original NMB4/NBC4/264-byte MBR4,role recensus,current
-receipt and passive-slot/command/fence/32MiB cold-stage charge remain source
-claims. Real coordinator delivery edge is critical_command_coordinator_pulse;
-never-admitted cleanup remains closed. Published-world SQL successor/full cold
-census/boot/effects/admission/shared atomic/opening/Plan5 remain incomplete.
-Public source/migrations/tests unchanged;compiler/native/SQL/gameplay/persistence/
-recovery UNEXECUTED. Private implementation is not available or qualified here.
+3c01b754d reports private cold-holder candidatea226828c:150 production/81C,
+11 new source-accepted slices/1480 new dependency records. Earlier e6221a016
+reports private4c918221/148 production/80C world/cold readers. Boot seal,original
+SHOP BEFORE reader,selected literal graph/cash/world and once-only enrollment/
+retained capacity are source claims. Full future-transition charge/effects/
+publication/guarded ACK/registration/replay/shared atomic birth/opening/Plan5
+remain incomplete. UID-zero pet absence is unresolved for absent player.
+Public src/migrations/tests unchanged;compiler/native/SQL/gameplay/persistence/
+recovery UNEXECUTED under major-plan deferral. Private code unavailable/unqualified.
 Supported
 client-free flat routing already exists; SQL-enabled flat routing is not required.
 Native C01 execution still

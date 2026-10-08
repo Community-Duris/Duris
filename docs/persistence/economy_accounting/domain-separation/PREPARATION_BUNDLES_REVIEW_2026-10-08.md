@@ -1441,3 +1441,101 @@ original owner/world/publication/save/ACK/driver/admission,shared keeper atomic/
 opening,Plans2-5 and original R1-R8 qualification still require their genuine
 owners. Actual continuing Goal remains BLOCKED; heartbeat ACTIVE. No sidework
 checkpoint or quiet queue closes the broader accounting completion audit.
+
+
+## Actual SQL story capacity reviewed; valid-history runtime rollback next
+
+Independent component review PASS for
+[code1e8e977a50d3e1cad9312af0b7cfbfa643bcf444](https://github.com/Community-Duris/Duris/commit/1e8e977a50d3e1cad9312af0b7cfbfa643bcf444)
+and [handoff2eb2fedd683ba83130bf4beddea419e6a153ef71](https://github.com/Community-Duris/Duris/blob/2eb2fedd683ba83130bf4beddea419e6a153ef71/docs/persistence/economy_accounting/quest-prep/QUEST_STORY_HISTORY_SQL_CAPACITY_HANDOFF_2026-10-08.md).
+Exactly two new tests and sole doc; no production mutation. Root reads complete
+harness/runner/handoff and actual SQL save/qry/trace/escape/logging boundaries.
+All1,334 src archive bodies/modes/Git blobs,1,634 original artifacts/560 actual
+compiler dependencies,tools/libraries/build inputs/ELFs and executed standalone
+input bodies authenticate. Fresh isolated strict builds execute all12 observations
+under O1 CONTROL(unsanitized) and Og ASan/UBSan without diagnostics; all fresh
+1,634 artifacts/560 inputs also authenticate and exact query/observation bytes
+match original and profiles. Real time-stamped log outputs are separately checked.
+Root proof D:\Dev\Temp\coordinator-sql-capacity-review-20261008;
+fresh suffix quest-story-sql-capacity-1re4xqtc,builds under
+D:\Dev\Builds\Duris\coordinator-sql-capacity-review-20261008.
+
+Complete real sql.c,story repository and utility.c logging TUs compile and execute.
+Copied objects retain all code/relocations/data/debug semantics; only intended
+sql_trace_exec_at binding changes GLOBAL/FUNC to WEAK/FUNC. Section-name table
+representation is accounted for; no claim of whole-object byte equality. Root
+independently checks all604/O1 and6814/Og sections and exact one-symbol table
+difference,final qry call/strong harness trace,link map owner and no live mysql_
+client dependency. Runtime exact full-query/count and forced refusal authenticate
+the intended SQL boundary. Worker six code/relocation/unrelated-binding negative
+controls authenticate as rejected; initial repeated-COMDAT verifier failure and
+whole-TU feasibility remain retained. No failed execution is erased.
+
+For revision7 identity safe ASCII,the fixed296-byte overhead leaves65,239 state
+bytes: complete65535-byte query reaches trace once.65,240 yields65536 and actual
+formatter refuses before trace,with repository write error and genuine logit.
+Revision-width,simulated2x escaped growth,trace refusal,DB/escape refusal,16MiB
+preguard equality/excess and controlled embedded NUL remain exact bounded cases.
+The native C-string wrapper stops at NUL by source inspection; actual MySQL
+escaping/charset/execution/transaction/schema/durability are NOT qualified.
+State strings are capacity inputs,not valid native story activity. Shared owner
+must decide any writer/error/capacity correction; this bundle makes none and
+adds no adoption wait or release gate.
+
+Private design/oracle review also PASS root authentication:15 exact bodies,
+70 anchors,25 indexed artifacts and ten decimal widths. Equation is295 fixed
+bytes+decimal revision digits+escaped C-string bytes. Generated history has real
+LF delimiters and hex fields,so raw bytes cannot universally substitute for
+escaped size. Design packet D:\Dev\Temp\story-history-sql-capacity-oracle-review-20261008.
+Architecture continues ONE separate PRIVATE implementation/artifact review in
+story-history-sql-capacity-implementation-review-20261008; final packet pending.
+No duplicated builds,new committed map/code or worker evidence mutation. Root
+component acceptance does not falsely claim that supplemental review finished.
+
+Quest next owns ONLY story_history_sql_runtime_rollback.cpp,
+test_story_history_sql_runtime_rollback.py and
+QUEST_STORY_HISTORY_SQL_RUNTIME_ROLLBACK_HANDOFF_2026-10-08.md in existing owned
+folders. Benefit: connect genuine valid service serialization,actual runtime
+completion and SQL formatter refusal to full prior-memory restoration before
+future domain separation. Inputs are public full runtime/production/feature/
+tracking/catalog and service APIs,closed406 runtime fixture/minimal Q/index
+bootstrap,1e8 full SQL/repository/logit/binding proof,and genuine mode/flat link
+providers as needed. Explicit SQL-only load/query/row/epoch/escape/trace controls
+may supply missing DB boundaries; prefer actual repository load and authenticate
+every altered symbol/final called provider. Never replace a reached non-SQL
+provider or infer private/native authority. Missing genuine closure yields exact
+dependency,not a manufactured pass.
+
+Generate valid state with deterministic real service events/unique keys/ordered
+component PIDs; no invalid padding or giant native names. Record event/fact counts,
+serialized/LF/hex alphabet,modeled escaped/full-query bytes. An explicit SQL
+escape model supports actual generated alphabet without MySQL charset claims.
+One nearby valid-state completion crosses full-query bound; actual runtime must
+report repository write error/zero trace and restore byte-identical prior state,
+with no failed fact/credit/metadata/telemetry. Repeat same frozen event/key with
+no ghost growth; retain healthy fitting control. Not an adjacent-byte threshold
+family or capacity/policy/format fix; daily policy stays disabled. Separate D:
+proof/builds,exact standalone import,strict O1 control/Og ASanUBSan,bounded logs/
+nonzero/timeout retention and full providers/deps/tools/libraries/objects/ELFs.
+No production/existing tests/helpers/capture/decoder/schema/registry/shared-driver/
+Plan5/FINISH/canonical handoff edits or server/migration/SQL service/journal/native/
+broad batch. Native transaction/world/reward/XP/save/ACK/cold/private interfaces
+remain external. Return precise feasibility if valid crossing is unavailable.
+
+New primarye6221a016 and3c01b754d publish documentation only; source/migrations/
+tests unchanged. Latest private candidatea226828c reports150 production/81C,
+11 new source-accepted slices/1480 dependencies,boot seal/SHOP BEFORE/original
+selected graphs/cash/current-world/once-only enrollment and current-holder capacity.
+Full future-variant charge/effects/publication/guarded ACK/registration/replay,
+shared atomic birth/opening and combinedPlan5 remain unfinished. UID-zero legacy
+pet absence stays unknown for absent player. Earlier4c918221 world/cold census
+report's approved reset policy replaces saved keeper cash/stock on cold restore;
+warm reset does not union/overlay. No new historical row-ID policy is imposed.
+All private source claims remain unavailable/unexecuted/unqualified here.
+
+At15:30 both side turns were actually interrupted/notLoaded,not timed-out jobs.
+Root continued the same tasks from retained context/proof,requiring process/job
+checks before work. No worktree move,reset,recreated batch or false Goal resume.
+Actual continuing native Goal remains BLOCKED and unfinished; heartbeat ACTIVE.
+Plans1-5/originalR1-R8/integrated qualification/owner completion and selected
+handoff reviews remain the broader finish line.
