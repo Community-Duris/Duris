@@ -1784,3 +1784,31 @@ handoff. No shared implementation changed. Full shop literals/history, other
 forests, native lifecycle/upgrade/retention/gameplay/load and combined release
 remain open. Notebook is nonblocking; no application/adoption claim. No
 activation, deployment, production mutation or auto-correction. Goal stays active.
+
+
+## SQL player and pet physical custody — 2026-10-07
+
+Completed independent reader slice; curator-ready [exact report](PLAN5_SQL_PLAYER_PET_CUSTODY_2026-10-07.md).
+Same local/remote `codex/accounting-plan5`, base `bc4ba06496f80fd28a487d12aa4addda6924f159`, code `67bb326177608d14f23e91bc2076151e771aaf02`;
+the following documentation publication tip is recorded in `delivery/result.json`.
+All seven earlier consolidated branch tips and prior follow-ups are preserved.
+
+Bounded raw SQL projections now detect player/pet physical/current disagreement,
+cross-table UID duplicates, missing live rows and invalid ancestry independently.
+Wallet roots stay excluded; matching native-coded player coin payloads can
+reconstruct absent physical rows. Eight player methods and seven existing shop
+methods pass with zero skips, 46/38 native cuts on fresh canonical64 MariaDB and
+MySQL. Reconciler/origin modules execute 131/55 methods with six listed skips.
+Complete original SQL runners pass both engines, including new RR and table
+fences. Four authenticated predecessor false-clears now diagnose disagreement.
+Whole batch 186.311157286s/900s, 1027 commands.
+
+Tested primary `02df3a70f4300dc30feb3163f441e9541224cb01`, composition `4a35cfe112dd2d417ed373a3d1bf52419124251c`,
+native `833d3085815b396861ad18a77635412212381e4b`, migrations `7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2`.
+Evidence `D:/Dev/Tests/Duris/accounting-plan5/sql-player-20261007/`; build cuts
+`D:/Dev/Builds/Duris/accounting-plan5-sql-player-20261007/green03/bin/tests/sql-player-custody/`.
+All attempts are retained. See report for exact blobs/commands, native capture
+limits, optional narrow shared fields and remaining payload/upgrade/retention/
+native gameplay/combined release gates. No shared implementation changed.
+Notebook is nonblocking; no adoption/application claim. No activation, production
+mutation or auto-correction. This is progress; the full Plan5 goal stays active.
