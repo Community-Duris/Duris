@@ -1841,3 +1841,33 @@ quantity currently is not read. See exact report for narrow fields/invariants/
 consumers/tests handoffs, commands, native scope and all remaining release gates.
 No shared implementation changed. Notebook nonblocking; no application/adoption
 claim. No activation, production change or auto-correction. Progress; goal active.
+
+
+## SQL locker and retained account physical custody — 2026-10-07
+
+Completed independent reader slice; curator-ready [exact report](PLAN5_SQL_LOCKER_CUSTODY_2026-10-07.md).
+Same local/remote `codex/accounting-plan5`, base `f00c1adba9515a8c2234dac405c1e806f209af5f`, code `27a3873f4729dc71f1d3c4dc5962c41de4b3741a`;
+publication tip is recorded in evidence `delivery/result.json`. Seven earlier
+consolidated tips and all previous follow-ups are preserved.
+
+Six bounded raw SQL projections distinguish active locker/chest and historical
+account ID namespaces; diagnose missing physical/current rows both directions,
+raw unknown metadata, duplicate UIDs, topology, unsupported quantities and coins.
+Historical account runtime authority remains explicitly unqualified. Eight locker
+methods pass without skips, 66 canonical SQL/current-native-capture cuts across
+MariaDB/MySQL. Prior corpse/player/shop suites pass without skips, 68/46/38 native
+cuts. Reconciler/origin execute 131/55, six listed skips. Original SQL runners pass
+both engines, including all new table fences and RR cuts. Six authenticated old
+false-clears and archived first-candidate NULL-side replay now diagnose.
+Complete batch 339.160112484s/900s, 1536 commands.
+
+Primary `996ce9ebbb7863eb6b149b254ba111a6c5544e9a`, composition `127200f47edd27ac6c26d749e043963610321cdf`,
+native `833d3085815b396861ad18a77635412212381e4b`, migrations `7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2`.
+Evidence `D:/Dev/Tests/Duris/accounting-plan5/sql-locker-20261007/`; cut outputs
+`D:/Dev/Builds/Duris/accounting-plan5-sql-locker-20261007/green02/bin/tests/sql-locker-custody/`.
+All preceding attempts are retained. Public native current metadata and actual
+coin encoding executed; raw locker physical capture, complete native hydration/
+access/gameplay and runtime account authority remain unqualified. Exact report
+contains fields/invariants/consumers/tests handoffs and all remaining gates.
+No shared implementation changed. Notebook nonblocking; application/adoption not
+claimed. No activation, production change or auto-correction. Progress; goal active.
