@@ -1812,3 +1812,32 @@ limits, optional narrow shared fields and remaining payload/upgrade/retention/
 native gameplay/combined release gates. No shared implementation changed.
 Notebook is nonblocking; no adoption/application claim. No activation, production
 mutation or auto-correction. This is progress; the full Plan5 goal stays active.
+
+
+## SQL corpse physical custody — 2026-10-07
+
+Completed independent reader slice; curator-ready [exact report](PLAN5_SQL_CORPSE_CUSTODY_2026-10-07.md).
+Same local/remote `codex/accounting-plan5`, base `0cf5a60840c9d65c98f5ce87dda9132de9767632`, code `6c87078c9dee655149e4d8823534b90486f7ff4f`;
+the following publication tip is recorded in evidence `delivery/result.json`.
+All seven earlier consolidated tips and existing follow-ups remain ancestors.
+
+Raw bounded SQL corpse projections now check packed numeric owner identity,
+physical/current presence both directions, UID/row topology, exact literals,
+unsupported quantity, native 3,000 bound, nested coins and transient ancestry.
+Eight corpse methods, eight player methods and seven shop methods pass without
+skips; 68/46/38 native cuts on fresh canonical64 MariaDB/MySQL. Reconciler/origin
+modules execute 131/55 with six listed skips. Complete original SQL runners pass
+both engines, including RR and all new table fences. Five authenticated old
+false-clears now diagnose; current-vnum bool alias replay now refuses.
+Whole final batch 276.569801899s/900s, 1319 commands.
+
+Primary `02df3a70f4300dc30feb3163f441e9541224cb01`, composition `1e31292851410ad1aa616961bc63530bcf2e2e9f`,
+native `833d3085815b396861ad18a77635412212381e4b`, migrations `7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2`.
+Evidence `D:/Dev/Tests/Duris/accounting-plan5/sql-corpse-20261007/`; build cuts
+`D:/Dev/Builds/Duris/accounting-plan5-sql-corpse-20261007/green03/bin/tests/sql-corpse-custody/`.
+All failed attempts are retained. Actual unmodified native physical parser and
+coin/helper bodies executed; public capture still omits corpse fields and native
+quantity currently is not read. See exact report for narrow fields/invariants/
+consumers/tests handoffs, commands, native scope and all remaining release gates.
+No shared implementation changed. Notebook nonblocking; no application/adoption
+claim. No activation, production change or auto-correction. Progress; goal active.
