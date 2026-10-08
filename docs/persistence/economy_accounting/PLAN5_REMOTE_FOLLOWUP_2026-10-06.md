@@ -1625,3 +1625,27 @@ New host helpers/evidence use D: and native permission scratch uses RAM.
 Curator-ready packet remains a nonblocking handoff to the primary-local notebook.
 Combined native source, original V2 installer, full census/producer journeys,
 both-engine upgrade/retention continuity and full R1–R8 remain open.
+## Canonical 64 native and managed claim qualification — 2026-10-07
+
+Same local/remote `codex/accounting-plan5`, with all earlier tips preserved.
+Recipe issue base `c373f04fac0ef14f734bc086c1cef01246dc70fe`, result
+`03d9cea1a2d8de31a6dc87e75824995d4ad60256`; canonical-head issue base that
+result, result `2b111d818bbc41bbbba785e4be1daa0228edea5f`.
+[Exact sources and disposition](PLAN5_CLAIM64_FIXTURE_QUALIFICATION_2026-10-07.md)
+records both original link failures, both obsolete-head engine failures and
+complete unchanged ASTs apart from three provider additions/four head literals.
+The full native method passes both fresh canonical 0064 engines, preserving all
+32 coin/3,026 decoder cases, 109 canonical cuts/90 refusals and 25 claim cuts per
+engine. The final complete managed module passes all 12 tests, zero skips,
+832.929 seconds, on final tree `eddb831506c06b001744b20858b5f01bbea7284b`:
+35 restore attempts/nine qualified restores, ten loader boots plus direct cold
+boot, native replay/receipt/UID/retention controls, both SQL engines, six actual
+corrupt-import refusals and 14 equal SELECT-only claim cuts. Native/migration
+inputs and prior production binaries are exactly authenticated; new outputs use
+separate D: bin directories. Shared source-list proposals remain owner handoffs.
+The primary's newer `76195e6d763d999214427f4d1d20924646b0a904` operator package
+changes reader/fixture bodies and is not qualified by this frozen packet.
+The report/seal/delivery remain curator-ready and nonblocking. No native/shared
+schema edits, activation, production mutation, audit correction or cross-chat
+notification occur. Full census, original V2 install, genuine producer/player
+journeys, both-engine upgrade/retention and full R1–R8 remain open.
