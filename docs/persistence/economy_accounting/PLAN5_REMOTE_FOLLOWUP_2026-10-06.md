@@ -1706,3 +1706,32 @@ Curator-ready packet only; primary-local notebook maintenance remains
 nonblocking. No acknowledgement, activation, SQL/gameplay execution or full
 Plan/R1-R8/release closure is claimed. Auction literal/history reconciliation,
 genuine journeys, retention/erasure, upgrades and combined qualification remain.
+
+
+## Retained auction root/claim custody audit - 2026-10-07
+
+Same local/remote `codex/accounting-plan5`; branch base `069156eb82e3b42f45719f22754f57827f52532a`, solved issue
+`88b68ee8a2022493861ff32b4e6dffb571cf134c`. [Exact source, commands and evidence](PLAN5_AUCTION_ROOT_CUSTODY_QUALIFICATION_2026-10-07.md)
+records primary `99b2a13a4141e8d36ac0f695e9e31d556139b5d6` plus seven current owned blobs and two
+unchanged player dependencies. Final custody tree `2667f69c25807f5f2e552dce0df3e8be3132fcd1`; native833d3085,
+canonical64 migration7e06717b. The new read-only command compares current roots,
+claim rights and reverse custody, preserving completed claims as history.
+
+The complete six-family custody driver passes all original families plus36
+auction scenarios at three limits and14 boundaries, zero skips. Native root/blob
+comparisons, ASan/UBSan controls, three used budget refusals and four prior
+operator omission controls retain unchanged authority. The initial mistaken
+zero-directory-entry assertion is preserved and corrected; no original control
+is removed. Complete auction-money117/zero skips and clean flatfile754-unit Make
+also pass on identical consumed inputs. No SQL/server/gameplay execution is
+claimed. Explicit fixture-provider proposals remain for primary adoption.
+
+Seven code/test files and this report/follow-up are the owned slice. No shared
+schema/API/native producer/coordinator file is changed. Source archives, argv,
+native/copy verification, seal and delivery are under
+`D:/Dev/Tests/Duris/accounting-plan5/auction-custody-20261007/`. All seven earlier
+remote tips remain preserved; prior player and receipt slices still need primary
+integration and keep their original source/evidence scopes. Curator-ready packet
+only; primary-local notebook upkeep is nonblocking and no acknowledgement is
+claimed. Templates/coin literals, full census/history, native V2 install, genuine
+journeys, retention/erasure, upgrades and combined Plans/R1-R8 release remain open.
