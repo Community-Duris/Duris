@@ -168,30 +168,33 @@ revokes it before release. The source SQL normalization/independent verifier and
 activation consumer are still required; no raw census or terminal DTO is authority.
 Production accounting stays inactive; all cross-stream release gates remain open.
 
-## Reviewed raw source and primary PC money interfaces - 2026-10-08
+## Reviewed same-cut NPC lifetime interface - 2026-10-08
 
-Shared private111/23/5 preserves the synchronous genuine world/full raw SQL borrow,
+Shared private111/23/5 retains the actual synchronous world/full raw SQL borrow,
 original session/slot/save epoch/closed outbox/request/evidence authentication,
-world-first residual limits and verifier rollback/release/failure latch. The borrowed
-activation view additionally has a const `pc_money` primary comparison report.
-It is derived from the original raw source2 with canonical account identities,
-complete defect counts, once-per-shared-bank comparison and explicit unloaded
-holdings. Independent Plan5 must still inspect raw providers and perform its own
-full money/item/forest audit; primary reports and digests grant no authority.
+world-first residual limits and verifier rollback/release/failure latch. The
+borrowed activation view now adds `native_wallets` (const lifetime span) and
+`npc_money` (const primary report), beside existing `pc_money` and raw providers.
 
-Two lifecycle bank clamps now agree with existing nonnegative signed-TINYINT
-bank storage/normalization/projection, including genuine Evil2; no schema or policy
-domain is narrowed. Current NPC money/opening and complete item correspondence
-remain missing. Initial inactive installation, actual independent callback/activation
-and committed publication are still unwired; no permit/result is cached.
+The actual original mapping verifier authenticates historical native birth inboxes
+before current locks, once inside this borrow after raw capture. It moves current
+lifetime metadata only after complete validation. Root retains those exact values;
+they expire with the raw borrow and grant no authority. Historical birth epoch and
+current cash/revision are distinct. Primary NPC comparison reparses raw6 images and
+joins complete references/current denominations/UID/mapping/lineage/origin metadata.
+Missing/duplicate/mixed/unknown findings and originless NPCs gate acceptance using
+complete counts; unloaded lifetimes and retired history remain explicit.
 
-Constructor chronology preserves authentic order and cleanup. All six genuine
-native prepend hooks are source-reviewed and composed; pure checks precede
-original mutation and nonallocating observation precedes each genuine prepend.
-Actual P selectors/source-custody handoffs remain open. Hooks do not qualify routes.
-Flat NO_MYSQL singleton collector purchase has real admission/save-hold/publication/
-guarded ACK source wiring. Its full historical receipt is separate from current
-catalog/bank clocks, and the outer original-root lock survives post-census/ACK.
-SQL bodies are preserved; dispatch equality is line-ending-normalized only.
-All source slices remain unrun. No independent Plan5 audit/backup/restore ownership
-changes or coverage/release gate promotions. Full major-plan qualification remains.
+Independent Plan5 must inspect original raw sources and perform its own full
+money/item/forest reconciliation; primary reports never replace independent proof.
+Native catalog is one all-row six-column table, not six providers. Its original
+scalar bounds and 4MiB canonical-image allowance remain; cumulative raw totals are
+not added twice. Originless opening/full item join, initial inactive installation,
+actual independent callback/activation and committed publication remain missing.
+
+The actual mobile P caller now distinguishes authentic absence from unavailable/
+unsupported chronology and retains lookup/nest refusal before command success.
+Cross-owner custody/full room producer remains open. Six native prepend hooks and
+flat collector admission/save-hold/publication/ACK source remain composed. SQL
+collector bodies are preserved; dispatch equality is line-ending-normalized only.
+All source is unrun. No Plan5 audit/backup/release ownership or coverage gate changes.
