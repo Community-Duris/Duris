@@ -44,10 +44,16 @@ Story-history map79105dcd5 now PASS source/design review:42 public bodies/four
 dependencies/42 source anchors/15 coverage excerpts/three links/53 artifacts
 authenticated. Original key versus current season/revision,whole-state authority,
 post-rename save uncertainty and erasure/aggregate distinction remain explicit.
-Quest next owns story_history_runtime_reentry.cpp/test and
-QUEST_STORY_HISTORY_RUNTIME_REENTRY_HANDOFF_2026-10-08.md: real runtime/flat
-post-rename failure,memory restore,authority reload and original-key S2 retry.
-Component only; no crash durability,SQL/native completion/ACK/cold proof.
+Story-runtime code406ab5ea1/handoffcb8e0ffeb now PASS independent actual-provider
+component review/replay:1,334 src bodies,1,606 artifacts/468 dependencies per
+original/fresh run authenticated. Fresh O1 CONTROL and Og ASan/UBSan PASS with
+five target renames/one injection each; exact stage/file bytes match. This is
+same-process tmpfs readback/reload,not crash durability or SQL/native reward/ACK.
+Quest next owns story_history_sql_capacity.cpp/test and
+QUEST_STORY_HISTORY_SQL_CAPACITY_HANDOFF_2026-10-08.md: real complete SQL state
+save through actual MySQL qry_at and65536-byte formatter with disclosed SQL-only
+DB/escape/trace doubles. Assert full-query max-fit/first-overflow/refusal before
+trace; no DB service,production capacity fix or native/transaction qualification.
 Gorblag is a source candidate; funded/item-parent native reachability is unproven.
 Genuine owner export, physical D/chronology and native qualification remain
 external dependencies.
@@ -84,10 +90,13 @@ compound atomicity. Observed legacy hazards are not permanent desired policy.
 Recipe map83038acc0 now PASS source/design review:3,455 public bodies/37 body
 pins/93 anchors/four links/11 ordering checks/22 artifacts authenticated. Reuse
 closed R1 journeys and maintained progression/ACK fixtures; no new craft runner.
-Architecture next evaluates SHOP_TRADE_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md:
-buy/sell/produced/cleanup compound custody,wallet,keeper stock/cash and completion
-delegation. Reuse closed quotes/acceptance/access and SHOP reviews; if already
-covered,return exact coverage/dependencies instead of a redundant document.
+SHOP map5c53e1e97 now PASS source/design review:3,455 public bodies/43 body pins/
+109 anchors/18 links/13 ordering checks/15 artifacts and standalone patch verified.
+Compound custody,wallet,keeper stock/cash and physical-before-completion/recovery
+remain one original operation. No new SHOP runner is reserved. Architecture next
+owns PRIVATE independent SQL-story capacity/oracle review for the quest component;
+no new committed map/code path and no worker wait. Real query/repository bodies,
+escaped-byte/C-string limits and exact oracles supply available independent work.
 Pickup still needs genuine save/current-proof/restart owners. Latest primary
 fc8a8961b reports private ordinary birth/restored outer candidate48570aec:
 147 production/79C,nine reviewed slices/13 overrides,809 dependency records/

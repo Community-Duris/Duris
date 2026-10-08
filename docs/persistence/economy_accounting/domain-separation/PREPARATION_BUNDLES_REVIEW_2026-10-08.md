@@ -1355,3 +1355,89 @@ Public src/migrations/tests are unchanged. Compiler/native/SQL/gameplay/persiste
 recovery execution is UNEXECUTED under major-plan deferral; implementation is
 private and unqualified. No new sideworker native interface is exposed. Actual
 Goals remain BLOCKED; heartbeat ACTIVE and broader primary finish line unresolved.
+
+
+## SHOP conversion map and story-runtime component reviewed; SQL capacity next
+
+Independent source/design review PASS for sole-doc
+[SHOP authority boundary](https://github.com/Community-Duris/Duris/blob/5c53e1e9774f6018adc9b7a2dbdfc51cd1ea23d1/docs/persistence/economy_accounting/domain-separation/SHOP_TRADE_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md),
+commit5c53e1e9774f6018adc9b7a2dbdfc51cd1ea23d1,parent83038acc0.
+Root authenticates3,455 public archived bodies,43 body pins,109 exact anchors,
+18 links,13 source-order checks and15 indexed artifacts; independently applies
+its exact standalone patch to fc8a8961b and verifies resulting tree. Full350-line
+map and actual preparation,closed admission gate,keeper exclusion,SQL revision
+CAS and physical-before-completion ordering reviewed. Source/design only; no
+new test/build/native execution or runner reservation. Private root proof:
+D:\Dev\Temp\coordinator-shop-boundary-review-20261008.
+
+Buy/sell/produced-stock and cleanup must keep custody,customer wallet,keeper
+stock/cash,issuance/sink and original completion within one compound root.
+Original participants/lifetimes/full v8 current-world proof,checkpoint hold,
+guarded ACK,retained fences and cold census remain real owner dependencies.
+Per-shop keeper exclusion/SQL row CAS do not qualify unfinished shared-keeper
+birth/opening/atomic lifecycle. Inactive flat physical callbacks do not establish
+active accounted parity. Produced quantities can retain completed partial roots;
+a later failure does not refund earlier purchases. Existing R10/R12/R13/R14,
+SHOP codecs/live-route and21-owner/16-physical publication controls stay distinct
+and preserved. No duplicate pure extraction/runner is justified.
+
+Independent actual-provider component review/replay PASS for
+[story runtime code](https://github.com/Community-Duris/Duris/commit/406ab5ea1175a94a49d3203464023a2b0bfd606b)
+and [exact handoff](https://github.com/Community-Duris/Duris/blob/cb8e0ffeb7506fac293c7638d5744a7d0cb53c37/docs/persistence/economy_accounting/quest-prep/QUEST_STORY_HISTORY_RUNTIME_REENTRY_HANDOFF_2026-10-08.md).
+Exactly two new owned tests plus sole handoff; code406ab5ea1,handoffcb8e0ffeb.
+Root authenticates1,334 public src bodies/archive,all1,606 worker artifacts and468
+actual dependencies,tool/library/build pins and standalone executed input bodies.
+Fresh isolated strict builds execute O1 CONTROL(unsanitized) and Og ASan/UBSan:
+both PASS with no runtime sanitizer diagnostics. Fresh1,606 artifacts/468 inputs
+also authenticate; exact seven-stage state/file bytes match the worker run and
+across profiles. Five target renames and one actual injected directory-fsync
+failure per profile. Private root proof:
+D:\Dev\Temp\coordinator-story-runtime-review-20261008;
+fresh build/evidence suffix quest-story-runtime-img82be5,outputs under
+D:\Dev\Builds\Duris\coordinator-story-runtime-review-20261008.
+
+Actual runtime/catalog/tracking/flat state/store/authority/mode providers execute.
+After the exact story file rename,one directory fsync fails; valid S1 authority
+remains visible while prior empty memory is restored. Actual bootstrap reloads
+S1 under seasonS2. Reusing the original key/full original fields conflicts and
+writes no second fact; S1 replay and distinct S2 controls pass. Manually checked
+retained transaction fields include exact ordered PID credit and literal key/
+definition/revision/season/time. SQL-only season/load/save boundaries and minimal
+boot globals are explicit doubles; no executed non-SQL provider is replaced.
+DrvFS metadata probe refuses; isolated private tmpfs roots are cleaned. Initial
+Git/invocation/link/CRLF failures remain retained. This is SAME-PROCESS readback/
+reload on tmpfs,not process restart/crash durability,SQL/native world/gameplay,
+economic reward/XP publication,original save/checkpoint/ACK or cold qualification.
+
+Next useful uncovered seam is the actual SQL story-save formatter. Repository
+allows up to16MiB while actual MySQL qry_at uses MAX_STRING_LENGTH65536; existing
+erasure fixture replaces qry_at. Quest owns ONLY new story_history_sql_capacity.cpp,
+test_story_history_sql_capacity.py and QUEST_STORY_HISTORY_SQL_CAPACITY_HANDOFF_2026-10-08.md under its existing test/doc directories. Execute complete real
+repository through real complete MySQL qry_at with actual config,prefer whole
+TU/GC; deterministic exact complete-body extraction is permitted if needed and
+disclosed. Explicit DB/escaping/trace/log doubles cannot qualify actual MySQL
+escaping/execution/transaction durability. Independently derive full-query max-fit/
+first-overflow including fixed UPSERT/revision,assert exact query/trace/refusal
+and report escaped-growth/C-string limits. No production capacity/policy fix.
+Strict O1 control/Og ASanUBSan,exact optional standalone import,whole provider/
+dependency/tool/library/ELF pins,bounded command/failure retention and D: proof.
+No production/existing test/helper/capture/decoder/schema/registry/shared driver/
+Plan5/FINISH/canonical handoff edit or server/migration/SQL service/journal/native/
+broad batch. Original native interfaces remain external; no adoption wait.
+
+Architecture owns a separate bounded PRIVATE independent review of this boundary
+and its required oracles using available published source/closed story findings.
+It derives capacity/escape/NUL/revision constraints and checks genuine provider
+versus controlled SQL-boundary/extraction provenance. One D: private artifact/
+concise disposition,NO new committed map/code path; no duplicated broad inventory
+or primary/Plan5 work. Code review depends on actual later quest publication;
+current design review can proceed now and cannot delay quest implementation.
+These assignments preserve both isolated worktrees and all completed deliveries.
+
+Published primary remainsfc8a8961b source report (coordinator base5f5a8bdfd),with
+unchanged public src/migrations/tests. Private candidate48570aec and reported
+integration are not inspected,imported,adopted or executed here. Full cold census,
+original owner/world/publication/save/ACK/driver/admission,shared keeper atomic/
+opening,Plans2-5 and original R1-R8 qualification still require their genuine
+owners. Actual continuing Goal remains BLOCKED; heartbeat ACTIVE. No sidework
+checkpoint or quiet queue closes the broader accounting completion audit.
