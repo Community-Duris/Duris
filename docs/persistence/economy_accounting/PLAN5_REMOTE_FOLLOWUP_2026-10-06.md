@@ -2945,3 +2945,27 @@ opening/cutover/erasure/retention/workload/combined Plan5/R1-R8/release gates st
 open. Prior follow-up prefix remains exact. Curator-ready; primary-local notebook
 nonblocking; application/import/ack unclaimed. No primary push, cross-chat message,
 activation, production, autocorrection, merge or deployment.
+
+
+## 2026-10-08: original native custody audit qualification and fixture repair
+
+Sole local/remote codex/accounting-plan5; base 4c2c05d8e86e704e053b145aae072393c67837fa; result is this containing
+commit. Exact remote/clean/ancestry/rehash receipt:
+D:/Dev/Tests/Duris/accounting-plan5/native-custody-20261008/delivery/result.json. Eight original native custody checks PASS
+across 16 qualified MySQL 8/MariaDB sessions, 494 authority-unchanged observations.
+Seven original methods pass on source00 b4c3c8e14783a76a8e492579064044f158530d6f;
+the final full saved-ground module passes 11 methods/zero skips on source02
+98225ac8a49f7b08cafa71c478156d69a984dd5e. Common reader/native/schema inputs and 26 other overlays are exact.
+Owned saved-ground fixture drift is completely fixed: remove duplicate revision
+table creation and name item_uid in its old positional payload-marker insert.
+Every assertion/native C++ body/compiler argv stays exact. Original 1050 and
+intermediate 1136 failures remain raw failures; all stage outputs are preserved.
+Ten fresh fixture compile/link calls; native/schema64 unchanged; no maintained
+server or actual producer/player/flatfile journey. Complete commands, source,
+backends, artifacts, metrics and scope: PLAN5_NATIVE_CUSTODY_QUALIFICATION_2026-10-08.md.
+Raw seal bd1da577bcfe75417ee5e0585044882a111a6dbe0bcbd6afe52af85ad278db9b. Nine other original audit opt-ins remain; shared head62
+assertions/provider composition, original missing-file controls and existing
+erasure/combined/coverage/release gates are not waived. No new shared interface
+or schema change. Prior follow-up prefix exact; curator-ready; local notebook
+nonblocking; application/import/ack unclaimed. No primary push, activation,
+production/autocorrection/deploy/merge/cross-chat message.

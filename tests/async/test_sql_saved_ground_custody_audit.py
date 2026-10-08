@@ -571,7 +571,6 @@ class NativeSavedGroundCustodyAuditTests(unittest.TestCase):
                             for statement in statements:cursor.execute(statement)
                             for name in ("economic_epoch","economic_lineage_state"):
                                 cursor.execute("CREATE TABLE "+name+" LIKE duris_restore."+name)
-                            cursor.execute("CREATE TABLE item_owner_revision(owner_type INT,owner_id BIGINT,owner_context_id BIGINT,revision BIGINT UNSIGNED) ENGINE=InnoDB")
                             cursor.execute("GRANT SELECT ON duris_history_markers.* TO 'auction_reader'@'localhost'")
                             cursor.execute("INSERT INTO saved_items(id,item_key,room_vnum,container_id,obj_uid,vnum,quantity,weight,extra_flags,item_type,value0,value1,value2,value3) "
                                 "VALUES (400,'PRIVATE-marker',10,NULL,81,100,1,1,0,1,0,0,0,0)")
@@ -613,7 +612,7 @@ class NativeSavedGroundCustodyAuditTests(unittest.TestCase):
                                         cursor.execute("DELETE FROM "+name)
                             marker_cut("absent",0)
                             branches=(
-                                ("immutable-payload",["INSERT INTO sql_room_item_payload VALUES (81)"],1),
+                                ("immutable-payload",["INSERT INTO sql_room_item_payload(item_uid) VALUES (81)"],1),
                                 ("current-coin-bytes",["INSERT INTO item_current_owner(item_uid,coin_payload) VALUES (81,X'78')"],1),
                                 ("coin-reference-inbox",["INSERT INTO critical_operation_inbox(operation_id,command_type) VALUES (X'12',17)",
                                     "INSERT INTO economic_accounting_item_reference(operation_id,item_uid) VALUES (X'12',81)"],1),
