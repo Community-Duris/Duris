@@ -794,3 +794,79 @@ producer/admission, role-aware accounting/results, birth-to-SHOP atomic ownershi
 opening/shared-keeper history, activation/Plan5/R1-R8 remain primary obligations.
 No reported contract is treated as an available API or executed proof. Actual
 native Goals remain BLOCKED, heartbeat ACTIVE and broader finish line unresolved.
+
+
+## Collector actual-provider capture reviewed; gambling boundary next
+
+PASS capture/codec/custody/command review at
+`463fd659a1d95f6227b0ed6aad18bb7dfaebfb95`, parent
+`b49a8612bc189436a4a4d0a6f3be997c4d6c2b4b`, published on
+`codex/collector-native-capture-20261008`.
+[Exact three-file handoff](https://github.com/Community-Duris/Duris/blob/463fd659a1d95f6227b0ed6aad18bb7dfaebfb95/docs/persistence/economy_accounting/domain-separation/COLLECTOR_COLLECTION_NATIVE_CAPTURE_HANDOFF_2026-10-08.md)
+contains the frozen public source, runner/harness pins, controls, seams and limits.
+This is an optional independently reviewed bundle; primary adoption is unknown.
+
+Coordinator read the complete Python/C++/handoff and relevant genuine preparation
+body. Authenticated two committed test bodies,2,816 public source blobs,12 whole
+production-provider blobs and all431 indexed artifacts. Both exact final ELFs
+were independently re-executed:82 O1+82 Og cases PASS under original90-second
+case bounds and ASan/UBSan options, exact PASS-only output and empty diagnostics.
+Each profile's538 dependency inputs plus compiler/tool/resolved-library pins
+remain exact. Original13 strict compile commands/link, complete artifacts and
+per-case results are authenticated. Independent nonzero7/timeout124 controls
+retain original/partial diagnostics. No compilation was repeated. Review proof:
+`D:\Dev\Temp\coordinator-collector-capture-review-20261008`.
+
+The independent oracle manually defines complete UID-sorted original root rows,
+room/corpse identity and selected ordinary singleton fields, then uses the genuine
+codec; second capture is determinism only. Coverage includes nested/root selection,
+ordinary masks, full-root revision/topology/custody changes, bounded graph/blob/
+weight controls and strong-output preservation. Destination-owner absence creates
+revision zero in its separately disclosed registry-initialization control.
+Live comparison does not rerun eligibility or observe standalone owner-map clock
+changes; nonselected duplicate native UIDs reach genuine command rejection. These
+are actual layer boundaries, not new global census guarantees. Synthetic native
+objects/thread diagnostics and synthetic envelope acceptance timestamp remain
+explicit. Detach is absent from ELF; SQL/materialization/durable mutation/purchase/
+publication/save exclusion/ACK/replay/cold remain UNEXECUTED. Original exact439
+and native player/coordinator/publisher owners remain external dependencies.
+
+Next one bounded architecture source/design delivery owns only
+`domain-separation/GAMBLING_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md`.
+Trace actual blackjack OFFER/deal/hit/stay/double/periodic settlement/interruption
+as source supports, table UID versus pointer-valued timers/Hand owner, original
+round/participant identity, deck/random outcome and configuration capture,
+denomination debit/stake/payout/loss/push/blackjack result, cleanup and original
+operation/wallet/save/ACK/recovery owners. Separate deterministic owned values
+from thread/native/durable authority. Preserve the published active-accounting
+refusal of wagers and pending payout; schema/plan support is not an admitted route.
+
+Future benefit is an implementation-ready modular boundary and smallest useful
+independent acceptance/extraction reservation, if source supports one: exact paths,
+caller connection, manual expectations/setup/schedule/fault cuts and whole-provider/
+owner prerequisites. Reuse closed R2 and accounting tests, no repeated numeric
+coverage or new ledger/format/backend framework. Public source/schema/existing
+tests are available; original active round admission/identity/retained native
+participant/publisher/current-world/cold recovery and private source remain absent.
+Doc-only blob/anchor/link/design review on D:, no production/test/shared runner/
+owner/registry/coverage/Plan5 edit or build/DB/server/journal/native/broad test.
+
+Prioritized current queue: architecture gambling boundary and quest dynamic-world-
+service boundary each have one owned active delivery. At each handoff select an
+independent source-supported acceptance/extraction gap after review. Genuine
+Collector/pickup/quest/currency publication and atomic birth integration retain
+their exact unavailable owner/driver contracts; do not invent interfaces or
+reopen passed components. Completed optional bundles stay available for primary
+import without an adoption wait.
+
+New primarye3e82a92d reports private prospective NBC4/NMB4 role-aware accounting/
+MBR4 results and exact live retained-allocation budget, candidatea41d13a7/140
+production files/75 C providers. Ordinary wallet effects and shared SHOP stock
+roles are distinct; supplied custody/CAS values do not establish atomic current
+storage. Original publisher capacity is charged once under unchanged32MiB; no
+authority follows from a byte census. Source review/formatting only, source private
+and compiler/native/SQL/gameplay/persistence/recovery UNEXECUTED by major-plan
+deferral. Public src/migrations/tests trees unchanged. Atomic birth-to-SHOP,physical
+publication/terminal disposition/cold/driver/admission and original broad primary
+requirements remain. Actual Goal stays BLOCKED; heartbeat ACTIVE; no finish-line
+or owner completion is inferred.

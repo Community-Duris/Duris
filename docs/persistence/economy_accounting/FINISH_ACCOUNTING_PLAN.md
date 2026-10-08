@@ -45,16 +45,18 @@ profile and reruns49 O1+49 Og controls without diagnostics; correction12 artifac
 and timeout/nonzero checks pass. Import both commits. This is observer/capture
 acceptance, not SQL/publication/ACK/save/cold qualification. Collector mapb49a8612b
 now PASS source/design review:3,069 public archive blobs/54 body pins/88 anchors/
-five links authenticated. Architecture next owns only its new collection native
-capture Python/C++ tests and COLLECTOR_COLLECTION_NATIVE_CAPTURE_HANDOFF_2026-10-08.md:
-actual providers/manual root and singleton expectations, ordinary masks and
-focused sanitizer qualification; provider closure still unproven. Preserve R0,
-shared owners/runners and original native dependencies. No production edit is assigned. Pickup still needs genuine save/
-current-proof/restart owners. Primary257190ac1 reports private flat CURRENT/BEFORE/
-cache publication/original held-body/guarded ACK progress at candidate06f8c714/
-136 production files; public source unchanged and native qualification unexecuted.
-Physical effects/cold registration/recovery/producer/admission and original broad
-requirements remain; private source/contract availability is not inferred. Supported
+five links authenticated. Collector capture463fd659a now PASS actual-provider
+review:2,816 source blobs/two test bodies/12 providers/431 artifacts authenticated;
+82 O1+82 Og cases independently PASS,538 dependency inputs/profile unchanged.
+Capture/codec/custody/command only; detach/SQL/publication/ACK/save/cold unexecuted.
+Architecture next owns GAMBLING_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md: actual
+blackjack round/state/random outcome/stake/settlement/interruption ownership,
+reuse R2 and existing accounting tests, preserve active guard. One document only.
+Pickup still needs genuine save/current-proof/restart owners. Primarye3e82a92d
+reports private role-aware birth accounting/MBR4 result and live publication budget
+at candidatea41d13a7/140 production files/75 C providers; public source unchanged
+and native qualification unexecuted. Atomic birth-to-SHOP,physical publication/
+cold/driver/admission and original broad requirements remain. Supported
 client-free flat routing already exists; SQL-enabled flat routing is not required.
 Native C01 execution still
 requires its genuine active fixture and phase witness. Owned-pack availability

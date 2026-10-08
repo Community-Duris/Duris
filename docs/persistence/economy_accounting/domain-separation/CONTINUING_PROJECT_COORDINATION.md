@@ -136,28 +136,34 @@ providers/commands unchanged. Import includes the correction. This is observer/
 capture acceptance, not SQL/publication/ACK/save/cold qualification.
 Collector mapb49a8612b now PASS source/design review there:3,069 archived public
 blobs,54 cited body pins,88 anchors and five links authenticated; no native run.
-Architecture next owns only test_collector_collection_native_capture.py,
-collector_collection_native_capture_harness.cpp and
-COLLECTOR_COLLECTION_NATIVE_CAPTURE_HANDOFF_2026-10-08.md: actual whole capture/
-codec/custody/command providers, manual full-root/singleton expectations and
-focused strict sanitizer qualification. Preserve R0 and ordinary capture masks;
-characterize missing-owner projection initialization separately. Exact provider
-closure remains unproven; genuine native/shutdown/current-proof/save owners stay
-unavailable. The review states controls/collisions; no production/shared runner/
-owner/quest edit, DB/journal/server or native journey is assigned.
+Collector capture463fd659a now PASS actual-provider review there:two committed
+tests/2,816 source blobs/12 providers/431 artifacts authenticated;82 O1+82 Og
+cases independently PASS with538 dependency inputs/profile and tool/library pins
+unchanged. Actual capture/codec/custody/command only; no detach/SQL/publication/
+ACK/save/cold proof. Eligibility/owner-clock/duplicate-UID limits remain explicit.
+Architecture next owns only GAMBLING_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md:
+source-grounded blackjack round/state/frozen outcome/stake/settlement/interruption
+ownership and one useful nonduplicate future acceptance/extraction reservation.
+Reuse R2 and existing accounting tests; preserve active refusal. Public inputs are
+available; original admitted round/native publisher/held/current-world/recovery
+and private primary bodies stay unavailable. No production/test/shared owner/
+driver/quest/Plan5 edit or build/DB/journal/server/native run is assigned.
 Genuine save/current-proof/restart owners still block pickup production wiring.
-Primary257190ac1 now reports private flat CURRENT/never-admitted BEFORE readers,
-cache publication/original held-body/guarded ACK integration, candidate06f8c714/
-136 production files/73 C providers. Original reservation borrow avoids nested
-tickets; partial hydration preserves retry/holds and original post-ACK cleanup
-survives unrelated integrity poisoning. Private source-review/formatting only;
-compiler/native/SQL/gameplay/persistence/recovery remain UNEXECUTED by major-plan
-deferral. Public source/migrations are unchanged. No private API or executed proof
-is available here. Supported client-free flat routing already exists; no new
-SQL-enabled flat route is required. Physical callback/retained effects/terminal
-disposition/cold registration/recovery/producer/admission, role-aware accounting/
-results, birth-to-SHOP atomic ownership, opening/shared-keeper history, activation,
-Plan5 and R1-R8 remain primary obligations.
+Primarye3e82a92d now reports private role-aware prospective birth accounting/
+MBR4 results and genuine live publication capacity charging over the reviewed
+CURRENT/cache/held/guarded-ACK source, candidatea41d13a7/140 production files/
+75 C providers. Ordinary birth retains original NMB3 cash effects; shared SHOP
+stock creates no cash/wallet and binds supplied participant values. Structural
+correlation does not create custody/CAS/current-storage authority. Original
+publication owner can charge actual retained allocations once under32MiB; byte
+accounting does not confer native/cancel/publication/ACK authority. Private source
+review/formatting only; compiler/native/SQL/gameplay/persistence/recovery remain
+UNEXECUTED by major-plan deferral. Public source/migrations are unchanged. No
+private API or executed proof is available here. Atomic birth-to-SHOP custody/
+mapping participant,physical publication/terminal disposition/cold/driver/admission,
+source factory/room O/P,opening/shared-keeper history,activation/Plan5/R1-R8 remain.
+Supported client-free flat routing already exists; no new SQL-enabled flat route
+is required.
 No shared owner,
 Plan5 audit or primary rewrite is assigned. Actual native Goals remain BLOCKED;
 heartbeat ACTIVE and broader primary finish line unchanged.
