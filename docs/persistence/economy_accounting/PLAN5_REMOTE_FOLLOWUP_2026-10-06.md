@@ -1898,3 +1898,25 @@ Exact report records owned blobs, commands, remaining gates and narrow central
 registration/native parity/runtime authority requests. No shared implementation
 changed. Notebook nonblocking; application/adoption not claimed. No activation,
 production change or autocorrection. Progress; full goal active.
+
+
+## Plan5 saved-ground raw source slice — 2026-10-07
+
+Same remote `codex/accounting-plan5`, branch base b72e6724bc50d2dd4a6b589357167919a9072f65,
+code a09d5a800ea0673dbcb94ca9a766e2a31ca6241d. [Exact report](PLAN5_SQL_SAVED_GROUND_CUSTODY_2026-10-07.md).
+Tested primary af425e28e27ab5d2c6a3726aa4b814c150b01395, composed 9793f5c8bf5ffc74c63a28dd65bb1b79a61c5f95; native833d3085815b396861ad18a77635412212381e4b,
+migrations7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2/canonical64. Four owned Python files;
+no shared/native/schema changes. Raw SQL key groups preserve native collation
+without key text; history/handoff markers stay explicitly unqualified. Six
+authenticated predecessor false clears repaired. New8 methods PASS/0 skips,
+82 canonical cuts plus30 synthetic predicate controls, both engines. Six unchanged
+custody dependencies and full reconciler/origins/whole SQL suites retain all
+original cases/budgets; six existing opt-ins remain explicit skips. Batch exit0,
+486.833688090s/900, 2419 commands; all private daemons stopped.
+Evidence D:/Dev/Tests/Duris/accounting-plan5/sql-saved-20261007; raw source/modes/logs/
+private DB copies, failed attempts, seal and post-push delivery retained. Curator
+packet ready; primary-local notebook nonblocking, acknowledgement/application and
+primary adoption not claimed. Full saved/handoff/modern recovery, world census,
+writer/origin authority, nativeEAB2/retention/upgrades/original major-plan/native/
+gameplay/fault/combined-candidate and R1–R8/release gates stay open. Accounting
+inactive; wallet-root exclusion and declined inactive spell path preserved.
