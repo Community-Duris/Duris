@@ -1854,3 +1854,24 @@ v4 implementation for independent execution. Do not repeat those maps or constru
 substitute owners. Current prioritized queue below retains exact dependencies;
 both chats' bounded deliveries stay CLOSED with no new assignment. GoalsBLOCKED/
 unfinished;heartbeatACTIVE;overall Plans2-4/Plan5/R1-R8/activation remain open.
+
+
+Cold scope/Smith value reassessment138c379e4 - 2026-10-08:
+Latest primary138c379e42940cdfdc0d077054b35b76f5bd2016 adds the63-line
+[Cold restoration scope/Smith value handoff](../COLD_RESTORE_SCOPE_AND_SMITH_VALUE_HANDOFF_2026-10-08.md),read in full.
+Candidate remains private9a7faa28;no public capability or execution advance.
+Cold restore preserves genuine existing loader/vector order and adopts present
+bodies without global reordering;historical process-global prepend chronology is
+not a new requirement or ordinal-format task. Frozen warm target UIDs/decisions,
+original identity/custody/full graph/literals/effect progress remain required.
+Smith-only payload17 skeleton/value fields/variable PC fee validator are reported
+source review,not joined/executable. Root owns the authentic compound executor;
+primary producer already builds pure capture,so sidework must not duplicate it.
+Original dynamic1255 output/native grant then reverse input extraction,shared NPC
+stock/item and PC owner advances,full native BEFORE/AFTER/save/lineage/generations/
+factory callbacks and guarded ACK remain genuine dependencies;birth epoch and
+pwipe season are distinct. No extra XP/notch/pouch/NPC payment or separate owner
+clock is authorized. Completed-present/startup adoption is separately reviewed by
+primary;missing-body recovery remains open. Current preparation reviews/queue
+below remain valid;no new side assignment on unchanged public source/fixtures.
+All major-plan execution deferred;GoalsBLOCKED/unfinished,heartbeatACTIVE.

@@ -269,6 +269,25 @@ Original reviewer reference-search correction is retained in the private report;
 no worker evidence or provider changed. Root supplemental-review.json records
 index/report identities; sealed private review packet remains on D:.
 
+Latest primary138c379e42940cdfdc0d077054b35b76f5bd2016 adds the63-line
+[Cold restoration scope/Smith value handoff](../COLD_RESTORE_SCOPE_AND_SMITH_VALUE_HANDOFF_2026-10-08.md),read in full.
+Candidate remains private9a7faa28;no public capability or execution advance.
+Cold restore preserves genuine existing loader/vector order and adopts present
+bodies without global reordering;historical process-global prepend chronology is
+not a new requirement or ordinal-format task. Frozen warm target UIDs/decisions,
+original identity/custody/full graph/literals/effect progress remain required.
+Smith-only payload17 skeleton/value fields/variable PC fee validator are reported
+source review,not joined/executable. Root owns the authentic compound executor;
+primary producer already builds pure capture,so sidework must not duplicate it.
+Original dynamic1255 output/native grant then reverse input extraction,shared NPC
+stock/item and PC owner advances,full native BEFORE/AFTER/save/lineage/generations/
+factory callbacks and guarded ACK remain genuine dependencies;birth epoch and
+pwipe season are distinct. No extra XP/notch/pouch/NPC payment or separate owner
+clock is authorized. Completed-present/startup adoption is separately reviewed by
+primary;missing-body recovery remains open. Current preparation reviews/queue
+below remain valid;no new side assignment on unchanged public source/fixtures.
+All major-plan execution deferred;GoalsBLOCKED/unfinished,heartbeatACTIVE.
+
 Latest primary73e441704fe30a907d53746838f154533b55b292 publishes
 [Craft/Forge and warm census source integration](../CRAFT_FORGE_WARM_CENSUS_SOURCE_INTEGRATION_2026-10-08.md),read in full.
 Private9a7faa28058820cbe3d6ff53cd999a3b39a9dd67377a30980c4f8bb9402ee791 joins
