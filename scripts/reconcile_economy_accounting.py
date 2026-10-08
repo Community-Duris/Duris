@@ -2058,10 +2058,11 @@ class Reconciler:
             for row in references:
                 event = ownership.get((row.get("legacy_operation_id"), row.get("legacy_event_index")), {})
                 custody.append([event.get(field) for field in ("uid", "root", "parent", "from_owner", "owner",
-                                                               "revision", "from_equipment_slot", "to_equipment_slot")])
+                                                               "state", "revision", "from_equipment_slot", "to_equipment_slot")])
             expected = [[uid, new[4], new[5] or None,
                          [7, 0, 0] if old[1] == 0 else [old[0], old[2], old[3]],
-                         [new[0], new[2], new[3]], new[6], old[7], new[7]]
+                         [new[0], new[2], new[3]], ("absent", "live", "tombstone", "quarantined")[new[1]],
+                         new[6], old[7], new[7]]
                         for _, _, uid, old, new in plan["events"]]
             check(same_projection(custody, expected),
                   "original_plan_custody_mismatch")

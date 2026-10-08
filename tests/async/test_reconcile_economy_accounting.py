@@ -3053,6 +3053,81 @@ class ReconciliationTests(unittest.TestCase):
         snapshot["native"]["items"][0].update(state="tombstone", owner=[8, 0, 0])
         self.assertIn("duplicate_item_retirement", self.codes(snapshot))
 
+    def test_original_item_plan_binds_live_and_quarantined_state(self):
+        for state in ("live", "quarantined"):
+            for native_changed in (False, True):
+                snapshot = clean_snapshot()
+                snapshot["ownership_events"][0]["state"] = state
+                snapshot["native"]["items"][0]["state"] = state
+                bind_original_plans(snapshot)
+                healthy = Reconciler()
+                self.assertEqual(healthy.audit(snapshot)["exception_counts"], {})
+                self.assertEqual(healthy.original_plans_verified, 1)
+                snapshot["ownership_events"][0]["state"] = "quarantined" if state == "live" else "live"
+                if native_changed:
+                    snapshot["native"]["items"][0]["state"] = snapshot["ownership_events"][0]["state"]
+                original = copy.deepcopy(snapshot)
+                with self.subTest(state=state, native_changed=native_changed):
+                    auditor = Reconciler()
+                    expected = {"original_plan_custody_mismatch": 1}
+                    if not native_changed:
+                        expected["stale_native_item"] = 1
+                    self.assertEqual(auditor.audit(snapshot)["exception_counts"], expected)
+                    self.assertEqual(auditor.original_plans_verified, 0)
+                    self.assertEqual(snapshot, original)
+
+    def test_original_item_plan_state_finding_precedes_history_scope_skip(self):
+        for state in ("live", "quarantined"):
+            snapshot = clean_snapshot()
+            snapshot["ownership_events"][0]["state"] = state
+            snapshot["native"]["items"][0]["state"] = state
+            bind_original_plans(snapshot)
+            event = copy.deepcopy(snapshot["ownership_events"][0])
+            event.update(operation_outcome="committed", referenced=False)
+            snapshot["native"]["uid_history_events"] = [event]
+            snapshot["ownership_events"][0]["state"] = "quarantined" if state == "live" else "live"
+            original = copy.deepcopy(snapshot)
+            with self.subTest(state=state):
+                auditor = Reconciler()
+                self.assertEqual(auditor.audit(snapshot)["exception_counts"],
+                                 {"original_plan_custody_mismatch": 1})
+                self.assertEqual(auditor.original_plans_verified, 0)
+                self.assertEqual(snapshot, original)
+
+    def test_original_item_plan_state_cli_keeps_projection_and_finding(self):
+        for state in ("live", "quarantined"):
+            snapshot = clean_snapshot()
+            snapshot["ownership_events"][0]["state"] = state
+            snapshot["native"]["items"][0]["state"] = state
+            bind_original_plans(snapshot)
+            changed = "quarantined" if state == "live" else "live"
+            snapshot["ownership_events"][0]["state"] = changed
+            snapshot["native"]["items"][0]["state"] = changed
+            with tempfile.TemporaryDirectory(prefix="original-item-state-") as folder:
+                path = Path(folder) / "snapshot.json"
+                payload = json.dumps(snapshot, sort_keys=True).encode()
+                path.write_bytes(payload)
+                for name in ("exceptions", "provenance"):
+                    for limit in (0, 1, 100):
+                        command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                   str(path), "--view", name, "--limit", str(limit)]
+                        if name == "provenance":
+                            command += ["--uid", "81"]
+                        result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                        with self.subTest(state=state, name=name, limit=limit):
+                            self.assertEqual((result.returncode, result.stderr), (1, ""))
+                            value = json.loads(result.stdout)
+                            if name == "provenance":
+                                self.assertEqual(value["coverage"]["exception_count"], 1)
+                                self.assertEqual(value["count"], 1)
+                                self.assertEqual([row["state"] for row in value["rows"]], [changed][:limit])
+                            else:
+                                self.assertEqual(value["exception_count"], 1)
+                                self.assertEqual(value["exception_counts"], {"original_plan_custody_mismatch": 1})
+                                self.assertEqual([row["code"] for row in value["exceptions"]],
+                                                 ["original_plan_custody_mismatch"][:limit])
+                            self.assertEqual(path.read_bytes(), payload)
+
     def test_selected_item_history_refuses_invalid_action_before_origin_lookup(self):
         cases = [(False, value) for value in (None, True, 1, {}, [], "private-action-alias", "quarantine")]
         cases.append((True, None))

@@ -2548,3 +2548,42 @@ native baseline recipes, genuine combined/producers/cold/opening/player/route/
 fault/load/activation/Plan5/R1-R8/release remain open. Primary-local notebook
 nonblocking; curator-ready input, application/ack unclaimed. No production write,
 autocorrection, activation, primary push, deployment or merge.
+
+
+## Original-plan endpoint custody state - 2026-10-08
+
+[Exact independent endpoint binding](PLAN5_ITEM_PLAN_STATE_2026-10-08.md)
+continues from 50acfeeb9d67ea7284cdfd3053bb9d69cba7381c on the same local/remote
+codex/accounting-plan5 and owned worktree. Result is this containing commit;
+post-push delivery/result.json verifies exact SHA/remote equality/all 27 overlays,
+seven earlier ancestor tips and prior tombstone preservation. Earlier branch work
+remains reachable here.
+
+The old original-plan comparison omits state, accepting live/quarantined endpoint
+substitutions and still counting the original plan verified. One existing custody
+comparison now includes state, using existing original_plan_custody_mismatch,
+before lineage skips; original projections/bytes stay intact. No shared interface/
+schema/native/producer change. Three methods reproduce 18 failed subtests on the
+old reader. Final Linux suite: 404 loaded/386 PASS/18 existing opt-in skips; host:
+404 loaded/383 PASS/21 platform/opt-in skips. Both complete partial-SQL runners
+pass four new saved-projection cases/24 actual CLI checks per engine, unchanged
+47-table read inventories and exact fixture restoration. Model capsules authored
+from actual SQL captures are explicit models, not collector gameplay/intent proof.
+All six model/four captured capsules pass both original native codecs (20 checks).
+Original complete canonical restore passes zero skips on fresh MariaDB 10.11.14/
+MySQL 8.0.46 head 0064: 3026 decoder cases, 109 cuts/90 refusals/58 full-entry per engine.
+
+Tested primary e6221a016ba8af26451831f1f4ec07ea264cf115 plus 27 overlays:
+325ae4bf625b0cb470bc64a642ed00189b9b1201; native 833d3085815b396861ad18a77635412212381e4b;
+migrations 7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2. Evidence
+D:/Dev/Tests/Duris/accounting-plan5/item-plan-state-20261008; raw seal c2624344ba1d609a07ab781eb0c0e0ff5a613887ceb0a020d9b9e68f36e9d6c4.
+Red/failed-host stages preserved; exact source03 final checks sealed. Six stopped
+containers, no OOM/live children/copied links. Docker recovery handled elsewhere.
+
+Prior tombstone fix c373f04fac0ef14f734bc086c1cef01246dc70fe still requires primary
+import with backup integration. Shared original flatfile providers/room UID/native
+baseline recipe gates and genuine combined/opening/cold/player/route/fault/load/
+activation/Plan5/R1-R8/release remain open, along with continued independent history/
+preimage review. Primary-local notebook nonblocking; curator-ready input,
+application/ack unclaimed. No production write, autocorrection, activation,
+primary push, deployment or merge.

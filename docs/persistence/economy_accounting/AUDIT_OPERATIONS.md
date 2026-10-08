@@ -422,6 +422,15 @@ quarantine continues to use `move` with `quarantined` state.
 [Exact action/state qualification](PLAN5_ITEM_SUPPLY_ACTIONS_2026-10-08.md)
 records the full CLI, native-plan and disposable SQL evidence.
 
+Retained EAP1 plans also bind the selected ownership event's endpoint custody
+state, alongside its owner, topology, revision and equipment. A live/quarantined
+projection that disagrees with those original bytes produces
+`original_plan_custody_mismatch` and cannot count as a verified original plan,
+even when the current projection agrees with the damaged history. The reader
+preserves the projected state for inspection.
+[Endpoint-state qualification](PLAN5_ITEM_PLAN_STATE_2026-10-08.md) records the
+exact model, native-codec and disposable SQL scope.
+
 The collector's retained reason21 transition from collector owner10 to system
 owner7 with ID0/context0 represents quarantine. The collector command requires
 state3 for that endpoint, and generic item transfers reject that reason. All

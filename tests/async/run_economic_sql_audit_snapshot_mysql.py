@@ -725,6 +725,7 @@ def verify_compound_item_actions(owner, reader, snapshot):
 def verify_collector_quarantine_views(owner, reader, snapshot):
     """Retain collector quarantine without guessing other system custody."""
     from _plan5_equipment_restore import Connection, inventory
+    from test_reconcile_economy_accounting import bind_original_plans
 
     output = ROOT / "bin/tests/plan5-collector-quarantine" / uuid.uuid4().hex
     output.mkdir(parents=True)
@@ -791,12 +792,95 @@ def verify_collector_quarantine_views(owner, reader, snapshot):
                 assert value["coverage"]["exception_count"] == sum(expected_counts.values()) and path.read_bytes() == encoded
                 (target / ("limit-" + str(limit) + ".json")).write_bytes(result.stdout)
                 commands.append(dict(command=command, exit=result.returncode))
+            # Author one explicit model capsule from this captured SQL cut;
+            # it is not a producer/intent/command qualification.
+            fixture = copy.deepcopy(captured)
+            fixture["operations"] = [row for row in fixture["operations"]
+                                     if row["operation_id"] == quarantine_root.hex()]
+            for name in ("effects", "postings", "children", "item_references"):
+                fixture[name] = [row for row in fixture[name]
+                                 if row["operation_id"] == quarantine_root.hex()]
+            bind_original_plans(fixture)
+            modeled = fixture["operations"][0]
+            fields = ("accounting_version", "writer_id", "policy_version", "compiler_version",
+                      "actor_kind", "actor_id", "intent_digest", "domain_digest", "plan_digest",
+                      "canonical_plan", "before_witness_count", "after_witness_count")
+            with owner.cursor() as cursor:
+                cursor.execute("SELECT " + ",".join(fields) + " FROM economic_accounting_operation "
+                               "WHERE operation_id=%s", (quarantine_root,))
+                original_root = cursor.fetchone()
+            plan_probes = []
+            try:
+                with owner.cursor() as cursor:
+                    cursor.execute("UPDATE economic_accounting_operation SET " +
+                                   ",".join(field + "=%s" for field in fields) + " WHERE operation_id=%s",
+                                   (*[bytes.fromhex(modeled[field]) if field.endswith("digest") or
+                                      field == "canonical_plan" else modeled[field] for field in fields], quarantine_root))
+                bound_before = inventory(owner)
+                connection = Connection(reader)
+                bound = capture(connection, LINEAGE, EPOCH)
+                bound_counts = dict(expected_counts)
+                bound_counts["missing_original_plan"] -= 1
+                if not bound_counts["missing_original_plan"]:
+                    del bound_counts["missing_original_plan"]
+                assert Reconciler().audit(bound)["exception_counts"] == bound_counts
+                assert connection.rollbacks == connection.observer.closes == 1
+                assert inventory(owner) == bound_before
+                capsule = target / "plan-bound"
+                capsule.mkdir()
+                (capsule / "canonical-plan.eap").write_bytes(bytes.fromhex(modeled["canonical_plan"]))
+                (capsule / "healthy-snapshot.json").write_text(json.dumps(bound, sort_keys=True))
+                for damage in ("selected-only", "history-and-native"):
+                    damaged = copy.deepcopy(bound)
+                    alternate = "live" if expected_state == "quarantined" else "quarantined"
+                    for row in damaged["ownership_events"]:
+                        if row["operation_id"] == quarantine_root.hex():
+                            row["state"] = alternate
+                    if damage == "history-and-native":
+                        for row in damaged["native"]["uid_history_events"]:
+                            if row["operation_id"] == quarantine_root.hex():
+                                row["state"] = alternate
+                        for row in damaged["native"]["items"]:
+                            if row["uid"] == 84:
+                                row["state"] = alternate
+                    damaged_counts = dict(bound_counts)
+                    damaged_counts["original_plan_custody_mismatch"] = damaged_counts.get("original_plan_custody_mismatch", 0) + 1
+                    assert Reconciler().audit(damaged)["exception_counts"] == damaged_counts
+                    probe = capsule / damage
+                    probe.mkdir()
+                    saved = probe / "snapshot.json"
+                    payload = json.dumps(damaged, sort_keys=True).encode()
+                    saved.write_bytes(payload)
+                    cli = []
+                    for name in ("exceptions", "provenance"):
+                        for limit in (0, 1, 100):
+                            command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                       str(saved), "--view", name, "--limit", str(limit)]
+                            if name == "provenance":
+                                command += ["--uid", "84"]
+                            result = subprocess.run(command, capture_output=True, timeout=30)
+                            assert result.returncode == 1 and not result.stderr
+                            assert json.loads(result.stdout) == view(damaged, Reconciler(limit).audit(damaged), name, limit, uid=84)
+                            assert saved.read_bytes() == payload and json.dumps(damaged, sort_keys=True).encode() == payload
+                            (probe / (name + "-" + str(limit) + ".json")).write_bytes(result.stdout)
+                            cli.append(dict(command=command, exit=result.returncode))
+                    assert inventory(owner) == bound_before
+                    plan_probes.append(dict(damage=damage, commands=cli, exception_counts=damaged_counts,
+                                            cli_checks=len(cli), application_tables_unchanged=len(bound_before),
+                                            snapshot_unchanged=True, modeled_original_plan=True))
+            finally:
+                with owner.cursor() as cursor:
+                    cursor.execute("UPDATE economic_accounting_operation SET " +
+                                   ",".join(field + "=%s" for field in fields) + " WHERE operation_id=%s",
+                                   (*[original_root[field] for field in fields], quarantine_root))
+            assert inventory(owner) == before
             for name, values in (("before", before), ("after", after)):
                 (target / ("authority-" + name + ".json")).write_text(json.dumps(values, sort_keys=True) + "\n")
             (target / "queries.json").write_text(json.dumps(connection.observer.queries) + "\n")
             records.append(dict(phase=phase, reason=reason, state=expected_state, actions=["create", "move"],
                 exception_counts=expected_counts, commands=commands, query_count=len(connection.observer.queries),
-                application_tables_unchanged=len(before), rollback_calls=1, cursor_close_calls=1))
+                application_tables_unchanged=len(before), rollback_calls=1, cursor_close_calls=1,
+                original_plan_probes=plan_probes))
     finally:
         with owner.cursor() as cursor:
             for table in ("economic_accounting_item_reference", "item_ownership_ledger",
