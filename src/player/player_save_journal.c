@@ -1,4 +1,6 @@
 #include "player/player_save_journal.h"
+#include "player/player_save_execution_guard.h"
+#include "player/player_save_replay_ownership.h"
 
 #include "player/player_snapshot_codec.h"
 
@@ -14,6 +16,7 @@
 #include <map>
 #include <mutex>
 #include <new>
+#include <optional>
 #include <set>
 #include <string>
 #include <sys/stat.h>
@@ -95,6 +98,22 @@ std::vector<stored_recovery> recovery_records;
 std::set<int32_t> policy_pids;
 bool quarantine_state_ready = false;
 bool quarantine_state_failed = false;
+
+struct control_fingerprint
+{
+	bool observed = false, exists = false;
+	size_t bytes = 0;
+	std::array<uint8_t, 32> digest = {};
+};
+control_fingerprint archive_fingerprint, policy_fingerprint, legacy_fingerprint;
+std::array<uint8_t, 32> sha256(const uint8_t *bytes, size_t size);
+player_save_journal_result control_namespace_locked();
+
+void remember_control(control_fingerprint &fingerprint, const std::vector<uint8_t> &bytes,
+		      bool exists)
+{
+	fingerprint = { true, exists, bytes.size(), sha256(bytes.data(), bytes.size()) };
+}
 
 uint64_t realtime_msec()
 {
@@ -375,7 +394,7 @@ bool archive_recovery_frames(int pid, std::vector<player_snapshot> *frames,
 					   bytes.size() - JOURNAL_HEADER_SIZE,
 					   &snapshot) != player_snapshot_codec_result::ok ||
 		    !ordinary_recovery_snapshot(snapshot) || snapshot.pid != pid ||
-		    snapshot.schema_version != get_u32(bytes.data(), 44) ||
+		    get_u32(bytes.data() + JOURNAL_HEADER_SIZE, 0) != get_u32(bytes.data(), 44) ||
 		    snapshot.revision != get_u64(bytes.data(), 48) ||
 		    snapshot.components != get_u64(bytes.data(), 56))
 			return false;
@@ -497,6 +516,7 @@ bool load_quarantine_archive()
 	bool exists = false;
 	if (!read_safe_bytes(archive_path, ARCHIVE_MAX_BYTES, &bytes, &exists))
 		return false;
+	remember_control(archive_fingerprint, bytes, exists);
 	if (!exists)
 		return true;
 	if (bytes.size() < ARCHIVE_HEADER_SIZE ||
@@ -600,6 +620,7 @@ bool load_quarantine_pid_policy()
 	bool exists = false;
 	if (!read_safe_bytes(quarantine_pids_path, 4096, &bytes, &exists))
 		return false;
+	remember_control(policy_fingerprint, bytes, exists);
 	if (!exists || bytes.empty())
 		return true;
 	size_t offset = 0;
@@ -715,6 +736,10 @@ bool persist_quarantine_archive(const std::set<int32_t> &pids,
 			raw_offset += encoded.size() + 40;
 		}
 	}
+	// Prepare allocating digest work before publishing the new archive. No
+	// exception after rename may leave durable recovery records ahead of memory.
+	control_fingerprint candidate_fingerprint;
+	remember_control(candidate_fingerprint, bytes, true);
 	const int fd = open_safe_file(archive_temporary_path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
 	if (fd < 0)
 		return false;
@@ -727,6 +752,8 @@ bool persist_quarantine_archive(const std::set<int32_t> &pids,
 		ok = sync_directory();
 	if (!ok)
 		unlink(archive_temporary_path.c_str());
+	else
+		archive_fingerprint = candidate_fingerprint;
 	return ok;
 }
 
@@ -784,6 +811,7 @@ bool load_legacy_quarantine_bytes()
 	bool exists = false;
 	if (!read_safe_bytes(quarantine_path, journal_quota, &bytes, &exists))
 		return false;
+	remember_control(legacy_fingerprint, bytes, exists);
 	if (!exists || bytes.empty())
 		return true;
 	for (const auto &record : archive_records)
@@ -816,7 +844,8 @@ bool build_frame(const player_snapshot &snapshot, journal_frame &frame)
 	put_u64(frame.bytes, 24, frame.record_id);
 	put_u64(frame.bytes, 32, frame.created_msec);
 	put_u32(frame.bytes, 40, static_cast<uint32_t>(snapshot.pid));
-	put_u32(frame.bytes, 44, snapshot.schema_version);
+	// Pin the encoded wire, including ward envelopes, rather than its normalized schema.
+	put_u32(frame.bytes, 44, get_u32(payload.data(), 0));
 	put_u64(frame.bytes, 48, snapshot.revision);
 	put_u64(frame.bytes, 56, snapshot.components);
 	put_u32(frame.bytes, 64, payload.size());
@@ -834,10 +863,11 @@ std::vector<uint8_t> read_journal_file(player_save_journal_result &result)
 	const int fd = open_safe_file(journal_path, O_RDONLY, 0600);
 	if (fd < 0)
 	{
-		if (errno == ENOENT)
+		const int open_error = errno;
+		if (open_error == ENOENT && !player_save_execution_guard::current_ownership_epoch())
 			return bytes;
-		result = errno == EPERM ? player_save_journal_result::unsafe_permissions :
-					  player_save_journal_result::io_failure;
+		result = open_error == EPERM ? player_save_journal_result::unsafe_permissions :
+					       player_save_journal_result::io_failure;
 		return bytes;
 	}
 	struct stat status = {};
@@ -1009,6 +1039,14 @@ scan_result scan_journal_safe()
 		}
 		if (!scanned.quarantine_records.empty())
 		{
+			if (player_save_execution_guard::current_ownership_epoch())
+			{
+				// Unknown corrupt headers cannot identify an affected PID scope.
+				// Keep the active bytes; archive only under stopped authority.
+				scanned.result = player_save_journal_result::corrupt_data;
+				fail_closed();
+				return scanned;
+			}
 			// A corrupt frame's header is not an authoritative PID. Archive its exact
 			// bytes, but never compact the active copy or allow any PID to load/save.
 			const bool archived = commit_quarantine_archive(
@@ -1122,6 +1160,15 @@ bool quarantine_configured_frames()
 
 player_save_journal_result quarantine_runtime_pid(int pid)
 {
+	std::optional<player_save_execution_guard::permit> execution;
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		execution.emplace(pid);
+		if (!*execution)
+			return execution->result() == player_save_execution_guard::admission::held ?
+				       player_save_journal_result::replay_deferred :
+				       player_save_journal_result::replay_blocked;
+	}
 	std::lock_guard<std::mutex> lock(journal_mutex);
 	if (!health.initialized)
 		return player_save_journal_result::not_initialized;
@@ -1180,6 +1227,10 @@ player_save_journal_result quarantine_runtime_pid(int pid)
 bool player_save_journal_init(const char *directory, size_t quota_bytes)
 {
 	std::lock_guard<std::mutex> lock(journal_mutex);
+	// The serial lifecycle initializes before enable and closes after ownership
+	// handoff/end. Never switch or erase a namespace with enabled owners.
+	if (player_save_execution_guard::current_ownership_epoch())
+		return false;
 	if (health.initialized)
 		return false;
 	try
@@ -1192,6 +1243,7 @@ bool player_save_journal_init(const char *directory, size_t quota_bytes)
 		archive_records.clear();
 		recovery_records.clear();
 		policy_pids.clear();
+		archive_fingerprint = policy_fingerprint = legacy_fingerprint = {};
 		if (!directory || !*directory || directory[0] != '/' ||
 		    quota_bytes < JOURNAL_HEADER_SIZE + 64 ||
 		    quota_bytes > PLAYER_SAVE_JOURNAL_MAX_BYTES)
@@ -1272,6 +1324,10 @@ bool player_save_journal_init(const char *directory, size_t quota_bytes)
 void player_save_journal_shutdown(void)
 {
 	std::lock_guard<std::mutex> lock(journal_mutex);
+	// The serial lifecycle initializes before enable and closes after ownership
+	// handoff/end. Never switch or erase a namespace with enabled owners.
+	if (player_save_execution_guard::current_ownership_epoch())
+		return;
 	health.initialized = false;
 	quarantine_state_ready = false;
 	quarantine_state_failed = true;
@@ -1328,6 +1384,13 @@ player_save_journal_diagnostic player_save_journal_diagnostic_copy(int pid)
 
 player_save_journal_result player_save_journal_append(const player_snapshot &snapshot)
 {
+	player_save_execution_guard::permit execution(snapshot.pid);
+	// Invalid PIDs cannot own a hold; preserve existing journal validation,
+	// initialization/quota precedence and append-failure accounting for them.
+	if (snapshot.pid > 0 && !execution)
+		return execution.result() == player_save_execution_guard::admission::held ?
+			       player_save_journal_result::replay_deferred :
+			       player_save_journal_result::replay_blocked;
 	std::lock_guard<std::mutex> lock(journal_mutex);
 	if (!health.initialized)
 		return player_save_journal_result::not_initialized;
@@ -1389,6 +1452,15 @@ player_save_journal_result player_save_journal_append(const player_snapshot &sna
 
 player_save_journal_result player_save_journal_archive_quarantined(const player_snapshot &snapshot)
 {
+	std::optional<player_save_execution_guard::permit> execution;
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		execution.emplace(snapshot.pid);
+		if (!*execution)
+			return execution->result() == player_save_execution_guard::admission::held ?
+				       player_save_journal_result::replay_deferred :
+				       player_save_journal_result::replay_blocked;
+	}
 	std::lock_guard<std::mutex> lock(journal_mutex);
 	if (!health.initialized)
 		return player_save_journal_result::not_initialized;
@@ -1420,6 +1492,11 @@ player_save_journal_result player_save_journal_checkpoint(int pid,
 {
 	if (pid <= 0 || !durable_revision)
 		return player_save_journal_result::corrupt_data;
+	player_save_execution_guard::permit execution(pid);
+	if (!execution)
+		return execution.result() == player_save_execution_guard::admission::held ?
+			       player_save_journal_result::replay_deferred :
+			       player_save_journal_result::replay_blocked;
 	std::lock_guard<std::mutex> lock(journal_mutex);
 	if (!health.initialized)
 		return player_save_journal_result::not_initialized;
@@ -1487,6 +1564,39 @@ player_save_journal_result checkpoint_proven(const std::map<int, player_revision
 {
 	if (acknowledged.empty() && proofs.empty())
 		return player_save_journal_result::ok;
+	// Own every affected PID before any compaction. These independent counted
+	// permits reject a restored hold even for callers outside replay/workers.
+	std::vector<player_save_execution_guard::permit> checkpoint_permits;
+	try
+	{
+		if (acknowledged.size() > checkpoint_permits.max_size() ||
+		    proofs.size() > checkpoint_permits.max_size() - acknowledged.size())
+			return player_save_journal_result::replay_blocked;
+		checkpoint_permits.reserve(acknowledged.size() + proofs.size());
+		for (const auto &[pid, revision] : acknowledged)
+		{
+			(void)revision;
+			checkpoint_permits.emplace_back(pid);
+			if (!checkpoint_permits.back())
+				return checkpoint_permits.back().result() ==
+						       player_save_execution_guard::admission::held ?
+					       player_save_journal_result::replay_deferred :
+					       player_save_journal_result::replay_blocked;
+		}
+		for (const auto &proof : proofs)
+		{
+			checkpoint_permits.emplace_back(proof.pid);
+			if (!checkpoint_permits.back())
+				return checkpoint_permits.back().result() ==
+						       player_save_execution_guard::admission::held ?
+					       player_save_journal_result::replay_deferred :
+					       player_save_journal_result::replay_blocked;
+		}
+	}
+	catch (const std::bad_alloc &)
+	{
+		return player_save_journal_result::replay_blocked;
+	}
 	std::lock_guard<std::mutex> lock(journal_mutex);
 	if (!health.initialized)
 		return player_save_journal_result::not_initialized;
@@ -1574,11 +1684,261 @@ player_save_journal_result checkpoint_proven(const std::map<int, player_revision
 }
 } // namespace
 
+static player_save_journal_result
+collect_journal_frames(std::vector<player_save_journal_retained_frame> *output, bool lifecycle)
+{
+	if (!output)
+		return player_save_journal_result::replay_blocked;
+	output->clear();
+	std::lock_guard<std::mutex> lock(journal_mutex);
+	if (!health.initialized)
+		return player_save_journal_result::not_initialized;
+	if (lifecycle)
+	{
+		try
+		{
+			const auto controls = control_namespace_locked();
+			if (controls != player_save_journal_result::ok)
+				return controls;
+		}
+		catch (...)
+		{
+			return player_save_journal_result::replay_blocked;
+		}
+	}
+	scan_result scanned = scan_journal_safe();
+	if (scanned.result != player_save_journal_result::ok)
+		return scanned.result;
+	try
+	{
+		std::vector<player_save_journal_retained_frame> retained;
+		retained.reserve(scanned.frames.size());
+		for (auto &frame : scanned.frames)
+		{
+			const int pid = frame.snapshot.pid;
+			retained.push_back({ std::move(frame.snapshot), std::move(frame.bytes),
+					     frame.record_id, quarantined_pids.count(pid) != 0,
+					     policy_pids.count(pid) != 0 });
+		}
+		output->swap(retained);
+		return player_save_journal_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		++health.backpressure;
+		return player_save_journal_result::replay_blocked;
+	}
+}
+
+player_save_journal_result
+player_save_journal_collect_retained(std::vector<player_save_journal_retained_frame> *output)
+{
+	return collect_journal_frames(output, false);
+}
+
+player_save_journal_result player_save_journal_collect_lifecycle_frames(
+	std::vector<player_save_journal_retained_frame> *output)
+{
+	return collect_journal_frames(output, true);
+}
+
+namespace
+{
+// Caller owns journal_mutex. These allocating control reads all precede any
+// retirement; no archive, policy or recovery record is waived by a revision.
+player_save_journal_result control_namespace_locked()
+{
+	if (!health.initialized || !quarantine_state_ready || quarantine_state_failed)
+		return player_save_journal_result::not_initialized;
+	const auto matches_control =
+		[](const std::string &path, size_t limit, const control_fingerprint &expected)
+	{
+		std::vector<uint8_t> bytes;
+		bool exists = false;
+		return expected.observed && read_safe_bytes(path, limit, &bytes, &exists) &&
+		       exists == expected.exists && bytes.size() == expected.bytes &&
+		       sha256(bytes.data(), bytes.size()) == expected.digest;
+	};
+	if (!matches_control(archive_path, ARCHIVE_MAX_BYTES, archive_fingerprint) ||
+	    !matches_control(quarantine_pids_path, 4096, policy_fingerprint) ||
+	    !matches_control(quarantine_path, journal_quota, legacy_fingerprint))
+		return player_save_journal_result::replay_blocked;
+	return player_save_journal_result::ok;
+}
+
+player_save_journal_result publication_namespace_locked(
+	int pid, const player_save_execution_guard::held_publication_reservation &reservation)
+{
+	if (!reservation.matches_pid(pid))
+		return player_save_journal_result::replay_blocked;
+	const auto controls = control_namespace_locked();
+	if (controls != player_save_journal_result::ok)
+		return controls;
+	if (quarantined_pids.count(pid) || archived_pids.count(pid) || policy_pids.count(pid))
+		return player_save_journal_result::quarantined_pid;
+	for (const auto &record : archive_records)
+		if (!record.pid || record.pid == pid)
+			return player_save_journal_result::replay_blocked;
+	for (const auto &stored : recovery_records)
+		if (stored.record.baseline.pid == pid || stored.record.replacement.pid == pid)
+			return player_save_journal_result::replay_blocked;
+	return player_save_journal_result::ok;
+}
+
+struct publication_frame_less
+{
+	using is_transparent = void;
+	bool operator()(const player_save_journal_retained_frame *a,
+			const player_save_journal_retained_frame *b) const
+	{
+		return a->encoded_frame < b->encoded_frame;
+	}
+	bool operator()(const std::vector<uint8_t> &a,
+			const player_save_journal_retained_frame *b) const
+	{
+		return a < b->encoded_frame;
+	}
+	bool operator()(const player_save_journal_retained_frame *a,
+			const std::vector<uint8_t> &b) const
+	{
+		return a->encoded_frame < b;
+	}
+};
+} // namespace
+
+player_save_journal_result player_save_journal_collect_publication_frames(
+	int pid, const player_save_execution_guard::held_publication_reservation &reservation,
+	std::vector<player_save_journal_retained_frame> *output)
+{
+	if (!output)
+		return player_save_journal_result::replay_blocked;
+	output->clear();
+	std::lock_guard<std::mutex> lock(journal_mutex);
+	try
+	{
+		const auto admissible = publication_namespace_locked(pid, reservation);
+		if (admissible != player_save_journal_result::ok)
+			return admissible;
+		scan_result scanned = scan_journal_safe();
+		if (scanned.result != player_save_journal_result::ok)
+			return scanned.result;
+		std::vector<player_save_journal_retained_frame> originals;
+		for (auto &frame : scanned.frames)
+			if (frame.snapshot.pid == pid)
+				originals.push_back({ std::move(frame.snapshot),
+						      std::move(frame.bytes), frame.record_id,
+						      false, false });
+		if (!reservation.matches_pid(pid))
+			return player_save_journal_result::replay_blocked;
+		output->swap(originals);
+		return player_save_journal_result::ok;
+	}
+	catch (...)
+	{
+		return player_save_journal_result::replay_blocked;
+	}
+}
+
+player_save_journal_result player_save_journal_retire_covered_ordinary(
+	int pid, const player_save_execution_guard::held_publication_reservation &reservation,
+	const player_save_covered_revision &proof,
+	const std::vector<player_save_journal_retained_frame> &originals)
+{
+	if (proof.pid_ != pid || proof.reservation_ != &reservation ||
+	    !reservation.matches_pid(pid))
+		return player_save_journal_result::replay_blocked;
+	std::lock_guard<std::mutex> lock(journal_mutex);
+	try
+	{
+		const auto admissible = publication_namespace_locked(pid, reservation);
+		if (admissible != player_save_journal_result::ok)
+			return admissible;
+		std::set<const player_save_journal_retained_frame *, publication_frame_less> exact;
+		for (const auto &original : originals)
+		{
+			if (original.snapshot.pid != pid || original.quarantined ||
+			    original.policy_fenced)
+				return player_save_journal_result::replay_blocked;
+			exact.insert(&original);
+		}
+		scan_result scanned = scan_journal_safe();
+		if (scanned.result != player_save_journal_result::ok)
+			return scanned.result;
+		std::vector<journal_frame> retained;
+		retained.reserve(scanned.frames.size());
+		bool removed = false;
+		for (auto &frame : scanned.frames)
+		{
+			const auto &snapshot = frame.snapshot;
+			const bool covered = snapshot.pid == pid && snapshot.revision &&
+					     snapshot.revision <= proof.revision_ &&
+					     !snapshot.death &&
+					     snapshot.quest_xp_receipts.empty() &&
+					     snapshot.spell_effect_receipts.empty() &&
+					     snapshot.craft_receipts.empty() &&
+					     exact.find(frame.bytes) != exact.end();
+			if (covered)
+				removed = true;
+			else
+				retained.push_back(std::move(frame));
+		}
+		if (!reservation.matches_pid(pid))
+			return player_save_journal_result::replay_blocked;
+		if (!removed)
+			return player_save_journal_result::ok;
+		if (!write_compacted(retained))
+		{
+			++health.checkpoint_failures;
+			return player_save_journal_result::io_failure;
+		}
+		++health.checkpoints;
+		refresh_health(retained);
+		return player_save_journal_result::ok;
+	}
+	catch (...)
+	{
+		++health.checkpoint_failures;
+		return player_save_journal_result::replay_blocked;
+	}
+}
+
+player_save_journal_result player_save_journal_publication_census(
+	int pid, const player_save_execution_guard::held_publication_reservation &reservation)
+{
+	std::lock_guard<std::mutex> lock(journal_mutex);
+	try
+	{
+		const auto admissible = publication_namespace_locked(pid, reservation);
+		if (admissible != player_save_journal_result::ok)
+			return admissible;
+		scan_result scanned = scan_journal_safe();
+		if (scanned.result != player_save_journal_result::ok)
+			return scanned.result;
+		for (const auto &frame : scanned.frames)
+			if (frame.snapshot.pid == pid)
+				return player_save_journal_result::replay_deferred;
+		// A prior covered-frame compaction may have renamed successfully but
+		// failed directory sync. Settle this observed absence before drop ACK;
+		// otherwise a retry could bypass retirement after seeing an empty PID.
+		if (!sync_directory())
+			return player_save_journal_result::io_failure;
+		return reservation.valid() ? player_save_journal_result::ok :
+					     player_save_journal_result::replay_blocked;
+	}
+	catch (...)
+	{
+		return player_save_journal_result::replay_blocked;
+	}
+}
+
 player_save_journal_result player_save_journal_replay(player_save_apply_fn apply, void *context)
 {
 	if (!apply)
 		return player_save_journal_result::replay_blocked;
+	const auto epoch = player_save_execution_guard::current_ownership_epoch();
+	bool replay_has_deferred = false;
 	std::vector<journal_frame> frames;
+	auto collect_frames = [&](std::vector<journal_frame> &out)
 	{
 		std::lock_guard<std::mutex> lock(journal_mutex);
 		if (!health.initialized)
@@ -1599,18 +1959,46 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 							       frame.snapshot.pid &&
 						       !policy_pids.count(frame.snapshot.pid);
 					});
-				if (!resolved_pending_verification)
+				if (!resolved_pending_verification && !epoch)
 					return player_save_journal_result::replay_blocked;
-				// Keep its original active frames in the journal. Only this PID
-				// waits for native recovery verification; unrelated PIDs replay.
+				if (epoch)
+					replay_has_deferred = true;
 				continue;
 			}
-			frames.push_back(std::move(frame));
+			try
+			{
+				out.push_back(std::move(frame));
+			}
+			catch (const std::bad_alloc &)
+			{
+				++health.backpressure;
+				return player_save_journal_result::replay_blocked;
+			}
 		}
-	}
+		return player_save_journal_result::ok;
+	};
+	const auto collected = collect_frames(frames);
+	if (collected != player_save_journal_result::ok)
+		return collected;
+	// Legacy replay retains counted permits. Enabled replay retains exclusive
+	// reservations through both exits; stage their storage before native apply.
+	std::vector<std::pair<int, player_save_execution_guard::permit>> execution_permits;
+	std::vector<player_save_execution_guard::replay_ticket> tickets;
+	std::vector<std::pair<int, player_save_execution_guard::replay_reservation>> reservations;
+	std::optional<player_save_execution_guard::replay_checkpoint_scope> checkpoint_scope;
 	std::map<int, player_revision_t> acknowledged;
 	std::vector<operation_record_proof> proven_operations;
 	std::set<int> runtime_quarantined_pids;
+	int deferred_pid = 0;
+	auto withdraw_pid_proofs = [&](int pid)
+	{
+		acknowledged.erase(pid);
+		proven_operations.erase(std::remove_if(proven_operations.begin(),
+						       proven_operations.end(),
+						       [&](const operation_record_proof &proof)
+						       { return proof.pid == pid; }),
+					proven_operations.end());
+	};
 	auto quarantine_failed_pid = [&](persistence_trace_event trace)
 	{
 		const int pid = trace.pid;
@@ -1621,18 +2009,23 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 		if (quarantined != player_save_journal_result::ok)
 			return quarantined;
 		runtime_quarantined_pids.insert(pid);
-		acknowledged.erase(pid);
-		proven_operations.erase(std::remove_if(proven_operations.begin(),
-						       proven_operations.end(),
-						       [&](const operation_record_proof &proof)
-						       { return proof.pid == pid; }),
-					proven_operations.end());
+		withdraw_pid_proofs(pid);
 		return player_save_journal_result::ok;
+	};
+	auto checkpoint_replayed = [&]()
+	{
+		if (epoch && (!acknowledged.empty() || !proven_operations.empty()))
+		{
+			if (!checkpoint_scope ||
+			    checkpoint_scope->enter() !=
+				    player_save_execution_guard::ownership_status::allowed)
+				return player_save_journal_result::replay_blocked;
+		}
+		return checkpoint_proven(acknowledged, proven_operations);
 	};
 	auto stop_replay = [&]()
 	{
-		const player_save_journal_result drained =
-			checkpoint_proven(acknowledged, proven_operations);
+		const player_save_journal_result drained = checkpoint_replayed();
 		return drained == player_save_journal_result::ok ?
 			       player_save_journal_result::replay_blocked :
 			       drained;
@@ -1648,10 +2041,134 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 					  return left.snapshot.revision < right.snapshot.revision;
 				  return left.record_id < right.record_id;
 			  });
+		size_t pid_count = 0;
+		int previous_pid = 0;
+		for (const auto &frame : frames)
+			if (frame.snapshot.pid != previous_pid)
+			{
+				++pid_count;
+				previous_pid = frame.snapshot.pid;
+			}
+		if (epoch)
+		{
+			tickets.reserve(pid_count);
+			reservations.reserve(pid_count);
+			previous_pid = 0;
+			for (const auto &frame : frames)
+				if (frame.snapshot.pid != previous_pid)
+				{
+					previous_pid = frame.snapshot.pid;
+					tickets.emplace_back(epoch, previous_pid);
+					const auto ticket_status = tickets.back().result();
+					if (ticket_status ==
+					    player_save_execution_guard::ownership_status::busy)
+					{
+						replay_has_deferred = true;
+						continue;
+					}
+					if (ticket_status !=
+					    player_save_execution_guard::ownership_status::allowed)
+						return player_save_journal_result::replay_blocked;
+					player_save_execution_guard::replay_reservation reservation(
+						tickets.back());
+					const auto reserved = reservation.result();
+					if (reserved == player_save_execution_guard::
+								ownership_status::busy ||
+					    reserved == player_save_execution_guard::
+								ownership_status::held)
+					{
+						replay_has_deferred = true;
+						continue;
+					}
+					if (reserved !=
+					    player_save_execution_guard::ownership_status::allowed)
+						return player_save_journal_result::replay_blocked;
+					reservations.emplace_back(previous_pid,
+								  std::move(reservation));
+				}
+			// Initial frames identify candidates only. Apply a fresh observation
+			// after exclusive reservation, never pre-reservation payload copies.
+			std::vector<journal_frame> fresh;
+			const auto refreshed = collect_frames(fresh);
+			if (refreshed != player_save_journal_result::ok)
+				return refreshed;
+			frames.swap(fresh);
+			std::sort(frames.begin(), frames.end(),
+				  [](const auto &left, const auto &right)
+				  {
+					  if (left.snapshot.pid != right.snapshot.pid)
+						  return left.snapshot.pid < right.snapshot.pid;
+					  if (left.snapshot.revision != right.snapshot.revision)
+						  return left.snapshot.revision <
+							 right.snapshot.revision;
+					  return left.record_id < right.record_id;
+				  });
+			if (!reservations.empty())
+			{
+				std::vector<const player_save_execution_guard::replay_reservation *>
+					authorities;
+				authorities.reserve(reservations.size());
+				for (const auto &entry : reservations)
+					authorities.push_back(&entry.second);
+				checkpoint_scope.emplace(authorities);
+				if (!checkpoint_scope->prepared())
+					return player_save_journal_result::replay_blocked;
+			}
+		}
+		else
+		{
+			execution_permits.reserve(pid_count);
+			previous_pid = 0;
+			for (const auto &frame : frames)
+				if (frame.snapshot.pid != previous_pid)
+				{
+					execution_permits.emplace_back(frame.snapshot.pid,
+								       frame.snapshot.pid);
+					previous_pid = frame.snapshot.pid;
+					if (execution_permits.back().second.result() ==
+					    player_save_execution_guard::admission::unavailable)
+						return player_save_journal_result::replay_blocked;
+				}
+		}
+		size_t permit_index = 0;
 		std::unordered_map<std::string, std::vector<const journal_frame *>> identities;
 		for (const journal_frame &frame : frames)
 		{
-			if (runtime_quarantined_pids.count(frame.snapshot.pid))
+			std::optional<player_save_execution_guard::execution_scope> callback_scope;
+			std::optional<player_save_execution_guard::permit> callback_permit;
+			if (epoch)
+			{
+				while (permit_index < reservations.size() &&
+				       reservations[permit_index].first < frame.snapshot.pid)
+					++permit_index;
+				if (permit_index == reservations.size() ||
+				    reservations[permit_index].first != frame.snapshot.pid)
+				{
+					replay_has_deferred = true;
+					continue;
+				}
+				callback_scope.emplace(reservations[permit_index].second);
+				if (callback_scope->result() !=
+				    player_save_execution_guard::ownership_status::allowed)
+					return player_save_journal_result::replay_blocked;
+				callback_permit.emplace(frame.snapshot.pid);
+				if (!*callback_permit)
+					return player_save_journal_result::replay_blocked;
+			}
+			else
+			{
+				while (execution_permits[permit_index].first < frame.snapshot.pid)
+					++permit_index;
+				if (execution_permits[permit_index].second.result() ==
+				    player_save_execution_guard::admission::held)
+				{
+					deferred_pid = frame.snapshot.pid;
+					replay_has_deferred = true;
+					continue;
+				}
+			}
+			if (runtime_quarantined_pids.count(frame.snapshot.pid) ||
+			    frame.snapshot.pid == deferred_pid)
 				continue;
 			const std::string identity = std::to_string(frame.snapshot.pid) + ":" +
 						     std::to_string(frame.snapshot.revision) + ":" +
@@ -1686,6 +2203,14 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 			{
 				applied = apply(frame.snapshot, context);
 			}
+			catch (const std::bad_alloc &)
+			{
+				// Allocation may fail before execution or during possible-commit
+				// verification. Keep the request unresolved, without durability
+				// proof, deferral or a new corruption quarantine.
+				applied = { player_save_apply_outcome::retryable_failure, 0,
+					    ENOMEM };
+			}
 			catch (...)
 			{
 				trace.stage = persistence_trace_stage::save_replay_result;
@@ -1709,13 +2234,28 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 			trace.incident = applied.outcome ==
 					 player_save_apply_outcome::terminal_failure;
 			persistence_trace_record(trace);
+			if (applied.outcome == player_save_apply_outcome::deferred)
+			{
+				// Sorted traversal needs no allocating held-PID set. Withdraw
+				// both earlier proof sources: a newer ordinary durable revision
+				// or an exact receipt must not retire this PID's retained frames.
+				deferred_pid = frame.snapshot.pid;
+				replay_has_deferred = true;
+				withdraw_pid_proofs(deferred_pid);
+				continue;
+			}
 			if (applied.outcome == player_save_apply_outcome::retryable_failure ||
 			    applied.outcome == player_save_apply_outcome::ambiguous_commit)
 			{
+				// Earlier success for this PID cannot retire any of its frames
+				// once a later request is unresolved. Drain only unaffected PIDs.
+				withdraw_pid_proofs(frame.snapshot.pid);
 				{
 					std::lock_guard<std::mutex> lock(journal_mutex);
 					++health.backpressure;
 				}
+				callback_permit.reset();
+				callback_scope.reset();
 				return stop_replay();
 			}
 			if (applied.outcome != player_save_apply_outcome::applied &&
@@ -1769,7 +2309,10 @@ player_save_journal_result player_save_journal_replay(player_save_apply_fn apply
 			std::lock_guard<std::mutex> lock(journal_mutex);
 			++health.replayed;
 		}
-		return checkpoint_proven(acknowledged, proven_operations);
+		const player_save_journal_result checkpointed = checkpoint_replayed();
+		return checkpointed == player_save_journal_result::ok && replay_has_deferred ?
+			       player_save_journal_result::replay_deferred :
+			       checkpointed;
 	}
 	catch (const std::bad_alloc &)
 	{
@@ -1880,6 +2423,15 @@ bool recovery_generation_matches(const player_save_recovery_record &record)
 player_save_journal_result
 player_save_journal_recovery_prepare(const player_save_recovery_record &record)
 {
+	std::optional<player_save_execution_guard::permit> execution;
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		execution.emplace(record.replacement.pid);
+		if (!*execution)
+			return execution->result() == player_save_execution_guard::admission::held ?
+				       player_save_journal_result::replay_deferred :
+				       player_save_journal_result::replay_blocked;
+	}
 	std::lock_guard<std::mutex> lock(journal_mutex);
 	if (!health.initialized || quarantine_state_failed)
 		return player_save_journal_result::not_initialized;
@@ -1969,6 +2521,15 @@ player_save_journal_result
 player_save_journal_recovery_resolve(const player_save_recovery_record &record,
 				     player_save_recovery_verify_fn verify, void *context)
 {
+	std::optional<player_save_execution_guard::permit> execution;
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		execution.emplace(record.replacement.pid);
+		if (!*execution)
+			return execution->result() == player_save_execution_guard::admission::held ?
+				       player_save_journal_result::replay_deferred :
+				       player_save_journal_result::replay_blocked;
+	}
 	// Backend proof may query the journal and must not run under its mutex.
 	try
 	{

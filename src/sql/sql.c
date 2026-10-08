@@ -27,6 +27,12 @@
 #include "sql/sql_telemetry_connection.h"
 #include "sql/sql_exclusion_guard.h"
 #include "sql/sql_economic_runtime.h"
+#include "economy/economic_gameplay_authority.h"
+#include "player/player_save_replay_ownership.h"
+#include "player/player_save_pipeline.h"
+#ifndef __NO_MYSQL__
+#include "player/player_sql_transaction_cleanup.h"
+#endif
 #include "item/item_ownership_runtime.h"
 #include "persistence/persistence_checkpoint.h"
 #include "sql/sql_pool.h"
@@ -34,6 +40,7 @@
 #include "core/runtime_compatibility_contract.h"
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <openssl/sha.h>
 #include <math.h>
 #include <stdarg.h>
@@ -190,6 +197,14 @@ int initialize_mysql()
 	return -1;
 }
 void shutdown_mysql(void) {}
+bool sql_retire_main_save_connection(MYSQL *) noexcept
+{
+	return false;
+}
+bool sql_finish_owned_player_save(MYSQL *, unsigned long) noexcept
+{
+	return false;
+}
 void do_sql(P_char /*ch*/, char * /*argument*/, int /*cmd*/) {}
 int sql_save_player_core(P_char /*ch*/)
 {
@@ -1508,7 +1523,7 @@ int initialize_mysql()
 		return -1;
 	}
 
-	if (!sql_economic_runtime_start())
+	if (!sql_economic_runtime_start_recovery())
 	{
 		logit(LOG_STATUS,
 		      "FATAL: economic lifecycle authority is unavailable or not ready; aborting boot");
@@ -1593,6 +1608,19 @@ void shutdown_mysql(void)
 		mysql_close(DB);
 		DB = NULL;
 	}
+}
+
+bool sql_retire_main_save_connection(MYSQL *original) noexcept
+{
+	if (!original || DB != original || getpid() != sql_main_process_id ||
+	    !nevent_is_game_thread())
+		return false;
+	// Keep the dedicated lifecycle owner intact. Its guard and every future
+	// factory/query see exclusion loss; never free a handle still available as DB.
+	duris_sql_exclusion_guard_state_ref().lost = true;
+	DB = nullptr;
+	mysql_close(original);
+	return true;
 }
 
 /* Handle a query, log possible errors and return results (if available) */
@@ -1709,6 +1737,17 @@ static bool sql_verify_boot_database(void)
 	if (!description_ok)
 	{
 		logit(LOG_STATUS, "FATAL: COMPAT-E009 item-description digest expression mismatch");
+		return false;
+	}
+	result = db_query("%s", RUNTIME_AUCTION_ACTIVE_ITEM_GENERATION_SQL);
+	row = result ? mysql_fetch_row(result) : NULL;
+	bool auction_active_item_ok = row && row[0] && !strcmp(row[0], "1");
+	if (result)
+		mysql_free_result(result);
+	if (!auction_active_item_ok)
+	{
+		logit(LOG_STATUS,
+		      "FATAL: COMPAT-E010 auction current-item generated type/expression mismatch");
 		return false;
 	}
 	if (!sql_verify_metadata_fingerprint())
@@ -2327,13 +2366,13 @@ static bool sql_verify_metadata_fingerprint(void)
 		 "k.ordinal_position=1 AND r.update_rule IN ('NO ACTION','RESTRICT') "
 		 "AND r.delete_rule='CASCADE')";
 	query +=
-		" UNION ALL SELECT CONCAT('X',CHAR(9),table_name,CHAR(9),column_name,CHAR(9),column_type) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation','sql_room_item_payload') UNION ALL SELECT CONCAT('K',CHAR(9),t.table_name,CHAR(9),t.constraint_name,CHAR(9),c.check_clause) FROM information_schema.table_constraints t JOIN information_schema.check_constraints c ON c.constraint_schema=t.constraint_schema AND c.constraint_name=t.constraint_name WHERE t.constraint_schema=DATABASE() AND t.constraint_type='CHECK' AND t.table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation','sql_room_item_payload')";
+		" UNION ALL SELECT CONCAT('X',CHAR(9),table_name,CHAR(9),column_name,CHAR(9),column_type) FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation','sql_room_item_payload','shopkeepers','shopkeeper_item_runtime_state','quest_mobile_native','quest_mobile_native_birth_origin','item_owner_revision','item_current_owner','item_ownership_baseline','economic_pending_claim_source','economic_pending_claim_consumption') UNION ALL SELECT CONCAT('K',CHAR(9),t.table_name,CHAR(9),t.constraint_name,CHAR(9),c.check_clause) FROM information_schema.table_constraints t JOIN information_schema.check_constraints c ON c.constraint_schema=t.constraint_schema AND c.constraint_name=t.constraint_name WHERE t.constraint_schema=DATABASE() AND t.constraint_type='CHECK' AND t.table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation','sql_room_item_payload','shopkeepers','shopkeeper_item_runtime_state','quest_mobile_native','quest_mobile_native_birth_origin','item_owner_revision','item_current_owner','item_ownership_baseline','economic_pending_claim_source','economic_pending_claim_consumption')";
 	const char *server = mysql_get_server_info(DB);
 	if (!server)
 		return false;
 	if (!strstr(server, "MariaDB"))
 		query +=
-			" UNION ALL SELECT CONCAT('E',CHAR(9),table_name,CHAR(9),constraint_name,CHAR(9),enforced) FROM information_schema.table_constraints WHERE constraint_schema=DATABASE() AND constraint_type='CHECK' AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation','sql_room_item_payload')";
+			" UNION ALL SELECT CONCAT('E',CHAR(9),table_name,CHAR(9),constraint_name,CHAR(9),enforced) FROM information_schema.table_constraints WHERE constraint_schema=DATABASE() AND constraint_type='CHECK' AND table_name IN ('economic_baseline_control','economic_baseline_reservation','economic_baseline_witness','economic_sql_lifecycle_installation','economic_sql_activation_receipt','economic_sql_global_activation','sql_room_item_payload','shopkeepers','shopkeeper_item_runtime_state','quest_mobile_native','quest_mobile_native_birth_origin','item_owner_revision','item_current_owner','item_ownership_baseline','economic_pending_claim_source','economic_pending_claim_consumption')";
 	query += " ORDER BY 1";
 	if (mysql_real_query(DB, query.c_str(), query.size()))
 		return false;
@@ -2412,6 +2451,18 @@ int sql_save_player_core(P_char ch)
 	char assoc_name[MAX_STRING_LENGTH];
 	char assoc_name_sql[MAX_STRING_LENGTH * 2 + 1];
 	struct char_player_data *p;
+	const auto epoch = player_save_execution_guard::current_ownership_epoch();
+	if (epoch)
+	{
+		if (ch && IS_MORPH(ch))
+			ch = MORPH_ORIG(ch);
+		// This entry owns only an ordinary positive-PID main-session write.
+		// Creation and a caller-owned transaction require their actual owner.
+		if (!ch || !IS_PC(ch) || GET_PID(ch) <= 0 || !DB || !nevent_is_game_thread() ||
+		    sql_in_transaction() || !player_save_pipeline_save_admitted(GET_PID(ch)) ||
+		    player_sql_idle_error(DB))
+			return 0;
+	}
 	if (ch && IS_PC(ch) && IS_SET(ch->runtime_flags, CHAR_RFLAG_LOAD_DEGRADED))
 	{
 		logit(LOG_DEBUG,
@@ -2423,49 +2474,112 @@ int sql_save_player_core(P_char ch)
 	if (IS_MORPH(ch))
 		ch = MORPH_ORIG(ch);
 	p = &ch->player;
-
-	if (GET_ASSOC(ch) == NULL)
-	{
-		assoc_name[0] = '\0';
-	}
-	else
-	{
-		snprintf(assoc_name, MAX_STRING_LENGTH, "%s", GET_ASSOC(ch)->get_name().c_str());
-	}
-	mysql_str(assoc_name, assoc_name_sql);
-
-	if (IS_SPECIALIZED(ch))
-	{
-	}
-
-	// deactivate any other players with same name (handles renamed characters)
-	snprintf(query, MAX_STRING_LENGTH,
-		 "UPDATE player_data SET active = 0 WHERE name = '%s' and pid != %d", p->name,
-		 GET_PID(ch));
-	db_query(query);
-
-	// Mark this player active and keep its denormalized account identity aligned
-	// with the canonical account projection. Existing rows created before the
-	// transactional status-save linkage are repaired on their next login.
-	if (ch->desc && ch->desc->account && ch->desc->account->acct_name &&
-	    ch->desc->account->acct_name[0])
-	{
-		char account_name_sql[MAX_STRING_LENGTH * 2 + 1];
-		mysql_str(ch->desc->account->acct_name, account_name_sql);
-		if (!qry("UPDATE player_data SET active=1,account_name='%s' WHERE pid=%d",
-			 account_name_sql, GET_PID(ch)))
-			return 0;
-	}
-	else if (!qry("UPDATE player_data SET active=1 WHERE pid=%d", GET_PID(ch)))
-	{
+	if (!epoch && economic_gameplay_authority::active() &&
+	    !player_save_pipeline_save_admitted(GET_PID(ch)))
 		return 0;
+	player_save_execution_guard::resident_claim residence;
+	std::optional<player_save_execution_guard::execution_scope> scope;
+	std::optional<player_save_execution_guard::permit> execution;
+	// Reuse the exact-main-session cleanup/disposal contract. Its destructor
+	// runs before the permit/scope/claim, including exceptions in projections.
+	struct core_save_cleanup
+	{
+		MYSQL *original;
+		unsigned long session;
+		bool pending = true;
+		explicit core_save_cleanup(MYSQL *connection) noexcept
+			: original(connection)
+			, session(mysql_thread_id(connection))
+		{
+		}
+		~core_save_cleanup() noexcept { (void)finish(); }
+		bool finish() noexcept
+		{
+			if (!pending)
+				return true;
+			pending = false;
+			return sql_finish_owned_player_save(original, session);
+		}
+	};
+	std::optional<core_save_cleanup> cleanup;
+	if (epoch)
+	{
+		residence = player_save_execution_guard::resident_claim(epoch, GET_PID(ch));
+		if (!residence)
+			return 0;
+		scope.emplace(residence);
+		if (scope->result() != player_save_execution_guard::ownership_status::allowed)
+			return 0;
+		execution.emplace(GET_PID(ch));
+		if (!*execution)
+			return 0;
+		cleanup.emplace(DB);
 	}
+	auto save = [&]() -> int
+	{
+		if (GET_ASSOC(ch) == NULL)
+		{
+			assoc_name[0] = '\0';
+		}
+		else
+		{
+			snprintf(assoc_name, MAX_STRING_LENGTH, "%s",
+				 GET_ASSOC(ch)->get_name().c_str());
+		}
+		mysql_str(assoc_name, assoc_name_sql);
 
-	// Update frag leaderboard tables for web statistics
-	sql_update_account_character(ch);
-	sql_update_frag_leaderboard(ch);
+		if (IS_SPECIALIZED(ch))
+		{
+		}
 
-	return 1;
+		// deactivate any other players with same name (handles renamed characters)
+		if (!epoch)
+		{
+			snprintf(
+				query, MAX_STRING_LENGTH,
+				"UPDATE player_data SET active = 0 WHERE name = '%s' and pid != %d",
+				p->name, GET_PID(ch));
+			db_query(query);
+		}
+
+		// Mark this player active and keep its denormalized account identity aligned
+		// with the canonical account projection. Existing rows created before the
+		// transactional status-save linkage are repaired on their next login.
+		if (ch->desc && ch->desc->account && ch->desc->account->acct_name &&
+		    ch->desc->account->acct_name[0])
+		{
+			char account_name_sql[MAX_STRING_LENGTH * 2 + 1];
+			mysql_str(ch->desc->account->acct_name, account_name_sql);
+			if (!qry("UPDATE player_data SET active=1,account_name='%s' WHERE pid=%d",
+				 account_name_sql, GET_PID(ch)))
+				return 0;
+		}
+		else if (!qry("UPDATE player_data SET active=1 WHERE pid=%d", GET_PID(ch)))
+		{
+			return 0;
+		}
+
+		// Update frag leaderboard tables for web statistics
+		sql_update_account_character(ch);
+		sql_update_frag_leaderboard(ch);
+
+		return 1;
+	};
+	if (!epoch)
+		return save();
+	int result = 0;
+	try
+	{
+		result = save();
+	}
+	catch (...)
+	{
+		// An exception is not a successful save. Exact-session cleanup or
+		// retirement must finish while this PID remains resident/excluded.
+	}
+	if (!cleanup->finish())
+		result = 0;
+	return result;
 }
 
 /* Save a variable delta. var_type: 1=FRAGS, 2=EXP */
@@ -4847,6 +4961,9 @@ bool sql_verify_auction_engines(void)
 bool sql_pwipe(int code_verify)
 {
 	pwipe_crossed_boundary = false;
+	// Season reset must not erase player authority retained by recovery owners.
+	if (player_save_execution_guard::current_ownership_epoch())
+		return false;
 	logit(LOG_DEBUG, "sql_pwipe: STARTED!");
 	if (code_verify == 1723699)
 	{

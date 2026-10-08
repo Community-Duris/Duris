@@ -10,6 +10,8 @@
 #include "flatfile/flatfile_shop_trade_materialization.h"
 #include "flatfile/flatfile_world_item_repository.h"
 #include "player/player_snapshot_codec.h"
+#include "flatfile/flatfile_player_snapshot_file.h"
+#include "flatfile/flatfile_store.h"
 #include "world/vnum.obj.h"
 
 #include <algorithm>
@@ -1104,6 +1106,291 @@ int main(int argc, char **argv)
 	require(owner_revision(root_path, destruction, &destroyed, &error) == 1 &&
 			destroyed.empty(),
 		"expired collector item was not durably destroyed");
+	{
+		flatfile_authority_lock lock, invalid_lock;
+		require(lock.acquire(root_path, &error), "could not acquire read-only proof lock");
+		critical_apply_result sealed;
+		require(flatfile_collector_repository_verify_retained_locked(
+				root_path, lock, accounted_purchase, &sealed, &error) == 0 &&
+				sealed.outcome == critical_apply_outcome::already_applied &&
+				sealed.error_code == 0 && collector_result(sealed).entry.uid == 101,
+			"read-only purchase retained proof failed: " + error);
+		const auto retained_seal = sealed;
+		// Reuse the current EAI/EAS envelopes and public record codecs. These
+		// disposable faults preserve every checksum/index reference so rejection
+		// depends on native/domain authentication, not a broken storage wrapper.
+		flatfile_accounting_record purchase_record;
+		require(flatfile_accounting_lookup(root_path, lock, accounted_purchase,
+						   &purchase_record,
+						   &error) == flatfile_accounting_status::ok,
+			"could not capture exact purchase record");
+		std::vector<uint8_t> original_record_bytes, index_bytes, segment_bytes;
+		require(flatfile_accounting_record_encode(purchase_record,
+							  &original_record_bytes) ==
+					flatfile_accounting_status::ok &&
+				flatfile_read(root_path + "/economic-evidence", "bucket-d3.eai",
+					      128 * 1024 * 1024, &index_bytes,
+					      &error) == flatfile_read_result::ok &&
+				flatfile_read(root_path + "/economic-evidence", "bucket-d3-0.eas",
+					      128 * 1024 * 1024, &segment_bytes,
+					      &error) == flatfile_read_result::ok,
+			"could not retain original evidence envelopes");
+		auto reseal_evidence = [](std::vector<uint8_t> &bytes)
+		{
+			require(bytes.size() >= 48, "short native evidence control");
+			SHA256(bytes.data() + 48, bytes.size() - 48, bytes.data() + 16);
+		};
+		auto conflicting_record = [&](const flatfile_accounting_record &changed)
+		{
+			std::vector<uint8_t> encoded;
+			require(flatfile_accounting_record_encode(changed, &encoded) ==
+						flatfile_accounting_status::ok &&
+					encoded.size() == original_record_bytes.size(),
+				"fault must remain a canonical structural record with original bounds");
+			auto index = index_bytes, segment = segment_bytes;
+			const auto at = std::search(segment.begin() + 80, segment.end(),
+						    original_record_bytes.begin(),
+						    original_record_bytes.end());
+			require(at != segment.end(),
+				"original record missing from exact native segment");
+			std::copy(encoded.begin(), encoded.end(), at);
+			size_t matches = 0;
+			for (size_t offset = 80; offset + 64 <= index.size(); offset += 64)
+				if (std::equal(accounted_purchase.operation_id.bytes.begin(),
+					       accounted_purchase.operation_id.bytes.end(),
+					       index.begin() + offset))
+				{
+					SHA256(encoded.data(), encoded.size(),
+					       index.data() + offset + 16);
+					++matches;
+				}
+			require(matches == 1, "exact original native index entry is not unique");
+			reseal_evidence(index);
+			reseal_evidence(segment);
+			require(flatfile_atomic_write(root_path + "/economic-evidence",
+						      "bucket-d3-0.eas", segment, &error) &&
+					flatfile_atomic_write(root_path + "/economic-evidence",
+							      "bucket-d3.eai", index, &error),
+				"could not publish private coherent evidence fault");
+			flatfile_accounting_record structural;
+			require(flatfile_accounting_lookup(root_path, lock, accounted_purchase,
+							   &structural, &error) ==
+					flatfile_accounting_status::ok,
+				"coherent fault did not pass the existing structural storage check");
+			critical_apply_result unchanged = retained_seal;
+			require(flatfile_collector_repository_verify_retained_locked(
+					root_path, lock, accounted_purchase, &unchanged, &error) ==
+						EILSEQ &&
+					unchanged.result_payload == retained_seal.result_payload,
+				"native proof accepted a coherent plan/result conflict");
+			std::vector<uint8_t> after;
+			require(flatfile_read(root_path + "/economic-evidence", "bucket-d3-0.eas",
+					      128 * 1024 * 1024, &after,
+					      &error) == flatfile_read_result::ok &&
+					after == segment,
+				"read-only native refusal repaired or mutated evidence");
+			require(flatfile_atomic_write(root_path + "/economic-evidence",
+						      "bucket-d3-0.eas", segment_bytes, &error) &&
+					flatfile_atomic_write(root_path + "/economic-evidence",
+							      "bucket-d3.eai", index_bytes, &error),
+				"could not restore original evidence");
+		};
+		auto changed_result = purchase_record;
+		auto alternate_result = purchased;
+		++alternate_result.wallet.amount[0];
+		std::array<uint8_t, COLLECTOR_COMMAND_RESULT_BYTES> alternate_bytes{};
+		require(collector_command_encode_result(alternate_result, &alternate_bytes),
+			"could not encode valid conflicting result");
+		changed_result.result.assign(alternate_bytes.begin(), alternate_bytes.end());
+		conflicting_record(changed_result);
+		auto changed_plan = purchase_record;
+		economic_accounting_plan alternate_plan;
+		require(economic_plan_decode(changed_plan.plan, &alternate_plan) ==
+				economic_accounting_error::ok,
+			"could not decode original native plan control");
+		for (auto &effect : alternate_plan.accounts)
+			if (economic_account_key_equal(effect.key, wallet_account))
+			{
+				++effect.before[0];
+				++effect.after[0];
+			}
+		require(economic_plan_encode(alternate_plan, &changed_plan.plan) ==
+				economic_accounting_error::ok,
+			"could not encode structurally valid alternate native plan");
+		conflicting_record(changed_plan);
+		require(flatfile_collector_repository_verify_retained_locked(
+				root_path, lock, accounted_expire, &sealed, &error) == 0 &&
+				collector_result(sealed).entry.status == collector::state::expired,
+			"read-only held expiry proof failed");
+		require(flatfile_collector_repository_verify_retained_locked(
+				root_path, lock, stale_purchase, &sealed, &error) == 0 &&
+				sealed.error_code == ESTALE,
+			"read-only rejection retained proof failed");
+		const auto unchanged = sealed;
+		auto absent = collector_command(purchase, 80);
+		require(collector_purchase_accounting_intent(
+				absent, operation(75), wallet_account, bank_account, first.entry,
+				&absent.accounting_intent) == economic_accounting_error::ok,
+			"could not freeze genuine absent Collector command");
+		absent.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+		require(flatfile_collector_repository_verify_retained_locked(
+				root_path, lock, absent, &sealed, &error) == ENOENT &&
+				sealed.result_payload == unchanged.result_payload &&
+				sealed.error_code == unchanged.error_code,
+			"absent operation proof mutated its output");
+		require(flatfile_collector_repository_verify_retained_locked(
+				root_path, invalid_lock, accounted_purchase, &sealed, &error) ==
+				EINVAL,
+			"unowned read-only proof lock accepted");
+		std::vector<fs::path> refs;
+		for (const auto &entry :
+		     fs::directory_iterator(root / "accounting/item_references"))
+			refs.push_back(entry.path());
+		require(!refs.empty(), "missing original reference bucket controls");
+		for (const auto &path : refs)
+			fs::rename(path, path.string() + ".retained");
+		require(flatfile_collector_repository_verify_retained_locked(
+				root_path, lock, accounted_purchase, &sealed, &error) == EILSEQ &&
+				sealed.result_payload == unchanged.result_payload,
+			"read-only proof accepted missing exact item references");
+		for (const auto &path : refs)
+			fs::rename(path.string() + ".retained", path);
+		require(flatfile_collector_repository_verify_retained_locked(
+				root_path, lock, accounted_purchase, &sealed, &error) == 0 &&
+				sealed.result_payload == retained_seal.result_payload,
+			"restored exact native receipt changed");
+		flatfile_collector_purchase_projection current;
+		current.player_save_revision = 999;
+		const auto missing_status =
+			flatfile_collector_repository_read_purchase_projection_locked(
+				root_path, lock, accounted_purchase, &current, &error);
+		require(missing_status == EIO && !fs::exists(root / "players") &&
+				current.player_save_revision == 999,
+			"missing original native snapshot control returned " +
+				std::to_string(missing_status) + " " + error);
+		player_snapshot native{};
+		native.schema_version = PLAYER_SNAPSHOT_SCHEMA_VERSION;
+		native.pid = 42;
+		native.revision = 8;
+		native.components = PLAYER_CHECKPOINT_COMPONENT_ALL;
+		native.encoded_size_bound = 8192;
+		native.status_integers = { { player_status_field::racewar, 1, 0, false } };
+		std::vector<uint8_t> native_bytes;
+		fs::create_directories(root / "players");
+		fs::permissions(root / "players", fs::perms::owner_all);
+		require(flatfile_player_snapshot_encode_file(native, &native_bytes) &&
+				flatfile_atomic_write(
+					flatfile_player_snapshot_file::player_directory(root_path),
+					flatfile_player_snapshot_file::player_filename(42),
+					native_bytes, &error),
+			"could not seed authentic native snapshot control: " + error);
+		const auto snapshot_file =
+			fs::path(flatfile_player_snapshot_file::player_directory(root_path)) /
+			flatfile_player_snapshot_file::player_filename(42);
+		fs::rename(snapshot_file, snapshot_file.string() + ".retained");
+		require(flatfile_collector_repository_read_purchase_projection_locked(
+				root_path, lock, accounted_purchase, &current, &error) == ENOENT &&
+				current.player_save_revision == 999 && !fs::exists(snapshot_file),
+			"missing native player file was fabricated");
+		fs::rename(snapshot_file.string() + ".retained", snapshot_file);
+		const auto projection_status =
+			flatfile_collector_repository_read_purchase_projection_locked(
+				root_path, lock, accounted_purchase, &current, &error);
+		require(projection_status == 0 && current.player_save_revision == 8 &&
+				current.receipt.result_payload == retained_seal.result_payload &&
+				current.result.entry.uid == 101 &&
+				current.result.wallet.amount == purchased.wallet.amount,
+			"current native materialization projection failed code=" +
+				std::to_string(projection_status) + " " + error);
+		flatfile_wallet_mutation later;
+		unsigned int later_code = 0;
+		require(flatfile_player_domain_prepare_wallet(
+				root_path, lock, 42, "beneficiary", 1, purchased.wallet_revision,
+				purchased.bank_revision, -1, true, &later, &later_code,
+				&error) == flatfile_player_domain_result::ok &&
+				!later_code && later.after_images.size() == 2,
+			"could not prepare real native balance controls");
+		std::vector<std::vector<uint8_t>> original_images;
+		for (const auto &image : later.after_images)
+		{
+			std::vector<uint8_t> bytes;
+			require(flatfile_read(root_path + "/domains", image.filename,
+					      128 * 1024 * 1024, &bytes,
+					      &error) == flatfile_read_result::ok,
+				"could not retain original native wallet/bank control bytes");
+			original_images.push_back(std::move(bytes));
+			require(flatfile_atomic_write(root_path + "/domains", image.filename,
+						      image.bytes, &error),
+				"could not stage native wallet/bank control");
+		}
+		const auto original_current_before_wallet = current;
+		require(flatfile_collector_repository_read_purchase_projection_locked(
+				root_path, lock, accounted_purchase, &current, &error) == ESTALE &&
+				current.receipt.result_payload ==
+					original_current_before_wallet.receipt.result_payload,
+			"current proof accepted changed wallet/revision");
+		// Only the shared bank revision advances; the original purchased wallet
+		// remains exact. This is explicitly allowed by the original SQL policy.
+		for (size_t index = 0; index < later.after_images.size(); ++index)
+			if (later.after_images[index].filename.find("player-") == 0)
+				require(flatfile_atomic_write(root_path + "/domains",
+							      later.after_images[index].filename,
+							      original_images[index], &error),
+					"could not restore original wallet authority");
+		require(flatfile_collector_repository_read_purchase_projection_locked(
+				root_path, lock, accounted_purchase, &current, &error) == 0 &&
+				current.result.bank_revision == purchased.bank_revision + 1,
+			"current proof refused permitted later shared-bank revision");
+		for (size_t index = 0; index < later.after_images.size(); ++index)
+			require(flatfile_atomic_write(root_path + "/domains",
+						      later.after_images[index].filename,
+						      original_images[index], &error),
+				"could not restore original wallet/bank authority");
+		std::vector<player_item_snapshot> literal;
+		require(player_item_snapshot_list_decode(purchase.item_blob.data(),
+							 purchase.item_blob_size, &literal) ==
+					player_snapshot_codec_result::ok &&
+				literal.size() == 1,
+			"could not decode original native payload control");
+		native.items = literal;
+		native.items[0].condition += 1;
+		require(flatfile_player_snapshot_encode_file(native, &native_bytes) &&
+				flatfile_atomic_write(
+					flatfile_player_snapshot_file::player_directory(root_path),
+					flatfile_player_snapshot_file::player_filename(42),
+					native_bytes, &error),
+			"could not seed changed native payload control");
+		const auto original_current = current;
+		require(flatfile_collector_repository_read_purchase_projection_locked(
+				root_path, lock, accounted_purchase, &current, &error) == ESTALE &&
+				current.receipt.result_payload ==
+					original_current.receipt.result_payload &&
+				current.player_save_revision ==
+					original_current.player_save_revision,
+			"current proof accepted changed exact native payload");
+		native.items.clear();
+		require(flatfile_player_snapshot_encode_file(native, &native_bytes) &&
+				flatfile_atomic_write(
+					flatfile_player_snapshot_file::player_directory(root_path),
+					flatfile_player_snapshot_file::player_filename(42),
+					native_bytes, &error),
+			"could not restore exact native snapshot control");
+		require(flatfile_collector_repository_read_purchase_projection_locked(
+				root_path, lock, accounted_purchase, &current, &error) == 0,
+			"exact restored native projection failed");
+		std::cout
+			<< "flatfile collector retained and current native proof controls passed\n";
+	}
+	{
+		flatfile_authority_lock lock;
+		require(lock.acquire(cancel_path, &error), "could not lock held cancel proof");
+		critical_apply_result sealed;
+		require(flatfile_collector_repository_verify_retained_locked(
+				cancel_path, lock, accounted_cancel, &sealed, &error) == 0 &&
+				collector_result(sealed).entry.status ==
+					collector::state::cancelled,
+			"read-only exact held cancellation proof failed");
+	}
 	std::cout << "flatfile collector authority tests passed\n";
 	return 0;
 }

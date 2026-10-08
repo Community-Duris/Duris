@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter, defaultdict
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -19,15 +20,46 @@ import sys
 MAX_INPUT_BYTES = 32 * 1024 * 1024
 MAX_ROWS = 100_000
 MAX_OUTPUT_ROWS = 100
-ORDINARY_KINDS = {1, 2, 3, 4, 5, 6}
+OPERATION_COUNT_LIMITS = {
+    "account_count": 3072, "posting_count": 6144,
+    "child_count": 64, "item_event_count": 3000,
+}
+EVIDENCE_INDEX_RANGES = {
+    "effects": {"account_index": (0, 3071)},
+    "postings": {"line_index": (0, 6143), "account_index": (0, 3071),
+                 "child_index": (0, 64)},
+    "children": {"child_index": (1, 64), "parent_index": (0, 63)},
+    "item_references": {"event_index": (0, 2999), "child_index": (0, 64),
+                        "legacy_event_index": (0, 65535)},
+    "ownership_events": {"event_index": (0, 65535)},
+}
+MAPPED_KINDS = {1, 2, 3, 4, 5, 6}
+ORDINARY_KINDS = MAPPED_KINDS | {11}
 UNITS = (1, 10, 100, 1000)
 HEX_ID = re.compile(r"[0-9a-f]{32}\Z")
 HEX_SOURCE_EVENT = re.compile(r"[0-9a-f]{96}\Z")
 HEX_KEY = re.compile(r"[0-9a-f]{80}\Z")
+# Independent policy interpretation; exhaustive native metadata comparisons
+# protect this table without importing the mutation implementation at runtime.
+SOURCE_KINDS_BY_REASON = {
+    3: (16,), 5: (1,), 6: (2,), 7: (3, 7), 8: (3,), 9: (4,), 10: (5,),
+    11: (17,), 12: (17,), 13: (17,), 14: (17,), 15: (17,), 16: (17,),
+    17: (8,), 18: (6,), 19: (6,), 21: (12, 18), 22: (12, 18),
+    24: (17, 18), 26: (13,), 27: (13,), 28: (13,), 29: (13,), 30: (13,),
+    31: (13, 17), 36: (14,), 38: (10,), 41: (16,), 42: (16,),
+    43: (18,), 44: (19,), 45: (6,), 46: (6,),
+}
 TABLES = (
     "operations", "effects", "postings", "children", "item_references",
     "ownership_events", "source_claims", "account_origins", "item_origins", "receipts",
 )
+ORPHAN_EVIDENCE_SOURCES = {
+    "effects": ("economic_accounting_account_effect", "account_index", "orphan_account_effect"),
+    "postings": ("economic_accounting_coin_posting", "line_index", "orphan_coin_posting"),
+    "children": ("economic_accounting_child", "child_index", "orphan_accounting_child"),
+    "item_references": ("economic_accounting_item_reference", "event_index", "orphan_item_reference"),
+    "baseline_reservations": ("economic_baseline_reservation", "identity_kind", "orphan_baseline_reservation"),
+}
 NATIVE_MAPPING_KINDS = (
     "wallet", "bank", "pile", "auction_escrow", "pending_claim", "treasury",
 )
@@ -49,6 +81,17 @@ REGISTRY_PATH = Path(__file__).resolve().parents[1] / "docs/persistence/economy_
 
 class SnapshotError(ValueError):
     pass
+
+
+def same_projection(actual, expected) -> bool:
+    # Expected values come from the bounded native decoder. Preserve their
+    # types and ranges without coercing floats or booleans into integers.
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(expected, (list, tuple)):
+        return len(actual) == len(expected) and all(
+            same_projection(value, original) for value, original in zip(actual, expected))
+    return actual == expected
 
 
 def vector(value: object) -> tuple[int, int, int, int]:
@@ -76,9 +119,30 @@ def account_key(value: object) -> tuple[str, int, int, int]:
     kind = int.from_bytes(raw[18:20], "little")
     identity = int.from_bytes(raw[20:28], "little")
     context = int.from_bytes(raw[28:36], "little")
-    if raw[16:18] != b"\x01\x00" or raw[36:] != bytes(4) or not 1 <= kind <= 10 or not identity:
+    if raw[16:18] != b"\x01\x00" or raw[36:] != bytes(4) or not 1 <= kind <= 11 or not identity:
         raise SnapshotError("invalid account key")
     return raw[:16].hex(), kind, identity, context
+
+
+def decode_source_event(value: object) -> tuple[int, str, str, int, int]:
+    """Decode the native S48 identity without invoking a mutation codec."""
+    if not isinstance(value, str) or not HEX_SOURCE_EVENT.fullmatch(value):
+        raise SnapshotError("invalid source event")
+    raw = bytes.fromhex(value)
+    kind = int.from_bytes(raw[:2], "little")
+    if (raw[2:4] != b"\x01\x00" or not 1 <= kind <= 23 or
+            not any(raw[4:20]) or not any(raw[20:36])):
+        raise SnapshotError("invalid source event")
+    return (kind, raw[4:20].hex(), raw[20:36].hex(),
+            int.from_bytes(raw[36:44], "little"), int.from_bytes(raw[44:48], "little"))
+
+
+def source_kind_allowed(reason: object, kind: object) -> bool:
+    # The current native contract permits every valid kind for other known
+    # reasons. Unknown reasons never inherit that permissive default.
+    return (type(reason) is int and 1 <= reason <= 46 and
+            type(kind) is int and 1 <= kind <= 23 and
+            kind in SOURCE_KINDS_BY_REASON.get(reason, range(1, 24)))
 
 
 def unsigned_revision(value: object) -> bool:
@@ -89,10 +153,88 @@ def item_revision_transition(before: object, after: object) -> bool:
     return unsigned_revision(before) and unsigned_revision(after) and after == before + 1
 
 
+def item_equipment_slot(row: dict, field: str = "equipment_slot") -> int | None:
+    """Keep historical omission unknown; never coerce a recorded slot."""
+    if field not in row:
+        return None
+    value = row[field]
+    if type(value) is not int or not 0 <= value <= 65535:
+        raise SnapshotError("invalid item equipment slot")
+    return value
+
+
+def valid_item_equipment_slot(value: object) -> bool:
+    return type(value) is int and 0 <= value <= 65535
+
+
+def valid_item_custody_position(row: dict, creation_origin: bool = False) -> bool:
+    """Apply independent native position grammar to captured authority rows."""
+    from economic_restore_evidence import EvidenceError, valid_position
+
+    state = row.get("state")
+    if state == "absent" and creation_origin:
+        # A logical creation opening names its UID; its original EAP1 before
+        # witness is the all-zero absent position. Preserve that representation.
+        return (row.get("owner") == [0, 0, 0] and row.get("root") == row.get("uid") and
+                row.get("parent") is None and row.get("revision") == 0 and
+                item_equipment_slot(row) in (None, 0))
+    if not isinstance(state, str) or state not in ("live", "tombstone", "quarantined"):
+        return False
+    owner = row.get("owner")
+    if (not isinstance(owner, list) or len(owner) != 3 or
+            any(type(part) is not int for part in owner) or
+            not unsigned_revision(row.get("uid")) or not row["uid"] or
+            not unsigned_revision(row.get("root")) or not unsigned_revision(row.get("revision")) or
+            any(not unsigned_revision(part) for part in owner[1:]) or
+            (row.get("parent") is not None and
+             (not unsigned_revision(row["parent"]) or not row["parent"]))):
+        return False
+    slot = item_equipment_slot(row)
+    try:
+        # Missing historical equipment remains unknown in the snapshot and in
+        # the separate equipment audit. It supplies no equipment constraint here.
+        valid_position(row["uid"], (owner[0], {"live": 1, "tombstone": 2, "quarantined": 3}[state],
+            *owner[1:], row["root"], row["parent"] or 0, row["revision"], slot or 0))
+    except EvidenceError:
+        return False
+    return True
+
+
 def require_id(value: object, label: str) -> str:
     if not isinstance(value, str) or not HEX_ID.fullmatch(value) or value == "0" * 32:
         raise SnapshotError(f"invalid {label}")
     return value
+
+
+def reservation_orphan_identity(row: dict) -> dict:
+    """Retain untrusted scope and the full non-personal reservation identity."""
+    kind, identity = row.get("row_index"), row.get("identity_id")
+    if type(kind) is not int or kind not in (1, 2) or type(identity) is not int or not 1 <= identity < 2**64:
+        raise SnapshotError("invalid orphan baseline reservation identity")
+    return {"claimed_lineage": require_id(row.get("claimed_lineage"), "orphan claimed lineage"),
+            "claimed_epoch": require_id(row.get("claimed_epoch"), "orphan claimed epoch"),
+            "identity_kind": kind, "identity_id": identity}
+
+
+def pending_claim_consumptions(native: dict) -> list[dict] | None:
+    """Preserve absent historical coverage; validate a declared allocation cut."""
+    rows = native.get("pending_claim_consumptions")
+    coverage = native.get("pending_claim_consumption_coverage")
+    if rows is None and coverage is None:
+        return None
+    if (not isinstance(rows, list) or len(rows) > MAX_ROWS or
+            not isinstance(coverage, dict) or set(coverage) != {"rows"} or
+            type(coverage["rows"]) is not int or coverage["rows"] != len(rows)):
+        raise SnapshotError("invalid pending claim consumption coverage")
+    for row in rows:
+        if (not isinstance(row, dict) or set(row) != {
+                "spending_operation_id", "source_operation_id", "source_slot", "amount"} or
+                type(row["source_slot"]) is not int or not 0 < row["source_slot"] < 2**16 or
+                type(row["amount"]) is not int or not 0 < row["amount"] < 2**64):
+            raise SnapshotError("invalid pending claim consumption row")
+        require_id(row["spending_operation_id"], "pending claim spending operation ID")
+        require_id(row["source_operation_id"], "pending claim original source operation ID")
+    return rows
 
 
 class Reconciler:
@@ -102,6 +244,7 @@ class Reconciler:
         self.limit = limit
         self.exceptions: list[dict] = []
         self.counts: Counter = Counter()
+        self.original_plans_verified = 0
         registry = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
         self.reasons = {row["number"]: row for row in registry["reasons"]}
         self.realized_price_reasons = {
@@ -114,16 +257,16 @@ class Reconciler:
         if len(self.exceptions) < self.limit:
             safe = {}
             for field, value in ids.items():
-                if field in ("operation_id",) and isinstance(value, str) and HEX_ID.fullmatch(value):
+                if field in ("operation_id", "claimed_lineage", "claimed_epoch") and isinstance(value, str) and HEX_ID.fullmatch(value):
                     safe[field] = value
                 elif field == "account_key" and isinstance(value, str) and HEX_KEY.fullmatch(value):
                     safe[field] = value
                 elif field == "source_event" and isinstance(value, str) and re.fullmatch(r"[0-9a-f]{96}", value):
                     safe[field] = value
                 elif field in ("uid", "parent_uid", "child_index", "line_index", "source_slot",
-                               "net_copper", "ship_id", "guild_id") and type(value) is int:
+                               "net_copper", "ship_id", "guild_id", "identity_kind", "identity_id") and type(value) is int:
                     safe[field] = value
-                elif field == "table" and value in TABLES:
+                elif field == "table" and isinstance(value, str) and (value in TABLES or value in ORPHAN_EVIDENCE_SOURCES):
                     safe[field] = value
                 elif field == "scope" and value == "snapshot":
                     safe[field] = value
@@ -160,6 +303,7 @@ class Reconciler:
         if snapshot.get("quiescent") is not True:
             self.emit("unfenced_snapshot", scope="snapshot")
         tables = {name: self.table(snapshot, name) for name in TABLES}
+        self.audit_orphan_evidence(snapshot)
         native = snapshot.get("native")
         if not isinstance(native, dict):
             raise SnapshotError("missing native authority")
@@ -167,6 +311,25 @@ class Reconciler:
         self.audit_guild_treasuries(snapshot.get("backend"), native)
         holdings = self.table(native, "holdings")
         items = self.table(native, "items")
+        # Validate before indexing: Python considers float/bool UID aliases the
+        # same dictionary key as native integers. These are immutable position
+        # projections, not values to coerce into an opening or current owner.
+        for positions in (tables["item_origins"], items):
+            for row in positions:
+                item_equipment_slot(row)
+                owner = row.get("owner")
+                if (not unsigned_revision(row.get("uid")) or not row["uid"] or
+                        not unsigned_revision(row.get("root")) or "parent" not in row or
+                        (row["parent"] is not None and
+                         (not unsigned_revision(row["parent"]) or not row["parent"])) or
+                        not isinstance(owner, list) or len(owner) != 3 or
+                        type(owner[0]) is not int or not 0 <= owner[0] <= 12 or
+                        any(not unsigned_revision(value) for value in owner[1:])):
+                    raise SnapshotError("invalid item position")
+                slot = item_equipment_slot(row)
+                if slot and (owner[0] not in (1, 12) or row["parent"] is not None or
+                             row.get("state") != "live" or (owner[0] == 12 and slot > 43)):
+                    raise SnapshotError("invalid item equipment position")
         unreferenced_uid_events = native.get("unreferenced_uid_events")
         uid_event_coverage = native.get("uid_event_coverage")
         if unreferenced_uid_events is None and snapshot.get("backend") == "sql_partial":
@@ -203,7 +366,7 @@ class Reconciler:
                          (type(parent_uid) is not int or not 0 < parent_uid < 2**64)) or
                         not isinstance(owner, list) or len(owner) != 3 or
                         any(type(value) is not int or value < 0 for value in owner) or
-                        event.get("state") not in ("live", "tombstone") or
+                        event.get("state") not in ("live", "tombstone", "quarantined") or
                         event.get("action") not in ("create", "destroy", "move")):
                     raise SnapshotError("invalid unreferenced UID event")
                 key = (operation_id, event_index)
@@ -213,6 +376,9 @@ class Reconciler:
                 self.emit("unreferenced_uid_event", operation_id=operation_id, uid=uid)
         pending_sources = native.get("pending_claim_sources")
         pending_source_coverage = native.get("pending_claim_source_coverage")
+        partial_amounts = Counter()
+        for row in pending_claim_consumptions(native) or []:
+            partial_amounts[(row["source_operation_id"], row["source_slot"])] += row["amount"]
         if pending_sources is None and snapshot.get("backend") == "sql_partial":
             self.emit("missing_pending_claim_source_coverage", scope="snapshot")
         elif pending_sources is not None or pending_source_coverage is not None:
@@ -240,6 +406,7 @@ class Reconciler:
             invalid_source_roots = 0
             invalid_consumer_roots = 0
             open_claim_amounts = Counter()
+            open_rows = consumed_rows = 0
             for source in pending_sources:
                 source_operation = require_id(source.get("source_operation_id"),
                                               "pending claim source operation ID")
@@ -290,6 +457,9 @@ class Reconciler:
                 if claim_operation is not None:
                     require_id(claim_operation, "pending claim consumer operation ID")
                 source_key = (source_operation, slot)
+                remaining = 0 if claim_operation is not None else amount - partial_amounts[source_key]
+                open_rows += remaining > 0
+                consumed_rows += remaining <= 0
                 if source_key in seen_sources:
                     self.emit("duplicate_pending_claim_source", operation_id=source_operation,
                               source_slot=slot)
@@ -307,7 +477,7 @@ class Reconciler:
                     account is not None and native_id_valid and
                     mapping_native_id == beneficiary and
                     active_id_valid and
-                    (claim_operation is not None or
+                    (remaining <= 0 or
                      mapping_active_native_id == beneficiary))
                 if (type(mapping_valid) is not bool or
                         (account is None and
@@ -327,7 +497,10 @@ class Reconciler:
                     if key[0] != lineage or key[1] != 5:
                         raise SnapshotError("pending claim source maps to another account kind")
                     if mapping_valid and claim_operation is None:
-                        open_claim_amounts[account] += amount
+                        open_claim_amounts[account] += remaining
+            if (open_rows != pending_source_coverage["open_rows"] or
+                    consumed_rows != pending_source_coverage["consumed_rows"]):
+                raise SnapshotError("pending claim source remaining coverage mismatch")
             if invalid_mappings != pending_source_coverage["invalid_account_mappings"]:
                 raise SnapshotError("pending claim source mapping coverage mismatch")
             if invalid_source_roots != pending_source_coverage["invalid_source_roots"]:
@@ -390,6 +563,21 @@ class Reconciler:
             self.emit_count("lineage_missing_required_source_event",
                             source_policy_coverage["missing_required_source_events"])
 
+        for operation in tables["operations"]:
+            result_code = operation.get("result_code")
+            if type(result_code) is not int or not 0 <= result_code < 2**32:
+                raise SnapshotError("invalid operation result_code")
+            for field, maximum in OPERATION_COUNT_LIMITS.items():
+                value = operation.get(field)
+                if type(value) is not int or not 0 <= value <= maximum:
+                    raise SnapshotError("invalid operation " + field)
+        for name, fields in EVIDENCE_INDEX_RANGES.items():
+            for row in tables[name]:
+                for field, (minimum, maximum) in fields.items():
+                    value = row.get(field)
+                    if type(value) is not int or not minimum <= value <= maximum:
+                        raise SnapshotError("invalid " + name + " " + field)
+        self.audit_child_identities(tables["children"])
         operations = self.index(tables["operations"], ("operation_id",), "duplicate_operation")
         effects = self.index(tables["effects"], ("operation_id", "account_index"), "duplicate_effect")
         postings = self.index(tables["postings"], ("operation_id", "line_index"), "duplicate_posting")
@@ -407,7 +595,8 @@ class Reconciler:
         native_items = self.index(items, ("uid",), "duplicate_native_uid")
         self.audit_mapping_creations(snapshot.get("backend"), lineage, native, origins,
                                      operations, effects, epoch)
-        self.audit_pending_claim_consumers(snapshot.get("backend"), lineage, native)
+        self.audit_pending_claim_consumers(snapshot.get("backend"), lineage, native,
+                                           epoch, operations, list(effects.values()))
         self.audit_coin_pile_mappings(snapshot.get("backend"), native,
                                       native_holdings, native_items, lineage)
         self.audit_uid_scope_coverage(snapshot.get("backend"), native,
@@ -467,7 +656,7 @@ class Reconciler:
                     self.emit("invalid_realized_price", operation_id=op_id)
                 elif op.get("outcome") != "committed":
                     self.emit("rejected_realized_price", operation_id=op_id)
-            policy = self.reasons.get(op.get("reason"))
+            policy = self.reasons.get(op.get("reason")) if type(op.get("reason")) is int else None
             if policy is None:
                 self.emit("unknown_policy_reason", operation_id=op_id)
             elif price is not None and not policy.get("realized_price_required", False):
@@ -483,10 +672,16 @@ class Reconciler:
                   type(receipt.get("committed_at_present")) is not bool or
                   not receipt.get("committed_at_present")):
                 self.emit("receipt_mismatch", operation_id=op_id)
-            for name, field in (("effects", "account_count"), ("postings", "posting_count"),
-                                ("children", "child_count"), ("item_references", "item_event_count")):
+            for name, field, index_field, first in (
+                    ("effects", "account_count", "account_index", 0),
+                    ("postings", "posting_count", "line_index", 0),
+                    ("children", "child_count", "child_index", 1),
+                    ("item_references", "item_event_count", "event_index", 0)):
                 if len(by_op[name][op_id]) != op.get(field):
                     self.emit("evidence_count_mismatch", operation_id=op_id, table=name)
+                elif sorted(row[index_field] for row in by_op[name][op_id]) != list(
+                        range(first, first + op[field])):
+                    self.emit("evidence_index_mismatch", operation_id=op_id, table=name)
             if op.get("outcome") == "rejected" and any(by_op[name][op_id] for name in by_op):
                 self.emit("rejected_operation_has_effects", operation_id=op_id)
             total = sum(copper(vector(row.get("delta"))) for row in by_op["postings"][op_id])
@@ -495,23 +690,33 @@ class Reconciler:
             source = op.get("source_event")
             if policy and policy.get("source_event_required") and source is None and op.get("outcome") == "committed":
                 self.emit("missing_source_event", operation_id=op_id)
-            if source is not None and op.get("outcome") == "committed":
-                if not isinstance(source, str) or not re.fullmatch(r"[0-9a-f]{96}", source):
+            if source is not None:
+                try:
+                    kind = decode_source_event(source)[0]
+                except SnapshotError:
                     self.emit("invalid_source_event", operation_id=op_id)
+                else:
+                    if policy and not source_kind_allowed(op.get("reason"), kind):
+                        self.emit("unauthorized_source_kind", operation_id=op_id)
+            if source is not None and op.get("outcome") == "committed":
                 claim = claims.get((lineage, source))
                 if not claim or claim.get("operation_id") != op_id:
                     self.emit("missing_source_claim", operation_id=op_id)
-            if policy and policy.get("original_operation_required") and (op.get("original_operation_id"),) not in operations:
+            original = op.get("original_operation_id")
+            original_valid = True
+            if original is not None:
+                try:
+                    require_id(original, "original operation ID")
+                except SnapshotError:
+                    original_valid = False
+                else:
+                    original_valid = original != op_id
+                if not original_valid:
+                    self.emit("invalid_original_operation", operation_id=op_id)
+            if (original_valid and policy and policy.get("original_operation_required") and
+                    (original,) not in operations):
                 self.emit("missing_original_operation", operation_id=op_id)
             child_indexes = {row.get("child_index") for row in by_op["children"][op_id]}
-            for row in by_op["children"][op_id]:
-                index = row.get("child_index")
-                parent = row.get("parent_index")
-                if type(index) is not int or not 1 <= index <= 64 or type(parent) is not int or not 0 <= parent < index:
-                    self.emit("invalid_child_link", operation_id=op_id, child_index=index)
-                child_id = row.get("child_operation_id")
-                if child_id == op_id or not isinstance(child_id, str):
-                    self.emit("invalid_child_link", operation_id=op_id, child_index=index)
             for name in ("postings", "item_references"):
                 for row in by_op[name][op_id]:
                     child_index = row.get("child_index", 0)
@@ -525,15 +730,24 @@ class Reconciler:
             if link not in linked_children:
                 self.emit("unlinked_child", operation_id=link[0], child_index=link[1])
         for claim in claims.values():
+            kind = None
+            source_parts = None
+            try:
+                source_parts = decode_source_event(claim.get("source_event"))
+                kind = source_parts[0]
+            except SnapshotError:
+                self.emit("invalid_source_claim", operation_id=claim.get("operation_id"))
             op = operations.get((claim.get("operation_id"),))
             if (op is not None and claim.get("operation_reason") is not None and
-                    claim.get("operation_reason") != op.get("reason")):
+                    (type(claim.get("operation_reason")) is not int or
+                     claim.get("operation_reason") != op.get("reason"))):
                 self.emit("source_claim_reason_mismatch",
                           operation_id=claim.get("operation_id"))
-            if claim.get("operation_reason") == 38:
-                self.emit("baseline_source_claim", operation_id=claim.get("operation_id"),
-                          source_event=claim.get("source_event"))
-                continue
+            reason = op.get("reason") if op is not None else claim.get("operation_reason")
+            if type(reason) is not int or reason not in self.reasons:
+                self.emit("unknown_source_claim_policy", operation_id=claim.get("operation_id"))
+            elif kind is not None and not source_kind_allowed(reason, kind):
+                self.emit("unauthorized_source_claim", operation_id=claim.get("operation_id"))
             inbox_receipt = claim.get("operation_inbox_receipt")
             durable_receipt = (
                 isinstance(inbox_receipt, dict) and
@@ -548,6 +762,29 @@ class Reconciler:
                 type(inbox_receipt.get("committed_at_present")) is bool and
                 inbox_receipt.get("committed_at_present") is True and
                 claim.get("operation_result_code") == 0)
+            if reason == 38:
+                witness = claim.get("baseline_witness")
+                witnessed = (
+                    snapshot.get("backend") == "sql_partial" and kind == 10 and
+                    isinstance(witness, dict) and
+                    set(witness) == {"lineage", "epoch", "operation_id", "source_event"} and
+                    witness.get("lineage") == lineage and
+                    witness.get("epoch") == claim.get("operation_epoch") and
+                    isinstance(witness.get("epoch"), str) and
+                    HEX_ID.fullmatch(witness["epoch"]) is not None and witness["epoch"] != "0" * 32 and
+                    source_parts[2] == witness["epoch"] and source_parts[4] == 0 and
+                    witness.get("operation_id") == claim.get("operation_id") and
+                    isinstance(witness.get("operation_id"), str) and
+                    HEX_ID.fullmatch(witness["operation_id"]) is not None and witness["operation_id"] != "0" * 32 and
+                    witness.get("source_event") == claim.get("source_event"))
+                if not witnessed:
+                    self.emit("baseline_source_claim", operation_id=claim.get("operation_id"),
+                              source_event=claim.get("source_event"))
+                elif (claim.get("lineage") != lineage or claim.get("operation_lineage") != lineage or
+                      claim.get("operation_source_event") != claim.get("source_event") or
+                      claim.get("operation_outcome") != "committed" or not durable_receipt):
+                    self.emit("orphan_source_claim", operation_id=claim.get("operation_id"))
+                continue
             linked = (op and op.get("outcome") == "committed" and
                       op.get("source_event") == claim.get("source_event"))
             if op and "operation_epoch" in claim:
@@ -588,10 +825,203 @@ class Reconciler:
         self.audit_items(ownership, references, item_origins, native_items,
                          {row.get("uid") for row in (native.get("uid_history_events") or [])
                           if isinstance(row, dict)})
+        self.audit_original_plans(tables, by_op, ownership)
         return {"exception_count": sum(self.counts.values()), "exception_counts": dict(sorted(self.counts.items())),
                 "exceptions": self.exceptions, "truncated": sum(self.counts.values()) > len(self.exceptions),
                 "checked": {name: len(tables[name]) for name in TABLES} |
-                           {"native_holdings": len(holdings), "native_items": len(items)}}
+                           {"native_holdings": len(holdings), "native_items": len(items),
+                            "original_plans_verified": self.original_plans_verified}}
+
+    def audit_original_plans(self, tables: dict, by_op: dict, ownership: dict) -> None:
+        """Bind projections to retained EAP1 bytes, independently of mutation code.
+
+        Every committed root needs its original plan, including model fixtures.
+        Missing proof is never inferred from a backend tag or a balanced cut.
+        EAI1 facts and command/receipt payload authentication remain separate.
+        """
+        import struct
+        from economic_restore_evidence import MAX_PLAN, decode_plan
+
+        total = 0
+        for operation in tables["operations"]:
+            encoded = operation.get("canonical_plan")
+            op_id = operation.get("operation_id")
+            if operation.get("outcome") != "committed":
+                if encoded is not None or operation.get("plan_digest") is not None:
+                    self.emit("rejected_original_plan", operation_id=op_id)
+                continue
+            if encoded is None:
+                self.emit("missing_original_plan", operation_id=op_id)
+                continue
+            if (not isinstance(encoded, str) or len(encoded) < 512 or len(encoded) > MAX_PLAN * 2 or
+                    len(encoded) % 2 or re.fullmatch(r"[0-9a-f]+", encoded) is None):
+                self.emit("invalid_original_plan", operation_id=op_id)
+                continue
+            total += len(encoded) // 2
+            if total > MAX_INPUT_BYTES:
+                raise SnapshotError("original plans exceed audit input limit")
+            try:
+                plan = decode_plan(bytes.fromhex(encoded))
+            except (ValueError, struct.error):
+                self.emit("invalid_original_plan", operation_id=op_id)
+                continue
+            meta = plan["metadata"]
+            expected_metadata = tuple(value.hex() if isinstance(value, bytes) else value for value in meta)
+            original = operation.get("original_operation_id")
+            if original is None:
+                original = "0" * 32
+            metadata = (operation.get("lineage"), operation.get("epoch"), op_id, original,
+                        *(operation.get(field) for field in ("accounting_version", "writer_id", "policy_version",
+                                                            "compiler_version", "actor_kind", "actor_id", "reason")),
+                        operation.get("source_event"))
+            counts = tuple(operation.get(field) for field in
+                           ("account_count", "posting_count", "child_count", "before_witness_count",
+                            "after_witness_count", "item_event_count"))
+            valid = True
+
+            def check(condition: bool, code: str) -> None:
+                nonlocal valid
+                if not condition:
+                    valid = False
+                    self.emit(code, operation_id=op_id)
+
+            original_valid = operation.get("original_operation_id") is None or (
+                isinstance(original, str) and HEX_ID.fullmatch(original) is not None and
+                original != "0" * 32 and original != op_id)
+            check(metadata == expected_metadata and original_valid and all(type(value) is int for value in metadata[4:11]),
+                  "original_plan_metadata_mismatch")
+            check(counts == plan["counts"] and all(type(value) is int for value in counts),
+                  "original_plan_count_mismatch")
+            check(all(operation.get(field) == plan[field].hex()
+                      for field in ("plan_digest", "intent_digest", "domain_digest")),
+                  "original_plan_digest_mismatch")
+            if not valid:
+                # A foreign or unbound capsule cannot authenticate this root's
+                # details. Preserve the root findings without cascading them.
+                continue
+
+            def projected(name: str, index: str, fields: tuple) -> list:
+                return [[row.get(field) for field in fields]
+                        for row in sorted(by_op[name].get(op_id, []), key=lambda row: row[index])]
+
+            expected = [[i, key.hex(), list(before), list(after), old, new]
+                        for i, (key, before, after, old, new) in enumerate(plan["effects"])]
+            check(same_projection(projected("effects", "account_index", (
+                "account_index", "account_key", "before", "after", "before_revision", "after_revision")), expected),
+                  "original_plan_account_mismatch")
+            expected = [[i, event, account, child, list(delta), amount]
+                        for i, (event, account, child, delta, amount) in enumerate(plan["postings"])]
+            check(same_projection(projected("postings", "line_index", (
+                "line_index", "event_index", "account_index", "child_index", "delta", "copper_value")), expected),
+                  "original_plan_posting_mismatch")
+            expected = [[i + 1, child.hex(), domain, discriminator, parent, relationship]
+                        for i, (child, domain, discriminator, parent, relationship) in enumerate(plan["children"])]
+            check(same_projection(projected("children", "child_index", (
+                "child_index", "child_operation_id", "domain_id", "discriminator", "parent_index", "relationship")), expected),
+                  "original_plan_child_mismatch")
+            expected = [[i, event, child, uid, old[6], new[6]]
+                        for i, (event, child, uid, old, new) in enumerate(plan["events"])]
+            references = sorted(by_op["item_references"].get(op_id, []), key=lambda row: row["event_index"])
+            check(same_projection([[row.get(field) for field in (
+                "line_index", "event_index", "child_index", "uid", "before_revision", "after_revision")]
+                for row in references], expected),
+                  "original_plan_item_mismatch")
+            custody = []
+            for row in references:
+                event = ownership.get((row.get("legacy_operation_id"), row.get("legacy_event_index")), {})
+                custody.append([event.get(field) for field in ("uid", "root", "parent", "from_owner", "owner",
+                                                               "revision", "from_equipment_slot", "to_equipment_slot")])
+            expected = [[uid, new[4], new[5] or None,
+                         [7, 0, 0] if old[1] == 0 else [old[0], old[2], old[3]],
+                         [new[0], new[2], new[3]], new[6], old[7], new[7]]
+                        for _, _, uid, old, new in plan["events"]]
+            check(same_projection(custody, expected),
+                  "original_plan_custody_mismatch")
+            if valid:
+                self.original_plans_verified += 1
+
+    def audit_child_identities(self, rows: list[dict]) -> None:
+        """Reconstruct original child identities without a mutation codec.
+
+        Check raw rows before slot indexing so a duplicate cannot hide invalid
+        identity evidence. Older exports lacking persisted derivation facts are
+        explicitly unverified; never infer a domain/discriminator from an ID.
+        """
+        indexed = {(row.get("operation_id"), row["child_index"]): row for row in rows}
+        seen: set[str] = set()
+        for row in rows:
+            root, index = row.get("operation_id"), row["child_index"]
+            ids = {"operation_id": root, "child_index": index}
+            try:
+                identity = require_id(row.get("child_operation_id"), "child operation ID")
+            except SnapshotError:
+                self.emit("invalid_child_link", **ids)
+                continue
+            if identity == root:
+                self.emit("invalid_child_link", **ids)
+                continue
+            if identity in seen:
+                self.emit("duplicate_child_operation", **ids)
+            seen.add(identity)
+            if not {"domain_id", "discriminator", "relationship", "receipt_operation_id"} <= row.keys():
+                self.emit("missing_child_identity_evidence", **ids)
+                continue
+            domain, discriminator = row["domain_id"], row["discriminator"]
+            parent, relationship = row["parent_index"], row["relationship"]
+            if (type(domain) is not int or not 1 <= domain < 2**32 or
+                    type(discriminator) is not int or not 0 <= discriminator < 2**64 or
+                    type(relationship) is not int or relationship != 1 or not 0 <= parent < index):
+                self.emit("invalid_child_link", **ids)
+                continue
+            parent_row = indexed.get((root, parent)) if parent else None
+            if parent and parent_row is None:
+                self.emit("invalid_child_link", **ids)
+                continue
+            try:
+                original_parent = require_id(parent_row["child_operation_id"] if parent else root,
+                                             "child parent operation ID")
+                if row["receipt_operation_id"] is not None:
+                    if require_id(row["receipt_operation_id"], "child receipt operation ID") != identity:
+                        raise SnapshotError("foreign child receipt operation ID")
+            except SnapshotError:
+                self.emit("invalid_child_link", **ids)
+                continue
+            expected = hashlib.sha256(bytes.fromhex(original_parent) +
+                                      domain.to_bytes(4, "little") +
+                                      discriminator.to_bytes(8, "little")).digest()[:16].hex()
+            if identity != expected:
+                self.emit("child_identity_mismatch", **ids)
+
+    def audit_orphan_evidence(self, snapshot: dict) -> None:
+        rows = snapshot.get("orphan_evidence")
+        coverage = snapshot.get("orphan_evidence_coverage")
+        if rows is None and coverage is None:
+            if snapshot.get("backend") == "sql_partial":
+                self.emit("missing_orphan_evidence_coverage", scope="snapshot")
+            return
+        rows = self.table(snapshot, "orphan_evidence")
+        counts = dict.fromkeys(ORPHAN_EVIDENCE_SOURCES, 0)
+        for row in rows:
+            table = row.get("table")
+            if not isinstance(table, str) or table not in ORPHAN_EVIDENCE_SOURCES:
+                raise SnapshotError("invalid orphan evidence table")
+            operation_id = require_id(row.get("operation_id"), "orphan operation ID")
+            if type(row.get("row_index")) is not int or not 0 <= row["row_index"] <= 65535:
+                raise SnapshotError("invalid orphan evidence index")
+            counts[table] += 1
+            if table == "baseline_reservations":
+                self.emit(ORPHAN_EVIDENCE_SOURCES[table][2], operation_id=operation_id,
+                          table=table, **reservation_orphan_identity(row))
+            else:
+                self.emit(ORPHAN_EVIDENCE_SOURCES[table][2], operation_id=operation_id,
+                          table=table, line_index=row["row_index"])
+        if (not isinstance(coverage, dict) or set(coverage) != {"scope", "table_counts"} or
+                coverage["scope"] != "database" or not isinstance(coverage["table_counts"], dict) or
+                set(coverage["table_counts"]) != set(counts) or
+                any(type(value) is not int or value < 0
+                    for value in coverage["table_counts"].values()) or
+                coverage["table_counts"] != counts):
+            raise SnapshotError("invalid orphan evidence coverage")
 
     def audit_ship_coffers(self, backend: object, native: dict) -> None:
         rows, coverage = native.get("ship_coffers"), native.get("ship_coffer_coverage")
@@ -768,6 +1198,14 @@ class Reconciler:
                 len(set(baseline_operation_ids)) != len(baseline_operation_ids)):
             raise SnapshotError("invalid baseline operation identity coverage")
         baseline_operation_ids = set(baseline_operation_ids)
+        # Compare selected creators with their own evidence without rescanning
+        # every effect for every root. Keep references; normalize only effects
+        # actually consumed by a selected creator below.
+        effects_by_operation = defaultdict(dict)
+        if effects is not None:
+            for key, effect in effects.items():
+                if isinstance(key, tuple) and len(key) == 2:
+                    effects_by_operation[key[0]][key[1]] = effect
         roots_by_id = {}
         for root in roots:
             operation_id = require_id(root.get("operation_id"), "mapping creator operation ID")
@@ -834,11 +1272,10 @@ class Reconciler:
                         effect.get("account_index"): effect for effect in root_effects
                     }
                     evidence_effects = {
-                        key[1]: {field: value.get(field) for field in (
+                        index: {field: value.get(field) for field in (
                             "account_index", "account_key", "before", "after",
                             "before_revision", "after_revision")}
-                        for key, value in effects.items()
-                        if isinstance(key, tuple) and len(key) == 2 and key[0] == operation_id
+                        for index, value in effects_by_operation.get(operation_id, {}).items()
                     }
                     if (len(root_effects_by_index) != len(root_effects) or
                             root_effects_by_index != evidence_effects):
@@ -855,7 +1292,7 @@ class Reconciler:
             creator_id = mapping.get("creating_operation_id")
             if (type(mapping_id) is not int or not 0 < mapping_id < 2**64 or
                     mapping_id in seen_mapping_ids or type(kind) is not int or
-                    kind not in ORDINARY_KINDS or type(context) is not int or
+                    kind not in MAPPED_KINDS or type(context) is not int or
                     not 0 <= context < 2**64 or
                     type(native_id) is not int or not 0 < native_id < 2**64 or
                     (active_native_id is not None and
@@ -933,7 +1370,12 @@ class Reconciler:
                      if row.get("creating_operation_id") is not None})):
             raise SnapshotError("mapping creation coverage mismatch")
     def audit_pending_claim_consumers(self, backend: object, lineage: str,
-                                      native: dict) -> None:
+                                      native: dict, selected_epoch: str | None = None,
+                                      operations: dict | None = None,
+                                      effects: list[dict] | None = None) -> None:
+        partial_rows = pending_claim_consumptions(native)
+        if partial_rows is None and backend == "sql_partial":
+            self.emit("missing_pending_claim_consumption_coverage", scope="snapshot")
         rows = native.get("pending_claim_consumers")
         coverage = native.get("pending_claim_consumer_coverage")
         source_records = native.get("pending_claim_sources")
@@ -959,7 +1401,26 @@ class Reconciler:
         seen = set()
         missing = mismatched = 0
         source_totals = defaultdict(lambda: [0, 0])
+        account_totals = Counter()
+        selected_debits = defaultdict(list)
+        for effect in effects or []:
+            key = effect.get("account_key")
+            if account_key(key)[1] == 5:
+                before, after = vector(effect.get("before")), vector(effect.get("after"))
+                if before[0] > after[0]:
+                    selected_debits[effect["operation_id"]].append({"account_key": key,
+                        "amount": before[0]-after[0], "before": list(before), "after": list(after)})
+        sources = {}
         for source in source_records:
+            source_id = require_id(source.get("source_operation_id"), "pending claim original source operation ID")
+            slot = source.get("source_slot")
+            if type(slot) is not int or not 0 < slot < 2**16:
+                raise SnapshotError("invalid pending claim source slot")
+            identity = (source_id, slot)
+            sources[identity] = source if identity not in sources else None
+            source_account = source.get("account_key")
+            if source_account is not None and account_key(source_account)[:2] != (lineage, 5):
+                raise SnapshotError("invalid pending claim source account")
             consumer_id = source.get("claim_operation_id")
             if consumer_id is None:
                 continue
@@ -969,8 +1430,38 @@ class Reconciler:
                 raise SnapshotError("invalid pending claim source amount")
             source_totals[consumer_id][0] += 1
             source_totals[consumer_id][1] += amount
+            account_totals[(consumer_id, source.get("account_key"))] += amount
             if source_totals[consumer_id][1] >= 2**63:
                 raise SnapshotError("pending claim source amount overflow")
+        seen_consumptions, partial_totals = set(), Counter()
+        for row in partial_rows or []:
+            source_identity = (row["source_operation_id"], row["source_slot"])
+            consumer_id = row["spending_operation_id"]
+            identity = (consumer_id, *source_identity)
+            if identity in seen_consumptions:
+                self.emit("duplicate_pending_claim_consumption", operation_id=consumer_id,
+                          source_operation_id=source_identity[0], source_slot=source_identity[1])
+            seen_consumptions.add(identity)
+            source = sources.get(source_identity)
+            if source is None:
+                self.emit("pending_claim_consumption_source_mismatch", operation_id=consumer_id,
+                          source_operation_id=source_identity[0], source_slot=source_identity[1])
+            else:
+                amount = source.get("amount")
+                if type(amount) is not int or not 0 < amount < 2**63:
+                    raise SnapshotError("invalid pending claim source amount")
+                if source.get("claim_operation_id") is not None:
+                    self.emit("pending_claim_mixed_consumption", operation_id=consumer_id,
+                              source_operation_id=source_identity[0], source_slot=source_identity[1])
+                partial_totals[source_identity] += row["amount"]
+            source_totals[consumer_id][0] += 1
+            source_totals[consumer_id][1] += row["amount"]
+            account_totals[(consumer_id, source.get("account_key") if source else None)] += row["amount"]
+            if source_totals[consumer_id][1] >= 2**63:
+                raise SnapshotError("pending claim source amount overflow")
+        for identity, amount in partial_totals.items():
+            if amount > sources[identity]["amount"]:
+                self.emit("pending_claim_overdrawn_source", source_operation_id=identity[0], source_slot=identity[1])
         for row in rows:
             operation_id = require_id(row.get("operation_id"),
                                       "pending claim consumer operation ID")
@@ -1024,9 +1515,19 @@ class Reconciler:
                         before[0] - after[0] != amount or any(before[1:]) or any(after[1:])):
                     raise SnapshotError("invalid pending claim consumer debit")
                 seen_accounts.add(key)
+                if account_totals.pop((operation_id, key), 0) != amount:
+                    self.emit("pending_claim_consumer_account_mismatch", operation_id=operation_id, account_key=key)
                 total_debit += amount
                 if total_debit >= 2**63:
                     raise SnapshotError("pending claim consumer debit overflow")
+            if operations is not None and (epoch == selected_epoch or (operation_id,) in operations):
+                operation = operations.get((operation_id,))
+                expected = selected_debits.get(operation_id, [])
+                if (operation is None or operation.get("epoch") != epoch or
+                        operation.get("outcome") != "committed" or operation.get("result_code") != 0 or
+                        sorted(expected, key=lambda effect: effect["account_key"]) !=
+                        sorted(effects, key=lambda effect: effect["account_key"])):
+                    self.emit("pending_claim_consumer_projection_mismatch", operation_id=operation_id)
             if source_row_count == 0:
                 missing += 1
                 self.emit("pending_claim_consumer_without_sources", operation_id=operation_id,
@@ -1038,6 +1539,12 @@ class Reconciler:
         for operation_id, (source_count, source_amount) in source_totals.items():
             self.emit("missing_pending_claim_consumer_root", operation_id=operation_id,
                       source_rows=source_count, source_amount=source_amount)
+        for (operation_id, account), amount in account_totals.items():
+            self.emit("pending_claim_consumer_account_mismatch", operation_id=operation_id, account_key=account)
+        for operation_id in set(selected_debits)-seen-set(source_totals):
+            operation = operations.get((operation_id,))
+            if operation is not None and operation.get("outcome") == "committed":
+                self.emit("missing_pending_claim_consumer_root", operation_id=operation_id)
         if (coverage["missing_source_rows"] != missing or
                 coverage["mismatched_source_amounts"] != mismatched):
             raise SnapshotError("pending claim consumer coverage mismatch")
@@ -1203,7 +1710,7 @@ class Reconciler:
             if (type(mapping_id) is not int or not 0 < mapping_id < 2**64 or
                     type(native_id) is not int or not 0 < native_id < 2**64 or
                     active_native_id is not None or identity != mapping_id or
-                    kind not in ORDINARY_KINDS or key_lineage != lineage or
+                    kind not in MAPPED_KINDS or key_lineage != lineage or
                     (operation_lineage is not None and
                      (not isinstance(operation_lineage, str) or
                       not HEX_ID.fullmatch(operation_lineage))) or
@@ -1279,7 +1786,8 @@ class Reconciler:
             raise SnapshotError("mapping retirement coverage mismatch")
         for (key,), origin in origins.items():
             operation_id = origin.get("retired_by")
-            if operation_id and (operation_id, key) not in current_epoch_retirements:
+            if (operation_id and account_key(key)[1] in MAPPED_KINDS and
+                    (operation_id, key) not in current_epoch_retirements):
                 if (operation_id,) in operations:
                     self.emit("missing_retired_mapping_evidence", operation_id=operation_id,
                               account_key=key)
@@ -1326,6 +1834,14 @@ class Reconciler:
                       not HEX_SOURCE_EVENT.fullmatch(source_event))) or
                     (backend == "sql_partial" and "source_event" not in root)):
                 raise SnapshotError("invalid lineage UID reference root")
+            if source_event is not None:
+                try:
+                    kind = decode_source_event(source_event)[0]
+                except SnapshotError:
+                    self.emit("invalid_lineage_uid_reference_root", operation_id=operation_id)
+                else:
+                    if not source_kind_allowed(reason, kind):
+                        self.emit("unauthorized_lineage_uid_source", operation_id=operation_id)
             if backend == "sql_partial" and (
                     not isinstance(inbox_receipt, dict) or
                     set(inbox_receipt) != {"status", "result_code", "failure_stage",
@@ -1398,7 +1914,7 @@ class Reconciler:
                      (type(ledger_parent) is not int or not 0 < ledger_parent < 2**64)) or
                     not isinstance(owner, list) or len(owner) != 3 or
                     any(type(value) is not int or value < 0 for value in owner) or
-                    ref.get("ledger_state") not in ("live", "tombstone") or
+                    ref.get("ledger_state") not in ("live", "tombstone", "quarantined") or
                     ref.get("ledger_action") not in ("create", "destroy", "move")):
                 self.emit("lineage_orphan_uid_reference", operation_id=operation_id, uid=uid)
             if operation_epoch == epoch:
@@ -1490,7 +2006,7 @@ class Reconciler:
                      (type(row["parent"]) is not int or row["parent"] <= 0)) or
                     not isinstance(owner, list) or len(owner) != 3 or
                     any(type(value) is not int or value < 0 for value in owner) or
-                    row.get("state") not in ("live", "tombstone") or
+                    row.get("state") not in ("live", "tombstone", "quarantined") or
                     row.get("action") not in ("create", "destroy", "move") or
                     row.get("operation_outcome") not in ("committed", "rejected", "unknown")):
                 raise SnapshotError("invalid lineage UID history event")
@@ -1529,7 +2045,8 @@ class Reconciler:
                 state = {"revision": row["revision"], "root": row["root"],
                          "parent": row["parent"], "owner": row["owner"], "state": row["state"]}
             current_item = current.get((uid,))
-            if current_item and any(current_item.get(field) != state[field] for field in state):
+            slot_stale = self.audit_item_equipment(uid, origin, rows, current_item)
+            if current_item and (slot_stale or any(current_item.get(field) != state[field] for field in state)):
                 self.emit("stale_native_item", uid=uid)
 
     def audit_uid_scope_coverage(self, backend: object, native: dict,
@@ -1606,7 +2123,7 @@ class Reconciler:
                     (parent is not None and (type(parent) is not int or not 0 < parent < 2**64)) or
                     not isinstance(owner, list) or len(owner) != 3 or
                     any(type(value) is not int or value < 0 for value in owner) or
-                    row.get("state") not in ("live", "tombstone") or
+                    row.get("state") not in ("live", "tombstone", "quarantined") or
                     row.get("action") not in ("create", "destroy", "move")):
                 raise SnapshotError("invalid unattributed UID history event")
             key = (operation_id, event_index, uid)
@@ -1634,7 +2151,7 @@ class Reconciler:
         for pile in piles:
             uid = pile.get("uid")
             state = pile.get("state")
-            if type(uid) is not int or not 0 < uid < 2**64 or state not in ("live", "tombstone"):
+            if type(uid) is not int or not 0 < uid < 2**64 or state not in ("live", "tombstone", "quarantined"):
                 raise SnapshotError("invalid coin-pile row")
             if uid in pile_by_uid:
                 self.emit("duplicate_coin_pile_uid", uid=uid)
@@ -1652,6 +2169,8 @@ class Reconciler:
             pile_by_uid[uid] = pile
             if state == "live":
                 live_piles.add(uid)
+            elif state == "quarantined":
+                self.emit("quarantined_coin_pile", uid=uid)
         mapping_counts = Counter()
         dangling = invalid = 0
         seen_mapping_keys = set()
@@ -1745,7 +2264,9 @@ class Reconciler:
                 if created or retired:
                     self.emit("missing_coin_pile_lifecycle_source", operation_id=operation_id)
                 continue
-            if not isinstance(source_event, str) or not HEX_SOURCE_EVENT.fullmatch(source_event):
+            try:
+                decode_source_event(source_event)
+            except SnapshotError:
                 self.emit("invalid_coin_pile_lifecycle_source", operation_id=operation_id)
                 continue
             raw = bytes.fromhex(source_event)
@@ -1853,7 +2374,9 @@ class Reconciler:
                 self.emit("unknown_outcome", operation_id=operation_id)
             if row_epoch == epoch:
                 current = current_ids.get(operation_id)
-                if current is None or current.get("realized_price_copper") != price:
+                if current is None or any(
+                        current.get(field) != row.get(field) for field in
+                        ("reason", "outcome", "result_code", "realized_price_copper")):
                     self.emit("realized_price_scope_mismatch", operation_id=operation_id)
                 current_ids.pop(operation_id, None)
             by_operation[operation_id] = row
@@ -1884,17 +2407,52 @@ class Reconciler:
             if retired and action == "destroy":
                 self.emit("duplicate_item_retirement", uid=uid,
                           operation_id=event.get("operation_id"))
-            if retired and event.get("state") == "live":
+            if retired and event.get("state") in ("live", "quarantined"):
                 self.emit("resurrected_item_uid", uid=uid, operation_id=event.get("operation_id"))
             retired = retired or action == "destroy" or event.get("state") == "tombstone"
         if not created:
             self.emit("missing_item_creation", uid=uid)
 
+    def audit_item_equipment(self, uid: int, origin: dict, rows: list[dict],
+                             current: dict | None) -> bool:
+        """Reconstruct the recorded slot separately from legacy position fields."""
+        expected = item_equipment_slot(origin)
+        actual = item_equipment_slot(current) if current is not None else None
+        missing = expected is None
+        recorded = expected is not None or actual is not None
+        for row in rows:
+            slots = []
+            for field in ("from_equipment_slot", "to_equipment_slot"):
+                value = row.get(field)
+                if field in row and not valid_item_equipment_slot(value):
+                    self.emit("invalid_item_equipment_slot", uid=uid,
+                              operation_id=row.get("operation_id"))
+                    slots.append(None)
+                else:
+                    slots.append(value)
+            before, after = slots
+            recorded |= before is not None or after is not None
+            missing |= before is None or after is None
+            if expected is not None and before is not None and before != expected:
+                self.emit("broken_item_equipment_history", uid=uid,
+                          operation_id=row.get("operation_id"))
+            expected = after
+        if current is not None:
+            missing |= actual is None
+        if recorded and missing:
+            self.emit("missing_item_equipment_evidence", uid=uid)
+        return expected is not None and actual is not None and expected != actual
+
     def audit_items(self, ownership: dict, references: dict, origins: dict, native: dict,
                     lineage_history_uids: set[int] | None = None) -> None:
-        for row in list(origins.values()) + list(native.values()):
-            if not unsigned_revision(row.get("revision")):
-                raise SnapshotError("invalid item origin or native revision")
+        for positions, code, opening in ((origins, "invalid_item_origin_position", True),
+                                         (native, "invalid_native_item_position", False)):
+            for row in positions.values():
+                item_equipment_slot(row)
+                if not unsigned_revision(row.get("revision")):
+                    raise SnapshotError("invalid item origin or native revision")
+                if not valid_item_custody_position(row, opening and row.get("origin") == "creation"):
+                    self.emit(code, uid=row.get("uid"))
         referenced = set()
         for ref in references.values():
             if (not unsigned_revision(ref.get("before_revision")) or
@@ -1941,9 +2499,10 @@ class Reconciler:
                 if event.get("before_revision") != state["revision"] or event.get("revision") != state["revision"] + 1:
                     self.emit("broken_item_history", uid=uid, operation_id=event.get("operation_id"))
                 state = {field: event.get(field) for field in ("revision", "root", "parent", "owner", "state")}
+            slot_stale = self.audit_item_equipment(uid, origin, rows, current)
             if not current:
                 self.emit("missing_native_item", uid=uid)
-            elif any(current.get(field) != state[field] for field in state):
+            elif slot_stale or any(current.get(field) != state[field] for field in state):
                 self.emit("stale_native_item", uid=uid)
         topology = {}
         edge_mismatches = {}
@@ -1983,7 +2542,7 @@ class Reconciler:
                 topology[node] = (kind, terminal, mismatch or edge_mismatches[node])
         for (uid,), item in native.items():
             kind, terminal, mismatch = topology[uid]
-            if item.get("state") == "live" and (mismatch or (
+            if item.get("state") in ("live", "quarantined") and (mismatch or (
                     kind == "root" and terminal != item.get("root"))):
                 self.emit("inconsistent_native_topology", uid=uid)
             elif kind == "cycle":
@@ -1994,24 +2553,52 @@ def bounded_rows(rows: list[dict], limit: int) -> dict:
     return {"count": len(rows), "rows": rows[:limit], "truncated": len(rows) > limit}
 
 
-def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = None) -> dict:
+def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = None,
+         operation_id: str | None = None, holding_key: str | None = None) -> dict:
+    if type(limit) is not int or not 0 <= limit <= MAX_OUTPUT_ROWS:
+        raise SnapshotError("invalid output limit")
+    if operation_id is not None:
+        require_id(operation_id, "operation lookup ID")
+        if name != "operation":
+            raise SnapshotError("operation filter requires operation view")
+    if holding_key is not None:
+        account_key(holding_key)
+        if name != "holdings":
+            raise SnapshotError("account filter requires holdings view")
     if name == "exceptions":
         return report
+    coverage = {
+        "lineage": snapshot["lineage"], "selected_epoch": snapshot["epoch"],
+        "complete": snapshot.get("complete") is True,
+        "quiescent": snapshot.get("quiescent") is True,
+        "exception_count": report.get("exception_count"),
+    }
     if name == "holdings":
         rows = [{"account_key": row["account_key"], "kind": account_key(row["account_key"])[1],
                  "balance": vector(row["balance"]), "revision": row["revision"]}
-                for row in snapshot["native"]["holdings"]]
+                for row in snapshot["native"]["holdings"]
+                if holding_key is None or row["account_key"] == holding_key]
         if any(not unsigned_revision(row["revision"]) for row in rows):
             raise SnapshotError("invalid native holding revision")
+        if holding_key is not None:
+            return {**bounded_rows(rows, limit), "coverage": {
+                **coverage,
+                "scope": "captured_native_holdings", "account_key": holding_key}}
     elif name == "provenance":
-        if uid is None:
+        if type(uid) is not int or not 0 < uid < 2**64:
             raise SnapshotError("provenance requires --uid")
         rows = [{"uid": uid, "operation_id": row["operation_id"],
                  "event_index": row["event_index"], "revision": row["revision"],
                  "root": row["root"], "parent": row["parent"], "owner": row["owner"],
-                 "state": row["state"], "action": row["action"]}
-                for row in snapshot["ownership_events"]
-                if row.get("uid") == uid and isinstance(row.get("operation_id"), str)
+                 "state": row["state"], "action": row["action"],
+                 **{field: item_equipment_slot(row, field)
+                    for field in ("from_equipment_slot", "to_equipment_slot")
+                    if field in row and valid_item_equipment_slot(row[field])}}
+                for row in (snapshot["ownership_events"] +
+                            (snapshot["native"].get("uid_history_events") or []) +
+                            (snapshot["native"].get("unattributed_uid_events") or []))
+                if type(row.get("uid")) is int and row["uid"] == uid
+                and isinstance(row.get("operation_id"), str)
                 and HEX_ID.fullmatch(row["operation_id"]) and type(row.get("event_index")) is int
                 and type(row.get("revision")) is int and type(row.get("root")) is int
                 and (row.get("parent") is None or type(row.get("parent")) is int)
@@ -2019,27 +2606,114 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
                 and all(type(part) is int for part in row["owner"])
                 and row.get("state") in ("live", "tombstone", "quarantined")
                 and row.get("action") in ("create", "move", "destroy", "quarantine")]
-        rows.sort(key=lambda row: (row["revision"], row["operation_id"]))
+        # The epoch and lineage collections can project the same native event.
+        # Deduplicate exact projections; conflicting positions stay visible.
+        unique = {json.dumps(row, sort_keys=True): row for row in rows}
+        rows = sorted(unique.values(),
+                      key=lambda row: (row["revision"], row["operation_id"], row["event_index"]))
+        return {**bounded_rows(rows, limit), "coverage": {
+            **coverage,
+            "lineage_history_available": isinstance(snapshot["native"].get("uid_history_events"), list),
+            "unattributed_history_available": isinstance(
+                snapshot["native"].get("unattributed_uid_events"), list)}}
+    elif name == "operation":
+        if operation_id is None:
+            raise SnapshotError("operation view requires --operation-id")
+        rows = []
+        record_counts = {}
+        for collection, fields in (
+                ("operations", ("reason", "result_code", "account_count", "posting_count",
+                                "child_count", "item_event_count", "realized_price_copper",
+                                "accounting_version", "writer_id", "policy_version", "compiler_version")),
+                ("effects", ("account_index", "before_revision", "after_revision")),
+                ("postings", ("line_index", "event_index", "account_index", "child_index", "copper_value")),
+                ("children", ("child_index", "parent_index", "domain_id", "discriminator", "relationship")),
+                ("item_references", ("line_index", "event_index", "uid", "child_index", "before_revision",
+                                     "after_revision", "legacy_event_index")),
+                ("receipts", ("status", "result_code", "failure_stage")),
+                ("source_claims", ()),
+                ("orphan_evidence", ("row_index",))):
+            selected = [row for row in snapshot.get(collection, [])
+                        if row.get("operation_id") == operation_id]
+            record_counts[collection] = len(selected)
+            for row in selected:
+                safe = {"record": collection, "operation_id": operation_id}
+                safe.update({field: row[field] for field in fields if type(row.get(field)) is int})
+                for field in ("lineage", "epoch", "original_operation_id", "child_operation_id",
+                              "receipt_operation_id", "legacy_operation_id"):
+                    if row.get(field) is not None:
+                        safe[field] = require_id(row[field], field)
+                if row.get("source_event") is not None:
+                    source = row["source_event"]
+                    if not isinstance(source, str) or not HEX_SOURCE_EVENT.fullmatch(source):
+                        raise SnapshotError("invalid operation source event")
+                    safe["source_event"] = source
+                if collection == "operations":
+                    safe["outcome"] = (row["outcome"] if row.get("outcome") in
+                                       ("committed", "rejected") else "unknown")
+                elif collection == "effects":
+                    account_key(row["account_key"])
+                    safe.update(account_key=row["account_key"], before=vector(row["before"]),
+                                after=vector(row["after"]))
+                elif collection == "postings":
+                    safe["delta"] = vector(row["delta"])
+                elif collection == "receipts":
+                    safe["committed_at_present"] = row.get("committed_at_present") is True
+                elif collection == "orphan_evidence":
+                    if row.get("table") not in ORPHAN_EVIDENCE_SOURCES:
+                        raise SnapshotError("invalid orphan evidence table")
+                    safe["table"] = row["table"]
+                    if row["table"] == "baseline_reservations":
+                        safe.update(reservation_orphan_identity(row))
+                rows.append(safe)
+        order = {collection: index for index, collection in enumerate(record_counts)}
+        rows.sort(key=lambda row: (order[row["record"]], next(
+            (row[field] for field in ("line_index", "event_index", "account_index", "child_index", "row_index")
+             if field in row), 0), json.dumps(row, sort_keys=True)))
+        return {**bounded_rows(rows, limit), "record_counts": record_counts, "coverage": {
+            **coverage, "root_scope": "selected_epoch",
+            "operation_id": operation_id}}
     elif name == "supply":
         totals: dict[tuple, int] = defaultdict(int)
+        effect_counts = Counter((row["operation_id"], row["account_index"]) for row in snapshot["effects"])
+        posting_counts = Counter((row["operation_id"], row["line_index"]) for row in snapshot["postings"])
         effect_kind = {(row["operation_id"], row["account_index"]): account_key(row["account_key"])[1]
-                       for row in snapshot["effects"]}
-        reasons = {row["operation_id"]: row.get("reason") for row in snapshot["operations"]}
+                       for row in snapshot["effects"]
+                       if effect_counts[(row["operation_id"], row["account_index"])] == 1}
+        operations = {row["operation_id"]: row for row in snapshot["operations"]}
+        root_counts = Counter(row["operation_id"] for row in snapshot["operations"])
         for post in snapshot["postings"]:
             kind = effect_kind.get((post.get("operation_id"), post.get("account_index")))
-            reason = reasons.get(post["operation_id"])
-            if kind in (7, 8, 9, 10) and type(reason) is int:
-                totals[(kind, reason)] += copper(vector(post["delta"]))
+            root = operations.get(post["operation_id"])
+            # Duplicate root/effect/line identities cannot choose an outcome,
+            # account kind or amount by export order or multiply supply.
+            if (kind in (7, 8, 9, 10) and root is not None and
+                    posting_counts[(post["operation_id"], post["line_index"])] == 1 and
+                    root_counts[post["operation_id"]] == 1 and root.get("outcome") == "committed" and
+                    type(root.get("reason")) is int):
+                totals[(kind, root["reason"])] += copper(vector(post["delta"]))
         rows = [{"account_kind": kind, "reason": reason, "net_copper": total}
                 for (kind, reason), total in sorted(totals.items())]
     elif name == "prices":
-        rows = [{"operation_id": row["operation_id"], "reason": row.get("reason"),
+        history = snapshot["native"].get("lineage_realized_prices")
+        price_coverage = snapshot["native"].get("realized_price_coverage")
+        history_available = isinstance(history, list) and isinstance(price_coverage, dict)
+        rows = [{"operation_id": row["operation_id"], "epoch": row["epoch"],
+                 "reason": row["reason"],
                  "price_copper": row["realized_price_copper"]}
-                for row in snapshot["operations"]
+                for row in snapshot["operations"] + (history if history_available else [])
                 if isinstance(row.get("operation_id"), str) and HEX_ID.fullmatch(row["operation_id"])
+                and isinstance(row.get("epoch"), str) and HEX_ID.fullmatch(row["epoch"])
                 and row.get("outcome") == "committed"
                 and type(row.get("reason")) is int and type(row.get("realized_price_copper")) is int
                 and 0 <= row["realized_price_copper"] < 2**63]
+        # Selected-epoch roots overlap captured lineage prices. Preserve
+        # conflicting projections instead of choosing either price as truth.
+        unique = {(row["epoch"], row["operation_id"], row["reason"], row["price_copper"]): row
+                  for row in rows}
+        rows = [unique[key] for key in sorted(unique)]
+        coverage.update(lineage_history_available=history_available,
+                        realized_price_coverage=dict(price_coverage) if history_available else None)
     elif name == "routes":
         matrix = json.loads((Path(__file__).resolve().parents[1] /
                              "docs/persistence/economy_accounting/writer_coverage_matrix.json").read_text())
@@ -2048,15 +2722,17 @@ def view(snapshot: dict, report: dict, name: str, limit: int, uid: int | None = 
                 for row in matrix["routes"]]
     else:
         raise SnapshotError("unknown view")
-    return bounded_rows(rows, limit)
+    return {**bounded_rows(rows, limit), "coverage": coverage}
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("snapshot", type=Path, help="complete quiescent snapshot JSON")
-    parser.add_argument("--view", choices=("exceptions", "holdings", "provenance", "supply", "prices", "routes"),
+    parser.add_argument("--view", choices=("exceptions", "holdings", "provenance", "operation", "supply", "prices", "routes"),
                         default="exceptions")
     parser.add_argument("--uid", type=int)
+    parser.add_argument("--operation-id")
+    parser.add_argument("--account-key")
     parser.add_argument("--limit", type=int, default=50)
     args = parser.parse_args()
     try:
@@ -2064,7 +2740,8 @@ def main() -> int:
             raise SnapshotError("snapshot or output limit exceeded")
         snapshot = json.loads(args.snapshot.read_text(encoding="utf-8"))
         report = Reconciler(args.limit).audit(snapshot)
-        result = view(snapshot, report, args.view, args.limit, args.uid)
+        result = view(snapshot, report, args.view, args.limit, args.uid,
+                      operation_id=args.operation_id, holding_key=args.account_key)
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
         return 0 if report["exception_count"] == 0 else 1
     except (OSError, ValueError, KeyError, TypeError) as error:

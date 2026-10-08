@@ -785,6 +785,568 @@ void lifecycle_native_capture(const fs::path &path)
 	       unchanged.banks.empty());
 }
 
+// Cold reader component controls use actual original typed apply/catalog/evidence
+// bodies. No player journal envelope, synthetic successful receipt or boot world.
+coin_transfer_endpoint cold_room_endpoint(const std::string &root, uint64_t uid,
+					  std::array<int32_t, 4> before,
+					  std::array<int32_t, 4> after, uint64_t operation,
+					  bool one_description = false)
+{
+	auto result = room_pile(root, uid, before, after, operation);
+	item_transfer_payload transfer;
+	assert(item_transfer_command_decode_payload(result.change, &transfer));
+	std::vector<player_item_snapshot> literals;
+	assert(player_item_snapshot_list_decode(transfer.item_blob.data(), transfer.item_blob_size,
+						&literals) == player_snapshot_codec_result::ok &&
+	       literals.size() == 1);
+	literals[0].string_mask = STRUNG_KEYS | STRUNG_DESC1 | STRUNG_DESC2 | STRUNG_DESC3;
+	literals[0].short_description = "a genuine fixture pile";
+	literals[0].description = "A genuine fixture pile is here.";
+	literals[0].action_description = "literal action";
+	if (one_description)
+		literals[0].extra_descriptions.push_back(
+			{ "coins", "original fixture description", false, {} });
+	bytes encoded;
+	assert(player_item_snapshot_list_encode(literals, &encoded) ==
+	       player_snapshot_codec_result::ok);
+	transfer.item_blob_size = encoded.size();
+	std::copy(encoded.begin(), encoded.end(), transfer.item_blob.begin());
+	assert(item_transfer_command_build(&result.change, id(operation), transfer,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	return result;
+}
+critical_command cold_root(coin_transfer_endpoint source, coin_transfer_endpoint destination,
+			   uint64_t operation, const economic_account_key &from,
+			   const economic_account_key &to)
+{
+	coin_transfer_payload payload{ source, destination };
+	critical_command command;
+	assert(coin_transfer_command_build(&command, id(operation), payload,
+					   critical_source_site::command,
+					   critical_deadline_class::interactive));
+	assert(coin_transfer_accounting_intent(command, id(90005), from, to,
+					       &command.accounting_intent) ==
+	       economic_accounting_error::ok);
+	command.schema_version = CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION;
+	command.accepted_at_usec = 12;
+	command.publication_required = true;
+	assert(critical_command_envelope_valid(command));
+	return command;
+}
+uint64_t cold_u64(const bytes &raw, size_t offset, size_t width = 8)
+{
+	assert(offset + width <= raw.size());
+	uint64_t value = 0;
+	for (size_t i = 0; i < width; ++i)
+		value |= uint64_t(raw[offset + i]) << (i * 8);
+	return value;
+}
+void cold_put(bytes &raw, size_t offset, uint64_t value, size_t width = 8)
+{
+	assert(offset + width <= raw.size());
+	for (size_t i = 0; i < width; ++i)
+		raw[offset + i] = static_cast<uint8_t>(value >> (i * 8));
+}
+void cold_digest(bytes &raw, size_t payload_offset, size_t digest_offset)
+{
+	assert(digest_offset + SHA256_DIGEST_LENGTH <= payload_offset);
+	SHA256(raw.data() + payload_offset, raw.size() - payload_offset,
+	       raw.data() + digest_offset);
+}
+void cold_rewrite_record(const fs::path &path, const flatfile_accounting_record &record)
+{
+	// The isolated fixture contains one genuine root. Re-encode only its tampered
+	// record and structural checksums; independent native catalog remains original.
+	bytes encoded;
+	assert(flatfile_accounting_record_encode(record, &encoded) ==
+	       flatfile_accounting_status::ok);
+	auto segment = read(path / "economic-evidence/bucket-07-0.eas");
+	auto index = read(path / "economic-evidence/bucket-07.eai");
+	assert(cold_u64(index, 68, 4) == 1 && index.size() == 144 && cold_u64(index, 132, 4) == 0);
+	segment.resize(80);
+	segment.insert(segment.end(), encoded.begin(), encoded.end());
+	cold_put(segment, 12, segment.size() - 48, 4);
+	cold_digest(segment, 48, 16);
+	cold_put(index, 72, encoded.size());
+	cold_put(index, 136, encoded.size(), 4);
+	SHA256(encoded.data(), encoded.size(), index.data() + 96);
+	cold_digest(index, 48, 16);
+	write(path / "economic-evidence/bucket-07-0.eas", segment);
+	write(path / "economic-evidence/bucket-07.eai", index);
+}
+bool cold_output_equal(const flatfile_room_coin_pile &a, const flatfile_room_coin_pile &b)
+{
+	bytes left, right;
+	assert(player_item_snapshot_list_encode({ a.item }, &left) ==
+		       player_snapshot_codec_result::ok &&
+	       player_item_snapshot_list_encode({ b.item }, &right) ==
+		       player_snapshot_codec_result::ok);
+	const auto &x = a.identity, &y = b.identity;
+	const auto &r = a.retained_pile_result, &t = b.retained_pile_result;
+	return a.lineage.bytes == b.lineage.bytes && a.epoch.bytes == b.epoch.bytes &&
+	       a.root_operation.bytes == b.root_operation.bytes &&
+	       a.pile_endpoint_operation.bytes == b.pile_endpoint_operation.bytes &&
+	       a.lineage_revision == b.lineage_revision &&
+	       a.retained_root_revision == b.retained_root_revision && x.item_uid == y.item_uid &&
+	       x.root_item_uid == y.root_item_uid && x.parent_item_uid == y.parent_item_uid &&
+	       item_owner_identity_equal(x.owner, y.owner) && x.item_revision == y.item_revision &&
+	       x.owner_revision == y.owner_revision && x.vnum == y.vnum && x.state == y.state &&
+	       left == right && r.root_item_uid == t.root_item_uid &&
+	       r.item_count == t.item_count && r.from_owner_revision == t.from_owner_revision &&
+	       r.to_owner_revision == t.to_owner_revision &&
+	       r.max_item_revision == t.max_item_revision &&
+	       r.corpse_revision == t.corpse_revision &&
+	       r.collector_catalog_changed == t.collector_catalog_changed;
+}
+void cold_refuse(const fs::path &path, const flatfile_room_coin_pile &sentinel,
+		 const char *case_name)
+{
+	const auto root = path.string();
+	const auto wallet_before = read(path / "domains/player-1.domain");
+	const auto bank_before = read(path / "domains/bank-account-one-1.domain");
+	auto output = sentinel;
+	flatfile_authority_lock lock;
+	assert(lock.acquire(root, nullptr));
+	const auto before = read(path / "domains/item_ownership");
+	const auto result = flatfile_accounting_coin_transaction::read_room_pile_locked(
+		root, lock, 9500, &output, nullptr);
+	assert(result && cold_output_equal(output, sentinel));
+	assert(read(path / "domains/item_ownership") == before);
+	std::cout << "COIN_FLAT_COLD case=" << case_name << " refused=" << result
+		  << " output_unchanged=1 native_unchanged=1\n";
+	assert(read(path / "domains/player-1.domain") == wallet_before &&
+	       read(path / "domains/bank-account-one-1.domain") == bank_before);
+}
+void cold_reader_journey(const fs::path &base)
+{
+	const auto seed = base / "genuine-zero";
+	setup(seed, false);
+	const auto root = seed.string();
+	const item_owner_identity room{ item_owner_type::room, 987654321, 0 };
+	assert(flatfile_item_repository_establish_owner(root, room, {}, nullptr) ==
+	       flatfile_item_baseline_result::applied);
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(root, nullptr));
+		ops changes;
+		assert(access_type::select_epoch(root, lock, control(root, lock).revision, true,
+						 id(95001), &changes, nullptr) == 0);
+		commit(root, lock, changes);
+	}
+	const economic_account_key pile{ id(90001), economic_account_kind::pile, 9500, 0 };
+	auto drop = cold_root(endpoint(1, state(root), { 98, 20, 3, 1 }, 95002),
+			      cold_room_endpoint(root, 9500, {}, { 2, 0, 0, 0 }, 95003), 95004,
+			      wallet(), pile);
+	const auto applied = flatfile_accounting_coin_transaction::apply(root, drop);
+	assert(applied.outcome == outcome::applied && !applied.error_code);
+	const auto record = retained(root, drop);
+	// The original root builder normalizes embedded endpoint IDs. Prove that
+	// original derivation independently before comparing the reader's values.
+	critical_operation_id expected_pile_operation;
+	assert(critical_operation_id_derive(drop.operation_id, COIN_TRANSFER_OPERATION_DOMAIN, 1,
+					    &expected_pile_operation));
+	coin_transfer_payload normalized_root;
+	assert(coin_transfer_command_decode_payload(drop, &normalized_root));
+	assert(normalized_root.destination.change.operation_id.bytes ==
+	       expected_pile_operation.bytes);
+	static constexpr char hex[] = "0123456789abcdef";
+	std::string reference_relative = "accounting/item_references/";
+	reference_relative += hex[expected_pile_operation.bytes[0] >> 4];
+	reference_relative += hex[expected_pile_operation.bytes[0] & 15];
+	reference_relative += ".bin";
+	flatfile_room_coin_pile proven;
+	for (int retry = 0; retry < 2; ++retry)
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(root, nullptr));
+		const auto before = read(seed / "domains/item_ownership");
+		flatfile_room_coin_pile output;
+		assert(!flatfile_accounting_coin_transaction::read_room_pile_locked(
+			root, lock, 9500, &output, nullptr));
+		assert(output.root_operation.bytes == drop.operation_id.bytes);
+		assert(output.identity.item_uid == 9500);
+		assert(output.identity.root_item_uid == 9500);
+		assert(!output.identity.parent_item_uid);
+		assert(output.identity.item_revision == 1);
+		assert(output.identity.owner_revision == 2);
+		assert(output.item.values[0] == 2);
+		assert(output.item.extra_descriptions.empty());
+		assert(output.retained_root_revision == applied.durable_revision);
+		assert(output.pile_endpoint_operation.bytes == expected_pile_operation.bytes);
+		assert(read(seed / "domains/item_ownership") == before);
+		if (!retry)
+			proven = output;
+		else
+			assert(cold_output_equal(proven, output));
+	}
+	{
+		flatfile_authority_lock unlocked;
+		auto unchanged = proven;
+		assert(flatfile_accounting_coin_transaction::read_room_pile_locked(
+			       root, unlocked, 9500, &unchanged, nullptr) == EINVAL &&
+		       cold_output_equal(unchanged, proven));
+		flatfile_authority_lock lock;
+		assert(lock.acquire(root, nullptr));
+		assert(flatfile_accounting_coin_transaction::read_room_pile_locked(
+			       root, lock, 0, &unchanged, nullptr) == EINVAL &&
+		       cold_output_equal(unchanged, proven));
+		assert(flatfile_accounting_coin_transaction::read_room_pile_locked(
+			       root, lock, 9500, nullptr, nullptr) == EINVAL);
+	}
+	assert(state(root).domains.wallet[0] == 98 &&
+	       !fs::exists(seed / "domains/.critical-authority-transaction"));
+	std::cout
+		<< "COIN_FLAT_COLD case=genuine_zero_and_fresh_lock value_only=1 native_unchanged=1\n";
+	// Subsequent reads receive no original envelope: only UID/head locate it.
+	drop = {};
+	const auto one = base / "genuine-one";
+	setup(one, false);
+	assert(flatfile_item_repository_establish_owner(one.string(), room, {}, nullptr) ==
+	       flatfile_item_baseline_result::applied);
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(one.string(), nullptr));
+		ops changes;
+		assert(access_type::select_epoch(one.string(), lock,
+						 control(one.string(), lock).revision, true,
+						 id(95101), &changes, nullptr) == 0);
+		commit(one.string(), lock, changes);
+	}
+	const auto one_command =
+		cold_root(endpoint(1, state(one.string()), { 98, 20, 3, 1 }, 95102),
+			  cold_room_endpoint(one.string(), 9500, {}, { 2, 0, 0, 0 }, 95103, true),
+			  95104, wallet(), pile);
+	assert(flatfile_accounting_coin_transaction::apply(one.string(), one_command).outcome ==
+	       outcome::applied);
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(one.string(), nullptr));
+		flatfile_room_coin_pile output;
+		assert(!flatfile_accounting_coin_transaction::read_room_pile_locked(
+			one.string(), lock, 9500, &output, nullptr));
+		assert(output.item.extra_descriptions.size() == 1 &&
+		       output.item.extra_descriptions[0].description ==
+			       "original fixture description");
+	}
+	std::cout << "COIN_FLAT_COLD case=genuine_one value_only=1\n";
+	const auto advanced = base / "wallet-advanced";
+	clone(seed, advanced);
+	establish_peer(advanced.string());
+	const auto later = split_child_command(state(advanced.string()),
+					       peer_state(advanced.string()), 2, 3, 95201);
+	assert(flatfile_accounting_coin_transaction::apply(advanced.string(), later).outcome ==
+	       outcome::applied);
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(advanced.string(), nullptr));
+		flatfile_room_coin_pile output;
+		assert(!flatfile_accounting_coin_transaction::read_room_pile_locked(
+			advanced.string(), lock, 9500, &output, nullptr));
+		assert(output.item.values[0] == 2);
+	}
+	assert(state(advanced.string()).domains.wallet[0] == 95);
+	std::cout
+		<< "COIN_FLAT_COLD case=historical_wallet_advanced current_wallet_not_adopted=1\n";
+	for (int variant = 0; variant < 20; ++variant)
+	{
+		const auto path = base / ("damaged-" + std::to_string(variant));
+		clone(seed, path);
+		auto head = read(path / "economic-evidence/pile-head-000000000000251c.eph");
+		if (variant == 0)
+		{
+			assert(fs::remove(path /
+					  "economic-evidence/pile-head-000000000000251c.eph"));
+		}
+		else if (variant == 1)
+		{
+			head[52] ^= 1;
+			write(path / "economic-evidence/pile-head-000000000000251c.eph", head);
+		}
+		else if (variant >= 2 && variant <= 5)
+		{
+			if (variant == 2)
+				cold_put(head, 52, 3);
+			if (variant == 3)
+				head[85] ^= 1;
+			if (variant == 4)
+				head[20] ^= 1;
+			if (variant == 5)
+			{
+				head[84] = 1;
+				for (size_t i = 52; i < 84; ++i)
+					head[i] = 0;
+			}
+			SHA256(head.data(), head.size() - 32, head.data() + head.size() - 32);
+			write(path / "economic-evidence/pile-head-000000000000251c.eph", head);
+		}
+		else if (variant == 6)
+		{
+			assert(fs::remove(path / "economic-evidence/bucket-07-0.eas"));
+		}
+		else if (variant == 7)
+		{
+			auto index = read(path / "economic-evidence/bucket-07.eai");
+			index[96] ^= 1;
+			cold_digest(index, 48, 16);
+			write(path / "economic-evidence/bucket-07.eai", index);
+		}
+		else if (variant == 8)
+		{
+			auto forged = record;
+			++forged.command.accepted_at_usec;
+			cold_rewrite_record(path, forged);
+		}
+		else if (variant == 9)
+		{
+			auto forged = record;
+			economic_accounting_plan plan;
+			assert(economic_plan_decode(forged.plan, &plan) ==
+			       economic_accounting_error::ok);
+			plan.postings.push_back({ 2, 0, 0, { 1, 0, 0, 0 }, 1 });
+			plan.postings.push_back({ 3, 0, 0, { -1, 0, 0, 0 }, -1 });
+			assert(economic_plan_normalize(&plan) == economic_accounting_error::ok);
+			assert(economic_plan_encode(plan, &forged.plan) ==
+			       economic_accounting_error::ok);
+			cold_rewrite_record(path, forged);
+		}
+		else if (variant == 10)
+		{
+			auto forged = record;
+			forged.durable_revision++;
+			cold_rewrite_record(path, forged);
+		}
+		else if (variant == 11)
+		{
+			auto raw = read(path / "domains/item_ownership");
+			raw.back() ^= 1;
+			write(path / "domains/item_ownership", raw);
+		}
+		else if (variant == 12 || variant == 13)
+		{
+			auto raw = read(path / "domains/item_ownership");
+			const auto item = 68 + cold_u64(raw, 56, 4) * 25;
+			assert(cold_u64(raw, item) == 9500 && cold_u64(raw, 60, 4) == 1);
+			if (variant == 12)
+				cold_put(raw, item + 8, 9501);
+			else
+			{
+				const auto size = 58 + cold_u64(raw, item + 54, 4) + 2;
+				bytes copy(raw.begin() + item, raw.begin() + item + size);
+				raw.insert(raw.begin() + item + size, copy.begin(), copy.end());
+				cold_put(raw, 60, 2, 4);
+				cold_put(raw, 12, raw.size() - 56, 4);
+			}
+			cold_digest(raw, 56, 24);
+			write(path / "domains/item_ownership", raw);
+		}
+		else if (variant == 14)
+		{
+			auto forged = record;
+			economic_frozen_intent intent;
+			economic_accounting_plan plan;
+			assert(economic_intent_decode(forged.command.accounting_intent, &intent) ==
+			       economic_accounting_error::ok);
+			assert(intent.admission.metadata.source_event);
+			intent.admission.metadata.source_event->slot ^= 1;
+			assert(economic_intent_encode(intent, &forged.command.accounting_intent) ==
+			       economic_accounting_error::ok);
+			assert(economic_plan_decode(forged.plan, &plan) ==
+			       economic_accounting_error::ok);
+			assert(economic_intent_plan_metadata(forged.command, intent,
+							     &plan.metadata) ==
+			       economic_accounting_error::ok);
+			assert(economic_plan_encode(plan, &forged.plan) ==
+			       economic_accounting_error::ok);
+			cold_rewrite_record(path, forged);
+		}
+		else if (variant == 15)
+		{
+			auto forged = record;
+			coin_transfer_payload payload;
+			coin_transfer_result result;
+			assert(coin_transfer_command_decode_payload(forged.command, &payload));
+			assert(coin_transfer_command_decode_result(payload, forged.result.data(),
+								   forged.result.size(), &result));
+			++result.piles[1].to_owner_revision;
+			std::array<uint8_t, COIN_TRANSFER_RESULT_BYTES> encoded;
+			assert(coin_transfer_command_encode_result(payload, result, &encoded));
+			forged.result.assign(encoded.begin(), encoded.end());
+			cold_rewrite_record(path, forged);
+		}
+		else if (variant == 16)
+		{
+			auto raw = read(path / "domains/item_ownership");
+			const auto item = 68 + cold_u64(raw, 56, 4) * 25;
+			const auto begin = item + 58, end = begin + cold_u64(raw, item + 54, 4);
+			const std::string key = "coins";
+			auto found = std::search(raw.begin() + begin, raw.begin() + end,
+						 key.begin(), key.end());
+			assert(found != raw.begin() + end);
+			*found = 'C';
+			cold_digest(raw, 56, 24);
+			write(path / "domains/item_ownership", raw);
+		}
+		else if (variant == 17)
+		{
+			assert(fs::remove(path / reference_relative));
+		}
+		else if (variant == 18)
+		{
+			auto refs = read(path / reference_relative);
+			assert(refs.size() == FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES);
+			cold_put(refs, 24, 9501);
+			write(path / reference_relative, refs);
+		}
+		else if (variant == 19)
+		{
+			auto refs = read(path / reference_relative);
+			assert(refs.size() == FLATFILE_ITEM_ACCOUNTING_REFERENCE_RECORD_BYTES);
+			auto extra = refs;
+			cold_put(extra, 64, 1, 2);
+			refs.insert(refs.end(), extra.begin(), extra.end());
+			write(path / reference_relative, refs);
+		}
+		const char *names[] = { "missing_head",
+					"corrupt_head",
+					"conflicting_balance",
+					"missing_original_root",
+					"wrong_epoch",
+					"retired_head",
+					"missing_segment",
+					"conflicting_index",
+					"different_original_envelope",
+					"extra_cancelling_plan",
+					"wrong_root_revision",
+					"corrupt_native_catalog",
+					"conflicting_root_uid",
+					"duplicate_native_uid",
+					"fabricated_original_source",
+					"different_native_receipt",
+					"conflicting_complete_literal",
+					"missing_item_reference",
+					"conflicting_item_reference",
+					"extra_item_reference" };
+		cold_refuse(path, proven, names[variant]);
+	}
+	const auto partial = base / "partial-pickup";
+	clone(seed, partial);
+	const auto partial_command = cold_root(
+		cold_room_endpoint(partial.string(), 9500, { 2, 0, 0, 0 }, { 1, 0, 0, 0 }, 95601),
+		endpoint(1, state(partial.string()), { 99, 20, 3, 1 }, 95602), 95603, pile,
+		wallet());
+	assert(flatfile_accounting_coin_transaction::apply(partial.string(), partial_command)
+		       .outcome == outcome::applied);
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(partial.string(), nullptr));
+		flatfile_room_coin_pile output;
+		assert(!flatfile_accounting_coin_transaction::read_room_pile_locked(
+			partial.string(), lock, 9500, &output, nullptr));
+		assert(output.item.values[0] == 1 && output.identity.item_revision == 2 &&
+		       output.root_operation.bytes == partial_command.operation_id.bytes);
+	}
+	std::cout << "COIN_FLAT_COLD case=genuine_partial_pickup latest_head=1\n";
+	const auto consumed = base / "genuine-consumed";
+	clone(partial, consumed);
+	const auto consumed_command =
+		cold_root(cold_room_endpoint(consumed.string(), 9500, { 1, 0, 0, 0 }, {}, 95604),
+			  endpoint(1, state(consumed.string()), { 100, 20, 3, 1 }, 95605), 95606,
+			  pile, wallet());
+	assert(flatfile_accounting_coin_transaction::apply(consumed.string(), consumed_command)
+		       .outcome == outcome::applied);
+	cold_refuse(consumed, proven, "genuine_consumed_pile");
+	const auto other = base / "room-counter-advanced";
+	clone(seed, other);
+	const economic_account_key other_pile{ id(90001), economic_account_kind::pile, 9501, 0 };
+	const auto other_command =
+		cold_root(endpoint(1, state(other.string()), { 97, 20, 3, 1 }, 95701),
+			  cold_room_endpoint(other.string(), 9501, {}, { 1, 0, 0, 0 }, 95702),
+			  95703, wallet(), other_pile);
+	assert(flatfile_accounting_coin_transaction::apply(other.string(), other_command).outcome ==
+	       outcome::applied);
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(other.string(), nullptr));
+		flatfile_room_coin_pile output;
+		assert(!flatfile_accounting_coin_transaction::read_room_pile_locked(
+			other.string(), lock, 9500, &output, nullptr));
+		assert(output.identity.owner_revision == proven.identity.owner_revision + 1 &&
+		       output.identity.item_revision == 1 && output.item.values[0] == 2);
+	}
+	std::cout << "COIN_FLAT_COLD case=genuine_room_counter_advanced exact_current_counter=1\n";
+	const auto retired = base / "historical-wallet-retired";
+	clone(seed, retired);
+	const auto retired_root = retired.string();
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(retired_root, nullptr));
+		flatfile_economic_mapping mapping;
+		ops changes;
+		assert(!flatfile_economic_mapping_read(retired_root, lock, wallet(), &mapping,
+						       nullptr));
+		assert(!access_type::retire(retired_root, lock,
+					    control(retired_root, lock).revision, wallet(),
+					    mapping.revision, id(95801), &changes, nullptr));
+		commit(retired_root, lock, changes);
+	}
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(retired_root, nullptr));
+		flatfile_room_coin_pile output;
+		assert(!flatfile_accounting_coin_transaction::read_room_pile_locked(
+			retired_root, lock, 9500, &output, nullptr));
+	}
+	std::cout
+		<< "COIN_FLAT_COLD case=historical_wallet_retired no_wallet_current_requirement=1\n";
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(retired_root, nullptr));
+		flatfile_economic_mapping mapping;
+		ops changes;
+		assert(!access_type::create(retired_root, lock,
+					    control(retired_root, lock).revision,
+					    economic_account_kind::wallet, 0, { 1, 1, {} },
+					    id(95802), &mapping, &changes, nullptr));
+		commit(retired_root, lock, changes);
+		assert(mapping.account.authority_id != wallet().authority_id);
+		flatfile_room_coin_pile output;
+		assert(!flatfile_accounting_coin_transaction::read_room_pile_locked(
+			retired_root, lock, 9500, &output, nullptr));
+	}
+	std::cout << "COIN_FLAT_COLD case=historical_wallet_reenrolled pile_epoch_unchanged=1\n";
+	for (int mode = 0; mode < 2; ++mode)
+	{
+		const auto path = base / (mode ? "reenrolled-epoch" : "inactive-epoch");
+		clone(seed, path);
+		const auto local = path.string();
+		{
+			flatfile_authority_lock lock;
+			assert(lock.acquire(local, nullptr));
+			ops changes;
+			if (mode)
+			{
+				flatfile_economic_epoch epoch;
+				epoch.epoch = id(95901);
+				epoch.predecessor = id(90005);
+				epoch.ordinal = 2;
+				epoch.creating_operation = id(95902);
+				epoch.transition_kind = 1;
+				epoch.transition_digest[0] = 42;
+				assert(access_type::append_epoch(local, lock,
+								 control(local, lock).revision,
+								 epoch, &changes, nullptr) == 0);
+				commit(local, lock, changes);
+			}
+			assert(access_type::select_epoch(local, lock, control(local, lock).revision,
+							 bool(mode), id(95903), &changes,
+							 nullptr) == 0);
+			commit(local, lock, changes);
+		}
+		cold_refuse(path, proven, mode ? "different_live_epoch" : "inactive_current_epoch");
+	}
+}
+
 int main(int argc, char **argv)
 {
 	assert(argc == 2);
@@ -932,6 +1494,49 @@ int main(int argc, char **argv)
 		       owned.size() == 1 && owned[0].item_revision == 1);
 	}
 	const auto pile_record = retained(root, drop_command);
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(root, nullptr));
+		assert(access_type::verify_source_claim(root, lock, pile_record, nullptr) ==
+		       flatfile_accounting_status::ok);
+	}
+	// An ACKed root cannot authenticate a lifecycle after its source claim is lost
+	// or damaged. The original writer creates the claim; these copies only fault it.
+	for (const bool corrupt : { false, true })
+	{
+		const auto target = path.parent_path() / (corrupt ? "coin-source-claim-corrupt" :
+								    "coin-source-claim-missing");
+		clone(path, target);
+		std::vector<fs::path> claims;
+		for (const auto &entry : fs::directory_iterator(target / "economic-evidence"))
+			if (entry.is_regular_file() &&
+			    entry.path().filename().string().starts_with("source-claim-"))
+				claims.push_back(entry.path());
+		assert(claims.size() == 1);
+		if (corrupt)
+		{
+			auto damaged = read(claims.front());
+			assert(!damaged.empty());
+			damaged.back() ^= 1;
+			write(claims.front(), damaged);
+		}
+		else
+			assert(fs::remove(claims.front()));
+		const auto before = durable_files(target);
+		const auto replay =
+			flatfile_accounting_coin_transaction::apply(target.string(), drop_command);
+		assert(replay.outcome == outcome::retryable_failure && replay.error_code);
+		assert(durable_files(target) == before);
+		{
+			flatfile_authority_lock lock;
+			assert(lock.acquire(target.string(), nullptr));
+			const auto proof =
+				flatfile_accounting_coin_transaction::verify_retained_locked(
+					target.string(), lock, drop_command);
+			assert(proof.outcome == outcome::retryable_failure && proof.error_code);
+		}
+		assert(durable_files(target) == before);
+	}
 	economic_accounting_plan pile_plan;
 	assert(economic_plan_decode(pile_record.plan, &pile_plan) == economic_accounting_error::ok);
 	assert(pile_plan.accounts.size() == 2 && pile_plan.postings.size() == 2 &&
@@ -1208,6 +1813,7 @@ int main(int argc, char **argv)
 	preexisting_pile_journey(path / "preexisting");
 	legacy_pile_inventory(path / "legacy-inventory");
 	lifecycle_native_capture(path / "lifecycle-native-capture");
+	cold_reader_journey(path / "cold-reader");
 	split_children_journey(path / "split-children");
 	std::cout
 		<< "flatfile peer coin root: native wallets, pile creation, split, merge, pickup and denomination change, shared bank revisions, balanced evidence, retained replay, stale rejection, and interrupted commit recovery passed\n";

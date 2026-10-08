@@ -7599,6 +7599,44 @@
       ]
     },
     {
+      "id": "file:economic-lifecycle-receipt",
+      "kind": "recovery_state",
+      "locator": "FLATFILE_ROOT/economic-evidence/lifecycle-*.elr",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "original_operation_lineage_epoch_and_lifetime_keys",
+      "technical_purpose": "Immutable lifecycle installation receipt binds ordered original native wallet aliases, bank names, source descriptors and command capsules to baseline/common receipt and authority origin; alias erasure must preserve these recovery bindings until approved retention and disclosure decisions",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "non_database",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "file:economic-authority-control",
+        "file:economic-authority-epoch",
+        "file:economic-accounting-index",
+        "file:economic-accounting-segment",
+        "file:flatfile-authority-journal",
+        "file:economic-baseline-control",
+        "file:economic-baseline-reservations",
+        "file:economic-baseline-witness"
+      ]
+    },
+    {
       "id": "file:economic-baseline-control",
       "kind": "recovery_state",
       "locator": "FLATFILE_ROOT/economic-evidence/baseline-*.ebc",
@@ -8389,6 +8427,136 @@
         ],
         "shared_fields": []
       }
+    },
+    {
+      "id": "database:shopkeeper_item_runtime_state",
+      "kind": "database_table",
+      "locator": "shopkeeper_item_runtime_state",
+      "data_category": "world_or_gameplay_state",
+      "data_subject_key": "none",
+      "technical_purpose": "Complete current physical keeper item payload; UID/custody remain in shopkeeper_items and item_current_owner",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "shared_security",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "payload"
+        ],
+        "shared_fields": []
+      },
+      "season_action": "reset_delete",
+      "active_retention": "current_season_or_operational_need",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "none",
+      "protected_record": false,
+      "dependencies": [
+        "database:shopkeeper_items"
+      ]
+    },
+    {
+      "id": "database:quest_mobile_native",
+      "kind": "database_table",
+      "locator": "quest_mobile_native",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "mobile_instance_id_and_original_transition_operation",
+      "technical_purpose": "Retain canonical native NPC lifetime and ordered stock for transactional quest offering and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "canonical_image"
+        ],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": []
+    },
+    {
+      "id": "database:economic_pending_claim_consumption",
+      "kind": "database_table",
+      "locator": "economic_pending_claim_consumption",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "retained_lifetime_mapping_and_operation_identity",
+      "technical_purpose": "Retain immutable partial pending-claim debits against their original source allocation for replay and recovery",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "season_action": "retain",
+      "active_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "archive_retention": "indefinite_until_recovery_and_controller_approved_purge_horizon",
+      "terminal_action": "retain",
+      "exception": "protected_recovery_replay_or_restore_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:economic_accounting_operation",
+        "database:economic_pending_claim_source"
+      ],
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [],
+        "shared_fields": []
+      }
+    },
+    {
+      "id": "database:quest_mobile_native_birth_origin",
+      "kind": "database_table",
+      "locator": "quest_mobile_native_birth_origin",
+      "data_category": "reconciliation_or_replay_record",
+      "data_subject_key": "mobile_instance_id_and_original_birth_operation",
+      "technical_purpose": "Retain the original published native constructor carrier for progressed lifetime recovery after confirmed journal retirement",
+      "controller_decision": {
+        "status": "pending",
+        "reference": "PENDING-CONTROLLER-DECISION"
+      },
+      "export_rule": {
+        "disposition": "pending",
+        "subject_route": "operation_domain",
+        "decision": {
+          "status": "pending",
+          "reference": "PENDING-SHARED-DISCLOSURE-DECISION"
+        },
+        "excluded_fields": [
+          "canonical_origin"
+        ],
+        "shared_fields": []
+      },
+      "season_action": "retain",
+      "active_retention": "pending_controller_decision",
+      "archive_retention": "pending_controller_decision",
+      "terminal_action": "retain",
+      "exception": "protected_reconciliation_or_replay_horizon",
+      "protected_record": true,
+      "dependencies": [
+        "database:quest_mobile_native",
+        "database:critical_operation_inbox"
+      ]
     }
   ]
 }

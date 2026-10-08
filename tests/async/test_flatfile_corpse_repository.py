@@ -23,6 +23,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-corpse-") as temporary:
     binary = temporary_path / "flatfile_corpse_test"
     compile_result = subprocess.run(
         [
+            rel('quest_mobile_native.c'), rel('quest_mobile_native_flatfile.c'), 'tests/async/native_quest_world_unavailable.cpp',
             "g++",
             "-std=c++20",
             "-Wall",
@@ -51,12 +52,12 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-corpse-") as temporary:
             rel("flatfile_player_domain_repository.c"),
             rel("flatfile_ip_activity_repository.c"),
             rel("corpse_lifecycle_command.c"),
-            rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
+            rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
             rel("player_snapshot_codec.c"),
             rel("collector_command.c"),
             rel("collector_codec.c"),
             rel("collector_policy.c"),
-            rel("shop_trade_command.c"),
+            rel("shop_trade_command.c"), rel("shop_trade_recovery_manifest.c"),
             rel("critical_command.c"),
             rel("epic_command.c"),
             rel("currency_command.c"),
@@ -70,7 +71,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-corpse-") as temporary:
             rel("flatfile_accounting_authority.c"),
             rel("flatfile_accounting_store.c"),
             rel("economic_accounting_types.c"),
-            rel("economic_accounting_plan.c"),
+            rel("economic_accounting_plan.c"), rel("economic_source_event.c"),
             rel("auction_item_claim_accounting.c"),
             rel("auction_accounting.c"),
             rel("auction_listing_accounting.c"),

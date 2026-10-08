@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <vector>
 
 struct item_ownership_runtime_entry
@@ -35,7 +36,43 @@ bool item_ownership_runtime_hydrate_owner(const item_owner_identity &owner, uint
 bool item_ownership_runtime_lookup(uint64_t item_uid, item_ownership_runtime_entry *entry);
 bool item_ownership_runtime_snapshot_owner(const item_owner_identity &owner, size_t limit,
 					   std::vector<item_ownership_runtime_entry> *snapshot);
+// Read-only game-thread census of every row claiming this root, including
+// conflicting owners, states and topology. Sorted by item UID; this does not
+// prove root existence, valid custody or durable/native authority. A zero root
+// or zero limit is invalid. Failure empties a nonnull output; success is complete.
+bool item_ownership_runtime_snapshot_root(uint64_t root_item_uid, size_t limit,
+					  std::vector<item_ownership_runtime_entry> *snapshot);
+// Same bounded root observation, restricted to active custody before counting
+// or allocating. Retained destroyed/quarantined history consumes no budget and
+// remains untouched. All active owners/topology count, including conflicting
+// claims. Explicit historical rows need separate per-UID comparison.
+bool item_ownership_runtime_snapshot_active_root(
+	uint64_t root_item_uid, size_t limit, std::vector<item_ownership_runtime_entry> *snapshot);
+// Pure serialized game-thread cache observation. Never inserts a missing owner,
+// hydrates, allocates or grants native authority. Missing/invalid/null refuses
+// with output unchanged; a cached revision of zero is a valid observation.
+bool item_ownership_runtime_peek_owner_revision(const item_owner_identity &owner,
+						uint64_t *revision) noexcept;
 bool item_ownership_runtime_owner_revision(const item_owner_identity &owner, uint64_t *revision);
+class item_native_quest_publication_owner;
+// Only the original native publication owner may project an authenticated
+// CURRENT cut. This grants neither SQL nor physical publication authority.
+class item_ownership_runtime_native_quest_publication_owner final
+{
+    private:
+	friend class item_native_quest_publication_owner;
+	enum class publication_result : uint8_t
+	{
+		applied,
+		rejected
+	};
+	static bool apply(const item_transfer_payload &, const item_transfer_result &,
+			  publication_result,
+			  std::span<const item_ownership_runtime_entry> current_custody,
+			  uint64_t current_from_revision, uint64_t current_to_revision,
+			  uint64_t current_player_revision) noexcept;
+};
+
 bool item_ownership_runtime_apply(const item_transfer_payload &payload,
 				  const item_transfer_result &result);
 bool item_ownership_runtime_apply_collector(const collector_command_payload &payload,
@@ -70,5 +107,15 @@ void item_ownership_runtime_forget_owner(const item_owner_identity &owner);
 void item_ownership_runtime_forget_player_domain(uint32_t player_pid);
 void item_ownership_runtime_reset(void);
 size_t item_ownership_runtime_size(void);
+
+// Private complete boot-world cache observation, on the serialized game thread.
+// Strict ascending UID values are evidence only. Current active UID/root/parent
+// links all count, including foreign owners/contexts; no hydrate or authority.
+class item_ownership_runtime_published_native_observer final
+{
+	friend class quest_mobile_published_world_owner;
+	static bool snapshot_links(std::span<const uint64_t> selected_uids, size_t limit,
+				   std::vector<item_ownership_runtime_entry> *output) noexcept;
+};
 
 #endif

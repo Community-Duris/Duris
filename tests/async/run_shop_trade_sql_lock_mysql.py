@@ -13,20 +13,21 @@ WORK = ROOT / "bin/tests/economic-sql-shop-lock"
 WORK.mkdir(parents=True, exist_ok=True)
 
 sources = [
-    "src/persistence/economic_sql_shop_trade_transaction.c",
+    "src/persistence/economic_sql_shop_trade_transaction.c", "src/persistence/shop_item_runtime_payload.c", "src/economy/shop_trade_recovery_image.c",
     "src/item/economic_accounting_item_reference.c",
     "src/player/player_snapshot_codec.c",
     "src/persistence/economic_accounting_repository.c",
     "src/economy/shop_trade_accounting.c",
-    "src/economy/shop_trade_command.c",
+    "src/economy/shop_trade_command.c", "src/economy/shop_trade_recovery_manifest.c",
     "src/economy/currency_command.c",
     "src/economy/economic_accounting_intent.c",
-    "src/economy/economic_accounting_plan.c",
+    "src/economy/economic_accounting_plan.c", "src/economy/economic_source_event.c",
     "src/economy/economic_accounting_types.c",
-    "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",
+    "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",
     "src/persistence/critical_command.c",
 ]
 root_sources = [
+    'src/world/quest_mobile_native.c', 'src/persistence/quest_mobile_native_sql.c',
     "src/persistence/critical_command_repository.c",
     "src/persistence/economic_sql_bank_transaction.c",
     "src/persistence/economic_sql_collector_transaction.c",

@@ -1,3 +1,7 @@
+#include "item/held_retirement_recovery.h"
+#include "item/held_retirement_transport.h"
+#include "economy/native_mobile_birth_recovery.h"
+#include "world/native_quest_recovery_context.h"
 #include "persistence/death_recovery_visibility.h"
 #include "account/password_async.h"
 #include "account/account_async.h"
@@ -19,6 +23,7 @@
 #include "persistence/persistence_log.h"
 #include "persistence/quest_reward_obligation_pipeline.h"
 #include "world/quest_reward_recovery.h"
+#include "world/native_quest_frozen_continuation.h"
 #include "core/structs.h"
 #include "telemetry/telemetry_runtime.h"
 #include "net/comm.h"
@@ -31,6 +36,8 @@
 #include "player/output_preferences.h"
 #include "net/command_latency.h"
 #include "world/db.h"
+#include "world/quest_mobile_native_birth.h"
+#include "world/object_template.h"
 #include "world/events.h"
 #include "world/world_activity.h"
 #include "cmd/interp.h"
@@ -105,6 +112,9 @@
 #include "account/creation_availability_config.h"
 #include "item/material_rarity.h"
 #include "sql/sql.h"
+#include "sql/sql_economic_runtime.h"
+#include <chrono>
+#include <thread>
 #include "sql/sql_player_migration.h"
 #include "net/telnet.h"
 #include "world/timers.h"
@@ -124,6 +134,7 @@
 #include "persistence/maintenance_snapshot.h"
 #include "persistence/critical_command_coordinator.h"
 #include "economy/economic_command_admission.h"
+#include "economy/economic_gameplay_authority.h"
 #include "persistence/critical_command_repository.h"
 #include "persistence/critical_outbox.h"
 #include "persistence/corpse_lifecycle_transaction.h"
@@ -134,7 +145,10 @@
 #include "item/item_uid_allocator.h"
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_accounting_dispatch.h"
+#include "flatfile/flatfile_economic_runtime.h"
 #include "economy/auction_transaction.h"
+#include "economy/auction_native_publication.h"
+#include "economy/auction_native_command_context.h"
 #include "economy/collector_catalog_cache.h"
 #include "economy/collector_listing_pipeline.h"
 #include "economy/collector_maintenance.h"
@@ -284,6 +298,7 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	locker_identify_pulse();
 	corpse_lifecycle_transaction_handle_completions(completions, count);
 	item_movement_transaction_handle_completions(completions, count);
+	quest_mobile_native_birth_completions(completions, count);
 	shop_trade_transaction_handle_completions(completions, count);
 	auction_transaction_handle_completions(completions, count);
 	collector_transaction_handle_completions(completions, count);
@@ -295,11 +310,40 @@ static void critical_gameplay_handle_completions(const critical_completion *comp
 	player_death_restitution_runtime_handle_completions(completions, count);
 }
 
+static void critical_gameplay_drain_completions(const critical_completion *completions,
+						size_t count)
+{
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		item_movement_transaction_cancel_drop_preparations();
+		player_save_pipeline_pulse();
+	}
+	critical_gameplay_handle_completions(completions, count);
+	quest_mobile_native_birth_pulse(false);
+}
+
+// This TU owns the original drained repository ACK results. Only this owner
+// can forward them to the retained native continuation; no public boolean is used.
+class quest_native_reward_ack_owner final
+{
+    public:
+	static void acknowledged(const quest_reward_ack_completion &completion) noexcept
+	{
+		quest_native_frozen_continuation_owner::acknowledged(completion);
+	}
+};
+
 static void quest_reward_ack_pipeline_pulse(void)
 {
 	quest_reward_ack_completion completions[QUEST_REWARD_ACK_PIPELINE_PULSE_MAX] = {};
 	const size_t count = quest_reward_obligation_pipeline_pulse(
 		completions, QUEST_REWARD_ACK_PIPELINE_PULSE_MAX);
+	for (size_t index = 0; index < count; ++index)
+		if (!completions[index].error_code &&
+		    (completions[index].result == quest_reward_obligation_result::ok ||
+		     completions[index].result ==
+			     quest_reward_obligation_result::already_acknowledged))
+			quest_native_reward_ack_owner::acknowledged(completions[index]);
 	for (size_t index = 0; index < count; ++index)
 		if (completions[index].result != quest_reward_obligation_result::ok &&
 		    completions[index].result !=
@@ -312,12 +356,52 @@ static void quest_reward_ack_pipeline_pulse(void)
 static bool critical_gameplay_restore_replayed_command(const critical_command &command,
 						       void *context)
 {
-	// Replay runs under the coordinator mutex. Neither observer may call back
+	// Replay runs under the coordinator mutex. No observer may call back
 	// into the coordinator; refusal keeps the journal and fails startup closed.
 	return player_death_restitution_runtime_restore_replayed_command(command, context) &&
 	       currency_transaction_restore_replayed_command(command) &&
 	       spell_item_lifecycle_restore_replayed_command(command) &&
-	       item_movement_transaction_restore_replayed_command(command);
+	       item_movement_transaction_restore_replayed_command(command) &&
+	       quest_mobile_native_birth_restore(command) &&
+	       (command.type != critical_command_type::auction ||
+		command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+		command.payload_version != AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION ||
+		!command.publication_required ||
+		auction_native_publication_restore_replayed_command(command)) &&
+	       (command.type != critical_command_type::shop_trade ||
+		command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+		!command.publication_required ||
+		shop_trade_transaction_restore_replayed_command(command)) &&
+	       (command.type != critical_command_type::collector ||
+		command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+		!command.publication_required ||
+		collector_service_restore_replayed_purchase(command));
+}
+
+static bool
+critical_gameplay_restore_native_envelope(const critical_native_recovery_envelope &envelope, void *)
+{
+	if (envelope.command.type == critical_command_type::native_mobile_birth)
+		return quest_mobile_native_birth_restore(envelope);
+	if (envelope.command.type == critical_command_type::auction)
+		return auction_native_publication_restore(envelope);
+	if (held_retirement_transport_command(envelope.command))
+		return item_movement_transaction_restore_held_retirement_recovery(envelope);
+	if (envelope.command.type == critical_command_type::item_transfer)
+		return item_movement_transaction_restore_native_recovery(envelope);
+	return false;
+}
+static bool
+critical_gameplay_native_publication_body_valid(const critical_native_recovery_envelope &envelope,
+						const critical_completion &completion) noexcept
+{
+	if (envelope.command.type == critical_command_type::native_mobile_birth)
+		return native_mobile_birth_recovery_publication(envelope, completion);
+	if (envelope.command.type == critical_command_type::auction)
+		return auction_recovery_publication_context_valid(envelope, completion);
+	if (held_retirement_transport_command(envelope.command))
+		return held_retirement_recovery_publication_context_valid(envelope, completion);
+	return native_quest_recovery_publication_context_valid(envelope, completion);
 }
 
 #ifndef __NO_MYSQL__
@@ -343,6 +427,12 @@ critical_gameplay_outbox_delivery(const critical_outbox_record &record, void *co
 /** Request an immediate game-thread shutdown transition through the existing persistence gates. */
 void request_shutdown(int shutdown_type, const char *issuer, const char *reason)
 {
+	if (!quest_mobile_native_birth_lifecycle_ready())
+	{
+		logit(LOG_STATUS,
+		      "Shutdown request refused: original native birth preparation is unresolved.");
+		return;
+	}
 	// Launcher signals request an immediate transition from the game thread.
 	// A wall-clock "now" schedules another world event, which can be starved.
 	shutdownData.reboot_time = 0;
@@ -639,6 +729,11 @@ int main(int argc, char **argv)
 	{
 		fatal_boot_error("comm", "MySQL initialization failed!");
 	}
+	// Resolve only an already selected, receipt-bearing native authority before
+	// item/world hydration and before choosing save replay ownership. This never
+	// installs a baseline or infers activation from configuration.
+	if (!persistence_mode_requires_mysql() && !flatfile_economic_runtime_start())
+		fatal_boot_error("comm", "Flatfile accounting runtime evidence unavailable");
 	if (!persistence_mode_requires_mysql() &&
 	    !item_uid_allocator_reserve(nullptr, ITEM_UID_BOOT_RESERVATION))
 		fatal_boot_error("comm", "Could not reserve a collision-free flat item UID range");
@@ -943,6 +1038,13 @@ int run_the_game(int port, int sslport)
 	{
 		fprintf(stderr, "--  Skipping optional subsystems in mini mode.\r\n");
 	}
+	// Final SQL recovery binding provenance uses all existing optional startup
+	// assignments. Native stock restoration already used the parsed boot values.
+	// This pre-worker cut never reparses, prebinds instance procedures or grants
+	// accounting/publication authority; failure keeps recovery closed.
+	if (persistence_mode_requires_mysql() && !finalize_recovery_object_template_bindings())
+		logit(LOG_STATUS, "SQL recovery object-template final binding seal unavailable");
+
 	ssl_read_cert();
 
 	fprintf(stderr, "Assigning map glyph variations.\r\n");
@@ -987,8 +1089,33 @@ int run_the_game(int port, int sslport)
 	if (!mini_mode)
 		locker_async_init();
 	const char *journal_directory = getenv("PLAYER_SAVE_JOURNAL_DIR");
-	if (!player_save_pipeline_init(journal_directory,
-				       player_quarantine_recovery_revalidate_selected))
+	const bool owned_accounting_boot = economic_gameplay_authority::active();
+	const bool player_saves_ready =
+#ifdef __NO_MYSQL__
+		owned_accounting_boot ?
+			player_save_pipeline_prepare(
+				journal_directory, player_quarantine_recovery_revalidate_selected) :
+			player_save_pipeline_init(journal_directory,
+						  player_quarantine_recovery_revalidate_selected);
+#else
+		player_save_pipeline_prepare(journal_directory,
+					     player_quarantine_recovery_revalidate_selected);
+#endif
+	// Selected accounting policy is already held; full SQL/world recovery completes below.
+	// Preparation/revalidation must finish at epoch zero; critical replay then
+	// installs its original holds before any ordinary save execution starts.
+	if (owned_accounting_boot)
+	{
+		uint64_t ownership_epoch = 0;
+		if (!player_saves_ready ||
+		    !player_save_execution_guard::begin_ownership_epoch(&ownership_epoch))
+		{
+			fprintf(stderr,
+				"Active accounting save ownership unavailable; aborting boot.\n");
+			_exit(1);
+		}
+	}
+	if (!player_saves_ready)
 	{
 		logit(LOG_STATUS,
 		      "Player save pipeline unavailable; nonterminal saves fail closed.");
@@ -1006,15 +1133,36 @@ int run_the_game(int port, int sslport)
 	const bool critical_outbox_ready =
 		critical_outbox_init(critical_gameplay_outbox_delivery, NULL);
 #endif
-	if (
+	const bool critical_commands_ready =
 #ifndef __NO_MYSQL__
-		!critical_outbox_ready ||
+		critical_outbox_ready &&
 #endif
-		!critical_command_coordinator_init(critical_journal_directory, critical_apply, NULL,
-						   CRITICAL_COORDINATOR_DEFAULT_WORKERS,
-						   critical_gameplay_restore_replayed_command, NULL,
-						   critical_extension_validator))
+		critical_command_coordinator_init(
+			critical_journal_directory, critical_apply, NULL,
+			CRITICAL_COORDINATOR_DEFAULT_WORKERS,
+			critical_gameplay_restore_replayed_command, NULL,
+			critical_extension_validator, critical_gameplay_restore_native_envelope,
+			critical_gameplay_native_publication_body_valid,
+			{ native_mobile_birth_recovery_valid, native_mobile_birth_recovery_initial,
+			  native_mobile_birth_recovery_successor,
+			  native_mobile_birth_recovery_publication,
+			  native_mobile_birth_recovery_terminal },
+			native_quest_recovery_pair_context_valid,
+			{ auction_recovery_envelope_valid, auction_recovery_initial_valid,
+			  auction_recovery_successor_valid,
+			  auction_recovery_publication_context_valid,
+			  auction_recovery_terminal_valid });
+	quest_mobile_native_birth_replay_ready(critical_commands_ready);
+	if (!critical_commands_ready)
 	{
+		if (owned_accounting_boot)
+		{
+			// Replay may already retain original holds. Never discard them or
+			// enter gameplay after partial initialization of active authority.
+			fprintf(stderr,
+				"Active accounting critical recovery unavailable; aborting boot.\n");
+			_exit(1);
+		}
 		if (critical_command_coordinator_shutdown())
 		{
 			player_death_restitution_runtime_abort_all();
@@ -1028,6 +1176,60 @@ int run_the_game(int port, int sslport)
 		persistence_alert(AVATAR, "critical_command", "pipeline", "none", "none",
 				  "start_failed", "check critical schema and journal");
 	}
+	critical_command_coordinator_set_drain_observer(critical_gameplay_drain_completions);
+#ifndef __NO_MYSQL__
+	if (player_saves_ready && critical_commands_ready)
+	{
+		// Actual validators/generation/save holds now exist, and all original
+		// world/template/procedure seals are complete. The retained boot owner
+		// pulses only accepted recovery, restoring genuine journal births and
+		// SQL-only published lifetimes before regular projection/save admission.
+		const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(60);
+		for (;;)
+		{
+			const auto progress = sql_economic_runtime_recover_boot_step(
+				critical_gameplay_drain_completions);
+			if (progress == sql_economic_boot_progress::ready)
+				break;
+			if (progress == sql_economic_boot_progress::refused ||
+			    std::chrono::steady_clock::now() >= deadline)
+			{
+				fprintf(stderr,
+					"Selected SQL/world accounting recovery unavailable; aborting boot.\n");
+				_exit(1);
+			}
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+	}
+#endif
+	// Critical replay installs original save holds before any save replay/worker
+	// can execute. Failed critical initialization keeps preparation closed and
+	// retains its original slots for shutdown/restart, rather than running past it.
+	if (
+#ifdef __NO_MYSQL__
+		owned_accounting_boot &&
+#endif
+		player_saves_ready && critical_commands_ready && !player_save_pipeline_start())
+	{
+		if (owned_accounting_boot)
+		{
+			fprintf(stderr,
+				"Active accounting save execution unavailable; aborting boot.\n");
+			_exit(1);
+		}
+		logit(LOG_STATUS,
+		      "Player save execution unavailable; prepared recovery remains held.");
+		persistence_alert(AVATAR, "player_save", "pipeline", "none", "none", "start_failed",
+				  "check prepared save recovery");
+	}
+#ifndef __NO_MYSQL__
+	if (player_saves_ready && critical_commands_ready &&
+	    !sql_economic_runtime_finish_boot_admission())
+	{
+		fprintf(stderr, "SQL accounting boot admission unavailable; aborting boot.\n");
+		_exit(1);
+	}
+#endif
 	if (!collector_catalog_cache_refresh())
 		logit(LOG_STATUS,
 		      "Collector catalog refresh unavailable; collector gameplay fails closed.");
@@ -1037,7 +1239,6 @@ int run_the_game(int port, int sslport)
 	if (!locker_identify_init(critical_journal_directory))
 		logit(LOG_STATUS,
 		      "Locker identification unavailable: receipt storage could not initialize.");
-	critical_command_coordinator_set_drain_observer(critical_gameplay_handle_completions);
 	if (!mini_mode)
 	{
 		const uint64_t maintenance_instance =
@@ -1096,20 +1297,44 @@ int run_the_game(int port, int sslport)
 	account_recovery_shutdown();
 	password_login_shutdown();
 	player_death_restitution_runtime_shutdown();
-	const bool critical_coordinator_stopped = critical_command_coordinator_shutdown();
+	const bool owned_saves_present = player_save_execution_guard::current_ownership_epoch() !=
+					 0;
+	const bool owned_saves_stopped = !owned_saves_present ||
+					 player_save_pipeline_shutdown_owned();
+	if (!owned_saves_stopped)
+	{
+		fprintf(stderr,
+			"Owned save shutdown incomplete; retaining journals for cold recovery.\n");
+		// Normal return destroys SQL/world dependencies and joinable globals.
+		// A refused close is an unclean exit, never successful owner release.
+		_exit(1);
+	}
+	const bool critical_coordinator_stopped = owned_saves_stopped &&
+						  critical_command_coordinator_shutdown();
 	if (!critical_coordinator_stopped)
+	{
 		logit(LOG_EXIT,
 		      "Critical coordinator refused shutdown after lifecycle guard acquisition.");
+		if (owned_saves_present)
+			_exit(1);
+	}
 	locker_identify_shutdown();
 	if (critical_coordinator_stopped)
 		critical_outbox_shutdown();
 	if (critical_coordinator_stopped && !_pwipe)
 	{
 		locker_async_shutdown();
-		player_save_pipeline_shutdown();
+		if (!owned_saves_present)
+			player_save_pipeline_shutdown();
 	}
 
-	/* Don't need this anymore, as dropped artis are handled in real time on the DB.
+	// Refused/cancelled shutdown and copyover retain their runtime projection.
+	// Pwipe skips ordinary asynchronous owner closure and is not this boundary.
+	if (critical_coordinator_stopped && owned_saves_stopped && !_pwipe && !_copyover &&
+	    !persistence_mode_requires_mysql())
+		flatfile_economic_runtime_shutdown();
+
+		/* Don't need this anymore, as dropped artis are handled in real time on the DB.
 	// Look for dropped artis and remove them from the next boot.
 	dropped_arti_hunt();
 	*/
@@ -2136,6 +2361,7 @@ static void run_event_phase(game_loop_pulse_context &ctx)
 	}
 
 	item_creation_grant_prepare_pulse();
+	item_movement_transaction_drop_prepare_pulse();
 	artifact_mana_pulse();
 	device_actions_pulse();
 
@@ -2156,6 +2382,10 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 		flush_pending_ship_saves();
 		locker_async_pulse();
 		corpse_lifecycle_transaction_pulse();
+		shop_trade_preparation_owner::pulse();
+		auction_native_publication_pulse();
+		shop_trade_transaction_restore_pulse();
+		quest_mobile_native_birth_pulse(true);
 		critical_completion critical_completions[64] = {};
 		const size_t critical_completion_count =
 			critical_command_coordinator_pulse(critical_completions, 64);
@@ -2176,20 +2406,25 @@ static void run_recurring_persistence_phase(game_loop_pulse_context &ctx)
 				      critical_apply_outcome::ambiguous_commit) &&
 			     critical_completions[index].attempt >
 				     CRITICAL_COORDINATOR_MAX_RETRIES))
+			{
+				char summary[256] = {};
+				snprintf(summary, sizeof(summary),
+					 "correlation=%s error=%u refusal=%s attempts=%u",
+					 critical_completions[index].recovery_correlation[0] ?
+						 critical_completions[index]
+							 .recovery_correlation.data() :
+						 "none",
+					 critical_completions[index].error_code,
+					 death_recovery_refusal_name(
+						 critical_completions[index].error_code),
+					 critical_completions[index].attempt);
 				persistence_alert(
 					AVATAR, "critical_command", "completion", "none",
 					critical_failure_stage_name(
 						critical_completions[index].failure_stage),
 					"integrity_failure",
-					"correlation=%s error=%u refusal=%s attempts=%u",
-					critical_completions[index].recovery_correlation[0] ?
-						critical_completions[index]
-							.recovery_correlation.data() :
-						"none",
-					critical_completions[index].error_code,
-					death_recovery_refusal_name(
-						critical_completions[index].error_code),
-					critical_completions[index].attempt);
+					death_recovery_literal_detail(summary));
+			}
 		player_save_pipeline_pulse();
 		quest_reward_recovery_pulse();
 		persistence_pulse_character_saves();
@@ -2429,6 +2664,7 @@ static void run_pulse_reset_phase(game_loop_pulse_context &ctx)
 	latency_trace_record("total_tick", loop_us, loop_tick);
 	if (!(tics % 300))
 	{
+		world_activity_log_diagnostics();
 		latency_trace_snapshot snapshot = {};
 		latency_trace_snapshot_take_and_reset(&snapshot);
 		FILE *_ltf = fopen("logs/latency_trace.log", "a");
@@ -2669,6 +2905,16 @@ resume_game_loop:
 						 (_reboot || _autoboot || _pwipe ? 'D' : 'S'));
 	if (_copyover)
 	{
+		if (player_save_execution_guard::current_ownership_epoch())
+		{
+			persistence_alert(AVATAR, "player_save", "copyover", "none", "none",
+					  "owned_lifecycle_pending", "copyover_cancelled=1");
+			shutdownflag = 0;
+			_reboot = 0;
+			_copyover = 0;
+			_autoboot = 0;
+			goto resume_game_loop;
+		}
 		if (!critical_command_coordinator_try_acquire_lifecycle_guard())
 		{
 			refuse_lifecycle_for_active_cutover_owner("copyover");
@@ -2763,7 +3009,9 @@ resume_game_loop:
 		critical_command_coordinator_release_lifecycle_guard();
 		goto resume_game_loop;
 	}
-	if (!_pwipe && !player_save_pipeline_drain(3000))
+	if (!_pwipe && !(player_save_execution_guard::current_ownership_epoch() ?
+				 player_save_pipeline_drain_owned(3000) :
+				 player_save_pipeline_drain(3000)))
 	{
 		critical_command_coordinator_resume();
 		critical_outbox_resume();

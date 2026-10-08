@@ -1,7 +1,12 @@
 #include "economy/economic_command_admission.h"
+#include "economy/auction_repository.h"
+#include "economy/auction_native_command_context.h"
+#include "economy/native_mobile_birth_command.h"
 #include "economy/economic_currency_adapter.h"
 #include "economy/coin_transfer_accounting.h"
 #include "economy/item_transfer_accounting.h"
+#include "item/native_quest_transport.h"
+#include "economy/collector_accounting.h"
 
 #include <new>
 
@@ -16,6 +21,13 @@ uint64_t little_u64(std::span<const uint8_t> input, size_t offset)
 }
 }
 
+bool economic_shop_trade_admission_available() noexcept
+{
+	// SHOP has no branch in the maintained schema-2 admission allowlist yet.
+	// Change alongside that complete route, never as a producer-side override.
+	return false;
+}
+
 bool economic_command_admission_supported(const critical_command &command) noexcept
 {
 	using error = economic_accounting_error;
@@ -24,6 +36,25 @@ bool economic_command_admission_supported(const critical_command &command) noexc
 		return false;
 	try
 	{
+		if (command.type == critical_command_type::auction)
+		{
+#ifdef __NO_MYSQL__
+			return false;
+#else
+			// Original immutable typed support; current SQL/world authority
+			// and guarded publication remain with the real native owner.
+			return command.publication_required &&
+			       command.payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION &&
+			       auction_repository_frozen_accounting_valid(command);
+#endif
+		}
+		// Immutable type support only. Original source admission and guarded
+		// native publication/ACK remain the private birth owner's obligations.
+		if (command.type == critical_command_type::native_mobile_birth)
+		{
+			quest_mobile_native_image original;
+			return native_mobile_birth_command_decode(command, &original) == error::ok;
+		}
 		economic_frozen_intent intent;
 		if (economic_intent_decode(command.accounting_intent, &intent) != error::ok)
 			return false;
@@ -90,7 +121,34 @@ bool economic_command_admission_supported(const critical_command &command) noexc
 		}
 		else if (command.type == critical_command_type::item_transfer)
 		{
+			if (native_quest_transport_command(command))
+			{
+				// Immutable type support only. Rebuild the complete original intent;
+				// live held ownership, birth/source and SQL authority remain mandatory.
+				if (!command.publication_required ||
+				    meta.writer_id != ECONOMIC_WRITER_ITEM_TRANSFER ||
+				    meta.actor_kind != economic_actor_kind::domain ||
+				    meta.actor_id > INT32_MAX)
+					return false;
+				admission.accepted_at_usec = 0;
+				const auto *source = meta.source_event ? &*meta.source_event :
+									 nullptr;
+				return item_native_mobile_accounting_intent(
+					       admission, meta.lineage, meta.epoch,
+					       static_cast<uint32_t>(meta.actor_id), source,
+					       &expected) == error::ok &&
+				       expected == command.accounting_intent;
+			}
 			return item_transfer_accounting_command_supported(command);
+		}
+		else if (command.type == critical_command_type::collector)
+		{
+			collector_command_payload payload;
+			collector::record listing;
+			economic_account_key wallet, bank;
+			return collector_purchase_accounting_decode(command, &intent, &payload,
+								    &listing, &wallet,
+								    &bank) == error::ok;
 		}
 		else
 			return false;
@@ -104,6 +162,9 @@ bool economic_command_admission_supported(const critical_command &command) noexc
 
 bool economic_flatfile_command_admission_supported(const critical_command &command) noexcept
 {
+	// Native acknowledged mutation has no qualified flat-file publication owner.
+	if (native_quest_transport_command(command))
+		return false;
 	if (command.type == critical_command_type::account_bank)
 	{
 		currency_command_payload payload = {};

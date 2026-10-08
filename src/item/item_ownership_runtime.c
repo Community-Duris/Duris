@@ -1,5 +1,6 @@
 #include "item/item_ownership_runtime.h"
 #include "item/craft_pouch_mutation.h"
+#include "core/prototypes.h"
 
 #include "economy/collector_command.h"
 #include "player/player_snapshot_codec.h"
@@ -57,6 +58,115 @@ bool item_ownership_runtime_snapshot_owner(const item_owner_identity &owner, siz
 		return true;
 	}
 	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+static bool snapshot_root(uint64_t root_item_uid, size_t limit, bool active_only,
+			  std::vector<item_ownership_runtime_entry> *snapshot)
+{
+	if (!snapshot)
+		return false;
+	snapshot->clear();
+	if (!root_item_uid || !limit)
+		return false;
+	try
+	{
+		// Count before allocating. The serialized game-thread registry cannot
+		// change between passes, and unrelated roots never consume the budget.
+		size_t count = 0;
+		for (const auto &[uid, entry] : entries)
+		{
+			(void)uid;
+			if (entry.root_item_uid != root_item_uid ||
+			    (active_only && entry.state != item_custody_state::active))
+				continue;
+			if (count >= limit)
+				return false;
+			++count;
+		}
+		std::vector<item_ownership_runtime_entry> captured;
+		captured.reserve(count);
+		for (const auto &[uid, entry] : entries)
+		{
+			(void)uid;
+			if (entry.root_item_uid == root_item_uid &&
+			    (!active_only || entry.state == item_custody_state::active))
+				captured.push_back(entry);
+		}
+		std::sort(captured.begin(), captured.end(), [](const auto &left, const auto &right)
+			  { return left.item_uid < right.item_uid; });
+		*snapshot = std::move(captured);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
+}
+
+bool item_ownership_runtime_snapshot_root(uint64_t root_item_uid, size_t limit,
+					  std::vector<item_ownership_runtime_entry> *snapshot)
+{
+	return snapshot_root(root_item_uid, limit, false, snapshot);
+}
+
+bool item_ownership_runtime_snapshot_active_root(
+	uint64_t root_item_uid, size_t limit, std::vector<item_ownership_runtime_entry> *snapshot)
+{
+	return snapshot_root(root_item_uid, limit, true, snapshot);
+}
+
+bool item_ownership_runtime_published_native_observer::snapshot_links(
+	std::span<const uint64_t> selected_uids, size_t limit,
+	std::vector<item_ownership_runtime_entry> *output) noexcept
+{
+	if (!output || !limit || limit > ITEM_OWNERSHIP_RUNTIME_MAX ||
+	    selected_uids.size() > PLAYER_SNAPSHOT_MAX_ROWS)
+		return false;
+	uint64_t previous = 0;
+	for (const auto uid : selected_uids)
+	{
+		if (!uid || uid == UINT64_MAX || uid <= previous)
+			return false;
+		previous = uid;
+	}
+	try
+	{
+		const auto selected = [&](uint64_t uid) noexcept
+		{ return std::binary_search(selected_uids.begin(), selected_uids.end(), uid); };
+		const auto matches = [&](const item_ownership_runtime_entry &entry) noexcept
+		{
+			return entry.state == item_custody_state::active &&
+			       (selected(entry.item_uid) || selected(entry.root_item_uid) ||
+				(entry.parent_item_uid && selected(entry.parent_item_uid)));
+		};
+		size_t count = 0;
+		for (const auto &[uid, entry] : entries)
+		{
+			(void)uid;
+			if (matches(entry))
+			{
+				if (count >= limit)
+					return false;
+				++count;
+			}
+		}
+		std::vector<item_ownership_runtime_entry> captured;
+		captured.reserve(count);
+		for (const auto &[uid, entry] : entries)
+		{
+			(void)uid;
+			if (matches(entry))
+				captured.push_back(entry);
+		}
+		std::sort(captured.begin(), captured.end(),
+			  [](const auto &a, const auto &b) { return a.item_uid < b.item_uid; });
+		*output = std::move(captured);
+		return true;
+	}
+	catch (...)
 	{
 		return false;
 	}
@@ -483,6 +593,18 @@ bool item_ownership_runtime_lookup(uint64_t item_uid, item_ownership_runtime_ent
 	return true;
 }
 
+bool item_ownership_runtime_peek_owner_revision(const item_owner_identity &owner,
+						uint64_t *revision) noexcept
+{
+	if (!revision || !item_owner_identity_valid(owner))
+		return false;
+	const auto found = owner_revisions.find(owner);
+	if (found == owner_revisions.end())
+		return false;
+	*revision = found->second;
+	return true;
+}
+
 bool item_ownership_runtime_owner_revision(const item_owner_identity &owner, uint64_t *revision)
 {
 	if (!revision)
@@ -603,6 +725,145 @@ bool item_ownership_runtime_apply_craft(const item_transfer_payload &payload,
 						    result.from_owner_revision) &&
 	       item_ownership_runtime_hydrate_owner({ item_owner_type::destruction, 0, 0 },
 						    result.from_owner_revision);
+}
+
+bool item_ownership_runtime_native_quest_publication_owner::apply(
+	const item_transfer_payload &payload, const item_transfer_result &result,
+	publication_result phase, std::span<const item_ownership_runtime_entry> current_custody,
+	uint64_t current_from_revision, uint64_t current_to_revision,
+	uint64_t current_player_revision) noexcept
+{
+	if (!nevent_is_game_thread())
+		return false;
+	try
+	{
+		if (phase != publication_result::applied && phase != publication_result::rejected)
+			return false;
+		const bool applied = phase == publication_result::applied;
+		const bool consumption = payload.native_mobile.action ==
+					 item_native_mobile_action::consumption;
+		if (!item_transfer_native_mobile_recovery_shape_valid(payload) ||
+		    current_custody.size() >
+			    2 * PLAYER_SNAPSHOT_MAX_OBJECTS + ITEM_TRANSFER_MAX_ITEMS ||
+		    (applied && (result.item_count != payload.item_count ||
+				 result.root_item_uid != item_transfer_result_root(payload) ||
+				 payload.expected_from_revision == UINT64_MAX ||
+				 payload.expected_to_revision == UINT64_MAX ||
+				 result.from_owner_revision != payload.expected_from_revision + 1 ||
+				 result.to_owner_revision != payload.expected_to_revision + 1 ||
+				 current_from_revision != result.from_owner_revision ||
+				 (consumption ? current_to_revision < result.to_owner_revision :
+						current_to_revision != result.to_owner_revision) ||
+				 result.corpse_revision || result.collector_catalog_changed)))
+			return false;
+		const item_owner_identity player{ item_owner_type::player,
+						  payload.native_recovery.player_pid, 0 };
+		auto from = owner_revisions.find(payload.from_owner);
+		auto to = owner_revisions.find(payload.to_owner);
+		auto giver = owner_revisions.find(player);
+		if (from == owner_revisions.end() || to == owner_revisions.end() ||
+		    giver == owner_revisions.end() ||
+		    from->second !=
+			    (applied ? payload.expected_from_revision : current_from_revision) ||
+		    (consumption ? (to->second > current_to_revision ||
+				    (applied && to->second < payload.expected_to_revision)) :
+				   to->second != (applied ? payload.expected_to_revision :
+							    current_to_revision)) ||
+		    (consumption ? giver->second > current_player_revision :
+				   current_player_revision != current_from_revision))
+			return false;
+		struct projected
+		{
+			item_ownership_runtime_entry *entry;
+			item_ownership_runtime_entry after;
+		};
+		std::vector<projected> changes;
+		changes.reserve(current_custody.size());
+		std::unordered_set<uint64_t> seen;
+		seen.reserve(current_custody.size());
+		size_t selected_count = 0;
+		uint64_t maximum = 0;
+		for (const auto &after : current_custody)
+		{
+			if (!after.item_uid || !seen.insert(after.item_uid).second)
+				return false;
+			auto original = std::lower_bound(payload.items.begin(),
+							 payload.items.begin() + payload.item_count,
+							 after.item_uid,
+							 [](const auto &item, uint64_t uid)
+							 { return item.item_uid < uid; });
+			const bool selected = original !=
+						      payload.items.begin() + payload.item_count &&
+					      original->item_uid == after.item_uid;
+			auto before = entries.find(after.item_uid);
+			auto current_owner = owner_revisions.find(after.owner);
+			const bool known_owner =
+				item_owner_identity_equal(after.owner, player) ||
+				item_owner_identity_equal(after.owner, payload.from_owner) ||
+				item_owner_identity_equal(after.owner, payload.to_owner);
+			const uint64_t owner_revision =
+				item_owner_identity_equal(after.owner, player) ?
+					current_player_revision :
+				item_owner_identity_equal(after.owner, payload.from_owner) ?
+					current_from_revision :
+					current_to_revision;
+			if (!known_owner || after.owner_revision != owner_revision ||
+			    before == entries.end() || current_owner == owner_revisions.end())
+				return false;
+			if (selected && applied)
+			{
+				uint64_t root = 0, parent = 0;
+				if (!original->expected_item_revision ||
+				    original->expected_item_revision == UINT64_MAX ||
+				    !item_transfer_target_topology(payload, original->item_uid,
+								   &root, &parent) ||
+				    before->second.item_revision !=
+					    original->expected_item_revision ||
+				    before->second.vnum != original->vnum ||
+				    before->second.root_item_uid != original->root_item_uid ||
+				    before->second.parent_item_uid != original->parent_item_uid ||
+				    before->second.state != item_custody_state::active ||
+				    !item_owner_identity_equal(before->second.owner,
+							       payload.from_owner) ||
+				    before->second.owner_revision > from->second ||
+				    after.root_item_uid != root ||
+				    after.parent_item_uid != parent ||
+				    after.item_revision != original->expected_item_revision + 1 ||
+				    after.vnum != original->vnum ||
+				    after.state != (consumption ? item_custody_state::destroyed :
+								  item_custody_state::active) ||
+				    !item_owner_identity_equal(after.owner, payload.to_owner))
+					return false;
+				++selected_count;
+				maximum = std::max(maximum, after.item_revision);
+			}
+			else if (before->second.root_item_uid != after.root_item_uid ||
+				 before->second.parent_item_uid != after.parent_item_uid ||
+				 before->second.item_revision != after.item_revision ||
+				 before->second.vnum != after.vnum ||
+				 before->second.state != after.state ||
+				 !item_owner_identity_equal(before->second.owner, after.owner) ||
+				 before->second.owner_revision > current_owner->second)
+				return false;
+			changes.push_back({ &before->second, after });
+		}
+		if (applied &&
+		    (selected_count != payload.item_count || maximum != result.max_item_revision))
+			return false;
+		// Original full physical/held-player proof and complete active cache
+		// census are required by the sole friend before this value projection.
+		// Every allocation/comparison precedes serialized nonfailing node writes.
+		for (const auto &change : changes)
+			*change.entry = change.after;
+		from->second = current_from_revision;
+		to->second = current_to_revision;
+		giver->second = current_player_revision;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
 }
 
 bool item_ownership_runtime_apply(const item_transfer_payload &payload,

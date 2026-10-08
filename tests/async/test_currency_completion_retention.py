@@ -367,12 +367,23 @@ int main(int argc, char **argv)
         assert(item_transfer_command_build(&pile_endpoint.change, pile_operation, pile,
                                            critical_source_site::command,
                                            critical_deadline_class::interactive));
-        assert(currency_transaction_submit_coin(&actor, pile_transfer, coin_completed,
-                                                nullptr, 0));
-        assert(held_submissions == 2 && submissions == 0 && submitted.publication_required);
-        assert(submitted.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
-               critical_command_envelope_valid(submitted));
-        const critical_command pile_replayed = submitted;
+        // An unqualified physical publisher refuses NEW schema-2 admission.
+        // Recovery still retains a previously admitted immutable operation.
+        assert(!currency_transaction_submit_coin(&actor, pile_transfer, coin_completed,
+                                                 nullptr, 0));
+        assert(held_submissions == 1 && submissions == 0);
+        critical_operation_id root_operation = {};
+        assert(critical_operation_id_generate(&root_operation));
+        critical_command pile_replayed;
+        assert(coin_transfer_command_build(&pile_replayed, root_operation, pile_transfer,
+                                           critical_source_site::command,
+                                           critical_deadline_class::interactive));
+        assert(economic_gameplay_authority::prepare_coin_transfer(&pile_replayed) ==
+               economic_accounting_error::ok);
+        pile_replayed.publication_required = true;
+        pile_replayed.accepted_at_usec = 1;
+        assert(pile_replayed.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+               critical_command_envelope_valid(pile_replayed));
         currency_transaction_reset_for_tests();
         assert(currency_transaction_restore_replayed_command(pile_replayed));
         coin_transfer_result pile_result = {};
@@ -391,9 +402,14 @@ int main(int argc, char **argv)
         receipt.result_size = bytes.size();
         std::copy(bytes.begin(), bytes.end(), receipt.result_payload.begin());
         currency_transaction_handle_completions(&receipt, 1);
-        assert(publication_acks == 2 && GET_COPPER(&actor) == 3);
-        assert(currency_transaction_health_copy().pending == 0 &&
-               !currency_transaction_player_busy(&actor));
+        assert(publication_acks == 1 && GET_COPPER(&actor) == 3);
+        assert(currency_transaction_health_copy().pending == 1 &&
+               currency_transaction_health_copy().publication_blocked == 1 &&
+               currency_transaction_player_busy(&actor) &&
+               currency_transaction_coin_item_busy(pile_uid));
+        currency_transaction_handle_completions(&receipt, 1);
+        currency_transaction_handle_completions(nullptr, 0);
+        assert(publication_acks == 1 && currency_transaction_health_copy().pending == 1);
         return 0;
     }
     if (scenario == "active_prepared_wallet_payment" ||
@@ -1222,8 +1238,8 @@ def main():
                 rel("currency_command.c"), rel("critical_command.c"),
                 rel("economic_currency_adapter.c"), rel("economic_accounting_intent.c"),
                 rel("economic_gameplay_authority.c"), rel("economic_command_admission.c"),
-                rel("economic_accounting_plan.c"), rel("economic_accounting_types.c"),
-                rel("coin_transfer_command.c"), rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
+                rel("economic_accounting_plan.c"), rel("economic_source_event.c"), rel("economic_accounting_types.c"),
+                rel("coin_transfer_command.c"), rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
                 rel("coin_transfer_accounting.c"),
                 rel("item_transfer_accounting.c"),
                 rel("player_snapshot_codec.c"), "-Wl,--gc-sections", "-lcrypto",

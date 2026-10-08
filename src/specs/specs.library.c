@@ -27,7 +27,13 @@
 #include "world/specs.prototypes.h"
 #include "magic/spells.h"
 #include "mob/studioproclib.h"
+#include "player/player_snapshot.h"
+#include "economy/native_mobile_birth_recipe.h"
 #include "world/weather.h"
+#include "world/object_template.h"
+#include <charconv>
+#include <string_view>
+#include <climits>
 
 /*
    external variables
@@ -305,6 +311,134 @@ struct ObjProcLib
 	  "'enter <keyword>' teleports the actor to a room.", PROCLIB_TRANSPORTER_HELP },
 };
 
+bool proclib_saved_binding_eligible(P_obj object, bool *eligible) noexcept
+{
+	if (!object || !eligible)
+		return false;
+	bool found = false;
+	size_t description_count = 0;
+	if (IS_SET(object->extra_flags, ITEM_PROCLIB))
+		for (const extra_descr_data *description = object->ex_description; description;
+		     description = description->next)
+		{
+			if (++description_count > PLAYER_SNAPSHOT_MAX_ROWS)
+				return false;
+			if (!description->keyword || strn_cmp(description->keyword, "_proclib_", 9))
+				continue;
+			if (!description->description)
+				return false;
+			const size_t length = strnlen(description->description,
+						      PLAYER_SNAPSHOT_MAX_STRING_BYTES + 1);
+			if (!length || length > PLAYER_SNAPSHOT_MAX_STRING_BYTES)
+				return false;
+			const ObjProcLib *library = nullptr;
+			for (size_t i = ARRAY_SIZE(object_proc_libs); i-- > 0;)
+				if (object_proc_libs[i].func &&
+				    !strn_cmp(description->keyword + 9,
+					      object_proc_libs[i].procName,
+					      strlen(object_proc_libs[i].procName)))
+				{
+					library = &object_proc_libs[i];
+					break;
+				}
+			if (!library || !library->parse_params)
+				return false;
+			// A saved flag is constructor-success evidence only under the
+			// owner's original locked literal/UID proof. Validate its existing
+			// post-parse storage shape; never parse user arguments again.
+			const std::string_view value(description->description, length);
+			const size_t split = value.find(static_cast<char>(0xff));
+			const auto integer = [](std::string_view text, int &result)
+			{
+				const auto parsed = std::from_chars(
+					text.data(), text.data() + text.size(), result);
+				return !text.empty() && parsed.ec == std::errc{} &&
+				       parsed.ptr == text.data() + text.size();
+			};
+			if (library->func == proclibobj_hummer)
+			{
+				if (value != " ")
+					return false;
+			}
+			else if (library->func == proclibobj_sayresponse)
+			{
+				if (split == std::string_view::npos || !split ||
+				    split + 1 >= value.size())
+					return false;
+			}
+			else if (library->func == proclibobj_transporter)
+			{
+				int destination = 0;
+				if (split == std::string_view::npos || !split ||
+				    !integer(value.substr(split + 1), destination) ||
+				    destination <= 0)
+					return false;
+			}
+			else if (library->func == proclibobj_actroom ||
+				 library->func == proclibobj_actworn)
+			{
+				int chance = 0;
+				if (split == std::string_view::npos ||
+				    !integer(value.substr(0, split), chance) || !chance ||
+				    split + 1 >= value.size())
+					return false;
+				if (library->func == proclibobj_actworn)
+				{
+					const size_t second =
+						value.find(static_cast<char>(0xff), split + 1);
+					if (second == std::string_view::npos ||
+					    second == split + 1 || second + 1 >= value.size())
+						return false;
+				}
+			}
+			else
+				return false;
+			found = true;
+		}
+	if (IS_SET(object->extra_flags, ITEM_PROCLIB) && !found)
+		return false;
+	*eligible = found;
+	return true;
+}
+
+bool proclib_saved_periodic_probe(P_obj object, size_t description_index, bool *periodic) noexcept
+{
+	if (!object || !periodic || description_index >= PLAYER_SNAPSHOT_MAX_ROWS)
+		return false;
+	try
+	{
+		// The native owner has just proved the exact ordered literal descriptions
+		// in its complete fresh world/SQL cut. This helper supplies no authority.
+		const extra_descr_data *description = object->ex_description;
+		for (size_t index = 0; index < description_index && description; ++index)
+			description = description->next;
+		if (!description)
+			return false;
+		bool requested = false;
+		if (description->keyword && description->description &&
+		    !strn_cmp(description->keyword, "_proclib_", 9))
+			for (size_t index = 0; index < ARRAY_SIZE(object_proc_libs); ++index)
+				if (object_proc_libs[index].func &&
+				    !strn_cmp(description->keyword + 9,
+					      object_proc_libs[index].procName,
+					      strlen(object_proc_libs[index].procName)))
+				{
+					// Exactly the existing constructor eligibility probe. In particular
+					// command-only sayresponse/transporter return FALSE. Already saved
+					// parsed parameters are never parsed again or added to the object.
+					requested = object_proc_libs[index].func(
+						object, nullptr, CMD_SET_PERIODIC, nullptr);
+					break;
+				}
+		*periodic = requested;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
 int proclib_obj_proc(P_obj obj, P_char ch, int cmd, char *argument);
 
 // event func - just redirects to generic proclib_obj_proc (which is in obj proc format)
@@ -383,6 +517,85 @@ void proclibUsage(P_char ch)
 // as the in-mud proclib command.
 //
 // 0 - success.  <0 is a procname issue,  >0 is a params issue (and the retVal is the idx+1
+int quest_mobile_native_original_proclib::prepare(P_obj obj, char *procName, char *args,
+						  size_t *library_index)
+{
+	int libIdx = -1;
+	for (libIdx = (sizeof(object_proc_libs) / sizeof(ObjProcLib)) - 1; libIdx >= 0; libIdx--)
+	{
+		if (!strn_cmp(procName, object_proc_libs[libIdx].procName,
+			      strlen(object_proc_libs[libIdx].procName)) &&
+		    object_proc_libs[libIdx].func)
+			break;
+	}
+	if (-1 == libIdx)
+		return -1;
+
+	char *params = object_proc_libs[libIdx].parse_params(args);
+	if (!params)
+		return (libIdx + 1);
+
+	// find a suffix to use...
+	int suffix = 0;
+	struct extra_descr_data *ed = obj->ex_description;
+	while (ed)
+	{
+		if (ed->keyword)
+		{
+			if (!strn_cmp(ed->keyword, "_proclib_", 9) &&
+			    !strn_cmp(ed->keyword + 9, object_proc_libs[libIdx].procName,
+				      strlen(object_proc_libs[libIdx].procName)))
+			{
+				int tempSuff =
+					atoi(ed->keyword +
+					     (9 + strlen(object_proc_libs[libIdx].procName)));
+				if (tempSuff > suffix)
+					suffix = tempSuff;
+			}
+		}
+		ed = ed->next;
+	}
+	char keyword[50];
+	snprintf(keyword, 50, "_proclib_%s%d", object_proc_libs[libIdx].procName, suffix + 1);
+
+	CREATE(ed, struct extra_descr_data, 1, MEM_TAG_EXDESCD);
+	ed->next = obj->ex_description;
+	obj->ex_description = ed;
+	CREATE(ed->keyword, char, strlen(keyword) + 1, MEM_TAG_EXDESCD);
+	strcpy(ed->keyword, keyword);
+	ed->description = params;
+	obj->str_mask |= STRUNG_EDESC;
+	SET_BIT(obj->extra_flags, ITEM_PROCLIB);
+
+	*library_index = static_cast<size_t>(libIdx);
+	return 0;
+}
+bool quest_mobile_native_original_proclib::probe(P_obj object, size_t index,
+						 bool *periodic) noexcept
+{
+	if (!object || !periodic || index >= ARRAY_SIZE(object_proc_libs) ||
+	    !object_proc_libs[index].func)
+		return false;
+	const auto function = object_proc_libs[index].func;
+	// These existing probes return before all other callback work. An unknown
+	// future library needs its original constructor participant, not prediction.
+	if (function != proclibobj_hummer && function != proclibobj_actroom &&
+	    function != proclibobj_actworn && function != proclibobj_sayresponse &&
+	    function != proclibobj_transporter)
+		return false;
+	try
+	{
+		const bool requested =
+			object_proc_libs[index].func(object, nullptr, CMD_SET_PERIODIC, nullptr);
+		*periodic = requested;
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
 int proclibObj_add(P_obj obj, char *procName, char *args)
 {
 	int libIdx = -1;
@@ -445,9 +658,12 @@ int proclibObj_add(P_obj obj, char *procName, char *args)
 	   added at runtime is still reachable. */
 	if ((obj->R_num >= 0) && obj_index[obj->R_num].func.obj != proclib_obj_cmd_bridge)
 	{
+		const auto recovery_before = obj_index[obj->R_num].func.obj;
 		if (obj_index[obj->R_num].func.obj)
 			proclib_chain_install(obj->R_num, obj_index[obj->R_num].func.obj);
 		obj_index[obj->R_num].func.obj = proclib_obj_cmd_bridge;
+		shop_trade_original_procedure_binding_stage::observe_normal_binding(
+			obj->R_num, recovery_before, proclib_obj_cmd_bridge);
 	}
 
 	return 0;
@@ -559,4 +775,43 @@ void do_proclib(P_char ch, char *argument, int /*cmd*/)
 	{
 		proclibUsage(ch);
 	}
+}
+
+bool quest_mobile_native_original_proclib::retained_library(
+	size_t index, native_mobile_birth_library *output) noexcept
+{
+	if (!output || index >= ARRAY_SIZE(object_proc_libs))
+		return false;
+	const auto function = object_proc_libs[index].func;
+	native_mobile_birth_library tag;
+	if (function == proclibobj_actroom)
+		tag = native_mobile_birth_library::actroom;
+	else if (function == proclibobj_actworn)
+		tag = native_mobile_birth_library::actworn;
+	else if (function == proclibobj_hummer)
+		tag = native_mobile_birth_library::hummer;
+	else if (function == proclibobj_sayresponse)
+		tag = native_mobile_birth_library::sayresponse;
+	else if (function == proclibobj_transporter)
+		tag = native_mobile_birth_library::transporter;
+	else
+		return false;
+	*output = tag;
+	return true;
+}
+bool quest_mobile_native_original_proclib::retained_index(native_mobile_birth_library tag,
+							  size_t *output) noexcept
+{
+	if (!output)
+		return false;
+	for (size_t index = 0; index < ARRAY_SIZE(object_proc_libs); ++index)
+	{
+		native_mobile_birth_library actual;
+		if (retained_library(index, &actual) && actual == tag)
+		{
+			*output = index;
+			return true;
+		}
+	}
+	return false;
 }

@@ -20,14 +20,37 @@ using currency_completion_fn = void (*)(P_char character, bool committed,
 					unsigned int error_code, const uint8_t *context,
 					size_t context_size);
 
-// Return false only when committed live publication needs another game pulse.
+// The legacy composite callback returns false when committed live publication
+// needs another pulse. When used as coin_publication_callbacks::notify, false
+// reports a notification failure after ACK; it cannot retry economic effects.
 using coin_completion_fn = bool (*)(P_char actor, bool committed,
 				    const coin_transfer_payload &payload,
 				    const coin_transfer_result &result, unsigned int error_code,
 				    const uint8_t *context, size_t context_size);
 
+// Schema-2 pile publication is separate from post-ACK notification. The publisher
+// must verify/materialize every physical endpoint against this original operation
+// and result, without notifying players, advancing bulk work, submitting commands
+// or erasing pending owners. Resolve native objects anew on every attempt. False
+// or an exception retains the original obligation; retry must be idempotent.
+using coin_physical_publication_fn = bool (*)(P_char actor,
+					      const critical_operation_id &operation_id,
+					      const coin_transfer_payload &payload,
+					      const coin_transfer_result &result,
+					      const uint8_t *context, size_t context_size);
+
+struct coin_publication_callbacks
+{
+	coin_physical_publication_fn publish = nullptr;
+	coin_completion_fn notify = nullptr;
+	// Optional producer-owned staging cleanup, called only after durable ACK and
+	// pending-owner extraction. It must not publish effects or submit new work.
+	void (*release)(const critical_operation_id &) noexcept = nullptr;
+};
+
 // A committed callback receives EOWNERDEAD on its final cleanup notification if
-// bounded live publication fails. It must not refund or reapply committed money.
+// bounded legacy live publication fails. Schema-2 obligations never use this
+// cleanup path or retire merely because publication retries are exhausted.
 constexpr unsigned int CURRENCY_COIN_PUBLICATION_MAX_ATTEMPTS = 8;
 
 struct currency_transaction_health
@@ -53,9 +76,13 @@ bool currency_transaction_coin_wallet(P_char character, int64_t value_delta,
 				      coin_transfer_endpoint *endpoint);
 bool currency_transaction_coin_wallet_exact(P_char character, uint8_t denomination, int32_t amount,
 					    bool debit, coin_transfer_endpoint *endpoint);
+// Schema-1 uses the original composite completion. Schema-2 item endpoints need
+// an explicit verified publisher before admission; its notification runs once
+// after durable ACK and owner release. Wallet-only schema-2 uses completion.
 bool currency_transaction_submit_coin(P_char actor, const coin_transfer_payload &payload,
 				      coin_completion_fn completion, const void *context,
-				      size_t context_size);
+				      size_t context_size,
+				      coin_publication_callbacks publication = {});
 bool currency_transaction_publish_wallet(P_char character, const currency_vector &wallet,
 					 uint64_t wallet_revision);
 bool currency_transaction_publish_balances(P_char character, const char *account_name,
@@ -111,6 +138,19 @@ void currency_transaction_handle_completions(const critical_completion *completi
 // Called only from the coordinator's validated journal-replay observer under
 // its mutex. Must not call coordinator APIs or issue a replacement operation.
 bool currency_transaction_restore_replayed_command(const critical_command &command);
+// Primary-owned native room-coin recovery handoff, invoked only for a restored
+// schema-2 ordinary single-root drop/pickup. It must verify the original retained
+// receipt and current wallet/bank/pile authority, publish idempotently under the
+// original save reservation, then perform guarded ACK and consume that hold.
+// True means that entire original obligation has completed; false or an exception
+// retains it. No implementation or native proof is supplied by this domain owner.
+bool coin_physical_publication_restore_and_acknowledge(
+	const critical_command &original_command, const critical_completion &sealed_completion);
+// Allocation-free synchronous reentry check for that owner immediately before
+// its guarded ACK. This observation is NOT native proof or an ACK capability.
+bool currency_transaction_restored_coin_receipt_current(
+	const critical_command &original_command,
+	const critical_completion &sealed_completion) noexcept;
 void currency_transaction_player_ready(P_char character);
 currency_transaction_health currency_transaction_health_copy(void);
 void currency_transaction_reset_for_tests(void);

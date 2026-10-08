@@ -15,9 +15,17 @@
 #include <unordered_set>
 #include <unordered_map>
 
+#if defined(__GNUC__) || defined(__clang__)
+/* The small capture contract harness links this translation unit without the
+ * combat runtime. Keep the production timer sync call available while making
+ * that intentionally minimal link a valid test target. */
+extern void spell_ward_sync_timers(P_char) __attribute__((weak));
+#endif
+
 #include "guild/assocs.h"
 #include "core/files.h"
 #include "item/item_ownership_runtime.h"
+#include "combat/spell_wards.h"
 #include "magic/spells.h"
 #include "item/trophy.h"
 
@@ -277,6 +285,12 @@ bool capture_skills(P_char ch, player_snapshot &snapshot, capture_budget &budget
 player_snapshot_capture_result capture_affects(P_char ch, player_snapshot &snapshot,
 					       capture_budget &budget)
 {
+#if defined(__GNUC__) || defined(__clang__)
+	if (spell_ward_sync_timers)
+		spell_ward_sync_timers(ch);
+#else
+	spell_ward_sync_timers(ch);
+#endif
 	std::unordered_set<const affected_type *> seen;
 	for (const affected_type *affect = ch->affected; affect; affect = affect->next)
 	{
@@ -295,6 +309,14 @@ player_snapshot_capture_result capture_affects(P_char ch, player_snapshot &snaps
 		row.level = affect->level;
 		row.bitvectors = { affect->bitvector, affect->bitvector2, affect->bitvector3,
 				   affect->bitvector4, affect->bitvector5 };
+		row.ward_source_uid = affect->ward_source_uid;
+		row.ward_full_duration = affect->ward_full_duration;
+		row.ward_capacity = affect->ward_capacity;
+		row.ward_capacity_max = affect->ward_capacity_max;
+		row.ward_refresh_remaining = affect->ward_refresh_remaining;
+		row.ward_source_type = affect->ward_source_type;
+		row.ward_source_worn = affect->ward_source_worn;
+		row.ward_active = affect->ward_active;
 		if (affect->wear_off_message_index > 0 &&
 		    affect->wear_off_message_index < MAX_WEAR_OFF_MESSAGES && affect->type >= 0 &&
 		    affect->type < MAX_SKILLS)
@@ -494,13 +516,22 @@ player_snapshot_capture_result capture_items(P_char owner,
 					     std::vector<player_item_snapshot> &target,
 					     capture_budget &budget, bool equipment, bool inventory,
 					     bool omit_norent, bool audit_ownership,
-					     uint64_t literal_inventory_root_uid = 0)
+					     std::span<const uint64_t> literal_inventory_roots = {})
 {
-	const obj_data *literal_root = nullptr;
-	if (literal_inventory_root_uid)
+	size_t selected_count = 0;
+	if (!literal_inventory_roots.empty())
 	{
-		if (!equipment || !inventory || literal_inventory_root_uid == UINT64_MAX)
+		if (!equipment || !inventory ||
+		    literal_inventory_roots.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
 			return player_snapshot_capture_result::invalid_identity;
+		for (size_t index = 0; index < literal_inventory_roots.size(); ++index)
+			if (!literal_inventory_roots[index] ||
+			    literal_inventory_roots[index] == UINT64_MAX ||
+			    std::find(literal_inventory_roots.begin(),
+				      literal_inventory_roots.begin() + index,
+				      literal_inventory_roots[index]) !=
+				    literal_inventory_roots.begin() + index)
+				return player_snapshot_capture_result::invalid_identity;
 		literal_identity_audit audit;
 		for (const obj_data *object : owner->equipment)
 		{
@@ -511,7 +542,10 @@ player_snapshot_capture_result capture_items(P_char owner,
 		for (const obj_data *object = owner->carrying; object;
 		     object = object->next_content)
 		{
-			const bool selected = object->obj_uid == literal_inventory_root_uid;
+			const bool selected = std::find(literal_inventory_roots.begin(),
+							literal_inventory_roots.end(),
+							object->obj_uid) !=
+					      literal_inventory_roots.end();
 			const auto result = audit_literal_identities(object, audit, 1, selected);
 			if (result != player_snapshot_capture_result::ok)
 				return result;
@@ -519,10 +553,10 @@ player_snapshot_capture_result capture_items(P_char owner,
 			{
 				if (!OBJ_CARRIED_BY(object, owner))
 					return player_snapshot_capture_result::malformed_source;
-				literal_root = object;
+				++selected_count;
 			}
 		}
-		if (!literal_root)
+		if (selected_count != literal_inventory_roots.size())
 			return player_snapshot_capture_result::invalid_identity;
 	}
 	std::unordered_set<const obj_data *> seen;
@@ -543,7 +577,10 @@ player_snapshot_capture_result capture_items(P_char owner,
 		for (const obj_data *object = owner->carrying; object;
 		     object = object->next_content)
 		{
-			const bool full_literal = object == literal_root;
+			const bool full_literal = std::find(literal_inventory_roots.begin(),
+							    literal_inventory_roots.end(),
+							    object->obj_uid) !=
+						  literal_inventory_roots.end();
 			const auto result = capture_item_tree(object, PLAYER_SNAPSHOT_NO_PARENT, 0,
 							      target, budget, seen, 1,
 							      full_literal ? false : omit_norent,
@@ -748,17 +785,16 @@ player_snapshot_capture_result player_snapshot_capture(P_char ch, player_revisio
 							 room_vnum, 0, snapshot_out);
 }
 
-player_snapshot_capture_result player_snapshot_capture_literal_inventory(
+player_snapshot_capture_result player_snapshot_capture_literal_inventory_roots(
 	P_char ch, player_revision_t revision, player_component_mask_t components, int save_intent,
-	int room_vnum, uint64_t inventory_root_uid, player_snapshot *snapshot_out)
+	int room_vnum, std::span<const uint64_t> inventory_roots, player_snapshot *snapshot_out)
 {
 	if (!ch || !snapshot_out || IS_NPC(ch) || !ch->only.pc || GET_PID(ch) <= 0 || !revision ||
 	    !components || (components & ~PLAYER_CHECKPOINT_COMPONENT_ALL))
 		return player_snapshot_capture_result::invalid_identity;
-	if (inventory_root_uid &&
-	    ((components & (PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY)) !=
-		     (PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY) ||
-	     inventory_root_uid == UINT64_MAX))
+	if (!inventory_roots.empty() &&
+	    (components & (PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY)) !=
+		    (PLAYER_COMPONENT_EQUIPMENT | PLAYER_COMPONENT_INVENTORY))
 		return player_snapshot_capture_result::invalid_identity;
 
 	try
@@ -794,7 +830,7 @@ player_snapshot_capture_result player_snapshot_capture_literal_inventory(
 			const auto result = capture_items(ch, snapshot.items, budget,
 							  components & PLAYER_COMPONENT_EQUIPMENT,
 							  components & PLAYER_COMPONENT_INVENTORY,
-							  true, true, inventory_root_uid);
+							  true, true, inventory_roots);
 			if (result != player_snapshot_capture_result::ok)
 				return result;
 		}
@@ -819,6 +855,17 @@ player_snapshot_capture_result player_snapshot_capture_literal_inventory(
 		return player_snapshot_capture_result::retryable_allocation_failure;
 	}
 	return player_snapshot_capture_result::ok;
+}
+
+player_snapshot_capture_result player_snapshot_capture_literal_inventory(
+	P_char ch, player_revision_t revision, player_component_mask_t components, int save_intent,
+	int room_vnum, uint64_t inventory_root_uid, player_snapshot *snapshot_out)
+{
+	const std::span<const uint64_t> roots =
+		inventory_root_uid ? std::span<const uint64_t>(&inventory_root_uid, 1) :
+				     std::span<const uint64_t>{};
+	return player_snapshot_capture_literal_inventory_roots(
+		ch, revision, components, save_intent, room_vnum, roots, snapshot_out);
 }
 
 player_snapshot_capture_result

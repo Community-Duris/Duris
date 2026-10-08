@@ -10,8 +10,15 @@
 #include "world/db.h"
 #include "cmd/interp.h"
 #include "economy/economic_gameplay_authority.h"
+#include "economy/native_quest_consumption_capture.h"
+#include "world/quest_mobile_native.h"
+#include "world/quest_mobile_native_binding.h"
+#include "item/item_ownership_runtime.h"
 #include "item/item_movement_transaction.h"
 #include "item/item_command_policy.h"
+#include "economy/collector_presence.h"
+#include "combat/training_dummy.h"
+#include "mob/studioproc.h"
 #include "economy/currency_transaction.h"
 #include "persistence/persistence_checkpoint.h"
 #include "persistence/persistence_mode.h"
@@ -20,6 +27,15 @@
 #include "player/player_revision_state.h"
 #include "player/player_snapshot.h"
 #include "world/quest_reward_recovery.h"
+#include "world/native_quest_frozen_continuation.h"
+#include "world/native_quest_recovery_context.h"
+#include "persistence/critical_command_coordinator.h"
+#ifndef __NO_MYSQL__
+#include "persistence/quest_reward_obligation_repository.h"
+#include "persistence/critical_command_repository.h"
+#include "persistence/economic_sql_item_transfer_transaction.h"
+#include "player/player_sql_transaction_cleanup.h"
+#endif
 #include "world/zone_story_quest_production.h"
 #include "core/utility.h"
 #include "core/utils.h"
@@ -39,6 +55,10 @@
 #include <new>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
+#include <memory>
+#include <algorithm>
+#include <array>
 #include <vector>
 
 /* external variables */
@@ -353,8 +373,11 @@ bool quest_reward_recovery_pending_save_receipts(
 	return true;
 }
 
+static void native_quest_gameplay_pulse() noexcept;
+
 void quest_reward_recovery_pulse(void)
 {
+	native_quest_gameplay_pulse();
 	for (auto current = quest_reward_recoveries.begin();
 	     current != quest_reward_recoveries.end();)
 	{
@@ -687,19 +710,28 @@ static bool capture_quest_credit_context(P_char actor, quest_durable_context *co
 
 // This snapshot travels with the consumed-item command. Keep the numeric reward
 // terms independent of the mutable quest catalog for later recovery.
-static bool capture_quest_offering_continuation(P_char mob, P_char actor, int quester_id,
-						int completion_index,
-						const quest_complete_data *completion,
-						quest_durable_context &context,
-						item_transfer_continuation *continuation)
+static bool capture_quest_offering_continuation(
+	P_char mob, P_char actor, int quester_id, int completion_index,
+	const quest_complete_data *completion, quest_durable_context &context,
+	item_transfer_continuation *continuation, const std::string *original_definition = nullptr,
+	const quest_reward_continuation *fee_terms = nullptr)
 {
 	if (!mob || !actor || !completion || !continuation || !world || mob->in_room < 0 ||
-	    GET_PID(actor) <= 0 || context.count == 0 ||
+	    GET_PID(actor) <= 0 || (context.count == 0 && !fee_terms) ||
 	    context.count > QUEST_DURABLE_MAX_OFFERINGS)
 		return false;
 	const std::string *definition_id =
-		zone_story_quest_production::definition_id_for(completion);
-	const int zone_number = zone_story_quest_production::zone_for_completion(completion);
+		original_definition ? original_definition :
+				      zone_story_quest_production::definition_id_for(completion);
+	int zone_number = -1;
+	if (definition_id)
+		for (const auto &definition :
+		     zone_story_quest_production::runtime_catalog().definitions)
+			if (definition.definition_id == *definition_id)
+			{
+				zone_number = definition.zone_number;
+				break;
+			}
 	if (!definition_id || definition_id->empty() ||
 	    definition_id->size() > QUEST_REWARD_MAX_DEFINITION_ID_BYTES || zone_number < 0 ||
 	    !context.credited_count ||
@@ -740,12 +772,13 @@ static bool capture_quest_offering_continuation(P_char mob, P_char actor, int qu
 			xp_award_count += context.credited_count;
 		}
 	const size_t name_length = strlen(context.character_name);
-	const size_t bytes =
-		36 + context.count * sizeof(uint64_t) + sizeof(uint32_t) +
-		reward_count * sizeof(uint32_t) * 4 + 6 * sizeof(uint32_t) +
-		context.credited_count * sizeof(uint32_t) + sizeof(uint32_t) + name_length +
-		sizeof(uint32_t) + definition_id->size() + sizeof(uint32_t) +
-		static_cast<size_t>(xp_award_count) * 3 * sizeof(uint32_t) + 16 + daily_count * 4;
+	const size_t bytes = 36 + context.count * sizeof(uint64_t) + sizeof(uint32_t) +
+			     reward_count * sizeof(uint32_t) * 4 + 6 * sizeof(uint32_t) +
+			     context.credited_count * sizeof(uint32_t) + sizeof(uint32_t) +
+			     name_length + sizeof(uint32_t) + definition_id->size() +
+			     sizeof(uint32_t) +
+			     static_cast<size_t>(xp_award_count) * 3 * sizeof(uint32_t) +
+			     (fee_terms ? 0 : 16 + daily_count * 4);
 	if (bytes > ITEM_TRANSFER_CONTINUATION_MAX_BYTES)
 		return false;
 	continuation->kind = item_transfer_continuation_kind::quest_offering;
@@ -769,7 +802,7 @@ static bool capture_quest_offering_continuation(P_char mob, P_char actor, int qu
 			continuation->data[offset + byte] =
 				static_cast<uint8_t>(value >> (byte * 8));
 	};
-	put32(0, 6);
+	put32(0, fee_terms ? 5 : 6);
 	put32(4, static_cast<uint32_t>(GET_PID(actor)));
 	put32(8, static_cast<uint32_t>(quester_id));
 	put32(12, static_cast<uint32_t>(completion_index));
@@ -870,18 +903,50 @@ static bool capture_quest_offering_continuation(P_char mob, P_char actor, int qu
 	}
 	if (awards_written != xp_award_count)
 		return false;
-	offset = awards_offset + awards_written * 12;
-	put32(offset, context.season_id);
-	put32(offset + 4, context.catalog_revision);
-	put32(offset + 8, 1);
-	put32(offset + 12, daily_count);
-	offset += 16;
-	for (size_t i = 0; i < context.credited_count; ++i)
-		if (context.daily_recipient_mask & (UINT64_C(1) << i))
-		{
-			put32(offset, context.credited_pids[i]);
-			offset += 4;
-		}
+	if (!fee_terms)
+	{
+		offset = awards_offset + awards_written * 12;
+		put32(offset, context.season_id);
+		put32(offset + 4, context.catalog_revision);
+		put32(offset + 8, 1);
+		put32(offset + 12, daily_count);
+		offset += 16;
+		for (size_t i = 0; i < context.credited_count; ++i)
+			if (context.daily_recipient_mask & (UINT64_C(1) << i))
+			{
+				put32(offset, context.credited_pids[i]);
+				offset += 4;
+			}
+	}
+	if (fee_terms)
+	{
+		if (context.count || fee_terms->version != 6 || fee_terms->root_count)
+			return false;
+		constexpr size_t tail_bytes =
+			4 + 16 + ECONOMIC_SOURCE_EVENT_BYTES + 8 + 16 + ITEM_TRANSFER_RESULT_BYTES;
+		if (continuation->data.size() > ITEM_TRANSFER_CONTINUATION_MAX_BYTES - tail_bytes)
+			return false;
+		put32(0, 6);
+		std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> source{};
+		if (economic_source_event_encode(fee_terms->action_source, &source) !=
+		    economic_accounting_error::ok)
+			return false;
+		auto &out = continuation->data;
+		out.insert(out.end(), { 'Q', 'R', 'F', '6' });
+		out.insert(out.end(), fee_terms->action_operation.bytes.begin(),
+			   fee_terms->action_operation.bytes.end());
+		out.insert(out.end(), source.begin(), source.end());
+		const size_t native_offset = out.size();
+		out.resize(native_offset + 8);
+		put64(native_offset, fee_terms->action_mobile_instance_id);
+		out.insert(out.end(), fee_terms->triggering_acceptance.bytes.begin(),
+			   fee_terms->triggering_acceptance.bytes.end());
+		out.insert(out.end(), fee_terms->original_acceptance_result.begin(),
+			   fee_terms->original_acceptance_result.end());
+		quest_reward_continuation decoded;
+		if (!quest_fee_reward_continuation_decode(out.data(), out.size(), &decoded))
+			return false;
+	}
 	return true;
 }
 
@@ -1135,6 +1200,125 @@ static void complete_quest_offering(P_char actor, bool committed,
 			    world[context.room].number);
 }
 
+// The existing journal owns both original full commands. Literal obligation rows
+// never authorize fee reward dispatch; this friend borrows their real carrier.
+bool quest_reward_obligation_native_fee_owner::verify_in_transaction(
+	MYSQL *connection, const critical_operation_id &action,
+	std::span<const uint8_t> literal) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)connection;
+	(void)action;
+	(void)literal;
+	return false;
+#else
+	try
+	{
+		critical_native_recovery_envelope actual, parent;
+		quest_reward_continuation terms;
+		item_transfer_payload payload;
+		native_quest_recovery_context accepted, released;
+		if (!connection ||
+		    !quest_reward_continuation_decode(literal.data(), literal.size(), &terms) ||
+		    terms.version != 6 || terms.action_operation.bytes != action.bytes ||
+		    !critical_native_quest_continuation_owner::copy_fee_obligation_context(
+			    action, literal, &actual, &parent) ||
+		    actual.command.operation_id.bytes != action.bytes ||
+		    !item_transfer_command_decode_payload(actual.command, &payload) ||
+		    !payload.native_cost.fee_only ||
+		    actual.phase != critical_native_recovery_phase::continuation_pending ||
+		    native_quest_recovery_context_decode(actual.command, actual.attachment,
+							 &released) !=
+			    player_snapshot_codec_result::ok ||
+		    released.publication_stage !=
+			    native_quest_recovery_publication_stage::physically_proven ||
+		    !released.receipt.present || released.receipt.error_code ||
+		    (released.receipt.outcome != critical_apply_outcome::applied &&
+		     released.receipt.outcome != critical_apply_outcome::already_applied) ||
+		    payload.continuation.data.size() != literal.size() ||
+		    !std::equal(literal.begin(), literal.end(),
+				payload.continuation.data.begin()) ||
+		    !quest_fee_reward_trigger_binding_valid(terms, parent.command) ||
+		    native_quest_recovery_context_decode(parent.command, parent.attachment,
+							 &accepted) !=
+			    player_snapshot_codec_result::ok ||
+		    !accepted.receipt.present || accepted.receipt.error_code ||
+		    (accepted.receipt.outcome != critical_apply_outcome::applied &&
+		     accepted.receipt.outcome != critical_apply_outcome::already_applied) ||
+		    accepted.receipt.result_size != ITEM_TRANSFER_RESULT_BYTES ||
+		    !std::equal(terms.original_acceptance_result.begin(),
+				terms.original_acceptance_result.end(),
+				accepted.receipt.result_payload.begin()))
+			return false;
+		critical_completion completion{};
+		completion.operation_id = actual.command.operation_id;
+		completion.outcome = released.receipt.outcome;
+		completion.durable_revision = released.receipt.durable_revision;
+		completion.error_code = released.receipt.error_code;
+		completion.failure_stage = released.receipt.failure_stage;
+		completion.result_size = released.receipt.result_size;
+		completion.result_payload = released.receipt.result_payload;
+		return economic_sql_native_fee_verify_receipt_in_transaction(
+			       connection, actual.command, completion) == 0 &&
+		       economic_sql_native_fee_verify_acceptance_in_transaction(
+			       connection, actual.command, parent.command,
+			       terms.original_acceptance_result) == 0 &&
+		       economic_sql_native_fee_verify_obligation_in_transaction(
+			       connection, actual.command, literal) == 0;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool quest_reward_obligation_native_fee_owner::ready(
+	const critical_operation_id &action, const quest_reward_continuation &terms) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)action;
+	(void)terms;
+	return false;
+#else
+	if (!nevent_is_game_thread() || terms.version != 6)
+		return false;
+	try
+	{
+		std::vector<uint8_t> literal;
+		if (!quest_fee_reward_continuation_encode(terms, &literal))
+			return false;
+		MYSQL *connection = sql_pool_acquire();
+		player_sql_pool_lease lease(connection);
+		if (!connection || player_sql_idle_error(connection))
+			return false;
+		player_sql_cleanup cleanup;
+		player_sql_transaction_cleanup transaction(connection, cleanup);
+		transaction.starting();
+		bool proven = false;
+		try
+		{
+			proven = !mysql_real_query(connection, "START TRANSACTION", 17) &&
+				 verify_in_transaction(connection, action, literal) &&
+				 transaction.same_session();
+		}
+		catch (...)
+		{
+			proven = false;
+		}
+		transaction.finish();
+		lease.reuse(cleanup);
+		return proven && cleanup.rollback_confirmed && !cleanup.cleanup_error &&
+		       cleanup.disposition == player_sql_cleanup_disposition::idle_verified &&
+		       transaction.same_session();
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
 void quest_reward_recover_pending(P_char player, const critical_operation_id &offering_operation,
 				  const quest_reward_continuation &continuation,
 				  uint64_t xp_applied_mask, uint64_t economic_applied_mask,
@@ -1142,8 +1326,12 @@ void quest_reward_recover_pending(P_char player, const critical_operation_id &of
 {
 	if (!player || IS_NPC(player) || GET_PID(player) <= 0 ||
 	    static_cast<uint32_t>(GET_PID(player)) != continuation.player_pid ||
-	    critical_operation_id_is_zero(offering_operation) || !continuation.root_count ||
+	    critical_operation_id_is_zero(offering_operation) ||
+	    (!continuation.root_count && continuation.version != 6) ||
 	    continuation.root_count > continuation.roots.size())
+		return;
+	if (quest_reward_is_fee_only(continuation) &&
+	    !quest_reward_obligation_native_fee_owner::ready(offering_operation, continuation))
 		return;
 	if (!economic_history_verified)
 	{
@@ -1184,7 +1372,9 @@ void quest_reward_recover_pending(P_char player, const critical_operation_id &of
 	struct quest_complete_data *completion = quest_completion_by_index(context);
 	bool tracking_complete = false;
 	const std::string tracking_id =
-		"legacy-offering-v1-" + std::to_string(continuation.roots[0]);
+		quest_reward_is_fee_only(continuation) ?
+			"native-fee-action-v6-" + quest_reward_operation_key(offering_operation) :
+			"legacy-offering-v1-" + std::to_string(continuation.roots[0]);
 	std::string tracking_error;
 	if (continuation.version >= 2 && !continuation.definition_id.empty())
 	{
@@ -1200,7 +1390,7 @@ void quest_reward_recover_pending(P_char player, const critical_operation_id &of
 			tracking_error = "unable to allocate frozen quest-credit recipients";
 		}
 		zone_story_quest_runtime::frozen_daily_context daily;
-		if (continuation.version >= 6)
+		if (quest_reward_has_daily_context(continuation))
 		{
 			daily.season_id = continuation.season_id;
 			daily.catalog_revision = continuation.catalog_revision;
@@ -1220,7 +1410,9 @@ void quest_reward_recover_pending(P_char player, const critical_operation_id &of
 					continuation.character_name, continuation.player_level,
 					continuation.player_racewar, true, continuation.party_size,
 					continuation.strongest_party_level, &tracking_error,
-					tracking_id, continuation.version >= 6 ? &daily : nullptr);
+					tracking_id,
+					quest_reward_has_daily_context(continuation) ? &daily :
+										       nullptr);
 		if (!tracking_complete)
 			logit(LOG_DEBUG,
 			      "pending zone-story quest completion could not be recovered: %s",
@@ -1409,8 +1601,12 @@ void quest_reward_recover_pending(P_char player, const critical_operation_id &of
 			if (continuation.rewards[prior].type == QUEST_GOAL_ITEM &&
 			    continuation.rewards[prior].number == reward.number)
 				++duplicate_ordinal;
-		const uint64_t source_id = quest_item_reward_source_id(
-			continuation.roots[0], static_cast<int>(reward.number), duplicate_ordinal);
+		const uint64_t source_id =
+			quest_reward_is_fee_only(continuation) ?
+				quest_item_reward_source_id(continuation, index) :
+				quest_item_reward_source_id(continuation.roots[0],
+							    static_cast<int>(reward.number),
+							    duplicate_ordinal);
 		const uint64_t item_uid = object->obj_uid;
 		try
 		{
@@ -1458,6 +1654,9 @@ void quest_reward_recover_xp_entitlement(P_char player,
 	    reward_index >= continuation.reward_count ||
 	    continuation.rewards[reward_index].type != QUEST_GOAL_EXP ||
 	    continuation.credited_count < 2)
+		return;
+	if (quest_reward_is_fee_only(continuation) &&
+	    !quest_reward_obligation_native_fee_owner::ready(offering_operation, continuation))
 		return;
 	const uint32_t recipient_pid = static_cast<uint32_t>(GET_PID(player));
 	bool frozen_award = false;
@@ -1743,6 +1942,8 @@ void tell_quest(int id, P_char pl)
 	}
 }
 
+static bool submit_native_quest_give(P_char, P_char, int, P_obj) noexcept;
+
 int quester(P_char ch, P_char pl, int cmd, char *arg)
 {
 	P_char vict;
@@ -1822,6 +2023,14 @@ int quester(P_char ch, P_char pl, int cmd, char *arg)
 			char offering_name[MAX_INPUT_LENGTH];
 			one_argument(arg, offering_name);
 			P_obj offering = get_obj_in_list_vis(pl, offering_name, pl->carrying);
+			if (economic_gameplay_authority::active_regular_sql())
+			{
+				if (!submit_native_quest_give(ch, pl, quester_id, offering))
+					send_to_char(
+						"This quest cannot accept that item safely right now.\r\n",
+						pl);
+				return TRUE;
+			}
 			if (item_command_uses_durable_ownership(offering))
 			{
 				if (submit_durable_quest_offering(ch, pl, quester_id, offering))
@@ -2251,4 +2460,2881 @@ bool has_quest_complete(int qi)
 		return TRUE;
 
 	return FALSE;
+}
+
+// Sole issuer of the original sequential NPC-stock consumption decision. The
+// caller must be the original native quest continuation owner; these values
+// neither publish effects nor acknowledge the retained operation.
+namespace
+{
+struct native_quest_original_branch
+{
+	quest_complete_data view{};
+	std::vector<goal_data> give, receive;
+	std::string message, disappear_message, definition_id;
+};
+}
+class quest_native_gameplay_owner;
+class quest_native_completion_owner final
+{
+    public:
+	static item_native_quest_preparation_state
+	prepare(P_char mobile, P_char final_giver, int quester_id, int completion_index,
+		item_native_quest_preparation_token *output) noexcept;
+
+    private:
+	friend class quest_native_gameplay_owner;
+	static item_native_quest_preparation_state
+	prepare_original(P_char, P_char, int, int, const native_quest_original_branch *,
+			 const critical_operation_id *, item_native_quest_preparation_token *,
+			 const critical_command * = nullptr,
+			 const native_quest_recovery_receipt * = nullptr) noexcept;
+};
+
+item_native_quest_preparation_state
+quest_native_completion_owner::prepare(P_char mobile, P_char player, int quester_id,
+				       int completion_index,
+				       item_native_quest_preparation_token *output) noexcept
+{
+	return prepare_original(mobile, player, quester_id, completion_index, nullptr, nullptr,
+				output);
+}
+
+item_native_quest_preparation_state quest_native_completion_owner::prepare_original(
+	P_char mob, P_char player, int quester_id, int completion_index,
+	const native_quest_original_branch *original_branch,
+	const critical_operation_id *original_child, item_native_quest_preparation_token *output,
+	const critical_command *triggering_acceptance,
+	const native_quest_recovery_receipt *triggering_receipt) noexcept
+{
+	using state = item_native_quest_preparation_state;
+#ifdef __NO_MYSQL__
+	(void)mob;
+	(void)player;
+	(void)quester_id;
+	(void)completion_index;
+	(void)original_branch;
+	(void)original_child;
+	(void)triggering_acceptance;
+	(void)triggering_receipt;
+	(void)output;
+	return state::refused;
+#else
+	if (!output || !nevent_is_game_thread() ||
+	    !economic_gameplay_authority::active_regular_sql() || !mob || !player || !IS_NPC(mob) ||
+	    !IS_PC(player) || !player->only.pc || GET_PID(player) <= 0 ||
+	    player->in_room == NOWHERE || player->in_room != mob->in_room || quester_id < 0 ||
+	    completion_index < 0 ||
+	    (!original_branch &&
+	     (quester_id >= number_of_quests || quest_index[quester_id].quester != GET_RNUM(mob))))
+		return state::refused;
+	try
+	{
+		const quest_complete_data *completion =
+			original_branch ? &original_branch->view :
+					  quest_index[quester_id].quest_complete;
+		if (!original_branch)
+			for (int i = 0; completion && i < completion_index; ++i)
+				completion = completion->next;
+		if (!completion)
+			return state::refused;
+		quest_mobile_native_reference reference;
+		std::vector<player_item_snapshot> native_items;
+		if (!quest_mobile_native_reference_copy(mob, mob->runtime_id, &reference) ||
+		    quest_mobile_native_items_observe(mob, reference, &native_items) !=
+			    player_snapshot_capture_result::ok)
+			return state::refused;
+		// Observe genuine original runtime cash metadata only when the ordered
+		// original preliminary pass first reaches a COINS requirement.
+		quest_mobile_native_cash_reference cash;
+		bool cash_observed = false;
+		std::vector<native_quest_cost_requirement> attempted_costs;
+		// Preserve original duplicate/availability checks, including each fee
+		// independently against the same original NPC cash (not their sum).
+		for (auto *goal = completion->give; goal; goal = goal->next)
+		{
+			if (goal->goal_type == QUEST_GOAL_COINS)
+			{
+				if (!cash_observed)
+				{
+					native_quest_cost_projection unchanged;
+					if (!quest_mobile_native_cash_reference_copy(
+						    mob, mob->runtime_id, &cash) ||
+					    native_quest_cost_project(cash.denominations,
+								      cash.cash_revision, {},
+								      &unchanged) !=
+						    native_quest_cost_projection_result::ok)
+						return state::refused;
+					cash_observed = true;
+				}
+				const int64_t available =
+					cash.denominations[0] + 10 * cash.denominations[1] +
+					100 * cash.denominations[2] + 1000 * cash.denominations[3];
+				if (available < goal->number)
+					return state::not_matched;
+				continue;
+			}
+			int needed = 1;
+			for (auto *later = goal->next; later; later = later->next)
+				if (later->goal_type == goal->goal_type &&
+				    later->number == goal->number)
+					++needed;
+			int count = 0;
+			for (P_obj object = mob->carrying; object; object = object->next_content)
+				if ((goal->goal_type == QUEST_GOAL_ITEM &&
+				     OBJ_VNUM(object) == goal->number) ||
+				    (goal->goal_type == QUEST_GOAL_ITEM_TYPE &&
+				     object->type == goal->number))
+					++count;
+			if ((goal->goal_type == QUEST_GOAL_ITEM ||
+			     goal->goal_type == QUEST_GOAL_ITEM_TYPE) &&
+			    count < needed)
+				return state::not_matched;
+		}
+		std::vector<uint64_t> ordered_roots;
+		std::unordered_set<uint64_t> consumed;
+		bool success = true;
+		bool invalid_cost_slot = false;
+		const auto select_pass = [&](int kind)
+		{
+			uint64_t slot = 0;
+			for (auto *goal = completion->give; goal; goal = goal->next, ++slot)
+			{
+				if (kind == QUEST_GOAL_ITEM && goal->goal_type == QUEST_GOAL_COINS)
+				{
+					if (!cash_observed || slot > UINT32_MAX)
+					{
+						invalid_cost_slot = true;
+						return false;
+					}
+					attempted_costs.push_back(
+						{ static_cast<uint32_t>(slot), goal->number });
+					continue;
+				}
+				if (goal->goal_type != kind)
+					continue;
+				P_obj selected = nullptr;
+				for (P_obj object = mob->carrying; object;
+				     object = object->next_content)
+					if (!consumed.count(object->obj_uid) &&
+					    (kind == QUEST_GOAL_ITEM ?
+						     OBJ_VNUM(object) == goal->number :
+						     object->type == goal->number))
+					{
+						selected = object;
+						break;
+					}
+				if (!selected)
+					return false;
+				if (!selected->obj_uid ||
+				    !consumed.insert(selected->obj_uid).second)
+					return false;
+				ordered_roots.push_back(selected->obj_uid);
+			}
+			return true;
+		};
+		// The first destructive pass handles ITEM; the later TYPE pass may
+		// fail after an overlapping prefix was already selected. That prefix
+		// is an original quest_action with no reward, not an all-or-nothing set.
+		if (!select_pass(QUEST_GOAL_ITEM))
+			success = false;
+		else if (!select_pass(QUEST_GOAL_ITEM_TYPE))
+			success = false;
+		if (invalid_cost_slot)
+			return state::refused;
+		const bool fee_only = ordered_roots.empty() && !attempted_costs.empty();
+		if (ordered_roots.empty() && !fee_only)
+			return state::refused;
+		critical_operation_id fee_operation{};
+		if (fee_only)
+		{
+			if (!original_child || critical_operation_id_is_zero(*original_child) ||
+			    !triggering_acceptance || !triggering_receipt ||
+			    !triggering_receipt->present || triggering_receipt->error_code ||
+			    triggering_receipt->result_size != ITEM_TRANSFER_RESULT_BYTES ||
+			    (triggering_receipt->outcome != critical_apply_outcome::applied &&
+			     triggering_receipt->outcome !=
+				     critical_apply_outcome::already_applied))
+				return state::refused;
+			fee_operation = *original_child;
+		}
+		std::vector<player_item_snapshot> selected;
+		std::vector<int32_t> indexes(native_items.size(), PLAYER_SNAPSHOT_NO_PARENT);
+		std::vector<uint64_t> roots(native_items.size());
+		size_t selected_roots = 0;
+		for (size_t i = 0; i < native_items.size(); ++i)
+		{
+			const auto &item = native_items[i];
+			const bool root = item.parent_index == PLAYER_SNAPSHOT_NO_PARENT;
+			if (!root &&
+			    (item.parent_index < 0 || static_cast<size_t>(item.parent_index) >= i))
+				return state::refused;
+			roots[i] = root ? item.object_uid : roots[item.parent_index];
+			if (!consumed.count(roots[i]))
+				continue;
+			if (root && item.equipment_slot)
+				return state::refused;
+			if (root)
+				++selected_roots;
+			auto literal = item;
+			if (!root)
+				literal.parent_index = indexes[item.parent_index];
+			indexes[i] = static_cast<int32_t>(selected.size());
+			selected.push_back(std::move(literal));
+		}
+		std::vector<uint8_t> selected_bytes;
+		if (selected_roots != consumed.size() || (!fee_only && selected.empty()) ||
+		    selected.size() > ITEM_TRANSFER_MAX_ITEMS ||
+		    player_item_snapshot_list_encode(selected, &selected_bytes) !=
+			    player_snapshot_codec_result::ok ||
+		    selected_bytes.size() > ITEM_TRANSFER_ITEM_BLOB_MAX_BYTES)
+			return state::refused;
+		item_transfer_payload payload{};
+		payload.from_owner = { item_owner_type::native_mobile, reference.mobile_instance_id,
+				       0 };
+		payload.to_owner =
+			fee_only ?
+				item_owner_identity{ item_owner_type::player,
+						     static_cast<uint32_t>(GET_PID(player)), 0 } :
+				item_owner_identity{ item_owner_type::destruction, 0, 0 };
+		payload.reason = item_transfer_reason::quest_turnin;
+		payload.reason_id = reference.mobile_vnum;
+		payload.expected_from_revision = reference.stock_revision;
+		uint64_t native_owner_revision = 0;
+		if (!item_ownership_runtime_peek_owner_revision(payload.from_owner,
+								&native_owner_revision) ||
+		    native_owner_revision != reference.stock_revision)
+			return state::refused;
+		if (!item_ownership_runtime_peek_owner_revision(payload.to_owner,
+								&payload.expected_to_revision))
+			return state::refused;
+		payload.multi_root = !fee_only;
+		payload.item_count = static_cast<uint16_t>(selected.size());
+		for (size_t i = 0; i < selected.size(); ++i)
+		{
+			const auto &item = selected[i];
+			item_ownership_runtime_entry current{};
+			const uint64_t parent = item.parent_index == PLAYER_SNAPSHOT_NO_PARENT ?
+							0 :
+							selected[item.parent_index].object_uid;
+			uint64_t root = item.object_uid;
+			for (int32_t j = item.parent_index; j != PLAYER_SNAPSHOT_NO_PARENT;
+			     j = selected[j].parent_index)
+				root = selected[j].object_uid;
+			if (!item_ownership_runtime_lookup(item.object_uid, &current) ||
+			    !item_owner_identity_equal(current.owner, payload.from_owner) ||
+			    current.state != item_custody_state::active ||
+			    current.vnum != item.vnum || current.root_item_uid != root ||
+			    current.parent_item_uid != parent || !current.item_revision ||
+			    current.item_revision == UINT64_MAX)
+				return state::refused;
+			payload.items[i] = { item.object_uid, root,
+					     parent,	      current.item_revision,
+					     item.vnum,	      item_custody_state::active };
+		}
+		std::sort(payload.items.begin(), payload.items.begin() + payload.item_count,
+			  [](const auto &a, const auto &b) { return a.item_uid < b.item_uid; });
+		payload.item_blob_size = fee_only ? 0 :
+						    static_cast<uint32_t>(selected_bytes.size());
+		if (!fee_only)
+			std::copy(selected_bytes.begin(), selected_bytes.end(),
+				  payload.item_blob.begin());
+		payload.native_mobile.present = true;
+		payload.native_mobile.reference = reference;
+		payload.native_mobile.action = item_native_mobile_action::consumption;
+		payload.native_mobile.final_giver_pid = static_cast<uint32_t>(GET_PID(player));
+		if (!attempted_costs.empty())
+		{
+			payload.native_cost.present = true;
+			payload.native_cost.fee_only = fee_only;
+			payload.native_cost.completion_slot =
+				fee_only ? static_cast<uint32_t>(completion_index) : 0;
+			payload.native_cost.wallet_mapping_id = cash.wallet_mapping_id;
+			if (native_quest_cost_project(cash.denominations, cash.cash_revision,
+						      attempted_costs,
+						      &payload.native_cost.projection) !=
+			    native_quest_cost_projection_result::ok)
+				return state::refused;
+		}
+		quest_reward_continuation fee_terms;
+		if (fee_only)
+		{
+			fee_terms.version = 6;
+			fee_terms.player_pid = static_cast<uint32_t>(GET_PID(player));
+			fee_terms.mobile_vnum = static_cast<uint32_t>(reference.mobile_vnum);
+			fee_terms.completion_index = static_cast<uint32_t>(completion_index);
+			fee_terms.action_operation = fee_operation;
+			fee_terms.action_mobile_instance_id = reference.mobile_instance_id;
+			fee_terms.action_source = { economic_source_kind::quest_action,
+						    fee_operation,
+						    reference.birth_source.generation,
+						    reference.mobile_revision,
+						    static_cast<uint32_t>(completion_index) };
+			fee_terms.triggering_acceptance = triggering_acceptance->operation_id;
+			std::copy_n(triggering_receipt->result_payload.begin(),
+				    ITEM_TRANSFER_RESULT_BYTES,
+				    fee_terms.original_acceptance_result.begin());
+			if (!quest_fee_reward_trigger_binding_valid(fee_terms,
+								    *triggering_acceptance))
+				return state::refused;
+		}
+		if (success)
+		{
+			if (ordered_roots.size() > QUEST_DURABLE_MAX_OFFERINGS)
+				return state::refused;
+			quest_durable_context context{};
+			context.quester_id = quester_id;
+			context.completion_index = completion_index;
+			context.room = mob->in_room;
+			context.count = static_cast<uint32_t>(ordered_roots.size());
+			std::copy(ordered_roots.begin(), ordered_roots.end(), context.roots);
+			const auto completed_at = time(nullptr);
+			if (completed_at <= 0)
+				return state::refused;
+			context.completed_at = static_cast<uint64_t>(completed_at);
+			if (!capture_quest_credit_context(player, &context) ||
+			    !capture_quest_offering_continuation(
+				    mob, player, quester_id, completion_index, completion, context,
+				    &payload.continuation,
+				    original_branch ? &original_branch->definition_id : nullptr,
+				    fee_only ? &fee_terms : nullptr))
+				return state::refused;
+		}
+		// A failed consumed prefix leaves continuation exactly empty. Successful
+		// completion preserves the existing version-5 full frozen reward terms.
+		critical_operation_id operation{};
+		critical_command original;
+		if (original_child)
+			operation = *original_child;
+		if ((original_child ? critical_operation_id_is_zero(operation) :
+				      !critical_operation_id_generate(&operation)) ||
+		    !item_transfer_command_build_native_mobile(
+			    &original, operation, payload, critical_source_site::command,
+			    critical_deadline_class::interactive))
+			return state::refused;
+		static_assert(ITEM_TRANSFER_NATIVE_MOBILE_MESSAGE_MAX_BYTES == MAX_STRING_LENGTH);
+		item_native_quest_publication_terms publication_terms;
+		const auto freeze_text = [](const char *text, std::string &out)
+		{
+			if (!text)
+				return true;
+			const size_t size = strnlen(text, MAX_STRING_LENGTH);
+			if (size == MAX_STRING_LENGTH)
+				return false;
+			out.assign(text, size);
+			return true;
+		};
+		// The original preliminary message follows successful availability
+		// checks even if an overlapping ITEM/TYPE pass later consumes a prefix.
+		// This original quest_action has no reward or disappearance terms.
+		if (!freeze_text(completion->message, publication_terms.message))
+			return state::refused;
+		publication_terms.echo_all = completion->echoAll != 0;
+		if (success)
+		{
+			if (!freeze_text(completion->disappear_message,
+					 publication_terms.disappear_message))
+				return state::refused;
+			publication_terms.disappear = completion->disappear != 0;
+		}
+		std::shared_ptr<const quest_native_consumption_capture> captured(
+			new quest_native_consumption_capture(
+				std::move(original), reference, mob->runtime_id,
+				static_cast<uint32_t>(GET_PID(player)),
+				static_cast<uint32_t>(completion_index), std::move(ordered_roots),
+				std::move(publication_terms),
+				success && !payload.native_cost.present ?
+					economic_source_kind::quest_completion :
+					economic_source_kind::quest_action,
+				fee_only));
+		return item_native_quest_preparation_owner::begin_consumption(
+			player, mob, std::move(captured), output);
+	}
+	catch (...)
+	{
+		return state::refused;
+	}
+#endif
+}
+
+item_native_quest_preparation_state
+quest_native_completion_prepare(P_char native_mobile, P_char final_giver, int quester_id,
+				int completion_index,
+				item_native_quest_preparation_token *output) noexcept
+{
+	return quest_native_completion_owner::prepare(native_mobile, final_giver, quester_id,
+						      completion_index, output);
+}
+
+#ifndef __NO_MYSQL__
+struct native_quest_frozen_recovery_state
+{
+	std::string key;
+	critical_command command;
+	std::vector<uint8_t> continuation;
+	quest_reward_continuation terms;
+	uint64_t player_runtime_id = 0, xp_mask = 0, economic_mask = 0;
+	std::unique_ptr<critical_native_recovery_envelope> current, pending, returned;
+	size_t retained_bytes = 0;
+	bool started = false, effect_returned = false, known_not_attempted = false;
+	bool pending_returned = false, durable_returned = false;
+	bool acknowledged = false, retired = false, poisoned = false;
+	bool restored = false;
+	bool terminal_pair_attempted = false;
+	std::unique_ptr<critical_native_recovery_envelope> restored_original, terminal_parent;
+};
+namespace
+{
+bool native_quest_terminal_parent_live(const critical_native_recovery_envelope &) noexcept;
+void native_quest_cleanup_retired_pair(const critical_native_recovery_envelope &,
+				       const critical_native_recovery_envelope &) noexcept;
+std::unordered_map<std::string, std::shared_ptr<native_quest_frozen_recovery_state>>
+	native_quest_frozen_recoveries;
+size_t
+native_quest_frozen_bytes(const native_quest_frozen_recovery_state &state,
+			  const critical_native_recovery_envelope *pending = nullptr,
+			  const critical_native_recovery_envelope *returned = nullptr) noexcept
+{
+	size_t bytes = sizeof(state) +
+		       sizeof(std::pair<const std::string,
+					std::shared_ptr<native_quest_frozen_recovery_state>>) +
+		       CRITICAL_COMMAND_MAX_ENCODED_BYTES;
+	const auto add = [&](size_t value)
+	{
+		if (bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
+		    value > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+			return false;
+		bytes += value;
+		return true;
+	};
+	if (!add(state.key.capacity()) || !add(state.key.capacity()) ||
+	    !add(state.continuation.capacity()) || !add(state.terms.character_name.capacity()) ||
+	    !add(state.terms.definition_id.capacity()))
+		return PLAYER_SAVE_PIPELINE_MAX_BYTES + 1;
+	for (const auto *record : std::array<const critical_native_recovery_envelope *, 5>{
+		     state.current.get(), pending ? pending : state.pending.get(),
+		     returned ? returned : state.returned.get(), state.restored_original.get(),
+		     state.terminal_parent.get() })
+		if (record && (!add(sizeof(*record) + CRITICAL_COMMAND_MAX_ENCODED_BYTES) ||
+			       !add(record->attachment.capacity())))
+			return PLAYER_SAVE_PIPELINE_MAX_BYTES + 1;
+	return bytes;
+}
+bool native_quest_frozen_current(const native_quest_frozen_recovery_state &state) noexcept
+{
+	const auto found = native_quest_frozen_recoveries.find(state.key);
+	return found != native_quest_frozen_recoveries.end() && found->second.get() == &state;
+}
+}
+#endif
+
+bool quest_native_frozen_continuation_owner::checkpoint(
+	native_quest_frozen_recovery_state &state) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)state;
+	return false;
+#else
+	if (!state.pending)
+		return true;
+	if (state.poisoned || !native_quest_frozen_current(state) || !state.current ||
+	    !critical_native_quest_continuation_owner::checkpoint_context(*state.current,
+									  *state.pending))
+		return false; // Retain exact expected/successor, including uncertain returned bytes.
+	if (!native_quest_frozen_current(state))
+	{
+		state.poisoned = true;
+		return false;
+	}
+	state.current = std::move(state.pending);
+	if (state.pending_returned)
+		state.durable_returned = true;
+	state.pending_returned = false;
+	// Pinned map identity, moves, scalar charging only after journal I/O.
+	const size_t bytes = native_quest_frozen_bytes(state);
+	if (!budget(&state, bytes))
+	{
+		state.poisoned = true;
+		return false;
+	}
+	state.retained_bytes = bytes;
+	return true;
+#endif
+}
+
+bool quest_native_frozen_continuation_owner::retire_completed(
+	native_quest_frozen_recovery_state &state) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)state;
+	return false;
+#else
+	if (!nevent_is_game_thread() || state.poisoned || !native_quest_frozen_current(state) ||
+	    !state.current || state.pending)
+		return false;
+	if (state.retired)
+		return true; // Only the actual paired journal success sets this latch.
+	try
+	{
+		// A read-only ACK probe may precede the live parent's handoff successor.
+		// Refresh unattempted lookup values; an actual pair attempt pins both preimages.
+		if (state.terminal_parent && !state.terminal_pair_attempted)
+			state.terminal_parent.reset();
+		if (!state.terminal_parent)
+		{
+			auto parent = std::make_unique<critical_native_recovery_envelope>();
+			if (!critical_native_quest_continuation_owner::copy_parent_context(
+				    *state.current, parent.get()))
+				return false; // No matching parent is never evidence of retirement.
+			state.terminal_parent = std::move(parent);
+			const size_t bytes = native_quest_frozen_bytes(state);
+			if (!budget(&state, bytes))
+			{
+				state.terminal_parent.reset();
+				return false;
+			}
+			state.retained_bytes = bytes;
+		}
+		native_quest_recovery_context parent_context, child_context;
+		if (!native_quest_recovery_pair_context_valid(*state.terminal_parent,
+							      *state.current, nullptr) ||
+		    native_quest_recovery_context_decode(
+			    state.terminal_parent->command, state.terminal_parent->attachment,
+			    &parent_context) != player_snapshot_codec_result::ok ||
+		    native_quest_recovery_context_decode(state.command, state.current->attachment,
+							 &child_context) !=
+			    player_snapshot_codec_result::ok)
+			return false;
+		if (parent_context.child_handoff_stage == 1 &&
+		    native_quest_terminal_parent_live(*state.terminal_parent))
+		{
+			// A live token must first persist its original handoff2 and reach take.
+			// The next pulse copies that actual successor, never this stale parent.
+			if (!state.terminal_pair_attempted)
+				state.terminal_parent.reset();
+			return false;
+		}
+		const auto matches = [](const native_quest_recovery_receipt &expected,
+					const critical_apply_result &actual)
+		{
+			return expected.present && !expected.error_code && !actual.error_code &&
+			       (expected.outcome == critical_apply_outcome::applied ||
+				expected.outcome == critical_apply_outcome::already_applied) &&
+			       actual.outcome == critical_apply_outcome::already_applied &&
+			       expected.durable_revision == actual.durable_revision &&
+			       expected.failure_stage == actual.failure_stage &&
+			       expected.result_size == actual.result_size &&
+			       expected.result_payload == actual.result_payload;
+		};
+		MYSQL *connection = sql_pool_acquire();
+		player_sql_pool_lease lease(connection);
+		if (!connection || player_sql_idle_error(connection))
+			return false;
+		player_sql_cleanup cleanup;
+		player_sql_transaction_cleanup transaction(connection, cleanup);
+		transaction.starting();
+		bool proven = false;
+		try
+		{
+			if (!mysql_real_query(connection, "START TRANSACTION", 17))
+			{
+				const auto parent_receipt =
+					critical_command_repository_verify_native_quest_in_transaction(
+						connection, state.terminal_parent->command);
+				const auto child_receipt =
+					quest_reward_is_fee_only(state.terms) ?
+						critical_apply_result{} :
+						critical_command_repository_verify_native_quest_in_transaction(
+							connection, state.command);
+				quest_reward_obligation_readback obligation;
+				unsigned int error = 0;
+				proven =
+					matches(parent_context.receipt, parent_receipt) &&
+					(quest_reward_is_fee_only(state.terms) ?
+						 quest_reward_obligation_native_fee_owner::
+							 verify_in_transaction(
+								 connection,
+								 state.command.operation_id,
+								 state.continuation) :
+						 matches(child_context.receipt, child_receipt)) &&
+					quest_reward_obligation_repository_read_exact_in_transaction(
+						connection, state.terms.player_pid,
+						state.command.operation_id, state.continuation,
+						&obligation,
+						&error) == quest_reward_obligation_result::ok &&
+					!error && obligation.acknowledged &&
+					transaction.same_session();
+			}
+		}
+		catch (...)
+		{
+			proven = false;
+		}
+		transaction.finish();
+		lease.reuse(cleanup);
+		if (!proven || !transaction.same_session() || !cleanup.rollback_confirmed ||
+		    cleanup.cleanup_error ||
+		    cleanup.disposition != player_sql_cleanup_disposition::idle_verified)
+			return false;
+		// Historical native roots plus the exact actual ACK authorize cleanup only.
+		// Current player/world projections may legitimately have advanced with rewards.
+		// Never rebind actors, publish stock or repeat reward/skill effects here.
+		state.acknowledged = true;
+		state.terminal_pair_attempted = true;
+		if (!critical_native_quest_continuation_owner::transition_pair(
+			    *state.terminal_parent, *state.current, nullptr))
+			return false; // Retain both full preimages through uncertain journal I/O.
+		state.retired = true;
+		native_quest_cleanup_retired_pair(*state.terminal_parent, *state.current);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool quest_native_frozen_continuation_owner::drive(native_quest_frozen_recovery_state &state,
+						   bool allow_effects) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)state;
+	(void)allow_effects;
+	return false;
+#else
+	if (!nevent_is_game_thread() || state.poisoned || !native_quest_frozen_current(state))
+		return false;
+	try
+	{
+		if (state.terminal_pair_attempted)
+			return retire_completed(
+				state); // Neither retained preimage may advance now.
+		if (!checkpoint(state))
+			return state.effect_returned && !state.poisoned &&
+			       native_quest_frozen_current(state);
+		if (state.retired ||
+		    ((state.restored || state.acknowledged || state.durable_returned) &&
+		     retire_completed(state)))
+			return true;
+		if (state.terminal_pair_attempted)
+			return false; // Genuine terminal proof owns cleanup, never reward dispatch.
+		// Stable retained writer owns the actual returned fact.
+		if (state.started && !state.effect_returned && !state.known_not_attempted)
+			return false; // Cold or actual started/unreturned never authorizes reward repetition.
+		if (!state.started)
+		{
+			if (quest_reward_is_fee_only(state.terms) &&
+			    !quest_reward_obligation_native_fee_owner::ready(
+				    state.command.operation_id, state.terms))
+				return false;
+			if (!allow_effects || state.current->revision >= UINT64_MAX - 1)
+				return false;
+			native_quest_recovery_context context;
+			if (native_quest_recovery_context_decode(
+				    state.command, state.current->attachment, &context) !=
+				    player_snapshot_codec_result::ok ||
+			    context.publication_steps[5] != 0)
+				return false;
+			auto began =
+				std::make_unique<critical_native_recovery_envelope>(*state.current);
+			++began->revision;
+			context.publication_steps[5] = 1;
+			if (native_quest_recovery_context_encode(state.command, context,
+								 &began->attachment) !=
+			    player_snapshot_codec_result::ok)
+				return false;
+			auto ended = std::make_unique<critical_native_recovery_envelope>(*began);
+			++ended->revision;
+			context.publication_steps[5] = 2;
+			if (native_quest_recovery_context_encode(state.command, context,
+								 &ended->attachment) !=
+			    player_snapshot_codec_result::ok)
+				return false;
+			const size_t bytes =
+				native_quest_frozen_bytes(state, began.get(), ended.get());
+			if (!budget(&state, bytes))
+				return false;
+			state.retained_bytes = bytes;
+			state.pending = std::move(began);
+			state.returned = std::move(ended);
+			state.started = true;
+			state.known_not_attempted = true;
+			if (!checkpoint(state))
+				return false;
+		}
+		if (!state.effect_returned)
+		{
+			if (!allow_effects || !state.known_not_attempted || !state.returned)
+				return false;
+			P_char actor = find_character_by_runtime_id(state.player_runtime_id);
+			if (!actor || !IS_PC(actor) || !actor->only.pc ||
+			    GET_PID(actor) != static_cast<int>(state.terms.player_pid))
+				return false;
+			state.known_not_attempted = false;
+			quest_reward_recover_pending(actor, state.command.operation_id, state.terms,
+						     state.xp_mask, state.economic_mask, true);
+			for (size_t i = 0; i < state.terms.xp_award_count; ++i)
+			{
+				const auto &award = state.terms.xp_awards[i];
+				if (award.recipient_pid == state.terms.player_pid)
+					continue;
+				if (P_char recipient =
+					    quest_reward_character_present(award.recipient_pid))
+					quest_reward_recover_xp_entitlement(
+						recipient, state.command.operation_id, state.terms,
+						award.reward_index, award.amount);
+			}
+			// Both successors and their owner storage existed before the first call.
+			// Returning is handoff, not proof that any reward succeeded or was saved.
+			state.effect_returned = true;
+			state.pending = std::move(state.returned);
+			state.pending_returned = true;
+			if (!checkpoint(state))
+				return !state.poisoned && native_quest_frozen_current(state);
+		}
+		if (state.durable_returned && !state.retired)
+			(void)retire_completed(state);
+		return state.effect_returned && !state.poisoned;
+	}
+	catch (...)
+	{
+		// Actual interrupted calls never repeat. Existing reward receipts retain
+		// their independent login/entitlement recovery, not inferred completion.
+		return false;
+	}
+#endif
+}
+
+void quest_native_frozen_continuation_owner::acknowledged(
+	const quest_reward_ack_completion &completion) noexcept
+{
+#ifndef __NO_MYSQL__
+	if (!nevent_is_game_thread() || completion.error_code ||
+	    (completion.result != quest_reward_obligation_result::ok &&
+	     completion.result != quest_reward_obligation_result::already_acknowledged))
+		return;
+	for (const auto &[key, state] : native_quest_frozen_recoveries)
+		if (state && !state->poisoned && state->effect_returned &&
+		    state->terms.player_pid == completion.player_pid &&
+		    state->command.operation_id.bytes == completion.offering_operation.bytes)
+			state->acknowledged =
+				true; // Actual original repository completion, never caller bool.
+#else
+	(void)completion;
+#endif
+}
+
+void quest_native_frozen_continuation_owner::pulse() noexcept
+{
+#ifndef __NO_MYSQL__
+	if (!nevent_is_game_thread())
+		return;
+	size_t remaining = QUEST_REWARD_ACK_PIPELINE_PULSE_MAX;
+	for (auto it = native_quest_frozen_recoveries.begin();
+	     it != native_quest_frozen_recoveries.end() && remaining--;)
+	{
+		auto held = it->second;
+		(void)drive(
+			*held,
+			false); // Settle actual writers/ACK only; never dispatch reward effects.
+		if (held->retired && !held->poisoned)
+			it = native_quest_frozen_recoveries.erase(it);
+		else
+			++it;
+	}
+	(void)budget(nullptr, 0);
+#endif
+}
+
+bool quest_native_frozen_continuation_owner::publish(const critical_command &command,
+						     const quest_reward_obligation_record &record,
+						     uint64_t original_player_runtime_id,
+						     bool *started) noexcept
+{
+	if (!started)
+		return false;
+	*started = false;
+#ifdef __NO_MYSQL__
+	(void)command;
+	(void)record;
+	(void)original_player_runtime_id;
+	return false;
+#else
+	if (!nevent_is_game_thread() || !original_player_runtime_id ||
+	    (command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION &&
+	     command.payload_version !=
+		     ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION) ||
+	    command.operation_id.bytes != record.offering_operation.bytes)
+		return false;
+	try
+	{
+		item_transfer_payload payload{};
+		quest_reward_continuation terms;
+		if (!item_transfer_command_decode_payload(command, &payload) ||
+		    !item_transfer_native_mobile_recovery_shape_valid(payload) ||
+		    payload.native_mobile.action != item_native_mobile_action::consumption ||
+		    payload.continuation.kind != item_transfer_continuation_kind::quest_offering ||
+		    payload.continuation.data != record.continuation ||
+		    payload.native_recovery.publication_terms.disappear ||
+		    !quest_reward_continuation_decode(record.continuation.data(),
+						      record.continuation.size(), &terms) ||
+		    (payload.native_cost.fee_only ?
+			     !quest_reward_is_fee_only(terms) :
+			     (terms.version != 5 && !quest_reward_has_daily_context(terms))) ||
+		    terms.player_pid != payload.native_recovery.player_pid)
+			return false;
+		const std::string key = quest_reward_operation_key(command.operation_id);
+		auto found = native_quest_frozen_recoveries.find(key);
+		if (found == native_quest_frozen_recoveries.end())
+		{
+			P_char actor = find_character_by_runtime_id(original_player_runtime_id);
+			if (!actor || !IS_PC(actor) || !actor->only.pc ||
+			    GET_PID(actor) != static_cast<int>(terms.player_pid))
+				return false;
+			auto state = std::make_shared<native_quest_frozen_recovery_state>();
+			state->key = key;
+			state->command = command;
+			state->continuation = record.continuation;
+			state->terms = std::move(terms);
+			state->player_runtime_id = original_player_runtime_id;
+			state->xp_mask = record.xp_applied_mask;
+			state->economic_mask = record.economic_applied_mask;
+			state->current = std::make_unique<critical_native_recovery_envelope>();
+			native_quest_recovery_context context;
+			if (!critical_native_quest_continuation_owner::copy_context(
+				    command, state->current.get()) ||
+			    state->current->phase !=
+				    critical_native_recovery_phase::continuation_pending ||
+			    native_quest_recovery_context_decode(
+				    command, state->current->attachment, &context) !=
+				    player_snapshot_codec_result::ok ||
+			    context.publication_stage !=
+				    native_quest_recovery_publication_stage::physically_proven ||
+			    !context.receipt.present ||
+			    (context.receipt.outcome != critical_apply_outcome::applied &&
+			     context.receipt.outcome != critical_apply_outcome::already_applied))
+				return false;
+			state->started = context.publication_steps[5] != 0;
+			state->effect_returned = state->durable_returned =
+				context.publication_steps[5] == 2;
+			state->retained_bytes = native_quest_frozen_bytes(*state);
+			found = native_quest_frozen_recoveries.emplace(key, std::move(state)).first;
+			if (!budget(nullptr, 0))
+			{
+				native_quest_frozen_recoveries.erase(found);
+				return false;
+			}
+		}
+		auto state = found->second;
+		if (!critical_command_equal(command, state->command) ||
+		    state->player_runtime_id != original_player_runtime_id ||
+		    state->continuation != record.continuation ||
+		    state->xp_mask != record.xp_applied_mask ||
+		    state->economic_mask != record.economic_applied_mask)
+			return false;
+		const bool handed = drive(*state, true);
+		*started = state->started && !state->effect_returned && !state->known_not_attempted;
+		return handed;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+namespace
+{
+enum class native_quest_gameplay_phase : uint8_t
+{
+	preparing_acceptance,
+	submitted_acceptance,
+	original_give_hooks,
+	choose_branch,
+	preparing_consumption,
+	submitted_consumption,
+	blocked
+};
+struct native_quest_gameplay_flow
+{
+	uint64_t player_runtime_id = 0, native_runtime_id = 0, original_root_uid = 0;
+	uint32_t player_pid = 0;
+	int quester_id = -1, completion_index = 0;
+	std::array<uint8_t, 9> give_hooks{};
+	std::vector<std::unique_ptr<const native_quest_original_branch>> branches;
+	size_t retained_bytes = sizeof(native_quest_gameplay_flow);
+	bool branch_program_frozen = false, program_durable = false,
+	     acceptance_handoff_durable = false;
+	bool program_capture_failed = false;
+	std::shared_ptr<const critical_command> acceptance_command, prepared_child, completed_child;
+	std::unique_ptr<critical_native_recovery_envelope> recovery, pending, hook_return,
+		child_context;
+	size_t recovery_bytes = 0;
+	uint8_t pending_kind = 0, pending_hook = 0;
+	int pending_branch = 0;
+	bool hook_not_attempted = false, child_allocated = false, child_observed = false;
+	bool child_handoff_durable = false, child_retired = false, child_taken = false;
+	bool child_frame_durable = false;
+	bool acceptance_rejected = false, acceptance_retired = false;
+	bool restored = false, cold_child_complete = false, original_program_lost = false;
+	std::unique_ptr<critical_native_recovery_envelope> restored_original;
+	critical_operation_id child_operation{};
+	item_native_quest_gameplay_result child_result = item_native_quest_gameplay_result::pending;
+	item_native_quest_preparation_token token;
+	native_quest_gameplay_phase phase = native_quest_gameplay_phase::preparing_acceptance;
+};
+std::unordered_map<uint64_t, std::shared_ptr<native_quest_gameplay_flow>> native_quest_gameplay;
+#ifndef __NO_MYSQL__
+// Startup identities are original operation IDs, never the shared runtime zero.
+std::unordered_map<std::string, std::shared_ptr<native_quest_gameplay_flow>>
+	native_quest_passive_gameplay;
+std::unordered_map<std::string, std::shared_ptr<const critical_native_recovery_envelope>>
+	native_quest_passive_children;
+bool native_quest_terminal_parent_live(const critical_native_recovery_envelope &parent) noexcept
+{
+	for (const auto &[runtime, flow] : native_quest_gameplay)
+		if (flow->acceptance_command && flow->acceptance_command->operation_id.bytes ==
+							parent.command.operation_id.bytes)
+			return true;
+	return false;
+}
+void native_quest_cleanup_retired_pair(const critical_native_recovery_envelope &parent,
+				       const critical_native_recovery_envelope &child) noexcept
+{
+	const auto exact = [](const critical_native_recovery_envelope &a,
+			      const critical_native_recovery_envelope &b)
+	{
+		return a.command.operation_id.bytes == b.command.operation_id.bytes &&
+		       a.revision == b.revision && a.phase == b.phase &&
+		       a.attachment == b.attachment;
+	};
+	// These maps contain passive mirrors of the exact coordinator records.
+	// Successful retirement is already latched; cleanup performs no encoding/allocation.
+	for (auto it = native_quest_passive_gameplay.begin();
+	     it != native_quest_passive_gameplay.end(); ++it)
+		if (it->second->recovery && exact(*it->second->recovery, parent))
+		{
+			native_quest_passive_gameplay.erase(it);
+			break;
+		}
+	for (const auto &[runtime, flow] : native_quest_gameplay)
+		if (flow->recovery && exact(*flow->recovery, parent))
+			flow->acceptance_retired =
+				true; // Keep a live token until its original take.
+	for (auto it = native_quest_passive_children.begin();
+	     it != native_quest_passive_children.end(); ++it)
+		if (exact(*it->second, child))
+		{
+			native_quest_passive_children.erase(it);
+			break;
+		}
+}
+#endif
+}
+
+class quest_native_gameplay_owner final
+{
+    public:
+	static bool begin(P_char mobile, P_char player, int quester_id, P_obj offering) noexcept;
+	static void pulse() noexcept;
+
+    private:
+	friend class quest_native_frozen_continuation_owner;
+	static bool restore_phase2(const critical_native_recovery_envelope &) noexcept;
+	static void passive_pulse() noexcept;
+#ifndef __NO_MYSQL__
+	static bool charge_passive_child(native_quest_gameplay_flow &) noexcept;
+#endif
+	friend bool
+	quest_native_frozen_continuation_owner::budget(const native_quest_frozen_recovery_state *,
+						       size_t) noexcept;
+	[[maybe_unused]] static bool charge_budget(size_t bytes) noexcept
+	{
+		return item_native_quest_gameplay_publication_owner::retained_budget(bytes);
+	}
+	[[maybe_unused]] static bool freeze_program(native_quest_gameplay_flow &) noexcept;
+	static bool budget(const native_quest_gameplay_flow *replace = nullptr,
+			   size_t replacement = 0) noexcept;
+	static void erase(uint64_t) noexcept;
+	static bool enroll(native_quest_gameplay_flow &, std::shared_ptr<const critical_command>,
+			   bool rejected) noexcept;
+	static bool checkpoint(native_quest_gameplay_flow &) noexcept;
+	static bool prepare_context(native_quest_gameplay_flow &, native_quest_recovery_context &,
+				    uint8_t kind, int branch = 0) noexcept;
+	static bool hook_begin(native_quest_gameplay_flow &, uint8_t) noexcept;
+	static bool hook_returned(native_quest_gameplay_flow &) noexcept;
+	static bool persist_program(native_quest_gameplay_flow &) noexcept;
+	static bool persist_branch(native_quest_gameplay_flow &, int, bool clear_child) noexcept;
+	static bool allocate_child(native_quest_gameplay_flow &) noexcept;
+	static bool persist_child_command(native_quest_gameplay_flow &,
+					  std::shared_ptr<const critical_command>) noexcept;
+	static bool finish_child(native_quest_gameplay_flow &, item_native_quest_gameplay_result,
+				 std::shared_ptr<const critical_command>) noexcept;
+	static bool charge_recovery(native_quest_gameplay_flow &, size_t) noexcept;
+};
+
+bool quest_native_gameplay_owner::budget(const native_quest_gameplay_flow *replace,
+					 size_t replacement) noexcept
+{
+	size_t bytes = 0;
+	for (const auto &[runtime, flow] : native_quest_gameplay)
+	{
+		const size_t retained = flow.get() == replace ? replacement : flow->retained_bytes;
+		if (retained > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+			return false;
+		bytes += retained;
+	}
+#ifndef __NO_MYSQL__
+	for (const auto &[key, flow] : native_quest_passive_gameplay)
+	{
+		const size_t retained = flow.get() == replace ? replacement : flow->retained_bytes;
+		if (retained > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+			return false;
+		bytes += retained;
+	}
+	for (const auto &[key, record] : native_quest_passive_children)
+	{
+		const size_t retained = sizeof(*record) + 2 * CRITICAL_COMMAND_MAX_ENCODED_BYTES +
+					record->attachment.capacity();
+		if (retained > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+			return false;
+		bytes += retained;
+	}
+	for (const auto &[key, state] : native_quest_frozen_recoveries)
+	{
+		if (state->retained_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+			return false;
+		bytes += state->retained_bytes;
+	}
+#endif
+	return item_native_quest_gameplay_publication_owner::retained_budget(bytes);
+}
+
+bool quest_native_frozen_continuation_owner::budget(
+	const native_quest_frozen_recovery_state *replace, size_t replacement) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)replace;
+	(void)replacement;
+	return false;
+#else
+	if (!nevent_is_game_thread())
+		return false;
+	size_t bytes = 0;
+	for (const auto &[runtime, flow] : native_quest_gameplay)
+	{
+		if (flow->retained_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+			return false;
+		bytes += flow->retained_bytes;
+	}
+	for (const auto &[key, flow] : native_quest_passive_gameplay)
+	{
+		if (flow->retained_bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+			return false;
+		bytes += flow->retained_bytes;
+	}
+	for (const auto &[key, record] : native_quest_passive_children)
+	{
+		const size_t retained = sizeof(*record) + 2 * CRITICAL_COMMAND_MAX_ENCODED_BYTES +
+					record->attachment.capacity();
+		if (retained > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+			return false;
+		bytes += retained;
+	}
+	for (const auto &[key, state] : native_quest_frozen_recoveries)
+	{
+		const size_t charge = state.get() == replace ? replacement : state->retained_bytes;
+		if (charge > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+			return false;
+		bytes += charge;
+	}
+	return quest_native_gameplay_owner::charge_budget(bytes);
+#endif
+}
+void quest_native_gameplay_owner::erase(uint64_t runtime) noexcept
+{
+	native_quest_gameplay.erase(runtime);
+	(void)budget();
+}
+#ifndef __NO_MYSQL__
+namespace
+{
+bool native_quest_gameplay_current(const native_quest_gameplay_flow &flow) noexcept
+{
+	const auto found = native_quest_gameplay.find(flow.native_runtime_id);
+	return found != native_quest_gameplay.end() && found->second.get() == &flow;
+}
+size_t native_quest_gameplay_recovery_bytes(
+	const native_quest_gameplay_flow &flow,
+	const critical_native_recovery_envelope *pending = nullptr,
+	const critical_native_recovery_envelope *returned = nullptr) noexcept
+{
+	size_t bytes = flow.acceptance_command ? CRITICAL_COMMAND_MAX_ENCODED_BYTES : 0;
+	const auto add = [&](size_t value)
+	{
+		if (bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
+		    value > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+			return false;
+		bytes += value;
+		return true;
+	};
+	if (flow.prepared_child && !add(CRITICAL_COMMAND_MAX_ENCODED_BYTES))
+		return PLAYER_SAVE_PIPELINE_MAX_BYTES + 1;
+	if (flow.completed_child && !add(CRITICAL_COMMAND_MAX_ENCODED_BYTES))
+		return PLAYER_SAVE_PIPELINE_MAX_BYTES + 1;
+	for (const auto *record : std::array<const critical_native_recovery_envelope *, 5>{
+		     flow.recovery.get(), pending ? pending : flow.pending.get(),
+		     returned ? returned : flow.hook_return.get(), flow.child_context.get(),
+		     flow.restored_original.get() })
+		if (record && (!add(sizeof(*record) + CRITICAL_COMMAND_MAX_ENCODED_BYTES) ||
+			       !add(record->attachment.capacity())))
+			return PLAYER_SAVE_PIPELINE_MAX_BYTES + 1;
+	return bytes;
+}
+}
+
+bool quest_native_gameplay_owner::charge_recovery(native_quest_gameplay_flow &flow,
+						  size_t bytes) noexcept
+{
+	if (flow.recovery_bytes > flow.retained_bytes)
+		return false;
+	const size_t original = flow.retained_bytes - flow.recovery_bytes;
+	if (bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES - original || !budget(&flow, original + bytes))
+		return false;
+	flow.recovery_bytes = bytes;
+	flow.retained_bytes = original + bytes;
+	return true;
+}
+
+bool quest_native_gameplay_owner::checkpoint(native_quest_gameplay_flow &flow) noexcept
+{
+	if (!flow.pending)
+		return true;
+	if (!native_quest_gameplay_current(flow) || !flow.recovery ||
+	    flow.phase == native_quest_gameplay_phase::blocked ||
+	    (flow.pending_kind == 11 ?
+		     (!flow.child_context ||
+		      !critical_native_quest_continuation_owner::transition_pair(
+			      *flow.recovery, *flow.child_context, flow.pending.get())) :
+		     !critical_native_quest_continuation_owner::checkpoint_context(*flow.recovery,
+										   *flow.pending)))
+		return false; // Own the exact expected/successor until CAS durability is confirmed.
+	if (flow.pending_kind == 11)
+		flow.child_retired = true; // Latch the actual paired journal return before cleanup.
+	if (!native_quest_gameplay_current(flow))
+	{
+		flow.phase = native_quest_gameplay_phase::blocked;
+		return false;
+	}
+	flow.recovery = std::move(flow.pending);
+	switch (flow.pending_kind)
+	{
+	case 1:
+		flow.acceptance_handoff_durable = true;
+		break;
+	case 2:
+		break; // The live not-attempted marker existed before the start write.
+	case 3:
+		flow.give_hooks[flow.pending_hook] = 2;
+		break;
+	case 4:
+		flow.program_durable = true;
+		break;
+	case 11:
+		// The exact latest child is now durable in the advanced parent. Remove
+		// only the passive copy; no allocation or absence proof after paired I/O.
+		for (auto child = native_quest_passive_children.begin();
+		     child != native_quest_passive_children.end(); ++child)
+			if (child->second->command.operation_id.bytes == flow.child_operation.bytes)
+			{
+				native_quest_passive_children.erase(child);
+				break;
+			}
+		[[fallthrough]];
+	case 5:
+	case 8:
+		flow.completion_index = flow.pending_branch;
+		flow.child_allocated = flow.child_observed = flow.child_handoff_durable = false;
+		flow.child_retired = flow.child_taken = false;
+		flow.phase = native_quest_gameplay_phase::choose_branch;
+		flow.child_operation = {};
+		flow.prepared_child.reset();
+		flow.child_frame_durable = false;
+		flow.cold_child_complete = false;
+		flow.completed_child.reset();
+		flow.child_context.reset();
+		break;
+	case 6:
+		flow.child_allocated = true;
+		break;
+	case 7:
+		flow.child_handoff_durable = true;
+		break;
+	case 9:
+		flow.child_frame_durable = true;
+		break;
+	case 10:
+		flow.give_hooks.back() = 2;
+		flow.program_durable = true;
+		flow.hook_return.reset();
+		break;
+	default:
+		flow.phase = native_quest_gameplay_phase::blocked;
+		return false;
+	}
+	flow.pending_kind = 0;
+	// Map pin, moves and checked scalar charging only after journal I/O.
+	if (!charge_recovery(flow, native_quest_gameplay_recovery_bytes(flow)))
+	{
+		flow.phase = native_quest_gameplay_phase::blocked;
+		return false;
+	}
+	return true;
+}
+
+bool quest_native_gameplay_owner::prepare_context(native_quest_gameplay_flow &flow,
+						  native_quest_recovery_context &context,
+						  uint8_t kind, int branch) noexcept
+{
+	try
+	{
+		if (!flow.acceptance_command || !flow.recovery || flow.pending ||
+		    flow.recovery->revision == UINT64_MAX || !native_quest_gameplay_current(flow))
+			return false;
+		auto successor =
+			std::make_unique<critical_native_recovery_envelope>(*flow.recovery);
+		++successor->revision;
+		if (native_quest_recovery_context_encode(*flow.acceptance_command, context,
+							 &successor->attachment) !=
+			    player_snapshot_codec_result::ok ||
+		    !charge_recovery(flow,
+				     native_quest_gameplay_recovery_bytes(flow, successor.get())))
+			return false;
+		flow.pending = std::move(successor);
+		flow.pending_kind = kind;
+		flow.pending_branch = branch;
+		return checkpoint(flow);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool quest_native_gameplay_owner::enroll(native_quest_gameplay_flow &flow,
+					 std::shared_ptr<const critical_command> command,
+					 bool rejected) noexcept
+{
+	try
+	{
+		if (!command || !native_quest_gameplay_current(flow))
+			return false;
+		if (flow.acceptance_command)
+		{
+			if (flow.acceptance_rejected != rejected ||
+			    !critical_command_equal(*command, *flow.acceptance_command) ||
+			    !checkpoint(flow))
+				return false;
+			if (rejected || flow.acceptance_handoff_durable)
+				return true;
+			native_quest_recovery_context retained;
+			if (native_quest_recovery_context_decode(
+				    *flow.acceptance_command, flow.recovery->attachment,
+				    &retained) != player_snapshot_codec_result::ok)
+				return false;
+			retained.parent_acceptance = flow.acceptance_command->operation_id;
+			return prepare_context(flow, retained, 1);
+		}
+		item_transfer_payload payload{};
+		auto current = std::make_unique<critical_native_recovery_envelope>();
+		native_quest_recovery_context context;
+		if (!item_transfer_command_decode_payload(*command, &payload) ||
+		    !item_transfer_native_mobile_recovery_shape_valid(payload) ||
+		    payload.native_mobile.action != item_native_mobile_action::acceptance ||
+		    payload.native_recovery.player_pid != flow.player_pid ||
+		    item_transfer_result_root(payload) != flow.original_root_uid ||
+		    !critical_native_quest_continuation_owner::copy_context(*command,
+									    current.get()) ||
+		    current->phase != critical_native_recovery_phase::continuation_pending ||
+		    native_quest_recovery_context_decode(*command, current->attachment, &context) !=
+			    player_snapshot_codec_result::ok ||
+		    context.publication_stage !=
+			    native_quest_recovery_publication_stage::physically_proven ||
+		    !context.receipt.present ||
+		    (rejected ?
+			     context.receipt.outcome != critical_apply_outcome::terminal_failure :
+			     (context.receipt.error_code ||
+			      (context.receipt.outcome != critical_apply_outcome::applied &&
+			       context.receipt.outcome !=
+				       critical_apply_outcome::already_applied))) ||
+		    context.branch_program_frozen || context.child_handoff_stage ||
+		    (!critical_operation_id_is_zero(context.parent_acceptance) &&
+		     context.parent_acceptance.bytes != command->operation_id.bytes))
+			return false;
+		const size_t bytes = CRITICAL_COMMAND_MAX_ENCODED_BYTES + sizeof(*current) +
+				     CRITICAL_COMMAND_MAX_ENCODED_BYTES +
+				     current->attachment.capacity();
+		if (!charge_recovery(flow, bytes))
+			return false;
+		flow.acceptance_command = std::move(command);
+		flow.recovery = std::move(current);
+		flow.give_hooks = context.give_hooks;
+		flow.acceptance_rejected = rejected;
+		if (rejected)
+			return true; // Exact original rejection is observed through the private item owner.
+		context.parent_acceptance = flow.acceptance_command->operation_id;
+		return prepare_context(flow, context, 1);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool quest_native_gameplay_owner::hook_begin(native_quest_gameplay_flow &flow,
+					     uint8_t hook) noexcept
+{
+	try
+	{
+		if (!checkpoint(flow) || !flow.recovery || hook >= flow.give_hooks.size())
+			return false;
+		if (flow.hook_return)
+			return flow.pending_hook == hook && flow.hook_not_attempted;
+		if (flow.give_hooks[hook] != 0 || flow.recovery->revision >= UINT64_MAX - 1)
+			return false; // No cold started/unreturned hook can acquire a live retry marker.
+		native_quest_recovery_context context;
+		if (native_quest_recovery_context_decode(*flow.acceptance_command,
+							 flow.recovery->attachment, &context) !=
+			    player_snapshot_codec_result::ok ||
+		    context.give_hooks[hook] != 0)
+			return false;
+		auto began = std::make_unique<critical_native_recovery_envelope>(*flow.recovery);
+		++began->revision;
+		context.give_hooks[hook] = 1;
+		if (native_quest_recovery_context_encode(*flow.acceptance_command, context,
+							 &began->attachment) !=
+		    player_snapshot_codec_result::ok)
+			return false;
+		auto returned = std::make_unique<critical_native_recovery_envelope>(*began);
+		++returned->revision;
+		context.give_hooks[hook] = 2;
+		if (native_quest_recovery_context_encode(*flow.acceptance_command, context,
+							 &returned->attachment) !=
+			    player_snapshot_codec_result::ok ||
+		    !charge_recovery(flow, native_quest_gameplay_recovery_bytes(flow, began.get(),
+										returned.get())))
+			return false;
+		flow.pending = std::move(began);
+		flow.hook_return = std::move(returned);
+		flow.pending_kind = 2;
+		flow.pending_hook = hook;
+		flow.hook_not_attempted = true;
+		return checkpoint(flow);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool quest_native_gameplay_owner::hook_returned(native_quest_gameplay_flow &flow) noexcept
+{
+	if (!flow.hook_return || flow.hook_not_attempted ||
+	    flow.give_hooks[flow.pending_hook] != 2 || flow.pending)
+		return false;
+	// The last actual return and its original post-GIVE program are one writer.
+	// Never publish the pre-call hook-only returned carrier for this hook.
+	if (static_cast<size_t>(flow.pending_hook) + 1 == flow.give_hooks.size())
+		return persist_program(flow);
+	flow.pending = std::move(flow.hook_return);
+	flow.pending_kind = 3;
+	return checkpoint(flow); // Entire returned writer existed before the original hook call.
+}
+
+bool quest_native_gameplay_owner::persist_program(native_quest_gameplay_flow &flow) noexcept
+{
+	try
+	{
+		if (!checkpoint(flow) || !flow.branch_program_frozen ||
+		    flow.program_capture_failed || flow.original_program_lost ||
+		    !std::all_of(flow.give_hooks.begin(), flow.give_hooks.end(),
+				 [](uint8_t step) { return step == 2; }))
+			return false;
+		if (flow.program_durable)
+			return true;
+		native_quest_recovery_context context;
+		if (!flow.recovery || native_quest_recovery_context_decode(
+					      *flow.acceptance_command, flow.recovery->attachment,
+					      &context) != player_snapshot_codec_result::ok)
+			return false;
+		const bool last_returned = context.give_hooks.back() == 1;
+		if (last_returned)
+		{
+			if (!flow.hook_return || flow.hook_not_attempted ||
+			    static_cast<size_t>(flow.pending_hook) + 1 != flow.give_hooks.size() ||
+			    !std::all_of(context.give_hooks.begin(), context.give_hooks.end() - 1,
+					 [](uint8_t step) { return step == 2; }))
+				return false;
+			context.give_hooks.back() = 2;
+		}
+		context.branches.reserve(flow.branches.size());
+		for (const auto &branch : flow.branches)
+		{
+			native_quest_recovery_branch out;
+			for (const auto &goal : branch->give)
+				out.give.push_back(
+					{ static_cast<uint8_t>(goal.goal_type), goal.number });
+			for (const auto &goal : branch->receive)
+				out.receive.push_back(
+					{ static_cast<uint8_t>(goal.goal_type), goal.number });
+			out.message = branch->message;
+			out.disappear_message = branch->disappear_message;
+			out.definition_id = branch->definition_id;
+			out.message_present = branch->view.message != nullptr;
+			out.disappear_message_present = branch->view.disappear_message != nullptr;
+			out.echo_all = branch->view.echoAll != 0;
+			out.disappear = branch->view.disappear != 0;
+			context.branches.push_back(std::move(out));
+		}
+		context.branch_program_frozen = true;
+		context.next_branch = static_cast<uint32_t>(flow.completion_index);
+		// Captured immutable branches and the actual returned fact remain owned
+		// on allocation, budget or journal refusal. Retry this same combined CAS.
+		return prepare_context(flow, context, last_returned ? 10 : 4);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool quest_native_gameplay_owner::persist_branch(native_quest_gameplay_flow &flow, int branch,
+						 bool clear_child) noexcept
+{
+	try
+	{
+		if (!checkpoint(flow) || branch < 0 ||
+		    static_cast<size_t>(branch) > flow.branches.size())
+			return false;
+		native_quest_recovery_context context;
+		if (!flow.recovery ||
+		    native_quest_recovery_context_decode(*flow.acceptance_command,
+							 flow.recovery->attachment, &context) !=
+			    player_snapshot_codec_result::ok ||
+		    !context.branch_program_frozen ||
+		    context.next_branch != static_cast<uint32_t>(flow.completion_index))
+			return false;
+		context.next_branch = static_cast<uint32_t>(branch);
+		if (clear_child)
+		{
+			if (context.next_child_command.empty() || !flow.child_context ||
+			    flow.child_retired || !flow.child_handoff_durable ||
+			    !flow.child_taken ||
+			    flow.child_result !=
+				    item_native_quest_gameplay_result::prefix_applied ||
+			    context.child_handoff_stage != 2 ||
+			    context.next_child_operation.bytes != flow.child_operation.bytes ||
+			    branch != flow.completion_index + 1 || !flow.prepared_child ||
+			    !critical_command_equal(flow.child_context->command,
+						    *flow.prepared_child))
+				return false;
+			context.latest_child_branch = static_cast<uint32_t>(flow.completion_index);
+			context.latest_child_revision = flow.child_context->revision;
+			context.latest_child_command = context.next_child_command;
+			context.latest_child_attachment = flow.child_context->attachment;
+			context.next_child_command.clear();
+			context.next_child_operation = {};
+			context.child_handoff_stage = 0;
+		}
+		return prepare_context(flow, context, clear_child ? 11 : 5, branch);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool quest_native_gameplay_owner::allocate_child(native_quest_gameplay_flow &flow) noexcept
+{
+	try
+	{
+		if (!checkpoint(flow))
+			return false;
+		if (flow.child_allocated)
+			return true;
+		if (critical_operation_id_is_zero(flow.child_operation) &&
+		    !critical_operation_id_generate(&flow.child_operation))
+			return false;
+		native_quest_recovery_context context;
+		if (!flow.recovery ||
+		    native_quest_recovery_context_decode(*flow.acceptance_command,
+							 flow.recovery->attachment, &context) !=
+			    player_snapshot_codec_result::ok ||
+		    context.child_handoff_stage || !context.branch_program_frozen ||
+		    context.next_branch != static_cast<uint32_t>(flow.completion_index))
+			return false;
+		context.next_child_operation = flow.child_operation;
+		context.child_handoff_stage = 1;
+		return prepare_context(flow, context, 6);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool quest_native_gameplay_owner::persist_child_command(
+	native_quest_gameplay_flow &flow, std::shared_ptr<const critical_command> command) noexcept
+{
+	try
+	{
+		if (!checkpoint(flow) || !flow.child_allocated || !command ||
+		    command->operation_id.bytes != flow.child_operation.bytes)
+			return false;
+		if (flow.prepared_child && !critical_command_equal(*flow.prepared_child, *command))
+			return false;
+		if (flow.child_frame_durable)
+			return flow.prepared_child !=
+			       nullptr; // Confirmed CAS still retains the original command.
+		native_quest_recovery_context context;
+		std::vector<uint8_t> original_frame;
+		if (!flow.recovery ||
+		    native_quest_recovery_context_decode(*flow.acceptance_command,
+							 flow.recovery->attachment, &context) !=
+			    player_snapshot_codec_result::ok ||
+		    context.child_handoff_stage != 1 ||
+		    context.next_child_operation.bytes != command->operation_id.bytes ||
+		    context.next_branch != static_cast<uint32_t>(flow.completion_index) ||
+		    critical_command_encode(*command, &original_frame) !=
+			    critical_command_codec_result::ok ||
+		    original_frame.empty() ||
+		    original_frame.size() > CRITICAL_COMMAND_MAX_ENCODED_BYTES ||
+		    (!context.next_child_command.empty() &&
+		     context.next_child_command != original_frame))
+			return false;
+		if (!flow.prepared_child)
+		{
+			const size_t retained = native_quest_gameplay_recovery_bytes(flow);
+			if (retained > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
+			    CRITICAL_COMMAND_MAX_ENCODED_BYTES >
+				    PLAYER_SAVE_PIPELINE_MAX_BYTES - retained ||
+			    !charge_recovery(flow, retained + CRITICAL_COMMAND_MAX_ENCODED_BYTES))
+				return false;
+			flow.prepared_child = std::move(command);
+		}
+		context.next_child_command = std::move(original_frame);
+		return prepare_context(flow, context, 9);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+bool quest_native_gameplay_owner::finish_child(
+	native_quest_gameplay_flow &flow, item_native_quest_gameplay_result result,
+	std::shared_ptr<const critical_command> command) noexcept
+{
+	try
+	{
+		if (!checkpoint(flow) || !flow.child_allocated || !flow.child_frame_durable ||
+		    !flow.prepared_child || !command ||
+		    !critical_command_equal(*command, *flow.prepared_child) ||
+		    command->operation_id.bytes != flow.child_operation.bytes ||
+		    (result != item_native_quest_gameplay_result::prefix_applied &&
+		     result != item_native_quest_gameplay_result::completion_applied &&
+		     result != item_native_quest_gameplay_result::rejected))
+			return false;
+		if (!flow.child_observed)
+		{
+			item_transfer_payload payload{};
+			if (!item_transfer_command_decode_payload(*command, &payload) ||
+			    !item_transfer_native_mobile_recovery_shape_valid(payload) ||
+			    payload.native_mobile.action !=
+				    item_native_mobile_action::consumption ||
+			    payload.native_recovery.player_pid != flow.player_pid ||
+			    payload.native_mobile.final_giver_pid != flow.player_pid ||
+			    (result == item_native_quest_gameplay_result::prefix_applied &&
+			     payload.continuation.kind != item_transfer_continuation_kind::none) ||
+			    (result == item_native_quest_gameplay_result::completion_applied &&
+			     payload.continuation.kind !=
+				     item_transfer_continuation_kind::quest_offering))
+				return false;
+			auto child = std::make_unique<critical_native_recovery_envelope>();
+			if (result != item_native_quest_gameplay_result::completion_applied)
+			{
+				native_quest_recovery_context context;
+				if (!critical_native_quest_continuation_owner::copy_context(
+					    *command, child.get()) ||
+				    child->phase !=
+					    critical_native_recovery_phase::continuation_pending ||
+				    native_quest_recovery_context_decode(
+					    *command, child->attachment, &context) !=
+					    player_snapshot_codec_result::ok ||
+				    context.publication_stage !=
+					    native_quest_recovery_publication_stage::
+						    physically_proven ||
+				    !context.receipt.present ||
+				    ((result == item_native_quest_gameplay_result::rejected) !=
+				     (context.receipt.outcome ==
+				      critical_apply_outcome::terminal_failure)))
+					return false;
+			}
+			else
+				child.reset(); // Reward owner retains the original child until genuine reward ACK.
+			size_t bytes = native_quest_gameplay_recovery_bytes(flow);
+			const size_t extra =
+				CRITICAL_COMMAND_MAX_ENCODED_BYTES +
+				(child ? sizeof(*child) + CRITICAL_COMMAND_MAX_ENCODED_BYTES +
+						 child->attachment.capacity() :
+					 0);
+			if (bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES ||
+			    extra > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes ||
+			    !charge_recovery(flow, bytes + extra))
+				return false;
+			flow.completed_child = std::move(command);
+			flow.child_context = std::move(child);
+			flow.child_result = result;
+			flow.child_observed = true;
+		}
+		else if (flow.child_result != result ||
+			 !critical_command_equal(*command, *flow.completed_child))
+			return false;
+		native_quest_recovery_context context;
+		if (native_quest_recovery_context_decode(*flow.acceptance_command,
+							 flow.recovery->attachment, &context) !=
+			    player_snapshot_codec_result::ok ||
+		    context.next_child_operation.bytes != flow.child_operation.bytes ||
+		    context.next_branch != static_cast<uint32_t>(flow.completion_index) ||
+		    context.child_handoff_stage != (flow.child_handoff_durable ? 2 : 1))
+			return false;
+		if (!flow.child_handoff_durable)
+		{
+			context.child_handoff_stage = 2;
+			if (result == item_native_quest_gameplay_result::prefix_applied &&
+			    flow.completion_index == INT_MAX)
+				return false;
+			// Keep the producing branch while its exact child frame remains.
+			// Only original retirement/take followed by clear+advance moves it.
+			if (!prepare_context(flow, context, 7))
+				return false;
+		}
+		// Prefix waits for paired advance after take; rewards wait for exact genuine ACK.
+		if (flow.child_context && !flow.child_retired &&
+		    result == item_native_quest_gameplay_result::rejected)
+		{
+			if (!critical_native_quest_continuation_owner::transition_pair(
+				    *flow.recovery, *flow.child_context, nullptr))
+				return false;
+			flow.child_retired = flow.acceptance_retired =
+				true; // Only this actual paired retirement return supplies both facts.
+			if (!native_quest_gameplay_current(flow))
+				return false;
+		}
+		if (flow.child_retired)
+		{
+			// No allocation after the irreversible retirement. Retrying this
+			// exact cleanup is safe even when the returned latch was already set.
+			for (auto child = native_quest_passive_children.begin();
+			     child != native_quest_passive_children.end(); ++child)
+				if (child->second->command.operation_id.bytes ==
+				    flow.child_operation.bytes)
+				{
+					native_quest_passive_children.erase(child);
+					break;
+				}
+		}
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+#endif
+
+#ifndef __NO_MYSQL__
+namespace
+{
+bool native_quest_passive_equal(const critical_native_recovery_envelope &a,
+				const critical_native_recovery_envelope &b)
+{
+	return a.phase == b.phase && a.revision == b.revision && a.attachment == b.attachment &&
+	       critical_command_equal(a.command, b.command);
+}
+size_t native_quest_passive_bytes(const critical_native_recovery_envelope &record)
+{
+	const size_t fixed = sizeof(record) + 2 * CRITICAL_COMMAND_MAX_ENCODED_BYTES;
+	return record.attachment.capacity() > PLAYER_SAVE_PIPELINE_MAX_BYTES - fixed ?
+		       PLAYER_SAVE_PIPELINE_MAX_BYTES + 1 :
+		       fixed + record.attachment.capacity();
+}
+bool native_quest_passive_total(size_t *output)
+{
+	size_t bytes = 0;
+	const auto add = [&](size_t value)
+	{
+		if (value > PLAYER_SAVE_PIPELINE_MAX_BYTES - bytes)
+			return false;
+		bytes += value;
+		return true;
+	};
+	for (const auto &[runtime, flow] : native_quest_gameplay)
+		if (!add(flow->retained_bytes))
+			return false;
+	for (const auto &[key, flow] : native_quest_passive_gameplay)
+		if (!add(flow->retained_bytes))
+			return false;
+	for (const auto &[key, record] : native_quest_passive_children)
+		if (!add(native_quest_passive_bytes(*record)))
+			return false;
+	for (const auto &[key, state] : native_quest_frozen_recoveries)
+		if (!add(state->retained_bytes))
+			return false;
+	*output = bytes;
+	return true;
+}
+}
+#endif
+
+bool quest_native_gameplay_owner::restore_phase2(
+	const critical_native_recovery_envelope &envelope) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)envelope;
+	return false;
+#else
+	try
+	{
+		item_transfer_payload payload{};
+		native_quest_recovery_context context;
+		if (envelope.phase != critical_native_recovery_phase::continuation_pending ||
+		    !envelope.revision ||
+		    !item_transfer_command_decode_payload(envelope.command, &payload) ||
+		    !item_transfer_native_mobile_recovery_shape_valid(payload) ||
+		    native_quest_recovery_context_decode(envelope.command, envelope.attachment,
+							 &context) !=
+			    player_snapshot_codec_result::ok ||
+		    !context.receipt.present ||
+		    context.publication_stage !=
+			    native_quest_recovery_publication_stage::physically_proven)
+			return false;
+		const std::string key = quest_reward_operation_key(envelope.command.operation_id);
+		for (const auto &[runtime, flow] : native_quest_gameplay)
+			if (flow->acceptance_command &&
+			    flow->acceptance_command->operation_id.bytes ==
+				    envelope.command.operation_id.bytes)
+				return flow->restored_original &&
+				       native_quest_passive_equal(*flow->restored_original,
+								  envelope);
+		auto existing = native_quest_passive_gameplay.find(key);
+		if (existing != native_quest_passive_gameplay.end())
+			return existing->second->restored_original &&
+			       native_quest_passive_equal(*existing->second->restored_original,
+							  envelope);
+		auto child_existing = native_quest_passive_children.find(key);
+		if (child_existing != native_quest_passive_children.end())
+			return native_quest_passive_equal(*child_existing->second, envelope);
+		auto reward_existing = native_quest_frozen_recoveries.find(key);
+		if (reward_existing != native_quest_frozen_recoveries.end())
+			return reward_existing->second->restored_original &&
+			       native_quest_passive_equal(
+				       *reward_existing->second->restored_original, envelope);
+		if (native_quest_passive_gameplay.size() + native_quest_passive_children.size() +
+			    native_quest_frozen_recoveries.size() + native_quest_gameplay.size() >=
+		    ITEM_MOVEMENT_PENDING_MAX)
+			return false;
+		if (payload.native_mobile.action == item_native_mobile_action::consumption)
+		{
+			if (payload.continuation.kind ==
+				    item_transfer_continuation_kind::quest_offering &&
+			    (context.receipt.outcome == critical_apply_outcome::applied ||
+			     context.receipt.outcome == critical_apply_outcome::already_applied))
+			{
+				auto state = std::make_shared<native_quest_frozen_recovery_state>();
+				state->key = key;
+				state->command = envelope.command;
+				state->continuation = payload.continuation.data;
+				if (!quest_reward_continuation_decode(state->continuation.data(),
+								      state->continuation.size(),
+								      &state->terms) ||
+				    (payload.native_cost.fee_only ?
+					     !quest_reward_is_fee_only(state->terms) :
+					     (state->terms.version != 5 &&
+					      !quest_reward_has_daily_context(state->terms))) ||
+				    state->terms.player_pid != payload.native_recovery.player_pid ||
+				    payload.native_recovery.publication_terms.disappear)
+					return false;
+				state->current =
+					std::make_unique<critical_native_recovery_envelope>(
+						envelope);
+				state->restored_original =
+					std::make_unique<critical_native_recovery_envelope>(
+						envelope);
+				state->started = context.publication_steps[5] != 0;
+				state->effect_returned = state->durable_returned =
+					context.publication_steps[5] == 2;
+				state->restored = true;
+				state->retained_bytes = native_quest_frozen_bytes(*state);
+				native_quest_frozen_recoveries.reserve(
+					native_quest_frozen_recoveries.size() + 1);
+				auto installed = native_quest_frozen_recoveries.emplace(key, state);
+				size_t bytes = 0;
+				if (!installed.second || !native_quest_passive_total(&bytes) ||
+				    !item_native_quest_gameplay_publication_owner::restore_budget(
+					    bytes))
+				{
+					if (installed.second)
+						native_quest_frozen_recoveries.erase(
+							installed.first);
+					return false;
+				}
+				return true;
+			}
+			auto record =
+				std::make_shared<const critical_native_recovery_envelope>(envelope);
+			native_quest_passive_children.reserve(native_quest_passive_children.size() +
+							      1);
+			auto installed =
+				native_quest_passive_children.emplace(key, std::move(record));
+			size_t bytes = 0;
+			if (!installed.second || !native_quest_passive_total(&bytes) ||
+			    !item_native_quest_gameplay_publication_owner::restore_budget(bytes))
+			{
+				if (installed.second)
+					native_quest_passive_children.erase(installed.first);
+				return false;
+			}
+			return true;
+		}
+		auto flow = std::make_shared<native_quest_gameplay_flow>();
+		flow->acceptance_command =
+			std::make_shared<const critical_command>(envelope.command);
+		flow->recovery = std::make_unique<critical_native_recovery_envelope>(envelope);
+		flow->restored_original =
+			std::make_unique<critical_native_recovery_envelope>(envelope);
+		flow->player_pid = payload.native_recovery.player_pid;
+		flow->original_root_uid = item_transfer_result_root(payload);
+		flow->give_hooks = context.give_hooks;
+		flow->branch_program_frozen = flow->program_durable = context.branch_program_frozen;
+		flow->original_program_lost = !context.branch_program_frozen &&
+					      std::all_of(context.give_hooks.begin(),
+							  context.give_hooks.end(),
+							  [](uint8_t step) { return step == 2; });
+		flow->completion_index = static_cast<int>(context.next_branch);
+		flow->acceptance_handoff_durable = context.parent_acceptance.bytes ==
+						   envelope.command.operation_id.bytes;
+		flow->acceptance_rejected = context.receipt.outcome ==
+					    critical_apply_outcome::terminal_failure;
+		flow->child_operation = context.next_child_operation;
+		flow->child_allocated = context.child_handoff_stage != 0;
+		flow->child_handoff_durable = context.child_handoff_stage == 2;
+		flow->restored = true;
+		if (!context.next_child_command.empty())
+		{
+			auto child = std::make_shared<critical_command>();
+			if (critical_command_decode(context.next_child_command.data(),
+						    context.next_child_command.size(),
+						    child.get()) !=
+			    critical_command_codec_result::ok)
+				return false;
+			flow->prepared_child = std::move(child);
+			flow->child_frame_durable = true;
+		}
+		flow->branches.reserve(context.branches.size());
+		size_t retained = sizeof(*flow) + key.capacity() + 1;
+		const auto charge = [&](size_t value)
+		{
+			if (value > PLAYER_SAVE_PIPELINE_MAX_BYTES - retained)
+				return false;
+			retained += value;
+			return true;
+		};
+		if (!charge(flow->branches.capacity() *
+			    sizeof(std::unique_ptr<const native_quest_original_branch>)))
+			return false;
+		for (const auto &original : context.branches)
+		{
+			auto branch = std::make_unique<native_quest_original_branch>();
+			branch->message = original.message;
+			branch->disappear_message = original.disappear_message;
+			branch->definition_id = original.definition_id;
+			const auto goals = [](const auto &from, std::vector<goal_data> &to)
+			{
+				to.reserve(from.size());
+				for (const auto &goal : from)
+					to.push_back({ static_cast<char>(goal.type), goal.number,
+						       nullptr });
+				for (size_t i = 1; i < to.size(); ++i)
+					to[i - 1].next = &to[i];
+			};
+			goals(original.give, branch->give);
+			goals(original.receive, branch->receive);
+			branch->view.message = original.message_present ? branch->message.data() :
+									  nullptr;
+			branch->view.disappear_message = original.disappear_message_present ?
+								 branch->disappear_message.data() :
+								 nullptr;
+			branch->view.echoAll = original.echo_all;
+			branch->view.disappear = original.disappear;
+			branch->view.give = branch->give.empty() ? nullptr : branch->give.data();
+			branch->view.receive = branch->receive.empty() ? nullptr :
+									 branch->receive.data();
+			if (!charge(sizeof(*branch) + branch->give.capacity() * sizeof(goal_data) +
+				    branch->receive.capacity() * sizeof(goal_data) +
+				    branch->message.capacity() + 1 +
+				    branch->disappear_message.capacity() + 1 +
+				    branch->definition_id.capacity() + 1))
+				return false;
+			flow->branches.push_back(std::move(branch));
+		}
+		flow->recovery_bytes = native_quest_gameplay_recovery_bytes(*flow);
+		if (!charge(flow->recovery_bytes))
+			return false;
+		flow->retained_bytes = retained;
+		flow->phase = flow->branch_program_frozen ?
+				      native_quest_gameplay_phase::choose_branch :
+				      native_quest_gameplay_phase::original_give_hooks;
+		native_quest_passive_gameplay.reserve(native_quest_passive_gameplay.size() + 1);
+		auto installed = native_quest_passive_gameplay.emplace(key, flow);
+		size_t bytes = 0;
+		if (!installed.second || !native_quest_passive_total(&bytes) ||
+		    !item_native_quest_gameplay_publication_owner::restore_budget(bytes))
+		{
+			if (installed.second)
+				native_quest_passive_gameplay.erase(installed.first);
+			return false;
+		}
+		return true; // Exact original branch/hook/child progress, no effect or coordinator call.
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+bool quest_native_frozen_continuation_owner::restore(
+	const critical_native_recovery_envelope &envelope) noexcept
+{
+	return quest_native_gameplay_owner::restore_phase2(envelope);
+}
+
+bool quest_native_frozen_continuation_owner::published(const critical_command &command) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)command;
+	return false;
+#else
+	if (!nevent_is_game_thread())
+		return false;
+	try
+	{
+		critical_native_recovery_envelope current;
+		return critical_native_quest_continuation_owner::copy_context(command, &current) &&
+		       restore(current);
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+void quest_native_gameplay_owner::passive_pulse() noexcept
+{
+#ifndef __NO_MYSQL__
+	if (!nevent_is_game_thread() || !economic_gameplay_authority::active_regular_sql())
+		return;
+	try
+	{
+		std::vector<std::string> keys;
+		keys.reserve(native_quest_passive_gameplay.size());
+		for (const auto &[key, flow] : native_quest_passive_gameplay)
+			keys.push_back(key);
+		for (const auto &key : keys)
+		{
+			auto found = native_quest_passive_gameplay.find(key);
+			if (found == native_quest_passive_gameplay.end())
+				continue;
+			auto flow = found->second;
+			bool terminal_held = false;
+			for (const auto &[reward_key, state] : native_quest_frozen_recoveries)
+				if (state->terminal_pair_attempted && state->terminal_parent &&
+				    flow->acceptance_command &&
+				    state->terminal_parent->command.operation_id.bytes ==
+					    flow->acceptance_command->operation_id.bytes)
+				{
+					terminal_held = true;
+					break;
+				}
+			if (terminal_held)
+				continue; // The original terminal pair owns this exact passive parent.
+			P_char player = nullptr, mobile = nullptr;
+			bool bound = false;
+			if (flow->prepared_child)
+			{
+				item_native_quest_preparation_token token;
+				const bool original_child_retained =
+					item_native_quest_gameplay_publication_owner::restored_token(
+						*flow->prepared_child, &token);
+				if (original_child_retained &&
+				    item_native_quest_gameplay_publication_owner::restored_participant(
+					    *flow->prepared_child, &token, &player, &mobile))
+				{
+					flow->token = token;
+					flow->phase =
+						native_quest_gameplay_phase::submitted_consumption;
+					bound = true;
+				}
+				else
+				{
+					// An admitted original child keeps its exact token while its
+					// genuine execution/readback is pending; never reprepare it.
+					if (original_child_retained)
+						continue;
+					const std::string child_key =
+						quest_reward_operation_key(flow->child_operation);
+					std::shared_ptr<const critical_native_recovery_envelope>
+						child;
+					auto retained =
+						native_quest_passive_children.find(child_key);
+					if (retained != native_quest_passive_children.end())
+						child = retained->second;
+					auto reward =
+						native_quest_frozen_recoveries.find(child_key);
+					if (!child &&
+					    reward != native_quest_frozen_recoveries.end() &&
+					    reward->second->current)
+						child = std::make_shared<
+							const critical_native_recovery_envelope>(
+							*reward->second->current);
+					if (child &&
+					    critical_command_equal(child->command,
+								   *flow->prepared_child) &&
+					    item_native_quest_gameplay_publication_owner::
+						    restored_readback(*child, &player, &mobile))
+					{
+						native_quest_recovery_context context;
+						item_transfer_payload payload{};
+						if (native_quest_recovery_context_decode(
+							    child->command, child->attachment,
+							    &context) !=
+							    player_snapshot_codec_result::ok ||
+						    !item_transfer_command_decode_payload(
+							    child->command, &payload))
+							continue;
+						auto next_context =
+							payload.continuation.kind ==
+										item_transfer_continuation_kind::
+											none ||
+									context.receipt.outcome ==
+										critical_apply_outcome::
+											terminal_failure ?
+								std::make_unique<
+									critical_native_recovery_envelope>(
+									*child) :
+								nullptr;
+						auto old_completed = flow->completed_child;
+						auto old_context = std::move(flow->child_context);
+						const auto old_result = flow->child_result;
+						const auto old_phase = flow->phase;
+						const bool old_observed = flow->child_observed,
+							   old_cold = flow->cold_child_complete;
+						flow->completed_child = flow->prepared_child;
+						flow->child_context = std::move(next_context);
+						flow->child_result =
+							context.receipt.outcome ==
+									critical_apply_outcome::
+										terminal_failure ?
+								item_native_quest_gameplay_result::
+									rejected :
+							payload.continuation.kind ==
+									item_transfer_continuation_kind::
+										none ?
+								item_native_quest_gameplay_result::
+									prefix_applied :
+								item_native_quest_gameplay_result::
+									completion_applied;
+						flow->child_observed = true;
+						flow->cold_child_complete = true;
+						flow->phase = native_quest_gameplay_phase::
+							submitted_consumption;
+						if (!charge_passive_child(*flow))
+						{
+							flow->completed_child =
+								std::move(old_completed);
+							flow->child_context =
+								std::move(old_context);
+							flow->child_result = old_result;
+							flow->phase = old_phase;
+							flow->child_observed = old_observed;
+							flow->cold_child_complete = old_cold;
+							continue;
+						}
+						bound = true;
+					}
+				}
+				if (!bound && flow->child_handoff_durable)
+					continue;
+			}
+			if (!bound)
+			{
+				native_quest_recovery_context original;
+				if (native_quest_recovery_context_decode(
+					    flow->recovery->command, flow->recovery->attachment,
+					    &original) != player_snapshot_codec_result::ok)
+					continue;
+				critical_native_recovery_envelope latest;
+				const auto *cut = flow->recovery.get();
+				if (!original.latest_child_command.empty())
+				{
+					if (critical_command_decode(
+						    original.latest_child_command.data(),
+						    original.latest_child_command.size(),
+						    &latest.command) !=
+					    critical_command_codec_result::ok)
+						continue;
+					latest.revision = original.latest_child_revision;
+					latest.phase =
+						critical_native_recovery_phase::continuation_pending;
+					latest.attachment =
+						std::move(original.latest_child_attachment);
+					cut = &latest;
+				}
+				// Genuine fresh SQL/native/world proof and confirmed rollback inside
+				// this owner authenticate the latest actual cut before actor rebinding.
+				if (!item_native_quest_gameplay_publication_owner::restored_readback(
+					    *cut, &player, &mobile))
+					continue;
+			}
+			if (!player || !mobile || !mobile->runtime_id || !player->runtime_id ||
+			    native_quest_gameplay.count(mobile->runtime_id))
+				continue;
+			const int quester = find_quester_id(GET_RNUM(mobile));
+			if (quester < 0)
+				continue;
+			native_quest_gameplay.reserve(native_quest_gameplay.size() + 1);
+			auto installed = native_quest_gameplay.emplace(mobile->runtime_id, flow);
+			if (!installed.second)
+				continue;
+			flow->player_runtime_id = player->runtime_id;
+			flow->native_runtime_id = mobile->runtime_id;
+			flow->quester_id = quester;
+			native_quest_passive_gameplay.erase(found);
+			// Same charged owner moved between maps; no aggregate increase.
+		}
+		std::vector<std::string> rewards;
+		rewards.reserve(native_quest_frozen_recoveries.size());
+		for (const auto &[key, state] : native_quest_frozen_recoveries)
+			if (state->restored && !state->retired)
+				rewards.push_back(key);
+		for (const auto &key : rewards)
+		{
+			auto found = native_quest_frozen_recoveries.find(key);
+			if (found == native_quest_frozen_recoveries.end())
+				continue;
+			auto state = found->second;
+			if (quest_native_frozen_continuation_owner::retire_completed(*state))
+				continue; // Actual ACK cleanup does not require the obsolete pre-reward cut.
+			if (state->terminal_pair_attempted)
+				continue; // No actor rebind or effect context can replace a pair retry.
+			if (state->player_runtime_id)
+			{
+				(void)quest_native_frozen_continuation_owner::drive(*state, true);
+				continue;
+			}
+			P_char player = nullptr, mobile = nullptr;
+			if (!item_native_quest_gameplay_publication_owner::restored_readback(
+				    *state->current, &player, &mobile))
+				continue;
+			MYSQL *connection = sql_pool_acquire();
+			player_sql_pool_lease lease(connection);
+			if (!connection || player_sql_idle_error(connection))
+				continue;
+			player_sql_cleanup cleanup;
+			player_sql_transaction_cleanup transaction(connection, cleanup);
+			transaction.starting();
+			std::vector<quest_reward_obligation_record> records;
+			unsigned int error = 0;
+			bool read = false;
+			try
+			{
+				read = !mysql_real_query(connection, "START TRANSACTION", 17) &&
+				       quest_reward_obligation_repository_pending(
+					       connection, state->terms.player_pid, &records,
+					       &error) == quest_reward_obligation_result::ok &&
+				       transaction.same_session();
+			}
+			catch (...)
+			{
+				read = false;
+			}
+			transaction.finish();
+			lease.reuse(cleanup);
+			if (!read || !cleanup.rollback_confirmed || cleanup.cleanup_error ||
+			    cleanup.disposition != player_sql_cleanup_disposition::idle_verified)
+				continue;
+			const auto record =
+				std::find_if(records.begin(), records.end(),
+					     [&](const auto &value) {
+						     return value.offering_operation.bytes ==
+							    state->command.operation_id.bytes;
+					     });
+			if (record == records.end() ||
+			    record->continuation != state->continuation ||
+			    (record->terms.version != 5 && record->terms.version != 6) ||
+			    record->terms.player_pid != state->terms.player_pid)
+				continue;
+			state->player_runtime_id = player->runtime_id;
+			state->xp_mask = record->xp_applied_mask;
+			state->economic_mask = record->economic_applied_mask;
+			(void)quest_native_frozen_continuation_owner::drive(*state, true);
+		}
+	}
+	catch (...)
+	{ /* Original passive records remain owned on every refusal. */
+	}
+#endif
+}
+
+#ifndef __NO_MYSQL__
+bool quest_native_gameplay_owner::charge_passive_child(native_quest_gameplay_flow &flow) noexcept
+{
+	if (flow.recovery_bytes > flow.retained_bytes)
+		return false;
+	const size_t original = flow.retained_bytes - flow.recovery_bytes;
+	const size_t replacement = native_quest_gameplay_recovery_bytes(flow);
+	if (replacement > PLAYER_SAVE_PIPELINE_MAX_BYTES - original)
+		return false;
+	const size_t old_retained = flow.retained_bytes;
+	flow.recovery_bytes = replacement;
+	flow.retained_bytes = original + replacement;
+	size_t bytes = 0;
+	if (native_quest_passive_total(&bytes) &&
+	    item_native_quest_gameplay_publication_owner::restore_budget(bytes))
+		return true;
+	flow.retained_bytes = old_retained;
+	flow.recovery_bytes = old_retained - original;
+	return false;
+}
+#endif
+
+bool quest_native_gameplay_owner::freeze_program(native_quest_gameplay_flow &flow) noexcept
+{
+	if (flow.branch_program_frozen)
+		return true;
+	// A later catalog cannot replace the lost original last-hook cut.
+	if (flow.original_program_lost)
+		return false;
+	const size_t original_budget = flow.retained_bytes;
+	size_t retained = original_budget;
+	try
+	{
+		std::vector<std::unique_ptr<const native_quest_original_branch>> branches;
+		std::unordered_set<const quest_complete_data *> seen_branches;
+		const auto charge = [&](size_t bytes)
+		{
+			if (bytes > PLAYER_SAVE_PIPELINE_MAX_BYTES - retained ||
+			    !budget(&flow, retained + bytes))
+				return false;
+			retained += bytes;
+			return true;
+		};
+		for (const auto *source = quest_index[flow.quester_id].quest_complete; source;
+		     source = source->next)
+		{
+			if (!seen_branches.insert(source).second ||
+			    branches.size() >= static_cast<size_t>(INT_MAX) ||
+			    !charge(sizeof(native_quest_original_branch) +
+				    2 * sizeof(std::unique_ptr<const native_quest_original_branch>)))
+				throw std::bad_alloc();
+			auto branch = std::make_unique<native_quest_original_branch>();
+			const auto copy_text = [&](const char *text, std::string &out)
+			{
+				if (!text)
+					return true;
+				const size_t size = strnlen(text, MAX_STRING_LENGTH);
+				if (size == MAX_STRING_LENGTH || !charge(size + 1))
+					return false;
+				out.assign(text, size);
+				return true;
+			};
+			const auto copy_goals =
+				[&](const goal_data *head, std::vector<goal_data> &out)
+			{
+				std::unordered_set<const goal_data *> seen;
+				for (auto *goal = head; goal; goal = goal->next)
+				{
+					if (!seen.insert(goal).second ||
+					    !charge(2 * sizeof(goal_data)))
+						return false;
+					out.push_back({ goal->goal_type, goal->number, nullptr });
+				}
+				for (size_t i = 1; i < out.size(); ++i)
+					out[i - 1].next = &out[i];
+				return true;
+			};
+			if (!copy_text(source->message, branch->message) ||
+			    !copy_text(source->disappear_message, branch->disappear_message) ||
+			    !copy_goals(source->give, branch->give) ||
+			    !copy_goals(source->receive, branch->receive))
+				throw std::bad_alloc();
+			if (const auto *definition =
+				    zone_story_quest_production::definition_id_for(source))
+			{
+				if (definition->size() > QUEST_REWARD_MAX_DEFINITION_ID_BYTES ||
+				    !charge(definition->size() + 1))
+					throw std::bad_alloc();
+				branch->definition_id = *definition;
+			}
+			branch->view.message = source->message ? branch->message.data() : nullptr;
+			branch->view.disappear_message = source->disappear_message ?
+								 branch->disappear_message.data() :
+								 nullptr;
+			branch->view.echoAll = source->echoAll;
+			branch->view.disappear = source->disappear;
+			branch->view.give = branch->give.empty() ? nullptr : branch->give.data();
+			branch->view.receive = branch->receive.empty() ? nullptr :
+									 branch->receive.data();
+			branches.push_back(std::move(branch));
+		}
+		flow.branches = std::move(branches);
+		flow.retained_bytes = retained;
+		flow.branch_program_frozen = true;
+		return true;
+	}
+	catch (...)
+	{
+		(void)budget(&flow, original_budget);
+		return false;
+	}
+}
+
+bool quest_native_gameplay_owner::begin(P_char mobile, P_char player, int quester_id,
+					P_obj offering) noexcept
+{
+#ifdef __NO_MYSQL__
+	(void)mobile;
+	(void)player;
+	(void)quester_id;
+	(void)offering;
+	return false;
+#else
+	if (!nevent_is_game_thread() || !economic_gameplay_authority::active_regular_sql() ||
+	    !mobile || !player || !offering || !IS_NPC(mobile) || !IS_PC(player) ||
+	    !player->only.pc || GET_PID(player) <= 0 || !player->runtime_id ||
+	    !mobile->runtime_id || player->in_room == NOWHERE ||
+	    player->in_room != mobile->in_room || quester_id < 0 ||
+	    quester_id >= number_of_quests || quest_index[quester_id].quester != GET_RNUM(mobile) ||
+	    !OBJ_CARRIED_BY(offering, player) ||
+	    (IS_SET(offering->extra_flags, ITEM_NODROP) && !IS_TRUSTED(player)) ||
+	    IS_OBJ_STAT2(offering, ITEM2_SOULBIND) ||
+	    IS_SET(offering->extra2_flags, ITEM2_CRAFTED) || training_dummy_is(mobile) ||
+	    collector_presence_is_npc(mobile) || GET_RNUM(mobile) == real_mobile(250) ||
+	    IS_AFFECTED(mobile, AFF_WRAITHFORM) ||
+	    (!IS_TRUSTED(player) && IS_CARRYING_N(mobile) >= CAN_CARRY_N(mobile) &&
+	     !mob_index[GET_RNUM(mobile)].qst_func) ||
+	    (IS_ARTIFACT(offering) && racewar(player, mobile)))
+		return false;
+	try
+	{
+		quest_mobile_native_reference actual_reference;
+		if (!quest_mobile_native_reference_copy(mobile, mobile->runtime_id,
+							&actual_reference))
+			return false;
+		const auto conflicts = [&](const critical_command &original)
+		{
+			item_transfer_payload retained{};
+			return !item_transfer_command_decode_payload(original, &retained) ||
+			       retained.native_recovery.player_pid ==
+				       static_cast<uint32_t>(GET_PID(player)) ||
+			       retained.native_mobile.reference.mobile_instance_id ==
+				       actual_reference.mobile_instance_id;
+		};
+		for (const auto &[key, flow] : native_quest_passive_gameplay)
+			if (!flow->acceptance_command || conflicts(*flow->acceptance_command))
+				return false;
+		for (const auto &[key, record] : native_quest_passive_children)
+			if (conflicts(record->command))
+				return false;
+		for (const auto &[key, state] : native_quest_frozen_recoveries)
+			if (state->restored && !state->retired && conflicts(state->command))
+				return false;
+		if (native_quest_gameplay.size() + native_quest_passive_gameplay.size() +
+				    native_quest_passive_children.size() +
+				    native_quest_frozen_recoveries.size() >=
+			    ITEM_MOVEMENT_PENDING_MAX ||
+		    native_quest_gameplay.count(mobile->runtime_id))
+			return false;
+		for (const auto &[runtime, flow] : native_quest_gameplay)
+			if (flow->player_pid == static_cast<uint32_t>(GET_PID(player)))
+				return false;
+		auto flow = std::make_shared<native_quest_gameplay_flow>();
+		flow->player_runtime_id = player->runtime_id;
+		flow->native_runtime_id = mobile->runtime_id;
+		flow->player_pid = static_cast<uint32_t>(GET_PID(player));
+		flow->quester_id = quester_id;
+		flow->original_root_uid = offering->obj_uid;
+		auto inserted = native_quest_gameplay.emplace(flow->native_runtime_id, flow);
+		if (!inserted.second)
+			return false;
+		if (!budget())
+		{
+			erase(flow->native_runtime_id);
+			return false;
+		}
+		const auto prepared = item_native_quest_preparation_owner::begin_acceptance(
+			player, mobile, offering, &flow->token);
+		if (prepared == item_native_quest_preparation_state::refused)
+		{
+			erase(flow->native_runtime_id);
+			return false;
+		}
+		if (!item_native_quest_gameplay_publication_owner::retain(flow->token))
+		{
+			if (item_native_quest_preparation_owner::cancel(flow->token))
+				erase(flow->native_runtime_id);
+			else
+				flow->phase = native_quest_gameplay_phase::blocked;
+			return false;
+		}
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+#endif
+}
+
+void quest_native_gameplay_owner::pulse() noexcept
+{
+	quest_native_frozen_continuation_owner::pulse();
+#ifndef __NO_MYSQL__
+	if (!nevent_is_game_thread() || !economic_gameplay_authority::active_regular_sql())
+		return;
+	try
+	{
+		passive_pulse();
+		std::vector<uint64_t> keys;
+		keys.reserve(native_quest_gameplay.size());
+		for (const auto &[runtime, flow] : native_quest_gameplay)
+			keys.push_back(runtime);
+		for (uint64_t runtime : keys)
+		{
+			auto found = native_quest_gameplay.find(runtime);
+			if (found == native_quest_gameplay.end())
+				continue;
+			auto flow = found->second;
+			if (flow->phase == native_quest_gameplay_phase::blocked ||
+			    !checkpoint(*flow))
+				continue;
+			P_char player = find_character_by_runtime_id(flow->player_runtime_id);
+			P_char mobile = find_character_by_runtime_id(flow->native_runtime_id);
+			if (!player || !mobile || !IS_PC(player) || !player->only.pc ||
+			    !IS_NPC(mobile) ||
+			    GET_PID(player) != static_cast<int>(flow->player_pid))
+				continue; // Real body absence retains original operation and driver.
+			if (flow->restored && flow->acceptance_rejected)
+			{
+				if (!flow->acceptance_retired &&
+				    !critical_native_quest_continuation_owner::retire_continuation(
+					    *flow->recovery))
+					continue;
+				flow->acceptance_retired = true;
+				erase(runtime);
+				continue;
+			}
+			if (flow->restored && !flow->acceptance_handoff_durable &&
+			    !enroll(*flow, flow->acceptance_command, false))
+				continue;
+			const auto phase = flow->phase;
+			if (phase == native_quest_gameplay_phase::submitted_acceptance ||
+			    phase == native_quest_gameplay_phase::submitted_consumption)
+			{
+				if (flow->child_taken)
+				{
+					(void)persist_branch(*flow, flow->completion_index + 1,
+							     true);
+					continue; // Retry the exact clear writer; the original child was already taken.
+				}
+				std::shared_ptr<const critical_command> original;
+				const auto publication =
+					flow->cold_child_complete ?
+						flow->child_result :
+						item_native_quest_gameplay_publication_owner::
+							observe_completed(flow->token, &original);
+				if (flow->cold_child_complete)
+					original = flow->completed_child;
+				if (publication == item_native_quest_gameplay_result::pending)
+					continue;
+				if (publication == item_native_quest_gameplay_result::unavailable)
+				{
+					flow->phase = native_quest_gameplay_phase::blocked;
+					continue;
+				}
+				if (phase == native_quest_gameplay_phase::submitted_acceptance)
+				{
+					if ((publication != item_native_quest_gameplay_result::
+								    acceptance_applied &&
+					     publication !=
+						     item_native_quest_gameplay_result::rejected) ||
+					    !enroll(*flow, original,
+						    publication ==
+							    item_native_quest_gameplay_result::
+								    rejected))
+						continue;
+					if (flow->acceptance_rejected && !flow->acceptance_retired)
+					{
+						if (!critical_native_quest_continuation_owner::
+							    retire_continuation(*flow->recovery))
+							continue;
+						if (!native_quest_gameplay_current(*flow))
+							continue;
+						flow->acceptance_retired = true;
+					}
+					const auto taken =
+						item_native_quest_gameplay_publication_owner::take(
+							flow->token);
+					if (taken == item_native_quest_gameplay_result::pending)
+						continue;
+					if (taken != publication)
+					{
+						flow->phase = native_quest_gameplay_phase::blocked;
+						continue;
+					}
+					if (flow->acceptance_rejected)
+						erase(runtime);
+					else
+						flow->phase = native_quest_gameplay_phase::
+							original_give_hooks;
+					continue; // Complete original command/body and phase2 owner survived take.
+				}
+				if (!finish_child(*flow, publication, original))
+					continue;
+				// Rejection already retired the exact pair. A successful reward keeps
+				// both journal records until its original frozen ACK owner proves completion.
+				const auto taken =
+					flow->cold_child_complete ?
+						flow->child_result :
+						item_native_quest_gameplay_publication_owner::take(
+							flow->token);
+				if (flow->cold_child_complete && flow->child_handoff_durable &&
+				    (flow->child_retired ||
+				     publication ==
+					     item_native_quest_gameplay_result::completion_applied))
+				{
+					// finish_child already removed any actually retired passive
+					// child without allocation; the reward owner remains separate.
+					flow->cold_child_complete = false;
+				}
+				if (taken == item_native_quest_gameplay_result::pending)
+					continue;
+				if (taken != publication)
+				{
+					flow->phase = native_quest_gameplay_phase::blocked;
+					continue;
+				}
+				if (publication !=
+				    item_native_quest_gameplay_result::prefix_applied)
+				{
+					erase(runtime); // Successful reward child retains its separate genuine-ACK owner.
+					continue;
+				}
+				flow->child_taken = true;
+				(void)persist_branch(*flow, flow->completion_index + 1, true);
+				continue; // Failed consumed prefix resumes the durably retained NEXT branch.
+			}
+			if (phase == native_quest_gameplay_phase::original_give_hooks)
+			{
+				if (flow->program_capture_failed)
+					continue; // Exact returned writer may settle; no recapture.
+				bool held = false;
+				for (size_t i = 0; i < flow->give_hooks.size(); ++i)
+				{
+					if (flow->give_hooks[i] == 1)
+					{
+						held = true;
+						break;
+					}
+					if (flow->give_hooks[i] == 2)
+						continue;
+					P_obj root = nullptr;
+					if (!item_native_quest_gameplay_publication_owner::
+						    observe_give(flow->player_runtime_id,
+								 flow->player_pid,
+								 flow->native_runtime_id,
+								 flow->original_root_uid, &player,
+								 &mobile, &root))
+					{
+						held = true;
+						break;
+					}
+					const auto still_owned =
+						native_quest_gameplay.find(runtime);
+					if (still_owned == native_quest_gameplay.end() ||
+					    still_owned->second != flow)
+					{
+						held = true;
+						break;
+					}
+					if (!hook_begin(*flow, static_cast<uint8_t>(i)) ||
+					    !item_native_quest_gameplay_publication_owner::
+						    observe_give(flow->player_runtime_id,
+								 flow->player_pid,
+								 flow->native_runtime_id,
+								 flow->original_root_uid, &player,
+								 &mobile, &root) ||
+					    !native_quest_gameplay_current(*flow))
+					{
+						held = true;
+						break;
+					}
+					flow->give_hooks[i] = 1;
+					flow->hook_not_attempted = false;
+					switch (i)
+					{
+					case 0:
+						if (IS_TRUSTED(player) && IS_ARTIFACT(root))
+							logit(LOG_OBJ,
+							      "%s gives artifact %s (%d) to %s.",
+							      J_NAME(player),
+							      root->short_description,
+							      obj_index[root->R_num].virtual_number,
+							      J_NAME(mobile));
+						break;
+					case 1:
+						if (IS_TRUSTED(player))
+							wizlog(GET_LEVEL(player),
+							       "%s gives %s to %s.", J_NAME(player),
+							       root->short_description,
+							       J_NAME(mobile));
+						break;
+					case 2:
+						if (IS_TRUSTED(player))
+							logit(LOG_WIZ, "%s gives %s to %s.",
+							      J_NAME(player),
+							      root->short_description,
+							      J_NAME(mobile));
+						break;
+					case 3:
+						if (IS_TRUSTED(player))
+							sql_log(player, WIZLOG, "Gave %s to %s.",
+								root->short_description,
+								J_NAME(mobile));
+						break;
+					case 4:
+						artifact_switch_check(player, root);
+						break;
+					case 5:
+						char_light(player);
+						break;
+					case 6:
+						room_light(player->in_room, REAL);
+						break;
+					case 7:
+						nq_action_check(player, mobile, nullptr);
+						break;
+					case 8:
+						studioproc_give(mobile, root, player);
+						break;
+					}
+					flow->give_hooks[i] = 2;
+					if (i + 1 == flow->give_hooks.size())
+					{
+						P_obj ignored = nullptr;
+						if (!item_native_quest_gameplay_publication_owner::
+							    observe_give(flow->player_runtime_id,
+									 flow->player_pid,
+									 flow->native_runtime_id, 0,
+									 &player, &mobile,
+									 &ignored) ||
+						    !native_quest_gameplay_current(*flow) ||
+						    !freeze_program(*flow))
+							flow->program_capture_failed = true;
+						// Capture once before any last-return writer can become durable.
+						// A failed capture retains actual return and durable start,
+						// never permission to call again or adopt a later catalog.
+					}
+					const bool returned_durable =
+						!flow->program_capture_failed &&
+						hook_returned(*flow);
+					if (!returned_durable || flow->program_capture_failed)
+					{
+						held = true;
+						break;
+					}
+					// Root removal is legal only when its original callback's
+					// existing mutation owner supplies subsequent durable proof.
+					// No raw pointer survives the call, including purge/reuse.
+					P_obj ignored = nullptr;
+					if (!item_native_quest_gameplay_publication_owner::
+						    observe_give(flow->player_runtime_id,
+								 flow->player_pid,
+								 flow->native_runtime_id, 0,
+								 &player, &mobile, &ignored))
+					{
+						held = true;
+						break;
+					}
+				}
+				if (!held && freeze_program(*flow) && persist_program(*flow))
+					flow->phase = native_quest_gameplay_phase::choose_branch;
+				continue; // Freeze each addressed decision only AFTER real GIVE callbacks.
+			}
+			if (phase == native_quest_gameplay_phase::choose_branch)
+			{
+				if (flow->quester_id < 0 || flow->completion_index < 0)
+				{
+					flow->phase = native_quest_gameplay_phase::blocked;
+					continue;
+				}
+				if (!flow->branch_program_frozen || !flow->program_durable)
+				{
+					flow->phase = native_quest_gameplay_phase::blocked;
+					continue;
+				}
+				if (static_cast<size_t>(flow->completion_index) >=
+				    flow->branches.size())
+				{
+					P_obj ignored = nullptr;
+					if (!flow->child_allocated &&
+					    item_native_quest_gameplay_publication_owner::
+						    observe_give(flow->player_runtime_id,
+								 flow->player_pid,
+								 flow->native_runtime_id, 0,
+								 &player, &mobile, &ignored) &&
+					    critical_native_quest_continuation_owner::
+						    retire_continuation(*flow->recovery))
+						erase(runtime);
+					continue; // Only original observed no-match completion retires this phase2 carrier.
+				}
+				if (!allocate_child(*flow))
+					continue;
+				P_obj ignored = nullptr;
+				if (!item_native_quest_gameplay_publication_owner::observe_give(
+					    flow->player_runtime_id, flow->player_pid,
+					    flow->native_runtime_id, 0, &player, &mobile, &ignored))
+					continue;
+				native_quest_recovery_context actual_trigger_context;
+				if (!flow->acceptance_command || !flow->recovery ||
+				    native_quest_recovery_context_decode(*flow->acceptance_command,
+									 flow->recovery->attachment,
+									 &actual_trigger_context) !=
+					    player_snapshot_codec_result::ok)
+				{
+					flow->phase = native_quest_gameplay_phase::blocked;
+					continue;
+				}
+				const auto prepared =
+					quest_native_completion_owner::prepare_original(
+						mobile, player, flow->quester_id,
+						flow->completion_index,
+						flow->branches[flow->completion_index].get(),
+						&flow->child_operation, &flow->token,
+						flow->acceptance_command.get(),
+						&actual_trigger_context.receipt);
+				if (prepared == item_native_quest_preparation_state::not_matched)
+				{
+					if (flow->completion_index == INT_MAX)
+					{
+						flow->phase = native_quest_gameplay_phase::blocked;
+						continue;
+					}
+					(void)persist_branch(*flow, flow->completion_index + 1,
+							     true);
+					continue;
+				}
+				if (prepared == item_native_quest_preparation_state::refused)
+				{
+					flow->phase = native_quest_gameplay_phase::blocked;
+					continue;
+				}
+				if (!item_native_quest_gameplay_publication_owner::retain(
+					    flow->token))
+				{
+					item_native_quest_preparation_owner::cancel(flow->token);
+					flow->phase = native_quest_gameplay_phase::blocked;
+					continue;
+				}
+				flow->phase = native_quest_gameplay_phase::preparing_consumption;
+				continue;
+			}
+			const bool acceptance = phase ==
+						native_quest_gameplay_phase::preparing_acceptance;
+			const auto prepared =
+				acceptance ? item_native_quest_preparation_owner::poll_acceptance(
+						     flow->token, player, mobile) :
+					     item_native_quest_preparation_owner::poll_consumption(
+						     flow->token, player, mobile);
+			if (prepared == item_native_quest_preparation_state::pending)
+				continue;
+			if (prepared != item_native_quest_preparation_state::ready)
+			{
+				if (item_native_quest_preparation_owner::cancel(flow->token) &&
+				    !flow->recovery)
+					erase(runtime);
+				else
+					flow->phase = native_quest_gameplay_phase::blocked;
+				// Existing definite cancellation is preserved. An admitted parent phase2
+				// remains owned until the missing authenticated child-cancellation seam.
+				continue;
+			}
+			if (!acceptance)
+			{
+				std::shared_ptr<const critical_command> original_child;
+				critical_submit_result failure =
+					critical_submit_result::unavailable;
+				if (!item_native_quest_preparation_owner::prepare_consumption_command(
+					    flow->token, player, mobile, &original_child, &failure))
+				{
+					if (failure == critical_submit_result::identity_conflict ||
+					    failure == critical_submit_result::invalid)
+						flow->phase = native_quest_gameplay_phase::blocked;
+					continue; // Prepare-only failure attempted no child journal admission.
+				}
+				if (!persist_child_command(*flow, original_child))
+					continue;
+				P_obj ignored = nullptr;
+				if (!item_native_quest_gameplay_publication_owner::observe_give(
+					    flow->player_runtime_id, flow->player_pid,
+					    flow->native_runtime_id, 0, &player, &mobile,
+					    &ignored) ||
+				    !native_quest_gameplay_current(*flow))
+					continue;
+			}
+			const auto submitted =
+				acceptance ?
+					item_native_quest_preparation_owner::submit_acceptance(
+						flow->token, player, mobile) :
+					item_native_quest_preparation_owner::submit_consumption(
+						flow->token, player, mobile);
+			if (critical_submit_result_keeps_operation(submitted))
+				flow->phase =
+					acceptance ?
+						native_quest_gameplay_phase::submitted_acceptance :
+						native_quest_gameplay_phase::submitted_consumption;
+			else if (submitted == critical_submit_result::identity_conflict ||
+				 submitted == critical_submit_result::invalid)
+				flow->phase = native_quest_gameplay_phase::blocked;
+			// Unavailable/overload/known journal refusal may retry the SAME
+			// retained immutable command/token; uncertain admission never retries.
+		}
+	}
+	catch (...)
+	{ /* Original tokens and flows remain owned. */
+	}
+#endif
+}
+
+static bool submit_native_quest_give(P_char mobile, P_char player, int quester_id,
+				     P_obj offering) noexcept
+{
+	return quest_native_gameplay_owner::begin(mobile, player, quester_id, offering);
+}
+static void native_quest_gameplay_pulse() noexcept
+{
+	quest_native_gameplay_owner::pulse();
 }

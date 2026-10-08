@@ -1,7 +1,10 @@
 #include "persistence/economic_sql_auction_money_claim_transaction.h"
+#include "persistence/economic_sql_auction_source_claim.h"
+#include "persistence/economic_sql_pending_claim_source.h"
 
 #include "economy/auction_money_claim_accounting.h"
 
+#include "economy/auction_native_command_context.h"
 #include <cerrno>
 
 #ifndef __NO_MYSQL__
@@ -120,32 +123,6 @@ uint32_t little_u32(std::span<const uint8_t> bytes, size_t offset)
 	return value;
 }
 
-int nibble(char c)
-{
-	if (c >= '0' && c <= '9')
-		return c - '0';
-	if (c >= 'a' && c <= 'f')
-		return c - 'a' + 10;
-	if (c >= 'A' && c <= 'F')
-		return c - 'A' + 10;
-	return -1;
-}
-
-bool hex_id(const std::string &encoded, critical_operation_id *value)
-{
-	if (encoded.size() != value->bytes.size() * 2)
-		return false;
-	for (size_t index = 0; index < value->bytes.size(); ++index)
-	{
-		const int high = nibble(encoded[index * 2]);
-		const int low = nibble(encoded[index * 2 + 1]);
-		if (high < 0 || low < 0)
-			return false;
-		value->bytes[index] = static_cast<uint8_t>((high << 4) | low);
-	}
-	return !critical_operation_id_is_zero(*value);
-}
-
 bool identity(const critical_command &command, economic_frozen_intent *intent,
 	      auction_command_payload *payload, economic_account_key *wallet,
 	      economic_account_key *bank, economic_account_key *claim)
@@ -202,47 +179,18 @@ bool bank_hint(MYSQL *connection, uint64_t mapping, uint32_t *native)
 bool locked_sources(MYSQL *connection, const economic_account_key &claim,
 		    auction_money_claim_state *state)
 {
-	const auto sql =
-		"SELECT HEX(source_operation_id),source_slot,HEX(lineage),claim_mapping_id,"
-		"beneficiary_pid,amount FROM economic_pending_claim_source WHERE beneficiary_pid=" +
-		std::to_string(state->beneficiary_pid) +
-		" AND claim_operation_id IS NULL ORDER BY source_operation_id,source_slot FOR UPDATE";
-	if (!execute(connection, sql))
-		return false;
-	std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
-		mysql_store_result(connection), mysql_free_result);
-	if (!rows || mysql_num_fields(rows.get()) != 6)
+	std::vector<economic_sql_pending_claim_remaining> sources;
+	const auto error = economic_sql_pending_claim_source_remaining(
+		connection, claim, state->beneficiary_pid, &sources);
+	if (error)
 	{
-		errno = mysql_errno(connection) ? static_cast<int>(mysql_errno(connection)) :
-						  EILSEQ;
+		errno = static_cast<int>(error);
 		return false;
 	}
 	state->sources.clear();
-	MYSQL_ROW cells = nullptr;
-	while ((cells = mysql_fetch_row(rows.get())))
-	{
-		if (state->sources.size() >= ECONOMIC_AUCTION_CLAIM_MAX_SOURCES ||
-		    std::any_of(cells, cells + 6, [](const char *cell) { return cell == nullptr; }))
-		{
-			errno = E2BIG;
-			return false;
-		}
-		auction_money_claim_source source;
-		uint64_t slot = 0, pid = 0;
-		critical_operation_id lineage = {};
-		if (!hex_id(cells[0], &source.operation) || !u64(cells[1], &slot) ||
-		    slot > UINT16_MAX || !hex_id(cells[2], &lineage) ||
-		    lineage.bytes != claim.lineage.bytes ||
-		    !u64(cells[3], &source.claim_mapping_id) || !u64(cells[4], &pid) ||
-		    pid > UINT32_MAX || !u64(cells[5], &source.amount))
-		{
-			errno = EILSEQ;
-			return false;
-		}
-		source.slot = static_cast<uint16_t>(slot);
-		source.beneficiary_pid = static_cast<uint32_t>(pid);
-		state->sources.push_back(source);
-	}
+	for (const auto &source : sources)
+		state->sources.push_back({ source.operation, source.slot, state->beneficiary_pid,
+					   claim.authority_id, source.remaining_amount });
 	return true;
 }
 
@@ -483,6 +431,13 @@ economic_sql_auction_money_claim_lock(MYSQL *connection, const critical_command 
 		economic_account_key wallet, bank, claim;
 		if (!identity(command, &intent, &payload, &wallet, &bank, &claim))
 			return EPROTONOSUPPORT;
+		if (command.payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION)
+		{
+			const auto native_error = auction_repository_validate_accounted_native_cut(
+				connection, command);
+			if (native_error)
+				return native_error;
+		}
 		economic_sql_auction_money_claim_context candidate;
 		if (!bank_hint(connection, bank.authority_id, &candidate.bank_id))
 			return failure_code();
@@ -569,16 +524,23 @@ unsigned int economic_sql_auction_money_claim_execute_and_record(
 			    economic_accounting_error::ok ||
 		    expected != command.accounting_intent)
 			return ESTALE;
-		if (!auction_repository_execute_accounted(connection, command, result, result_code,
-							  mutation_applied))
+		const bool native = command.payload_version ==
+				    AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION;
+		if (!(native ? auction_repository_execute_accounted_native(connection, command, {},
+									   result, result_code,
+									   mutation_applied) :
+			       auction_repository_execute_accounted(connection, command, result,
+								    result_code, mutation_applied)))
 			return failure_code();
 		if ((*result_code == 0) != *mutation_applied)
 			return EILSEQ;
 		if (!*mutation_applied)
-			return insert_operation(connection, command, intent, nullptr,
-						*result_code) ?
-				       0 :
-				       failure_code();
+		{
+			if (!insert_operation(connection, command, intent, nullptr, *result_code))
+				return failure_code();
+			return economic_sql_auction_source_claim_verify(connection, intent,
+									*result_code);
+		}
 		if (!locked_after(connection, payload, before, active.bank_id, *result))
 			return failure_code();
 		economic_accounting_plan plan;
@@ -588,13 +550,11 @@ unsigned int economic_sql_auction_money_claim_execute_and_record(
 			return EILSEQ;
 		if (!insert_operation(connection, command, intent, &plan, 0))
 			return failure_code();
-		if (!execute(connection,
-			     "INSERT INTO economic_accounting_source_claim("
-			     "lineage,source_event,operation_id,outcome) SELECT lineage,"
-			     "source_event,operation_id,outcome FROM economic_accounting_operation "
-			     "WHERE operation_id=" +
-				     id(command.operation_id)))
-			return failure_code();
+		const auto source_claim_error =
+			economic_sql_auction_source_claim_record(connection, command, intent);
+		if (source_claim_error)
+			return source_claim_error;
+
 		for (size_t index = 0; index < plan.accounts.size(); ++index)
 			if (!insert_effect(connection, command.operation_id, index,
 					   plan.accounts[index]))
@@ -603,15 +563,12 @@ unsigned int economic_sql_auction_money_claim_execute_and_record(
 			if (!insert_posting(connection, command.operation_id, index,
 					    plan.postings[index]))
 				return failure_code();
-		if (!execute(connection,
-			     "UPDATE economic_pending_claim_source SET claim_operation_id=" +
-				     id(command.operation_id) +
-				     " WHERE beneficiary_pid=" + std::to_string(payload.actor_pid) +
-				     " AND lineage=" + id(wallet.lineage) +
-				     " AND claim_mapping_id=" + std::to_string(claim.authority_id) +
-				     " AND claim_operation_id IS NULL") ||
-		    mysql_affected_rows(connection) != before.claim.sources.size())
-			return failure_code();
+		const auto consumed = economic_sql_pending_claim_source_consume(
+			connection, command.operation_id, claim, payload.actor_pid,
+			static_cast<uint64_t>(before.claim.money),
+			static_cast<uint64_t>(before.claim.money));
+		if (consumed)
+			return consumed;
 		return 0;
 	}
 	catch (const std::bad_alloc &)

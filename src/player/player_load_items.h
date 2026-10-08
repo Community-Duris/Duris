@@ -2,6 +2,7 @@
 #define PLAYER_LOAD_ITEMS_H
 
 #include "player/player_load_repository.h"
+#include "player/inert_item_stage.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -11,6 +12,7 @@ typedef struct char_data *P_char;
 struct obj_data;
 typedef struct obj_data *P_obj;
 
+// Original SHOP staging uses the separate private capability in inert_item_stage.h.
 enum class player_load_item_materialize_outcome : uint8_t
 {
 	applied,
@@ -55,5 +57,7 @@ bool player_load_item_graph_materialize_creation(const item_transfer_payload &pa
 void player_load_item_runtime_state_apply(P_obj object, const player_item_snapshot &item);
 void player_load_items_activate_equipment(P_char character);
 void player_load_items_discard(P_char character);
+// Pure production metadata validation for identity-bound offline evidence.
+bool player_load_item_snapshot_metadata_valid(const player_item_snapshot &item);
 
 #endif

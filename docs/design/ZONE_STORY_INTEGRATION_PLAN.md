@@ -5,6 +5,10 @@ coverage, encountered-NPC visibility, and first-journey guidance implemented
 on `codex/discovered-zone-dailies`.
 Deeper objective and provenance integration is incremental.**
 
+The [October 7 accounting integration checkpoint](ZONE_STORY_ACCOUNTING_SYNC.md)
+records the updated accounting base, preserved journals, reward wire-format
+compatibility, and migration-history transition limits for research databases.
+
 The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
 Twin Towers, Plains of Life, Ailvio, Braddistock, Breale, Abandoned Elven

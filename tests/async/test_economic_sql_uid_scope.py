@@ -6,6 +6,7 @@ from decimal import Decimal
 import json
 import sys
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -14,6 +15,7 @@ from economic_sql_audit_snapshot import (ExportError, infer_created_mapping_orig
                                          auction_escrow_mapping_is_live,
                                          native_source_count,
                                          native_mapping_identity_valid,
+                                         read_native,
                                          append_committed_item_creation_origin,
                                          read_pending_claim_consumers,
                                          read_mapping_creations,
@@ -32,12 +34,14 @@ class Cursor:
             return [{"operation_id": b"z" * 16, "event_index": 0, "item_uid": 3,
                      "root_item_uid": 3, "parent_item_uid": None, "to_owner_type": 1,
                      "to_owner_id": 8, "to_owner_context_id": 0, "item_revision": 1,
+                     "from_equipment_slot": 0, "to_equipment_slot": 5,
                      "from_owner_revision": 0, "reason_type": 2}]
         if "SELECT l.operation_id,l.event_index,l.item_uid" in self.sql:
             return [{
                 "operation_id": bytes([uid + 96]) * 16, "event_index": 0, "item_uid": uid,
                 "root_item_uid": uid, "parent_item_uid": None, "to_owner_type": 1,
                 "to_owner_id": 7, "to_owner_context_id": 0, "item_revision": 1,
+                "from_equipment_slot": 0, "to_equipment_slot": 5,
                 "from_owner_revision": 0, "reason_type": 2, "operation_outcome": 1,
                 "operation_epoch": b"e" * 16,
             } for uid in (1, 5)]
@@ -54,6 +58,138 @@ class Cursor:
 
 
 class UidScopeTests(unittest.TestCase):
+    def test_compound_item_actions_follow_retained_supply_endpoints(self):
+        import copy
+        import economic_sql_audit_snapshot as exporter
+
+        cases = ((34, 7, 1, 1, "create", "live", 7, 0), (9, 7, 6, 1, "create", "live", 7, 0),
+                 (34, 1, 8, 2, "destroy", "tombstone", 0, 0), (33, 1, 8, 2, "destroy", "tombstone", 0, 0),
+                 (21, 1, 8, 2, "destroy", "tombstone", 0, 0), (34, 1, 1, 2, "move", "live", 7, 0),
+                 (34, 7, 1, 2, "move", "live", 7, 0), (2, 1, 8, 2, "create", "tombstone", 0, 0),
+                 (3, 1, 1, 2, "destroy", "live", 7, 0), (8, 1, 1, 2, "move", "live", 7, 0),
+                 (21, 10, 7, 2, "move", "quarantined", 0, 0),
+                 (8, 10, 7, 2, "move", "live", 0, 0), (21, 1, 7, 2, "move", "live", 0, 0),
+                 (21, 10, 7, 2, "move", "live", 1, 0), (21, 10, 7, 2, "move", "live", 0, 1))
+        for reason, old_owner, new_owner, revision, expected, expected_state, owner_id, context_id in cases:
+            row = dict(operation_id=b"a" * 16, event_index=0, item_uid=81,
+                       root_item_uid=81, parent_item_uid=None, from_owner_type=old_owner,
+                       from_owner_id=0 if old_owner == 7 else 7, from_owner_context_id=0,
+                       to_owner_type=new_owner, to_owner_id=owner_id,
+                       to_owner_context_id=context_id, item_revision=revision, before_revision=revision - 1,
+                       from_equipment_slot=0, to_equipment_slot=0, reason_type=reason,
+                       operation_epoch=b"e" * 16, operation_outcome=1, personal_alias="private-compound-action")
+
+            class ActionCursor:
+                sql = ""
+                def __init__(self):
+                    self.queries = []
+                def execute(self, query, _params=()):
+                    self.sql = query
+                    self.queries.append(query)
+                def fetchone(self):
+                    return dict(source_operations=0, missing_claim_operations=0,
+                                duplicate_source_values=0, required_operations=0, missing_source_events=0,
+                                root_count=0, plan_bytes=0, max_plan_bytes=0)
+                def fetchall(self):
+                    if "SELECT DISTINCT l.item_uid,o.lineage" in self.sql:
+                        return [dict(item_uid=81, lineage=b"l" * 16), dict(item_uid=82, lineage=None)]
+                    if "WHERE o.operation_id IS NULL" in self.sql:
+                        return [dict(row, item_uid=82, root_item_uid=82)]
+                    if "FROM economic_accounting_item_reference r" in self.sql:
+                        return [dict(row, operation_id=b"b" * 16, child_index=0,
+                                     before_revision=revision - 1, after_revision=revision,
+                                     legacy_operation_id=row["operation_id"], legacy_event_index=0,
+                                     epoch=b"e" * 16, outcome=1, item_event_count=1, ledger_uid=81)]
+                    if "SELECT l.operation_id,l.event_index,l.item_uid" in self.sql:
+                        return [dict(row)]
+                    return []
+
+            cursor = ActionCursor()
+            original = copy.deepcopy(row)
+            with self.subTest(reason=reason, old_owner=old_owner, new_owner=new_owner, revision=revision,
+                              owner_id=owner_id, context_id=context_id):
+                evidence = exporter.read_evidence(cursor, b"l" * 16, b"e" * 16, False)
+                references, _, _ = exporter.read_lineage_uid_references(cursor, b"l" * 16)
+                history = read_uid_event_census(cursor, b"l" * 16, [{"uid": 81, "revision": 0}],
+                                               {"item_references": []}, [], [])
+                actions = [evidence["ownership_events"][0]["action"], references[0]["ledger_action"],
+                           history[0][0]["action"], history[6][0]["action"]]
+                self.assertEqual(actions, [expected] * 4)
+                states = [evidence["ownership_events"][0]["state"], references[0]["ledger_state"],
+                          history[0][0]["state"], history[6][0]["state"]]
+                self.assertEqual(states, [expected_state] * 4)
+                self.assertEqual(row, original)
+                self.assertNotIn("private-compound", json.dumps([evidence, references, history]))
+                queries = [query for query in cursor.queries
+                           if "SELECT l.operation_id,l.event_index,l.item_uid" in query or
+                           "FROM economic_accounting_item_reference r" in query]
+                self.assertTrue(queries and all("l.from_owner_type" in query for query in queries))
+                self.assertTrue(all(query.startswith("SELECT ") for query in cursor.queries))
+                for action in actions[:3]:
+                    origins, known = [], set()
+                    appended = append_committed_item_creation_origin(
+                        origins, known, 81, action, revision - 1, "committed")
+                    self.assertEqual(appended, expected == "create" and revision == 1)
+                    for outcome in ("rejected", "unknown"):
+                        self.assertFalse(append_committed_item_creation_origin(
+                            [], set(), 81, action, revision - 1, outcome))
+
+    def test_coin_payload_bounds_refuse_before_mapping_payload_reads(self):
+        from economic_sql_audit_snapshot import MAX_INPUT_BYTES, MAX_ITEM_PAYLOAD_BYTES, MAX_ROWS
+
+        class BoundsCursor:
+            def __init__(self, bounds):
+                self.bounds = bounds
+                self.payload_reads = []
+                self.sql = ""
+
+            def execute(self, sql, params=()):
+                self.sql = sql
+                if "coin_payload" in sql and "OCTET_LENGTH" not in sql:
+                    self.payload_reads.append(sql)
+                    raise ExportError("payload selected before its source bounds")
+
+            def fetchone(self):
+                return self.bounds
+
+        for bounds in (None,
+                       dict(row_count=MAX_ROWS + 1, payload_bytes=0, max_payload_bytes=0),
+                       dict(row_count=1, payload_bytes=MAX_INPUT_BYTES + 1, max_payload_bytes=1),
+                       dict(row_count=1, payload_bytes=MAX_ITEM_PAYLOAD_BYTES + 1,
+                            max_payload_bytes=MAX_ITEM_PAYLOAD_BYTES + 1)):
+            with self.subTest(bounds=bounds):
+                cursor = BoundsCursor(bounds)
+                with mock.patch('economic_sql_audit_snapshot.read_ship_coffers', return_value=([], {})), \
+                     mock.patch('economic_sql_audit_snapshot.read_guild_treasuries', return_value=([], {})):
+                    with self.assertRaisesRegex(ExportError, "coin-pile source exceeds audit bounds"):
+                        read_native(cursor, b"l" * 16)
+                self.assertEqual(cursor.payload_reads, [])
+
+    def test_mapped_coin_payload_budget_counts_repeated_joined_bytes(self):
+        from economic_sql_audit_snapshot import MAX_INPUT_BYTES
+
+        class JoinedBoundsCursor:
+            sql = ""
+            payload_reads = 0
+
+            def execute(self, sql, params=()):
+                self.sql = sql
+                if "coin_payload" in sql and "OCTET_LENGTH" not in sql:
+                    self.payload_reads += 1
+                    raise ExportError("payload selected before its joined bounds")
+
+            def fetchone(self):
+                if "economic_account_mapping" in self.sql:
+                    return dict(payload_bytes=MAX_INPUT_BYTES + 1)
+                return dict(row_count=1, payload_bytes=1, max_payload_bytes=1)
+
+        cursor = JoinedBoundsCursor()
+        with mock.patch('economic_sql_audit_snapshot.read_ship_coffers', return_value=([], {})), \
+             mock.patch('economic_sql_audit_snapshot.read_guild_treasuries', return_value=([], {})):
+            with self.assertRaisesRegex(ExportError, "mapped coin-pile source exceeds audit bounds"):
+                read_native(cursor, b"l" * 16)
+        self.assertEqual(cursor.payload_reads, 0)
+
     def test_native_mapping_coverage_requires_the_account_locator(self):
         class NativeCursor:
             sql = ""
@@ -110,7 +246,7 @@ class UidScopeTests(unittest.TestCase):
             origins, known, 9001, "create", 0, "committed"))
         self.assertEqual(origins, [{"uid": 9001, "origin": "creation", "revision": 0,
                                    "root": 9001, "parent": None, "owner": [0, 0, 0],
-                                   "state": "absent"}])
+                                   "state": "absent", "equipment_slot": 0}])
 
     def test_global_ownership_census_is_partitioned_by_lineage(self):
         operation = b"a" * 16
@@ -127,12 +263,14 @@ class UidScopeTests(unittest.TestCase):
         (events, unreferenced, event_coverage, unanchored, ambiguous, scope,
          unattributed, unattributed_coverage) = result
         self.assertEqual(len(events), 2)
+        self.assertEqual([(row['from_equipment_slot'], row['to_equipment_slot']) for row in events], [(0, 5), (0, 5)])
         self.assertEqual(events[0]["operation_outcome"], "committed")
         self.assertEqual({row["uid"] for row in unreferenced}, {5})
         self.assertEqual(event_coverage["referenced_events"], 1)
         self.assertEqual(unanchored, [5])
         self.assertEqual(ambiguous, [4])
         self.assertEqual([(row["uid"], row["action"]) for row in unattributed], [(3, "create")])
+        self.assertEqual([(row['from_equipment_slot'], row['to_equipment_slot']) for row in unattributed], [(0, 5)])
         self.assertEqual(unattributed_coverage, {"uids": 1, "events": 1})
         self.assertEqual(scope, {
             "ownership_uid_count": 2, "anchored_ownership_uid_count": 1,

@@ -1,5 +1,69 @@
 # Plan 5: independent audit, lifecycle, and release qualification
 
+## Independent history and namespace qualified � 2026-10-07
+
+[Primary integration](../PLAN5_HISTORY_NAMESPACE_PRIMARY_INTEGRATION_2026-10-07.md)
+adds catalogue-required consecutive history and captured physical-namespace
+checks. All three complete original native suites pass with zero skips:
+lifecycle69 history/48 namespace controls; authority77 history/49 namespace
+controls; all131 lifecycle,20 healthy/367 damaged and69 marker cases remain.
+Primary authenticates6,377 source inputs and17,098 native regular bodies/modes,
+then imports exactly13 qualified files. Accounting/checkpoint contracts,
+syntax, formatting and whitespace pass. Source archive transport conversion
+is verified separately from Git blob identity. Protected WIP stays exact.
+Named known-range closure does not certify full accounting; native holdings,
+producer/player journeys, full recovery and release remain open.
+
+## Exact restore projection representations integrated — 2026-10-05
+
+[The exact Plan5 repair](../PLAN5_RESTORE_REPRESENTATION_INTEGRATION_2026-10-05.md) refuses noninteger aliases throughout independent
+restore evidence. Six mandatory pure cases make105 central rows; all104 prior
+policies remain exact. Peer zero-skip native/clone evidence stays its canonical56
+and original EAB1 scope. Primary AST/pins/static inventory only; current combined
+and nativeEAB2/schema61 qualification remain open. R1–R8, coverage, release and
+activation stay incomplete; inactive behavior and safety gates stay.
+
+## Exact baseline projection representations integrated — 2026-10-05
+
+[The exact Plan5 repair](../PLAN5_BASELINE_REPRESENTATION_INTEGRATION_2026-10-05.md) refuses numerically equal noncanonical types in
+original roots, projections, inbox controls and source bounds. Four new mandatory
+pure cases make104 central rows; all103 prior policies remain. Peer native and
+maintained-build evidence stays f23/schema56/EAB1, including preserved link
+failures and successful output-only retries. Local AST/pins/inventory only;
+nativeEAB2/schema61 sealing and original Plan1 acceptance remain open.
+Inactive behavior and all R1–R8/release/activation gates stay.
+
+## Independent EAB1/EAB2 readers integrated — 2026-10-05
+
+[The exact reader integration](../PLAN5_DUAL_VERSION_READER_INTEGRATION_2026-10-05.md) preserves historicalEAB1 and validates
+versioned equipment/original-plan evidence. Central inventory917owners/103rows
+adds eight pure and two mandatory C++ reference checks; all101 prior policies
+remain. Peer native evidence stays7cd9/schema56/EAB1, with its exact GCC13.3
+erratum. Local pins/AST/inventory only. Actual native selector is documented;
+native/schema61 installation, measured sealing and original Plan1 qualification
+remain. R1–R8 and release stay BLOCKED; inactive behavior and safety gates stay.
+
+## Baseline equipment/schema61 source closure reviewed — 2026-10-05
+
+[The primary/Plan5 interface](../BASELINE_EQUIPMENT_SCHEMA61_SOURCE_HANDOFF_2026-10-05.md) fixes the versioned equipment contract and
+current61-head consumer handoff while preserving historicalEAB1/0056 cuts.
+Private native/schema compositions pass independent source review;28 schema
+inputs have exact inverses/checksums/heads and matching bounded metadata readers.
+Unmeasured engine fingerprints remain failclosed; candidates are not installed.
+Actual both-engine sealing, independent EAB2 readers and original Plan1 native
+qualification remain required. This is source closure, not completed acceptance;
+inactive behavior and all original R1–R8/release gates stay.
+
+## Original-plan audit repair and central integration — 2026-10-05
+
+[The exact Plan5 closure](../PLAN5_ORIGINAL_PLAN_AUDIT_INTEGRATION_2026-10-05.md) resolves the saved integer-representation import
+blocker and imports bounded EAP1 capture, independent canonical/source-claim
+audit and repaired manual exporter fixture. Central inventory917owners/101rows
+keeps every prior policy and expands only child pure cases/new canonical owner.
+Peer native/SQL evidence stays frozen to its recorded schema56 scope. Local
+AST/pins/inventory only; combined major-plan qualification, EAB2 readers and full
+R1–R8/release remain open. Primary native/schema/inactive behavior stay.
+
 Start from add-double-entry HEAD 49af585c4. The reconciler and route inventory
 can be developed against current native rows and synthetic committed evidence
 while Plans 1-4 proceed. Final release certification consumes their results,

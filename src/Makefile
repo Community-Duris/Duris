@@ -158,6 +158,7 @@ OBJS =  $(SHIP_OBJS) \
 				 magic/spell_incendiary_cloud.o \
 				 magic/spell_spore_cloud.o \
 				 magic/spell_alignment_dispel.o \
+				 magic/spell_dispel_magic.o \
 				 magic/spell_sunray.o \
 				 magic/spell_obtenebration.o \
 				 world/achievements.o \
@@ -179,6 +180,7 @@ OBJS =  $(SHIP_OBJS) \
 				 cmd/actcomm.o \
 				 cmd/actinf.o \
 				 cmd/actmove.o \
+				 cmd/lockpick_retirement.o \
 				 cmd/actnew.o \
 				 cmd/actobj.o \
 				 cmd/actoff.o \
@@ -252,6 +254,7 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/collector_service.o \
 				 economy/collector_notification.o \
 				 economy/collector_transaction.o \
+				 economy/collector_purchase_publication.o \
 				 economy/collector_repository.o \
 				 economy/collector_accounting.o \
 				 persistence/economic_sql_collector_transaction.o \
@@ -311,6 +314,7 @@ OBJS =  $(SHIP_OBJS) \
 				 world/nevent_periodic.o \
 				 combat/training_dummy.o \
 				 combat/attack_continuation.o \
+				 combat/spell_wards.o \
 				 combat/hit_calculations.o \
 				 combat/defense_resolution.o \
 				 combat/attack_cadence.o \
@@ -374,6 +378,7 @@ OBJS =  $(SHIP_OBJS) \
 				 core/env_file.o \
 				 flatfile/flatfile_store.o \
 				 flatfile/flatfile_authority_transaction.o \
+				 flatfile/quest_mobile_native_flatfile.o \
 				 flatfile/flatfile_accounting_store.o \
 				 flatfile/flatfile_accounting_authority.o \
 				 flatfile/flatfile_accounting_bank_transaction.o \
@@ -383,6 +388,7 @@ OBJS =  $(SHIP_OBJS) \
 				 flatfile/flatfile_accounting_dispatch.o \
 				 flatfile/flatfile_accounting_baseline.o \
 				 flatfile/flatfile_accounting_lifecycle_transaction.o \
+				 flatfile/flatfile_economic_runtime.o \
 				 flatfile/flatfile_item_accounting_reference.o \
 				 flatfile/flatfile_account_repository.o \
 				 flatfile/flatfile_account_delete.o \
@@ -439,7 +445,10 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/economic_sql_source_normalize.o \
 				 persistence/economic_sql_bank_transaction.o \
 				 persistence/economic_sql_item_transfer_transaction.o \
+				 persistence/held_retirement_sql_observer.o \
+				 persistence/economic_sql_native_mobile_birth_transaction.o \
 				 persistence/sql_room_item_payload.o \
+				 persistence/sql_room_coin_payload.o \
 				 persistence/critical_command_repository.o \
 				 persistence/quest_reward_obligation_repository.o \
 				 persistence/quest_reward_obligation_pipeline.o \
@@ -447,8 +456,11 @@ OBJS =  $(SHIP_OBJS) \
 				 persistence/player_death_restitution_repository.o \
 				 persistence/corpse_lifecycle_command.o \
 				 item/item_transfer_command.o \
+				 item/lockpick_retirement_continuation.o \
+				 item/held_retirement_recovery.o \
 				 item/craft_pouch_mutation.o \
 				 item/item_ownership_runtime.o \
+				 item/ordinary_drop_recovery.o \
 				 item/item_get_policy.o \
 				 item/item_command_policy.o \
 				 item/item_command_parser.o \
@@ -456,6 +468,7 @@ OBJS =  $(SHIP_OBJS) \
 				 item/item_movement_transaction.o \
 				 economy/shop_trade_transaction.o \
 				 economy/shop_trade_runtime.o \
+				 economy/shop_trade_world_witness.o \
 				 item/item_transfer_repository.o \
 				 item/economic_accounting_item_reference.o \
 				 item/item_transfer_synthetic.o \
@@ -468,8 +481,14 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/coin_transfer_command.o \
 				 economy/coin_transfer_accounting.o \
 				 economy/item_transfer_accounting.o \
+				 economy/native_quest_cost.o \
+				 economy/native_quest_coin_give.o \
+				 economy/native_mobile_birth_command.o \
+				 economy/native_mobile_birth_accounting.o \
+				 economy/native_mobile_birth_result.o \
 				 economy/economic_accounting_types.o \
 				 economy/economic_accounting_plan.o \
+				 economy/economic_source_event.o \
 				 economy/economic_accounting_intent.o \
 				 economy/economic_command_admission.o \
 				 economy/economic_gameplay_authority.o \
@@ -478,13 +497,19 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/economic_baseline_command.o \
 				 economy/economic_currency_adapter.o \
 				 economy/auction_command.o \
+				 economy/auction_native_command_context.o \
+				 economy/auction_recovery_context.o \
+				 economy/auction_native_publication.o \
 				 economy/auction_repository.o \
 				 economy/auction_accounting.o \
 				 economy/auction_money_claim_accounting.o \
 				 persistence/economic_sql_pending_claim_source.o \
+				 persistence/economic_sql_auction_claim_endpoint.o \
+				 persistence/economic_sql_auction_retained.o \
 				 economy/auction_listing_accounting.o \
 				 persistence/economic_sql_auction_listing_transaction.o \
 				 persistence/economic_sql_shop_trade_transaction.o \
+				 persistence/shop_item_runtime_payload.o \
 				 persistence/economic_sql_auction_bid_transaction.o \
 				 persistence/economic_sql_auction_money_claim_transaction.o \
 				 economy/auction_item_claim_accounting.o \
@@ -505,6 +530,8 @@ OBJS =  $(SHIP_OBJS) \
 				 economy/boon_shop_command.o \
 				 economy/boon_shop_transaction.o \
 				 economy/shop_trade_command.o \
+				 economy/shop_trade_recovery_manifest.o \
+				 economy/shop_trade_recovery_image.o \
 				 economy/shop_trade_accounting.o \
 				 world/zone_story_quest_tracking.o \
 				 world/zone_story_quest_catalog.o \
@@ -526,6 +553,7 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_load_topology.o \
 				 player/player_load_pipeline.o \
 				 player/player_load_items.o \
+				 player/inert_item_stage.o \
 				 player/player_load_pets.o \
 				 player/pet_restore_state.o \
 				 player/pet_restore_runtime.o \
@@ -549,6 +577,8 @@ OBJS =  $(SHIP_OBJS) \
 				 redis/redis_world_runtime.o \
 				 redis/redis_world_store.o \
 				 economy/currency_transaction.o \
+				 economy/coin_physical_publication.o \
+				 economy/coin_physical_recovery.o \
 				 player/player_revision_state.o \
 				 player/player_save_worker.o \
 				 player/player_save_journal.o \
@@ -564,6 +594,22 @@ OBJS =  $(SHIP_OBJS) \
 				 player/player_death_conflict_repository.o \
 				 player/output_preferences.o player/output_message.o player/player_snapshot_capture.o \
 				 player/player_snapshot_codec.o \
+				 world/quest_mobile_native.o \
+				 world/quest_mobile_native_birth.o \
+				 world/quest_mobile_published_saved_forest.o \
+				 world/quest_mobile_published_world_owner.o \
+				 persistence/quest_mobile_published_world_sql.o \
+				 world/native_mobile_birth_artifact.o \
+				 world/native_mobile_birth_procedure.o \
+				 world/native_mobile_birth_reset_tail.o \
+				 economy/native_mobile_birth_constructor_recipe.o \
+				 economy/native_mobile_birth_recipe.o \
+				 economy/native_mobile_birth_recovery.o \
+	world/native_quest_recovery_context.o \
+				 world/quest_mobile_native_reference.o \
+				 world/quest_mobile_native_binding.o \
+				 persistence/quest_mobile_native_sql.o \
+				 persistence/quest_mobile_native_origin_sql.o \
 				 persistence/persistence_queue.o \
 				 persistence/latency_trace.o \
 				 sql/sql_persistence_raw.o \

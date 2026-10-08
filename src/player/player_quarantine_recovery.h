@@ -34,11 +34,25 @@ void player_quarantine_recovery_revalidate_selected();
 
 // Listener-free owners: callers must hold the isolated restore/server-stop
 // boundary. SQL and flat-file verification never execute a creation command.
+// SQL borrows an idle autocommit session with reconnect disabled. It never closes
+// or replaces the handle. Reuse-sensitive callers require explicit cleanup proof;
+// a successful recovery result alone does not grant pooled-session reuse.
+// Enabled SQL prepare/resume and receipt writes borrow an existing exact-PID
+// execution scope. The caller retains that ownership through subsequent lease
+// disposal; these participants never acquire a new replay-bypassing residence.
+// Refusal before native entry leaves caller cleanup evidence untouched.
+struct player_sql_cleanup;
 bool player_quarantine_recovery_prepare_sql(MYSQL *, int pid, const std::vector<critical_command> &,
 					    const std::string &backend_identity,
 					    player_save_recovery_record *, std::string *error);
 bool player_quarantine_recovery_resume_sql(MYSQL *, int pid, const std::string &backend_identity,
 					   std::string *error);
+bool player_quarantine_recovery_prepare_sql(MYSQL *, int pid, const std::vector<critical_command> &,
+					    const std::string &backend_identity,
+					    player_save_recovery_record *, std::string *error,
+					    player_sql_cleanup *cleanup);
+bool player_quarantine_recovery_resume_sql(MYSQL *, int pid, const std::string &backend_identity,
+					   std::string *error, player_sql_cleanup *cleanup);
 bool player_quarantine_recovery_prepare_flatfile(const std::string &root, int pid,
 						 const std::vector<critical_command> &,
 						 const std::string &backend_identity,

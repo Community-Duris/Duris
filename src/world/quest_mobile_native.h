@@ -1,0 +1,120 @@
+#ifndef QUEST_MOBILE_NATIVE_H
+#define QUEST_MOBILE_NATIVE_H
+
+#include "economy/economic_accounting_plan.h"
+#include "economy/currency_command.h"
+#include "world/quest_mobile_native_reference.h"
+#include "player/player_snapshot_codec.h"
+#include "player/player_snapshot_capture.h"
+
+#include <array>
+#include <optional>
+#include <span>
+
+// Keep the original image and 148-byte reference formats readable verbatim.
+constexpr size_t QUEST_MOBILE_NATIVE_IMAGE_OVERHEAD = 216;
+constexpr uint16_t QUEST_MOBILE_NATIVE_CASH_IMAGE_VERSION = 2;
+constexpr size_t QUEST_MOBILE_NATIVE_CASH_IMAGE_OVERHEAD = 256;
+
+enum class quest_mobile_lifetime_state : uint8_t
+{
+	live = 1,
+	retired = 2
+};
+
+struct quest_mobile_native_cash
+{
+	uint64_t revision = 0;
+	currency_vector denominations{};
+};
+
+struct quest_mobile_native_image
+{
+	quest_mobile_native_reference reference;
+	quest_mobile_lifetime_state state = {};
+	critical_operation_id last_transition_operation = {};
+	// Equipment roots in ascending one-based slot order, then carried roots in
+	// native linked-list order; each complete subtree is contiguous depth-first.
+	// The existing parent/slot representation preserves order without a second
+	// UID/custody catalog. Every row freezes all four literal strings.
+	std::vector<player_item_snapshot> items;
+	// Absent in historical v1 images: unknown cash, never an authoritative zero.
+	// A v2 image freezes the actual native denominations, not converted value.
+	std::optional<quest_mobile_native_cash> cash;
+};
+
+player_snapshot_codec_result
+quest_mobile_native_image_encode(const quest_mobile_native_image &,
+				 std::vector<uint8_t> *output) noexcept;
+player_snapshot_codec_result
+quest_mobile_native_image_decode(std::span<const uint8_t>,
+				 quest_mobile_native_image *output) noexcept;
+
+// Pure native cash revision policy, not admitted source/transition authority.
+// Missing BEFORE means birth; unknown historical cash cannot be adopted here.
+// A cash change advances both its revision and mobile revision exactly once.
+bool quest_mobile_native_cash_transition_valid(const quest_mobile_native_image *before,
+					       const quest_mobile_native_image &after) noexcept;
+
+// Read-only complete NPC forest, including NORENT items: this is native stock,
+// not a player save/filtering decision. No UID adoption, runtime/custody write,
+// birth decision, rebind, retirement or ACK. The supplied reference/operation
+// remain caller facts; matching prototype/birthplace is not durable authority.
+// Capture requires explicit LIVE input. RETIRED images are values constructed
+// by the eventual native transition owner and must have an empty forest.
+// Every output remains unchanged on failure. Game-thread serialization remains
+// the caller's obligation, as for existing literal tree capture.
+player_snapshot_capture_result quest_mobile_native_capture(
+	P_char, const quest_mobile_native_reference &, quest_mobile_lifetime_state,
+	const critical_operation_id &last_transition, quest_mobile_native_image *output) noexcept;
+
+// Cash-aware capture for the original economic owner. The caller supplies its
+// retained cash revision; this reads the actual post-conversion native wallet.
+// The compatibility overload above still returns a v1 image with unknown cash.
+player_snapshot_capture_result
+quest_mobile_native_capture(P_char, const quest_mobile_native_reference &,
+			    quest_mobile_lifetime_state,
+			    const critical_operation_id &last_transition, uint64_t cash_revision,
+			    quest_mobile_native_image *output) noexcept;
+
+// Read-only full native item forest on the game thread. No previous-transition
+// operation or cash revision is fabricated merely to observe the original stock.
+// Reference remains an already-authenticated caller fact; output is unchanged
+// on refusal. The existing image capture/codec policies remain unchanged.
+player_snapshot_capture_result
+quest_mobile_native_items_observe(P_char, const quest_mobile_native_reference &,
+				  std::vector<player_item_snapshot> *output) noexcept;
+
+struct item_transfer_payload;
+// Pure ordered item values only. Original reference/forest are caller evidence;
+// no historical last-transition or cash image is constructed to transform them.
+// The cash-aware image participant retains its separate exact cash policy.
+player_snapshot_codec_result quest_mobile_native_items_transition(
+	std::span<const player_item_snapshot>, const quest_mobile_native_reference &,
+	const item_transfer_payload &, std::vector<player_item_snapshot> *after) noexcept;
+// Pure ordered stock transition for an already LIVE original native image.
+// The enclosing participant validates the complete native-v11 payload contract;
+// this helper validates only the original image/reference and literal stock transform.
+// Values only: no birth, admission, custody, native mutation or ACK authority.
+// Item-only transitions preserve the exact known wallet and its revision.
+player_snapshot_codec_result quest_mobile_native_item_transition(
+	const quest_mobile_native_image &before, const item_transfer_payload &payload,
+	const critical_operation_id &operation, quest_mobile_native_image *after) noexcept;
+
+// Explicit15/16 finite cash acceptance preserves the complete original stock,
+// stock/custody revision and native lifetime. Only mobile/cash revisions advance.
+// Original root proves both actual wallets and the before image independently;
+// this pure projection supplies no source, SQL or publication authority.
+// Pure no-item original fee action: actual NPC cash/mobile revision changes,
+// full stock and custody are unchanged. Caller owes source/root/SQL publication.
+player_snapshot_codec_result
+quest_mobile_native_fee_transition(const quest_mobile_native_image &, const item_transfer_payload &,
+				   const critical_operation_id &,
+				   quest_mobile_native_image *) noexcept;
+
+player_snapshot_codec_result
+quest_mobile_native_money_transition(const quest_mobile_native_image &,
+				     const item_transfer_payload &, const critical_operation_id &,
+				     quest_mobile_native_image *) noexcept;
+
+#endif

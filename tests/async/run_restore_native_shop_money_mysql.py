@@ -9,7 +9,8 @@ import pymysql
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
-from qualify_database_restore import require_currency_revision_history, require_currency_values
+from qualify_database_restore import (require_currency_revision_history, require_currency_values,
+                                      require_economic_evidence_integrity)
 
 if (os.environ.get("TEST_DB_DISPOSABLE") != "1" or
         os.environ.get("DB_HOST") != "127.0.0.1" or os.environ.get("DB_SOCKET") or
@@ -51,6 +52,7 @@ class Executor:
 def admitted():
     require_currency_revision_history(Executor())
     require_currency_values(Executor())
+    require_economic_evidence_integrity(Executor())
 
 
 def refused():

@@ -71,6 +71,7 @@ int main(int argc, char **argv) {
 '''
 
 SOURCES = [
+    'quest_mobile_native.c', 'quest_mobile_native_flatfile.c',
     "flatfile_player_repository.c", "player_load_topology.c", "flatfile_identity_repository.c",
     "flatfile_item_repository.c", "coin_transfer_command.c", "flatfile_player_snapshot_file.c",
     "flatfile_corpse_repository.c", "flatfile_locker_repository.c", "flatfile_world_item_repository.c",
@@ -78,8 +79,8 @@ SOURCES = [
     "flatfile_shop_trade_materialization.c", "flatfile_shopkeeper_repository.c",
     "flatfile_auction_repository.c", "flatfile_boon_repository.c",
     "flatfile_player_domain_repository.c", "flatfile_authority_transaction.c",
-    "player_snapshot_codec.c", "player_save_journal.c", "flatfile_store.c", "item_transfer_command.c", "craft_pouch_mutation.c", "chaos_pouch_ledger.c",
-    "corpse_lifecycle_command.c", "shop_trade_command.c", "critical_command.c", "epic_command.c",
+    "player_snapshot_codec.c", "player_save_journal.c", "flatfile_store.c", "item_transfer_command.c", "quest_mobile_native_reference.c", "economic_source_event.c", "craft_pouch_mutation.c", "chaos_pouch_ledger.c",
+    "corpse_lifecycle_command.c", "shop_trade_command.c", "shop_trade_recovery_manifest.c", "critical_command.c", "epic_command.c",
     "currency_command.c", "auction_command.c", "combat_outcome_command.c", "boon_reward_command.c",
     "boon_shop_command.c", "persistence_observability.c", "persistence_mode.c",
     "flatfile_ip_activity_repository.c",

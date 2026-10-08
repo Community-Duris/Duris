@@ -27,6 +27,8 @@ class BaselineSchemaTest(unittest.TestCase):
     def setUpClass(cls):
         fixtures.AccountingSchemaTest.setUpClass.__func__(cls)
         cls.engine, cls.expected = schema.fingerprint(cls.client)
+        if schema.EXPECTED[cls.engine] is None:
+            raise RuntimeError('0061 baseline metadata awaits actual engine measurement')
         if cls.expected != schema.EXPECTED[cls.engine]:
             raise RuntimeError('baseline storage metadata differs from the reviewed contract')
         cls.probe_directory = tempfile.TemporaryDirectory(prefix='baseline-runtime-probe-')
@@ -38,7 +40,7 @@ class BaselineSchemaTest(unittest.TestCase):
 
     def assert_metadata_rejected(self):
         self.assertNotEqual(schema.fingerprint(self.client), (self.engine,self.expected))
-        for verifier in (ROOT/'migrations/immutable/0032_economic_baseline.sh',
+        for verifier in (ROOT/'migrations/immutable/0061_economic_baseline_equipment.sh',
                          ROOT/'migrations/verify_runtime_compatibility.sh'):
             result = subprocess.run(['bash',str(verifier)],env=self.client.env,
                                     capture_output=True,text=True,timeout=30)
@@ -112,6 +114,29 @@ class BaselineSchemaTest(unittest.TestCase):
         maximum = self.batch(holding_count='3071', item_count='6000',
                              canonical_witness="CONCAT('EAB1',REPEAT(CHAR(0),872140))")
         self.assertEqual(self.execute(self.prefix() + maximum + 'SELECT OCTET_LENGTH(canonical_witness) FROM economic_baseline_witness;ROLLBACK;'), ['872144'])
+
+    def test_equipment_witness_shape_and_original_version_compatibility(self):
+        # Opaque SQL storage shapes only; native EAB2 codec/equipment evidence
+        # belongs to the separately owned Plan1 major-plan qualification.
+        canonical = "CONCAT('EAB2',X'0200C000',REPEAT(CHAR(0),184))"
+        self.execute(self.prefix() + self.batch(witness_version='2',
+                     canonical_witness=canonical) + 'ROLLBACK;')
+        maximum = "CONCAT('EAB2',X'0200C000',REPEAT(CHAR(0),920136))"
+        self.assertEqual(self.execute(self.prefix() + self.batch(
+            witness_version='2', holding_count='3071', item_count='6000',
+            canonical_witness=maximum) +
+            'SELECT OCTET_LENGTH(canonical_witness) FROM economic_baseline_witness;ROLLBACK;'), ['920144'])
+        for fields in (
+            {'witness_version': '3', 'canonical_witness': canonical},
+            {'witness_version': '1', 'canonical_witness': canonical},
+            {'witness_version': '2', 'canonical_witness': "CONCAT('EAB2',X'0100C000',REPEAT(CHAR(0),184))"},
+            {'witness_version': '2', 'canonical_witness': "CONCAT('EAB2',X'0200BF00',REPEAT(CHAR(0),184))"},
+            {'witness_version': '2', 'canonical_witness': "CONCAT('EAB2',X'0200C000',REPEAT(CHAR(0),183))"},
+            {'witness_version': '2', 'canonical_witness': "CONCAT('EAB2',X'0200C000',REPEAT(CHAR(0),185))"},
+            {'witness_version': '2', 'holding_count': '3072', 'canonical_witness': canonical},
+            {'witness_version': '2', 'item_count': '6001', 'canonical_witness': canonical},
+        ):
+            self.execute(self.prefix() + self.batch(**fields), failure='3819|4025')
 
     def test_cross_batch_lifetime_duplicate_and_separate_item_namespace(self):
         base = self.prefix() + self.batch() + self.reserve() + self.batch(3,2)

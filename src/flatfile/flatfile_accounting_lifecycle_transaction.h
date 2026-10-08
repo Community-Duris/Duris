@@ -43,6 +43,11 @@ struct flatfile_accounting_lifecycle_request
 	uint64_t actor_id = 0;
 	uint64_t accepted_at_usec = 0;
 	economic_digest coverage_digest = {};
+	// Externally asserted frozen boundary, independently established by the
+	// future native cutover producer. Setting these fields is not proof and
+	// does not replace complete writer/command census and native exclusion.
+	economic_digest boundary_digest = {};
+	bool frozen_boundary_proven = false;
 	// External proof that the system is in a virgin_state / never_activated state.
 	bool virgin_state_proven = false;
 };
@@ -54,6 +59,7 @@ struct flatfile_accounting_lifecycle_receipt
 	critical_operation_id epoch = {};
 	critical_operation_id baseline_operation_id = {};
 	economic_digest coverage_digest = {};
+	economic_digest boundary_digest = {};
 	uint64_t baseline_revision = 0;
 	std::vector<flatfile_economic_mapping> mappings;
 };
@@ -62,9 +68,34 @@ struct flatfile_accounting_lifecycle_receipt
 // Coordinates complete native capture of wallets and shared banks, enforces
 // one-to-one mapping and lifetime reconciliation, stages the baseline witness
 // and reservations, verifies virgin_state (never_activated) proof, and commits
-// the lifecycle receipt before selecting the active epoch.
+// immutable lifecycle receipt and epoch selection in one authority bundle.
+// Exact original-ID retry verifies retained baseline/reservations and historical
+// epoch links before EALREADY or native capture, returning the original ordered
+// mappings without consulting mutable mapping rows. Changed requests conflict;
+// Original native descriptors bind locator/PID/order to retained baseline source
+// fingerprints and coverage. Mapping revision/operation metadata is authority of
+// the immutable lifecycle frame, not independently rebuilt from later mappings.
+// missing/corrupt completed history refuses. Shared authenticated journal recovery
+// may finish a previously committed original bundle on retry; no new images,
+// native capture/mutation, mapping changes or epoch selection are prepared.
+// The common receipt bucket must already be initialized for a fresh install.
+// Caller receipt stays unchanged on failure, including allocation/I/O failure.
+// Frozen-boundary authority is an external prerequisite; no authenticated native
+// boundary producer or production activation wiring is supplied by this owner.
 class flatfile_accounting_lifecycle_transaction
 {
+    private:
+	friend bool flatfile_economic_runtime_start() noexcept;
+	// Borrow identity -> authority locks through current-source enumeration and
+	// projection publication. May finish existing authenticated shared/domain
+	// recovery; never installs a baseline, stages new images or selects an epoch.
+	// Valid absent/inactive returns active_out=false. Failure leaves output and
+	// absent gameplay projection unchanged; known lifecycle origin is mandatory.
+	static unsigned int recover_runtime_locked(const std::string &root,
+						   const flatfile_identity_lock &identity_lock,
+						   const flatfile_authority_lock &lock,
+						   bool *active_out, std::string *error) noexcept;
+
     public:
 	static unsigned int capture_native_sources_locked(
 		const std::string &root, const flatfile_identity_lock &identity_lock,

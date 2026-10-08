@@ -26,6 +26,7 @@
 #include "economy/economic_gameplay_authority.h"
 #include "sql/sql.h"
 #include "sql/sql_player_identity.h"
+#include "player/player_save_replay_ownership.h"
 
 /*
    external variables
@@ -1573,6 +1574,12 @@ bool rename_craftlist(char *old_name, char *new_name)
 /* ------------------------------------------------------------------------------ */
 bool rename_character(P_char ch, char *old_name, char *new_name)
 {
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		send_to_char("Character renaming is unavailable while accounting owns saves.\r\n",
+			     ch);
+		return FALSE;
+	}
 	char buf[256];
 	struct acct_chars *c = NULL;
 	P_char doofus;

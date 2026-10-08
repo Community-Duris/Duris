@@ -171,6 +171,9 @@ class DisposableMariaDB:
         return result.stdout.strip()
 
     def start(self):
+        from disposable_sql_fixture import private_network
+        network = private_network()
+        server_arguments = ["--innodb-use-native-aio=OFF"]
         env = environment()
         variables = {self.prefix + "_ROOT_PASSWORD": self.root_password,
                      self.prefix + "_USER": self.user,
@@ -178,24 +181,28 @@ class DisposableMariaDB:
                      self.prefix + "_DATABASE": self.database}
         env.update(variables)
         command = [self.docker, "run", "--pull=never", "--rm", "-d", "--name", self.container,
-                   "--cpus", "2", "--memory", "2g", "-p", "127.0.0.1::3306"]
+                   "--cpus", "2", "--memory", "2g"]
+        if network:
+            with socket.socket() as probe:
+                probe.bind(("127.0.0.1", 0))
+                self.port = probe.getsockname()[1]
+            command += ["--network", network]
+            server_arguments += ["--port=" + str(self.port), "--bind-address=127.0.0.1"]
+        else:
+            command += ["-p", "127.0.0.1::3306"]
         for key in variables:
             command.extend(("-e", key))
-        result = subprocess.run(command + [self.image], env=env, text=True,
+        result = subprocess.run(command + [self.image, *server_arguments], env=env, text=True,
                                 capture_output=True, timeout=60)
         require(result.returncode == 0, "disposable DB start failed: " +
                 self.redact(result.stderr[-5000:]))
         self.started = True
-        mapping = subprocess.check_output(
+        mapping = "127.0.0.1:" + str(self.port) if network else subprocess.check_output(
             [self.docker, "port", self.container, "3306/tcp"], text=True, timeout=30).strip()
         require(re.fullmatch(r"127\.0\.0\.1:\d+", mapping),
                 f"DB publication was not exclusively loopback: {mapping!r}")
         published_port = int(mapping.rsplit(":", 1)[1])
-        try:
-            socket.gethostbyname("host.docker.internal")
-            docker_host = "host.docker.internal"
-        except socket.gaierror:
-            docker_host = "127.0.0.1"
+        docker_host = "127.0.0.1"
         if docker_host == "127.0.0.1":
             self.port = published_port
         else:
@@ -282,9 +289,11 @@ class DisposableMariaDB:
                 self.forward.close()
         finally:
             if self.started:
-                subprocess.run([self.docker, "rm", "-f", self.container], text=True,
-                               capture_output=True, timeout=60)
-                result = subprocess.run([self.docker, "inspect", self.container], text=True,
+                removal = subprocess.run([self.docker, "rm", "-f", self.container], text=True,
+                                         capture_output=True, timeout=60)
+                require(removal.returncode == 0,
+                        f"disposable container removal failed: {removal.stderr}")
+                result = subprocess.run([self.docker, "container", "inspect", self.container], text=True,
                                         capture_output=True, timeout=30)
                 require(result.returncode != 0 and "No such" in result.stderr + result.stdout,
                         f"disposable container removal not verified: {self.container}")

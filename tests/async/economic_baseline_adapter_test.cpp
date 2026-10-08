@@ -38,6 +38,8 @@ economic_digest digest(uint8_t n)
 economic_baseline_batch fixture()
 {
 	economic_baseline_batch result;
+	// Keep the historical reference bytes/digests explicit.
+	result.witness_version = 1;
 	result.lineage = id(1);
 	result.epoch = id(2);
 	result.preparation_id = id(3);

@@ -20,6 +20,39 @@ critical_apply_result critical_command_repository_reconcile(MYSQL *connection,
 critical_apply_result
 critical_command_repository_verify_creation_in_transaction(MYSQL *connection,
 							   const critical_command &command);
+// Read-only retained definitive schema-2 coin receipt. Caller must own a
+// reconnect-disabled transaction and acquire current native/accounting authority
+// locks in native order BEFORE invoking this historical proof. Reads a nonlocking
+// committed inbox snapshot; never STARTs/COMMITs/ROLLBACKs or executes a missing
+// operation. Missing/uncommitted receipts retain retry; changed identity refuses.
+// Successful and authentic rejected roots preserve their exact retained result,
+// durable revision and source/destination failure stage after accounting/outbox
+// verification. This does not establish current native custody or grant ACK.
+critical_apply_result
+critical_command_repository_verify_coin_in_transaction(MYSQL *connection,
+						       const critical_command &command) noexcept;
+// Read-only retained definitive schema-2 ordinary-drop receipt. Caller must own
+// a reconnect-disabled transaction and acquire current lineage/season/room/
+// custody/payload locks in native order BEFORE invoking this historical proof.
+// Uses a nonlocking committed inbox snapshot; it never takes a late inbox lock,
+// STARTs/COMMITs/ROLLBACKs, applies a missing command, or grants publication ACK.
+// Missing/uncommitted receipts retain retry; changed identity/corruption refuse.
+// A proven rejected root returns its exact original terminal_failure result;
+// rejected accounting/root/outbox/native movement/payload absence is verified.
+// This does not establish current source custody or permit publication/ACK.
+critical_apply_result critical_command_repository_verify_ordinary_drop_in_transaction(
+	MYSQL *connection, const critical_command &command) noexcept;
+// Historical collector purchase proof only. Caller already owns current
+// lifetime/catalog/listing/wallet/custody locks on its original transaction.
+// Only a fully verified stored rejection returns terminal_failure.
+critical_apply_result critical_command_repository_verify_collector_purchase_in_transaction(
+	MYSQL *connection, const critical_command &command) noexcept;
+// Historical v6 shop proof only. Caller owns an original reconnect-disabled
+// transaction and acquires current authority/domain/custody locks first.
+// No current projection, transaction lifecycle, application or ACK authority.
+// Proof failures retain retry; only an authentic retained rejection is terminal.
+critical_apply_result critical_command_repository_verify_shop_trade_in_transaction(
+	MYSQL *connection, const critical_command &command) noexcept;
 critical_apply_result critical_command_repository_apply_from_pool(const critical_command &command,
 								  void *context);
 
@@ -40,5 +73,29 @@ bool critical_command_repository_begin_inbox_in_transaction(MYSQL *connection,
 							    const critical_command &command);
 bool critical_command_repository_finish_item_transfer_in_transaction(
 	MYSQL *connection, const critical_command &command, const item_transfer_result &result);
+
+// Read-only exact original native quest v12 inbox/accounting/source/reward/
+// outbox/result proof. Caller owns an original reconnect-disabled IN_TRANS
+// session and confirms cleanup. Physical publication additionally requires its
+// native-before-save/custody locks and current world proof. Terminal cleanup
+// instead requires the exact actual reward ACK and all original reward receipts.
+// Never begins, commits, rolls back, replaces a connection or invents world evidence.
+// Success/rejection is historical receipt proof only, not publication/ACK.
+critical_apply_result
+critical_command_repository_verify_native_quest_in_transaction(MYSQL *,
+							       const critical_command &) noexcept;
+
+// Exact original typed HRT committed receipt/root/source/native/outbox proof.
+// Nonlocking inbox snapshot before current participant locks; caller owns one
+// reconnect-disabled transaction and cleanup. Missing receipt is retryable.
+// No current epoch, execution, source recapture, publication or ACK authority.
+critical_apply_result critical_command_repository_verify_held_retirement_in_transaction(
+	MYSQL *, const critical_command &) noexcept;
+// Distinct original in-process never_admitted completion only. Caller holds
+// its exact original coordinator refusal/body/reservation pin. Requires no
+// inbox or operation effects/obligations and absent exact source tuple; never
+// infers admission refusal from missing rows or manufactures a SQL receipt.
+unsigned int critical_command_repository_verify_held_retirement_refusal_in_transaction(
+	MYSQL *, const critical_command &, const critical_completion &) noexcept;
 
 #endif

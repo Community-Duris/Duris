@@ -1,4 +1,6 @@
 #include "economy/item_transfer_accounting.h"
+#include "economy/native_mobile_birth_accounting.h"
+#include "economy/native_quest_cost_policy.h"
 #include "item/craft_pouch_mutation.h"
 #include "world/vnum.obj.h"
 #include "player/player_snapshot_codec.h"
@@ -364,6 +366,235 @@ economic_accounting_error item_transfer_accounting_intent(const critical_command
 			facts.metadata.reason = economic_reason::item_move;
 		}
 		return economic_intent_freeze(command, facts, encoded);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
+
+// Pure frozen native facts only. This constructor does not extend the current
+// admission predicate or install a SQL/flat owner for this native mutation.
+economic_accounting_error item_native_mobile_accounting_intent(
+	const critical_command &command, const critical_operation_id &lineage,
+	const critical_operation_id &epoch, uint32_t actor_pid,
+	const economic_source_event *original_quest_event, std::vector<uint8_t> *encoded) noexcept
+{
+	using error = economic_accounting_error;
+	if (!encoded || !actor_pid || actor_pid > INT32_MAX ||
+	    command.schema_version != CRITICAL_COMMAND_SCHEMA_VERSION ||
+	    !command.accounting_intent.empty() || command.accepted_at_usec ||
+	    command.publication_required || command.type != critical_command_type::item_transfer ||
+	    (command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_RECOVERY_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_COST_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_COST_RECOVERY_PAYLOAD_VERSION &&
+	     command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_MONEY_PAYLOAD_VERSION &&
+	     command.payload_version !=
+		     ITEM_TRANSFER_NATIVE_MOBILE_MONEY_RECOVERY_PAYLOAD_VERSION) ||
+	    critical_operation_id_is_zero(lineage) || critical_operation_id_is_zero(epoch))
+		return error::invalid_identity;
+	try
+	{
+		item_transfer_payload payload = {};
+		if (!item_transfer_command_decode_payload(command, &payload) ||
+		    payload.native_mobile.final_giver_pid != actor_pid)
+			return error::unauthorized;
+		economic_admission_facts facts;
+		facts.metadata.lineage = lineage;
+		facts.metadata.epoch = epoch;
+		facts.metadata.actor_kind = economic_actor_kind::domain;
+		facts.metadata.actor_id = actor_pid;
+		facts.metadata.writer_id = ECONOMIC_WRITER_ITEM_TRANSFER;
+		if (payload.native_mobile.action == item_native_mobile_action::acceptance)
+		{
+			if (original_quest_event)
+				return error::
+					unauthorized; // Acceptance does not create reward authority.
+			facts.metadata.reason = payload.native_money.present ?
+							economic_reason::coin_transfer :
+							economic_reason::item_move;
+		}
+		else
+		{
+			if (!original_quest_event ||
+			    !economic_source_event_valid(*original_quest_event) ||
+			    (original_quest_event->kind != economic_source_kind::quest_action &&
+			     original_quest_event->kind !=
+				     economic_source_kind::quest_completion) ||
+			    (payload.native_cost.present &&
+			     original_quest_event->kind != economic_source_kind::quest_action) ||
+			    (!payload.native_cost.present &&
+			     payload.continuation.kind ==
+				     item_transfer_continuation_kind::quest_offering &&
+			     original_quest_event->kind != economic_source_kind::quest_completion))
+				return error::unauthorized;
+			if (payload.native_cost.fee_only &&
+			    (original_quest_event->source.bytes != command.operation_id.bytes ||
+			     original_quest_event->generation.bytes !=
+				     payload.native_mobile.reference.birth_source.generation.bytes ||
+			     original_quest_event->sequence !=
+				     payload.native_mobile.reference.mobile_revision ||
+			     original_quest_event->slot != payload.native_cost.completion_slot))
+				return error::unauthorized;
+			// One original action source covers every bound attempted fee slot.
+			// Frozen successful reward terms retain their genuine later issuer.
+			facts.metadata.reason = payload.native_cost.present ?
+							economic_reason::quest_cost :
+							economic_reason::item_destroy;
+			facts.metadata.source_event = *original_quest_event;
+		}
+		return economic_intent_freeze(command, facts, encoded);
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
+
+economic_accounting_error
+item_native_mobile_cost_accounting_effects(const item_transfer_payload &payload,
+					   const economic_account_key &wallet,
+					   economic_accounting_plan *plan) noexcept
+{
+	using error = economic_accounting_error;
+	if (!plan || !payload.native_cost.present ||
+	    payload.native_mobile.action != item_native_mobile_action::consumption ||
+	    !economic_account_key_valid(wallet) || wallet.kind != economic_account_kind::wallet ||
+	    wallet.context_id != ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT ||
+	    wallet.authority_id != payload.native_cost.wallet_mapping_id ||
+	    wallet.lineage.bytes != plan->metadata.lineage.bytes ||
+	    plan->metadata.reason != economic_reason::quest_cost ||
+	    plan->metadata.writer_id != ECONOMIC_WRITER_ITEM_TRANSFER ||
+	    plan->metadata.actor_kind != economic_actor_kind::domain ||
+	    plan->metadata.actor_id != payload.native_mobile.final_giver_pid ||
+	    plan->metadata.policy_version != ECONOMIC_QUEST_REQUIREMENT_POLICY_VERSION ||
+	    !plan->metadata.source_event ||
+	    plan->metadata.source_event->kind != economic_source_kind::quest_action ||
+	    !economic_source_event_valid(*plan->metadata.source_event) || !plan->accounts.empty() ||
+	    !plan->postings.empty())
+		return error::unauthorized;
+	try
+	{
+		std::vector<uint8_t> exact;
+		if (payload.native_cost.projection.attempts.empty() ||
+		    native_quest_cost_projection_encode(payload.native_cost.projection, &exact) !=
+			    native_quest_cost_projection_result::ok)
+			return error::corrupt_evidence;
+		const auto &cost = payload.native_cost.projection;
+		auto candidate = *plan;
+		bool charged = false;
+		for (const auto &attempt : cost.attempts)
+		{
+			if (attempt.outcome != native_quest_cost_attempt_outcome::charged)
+				continue;
+			if (!charged)
+			{
+				candidate.accounts.push_back({ wallet, cost.before, cost.after,
+							       cost.before_revision,
+							       cost.after_revision });
+				candidate.accounts.push_back(
+					{ { wallet.lineage, economic_account_kind::sink,
+					    ECONOMIC_QUEST_REQUIREMENT_SINK_ID,
+					    ECONOMIC_QUEST_REQUIREMENT_SINK_CONTEXT },
+					  {},
+					  {},
+					  0,
+					  0 });
+				charged = true;
+			}
+			if (candidate.postings.size() > ECONOMIC_ACCOUNTING_MAX_POSTINGS - 2)
+				return error::capacity;
+			economic_coin_vector debit{}, opposite{};
+			auto status = economic_coin_delta(attempt.before, attempt.after, &debit);
+			if (status != error::ok)
+				return status;
+			int64_t copper = 0;
+			status = economic_coin_value(debit, &copper);
+			if (status != error::ok)
+				return status;
+			if (copper != -static_cast<int64_t>(attempt.requirement.copper))
+				return error::corrupt_evidence;
+			for (size_t i = 0; i < debit.size(); ++i)
+			{
+				if (debit[i] == INT64_MIN)
+					return error::overflow;
+				opposite[i] = -debit[i];
+			}
+			candidate.postings.push_back(
+				{ static_cast<uint32_t>(candidate.postings.size()), 0, 0, debit,
+				  copper });
+			candidate.postings.push_back(
+				{ static_cast<uint32_t>(candidate.postings.size()), 1, 0, opposite,
+				  -copper });
+		}
+		const auto status = economic_coin_effects_validate(
+			candidate.accounts, candidate.postings, candidate.children.size());
+		if (status != error::ok)
+			return status;
+		*plan = std::move(candidate);
+		return error::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return error::capacity;
+	}
+}
+
+economic_accounting_error item_native_mobile_money_accounting_effects(
+	const item_transfer_payload &payload, const economic_account_key &player_wallet,
+	const economic_account_key &native_wallet, economic_accounting_plan *plan) noexcept
+{
+	using error = economic_accounting_error;
+	if (!plan || !payload.native_money.present ||
+	    !(payload.native_recovery.present ?
+		      item_transfer_native_mobile_recovery_shape_valid(payload) :
+		      item_transfer_native_mobile_shape_valid(payload)) ||
+	    !economic_account_key_valid(player_wallet) ||
+	    !economic_account_key_valid(native_wallet) ||
+	    player_wallet.kind != economic_account_kind::wallet || player_wallet.context_id ||
+	    native_wallet.kind != economic_account_kind::wallet ||
+	    native_wallet.context_id != ECONOMIC_NATIVE_MOBILE_WALLET_CONTEXT ||
+	    player_wallet.authority_id != payload.native_money.player_wallet_mapping_id ||
+	    native_wallet.authority_id != payload.native_money.mobile_wallet_mapping_id ||
+	    player_wallet.lineage.bytes != plan->metadata.lineage.bytes ||
+	    native_wallet.lineage.bytes != plan->metadata.lineage.bytes ||
+	    plan->metadata.writer_id != ECONOMIC_WRITER_ITEM_TRANSFER ||
+	    plan->metadata.reason != economic_reason::coin_transfer ||
+	    plan->metadata.policy_version != 1 ||
+	    plan->metadata.actor_kind != economic_actor_kind::domain ||
+	    plan->metadata.actor_id != payload.native_mobile.final_giver_pid ||
+	    plan->metadata.source_event || !plan->accounts.empty() || !plan->postings.empty() ||
+	    !plan->children.empty() || !plan->items_before.empty() || !plan->items_after.empty() ||
+	    !plan->item_events.empty())
+		return error::unauthorized;
+	try
+	{
+		auto candidate = *plan;
+		const auto &money = payload.native_money.projection;
+		candidate.accounts = {
+			{ player_wallet, money.player_before, money.player_after,
+			  money.player_before_revision, money.player_after_revision },
+			{ native_wallet, money.mobile_before, money.mobile_after,
+			  money.mobile_before_revision, money.mobile_after_revision }
+		};
+		economic_coin_vector debit{}, credit{};
+		auto status = economic_coin_delta(money.player_before, money.player_after, &debit);
+		if (status != error::ok)
+			return status;
+		status = economic_coin_delta(money.mobile_before, money.mobile_after, &credit);
+		if (status != error::ok)
+			return status;
+		int64_t value = 0;
+		status = economic_coin_value(credit, &value);
+		if (status != error::ok)
+			return status;
+		candidate.postings = { { 0, 0, 0, debit, -value }, { 1, 1, 0, credit, value } };
+		status = economic_coin_effects_validate(candidate.accounts, candidate.postings, 0);
+		if (status != error::ok)
+			return status;
+		*plan = std::move(candidate);
+		return error::ok;
 	}
 	catch (const std::bad_alloc &)
 	{

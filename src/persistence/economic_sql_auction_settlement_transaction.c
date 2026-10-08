@@ -1,8 +1,10 @@
 #include "persistence/economic_sql_auction_settlement_transaction.h"
+#include "persistence/economic_sql_auction_source_claim.h"
 
 #include "economy/auction_settlement_accounting.h"
 #include "persistence/economic_sql_pending_claim_source.h"
 
+#include "economy/auction_native_command_context.h"
 #include <cerrno>
 
 #ifndef __NO_MYSQL__
@@ -23,8 +25,6 @@ constexpr uint16_t PLAYER_LOCATOR = 1;
 constexpr uint16_t BANK_LOCATOR = 2;
 constexpr uint16_t AUCTION_LOCATOR = 4;
 constexpr uint16_t CLAIM_LOCATOR = 5;
-constexpr size_t FACT_HEADER_BYTES = 122;
-constexpr size_t FACT_ITEM_BYTES = 27;
 
 std::string hex(std::span<const uint8_t> bytes)
 {
@@ -113,28 +113,6 @@ bool i64(const std::string &text, int64_t *value)
 	return parsed.ec == std::errc{} && parsed.ptr == text.data() + text.size();
 }
 
-uint64_t little_u64(std::span<const uint8_t> bytes, size_t offset)
-{
-	uint64_t value = 0;
-	for (size_t index = 0; index < 8; ++index)
-		value |= static_cast<uint64_t>(bytes[offset + index]) << (index * 8);
-	return value;
-}
-
-uint32_t little_u32(std::span<const uint8_t> bytes, size_t offset)
-{
-	uint32_t value = 0;
-	for (size_t index = 0; index < 4; ++index)
-		value |= static_cast<uint32_t>(bytes[offset + index]) << (index * 8);
-	return value;
-}
-
-uint16_t little_u16(std::span<const uint8_t> bytes, size_t offset)
-{
-	return static_cast<uint16_t>(bytes[offset]) |
-	       (static_cast<uint16_t>(bytes[offset + 1]) << 8);
-}
-
 bool hex_id(const std::string &encoded, critical_operation_id *value)
 {
 	return encoded.size() == 32 && critical_operation_id_from_hex(encoded.c_str(), value);
@@ -152,65 +130,8 @@ bool identity(const critical_command &command, economic_frozen_intent *intent,
 	      auction_command_payload *payload, auction_settlement_listing *listing,
 	      auction_settlement_accounts *accounts)
 {
-	if (!intent || !payload || !listing || !accounts ||
-	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
-	    !critical_command_envelope_valid(command) ||
-	    !auction_command_decode_payload(command, payload) ||
-	    economic_intent_decode(command.accounting_intent, intent) !=
-		    economic_accounting_error::ok ||
-	    economic_intent_verify_binding(command, *intent) != economic_accounting_error::ok)
-		return false;
-	const auto facts = std::span<const uint8_t>(intent->admission.facts);
-	if (facts.size() < FACT_HEADER_BYTES)
-		return false;
-	const uint16_t count = little_u16(facts, 120);
-	if (!count || count > AUCTION_COMMAND_MAX_ITEMS ||
-	    facts.size() != FACT_HEADER_BYTES + count * FACT_ITEM_BYTES)
-		return false;
-	const auto &lineage = intent->admission.metadata.lineage;
-	accounts->escrow = { lineage, economic_account_kind::auction_escrow, little_u64(facts, 0),
-			     0 };
-	if (const auto mapping = little_u64(facts, 8))
-		accounts->seller_claim = { lineage, economic_account_kind::pending_claim, mapping,
-					   0 };
-	if (const auto mapping = little_u64(facts, 16))
-		accounts->actor_wallet = { lineage, economic_account_kind::wallet, mapping, 0 };
-	if (const auto mapping = little_u64(facts, 24))
-		accounts->actor_bank = { lineage, economic_account_kind::bank, mapping,
-					 payload->racewar };
-	listing->auction_id = little_u32(facts, 32);
-	listing->seller_pid = little_u32(facts, 36);
-	listing->winner_pid = little_u32(facts, 40);
-	listing->status = little_u32(facts, 44);
-	listing->custody_state = little_u32(facts, 48);
-	listing->quantity = little_u32(facts, 52);
-	listing->current_price = static_cast<int64_t>(little_u64(facts, 56));
-	listing->buy_price = static_cast<int64_t>(little_u64(facts, 64));
-	listing->revision = little_u64(facts, 72);
-	listing->end_time = little_u64(facts, 80);
-	std::copy_n(facts.begin() + 88, 16, listing->listing_operation.bytes.begin());
-	std::copy_n(facts.begin() + 104, 16, listing->winning_bid_operation.bytes.begin());
-	listing->item_count = count;
-	for (size_t index = 0; index < count; ++index)
-	{
-		const size_t offset = FACT_HEADER_BYTES + index * FACT_ITEM_BYTES;
-		auto &item = listing->items[index];
-		item.uid = little_u64(facts, offset);
-		item.revision = little_u64(facts, offset + 8);
-		item.slot = little_u16(facts, offset + 16);
-		item.vnum = static_cast<int32_t>(little_u32(facts, offset + 18));
-		item.claim_pid = little_u32(facts, offset + 22);
-		item.claimed = facts[offset + 26] != 0;
-	}
-	critical_command projected = command;
-	projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
-	projected.accounting_intent.clear();
-	projected.publication_required = false;
-	std::vector<uint8_t> expected;
-	return auction_settlement_accounting_intent(projected, intent->admission.metadata.epoch,
-						    *listing, *accounts,
-						    &expected) == economic_accounting_error::ok &&
-	       expected == command.accounting_intent;
+	return auction_settlement_accounting_decode(command, intent, payload, listing, accounts) ==
+	       economic_accounting_error::ok;
 }
 
 bool mapping_native_hint(MYSQL *connection, uint64_t mapping, uint32_t *native)
@@ -319,7 +240,7 @@ bool actor_before(MYSQL *connection, const auction_command_payload &payload, uin
 }
 
 bool locked_before(MYSQL *connection, const auction_command_payload &payload, uint32_t bank_id,
-		   auction_settlement_authority *before)
+		   auction_settlement_authority *before, bool native_full_forest)
 {
 	if (!actor_before(connection, payload, bank_id, &before->actor_balances_before))
 		return false;
@@ -456,16 +377,19 @@ bool locked_before(MYSQL *connection, const auction_command_payload &payload, ui
 						  item[1],
 						  item[5],
 						  static_cast<item_custody_state>(item[7]) } };
-		if (!row(connection,
-			 "SELECT item_uid FROM item_current_owner WHERE root_item_uid=" +
-				 std::to_string(uid) + " AND item_uid<>" + std::to_string(uid) +
-				 " LIMIT 1 FOR UPDATE",
-			 1, &values, true))
-			return false;
-		if (!values.empty())
+		if (!native_full_forest)
 		{
-			errno = EOPNOTSUPP;
-			return false;
+			if (!row(connection,
+				 "SELECT item_uid FROM item_current_owner WHERE root_item_uid=" +
+					 std::to_string(uid) + " AND item_uid<>" +
+					 std::to_string(uid) + " LIMIT 1 FOR UPDATE",
+				 1, &values, true))
+				return false;
+			if (!values.empty())
+			{
+				errno = EOPNOTSUPP;
+				return false;
+			}
 		}
 	}
 	if (payload.action == auction_action::finalize && listing.winner_pid &&
@@ -626,6 +550,13 @@ unsigned int economic_sql_auction_settlement_lock(MYSQL *connection,
 		auction_settlement_accounts accounts;
 		if (!identity(command, &intent, &payload, &listing, &accounts))
 			return EPROTONOSUPPORT;
+		if (command.payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION)
+		{
+			const auto native_error = auction_repository_validate_accounted_native_cut(
+				connection, command);
+			if (native_error)
+				return native_error;
+		}
 		economic_sql_auction_settlement_context candidate;
 		std::vector<economic_sql_mapping_request> requests = {
 			{ accounts.escrow, AUCTION_LOCATOR, listing.auction_id }
@@ -649,6 +580,30 @@ unsigned int economic_sql_auction_settlement_lock(MYSQL *connection,
 							       requests, &candidate.authority);
 		if (error)
 			return error;
+		// Existing mapped claim lifetimes require their actual native row, including zero.
+		// Only an explicit AEC1 absence request may admit a missing endpoint.
+		for (const auto &request : requests)
+			if (request.account.kind == economic_account_kind::pending_claim)
+			{
+				std::vector<std::string> cells;
+				if (!row(connection,
+					 "SELECT pid FROM auction_money_pickups WHERE pid=" +
+						 std::to_string(request.native_id) + " FOR UPDATE",
+					 1, &cells))
+					return failure_code();
+				uint64_t native = 0;
+				if (!u64(cells[0], &native) || native != request.native_id)
+					return EILSEQ;
+			}
+		for (uint32_t pid : { accounts.absent_seller_pid })
+			if (pid)
+			{
+				const auto absent_error =
+					economic_sql_pending_claim_endpoint_lock_absent(
+						connection, command, pid);
+				if (absent_error)
+					return absent_error;
+			}
 		candidate.session_id = mysql_thread_id(connection);
 		if (!(connection->server_status & SERVER_STATUS_IN_TRANS))
 			return ENOTCONN;
@@ -708,7 +663,9 @@ unsigned int economic_sql_auction_settlement_execute_and_record(
 		auction_settlement_authority before;
 		before.epoch = active.authority.epoch;
 		before.accounts = accounts;
-		if (!locked_before(connection, payload, active.actor_bank_id, &before))
+		if (!locked_before(connection, payload, active.actor_bank_id, &before,
+				   command.payload_version ==
+					   AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION))
 			return failure_code();
 		critical_command projected = command;
 		projected.schema_version = CRITICAL_COMMAND_SCHEMA_VERSION;
@@ -720,18 +677,34 @@ unsigned int economic_sql_auction_settlement_execute_and_record(
 			    economic_accounting_error::ok ||
 		    expected != command.accounting_intent)
 			return ESTALE;
-		if (!auction_repository_execute_accounted(connection, command, result, result_code,
-							  mutation_applied))
+		const bool native = command.payload_version ==
+				    AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION;
+		if (!(native ? auction_repository_execute_accounted_native(connection, command, {},
+									   result, result_code,
+									   mutation_applied) :
+			       auction_repository_execute_accounted(connection, command, result,
+								    result_code, mutation_applied)))
 			return failure_code();
 		if ((*result_code == 0) != *mutation_applied)
 			return EILSEQ;
 		if (!*mutation_applied)
-			return insert_operation(connection, command, intent, nullptr,
-						*result_code) ?
-				       0 :
-				       failure_code();
+		{
+			if (!insert_operation(connection, command, intent, nullptr, *result_code))
+				return failure_code();
+			return economic_sql_auction_source_claim_verify(connection, intent,
+									*result_code);
+		}
 		if (!locked_after(connection, payload, &before, *result))
 			return failure_code();
+		if (accounts.absent_seller_pid)
+		{
+			const auto error = economic_sql_pending_claim_endpoint_create(
+				connection, command, accounts.absent_seller_pid,
+				&accounts.seller_claim);
+			if (error)
+				return error;
+			before.accounts = accounts;
+		}
 		economic_accounting_plan plan;
 		if (auction_settlement_accounting_plan(command, intent, before, *result, &plan) !=
 			    economic_accounting_error::ok ||
@@ -739,6 +712,10 @@ unsigned int economic_sql_auction_settlement_execute_and_record(
 			return EILSEQ;
 		if (!insert_operation(connection, command, intent, &plan, 0))
 			return failure_code();
+		const auto source_claim_error =
+			economic_sql_auction_source_claim_record(connection, command, intent);
+		if (source_claim_error)
+			return source_claim_error;
 		for (size_t index = 0; index < plan.accounts.size(); ++index)
 			if (!insert_effect(connection, command.operation_id, index,
 					   plan.accounts[index]))

@@ -30,6 +30,9 @@ struct economic_baseline_batch
 	std::vector<economic_baseline_holding> holdings;
 	// Complete forests, including unchanged ancestors and quarantine/history.
 	std::vector<economic_baseline_item> items;
+	// New source preparations retain equipment in EAB2. Historical decoding
+	// explicitly selects v1; never reseal a retained v1 witness as v2.
+	uint16_t witness_version = 2;
 };
 class economic_prepared_baseline
 {
@@ -65,7 +68,23 @@ economic_accounting_error economic_baseline_prepare(const economic_baseline_batc
 // cutover owner, never force it into an ordinary command or truncate a forest.
 constexpr size_t ECONOMIC_BASELINE_HEADER_BYTES = 192;
 constexpr size_t ECONOMIC_BASELINE_HOLDING_BYTES = 112;
-constexpr size_t ECONOMIC_BASELINE_ITEM_BYTES = 88;
+constexpr size_t ECONOMIC_BASELINE_ITEM_V1_BYTES = 88;
+constexpr size_t ECONOMIC_BASELINE_ITEM_V2_BYTES = 96;
+constexpr size_t ECONOMIC_BASELINE_ITEM_BYTES = ECONOMIC_BASELINE_ITEM_V2_BYTES;
+constexpr bool economic_baseline_witness_version_valid(uint16_t version)
+{
+	return version == 1 || version == 2;
+}
+constexpr size_t economic_baseline_item_bytes(uint16_t version)
+{
+	return version == 1 ? ECONOMIC_BASELINE_ITEM_V1_BYTES :
+	       version == 2 ? ECONOMIC_BASELINE_ITEM_V2_BYTES :
+			      0;
+}
+constexpr size_t ECONOMIC_BASELINE_V1_MAX_BYTES =
+	ECONOMIC_BASELINE_HEADER_BYTES +
+	ECONOMIC_BASELINE_MAX_HOLDINGS * ECONOMIC_BASELINE_HOLDING_BYTES +
+	ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES * ECONOMIC_BASELINE_ITEM_V1_BYTES;
 constexpr size_t ECONOMIC_BASELINE_MAX_BYTES =
 	ECONOMIC_BASELINE_HEADER_BYTES +
 	ECONOMIC_BASELINE_MAX_HOLDINGS * ECONOMIC_BASELINE_HOLDING_BYTES +

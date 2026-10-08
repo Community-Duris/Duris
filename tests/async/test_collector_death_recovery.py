@@ -32,6 +32,7 @@ harness = r'''
 constexpr int DEATH_EXTRACT_RETRY_INITIAL = 4;
 void persistence_report(persistence_severity, int, const char *, const char *, const char *, const char *, const char *, const char *, ...) {}
 void persistence_alert(int, const char *, const char *, const char *, const char *, const char *, const char *, ...) {}
+void death_recovery_report(P_char, persistence_severity, const char *, const char *, ...) {}
 bool items_busy = false, currency_busy = false, terminal_ok = true;
 int terminal_saves = 0, releases = 0, schedules = 0, item_submissions = 0;
 P_obj live_corpse = nullptr;
@@ -142,7 +143,7 @@ with tempfile.TemporaryDirectory(prefix="collector-death-recovery-") as temporar
         "-O1", "-g", "-fsanitize=address,undefined", "-fno-sanitize-recover=all", "-fno-omit-frame-pointer", "-no-pie",
         "-I", str(ROOT / "src"), "-I", str(ROOT / "tests/async"),
         str(ROOT / "src/persistence/critical_command.c"),
-        str(ROOT / "src/item/item_transfer_command.c"), str(ROOT / "src/item/craft_pouch_mutation.c"), str(ROOT / "src/combat/chaos_pouch_ledger.c"), str(ROOT / "src/player/player_snapshot_codec.c"),
+        str(ROOT / "src/item/item_transfer_command.c"), str(ROOT / "src/world/quest_mobile_native_reference.c"), str(ROOT / "src/economy/economic_source_event.c"), str(ROOT / "src/item/craft_pouch_mutation.c"), str(ROOT / "src/combat/chaos_pouch_ledger.c"), str(ROOT / "src/player/player_snapshot_codec.c"),
         str(ROOT / "src/economy/collector_policy.c"),
         str(ROOT / "src/economy/collector_death_enrollment.c"),
         str(source), "-lcrypto", "-o", str(binary),

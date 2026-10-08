@@ -1,11 +1,103 @@
 &+W======================================================================&n
 &+Y                           DURIS PLAYER NEWS&n
 &+W======================================================================&n
-&+WUpdated: September 21, 2026&n
+&+WUpdated: October 3, 2026&n
 
-Welcome back! This catch-up covers December 14, 2025 to September 21, 2026.
+Welcome back! This catch-up covers December 14, 2025 to October 3, 2026.
 The newest changes come first. Each month has short sections so you can
 find what matters to your character. Later updates replace older rules.
+
+&+R09/22/26 - 10/03/26&n &+L-&n &+YQuests, wards, crafting & travel!&n
+&+W----------------------------------------------------------------------&n
+
+&+CQuests, achievements and help&n
+&+Y-&n With experience messages enabled, world quest rewards now show a
+  separate &+C'Quest EXP'&n line. It reports the experience actually added
+  to your character, including any limits that apply.
+&+Y-&n Fixed item turn-ins and NPC item rewards for static quests. Handing
+  over the required item can now complete the quest correctly.
+&+Y-&n &+C'achievements zones'&n lists areas where you have completed quests,
+  with your highest completion counts first. Areas with no completed
+  quests no longer crowd the summary.
+&+Y-&n Browse the current help catalog with &+C'help index [category] [page]'&n.
+  Categories include &+C'all'&n, &+C'races'&n, &+C'classes'&n, &+C'specs'&n and
+  &+C'skillsets'&n. Each page gives the command for the next page.
+&+Y-&n Race, class and specialization help now shows current game data.
+  Searches include live topics and suggest likely matches for typos.
+  Missing explanations are clearly identified instead of opening an
+  unrelated topic.
+
+&+CSpell wards, dispels and combat&n
+&+Y-&n &+CMinor Globe&n, &+CSpirit Ward&n, &+CGreater Spirit Ward&n and &+CGlobe&n
+  now have a finite capacity for blocking eligible spell damage. Time
+  and absorbed damage wear them down; a breaking hit's excess damage
+  continues through your remaining defenses.
+&+Y-&n Recasting restores a cast ward. Equipment wards renew on their own
+  schedule; swapping or re-equipping items cannot refill a broken ward
+  early. &+CGroup Globe&n gives each recipient an independent ward.
+&+Y-&n &+C'score'&n shows cast and equipment wards separately, including their
+  remaining capacity and renewal timing. Ward wear survives saves and
+  reconnects.
+&+Y-&n A resisted &+CDispel Magic&n now shortens each eligible ordinary timed
+  spell by &+Y10%&n of its remaining duration, with at least one tick of
+  wear. Resisted wards lose capacity and duration without hit-point
+  damage; magical barriers lose strength and duration on both sides.
+&+Y-&n Portals no longer require a raidable target for entering, looking
+  through or dispelling. Dispel level checks still apply. An eligible
+  failed dispel shortens a timed portal's remaining life on both ends.
+&+Y-&n Fixed &+CFrost Beam&n unnecessarily forcing the caster into melee
+  engagement.
+&+Y-&n NPC alchemists now use paced mixture attacks instead of repeatedly
+  generating combat potion inventories. These attacks no longer create
+  bottles to collect from the ground.
+
+&+CCrafting, materials and coins&n
+&+Y-&n &+CCraft&n and &+CForge&n now keep completed recipe results and their
+  associated progress together through interrupted saves and recovery.
+&+Y-&n Poison mixing, &+CEncrust&n and Harvester soul-shard exchanges now keep
+  ingredient consumption and their recorded results together through
+  recovery, avoiding repeated consumption or rerolled results.
+&+Y-&n Downgrading a material delivers all lower-tier materials together.
+  If the exchange cannot finish, the original stays intact.
+&+Y-&n Enhancement commands now check payment and invalid material or stat
+  calculations before changing your equipment. Salvage checks that its
+  reward items exist before consuming your item or tool.
+&+Y-&n Fixed coin transfers leaving an out-of-date balance on a character
+  who disconnects while the transfer is finishing.
+
+&+CShopping in quantities&n
+&+Y-&n Produced stock marked &+Y'[quantity 1-50]'&n in &+C'list'&n supports
+  &+C'buy <item> quantity <1-50>'&n for delivery to inventory, or
+  &+C'buy <item> quantity <1-50> into <container>'&n.
+&+Y-&n Keywords and numbered list selectors both work. Try
+  &+C'buy ration quantity 10'&n or &+C'buy #3 quantity 10 into backpack'&n.
+  Containers must be carried, open and able to hold the item.
+&+Y-&n Orders show quantity, destination, unit price and total. A stopped
+  order reports copies delivered and the actual charge. Rejected paid
+  delivery identifies a pending refund. If committed delivery is late,
+  wait or reconnect before buying again. The epic shop is excluded.
+
+&+CFerries and portals&n
+&+Y-&n &+RThe Str&+Lom&+Rvok&n now sails between &+CStorm Port&n,
+  &+CTorrhan&n and &+CStrathor&n. Tickets cost &+Y10 platinum&n.
+&+Y-&n &+C'look out'&n works aboard ferries again, showing the surrounding dock
+  or sea.
+&+Y-&n The WaveDancer's cabins and hold now receive the same ticket checks,
+  travel announcements and ferry commands as the rest of the ship.
+  Fixed duplicate announcements in ferry boarding rooms.
+&+Y-&n Numbered nexus portal commands such as &+C'enter 1.portal'&n now use the
+  selected nexus portal's destination instead of the wrong room.
+
+&+CLogin, clients and everyday performance&n
+&+Y-&n The login screen identifies enabled special server modes, including
+  &+YSTAGING&n, &+RCHAOS&n, &+GALL-RACES&n and &+CALL-CLASSES&n.
+&+Y-&n More account loading runs in the background. Network input is read
+  between simulation pulses for more responsive connections.
+&+Y-&n Fixed fragmented Telnet option messages and lost WebSocket commands
+  arriving immediately before a disconnect.
+&+Y-&n World activity throttling is enabled by default. Distant, empty
+  areas do less routine background work and wake as players approach.
+  Combat, patrols and special procedures keep their usual schedules.
 
 &+R09/15/26 - 09/21/26&n &+L-&n &+YKingdom works, quest records, practice targets & more!&n
 &+W----------------------------------------------------------------------&n

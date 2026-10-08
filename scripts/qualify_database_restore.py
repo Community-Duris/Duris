@@ -3,6 +3,7 @@
 import os
 import sys
 import migration_runner as migrations
+import economic_restore_evidence
 
 
 def require_completed_history(rows):
@@ -166,6 +167,151 @@ def require_currency_values(executor):
             raise RuntimeError("restore_currency_value_mismatch")
 
 
+def require_economic_coin_effect_integrity(executor):
+    """Validate retained coin witnesses without giving system books balances."""
+    coins = ("copper", "silver", "gold", "platinum")
+    ordinary = "SUBSTRING(e.account_key,19,2) IN (" + ",".join(
+        f"UNHEX('{kind:02x}00')" for kind in (1, 2, 3, 4, 5, 6, 11)) + ")"
+    zero = lambda size: f"UNHEX(REPEAT('00',{size}))"
+    checks = [("SELECT COUNT(*) FROM economic_accounting_account_effect e "
+               "JOIN economic_accounting_operation o ON o.operation_id=e.operation_id "
+               "WHERE OCTET_LENGTH(e.account_key)<>40 OR SUBSTRING(e.account_key,1,16)<>o.lineage "
+               f"OR SUBSTRING(e.account_key,1,16)={zero(16)} "
+               "OR SUBSTRING(e.account_key,17,2)<>UNHEX('0100') "
+               "OR SUBSTRING(e.account_key,19,2) NOT IN (" + ",".join(
+                   f"UNHEX('{kind:02x}00')" for kind in range(1, 12)) + ") "
+               f"OR SUBSTRING(e.account_key,21,8)={zero(8)} "
+               f"OR SUBSTRING(e.account_key,37,4)<>{zero(4)};",
+               "restore_economic_account_key_mismatch")]
+    # Canonical keys order by numeric kind, authority ID and context, not the
+    # little-endian byte order of their persisted representation.
+    def key_order(alias):
+        return "(" + ",".join(
+            f"CAST(CONV(HEX(REVERSE(SUBSTRING({alias}.account_key,{offset},{size}))),16,10) "
+            "AS DECIMAL(20,0))" for offset, size in ((19, 2), (21, 8), (29, 8))) + ")"
+    checks.append((
+        "SELECT COUNT(*) FROM economic_accounting_account_effect e "
+        "JOIN economic_accounting_account_effect prior ON prior.operation_id=e.operation_id "
+        "AND prior.account_index+1=e.account_index WHERE " + key_order("prior") + ">=" + key_order("e") + ";",
+        "restore_economic_account_key_mismatch"))
+    weighted = "+".join(f"CAST(p.delta_{coin} AS DECIMAL(65,0))*{weight}"
+                        for coin, weight in zip(coins, (1, 10, 100, 1000)))
+    checks.extend((
+        ("SELECT COUNT(*) FROM economic_accounting_coin_posting p WHERE p.event_index<>p.line_index OR "
+         "(" + " AND ".join(f"p.delta_{coin}=0" for coin in coins) + ") "
+         f"OR ({weighted})<>CAST(p.copper_value AS DECIMAL(65,0));",
+         "restore_economic_posting_value_mismatch"),
+        ("SELECT COUNT(*) FROM (SELECT operation_id,SUM(CAST(copper_value AS DECIMAL(65,0))) total "
+         "FROM economic_accounting_coin_posting GROUP BY operation_id) p WHERE p.total<>0;",
+         "restore_economic_root_unbalanced"),
+    ))
+    same = " AND ".join(f"e.before_{coin}=e.after_{coin}" for coin in coins)
+    invalid_holding = " OR ".join(f"e.{side}_{coin}<0" for side in ("before", "after") for coin in coins)
+    for side in ("before", "after"):
+        total = "+".join(f"CAST(e.{side}_{coin} AS DECIMAL(65,0))*{weight}"
+                         for coin, weight in zip(coins, (1, 10, 100, 1000)))
+        invalid_holding += f" OR ({total})>9223372036854775807"
+    system_zero = " AND ".join(f"e.{side}_{coin}=0" for side in ("before", "after") for coin in coins)
+    checks.append((
+        "SELECT COUNT(*) FROM economic_accounting_account_effect e WHERE "
+        f"({ordinary} AND ({invalid_holding} OR e.after_revision<e.before_revision "
+        f"OR (NOT ({same}) AND e.after_revision=e.before_revision))) "
+        f"OR (NOT ({ordinary}) AND (NOT ({system_zero}) OR e.before_revision<>0 OR e.after_revision<>0));",
+        "restore_economic_account_witness_mismatch"))
+    summed = ",".join(f"SUM(CAST(delta_{coin} AS DECIMAL(65,0))) delta_{coin}" for coin in coins)
+    mismatch = " OR ".join(
+        f"CAST(e.after_{coin} AS DECIMAL(65,0))-CAST(e.before_{coin} AS DECIMAL(65,0))"
+        f"<>COALESCE(p.delta_{coin},0)" for coin in coins)
+    checks.append((
+        "SELECT COUNT(*) FROM economic_accounting_account_effect e LEFT JOIN "
+        f"(SELECT operation_id,account_index,COUNT(*) n,{summed} FROM economic_accounting_coin_posting "
+        "GROUP BY operation_id,account_index) p ON p.operation_id=e.operation_id "
+        f"AND p.account_index=e.account_index WHERE ({ordinary} AND ({mismatch})) "
+        f"OR (COALESCE(p.n,0)=0 AND (NOT ({ordinary}) OR NOT ({same}) "
+        "OR e.after_revision<=e.before_revision));",
+        "restore_economic_account_delta_mismatch"))
+    for query, code in checks:
+        if executor.sql(query) != "0":
+            raise RuntimeError(code)
+
+
+def require_economic_evidence_integrity(executor):
+    """Refuse lost or internally inconsistent retained economic evidence.
+
+    This is independent SELECT-only reconciliation across every retained epoch.
+    Empty/inactive histories pass. Canonical capsules bind retained SQL evidence;
+    locked native custody, publication and allocator authority remain separate.
+    """
+    checks = []
+    for table, count, index, first, family in (
+            ("economic_accounting_account_effect", "account_count", "account_index", 0, "account"),
+            ("economic_accounting_coin_posting", "posting_count", "line_index", 0, "posting"),
+            ("economic_accounting_child", "child_count", "child_index", 1, "child"),
+            ("economic_accounting_item_reference", "item_event_count", "line_index", 0, "item")):
+        checks.extend((
+            (f"SELECT COUNT(*) FROM {table} e LEFT JOIN economic_accounting_operation o "
+             "ON o.operation_id=e.operation_id WHERE o.operation_id IS NULL;",
+             f"restore_economic_orphan_{family}"),
+            ("SELECT COUNT(*) FROM economic_accounting_operation o LEFT JOIN "
+             f"(SELECT operation_id,COUNT(*) n FROM {table} GROUP BY operation_id) e "
+             f"ON e.operation_id=o.operation_id WHERE o.{count}<>COALESCE(e.n,0);",
+             f"restore_economic_{family}_count_mismatch"),
+            (f"SELECT COUNT(*) FROM {table} e JOIN economic_accounting_operation o "
+             f"ON o.operation_id=e.operation_id WHERE e.{index}<{first} "
+             f"OR e.{index}>=o.{count}+{first};",
+             f"restore_economic_{family}_index_mismatch"),
+        ))
+    checks.extend((
+        ("SELECT COUNT(*) FROM economic_accounting_operation o LEFT JOIN critical_operation_inbox i "
+         "ON i.operation_id=o.operation_id WHERE i.operation_id IS NULL OR i.status<>1 "
+         "OR i.result_code<>o.result_code OR i.failure_stage<>0 OR i.committed_at IS NULL "
+         "OR NOT ((o.outcome=1 AND o.result_code=0) OR (o.outcome=2 AND o.result_code<>0));",
+         "restore_economic_receipt_mismatch"),
+        ("SELECT COUNT(*) FROM economic_accounting_operation o LEFT JOIN economic_accounting_source_claim c "
+         "ON c.operation_id=o.operation_id AND c.lineage=o.lineage AND c.source_event=o.source_event "
+         "AND c.outcome=o.outcome WHERE o.outcome=1 AND o.source_event IS NOT NULL AND c.operation_id IS NULL;",
+         "restore_economic_source_claim_missing"),
+        ("SELECT COUNT(*) FROM economic_accounting_source_claim c LEFT JOIN economic_accounting_operation o "
+         "ON o.operation_id=c.operation_id AND o.lineage=c.lineage AND o.source_event=c.source_event "
+         "AND o.outcome=c.outcome WHERE o.operation_id IS NULL OR c.outcome<>1;",
+         "restore_economic_source_claim_mismatch"),
+        ("SELECT COUNT(*) FROM economic_accounting_coin_posting p LEFT JOIN economic_accounting_account_effect e "
+         "ON e.operation_id=p.operation_id AND e.account_index=p.account_index WHERE e.operation_id IS NULL;",
+         "restore_economic_posting_account_missing"),
+        ("SELECT COUNT(*) FROM economic_accounting_child c LEFT JOIN economic_accounting_child p "
+         "ON p.operation_id=c.operation_id AND p.child_index=c.parent_index "
+         "LEFT JOIN critical_operation_inbox i ON i.operation_id=c.receipt_operation_id "
+         "WHERE c.parent_index>=c.child_index OR (c.parent_index<>0 AND p.operation_id IS NULL) "
+         "OR c.child_operation_id=c.operation_id OR c.relationship<>1 OR c.domain_id=0 "
+         "OR (c.receipt_operation_id IS NOT NULL AND (c.receipt_operation_id<>c.child_operation_id "
+         "OR i.operation_id IS NULL OR i.status<>1 OR i.result_code<>0 OR i.failure_stage<>0 "
+         "OR i.committed_at IS NULL));",
+         "restore_economic_child_link_mismatch"),
+    ))
+    for table in ("economic_accounting_coin_posting", "economic_accounting_item_reference"):
+        checks.append((
+            f"SELECT COUNT(*) FROM {table} e LEFT JOIN economic_accounting_child c "
+            "ON c.operation_id=e.operation_id AND c.child_index=e.child_index "
+            "WHERE e.child_index<>0 AND c.operation_id IS NULL;",
+            "restore_economic_child_evidence_missing"))
+    checks.append((
+        "SELECT COUNT(*) FROM economic_accounting_item_reference r LEFT JOIN item_ownership_ledger l "
+        "ON l.operation_id=r.legacy_operation_id AND l.event_index=r.legacy_event_index "
+        "AND l.item_uid=r.item_uid AND l.item_revision=r.after_revision "
+        "LEFT JOIN economic_accounting_child c ON c.operation_id=r.operation_id AND c.child_index=r.child_index "
+        "LEFT JOIN critical_operation_inbox i ON i.operation_id=r.legacy_operation_id "
+        "WHERE l.operation_id IS NULL OR r.item_uid=0 OR r.event_index<>r.line_index "
+        "OR CAST(r.after_revision AS DECIMAL(20,0))-CAST(r.before_revision AS DECIMAL(20,0))<>1 "
+        "OR r.legacy_operation_id<>IF(r.child_index=0,r.operation_id,c.child_operation_id) "
+        "OR i.operation_id IS NULL OR i.status<>1 OR i.result_code<>0 OR i.failure_stage<>0 "
+        "OR i.committed_at IS NULL;", "restore_economic_item_link_mismatch"))
+    for query, code in checks:
+        if executor.sql(query) != "0":
+            raise RuntimeError(code)
+    require_economic_coin_effect_integrity(executor)
+    economic_restore_evidence.require_integrity(executor)
+
+
 def main():
     if os.environ.get("DB_NAME") != "duris_restore" or not os.environ.get("DB_SOCKET"):
         raise RuntimeError("isolated_restore_connection_required")
@@ -200,6 +346,7 @@ def main():
         require_epic_revision_history(executor)
         require_currency_revision_history(executor)
         require_currency_values(executor)
+        require_economic_evidence_integrity(executor)
         print('{"history":"ok","reconciliation":"ok"}')
     finally:
         executor.release_lock()
@@ -211,4 +358,3 @@ if __name__ == "__main__":
     except Exception:
         print("database_restore_qualification_failed", file=sys.stderr)
         raise SystemExit(1)
-

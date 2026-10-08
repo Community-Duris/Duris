@@ -1725,11 +1725,9 @@ std::string service::render_daily(uint32_t season, uint32_t pid, int level, int 
 	    << "  Resets at 00:00 UTC in " << display_remaining((period_for(now) + 1) * 86400 - now)
 	    << ".\r\n";
 	const auto &today = daily_completed_ids(season, pid, now);
-	const size_t completed = std::count_if(quest_units_.begin(), quest_units_.end(),
-					       [&](const auto &unit) {
-						       return unit.daily_candidate &&
-							      contains_any(unit.contracts, today);
-					       });
+	const size_t completed = std::count_if(
+		quest_units_.begin(), quest_units_.end(), [&](const auto &unit)
+		{ return unit.daily_candidate && contains_any(unit.contracts, today); });
 	out << "  Completed today: " << completed << "; renown: " << summary_for(season, pid).renown
 	    << "\r\n";
 	if (now < checklist_starts_at_)
@@ -1773,11 +1771,9 @@ std::string service::render_daily_score(uint32_t season, uint32_t pid, int level
 	if (!daily_policy_.enabled)
 		return {};
 	const auto &today = daily_completed_ids(season, pid, now);
-	const size_t done = std::count_if(quest_units_.begin(), quest_units_.end(),
-					  [&](const auto &unit) {
-						  return unit.daily_candidate &&
-							 contains_any(unit.contracts, today);
-					  });
+	const size_t done = std::count_if(
+		quest_units_.begin(), quest_units_.end(), [&](const auto &unit)
+		{ return unit.daily_candidate && contains_any(unit.contracts, today); });
 	return "\r\n" + std::string(color(colors, "&+L")) + "Daily: " + color(colors, "&n") +
 	       std::to_string(done) + " completed today; renown " +
 	       std::to_string(summary_for(season, pid).renown) +

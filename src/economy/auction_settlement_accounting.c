@@ -44,7 +44,7 @@ bool account(const economic_account_key &key, economic_account_kind kind,
 }
 
 bool valid(const auction_command_payload &payload, const auction_settlement_listing &listing,
-	   const auction_settlement_accounts &accounts)
+	   const auction_settlement_accounts &accounts, bool resolved = false)
 {
 	if ((payload.action != auction_action::finalize &&
 	     payload.action != auction_action::remove) ||
@@ -67,9 +67,15 @@ bool valid(const auction_command_payload &payload, const auction_settlement_list
 	const bool sale = payload.action == auction_action::finalize && listing.winner_pid;
 	const auto &lineage = accounts.escrow.lineage;
 	if (!account(accounts.escrow, economic_account_kind::auction_escrow, lineage, 0) ||
-	    (sale ? !account(accounts.seller_claim, economic_account_kind::pending_claim, lineage,
-			     0) :
-		    !empty(accounts.seller_claim)) ||
+	    (sale ? (accounts.absent_seller_pid ?
+			     (accounts.absent_seller_pid != listing.seller_pid ||
+			      (resolved ?
+				       !account(accounts.seller_claim,
+						economic_account_kind::pending_claim, lineage, 0) :
+				       !empty(accounts.seller_claim))) :
+			     !account(accounts.seller_claim, economic_account_kind::pending_claim,
+				      lineage, 0)) :
+		    (!empty(accounts.seller_claim) || accounts.absent_seller_pid)) ||
 	    (payload.actor_pid ?
 		     !account(accounts.actor_wallet, economic_account_kind::wallet, lineage, 0) ||
 			     !account(accounts.actor_bank, economic_account_kind::bank, lineage,
@@ -101,9 +107,11 @@ std::vector<uint8_t> facts(const auction_settlement_listing &listing,
 {
 	std::vector<uint8_t> result;
 	result.reserve(122 + listing.item_count * 27);
-	for (const auto &key :
-	     { accounts.escrow, accounts.seller_claim, accounts.actor_wallet, accounts.actor_bank })
-		append_u64(&result, key.authority_id);
+	for (uint64_t mapping :
+	     { accounts.escrow.authority_id,
+	       accounts.absent_seller_pid ? uint64_t{ 0 } : accounts.seller_claim.authority_id,
+	       accounts.actor_wallet.authority_id, accounts.actor_bank.authority_id })
+		append_u64(&result, mapping);
 	for (uint32_t value : { listing.auction_id, listing.seller_pid, listing.winner_pid,
 				listing.status, listing.custody_state, listing.quantity })
 		append_u32(&result, value);
@@ -125,6 +133,11 @@ std::vector<uint8_t> facts(const auction_settlement_listing &listing,
 		append_u32(&result, static_cast<uint32_t>(item.vnum));
 		append_u32(&result, item.claim_pid);
 		result.push_back(item.claimed ? 1 : 0);
+	}
+	if (accounts.absent_seller_pid)
+	{
+		result.insert(result.end(), { 'A', 'E', 'C', '1' });
+		append_u32(&result, accounts.absent_seller_pid);
 	}
 	return result;
 }
@@ -221,10 +234,23 @@ economic_accounting_error auction_settlement_accounting_decode(
 		};
 		const auto count = static_cast<uint16_t>(number(120, 2));
 		if (!count || count > AUCTION_COMMAND_MAX_ITEMS ||
-		    facts.size() != 122 + static_cast<size_t>(count) * 27)
+		    (facts.size() != 122 + static_cast<size_t>(count) * 27 &&
+		     facts.size() != 130 + static_cast<size_t>(count) * 27))
 			return error::invalid_identity;
 		const auto &lineage = parsed_intent.admission.metadata.lineage;
 		auction_settlement_accounts parsed_accounts;
+		const size_t original_size = 122 + static_cast<size_t>(count) * 27;
+		if (facts.size() == original_size + 8)
+		{
+			if (!std::equal(facts.begin() + original_size,
+					facts.begin() + original_size + 4,
+					std::array<uint8_t, 4>{ 'A', 'E', 'C', '1' }.begin()))
+				return error::invalid_version;
+			parsed_accounts.absent_seller_pid =
+				static_cast<uint32_t>(number(original_size + 4, 4));
+			if (!parsed_accounts.absent_seller_pid)
+				return error::invalid_identity;
+		}
 		parsed_accounts.escrow = { lineage, economic_account_kind::auction_escrow,
 					   number(0, 8), 0 };
 		if (const auto id = number(8, 8))
@@ -304,8 +330,11 @@ economic_accounting_error auction_settlement_accounting_plan(
 			return error::corrupt_evidence;
 		const auto &listing = authority.listing;
 		const auto &accounts = authority.accounts;
-		if (!valid(payload, listing, accounts))
+		if (!valid(payload, listing, accounts, true))
 			return error::invalid_identity;
+		if (accounts.absent_seller_pid &&
+		    (authority.seller_claim_before || authority.seller_claim_revision_before))
+			return error::corrupt_evidence;
 		const auto &meta = intent.admission.metadata;
 		const auto expected_source = source(listing, payload);
 		if (meta.writer_id != ECONOMIC_WRITER_AUCTION_SETTLEMENT ||

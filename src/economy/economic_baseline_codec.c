@@ -49,7 +49,8 @@ struct reader
 		std::copy(input.begin(), input.end(), value.begin());
 	}
 };
-constexpr std::array<uint8_t, 4> MAGIC = { 'E', 'A', 'B', '1' };
+constexpr std::array<uint8_t, 4> MAGIC_V1 = { 'E', 'A', 'B', '1' };
+constexpr std::array<uint8_t, 4> MAGIC_V2 = { 'E', 'A', 'B', '2' };
 }
 
 economic_accounting_error economic_baseline_encode(const economic_prepared_baseline &prepared,
@@ -60,13 +61,16 @@ economic_accounting_error economic_baseline_encode(const economic_prepared_basel
 	try
 	{
 		const auto &value = prepared.witness();
-		const size_t total = ECONOMIC_BASELINE_HEADER_BYTES +
-				     value.holdings.size() * ECONOMIC_BASELINE_HOLDING_BYTES +
-				     value.items.size() * ECONOMIC_BASELINE_ITEM_BYTES;
+		if (!economic_baseline_witness_version_valid(value.witness_version))
+			return error::invalid_version;
+		const size_t total =
+			ECONOMIC_BASELINE_HEADER_BYTES +
+			value.holdings.size() * ECONOMIC_BASELINE_HOLDING_BYTES +
+			value.items.size() * economic_baseline_item_bytes(value.witness_version);
 		writer out;
 		out.bytes.reserve(total);
-		out.block(MAGIC);
-		out.integer(1, 2);
+		out.block(value.witness_version == 1 ? MAGIC_V1 : MAGIC_V2);
+		out.integer(value.witness_version, 2);
 		out.integer(ECONOMIC_BASELINE_HEADER_BYTES, 2);
 		out.integer(total, 4);
 		out.integer(0, 4);
@@ -100,6 +104,11 @@ economic_accounting_error economic_baseline_encode(const economic_prepared_basel
 			out.integer(position.root_uid);
 			out.integer(position.parent_uid);
 			out.integer(position.revision);
+			if (value.witness_version == 2)
+			{
+				out.integer(position.equipment_slot, 2);
+				out.integer(0, 6);
+			}
 			out.block(item.source_digest);
 		}
 		*encoded = std::move(out.bytes);
@@ -119,11 +128,16 @@ economic_baseline_decode(std::span<const uint8_t> encoded,
 		return error::invalid_identity;
 	if (encoded.size() > ECONOMIC_BASELINE_MAX_BYTES)
 		return error::capacity;
-	if (encoded.size() < ECONOMIC_BASELINE_HEADER_BYTES ||
-	    !std::equal(MAGIC.begin(), MAGIC.end(), encoded.begin()))
+	if (encoded.size() < ECONOMIC_BASELINE_HEADER_BYTES)
 		return error::corrupt_evidence;
+	const bool legacy = std::equal(MAGIC_V1.begin(), MAGIC_V1.end(), encoded.begin());
+	if (!legacy && !std::equal(MAGIC_V2.begin(), MAGIC_V2.end(), encoded.begin()))
+		return error::corrupt_evidence;
+	if (legacy && encoded.size() > ECONOMIC_BASELINE_V1_MAX_BYTES)
+		return error::capacity;
 	reader input{ encoded, 4 };
-	if (input.integer(2) != 1)
+	const auto version = static_cast<uint16_t>(input.integer(2));
+	if (version != (legacy ? 1 : 2))
 		return error::invalid_version;
 	if (input.integer(2) != ECONOMIC_BASELINE_HEADER_BYTES ||
 	    input.integer(4) != encoded.size() || input.integer(4) != 0)
@@ -131,6 +145,7 @@ economic_baseline_decode(std::span<const uint8_t> encoded,
 	try
 	{
 		economic_baseline_batch value;
+		value.witness_version = version;
 		input.block(value.lineage.bytes);
 		input.block(value.epoch.bytes);
 		input.block(value.preparation_id.bytes);
@@ -148,7 +163,7 @@ economic_baseline_decode(std::span<const uint8_t> encoded,
 			return error::capacity;
 		const size_t total = ECONOMIC_BASELINE_HEADER_BYTES +
 				     holdings * ECONOMIC_BASELINE_HOLDING_BYTES +
-				     items * ECONOMIC_BASELINE_ITEM_BYTES;
+				     items * economic_baseline_item_bytes(version);
 		if (total != encoded.size())
 			return error::corrupt_evidence;
 		value.holdings.resize(holdings);
@@ -177,6 +192,12 @@ economic_baseline_decode(std::span<const uint8_t> encoded,
 			position.root_uid = input.integer();
 			position.parent_uid = input.integer();
 			position.revision = input.integer();
+			if (version == 2)
+			{
+				position.equipment_slot = static_cast<uint16_t>(input.integer(2));
+				if (input.integer(6))
+					return error::corrupt_evidence;
+			}
 			input.block(item.source_digest);
 		}
 		std::optional<economic_prepared_baseline> result;

@@ -33,11 +33,17 @@ SOURCE_FILE_FIXES = {
 }
 
 OFFLINE_WRITERS = {
+    "repair.player_item_payload": "Reconstructs missing physical payload for an existing selected player UID under an approved offline plan and runtime exclusion. Custody, root, parent, revision and supply remain unchanged; this is neither issuance nor an economic adjustment.",
     "import.legacy_dump": "Guarded local import replaces native rows from a legacy dump; it is an offline migration boundary, not a gameplay credit.",
     "import.currency_baselines": "Creates opening wallet/bank baseline witnesses for an authorized cutover; it must not alter live holdings or masquerade as issuance.",
     "restore.qualification": "Restores into an isolated qualification target; it is not permission to promote that target to live authority.",
 }
 DORMANT_WRITERS = {
+    "quest.native_flat_item_participant": "Explicit borrowed native quest flat participant returns one existing authority bundle; no admitted gameplay caller or standalone commit/ACK is supplied.",
+    "shop.accounted_preparation_start": "Original retained SHOP preparation owns one frozen selection through player/native checkpoint and exact admission. Its production entry remains unreachable while the central SHOP route is unregistered; source integration is not native qualification.",
+    "shop.accounted_producer_entry": "Four buy/sell front doors hand their original selection to the retained owner before any legacy split payment/grant path. Central availability is closed; source integration is not route qualification.",
+    "shop.accounted_produced_continuation": "Only post-publication/ACK completion selects the next produced copy with the same keeper, stock, destination and price. Original-copy retry never rerolls; central SHOP admission remains closed.",
+    "quest.native_mobile_stage_publication": "Private detached native mobile publication is defined but has no in-tree birth owner/caller. Keep it unavailable until the original admitted source, native economic values/stock, retained candidate and final publication outcome are proved; stage consumption grants no ACK.",
     "currency.bank_single_projection": "The single-denomination bank publisher has no in-tree caller. If revived, it would change a live PC projection without a revision fence; require a committed bank identity/revision or refuse.",
     "currency.compat_sql_bank": "Direct SQL writer definition has no in-tree caller outside its own wrapper path; it is not a current gameplay route.",
     "auction.legacy_definitions": "Legacy offer mutator is definition-only in the current tree; the current offer path is separately routed.",
@@ -54,6 +60,24 @@ DORMANT_WRITERS = {
     "player.confiscate_all_dormant": "Compiled bulk rent confiscation helper has no in-tree callsite; its direct inventory extraction requires bounded UID retirement if revived.",
 }
 NON_WRITERS = {
+    "quest.native_birth_reset_capture": "Original successful reset-M decision retains one invocation/source, reserved native UID and detached constructor. No live list/count/room, economic or custody publication occurs here.",
+    "quest.native_birth_command_capture": "Captures actual final ordered stock/cash/literals and constructor/stock recipes into the original command; detached staging is not a committed birth or ACK.",
+    "quest.native_birth_alchemist_decision": "Eligible detached original chance sets the existing latch before one RNG draw and retains missed/selected. No vial allocation/publication; a nonreturned attempt cannot be rerolled.",
+    "quest.native_birth_alchemist_latch_restore": "Hydrates only original retained alchemist latch after owner proof; no RNG/grant and never clears a true latch.",
+    "quest.native_birth_alchemist_stock_capture": "Freezes genuine alchemist decision and optional actual reserved VNUM102 stock UID into NBC3 before sealing; original detached factory/carry staging remains separate from durable birth publication.",
+    "quest.native_stock_factory": "Prepares private original stock using supplied reserved UID and actual field/proclib/masterbook/conversion decisions; no object-list/index-count/native custody enrollment before admitted proof.",
+    "quest.native_stock_container_shell_probe": "Retains one real original read_object/weight/extract shell probe attempt for reducing-container stock; temporary UID/RNG/callback work is not admitted custody or new birth source.",
+    "shop.accounted_refusal_cleanup": "After exact prejournal cancellation, disposes only the original unique NOWHERE produced candidate whose complete literal tree is unchanged; no admitted custody or holding is retired.",
+    "item.shop_container_shell_probe": "Reads and extracts a temporary unowned template to observe container shell weight; no admitted UID, custody root, durable holding or ACK authority.",
+    "coin.restored_pile_rendering": "Compares retained opening/result literals on detached stack-local objects; no UID admission or native holding change.",
+    "recovery.ordinary_drop_graph_reconstruction": "Reconstructs only an entirely absent graph from exact original receipt/current SQL authority using retained UIDs and literals. Projection enrollment changes global/index/room/runtime caches without economic issuance, destruction or ACK.",
+    "recovery.inert_literal_eligibility": "Pure bounded classification of literal/prototype eligibility; no allocation, pool access, hydration, native mutation or enrollment permission.",
+    'recovery.sql_ordinary_drop_receipt_observation': 'Reads exact committed inbox, historical economic root/payload and outbox inside caller-owned native locks; no native mutation, missing-command apply or transaction/ACK ownership.',
+    'recovery.runtime_owner_revision_observation': 'Reads only an existing serialized owner-cache revision without inserting or hydrating missing metadata; no native custody or economic effect.',
+    'recovery.ordinary_drop_graph_observation': 'Observes exact original SQL-drop receipt and current epoch/season/custody/literal graph together with complete physical/runtime placement; no construction, repair, enrollment, issuance/destruction or publication ACK.',
+    "recovery.inert_literal_staging": "Allocates only private discard-only literal memory with a retained UID; no UID issuance, native holdings/custody, global object-list/index-count changes or registry admission. Final proof/enrollment is a separate owner.",
+    "recovery.inert_literal_cleanup": "Releases only unpublished stage memory/strings/descriptions without extraction, effect/procedure/event callbacks or native/runtime custody retirement.",
+    "coin.retained_pile_rendering": "Compares denomination-dependent text and weight on a stack-local zero-add renderer; it neither admits a UID nor changes a native holding.",
     "recovery.sql_exact_room_stage_cleanup": "Clears original UIDs only in the detached exact room tree before extracting its rejected root; durable payload and custody remain retained. Cleanup is not retirement.",
     "macro.checked_item_publication_declaration": "The checked obj_to_char prototype declares an interface; only its implementation and callers can publish a live item.",
     "account.cleanup_temp_char": "restoreCharOnly loads a temporary PC solely for account/browser display; every in-tree caller frees that temporary character graph, so extracting its copied items is not a durable custody retirement.",
@@ -153,6 +177,31 @@ NON_WRITERS = {
     "special.flying_citadel_unreachable_move": "flying_citadel returns FALSE unconditionally before the room-to-room object movement; the two calls cannot execute in this build.",
 }
 PROJECTION_ROUTES = {
+    "coin.cold_room_projection": "Restores an existing original-UID room coin pile from the original borrowed SQL session after locked current custody, literal, source, indexed plan, retained root/child and ledger proof. It projects locked owner revisions and exact literal bytes without a new issuance, command, posting or ACK. Flatfile support and complete current native/restart qualification remain unverified.",
+    "auction.native_item_publication": "Original retained list/claim owner publishes the authenticated committed item forest through started/returned native effect steps; list removes live copies and claim places original UIDs, without a second custody root.",
+    "movement.pick_break_committed_publication": "Projects exact committed lockpick destruction after current runtime destroyed-owner, UID, revision and held-slot proof; absent authentic physical pick is a retry without messages or RNG.",
+    "quest.native_cost_cash_publication": "Projects originally committed native quest cost cash and reference revisions after exact old/new identity, original cash revision, canonical projection and retained action-journal proof; partial unreturned writes grant no replay or ACK.",
+    "quest.native_money_cash_publication": "Projects originally committed player-to-native-mobile coin transfer after exact live player/native identity, canonical transfer, before/result balances and revisions; original action journal owns partial-write uncertainty and guarded completion.",
+    "quest.published_world_cash_reconstruction": "Reconstructs exact originally published native mobile forest and cash from selected locked current authority before current metadata and runtime census proof; no new source, UID or issuance and no inferred publication ACK.",
+    "quest.native_birth_cold_reconstruction": "After historical receipt/current locked native/source/cash/custody and complete world proof plus rollback, reconstructs or adopts original NPC/full stock without new source/UID/global RNG or repeated historical callbacks.",
+    "quest.native_birth_cold_resume": "Resumes actual consumed partial callback-free cold enrollment; historical started/unreturned remains held and projection allocation refusal remains retryable.",
+    "quest.native_birth_publication": "Proves original committed birth/current native values and custody, persists once-only effects, consumes actual stages and uses original guarded ACK/phase2 retirement; no second issuance.",
+    "quest.native_mobile_step_publication": "Actual birth caller consumes original detached NPC through eight retained ownership/room/service/hook steps. Started/unreturned remains held; callbacks confer no ACK authority.",
+    "quest.native_mobile_cold_runtime_rebuild": "Rebuilds absent original consumed NPC runtime/room/recurring services from authenticated constructor and saved successful decisions without repeating the special probe or historical callbacks.",
+    "quest.native_stock_ownership_publication": "Consumes actual authenticated original stock into object-list/index counts with unchanged UID/literal. Events and callbacks belong to separate retained steps.",
+    "quest.native_stock_step_publication": "Runs original retained library/general/Zombie/scheduler tails once in construction order using retained chosen delays and stage-owned started latch; no fabricated returned outcome.",
+    "quest.native_stock_cold_enrollment": "Rearms only saved-success service/Zombie tails on exact restored published stock, proving actual handles and original prefix without executing historical callbacks again.",
+    "quest.native_stock_live_enrollment": "Post-commit real stock enrollment applies original light/affect/activity placement after published ownership. Detached graph placement alone grants no economic custody authority.",
+    "quest.native_stock_cold_native_projection": "Restores exact worn/carrying native projection and real service handle after original cold proof, with no artifact SQL/casts/procs or duplicate corpse activity.",
+    "quest.native_item_current_publication": "Projects the original committed native quest item transition by detach/place or original stock destruction under historical receipt/current SQL/world/full held-player proof. Frozen sequential continuation and guarded ACK stay with original owners.",
+    "shop.cold_physical_publication": "Original held cold SHOP owner applies one literal-fenced native detach/place/cleanup/destroy leg only after full original SQL/world proof. Started/unreturned tails remain held; callbacks grant no independent economic or ACK authority. Flat cold parity and complete original native qualification remain open.",
+    "shop.cold_keeper_cash_projection": "Original cold SHOP owner projects observed locked keeper cash only after original command/receipt-or-refusal and full native BEFORE/AFTER proof. No new posting or NPC authority; signed values and original-session cleanup remain required. Native qualification remains open.",
+    "shop.native_current_publication": "Original held SHOP native publication projects complete current SQL images only after exact retained receipt and whole-world proof; cold continuation and real native journeys remain unqualified.",
+    "shop.native_current_runtime": "Friend-only native owner projects current custody, owner and shop revision caches from its original locked SQL session; observed values alone grant no publication or ACK authority.",
+    "recovery.ordinary_drop_retained_live_publication": "After exact retained SQL drop receipt, current custody/literal/session and live graph proof, relinks the existing UID tree from player to original room and hydrates its committed runtime revision. It creates no new economic root, supply event or publication ACK; interrupted native tails remain held.",
+    "coin.restored_balance_projection": "Copies verified current native wallet/shared-bank vectors into exact original live bodies under retained receipt/current authority; no new posting.",
+    "coin.restored_room_projection": "Projects an original-UID committed room pile, including private inert-stage hydration and global/room enrollment not represented by scanner hits; complete native authority and guarded ACK remain mandatory.",
+    "coin.retained_room_projection": "Publishes a committed original-UID ordinary-room pile with retained exact literal/custody/result checks. Uncertain handler/materializer stages remain held; no second accounting root is created.",
     "recovery.sql_exact_room_hydration": "Projects a complete literal graph after successful schema-2 provenance, current season, UID/revision/topology and exact staged-byte checks; no accounting root is created.",
     "recovery.sql_exact_room_placement": "Installs retained placement without replaying decay, falling, redirection or gameplay drop effects; no new custody or issuance is authorized.",
     "quest.durable_offering_publication": "Removes the live offering objects only after the committed item-destruction result is checked; it must retain a recoverable quest reward obligation.",
@@ -457,7 +506,7 @@ def source_definition_lines(path: Path, function: str | None) -> list[int]:
         while tail < len(code) and code[tail].isspace():
             tail += 1
         while tail < len(code):
-            qualifier = re.match(r"(?:const\b|noexcept(?:\s*\([^)]*\))?|override\b|final\b|&|&&)\s*", code[tail:])
+            qualifier = re.match(r"(?:try\b|const\b|noexcept(?:\s*\([^)]*\))?|override\b|final\b|&|&&)\s*", code[tail:])
             if not qualifier:
                 break
             tail += qualifier.end()
@@ -477,7 +526,7 @@ def source_definition_lines(path: Path, function: str | None) -> list[int]:
             previous_end = line_start - 1
             previous_start = code.rfind("\n", 0, previous_end) + 1
             previous = code[previous_start:previous_end].strip()
-            if not re.fullmatch(r"[A-Za-z_]\w*(?:::\w+)*", previous):
+            if not re.fullmatch(r"(?:static\s+)?[A-Za-z_]\w*(?:::\w+)*", previous):
                 continue
         if any(word in prefix for word in ("return", "if ", "while ", "for ", "case ", "=")):
             continue
@@ -486,6 +535,13 @@ def source_definition_lines(path: Path, function: str | None) -> list[int]:
 
 
 def source_targets(route_id: str, disposition: str) -> dict:
+    if route_id in {"shop.accounted_preparation_start", "shop.accounted_producer_entry",
+                    "shop.accounted_produced_continuation"}:
+        return {"holding_effect": "Central SHOP availability is closed; the connected producer/driver cannot initiate active money mutation until the complete route is qualified.",
+                "custody_effect": DORMANT_WRITERS[route_id],
+                "native_state_targets": ["original player/keeper checkpoint and held selection", "future admitted SHOP money/item root and guarded publication"]}
+    if route_id == "repair.player_item_payload":
+        return {"holding_effect": "No wallet or bank mutation, issuance, retirement or accounting root.", "custody_effect": OFFLINE_WRITERS[route_id], "native_state_targets": ["player_items and player_item_runtime_state for the retained UID", "player_item_affects and player_item_extra_descr", "player_death_restitution_receipt and player_death_restitution_item payload_repair audit rows"]}
     if disposition == "non_writer_candidate":
         return {"holding_effect": "none in this function for economy/custody scope", "custody_effect": "none", "native_state_targets": []}
     if disposition == "dormant_writer_candidate":
@@ -587,10 +643,17 @@ def source_targets(route_id: str, disposition: str) -> dict:
     return {"holding_effect": "See the source-backed route detail.", "custody_effect": "See the source-backed route detail.", "native_state_targets": ["Native function state plus existing repository/flat-file authority where applicable"]}
 
 
+NATIVE_SCHEMA2_COMPONENT_IDS = set(['quest.native_birth_carrier_submit', 'quest.native_birth_sql_participant', 'quest.native_birth_submit', 'quest.native_sql_image_participant', 'quest.native_sql_item_participant'])
+NATIVE_UNQUALIFIED_PROJECTION_IDS = set(['quest.native_birth_cold_reconstruction', 'quest.native_birth_cold_resume', 'quest.native_birth_publication', 'quest.native_item_current_publication', 'quest.native_mobile_cold_runtime_rebuild', 'quest.native_mobile_step_publication', 'quest.native_stock_cold_enrollment', 'quest.native_stock_cold_native_projection', 'quest.native_stock_live_enrollment', 'quest.native_stock_ownership_publication', 'quest.native_stock_step_publication'])
+
+
 def schema_record(route_id: str, disposition: str) -> dict:
     if disposition in {"non_writer_candidate", "dormant_writer_candidate", "offline_operational_writer"}:
         current = "not_applicable" if disposition == "non_writer_candidate" else "none"
         mode = "no live critical-command gameplay route"
+    elif route_id in NATIVE_SCHEMA2_COMPONENT_IDS:
+        current = 2
+        mode = "typed_schema_2_native_component_without_qualified_gameplay_route"
     elif route_id in SCHEMA2_SQL_COIN_COMPONENT_IDS:
         current = 2
         mode = "typed_schema_2_sql_component_without_qualified_gameplay_route"
@@ -603,6 +666,9 @@ def schema_record(route_id: str, disposition: str) -> dict:
     elif route_id == "currency.split":
         current = 1
         mode = "schema_1_when_inactive_schema_2_sequential_coin_children_when_active"
+    elif route_id == "coin.player_give":
+        current = 1
+        mode = "schema_1_when_inactive_schema_2_exact_wallet_transfer_when_active"
     elif route_id in SOURCE_QUALIFIED_SPELL_GRANT_IDS:
         current = None
         mode = "typed_schema_2_for_active_pc_npc_refused_direct_legacy_when_inactive"
@@ -630,6 +696,12 @@ def schema_record(route_id: str, disposition: str) -> dict:
             "src/cmd/actoth.c:do_split and continue_money_split (active wallet-to-wallet schema-2 coin child per eligible recipient)",
             "tests/async/test_currency_completion_retention.py (retained completion and partial split behavior)",
         ])
+    if route_id == "coin.player_give":
+        evidence.extend([
+            "src/cmd/actobj.c:submit_coin_give (exact-denomination player/morph wallet endpoints)",
+            "src/economy/currency_transaction.c:currency_transaction_submit_coin (freeze accounting intent before retained admission)",
+            "src/economy/economic_gameplay_authority.c:prepare_coin_transfer (existing wallet mappings and balanced typed intent)",
+        ])
     if route_id in SCHEMA2_SQL_COIN_COMPONENT_IDS:
         evidence.extend([
             "src/economy/coin_transfer_accounting.c:947-1017 (SQL native coin effects, balanced postings, item references, source claim and receipt)",
@@ -640,7 +712,7 @@ def schema_record(route_id: str, disposition: str) -> dict:
             "src/persistence/economic_sql_shop_trade_transaction.c (typed SQL shop root applies native balances and item custody)",
             "tests/async/test_shop_trade_accounting_context.py (focused contract; not a full player journey)",
         ])
-    schema2_connected = route_id in SCHEMA2_ITEM_TRANSFER_IDS or route_id == "currency.split"
+    schema2_connected = route_id in SCHEMA2_ITEM_TRANSFER_IDS or route_id in {"currency.split", "coin.player_give"}
     if route_id in SCHEMA2_CRAFT_IDS:
         evidence.extend([
             "src/item/item_movement_transaction.c:item_movement_transaction_submit_craft (prepare crafting intent before retained coordinator admission)",
@@ -685,6 +757,10 @@ def schema_record(route_id: str, disposition: str) -> dict:
         interpretation = f"Schema 1 remains the inactive/legacy path. When the accounting authority is active, eligible player get/drop/put/give moves, trusted-steal handoffs, typed-source player/room creation grants, and item-action consumption/destruction{item_action_coverage} use a frozen schema-2 intent on SQL and flat-file; each backend stores the item operation, source claim when required, exact custody references and result atomically. Other item destruction/extraction paths and money-valued item creation/destruction remain unsupported." if schema2_connected else "Schema 1 is the current legacy gameplay envelope; schema 2 is bounded/frozen-intent support, with only partial bank/baseline repository paths and the eligible item custody slice connected." if current == 1 else "This function projects an existing native result or recovery snapshot; it must prove identity, completeness and non-stale publication, and creates no new accounting root." if disposition == "runtime_projection_route" else "No schema-2 gameplay writer is connected here; direct legacy paths must be blocked or migrated before activation." if disposition not in {"non_writer_candidate", "dormant_writer_candidate", "offline_operational_writer"} else mode
     if route_id == "currency.split":
         interpretation = "Inactive do_split uses a schema-1 sender debit followed by recipient credits. Active do_split submits one balanced schema-2 wallet-to-wallet coin child per eligible recipient, with exact denomination and retained completion. Completed shares remain transferred if a later child fails; there is no atomic multi-party split root. Full backend gameplay qualification remains pending."
+    elif route_id == "coin.player_give":
+        interpretation = "Inactive player giving retains its schema-1 compound coin path. Active player giving freezes one exact-denomination schema-2 wallet-to-wallet root using the existing player mappings; morph recipients resolve to their original player wallet. Unsupported active NPC and mint routes refuse before native mutation. Complete command-to-native backend, publication and restart qualification remains pending."
+    elif route_id in NATIVE_SCHEMA2_COMPONENT_IDS:
+        interpretation = "Installed original native root/participant/carrier calls are source evidence only. Exact native lifetime/cash/custody, held publication/restart and backend parity remain unverified; activation stays closed."
     elif route_id in SCHEMA2_SQL_COIN_COMPONENT_IDS:
         interpretation = "The SQL transaction component records typed schema-2 coin effects and balanced postings. Pooled dispatch/reconcile and player-visible publication are separate qualification gates; flat-file coin accounting remains unqualified."
     elif route_id in SCHEMA2_SQL_SHOP_COMPONENT_IDS:
@@ -708,6 +784,20 @@ def schema_record(route_id: str, disposition: str) -> dict:
 
 
 def double_entry(route_id: str, disposition: str, schema: dict) -> dict:
+    if route_id in NATIVE_SCHEMA2_COMPONENT_IDS:
+        return {"status": "source_only_native_schema2_component", "unified_operation_postings_observed": False,
+                "legacy_domain_evidence": ["Original native root calls are installed; no complete runtime/backend evidence is assigned here."],
+                "required_atomic_evidence": ["Original lifetime/source and same-session accounting/custody root", "Exact current native cash/stock and held publication/restart proof", "Original required backend parity journeys"],
+                "global_evidence": [], "note": "Source reachability is not qualification or activation authority."}
+    if route_id == "coin.player_give":
+        return {
+            "status": "typed_schema2_wallet_transfer_source_without_qualified_gameplay",
+            "unified_operation_postings_observed": False,
+            "legacy_domain_evidence": ["The active producer connects two exact-denomination player wallets to the existing typed coin owner; inactive behavior retains its schema-1 path."],
+            "required_atomic_evidence": ["Actual MySQL, MariaDB and flat-file command-to-native peer journeys", "Exact native wallet vectors/revisions, balanced root and receipt", "Morph identity, endpoint failure, held publication, lost reply and restart"],
+            "global_evidence": ["src/cmd/actobj.c:submit_coin_give", "src/economy/currency_transaction.c:currency_transaction_submit_coin", "src/economy/economic_gameplay_authority.c:prepare_coin_transfer"],
+            "note": "Source connection is reviewed; component evidence does not qualify the complete gameplay route or activation.",
+        }
     if route_id in SCHEMA2_SQL_ROOM_PAYLOAD_COMPONENT_IDS:
         return {"status": "sql_payload_component_without_independent_accounting_root", "unified_operation_postings_observed": False, "legacy_domain_evidence": ["Payload participates in the existing typed item root; no new accounting root or posting."], "required_atomic_evidence": ["Complete native gameplay, ACK and cold-boot qualification under the item owner"], "global_evidence": ["src/persistence/sql_room_item_payload.c:sql_room_item_payload_record", "src/item/item_transfer_repository.c:item_transfer_repository_execute_at_offset"], "note": "Source observed only; backend entries unverified and global activation blocked."}
     if disposition == "non_writer_candidate":
@@ -803,6 +893,12 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
     elif route_id == "currency.split":
         decision = "allow_sequential_schema2_coin_children"
         policy = "Under active authority, admit only identified player wallets and submit one exact-denomination balanced transfer per eligible recipient. Retain each completion before continuing; stop on failure and report that completed shares remain transferred. The legacy schema-1 branch runs only while accounting is inactive."
+    elif route_id in NATIVE_SCHEMA2_COMPONENT_IDS:
+        decision = "sql_component_requires_qualified_root"
+        policy = "Keep native admission/activation closed until the already-required complete source/lifetime/root, publication/recovery, gameplay and backend parity qualification is satisfied; source linkage grants no qualification."
+    elif route_id in NATIVE_UNQUALIFIED_PROJECTION_IDS or route_id == "coin.cold_room_projection":
+        decision = "block_until_projection_proof"
+        policy = PROJECTION_ROUTES[route_id] + " Keep complete original native route qualification and activation closed; census or isolated fixtures do not promote backend/world/restart coverage."
     elif route_id in SCHEMA2_SQL_SHOP_COMPONENT_IDS:
         decision = "sql_component_requires_qualified_root"
         policy = "Apply only under the owning typed schema-2 shop root. Qualify pooled apply/reconcile, same-root native and accounting evidence, publication/restart, and flat-file parity before enabling the whole gameplay route."
@@ -818,7 +914,8 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
     elif disposition == "offline_operational_writer":
         decision = "maintenance_only_no_live_admission"
         policy = OFFLINE_WRITERS[route_id] + " Require a quiesced boundary, exact retained lineage/epoch, source snapshot witness and idempotent resume; fail closed on unknown rows."
-    elif route_id in {"player.legacy_flatfile_load", "player.sql_status_projection",
+    elif route_id in {"shop.native_current_publication", "shop.native_current_runtime",
+                      "player.legacy_flatfile_load", "player.sql_status_projection",
                       "player.sql_bank_live_load", "world.generated_npc_hydration",
                       "recovery.copyover_npc_gold_projection",
                       "recovery.flat_corpse_coin_materialization",
@@ -853,7 +950,9 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
                       "special.disarm_pick_gloves_slot_relink",
                       "artifact.good_evil_sword_slot_relink"}:
         decision = "block_until_projection_proof"
-        if route_id == "player.sql_bank_live_load":
+        if route_id in {"shop.native_current_publication", "shop.native_current_runtime"}:
+            policy = PROJECTION_ROUTES[route_id] + " Keep accounted SHOP admission closed until coherent native/schema/backend recovery and the original major-plan qualification are complete."
+        elif route_id == "player.sql_bank_live_load":
             policy = PROJECTION_ROUTES[route_id] + " The login caller ignores a failed bank read after this function has zeroed the PC bank. Refuse publication until the selected bank result and revision are verified."
         elif route_id == "player.sql_status_projection":
             policy = PROJECTION_ROUTES[route_id] + " Refuse publication until the separate selected account-bank load succeeds and wallet/bank revisions form one complete player view."
@@ -889,6 +988,17 @@ def activation_policy(route_id: str, disposition: str, schema: dict) -> dict:
         if route_id.startswith("auction."):
             policy += " Keep accepted escrow, seller claim/proceeds, fee and item winner/return custody under the same auction root; no implicit reimbursement."
     return {"decision": decision, "must_block_on_activation": decision in {"block_until_active_craft_journeys", "refuse_before_allocation_until_native_source_and_root_exist", "block_until_typed_schema2_accounting", "block_until_projection_proof", "keep_unreachable_or_block_if_reactivated", "sql_component_requires_qualified_root"}, "required_policy": policy}
+
+
+def source_state(registry: dict) -> str:
+    candidate = registry.get("candidate_worktree_evidence")
+    if candidate is None:
+        return "registry_source_commit"
+    if candidate.get("status") == "unpublished_candidate_worktree":
+        return "published_base_with_unpublished_candidate_worktree"
+    if candidate.get("status") == "source_integrated_unqualified":
+        return "source_integrated_unqualified"
+    raise ValueError("review unknown candidate source provenance status")
 
 
 def build() -> dict:
@@ -997,7 +1107,7 @@ def build() -> dict:
         "schema_version": 1,
         "artifact_kind": "source_reviewed_economy_item_writer_coverage_matrix",
         "repository_head": source_commit,
-        "source_state": "published_base_with_unpublished_candidate_worktree" if registry.get("candidate_worktree_evidence") else "registry_source_commit",
+        "source_state": source_state(registry),
         "candidate_worktree_evidence": registry.get("candidate_worktree_evidence"),
         "coverage_complete": False,
         "playable_release_status": "BLOCKED",

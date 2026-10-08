@@ -456,8 +456,7 @@ bool record_authoritative_completion(std::string_view definition_id, int32_t zon
 			return true;
 		}
 	}
-	const auto *definition = tracker.catalog().definitions.empty() ? nullptr :
-									 [&]()
+	const auto *definition = tracker.catalog().definitions.empty() ? nullptr : [&]()
 	{
 		for (const auto &candidate : tracker.catalog().definitions)
 			if (candidate.definition_id == definition_id)

@@ -108,7 +108,7 @@ assert "CLASS_ROGUE" in db and "func.obj = item_switch;" in db
 conversion = (ROOT / "src/mob/mobconv.c").read_text()
 assert "ch->points.base_hit = hits;" in conversion and "class_hitpoints[flag2idx(ch->player.m_class)]" in conversion
 quest = (ROOT / "src/world/quest.c").read_text()
-assert "put32(0, 6);" in quest and "QUEST_REWARD_MAX_CREDITED_PIDS" in quest
+assert "put32(0, fee_terms ? 5 : 6);" in quest and "QUEST_REWARD_MAX_CREDITED_PIDS" in quest
 assert "extract_obj(mob->carrying, TRUE);" in quest and "extract_char(mob);" in quest
 carving = (ROOT / "src/classes/new_skills.c").read_text()
 assert "carve = read_object(8, VIRTUAL);" in carving

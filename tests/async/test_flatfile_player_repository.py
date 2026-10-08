@@ -2,10 +2,13 @@
 
 from _paths import SRC, rel
 import pathlib
+import hashlib
 import shutil
+import struct
 import sys
 import subprocess
 import tempfile
+from _flatfile_player_fixture import build_player_inspector
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -14,87 +17,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tests") as temporary:
     temporary_path = pathlib.Path(temporary)
     binary = temporary_path / "flatfile_player_test"
-    compile_result = subprocess.run(
-        [
-            "g++",
-            "-std=c++20",
-            "-Wall",
-            "-Wextra",
-            "-Wpedantic",
-            "-Werror",
-            "-D__NO_MYSQL__",
-            "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections",
-            "-DDURIS_FLATFILE_AUTHORITY_FAULT_TEST",
-            "-DDURIS_FLATFILE_PLAYER_READ_FAULT_TEST",
-            "-DDURIS_FLATFILE_ACCOUNTING_TEST",
-            "-Isrc",
-            "-Isrc/no_mysql",
-            "tests/async/flatfile_player_repository_harness.cpp",
-            rel("flatfile_player_repository.c"),
-            rel("player_load_topology.c"),
-            rel("flatfile_identity_repository.c"),
-            rel("flatfile_item_repository.c"),
-            rel("flatfile_collector_repository.c"),
-            rel("collector_command.c"),
-            rel("collector_codec.c"),
-            rel("collector_policy.c"),
-            rel("coin_transfer_command.c"),
-            rel("flatfile_player_snapshot_file.c"),
-            rel("flatfile_corpse_repository.c"),
-            rel("flatfile_locker_repository.c"),
-            rel("flatfile_world_item_repository.c"),
-            rel("flatfile_artifact_repository.c"),
-            rel("flatfile_shop_trade_repository.c"),
-            rel("flatfile_shop_trade_materialization.c"),
-            rel("flatfile_shopkeeper_repository.c"),
-            rel("flatfile_auction_repository.c"),
-            rel("flatfile_boon_repository.c"),
-            rel("flatfile_player_domain_repository.c"),
-            rel("flatfile_authority_transaction.c"),
-            rel("flatfile_item_accounting_reference.c"),
-            rel("flatfile_accounting_authority.c"),
-            rel("flatfile_accounting_store.c"),
-            rel("economic_accounting_types.c"),
-            rel("economic_accounting_plan.c"),
-            rel("auction_listing_accounting.c"),
-            rel("auction_accounting.c"),
-            rel("auction_settlement_accounting.c"),
-            rel("auction_money_claim_accounting.c"),
-            rel("auction_item_claim_accounting.c"),
-            rel("collector_accounting.c"),
-            rel("economic_accounting_intent.c"),
-            rel("economic_accounting_item_reference.c"),
-            rel("item_transfer_accounting.c"),
-            rel("player_snapshot_codec.c"),
-            rel("player_save_journal.c"),
-            rel("player_quarantine_recovery.c"),
-            rel("flatfile_store.c"),
-            rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
-            rel("corpse_lifecycle_command.c"),
-            rel("shop_trade_command.c"),
-            rel("critical_command.c"),
-            rel("epic_command.c"),
-            rel("currency_command.c"),
-            rel("auction_command.c"),
-            rel("combat_outcome_command.c"),
-            rel("boon_reward_command.c"),
-            rel("boon_shop_command.c"),
-            rel("persistence_observability.c"),
-            rel("persistence_mode.c"),
-            rel("flatfile_ip_activity_repository.c"),
-            "-lcrypto",
-            "-pthread",
-            "-Wl,--wrap=openat",
-            "-o",
-            str(binary),
-        ],
-        cwd=ROOT,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-    )
-    if compile_result.returncode:
-        raise SystemExit(compile_result.stdout)
+    binary = build_player_inspector(binary)
 
     if len(sys.argv) == 3 and sys.argv[1] == "--build-inspector":
         destination = pathlib.Path(sys.argv[2]).resolve()
@@ -116,6 +39,34 @@ with tempfile.TemporaryDirectory(prefix="flat-player-test-", dir=ROOT / "bin/tes
         )
         if run_result.returncode:
             raise SystemExit(run_result.stdout)
+
+        # The native checksum-refusal case deliberately damages this synthetic
+        # snapshot last. Undo that exact fault before exercising its observer.
+        state = pathlib.Path(state_temporary)
+        snapshot = state / "players/42.snapshot"
+        data = bytearray(snapshot.read_bytes())
+        data[-1] ^= 0x5a
+        snapshot.write_bytes(data)
+        inspection = [str(binary), str(state), "inspect", "42"]
+        before = {p.relative_to(state): p.read_bytes() for p in state.rglob("*") if p.is_file()}
+        subprocess.run(inspection, cwd=ROOT, check=True, capture_output=True)
+        assert before == {p.relative_to(state): p.read_bytes() for p in state.rglob("*") if p.is_file()}, \
+            "ordinary inspection changed authority files"
+
+        # This is a valid native v2 after-image journal, not an invalid marker.
+        # The old observer replayed it, installed the image, and reported success.
+        name, image = b"inspection_should_not_write", b"observer side effect"
+        payload = struct.pack("<HBBH", 1, 1, 1, len(name)) + name + struct.pack("<I", len(image)) + image
+        pending = b"DURAUTH\0" + struct.pack("<II", 2, len(payload)) + hashlib.sha256(payload).digest() + payload
+        journal = state / "domains/.critical-authority-transaction"
+        journal.write_bytes(pending)
+        journal.chmod(0o600)
+        refused = subprocess.run(inspection, cwd=ROOT, capture_output=True, text=True)
+        assert refused.returncode != 0 and "inspect refuses pending recovery" in refused.stderr, \
+            "observer accepted authority that requires recovery"
+        assert journal.read_bytes() == pending and not (state / "domains" / name.decode()).exists(), \
+            "inspection replayed a pending after-image"
+        print("PASS: native authority inspection preserves files and refuses a valid pending after-image")
 
     with tempfile.TemporaryDirectory(prefix="flat-recovery-state-") as recovery_temporary:
         recovery_result = subprocess.run([str(binary), recovery_temporary, "quarantine-recovery"],

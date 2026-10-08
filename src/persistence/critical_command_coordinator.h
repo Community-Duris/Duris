@@ -6,20 +6,43 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 
 class economic_sql_lifecycle_guard;
 class economic_sql_cutover_transaction_owner;
+class player_save_restored_publication_owner;
+// Only an exact private pipeline owner can consume a canonical pre-admission
+// collector refusal. This neither checkpoints a journal nor fabricates ACK.
+bool critical_command_coordinator_cancel_collector_publication(
+	player_save_restored_publication_owner &);
+// Exact private SHOP refusal: authenticate and pin the retained original
+// before cleanup; release the hold only after successful same-generation proof.
+bool critical_command_coordinator_cancel_shop_publication(
+	player_save_restored_publication_owner &owner,
+	bool (*native_cleanup)(const critical_command &, const critical_completion &,
+			       void *) noexcept,
+	void *context);
+
+// Only the private auction save owner can consume an original never-admitted
+// refusal after exact retained native-body and successful absence/BEFORE proof.
+bool critical_command_coordinator_cancel_auction_publication(
+	player_save_restored_publication_owner &,
+	bool (*)(const critical_command &, const critical_completion &, void *) noexcept, void *);
 
 // Private coordinator-side lease operations used only by the SQL lifecycle
 // owner. They expose no readiness boolean or lease identity to public callers.
 class critical_command_coordinator_owner final
 {
+	friend class sql_economic_runtime_boot_owner;
+	// Exact original journal/operation/fence cut while this boot thread owns
+	// the real lifecycle reservation. A diagnostic health copy is insufficient.
+	static bool boot_recovery_ready();
 	friend class economic_sql_lifecycle_guard;
 	friend class economic_sql_cutover_transaction_owner;
 	static bool acquire_cutover_lease(uint64_t timeout_msec, uint64_t *generation,
 					  uint64_t *lease_id);
 	static bool validate_cutover_lease(uint64_t generation, uint64_t lease_id);
-	static void release_cutover_lease(uint64_t generation, uint64_t lease_id);
+	static bool release_cutover_lease(uint64_t generation, uint64_t lease_id);
 	static bool begin_cutover_transaction(uint64_t generation, uint64_t lease_id,
 					      const void *connection, unsigned long session);
 	static bool validate_cutover_transaction(uint64_t generation, uint64_t lease_id,
@@ -80,6 +103,7 @@ struct critical_coordinator_health
 	uint64_t inflight;
 	uint64_t blocked;
 	uint64_t publication_pending;
+	uint64_t native_continuation_pending;
 	uint64_t retained_bytes;
 	uint64_t completed_cache;
 	uint64_t fenced_keys;
@@ -114,6 +138,48 @@ using critical_apply_fn = critical_apply_result (*)(const critical_command &comm
 using critical_drain_observer_fn = void (*)(const critical_completion *completions, size_t count);
 using critical_replay_observer_fn = bool (*)(const critical_command &command, void *context);
 
+// Passive original native registration under coordinator_mutex; no reentry,
+// submission, SQL or native effects. The context is the existing replay_context.
+using critical_native_recovery_observer_fn = bool (*)(const critical_native_recovery_envelope &,
+						      void *context);
+// Pure structural check of the retained original publication body and exact
+// retained receipt. No reentry/effects; this is never a caller ACK permit.
+using critical_native_recovery_publication_validator_fn =
+	bool (*)(const critical_native_recovery_envelope &, const critical_completion &) noexcept;
+
+// Pure original quest parent/child body correlation. Registered once with the
+// real domain codec; this carries no current SQL/world or reward ACK authority.
+using critical_native_recovery_pair_validator_fn = bool (*)(
+	const critical_native_recovery_envelope &, const critical_native_recovery_envelope &,
+	const critical_native_recovery_envelope *) noexcept;
+
+// Pure birth-domain body checks. These authenticate bounded original progress,
+// never current SQL/world state or a caller's physical-publication assertion.
+// All five callbacks are required for birth-v2/v3 envelopes; quest authority is separate.
+struct critical_native_birth_recovery_validators
+{
+	bool (*valid)(const critical_native_recovery_envelope &) noexcept = nullptr;
+	bool (*initial)(const critical_native_recovery_envelope &) noexcept = nullptr;
+	bool (*successor)(const critical_native_recovery_envelope &,
+			  const critical_native_recovery_envelope &) noexcept = nullptr;
+	bool (*publication)(const critical_native_recovery_envelope &,
+			    const critical_completion &) noexcept = nullptr;
+	bool (*terminal)(const critical_native_recovery_envelope &) noexcept = nullptr;
+};
+
+// Pure auction NAR checks. All callbacks must be registered by the genuine
+// domain codec before typed admission/replay. They grant no SQL/world authority.
+struct critical_native_auction_recovery_validators
+{
+	bool (*valid)(const critical_native_recovery_envelope &) noexcept = nullptr;
+	bool (*initial)(const critical_native_recovery_envelope &) noexcept = nullptr;
+	bool (*successor)(const critical_native_recovery_envelope &,
+			  const critical_native_recovery_envelope &) noexcept = nullptr;
+	bool (*publication)(const critical_native_recovery_envelope &,
+			    const critical_completion &) noexcept = nullptr;
+	bool (*terminal)(const critical_native_recovery_envelope &) noexcept = nullptr;
+};
+
 // Optional support for canonical schema-2 commands. The validator must be pure,
 // bounded and noexcept; it verifies typed immutable evidence, never current
 // authority or activation state (retained receipts must remain replayable).
@@ -125,12 +191,167 @@ bool critical_command_coordinator_init(
 	const char *journal_directory, critical_apply_fn apply, void *context,
 	unsigned int workers = CRITICAL_COORDINATOR_DEFAULT_WORKERS,
 	critical_replay_observer_fn replay_observer = nullptr, void *replay_context = nullptr,
-	critical_extension_validator_fn extension_validator = nullptr);
+	critical_extension_validator_fn extension_validator = nullptr,
+	critical_native_recovery_observer_fn native_replay_observer = nullptr,
+	critical_native_recovery_publication_validator_fn native_publication_validator = nullptr,
+	critical_native_birth_recovery_validators birth_validators = {},
+	critical_native_recovery_pair_validator_fn quest_pair_validator = nullptr,
+	critical_native_auction_recovery_validators auction_validators = {});
+// Separate original owner capabilities: continuation owners cannot submit or
+// cross physical ACK. Opaque context carries no source/SQL/publication authority.
+// Only the original birth owner can cross this physical publication boundary.
+// It must first prove its original SQL receipt, current native/custody image and
+// consumed world publication. These methods themselves grant none of that proof.
+// Birth uses its original command and typed progress carrier, not a player save token.
+class critical_native_mobile_birth_publication_owner final
+{
+	friend class quest_mobile_native_birth_owner;
+	// Typed v2/v3 admission and exact same-phase progress CAS. Raw v1 remains readable.
+	static critical_submit_result submit(critical_native_recovery_envelope);
+	static bool copy_context(const critical_command &,
+				 critical_native_recovery_envelope *) noexcept;
+	static bool checkpoint_context(const critical_native_recovery_envelope &,
+				       const critical_native_recovery_envelope &) noexcept;
+	static bool observe_generation(const critical_native_recovery_envelope &,
+				       uint64_t *) noexcept;
+	static bool cancel_refusal(const critical_native_recovery_envelope &,
+				   const critical_completion &, uint64_t,
+				   bool (*)(const critical_command &, const critical_completion &,
+					    void *) noexcept,
+				   void *) noexcept;
+	// Physical ACK retains the exact body in continuation phase. Terminal retirement
+	// is separate, and never consumes a player-save hold or uses command-only cache.
+	static bool acknowledge(const critical_native_recovery_envelope &,
+				const critical_completion &, uint64_t) noexcept;
+	static bool retire(const critical_native_recovery_envelope &) noexcept;
+	// Constructor births retain advancement fences across phase2. This pins
+	// the actual terminal envelope/generation over the original native owner's
+	// durable transfer, then retires the journal and releases fences on success.
+	static bool retire(const critical_native_recovery_envelope &, uint64_t,
+			   bool (*)(const critical_native_recovery_envelope &, void *) noexcept,
+			   void *) noexcept;
+	static bool observe_generation(const critical_command &, uint64_t *) noexcept;
+	// Only a delivered, exact retained no-admission receipt permits cleanup.
+	// Pins the original operation over cleanup and removes it only on success.
+	// No journal checkpoint, completed cache entry or execution ACK is created.
+	static bool cancel_refusal(const critical_command &, const critical_completion &,
+				   uint64_t original_coordinator_generation,
+				   bool (*native_cleanup)(const critical_command &,
+							  const critical_completion &,
+							  void *) noexcept,
+				   void *context) noexcept;
+	static bool acknowledge(const critical_command &, const critical_completion &,
+				uint64_t original_coordinator_generation) noexcept;
+};
+
+// These are private capabilities of the actual auction save/native owners.
+// Publication retains the physical hold; notice continuation cannot cross ACK.
+class critical_native_auction_submission_owner final
+{
+	friend class player_save_auction_checkpoint_owner;
+	static critical_submit_result submit(critical_native_recovery_envelope);
+};
+class critical_native_auction_publication_owner final
+{
+	friend class player_save_auction_publication_owner;
+	friend class critical_native_auction_background_publication_owner;
+	static bool copy_context(const critical_command &,
+				 critical_native_recovery_envelope *) noexcept;
+	static bool checkpoint_context(const critical_native_recovery_envelope &,
+				       const critical_native_recovery_envelope &) noexcept;
+};
+// Native actor-zero finalize/removal has no player save slot or synthetic PID.
+// Only its actual domain owner can consume original SQL/world proof through ACK.
+class critical_native_auction_background_publication_owner final
+{
+	friend class auction_native_publication_owner;
+	static critical_submit_result submit(critical_native_recovery_envelope);
+	static bool copy_context(const critical_command &,
+				 critical_native_recovery_envelope *) noexcept;
+	static bool checkpoint_context(const critical_native_recovery_envelope &,
+				       const critical_native_recovery_envelope &) noexcept;
+	static bool observe_generation(const critical_native_recovery_envelope &,
+				       uint64_t *) noexcept;
+	static bool cancel_refusal(const critical_native_recovery_envelope &,
+				   const critical_completion &, uint64_t,
+				   bool (*)(const critical_command &, const critical_completion &,
+					    void *) noexcept,
+				   void *) noexcept;
+	static bool acknowledge(const critical_native_recovery_envelope &,
+				const critical_completion &, uint64_t) noexcept;
+};
+
+class critical_native_auction_continuation_owner final
+{
+	friend class auction_native_publication_owner;
+	static bool copy_context(const critical_command &,
+				 critical_native_recovery_envelope *) noexcept;
+	static bool checkpoint_context(const critical_native_recovery_envelope &,
+				       const critical_native_recovery_envelope &) noexcept;
+	static bool retire_continuation(const critical_native_recovery_envelope &) noexcept;
+};
+
+class critical_native_quest_submission_owner final
+{
+	friend class player_save_native_quest_checkpoint_owner;
+	static critical_submit_result submit(critical_native_recovery_envelope envelope);
+};
+
+class critical_native_quest_publication_owner final
+{
+	friend class player_save_native_quest_publication_owner;
+	friend class player_save_native_quest_checkpoint_owner;
+	// Borrow one authentic retained fee parent without changing either owner.
+	static bool
+	copy_fee_acceptance_context(const critical_command &actual_fee,
+				    critical_native_recovery_envelope *original_parent) noexcept;
+	static bool copy_fee_ack_context(const critical_command &,
+					 critical_native_recovery_envelope *) noexcept;
+	static bool copy_context(const critical_command &,
+				 critical_native_recovery_envelope *) noexcept;
+	static bool checkpoint_context(const critical_native_recovery_envelope &expected,
+				       const critical_native_recovery_envelope &successor) noexcept;
+};
+
+class critical_native_quest_continuation_owner final
+{
+	friend class quest_native_gameplay_owner;
+	friend class quest_native_frozen_continuation_owner;
+	friend class quest_reward_obligation_native_fee_owner;
+	static bool copy_context(const critical_command &,
+				 critical_native_recovery_envelope *) noexcept;
+	// Retained-state correlation only: select one authentic phase2 parent of
+	// this exact physically released child through the registered domain check.
+	// No SQL/world/journal effects or completion authority. Ambiguity/refusal
+	// preserves output; context uncertainty remains eligible for paired retries.
+	static bool copy_parent_context(const critical_native_recovery_envelope &child,
+					critical_native_recovery_envelope *output) noexcept;
+	// Read-only borrowing of one authentic released fee child and its retained
+	// acceptance parent; ambiguity or uncertain checkpoints refuse unchanged.
+	static bool
+	copy_fee_obligation_context(const critical_operation_id &actual_action,
+				    std::span<const uint8_t> literal_continuation,
+				    critical_native_recovery_envelope *actual_child,
+				    critical_native_recovery_envelope *original_parent) noexcept;
+	static bool checkpoint_context(const critical_native_recovery_envelope &expected,
+				       const critical_native_recovery_envelope &successor) noexcept;
+	static bool retire_continuation(const critical_native_recovery_envelope &expected) noexcept;
+	// Pins both exact phase2 operations and their retained byte budget over one
+	// original journal rewrite. Prefix successor retains the authentic latest
+	// child; terminal null requires prior genuine domain/reward-completion proof.
+	// Success must be latched by the owner; absence never confirms a repeat.
+	static bool
+	transition_pair(const critical_native_recovery_envelope &parent,
+			const critical_native_recovery_envelope &child,
+			const critical_native_recovery_envelope *parent_successor) noexcept;
+};
+
 // Atomically reserves an owner-free application lifecycle boundary without
 // stopping workers or discarding accepted operations. False leaves the active
 // owner untouched. Keep the guard through shutdown/copyover dependencies, then
 // release it if the lifecycle operation is cancelled or after SQL teardown.
 bool critical_command_coordinator_try_acquire_lifecycle_guard(void);
+bool critical_command_coordinator_lifecycle_guard_held_by_current_thread(void);
 void critical_command_coordinator_release_lifecycle_guard(void);
 // Returns false without changing coordinator lifetime when an owner is issuing
 // or holds a cutover. Retry only after that owner reaches a terminal boundary.
@@ -151,6 +372,9 @@ bool critical_command_coordinator_get_completed(const critical_operation_id &ope
 // Release a publication-held operation only after the live callback succeeded and
 // the journal checkpoint was durable. A false result leaves the operation fenced.
 bool critical_command_coordinator_acknowledge_publication(const critical_operation_id &operation_id);
+// Only the original restored save owner can supply this nonconstructible proof.
+bool critical_command_coordinator_acknowledge_publication(
+	player_save_restored_publication_owner &owner);
 size_t critical_command_coordinator_pulse(critical_completion *completions, size_t capacity);
 bool critical_command_coordinator_is_fenced(const critical_entity_key &key,
 					    critical_operation_id *operation_id);

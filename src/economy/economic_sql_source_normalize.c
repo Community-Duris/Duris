@@ -218,10 +218,32 @@ struct consumer
 					   integer<uint64_t>(cells[4]),
 					   integer<uint64_t>(cells[5]) };
 			position.revision = integer<uint64_t>(cells[6]);
+			if (input.version == 2)
+			{
+				const auto &equipment = input.item_equipment_sources[0].rows[index];
+				item.observed_equipment_slot =
+					integer<uint16_t>(equipment.cells[1]);
+				position.equipment_slot = *item.observed_equipment_slot;
+				item.equipment_source =
+					economic_sql_equipment_source_reference{ index,
+										 equipment.digest };
+			}
 			item.vnum = integer<int32_t>(cells[7]);
 			position.state =
 				static_cast<item_custody_state>(integer<uint8_t>(cells[8]));
-			if (!item.item.uid || !position.root_uid ||
+			const bool native_mobile = position.owner.type ==
+						   item_owner_type::native_mobile;
+			const bool invalid_equipment =
+				item.observed_equipment_slot &&
+				((native_mobile &&
+				  position.equipment_slot > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT) ||
+				 (position.equipment_slot &&
+				  ((position.owner.type != item_owner_type::player &&
+				    !native_mobile) ||
+				   position.parent_uid ||
+				   position.state != item_custody_state::active ||
+				   (native_mobile && position.root_uid != item.item.uid))));
+			if (invalid_equipment || !item.item.uid || !position.root_uid ||
 			    (cells[2] && !position.parent_uid) || item.vnum <= 0 ||
 			    !item_owner_identity_valid(position.owner) ||
 			    position.state < item_custody_state::active ||
@@ -323,6 +345,7 @@ struct consumer
 	void run()
 	{
 		report.source_digest = input.digest;
+		report.custody_digest = input.custody_digest;
 		report.diagnostics.reserve(limit);
 		monetary("player_data", kind::wallet, 3, 4, false, 7);
 		monetary("account_banks", kind::bank, 3, 4, true, 7);

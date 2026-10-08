@@ -152,7 +152,7 @@ with tempfile.TemporaryDirectory(prefix='corpse-batch-', dir=ROOT/'bin/tests') a
         '-fsanitize=address,undefined','-fno-omit-frame-pointer','-fno-pie','-no-pie','-pthread','-Isrc','-Itests/async',str(source),
         str(SRC/'account/character_identity.c'),
         *[str(SRC/name) for name in ['item_movement_transaction.c','item_ownership_runtime.c',
-        'item_transfer_command.c', "craft_pouch_mutation.c", "chaos_pouch_ledger.c",'critical_command.c','player_snapshot_capture.c','player_snapshot_codec.c']],
+        'item_transfer_command.c', 'quest_mobile_native_reference.c', 'economic_source_event.c', "craft_pouch_mutation.c", "chaos_pouch_ledger.c",'critical_command.c','player_snapshot_capture.c','player_snapshot_codec.c']],
         '-Wl,--gc-sections','-lcrypto','-o',str(binary)],cwd=ROOT,check=True,timeout=180)
     subprocess.run([str(binary)],check=True,timeout=30)
 

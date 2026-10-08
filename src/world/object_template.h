@@ -2,6 +2,8 @@
 #define DURIS_OBJECT_TEMPLATE_H
 
 #include "core/structs.h"
+#include "mob/studioproclib.h"
+#include <span>
 #include <string>
 #include <vector>
 
@@ -43,5 +45,65 @@ struct object_template
 // Boot-only cache population; misses at runtime never fall back to file parsing.
 bool cache_object_template(int vnum);
 const object_template *find_object_template(int vnum);
+// Separate immutable, complete SQL boot catalog. Available only after every
+// native indexed prototype was parsed successfully without construction effects.
+// Readiness binds the sealed table/count/file; lookup also verifies exact target
+// R_num/vnum/file-position/special-procedure identity. No allocation/parser/cache
+// fallback occurs on lookup. Starter/runtime loaders keep their existing cache.
+// Catalog failure or stale boot provenance returns false/nullptr, not partial
+// coverage or authority to restore/ACK. Pointers last until world teardown/reboot.
+bool recovery_object_templates_ready() noexcept;
+// One serialized SQL boot finalization after optional subsystem bindings and
+// before worker/critical startup. Validates the complete already-parsed catalog,
+// then snapshots existing function pointers without parsing/allocating/callbacks
+// or rewriting native indices. Success preserves prototype values/addresses.
+// Boot provenance failure closes the whole catalog; unavailable input stays
+// unavailable. Runtime/foreign-thread/flatfile calls refuse without mutation.
+// No UID, economic, source, native publication or ACK authority is granted.
+// Later lazy instance binding/staleness remains a separate prerequisite.
+bool finalize_recovery_object_template_bindings() noexcept;
+const object_template *find_recovery_object_template(int vnum) noexcept;
+struct player_item_snapshot;
+class shop_trade_native_publication_owner;
+class quest_mobile_native_item_binding;
+class shop_trade_original_procedure_binding_stage
+{
+    public:
+	shop_trade_original_procedure_binding_stage() noexcept = default;
+	shop_trade_original_procedure_binding_stage(
+		shop_trade_original_procedure_binding_stage &&) noexcept = default;
+	shop_trade_original_procedure_binding_stage &
+	operator=(shop_trade_original_procedure_binding_stage &&) noexcept = default;
+	shop_trade_original_procedure_binding_stage(
+		const shop_trade_original_procedure_binding_stage &) = delete;
+	shop_trade_original_procedure_binding_stage &
+	operator=(const shop_trade_original_procedure_binding_stage &) = delete;
+
+    private:
+	friend class shop_trade_native_publication_owner;
+	friend class auction_native_publication_owner;
+	friend class quest_mobile_native_birth_owner;
+	friend class quest_mobile_published_saved_forest;
+	friend int proclibObj_add(P_obj, char *, char *);
+	friend P_obj instantiate_object_template(const object_template &);
+	struct binding
+	{
+		size_t catalog_index;
+		obj_proc_type before, after, predecessor;
+		bool chain_needed = false;
+	};
+	static bool prepare(std::span<const P_obj>, std::span<const player_item_snapshot>,
+			    shop_trade_original_procedure_binding_stage &) noexcept;
+	static bool prepare_native_birth(std::span<const quest_mobile_native_item_binding>,
+					 shop_trade_original_procedure_binding_stage &) noexcept;
+	size_t retained_bytes() const noexcept;
+	bool valid() const noexcept;
+	void commit_unchecked() noexcept;
+	static void observe_normal_binding(int, obj_proc_type, obj_proc_type) noexcept;
+	std::vector<binding> bindings_;
+	proclib_recovery_chain_stage chain_;
+	bool prepared_ = false;
+};
+
 P_obj instantiate_object_template(const object_template &prototype);
 #endif

@@ -12,6 +12,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-auction-") as temporary:
     temporary_path = pathlib.Path(temporary)
     binary = temporary_path / "flatfile_auction_test"
     sources = [
+        rel('quest_mobile_native.c'), rel('quest_mobile_native_flatfile.c'), 'tests/async/native_quest_world_unavailable.cpp',
         "tests/async/flatfile_auction_repository_harness.cpp",
         rel("flatfile_auction_repository.c"),
         rel("flatfile_boon_repository.c"),
@@ -36,7 +37,7 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-auction-") as temporary:
         rel("flatfile_accounting_store.c"),
         rel("flatfile_store.c"),
         rel("economic_accounting_types.c"),
-        rel("economic_accounting_plan.c"),
+        rel("economic_accounting_plan.c"), rel("economic_source_event.c"),
         rel("economic_accounting_intent.c"),
         rel("auction_item_claim_accounting.c"),
         rel("auction_listing_accounting.c"),
@@ -48,9 +49,9 @@ with tempfile.TemporaryDirectory(prefix="duris-flat-auction-") as temporary:
         rel("item_transfer_accounting.c"),
         rel("player_snapshot_codec.c"),
         rel("auction_command.c"),
-        rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
+        rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
         rel("corpse_lifecycle_command.c"),
-        rel("shop_trade_command.c"),
+        rel("shop_trade_command.c"), rel("shop_trade_recovery_manifest.c"),
         rel("epic_command.c"),
         rel("currency_command.c"),
         rel("combat_outcome_command.c"),

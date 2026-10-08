@@ -24,6 +24,19 @@ enum class regen_resource : uint8_t
 	ward
 };
 
+/* Group wake reschedules without changing deadlines or scheduler ordering. */
+class nevent_reschedule_batch
+{
+    public:
+	nevent_reschedule_batch();
+	~nevent_reschedule_batch();
+	nevent_reschedule_batch(const nevent_reschedule_batch &) = delete;
+	nevent_reschedule_batch &operator=(const nevent_reschedule_batch &) = delete;
+
+    private:
+	bool active;
+};
+
 /* Current nevent owner-list traversal helpers. */
 
 #define LOOP_EVENTS_CH(var, e_list) for ((var) = (e_list); (var); (var) = (var)->next_char_nev)

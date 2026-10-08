@@ -542,32 +542,45 @@ bool load_components(MYSQL *connection, const player_load_request &request,
 					 static_cast<uint8_t>(unsigned_value(row[2])) });
 			       return true;
 		       }) ||
-	    !load_rows(connection,
-		       "SELECT type,duration,flags,modifier,location,level,bitvector1,bitvector2,"
-		       "bitvector3,bitvector4,bitvector5,custom_msg_char,custom_msg_room FROM "
-		       "player_affects WHERE pid=" +
-			       pid + " ORDER BY id",
-		       result,
-		       [&](MYSQL_ROW row)
-		       {
-			       player_affect_snapshot affect = {};
-			       affect.type = static_cast<int16_t>(signed_value(row[0]));
-			       affect.duration = static_cast<int32_t>(signed_value(row[1]));
-			       affect.flags = static_cast<uint32_t>(unsigned_value(row[2]));
-			       affect.modifier = static_cast<int32_t>(signed_value(row[3]));
-			       affect.location = static_cast<uint8_t>(unsigned_value(row[4]));
-			       affect.level = static_cast<uint16_t>(unsigned_value(row[5]));
-			       for (size_t index = 0; index < affect.bitvectors.size(); ++index)
-				       affect.bitvectors[index] = unsigned_value(row[6 + index]);
-			       affect.wear_off_character = row[11] ? row[11] : "";
-			       affect.wear_off_room = row[12] ? row[12] : "";
-			       if (affect.wear_off_character.size() >
-					   PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
-				   affect.wear_off_room.size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES)
-				       return false;
-			       result->snapshot.affects.push_back(std::move(affect));
-			       return true;
-		       }) ||
+	    !load_rows(
+		    connection,
+		    "SELECT type,duration,flags,modifier,location,level,bitvector1,bitvector2,"
+		    "bitvector3,bitvector4,bitvector5,custom_msg_char,custom_msg_room,"
+		    "ward_source_uid,ward_full_duration,ward_capacity,ward_capacity_max,"
+		    "ward_refresh_remaining,ward_source_type,ward_source_worn,ward_active FROM "
+		    "player_affects WHERE pid=" +
+			    pid + " ORDER BY id",
+		    result,
+		    [&](MYSQL_ROW row)
+		    {
+			    player_affect_snapshot affect = {};
+			    affect.type = static_cast<int16_t>(signed_value(row[0]));
+			    affect.duration = static_cast<int32_t>(signed_value(row[1]));
+			    affect.flags = static_cast<uint32_t>(unsigned_value(row[2]));
+			    affect.modifier = static_cast<int32_t>(signed_value(row[3]));
+			    affect.location = static_cast<uint8_t>(unsigned_value(row[4]));
+			    affect.level = static_cast<uint16_t>(unsigned_value(row[5]));
+			    for (size_t index = 0; index < affect.bitvectors.size(); ++index)
+				    affect.bitvectors[index] = unsigned_value(row[6 + index]);
+			    affect.wear_off_character = row[11] ? row[11] : "";
+			    affect.wear_off_room = row[12] ? row[12] : "";
+			    affect.ward_source_uid = unsigned_value(row[13]);
+			    affect.ward_full_duration = static_cast<int32_t>(signed_value(row[14]));
+			    affect.ward_capacity = static_cast<int64_t>(unsigned_value(row[15]));
+			    affect.ward_capacity_max =
+				    static_cast<int64_t>(unsigned_value(row[16]));
+			    affect.ward_refresh_remaining =
+				    static_cast<int32_t>(signed_value(row[17]));
+			    affect.ward_source_type = static_cast<uint8_t>(unsigned_value(row[18]));
+			    affect.ward_source_worn = static_cast<uint8_t>(unsigned_value(row[19]));
+			    affect.ward_active = static_cast<uint8_t>(unsigned_value(row[20]));
+			    if (affect.wear_off_character.size() >
+					PLAYER_SNAPSHOT_MAX_STRING_BYTES ||
+				affect.wear_off_room.size() > PLAYER_SNAPSHOT_MAX_STRING_BYTES)
+				    return false;
+			    result->snapshot.affects.push_back(std::move(affect));
+			    return true;
+		    }) ||
 	    !load_rows(connection,
 		       "SELECT mob_vnum,times_researched,UNIX_TIMESTAMP(last_researched),"
 		       "UNIX_TIMESTAMP(last_shapechanged) FROM player_shapechanges WHERE pid=" +
@@ -647,12 +660,14 @@ bool load_bank(MYSQL *connection, const player_load_request &request, player_loa
 
 bool load_owner_identity_valid(const item_owner_identity &owner)
 {
-	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::pet)
+	if (owner.type <= item_owner_type::unknown || owner.type > item_owner_type::native_mobile)
 		return false;
 	if (owner.type == item_owner_type::system || owner.type == item_owner_type::destruction)
 		return owner.id == 0 && owner.context_id == 0;
 	if (owner.type == item_owner_type::collector)
 		return owner.id != 0 && owner.context_id == 0;
+	if (owner.type == item_owner_type::native_mobile)
+		return owner.id && owner.id != UINT64_MAX && !owner.context_id;
 	if (owner.type == item_owner_type::pet)
 		return owner.id != 0 && owner.context_id != 0 && owner.context_id <= INT32_MAX;
 	return owner.id != 0;
@@ -1213,12 +1228,66 @@ bool load_restitution_runtime_state(MYSQL *connection, player_load_result *resul
 	return true;
 }
 
+bool preserve_runtime_metadata(const player_item_snapshot &state, player_item_snapshot *item)
+{
+	// Scalar metadata remains authoritative. When its canonical projection still
+	// agrees with the complete companion, retain codec details that SQL flattens:
+	// affect slots/order and the original spellbook/extra-description encoding.
+	auto affect_keys = [](const auto &affects)
+	{
+		std::unordered_set<uint64_t> keys;
+		for (const auto &affect : affects)
+			if (affect[0] || affect[1])
+				keys.insert((static_cast<uint64_t>(static_cast<uint16_t>(affect[0]))
+					     << 32) |
+					    static_cast<uint32_t>(affect[1]));
+		return keys;
+	};
+	if (affect_keys(state.affects) == affect_keys(item->affects))
+		item->affects = state.affects;
+	auto description_keys = [](const auto &descriptions, std::unordered_set<std::string> *keys)
+	{
+		for (const auto &description : descriptions)
+		{
+			if (description.keyword.empty())
+				continue;
+			std::string key = description.keyword + '\0';
+			if (description.spellbook)
+			{
+				std::vector<int32_t> spells = description.spell_ids;
+				if (!description.description.empty() &&
+				    (!spells.empty() || !decode_runtime_spellbook_json(
+								description.description, &spells)))
+					return false;
+				std::sort(spells.begin(), spells.end());
+				for (int32_t spell : spells)
+					key += std::to_string(spell) + ',';
+			}
+			else
+				key += description.description;
+			keys->insert(std::move(key));
+		}
+		return true;
+	};
+	std::unordered_set<std::string> expected, actual;
+	if (!description_keys(state.extra_descriptions, &expected) ||
+	    !description_keys(item->extra_descriptions, &actual))
+		return false;
+	if (expected == actual)
+	{
+		item->extra_descriptions = state.extra_descriptions;
+		item->string_mask = (item->string_mask & 15) | (state.string_mask & 16);
+	}
+	return true;
+}
+
 bool load_items(MYSQL *connection, player_load_result *result)
 {
 	const std::string pid = std::to_string(result->pid);
 	std::unordered_map<uint64_t, size_t> item_by_database_id;
 	std::unordered_map<uint64_t, size_t> item_by_uid;
 	std::unordered_set<uint64_t> stale_database_ids;
+	std::unordered_map<uint64_t, player_item_snapshot> runtime_metadata;
 	try
 	{
 		item_by_database_id.reserve(PLAYER_LOAD_ITEM_MAX);
@@ -1319,6 +1388,7 @@ bool load_items(MYSQL *connection, player_load_result *result)
 					    item.timers[timer] = state[0].timers[timer];
 				    item.dynamic_affects = std::move(state[0].dynamic_affects);
 				    identity.override_mask |= PLAYER_LOAD_ITEM_OVERRIDE_RUNTIME;
+				    runtime_metadata.emplace(item.object_uid, std::move(state[0]));
 			    }
 			    uint64_t custody_slot = 0, slot_evidence = 0;
 			    if (!parse_unsigned(row[44], MAX_WEAR, &custody_slot) ||
@@ -1564,6 +1634,13 @@ bool load_items(MYSQL *connection, player_load_result *result)
 								   row[6], result);
 		    }))
 		return false;
+	for (auto &item : result->snapshot.items)
+	{
+		const auto found = runtime_metadata.find(item.object_uid);
+		if (found != runtime_metadata.end() &&
+		    !preserve_runtime_metadata(found->second, &item))
+			return false;
+	}
 	if (!load_restitution_runtime_state(connection, result, item_by_uid))
 		return false;
 	return result->snapshot.items.size() == result->item_identities.size();

@@ -97,6 +97,8 @@ expect_schema_rejection() {
 docker exec -i -e MYSQL_PWD "$CONTAINER_ID" "$DB_CLIENT" -uroot "$DB_NAME" \
     < migrations/bootstrap_multithread_safe.sql
 docker exec -i -e MYSQL_PWD "$CONTAINER_ID" "$DB_CLIENT" -uroot "$DB_NAME" \
+    < migrations/immutable/0038_item_equipment_slot.sql
+docker exec -i -e MYSQL_PWD "$CONTAINER_ID" "$DB_CLIENT" -uroot "$DB_NAME" \
     < migrations/immutable/0043_shopkeeper_item_condition.sql
 verify_schema
 docker exec -e MYSQL_PWD "$CONTAINER_ID" "$DB_CLIENT" -uroot "$DB_NAME" \
@@ -137,6 +139,36 @@ export DB_HOST DB_PORT DB_NAME DB_USER=root DB_PASSWD="$PASSWORD"
 export ECONOMIC_SQL_LIFECYCLE_DISPOSABLE_SCHEMA=1
 bash migrations/immutable/0040_economic_sql_global_activation.sh
 unset DB_SOCKET
+# Preserve the historical schema-only probes above. Current native witnesses
+# require the normal sealed EAB2 migration chain on this same owned fixture.
+(
+    [[ "$mapping" =~ ^127\.0\.0\.1:([0-9]+)$ ]] &&
+        (( DB_PORT >= 1 && DB_PORT <= 65535 )) || {
+        echo 'Migration qualification requires the owned loopback container port' >&2
+        exit 1
+    }
+    export ENVIRONMENT=test DB_HOST=127.0.0.1
+    export RUNTIME_COMPATIBILITY_MANIFEST="$ROOT/migrations/runtime_compatibility_manifest.json"
+    unset DB_SOCKET
+    python3 - <<'DURIS_LIFECYCLE_HEAD_PY'
+import json
+from pathlib import Path
+
+history = json.loads(Path("migrations/migration_manifest.json").read_text())["migrations"]
+if len(history) != 62 or history[-1]["sequence"] != 62 or \
+        history[-1]["id"] != "0062_economic_pending_claim_consumption":
+    raise RuntimeError("current lifecycle qualification requires sealed canonical schema62")
+DURIS_LIFECYCLE_HEAD_PY
+    python3 scripts/migration_runner.py adopt --kind fresh_bootstrap
+    python3 scripts/migration_runner.py run
+    head=$(mysql --no-defaults --protocol=tcp -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" \
+        -N -B --raw "$DB_NAME" -e "SELECT COUNT(*),MAX(sequence_number),SUM(sequence_number=62 AND migration_id='0062_economic_pending_claim_consumption') FROM mud_schema_history")
+    [[ "$head" == $'62\t62\t1' ]] || {
+        echo 'Current lifecycle qualification did not reach the registered schema62 head' >&2
+        exit 1
+    }
+    bash migrations/verify_runtime_compatibility.sh
+)
 read -r -a MYSQL_CFLAGS <<< "$(mysql_config --cflags)"
 read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
 "${CXX:-g++}" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -O1 -g \
@@ -153,15 +185,31 @@ read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
     src/persistence/economic_sql_source_snapshot.c \
     src/economy/economic_sql_source_normalize.c \
     src/persistence/economic_sql_baseline_transaction.c \
+    src/economy/shop_trade_recovery_manifest.c \
+    src/persistence/economic_sql_auction_retained.c \
+    src/persistence/economic_sql_auction_bid_transaction.c \
+    src/persistence/economic_sql_pending_claim_source.c \
+    src/persistence/economic_sql_auction_claim_endpoint.c \
+    src/economy/auction_command.c \
+    src/economy/auction_repository.c \
+    src/economy/currency_command.c \
+    src/economy/auction_accounting.c \
+    src/economy/auction_money_claim_accounting.c \
+    src/economy/auction_item_claim_accounting.c \
+    src/economy/auction_settlement_accounting.c \
+    src/persistence/economic_accounting_repository.c \
+    src/persistence/economic_sql_auction_settlement_transaction.c \
+    src/persistence/economic_sql_auction_item_claim_transaction.c \
+    src/persistence/economic_sql_auction_money_claim_transaction.c \
     src/economy/economic_baseline_command.c \
     src/economy/economic_baseline_adapter.c \
     src/economy/economic_baseline_codec.c \
     src/economy/economic_accounting_intent.c \
-    src/economy/economic_accounting_plan.c \
+    src/economy/economic_accounting_plan.c src/economy/economic_source_event.c \
     src/economy/economic_accounting_types.c \
     src/economy/economic_gameplay_authority.c \
     src/persistence/critical_command.c \
-    src/item/item_transfer_command.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c \
+    src/item/item_transfer_command.c src/world/quest_mobile_native_reference.c src/item/craft_pouch_mutation.c src/combat/chaos_pouch_ledger.c \
     src/economy/coin_transfer_command.c \
     src/economy/coin_transfer_accounting.c \
     src/economy/item_transfer_accounting.c \
@@ -170,6 +218,7 @@ read -r -a MYSQL_LIBS <<< "$(mysql_config --libs)"
     "${MYSQL_LIBS[@]}" -lcrypto -lz -o "$TEMP/lifecycle-owner"
 # The composed owner harness below also exercises faulted lease transfers.
 "${CXX:-g++}" -std=c++20 -Wall -Wextra -Wpedantic -Werror -pthread -O1 -g \
+    -ffunction-sections -fdata-sections -Wl,--gc-sections \
     -fsanitize=address,undefined -fno-omit-frame-pointer -fno-pie -no-pie \
     "${MYSQL_CFLAGS[@]}" -Isrc \
     tests/async/economic_sql_owned_cutover_capability.cpp \

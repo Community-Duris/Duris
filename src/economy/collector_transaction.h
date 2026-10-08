@@ -2,6 +2,7 @@
 #define DURIS_COLLECTOR_TRANSACTION_H
 
 #include "economy/collector_command.h"
+#include "economy/economic_accounting_types.h"
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/critical_outbox.h"
 #include "core/structs.h"
@@ -17,6 +18,63 @@ using collector_completion_fn = void (*)(P_char character, bool committed,
 					 const collector_command_result &result,
 					 unsigned int error_code,
 					 const collector_command_payload &payload);
+
+// Local effect bookkeeping only: neither a native receipt nor save authority.
+// A started materializer which did not return success stays unresolved; final
+// UID/location alone cannot prove the handler's auxiliary effects completed.
+struct collector_purchase_publication_state
+{
+	bool materializer_started = false;
+	bool materializer_returned = false;
+	bool receipt_conflict = false;
+
+    private:
+	friend class collector_purchase_publication_owner;
+	bool bound_ = false;
+	critical_operation_id operation_ = {};
+	std::array<uint8_t, 32> command_digest_ = {};
+	critical_completion original_ = {};
+};
+using collector_purchase_effect_fn = bool (*)(P_char, const collector_command_result &,
+					      const collector_command_payload &,
+					      collector_purchase_publication_state &);
+
+// Only the named service restoration entry may choose the existing native effect
+// and post-ACK notification. No public callback registration or receipt synthesis.
+class collector_purchase_cold_restore_owner
+{
+	friend bool collector_service_restore_replayed_purchase(const critical_command &) noexcept;
+	static bool restore(const critical_command &, collector_purchase_effect_fn,
+			    collector_completion_fn) noexcept;
+};
+
+bool collector_transaction_submit_purchase_identified(P_char character,
+						      const critical_operation_id &operation_id,
+						      const collector_command_payload &payload,
+						      const collector::record &original_listing,
+						      collector_purchase_effect_fn effect,
+						      collector_completion_fn notify);
+
+// Accounted purchase domain owner. Shared save admission and private reserved
+// ACK remain in the pipeline; the SQL native proof is implemented separately.
+// Preparation freezes the existing accounted intent with a strong guarantee.
+// Submission installs the original save hold before coordinator admission;
+// definite refusal releases it, uncertainty preserves it and the original ID.
+economic_accounting_error collector_purchase_prepare_accounted(critical_command *,
+							       const collector::record &);
+critical_submit_result collector_purchase_submit_for_publication(critical_command);
+// Own current/historical backend/session/save proof through callback and ACK.
+// True means exact original guarded ACK AND save-hold release completed. Every
+// attempt revalidates, including ACK retry. A rejected receipt invokes no effect
+// callback and needs native no-effect proof. No raw proof is exported as authority.
+// Check state.receipt_conflict AFTER the effect callback and BEFORE guarded ACK:
+// callback reentry may have delivered a contradictory sealed completion.
+// Existing canonical never_admitted instead releases the original hold with
+// no callback/native mutation/ACK, after validating its original disposition.
+bool collector_purchase_publication_attempt(const critical_command &, const critical_completion &,
+					    uint64_t actor_runtime_id,
+					    collector_purchase_publication_state &,
+					    collector_purchase_effect_fn);
 
 bool collector_transaction_submit(
 	P_char character, const collector_command_payload &payload,

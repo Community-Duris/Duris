@@ -533,7 +533,7 @@ unsigned int economic_sql_activation_receipt_validate_readback_row(
 			same_id(row.baseline_witness_lineage, receipt.lineage) &&
 			same_id(row.baseline_witness_epoch, receipt.epoch) &&
 			row.baseline_witness_revision == receipt.baseline_revision &&
-			row.baseline_witness_version == 1 &&
+			(row.baseline_witness_version == 1 || row.baseline_witness_version == 2) &&
 			row.baseline_witness_holding_count <= ECONOMIC_BASELINE_MAX_HOLDINGS &&
 			row.baseline_witness_item_count <= ECONOMIC_ACCOUNTING_MAX_ITEM_WITNESSES &&
 			row.baseline_canonical_witness.size() >= ECONOMIC_BASELINE_HEADER_BYTES &&
@@ -544,6 +544,7 @@ unsigned int economic_sql_activation_receipt_validate_readback_row(
 				economic_accounting_error::ok &&
 			decoded_baseline.has_value());
 		const auto &witness = decoded_baseline->witness();
+		require(row.baseline_witness_version == witness.witness_version);
 		require(same_id(witness.lineage, receipt.lineage) &&
 			same_id(witness.epoch, receipt.epoch) &&
 			same_id(witness.preparation_id, receipt.operation_id) &&

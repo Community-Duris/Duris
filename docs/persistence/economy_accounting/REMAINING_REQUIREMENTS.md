@@ -1,14 +1,1578 @@
 # Double-entry economy: remaining requirements
 
+## Fresh runtime-cache correspondence source composed - 2026-10-07
+
+[Primary source handoff](PERSISTED_PROVIDER_UNION_PRIMARY_HANDOFF_2026-10-07.md)
+records the reviewed private 51-production/23-original-fixture candidate. The
+cache consumer reads genuine current owner clocks; duplicate persisted UIDs
+retain correct cache counts and complete refusal findings. Both predecessor
+fixture control sets remain. This is source review/composition, not execution.
+[Required room reset work](DAY1_ROOM_RESET_IMPLEMENTATION_HANDOFF_2026-10-07.md)
+identifies actorless issuance and same-root room recovery still to implement.
+Initialized-world correspondence, original native/both-engine/gameplay/recovery
+qualification and full R1-R8 release remain open. No policy or safety gate changes.
+
+
+## Fresh activation consumer source reviewed - 2026-10-07
+
+[Source handoff](PERSISTED_PROVIDER_UNION_PRIMARY_HANDOFF_2026-10-07.md) records
+the private persisted-union consumer, owned RR read cut, genuine legacy auction
+identity witness and original money-fixture repair. Source review and touched
+formatting pass; original test controls and recipe remain. Complete mobile/live
+world census and original native/both-engine qualification remain required.
+These private source slices do not close R6, activation or release gates.
+
+## Complete independent operator source integrated - 2026-10-07
+
+[Primary integration evidence](PLAN5_OPERATOR_PRIMARY_INTEGRATION_2026-10-07.md)
+records the complete32-file reader/test closure and reviewed cashout overflow
+fix. Formatting, strict operator/fixture syntax, inventory927/workload108 and
+normal validation pass. All previous commands, suites and policies remain.
+Native/runtime and original major-plan release qualification remain pending;
+source integration does not close those gates.
+
+
+## Shopkeeper native fixture recipes repaired - 2026-10-07
+
+[Source repair evidence](SHOPKEEPER_NATIVE_RECIPE_REPAIR_2026-10-07.md) records
+three/four missing real providers restored to the original repository/ownership
+recipes. Original AST, flags, assertions and providers remain exact; inventory
+and normal accounting validation pass. Native execution is deferred with the
+major-plan candidate; external peer passes remain reported. No release gate closes.
+
+
+## Persisted union candidate authenticated - 2026-10-07
+
+[Primary source handoff](PERSISTED_PROVIDER_UNION_PRIMARY_HANDOFF_2026-10-07.md)
+records the room allocation-error fix, corrected original union fixtures and
+frozen40 composition. Source/fixture syntax and complete source authentication
+pass; native runtime/full builds remain pending. Lifecycle consumption and
+mobile/live/world census remain required. No original gate or inactive behavior
+changes, and no complete activation/release claim follows from this source work.
+
+
+## Central lifecycle component registered - 2026-10-07
+
+[Registration evidence](PLAN5_LIFECYCLE_V2_REGISTRATION_2026-10-07.md)
+records the reproduced three-file inventory failure and complete classification.
+All previous rows remain;926 tests/107 integration rows and central selection
+validate. The new offline lifecycle row requires fresh artifacts and zero skips.
+Native execution and original release gates remain pending; none are replaced.
+
+
+## Independent lifecycle V2 reader integrated - 2026-10-07
+
+[Primary evidence](PLAN5_LIFECYCLE_V2_PRIMARY_INTEGRATION_2026-10-07.md)
+records the reviewed retained-pile/envelope reader and exact five peer blobs.
+Formatting, strict fixture syntax and normal contracts pass. Its original native
+component link fails on the retained WSL math-library closure; runtime cases and
+original V2 installer qualification remain open. Full operator dependencies,
+Plans2-4, census/activation and R1-R8 release qualification are unfinished.
+
+
+## Persisted provider union source ready - 2026-10-07
+
+[Current evidence](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md) records
+the reviewed additive provider union, two strict SQL/flat syntax passes and
+final collector boundary preparation. All raw reports/history and original
+code/budgets remain. Original union fixtures, auction sealing, whole-candidate
+native qualification, remaining census and activation are still required.
+
+
+## Collector correspondence source ready - 2026-10-07
+
+[Current source and qualification evidence](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
+records reviewed collector literal/root/death identity correspondence, five
+strict syntax passes and primary authentication of its54-record packet and
+combined38. Original code, budgets and inactive gates remain unchanged; no
+production import or native/release completion is claimed. Auction, provider
+union, source-complete activation and original major-plan qualification continue.
+
+
+## Exact room boundary controls prepared - 2026-10-07
+
+[Current source-preparation evidence](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
+records the four previously missing root-count/item-byte boundary controls.
+Independent source review and strict SQL/flat fixture syntax pass; original
+cases and frozen providers remain unchanged. Native execution stays pending
+with original major-plan qualification. Auction/collector and complete census,
+activation, Plans2-4 and joint release work remain open; no gate is waived.
+
+
+
+## Modern room source and original boot controls - 2026-10-07
+
+[Current checkpoint](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md) records
+the reviewed room-provider pair: five native projections, shared capture budgets,
+complete raw history and explicit missing/incomplete evidence. Five strict syntax
+checks pass; primary authenticates 47 records and unchanged old native functions.
+V10 binds all eighteen original boot controls to private34, with source-only
+authentication. Native controls, full builds, remaining census providers and
+activation stay open; private36 source composition authenticates, with no import.
+
+## Persisted physical correspondence source ready - 2026-10-07
+
+[Current qualification checkpoint](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
+records the frozen four-file physical validator/normalizer. Primary authenticates
+all 43 records, original interfaces and six strict SQL/flat syntax receipts. It
+preserves all raw observations and unresolved custody; full native qualification
+and source-complete activation remain open. Borrowed RR capture can use the
+existing writable cutover without changing owning READ ONLY capture. Modern
+room capture proceeds independently; private 34 source composition authenticates. No
+private native source is imported and no original gate or writer policy changes.
+
+## Independent coin exporter integrated - 2026-10-07
+
+[Primary integration](PLAN5_COIN_EXPORT_PRIMARY_INTEGRATION_2026-10-07.md)
+fixes shared native row budgets and area-money prototype capture. The old
+failure reproduces locally; all186 focused pure methods pass, zero skips,
+and normal contracts pass. Peer native/modeled SQL evidence stays reported
+and externally unauthenticated. Full release still refuses missing writer
+evidence; Plans2-4, joint Plan5 and source-complete activation remain open.
+
+## Shared native qualification progress - 2026-10-07
+
+[Current qualification checkpoint](SHARED_NATIVE_QUALIFICATION_PROGRESS_2026-10-07.md)
+records the complete private shutdown/SHOP candidate and the actual SQL754
+Make/full-link pass. Complete cache export then failed for host disk space;
+Docker startup and the WSL math-library closure block remaining native checks.
+Flat Make, genuine Collector/SHOP journeys and shared flat boot qualification
+remain open. No production fix is imported or gate promoted. Preserve original
+budgets, failed evidence, inactive/spell boundaries and all926 writer policies.
+
+The checkpoint authenticates private32: frozen30 recovery/genesis/shutdown/SHOP
+plus two persisted physical-capture files. Original interfaces and transport
+authenticate; all18 genuine full-server controls remain unexecuted. Physical
+correspondence and full activation stay open. The native lifecycle V2 wire
+contract enables independent Plan5 work; no private native fix is imported.
+
+## Flatfile ordinary room-pile reader qualified - 2026-10-07
+
+[Qualified data reader](FLATFILE_COIN_COLD_READER_INTEGRATION_2026-10-07.md)
+authenticates indexed original command, claim, plan, native receipt/reference,
+current head/custody/full literal and live epoch under a borrowed authority lock.
+All original sanitizer cases and30 new reader groups pass; both754-provider
+production links and shared contracts pass. This is a recovery prerequisite;
+shared flat boot/history fences, physical publication/ACK, complete Plans2-4
+and R1-R8/release remain open. All926 writer policies remain unchanged.
+
+## Flatfile COIN source claim fixed - 2026-10-07
+
+[Qualified source-claim fix](FLATFILE_COIN_SOURCE_CLAIM_FIX_2026-10-07.md)
+stages the original lifecycle claim with the native authority commit and checks
+successful retained replay. Missing/corrupt proof remains retryable with durable
+bytes unchanged. The combined sourceclaim/reader candidate passes the complete
+original sanitizer suite and both original754-provider production links.
+All926 writer policies remain unchanged; full flat boot, shared publication/ACK,
+activation, Plans2-4 and R1-R8/release remain open.
+
+## Coin owner component fixture repaired - 2026-10-07
+
+[Qualified fixture](COIN_OWNER_COMPONENT_FIXTURE_INTEGRATION_2026-10-07.md)
+restores the real stopped-pipeline provider/registration and canonical native
+literal inputs. All original35 owner cases pass in both profiles (70 total);
+primary verifies94 actual compiler closures, current223 dependencies and exact
+maintained generated harness bytes. The five earlier physical literal controls
+are retained alongside the original25 controls. Native successful SQL/world/ACK,
+flatfile parity, remaining Plans2-4 and full R1-R8/release remain separate and open.
+Production behavior and all926 writer policies remain unchanged.
+
+## Collector flatfile proof-reader prerequisite integrated - 2026-10-07
+
+[Qualified prerequisite](COLLECTOR_FLATFILE_PROOF_READERS_INTEGRATION_2026-10-07.md) adds borrowed-lock retained/current native proof readers and repairs the
+complete original component fixture. The original71.118-second recipe, both
+original754-provider production links, ten shared-source contracts and four
+changed-line formatting checks pass. Primary authenticates the complete raw
+source/native exports and an explicit canonical LF token/literal bridge.
+All926 writer policies remain unchanged; no route or release gate is promoted.
+Collector player/coordinator/ACK, SQL cold recovery, flatfile publication and
+the remaining original Plan4/Plans2-4/R1-R8 acceptance remain open.
+
+## Maintained post-ACK room coin recovery qualified - 2026-10-07
+
+[Qualified coin fix](COIN_POSTACK_MAINTAINED_INTEGRATION_2026-10-07.md) restores acknowledged ordinary room piles on cold
+boot with the original UID, complete retained literal, custody and owner counters,
+and preserves the native money prototype's zero/one-renderer shape. Both original
+754-provider production builds, ten source contracts, 60 physical publication
+controls, 14 inert staging controls and the final writer/accounting contracts pass.
+The genuine current-source MariaDB10.11 and MySQL8.0.46 journeys pass the real
+command/ACK, both full-server cold boots and all five normal stops per engine.
+Primary independently authenticates 146 sealed evidence files and 3,830 recoverable
+raw/mode/link members. Startup observation uses the existing native watchdog inside
+the original120-second budget; native birth/shutdown guards and stop30 stay intact.
+The separate 35-case owner fixture gap predates this fix and remains open, as do
+flatfile parity, the rest of Plans2-4 and full R1-R8/release qualification. All925
+prior writer policies stay intact; the new cold-projection row remains explicitly
+unqualified for complete coverage. Inactive and declined spell behavior stay intact.
+
+## Native auction creator proof qualified - 2026-10-07
+
+[Retained creator and zero-fee fix](AUCTION_NATIVE_CREATOR_PROOF_FIX_2026-10-07.md)
+now passes both maintained original753-provider builds/full links, ten original
+contracts, the real-source sanitizer regression and the unchanged original
+MySQL8/MariaDB10.11 auction SQL component, including BID184/185 and original
+refusal/replay controls. All925 writer policies and evidence states are preserved.
+This closes the retained native creator defect; whole Plan4, physical player
+journeys, flatfile parity, activation and full R1-R8/release qualification remain
+open. The coin restart and fresh SHOP streams continue independently.
+
+## Maintained producer composition - 2026-10-07
+
+[Current candidate](MAINTAINED_PRODUCER_CANDIDATE_INTEGRATION_2026-10-07.md)
+applies the reviewed shared/held/quest/native-auction closure with later coin
+and cold-birth safeguards, current Plan5 work and inactive/spell boundaries
+preserved. Both original753-provider production builds and ten Linux contracts
+pass. All108 owned formatting checks and the refreshed925-route writer contracts
+pass, including both original formatted dependency builds and full links. Original Plan1 independent
+acceptance retains its recorded scope; current major-plan, gameplay, activation
+and full R1-R8/release qualification remain open. No coverage gate is promoted.
+
+## Independent history and namespace qualified � 2026-10-07
+
+[Primary integration](PLAN5_HISTORY_NAMESPACE_PRIMARY_INTEGRATION_2026-10-07.md)
+adds catalogue-required consecutive history and captured physical-namespace
+checks. All three complete original native suites pass with zero skips:
+lifecycle69 history/48 namespace controls; authority77 history/49 namespace
+controls; all131 lifecycle,20 healthy/367 damaged and69 marker cases remain.
+Primary authenticates6,377 source inputs and17,098 native regular bodies/modes,
+then imports exactly13 qualified files. Accounting/checkpoint contracts,
+syntax, formatting and whitespace pass. Source archive transport conversion
+is verified separately from Git blob identity. Protected WIP stays exact.
+Named known-range closure does not certify full accounting; native holdings,
+producer/player journeys, full recovery and release remain open.
+
+## Latest literal-capacity recovery result — 2026-10-07
+
+[Qualification and integration](LITERAL_POOL_CAPACITY_RECOVERY_QUALIFICATION_2026-10-07.md)
+passes the original warm/full-cold and genuine origin-fault/pending-journal cases
+on both SQL engines. Pending cold now exits0 within the unchanged60-second limit.
+Primary authenticates172 files/2548 native members and owned cleanup. Narrow
+maintained integration now passes both original 740-provider production builds
+and actual pool controls. Root authenticates 1,308 unchanged source files and
+3,001 native artifact bytes/modes, original flags, provider closures and exact
+control markers. The native handoff is
+`bin/tests/mm-maintained-linux-primary-20261007/NATIVE-HANDOFF.json`.
+The earlier bind-filesystem link timeout is preserved; the Linux successor keeps
+the same controls and the 15-second execution limit. Exact owned cleanup passes.
+Whole maintained gameplay and release remain open; older failures below remain
+historical evidence, not the latest outcome.
+
+## Ordinary coin recovery counter fix — 2026-10-07
+
+[Focused qualification](COIN_RECOVERY_OWNER_COUNTER_QUALIFICATION_2026-10-07.md)
+repairs both locked endpoint counters and exact item owner_revision. Original
+source fails three regressions; corrected maintained source passes all ten native
+ASan/UBSan cases. Authority/world seams limit this evidence to cache projection.
+Post-ACK SQL room coin boot restoration and full Plan2 qualification remain open.
+
+## Current native auction proof progress — 2026-10-07
+
+[Private component progress](NATIVE_AUCTION_RETAINED_PROOF_PROGRESS_2026-10-07.md)
+passes original native-v2 LIST, settlement, partial pickup and exact durable
+rejected replay. The next original v1 LIST171 returns retryable EAGAIN; its
+original custody INSERT has now been observed failing1062 because a claimed
+row retains the globally unique UID. Additive history-preserving schema64 is
+measured privately on MySQL8 and MariaDB10.11: canonical migration and both
+interrupted-DDL resume routes pass, preserving original application/history rows.
+All 238 commands have their expected outcomes. Runtime fingerprints are now
+measured and the offline contract passes. Both original753-provider production
+links and nine contracts now pass on the measured private source; original
+producer reruns and maintained integration remain open. Earlier strict753-provider
+builds and nine contracts pass on private d2 source; both-engine component completion, physical
+journeys and maintained producer integration remain open. The separately
+reviewed post-SQL-proof recovery diagnostic also passes both original753 builds
+and nine contracts; runtime recovery qualification remains pending. Existing
+inactive behavior, declined spell path and release gates remain preserved.
+
+## Required baseline controls qualified — 2026-10-07
+
+[Primary integration](PLAN5_BASELINE_CONTROLS_PRIMARY_INTEGRATION_2026-10-07.md)
+adds catalogue-required baseline control/reference pages, including rootless
+and inactive initialized books. All three original native reader suites pass
+with zero skips; 65 new baseline controls pass alongside existing cases.
+Missing controls stay visible; full history, holdings, producers, recovery
+and release remain open. Complete/closure/release flags remain false.
+
+## Flatfile page consistency qualified — 2026-10-07
+
+[Primary integration](PLAN5_PAGE_CONSISTENCY_PRIMARY_INTEGRATION_2026-10-07.md)
+corrects `consistent_page` for semantic findings without losing sticky history.
+All three original native reader suites pass on the combined baseline-controls
+candidate with zero skips. Primary authenticates source and native exports;
+producer, recovery and release qualification remain open.
+
+## Lifecycle receipt paging qualified — 2026-10-07
+
+[Primary integration](PLAN5_LIFECYCLE_PAGES_PRIMARY_INTEGRATION_2026-10-07.md)
+adds independent durable pages for required lifecycle receipts, including
+inactive epochs. The complete original lifecycle suite passes 131 cases
+(nine accepted, 122 refused) plus 46 page controls, zero skips. The original
+authority suite also passes all 20 positive stores, 367 corruption refusals,
+28 root-page and 29 authority-page controls. Missing receipts remain visible
+through their required initializer roots. Sticky findings, rotating refused
+buckets, explicit partial coverage and existing safety budgets remain.
+Native source/artifacts and formatting-only equivalence are authenticated.
+Full holdings, producers, recovery and release remain open.
+
+## Lifecycle audit maximum budget qualified — 2026-10-06
+
+[Primary integration](PLAN5_LIFECYCLE_BUDGET_PRIMARY_INTEGRATION_2026-10-06.md)
+passes the full 131-case native lifecycle suite: nine accepted, 122 refused and
+zero skips. Its maximum modeled native-codec fixture needs 9,574 physical reads,
+so the default cap increases from 2,048 to 16,384 while byte/time/directory and
+explicit page budgets remain. Source and economic evidence stay unchanged.
+Complete holdings, genuine producers, growing-history qualification and release
+remain unfinished.
+
+## Durable independent flatfile pages qualified — 2026-10-06
+
+[Primary qualification](PLAN5_FLATFILE_PAGES_PRIMARY_INTEGRATION_2026-10-06.md)
+passes57 new root/authority-page controls and the complete original native suite.
+Sticky refusals and historical-range progress remain partial evidence. The first
+unattributed timestamp refusal is preserved, and the timestamp guard remains
+unchanged. Whole native reconstruction, R7/R8 and release stay unfinished.
+
+## SQL audit refusal fairness qualified — 2026-10-06
+
+[Primary qualification](PLAN5_SQL_FAIRNESS_PRIMARY_INTEGRATION_2026-10-06.md)
+passes67 original methods without errors/skips and18 mandatory tests on both
+private SQL engines. Budget-refused namespaces now rotate while preserving
+coverage and sticky refusal history; cleanup/source failures do not rotate.
+Producer gameplay, full R7/R8, activation and release remain open.
+
+## Current producer qualification — 2026-10-07
+
+[Final source 30837d50](AUCTION_NATIVE_ADMISSION_CAP_QUALIFICATION_2026-10-07.md)
+passes both strict 753-provider production builds, nine contracts and the
+original native admission-boundary regression. Selected LIST/CLAIM accounting
+nodes above 3,000 refuse before domain effects; structural/read-only capacity
+remains 4,096. The incoming allowlist and inactive/spell boundaries stay exact.
+This source is private; maintained producer integration remains open.
+
+Both actual MySQL and MariaDB warm/full-cold/owned-shutdown journeys now pass
+on the same actual ELF with the genuine production lifecycle teardown guard.
+MySQL's genuine origin-INSERT fault exits 17 as expected and retains one phase-2
+journal record. Its subsequent pending-journal cold case hits the unchanged
+60-second deadline (exit 124, 60.024 seconds). A separate unchanged-ELF
+diagnostic also times out at 60.034 seconds; its single bounded stack reaches
+the retained birth's SQL wallet-mapping count proof after replay initialization.
+A separate unchanged-ELF SELECT-only diagnostic times out at 60.025 seconds.
+Its nine metadata reads complete in 0.441 seconds and show transaction turnover
+without observed wait relations. The sample is non-atomic; instrumentation
+coverage and client ownership are unproven, so it does not establish a global
+absence of waits or the failed recovery predicate. Primary authenticates all
+146 SQL diagnostic files, 1,779 native members and exact cleanup; the separate
+stack packet contains 129 files. Neither diagnostic changes code or deadlines.
+The [numeric source diagnostic](NATIVE_COLD_PROOF_OBSERVATIONS_2026-10-07.md)
+passes both original full 753-provider builds and nine contracts. Its genuine
+new ELF passes both engines' normal warm/cold cases; pending MySQL cold still
+times out at 60.053 seconds. Actual stages 9400/9411 with code zero establish
+at least one complete original SQL-proof/rollback boundary passed. The later
+failed reconstruction/publication check remains unobserved. Primary authenticates
+124 files, 1,779 native members and cleanup. MariaDB fault cases remain unrun
+under original fail-fast order.
+Primary authenticates 123 evidence files, 1,779 native archive members and exact
+owned cleanup. Normal cold success does not establish fault recovery completion.
+
+The full-tree auction component now applies LIST operation 151 (outcome 0,
+error 0, 320 result bytes), then fails the original early-finalize rejection
+assertion. The actual early-finalize errno is unobserved. Source review finds
+the legacy descendant refusal and v1-only non-item execution route; complete
+native-v2 historical/current-cut proof integration is in progress. Primary
+authenticates 98 sealed files, 542 native members and cleanup. Neither this
+component model nor native boundary tests establish physical player journeys.
+
+Published reader parent 66a3deee3 contains separately qualified SQL refusal
+fairness, flatfile pages and maximum lifecycle audit budget. Unrelated SHOP
+edits remain. Plans 1–4, complete R1–R8 and release remain unfinished.
+
+## Current flatfile audit envelopes published — 2026-10-06
+
+[Primary qualification](PLAN5_FLATFILE_ENVELOPE_PRIMARY_INTEGRATION_2026-10-06.md)
+is committed and directly pushed as `a455dcb94`, with exact remote readback.
+The complete original native regression passes:1058 metadata and574 envelope
+comparisons,11 native-accepted records, ten malformed-envelope refusals,20 valid
+stores and367 corruption refusals. All2881 selected source bytes/modes and
+economic evidence remain unchanged. The independent reader now accepts current
+collector/native-mobile/accounted-shop envelopes while retaining original
+sentinel, size and binding checks. Current753 producer/cold qualification remains
+separate. The [operator-lock/budget slice](
+PLAN5_FLATFILE_AUDIT_BOUNDARY_PRIMARY_INTEGRATION_2026-10-06.md) is
+published as79df6775b. Its complete original native suite and21 added
+authority/budget controls pass; selected source and economic bytes stay
+unchanged. Current producer/cold qualification remains separate.
+
+## Independent composite SQL sweep published — 2026-10-06
+
+[Primary integration](PLAN5_SQL_COMPOSITE_PRIMARY_INTEGRATION_2026-10-06.md)
+is committed and normally pushed as `8f40b43ec`, with exact remote readback.
+The complete decoder/audit slice checks standalone baseline controls and orphan
+reservations through bounded rotating namespace pages. All35 maintained methods
+survive;34 are AST-exact and the remaining native method gains stronger checks.
+Primary Windows checks pass135 methods with13 explicit platform/native/budget
+skips across four affected suites. Normal validation passes, release false.
+Peer117-method native results remain scoped to its frozen inputs. Current
+producer recovery, full R7/R8, activation and whole Plan completion stay open.
+
+## Independent captured-item reader published — 2026-10-06
+
+[Primary integration](PLAN5_CAPTURED_ITEM_PRIMARY_INTEGRATION_2026-10-06.md) is
+committed and directly pushed as `de42a11c0`, with exact remote readback. All46
+existing method ASTs remain exact; six methods are added. Primary discovers52
+methods:49 pass and three native integration cases require their separate Linux
+database invocation. Normal accounting validation passes, with release false.
+Peer-native109-method/capture results retain their frozen scope. The remaining
+Plan5 audit slices and full current producer/recovery qualification stay open.
+
+## Captured-item reader interface handed off — 2026-10-06
+
+[Exact producer contracts](CAPTURED_ITEM_OPENING_PLAN5_INTERFACE_2026-10-06.md)
+record EBS2/ESN5/EIC2 and unchanged empty-opening behavior. The functions match
+both private candidates byte-for-byte. The auction source-claim fix is queued
+against the maintained branch; full startup and independent digest qualification
+remain open. This handoff does not complete a Plan or release gate.
+
+## Independent opening-policy reader integrated — 2026-10-06
+
+[Primary integration](PLAN5_OPENING_POLICY_PID_PRIMARY_INTEGRATION_2026-10-06.md)
+authenticates original policy/PID facts, including zero and retired claims.
+All 209 selected pure methods pass, zero skips; exact native/migration inputs
+match the separately reported Plan5 qualification. External native artifacts
+remain peer-attributed. Producer claims, complete startup and release stay open.
+
+## Projection contract parser repaired — 2026-10-06
+
+[Primary repair](PROJECTION_DEFAULT_ARGUMENT_PARSER_PRIMARY_REPAIR_2026-10-06.md)
+fixes the default-argument brace parser without changing production policy.
+The original failure reproduces; the same frozen-method check and all seven
+maintained methods pass, zero skips. Complete startup-source builds and cold
+world/journal qualification remain open; no Plan or release gate is promoted.
+
+## Genuine producer qualification advancing — 2026-10-06
+
+[Shared progress](SHARED_PRODUCER_INTEGRATION_PROGRESS_2026-10-06.md) records
+both complete 747-unit builds and genuine first M+G publication on both SQL
+engines, with the genuine event catalog exported and loaded. The private
+native-wallet successor now passes both original production builds/contracts
+and [normal cold SQL startup/readback](NATIVE_WALLET_STARTUP_PRIMARY_QUALIFICATION_2026-10-06.md)
+on both engines. Source remains private; authentic cold world restoration,
+pending-journal recovery and complete activation remain unfinished.
+Completed independent Plan 1 acceptance
+remains intact; complete openings, activation and full R1–R8 stay open.
+
+
+## Partial claim snapshot readers integrated — 2026-10-06
+
+[Primary qualification](PLAN5_PARTIAL_SNAPSHOT_PRIMARY_QUALIFICATION_2026-10-06.md)
+closes saved partial-allocation coverage and source-batch double counting.
+All 173 selected pure methods pass; both original native capture methods and
+the full native restore entry point pass on both fresh canonical 0062 engines,
+each with 109 cuts/90 refusals. Producer/cold/full release gates remain open.
+
+
+## Exact UID provenance integrated — 2026-10-06
+
+[Primary qualification](PLAN5_UID_PROVENANCE_PRIMARY_QUALIFICATION_2026-10-06.md)
+requires an exact integer UID before including retained provenance. Original
+failure and all three maintained provenance/CLI methods pass, zero skips.
+Allocation snapshots, real producer/recovery journeys and full release remain open.
+
+## Auction/opening shared milestone qualified — 2026-10-06
+
+[Exact maintained qualification](AUCTION_OPENING_RETAINED_PRIMARY_QUALIFICATION_2026-10-06.md) records seven original native
+suites on each fresh canonical0062 engine, both full740-object production
+builds and final formatted relinks. Complete retained item-claim and original
+money/source corruption controls pass. Registry/matrix stay incomplete and
+release BLOCKED. HRT, quest/birth, actual gameplay/ACK/cold and full Plan/Plan5
+qualification remain open.
+
+## Retained claim allocation readers qualified — 2026-10-06
+
+[Current primary integration and full component qualification](PLAN5_RETAINED_CLAIM_PRIMARY_QUALIFICATION_2026-10-06.md)
+closes the independent retained-allocation omission. Both original failures
+reproduce; all33 reader methods and the full native/SQL restore method pass
+on both fresh canonical0062 engines. Each passes105 cuts/89 refusals, including
+whole/partial allocation and second-page corruption. Producer policy/PID,
+current-balance reconciliation, full Plans and release remain open.
+
+## Baseline absent-price replay proof qualified — 2026-10-06
+
+[Exact original baseline qualification](BASELINE_NULL_PRICE_PRIMARY_QUALIFICATION_2026-10-06.md)
+repairs an omitted NULL sale-price comparison. The full original native suite
+passes both fresh canonical0062 engines, including faults, concurrency,
+allocation failures and maximum batches; flat refusal and production owner
+objects pass. Broader producer/recovery, complete Plans and release remain open.
+
+## Shared producer integration advancing — 2026-10-06
+
+[Current private integration evidence](SHARED_PRODUCER_INTEGRATION_PROGRESS_2026-10-06.md)
+records completed auction shared wiring, held source/current interfaces and the
+real quest-money receipt dependency. Strict object boundaries pass on both
+backends; combined native/SQL qualification is in progress. These changes are
+private and do not complete a Plan, R1–R8, activation or release gate.
+
+## Independent SQL NPC value reader integrated — 2026-10-06
+
+[Current primary both-engine qualification](PLAN5_SQL_NATIVE_MOBILE_PRIMARY_QUALIFICATION_2026-10-06.md) adds complete bounded
+saved-image decoding to SELECT-only restore/audit. All26 reader methods and
+the original native/SQL restore batch pass on both canonical0062 engines,
+zero skips and unchanged authority. Producer/cold recovery and full release remain open.
+
+## Canonical0062 verifier executable mode repaired — 2026-10-06
+
+[Mode-only repair](CLAIM_CONSUMPTION_VERIFIER_MODE_PRIMARY_2026-10-06.md) fixes the raw-Git Linux PermissionError without
+changing sealed bytes. The original full native/restore test passes on both
+fresh schema0062 engines with zero skips. NPC reader integration is separate;
+producer/recovery and full release qualification remain open.
+
+## Saved NPC images validated during flatfile restore — 2026-10-06
+
+[Current primary qualification](PLAN5_NATIVE_MOBILE_RESTORE_PRIMARY_QUALIFICATION_2026-10-06.md)
+imports the completed Plan5 flatfile saved-NPC image check. The complete original
+native method passes:4 valid/48 refused images plus20 valid stores/367 retained
+corruption cases, zero skips and unchanged bytes. Original providers, sanitizer
+flags and deadlines remain. No birth/source, full Plan or release qualification
+is claimed; auction, quest, held recovery and incoming SQL reader work remain.
+
+## Claim consumption schema0062 qualified — 2026-10-06
+
+[Exact additive0062 qualification](CLAIM_CONSUMPTION_SCHEMA_0062_PRIMARY_QUALIFICATION_2026-10-06.md)
+registers immutable partial claims and nullable new-origin witnesses without
+backfilling history. Both original engine/fork/compiled-boot and native session
+fault suites pass; both fresh738-object production builds and current contracts
+pass. Original receipt comparisons now cover complete manifests. Producer money
+opening/spending/recovery, independent readers, full R6/R8 and release remain open.
+
+## Matching equipment capture and production-build evidence consumed — 2026-10-06
+
+[Primary source comparison](PLAN5_EQUIPMENT_V2_PRIMARY_QUALIFICATION_2026-10-06.md)
+confirms identical native/canonical61/script inputs for Plan5's new both-engine
+equipment capture/exporter batch and fresh738-unit production builds on both
+backends. Results remain peer-attributed; external artifacts were not locally
+re-inspected. The partial exporter grants no activation authority. Full R6,
+real producer/ACK/cold journeys and release qualification remain open.
+
+## Published source pin representation repaired — 2026-10-06
+
+[Primary provenance repair](PUBLISHED_SOURCE_PIN_PRIMARY_REPAIR_2026-10-06.md)
+changes only five raw Git-LF pins and their matrix copies; all other148pins and
+route/status metadata remain. Three precise LF attributes retain Windows
+checkout reproducibility. Original58 methods pass on both authenticated
+published bytes and maintained source;14-golden validator and matrix pass.
+Coverage remains incomplete and release BLOCKED.
+
+## Read-only census capability fence qualified — 2026-10-06
+
+[Exact fence integration](PLAN5_CENSUS_CAPABILITY_FENCE_PRIMARY_2026-10-06.md)
+provides the missing quest game-thread boundary by aborting any unexpected
+publication. Original native sanitizer methods pass in both configurations:
+29 cases each,262,144 cache rows and zero skips. Formatting passes; SQL-mode
+opens no database. Full R6–R8 and release qualification remain open.
+
+## Historical child equipment finding retained — 2026-10-06
+
+[Exact expectation repair](PLAN5_CHILD_EQUIPMENT_EXPECTATION_PRIMARY_2026-10-06.md)
+keeps the missing equipment finding beside both child findings and the missing
+original plan. All21 existing independent child methods pass with zero skips;
+the edited native/private-SQL branch retains its older peer qualification.
+The historical cut remains incomplete and current major qualification is pending.
+
+## Native audit recipe providers repaired — 2026-10-06
+
+[Primary integration](PLAN5_NATIVE_PROVIDER_PRIMARY_INTEGRATION_2026-10-06.md)
+adds the actual missing shop-trade recovery manifest provider to nine original
+native recipes. Shared restore SOURCES supplies it exactly once; flags and
+assertions remain. Original native flatfile ASan/UBSan passes, including85 fault
+cases; normal contracts and matrix pass. Separate child/census fixes and the
+current major SQL/gameplay/release qualification remain pending.
+
+## Equipment capture v2 integrated — 2026-10-06
+
+[Primary source integration](SQL_EQUIPMENT_CAPTURE_V2_PRIMARY_INTEGRATION_2026-10-06.md)
+repairs omitted native equipment with a separate same-transaction projection,
+preserving historical money hashes and explicit v1 unobserved slots. Independent
+review, focused sanitizer controls, both integrated production object pairs and
+normal contracts/matrix pass. Original SQL/native major qualification remains
+pending. [Auction/claim opening handoff](SQL_OPENING_AUCTION_CLAIM_IMPLEMENTATION_HANDOFF_2026-10-06.md)
+records the next coupled money slice. Full R6, Plans2–4 and release remain open.
+
+## Real Kord crash fixture wired — 2026-10-06
+
+[Shared driver wiring](QUEST_CRASH_REAL_KORD_FIXTURE_2026-10-06.md) exposes actual
+QP06 prototype/Q terms, aliases, C3000 and reward29237 with exact three-root checks.
+Original calibration and fault limits remain. Optional later ordinary reward drop
+must retain the UID across the second cold boot. Both actual fixture preparations
+and AST/whitespace checks pass; no gameplay/drop/cold journey is claimed. Active
+native child/publication and move-before-lost-ACK qualification remain pending.
+
+## Quest prep refreshed for installed native owners — 2026-10-06
+
+[Primary refresh](QUEST_PREP_NATIVE_REFRESH_PRIMARY_INTEGRATION_2026-10-06.md)
+imports ten exact peer files from3e9ce549a, retaining the eleventh original test.
+Seven source cases and seven extracted observations pass in the pinned private
+view; primary QP06 source/fixture and QP03 recipient checks pass after installation.
+Three original paid/refund/stale-task diagnostics remain RED. Removed obsolete
+helper stubs do not replace native hold/custody requirements; all seven complete
+journeys, producer integration and full accounting qualification remain pending.
+
+## Independent collector quarantine reader integrated — 2026-10-06
+
+[Primary integration](PLAN5_COLLECTOR_QUARANTINE_PRIMARY_INTEGRATION_2026-10-06.md)
+consumes the exact completed Plan5 issue977a5f317. All four ownership projections
+retain quarantine; history readers and retired-UID checks preserve its semantics.
+Four focused methods, five ASTs and normal accounting validation pass. Peer native
+and both-engine results retain their older source/component scope; combined
+producer, opening capture, restart and release qualification remain unfinished.
+No authority, activation, manifest or unrelated WIP changes are introduced.
+
+## Explicit activation verifier request context — 2026-10-06
+
+[Shared contract and Plan 5 handoff](ACTIVATION_VERIFIER_REQUEST_CONTEXT_2026-10-06.md)
+pass the original request synchronously to the borrowed-session verifier.
+Both production owner-mode objects, the original harness with exact flags,
+three existing source cases and current matrix/writer contracts pass at their
+stated scopes. Guards, decision/retry, capture and transaction order remain.
+Complete opening capture, stopped-maintenance orchestration and the genuine
+independent verifier remain full R6 work; no production authority is activated.
+This closes the missing request-context interface, not full release acceptance.
+
+## Actual inactive alchemist reset/literal fixture retained — 2026-10-06
+
+[Scoped native evidence](ALCHEMIST_ACTUAL_RESET_LITERAL_QUALIFICATION_2026-10-06.md)
+and the retained fixture link all 738 original production providers. Both
+real boot/reset worlds pass, including chance/UID/latch retries and moved-vial
+public literal capture without synthetic birth/source reference facts.
+Independent review accepts the exact provider and assertion scope. Accounting
+was inactive; active NBC3 admission, SQL/custody/publication/ACK and authentic
+cold restoration remain pending. No Plan or release gate is marked complete.
+
+## Native birth writer registry refreshed — 2026-10-06
+
+[Maintained integration evidence](NATIVE_BIRTH_WRITER_REGISTRY_INTEGRATION_2026-10-06.md)
+records the reviewed 920-row registry, all 2,818 current unique sites mapped,
+and actual normal validator, matrix, site, route and 55-case coverage passes.
+Original IDs/backend evidence stay intact; four stale assertions retain their
+operation/owner requirements and both changed source pins match actual files.
+This closes the stale native census/matrix issue. Full active producer,
+SQL/publication/ACK, cold restart, flat parity and release work remain open.
+Coverage stays incomplete and activation closed; no Plan is declared complete.
+
+## Parallel quest acceptance prep consumed — 2026-10-06
+
+[Primary handoff](QUEST_PREP_PRIMARY_INTEGRATION_2026-10-06.md) imports eleven
+owned prep files froma7c7efb26. Five static production-term/fixture checks pass
+on the actual integrated source; six ASTs pass. Seven native journeys and dynamic
+bartender settlement remain pending. Peer diagnostic REDs locate original
+requirements and add no release gates. Use this pack for actual owner/native
+qualification; no source authority or gameplay/ACK is synthesized.
+
+## Independent compound-action audit fix integrated — 2026-10-06
+
+[Primary integration evidence](PLAN5_COMPOUND_ACTION_PRIMARY_INTEGRATION_2026-10-06.md)
+imports five exact owned blobs fromf2a928094. Actual UID-scope, canonical audit
+and audit-origin checks pass; optional native skips retain their stated scope.
+The independent endpoint/revision rule fixes compound creation/retirement
+projection without changing native authority or source. Peer both-engine/native
+evidence remains tied to its older native tree; primary51de producer/recovery,
+writer refresh and combined release acceptance remain open.
+
+## Reviewed native birth/quest source installed — 2026-10-06
+
+[Exact qualification evidence](NATIVE_BIRTH_RECOVERY_MAJOR_QUALIFICATION_2026-10-06.md)
+records both original production backends passing on actual51de. The reviewed
+native birth/quest source and six test companions are installed as an inactive
+review candidate; two missing original drivers are registered, with all existing
+manifest rows retained. Original codec/context and independently reviewed NBC
+compatibility components pass at their stated scopes. Shared journal/coordinator
+controls pass, including the separately repaired uncertain-journal linkage.
+Writer source/matrix refresh and actual producer/SQL/publication/restart journeys
+remain open. No complete Plan, R1–R8, coverage, activation or release pass is
+claimed. Owned artifacts are retained, cleanup completed, and unrelated WIP,
+inactive behavior and the declined spell-path boundary are preserved.
+
+## Independent unique supply evidence fix integrated — 2026-10-06
+
+[Exact primary integration](PLAN5_SUPPLY_EVIDENCE_PRIMARY_INTEGRATION_2026-10-06.md) imports five owned blobs from `62ad380b6`. The new actual CLI regression, AST and normal/matrix/current61 metadata pass. All committed code/test/schema inputs match the qualified peer composition; native source, complete central manifest and unrelated WIP remain. Peer native/both-engine results retain their recorded component scope. No primary native rerun, complete capture or full release qualification is claimed. Original Plans and major native work remain open.
+
+
+## Independent quarantined coin reader fix integrated — 2026-10-06
+
+[Exact primary integration](PLAN5_QUARANTINED_COIN_PRIMARY_INTEGRATION_2026-10-06.md) imports five owned blobs from `eadeec0e7`. The new actual CLI regression, AST and normal/matrix/current61 metadata pass. All committed code/test/schema inputs match the qualified peer composition; native source, complete central manifest and unrelated WIP remain. Peer native/both-engine results retain their recorded component scope. No primary native rerun, complete capture or full release qualification is claimed. Original Plans and major native work remain open.
+
+
+## Independent quarantined containment fix integrated — 2026-10-06
+
+[Exact primary integration](PLAN5_QUARANTINED_TOPOLOGY_PRIMARY_INTEGRATION_2026-10-06.md)
+imports five owned blobs from4528dbfd7. Quarantined owner/root disagreements
+now receive the existing topology finding; no authority changes. The new actual
+CLI case, AST and normal/matrix/current61 metadata pass. All committed code/test
+inputs match the qualified peer composition; native source, complete manifest
+and unrelated WIP remain. Peer native/both-engine component evidence retains
+its recorded scope. No primary native rerun, complete capture or full release
+qualification is claimed. Original Plans and major native work remain open.
+
+
+## Independent retained flatfile semantics fix integrated — 2026-10-06
+
+[Exact primary integration](PLAN5_FLATFILE_PLAN_SEMANTICS_PRIMARY_INTEGRATION_2026-10-06.md)
+imports the five owned blobs from9e72cd35f. All committed code/test/schema
+inputs match the qualified peer composition; native source, full manifest and
+unrelated WIP are preserved. Primary AST and normal/matrix/current61 metadata
+pass. Peer reports the complete expanded native restore suite, semantic oracle
+comparisons and strict SQL build passing, zero selected skips, at its recorded
+structural/component scope. No primary native rerun or private quest/birth
+qualification is claimed. Full Plans, complete capture and release remain open.
+
+
+## Quest terminal pair and actual NBC2 producer composed — 2026-10-06
+
+[The integrated source handoff](NATIVE_QUEST_TERMINAL_PAIR_SOURCE_2026-10-06.md)
+records authentic parent/child receipt plus exact reward ACK cleanup, atomic
+terminal rejection, handoff1/2 and preserved uncertain-pair retries. The actual
+NBC2 factory/producer and immutable birthplace correlation are connected.
+All5,783 private inputs match4b0e7821, including1,560 published scripts/tests
+from743551948; original drivers and unrelated WIP are preserved. Independent
+source review, exact pins/inverses, helper AST and formatting pass. Cold birth
+adoption/body-loss restoration, remaining mechanics/flat parity and major native
+qualification continue in parallel. No maintained native installation, full Plan
+or release gate is claimed; accounting and safety behavior stay unchanged.
+
+
+## Independent item custody-position fix integrated — 2026-10-06
+
+[Exact peer import and primary checks](PLAN5_ITEM_CUSTODY_PRIMARY_INTEGRATION_2026-10-06.md)
+integrate the completed impossible-custody finding fix from560f91d9d. Five owned
+blobs and all code/test inputs match its qualified composition; original native
+source, migrations, complete central manifest and unrelated WIP are preserved.
+Primary's two new custody methods and affected topology method pass, zero skips,
+plus normal/matrix/current61 metadata. Peer native/both-engine component results
+retain their recorded scope. No primary native rerun, full capture, Plan or
+release qualification is claimed.
+
+
+## Constructor and quest recovery source composed — 2026-10-06
+
+[The owning source handoff](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
+records the reviewed real constructor capsule/classless fix, automatic running-
+executable witness, combined final GIVE/program CAS and exact acknowledged reward
+reader. All5,779 private candidate inputs match manifestd57b06, including1,560
+published scripts/tests from8df2b58f4; original drivers and unrelated WIP are
+preserved. Source review, corrected XP mask consistency, formatting and inverse
+checks pass. Fixed372-byte constructor codec and atomic paired journal source are also composed.
+Explicit command/producer connection, arbitrary NPC binding seal,
+latest-child and paired retirement integration, remaining routes and major native
+qualification are ongoing. No maintained native installation or full gate passes.
+
+
+## Independent supply outcome fix integrated — 2026-10-06
+
+[Exact peer import and primary checks](PLAN5_SUPPLY_OUTCOME_PRIMARY_INTEGRATION_2026-10-06.md)
+integrate the completed supply-view correction: rejected, unknown and duplicate
+roots cannot contribute system supply totals. Five owned blobs match peer
+ceb9dbbb7; all code/test inputs match its qualified composition and the complete
+central manifest is preserved. Primary's two new methods pass, zero skips, plus
+normal/matrix/current61 metadata. Peer both-engine recipe evidence retains its
+recorded modeled/native scope. No new primary native run, private birth proof,
+complete capture, full Plan or release qualification is claimed.
+
+
+## Original birth/native12 replay source composed — 2026-10-06
+
+[The source handoff](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
+now records the accepted native12 passive item/quest owner and actual startup
+dispatch composed with typed birth, its retry fix and shared private interfaces.
+All5775 inputs match private3ee546, including1560 committed current script/test
+inputs froma1a92f4dd; original drivers remain exact and unrelated SHOP WIP is
+excluded. Source review closes flat helper guards, authentic reconnect and
+post-retirement cleanup defects. Native execution and maintained installation
+remain deferred; NPC constructor capsule/build witness and the documented
+acknowledged/retired/callback boundaries are ongoing required work. Full Plans,
+coverage, activation and release remain open.
+
+
+## Shared native recovery interfaces source-accepted — 2026-10-06
+
+[The owning source handoff](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
+records the reviewed original factory/mutable codec on5773-input private12b,
+the typed birth owner and corrected retained-choice retry, and three new shared
+interfaces: actual-player checkpoint rebinding, phase2 genuine SQL receipt-core
+readback and private original-constructor RNG capture/replay. Exact preimages,
+source review, byte inverses and changed-line formatting pass. No new native
+execution or maintained C/C++ installation is claimed. Actual native12 passive
+domain integration, NPC recipe/time/config/build witness, remaining reset
+mechanics/flat parity and combined major qualification are still unfinished.
+
+
+## Independent equipment cold-restore coverage integrated — 2026-10-06
+
+[Peer qualification and exact source integration](PLAN5_EQUIPMENT_COLD_RESTORE_INTEGRATION_2026-10-06.md)
+are imported from7c0d6cf6c: the original native baseline recipe now checks the
+full equipment reader before and after actual private dump/import on both SQL
+engines. Its original native books remain authentic; live equipment placements
+are explicitly modeled. Peer reports the complete recipe passing, zero skips,
+with drift retained after restore and all228 application-table inventories exact.
+Primary verifies all code/test inputs equal the qualified peer composition,
+imports six owned blobs exactly, and preserves every manifest field/deadline.
+Python AST and normal/matrix/current61 metadata pass. No primary native rerun,
+complete capture, full Plan or release qualification is claimed.
+
+
+## Independent equipment-custody fix integrated — 2026-10-06
+
+[Exact source import and primary registration](PLAN5_EQUIPMENT_PRIMARY_REGISTRATION_2026-10-06.md)
+integrate peera781ab425's completed equipment-slot drift/history/scalar/provenance
+fix. Ten owned blobs match; the only manifest addition is its original seven-case
+test. All existing fields, UID minimum11 and105 integration rows are preserved.
+Actual central adapters pass7 equipment and11 affected UID methods, zero skips;
+normal/matrix/current61 metadata checks pass. Complete918-entry discovery is
+inventory only. Both-engine/native component results retain the peer's exact
+qualified scope; no primary native rerun or full Plan/release completion is claimed.
+
+
+## Shared birth journal carrier handoff — 2026-10-06
+
+[The reviewed three-file private carrier](NATIVE_BIRTH_CARRIER_SOURCE_HANDOFF_2026-10-06.md)
+reuses the original native envelope for birth-v2 admission, exact progress CAS,
+passive replay, genuine refusal cleanup, retained physical ACK and terminal
+retirement. Quest-native12 capabilities remain explicitly restricted; raw
+birth-v1 and original quotas are preserved. Actual command/context/current
+receipt proof precedes journal mutation, with no post-I/O allocation.
+
+Accepted packet177159 is frozen and composed into all5771 private source inputs
+on8ee284. Source review, original preimages, byte inverses and changed-line
+formatting pass. Actual domain codec/factory/startup wiring remains in progress;
+native testing stays deferred until the combined candidate is ready. No native
+installation, full Plan completion, coverage or release readiness is claimed.
+
+
+## Immutable original birth recipe handoff — 2026-10-06
+
+[Accepted codec, wrapper and corrected SQL readback](NATIVE_BIRTH_RECIPE_SOURCE_HANDOFF_2026-10-06.md)
+are frozen and composed into5769 exact private source inputs. The birth-v2 wrapper
+retains original stock choices, preserves v1 readability/native image and original
+limits, and canonically binds the recipe. Parsed parameters already survive in
+literal descriptions. This is source acceptance only: actual factory restoration,
+mutable typed continuation, remaining reset mechanics and native qualification
+remain open. No maintained native install or full Plan/release gate is claimed.
+
+The reviewed live subset and its two narrow corrections are now composed with
+that contract on5771-input private4057 source. Original preimages match; cold
+factory/carrier/provider/mechanics and native qualification remain unfinished.
+
+## Birth refusal owner and full-reader evidence — 2026-10-06
+
+The [private native handoff](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)
+now records reviewed retention/cancellation of genuine birth admission refusals.
+The two-file correction is frozen and composed into all5767 original inputs;
+source only, with actual producer/cleanup and cold qualification still pending.
+
+The [independent full-reader report](PLAN5_NATIVE_CURRENT61_FULL_AUDIT_QUALIFICATION_2026-10-05.md)
+is imported exactly from peer236d20d9b. Primary verifies native/migration/scripts
+trees match the tested391ef81 source; the sole committed test difference is the
+already published UID minimum9→11 registration. Both engines' complete maintained
+readers accept the original native cuts and preserve all228 application tables
+and expected missing-authority findings. This qualifies reader compatibility at
+that scope; no primary native rerun, private birth proof or full capture/release
+completion is claimed. Original producer/recovery and all full gates remain open.
+
+## Plan5 coin-payload reader fix integrated — 2026-10-06
+
+[Primary integration and original-case registration](PLAN5_COIN_SOURCE_PRIMARY_INTEGRATION_2026-10-06.md)
+records the exact peerda2153 reader fix: source limits precede payload reads,
+including repeated mapping bytes; ignored non-coin bytes are excluded. The
+existing UID-scope row now requires all11 original/new cases, which pass with
+zero skips. Normal/matrix/runtime metadata checks pass. Native/schema and all
+other manifest fields remain unchanged. Peer SQL/component evidence retains its
+scope; full native capture, producer/recovery qualification, Plans and release
+remain open. Accounting stays inactive and unrelated SHOP WIP is preserved.
+
+## Original birth publication interface handoff — 2026-10-05
+
+[Reviewed private616d source](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)
+provides genuine receipt plus current native/cash/custody verification and shared
+retained-budget interfaces for the reset owner. No execution or native installation.
+Actual producer, cold constructor choices, reducing-container probe, occupied-slot
+and alchemist effects, original native qualification and all full gates stay open.
+
+## Integrated current61 managed restore evidence — 2026-10-05
+
+[The exact peer176b612c8 report](PLAN5_INTEGRATED_CURRENT61_MANAGED_RESTORE_QUALIFICATION_2026-10-05.md)
+closes its pending current-reader managed-restore follow-up: two original SQL
+methods and one original flat lifecycle method pass with zero skips. Primary
+verified tested native/schema and committed reader/fixture/manifest scope. Peer
+execution remains attributed; flat modeled sources/inactive lifecycle, complete
+capture, active erasure, actual world/player journeys and full R8/release stay
+open. Private quest/birth candidates and unrelated SHOP WIP are not qualified.
+
+## Plan2 player-give source classification — 2026-10-05
+
+[The metadata repair](PLAYER_GIVE_SOURCE_CLASSIFICATION_2026-10-05.md) records
+the existing active producer without promoting backend evidence. Original55
+coverage methods and matrix/normal/runtime metadata checks pass. Actual peer/split
+gameplay, publication and restart remain open; no Plan or R1–R8 gate closes.
+
+## Private native quest major qualification — 2026-10-05
+
+[The frozen private source and actual component evidence](NATIVE_QUEST_PRIVATE_MAJOR_QUALIFICATION_2026-10-05.md)
+record a passing production SQL build, both-engine current SQL cut component,
+and ASan/UBSan native journal carrier component under their original limits.
+The real-provider context codec and actual production capacity helper pass
+strict sanitizers and their original deadline. Shared candidate907's SQL
+production build passes; flatfile stops on one SQL-only unused quest helper.
+Its narrow correction is included in the next private physical-stage candidate.
+Legacy journal faults pass; uncertain/admission remain link-blocked. The
+original coordinator recipe now passes on private5bb with its actual document
+and complete driver inputs, preserving assertions, flags and30-second runtime
+limit. Physical-stage candidate5bb passes both original production builds;
+its 2918 artifacts are exported with exact hashes and its owned runner and
+volumes are removed. Exact-child candidate7a2 passes its original sanitizer
+context component and flatfile production build; SQL stops at two pointer-list
+type errors. The independently reviewed const-pointer correction is composed
+as0ef: both original production builds pass, with2918 artifacts exported
+byte-exactly and owned runner/volumes removed. Original NPC birth interfaces and
+root integration are composed with the published Plan5 reader fix as16ba;
+both builds stop at linkage because four actual provider units are absent from
+the Makefile. The reviewed four-provider correction produces successorf27:
+both original production builds pass, with2934 artifacts exported byte-exactly
+and owned runner/volumes removed. Original driver, flags, targets and limits remain. Reviewed private admission201f and guarded-ACK6b are frozen
+and composed into5767-input owner-seam candidateb16d. Its actual reset producer,
+stock construction, boot/pulse recovery and physical publication remain unfinished;
+no execution evidence transfers to that source-only successor.
+Actual boot, physical fault/restart, durable GIVE/branch
+integration and complete native writer qualification remain open.
+These private candidates are not installed on the maintained branch. No Plan,
+R1–R8, full capture, release or activation completion is claimed; inactive
+behavior and all original safety gates remain.
+
+The separate [lifecycle source provenance repair](CURRENT61_LIFECYCLE_SOURCE_PIN_REPAIR_2026-10-05.md)
+is committed and pushed as `34fa307cb`. Only two stale registry/matrix hashes
+change; all55 original coverage/activation methods, matrix check and normal
+validation pass. This solves metadata drift, without changing coverage or release.
+Plan5 independently verifies all71 original coverage/audit methods with zero
+skips and normal metadata checks in the exact published
+[pin-repair qualification](PLAN5_CURRENT61_PIN_REPAIR_QUALIFICATION_2026-10-05.md).
+Its earlier286-method batch is not relabelled as passing; release still refuses
+missing executable writer evidence.
+Plan5's [full-source retention qualification](PLAN5_CURRENT61_RETENTION_QUALIFICATION_2026-10-05.md)
+is imported byte-exactly from3015f010e. Both SQL engines' account/character
+journeys and the three flatfile retention journeys pass at the recorded current61
+native/schema scope, which matches the maintained source trees. Seeded history,
+typed-active-erasure and full R8/release limitations remain explicit; no result
+is transferred to the private quest or birth candidates.
+
+Plan5's [original-command reader fix and primary integration](PLAN5_COMMAND_PREIMAGE_PRIMARY_INTEGRATION_2026-10-05.md)
+is committed and pushed as bc0d6071f, importing the exact f78df1c8a slice
+and registering its five requested methods in
+the existing105 manifest rows. All61 focused reader and55 coverage-contract
+methods pass with zero skips; normal/matrix/runtime validation passes. Release
+still refuses missing writer evidence. No native-source change or full plan
+completion follows from this reader milestone.
+
+Plan5's [audit budget and build dependency report](PLAN5_CURRENT61_AUDIT_BUDGET_AND_BUILD_DEPENDENCIES_2026-10-05.md)
+is imported byte-exactly fromcb9d8c2e7. It reports both original near-limit
+methods passing with zero skips, twelve CLI measurements and unchanged original
+native dependency closures. This is peer-reported synthetic/component evidence;
+no local rerun or private native qualification is claimed. At that report's
+seal its current-reader retention and managed restore remained pending. The
+report's central five-method registration request was already completed by
+primarybc0d6071f. Original release-host/mixed native workload and full Plan5/R8
+gates remain open.
+
+The subsequent [original-row registration qualification](PLAN5_COMMAND_PREIMAGE_REGISTRATION_QUALIFICATION_2026-10-05.md)
+and [integrated current61 native retention qualification](PLAN5_INTEGRATED_CURRENT61_RETENTION_QUALIFICATION_2026-10-05.md)
+are imported byte-exactly from7f905a35d. The primary verifies identical native,
+migration, five reader/test files and central manifest bytes before import.
+Both original central rows and55 coverage methods pass with zero skips.
+The integrated-reader SQL account/character journeys pass on both engines with
+ten cold restarts; flatfile character/durable/uncertain journeys pass with seven.
+These are independent peer-executed native results using explicit unchanged-build
+dependency proof. Seeded history, incomplete capture/refusals and managed-restore
+limitations remain; no evidence transfers to private quest/birth producers or
+proves full Plan5/R8/release completion.
+
+## Current combined source qualification — 2026-10-05
+
+[Current source and evidence](PLAN1_CURRENT_COMBINED_QUALIFICATION_2026-10-05.md) supersede earlier installation/build status.
+Reviewed native/schema61 is installed; both production builds and the reviewed54
+both-engine audit pass. Latest original-diagnostic qualification passes both engines; SHOP74
+run stopped at original300-second compile limit. The original deletion inspector
+passes with ASan/UBSan. All three original flatfile recovery journeys now pass
+on the exact current61 source, including seven cold restarts; the earlier missing
+fixture failure remains recorded. See [scoped inspector qualification](FLAT_DELETION_INSPECTOR_CURRENT61_QUALIFICATION_2026-10-05.md).
+Equipment/schema milestonef899ef486 is pushed. Private quest ownership/root work
+continues; no full plan, R1–R8, release or activation
+completion is claimed. Original requirements and inactive gates stay.
+
+## Original baseline qualification and narrow reader handoff — 2026-10-05
+
+[The retained original-owner evidence](PLAN1_BASELINE_NATIVE_QUALIFICATION_HANDOFF_2026-10-05.md) records both-engine genuineC05
+and same populated35→61 upgrade, plus private proposed-reader nativeaudit161cuts/
+161restorerefusals per engine. Original cases/flags/limits stay; complete capture
+remains false. The maintained SQL candidate build passes; flatfile is in progress.
+Native/schema61 installation and Plan5-owned exception-diff integration remain
+pending. Exact peer report-only imports retain canonical56 scope. Original full
+Plan1/R1–R8/coverage/release gates stay open; inactive behavior and activation stay.
+
+## Flat baseline marker recovery fixture verified — 2026-10-05
+
+[The exact marker fixture correction](FLAT_BASELINE_MARKER_RECOVERY_FIXTURE_2026-10-05.md) passes the unchanged native owner
+with ASan/UBSan: all19 initialization and20 batch after-image recovery cuts,
+626 staging/421 lookup allocation failures and original replay/corruption limits.
+Production initialization/retry behavior is unchanged. Both original baseline
+component owners have now passed separately on the frozen EAB2/schema61 candidate;
+pending native/schema sources are not installed here. Maintained builds, independent
+audit and historical C05/populated upgrade remain open. Plan1/R1–R8/coverage/release
+are incomplete; inactive behavior and activation gates stay.
+
+## Baseline component collector linkage verified — 2026-10-05
+
+[The real-provider recipe repair](BASELINE_COMPONENT_COLLECTOR_LINKAGE_2026-10-05.md) passes original SQL and client-free
+native modes with ASan/UBSan in 518.455 seconds. The exact original 25-source
+prefix, cases, flags, wrappers and limits remain. Evidence belongs to the frozen
+EAB2/schema61 candidate; those native/schema changes remain pending. The broader
+batch failed the next flatfile mutation-count assertion. Independent audit padding
+exception and genuine historical C05/schema35 compatibility remain open. No full
+Plan 1/R1–R8/coverage/release completion or activation; inactive gates stay.
+
+## Retained SHOP fixture source linkage — 2026-10-05
+
+[The bounded component recipe repair](SHOP_RETENTION_FIXTURE_LINKAGE_2026-10-05.md) restores actual pure providers and
+complete abort boundaries for outside-scope cold authority. Original21/16 cases,
+four jobs, flags and limits stay exact; physical character_list is an unavailable
+null root. Independent source review/format/pins only, no LINK_PASS. Original74
+executions and positive cold SQL/world/ACK/restart remain in Plan4 qualification.
+Coverage, R1–R8/release and activation remain incomplete; inactive gates stay.
+
+## Exact restore projection representations integrated — 2026-10-05
+
+[The exact Plan5 repair](PLAN5_RESTORE_REPRESENTATION_INTEGRATION_2026-10-05.md) refuses noninteger aliases throughout independent
+restore evidence. Six mandatory pure cases make105 central rows; all104 prior
+policies remain exact. Peer zero-skip native/clone evidence stays its canonical56
+and original EAB1 scope. Primary AST/pins/static inventory only; current combined
+and nativeEAB2/schema61 qualification remain open. R1–R8, coverage, release and
+activation stay incomplete; inactive behavior and safety gates stay.
+
+## Exact baseline projection representations integrated — 2026-10-05
+
+[The exact Plan5 repair](PLAN5_BASELINE_REPRESENTATION_INTEGRATION_2026-10-05.md) refuses numerically equal noncanonical types in
+original roots, projections, inbox controls and source bounds. Four new mandatory
+pure cases make104 central rows; all103 prior policies remain. Peer native and
+maintained-build evidence stays f23/schema56/EAB1, including preserved link
+failures and successful output-only retries. Local AST/pins/inventory only;
+nativeEAB2/schema61 sealing and original Plan1 acceptance remain open.
+Inactive behavior and all R1–R8/release/activation gates stay.
+
+## Original cold SHOP procedure bindings integrated — 2026-10-05
+
+[The reviewed binding repair](SHOP_COLD_PROCEDURE_BINDING_INTEGRATION_2026-10-05.md) stages original switch/proclib chains
+before fresh SQL/world proof and nonfailing retained enrollment. Exact incumbent,
+catalog and literal identity stay; normal construction policy stays. Callbacks
+remain individually once-only with fresh exact lookup. Source checks/pins/census
+only; actual component link, cold recovery/ACK and flat parity remain in the
+original major-plan batch. Fresh SHOP and activation stay closed; R1–R8 and release
+remain BLOCKED.
+
+## Independent EAB1/EAB2 readers integrated — 2026-10-05
+
+[The exact reader integration](PLAN5_DUAL_VERSION_READER_INTEGRATION_2026-10-05.md) preserves historicalEAB1 and validates
+versioned equipment/original-plan evidence. Central inventory917owners/103rows
+adds eight pure and two mandatory C++ reference checks; all101 prior policies
+remain. Peer native evidence stays7cd9/schema56/EAB1, with its exact GCC13.3
+erratum. Local pins/AST/inventory only. Actual native selector is documented;
+native/schema61 installation, measured sealing and original Plan1 qualification
+remain. R1–R8 and release stay BLOCKED; inactive behavior and safety gates stay.
+
+## Baseline equipment/schema61 source closure reviewed — 2026-10-05
+
+[The primary/Plan5 interface](BASELINE_EQUIPMENT_SCHEMA61_SOURCE_HANDOFF_2026-10-05.md) fixes the versioned equipment contract and
+current61-head consumer handoff while preserving historicalEAB1/0056 cuts.
+Private native/schema compositions pass independent source review;28 schema
+inputs have exact inverses/checksums/heads and matching bounded metadata readers.
+Unmeasured engine fingerprints remain failclosed; candidates are not installed.
+Actual both-engine sealing, independent EAB2 readers and original Plan1 native
+qualification remain required. This is source closure, not completed acceptance;
+inactive behavior and all original R1–R8/release gates stay.
+
+## Original cold SHOP publication owner integrated — 2026-10-05
+
+[The reviewed SQL recovery owner](SHOP_ORIGINAL_COLD_PUBLICATION_INTEGRATION_2026-10-05.md) retains the actual original command,
+receipt/refusal, literal forest and uncertainty stages across actor-independent
+pulses. It uses complete locked SQL/world/cache proof, original UID staging and
+confirmed original-session rollback before guarded ACK or cancellation. Existing
+live behavior and final boot binding seal stay. Eight new sites/two unqualified
+projection rows are conservatively mapped; no executable checks ran. Flat cold
+parity, missing lazy bindings, component fixture closure and original major-plan
+qualification remain open. Fresh SHOP availability and activation stay closed;
+full R1–R8/release remain BLOCKED.
+
+## Maintained SQL checkpoint shadowing repaired — 2026-10-05
+
+[The five-identifier source repair](SHOP_CHECKPOINT_LITERAL_SHADOW_REPAIR_2026-10-05.md) closes the exact inner-vector
+shadowing diagnosed by the peer refreshed SQL build. Outer capture/output,
+literal/parent/slot/budget policy and guards remain exact. The frozen peer report
+records a passing full flat build and separate SQL build failure at its stated
+7cd9/schema56 scope. Local inverse/format/pins/static checks only; current combined
+SQL/both-policy/native qualification remains in the major-plan batch. Inactive
+behavior and R1–R8/release gates remain.
+
+## Recovery template binding order corrected — 2026-10-05
+
+[The two-cut source repair](RECOVERY_TEMPLATE_BINDING_SEAL_2026-10-05.md) parses complete prototypes after boot
+procedure binding and before populated sidecar restoration, then snapshots final
+existing bindings after optional initialization and before workers. It validates
+the whole catalog before allocation-free pointer updates and preserves parsed
+addresses/native indices; runtime/off-thread calls refuse before mutation.
+Source review/inverses/format/pins/census only; no execution. Lazy bindings and
+early-restoration staleness, cold integration and native qualification remain
+open. Earlier catalog cut descriptions below retain their historical scope.
+Inactive behavior and R1–R8/release gates remain.
+
+## Original-plan audit repair and central integration — 2026-10-05
+
+[The exact Plan5 closure](PLAN5_ORIGINAL_PLAN_AUDIT_INTEGRATION_2026-10-05.md) resolves the saved integer-representation import
+blocker and imports bounded EAP1 capture, independent canonical/source-claim
+audit and repaired manual exporter fixture. Central inventory917owners/101rows
+keeps every prior policy and expands only child pure cases/new canonical owner.
+Peer native/SQL evidence stays frozen to its recorded schema56 scope. Local
+AST/pins/inventory only; combined major-plan qualification, EAB2 readers and full
+R1–R8/release remain open. Primary native/schema/inactive behavior stay.
+
+## Original SHOP no-execution SQL BEFORE interface integrated — 2026-10-05
+
+[The explicit SELECT-only reader](SHOP_NEVER_ADMITTED_BEFORE_READER_2026-10-05.md) checks the original v8 BEFORE
+forests/revisions and inbox/root/source/evidence/outbox absence under one borrowed
+transaction/session. A separate never_admitted flag preserves no-execution
+semantics; existing execution/rejection wrappers retain their sealed receipts.
+Independent source review, inverse/format, source pins and static inventory pass;
+no SQL/native execution. Cold cleanup caller, sealed bindings, flat parity and
+original major-plan qualification remain open. R1–R8/release remain BLOCKED.
+
+## Ordinary movement native-context initializer repair — 2026-10-05
+
+[The three-site source repair](ITEM_MOVEMENT_NATIVE_CONTEXT_INITIALIZERS_2026-10-05.md) explicitly initializes absent native-mobile
+context in ordinary movement, batch and craft payloads. Plan5 reproduced three
+missing-field diagnostics in both maintained builds; its exact failed-build
+report is preserved. Defaults/member order, forward/inverse, changed-line format,
+pins/census and static validators pass locally. Both-policy builds and relevant
+native/inactive-path checks remain in the original major-plan qualification batch.
+Inactive behavior and admission gates stay; R1–R8/release remain BLOCKED.
+
+## Baseline equipment defect and versioned repair handoff — 2026-10-05
+
+[The exact peer evidence and reviewed native interface](BASELINE_EQUIPMENT_V2_SOURCE_HANDOFF_2026-10-05.md) establish that
+EAB1 loses an accepted equipment slot and cannot regenerate its original plan.
+Original baseline/replay acceptance is reopened; earlier results remain their
+recorded historical scope. Private EAB2 retains the full position and both
+equipment fingerprints; five core inputs and three native fixture updates pass
+source review/inverse/format only, with no execution or installation. Primary
+schema/compatibility and Plan5 independent readers meet on that exact contract.
+Current inactive behavior stays; R1–R8, release and activation remain BLOCKED.
+
+## Guarded original SHOP refusal callback integrated — 2026-10-05
+
+[The shared cancellation interface](SHOP_GUARDED_REFUSAL_CALLBACK_2026-10-05.md) authenticates and pins the original
+never-admitted command/refusal before its private cleanup callback, then rechecks
+the same generation and hold before cancellation. Review corrected the live
+false-callback compatibility regression; original live continuation stays.
+Source review/inverse/format/pins/census only; no native execution. Cold SQL
+BEFORE/cleanup/rearm, flat parity and major-plan qualification stay open.
+Inactive/admission behavior stays; full R1–R8/release remain BLOCKED.
+
+## Independent native-mobile grammar integrated — 2026-10-05
+
+[The four-file peer slice](PLAN5_NATIVE_MOBILE_GRAMMAR_INTEGRATION_2026-10-05.md) accepts original owner12 lifetime/context/state and
+equipment rules in the independent EAP1/EAB1 readers. Historical owner grammar
+and bounds stay. Six pure and one mandatory two-policy native method are centrally
+registered:916owners/97rows, all95 prior rows unchanged. Peer evidence is frozen
+to1e36/schema0056; local AST/pins/inventory only. Full qualification stays open.
+No producer/activation behavior changes; full R1–R8/release remain BLOCKED.
+
+## SHOP source-contract anchors corrected — 2026-10-05
+
+[The source probe repair](SHOP_SOURCE_CONTRACT_ANCHOR_REPAIR_2026-10-05.md) follows actual checked-placement implementation and
+unique SQL writes in their owning functions. Complete operation sets, exact route
+ownership and all refusal/unqualified assertions remain. AST/inverse/source
+extraction checks only; original 71-method qualification stays deferred.
+No production behavior or activation change; full R1–R8/release remain BLOCKED.
+
+## SHOP frozen epoch field corrected — 2026-10-05
+
+[The one-expression repair](SHOP_FROZEN_EPOCH_FIELD_REPAIR_2026-10-05.md) reads the decoded original epoch from the existing
+frozen admission metadata before checking the retained SHOP mapping. The prior
+direct field did not exist and blocked the peer maintained SQL build. All other
+guards and source bodies are unchanged. Source inverse/format/pins only; native
+build and gameplay qualification remain deferred to major-plan readiness.
+Admission/inactive behavior stay unchanged; full R1–R8/release remain BLOCKED.
+
+## Native quest borrowed item persistence integrated — 2026-10-05
+
+[The explicit SQL/flat participants](NATIVE_QUEST_PARTICIPANT_INTEGRATION_2026-10-05.md) preserve ordered native stock and
+existing cash/identity while mutating custody under the original borrowed root.
+Review corrected omitted-child cascade, forest/readback bounds and transient
+failure classification; focused recipe closure preserves original test policy.
+Source review/inverses/format/AST/syntax/pins/census only; no native execution.
+Original birth/source/lifecycle, admitted atomic root, producers/publication/
+restore/ACK and major-plan qualification remain open. Inactive behavior and
+safety gates stay; R1–R8, release and activation remain BLOCKED.
+
+## Original cold SHOP world observation integrated — 2026-10-05
+
+[The pure sibling](SHOP_COLD_WORLD_OBSERVATION_2026-10-05.md) records unique addressed-body presence, account availability,
+complete physical forests, current mismatches and actual original-role bindings.
+Independent review corrected stale foreign shop bindings that could disguise an
+unresolved keeper as absent. Existing live source is byte-exact; no native/SQL,
+rebind, mutation or ACK authority is added. Source review/format/pins/census only;
+original replay/publication/ACK, flat parity and major-plan qualification remain
+open. Accounting stays inactive; R1–R8, release and activation remain BLOCKED.
+
+## Native quest identity and final-giver contracts integrated — 2026-10-05
+
+[The source prerequisite](NATIVE_QUEST_CONTRACT_INTEGRATION_2026-10-05.md) adds explicit native owner/key/v11 item contexts,
+original final-giver reward binding and complete extracted-codec link closure.
+Historical/default formats and shared SHOP proof remain unchanged; ordinary
+execution/admission refuse native mutations. Source review/AST/syntax/pins/census
+only; no native execution. Original atomic parent, birth/source/lifecycle/restore,
+producer/publication and original major-plan qualification remain open. Accounting
+stays inactive; R1–R8, release and activation remain BLOCKED.
+
+## SQL SHOP missing revision cache corrected — 2026-10-05
+
+[The private owner fix](SHOP_SQL_REVISION_CACHE_2026-10-05.md) initializes a missing runtime revision only from
+the authenticated current SQL projection, with staged allocation and final
+session/census/readback proof. Newer cached revisions still refuse; inactive
+behavior and admission stay unchanged. Source review/format/pins/inventory only,
+without native execution. Cold publication/ACK, coherent schemas, original major
+plan qualification and full R1–R8 remain open; release/activation stay BLOCKED.
+
+## Original NPC cash retained in native images — 2026-10-05
+
+[The source milestone](NATIVE_MOBILE_CASH_IMAGE_2026-10-05.md) adds explicit v2 four-denomination cash/revision
+capture and shared checked SQL/flat transition policy. Historical v1 bytes and
+the 148-byte reference stay compatible; unknown cash is never adopted as zero.
+Source review/pins/format/inventory only, with no native execution. Original
+reset/spawn generation, birth/stock/source ownership, durable restore/retirement,
+coherent schemas and major-plan qualification remain open. Inactive safety gates
+are preserved; full R1–R8, release and activation remain BLOCKED.
+
+## Retained SHOP producers and game-thread driver integrated — 2026-10-05
+
+[The source integration](SHOP_RETAINED_PRODUCER_DRIVER_INTEGRATION_2026-10-05.md) connects the four original buy/sell selections
+to one retained checkpoint/admission/publication driver and sequential post-ACK
+produced continuation. Separate proved prejournal cancellation preserves literal
+cleanup and owner fences. Independent source review/pins/format only; no native
+execution. Regular-phase invocation excludes shutdown drain. Central availability
+remains closed; coherent schemas, cold recovery/ACK, flat parity, original
+major-plan qualification and full R1–R8 remain open/BLOCKED.
+
+## Retained SHOP v8 submission corrected — 2026-10-05
+
+[The source-proven version fix](SHOP_V8_SUBMISSION_VERSION_FIX_2026-10-05.md)
+removes the v7-only guard that rejected every command produced by the v8
+recovery builder. Owned submission accepts exactly v7/v8 with all original
+decode, identity, native checkpoint and held-player checks retained. Source
+review/changed-line formatting only; no native qualification. Central admission,
+activation, producer driving and original major-plan gates remain open/closed
+as recorded in the owning report.
+
+## Detached native mobile stage installed — 2026-10-05
+
+[The reviewed loader integration](NATIVE_MOBILE_STAGE_INTEGRATION_2026-10-05.md)
+prepares an actual NPC outside live list/count/index/event publication and
+consumes its private retained stage before room/special callbacks. Both legacy
+overloads and probes keep their original path. Source/raw-preimage review only;
+no native execution or original birth/UID/source/restore/retirement owner is
+claimed. The actual reset/spawn issuer and explicit durable native reference
+restore remain unfinished. No full NPC state ledger or new gate is added;
+major-plan qualification, R1–R8, release and activation remain open/BLOCKED.
+
+## Coherent SHOP source installed — 2026-10-05
+
+[The composed source milestone](SHOP_COHERENT_SOURCE_INTEGRATION_2026-10-05.md)
+installs 32 reviewed production inputs and 22 current-based recipe/Makefile
+inputs, including native checkpoint, literal payload, v8 recovery manifests,
+original current SQL images and exact retained receipt verification. Independent
+source review and raw-preimage/inverse/AST/include checks passed; no native
+execution occurred. Current accounted SHOP admission stays closed and canonical
+schema0056 is unchanged. Actual gameplay producer invocation, coherent0057,
+cold continuation/publication/ACK, flat parity and original major-plan
+qualification remain open. Source census/projection rows are unqualified;
+release and activation remain BLOCKED.
+
+## Native reference and original-generation observation — 2026-10-05
+
+[The coherent source integration](NATIVE_REFERENCE_RUNTIME_INTEGRATION_2026-10-05.md)
+extracts the existing native/source-event codecs, updates all 63 focused link
+recipes and adds zeroable runtime reference storage. The read-only accessor
+checks the originally retained runtime generation before pointer access.
+Independent review corrected eleven invalid source-helper calls before import.
+Source/format/pins/inventory only; native birth/restore ownership, explicit
+durable reference records, major-plan execution and full R1–R8 remain open.
+Private cold shop value/receipt proof is reviewed but not installed or qualified.
+
+## Independent child identity audit integrated — 2026-10-05
+
+[The exact peer fix and class-specific registration](PLAN5_CHILD_IDENTITY_INTEGRATION_2026-10-05.md)
+detect malformed, wrong-derived or reused child IDs from original stored facts.
+The frozen peer report records 220 selected passing methods with component-only
+scope. Central inventory now has 915 owners and 95 matrix rows; all 92 earlier
+rows and engine policy are preserved. Local AST/inventory/source checks only;
+major-plan execution, complete original-plan/receipt authentication, actual
+writers/gameplay/recovery and R1–R8 remain open. No activation or safety change.
+
+## Reviewed cold SHOP original SQL images — 2026-10-05
+
+[The frozen four-file source slice](SHOP_COLD_SQL_SOURCE_CHECKPOINT_2026-10-05.md)
+reads actual canonical player values and authenticates complete BEFORE/AFTER
+player/keeper images inside the original SQL transaction. Review corrected
+keeper foreign-copy and extra-context/reference closure gaps; AFTER readback
+uses only original locked identities. Private source/format/pins only, without
+actual executable installation or qualification. Coherent dependencies, cold
+startup/publication/ACK, both backends and original R1–R8 acceptance stay open.
+
+## Plan 5 evidence and complete central inventory — 2026-10-05
+
+[Exact peer evidence and runner registration](PLAN5_CENSUS_AND_INVENTORY_INTEGRATION_2026-10-05.md)
+imports frozen 71-contract pin-repair and 58-case pure custody evidence without
+promoting it to current native qualification. Eight existing test classifications
+and two existing SQL matrix omissions are repaired: 914 owners, 92 rows, all
+87 original rows unchanged. The [publication recipe path fix](PUBLICATION_RECIPE_PATH_REPAIR_2026-10-05.md)
+is separately published as `7a5f9e97d`. Source/JSON/AST/inventory checks only;
+major-plan testing, full writer/player/recovery acceptance and R1–R8 stay open.
+The private staged NPC loader is frozen for review; the cold shop player reader
+continues in parallel. Existing inactive behavior and safety gates remain.
+
+## Shop recovery binding foundation and parallel NPC schema — 2026-10-05
+
+[Canonical recovery bindings and producer preparation](SHOP_RECOVERY_BINDING_SOURCE_2026-10-05.md)
+integrates the independently reviewed pure forest-binding codecs and maintained
+object registration. The private next shop command retains ordered BEFORE/AFTER
+player/keeper bindings within existing journal limits; its producer also checks
+the keeper's native budget and all physical player items, including omitted
+NORENT. Private NPC migration 0060 extends the three existing owner-type ranges
+for native-mobile custody. Source/format/pins/inventory checks only; command,
+producer, coherent schema chain, cold SQL/replay/publication, major-plan tests
+and R1–R8 acceptance remain unfinished. Existing inactive behavior and gates stay.
+
+## Private shop weight/retry and parallel NPC checkpoint — 2026-10-05
+
+[Original destination weight and complete prospective inventory](SHOP_DESTINATION_WEIGHT_SOURCE_CHECKPOINT_2026-10-05.md)
+freezes18 private source-reviewed files: explicitv7, atomic target weight,
+complete literal before/after, returned-nesting retry and pre-admission native/
+wire bounds. Parallel Plan3 pure codecs and six compile recipes are prepared.
+These are source-only private implementations. Cold recovery, producer wiring,
+coherent migrations, major-plan qualification and R1–R8 release remain open.
+
+
+## Cross-platform exact source-pin repair — 2026-10-05
+
+[Canonical checkout policy and exact metadata repair](SOURCE_PIN_CHECKOUT_POLICY_REPAIR_2026-10-05.md)
+resolves the five peer-established provenance mismatches: Windows CRLF versus
+Git/Linux LF. All58 pinned paths now require LF; strict raw-byte assertions,
+ownership, evidence and incomplete release status remain unchanged. Exact peer
+combined-build/recovery evidence is imported with its frozen55a314496 scope.
+Source/hash/attribute/generator checks passed; no local major-plan tests ran.
+
+
+## Active custody observation and private publication checkpoint — 2026-10-05
+
+[Bounded active-root census and shared handoff](ACTIVE_CUSTODY_CENSUS_SOURCE_2026-10-05.md)
+integrates the pure observation while preserving old all-state history behavior.
+Four private shop corrections passed source review; whole native publication
+remains open for nested destination weight, recovery, producer and qualification.
+Private NPC final-giver contracts are pinned but not admitted or executed.
+
+## Independent evidence-index density repair — 2026-10-05
+
+[Exact imported Plan5 slice](PLAN5_INDEX_DENSITY_INTEGRATION_2026-10-05.md)
+detects sparse/offset positions despite balanced counts and links. Peer117
+selected checks qualify its frozen inputs; current combined native execution
+remains deferred. No shared schema, producer or activation change.
+
+## Shared keeper sale insertion order — 2026-10-05
+
+[Keeper sell-store native order](SHOP_KEEPER_NATIVE_ORDER_SOURCE_2026-10-05.md)
+now shares the reviewed player ordering body with typed NPC/action checks.
+Private successful shop publication and recovery are still being implemented.
+Source review/format/pins/census only; major-plan native qualification stays open.
+
+## Writer coverage source-contract reconciliation — 2026-10-05
+
+[Strict operation identity and provenance repair](WRITER_CONTRACT_RECONCILIATION_2026-10-05.md)
+addresses the three peer-established contract failures and a further stale restore
+anchor. Original owner exceptions and unqualified coverage are preserved.
+AST/pins/census/whitespace checks only; repaired contract execution remains deferred.
+
+## NPC capture compiler-blocker source repair — 2026-10-05
+
+[Existing corruption-guard declaration inclusion](QUEST_MOBILE_CAPTURE_INCLUDE_REPAIR_2026-10-05.md)
+addresses the peer-established both-backend compiler defect without changing the
+guard. Peer copied-source probes compiled; no local major-plan execution ran.
+Current maintained builds, native qualification and coverage-contract repairs remain.
+
+## Integrated evidence index representation repair — 2026-10-05
+
+[The independent index-validation slice](PLAN5_EVIDENCE_INDEX_TYPES_SLICE_2026-10-05.md)
+is imported as three exact82a44c3dd blobs after matching current preimages.
+All ten original evidence index fields require exact integers and native bounds
+before dictionary indexing; duplicate and semantic relationship findings remain.
+Peer110 units and both-engine money-index export evidence qualify their frozen
+e018/canonical0056 inputs, not native item/child producers or this combined tree.
+Independent source review, raw hashes, two Python AST checks and whitespace pass;
+no local tests/native/SQL execution or waived qualification gate.
+
+## Integrated NPC flat bundle preparation — 2026-10-05
+
+[Canonical flat image read and exact-before preparation](QUEST_MOBILE_FLAT_SOURCE_2026-10-05.md)
+are source-integrated with no caller or standalone commit. Original admitted
+parent, protected namespace/Plan5 evidence, recovery and qualification remain open.
+No executed backend parity or native lifecycle completion is claimed.
+
+## Shared native shop ordering — 2026-10-05
+
+[Native insertion-order conversion](SHOP_NATIVE_ORDER_SOURCE_2026-10-05.md)
+is integrated into the read-only world witness and reused by the private owner.
+Signed native row-ID guards and private0059 schema are source accepted.
+Publication/recovery/guarded ACK and major-plan qualification remain open.
+
+## Integrated NPC native SQL participant — 2026-10-05
+
+[Borrowed native image/stock SQL participation](QUEST_MOBILE_SQL_SOURCE_2026-10-05.md)
+is source-integrated and registered as a dormant definition. Admitted native
+birth/lifecycle/custody, schema0059, flat parity and qualification remain open.
+No gameplay route, activation or executed proof is added.
+
+## Integrated shop world witness — 2026-10-04
+
+[Complete read-only world observation](SHOP_WORLD_WITNESS_SOURCE_2026-10-04.md)
+is source-integrated and registered. Original-lease publication, current native
+projections, native placement order, recovery and guarded ACK remain unfinished.
+Source checks only; major-plan build/runtime qualification remains deferred.
+
+## Integrated NPC values and stock capture component — 2026-10-04
+
+The exact reviewed quest_mobile_native C871b2473/H2a149708 is now source-integrated
+and registered in the maintained Makefile. It supplies canonical values and pure
+complete ordered NPC EQ/INV capture, including the corrected shared size estimate.
+This changes no birth, ID allocator, native custody, quest/lifecycle route, activation
+or inactive behavior. Current candidate source pins are refreshed; no coverage
+completion is inferred. Builds/tests remain deferred to major-plan readiness.
+The previous e018 SQL build/restore evidence remains valid for that historical
+tree and does not qualify this newly extended native candidate. Actual native SQL/
+flat participant, owner/source authority, rebind, producer and guarded ACK remain
+required. See [the detailed source checkpoint](QUEST_MOBILE_VALUES_SOURCE_2026-10-04.md).
+
+## Integrated selected result-code representation repair — 2026-10-04
+
+[The independent result-code repair](PLAN5_SELECTED_ROOT_RESULT_TYPES_SLICE_2026-10-04.md)
+requires strict integer uint32 selected-operation results before duplicate indexing.
+Boolean/float/missing/negative/overflow representations refuse without coercion;
+valid integers retain existing outcome findings. All three peer d0d570113 blobs
+are imported exactly, with existing reader/test preimages matching14dff224b.
+Independent source review, two Python AST checks and whitespace pass.
+Peer106 units and both-engine component evidence remain frozen-input canonical0056
+reader qualification, not full native producers/gameplay or incoming private source.
+No local execution, schema/coordinator/activation change or waived release gate.
+
+## Actorless shop refusal and v6 callback source checkpoint — 2026-10-04
+
+[Exact disconnected-player hold cancellation and literal callback matching](SHOP_ACTORLESS_REFUSAL_SOURCE_2026-10-04.md)
+are implemented and independently source reviewed. Original notification/produced
+cleanup stays retained for player return; changed retired receipts block and
+legacy v5 behavior stays intact. These private inputs have not run native checks.
+Successful original-lease publication, whole-world witness/current projections,
+replay, producer/lifecycle integration and major-plan qualification remain open.
+
+## Quest native values/stock source checkpoint — 2026-10-04
+
+[Private canonical mobile values and full ordered stock capture](QUEST_MOBILE_VALUES_SOURCE_2026-10-04.md)
+are implemented and source reviewed. Shared capture overhead is counted once;
+existing bounds and actual equipment/carry order remain. Native birth/custody,
+SQL/flat participant, lifecycle/rebind, sequential quest/reward, publication/ACK
+and major-plan qualification remain unfinished. No production route or Plan3
+completion is claimed.
+
+## Maintained SQL build and managed cold restore — 2026-10-04
+
+The [fresh Plan5 qualification](PLAN5_SQL_MANAGED_RESTORE_QUALIFICATION_2026-10-04.md)
+reports716 strict maintained C++20 objects and a complete SQL server link, then
+both canonical0056 databases pass the original managed dump/cold-import/service
+boot checks with zero skips. This closes the earlier collector compiler blocker
+for native treee0185879. Current published native/migration trees and the six
+named backup/restore harness inputs match its frozen31751b706 inputs exactly;
+the peer report is imported byte-for-byte froma592aa177 after source review.
+No local rerun or qualification of incoming private source is claimed.
+Synthetic history fixtures, inactive boots and these two restore cases do not
+prove real producer/gameplay journeys, full-world accounting, retention policy
+or R1–R8 release acceptance. Major-plan qualification remains required.
+
+## Integrated selected operation count validation — 2026-10-04
+
+The [independent Plan5 repair](PLAN5_SELECTED_ROOT_COUNT_TYPES_SLICE_2026-10-04.md)
+now rejects boolean, float, missing and out-of-range selected-root count fields
+before indexing, using the existing native limits. Valid integer disagreements
+retain cardinality findings. Three exact peer blobs from71d09ae160 are imported;
+reader/test preimages match this candidate and independent source review plus
+two Python AST checks pass. Native/schema/activation behavior is unchanged.
+Peer reports102 units and both-engine malformed-export refusal on frozen6a2428c
+inputs; its modeled holdings/origin oracle and canonical0056 component evidence
+do not qualify actual runtime producers or this combined candidate. Major-plan
+execution remains deferred; coverage and full release acceptance remain open.
+
+## Full-player shop source proof — 2026-10-04
+
+See [the full-player native proof checkpoint](SHOP_FULL_PLAYER_NATIVE_PROOF_2026-10-04.md): the original whole-player body is retained
+in its bounded slot, normal saved string policies are preserved, and complete
+custody/current-native plus historical receipt proof passes independent source
+review. These private inputs are unqualified; physical publication, original
+lease cleanup/guarded ACK, replay, writer/lifecycle/gameplay integration and
+major-plan qualification remain unfinished. No native release gate is waived.
+
+## Native shop source checkpoint — 2026-10-04
+
+The [shared native admission handoff](SHOP_NATIVE_ADMISSION_HANDOFF_2026-10-04.md)
+records the source-reviewed private keeper/player/producer and guarded refusal
+ownership slices. Successful publication, replay, writer/lifecycle integration,
+coherent schema measurement and original major-plan qualification remain open.
+This private source progress does not complete R1–R8 or change activation gates.
+
+## Integrated independent baseline fence-digest repair — 2026-10-04
+
+Peer slice `3c8ba021a7dd8b3ac9048651672c9a456774c5d7` is imported with all
+six existing preimages matching primary `2a357bdeb` and all seven resulting
+canonical file blobs matching the peer. Both independent native origin and
+restore readers now verify the existing baseline inbox fence digest against its
+actual nine-byte native preimage. Missing or changed digest evidence refuses;
+no native authority, migration, coordinator, accounting activation or flat marker
+format changes. Independent source review and six Python AST checks pass.
+
+The [peer report](PLAN5_SQL_BASELINE_KEYS_HASH_SLICE_2026-10-04.md) retains the
+actual pre-fix admissions, failed first correction, final 25 focused units and
+both canonical0056 engine damage/cold-restore qualification. Those results qualify
+its frozen inputs only; no new local runtime execution or combined major-plan
+qualification is claimed. Admission-time binding, complete native capture,
+remaining Plans2–4 producers and full R1–R8 release acceptance remain required.
+Testing remains batched at major-plan readiness.
+
 The R1-R8 requirement contract below remains the feature checklist;
 [the economy contract](../ECONOMY_ACCOUNTING.md) defines the wire, identity, and
 conservation rules. The evidence table and counts below are the historical
 2026-09-27 assessment at add-double-entry HEAD `49af585c4`. Use the
 [active completion plan](FINISH_ACCOUNTING_PLAN.md) and
-[latest review status](REVIEW_STATUS_2026-10-03.md) for current implementation
+[latest review status](REVIEW_STATUS_2026-10-04.md) for current implementation
 and qualification status. The older continuation retains historical evidence. The [delivery plan](DELIVERY_PLAN.md) links five
 executable work plans. A component test or source reference is not a qualified
 player journey.
+
+Plan 1's major qualification batch is underway on production source `9fabe54bb`.
+Both strict builds, focused components, worker/journal guard cases and both-engine
+bank/coin/item coordinator/pool checks plus maintained lifecycle,22 checked-release,
+14 startup and18 recovery-session cases pass within their stated scopes on both
+engines. The scoped ordinary SQL drop now passes actual gameplay publication,
+guarded ACK and two complete cold boots per engine after correcting empty-slot
+census exhaustion. The maintained regression now passes on both engines and Plan 1's original
+independent acceptance is complete within the recorded source scopes; Plans 2–4,
+combined Plan 5 and full activation-owner integration remain unfinished. No R1–R8 or
+full-feature acceptance gate is waived by this scoped result.
 
 ## Product boundary
 
@@ -27,7 +1591,7 @@ and preserve operation identity, even if their storage mechanics differ.
 Production migration, deployment, data repair, and restitution need separate
 authorization.
 
-## Evidence at this head
+## Historical evidence before maintained producer integration
 
 | State | Evidence | Limit |
 | --- | --- | --- |
@@ -92,3 +1656,25 @@ every unsupported route, independent reconciliation of every admitted holding
 and UID, and player-visible recovery after restart. A green pure codec, source
 contract, or synthetic fixture suite is useful component evidence but does not
 meet this release test.
+
+
+### October 4 maintained SQL collector publication compiler repair
+
+The [peer build handoff](PLAN5_SQL_COLLECTOR_ROW_BUILD_HANDOFF_2026-10-04.md)
+establishes a maintained SQL `-Werror=sign-compare` failure in the original
+collector publication translation unit. Its signed native row ID is now
+checked nonnegative before exact unsigned equality against the bounded result
+row. Native row bounds, full literal/custody proof, publication reservations,
+guarded ACK, inactive dispatch and refusal behavior retain their existing owners.
+No representation, schema, warning flags or gameplay rules change.
+
+The maintained raw file now exactly matches peer diagnostic candidate
+`51478b2dfadb97c5aa910735a0337238e8aee964a3150b97fe80b0f9912ba9d1`.
+That copied candidate passed the peer's strict SQL syntax check, while its
+unchanged control reproduced the error. Primary changed-line clang-format18,
+raw pin, JSON/source inventory and whitespace checks cover this actual repair;
+no new local build, tests, database or gameplay execution is claimed. The peer's
+543 unreached syntax passes remain syntax-only, input-specific evidence.
+Maintained SQL linking/service and actual collector publication/replay checks
+remain in the original major-plan qualification. This repair lets Plan5 resume
+its fresh managed SQL restore batch; it does not qualify full accounting.

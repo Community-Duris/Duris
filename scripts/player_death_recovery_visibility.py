@@ -133,11 +133,12 @@ def sql_owners(api, db, pid: int, decoded: dict) -> list[dict]:
 def flatfile_reader(api) -> Path:
     binary = api.ROOT / "bin/tools/player_death_recovery_flatfile"
     sources = [api.ROOT / p for p in (
+        'src/world/quest_mobile_native.c', 'src/flatfile/quest_mobile_native_flatfile.c',
         "scripts/player_death_recovery_flatfile.cpp", "src/flatfile/flatfile_item_repository.c",
         "src/flatfile/flatfile_world_item_repository.c", "src/flatfile/flatfile_locker_repository.c",
         "src/flatfile/flatfile_player_snapshot_file.c", "src/flatfile/flatfile_store.c",
         "src/flatfile/flatfile_authority_transaction.c", "src/player/player_snapshot_codec.c",
-        "src/item/item_transfer_command.c", "src/persistence/critical_command.c")]
+        "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/economy/economic_source_event.c", "src/persistence/critical_command.c")]
     dependencies = sources + list((api.ROOT / "src").rglob("*.h"))
     if binary.exists() and binary.stat().st_mtime_ns >= max(p.stat().st_mtime_ns for p in dependencies):
         return binary

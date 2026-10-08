@@ -384,14 +384,13 @@ context load_context(const std::string &root, size_t bucket, std::string *error)
 		     &extra, error) == flatfile_read_result::not_found);
 	return value;
 }
-flatfile_accounting_record lookup_in(const std::string &root, const context &value,
-				     const critical_command &command, std::string *error)
+flatfile_accounting_record retained_in(const std::string &root, const context &value,
+				       const critical_operation_id &operation, std::string *error)
 {
 	auto found = std::lower_bound(value.index.entries.begin(), value.index.entries.end(),
-				      command.operation_id.bytes,
-				      [](const entry &item, const auto &id)
+				      operation.bytes, [](const entry &item, const auto &id)
 				      { return item.id.bytes < id; });
-	require(found != value.index.entries.end() && found->id.bytes == command.operation_id.bytes,
+	require(found != value.index.entries.end() && found->id.bytes == operation.bytes,
 		status::not_found);
 	std::vector<uint8_t> older;
 	const auto *bytes = &value.active;
@@ -405,7 +404,13 @@ flatfile_accounting_record lookup_in(const std::string &root, const context &val
 	economic_frozen_intent intent;
 	checked(economic_intent_decode(record.command.accounting_intent, &intent));
 	require(intent.admission.metadata.lineage.bytes == value.index.lineage.bytes &&
-		record.command.operation_id.bytes == command.operation_id.bytes);
+		record.command.operation_id.bytes == operation.bytes);
+	return record;
+}
+flatfile_accounting_record lookup_in(const std::string &root, const context &value,
+				     const critical_command &command, std::string *error)
+{
+	auto record = retained_in(root, value, command.operation_id, error);
 	std::vector<uint8_t> expected, actual;
 	command_checked(critical_command_encode(command, &expected));
 	command_checked(critical_command_encode(record.command, &actual));
@@ -610,6 +615,22 @@ flatfile_accounting_status flatfile_accounting_lookup(const std::string &root,
 			recover(root, lock, error);
 			auto value = load_context(root, bucket_for(command.operation_id), error);
 			auto retained = lookup_in(root, value, command, error);
+			*record = std::move(retained);
+		},
+		error);
+}
+flatfile_accounting_status flatfile_accounting_storage::lookup_retained_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &operation, flatfile_accounting_record *record,
+	std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			require(record && !critical_operation_id_is_zero(operation));
+			recover(root, lock, error);
+			auto value = load_context(root, bucket_for(operation), error);
+			auto retained = retained_in(root, value, operation, error);
 			*record = std::move(retained);
 		},
 		error);

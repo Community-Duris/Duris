@@ -54,6 +54,7 @@
 #include "player/player_load_pipeline.h"
 #include "player/player_revision_state.h"
 #include "player/player_save_pipeline.h"
+#include "player/player_save_replay_ownership.h"
 #include "persistence/critical_command_coordinator.h"
 #include "persistence/critical_outbox.h"
 #include "persistence/locker_async.h"
@@ -3612,6 +3613,15 @@ void verify_delete_account(P_desc d, char *arg)
 		display_account_deletion_confirmation(d, fenced);
 		return;
 	}
+	// Refuse before persisting an irreversible fence or closing other sessions.
+	if (player_save_execution_guard::current_ownership_epoch())
+	{
+		SEND_TO_Q("\r\nAccount deletion is currently unavailable. Please retry later "
+			  "or contact an immortal.\r\n",
+			  d);
+		display_account_deletion_confirmation(d, fenced);
+		return;
+	}
 
 #ifndef __NO_MYSQL__
 	if (!fenced)
@@ -3706,6 +3716,7 @@ void verify_delete_account(P_desc d, char *arg)
 		flush_pending_ship_saves();
 		if (drain_pending_ship_saves() && drain_guard.drain())
 		{
+			// Let the backend commit quest aliases and identities together.
 #ifndef __NO_MYSQL__
 			deleted = sql_delete_account(account_name.c_str());
 #else

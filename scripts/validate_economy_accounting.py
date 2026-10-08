@@ -198,7 +198,7 @@ def validate_fixture(fixture, registry):
 LEXEME = re.compile(r'//[^\n]*|/\*[\s\S]*?\*/|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'')
 PATTERNS = {
     'money_helper': r'\b(?:ADD_MONEY|SUB_MONEY|SUB_BANK|CLEAR_MONEY|insert_money_pickup|transact)\s*\(',
-    'economic_submit': r'\b(?:currency_transaction_submit\w*|coin_transfer_command_build|currency_command_build|item_transfer_command_build|item_creation_grant_submit\w*|item_movement_transaction_submit\w*|shop_trade_transaction_submit|collector_transaction_submit|auction_transaction_submit\w*)\s*\(',
+    'economic_submit': r'\b(?:currency_transaction_submit\w*|coin_transfer_command_build|currency_command_build|item_transfer_command_build|item_creation_grant_submit\w*|item_movement_transaction_submit\w*|shop_trade_transaction_submit(?:_with_publication)?|shop_trade_preparation_owner::start|shop_trade_start_accounted|collector_transaction_submit|auction_transaction_submit\w*)\s*\(',
     'coin_assignment': r'GET_(?:BALANCE_)?(?:COPPER|SILVER|GOLD|PLATINUM)\([^;\n]*?\)\s*(?:=(?!=)|[+*/-]=|\+\+|--)',
     'direct_cash_assignment': r'(?:->|\.)\s*(?:cash|bank)\s*\[[^;\n]*?\]\s*(?:=(?!=)|[+*/-]=|\+\+|--)',
     'ship_coffer_assignment': r'\bship->money\s*(?:=(?!=)|[+*/-]=|\+\+|--)',

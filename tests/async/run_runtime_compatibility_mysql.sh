@@ -6,14 +6,16 @@ PASSWORD=$(printf 'runtime-contract-%s-%s' "$$" "$RANDOM")
 DB_NAME="runtime_contract_test"
 LEGACY_DB_NAME="runtime_contract_legacy_test"
 DB_IMAGE="${RUNTIME_DB_IMAGE:-mysql:8.0}"
-cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
+SQL_FIXTURE_CONTAINER_ID=
+cleanup() { [[ "${SQL_FIXTURE_CONTAINER_ID:-}" =~ ^[0-9a-f]{64}$ ]] && docker rm -f "$SQL_FIXTURE_CONTAINER_ID" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
+trap 'printf "runtime schema proof failed at line %s (replay=%s step=%s)\n" "$LINENO" "${replay:-legacy}" "${file:-setup}" >&2' ERR
 if [[ "$DB_IMAGE" == mariadb:* ]]; then
     ROOT_PASSWORD_ENV="MARIADB_ROOT_PASSWORD"
 else
     ROOT_PASSWORD_ENV="MYSQL_ROOT_PASSWORD"
 fi
-docker run -d --name "$NAME" -e "$ROOT_PASSWORD_ENV=$PASSWORD" "$DB_IMAGE" >/dev/null
+SQL_FIXTURE_CONTAINER_ID=$(docker run -d --name "$NAME" -e "$ROOT_PASSWORD_ENV=$PASSWORD" "$DB_IMAGE" --innodb-use-native-aio=OFF)
 ready=0
 for _ in $(seq 1 90); do
     if docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -N -e 'SELECT 1' >/dev/null 2>&1; then
@@ -32,11 +34,11 @@ for step in m.load_manifest().migrations:
 PYTHON
 )
 mapfile -t MIGRATION_FILES <<< "$migration_files"
+# Sealed verifiers can call siblings by relative path. Preserve their layout
+# instead of flattening the manifest into /tmp and breaking those dependencies.
+docker exec "$NAME" mkdir -p /tmp/migrations/immutable
 for file in bootstrap_multithread_safe.sql "${MIGRATION_FILES[@]}" runtime_compatibility_manifest.json verify_runtime_compatibility.sh; do
-    docker cp "$ROOT/migrations/$file" "$NAME:/tmp/$(basename "$file")" >/dev/null
-    if [[ "$file" == *.sh ]]; then
-        docker exec "$NAME" chmod +x "/tmp/$(basename "$file")"
-    fi
+    docker cp "$ROOT/migrations/$file" "$NAME:/tmp/migrations/$file" >/dev/null
 done
 
 # The pre-b029 launcher created server_reboots outside the migration system.
@@ -68,10 +70,10 @@ VALUES
 "
 for _ in 1 2; do
     docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
-        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/0004_server_reboots.sql"
+        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/migrations/immutable/0004_server_reboots.sql"
     docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
         -e DB_PASSWD="$PASSWORD" -e DB_NAME="$LEGACY_DB_NAME" \
-        "$NAME" /tmp/0004_server_reboots.sh >/dev/null
+        "$NAME" bash /tmp/migrations/immutable/0004_server_reboots.sh >/dev/null
 done
 LEGACY_MYSQL=(docker exec -i -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot -N -B "$LEGACY_DB_NAME")
 legacy_rows=$("${LEGACY_MYSQL[@]}" -e "
@@ -124,10 +126,10 @@ WHERE table_schema=DATABASE() AND table_name='kingdom_realms';")
 [[ "$legacy_realm_collation" == utf8mb4_general_ci ]]
 for _ in 1 2; do
     docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
-        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/0006_kingdom_realms.sql"
+        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/migrations/immutable/0006_kingdom_realms.sql"
     docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
         -e DB_PASSWD="$PASSWORD" -e DB_NAME="$LEGACY_DB_NAME" \
-        "$NAME" /tmp/0006_kingdom_realms.sh >/dev/null
+        "$NAME" bash /tmp/migrations/immutable/0006_kingdom_realms.sh >/dev/null
 done
 legacy_realm_row=$("${LEGACY_MYSQL[@]}" -e "
 SELECT CONCAT_WS(':',assoc_id,realm_id,hall_vnum,highest_claim,res_mineral,
@@ -149,10 +151,10 @@ CREATE TABLE kingdom_garrison (
 INSERT INTO kingdom_garrison VALUES (3,0,1,12),(3,16,2,20);"
 for _ in 1 2; do
     docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
-        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/0009_kingdom_garrison.sql"
+        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/migrations/immutable/0009_kingdom_garrison.sql"
     docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
         -e DB_PASSWD="$PASSWORD" -e DB_NAME="$LEGACY_DB_NAME" \
-        "$NAME" /tmp/0009_kingdom_garrison.sh >/dev/null
+        "$NAME" bash /tmp/migrations/immutable/0009_kingdom_garrison.sh >/dev/null
 done
 legacy_garrison_rows=$("${LEGACY_MYSQL[@]}" -e "
 SELECT GROUP_CONCAT(CONCAT_WS(':',assoc_id,slot,guard_class,level)
@@ -186,35 +188,34 @@ VALUES (UNHEX(REPEAT('11',16)),UNHEX(REPEAT('22',32)),UNHEX(REPEAT('33',32)),
         17,1,1,3,116,4,'');"
 for _ in 1 2; do
     docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
-        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/0029_critical_failure_stage.sql"
+        "mysql -h127.0.0.1 -uroot '$LEGACY_DB_NAME' < /tmp/migrations/immutable/0029_critical_failure_stage.sql"
     docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
         -e DB_PASSWD="$PASSWORD" -e DB_NAME="$LEGACY_DB_NAME" \
-        "$NAME" /tmp/0029_critical_failure_stage.sh >/dev/null
+        "$NAME" bash /tmp/migrations/immutable/0029_critical_failure_stage.sh >/dev/null
 done
 legacy_failure_stage=$("${LEGACY_MYSQL[@]}" -e "
 SELECT CONCAT(COUNT(*),':',SUM(failure_stage=0),':',MIN(result_code),':',MIN(durable_revision))
 FROM critical_operation_inbox;")
 [[ "$legacy_failure_stage" == "1:1:116:4" ]]
 
-docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c "mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/bootstrap_multithread_safe.sql"
+docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c "mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/migrations/bootstrap_multithread_safe.sql"
 # Apply every registered step and its verifier, including an exact replay.
 for replay in 1 2; do
     for file in "${MIGRATION_FILES[@]}"; do
-        # 0022 intentionally adds nullable progression columns to
-        # telemetry_interval. The sealed 0014 verifier checks the original
-        # 154-column shape, so it is valid before 0022 but cannot describe the
-        # later shape on the second idempotence replay. Later verifiers cover
-        # the resulting shape; do not weaken the first-pass check.
-        if [[ "$replay" == 2 && "$(basename "$file")" == "0014_telemetry_storage.sh" ]]; then
+        # Each sealed verifier describes the shape immediately after its own
+        # step. Later migrations replace indexes and extend those shapes. Keep
+        # every first-pass verifier; replay the SQL and check the complete
+        # current fingerprint below rather than reapplying historical shapes.
+        if [[ "$replay" == 2 && "$file" == *.sh ]]; then
             continue
         fi
         if [[ "$file" == *.sql ]]; then
             docker exec -e MYSQL_PWD="$PASSWORD" "$NAME" sh -c \
-                "mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/$(basename "$file")"
+                "mysql -h127.0.0.1 -uroot '$DB_NAME' < /tmp/migrations/$file"
         else
             docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root \
                 -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" \
-                "$NAME" "/tmp/$(basename "$file")" >/dev/null
+                "$NAME" bash "/tmp/migrations/$file" >/dev/null
         fi
     done
 done
@@ -246,7 +247,7 @@ MYSQL=(docker exec -i -e MYSQL_PWD="$PASSWORD" "$NAME" mysql -h127.0.0.1 -uroot 
 history_checksum=$("${MYSQL[@]}" -e "SELECT LOWER(HEX(history_checksum)) FROM mud_schema_migration_state WHERE state_id=1;")
 "${MYSQL[@]}" -e "CREATE TABLE imported_extension_probe (id INT PRIMARY KEY, note VARCHAR(32)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; INSERT INTO imported_extension_probe VALUES (1, 'preserved');"
 
-verify() { docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" -e RUNTIME_COMPATIBILITY_MANIFEST=/tmp/runtime_compatibility_manifest.json "$NAME" /tmp/verify_runtime_compatibility.sh; }
+verify() { docker exec -e ENVIRONMENT=test -e DB_HOST=127.0.0.1 -e DB_PORT=3306 -e DB_USER=root -e DB_PASSWD="$PASSWORD" -e DB_NAME="$DB_NAME" -e RUNTIME_COMPATIBILITY_MANIFEST=/tmp/migrations/runtime_compatibility_manifest.json "$NAME" bash /tmp/migrations/verify_runtime_compatibility.sh; }
 expect_reject() { if verify >/dev/null 2>&1; then echo "runtime drift was accepted: $1" >&2; exit 1; fi; }
 verify >/dev/null
 for table in player_death_disposition player_death_custody kingdom_garrison epic_stone_claim telemetry_session telemetry_interval telemetry_config telemetry_player_day telemetry_cohort_day telemetry_rollup_state; do

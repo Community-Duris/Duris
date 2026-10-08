@@ -43,6 +43,13 @@ DEFAULT_SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0051_player_item_runtime_state.sql",
     ROOT / "migrations" / "immutable" / "0053_craft_progression.sql",
     ROOT / "migrations" / "immutable" / "0055_sql_room_item_payload.sql",
+    ROOT / "migrations" / "immutable" / "0057_shopkeeper_item_runtime_state.sql",
+    ROOT / "migrations" / "immutable" / "0058_economic_baseline_command_admission_time.sql",
+    ROOT / "migrations" / "immutable" / "0059_quest_mobile_native.sql",
+    ROOT / "migrations" / "immutable" / "0060_native_mobile_item_owner.sql",
+    ROOT / "migrations" / "immutable" / "0061_economic_baseline_equipment.sql",
+    ROOT / "migrations" / "immutable" / "0062_economic_pending_claim_consumption.sql",
+    ROOT / "migrations" / "immutable" / "0063_quest_mobile_native_birth_origin.sql",
 )
 
 ROOT_FIELDS = {
@@ -81,6 +88,7 @@ DESTRUCTIVE_ACTIONS = {
 }
 REQUIRED_NON_DATABASE_STORES = {
     "file:flatfile-authority-journal": ("recovery_state", "FLATFILE_ROOT/domains/.critical-authority-transaction"),
+    "file:economic-lifecycle-receipt": ("recovery_state", "FLATFILE_ROOT/economic-evidence/lifecycle-*.elr"),
     "file:economic-baseline-control": ("recovery_state", "FLATFILE_ROOT/economic-evidence/baseline-*.ebc"),
     "file:economic-baseline-reservations": ("recovery_state", "FLATFILE_ROOT/economic-evidence/baseline-*.ebi"),
     "file:economic-baseline-witness": ("recovery_state", "FLATFILE_ROOT/economic-evidence/baseline-*.eab"),

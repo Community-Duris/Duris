@@ -8,6 +8,7 @@
 #include "persistence/persistence_observability.h"
 #include "persistence/persistence_mode.h"
 #include "player/player_snapshot_codec.h"
+#include "player/player_save_execution_guard.h"
 #include "player/player_quarantine_recovery.h"
 #include "flatfile/flatfile_craft_progression.h"
 
@@ -1344,6 +1345,17 @@ player_save_apply_result flatfile_player_snapshot_apply(const std::string &root,
 		return { player_save_apply_outcome::terminal_failure, 0, EPERM };
 	if (!valid_snapshot(snapshot) || !replace_items_together(snapshot.components))
 		return { player_save_apply_outcome::terminal_failure, 0, EINVAL };
+	// Include every direct/selected native mutation in the existing ownership
+	// permit. Inactive permits remain allocation-free and do not alter bytes.
+	player_save_execution_guard::permit execution(snapshot.pid);
+	if (!execution)
+		return { execution.result() == player_save_execution_guard::admission::held ?
+				 player_save_apply_outcome::deferred :
+				 player_save_apply_outcome::retryable_failure,
+			 0,
+			 execution.result() == player_save_execution_guard::admission::held ?
+				 0U :
+				 ENOMEM };
 	if (!snapshot.quest_xp_receipts.empty() &&
 	    (!(snapshot.components & PLAYER_COMPONENT_STATUS) ||
 	     std::none_of(snapshot.status_integers.begin(), snapshot.status_integers.end(),

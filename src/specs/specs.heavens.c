@@ -960,6 +960,13 @@ static int stat_pool_common(P_obj obj, P_char ch, int cmd, sh_int *statPtr, cons
 	return TRUE;
 }
 
+int native_birth_spell_pool_initialize(P_obj obj, int selected_spell, int original_time)
+{
+	obj->value[0] = selected_spell;
+	obj->timer[0] = original_time;
+	return TRUE;
+}
+
 int spell_pool(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 {
 	int curr_time, rannum;
@@ -980,12 +987,7 @@ int spell_pool(P_obj obj, P_char ch, int cmd, char * /*arg*/)
 
 	if (cmd == CMD_SET_PERIODIC)
 	{
-		curr_time = time(NULL);
-
-		obj->value[0] = rannum;
-		obj->timer[0] = curr_time;
-
-		return TRUE;
+		return native_birth_spell_pool_initialize(obj, rannum, time(NULL));
 	}
 
 	spell_func = spells[obj->value[0]];
@@ -7177,46 +7179,8 @@ int good_evil_sword(P_obj obj, P_char ch, int cmd, char *arg)
 	return FALSE;
 }
 
-void dispel_portal(P_char ch, P_obj obj)
-{
-	P_obj obj2;
-
-	if (GET_LEVEL(ch) < 46)
-	{
-		act("$p easily resists your assault!", FALSE, ch, obj, 0, TO_CHAR);
-		return;
-	}
-	else if ((GET_LEVEL(ch) < 50) && !number(0, 1))
-	{
-		act("$p resists your assault!", FALSE, ch, obj, 0, TO_CHAR);
-		return;
-	}
-
-	// success, search for portal on other side
-
-	obj2 = world[real_room(obj->value[0])].contents;
-
-	while (obj2)
-	{
-		if (obj2->R_num == obj->R_num && (obj2->value[7] == obj->value[7]) && (obj2 != obj))
-			break;
-
-		obj2 = obj2->next_content;
-	}
-
-	if (!obj2)
-	{ // means we scrolled whole content of another side and cannot find portal
-		send_to_char("bug in dispelling portals, notify a god.\n", ch);
-		return;
-	}
-
-	// decay them both
-	Decay(obj);
-	Decay(obj2);
-}
-
 //---------------------------------------------------------
-// general portal actions: dispel,look in, enter
+// general portal actions: look in, enter
 // (msg comes from portal hooks)
 //---------------------------------------------------------
 int portal_general_internal(P_obj obj, P_char ch, int cmd, char *arg,
@@ -7225,12 +7189,6 @@ int portal_general_internal(P_obj obj, P_char ch, int cmd, char *arg,
 	int to_room;
 	P_char dummy;
 	P_obj obj2 = NULL;
-
-	if (cmd == CMD_DISPEL)
-	{
-		dispel_portal(ch, obj);
-		return TRUE;
-	}
 
 	if (cmd == CMD_DECAY)
 	{
@@ -7374,17 +7332,8 @@ int portal_door(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 
 	// what commands invokes portal actions
-	if ((cmd == CMD_DECAY) || (cmd == CMD_DISPEL) ||
-	    (((cmd == CMD_ENTER) || (cmd == CMD_LOOK)) && ch))
+	if ((cmd == CMD_DECAY) || (((cmd == CMD_ENTER) || (cmd == CMD_LOOK)) && ch))
 	{
-		/*
-		 if(ch && !is_Raidable(ch, 0, 0))
-		 {
-		   send_to_char("&=LWYou are not raidable! You shall not pass!\r\n", ch);
-		   return false;
-		 }
-	   */
-
 		struct portal_action_messages msg = {
 			/*in ch    */ "You enter $p and reappear elsewhere...",
 			/*in ch r  */
@@ -7413,15 +7362,8 @@ int portal_wormhole(P_obj obj, P_char ch, int cmd, char *arg)
 	if (cmd == CMD_SET_PERIODIC)
 		return FALSE;
 
-	if ((cmd == CMD_DECAY) || (cmd == CMD_DISPEL) ||
-	    (((cmd == CMD_ENTER) || (cmd == CMD_LOOK)) && ch))
+	if ((cmd == CMD_DECAY) || (((cmd == CMD_ENTER) || (cmd == CMD_LOOK)) && ch))
 	{
-		if (ch && !is_Raidable(ch, 0, 0))
-		{
-			send_to_char("&=LWYou are not raidable! You shall not pass!\r\n", ch);
-			return false;
-		}
-
 		struct portal_action_messages msg = {
 			/*in ch    */
 			"&+LAs you enter $p&+L, you feel yourself being torn into a thousand pieces,\n"
@@ -7463,15 +7405,8 @@ int portal_etherportal(P_obj obj, P_char ch, int cmd, char *arg)
 		return FALSE;
 
 	// what commands invokes portal actions
-	if ((cmd == CMD_DECAY) || (cmd == CMD_DISPEL) ||
-	    (((cmd == CMD_ENTER) || (cmd == CMD_LOOK)) && ch))
+	if ((cmd == CMD_DECAY) || (((cmd == CMD_ENTER) || (cmd == CMD_LOOK)) && ch))
 	{
-		if (ch && !is_Raidable(ch, 0, 0))
-		{
-			send_to_char("&=LWYou are not raidable! You shall not pass!\r\n", ch);
-			return false;
-		}
-
 		struct portal_action_messages msg = {
 			/*in ch    */
 			"&+YAs you enter $p&+Y, you feel yourself being torn into a thousand\n"
@@ -7497,8 +7432,6 @@ int portal_etherportal(P_obj obj, P_char ch, int cmd, char *arg)
 int moonstone(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 {
 	char *name;
-	struct obj_affect *aff;
-	P_nevent e;
 
 	// If not moonstone or bloodstone.
 	if (!obj || (obj_index[obj->R_num].virtual_number != 419 &&
@@ -7537,39 +7470,6 @@ int moonstone(P_obj obj, P_char ch, int cmd, char * /*argument*/)
 					affect_from_char(ch, SPELL_BLOODSTONE);
 				}
 			}
-		}
-		return FALSE;
-	}
-
-	// Upon dispel, make object decay soon and let it be dispelled.
-	if (cmd == CMD_DISPEL)
-	{
-		// Get obj affect.
-		aff = get_obj_affect(obj, TAG_OBJ_DECAY);
-		if (aff)
-		{
-			// Find decay event.
-			LOOP_EVENTS_OBJ(e, obj->nevents)
-			{
-				if (e->func != event_obj_affect)
-				{
-					continue;
-				}
-				// If found, move decay one full scheduler-wheel interval from now.
-				if (*((struct obj_affect **)e->data) == aff)
-				{
-					if (!nevent_reschedule_after(nevent_handle_from_event(e),
-								     PULSES_IN_TICK))
-						logit(LOG_EXIT,
-						      "moonstone: failed to reschedule decay event");
-				}
-			}
-		}
-		else
-		{
-			// Set timer to 1 min
-			logit(LOG_DEBUG, "moonstone: obj has no decay timer! (creating one)");
-			set_obj_affected(obj, 1, TAG_OBJ_DECAY, 0);
 		}
 		return FALSE;
 	}

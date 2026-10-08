@@ -136,6 +136,8 @@ int main() {
             assert(!IS_AFFECTED2(&ch, AFF2_CASTING));
             assert(CAN_ACT((&ch)));
             assert(descriptor.input.head == &queued && descriptor.input.tail == &queued);
+            assert(descriptor.input.bytes == sizeof(command) && descriptor.input.entries == 1);
+            assert(!descriptor.input.overflowed && !descriptor.input.overflow_reported);
             assert(std::strcmp(queued.text, "look") == 0);
             assert(descriptor.input.bytes == sizeof(command) && descriptor.input.entries == 1);
             assert(!descriptor.input.overflowed && !descriptor.input.overflow_reported);

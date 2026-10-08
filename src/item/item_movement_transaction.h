@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <vector>
 
 enum class item_creation_prepare_result
@@ -81,6 +82,24 @@ enum class item_movement_reject
 
 const char *item_movement_reject_name(item_movement_reject reason);
 bool item_movement_reject_is_transient(item_movement_reject reason);
+
+// SQL schema-2 ordinary single-root drop only. Preparation owns identities and
+// the literal checkpoint, never a character/object pointer across pulses. The
+// completion is notification-only, after physical publication, ACK and release.
+bool item_movement_transaction_prepare_sql_drop(P_char actor, P_obj root,
+						item_movement_completion_fn completion,
+						const void *context, size_t context_size,
+						item_movement_reject *reject);
+bool item_movement_transaction_prepare_sql_lockpick_retirement(P_char, P_obj,
+							       const item_transfer_continuation &,
+							       item_movement_publication_fn,
+							       item_movement_reject *);
+bool item_movement_transaction_restore_held_retirement_recovery(
+	const critical_native_recovery_envelope &) noexcept;
+void item_movement_transaction_drop_prepare_pulse(void);
+// Lifecycle cancellation of unadmitted preparations only. Their ordinary save
+// bodies remain owned by the pipeline/worker; admitted original holds are untouched.
+void item_movement_transaction_cancel_drop_preparations(void);
 
 struct item_movement_health
 {
@@ -199,5 +218,150 @@ bool item_movement_transaction_player_busy(P_char actor);
 bool item_movement_transaction_player_creation_busy(P_char actor);
 item_movement_health item_movement_transaction_health_copy(void);
 void item_movement_transaction_reset_for_tests(void);
+
+struct critical_native_recovery_envelope;
+// Startup observer only: retain the original domain continuation without
+// executing, submitting, acknowledging, or entering the coordinator.
+bool item_movement_transaction_restore_native_recovery(
+	const critical_native_recovery_envelope &) noexcept;
+
+class quest_native_consumption_capture;
+
+enum class item_native_quest_preparation_state : uint8_t
+{
+	pending,
+	ready,
+	refused,
+	not_matched
+};
+struct item_native_quest_preparation_token
+{
+    private:
+	critical_operation_id operation_{};
+	uint64_t generation_ = 0;
+	friend class item_native_quest_preparation_owner;
+	friend class item_native_quest_gameplay_publication_owner;
+	friend class item_native_quest_publication_owner;
+};
+class quest_native_gameplay_owner;
+enum class item_native_quest_gameplay_result : uint8_t
+{
+	pending,
+	acceptance_applied,
+	prefix_applied,
+	completion_applied,
+	rejected,
+	unavailable
+};
+// Original quest driver can retain and consume only its exact generation's
+// completed guard publication. These facts never grant ACK or native authority.
+// The original birth owner shares the existing preparation cap without replacing
+// quest-driver bytes or acquiring quest publication/ACK capabilities.
+class item_native_quest_birth_budget_owner final
+{
+    private:
+	friend class quest_mobile_native_birth_owner;
+	static bool retained_budget(size_t actual_birth_bytes) noexcept;
+};
+
+class item_native_quest_gameplay_publication_owner final
+{
+    private:
+	friend class quest_native_gameplay_owner;
+	static bool retain(const item_native_quest_preparation_token &) noexcept;
+	static bool retained_budget(size_t actual_driver_bytes) noexcept;
+	static bool restore_budget(size_t actual_driver_bytes) noexcept;
+	// Current repository receipt plus the complete original world cut; the
+	// returned runtime IDs are observed live bodies, never persisted IDs.
+	static bool restored_readback(const critical_native_recovery_envelope &, P_char *,
+				      P_char *) noexcept;
+	static bool restored_participant(const critical_command &,
+					 item_native_quest_preparation_token *, P_char *,
+					 P_char *) noexcept;
+	static bool restored_token(const critical_command &,
+				   item_native_quest_preparation_token *) noexcept;
+	// Exact completed original command, borrowed by shared ownership before take.
+	// Does not consume the retained publication or grant native/ACK authority.
+	// The quest driver must reserve its original aggregate budget and persist
+	// its continuation handoff before consuming this publication generation.
+	static item_native_quest_gameplay_result
+	observe_completed(const item_native_quest_preparation_token &,
+			  std::shared_ptr<const critical_command> *) noexcept;
+	static item_native_quest_gameplay_result
+	take(const item_native_quest_preparation_token &) noexcept;
+	// Fresh complete world/UID census for one original post-GIVE callback.
+	// No historical/custody/SQL proof, ACK or source authority is returned.
+	static bool observe_give(uint64_t player_runtime, uint32_t pid, uint64_t native_runtime,
+				 uint64_t original_root_uid, P_char *player, P_char *mobile,
+				 P_obj *root) noexcept;
+};
+
+// Original already-LIVE native acceptance only. No birth/adoption, cash,
+// source issuance, generic admission or bool-based publication/ACK.
+class item_native_quest_preparation_owner final
+{
+    public:
+	static item_native_quest_preparation_state
+	begin_acceptance(P_char actor, P_char native_mobile, P_obj carried_root,
+			 item_native_quest_preparation_token *) noexcept;
+	static item_native_quest_preparation_state
+	poll_acceptance(const item_native_quest_preparation_token &, P_char actor,
+			P_char native_mobile) noexcept;
+	// Genuine zero-item ordinary coin GIVE. No original quester trigger, source
+	// issuance or synthetic carried root; complete SQL/publication owner follows.
+	static item_native_quest_preparation_state
+	begin_money_acceptance(P_char actor, P_char native_mobile, uint8_t denomination,
+			       int32_t quantity, item_native_quest_preparation_token *) noexcept;
+	static item_native_quest_preparation_state
+	poll_money_acceptance(const item_native_quest_preparation_token &, P_char actor,
+			      P_char native_mobile) noexcept;
+	static critical_submit_result
+	submit_money_acceptance(const item_native_quest_preparation_token &, P_char actor,
+				P_char native_mobile) noexcept;
+	static item_native_quest_preparation_state
+	begin_consumption(P_char actor, P_char native_mobile,
+			  std::shared_ptr<const quest_native_consumption_capture>,
+			  item_native_quest_preparation_token *) noexcept;
+	static item_native_quest_preparation_state
+	poll_consumption(const item_native_quest_preparation_token &, P_char actor,
+			 P_char native_mobile) noexcept;
+	static critical_submit_result
+	submit_consumption(const item_native_quest_preparation_token &, P_char actor,
+			   P_char native_mobile) noexcept;
+	static bool cancel(const item_native_quest_preparation_token &) noexcept;
+	static critical_submit_result submit_acceptance(const item_native_quest_preparation_token &,
+							P_char actor,
+							P_char native_mobile) noexcept;
+
+    private:
+	friend class quest_native_gameplay_owner;
+	// Freeze the exact acknowledged consumption command BEFORE its journal
+	// admission, so the original parent can retain the whole child handoff.
+	// True means preparation only, never durable execution or publication.
+	// Output remains unchanged on refusal; failure preserves submit diagnostics.
+	static bool prepare_consumption_command(const item_native_quest_preparation_token &,
+						P_char actor, P_char native_mobile,
+						std::shared_ptr<const critical_command> *,
+						critical_submit_result *failure) noexcept;
+};
+
+// Original coin feedback only, after exact original cash publication. This
+// private owner never debits/credits, executes quester, or grants receipt/ACK.
+class item_native_quest_publication_owner;
+class quest_native_coin_give_notice_owner final
+{
+    private:
+	friend class item_native_quest_publication_owner;
+	static bool publish(P_char actor, P_char native_mobile, uint8_t denomination,
+			    int32_t quantity, int32_t original_room_vnum) noexcept;
+};
+
+// The addressed original quest continuation invokes this only after native
+// acceptance publication. Preparation owns the real ordered decision and its
+// acknowledged final-giver fence; it supplies no publication or ACK authority.
+item_native_quest_preparation_state
+quest_native_completion_prepare(P_char native_mobile, P_char final_giver, int quester_id,
+				int completion_index,
+				item_native_quest_preparation_token *) noexcept;
 
 #endif

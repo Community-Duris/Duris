@@ -5,13 +5,20 @@
 #include "player/player_snapshot_codec.h"
 #include "core/prototypes.h"
 #include "core/utils.h"
+#include "economy/economic_gameplay_authority.h"
+#include "player/player_save_pipeline.h"
 
 #include <algorithm>
 #include <climits>
 #include <cstring>
 #include <limits>
 #include <new>
+#include <set>
 #include <unordered_map>
+#include <utility>
+#ifndef __NO_MYSQL__
+#include "persistence/economic_sql_shop_trade_transaction.h"
+#endif
 
 namespace
 {
@@ -84,10 +91,12 @@ void shop_trade_runtime_reset_for_tests(void)
 	shop_revisions.clear();
 }
 
-shop_trade_payload_build_result
-shop_trade_runtime_build_payload(P_char player, P_char keeper, P_obj selected, P_obj stock,
-				 P_obj destination, uint32_t shop_id, shop_trade_action action,
-				 int64_t price, shop_trade_payload *payload)
+static shop_trade_payload_build_result
+build_payload(P_char player, P_char keeper, P_obj selected, P_obj stock, P_obj destination,
+	      uint32_t shop_id, shop_trade_action action, int64_t price,
+	      shop_trade_payload *payload,
+	      const player_shop_checkpoint_stage *player_status = nullptr,
+	      uint64_t native_shop_revision = 0)
 {
 	if (!player || IS_NPC(player) || !player->only.pc || GET_PID(player) <= 0 || !keeper ||
 	    !IS_NPC(keeper) || GET_VNUM(keeper) <= 0 || !shop_index || number_of_shops < 0 ||
@@ -104,14 +113,26 @@ shop_trade_runtime_build_payload(P_char player, P_char keeper, P_obj selected, P
 	if (!account_name || !strcmp(account_name, "Unknown") ||
 	    strlen(account_name) > CURRENCY_ACCOUNT_NAME_MAX_BYTES)
 		return shop_trade_payload_build_result::unavailable;
-	uint64_t shop_revision = 0;
-	if (!shop_trade_runtime_revision(shop_id, &shop_revision))
+	uint64_t shop_revision = native_shop_revision;
+	if (player_status)
+	{
+		if (!economic_gameplay_authority::active_regular_sql() ||
+		    !player_status->save_revision || !player_status->level ||
+		    player_status->level > 255 ||
+		    static_cast<uint32_t>(GET_LEVEL(player)) != player_status->level ||
+		    !shop_revision || shop_revision == std::numeric_limits<uint64_t>::max())
+			return shop_trade_payload_build_result::unavailable;
+	}
+	else if (!shop_trade_runtime_revision(shop_id, &shop_revision))
 		return shop_trade_payload_build_result::unavailable;
 
 	std::vector<player_item_snapshot> snapshots;
-	if (player_item_snapshot_tree_capture(selected, &snapshots, nullptr) !=
-		    player_snapshot_capture_result::ok ||
-	    snapshots.empty() || snapshots.size() > SHOP_TRADE_MAX_ITEMS ||
+	const auto captured =
+		player_status ?
+			player_item_snapshot_tree_capture_literal(selected, &snapshots, nullptr) :
+			player_item_snapshot_tree_capture(selected, &snapshots, nullptr);
+	if (captured != player_snapshot_capture_result::ok || snapshots.empty() ||
+	    snapshots.size() > SHOP_TRADE_MAX_ITEMS ||
 	    snapshots.front().object_uid != selected->obj_uid)
 		return shop_trade_payload_build_result::capture_failure;
 	std::vector<uint8_t> blob;
@@ -219,10 +240,54 @@ shop_trade_runtime_build_payload(P_char player, P_char keeper, P_obj selected, P
 		built.stock_vnum = selected_entry->vnum;
 	}
 	std::vector<uint8_t> validated;
-	if (!shop_trade_command_encode_payload(built, &validated))
+	if (player_status)
+	{
+		built.expected_player_save_revision = player_status->save_revision;
+		built.expected_player_level = player_status->level;
+		if (!shop_trade_command_encode_accounted_payload(built, &validated))
+			return shop_trade_payload_build_result::invalid;
+	}
+	else if (!shop_trade_command_encode_payload(built, &validated))
 		return shop_trade_payload_build_result::invalid;
 	*payload = std::move(built);
 	return shop_trade_payload_build_result::ok;
+}
+
+shop_trade_payload_build_result
+shop_trade_runtime_build_payload(P_char player, P_char keeper, P_obj selected, P_obj stock,
+				 P_obj destination, uint32_t shop_id, shop_trade_action action,
+				 int64_t price, shop_trade_payload *payload)
+{
+	return build_payload(player, keeper, selected, stock, destination, shop_id, action, price,
+			     payload);
+}
+
+shop_trade_payload_build_result shop_trade_runtime_build_accounted_payload(
+	P_char player, P_char keeper, P_obj selected, P_obj stock, P_obj destination,
+	uint32_t shop_id, shop_trade_action action, int64_t price,
+	const player_shop_checkpoint_stage &player_status, uint64_t native_shop_revision,
+	shop_trade_payload *payload)
+{
+	return build_payload(player, keeper, selected, stock, destination, shop_id, action, price,
+			     payload, &player_status, native_shop_revision);
+}
+
+bool shop_trade_runtime_object_matches_accounted_payload(P_obj selected,
+							 const shop_trade_payload &payload)
+{
+	if (!selected || selected->obj_uid != payload.selected_item_uid ||
+	    !payload.expected_player_save_revision || !payload.expected_player_level ||
+	    payload.expected_player_level > 255 || !payload.item_blob_size ||
+	    payload.item_blob_size > payload.item_blob.size())
+		return false;
+	std::vector<player_item_snapshot> snapshots;
+	std::vector<uint8_t> encoded;
+	return player_item_snapshot_tree_capture_literal(selected, &snapshots, nullptr) ==
+		       player_snapshot_capture_result::ok &&
+	       player_item_snapshot_list_encode(snapshots, &encoded) ==
+		       player_snapshot_codec_result::ok &&
+	       encoded.size() == payload.item_blob_size &&
+	       std::equal(encoded.begin(), encoded.end(), payload.item_blob.begin());
 }
 
 bool shop_trade_runtime_object_matches_payload(P_obj selected, const shop_trade_payload &payload)
@@ -238,3 +303,171 @@ bool shop_trade_runtime_object_matches_payload(P_obj selected, const shop_trade_
 	       encoded.size() == payload.item_blob_size &&
 	       std::equal(encoded.begin(), encoded.end(), payload.item_blob.begin());
 }
+
+#ifndef __NO_MYSQL__
+bool shop_trade_current_runtime_owner::publish(
+	MYSQL *connection, const shop_trade_payload &payload,
+	const economic_sql_shop_trade_publication &current) noexcept
+{
+	if (!nevent_is_game_thread() || !connection || !current.session_id ||
+	    mysql_thread_id(connection) != current.session_id ||
+	    !(connection->server_status & SERVER_STATUS_IN_TRANS) ||
+	    current.custody.size() != current.custody_vnums.size() || !current.shop_revision)
+		return false;
+	try
+	{
+		const item_owner_identity player{ item_owner_type::player, payload.player_pid, 0 };
+		const item_owner_identity keeper{ item_owner_type::shopkeeper,
+						  item_shopkeeper_owner_id(payload.shop_id), 0 };
+		const item_owner_identity counterparty =
+			payload.action == shop_trade_action::buy_produced ?
+				item_owner_identity{ item_owner_type::system, 0, 0 } :
+			(payload.action == shop_trade_action::sell_destroy ||
+			 payload.action == shop_trade_action::discard_invalid) ?
+				item_owner_identity{ item_owner_type::destruction, 0, 0 } :
+				keeper;
+		auto revision_for = [&](const item_owner_identity &owner, uint64_t *revision)
+		{
+			if (item_owner_identity_equal(owner, player))
+				*revision = current.wallet_owner_revision;
+			else if (item_owner_identity_equal(owner, keeper))
+				*revision = current.keeper_owner_revision;
+			else if (item_owner_identity_equal(owner, counterparty))
+				*revision = current.counterparty_owner_revision;
+			else
+				return false;
+			return true;
+		};
+		uint64_t cached = 0;
+		if ((item_ownership_runtime_peek_owner_revision(player, &cached) &&
+		     cached > current.wallet_owner_revision) ||
+		    (item_ownership_runtime_peek_owner_revision(keeper, &cached) &&
+		     cached > current.keeper_owner_revision))
+			return false;
+		const auto old_shop = shop_revisions.find(payload.shop_id);
+		if (old_shop != shop_revisions.end() && old_shop->second > current.shop_revision)
+			return false;
+		// Rejected produced outputs have no SQL rows and therefore are not in
+		// current.custody. The original output IDs must also be absent in cache.
+		if (current.rejected && payload.action == shop_trade_action::buy_produced)
+			for (size_t index = 0; index < payload.item_count; ++index)
+			{
+				item_ownership_runtime_entry existing{};
+				if (item_ownership_runtime_lookup(payload.items[index].item_uid,
+								  &existing))
+					return false;
+			}
+		std::vector<item_ownership_runtime_entry> batch;
+		batch.reserve(current.custody.size());
+		for (size_t index = 0; index < current.custody.size(); ++index)
+		{
+			const auto &entry = current.custody[index];
+			const auto &position = entry.position;
+			if (position.state == item_custody_state::absent)
+			{
+				item_ownership_runtime_entry existing{};
+				if (item_ownership_runtime_lookup(entry.uid, &existing))
+					return false;
+				continue;
+			}
+			uint64_t owner_revision = 0;
+			if (!revision_for(position.owner, &owner_revision))
+			{
+				// Historical descendants may belong to an owner outside this
+				// locked owner cut. Never fabricate or hydrate its revision.
+				if (position.state == item_custody_state::active)
+					return false;
+				item_ownership_runtime_entry existing{};
+				if (item_ownership_runtime_lookup(entry.uid, &existing) &&
+				    (existing.root_item_uid != position.root_uid ||
+				     existing.parent_item_uid != position.parent_uid ||
+				     !item_owner_identity_equal(existing.owner, position.owner) ||
+				     existing.item_revision != position.revision ||
+				     existing.vnum != current.custody_vnums[index] ||
+				     existing.state != position.state))
+					return false;
+				continue;
+			}
+			batch.push_back({ entry.uid, position.root_uid, position.parent_uid,
+					  position.owner, position.revision, owner_revision,
+					  current.custody_vnums[index], position.state });
+		}
+		// Allocate the missing authenticated SQL revision before any cache hydration.
+		// Keep its node private until the complete owner readback succeeds.
+		decltype(shop_revisions)::node_type staged_shop;
+		if (old_shop == shop_revisions.end())
+		{
+			decltype(shop_revisions) staged;
+			staged.emplace(payload.shop_id, current.shop_revision);
+			staged_shop = staged.extract(payload.shop_id);
+			shop_revisions.reserve(shop_revisions.size() + 1);
+		}
+		if (!item_ownership_runtime_hydrate_many_atomic(batch.data(), batch.size()) ||
+		    !item_ownership_runtime_hydrate_owner(player, current.wallet_owner_revision) ||
+		    !item_ownership_runtime_hydrate_owner(keeper, current.keeper_owner_revision))
+			return false;
+		for (const auto &entry : batch)
+		{
+			item_ownership_runtime_entry actual{};
+			if (!item_ownership_runtime_lookup(entry.item_uid, &actual) ||
+			    actual.root_item_uid != entry.root_item_uid ||
+			    actual.parent_item_uid != entry.parent_item_uid ||
+			    !item_owner_identity_equal(actual.owner, entry.owner) ||
+			    actual.item_revision != entry.item_revision ||
+			    actual.owner_revision != entry.owner_revision ||
+			    actual.vnum != entry.vnum || actual.state != entry.state)
+				return false;
+		}
+		// Active-root census includes foreign/malformed active claims. Omitted
+		// unrelated history remains retained; explicit history was checked above.
+		std::set<uint64_t> roots;
+		for (const auto &entry : current.custody)
+			roots.insert(entry.position.root_uid);
+		for (uint64_t root : roots)
+		{
+			std::vector<item_ownership_runtime_entry> actual;
+			if (!item_ownership_runtime_snapshot_active_root(root, batch.size() + 1,
+									 &actual))
+				return false;
+			size_t expected_count = 0;
+			for (const auto &entry : batch)
+				if (entry.root_item_uid == root &&
+				    entry.state == item_custody_state::active)
+					++expected_count;
+			if (actual.size() != expected_count)
+				return false;
+			for (const auto &entry : actual)
+				if (std::none_of(batch.begin(), batch.end(),
+						 [&](const auto &value)
+						 {
+							 return value.item_uid == entry.item_uid &&
+								value.root_item_uid == root &&
+								value.state ==
+									item_custody_state::active;
+						 }))
+					return false;
+		}
+		if (!item_ownership_runtime_peek_owner_revision(player, &cached) ||
+		    cached != current.wallet_owner_revision ||
+		    !item_ownership_runtime_peek_owner_revision(keeper, &cached) ||
+		    cached != current.keeper_owner_revision)
+			return false;
+		if (mysql_thread_id(connection) != current.session_id ||
+		    !(connection->server_status & SERVER_STATUS_IN_TRANS))
+			return false;
+		if (staged_shop)
+		{
+			if (!shop_revisions.insert(std::move(staged_shop)).inserted)
+				return false;
+		}
+		else
+			shop_revisions.find(payload.shop_id)->second = current.shop_revision;
+		return mysql_thread_id(connection) == current.session_id &&
+		       (connection->server_status & SERVER_STATUS_IN_TRANS);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+#endif

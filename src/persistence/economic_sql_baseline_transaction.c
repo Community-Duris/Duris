@@ -1,4 +1,5 @@
 #include "persistence/economic_sql_baseline_transaction.h"
+#include "persistence/economic_sql_pending_claim_source.h"
 #include <algorithm>
 #include <cerrno>
 #include <charconv>
@@ -10,6 +11,17 @@
 #include <type_traits>
 
 #ifdef __NO_MYSQL__
+unsigned int
+economic_sql_baseline_verify_known_retained_in_transaction(MYSQL *, const critical_operation_id &,
+							   economic_baseline_batch *) noexcept
+{
+	return ENOTSUP;
+}
+unsigned int economic_sql_baseline_verify_retained_in_transaction(MYSQL *, const critical_command &,
+								  uint64_t *) noexcept
+{
+	return ENOTSUP;
+}
 unsigned int economic_sql_baseline_transaction::initialize(MYSQL *, const critical_operation_id &,
 							   const critical_operation_id &,
 							   const economic_account_key &,
@@ -289,20 +301,23 @@ void rows(MYSQL *connection, const std::string &table, const std::string &where,
 	}
 	count(connection, table, where, values.size());
 }
-void evidence(MYSQL *connection, const critical_command &command,
-	      const economic_prepared_baseline &prepared, uint64_t revision, bool append)
+void evidence_values(MYSQL *connection, const critical_operation_id &operation,
+		     std::span<const uint8_t> canonical_intent,
+		     std::optional<uint64_t> accepted_at_usec,
+		     const economic_prepared_baseline &prepared,
+		     const economic_accounting_plan &plan, uint64_t revision, bool append)
 {
-	economic_accounting_plan plan;
-	checked(economic_baseline_command_plan(command, prepared, &plan));
 	std::vector<uint8_t> encoded, witness;
 	checked(economic_plan_encode(plan, &encoded));
 	checked(economic_baseline_encode(prepared, &witness));
 	const auto &m = plan.metadata;
 	const auto &b = prepared.witness();
 	require(m.source_event && plan.children.empty() && plan.item_events.empty());
+	const auto contract_error = economic_sql_pending_claim_source_contract(connection);
+	require(!contract_error, contract_error);
 	std::array<uint8_t, ECONOMIC_SOURCE_EVENT_BYTES> source;
 	checked(economic_source_event_encode(*m.source_event, &source));
-	fields op = { { "operation_id", id(command.operation_id) },
+	fields op = { { "operation_id", id(operation) },
 		      { "lineage", id(m.lineage) },
 		      { "epoch", id(m.epoch) },
 		      { "original_operation_id", "NULL" },
@@ -314,10 +329,11 @@ void evidence(MYSQL *connection, const critical_command &command,
 		      { "actor_id", std::to_string(m.actor_id) },
 		      { "reason", std::to_string(static_cast<unsigned>(m.reason)) },
 		      { "source_event", hex(source) },
+		      { "realized_price_copper", "NULL" },
 		      { "intent_digest", hex(m.intent_digest) },
 		      { "domain_digest", hex(m.domain_digest) },
 		      { "plan_digest", hex(hash(encoded)) },
-		      { "canonical_intent", hex(command.accounting_intent) },
+		      { "canonical_intent", hex(canonical_intent) },
 		      { "canonical_plan", hex(encoded) },
 		      { "outcome", "1" },
 		      { "result_code", "0" },
@@ -330,12 +346,12 @@ void evidence(MYSQL *connection, const critical_command &command,
 	if (append)
 		insert(connection, "economic_accounting_operation", op);
 	count(connection, "economic_accounting_operation", predicate(op), 1);
-	const auto root = "operation_id=" + id(command.operation_id);
+	const auto root = "operation_id=" + id(operation);
 	std::vector<fields> effects, postings, reservations;
 	for (size_t i = 0; i < plan.accounts.size(); ++i)
 	{
 		const auto &a = plan.accounts[i];
-		fields f = { { "operation_id", id(command.operation_id) },
+		fields f = { { "operation_id", id(operation) },
 			     { "account_index", std::to_string(i) },
 			     { "account_key", key(a.key) } };
 		coins(f, "before_", a.before);
@@ -347,7 +363,7 @@ void evidence(MYSQL *connection, const critical_command &command,
 	for (size_t i = 0; i < plan.postings.size(); ++i)
 	{
 		const auto &a = plan.postings[i];
-		fields f = { { "operation_id", id(command.operation_id) },
+		fields f = { { "operation_id", id(operation) },
 			     { "line_index", std::to_string(i) },
 			     { "event_index", std::to_string(a.event_index) },
 			     { "account_index", std::to_string(a.account_index) },
@@ -360,31 +376,147 @@ void evidence(MYSQL *connection, const critical_command &command,
 	rows(connection, "economic_accounting_coin_posting", root, postings, append);
 	fields claim = { { "lineage", id(m.lineage) },
 			 { "source_event", hex(source) },
-			 { "operation_id", id(command.operation_id) },
+			 { "operation_id", id(operation) },
 			 { "outcome", "1" } };
 	if (append)
 		insert(connection, "economic_accounting_source_claim", claim);
 	count(connection, "economic_accounting_source_claim", predicate(claim), 1);
 	count(connection, "economic_accounting_source_claim", root, 1);
-	fields batch = { { "operation_id", id(command.operation_id) },
+	fields batch = { { "operation_id", id(operation) },
 			 { "lineage", id(m.lineage) },
 			 { "epoch", id(m.epoch) },
 			 { "book_revision", std::to_string(revision) },
-			 { "witness_version", "1" },
+			 { "witness_version", std::to_string(b.witness_version) },
 			 { "holding_count", std::to_string(b.holdings.size()) },
 			 { "item_count", std::to_string(b.items.size()) },
 			 { "witness_digest", hex(hash(witness)) },
 			 { "canonical_witness", hex(witness) } };
 	if (append)
+	{
+		// The normalized EAI1 binding intentionally omits original admission time.
+		// Retain that native preimage fact with this same immutable witness/root
+		// transaction; SQL creation time is never a substitute.
+		require(accepted_at_usec && *accepted_at_usec, EINVAL);
+		batch.emplace_back("claim_origin_version", "1");
+		batch.emplace_back("command_accepted_at_usec", std::to_string(*accepted_at_usec));
 		insert(connection, "economic_baseline_witness", batch);
+	}
+	// Historical NULL witnesses remain original-ID replay compatible. The
+	// explicit retained timestamp check below never backfills committed rows.
 	count(connection, "economic_baseline_witness", predicate(batch), 1);
+	// NULL is an explicit historical contract, never an invitation to backfill
+	// old EAB1/EAB2 operations. New lifecycle money openings bind this marker
+	// through their versioned request and require it for complete admission.
+	const auto origin_marker =
+		read(connection,
+		     "SELECT claim_origin_version FROM economic_baseline_witness WHERE " + root +
+			     " LOCK IN SHARE MODE",
+		     1);
+	const bool money_opening = std::any_of(
+		b.holdings.begin(), b.holdings.end(),
+		[](const auto &holding)
+		{
+			return holding.account.kind == economic_account_kind::pending_claim ||
+			       holding.account.kind == economic_account_kind::auction_escrow;
+		});
+	if (money_opening)
+	{
+		const auto parent = read(
+			connection,
+			"SELECT COUNT(*) FROM economic_sql_lifecycle_installation WHERE operation_id=" +
+				id(b.preparation_id),
+			1);
+		const auto parents = integer<uint64_t>(parent[0]);
+		require(parents <= 1);
+		// Historical NULL roots without a money lifecycle remain unknown. A
+		// declared new origin requires its authentic original V2 preparation;
+		// dropping SQL origin rows or the timestamp cannot downgrade that root.
+		if (parents || origin_marker[0])
+		{
+			require(parents == 1 && accepted_at_usec && *accepted_at_usec &&
+					origin_marker[0] &&
+					integer<uint16_t>(origin_marker[0]) == 1,
+				ENODATA);
+			const std::string_view domain = "DURIS-SQL-LIFECYCLE-V2";
+			std::vector<uint8_t> request(domain.begin(), domain.end());
+			const auto number = [&](uint64_t value)
+			{
+				for (size_t i = 0; i < 8; ++i)
+					request.push_back(static_cast<uint8_t>(value >> (8 * i)));
+			};
+			for (const auto &value : { b.preparation_id, b.lineage, b.epoch })
+			{
+				number(value.bytes.size());
+				request.insert(request.end(), value.bytes.begin(),
+					       value.bytes.end());
+			}
+			number(b.actor_id);
+			number(*accepted_at_usec);
+			const auto request_hash = hex(hash(request));
+			count(connection,
+			      "economic_sql_lifecycle_installation p JOIN critical_operation_inbox i ON i.operation_id=p.operation_id",
+			      "p.operation_id=" + id(b.preparation_id) + " AND p.lineage=" +
+				      id(b.lineage) + " AND p.epoch=" + id(b.epoch) +
+				      " AND p.native_boundary_digest=" + hex(b.boundary_digest) +
+				      " AND p.request_digest=" + request_hash +
+				      " AND p.phase IN (1,2) AND (p.baseline_operation_id IS NULL OR p.baseline_operation_id=" +
+				      id(operation) + ") AND i.command_hash=" + request_hash +
+				      " AND i.keys_hash=" + hex(hash({})) + " AND i.command_type=" +
+				      std::to_string(static_cast<uint16_t>(
+					      critical_command_type::economic_baseline)) +
+				      " AND i.schema_version=" +
+				      std::to_string(CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION) +
+				      " AND i.payload_version=1 AND i.status=1 AND i.result_code=0 AND i.failure_stage=0 AND i.durable_revision=0 AND OCTET_LENGTH(i.result_payload)=0 AND i.committed_at IS NOT NULL",
+			      1);
+		}
+	}
+	if (origin_marker[0])
+	{
+		require(integer<uint16_t>(origin_marker[0]) == 1);
+		for (size_t index = 0; index < b.holdings.size(); ++index)
+		{
+			const auto &holding = b.holdings[index];
+			if (holding.account.kind != economic_account_kind::pending_claim)
+				continue;
+			require(holding.account.context_id == 0 && holding.balance[0] >= 0 &&
+					static_cast<uint64_t>(holding.balance[0]) <= UINT_MAX &&
+					!holding.balance[1] && !holding.balance[2] &&
+					!holding.balance[3],
+				ERANGE);
+			if (!holding.balance[0])
+				continue;
+			require(index < UINT16_MAX, E2BIG);
+			const auto mapped = read(
+				connection,
+				"SELECT native_id FROM economic_account_mapping WHERE mapping_id=" +
+					std::to_string(holding.account.authority_id) +
+					" AND lineage=" + id(m.lineage) +
+					" AND account_kind=5 AND context_id=0 AND backend_kind=1 AND locator_kind=5 "
+					"LOCK IN SHARE MODE",
+				1);
+			const auto pid = integer<uint32_t>(mapped[0]);
+			require(pid, EILSEQ);
+			const auto amount = static_cast<uint64_t>(holding.balance[0]);
+			const auto slot = static_cast<uint16_t>(index + 1);
+			if (append)
+			{
+				const auto staged = economic_sql_pending_claim_source_stage(
+					connection, operation, slot, holding.account, pid, amount);
+				require(!staged, staged);
+			}
+		}
+		const auto origin_error =
+			economic_sql_pending_claim_source_verify_baseline(connection, operation, b);
+		require(!origin_error, origin_error);
+	}
+
 	auto reservation = [&](unsigned kind, uint64_t identity)
 	{
 		reservations.push_back({ { "lineage", id(m.lineage) },
 					 { "epoch", id(m.epoch) },
 					 { "identity_kind", std::to_string(kind) },
 					 { "identity_id", std::to_string(identity) },
-					 { "operation_id", id(command.operation_id) } });
+					 { "operation_id", id(operation) } });
 	};
 	for (const auto &a : b.holdings)
 		reservation(1, a.account.authority_id);
@@ -396,9 +528,17 @@ void evidence(MYSQL *connection, const critical_command &command,
 	     { "economic_accounting_child", "economic_accounting_item_reference", "currency_ledger",
 	       "item_ownership_ledger", "critical_outbox" })
 		count(connection, table, root, 0);
-	count(connection, "economic_accounting_child",
-	      "child_operation_id=" + id(command.operation_id), 0);
+	count(connection, "economic_accounting_child", "child_operation_id=" + id(operation), 0);
 }
+void evidence(MYSQL *connection, const critical_command &command,
+	      const economic_prepared_baseline &prepared, uint64_t revision, bool append)
+{
+	economic_accounting_plan plan;
+	checked(economic_baseline_command_plan(command, prepared, &plan));
+	evidence_values(connection, command.operation_id, command.accounting_intent,
+			command.accepted_at_usec, prepared, plan, revision, append);
+}
+
 uint64_t verify(MYSQL *connection, const critical_command &command)
 {
 	// Original inbox identity is checked before decoding any retained intent.
@@ -414,9 +554,9 @@ uint64_t verify(MYSQL *connection, const critical_command &command)
 		row[4]->empty() && row[5]);
 	auto stored = read(
 		connection,
-		"SELECT canonical_witness,book_revision FROM economic_baseline_witness WHERE operation_id=" +
+		"SELECT canonical_witness,book_revision,command_accepted_at_usec,claim_origin_version FROM economic_baseline_witness WHERE operation_id=" +
 			id(command.operation_id),
-		2);
+		4);
 	require(stored[0] && stored[0]->size() <= ECONOMIC_BASELINE_MAX_BYTES &&
 		integer<uint64_t>(stored[1]) == revision);
 	std::optional<economic_prepared_baseline> prepared;
@@ -425,6 +565,23 @@ uint64_t verify(MYSQL *connection, const critical_command &command)
 		&prepared));
 	const auto current = book(connection, prepared->witness(), false);
 	require(revision <= current.revision);
+	// The initial bounded witness read supplies routing/decoding only. Retain
+	// native inbox -> lineage/epoch -> book -> witness lock order, and bind
+	// every decoded byte plus optional historical state to the locked row.
+	const auto locked = read(
+		connection,
+		"SELECT canonical_witness,book_revision,command_accepted_at_usec,claim_origin_version FROM economic_baseline_witness WHERE operation_id=" +
+			id(command.operation_id) + " LOCK IN SHARE MODE",
+		4);
+	require(locked == stored);
+	// Old NULL rows still require the original full command_hash above and all
+	// canonical evidence below. A present invalid/mismatched value may never
+	// take that compatibility path or be replaced with the caller's timestamp.
+	if (locked[2])
+	{
+		const auto accepted_at_usec = integer<uint64_t>(locked[2]);
+		require(accepted_at_usec && accepted_at_usec == command.accepted_at_usec);
+	}
 	evidence(connection, command, *prepared, revision, false);
 	return revision;
 }
@@ -439,6 +596,191 @@ struct transaction
 			(void)mysql_real_query(connection, "ROLLBACK", 8);
 	}
 };
+}
+unsigned int economic_sql_baseline_verify_retained_in_transaction(
+	MYSQL *connection, const critical_command &command, uint64_t *durable_revision) noexcept
+{
+	try
+	{
+		require(connection && durable_revision &&
+				command.type == critical_command_type::economic_baseline &&
+				command.schema_version ==
+					CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+				critical_command_envelope_valid(command),
+			EINVAL);
+		using flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+		flag reconnect = false;
+		require(!mysql_get_option(connection, MYSQL_OPT_RECONNECT, &reconnect) &&
+				!reconnect,
+			EPERM);
+		const auto session = mysql_thread_id(connection);
+		active(connection, session);
+		const auto revision = verify(connection, command);
+		active(connection, session);
+		*durable_revision = revision;
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
+}
+unsigned int economic_sql_baseline_verify_known_retained_in_transaction(
+	MYSQL *connection, const critical_operation_id &operation,
+	economic_baseline_batch *optional_witness) noexcept
+{
+	try
+	{
+		require(connection && !critical_operation_id_is_zero(operation), EINVAL);
+		using flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+		flag reconnect = false;
+		require(!mysql_get_option(connection, MYSQL_OPT_RECONNECT, &reconnect) &&
+				!reconnect,
+			EPERM);
+		const auto session = mysql_thread_id(connection);
+		active(connection, session);
+		const auto receipt = read(
+			connection,
+			"SELECT status,durable_revision,result_code,failure_stage,result_payload,committed_at,"
+			"command_type,schema_version,payload_version,OCTET_LENGTH(command_hash),OCTET_LENGTH(keys_hash) "
+			"FROM critical_operation_inbox WHERE operation_id=" +
+				id(operation) + " LOCK IN SHARE MODE",
+			11);
+		const auto revision = integer<uint64_t>(receipt[1]);
+		require(integer<unsigned>(receipt[0]) == 1 && revision &&
+			integer<unsigned>(receipt[2]) == 0 && integer<unsigned>(receipt[3]) == 0 &&
+			receipt[4] && receipt[4]->empty() && receipt[5] &&
+			integer<unsigned>(receipt[6]) ==
+				static_cast<unsigned>(critical_command_type::economic_baseline) &&
+			integer<unsigned>(receipt[7]) ==
+				CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+			integer<unsigned>(receipt[8]) == 1 && integer<unsigned>(receipt[9]) == 32 &&
+			integer<unsigned>(receipt[10]) == 32);
+		const auto stored = read(
+			connection,
+			"SELECT canonical_witness,book_revision,command_accepted_at_usec,claim_origin_version "
+			"FROM economic_baseline_witness WHERE operation_id=" +
+				id(operation),
+			4);
+		require(stored[0] && stored[0]->size() <= ECONOMIC_BASELINE_MAX_BYTES &&
+			integer<uint64_t>(stored[1]) == revision);
+		std::optional<economic_prepared_baseline> prepared;
+		checked(economic_baseline_decode(
+			std::span(reinterpret_cast<const uint8_t *>(stored[0]->data()),
+				  stored[0]->size()),
+			&prepared));
+		require(prepared->plan().metadata.operation_id.bytes == operation.bytes);
+		if (stored[2])
+		{
+			// A real retained timestamp permits full original identity proof,
+			// including historical NULL origin markers. No timestamp is invented.
+			critical_command original;
+			checked(economic_baseline_command_build(
+				*prepared, integer<uint64_t>(stored[2]), &original));
+			require(verify(connection, original) == revision);
+		}
+		else
+		{
+			require(!stored[3]); // New origin markers must retain their real timestamp.
+			const auto current = book(connection, prepared->witness(), false);
+			require(revision <= current.revision);
+			const auto locked = read(
+				connection,
+				"SELECT canonical_witness,book_revision,command_accepted_at_usec,claim_origin_version "
+				"FROM economic_baseline_witness WHERE operation_id=" +
+					id(operation) + " LOCK IN SHARE MODE",
+				4);
+			require(locked == stored);
+			const auto encoded_intent = read(
+				connection,
+				"SELECT canonical_intent FROM economic_accounting_operation WHERE operation_id=" +
+					id(operation) + " LOCK IN SHARE MODE",
+				1);
+			require(encoded_intent[0] &&
+				encoded_intent[0]->size() <=
+					CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES);
+			const auto intent_bytes = std::span(
+				reinterpret_cast<const uint8_t *>(encoded_intent[0]->data()),
+				encoded_intent[0]->size());
+			economic_frozen_intent intent;
+			checked(economic_intent_decode(intent_bytes, &intent));
+			auto expected_intent = intent;
+			expected_intent.admission.metadata = prepared->plan().metadata;
+			expected_intent.admission.facts.clear();
+			expected_intent.admission.facts_version = 1;
+			std::vector<uint8_t> canonical_intent;
+			checked(economic_intent_encode(expected_intent, &canonical_intent));
+			require(canonical_intent.size() == intent_bytes.size() &&
+				std::equal(canonical_intent.begin(), canonical_intent.end(),
+					   intent_bytes.begin()));
+			// Validate the fixed EBC1 payload domain directly. This is value
+			// framing, not reconstruction of an unknown command header/time.
+			std::vector<uint8_t> payload(ECONOMIC_BASELINE_COMMAND_BYTES, 0);
+			payload[0] = 'E';
+			payload[1] = 'B';
+			payload[2] = 'C';
+			payload[3] = '1';
+			auto put = [](std::vector<uint8_t> &bytes, size_t offset, uint64_t value,
+				      size_t width)
+			{
+				for (size_t i = 0; i < width; ++i)
+					bytes[offset + i] = static_cast<uint8_t>(value >> (i * 8));
+			};
+			put(payload, 4, 1, 2);
+			put(payload, 6, ECONOMIC_BASELINE_COMMAND_BYTES, 2);
+			put(payload, 8, stored[0]->size(), 4);
+			const auto witness_hash =
+				hash(std::span(reinterpret_cast<const uint8_t *>(stored[0]->data()),
+					       stored[0]->size()));
+			std::copy(witness_hash.begin(), witness_hash.end(), payload.begin() + 16);
+			std::vector<uint8_t> domain(8 + payload.size(), 0);
+			put(domain, 0,
+			    static_cast<uint16_t>(critical_command_type::economic_baseline), 2);
+			put(domain, 2, 1, 2);
+			put(domain, 4, payload.size(), 4);
+			std::copy(payload.begin(), payload.end(), domain.begin() + 8);
+			static constexpr char tag[] = "DURIS-ECONOMIC-DOMAIN-V1";
+			domain.insert(domain.begin(), tag, tag + sizeof(tag));
+			require(hash(domain) == intent.domain_digest);
+			auto plan = prepared->plan();
+			static_cast<economic_operation_metadata &>(plan.metadata) =
+				intent.admission.metadata;
+			checked(economic_intent_digest(intent, &plan.metadata.intent_digest));
+			plan.metadata.domain_digest = intent.domain_digest;
+			evidence_values(connection, operation, intent_bytes, std::nullopt,
+					*prepared, plan, revision, false);
+			// The unknown full command hash/header remains unobserved. This
+			// API authenticates retained known witness values, never that header.
+		}
+		std::optional<economic_baseline_batch> result;
+		if (optional_witness)
+			result = prepared->witness();
+		static_assert(std::is_nothrow_move_assignable_v<economic_baseline_batch>);
+		active(connection, session);
+		if (optional_witness)
+			*optional_witness = std::move(*result);
+		return 0;
+	}
+	catch (const failure &error)
+	{
+		return error.code;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return ENOMEM;
+	}
+	catch (...)
+	{
+		return EIO;
+	}
 }
 unsigned int economic_sql_baseline_transaction::initialize(
 	MYSQL *connection, const critical_operation_id &lineage, const critical_operation_id &epoch,

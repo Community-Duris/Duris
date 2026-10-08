@@ -3,6 +3,7 @@
 #include "core/utils.h"
 #include "core/mm.h"
 #include <errno.h>
+#include <limits>
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -96,6 +97,64 @@ void *_mm_get(struct mm_ds *mmds, const char * /*file*/, int /*line*/)
 	//	debug("mm_get: pool: %s, file: %s, line: %d", mmds->name, file, line);
 
 	return mem;
+}
+
+void *mm_try_get(struct mm_ds *mmds) noexcept
+{
+	if (!mmds || !mmds->head)
+		return nullptr;
+	char *mem = mmds->head;
+	mmds->head = mm_next(mem, mmds->next_off);
+	if (!mmds->head)
+		mmds->tail = nullptr;
+#ifdef MM_STATS
+	++mmds->objs_used;
+#endif
+	memset(mem, 0, mmds->size);
+	return mem;
+}
+
+bool mm_try_reserve_free_slot(struct mm_ds *mmds) noexcept
+{
+	if (!mmds || mmds->size < sizeof(char *) || mmds->next_off > mmds->size - sizeof(char *))
+		return false;
+	if (mmds->head)
+		return mmds->tail != nullptr;
+	if (mmds->tail || mmds->chunk_size <= 0)
+		return false;
+	const size_t maximum = std::numeric_limits<size_t>::max();
+	const size_t pages = static_cast<size_t>(mmds->chunk_size);
+	if (pages > maximum / 4096)
+		return false;
+	const size_t howmuch = pages * 4096;
+	const size_t slots = howmuch / mmds->size;
+	if (!slots)
+		return false;
+#ifdef MM_STATS
+	const size_t waste = howmuch % mmds->size;
+	if (pages > maximum - mmds->pages_owned || waste > maximum - mmds->bytes_wasted)
+		return false;
+#endif
+	auto *more = static_cast<char *>(
+		mmap(nullptr, howmuch, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+	if (more == MAP_FAILED)
+		return false;
+	// Build the original configured chunk completely before publishing capacity.
+	// This does not acquire an object or change the outstanding-object count.
+	char *head = nullptr;
+	for (size_t index = 0; index < slots; ++index)
+	{
+		char *slot = more + index * mmds->size;
+		mm_set_next(slot, mmds->next_off, head);
+		head = slot;
+	}
+	mmds->head = head;
+	mmds->tail = more;
+#ifdef MM_STATS
+	mmds->pages_owned += pages;
+	mmds->bytes_wasted += waste;
+#endif
+	return true;
 }
 
 void mm_alloc_chunk(struct mm_ds *mmds)

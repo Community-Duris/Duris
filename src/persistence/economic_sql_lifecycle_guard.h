@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <mutex>
 #include <shared_mutex>
+#include <thread>
 
 class economic_sql_lifecycle_guard;
 class economic_sql_cutover_transaction_owner;
@@ -51,6 +52,8 @@ class economic_sql_lifecycle_guard
 	~economic_sql_lifecycle_guard();
 
 	// Acquire at process boot before admitting gameplay; retain until shutdown.
+	// A failed factory can leave cleanup obligations in the supplied guard.
+	// Keep that guard and original handle alive until release() succeeds.
 	static unsigned int acquire_runtime(MYSQL *control_connection,
 					    economic_sql_lifecycle_guard *) noexcept;
 	// Acquire only from the quiesced maintenance process, before source capture.
@@ -65,12 +68,17 @@ class economic_sql_lifecycle_guard
 	bool acquire_cutover_capability(uint64_t drain_timeout_msec,
 					economic_sql_cutover_capability *output) noexcept;
 	bool is_valid_authority() const noexcept;
+	// Acquisition failure can retain cleanup obligations without granting authority.
+	// Retry release while the original idle, non-reconnecting handle stays alive.
+	// False retains exclusion; destruction cannot certify SQL cleanup.
+	bool release() noexcept;
 
     private:
 	friend class economic_sql_cutover_capability;
 	friend class economic_sql_cutover_transaction_owner;
 	friend class economic_sql_accounting_lifecycle_transaction;
 	friend class economic_sql_currency_writer_guard;
+	friend class economic_sql_runtime_world_writer_guard;
 	// Exact data-only readback needs to prove supplied-handle ownership without
 	// exposing the guard's connection/session through a general accessor.
 	friend unsigned int
@@ -79,16 +87,21 @@ class economic_sql_lifecycle_guard
 						 economic_sql_activation_receipt *) noexcept;
 	static void clear_transferred_local_authority(bool runtime, bool maintenance) noexcept;
 	bool is_valid_cutover_capability(const economic_sql_cutover_capability &) const noexcept;
+	static bool release_named_lock(MYSQL *, unsigned long, const char *, bool *) noexcept;
 	MYSQL *connection_ = nullptr;
 	unsigned long session_ = 0;
+	std::thread::id owner_thread_;
 	bool runtime_lock_ = false;
 	bool writer_lock_ = false;
+	bool acquisition_confirmed_ = false;
+	bool runtime_release_attempted_ = false;
+	bool writer_release_attempted_ = false;
 	bool maintenance_ = false;
 	bool local_runtime_ = false;
 	bool local_maintenance_ = false;
 	// Bound privately by the composed owner. Ordinary SQL guard consumers do
 	// not acquire a coordinator dependency merely by releasing a SQL fence.
-	void (*coordinator_release_)(uint64_t, uint64_t) = nullptr;
+	bool (*coordinator_release_)(uint64_t, uint64_t) = nullptr;
 	uint64_t authority_id_ = 0;
 	uint64_t coordinator_generation_ = 0;
 	uint64_t coordinator_lease_id_ = 0;
@@ -164,11 +177,14 @@ class economic_sql_cutover_transaction_owner final
 	bool release_after_terminal() noexcept;
 	MYSQL *connection_ = nullptr;
 	unsigned long session_ = 0;
+	std::thread::id owner_thread_;
 	uint64_t sql_authority_id_ = 0;
 	uint64_t coordinator_generation_ = 0;
 	uint64_t coordinator_lease_id_ = 0;
 	bool runtime_lock_ = false;
 	bool writer_lock_ = false;
+	bool runtime_release_attempted_ = false;
+	bool writer_release_attempted_ = false;
 	bool maintenance_ = false;
 	bool local_runtime_ = false;
 	bool local_maintenance_ = false;
@@ -202,12 +218,48 @@ class economic_sql_currency_writer_guard
 	// Validate this exact held lease inside its transaction as well as before it.
 	// This does not acquire authority or accept a caller assertion of admission.
 	bool is_valid_for(MYSQL *connection) const noexcept;
+	// False requires connection-owner retirement/retained recovery. No transaction
+	// or borrowed named lock is ended on the caller's behalf.
+	bool release() noexcept;
+	// Exact pool-owned retirement, not a caller assertion. Consumes only a
+	// currently borrowed pooled handle; a foreign/direct DB handle is untouched.
+	// Call after transaction cleanup and never access the consumed pointer again.
+	bool retire_pooled_session() noexcept;
 
     private:
+	friend class player_sql_pool_lease;
 	std::shared_lock<std::shared_mutex> local_shared_;
 	MYSQL *connection_ = nullptr;
 	unsigned long session_ = 0;
+	std::thread::id owner_thread_;
 	bool writer_lock_ = false;
+	bool acquisition_confirmed_ = false;
+	bool release_attempted_ = false;
+};
+
+// Boot-only whole native-world read/construction exclusion. The actual runtime
+// guard remains unchanged; this separate owner holds the genuine writer named
+// lock and local gate only AFTER accepted journal work has genuinely drained.
+// Only the real boot owner can acquire, validate or release this lease.
+class economic_sql_runtime_world_writer_guard final
+{
+	friend class sql_economic_runtime_boot_owner;
+	economic_sql_runtime_world_writer_guard() noexcept = default;
+	~economic_sql_runtime_world_writer_guard() noexcept;
+	economic_sql_runtime_world_writer_guard(const economic_sql_runtime_world_writer_guard &) =
+		delete;
+	economic_sql_runtime_world_writer_guard &
+	operator=(const economic_sql_runtime_world_writer_guard &) = delete;
+	static unsigned int acquire(MYSQL *, const economic_sql_lifecycle_guard &,
+				    economic_sql_runtime_world_writer_guard *) noexcept;
+	bool valid() const noexcept;
+	bool release() noexcept;
+	MYSQL *connection_ = nullptr;
+	const economic_sql_lifecycle_guard *runtime_ = nullptr;
+	unsigned long session_ = 0;
+	std::thread::id thread_{};
+	std::unique_lock<std::shared_mutex> local_;
+	bool lock_ = false, confirmed_ = false, release_attempted_ = false;
 };
 
 #endif

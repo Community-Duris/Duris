@@ -3,6 +3,7 @@
 from pathlib import Path
 import json
 import subprocess
+import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -32,7 +33,7 @@ class TestWriterRouteEvidenceContract(unittest.TestCase):
             self.assertEqual(self.matrix["playable_release_status"], "BLOCKED")
 
     def test_economy_accounting_validator_passes(self):
-        cmd = ["python3", str(ROOT / "scripts/validate_economy_accounting.py")]
+        cmd = [sys.executable, str(ROOT / "scripts/validate_economy_accounting.py")]
         res = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
         self.assertEqual(
             res.returncode, 0, f"Validator failed: {res.stderr}\n{res.stdout}"

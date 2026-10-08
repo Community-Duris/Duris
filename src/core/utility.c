@@ -25,6 +25,7 @@ using namespace std;
 #endif
 
 #include "core/prototypes.h"
+#include "world/world_activity.h"
 #include "core/structs.h"
 #include "net/comm.h"
 #include "world/db.h"
@@ -4983,6 +4984,10 @@ P_char char_in_room(int room)
 bool spell_can_affect_char(P_char ch, int spl)
 {
 	int i = GetLowestSpellCircle_p(spl);
+	// Finite player wards can be worn down by these spells. Selection must
+	// remain read-only; the damage stage owns eligibility and capacity wear.
+	if (IS_PC(ch))
+		return true;
 
 	if (spl == SPELL_MOLTEN_SPRAY && IS_UNDEADRACE(ch))
 		return true;
@@ -7220,6 +7225,7 @@ void connect_rooms(int v1, int v2, int to_dir, int from_dir)
 		CREATE(world[r1].dir_option[to_dir], room_direction_data, 1, MEM_TAG_DIRDATA);
 		world[r1].dir_option[to_dir]->to_room = r2;
 		world[r1].dir_option[to_dir]->exit_info = 0;
+		world_activity_room_exits_changed(r1);
 	}
 
 	if (from_dir >= 0 && !world[r2].dir_option[from_dir])
@@ -7227,6 +7233,7 @@ void connect_rooms(int v1, int v2, int to_dir, int from_dir)
 		CREATE(world[r2].dir_option[from_dir], room_direction_data, 1, MEM_TAG_DIRDATA);
 		world[r2].dir_option[from_dir]->to_room = r1;
 		world[r2].dir_option[from_dir]->exit_info = 0;
+		world_activity_room_exits_changed(r2);
 	}
 }
 
@@ -7244,6 +7251,7 @@ void disconnect_exit(int v1, int dir)
 
 	FREE(VIRTUAL_EXIT(r1, dir));
 	VIRTUAL_EXIT(r1, dir) = NULL;
+	world_activity_room_exits_changed(r1);
 }
 
 void disconnect_rooms(int v1, int v2)
@@ -7269,12 +7277,14 @@ void disconnect_rooms(int v1, int v2)
 	{
 		FREE(VIRTUAL_EXIT(r1, d1));
 		VIRTUAL_EXIT(r1, d1) = NULL;
+		world_activity_room_exits_changed(r1);
 	}
 
 	if (d2 >= 0 && d2 < NUM_EXITS)
 	{
 		FREE(VIRTUAL_EXIT(r2, d2));
 		VIRTUAL_EXIT(r2, d2) = NULL;
+		world_activity_room_exits_changed(r2);
 	}
 }
 

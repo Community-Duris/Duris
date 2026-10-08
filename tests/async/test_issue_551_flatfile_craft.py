@@ -10,13 +10,14 @@ import shutil
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 sources = [
+  rel('quest_mobile_native.c'), rel('quest_mobile_native_flatfile.c'), 'tests/async/native_quest_world_unavailable.cpp',
   "tests/async/flatfile_craft_conservation_harness.cpp",
   rel("flatfile_item_repository.c"),
   rel("flatfile_item_accounting_reference.c"),
   rel("flatfile_accounting_authority.c"),
   rel("flatfile_accounting_store.c"),
   rel("economic_accounting_types.c"),
-  rel("economic_accounting_plan.c"),
+  rel("economic_accounting_plan.c"), rel("economic_source_event.c"),
   rel("economic_accounting_intent.c"),
   rel("economic_accounting_item_reference.c"),
   rel("item_transfer_accounting.c"),
@@ -46,9 +47,9 @@ sources = [
   rel("flatfile_authority_transaction.c"),
   rel("flatfile_store.c"),
   rel("player_snapshot_codec.c"),
-  rel("item_transfer_command.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
+  rel("item_transfer_command.c"), rel("quest_mobile_native_reference.c"), rel("craft_pouch_mutation.c"), rel("chaos_pouch_ledger.c"),
   rel("corpse_lifecycle_command.c"),
-  rel("shop_trade_command.c"),
+  rel("shop_trade_command.c"), rel("shop_trade_recovery_manifest.c"),
   rel("critical_command.c"),
   rel("epic_command.c"),
   rel("currency_command.c"),

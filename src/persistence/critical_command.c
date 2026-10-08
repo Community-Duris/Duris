@@ -1,4 +1,7 @@
 #include "persistence/critical_command.h"
+#include "economy/auction_native_command_context.h"
+#include "economy/shop_trade_command.h"
+#include "item/item_transfer_command.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -13,9 +16,37 @@ namespace
 {
 constexpr unsigned char COMMAND_MAGIC[4] = { 'C', 'C', 'M', '1' };
 
+size_t envelope_key_limit(const critical_command &command) noexcept
+{
+	return critical_command_native_auction_envelope(command) ?
+		       CRITICAL_COMMAND_MAX_NATIVE_AUCTION_KEYS :
+		       CRITICAL_COMMAND_MAX_KEYS;
+}
+bool envelope_encoded_size(const critical_command &command, size_t *size) noexcept
+{
+	if (!size)
+		return false;
+	size_t bytes = CRITICAL_COMMAND_HEADER_BYTES;
+	const auto add = [&](size_t count, size_t width) noexcept
+	{
+		if (count > (CRITICAL_COMMAND_MAX_ENCODED_BYTES - bytes) / width)
+			return false;
+		bytes += count * width;
+		return true;
+	};
+	if (!add(command.keys.size(), CRITICAL_COMMAND_ENTITY_KEY_BYTES) ||
+	    !add(command.expected_revisions.size(), CRITICAL_COMMAND_EXPECTED_REVISION_BYTES) ||
+	    !add(command.payload.size(), 1) ||
+	    (command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+	     (!add(CRITICAL_COMMAND_ACCOUNTING_PREFIX_BYTES, 1) ||
+	      !add(command.accounting_intent.size(), 1))))
+		return false;
+	*size = bytes;
+	return true;
+}
 bool valid_entity_type(critical_entity_type type)
 {
-	return type >= critical_entity_type::player && type <= critical_entity_type::pet;
+	return type >= critical_entity_type::player && type <= critical_entity_type::native_mobile;
 }
 
 template <typename T> void append_le(std::vector<uint8_t> &output, T value)
@@ -47,6 +78,18 @@ int hex_value(char value)
 	return -1;
 }
 } // namespace
+
+// Auction2 preparation/binding is structural only: legacy execution explicitly
+// rejects this payload version even when the pure schema1 projection is valid.
+bool critical_command_native_auction_envelope(const critical_command &command) noexcept
+{
+	return command.type == critical_command_type::auction &&
+	       command.payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION &&
+	       ((command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+		 command.publication_required && !command.accounting_intent.empty()) ||
+		(command.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION &&
+		 !command.publication_required && command.accounting_intent.empty()));
+}
 
 bool critical_operation_id_generate(critical_operation_id *operation_id)
 {
@@ -146,21 +189,51 @@ bool critical_command_normalize(critical_command *command)
 {
 	if (!command)
 		return false;
-	std::sort(command->keys.begin(), command->keys.end(), critical_entity_key_less);
-	if (std::adjacent_find(command->keys.begin(), command->keys.end(),
-			       critical_entity_key_equal) != command->keys.end())
+	size_t wire_bytes = 0;
+	if (command->keys.size() > envelope_key_limit(*command) ||
+	    command->expected_revisions.size() > envelope_key_limit(*command) ||
+	    command->payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES ||
+	    command->accounting_intent.size() > CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES ||
+	    !envelope_encoded_size(*command, &wire_bytes))
 		return false;
-	std::sort(command->expected_revisions.begin(), command->expected_revisions.end(),
-		  [](const critical_expected_revision &left,
-		     const critical_expected_revision &right)
-		  { return critical_entity_key_less(left.key, right.key); });
-	return critical_command_valid(*command);
+	try
+	{
+		auto normalized = *command;
+		std::sort(normalized.keys.begin(), normalized.keys.end(), critical_entity_key_less);
+		if (std::adjacent_find(normalized.keys.begin(), normalized.keys.end(),
+				       critical_entity_key_equal) != normalized.keys.end())
+			return false;
+		std::sort(normalized.expected_revisions.begin(),
+			  normalized.expected_revisions.end(),
+			  [](const critical_expected_revision &left,
+			     const critical_expected_revision &right)
+			  { return critical_entity_key_less(left.key, right.key); });
+		if (!(critical_command_native_auction_envelope(normalized) ?
+			      critical_command_envelope_valid(normalized) :
+			      critical_command_valid(normalized)))
+			return false;
+		*command = std::move(normalized);
+		return true;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return false;
+	}
 }
 
 bool critical_command_legacy_execution_supported(const critical_command &command)
 {
 	return command.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION &&
-	       command.accounting_intent.empty() && command.type >= critical_command_type::test &&
+	       command.accounting_intent.empty() &&
+	       std::none_of(command.keys.begin(), command.keys.end(), [](const auto &key)
+			    { return key.type == critical_entity_type::native_mobile; }) &&
+	       (command.type != critical_command_type::item_transfer ||
+		command.payload_version <= ITEM_TRANSFER_PAYLOAD_VERSION) &&
+	       (command.type != critical_command_type::shop_trade ||
+		command.payload_version <= SHOP_TRADE_PAYLOAD_VERSION) &&
+	       (command.type != critical_command_type::auction ||
+		command.payload_version <= AUCTION_COMMAND_PAYLOAD_VERSION) &&
+	       command.type >= critical_command_type::test &&
 	       command.type <= critical_command_type::player_death_restitution;
 }
 
@@ -184,23 +257,34 @@ bool critical_command_envelope_valid(const critical_command &command)
 	     (command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
 	      (command.type != critical_command_type::account_bank &&
 	       command.type != critical_command_type::coin_transfer &&
-	       command.type != critical_command_type::item_transfer))) ||
+	       command.type != critical_command_type::item_transfer &&
+	       command.type != critical_command_type::collector &&
+	       command.type != critical_command_type::native_mobile_birth &&
+	       !(command.type == critical_command_type::shop_trade &&
+		 shop_trade_payload_version_is_accounted(command.payload_version)) &&
+	       !(command.type == critical_command_type::auction &&
+		 command.payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION)))) ||
 	    command.accounting_intent.size() > CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES ||
 	    critical_operation_id_is_zero(command.operation_id) || !command.payload_version ||
 	    command.type < critical_command_type::test ||
-	    command.type > critical_command_type::economic_baseline ||
+	    command.type > critical_command_type::native_mobile_birth ||
 	    command.source_site < critical_source_site::command ||
 	    command.source_site > critical_source_site::operator_repair ||
 	    command.deadline_class < critical_deadline_class::interactive ||
 	    command.deadline_class > critical_deadline_class::recovery ||
 	    !command.accepted_at_usec || command.keys.empty() ||
-	    command.keys.size() > CRITICAL_COMMAND_MAX_KEYS ||
-	    command.expected_revisions.size() > CRITICAL_COMMAND_MAX_KEYS ||
+	    command.keys.size() > envelope_key_limit(command) ||
+	    command.expected_revisions.size() > envelope_key_limit(command) ||
 	    command.payload.size() > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+		return false;
+	size_t wire_bytes = 0;
+	if (!envelope_encoded_size(command, &wire_bytes))
 		return false;
 	for (size_t index = 0; index < command.keys.size(); ++index)
 	{
 		if (!valid_entity_type(command.keys[index].type) || !command.keys[index].id ||
+		    (command.keys[index].type == critical_entity_type::native_mobile &&
+		     command.keys[index].id == UINT64_MAX) ||
 		    (index &&
 		     !critical_entity_key_less(command.keys[index - 1], command.keys[index])))
 			return false;
@@ -209,6 +293,7 @@ bool critical_command_envelope_valid(const critical_command &command)
 	{
 		const critical_entity_key &key = command.expected_revisions[index].key;
 		if (!valid_entity_type(key.type) || !key.id ||
+		    (key.type == critical_entity_type::native_mobile && key.id == UINT64_MAX) ||
 		    !std::binary_search(command.keys.begin(), command.keys.end(), key,
 					critical_entity_key_less) ||
 		    (index &&
@@ -269,67 +354,71 @@ const char *critical_failure_stage_name(critical_failure_stage stage)
 critical_command_codec_result critical_command_encode(const critical_command &command,
 						      std::vector<uint8_t> *encoded)
 {
-	if (!encoded || !critical_command_envelope_valid(command))
+	if (!encoded)
 		return critical_command_codec_result::invalid;
-	encoded->clear();
+	size_t wire_bytes = 0;
+	if (!envelope_encoded_size(command, &wire_bytes))
+		return critical_command_native_auction_envelope(command) ?
+			       critical_command_codec_result::overflow :
+			       critical_command_codec_result::invalid;
+	if (!critical_command_envelope_valid(command))
+		return critical_command_codec_result::invalid;
+	std::vector<uint8_t> result;
 	try
 	{
-		encoded->reserve(64 + command.keys.size() * 16 +
-				 command.expected_revisions.size() * 24 + command.payload.size() +
-				 command.accounting_intent.size() + 4);
-		encoded->insert(encoded->end(), COMMAND_MAGIC,
-				COMMAND_MAGIC + sizeof(COMMAND_MAGIC));
-		append_le<uint32_t>(*encoded, command.schema_version);
-		encoded->insert(encoded->end(), command.operation_id.bytes.begin(),
-				command.operation_id.bytes.end());
-		append_le<uint16_t>(*encoded, static_cast<uint16_t>(command.type));
-		append_le<uint16_t>(*encoded, command.payload_version);
-		append_le<uint16_t>(*encoded, static_cast<uint16_t>(command.source_site));
-		encoded->push_back(static_cast<uint8_t>(command.deadline_class));
-		encoded->push_back(command.publication_required ? 1 : 0);
-		append_le<uint64_t>(*encoded, command.accepted_at_usec);
-		append_le<uint32_t>(*encoded, static_cast<uint32_t>(command.keys.size()));
-		append_le<uint32_t>(*encoded,
+		result.reserve(wire_bytes);
+		result.insert(result.end(), COMMAND_MAGIC, COMMAND_MAGIC + sizeof(COMMAND_MAGIC));
+		append_le<uint32_t>(result, command.schema_version);
+		result.insert(result.end(), command.operation_id.bytes.begin(),
+			      command.operation_id.bytes.end());
+		append_le<uint16_t>(result, static_cast<uint16_t>(command.type));
+		append_le<uint16_t>(result, command.payload_version);
+		append_le<uint16_t>(result, static_cast<uint16_t>(command.source_site));
+		result.push_back(static_cast<uint8_t>(command.deadline_class));
+		result.push_back(command.publication_required ? 1 : 0);
+		append_le<uint64_t>(result, command.accepted_at_usec);
+		append_le<uint32_t>(result, static_cast<uint32_t>(command.keys.size()));
+		append_le<uint32_t>(result,
 				    static_cast<uint32_t>(command.expected_revisions.size()));
-		append_le<uint32_t>(*encoded, static_cast<uint32_t>(command.payload.size()));
+		append_le<uint32_t>(result, static_cast<uint32_t>(command.payload.size()));
 		for (const critical_entity_key &key : command.keys)
 		{
-			encoded->push_back(static_cast<uint8_t>(key.type));
+			result.push_back(static_cast<uint8_t>(key.type));
 			for (unsigned int pad = 0; pad < 7; ++pad)
-				encoded->push_back(0);
-			append_le<uint64_t>(*encoded, key.id);
+				result.push_back(0);
+			append_le<uint64_t>(result, key.id);
 		}
 		for (const critical_expected_revision &revision : command.expected_revisions)
 		{
-			encoded->push_back(static_cast<uint8_t>(revision.key.type));
+			result.push_back(static_cast<uint8_t>(revision.key.type));
 			for (unsigned int pad = 0; pad < 7; ++pad)
-				encoded->push_back(0);
-			append_le<uint64_t>(*encoded, revision.key.id);
-			append_le<uint64_t>(*encoded, revision.revision);
+				result.push_back(0);
+			append_le<uint64_t>(result, revision.key.id);
+			append_le<uint64_t>(result, revision.revision);
 		}
-		encoded->insert(encoded->end(), command.payload.begin(), command.payload.end());
+		result.insert(result.end(), command.payload.begin(), command.payload.end());
 		if (command.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
 		{
 			append_le<uint32_t>(
-				*encoded, static_cast<uint32_t>(command.accounting_intent.size()));
-			encoded->insert(encoded->end(), command.accounting_intent.begin(),
-					command.accounting_intent.end());
+				result, static_cast<uint32_t>(command.accounting_intent.size()));
+			result.insert(result.end(), command.accounting_intent.begin(),
+				      command.accounting_intent.end());
 		}
 	}
 	catch (const std::bad_alloc &)
 	{
-		encoded->clear();
 		return critical_command_codec_result::overflow;
 	}
-	return encoded->size() <= CRITICAL_COMMAND_MAX_ENCODED_BYTES ?
-		       critical_command_codec_result::ok :
-		       critical_command_codec_result::overflow;
+	if (result.size() != wire_bytes || result.size() > CRITICAL_COMMAND_MAX_ENCODED_BYTES)
+		return critical_command_codec_result::overflow;
+	*encoded = std::move(result);
+	return critical_command_codec_result::ok;
 }
 
 critical_command_codec_result critical_command_decode(const uint8_t *encoded, size_t size,
 						      critical_command *command)
 {
-	if (!encoded || !command || size < 52)
+	if (!encoded || !command || size < CRITICAL_COMMAND_HEADER_BYTES)
 		return critical_command_codec_result::truncated;
 	if (size > CRITICAL_COMMAND_MAX_ENCODED_BYTES || memcmp(encoded, COMMAND_MAGIC, 4) != 0)
 		return critical_command_codec_result::invalid;
@@ -363,15 +452,29 @@ critical_command_codec_result critical_command_decode(const uint8_t *encoded, si
 	    !read_le(encoded, size, &offset, &revision_count) ||
 	    !read_le(encoded, size, &offset, &payload_size))
 		return critical_command_codec_result::truncated;
-	if (!key_count || key_count > CRITICAL_COMMAND_MAX_KEYS ||
-	    revision_count > CRITICAL_COMMAND_MAX_KEYS ||
-	    payload_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
+	// Intent bytes are decoded below. This is only the allocation hard gate;
+	// final envelope validation rechecks exact schema/publication/intent shape.
+	const bool native_auction_header =
+		decoded.type == critical_command_type::auction &&
+		decoded.payload_version == AUCTION_NATIVE_COMMAND_PAYLOAD_VERSION &&
+		((decoded.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION &&
+		  decoded.publication_required) ||
+		 (decoded.schema_version == CRITICAL_COMMAND_SCHEMA_VERSION &&
+		  !decoded.publication_required));
+	const size_t key_limit = native_auction_header ? CRITICAL_COMMAND_MAX_NATIVE_AUCTION_KEYS :
+							 CRITICAL_COMMAND_MAX_KEYS;
+	if (!key_count || key_count > CRITICAL_COMMAND_MAX_NATIVE_AUCTION_KEYS ||
+	    revision_count > CRITICAL_COMMAND_MAX_NATIVE_AUCTION_KEYS || key_count > key_limit ||
+	    revision_count > key_limit || payload_size > CRITICAL_COMMAND_MAX_PAYLOAD_BYTES)
 		return critical_command_codec_result::overflow;
-	uint64_t required = static_cast<uint64_t>(key_count) * 16 +
-			    static_cast<uint64_t>(revision_count) * 24 + payload_size;
+	uint64_t required =
+		static_cast<uint64_t>(key_count) * CRITICAL_COMMAND_ENTITY_KEY_BYTES +
+		static_cast<uint64_t>(revision_count) * CRITICAL_COMMAND_EXPECTED_REVISION_BYTES +
+		payload_size;
 	if (decoded.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
 	{
-		if (required > size - offset || size - offset - required < 4)
+		if (required > size - offset ||
+		    size - offset - required < CRITICAL_COMMAND_ACCOUNTING_PREFIX_BYTES)
 			return critical_command_codec_result::truncated;
 		size_t intent_offset = offset + static_cast<size_t>(required);
 		uint32_t intent_size = 0;
@@ -379,7 +482,7 @@ critical_command_codec_result critical_command_decode(const uint8_t *encoded, si
 			return critical_command_codec_result::truncated;
 		if (!intent_size || intent_size > CRITICAL_COMMAND_MAX_ACCOUNTING_INTENT_BYTES)
 			return critical_command_codec_result::overflow;
-		required += 4 + intent_size;
+		required += CRITICAL_COMMAND_ACCOUNTING_PREFIX_BYTES + intent_size;
 	}
 	if (required != size - offset)
 		return required > size - offset ? critical_command_codec_result::truncated :
@@ -416,8 +519,10 @@ critical_command_codec_result critical_command_decode(const uint8_t *encoded, si
 		}
 		decoded.payload.assign(encoded + offset, encoded + offset + payload_size);
 		if (decoded.schema_version == CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION)
-			decoded.accounting_intent.assign(encoded + offset + payload_size + 4,
-							 encoded + size);
+			decoded.accounting_intent.assign(
+				encoded + offset + payload_size +
+					CRITICAL_COMMAND_ACCOUNTING_PREFIX_BYTES,
+				encoded + size);
 	}
 	catch (const std::bad_alloc &)
 	{

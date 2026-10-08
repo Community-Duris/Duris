@@ -1,4 +1,6 @@
 #include "persistence/death_recovery_visibility.h"
+#include "flatfile/quest_mobile_native_flatfile.h"
+#include "item/item_transfer_repository.h"
 #include "flatfile/flatfile_item_repository.h"
 
 #include "flatfile/flatfile_auction_repository.h"
@@ -405,8 +407,11 @@ bool valid_catalog(const ownership_catalog &catalog)
 			return false;
 		if (entry.equipment_slot > ITEM_TRANSFER_MAX_EQUIPMENT_SLOT ||
 		    (entry.equipment_slot &&
-		     (entry.owner.type != item_owner_type::player || entry.parent_item_uid ||
-		      entry.state != item_custody_state::active)))
+		     ((entry.owner.type != item_owner_type::player &&
+		       entry.owner.type != item_owner_type::native_mobile) ||
+		      entry.parent_item_uid || entry.state != item_custody_state::active ||
+		      (entry.owner.type == item_owner_type::native_mobile &&
+		       entry.root_item_uid != entry.item_uid))))
 			return false;
 		if (!entry.coin_payload.empty())
 		{
@@ -727,6 +732,10 @@ bool room_transfer(const item_transfer_payload &payload)
 bool generic_transfer_supported(const item_transfer_payload &payload, uint16_t payload_version,
 				bool accounted)
 {
+	// Read compatibility is not native NPC stock mutation/admission authority.
+	if (payload.from_owner.type == item_owner_type::native_mobile ||
+	    payload.to_owner.type == item_owner_type::native_mobile)
+		return false;
 	const bool mobile_claim = payload.reason == item_transfer_reason::mobile_claim &&
 				  item_owner_identity_equal(payload.from_owner, payload.to_owner) &&
 				  !payload.multi_root && !payload.target_parent_item_uid;
@@ -2286,6 +2295,7 @@ flatfile_item_repository_establish_owner(const std::string &root, const item_own
 					 std::string *error)
 {
 	if (root.empty() || !item_owner_identity_valid(owner) ||
+	    owner.type == item_owner_type::native_mobile ||
 	    items.size() > ownership_maximum_entries ||
 	    !std::is_sorted(items.begin(), items.end(), item_less))
 		return flatfile_item_baseline_result::invalid;
@@ -4207,6 +4217,43 @@ flatfile_item_repository_result flatfile_item_repository_read_coin_pile_locked(
 		       result;
 }
 
+unsigned int flatfile_item_repository_verify_coin_root_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_command &command, std::span<const uint8_t> retained_result,
+	std::string *error)
+try
+{
+	std::array<uint8_t, SHA256_DIGEST_LENGTH> digest = {};
+	if (root.empty() || !lock.matches(root) ||
+	    command.schema_version != CRITICAL_COMMAND_ACCOUNTING_SCHEMA_VERSION ||
+	    command.type != critical_command_type::coin_transfer ||
+	    !critical_command_envelope_valid(command) || !command_digest(command, &digest) ||
+	    retained_result.size() != COIN_TRANSFER_RESULT_BYTES)
+		return EINVAL;
+	const auto recovered = flatfile_authority_transaction_recover(root, lock, error);
+	if (recovered != flatfile_authority_transaction_result::ok)
+		return recovered == flatfile_authority_transaction_result::io_error ? EIO : EILSEQ;
+	ownership_catalog catalog;
+	const auto loaded = load_catalog(root, &catalog, error);
+	if (loaded != flatfile_item_repository_result::ok)
+		return loaded == flatfile_item_repository_result::io_error ? EIO : EILSEQ;
+	const auto found = std::find_if(
+		catalog.operations.begin(), catalog.operations.end(),
+		[&](const operation_state &value)
+		{ return critical_operation_id_equal(value.operation_id, command.operation_id); });
+	if (found == catalog.operations.end())
+		return ENOENT;
+	if (!found->coin_operation || found->result_code || found->command_digest != digest ||
+	    !std::equal(found->coin_result.begin(), found->coin_result.end(),
+			retained_result.begin(), retained_result.end()))
+		return EILSEQ;
+	return 0;
+}
+catch (const std::bad_alloc &)
+{
+	return ENOMEM;
+}
+
 flatfile_item_repository_result flatfile_item_repository_list_coin_piles_locked(
 	const std::string &root, const flatfile_authority_lock &lock,
 	std::vector<flatfile_coin_pile_source> *sources, std::string *error)
@@ -4594,4 +4641,285 @@ flatfile_critical_command_repository_apply_selected(const critical_command &comm
 	    command.type == critical_command_type::combat_outcome)
 		return flatfile_player_domain_apply(root, command);
 	return { critical_apply_outcome::terminal_failure, 0, ENOTSUP };
+}
+
+namespace
+{
+bool flat_native_custody_matches(const ownership_catalog &catalog,
+				 const quest_mobile_native_image &image)
+{
+	const item_owner_identity owner{ item_owner_type::native_mobile,
+					 image.reference.mobile_instance_id, 0 };
+	size_t count = 0;
+	for (const auto &row : catalog.items)
+		if (item_owner_identity_equal(row.owner, owner))
+			++count;
+	if (count != image.items.size())
+		return false;
+	std::vector<uint64_t> roots(image.items.size());
+	for (size_t i = 0; i < image.items.size(); ++i)
+	{
+		const auto &item = image.items[i];
+		const bool root = item.parent_index == PLAYER_SNAPSHOT_NO_PARENT;
+		roots[i] = root ? item.object_uid : roots[item.parent_index];
+		const auto *row = catalog_item(catalog, item.object_uid);
+		if (!row || !item_owner_identity_equal(row->owner, owner) ||
+		    row->root_item_uid != roots[i] ||
+		    row->parent_item_uid !=
+			    (root ? 0 : image.items[item.parent_index].object_uid) ||
+		    !row->item_revision || row->item_revision == UINT64_MAX ||
+		    row->vnum != item.vnum || row->state != item_custody_state::active ||
+		    row->equipment_slot != item.equipment_slot)
+			return false;
+	}
+	return true;
+}
+flatfile_item_repository_result
+flat_native_player_preimage(const std::string &root, const flatfile_authority_lock &lock,
+			    const ownership_catalog &catalog, const item_transfer_payload &payload,
+			    std::span<const player_item_snapshot> original, bool *matched,
+			    std::string *error)
+{
+	*matched = false;
+	player_snapshot saved;
+	const auto loaded = flatfile_player_snapshot_read(
+		root, static_cast<int32_t>(payload.from_owner.id), &saved, error);
+	if (loaded != flatfile_player_load_result::ok)
+		return loaded == flatfile_player_load_result::io_error ?
+			       flatfile_item_repository_result::io_error :
+		       loaded == flatfile_player_load_result::not_found ?
+			       flatfile_item_repository_result::not_found :
+			       flatfile_item_repository_result::invalid;
+	std::vector<flatfile_item_ownership_record> owned;
+	for (const auto &row : catalog.items)
+		if (item_owner_identity_equal(row.owner, payload.from_owner) &&
+		    row.state == item_custody_state::active)
+			owned.push_back(row);
+	const auto reconciled = flatfile_shop_trade_materialization_reconcile(
+		root, lock, static_cast<uint32_t>(payload.from_owner.id), owned, &saved, error);
+	if (reconciled != flatfile_shop_trade_materialization_result::ok)
+		return reconciled == flatfile_shop_trade_materialization_result::io_error ?
+			       flatfile_item_repository_result::io_error :
+			       flatfile_item_repository_result::invalid;
+	std::vector<player_item_snapshot> expected(original.begin(), original.end());
+	std::vector<uint8_t> a, b;
+	auto code = player_item_snapshot_list_encode(saved.items, &a);
+	if (code == player_snapshot_codec_result::ok)
+		code = player_item_snapshot_list_encode(expected, &b);
+	if (code != player_snapshot_codec_result::ok)
+		return code == player_snapshot_codec_result::allocation_failure ?
+			       flatfile_item_repository_result::io_error :
+			       flatfile_item_repository_result::invalid;
+	if (a != b)
+		return flatfile_item_repository_result::ok;
+	std::unordered_set<uint64_t> selected;
+	for (size_t i = 0; i < payload.item_count; ++i)
+		selected.insert(payload.items[i].item_uid);
+	std::vector<player_item_snapshot> observed;
+	std::vector<int32_t> remap(saved.items.size(), PLAYER_SNAPSHOT_NO_PARENT);
+	for (size_t i = 0; i < saved.items.size(); ++i)
+	{
+		auto item = saved.items[i];
+		if (!selected.count(item.object_uid))
+			continue;
+		if (item.parent_index != PLAYER_SNAPSHOT_NO_PARENT)
+		{
+			if (item.parent_index < 0 || static_cast<size_t>(item.parent_index) >= i ||
+			    remap[item.parent_index] == PLAYER_SNAPSHOT_NO_PARENT)
+				return flatfile_item_repository_result::invalid;
+			item.parent_index = remap[item.parent_index];
+		}
+		remap[i] = static_cast<int32_t>(observed.size());
+		observed.push_back(std::move(item));
+	}
+	code = player_item_snapshot_list_encode(observed, &a);
+	if (code != player_snapshot_codec_result::ok)
+		return code == player_snapshot_codec_result::allocation_failure ?
+			       flatfile_item_repository_result::io_error :
+			       flatfile_item_repository_result::invalid;
+	if (a.size() != payload.item_blob_size ||
+	    !std::equal(a.begin(), a.end(), payload.item_blob.begin()))
+		return flatfile_item_repository_result::ok;
+	// Reconciliation is read-only. Outbound materialization below retains the
+	// selected original bytes; the ordinary save generation is never rewritten.
+	*matched = true;
+	return flatfile_item_repository_result::ok;
+}
+bool flat_native_custody_delta(const ownership_catalog &before, const ownership_catalog &after,
+			       const item_transfer_payload &payload,
+			       item_transfer_custody_delta *output)
+{
+	item_transfer_custody_delta delta;
+	for (size_t i = 0; i < payload.item_count; ++i)
+	{
+		const auto *old = catalog_item(before, payload.items[i].item_uid);
+		const auto *now = catalog_item(after, payload.items[i].item_uid);
+		if (!old || !now)
+			return false;
+		delta.before.push_back({ old->item_uid, accounting_position(*old) });
+		delta.after.push_back({ now->item_uid, accounting_position(*now) });
+		delta.events.push_back({ static_cast<uint32_t>(i), 0, old->item_uid,
+					 accounting_position(*old), accounting_position(*now) });
+	}
+	if (economic_item_effects_validate(delta.before, delta.after, delta.events, 0) !=
+	    economic_accounting_error::ok)
+		return false;
+	*output = std::move(delta);
+	return true;
+}
+}
+
+flatfile_item_repository_result flatfile_item_repository_prepare_native_mobile(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_command &command,
+	std::span<const player_item_snapshot> original_player_items, item_transfer_result *result,
+	unsigned int *result_code, item_transfer_custody_delta *delta,
+	quest_mobile_native_image *after, std::vector<flatfile_authority_operation> *operations,
+	std::string *error)
+{
+	if (!lock.matches(root) || !result || !result_code || !delta || !after || !operations ||
+	    command.payload_version != ITEM_TRANSFER_NATIVE_MOBILE_PAYLOAD_VERSION ||
+	    critical_operation_id_is_zero(command.operation_id))
+		return flatfile_item_repository_result::invalid;
+	*result_code = 0;
+	try
+	{
+		item_transfer_payload payload{};
+		if (!item_transfer_command_decode_payload(command, &payload) ||
+		    !item_transfer_native_mobile_shape_valid(payload))
+			return flatfile_item_repository_result::invalid;
+		const bool acceptance = payload.native_mobile.action ==
+					item_native_mobile_action::acceptance;
+		if ((!acceptance && !original_player_items.empty()) ||
+		    original_player_items.size() > PLAYER_SNAPSHOT_MAX_OBJECTS)
+			return flatfile_item_repository_result::invalid;
+		quest_mobile_native_flatfile_row native;
+		int code = quest_mobile_native_flatfile_read_locked(
+			root, lock, payload.native_mobile.reference.mobile_instance_id, &native);
+		if (code)
+			return code == ENOMEM || code == EIO ?
+				       flatfile_item_repository_result::io_error :
+				       flatfile_item_repository_result::invalid;
+		quest_mobile_native_image next;
+		if (!native.present)
+		{
+			*result_code = ESTALE;
+			return flatfile_item_repository_result::ok;
+		}
+		const auto transformed = quest_mobile_native_item_transition(
+			native.image, payload, command.operation_id, &next);
+		if (transformed == player_snapshot_codec_result::allocation_failure)
+		{
+			return flatfile_item_repository_result::io_error;
+		}
+		if (transformed != player_snapshot_codec_result::ok)
+		{
+			*result_code = transformed == player_snapshot_codec_result::limit_exceeded ?
+					       E2BIG :
+					       ESTALE;
+			return flatfile_item_repository_result::ok;
+		}
+		ownership_catalog catalog;
+		const auto loaded = load_catalog(root, &catalog, error);
+		if (loaded != flatfile_item_repository_result::ok)
+			return loaded;
+		std::array<uint8_t, SHA256_DIGEST_LENGTH> digest{};
+		if (!command_digest(command, &digest))
+			return flatfile_item_repository_result::invalid;
+		for (const auto &entry : catalog.operations)
+			if (critical_operation_id_equal(entry.operation_id, command.operation_id))
+			{
+				*result_code = CRYPTO_memcmp(entry.command_digest.data(),
+							     digest.data(), digest.size()) ?
+						       EEXIST :
+						       EALREADY;
+				return flatfile_item_repository_result::ok;
+			} // Root owns original receipt replay/proof.
+		const auto *from = find_owner(&catalog, payload.from_owner);
+		const auto *to = find_owner(&catalog, payload.to_owner);
+		if (!from || !to || from->revision != payload.expected_from_revision ||
+		    to->revision != payload.expected_to_revision ||
+		    (acceptance ? to->revision : from->revision) !=
+			    native.image.reference.stock_revision)
+		{
+			*result_code = ESTALE;
+			return flatfile_item_repository_result::ok;
+		}
+		if (!flat_native_custody_matches(catalog, native.image))
+			return flatfile_item_repository_result::invalid;
+		if (acceptance)
+		{
+			bool matched = false;
+			const auto preimage =
+				flat_native_player_preimage(root, lock, catalog, payload,
+							    original_player_items, &matched, error);
+			if (preimage != flatfile_item_repository_result::ok)
+				return preimage;
+			if (!matched)
+			{
+				*result_code = ESTALE;
+				return flatfile_item_repository_result::ok;
+			}
+		}
+		if (catalog.revision == UINT64_MAX ||
+		    catalog.operations.size() >= ownership_maximum_operations)
+			return flatfile_item_repository_result::invalid;
+		ownership_catalog candidate = catalog;
+		item_transfer_result applied{};
+		code = apply_transfer(&candidate, payload, &applied);
+		if (code)
+		{
+			*result_code = code;
+			return code == ENOMEM ? flatfile_item_repository_result::io_error :
+						flatfile_item_repository_result::ok;
+		}
+		if (!flat_native_custody_matches(candidate, next))
+			return flatfile_item_repository_result::invalid;
+		item_transfer_custody_delta effects;
+		if (!flat_native_custody_delta(catalog, candidate, payload, &effects))
+			return flatfile_item_repository_result::invalid;
+		operation_state operation{ command.operation_id, digest, 0, applied };
+		if (!acceptance &&
+		    payload.continuation.kind == item_transfer_continuation_kind::quest_offering)
+			operation.quest_continuation = payload.continuation.data;
+		candidate.operations.push_back(std::move(operation));
+		std::vector<flatfile_authority_operation> prepared;
+		flatfile_authority_operation native_operation;
+		code = quest_mobile_native_flatfile_prepare_locked(root, lock, command.operation_id,
+								   native, next, &native_operation);
+		if (code)
+			return code == ENOMEM || code == EIO ?
+				       flatfile_item_repository_result::io_error :
+				       flatfile_item_repository_result::invalid;
+		prepared.push_back(std::move(native_operation));
+		std::vector<uint8_t> catalog_bytes;
+		if (!encode_catalog(candidate, catalog.revision + 1, &catalog_bytes))
+			return flatfile_item_repository_result::invalid;
+		prepared.push_back({ flatfile_authority_store::domains,
+				     flatfile_authority_operation_kind::write, ownership_filename,
+				     std::move(catalog_bytes) });
+		if (acceptance)
+		{
+			flatfile_shop_trade_materialization_mutation removal;
+			const auto status = flatfile_item_transfer_materialization_prepare(
+				root, lock, command.operation_id, payload, &removal, error);
+			if (status != flatfile_shop_trade_materialization_result::ok)
+				return status == flatfile_shop_trade_materialization_result::io_error ?
+					       flatfile_item_repository_result::io_error :
+					       flatfile_item_repository_result::invalid;
+			prepared.push_back({ flatfile_authority_store::domains,
+					     flatfile_authority_operation_kind::write,
+					     std::move(removal.after_image.filename),
+					     std::move(removal.after_image.bytes) });
+		}
+		*result = applied;
+		*delta = std::move(effects);
+		*after = std::move(next);
+		*operations = std::move(prepared);
+		return flatfile_item_repository_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		return flatfile_item_repository_result::io_error;
+	}
 }

@@ -37,6 +37,10 @@
 #include "core/utils.h"
 #include "core/utility.h"
 #include "mob/studioproclib.h"
+#include <climits>
+#include <algorithm>
+#include <limits>
+#include <utility>
 
 extern P_index obj_index;
 extern P_room world;
@@ -327,6 +331,170 @@ static int (*proclib_chain_prev(int rnum))(P_obj, P_char, int, char *)
 		if (proclib_chain[i].rnum == rnum)
 			return proclib_chain[i].prev;
 	return NULL;
+}
+
+proclib_recovery_chain_stage::~proclib_recovery_chain_stage() noexcept
+{
+	reset();
+}
+proclib_recovery_chain_stage::proclib_recovery_chain_stage(
+	proclib_recovery_chain_stage &&other) noexcept
+{
+	*this = std::move(other);
+}
+proclib_recovery_chain_stage &
+proclib_recovery_chain_stage::operator=(proclib_recovery_chain_stage &&other) noexcept
+{
+	if (this != &other)
+	{
+		reset();
+		allocation_ = std::exchange(other.allocation_, nullptr);
+		expected_ = other.expected_;
+		expected_top_ = other.expected_top_;
+		expected_cap_ = other.expected_cap_;
+		next_top_ = other.next_top_;
+		next_cap_ = other.next_cap_;
+		prepared_ = std::exchange(other.prepared_, false);
+		requests_ = std::move(other.requests_);
+	}
+	return *this;
+}
+void proclib_recovery_chain_stage::reset() noexcept
+{
+	free(allocation_);
+	allocation_ = nullptr;
+	prepared_ = false;
+	requests_.clear();
+}
+bool proclib_recovery_chain_stage::predecessor_matches(int rnum, obj_proc_type previous) noexcept
+{
+	return rnum >= 0 && proclib_chain_prev(rnum) == previous;
+}
+bool proclib_recovery_chain_stage::prepare(std::span<const request> requests,
+					   proclib_recovery_chain_stage &output) noexcept
+{
+	if (!nevent_is_game_thread() || proclib_chain_top < 0 ||
+	    proclib_chain_cap < proclib_chain_top || (proclib_chain_cap && !proclib_chain))
+		return false;
+	try
+	{
+		proclib_recovery_chain_stage candidate;
+		candidate.expected_ = proclib_chain;
+		candidate.expected_top_ = proclib_chain_top;
+		candidate.expected_cap_ = proclib_chain_cap;
+		candidate.requests_.assign(requests.begin(), requests.end());
+		size_t additions = 0;
+		for (size_t i = 0; i < requests.size(); ++i)
+		{
+			const auto &value = requests[i];
+			if (value.rnum < 0 || value.previous == proclib_obj_cmd_bridge)
+				return false;
+			for (size_t j = 0; j < i; ++j)
+				if (requests[j].rnum == value.rnum)
+					return false;
+			bool present = false;
+			for (int j = 0; j < proclib_chain_top; ++j)
+				if (proclib_chain[j].rnum == value.rnum)
+				{
+					if (proclib_chain[j].prev != value.previous)
+						return false;
+					present = true;
+					break;
+				}
+			if (!present && value.previous)
+				++additions;
+		}
+		if (additions > static_cast<size_t>(INT_MAX - proclib_chain_top))
+			return false;
+		candidate.next_top_ = proclib_chain_top + static_cast<int>(additions);
+		candidate.next_cap_ = std::max(proclib_chain_cap, candidate.next_top_);
+		if (additions)
+		{
+			if (static_cast<size_t>(candidate.next_cap_) >
+			    std::numeric_limits<size_t>::max() / sizeof(proclib_chain_ent))
+				return false;
+			candidate.allocation_ = malloc(static_cast<size_t>(candidate.next_cap_) *
+						       sizeof(proclib_chain_ent));
+			if (!candidate.allocation_)
+				return false;
+			auto *entries = static_cast<proclib_chain_ent *>(candidate.allocation_);
+			for (int j = 0; j < proclib_chain_top; ++j)
+				entries[j] = proclib_chain[j];
+			int next = proclib_chain_top;
+			for (const auto &value : requests)
+			{
+				bool present = false;
+				for (int j = 0; j < proclib_chain_top; ++j)
+					if (proclib_chain[j].rnum == value.rnum)
+					{
+						present = true;
+						break;
+					}
+				if (!present && value.previous)
+					entries[next++] = { value.rnum, value.previous };
+			}
+			if (next != candidate.next_top_)
+				return false;
+		}
+		candidate.prepared_ = true;
+		output = std::move(candidate);
+		return true;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+size_t proclib_recovery_chain_stage::retained_bytes() const noexcept
+{
+	size_t bytes = sizeof(*this);
+	if (requests_.capacity() > (SIZE_MAX - bytes) / sizeof(request))
+		return 0;
+	bytes += requests_.capacity() * sizeof(request);
+	if (allocation_)
+	{
+		if (next_cap_ < 0 ||
+		    static_cast<size_t>(next_cap_) > (SIZE_MAX - bytes) / sizeof(proclib_chain_ent))
+			return 0;
+		bytes += static_cast<size_t>(next_cap_) * sizeof(proclib_chain_ent);
+	}
+	return bytes;
+}
+bool proclib_recovery_chain_stage::valid() const noexcept
+{
+	if (!prepared_ || !nevent_is_game_thread() || expected_ != proclib_chain ||
+	    expected_top_ != proclib_chain_top || expected_cap_ != proclib_chain_cap)
+		return false;
+	if (allocation_)
+	{
+		const auto *entries = static_cast<const proclib_chain_ent *>(allocation_);
+		for (int i = 0; i < expected_top_; ++i)
+			if (entries[i].rnum != proclib_chain[i].rnum ||
+			    entries[i].prev != proclib_chain[i].prev)
+				return false;
+	}
+	for (const auto &value : requests_)
+	{
+		const auto previous = proclib_chain_prev(value.rnum);
+		if (previous && previous != value.previous)
+			return false;
+	}
+	return true;
+}
+void proclib_recovery_chain_stage::commit_unchecked() noexcept
+{
+	// Caller has validated the complete catalog/chain batch on the serialized
+	// game thread. No allocation, callback, parser or checked failure follows.
+	if (allocation_)
+	{
+		auto *old = proclib_chain;
+		proclib_chain =
+			static_cast<proclib_chain_ent *>(std::exchange(allocation_, nullptr));
+		proclib_chain_top = next_top_;
+		proclib_chain_cap = next_cap_;
+		free(old);
+	}
+	prepared_ = false;
 }
 
 int proclib_obj_cmd_bridge(P_obj obj, P_char ch, int cmd, char *argument)

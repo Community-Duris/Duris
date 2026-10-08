@@ -26,8 +26,8 @@ if not options.client_free_only and (
 SOURCES = ["tests/async/economic_sql_source_snapshot_test.cpp",
            "src/persistence/economic_sql_source_snapshot.c",
            "src/economy/economic_sql_source_normalize.c",
-           "src/economy/economic_accounting_types.c",
-           "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/persistence/critical_command.c",
+           "src/economy/economic_accounting_types.c", "src/economy/shop_trade_recovery_manifest.c",
+           "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/economy/economic_source_event.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c", "src/persistence/critical_command.c",
            "src/player/player_snapshot_codec.c"]
 
 
@@ -73,6 +73,7 @@ with tempfile.TemporaryDirectory(prefix="duris-sql-sources-") as temporary:
                                   text=True, capture_output=True, env=client.env, timeout=120)
             if boot.returncode:
                 raise RuntimeError("disposable source schema bootstrap failed")
+            client.sql((ROOT / "migrations/immutable/0038_item_equipment_slot.sql").read_text())
             client.sql((ROOT / "migrations/immutable/0043_shopkeeper_item_condition.sql").read_text())
             run_mode("sql", client.env, directory)
             run_mode("client-free", os.environ, directory)

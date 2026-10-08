@@ -553,9 +553,10 @@ with tempfile.TemporaryDirectory(prefix="duris-critical-command-") as temporary:
     subprocess.run(
         [
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
-            "-pthread", "-Isrc", str(source), rel("critical_command.c"),
+            "-pthread", "-ffunction-sections", "-fdata-sections", "-Isrc",
+            str(source), rel("critical_command.c"),
             rel("critical_command_journal.c"), rel("critical_command_coordinator.c"),
-            "-lz", "-lcrypto", "-Wl,--wrap=fsync", "-o", str(binary),
+            "-lz", "-lcrypto", "-Wl,--wrap=fsync", "-Wl,--gc-sections", "-o", str(binary),
         ],
         cwd=ROOT,
         check=True,

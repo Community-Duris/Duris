@@ -52,6 +52,13 @@ unsigned int coin_transfer_accounting_record(MYSQL *connection, const critical_c
 					     unsigned int result_code,
 					     const coin_transfer_accounting_context &context);
 
+// Read-only indexed-row/source-claim verification for an independently authenticated
+// stored canonical coin plan. No original command hash/binding, native authority,
+// item child ledger, inbox or outbox proof is granted here. The caller owns the
+// transaction/session and supplies the already authenticated plan operation ID.
+unsigned int coin_transfer_accounting_verify_indexed_plan(MYSQL *connection,
+							  const economic_accounting_plan &plan);
+
 // Validate retained exact-ID evidence, without consulting the current active
 // epoch. The repository has already matched the exact root command hash.
 unsigned int coin_transfer_accounting_verify_retained(

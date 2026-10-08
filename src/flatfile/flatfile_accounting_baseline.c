@@ -1,5 +1,6 @@
 #include "flatfile/flatfile_accounting_baseline.h"
 #include "flatfile/flatfile_accounting_authority.h"
+#include "flatfile/flatfile_accounting_staging_view.h"
 #include "flatfile/flatfile_store.h"
 #include <algorithm>
 #include <cerrno>
@@ -7,6 +8,7 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <new>
+#include <memory>
 #include <openssl/sha.h>
 #include <set>
 #include <string_view>
@@ -123,9 +125,17 @@ std::string index_name(const std::string &base, size_t bucket)
 	need(bucket < FLATFILE_BASELINE_BUCKETS);
 	return base + "0123456789abcdef"[bucket] + ".ebi";
 }
-bytes read(const std::string &root, const std::string &name, size_t maximum)
+bytes read(const std::string &root, const std::string &name, size_t maximum,
+	   const flatfile_accounting_staging_view *view = nullptr)
 {
 	bytes result;
+	if (view)
+	{
+		bool found = false;
+		authority(view->read(name, maximum, &result, &found));
+		if (found)
+			return result;
+	}
 	errno = 0;
 	auto code = flatfile_read(root + "/economic-evidence", name, maximum, &result, nullptr);
 	need(code == flatfile_read_result::ok,
@@ -134,9 +144,16 @@ bytes read(const std::string &root, const std::string &name, size_t maximum)
 		     status::invalid);
 	return result;
 }
-void absent(const std::string &root, const std::string &name)
+void absent(const std::string &root, const std::string &name,
+	    const flatfile_accounting_staging_view *view = nullptr)
 {
 	bytes ignored;
+	if (view)
+	{
+		bool found = false;
+		authority(view->read(name, ECONOMIC_BASELINE_MAX_BYTES, &ignored, &found));
+		need(!found, status::conflict);
+	}
 	errno = 0;
 	auto code = flatfile_read(root + "/economic-evidence", name, ECONOMIC_BASELINE_MAX_BYTES,
 				  &ignored, nullptr);
@@ -166,20 +183,36 @@ bytes encode(const head &value)
 		raw(body, digest);
 	return envelope("DUREBC1", body);
 }
-void membership(const std::string &root, const flatfile_authority_lock &lock,
-		const critical_operation_id &lineage, const critical_operation_id &epoch)
+flatfile_economic_epoch membership(const std::string &root, const flatfile_authority_lock &lock,
+				   const critical_operation_id &lineage,
+				   const critical_operation_id &epoch,
+				   const flatfile_accounting_staging_view *view = nullptr)
 {
 	flatfile_economic_control control;
-	authority(flatfile_economic_control_read(root, lock, &control, nullptr));
+	if (view)
+	{
+		need(view->matches(root, lock));
+		authority(view->control(&control));
+	}
+	else
+		authority(flatfile_economic_control_read(root, lock, &control, nullptr));
 	need(control.lineage.bytes == lineage.bytes);
 	flatfile_economic_epoch retained;
-	authority(flatfile_economic_epoch_read(root, lock, lineage, epoch, &retained, nullptr));
+	if (view)
+		authority(view->epoch(lineage, epoch, &retained));
+	else
+		authority(flatfile_economic_epoch_read(root, lock, lineage, epoch, &retained,
+						       nullptr));
+	return retained;
 }
 head load(const std::string &root, const flatfile_authority_lock &lock,
-	  const critical_operation_id &lineage, const critical_operation_id &epoch)
+	  const critical_operation_id &lineage, const critical_operation_id &epoch,
+	  const flatfile_accounting_staging_view *view = nullptr)
 {
-	membership(root, lock, lineage, epoch);
-	auto encoded = read(root, prefix(lineage, epoch) + "head.ebc", 656);
+	const auto retained = membership(root, lock, lineage, epoch, view);
+	need(retained.baseline_initialization !=
+	     flatfile_baseline_initialization::never_initialized);
+	auto encoded = read(root, prefix(lineage, epoch) + "head.ebc", 656, view);
 	auto in = unwrap(encoded, "DUREBC1");
 	head value;
 	value.lineage = in.id();
@@ -194,6 +227,14 @@ head load(const std::string &root, const flatfile_authority_lock &lock,
 	     value.opening.kind == economic_account_kind::opening &&
 	     value.opening.lineage.bytes == lineage.bytes &&
 	     !critical_operation_id_is_zero(value.last_operation));
+	if (retained.baseline_initialization == flatfile_baseline_initialization::initialized)
+	{
+		need(economic_account_key_equal(value.opening, retained.baseline_opening));
+		if (!value.revision)
+			need(value.last_operation.bytes ==
+			     retained.baseline_initializing_operation.bytes);
+	}
+	// Legacy v1 may be read structurally; it cannot prove a new initialization.
 	return value;
 }
 struct reservation
@@ -222,10 +263,11 @@ bytes encode(const head &value, size_t slot, const bucket &entries)
 	}
 	return envelope("DUREBI1", body);
 }
-bucket load(const std::string &root, const head &value, size_t slot)
+bucket load(const std::string &root, const head &value, size_t slot,
+	    const flatfile_accounting_staging_view *view = nullptr)
 {
 	auto encoded = read(root, index_name(prefix(value.lineage, value.epoch), slot),
-			    FLATFILE_BASELINE_INDEX_MAX_BYTES);
+			    FLATFILE_BASELINE_INDEX_MAX_BYTES, view);
 	need(hash(encoded) == value.indexes[slot]);
 	auto in = unwrap(encoded, "DUREBI1");
 	need(in.id().bytes == value.lineage.bytes && in.id().bytes == value.epoch.bytes &&
@@ -246,6 +288,19 @@ bucket load(const std::string &root, const head &value, size_t slot)
 	in.done();
 	return result;
 }
+std::array<bucket, FLATFILE_BASELINE_BUCKETS>
+load_indexes(const std::string &root, const head &book,
+	     const flatfile_accounting_staging_view *view = nullptr)
+{
+	std::array<bucket, FLATFILE_BASELINE_BUCKETS> indexes;
+	for (size_t slot = 0; slot < indexes.size(); ++slot)
+	{
+		indexes[slot] = load(root, book, slot, view);
+		need(book.revision || indexes[slot].empty());
+	}
+	return indexes;
+}
+
 bucket reservations(const economic_prepared_baseline &prepared)
 {
 	bucket result;
@@ -276,8 +331,18 @@ void room(const operations &ops)
 		total += size;
 	}
 }
-void append(operations &ops, const std::string &name, bytes value)
+void append(operations &ops, const std::string &name, bytes value,
+	    flatfile_accounting_staging_view *view = nullptr)
 {
+	if (view)
+	{
+		operations updates;
+		updates.push_back({ flatfile_authority_store::economic_evidence,
+				    flatfile_authority_operation_kind::write, name,
+				    std::move(value) });
+		authority(view->merge(updates, &ops));
+		return;
+	}
 	ops.push_back({ flatfile_authority_store::economic_evidence,
 			flatfile_authority_operation_kind::write, name, std::move(value) });
 }
@@ -369,16 +434,11 @@ flatfile_accounting_status flatfile_accounting_baseline_lookup(const std::string
 			bytes encoded;
 			checked(economic_plan_encode(plan, &encoded));
 			need(encoded == retained.plan);
-			std::array<bucket, FLATFILE_BASELINE_BUCKETS> indexes;
-			std::array<bool, FLATFILE_BASELINE_BUCKETS> loaded = {};
+			const auto indexes = load_indexes(root, book);
 			for (const auto &entry : reservations(*prepared))
 			{
 				const auto slot = entry.id % FLATFILE_BASELINE_BUCKETS;
-				if (!loaded[slot])
-				{
-					indexes[slot] = load(root, book, slot);
-					loaded[slot] = true;
-				}
+
 				const auto found = std::lower_bound(
 					indexes[slot].begin(), indexes[slot].end(), entry, less);
 				need(found != indexes[slot].end() && found->kind == entry.kind &&
@@ -397,6 +457,36 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::initialize(
 	const economic_account_key &opening, const critical_operation_id &creating_operation,
 	operations *ops, std::string *error)
 {
+	return initialize_staged(root, lock, lineage, epoch, opening, creating_operation, ops,
+				 error, nullptr);
+}
+flatfile_accounting_status flatfile_accounting_baseline_storage::initialize_staged(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &lineage, const critical_operation_id &epoch,
+	const economic_account_key &opening, const critical_operation_id &creating_operation,
+	operations *ops, std::string *error, flatfile_accounting_staging_view *view)
+{
+	return initialize_with_origin_staged(
+		root, lock, lineage, epoch, opening, creating_operation, ops, error, view,
+		flatfile_baseline_initialization_origin::baseline_participant);
+}
+flatfile_accounting_status flatfile_accounting_baseline_storage::initialize_lifecycle_staged(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &lineage, const critical_operation_id &epoch,
+	const economic_account_key &opening, const critical_operation_id &creating_operation,
+	operations *ops, std::string *error, flatfile_accounting_staging_view *view)
+{
+	return initialize_with_origin_staged(
+		root, lock, lineage, epoch, opening, creating_operation, ops, error, view,
+		flatfile_baseline_initialization_origin::lifecycle_owner);
+}
+flatfile_accounting_status flatfile_accounting_baseline_storage::initialize_with_origin_staged(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &lineage, const critical_operation_id &epoch,
+	const economic_account_key &opening, const critical_operation_id &creating_operation,
+	operations *ops, std::string *error, flatfile_accounting_staging_view *view,
+	flatfile_baseline_initialization_origin origin)
+{
 	return guarded(
 		[&]
 		{
@@ -404,24 +494,79 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::initialize(
 			     opening.kind == economic_account_kind::opening &&
 			     opening.lineage.bytes == lineage.bytes &&
 			     !critical_operation_id_is_zero(creating_operation));
+			if (view)
+				authority(view->begin(root, lock, ops));
+			const auto retained = membership(root, lock, lineage, epoch, view);
+			need(origin ==
+				     flatfile_baseline_initialization_origin::baseline_participant ||
+			     origin == flatfile_baseline_initialization_origin::lifecycle_owner);
+			if (origin == flatfile_baseline_initialization_origin::lifecycle_owner)
+				need(retained.creating_operation.bytes ==
+						     creating_operation.bytes &&
+					     retained.transition_kind == 1,
+				     status::conflict);
+			if (retained.baseline_initialization ==
+			    flatfile_baseline_initialization::initialized)
+			{
+				// Historical unknown generic retries stay unknown. A lifecycle
+				// install cannot adopt unknown or generic initialization as its own.
+				need(retained.initialization_origin == origin ||
+					     (origin == flatfile_baseline_initialization_origin::
+								baseline_participant &&
+					      retained.initialization_origin ==
+						      flatfile_baseline_initialization_origin::
+							      legacy_unknown),
+				     status::conflict);
+				need(retained.baseline_initializing_operation.bytes ==
+						     creating_operation.bytes &&
+					     economic_account_key_equal(retained.baseline_opening,
+									opening),
+				     status::conflict);
+				const auto book = load(root, lock, lineage, epoch, view);
+				(void)load_indexes(root, book, view);
+				throw failure{ status::already_exists };
+			}
+			need(retained.baseline_initialization ==
+			     flatfile_baseline_initialization::never_initialized);
+			need(retained.initialization_origin ==
+			     flatfile_baseline_initialization_origin::legacy_unknown);
 			room(*ops);
-			need(ops->size() + FLATFILE_BASELINE_BUCKETS + 1 <=
+			need(ops->size() + FLATFILE_BASELINE_BUCKETS + 3 <=
 				     flatfile_authority_transaction_maximum_operations,
 			     status::capacity);
-			membership(root, lock, lineage, epoch);
+			flatfile_economic_control control;
+			if (view)
+				authority(view->control(&control));
+			else
+				authority(flatfile_economic_control_read(root, lock, &control,
+									 nullptr));
 			const auto base = prefix(lineage, epoch);
 			empty_namespace(root, base);
 			head book{ lineage, epoch, creating_operation, opening, 0, {} };
 			auto result = *ops;
+			std::unique_ptr<flatfile_accounting_staging_view> candidate_view;
+			if (view)
+				candidate_view.reset(
+					new flatfile_accounting_staging_view(*view, result));
 			for (size_t slot = 0; slot < FLATFILE_BASELINE_BUCKETS; ++slot)
 			{
 				auto encoded = encode(book, slot, {});
 				book.indexes[slot] = hash(encoded);
-				append(result, index_name(base, slot), std::move(encoded));
+				append(result, index_name(base, slot), std::move(encoded),
+				       candidate_view.get());
 			}
-			append(result, base + "head.ebc", encode(book));
+			append(result, base + "head.ebc", encode(book), candidate_view.get());
+			// Marker, catalog hash and complete empty book publish atomically.
+			authority(flatfile_accounting_authority_storage::
+					  stage_baseline_initialization_with_origin_staged(
+						  root, lock, control.revision, lineage, epoch,
+						  opening, creating_operation, &result, error,
+						  candidate_view.get(), origin));
 			room(result);
-			*ops = std::move(result);
+			if (view)
+				authority(view->adopt(*candidate_view));
+			else
+				*ops = std::move(result);
 		},
 		error);
 }
@@ -431,30 +576,60 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::stage(
 	const critical_command &command, const economic_prepared_baseline &prepared,
 	operations *ops, std::string *error)
 {
+	return stage_staged(root, lock, command, prepared, ops, error, nullptr, nullptr);
+}
+flatfile_accounting_status flatfile_accounting_baseline_storage::stage_staged(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_command &command, const economic_prepared_baseline &prepared,
+	operations *ops, std::string *error, flatfile_accounting_staging_view *view,
+	uint64_t *verified_revision)
+{
 	return guarded(
 		[&]
 		{
 			need(ops);
+			if (view)
+				authority(view->begin(root, lock, ops));
 			room(*ops);
 			economic_accounting_plan plan;
 			checked(economic_baseline_command_plan(command, prepared, &plan));
 			flatfile_accounting_record retained;
 			bytes source;
-			auto existing = flatfile_accounting_baseline_lookup(
-				root, lock, command, &retained, &source, error);
+			bool staged_book = false;
+			if (view)
+			{
+				bytes probe;
+				authority(view->read(prefix(plan.metadata.lineage,
+							    plan.metadata.epoch) +
+							     "head.ebc",
+						     656, &probe, &staged_book));
+			}
+			auto existing = staged_book ? status::not_found :
+						      flatfile_accounting_baseline_lookup(
+							      root, lock, command, &retained,
+							      &source, error);
 			if (existing == status::ok)
+			{
+				if (verified_revision)
+					*verified_revision = retained.durable_revision;
 				throw failure{ status::already_exists };
+			}
 			need(existing == status::not_found, existing);
-			auto book = load(root, lock, plan.metadata.lineage, plan.metadata.epoch);
+			const auto retained_epoch = membership(root, lock, plan.metadata.lineage,
+							       plan.metadata.epoch, view);
+			need(retained_epoch.baseline_initialization ==
+			     flatfile_baseline_initialization::initialized);
+			auto book =
+				load(root, lock, plan.metadata.lineage, plan.metadata.epoch, view);
 			need(economic_account_key_equal(book.opening,
 							prepared.witness().opening_account));
 			need(book.revision != UINT64_MAX, status::capacity);
 			const auto base = prefix(book.lineage, book.epoch);
 			const auto name = base + hex(command.operation_id) + ".eab";
-			absent(root, name);
+			absent(root, name, view);
 			std::array<bucket, FLATFILE_BASELINE_BUCKETS> indexes;
 			for (size_t slot = 0; slot < FLATFILE_BASELINE_BUCKETS; ++slot)
-				indexes[slot] = load(root, book, slot);
+				indexes[slot] = load(root, book, slot, view);
 			std::array<bucket, FLATFILE_BASELINE_BUCKETS> added;
 			for (const auto &entry : reservations(prepared))
 			{
@@ -477,6 +652,10 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::stage(
 				     flatfile_authority_transaction_maximum_operations,
 			     status::capacity);
 			auto result = *ops;
+			std::unique_ptr<flatfile_accounting_staging_view> candidate_view;
+			if (view)
+				candidate_view.reset(
+					new flatfile_accounting_staging_view(*view, result));
 			for (size_t slot = 0; slot < FLATFILE_BASELINE_BUCKETS; ++slot)
 				if (!added[slot].empty())
 				{
@@ -489,13 +668,14 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::stage(
 						   std::back_inserter(merged), less);
 					auto encoded = encode(book, slot, merged);
 					book.indexes[slot] = hash(encoded);
-					append(result, index_name(base, slot), std::move(encoded));
+					append(result, index_name(base, slot), std::move(encoded),
+					       candidate_view.get());
 				}
 			checked(economic_baseline_encode(prepared, &source));
-			append(result, name, std::move(source));
+			append(result, name, std::move(source), candidate_view.get());
 			++book.revision;
 			book.last_operation = command.operation_id;
-			append(result, base + "head.ebc", encode(book));
+			append(result, base + "head.ebc", encode(book), candidate_view.get());
 			flatfile_accounting_record record;
 			record.command = command;
 			record.durable_revision = book.revision;
@@ -508,10 +688,34 @@ flatfile_accounting_status flatfile_accounting_baseline_storage::stage(
 			operations receipt;
 			checked(flatfile_accounting_storage::stage(root, lock, record, &receipt,
 								   error));
-			for (auto &operation : receipt)
-				result.push_back(std::move(operation));
+			if (candidate_view)
+				authority(candidate_view->merge(receipt, &result));
+			else
+				for (auto &operation : receipt)
+					result.push_back(std::move(operation));
 			room(result);
-			*ops = std::move(result);
+			if (view)
+				authority(view->adopt(*candidate_view));
+			else
+				*ops = std::move(result);
+			if (verified_revision)
+				*verified_revision = record.durable_revision;
+		},
+		error);
+}
+
+flatfile_accounting_status flatfile_accounting_baseline_storage::verify_structure_locked(
+	const std::string &root, const flatfile_authority_lock &lock,
+	const critical_operation_id &lineage, const critical_operation_id &epoch,
+	const economic_account_key &opening, std::string *error)
+{
+	return guarded(
+		[&]
+		{
+			need(lock.matches(root));
+			const auto book = load(root, lock, lineage, epoch);
+			need(economic_account_key_equal(book.opening, opening));
+			(void)load_indexes(root, book);
 		},
 		error);
 }

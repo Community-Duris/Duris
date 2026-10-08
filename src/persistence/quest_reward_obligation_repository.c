@@ -9,6 +9,7 @@
 #include <new>
 #include <string>
 #include <utility>
+#include <type_traits>
 #include <map>
 
 #ifndef __NO_MYSQL__
@@ -501,6 +502,106 @@ quest_reward_obligation_result quest_reward_xp_entitlement_repository_pending(
 #endif
 }
 
+quest_reward_obligation_result quest_reward_obligation_repository_read_ack_terms(
+	MYSQL *connection, uint32_t player_pid, const critical_operation_id &operation,
+	std::vector<uint8_t> *literal, quest_reward_continuation *terms,
+	unsigned int *database_error, quest_reward_read_metrics *metrics) noexcept
+{
+	quest_reward_read_metrics local;
+	if (!metrics)
+		metrics = &local;
+	*metrics = {};
+	if (database_error)
+		*database_error = 0;
+	if (!connection || !player_pid || critical_operation_id_is_zero(operation) || !literal ||
+	    !terms)
+		return quest_reward_obligation_result::invalid;
+#ifdef __NO_MYSQL__
+	if (database_error)
+		*database_error = ENOTSUP;
+	return quest_reward_obligation_result::database_error;
+#else
+	try
+	{
+		char hex[33]{};
+		if (!critical_operation_id_to_hex(operation, hex, sizeof(hex)))
+			return quest_reward_obligation_result::invalid;
+		const std::string query =
+			"SELECT OCTET_LENGTH(continuation),LEFT(continuation," +
+			std::to_string(ITEM_TRANSFER_CONTINUATION_MAX_BYTES + 1) +
+			") FROM quest_reward_obligation WHERE offering_operation_id=UNHEX('" + hex +
+			"') AND player_pid=" + std::to_string(player_pid) + " LIMIT 2";
+		++metrics->query_count;
+		if (mysql_real_query(connection, query.data(), query.size()))
+		{
+			if (database_error)
+				*database_error = mysql_errno(connection);
+			return quest_reward_obligation_result::database_error;
+		}
+		std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)> rows(
+			mysql_store_result(connection), mysql_free_result);
+		if (!rows)
+		{
+			if (database_error)
+				*database_error = mysql_errno(connection);
+			return quest_reward_obligation_result::database_error;
+		}
+		const auto row = mysql_fetch_row(rows.get());
+		if (!row)
+		{
+			if (mysql_errno(connection))
+			{
+				if (database_error)
+					*database_error = mysql_errno(connection);
+				return quest_reward_obligation_result::database_error;
+			}
+			return quest_reward_obligation_result::not_found;
+		}
+		const auto lengths = mysql_fetch_lengths(rows.get());
+		++metrics->row_count;
+		if (!lengths || mysql_num_fields(rows.get()) != 2)
+			return quest_reward_obligation_result::corrupt;
+		metrics->byte_count += (row[0] ? lengths[0] : 0) + (row[1] ? lengths[1] : 0);
+		uint64_t full = 0;
+		quest_reward_continuation candidate;
+		if (!row[0] || !row[1] || !receipt_number(row[0], &full) || !full ||
+		    full > ITEM_TRANSFER_CONTINUATION_MAX_BYTES || full != lengths[1] ||
+		    !quest_reward_continuation_decode(reinterpret_cast<const uint8_t *>(row[1]),
+						      lengths[1], &candidate) ||
+		    candidate.player_pid != player_pid ||
+		    (quest_reward_is_fee_only(candidate) &&
+		     candidate.action_operation.bytes != operation.bytes))
+			return quest_reward_obligation_result::corrupt;
+		std::vector<uint8_t> bytes(reinterpret_cast<const uint8_t *>(row[1]),
+					   reinterpret_cast<const uint8_t *>(row[1]) + lengths[1]);
+		if (const auto extra = mysql_fetch_row(rows.get()))
+		{
+			const auto sizes = mysql_fetch_lengths(rows.get());
+			++metrics->row_count;
+			if (sizes)
+				metrics->byte_count +=
+					(extra[0] ? sizes[0] : 0) + (extra[1] ? sizes[1] : 0);
+			return quest_reward_obligation_result::corrupt;
+		}
+		if (mysql_errno(connection))
+		{
+			if (database_error)
+				*database_error = mysql_errno(connection);
+			return quest_reward_obligation_result::database_error;
+		}
+		*literal = std::move(bytes);
+		*terms = std::move(candidate);
+		return quest_reward_obligation_result::ok;
+	}
+	catch (...)
+	{
+		if (database_error)
+			*database_error = ENOMEM;
+		return quest_reward_obligation_result::database_error;
+	}
+#endif
+}
+
 quest_reward_obligation_result
 quest_reward_obligation_repository_acknowledge(MYSQL *connection, uint32_t player_pid,
 					       const critical_operation_id &offering_operation,
@@ -612,5 +713,205 @@ quest_reward_obligation_repository_acknowledge(MYSQL *connection, uint32_t playe
 		return quest_reward_obligation_result::already_acknowledged;
 	return pending_effects ? quest_reward_obligation_result::pending_effects :
 				 quest_reward_obligation_result::corrupt;
+#endif
+}
+
+quest_reward_obligation_result quest_reward_obligation_repository_read_exact_in_transaction(
+	MYSQL *connection, uint32_t player_pid, const critical_operation_id &offering_operation,
+	std::span<const uint8_t> original_continuation, quest_reward_obligation_readback *output,
+	unsigned int *database_error_code, quest_reward_read_metrics *metrics) noexcept
+{
+	quest_reward_read_metrics local_metrics;
+	if (!metrics)
+		metrics = &local_metrics;
+	*metrics = {};
+	if (database_error_code)
+		*database_error_code = 0;
+	if (!connection || !player_pid || !output ||
+	    critical_operation_id_is_zero(offering_operation) || original_continuation.empty() ||
+	    original_continuation.size() > ITEM_TRANSFER_CONTINUATION_MAX_BYTES)
+		return quest_reward_obligation_result::invalid;
+#ifdef __NO_MYSQL__
+	if (database_error_code)
+		*database_error_code = ENOTSUP;
+	return quest_reward_obligation_result::database_error;
+#else
+	try
+	{
+		const unsigned long session = mysql_thread_id(connection);
+		auto same_session = [&]()
+		{
+			using flag = std::remove_pointer_t<decltype(MYSQL_BIND{}.is_null)>;
+			flag reconnect = true;
+			return session && mysql_thread_id(connection) == session &&
+			       (connection->server_status & SERVER_STATUS_IN_TRANS) &&
+			       (connection->server_status & SERVER_STATUS_AUTOCOMMIT) &&
+			       !mysql_get_option(connection, MYSQL_OPT_RECONNECT, &reconnect) &&
+			       !reconnect;
+		};
+		auto database_failure = [&](unsigned int error)
+		{
+			if (database_error_code)
+				*database_error_code = error ? error : EIO;
+			return quest_reward_obligation_result::database_error;
+		};
+		if (!same_session())
+			return database_failure(EINVAL);
+		quest_reward_obligation_readback candidate;
+		auto &record = candidate.record;
+		if (!quest_reward_continuation_decode(original_continuation.data(),
+						      original_continuation.size(),
+						      &record.terms) ||
+		    record.terms.player_pid != player_pid)
+			return quest_reward_obligation_result::invalid;
+		record.offering_operation = offering_operation;
+		char hex[33] = {};
+		if (!critical_operation_id_to_hex(offering_operation, hex, sizeof(hex)))
+			return quest_reward_obligation_result::invalid;
+		const std::string exact_operation = "UNHEX('" + std::string(hex) + "')";
+		const std::string obligation_sql =
+			"SELECT q.continuation,i.status,i.result_code,q.xp_applied_mask,"
+			"q.acknowledged_at IS NOT NULL FROM quest_reward_obligation q "
+			"LEFT JOIN critical_operation_inbox i ON i.operation_id=q.offering_operation_id "
+			"WHERE q.offering_operation_id=" +
+			exact_operation + " AND q.player_pid=" + std::to_string(player_pid) +
+			" LIMIT 2";
+		using rows_pointer = std::unique_ptr<MYSQL_RES, decltype(&mysql_free_result)>;
+		auto query = [&](const std::string &sql, rows_pointer &rows)
+		{
+			if (!same_session())
+				return database_failure(EINVAL);
+			++metrics->query_count;
+			if (mysql_real_query(connection, sql.data(), sql.size()))
+				return database_failure(mysql_errno(connection));
+			rows.reset(mysql_store_result(connection));
+			if (!rows)
+				return database_failure(mysql_errno(connection));
+			if (!same_session())
+				return database_failure(EINVAL);
+			return quest_reward_obligation_result::ok;
+		};
+		auto count_row = [&](MYSQL_RES *rows, MYSQL_ROW row)
+		{
+			auto lengths = mysql_fetch_lengths(rows);
+			if (!lengths)
+				return static_cast<unsigned long *>(nullptr);
+			++metrics->row_count;
+			for (unsigned int column = 0; column < mysql_num_fields(rows); ++column)
+				metrics->byte_count += row[column] ? lengths[column] : 0;
+			return lengths;
+		};
+		rows_pointer rows(nullptr, mysql_free_result);
+		auto result = query(obligation_sql, rows);
+		if (result != quest_reward_obligation_result::ok)
+			return result;
+		auto row = mysql_fetch_row(rows.get());
+		if (!row)
+			return quest_reward_obligation_result::not_found;
+		auto lengths = count_row(rows.get(), row);
+		uint64_t acknowledged = 0, status = 0, code = 0;
+		if (!lengths || !row[0] || lengths[0] != original_continuation.size() ||
+		    memcmp(row[0], original_continuation.data(), original_continuation.size()) ||
+		    !receipt_number(row[1], &status) || status != 1 ||
+		    !receipt_number(row[2], &code) || code ||
+		    !receipt_number(row[3], &record.xp_applied_mask) ||
+		    !receipt_number(row[4], &acknowledged) || acknowledged > 1)
+			return quest_reward_obligation_result::corrupt;
+		if ((row = mysql_fetch_row(rows.get())))
+		{
+			count_row(rows.get(), row);
+			return quest_reward_obligation_result::corrupt;
+		}
+		rows.reset();
+		candidate.acknowledged = acknowledged != 0;
+		record.continuation.assign(original_continuation.begin(),
+					   original_continuation.end());
+		const size_t expected_xp = record.terms.version >= 5 &&
+							   record.terms.credited_count > 1 ?
+						   record.terms.xp_award_count :
+						   0;
+		const std::string xp_sql =
+			"SELECT recipient_pid,reward_index,amount,applied_at IS NOT NULL "
+			"FROM quest_reward_xp_entitlement WHERE offering_operation_id=" +
+			exact_operation + " ORDER BY reward_index,recipient_pid LIMIT " +
+			std::to_string(expected_xp + 1);
+		result = query(xp_sql, rows);
+		if (result != quest_reward_obligation_result::ok)
+			return result;
+		std::array<bool, QUEST_REWARD_MAX_CREDITED_PIDS> seen = {};
+		size_t xp_rows = 0;
+		uint64_t owner_entitlement_mask = 0;
+		while ((row = mysql_fetch_row(rows.get())))
+		{
+			lengths = count_row(rows.get(), row);
+			uint64_t pid = 0, index = 0, amount = 0, applied = 0;
+			if (!lengths || xp_rows >= expected_xp || !receipt_number(row[0], &pid) ||
+			    !receipt_number(row[1], &index) || !receipt_number(row[2], &amount) ||
+			    !receipt_number(row[3], &applied) || applied > 1)
+				return quest_reward_obligation_result::corrupt;
+			size_t found = expected_xp;
+			for (size_t award = 0; award < expected_xp; ++award)
+			{
+				const auto &original = record.terms.xp_awards[award];
+				if (original.recipient_pid == pid &&
+				    original.reward_index == index && original.amount == amount)
+				{
+					found = award;
+					break;
+				}
+			}
+			if (found == expected_xp || seen[found] ||
+			    (candidate.acknowledged && !applied))
+				return quest_reward_obligation_result::corrupt;
+			seen[found] = true;
+			if (applied)
+			{
+				candidate.xp_entitlement_applied_mask |= UINT64_C(1) << found;
+				if (pid == player_pid)
+					owner_entitlement_mask |= UINT64_C(1) << index;
+			}
+			++xp_rows;
+		}
+		if (xp_rows != expected_xp)
+			return quest_reward_obligation_result::corrupt;
+		if (record.terms.version >= 5 && record.terms.credited_count > 1 &&
+		    record.xp_applied_mask != owner_entitlement_mask)
+			return quest_reward_obligation_result::corrupt;
+		rows.reset();
+		uint64_t required_xp_mask = 0, required_economic_mask = 0;
+		for (size_t index = 0; index < record.terms.reward_count; ++index)
+		{
+			const auto type = record.terms.rewards[index].type;
+			if (type == 5U)
+				required_xp_mask |= UINT64_C(1) << index;
+			if (type == 1U || type == 3U)
+				required_economic_mask |= UINT64_C(1) << index;
+		}
+		if (record.xp_applied_mask & ~required_xp_mask)
+			return quest_reward_obligation_result::corrupt;
+		if (!same_session())
+			return database_failure(EINVAL);
+		std::vector<quest_reward_obligation_record> selected;
+		selected.push_back(std::move(record));
+		result =
+			read_economic_receipts(connection, &selected, database_error_code, metrics);
+		if (result != quest_reward_obligation_result::ok)
+			return result;
+		record = std::move(selected.front());
+		if (candidate.acknowledged &&
+		    (record.xp_applied_mask != required_xp_mask ||
+		     record.economic_applied_mask != required_economic_mask))
+			return quest_reward_obligation_result::corrupt;
+		if (!same_session())
+			return database_failure(EINVAL);
+		*output = std::move(candidate);
+		return quest_reward_obligation_result::ok;
+	}
+	catch (const std::bad_alloc &)
+	{
+		if (database_error_code)
+			*database_error_code = ENOMEM;
+		return quest_reward_obligation_result::database_error;
+	}
 #endif
 }

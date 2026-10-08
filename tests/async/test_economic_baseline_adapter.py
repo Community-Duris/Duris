@@ -45,13 +45,15 @@ with tempfile.TemporaryDirectory(prefix='duris-baseline-') as temporary:
         if mode=='client-free':command += ['-D__NO_MYSQL__', '-I'+str(ROOT/'src/no_mysql')]
         command += [str(ROOT/name) for name in ('tests/async/economic_baseline_adapter_test.cpp',
             'src/economy/economic_baseline_command.c','src/economy/economic_baseline_adapter.c','src/economy/economic_baseline_codec.c','src/economy/economic_accounting_intent.c',
-            'src/economy/economic_accounting_plan.c','src/economy/economic_accounting_types.c',
+            'src/economy/economic_accounting_plan.c', 'src/economy/economic_source_event.c','src/economy/economic_accounting_types.c',
             'src/economy/economic_command_admission.c','src/economy/economic_currency_adapter.c',
             'src/persistence/critical_command_coordinator.c','src/persistence/critical_command_journal.c',
             'src/flatfile/flatfile_accounting_store.c','src/flatfile/flatfile_authority_transaction.c','src/flatfile/flatfile_store.c',
-            'src/economy/currency_command.c','src/persistence/critical_command.c','src/item/item_transfer_command.c', "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",
+            'src/economy/currency_command.c','src/persistence/critical_command.c','src/item/item_transfer_command.c', 'src/world/quest_mobile_native_reference.c', "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",
             'src/economy/coin_transfer_command.c','src/economy/coin_transfer_accounting.c',
-            'src/economy/item_transfer_accounting.c','src/player/player_snapshot_codec.c')]
+            'src/economy/item_transfer_accounting.c','src/player/player_snapshot_codec.c',
+            'src/economy/collector_accounting.c','src/economy/collector_command.c',
+            'src/economy/collector_policy.c','src/economy/collector_codec.c')]
         command+=['-Wl,--wrap=_Znwm,--wrap=_Znam','-lcrypto','-lz','-pthread','-o',str(executable)]
         subprocess.run(command,check=True)
         environment=dict(os.environ,ASAN_OPTIONS='detect_leaks=1:halt_on_error=1',UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1')

@@ -320,6 +320,42 @@ int main(int argc, char **argv)
     const std::string journal = directory + "/player-save.journal";
     const std::string quarantine = directory + "/player-save.journal.quarantine.archive";
 
+    // A ward wire envelope must match its journal header while decoding to
+    // the ordinary accounting schema, including native quarantine recovery.
+    {
+        const std::string isolated = directory + "-wards";
+        auto ward = make_snapshot(9201, 1);
+        player_affect_snapshot affect{};
+        affect.type = 144; affect.duration = 2400; affect.flags = 16646;
+        affect.ward_source_type = 2; affect.ward_source_uid = 99112342;
+        affect.ward_full_duration = 2400; affect.ward_capacity_max = 3200000000LL;
+        affect.ward_refresh_remaining = 123;
+        ward.affects.push_back(affect);
+        assert(player_save_journal_init(isolated.c_str()));
+        assert(player_save_journal_append(ward) == player_save_journal_result::ok);
+        const auto frame = read_file_bytes(isolated + "/player-save.journal");
+        assert(frame[44] == PLAYER_SNAPSHOT_SCHEMA_VERSION + PLAYER_SNAPSHOT_WARD_WIRE_OFFSET);
+        player_save_journal_shutdown();
+        assert(player_save_journal_init(isolated.c_str()));
+        replay_state state;
+        assert(player_save_journal_replay(replay_apply, &state) == player_save_journal_result::ok);
+        assert(state.applied.size() == 1 && !player_save_journal_pid_quarantined(ward.pid));
+        ward.revision = 2;
+        assert(player_save_journal_append(ward) == player_save_journal_result::ok);
+        assert(player_save_journal_worker_ack(ward, 2, nullptr));
+        assert(player_save_journal_health_copy().records == 0);
+        ward.revision = 3;
+        assert(player_save_journal_append(ward) == player_save_journal_result::ok);
+        player_save_journal_worker_terminal(ward, nullptr);
+        std::vector<player_snapshot> recovery;
+        std::array<uint8_t, 32> digest{};
+        assert(player_save_journal_recovery_inspect(ward.pid, &recovery, &digest) == player_save_journal_result::ok);
+        const auto &retained = recovery[0].affects.back();
+        assert(retained.ward_capacity == 0 && retained.ward_refresh_remaining == 123);
+        assert(retained.ward_source_uid == 99112342);
+        player_save_journal_shutdown();
+    }
+
     // Startup replay bypasses the live worker. Its original result must reach
     // diagnostics before quarantining, including exceptions, without changing
     // the native archive or losing a witness after the rolling history wraps.

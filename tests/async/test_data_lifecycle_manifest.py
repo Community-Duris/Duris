@@ -47,6 +47,11 @@ SCHEMA_FILES = (
     ROOT / "migrations" / "immutable" / "0051_player_item_runtime_state.sql",
     ROOT / "migrations" / "immutable" / "0053_craft_progression.sql",
     ROOT / "migrations" / "immutable" / "0055_sql_room_item_payload.sql",
+    ROOT / "migrations" / "immutable" / "0057_shopkeeper_item_runtime_state.sql",
+    ROOT / "migrations" / "immutable" / "0058_economic_baseline_command_admission_time.sql",
+    ROOT / "migrations" / "immutable" / "0059_quest_mobile_native.sql",
+    ROOT / "migrations" / "immutable" / "0060_native_mobile_item_owner.sql",
+    ROOT / "migrations" / "immutable" / "0061_economic_baseline_equipment.sql",
 )
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("validate_data_lifecycle", VALIDATOR)
 VALIDATOR_MODULE = importlib.util.module_from_spec(VALIDATOR_SPEC)
@@ -108,8 +113,8 @@ class LifecycleManifestTest(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads(result.stdout)
-        self.assertEqual(report["database_tables"], 226)
-        self.assertEqual(report["non_database_stores"], 50)
+        self.assertEqual(report["database_tables"], 228)
+        self.assertEqual(report["non_database_stores"], 51)
         self.assertEqual(report["redis_surfaces"], 42)
         self.assertFalse(report["destructive_rules_enabled"])
 
@@ -258,7 +263,7 @@ class LifecycleManifestTest(unittest.TestCase):
         }
         stores = {row["id"] for row in self.manifest["entries"]
                   if row["id"].startswith(("database:economic_", "file:economic-"))} | shared
-        self.assertEqual(len(stores), 35)
+        self.assertEqual(len(stores), 36)
         for entry_id in sorted(stores):
             for field, value in (("protected_record", False), ("season_action", "reset_delete"),
                                  ("terminal_action", "deactivate")):

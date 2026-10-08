@@ -10,6 +10,12 @@ MYSQL *sql_pool_acquire(void)
 
 void sql_pool_release(MYSQL *) {}
 
+bool sql_pool_retire_owned_connection(MYSQL *)
+{
+	// No pool lease exists in this fixture; never consume a borrowed/direct handle.
+	return false;
+}
+
 MYSQL *sql_pool_replace_connection(MYSQL *)
 {
 	return nullptr;

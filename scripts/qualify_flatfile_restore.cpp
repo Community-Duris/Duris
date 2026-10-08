@@ -22,6 +22,19 @@
 #include "flatfile/flatfile_item_repository.h"
 #include "flatfile/flatfile_craft_progression.h"
 #include "kingdom/kingdom_restore.h"
+#include "world/quest_mobile_native.h"
+#include "qualify_flatfile_economic_records.h"
+#include "qualify_flatfile_economic_namespace.h"
+#include "qualify_flatfile_economic_money_history.h"
+#include "qualify_flatfile_wallet_bank.h"
+#include "qualify_flatfile_auction_money.h"
+#include "qualify_flatfile_auction_source_balance.h"
+#include "qualify_flatfile_auction_source_credit.h"
+#include "qualify_flatfile_auction_source_consumption.h"
+#include "qualify_flatfile_native_custody.h"
+#include "qualify_flatfile_native_world.h"
+#include "qualify_flatfile_native_locker.h"
+#include "qualify_flatfile_native_shopkeeper.h"
 
 // Native parsers may log diagnostics containing identities; this process reports
 // only aggregate success or a fixed failure code.
@@ -63,6 +76,42 @@ template <typename Result> static bool readable(Result result)
 	return result == Result::ok || result == Result::not_found;
 }
 
+static void current_money_findings(const restore_current_money::result &result)
+{
+	bool comma = false;
+	for (const auto &finding : result.findings)
+	{
+		if (comma)
+			std::cout << ',';
+		comma = true;
+		std::cout << "{\"epoch\":\"" << restore_economic_baseline::hex(finding.epoch)
+			  << "\",\"operation\":\""
+			  << restore_economic_baseline::hex(finding.operation)
+			  << "\",\"account\":\"" << restore_economic_baseline::hex(finding.account)
+			  << "\",\"code\":\"" << finding.code
+			  << "\",\"native_kind\":" << finding.native_kind
+			  << ",\"native_id\":" << finding.native_id;
+		if (finding.observed)
+		{
+			const auto &value = *finding.observed;
+			std::cout << ",\"observed\":{\"native_revision\":" << value.native_revision
+				  << ",\"expected_revision\":" << value.expected_revision
+				  << ",\"native\":[";
+			for (size_t i = 0; i < 4; ++i)
+			{
+				std::cout << (i ? "," : "");
+				restore_current_money::native_decimal(std::cout, value.native[i]);
+			}
+			std::cout << "],\"expected\":[";
+			for (size_t i = 0; i < 4; ++i)
+				std::cout << (i ? "," : "") << value.expected[i];
+			std::cout << "]}";
+		}
+		std::cout << '}';
+	}
+	std::cout << "]}\n";
+}
+
 static std::string account_name(const std::string &stem)
 {
 	require(!stem.empty() && stem.size() % 2 == 0 &&
@@ -79,6 +128,38 @@ static std::string account_name(const std::string &stem)
 		name += character;
 	}
 	return name;
+}
+
+// Validate copied native image values after authority-bundle recovery. The
+// value decoder does not recover storage, issue IDs, publish or authenticate
+// birth/source/epoch authority. Independent economic evidence remains separate.
+static void qualify_native_mobile_images(const std::filesystem::path &directory)
+{
+	struct stat status = {};
+	require(lstat(directory.c_str(), &status) == 0 && S_ISDIR(status.st_mode));
+	for (const auto &entry : std::filesystem::directory_iterator(directory))
+	{
+		const auto name = entry.path().filename().string();
+		if (!name.starts_with("quest-mobile-native"))
+			continue;
+		const std::string prefix = "quest-mobile-native-", extension = ".qmn";
+		require(name.starts_with(prefix) && name.ends_with(extension) &&
+			name.size() > prefix.size() + extension.size());
+		const auto identity =
+			name.substr(prefix.size(), name.size() - prefix.size() - extension.size());
+		uint64_t lifetime = 0;
+		const auto parsed = std::from_chars(identity.data(),
+						    identity.data() + identity.size(), lifetime);
+		require(parsed.ec == std::errc() &&
+			parsed.ptr == identity.data() + identity.size() && lifetime &&
+			lifetime != UINT64_MAX && identity == std::to_string(lifetime));
+		const auto encoded = restore_economic_authority::file_bytes(
+			directory, name, PLAYER_SNAPSHOT_MAX_BYTES);
+		quest_mobile_native_image image;
+		require(quest_mobile_native_image_decode(encoded, &image) ==
+				player_snapshot_codec_result::ok &&
+			image.reference.mobile_instance_id == lifetime);
+	}
 }
 
 // Locker identification stores durable payment receipts alongside the critical
@@ -202,6 +283,736 @@ int main(int argc, char **argv)
 {
 	try
 	{
+		if (restore_economic_namespace::command(argc, argv))
+			return 0;
+		if (argc == 7 && std::string(argv[1]) == "--economic-authority-page")
+		{
+			using namespace restore_economic_authority;
+			const std::string direction = argv[3], bucket_text = argv[4];
+			need(direction == "mapping" || direction == "native");
+			unsigned bucket = 0;
+			auto parsed = std::from_chars(bucket_text.data(),
+						      bucket_text.data() + bucket_text.size(),
+						      bucket);
+			need(parsed.ec == std::errc{} &&
+			     parsed.ptr == bucket_text.data() + bucket_text.size() &&
+			     std::to_string(bucket) == bucket_text && bucket < buckets);
+			auto decode = [&](const std::string &text)
+			{
+				bytes value;
+				if (text == "-")
+					return value;
+				need(text.size() % 2 == 0 &&
+				     (direction == "mapping" ?
+					      text.size() == 16 :
+					      text.size() >= 26 && text.size() <= 124));
+				for (size_t i = 0; i < text.size(); ++i)
+				{
+					const auto c = text[i];
+					need((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'));
+					if (i % 2 == 0)
+						value.push_back(0);
+					value.back() = static_cast<uint8_t>(
+						(value.back() << 4) |
+						(c <= '9' ? c - '0' : c - 'a' + 10));
+				}
+				need(nonzero(value));
+				return value;
+			};
+			audit_budget budget;
+			budget.remaining_bytes = 32 * 1024 * 1024;
+			budget.remaining_files = 64;
+			scoped_audit_budget scope(budget);
+			authority_read_lock lock(argv[2]);
+			const auto evidence = std::filesystem::path(argv[2]) / "economic-evidence";
+			if (!lock.locked() || !std::filesystem::exists(evidence) ||
+			    std::filesystem::is_empty(evidence))
+			{
+				lock.finish();
+				audit_checkpoint();
+				std::cout << "{\"initialized\":false}\n";
+				return 0;
+			}
+			auto result = restore_economic_authority::checker(argv[2]).page(
+				direction == "mapping", bucket, decode(argv[5]), decode(argv[6]),
+				std::string(argv[6]) != "-");
+			lock.finish();
+			audit_checkpoint();
+			auto hex = [](const auto &value)
+			{ return restore_economic_baseline::hex(value); };
+			std::cout
+				<< "{\"initialized\":true,\"lineage\":\"" << hex(result.lineage)
+				<< "\",\"authority_body_sha256\":\"" << hex(result.authority_body)
+				<< "\",\"direction\":\"" << direction << "\",\"bucket\":" << bucket
+				<< ",\"cursor\":\"" << hex(result.cursor) << "\",\"ceiling\":\""
+				<< hex(result.ceiling) << "\",\"rows\":" << result.rows
+				<< ",\"verified\":" << result.verified
+				<< ",\"bucket_rows\":" << result.bucket_rows
+				<< ",\"range_exhausted\":" << (result.exhausted ? "true" : "false")
+				<< ",\"invalid_links\":[";
+			for (size_t i = 0; i < result.invalid_links.size(); ++i)
+				std::cout << (i ? "," : "") << '"' << hex(result.invalid_links[i])
+					  << '"';
+			std::cout << "]}\n";
+			return 0;
+		}
+		if ((argc == 4 && std::string(argv[1]) == "--economic-baseline-history-context") ||
+		    (argc == 5 && std::string(argv[1]) == "--economic-baseline-history-control") ||
+		    (argc == 6 && std::string(argv[1]) == "--economic-baseline-history-page"))
+		{
+			using namespace restore_economic_authority;
+			need(std::filesystem::path(argv[2]).is_absolute());
+			auto decode = []<size_t Size>(const std::string &text)
+			{
+				std::array<uint8_t, Size> value = {};
+				need(text.size() == Size * 2);
+				for (size_t i = 0; i < text.size(); ++i)
+				{
+					const auto c = text[i];
+					need((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'));
+					value[i / 2] = static_cast<uint8_t>(
+						(value[i / 2] << 4) |
+						(c <= '9' ? c - '0' : c - 'a' + 10));
+				}
+				need(nonzero(value));
+				return value;
+			};
+			audit_budget budget;
+			scoped_audit_budget scope(budget);
+			authority_read_lock lock(argv[2]);
+			const auto evidence = std::filesystem::path(argv[2]) / "economic-evidence";
+			if (!lock.locked() || !std::filesystem::exists(evidence) ||
+			    std::filesystem::is_empty(evidence))
+			{
+				lock.finish();
+				audit_checkpoint();
+				std::cout << "{\"initialized\":false}\n";
+				return 0;
+			}
+			auto hex = [](const auto &value)
+			{ return restore_economic_baseline::hex(value); };
+			restore_economic_records::checker reader(argv[2]);
+			if (argc == 4)
+			{
+				const auto context = reader.history_context();
+				need(std::string(argv[3]) == "-" ||
+				     context.cut == decode.operator()<32>(argv[3]));
+				lock.finish();
+				audit_checkpoint();
+				std::cout << "{\"initialized\":true,\"lineage\":\""
+					  << hex(context.lineage) << "\",\"source_cut_sha256\":\""
+					  << hex(context.cut) << "\",\"legacy_unknown_epochs\":"
+					  << context.legacy_unknown_epochs << ",\"books\":[";
+				bool first = true;
+				for (const auto &[epoch, book] : context.books)
+				{
+					std::cout << (first ? "" : ",") << "{\"epoch\":\""
+						  << hex(epoch)
+						  << "\",\"revision\":" << book.revision
+						  << ",\"terminal\":\"" << hex(book.terminal)
+						  << "\"}";
+					first = false;
+				}
+				std::cout << "]}\n";
+			}
+			else if (argc == 5)
+			{
+				const auto control =
+					reader.history_control(decode.operator()<16>(argv[3]),
+							       decode.operator()<32>(argv[4]));
+				lock.finish();
+				audit_checkpoint();
+				std::cout << "{\"initialized\":true,\"lineage\":\""
+					  << hex(control.lineage) << "\",\"source_cut_sha256\":\""
+					  << hex(control.cut) << "\",\"epoch\":\""
+					  << hex(control.epoch)
+					  << "\",\"revision\":" << control.revision
+					  << ",\"terminal\":\"" << hex(control.terminal)
+					  << "\",\"reservations\":" << control.reservations
+					  << "}\n";
+			}
+			else
+			{
+				const std::string bucket_text = argv[3];
+				unsigned bucket = 0;
+				const auto parsed = std::from_chars(
+					bucket_text.data(), bucket_text.data() + bucket_text.size(),
+					bucket);
+				need(parsed.ec == std::errc{} &&
+				     parsed.ptr == bucket_text.data() + bucket_text.size() &&
+				     !bucket_text.empty() &&
+				     std::to_string(bucket) == bucket_text && bucket < buckets);
+				const auto value =
+					reader.history_page(bucket,
+							    std::string(argv[4]) == "-" ?
+								    identity{} :
+								    decode.operator()<16>(argv[4]),
+							    decode.operator()<32>(argv[5]));
+				lock.finish();
+				audit_checkpoint();
+				const auto &page = value.page;
+				std::cout << "{\"initialized\":true,\"lineage\":\""
+					  << hex(page.lineage) << "\",\"source_cut_sha256\":\""
+					  << hex(page.authority_body) << "\",\"bucket\":" << bucket
+					  << ",\"cursor\":\"" << hex(page.cursor)
+					  << "\",\"rows\":" << page.rows
+					  << ",\"verified\":" << page.verified
+					  << ",\"bucket_rows\":" << page.bucket_rows
+					  << ",\"range_exhausted\":"
+					  << (page.exhausted ? "true" : "false")
+					  << ",\"invalid_records\":[";
+				for (size_t i = 0; i < page.invalid_records.size(); ++i)
+					std::cout << (i ? "," : "") << '"'
+						  << hex(page.invalid_records[i]) << '"';
+				std::cout << "],\"baseline\":";
+				if (value.baseline)
+				{
+					const auto &entry = *value.baseline;
+					std::cout << "{\"epoch\":\"" << hex(entry.epoch)
+						  << "\",\"operation\":\"" << hex(entry.operation)
+						  << "\",\"revision\":" << entry.revision
+						  << ",\"reservations\":" << entry.reservations
+						  << ",\"book_reservations\":"
+						  << entry.book_reservations << ",\"terminal\":"
+						  << (entry.terminal ? "true" : "false") << '}';
+				}
+				else
+					std::cout << "null";
+				std::cout << "}\n";
+			}
+			return 0;
+		}
+		if (argc == 6 && (std::string(argv[1]) == "--economic-evidence-page" ||
+				  std::string(argv[1]) == "--economic-lifecycle-page" ||
+				  std::string(argv[1]) == "--economic-baseline-controls-page"))
+		{
+			using namespace restore_economic_authority;
+			const bool lifecycle = std::string(argv[1]) == "--economic-lifecycle-page";
+			const bool baseline = std::string(argv[1]) ==
+					      "--economic-baseline-controls-page";
+			const std::string bucket_text = argv[3], after_text = argv[4],
+					  ceiling_text = argv[5];
+			unsigned bucket = 0;
+			auto parsed = std::from_chars(bucket_text.data(),
+						      bucket_text.data() + bucket_text.size(),
+						      bucket);
+			need(parsed.ec == std::errc{} &&
+			     parsed.ptr == bucket_text.data() + bucket_text.size() &&
+			     !bucket_text.empty() && std::to_string(bucket) == bucket_text &&
+			     bucket < buckets);
+			auto decode = [](const std::string &text)
+			{
+				if (text == "-")
+					return identity{};
+				auto value = restore_economic_baseline::unhex(text);
+				need(nonzero(value));
+				return value;
+			};
+			audit_budget budget;
+			if (!lifecycle && !baseline)
+			{
+				budget.remaining_bytes = 32 * 1024 * 1024;
+				budget.remaining_files = 64;
+			}
+			scoped_audit_budget scope(budget);
+			authority_read_lock lock(argv[2]);
+			const auto evidence = std::filesystem::path(argv[2]) / "economic-evidence";
+			if (!lock.locked() || !std::filesystem::exists(evidence) ||
+			    std::filesystem::is_empty(evidence))
+			{
+				lock.finish();
+				audit_checkpoint();
+				std::cout << "{\"initialized\":false}\n";
+				return 0;
+			}
+			restore_economic_records::checker reader(argv[2]);
+			auto result =
+				baseline ? reader.baseline_controls_page(bucket, decode(after_text),
+									 decode(ceiling_text),
+									 ceiling_text != "-") :
+				lifecycle ? reader.lifecycle_page(bucket, decode(after_text),
+								  decode(ceiling_text),
+								  ceiling_text != "-") :
+					    reader.page(bucket, decode(after_text),
+							decode(ceiling_text), ceiling_text != "-");
+			lock.finish();
+			audit_checkpoint();
+			auto hex = [](const auto &value)
+			{ return restore_economic_baseline::hex(value); };
+			std::cout
+				<< "{\"initialized\":true,\"lineage\":\"" << hex(result.lineage)
+				<< "\",\"authority_body_sha256\":\"" << hex(result.authority_body)
+				<< "\",\"bucket\":" << bucket << ",\"cursor\":\""
+				<< hex(result.cursor) << "\",\"ceiling\":\"" << hex(result.ceiling)
+				<< "\",\"rows\":" << result.rows
+				<< ",\"verified\":" << result.verified
+				<< ",\"bucket_rows\":" << result.bucket_rows
+				<< ",\"range_exhausted\":" << (result.exhausted ? "true" : "false")
+				<< (baseline  ? ",\"invalid_books\":[" :
+				    lifecycle ? ",\"invalid_receipts\":[" :
+						",\"invalid_records\":[");
+			for (size_t i = 0; i < result.invalid_records.size(); ++i)
+				std::cout << (i ? "," : "") << '"' << hex(result.invalid_records[i])
+					  << '"';
+			std::cout << "]}\n";
+			return 0;
+		}
+		if ((argc == 3 || argc == 5) &&
+		    std::string(argv[1]) == "--economic-shopkeeper-custody-audit")
+		{
+			size_t limit = 100;
+			if (argc == 5)
+			{
+				restore_economic_authority::need(std::string(argv[3]) == "--limit");
+				limit = restore_wallet_bank::decimal(argv[4], 100);
+			}
+			restore_economic_authority::audit_budget budget;
+			const auto result =
+				restore_native_shopkeeper::audit(argv[2], budget, limit);
+			std::cout
+				<< "{\"format\":\"flatfile_shopkeeper_custody_audit_v1\","
+				   "\"scope\":\"durable_shopkeeper_literals_and_custody\",\"shop_present\":"
+				<< (result.shop_present ? "true" : "false")
+				<< ",\"custody_present\":"
+				<< (result.custody_present ? "true" : "false")
+				<< ",\"shop_version\":" << result.shop_version
+				<< ",\"shop_revision\":" << result.shop_revision
+				<< ",\"keepers\":" << result.keepers
+				<< ",\"affects\":" << result.affects
+				<< ",\"cash_known\":" << result.cash_known
+				<< ",\"cash_legacy\":" << result.cash_legacy
+				<< ",\"retained_cash_copper\":\"" << result.retained_cash << "\""
+				<< ",\"shop_items\":" << result.shop_items
+				<< ",\"shop_coin_literals\":" << result.shop_coins
+				<< ",\"compared_items\":" << result.compared_items
+				<< ",\"custody_shop_items\":" << result.custody_shop_items
+				<< ",\"other_custody_items\":" << result.other_custody_items
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"shop_owner_literals_verified\":"
+				<< (result.verified() ? "true" : "false")
+				<< ",\"other_owner_literals_compared\":false,\"native_holdings_compared\":false,"
+				   "\"item_history_verified\":false,\"full_R7_qualified\":false,\"release_qualified\":false,"
+				   "\"finding_counts\":{";
+			bool first = true;
+			for (const auto &[code, count] : result.finding_counts)
+			{
+				if (!first)
+					std::cout << ',';
+				first = false;
+				std::cout << '"' << code << "\":" << count;
+			}
+			std::cout << "},\"findings\":[";
+			first = true;
+			for (const auto &row : result.findings)
+			{
+				if (!first)
+					std::cout << ',';
+				first = false;
+				std::cout << "{\"code\":\"" << row.code << "\",\"uid\":\""
+					  << row.uid << "\"}";
+			}
+			std::cout << "]}\n";
+			return result.valid() ? 0 : 1;
+		}
+		if ((argc == 3 || argc == 5) &&
+		    std::string(argv[1]) == "--economic-locker-custody-audit")
+		{
+			size_t limit = 100;
+			if (argc == 5)
+			{
+				restore_economic_authority::need(std::string(argv[3]) == "--limit");
+				limit = restore_wallet_bank::decimal(argv[4], 100);
+			}
+			restore_economic_authority::audit_budget budget;
+			const auto result = restore_native_locker::audit(argv[2], budget, limit);
+			std::cout
+				<< "{\"format\":\"flatfile_locker_custody_audit_v1\","
+				   "\"scope\":\"durable_locker_literals_and_custody\",\"locker_present\":"
+				<< (result.locker_present ? "true" : "false")
+				<< ",\"custody_present\":"
+				<< (result.custody_present ? "true" : "false")
+				<< ",\"locker_version\":" << result.locker_version
+				<< ",\"locker_revision\":" << result.locker_revision
+				<< ",\"lockers\":" << result.lockers
+				<< ",\"chests\":" << result.chests
+				<< ",\"access_grants\":" << result.access
+				<< ",\"locker_items\":" << result.locker_items
+				<< ",\"locker_coin_literals\":" << result.locker_coins
+				<< ",\"compared_items\":" << result.compared_items
+				<< ",\"custody_locker_items\":" << result.custody_locker_items
+				<< ",\"other_custody_items\":" << result.other_custody_items
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"locker_owner_literals_verified\":"
+				<< (result.verified() ? "true" : "false")
+				<< ",\"other_owner_literals_compared\":false,\"native_holdings_compared\":false,"
+				   "\"item_history_verified\":false,\"full_R7_qualified\":false,\"release_qualified\":false,"
+				   "\"finding_counts\":{";
+			bool first = true;
+			for (const auto &[code, count] : result.finding_counts)
+			{
+				if (!first)
+					std::cout << ',';
+				first = false;
+				std::cout << '"' << code << "\":" << count;
+			}
+			std::cout << "},\"findings\":[";
+			first = true;
+			for (const auto &row : result.findings)
+			{
+				if (!first)
+					std::cout << ',';
+				first = false;
+				std::cout << "{\"code\":\"" << row.code << "\",\"uid\":\""
+					  << row.uid << "\"}";
+			}
+			std::cout << "]}\n";
+			return result.valid() ? 0 : 1;
+		}
+		if ((argc == 3 || argc == 5) &&
+		    std::string(argv[1]) == "--economic-world-custody-audit")
+		{
+			size_t limit = 100;
+			if (argc == 5)
+			{
+				restore_economic_authority::need(std::string(argv[3]) == "--limit");
+				limit = restore_wallet_bank::decimal(argv[4], 100);
+			}
+			restore_economic_authority::audit_budget budget;
+			const auto result = restore_native_world::audit(argv[2], budget, limit);
+			std::cout
+				<< "{\"format\":\"flatfile_world_custody_audit_v1\","
+				   "\"scope\":\"durable_world_literals_and_custody\",\"world_present\":"
+				<< (result.world_present ? "true" : "false")
+				<< ",\"custody_present\":"
+				<< (result.custody_present ? "true" : "false")
+				<< ",\"world_version\":" << result.world_version
+				<< ",\"world_revision\":" << result.world_revision
+				<< ",\"corpses\":" << result.corpses
+				<< ",\"saved_records\":" << result.saved
+				<< ",\"room_records\":" << result.rooms
+				<< ",\"world_items\":" << result.world_items
+				<< ",\"world_coin_literals\":" << result.world_coins
+				<< ",\"compared_items\":" << result.compared_items
+				<< ",\"custody_world_items\":" << result.custody_world_items
+				<< ",\"other_custody_items\":" << result.other_custody_items
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"world_owner_literals_verified\":"
+				<< (result.verified() ? "true" : "false")
+				<< ",\"other_owner_literals_compared\":false,\"native_holdings_compared\":false,"
+				   "\"item_history_verified\":false,\"full_R7_qualified\":false,\"release_qualified\":false,"
+				   "\"finding_counts\":{";
+			bool first = true;
+			for (const auto &[code, count] : result.finding_counts)
+			{
+				if (!first)
+					std::cout << ',';
+				first = false;
+				std::cout << '"' << code << "\":" << count;
+			}
+			std::cout << "},\"findings\":[";
+			first = true;
+			for (const auto &row : result.findings)
+			{
+				if (!first)
+					std::cout << ',';
+				first = false;
+				std::cout << "{\"code\":\"" << row.code << "\",\"uid\":\""
+					  << row.uid << "\"}";
+			}
+			std::cout << "]}\n";
+			return result.valid() ? 0 : 1;
+		}
+		if (argc == 3 && std::string(argv[1]) == "--economic-custody-catalog-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			const auto result = restore_native_custody::audit_catalog(argv[2], budget);
+			std::cout
+				<< "{\"format\":\"flatfile_custody_catalog_audit_v1\","
+				   "\"scope\":\"durable_custody_catalog_decoding\",\"catalog_present\":"
+				<< (result.present ? "true" : "false")
+				<< ",\"catalog_version\":" << result.version
+				<< ",\"catalog_revision\":" << result.revision
+				<< ",\"owners\":" << result.owners << ",\"items\":" << result.items
+				<< ",\"operations\":" << result.operations
+				<< ",\"active_items\":" << result.active
+				<< ",\"destroyed_items\":" << result.destroyed
+				<< ",\"quarantined_items\":" << result.quarantined
+				<< ",\"inline_coin_payloads\":" << result.inline_coin_payloads
+				<< ",\"coin_operations\":" << result.coin_operations
+				<< ",\"quest_operations\":" << result.quest_operations
+				<< ",\"custody_catalog_decoded\":"
+				<< (result.present ? "true" : "false")
+				<< ",\"native_holdings_compared\":false,\"owner_literals_compared\":false,"
+				   "\"item_history_verified\":false,\"full_R7_qualified\":false,"
+				   "\"release_qualified\":false}\n";
+			return 0;
+		}
+		if (argc == 3 && std::string(argv[1]) == "--economic-wallet-bank-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			auto result = restore_wallet_bank::audit(argv[2], budget);
+			std::cout
+				<< "{\"format\":\"flatfile_wallet_bank_audit_v1\","
+				   "\"scope\":\"current_wallet_bank_values_and_revisions\",\"initialized\":"
+				<< (result.initialized ? "true" : "false") << ",\"epoch\":\""
+				<< restore_economic_baseline::hex(result.epoch)
+				<< "\",\"active_wallet_bank_accounts\":" << result.active_accounts
+				<< ",\"retired_current_epoch_accounts\":"
+				<< result.retired_epoch_accounts
+				<< ",\"prior_epoch_wallet_bank_accounts\":"
+				<< result.prior_epoch_accounts
+				<< ",\"native_wallet_domains\":" << result.native_wallets
+				<< ",\"native_bank_domains\":" << result.native_banks
+				<< ",\"compared_accounts\":" << result.compared_accounts
+				<< ",\"unanchored_current_accounts\":"
+				<< result.unanchored_current_accounts
+				<< ",\"accepted_roots\":" << result.history.accepted_roots
+				<< ",\"ordinary_account_edges\":" << result.history.edges
+				<< ",\"history_invalid_accounts\":"
+				<< result.history.invalid_accounts
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"wallet_bank_holdings_compared\":"
+				<< (result.compared_accounts ? "true" : "false")
+				<< ",\"current_wallet_bank_values_verified\":"
+				<< (result.verified() ? "true" : "false")
+				<< ",\"account_origins_verified\":false,\"cross_epoch_continuity_verified\":false,"
+				   "\"other_money_domains_verified\":false,\"native_holdings_compared\":false,"
+				   "\"full_R7_qualified\":false,\"release_qualified\":false,\"findings\":[";
+			current_money_findings(result);
+			return result.valid() ? 0 : 1;
+		}
+
+		if (argc == 3 && std::string(argv[1]) == "--economic-auction-money-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			auto result = restore_auction_money::audit(argv[2], budget);
+			std::cout
+				<< "{\"format\":\"flatfile_auction_money_audit_v1\","
+				   "\"scope\":\"current_auction_escrow_claim_values_and_revisions\",\"initialized\":"
+				<< (result.initialized ? "true" : "false") << ",\"epoch\":\""
+				<< restore_economic_baseline::hex(result.epoch)
+				<< "\",\"active_auction_money_accounts\":" << result.active_accounts
+				<< ",\"retired_current_epoch_accounts\":"
+				<< result.retired_epoch_accounts
+				<< ",\"prior_epoch_auction_money_accounts\":"
+				<< result.prior_epoch_accounts << ",\"catalog_present\":"
+				<< (result.catalog_present ? "true" : "false")
+				<< ",\"claim_sources_present\":"
+				<< (result.sources_present ? "true" : "false")
+				<< ",\"catalog_revision\":" << result.catalog_revision
+				<< ",\"claim_source_revision\":" << result.source_revision
+				<< ",\"catalog_listings\":" << result.listings
+				<< ",\"catalog_operations\":" << result.operations
+				<< ",\"claim_source_rows\":" << result.source_rows
+				<< ",\"native_open_escrows\":" << result.native_escrows
+				<< ",\"native_pending_claims\":" << result.native_claims
+				<< ",\"compared_accounts\":" << result.compared_accounts
+				<< ",\"unanchored_current_accounts\":"
+				<< result.unanchored_current_accounts
+				<< ",\"accepted_roots\":" << result.history.accepted_roots
+				<< ",\"ordinary_account_edges\":" << result.history.edges
+				<< ",\"history_invalid_accounts\":"
+				<< result.history.invalid_accounts
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"auction_money_holdings_compared\":"
+				<< (result.compared_accounts ? "true" : "false")
+				<< ",\"current_auction_money_values_verified\":"
+				<< (result.verified() ? "true" : "false")
+				<< ",\"account_origins_verified\":false,\"claim_source_attribution_verified\":false,"
+				   "\"cross_epoch_continuity_verified\":false,\"other_money_domains_verified\":false,"
+				   "\"native_holdings_compared\":false,\"full_R7_qualified\":false,"
+				   "\"release_qualified\":false,\"findings\":[";
+			current_money_findings(result);
+			return result.valid() ? 0 : 1;
+		}
+		if (argc == 3 && std::string(argv[1]) == "--economic-auction-source-balance-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			const auto result = restore_auction_source_balance::audit(argv[2], budget);
+			std::cout
+				<< "{\"format\":\"flatfile_auction_source_balance_audit_v1\","
+				   "\"scope\":\"remaining_claim_sources_native_claims_and_retained_lifetimes\","
+				   "\"initialized\":"
+				<< (result.initialized ? "true" : "false") << ",\"epoch\":\""
+				<< restore_economic_baseline::hex(result.epoch)
+				<< "\",\"catalog_present\":"
+				<< (result.catalog_present ? "true" : "false")
+				<< ",\"claim_sources_present\":"
+				<< (result.sources_present ? "true" : "false")
+				<< ",\"catalog_revision\":" << result.catalog_revision
+				<< ",\"claim_source_revision\":" << result.source_revision
+				<< ",\"claim_source_rows\":" << result.source_rows
+				<< ",\"consumed_source_rows\":" << result.consumed_rows
+				<< ",\"unconsumed_source_rows\":" << result.unconsumed_rows
+				<< ",\"native_pending_claims\":" << result.native_claims
+				<< ",\"compared_claims\":" << result.compared_claims
+				<< ",\"current_auction_money_values_verified\":"
+				<< (result.current_values_verified ? "true" : "false")
+				<< ",\"remaining_claim_source_balances_verified\":"
+				<< (result.balance_verified() ? "true" : "false")
+				<< ",\"source_finding_count\":" << result.source_findings
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"account_origins_verified\":false,\"claim_source_attribution_verified\":false,"
+				   "\"claim_source_consumption_order_verified\":false,\"cross_epoch_continuity_verified\":false,"
+				   "\"other_money_domains_verified\":false,\"native_holdings_compared\":false,"
+				   "\"full_R7_qualified\":false,\"release_qualified\":false,\"findings\":[";
+			current_money_findings(result);
+			return result.valid() ? 0 : 1;
+		}
+		if (argc == 3 && std::string(argv[1]) == "--economic-auction-source-credit-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			const auto result = restore_auction_source_credit::audit(argv[2], budget);
+			std::cout
+				<< "{\"format\":\"flatfile_auction_source_credit_audit_v1\","
+				   "\"scope\":\"native_claim_source_credits_and_authenticated_creator_receipts\","
+				   "\"initialized\":"
+				<< (result.initialized ? "true" : "false") << ",\"epoch\":\""
+				<< restore_economic_baseline::hex(result.epoch)
+				<< "\",\"creator_roots\":" << result.creator_roots
+				<< ",\"expected_credits\":" << result.expected_credits
+				<< ",\"compared_credits\":" << result.compared_credits
+				<< ",\"claim_source_rows\":" << result.source_rows
+				<< ",\"consumed_source_rows\":" << result.consumed_rows
+				<< ",\"unconsumed_source_rows\":" << result.unconsumed_rows
+				<< ",\"claim_source_credit_roots_verified\":"
+				<< (result.credits_verified() ? "true" : "false")
+				<< ",\"current_auction_money_values_verified\":"
+				<< (result.current_values_verified ? "true" : "false")
+				<< ",\"remaining_claim_source_balances_verified\":"
+				<< (result.balance_verified() ? "true" : "false")
+				<< ",\"credit_finding_count\":" << result.credit_findings
+				<< ",\"source_finding_count\":" << result.source_findings
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"account_origins_verified\":false,\"claim_source_attribution_verified\":false,"
+				   "\"claim_source_digest_verified\":false,\"claim_source_consumption_order_verified\":false,"
+				   "\"cross_epoch_continuity_verified\":false,\"native_holdings_compared\":false,"
+				   "\"full_R7_qualified\":false,\"release_qualified\":false,\"findings\":[";
+			current_money_findings(result);
+			return result.valid() ? 0 : 1;
+		}
+		if (argc == 3 &&
+		    std::string(argv[1]) == "--economic-auction-source-attribution-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			const auto result =
+				restore_auction_source_consumption::audit(argv[2], budget);
+			std::cout
+				<< "{\"format\":\"flatfile_auction_source_attribution_audit_v1\","
+				   "\"scope\":\"native_claim_source_credits_consumers_and_frozen_sets\","
+				   "\"initialized\":"
+				<< (result.initialized ? "true" : "false") << ",\"epoch\":\""
+				<< restore_economic_baseline::hex(result.epoch)
+				<< "\",\"creator_roots\":" << result.creator_roots
+				<< ",\"expected_credits\":" << result.expected_credits
+				<< ",\"compared_credits\":" << result.compared_credits
+				<< ",\"consumer_roots\":" << result.consumer_roots
+				<< ",\"compared_consumers\":" << result.compared_consumers
+				<< ",\"selected_source_rows\":" << result.selected_source_rows
+				<< ",\"cashout_roots\":" << result.cashout_roots
+				<< ",\"verified_digests\":" << result.verified_digests
+				<< ",\"claim_source_rows\":" << result.source_rows
+				<< ",\"claim_source_credit_roots_verified\":"
+				<< (result.credits_verified() ? "true" : "false")
+				<< ",\"remaining_claim_source_balances_verified\":"
+				<< (result.balance_verified() ? "true" : "false")
+				<< ",\"claim_source_consumption_order_verified\":"
+				<< (result.consumption_verified() ? "true" : "false")
+				<< ",\"claim_source_digest_verified\":"
+				<< (result.digests_verified() ? "true" : "false")
+				<< ",\"claim_source_attribution_verified\":"
+				<< (result.attribution_verified() ? "true" : "false")
+				<< ",\"consumption_finding_count\":" << result.consumption_findings
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"account_origins_verified\":false,\"cross_epoch_continuity_verified\":false,"
+				   "\"native_holdings_compared\":false,\"full_R7_qualified\":false,"
+				   "\"release_qualified\":false,\"findings\":[";
+			current_money_findings(result);
+			return result.valid() ? 0 : 1;
+		}
+		if (argc == 3 && std::string(argv[1]) == "--economic-money-history-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			auto result = restore_economic_money_history::audit(argv[2], budget);
+			std::cout
+				<< "{\"accepted_roots\":" << result.accepted_roots
+				<< ",\"ordinary_account_edges\":" << result.edges
+				<< ",\"epoch_accounts\":" << result.accounts
+				<< ",\"baseline_anchored_accounts\":"
+				<< result.baseline_anchored_accounts
+				<< ",\"unanchored_accounts\":" << result.unanchored_accounts
+				<< ",\"invalid_accounts\":" << result.invalid_accounts
+				<< ",\"same_epoch_transition_continuity_verified\":"
+				<< (result.valid() ? "true" : "false") << ",\"findings_truncated\":"
+				<< (result.invalid_accounts > result.findings.size() ? "true" :
+										       "false")
+				<< ",\"account_origins_verified\":false,\"cross_epoch_continuity_verified\":false"
+				   ",\"native_holdings_compared\":false,\"full_R7_qualified\":false"
+				   ",\"release_qualified\":false,\"findings\":[";
+			bool comma = false;
+			for (const auto &finding : result.findings)
+			{
+				if (comma)
+					std::cout << ',';
+				comma = true;
+				std::cout << "{\"epoch\":\""
+					  << restore_economic_baseline::hex(finding.epoch)
+					  << "\",\"operation\":\""
+					  << restore_economic_baseline::hex(finding.operation)
+					  << "\",\"account\":\""
+					  << restore_economic_baseline::hex(finding.account)
+					  << "\",\"code\":\"" << finding.code << "\"}";
+			}
+			std::cout << "]}\n";
+			return result.valid() ? 0 : 1;
+		}
+		if (argc == 3 && std::string(argv[1]) == "--economic-evidence-audit")
+		{
+			require(std::filesystem::path(argv[2]).is_absolute());
+			struct stat root_info = {};
+			require(lstat(argv[2], &root_info) == 0 && S_ISDIR(root_info.st_mode));
+			restore_economic_authority::audit_budget budget;
+			auto result = restore_economic_records::audit(argv[2], budget);
+			std::cout << "{\"legacy_unknown_epochs\":" << result.legacy_unknown_epochs
+				  << ",\"never_initialized_epochs\":"
+				  << result.never_initialized_epochs
+				  << ",\"initialized_epochs\":" << result.initialized_epochs
+				  << ",\"lifecycle_receipts\":" << result.lifecycle_receipts
+				  << ",\"unknown_initialized_origins\":"
+				  << result.unknown_initialized_origins
+				  << ",\"baseline_participant_epochs\":"
+				  << result.baseline_participant_epochs
+				  << ",\"lifecycle_owner_epochs\":" << result.lifecycle_owner_epochs
+				  << ",\"lifecycle_provenance_complete\":"
+				  << (result.lifecycle_complete() ? "true" : "false")
+				  << ",\"baseline_provenance_complete\":"
+				  << (result.complete() ? "true" : "false") << "}\n";
+			return 0;
+		}
 		if (argc == 3 && (std::string(argv[1]) == "--journals-preflight" ||
 				  std::string(argv[1]) == "--journals-drained"))
 		{
@@ -223,6 +1034,10 @@ int main(int argc, char **argv)
 		std::string error;
 		require(flatfile_player_domain_restore_recover(root, &error) ==
 			flatfile_player_domain_result::ok);
+		// Recovery is complete on this copied candidate. Audit retained authority
+		// without invoking the storage readers, which also perform recovery.
+		require(restore_economic_records::checker(root).run().lifecycle_complete());
+		qualify_native_mobile_images(std::filesystem::path(root) / "domains");
 		// Mini-world boot does not materialize every persistent world domain.
 		// Exercise their native decoders before any qualification receipt.
 		require(flatfile_corpse_repository_validate(root, &error));

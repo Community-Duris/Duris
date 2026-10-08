@@ -14,11 +14,14 @@ from collections import Counter
 import json
 import os
 from pathlib import Path
+import re
 import struct
 import sys
 
-from economic_sql_audit_origins import ITEM_STATES, OriginError, identity, read_origins_in_transaction
-from reconcile_economy_accounting import MAX_INPUT_BYTES, MAX_ROWS, REGISTRY_PATH, TABLES
+from economic_sql_audit_origins import (ITEM_STATES, OriginError, baseline_projection_bound,
+                                       identity, read_origins_in_transaction)
+from reconcile_economy_accounting import (MAX_INPUT_BYTES, MAX_ROWS, ORPHAN_EVIDENCE_SOURCES,
+                                          REGISTRY_PATH, TABLES)
 
 MAX_ITEM_PAYLOAD_BYTES = 4 * 1024 * 1024
 MAX_ITEM_ROWS = 8192
@@ -53,7 +56,15 @@ def bounded(cursor, sql: str, params: tuple = ()) -> list[dict]:
     return rows
 
 
-def decode_coin_payload(blob: bytes, expected_uid: int) -> list[int]:
+def coin_source_sql(alias: str = "") -> str:
+    # The native codec stores ITEM_MONEY at byte31, including area prototypes.
+    # This only selects candidates; full bounded decoding authenticates values.
+    prefix = alias + "." if alias else ""
+    return (f"({prefix}vnum={COIN_VNUM} OR "
+            f"SUBSTRING({prefix}coin_payload,31,1)=X'14')")
+
+
+def decode_coin_payload(blob: bytes, expected_uid: int, expected_vnum: int = COIN_VNUM) -> list[int]:
     """Decode denomination values from the bounded player-item snapshot codec."""
     if not isinstance(blob, bytes) or not blob or len(blob) > MAX_ITEM_PAYLOAD_BYTES:
         raise ExportError("invalid coin-pile payload size")
@@ -78,6 +89,18 @@ def decode_coin_payload(blob: bytes, expected_uid: int) -> list[int]:
     count = number("I")
     if count != 1:
         raise ExportError("coin-pile payload must contain exactly one item")
+    # The native decoder shares one row budget across the item and every
+    # nested vector, including spell rows across separate descriptions.
+    remaining_rows = MAX_ITEM_ROWS - count
+
+    def row_count() -> int:
+        nonlocal remaining_rows
+        count = number("I")
+        if count > remaining_rows:
+            raise ExportError("coin-pile nested row count exceeds limit")
+        remaining_rows -= count
+        return count
+
     parent = number("i")
     number("h")  # equipment slot
     uid = number("Q")
@@ -101,27 +124,23 @@ def decode_coin_payload(blob: bytes, expected_uid: int) -> list[int]:
         number("Q")  # bitvectors
     for _ in range(8):
         number("h")  # fixed affects
-    dynamic_count = number("I")
-    if dynamic_count > MAX_ITEM_ROWS:
-        raise ExportError("coin-pile dynamic affect count exceeds limit")
+    dynamic_count = row_count()
     for _ in range(dynamic_count):
         number("h")
         number("h")
         number("Q")
-    description_count = number("I")
-    if description_count > MAX_ITEM_ROWS:
-        raise ExportError("coin-pile extra description count exceeds limit")
+    description_count = row_count()
     for _ in range(description_count):
         skip_string()
         skip_string()
         if number("B") > 1:
             raise ExportError("invalid coin-pile spellbook flag")
-        spell_count = number("I")
-        if spell_count > MAX_ITEM_ROWS:
-            raise ExportError("coin-pile spell count exceeds limit")
+        spell_count = row_count()
         for _ in range(spell_count):
             number("i")
-    if offset != len(blob) or uid != expected_uid or parent != -1 or vnum != COIN_VNUM or \
+    if offset != len(blob) or uid != expected_uid or parent != -1 or \
+            type(expected_vnum) is not int or not 0 < expected_vnum <= 2**31 - 1 or \
+            vnum != expected_vnum or \
             item_type != ITEM_MONEY or any(amount < 0 for amount in values[:4]):
         raise ExportError("coin-pile payload identity or values are invalid")
     return values[:4]
@@ -137,10 +156,24 @@ def realized_price_column_available(cursor) -> bool:
 
 def operation_rows(cursor, lineage: bytes, epoch: bytes,
                    has_realized_price: bool) -> tuple[list[dict], list[bytes]]:
+    # EAP1 contains fixed-width non-personal IDs and arithmetic, unlike opaque
+    # EAI1 facts. Bound the source before fetching/hex-encoding retained plans.
+    from economic_restore_evidence import MAX_PLAN
+    cursor.execute(
+        "SELECT COUNT(*) AS root_count,COALESCE(SUM(OCTET_LENGTH(canonical_plan)),0) AS plan_bytes,"
+        "COALESCE(MAX(OCTET_LENGTH(canonical_plan)),0) AS max_plan_bytes "
+        "FROM economic_accounting_operation WHERE lineage=%s AND epoch=%s AND reason<>38",
+        (lineage, epoch))
+    bounds = cursor.fetchone()
+    if (bounds is None or bounds["root_count"] > MAX_ROWS or bounds["plan_bytes"] * 2 > MAX_INPUT_BYTES or
+            bounds["max_plan_bytes"] > MAX_PLAN):
+        raise ExportError("original plan source exceeds audit input limit")
     price_column = "realized_price_copper" if has_realized_price else "NULL AS realized_price_copper"
     rows = bounded(cursor,
         "SELECT operation_id,original_operation_id,reason,outcome,result_code,source_event,"
-        "account_count,posting_count,child_count,item_event_count," + price_column + " "
+        "accounting_version,writer_id,policy_version,compiler_version,actor_kind,actor_id,"
+        "intent_digest,domain_digest,plan_digest,canonical_plan,"
+        "account_count,posting_count,child_count,before_witness_count,after_witness_count,item_event_count," + price_column + " "
         "FROM economic_accounting_operation WHERE lineage=%s AND epoch=%s "
         "AND reason<>38 ORDER BY operation_id", (lineage, epoch))
     operations = []
@@ -154,6 +187,11 @@ def operation_rows(cursor, lineage: bytes, epoch: bytes,
                            "outcome": {1: "committed", 2: "rejected"}.get(row["outcome"], "unknown"),
                            "result_code": row["result_code"],
                            "source_event": hex_id(row["source_event"]),
+                           **{field: row[field] for field in ("accounting_version", "writer_id", "policy_version",
+                                                             "compiler_version", "actor_kind", "actor_id",
+                                                             "before_witness_count", "after_witness_count")},
+                           **{field: hex_id(row[field]) for field in ("intent_digest", "domain_digest", "plan_digest",
+                                                                     "canonical_plan")},
                            "account_count": row["account_count"],
                            "posting_count": row["posting_count"],
                            "child_count": row["child_count"],
@@ -169,6 +207,58 @@ def scoped_rows(cursor, table: str, columns: str, lineage: bytes, epoch: bytes,
         f"SELECT {columns} FROM {table} e JOIN economic_accounting_operation o "
         "ON o.operation_id=e.operation_id WHERE o.lineage=%s AND o.epoch=%s "
         f"AND o.reason<>38 ORDER BY {order}", (lineage, epoch))
+
+
+def read_orphan_evidence(cursor) -> tuple[list[dict], dict]:
+    # Without a root there is no trusted lineage/epoch to filter on. Capture
+    # database-wide anomalies in this same read view, never a commit watermark.
+    result = []
+    counts = {}
+    for name, (table, index, _) in ORPHAN_EVIDENCE_SOURCES.items():
+        extra, join, order = "", "", f"e.operation_id,e.{index}"
+        if name == "baseline_reservations":
+            extra = ",e.identity_id,e.lineage AS claimed_lineage,e.epoch AS claimed_epoch"
+            join = ("LEFT JOIN economic_baseline_witness o ON o.operation_id=e.operation_id "
+                    "AND o.lineage=e.lineage AND o.epoch=e.epoch ")
+            order += ",e.lineage,e.epoch,e.identity_id"
+        else:
+            join = "LEFT JOIN economic_accounting_operation o ON o.operation_id=e.operation_id "
+        rows = bounded(cursor,
+            f"SELECT e.operation_id,e.{index} AS row_index{extra} FROM {table} e " + join +
+            f"WHERE o.operation_id IS NULL ORDER BY {order}")
+        if len(result) + len(rows) > MAX_ROWS:
+            raise ExportError("SQL orphan evidence collection exceeds row limit")
+        counts[name] = len(rows)
+        for row in rows:
+            entry = {"table": name, "operation_id": hex_id(row["operation_id"]), "row_index": row["row_index"]}
+            if name == "baseline_reservations":
+                entry.update(identity_id=row["identity_id"], claimed_lineage=hex_id(row["claimed_lineage"]),
+                             claimed_epoch=hex_id(row["claimed_epoch"]))
+            result.append(entry)
+    return result, {"scope": "database", "table_counts": counts}
+
+
+def item_ledger_action(row: dict) -> str:
+    """Classify supply endpoints without replacing explicit legacy reasons."""
+    reason = row["reason_type"]
+    if reason == 2:
+        return "create"
+    if reason == 3 or row["to_owner_type"] == 8:
+        return "destroy"
+    if row.get("from_owner_type") == 7 and row["item_revision"] == 1:
+        return "create"
+    return "move"
+
+
+def item_ledger_state(row: dict) -> str:
+    """Retain the collector's explicit quarantine endpoint contract."""
+    if row["to_owner_type"] == 8:
+        return "tombstone"
+    if (row["reason_type"] == 21 and row.get("from_owner_type") == 10 and
+            row["to_owner_type"] == 7 and row["to_owner_id"] == 0 and
+            row["to_owner_context_id"] == 0):
+        return "quarantined"
+    return "live"
 
 
 def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool) -> dict:
@@ -187,30 +277,37 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
             "after": [row[f"after_{unit}"] for unit in ("copper", "silver", "gold", "platinum")],
             "before_revision": row["before_revision"], "after_revision": row["after_revision"]})
     postings = scoped_rows(cursor, "economic_accounting_coin_posting",
-        "e.operation_id,e.line_index,e.account_index,e.child_index,e.delta_copper,"
+        "e.operation_id,e.line_index,e.event_index,e.account_index,e.child_index,e.delta_copper,"
         "e.delta_silver,e.delta_gold,e.delta_platinum,e.copper_value", lineage, epoch,
         "e.operation_id,e.line_index")
     for row in postings:
         result["postings"].append({
             "operation_id": hex_id(row["operation_id"]), "line_index": row["line_index"],
+            "event_index": row["event_index"],
             "account_index": row["account_index"], "child_index": row["child_index"],
             "delta": [row[f"delta_{unit}"] for unit in ("copper", "silver", "gold", "platinum")],
             "copper_value": row["copper_value"]})
     children = scoped_rows(cursor, "economic_accounting_child",
-        "e.operation_id,e.child_index,e.child_operation_id,e.parent_index", lineage, epoch,
+        "e.operation_id,e.child_index,e.child_operation_id,e.parent_index,"
+        "e.domain_id,e.discriminator,e.relationship,e.receipt_operation_id", lineage, epoch,
         "e.operation_id,e.child_index")
     for row in children:
         result["children"].append({"operation_id": hex_id(row["operation_id"]),
                                     "child_index": row["child_index"],
                                     "child_operation_id": hex_id(row["child_operation_id"]),
-                                    "parent_index": row["parent_index"]})
+                                    "parent_index": row["parent_index"],
+                                    "domain_id": row["domain_id"],
+                                    "discriminator": row["discriminator"],
+                                    "relationship": row["relationship"],
+                                    "receipt_operation_id": hex_id(row["receipt_operation_id"])})
     references = scoped_rows(cursor, "economic_accounting_item_reference",
-        "e.operation_id,e.event_index,e.child_index,e.item_uid,e.before_revision,"
+        "e.operation_id,e.line_index,e.event_index,e.child_index,e.item_uid,e.before_revision,"
         "e.after_revision,e.legacy_operation_id,e.legacy_event_index", lineage, epoch,
         "e.operation_id,e.event_index")
     for row in references:
         result["item_references"].append({
             "operation_id": hex_id(row["operation_id"]), "event_index": row["event_index"],
+            "line_index": row["line_index"],
             "child_index": row["child_index"], "uid": row["item_uid"],
             "before_revision": row["before_revision"], "after_revision": row["after_revision"],
             "legacy_operation_id": hex_id(row["legacy_operation_id"]),
@@ -250,13 +347,13 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
         "SELECT 1 FROM economic_accounting_source_claim s WHERE s.lineage=o.lineage "
         "AND s.source_event=o.source_event AND s.operation_id=o.operation_id) "
         "THEN 0 ELSE 1 END),0) AS missing_claim_operations "
-        "FROM economic_accounting_operation o WHERE o.lineage=%s AND o.reason<>38 "
+        "FROM economic_accounting_operation o WHERE o.lineage=%s "
         "AND o.outcome=1 AND o.source_event IS NOT NULL", (lineage,))
     source_count = cursor.fetchone()
     cursor.execute(
         "SELECT COUNT(*) AS duplicate_source_values FROM ("
         "SELECT source_event FROM economic_accounting_operation "
-        "WHERE lineage=%s AND reason<>38 AND outcome=1 AND source_event IS NOT NULL "
+        "WHERE lineage=%s AND outcome=1 AND source_event IS NOT NULL "
         "GROUP BY source_event HAVING COUNT(*)>1) duplicates", (lineage,))
     duplicates = cursor.fetchone()
     result["source_claim_coverage"] = {
@@ -265,7 +362,7 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
         "duplicate_source_values": int(duplicates["duplicate_source_values"])}
     registry = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
     required_reasons = sorted(row["number"] for row in registry["reasons"]
-                              if row["source_event_required"] and row["number"] != 38)
+                              if row["source_event_required"])
     placeholders = ",".join("%s" for _ in required_reasons)
     cursor.execute(
         "SELECT COUNT(*) AS required_operations,COALESCE(SUM(source_event IS NULL),0) "
@@ -290,6 +387,8 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
                           for row in receipts]
     ledger = bounded(cursor,
         "SELECT l.operation_id,l.event_index,l.item_uid,l.root_item_uid,l.parent_item_uid,"
+        "l.from_owner_type,l.from_owner_id,l.from_owner_context_id,"
+        "l.from_equipment_slot,l.to_equipment_slot,"
         "l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,l.reason_type,"
         "r.before_revision FROM item_ownership_ledger l "
         "JOIN economic_accounting_item_reference r ON r.legacy_operation_id=l.operation_id "
@@ -298,16 +397,57 @@ def read_evidence(cursor, lineage: bytes, epoch: bytes, has_realized_price: bool
         "WHERE o.lineage=%s AND o.epoch=%s AND o.reason<>38 "
         "ORDER BY l.operation_id,l.event_index", (lineage, epoch))
     for row in ledger:
-        reason = row["reason_type"]
         result["ownership_events"].append({
             "operation_id": hex_id(row["operation_id"]), "event_index": row["event_index"],
             "uid": row["item_uid"], "before_revision": row["before_revision"],
             "revision": row["item_revision"], "root": row["root_item_uid"],
             "parent": row["parent_item_uid"],
             "owner": [row["to_owner_type"], row["to_owner_id"], row["to_owner_context_id"]],
-            "state": "tombstone" if row["to_owner_type"] == 8 else "live",
-            "action": "create" if reason == 2 else "destroy" if reason == 3 else "move"})
+            "from_owner": [row["from_owner_type"], row["from_owner_id"], row["from_owner_context_id"]],
+            "from_equipment_slot": row["from_equipment_slot"], "to_equipment_slot": row["to_equipment_slot"],
+            "state": item_ledger_state(row),
+            "action": item_ledger_action(row)})
     return result
+
+
+def bind_baseline_claim_witnesses(cursor, lineage: bytes, epoch: bytes,
+                                claims: list[dict], origins: dict) -> None:
+    """Attach source identities from verified EAB1 books in this read view."""
+    baselines = [row for row in claims if row.get("operation_reason") == 38]
+    if not baselines:
+        return
+    # Bound the whole retained lineage before decoding another epoch's book.
+    cursor.execute(
+        "SELECT COUNT(*) AS row_count,COALESCE(SUM(OCTET_LENGTH(w.canonical_witness)+"
+        "COALESCE(OCTET_LENGTH(o.canonical_intent),0)+COALESCE(OCTET_LENGTH(o.canonical_plan),0)),0) "
+        "AS blob_bytes FROM economic_baseline_witness w LEFT JOIN economic_accounting_operation o "
+        "ON o.operation_id=w.operation_id WHERE w.lineage=%s", (lineage,))
+    bounds = cursor.fetchone()
+    if (bounds is None or bounds["row_count"] > MAX_ROWS or
+            bounds["blob_bytes"] > MAX_INPUT_BYTES):
+        raise ExportError("baseline claim witness source exceeds audit input limit")
+    try:
+        baseline_projection_bound(cursor, lineage)
+    except OriginError as error:
+        raise ExportError("baseline claim projection source exceeds audit input limit") from error
+    cache = {epoch.hex(): origins["baseline_source_events"]}
+    for claim in baselines:
+        claim["baseline_witness"] = None
+        other = claim.get("operation_epoch")
+        if (claim.get("operation_lineage") != lineage.hex() or not isinstance(other, str) or
+                re.fullmatch(r"[0-9a-f]{32}", other) is None or other == "0" * 32):
+            continue
+        if other not in cache:
+            try:
+                retained = read_origins_in_transaction(cursor, lineage, bytes.fromhex(other))
+            except OriginError:
+                cache[other] = {}
+            else:
+                cache[other] = retained["baseline_source_events"]
+        source = cache[other].get(claim["operation_id"])
+        if source is not None:
+            claim["baseline_witness"] = {"lineage": lineage.hex(), "epoch": other,
+                                         "operation_id": claim["operation_id"], "source_event": source}
 
 
 def read_lineage_realized_prices(cursor, lineage: bytes,
@@ -351,7 +491,7 @@ def read_lineage_uid_references(cursor, lineage: bytes) -> tuple[list[dict], lis
         "SELECT r.operation_id,r.event_index,r.child_index,r.item_uid,r.before_revision,"
         "r.after_revision,r.legacy_operation_id,r.legacy_event_index,o.epoch,o.outcome,"
         "o.item_event_count,l.item_uid AS ledger_uid,l.item_revision,"
-        "l.root_item_uid,l.parent_item_uid,l.to_owner_type,l.to_owner_id,"
+        "l.root_item_uid,l.parent_item_uid,l.from_owner_type,l.to_owner_type,l.to_owner_id,"
         "l.to_owner_context_id,l.reason_type "
         "FROM economic_accounting_item_reference r "
         "JOIN economic_accounting_operation o ON o.operation_id=r.operation_id "
@@ -365,9 +505,8 @@ def read_lineage_uid_references(cursor, lineage: bytes) -> tuple[list[dict], lis
         action = None
         if row["ledger_uid"] is not None:
             owner = [row["to_owner_type"], row["to_owner_id"], row["to_owner_context_id"]]
-            state = "tombstone" if row["to_owner_type"] == 8 else "live"
-            reason = row["reason_type"]
-            action = "create" if reason == 2 else "destroy" if reason == 3 else "move"
+            state = item_ledger_state(row)
+            action = item_ledger_action(row)
         result.append({
             "operation_id": hex_id(row["operation_id"]), "event_index": row["event_index"],
             "child_index": row["child_index"], "uid": row["item_uid"],
@@ -463,7 +602,8 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
         placeholders = ",".join("%s" for _ in batch)
         rows = bounded(cursor,
             "SELECT l.operation_id,l.event_index,l.item_uid,l.root_item_uid,l.parent_item_uid,"
-            "l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
+            "l.from_equipment_slot,l.to_equipment_slot,"
+            "l.from_owner_type,l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
             "l.reason_type,o.epoch AS operation_epoch,"
             "o.outcome AS operation_outcome "
             "FROM item_ownership_ledger l "
@@ -480,7 +620,6 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
                 raise ExportError("UID ownership history exceeds audit bounds")
             event_key = (row["operation_id"], row["event_index"], row["item_uid"])
             is_referenced = event_key in referenced
-            reason = row["reason_type"]
             event = {
                 "operation_id": hex_id(row["operation_id"]),
                 "event_index": row["event_index"], "uid": row["item_uid"],
@@ -488,8 +627,10 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
                 "root": row["root_item_uid"], "parent": row["parent_item_uid"],
                 "owner": [row["to_owner_type"], row["to_owner_id"],
                           row["to_owner_context_id"]],
-                "state": "tombstone" if row["to_owner_type"] == 8 else "live",
-                "action": "create" if reason == 2 else "destroy" if reason == 3 else "move",
+                "from_equipment_slot": row["from_equipment_slot"],
+                "to_equipment_slot": row["to_equipment_slot"],
+                "state": item_ledger_state(row),
+                "action": item_ledger_action(row),
                 "operation_epoch": hex_id(row["operation_epoch"]),
                 "operation_outcome": {1: "committed", 2: "rejected"}.get(
                     row["operation_outcome"], "unknown"),
@@ -504,7 +645,8 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
         placeholders = ",".join("%s" for _ in batch)
         rows = bounded(cursor,
             "SELECT l.operation_id,l.event_index,l.item_uid,l.root_item_uid,l.parent_item_uid,"
-            "l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
+            "l.from_equipment_slot,l.to_equipment_slot,"
+            "l.from_owner_type,l.to_owner_type,l.to_owner_id,l.to_owner_context_id,l.item_revision,"
             "l.reason_type FROM item_ownership_ledger l "
             "LEFT JOIN economic_accounting_operation o ON o.operation_id=l.operation_id "
             "WHERE o.operation_id IS NULL "
@@ -516,7 +658,6 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
                 continue
             if len(unattributed_events) >= MAX_ROWS:
                 raise ExportError("unattributed UID ownership history exceeds audit bounds")
-            reason = row["reason_type"]
             unattributed_events.append({
                 "operation_id": hex_id(row["operation_id"]),
                 "event_index": row["event_index"], "uid": row["item_uid"],
@@ -524,8 +665,10 @@ def read_uid_event_census(cursor, lineage: bytes, item_origins: list[dict], evid
                 "root": row["root_item_uid"], "parent": row["parent_item_uid"],
                 "owner": [row["to_owner_type"], row["to_owner_id"],
                           row["to_owner_context_id"]],
-                "state": "tombstone" if row["to_owner_type"] == 8 else "live",
-                "action": "create" if reason == 2 else "destroy" if reason == 3 else "move"})
+                "from_equipment_slot": row["from_equipment_slot"],
+                "to_equipment_slot": row["to_equipment_slot"],
+                "state": item_ledger_state(row),
+                "action": item_ledger_action(row)})
     return (events, unreferenced, {
         "tracked_uids": len(history_uids), "ledger_events": ledger_events,
         "referenced_events": referenced_events,
@@ -548,7 +691,7 @@ def append_committed_item_creation_origin(item_origins: list[dict], known_uids: 
         return False
     item_origins.append({"uid": uid, "origin": "creation", "revision": 0,
                          "root": uid, "parent": None, "owner": [0, 0, 0],
-                         "state": "absent"})
+                         "state": "absent", "equipment_slot": 0})
     known_uids.add(uid)
     return True
 
@@ -870,12 +1013,6 @@ def infer_created_mapping_origins(lineage: str, mappings: list[dict],
 
 
 def read_pending_claim_consumers(cursor, lineage: bytes) -> tuple[list[dict], dict]:
-    registry = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
-    claim_reasons = [row["number"] for row in registry["reasons"]
-                     if row["id"] == "auction_claim"]
-    if len(claim_reasons) != 1:
-        raise ExportError("auction claim reason is missing or ambiguous")
-    claim_reason = claim_reasons[0]
     rows = bounded(cursor,
         "SELECT o.operation_id,o.epoch,o.outcome,o.result_code,"
         "i.status AS inbox_status,i.result_code AS inbox_result_code,"
@@ -888,11 +1025,17 @@ def read_pending_claim_consumers(cursor, lineage: bytes) -> tuple[list[dict], di
         "FROM economic_accounting_operation o "
         "LEFT JOIN critical_operation_inbox i ON i.operation_id=o.operation_id "
         "JOIN economic_accounting_account_effect e ON e.operation_id=o.operation_id "
-        "LEFT JOIN (SELECT claim_operation_id,COUNT(*) AS source_rows,SUM(amount) AS source_amount "
+        "LEFT JOIN (SELECT allocation_operation_id,COUNT(*) AS source_rows,SUM(amount) AS source_amount "
+        "FROM (SELECT claim_operation_id AS allocation_operation_id,amount "
         "FROM economic_pending_claim_source WHERE lineage=%s AND claim_operation_id IS NOT NULL "
-        "GROUP BY claim_operation_id) s ON s.claim_operation_id=o.operation_id "
-        "WHERE o.lineage=%s AND o.reason=%s AND o.outcome=1 "
-        "ORDER BY o.operation_id,e.account_index", (lineage, lineage, claim_reason))
+        "UNION ALL SELECT c.spending_operation_id,c.amount FROM economic_pending_claim_consumption c "
+        "LEFT JOIN economic_pending_claim_source p ON p.source_operation_id=c.source_operation_id "
+        "AND p.source_slot=c.source_slot LEFT JOIN economic_accounting_operation spender "
+        "ON spender.operation_id=c.spending_operation_id WHERE p.lineage=%s OR spender.lineage=%s) allocations "
+        "GROUP BY allocation_operation_id) s ON s.allocation_operation_id=o.operation_id "
+        "WHERE o.lineage=%s AND o.outcome=1 AND e.before_copper>e.after_copper "
+        "AND SUBSTRING(e.account_key,17,4)=UNHEX('01000500') "
+        "ORDER BY o.operation_id,e.account_index", (lineage, lineage, lineage, lineage))
     consumers = {}
     for row in rows:
         key = row["account_key"]
@@ -937,6 +1080,29 @@ def read_pending_claim_consumers(cursor, lineage: bytes) -> tuple[list[dict], di
                      for row in result)
     return result, {"rows": len(result), "missing_source_rows": missing,
                     "mismatched_source_amounts": mismatched}
+
+
+def read_pending_claim_consumptions(cursor, lineage: bytes) -> tuple[list[dict], dict]:
+    rows = bounded(cursor,
+        "SELECT c.spending_operation_id,c.source_operation_id,c.source_slot,c.amount "
+        "FROM economic_pending_claim_consumption c LEFT JOIN economic_pending_claim_source s "
+        "ON s.source_operation_id=c.source_operation_id AND s.source_slot=c.source_slot "
+        "LEFT JOIN economic_accounting_operation o ON o.operation_id=c.spending_operation_id "
+        # A row with neither retained root nor source has unknown lineage. Keep
+        # its IDs as a database-wide orphan instead of attributing or hiding it.
+        "WHERE s.lineage=%s OR o.lineage=%s OR (s.source_operation_id IS NULL AND o.operation_id IS NULL) "
+        "ORDER BY c.spending_operation_id,c.source_operation_id,c.source_slot", (lineage, lineage))
+    result = []
+    for row in rows:
+        if (any(type(row[field]) is not bytes or len(row[field]) != 16 or not any(row[field])
+                for field in ("spending_operation_id", "source_operation_id")) or
+                type(row["source_slot"]) is not int or not 0 < row["source_slot"] < 2**16 or
+                type(row["amount"]) is not int or not 0 < row["amount"] < 2**64):
+            raise ExportError("invalid pending claim consumption row")
+        result.append({"spending_operation_id": hex_id(row["spending_operation_id"]),
+                       "source_operation_id": hex_id(row["source_operation_id"]),
+                       "source_slot": row["source_slot"], "amount": row["amount"]})
+    return result, {"rows": len(result)}
 
 
 def native_source_count(cursor, lineage: bytes, table: str, identity_column: str,
@@ -1027,6 +1193,24 @@ def read_guild_treasuries(cursor) -> tuple[list[dict], dict]:
 
 
 def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
+    # Both native-item and mapping projections can return payload bytes. Bound
+    # them before either buffered SELECT, including repeated mapping joins.
+    cursor.execute("SELECT COUNT(*) AS row_count,"
+                   "COALESCE(SUM(OCTET_LENGTH(coin_payload)),0) AS payload_bytes,"
+                   "COALESCE(MAX(OCTET_LENGTH(coin_payload)),0) AS max_payload_bytes "
+                   "FROM item_current_owner WHERE " + coin_source_sql())
+    coin_bounds = cursor.fetchone()
+    if (coin_bounds is None or coin_bounds["row_count"] > MAX_ROWS or
+            coin_bounds["payload_bytes"] > MAX_INPUT_BYTES or
+            coin_bounds["max_payload_bytes"] > MAX_ITEM_PAYLOAD_BYTES):
+        raise ExportError("coin-pile source exceeds audit bounds")
+    cursor.execute("SELECT COALESCE(SUM(OCTET_LENGTH(i.coin_payload)),0) AS payload_bytes "
+                   "FROM economic_account_mapping m JOIN item_current_owner i "
+                   "ON m.account_kind=3 AND i.item_uid=m.active_native_id AND " + coin_source_sql("i") +
+                   " WHERE m.lineage=%s AND m.backend_kind=1", (lineage,))
+    mapping_bounds = cursor.fetchone()
+    if mapping_bounds is None or mapping_bounds["payload_bytes"] > MAX_INPUT_BYTES:
+        raise ExportError("mapped coin-pile source exceeds audit bounds")
     native = {"holdings": [], "items": [], "coin_piles": [],
               "coin_pile_mappings": [], "pending_claim_sources": []}
     native["ship_coffers"], native["ship_coffer_coverage"] = read_ship_coffers(cursor)
@@ -1048,7 +1232,8 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
         "p.platinum AS wallet_platinum,p.wallet_revision,"
         "b.bank_copper,b.bank_silver,b.bank_gold,b.bank_platinum,b.bank_revision,"
         "i.item_uid AS pile_uid,i.vnum AS pile_vnum,i.state AS pile_state,"
-        "i.item_revision AS pile_revision,i.coin_payload AS pile_payload,"
+        "i.item_revision AS pile_revision,"
+        f"CASE WHEN {coin_source_sql('i')} THEN i.coin_payload ELSE NULL END AS pile_payload,"
         "a.id AS escrow_id,a.status AS escrow_status,a.winning_bidder_pid AS escrow_winner_pid,"
         "a.cur_price AS escrow_copper,"
         "a.auction_revision AS escrow_revision,"
@@ -1099,7 +1284,8 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
         exists = {
             1: row["wallet_id"] is not None,
             2: row["bank_id"] is not None,
-            3: row["pile_uid"] is not None and row["pile_vnum"] == COIN_VNUM and row["pile_state"] == 1,
+            3: row["pile_uid"] is not None and row["pile_state"] == 1 and
+               (row["pile_vnum"] == COIN_VNUM or row["pile_payload"] is not None),
             4: row["escrow_id"] is not None and auction_escrow_mapping_is_live(
                 row["escrow_status"], row["escrow_winner_pid"]),
             5: row["claim_row_id"] is not None or row["claim_player_id"] is not None,
@@ -1114,7 +1300,8 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
         balance = {
             1: [row[f"wallet_{unit}"] for unit in ("copper", "silver", "gold", "platinum")],
             2: [row[f"bank_{unit}"] for unit in ("copper", "silver", "gold", "platinum")],
-            3: decode_coin_payload(row["pile_payload"], row["pile_uid"]) if row["pile_payload"] is not None else None,
+            3: decode_coin_payload(row["pile_payload"], row["pile_uid"], row["pile_vnum"])
+               if row["pile_payload"] is not None else None,
             4: auction_escrow_balance(row["escrow_status"], row["escrow_copper"],
                                       row["escrow_winner_pid"]),
             5: [row["claim_copper"] if row["claim_row_id"] is not None else 0, 0, 0, 0],
@@ -1138,7 +1325,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             (1, "wallet", "player_data", "pid", "1=1"),
             (2, "bank", "account_banks", "id", "1=1"),
             (3, "pile", "item_current_owner", "item_uid",
-             f"vnum={COIN_VNUM} AND state=1"),
+             coin_source_sql() + " AND state=1"),
             (4, "auction_escrow", "auctions", "id",
              "status='OPEN' OR (status='REMOVED' AND winning_bidder_pid<>0)"),
             (5, "pending_claim", "auction_money_pickups", "pid", "1=1"),
@@ -1162,6 +1349,11 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
         "AND m.lineage=s.lineage AND m.backend_kind=1 AND m.account_kind=5 "
         "AND m.locator_kind=5 "
         "WHERE s.lineage=%s ORDER BY s.source_operation_id,s.source_slot", (lineage,))
+    native["pending_claim_consumptions"], native["pending_claim_consumption_coverage"] = (
+        read_pending_claim_consumptions(cursor, lineage))
+    partial_amounts = Counter()
+    for row in native["pending_claim_consumptions"]:
+        partial_amounts[(bytes.fromhex(row["source_operation_id"]), row["source_slot"])] += row["amount"]
     claim_source_coverage = {"rows": len(claim_sources), "open_rows": 0,
                              "consumed_rows": 0, "invalid_account_mappings": 0,
                              "invalid_source_roots": 0, "invalid_consumer_roots": 0}
@@ -1169,11 +1361,13 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     source_keys = {}
     consumer_keys = {}
     consumer_amounts = Counter()
+    source_amounts = Counter()
     for row in claim_sources:
         if row["mapped_id"] is not None:
             key = account_key(lineage, 5, row["claim_mapping_id"], row["context_id"])
             pair = (row["source_operation_id"], bytes.fromhex(key))
             source_pairs.add(pair)
+            source_amounts[pair] += row["amount"]
             source_keys[(row["source_operation_id"], row["source_slot"])] = bytes.fromhex(key)
             if row["claim_operation_id"] is not None:
                 consumer_pair = (row["claim_operation_id"], bytes.fromhex(key))
@@ -1183,9 +1377,11 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     source_root_metadata = {}
     source_root_effects = Counter()
     source_pair_values = {}
+    source_root_postings = {}
     source_pairs = sorted(source_pairs)
     for offset in range(0, len(source_pairs), 64):
         batch = source_pairs[offset:offset + 64]
+        batch_pairs = set(batch)
         operation_ids = tuple(dict.fromkeys(pair[0] for pair in batch))
         account_keys = tuple(dict.fromkeys(pair[1] for pair in batch))
         operation_placeholders = ",".join("%s" for _ in operation_ids)
@@ -1212,7 +1408,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             "SELECT operation_id,COUNT(*) AS posting_rows,COALESCE(SUM(copper_value),0) AS net_copper "
             "FROM economic_accounting_coin_posting "
             f"WHERE operation_id IN ({operation_placeholders}) GROUP BY operation_id", operation_ids)
-        source_root_postings = {row["operation_id"]: row for row in posting_audits}
+        source_root_postings.update({row["operation_id"]: row for row in posting_audits})
         effects = bounded(cursor,
             "SELECT operation_id,account_key,before_copper,before_silver,before_gold,"
             "before_platinum,after_copper,after_silver,after_gold,after_platinum "
@@ -1221,6 +1417,8 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             f"AND account_key IN ({key_placeholders})", operation_ids + account_keys)
         for effect in effects:
             effect_key = (effect["operation_id"], effect["account_key"])
+            if effect_key not in batch_pairs:
+                continue
             source_root_effects[effect_key] += 1
             source_pair_values[effect_key] = effect
     for row in claim_sources:
@@ -1228,11 +1426,13 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
                 row["beneficiary_pid"] is None or row["amount"] is None or
                 row["amount"] <= 0):
             raise ExportError("invalid pending-claim source row")
-        consumed = row["claim_operation_id"] is not None
+        remaining = (0 if row["claim_operation_id"] is not None else
+                     row["amount"] - partial_amounts[(row["source_operation_id"], row["source_slot"])])
+        consumed = remaining <= 0
         claim_source_coverage["consumed_rows" if consumed else "open_rows"] += 1
         mapping_valid = (row["mapped_id"] is not None and
                          row["mapped_native_id"] == row["beneficiary_pid"] and
-                         (row["claim_operation_id"] is not None or
+                         (remaining <= 0 or
                           row["mapped_active_native_id"] == row["beneficiary_pid"]))
         if not mapping_valid:
             claim_source_coverage["invalid_account_mappings"] += 1
@@ -1254,7 +1454,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             root["posting_count"] and
             source_root_postings[row["source_operation_id"]]["net_copper"] == 0 and
             effect["before_copper"] is not None and effect["after_copper"] is not None and
-            effect["after_copper"] - effect["before_copper"] == row["amount"] and
+            effect["after_copper"] - effect["before_copper"] == source_amounts[effect_key] and
             all(effect[field] is not None and effect[after] == effect[field]
                 for field, after in (("before_silver", "after_silver"),
                                      ("before_gold", "after_gold"),
@@ -1263,7 +1463,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             claim_source_coverage["invalid_source_roots"] += 1
         consumer_root_valid = None
         consumer_receipt = None
-        if consumed:
+        if row["claim_operation_id"] is not None:
             consumer_key = consumer_keys.get((row["source_operation_id"], row["source_slot"]))
             consumer_effect_key = ((row["claim_operation_id"], consumer_key)
                                    if consumer_key is not None else None)
@@ -1305,16 +1505,10 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             "consumer_root_valid": consumer_root_valid,
             "consumer_inbox_receipt": consumer_receipt})
     native["pending_claim_source_coverage"] = claim_source_coverage
-    cursor.execute("SELECT COUNT(*) AS row_count,"
-                   "COALESCE(SUM(OCTET_LENGTH(coin_payload)),0) AS payload_bytes "
-                   "FROM item_current_owner WHERE vnum=%s", (COIN_VNUM,))
-    coin_bounds = cursor.fetchone()
-    if (coin_bounds is None or coin_bounds["row_count"] > MAX_ROWS or
-            coin_bounds["payload_bytes"] > MAX_INPUT_BYTES):
-        raise ExportError("coin-pile source exceeds audit bounds")
     items = bounded(cursor,
         "SELECT item_uid,root_item_uid,parent_item_uid,owner_type,owner_id,"
-        "owner_context_id,item_revision,state,vnum,coin_payload "
+        "owner_context_id,item_revision,state,equipment_slot,vnum,"
+        f"CASE WHEN {coin_source_sql()} THEN coin_payload ELSE NULL END AS coin_payload "
         "FROM item_current_owner ORDER BY item_uid")
     coin_payload_rows = 0
     missing_coin_payload_rows = 0
@@ -1326,14 +1520,15 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
                                 "owner": [row["owner_type"], row["owner_id"],
                                           row["owner_context_id"]],
                                 "revision": row["item_revision"],
-                                "state": ITEM_STATES[row["state"]]})
-        if row["vnum"] == COIN_VNUM:
+                                "state": ITEM_STATES[row["state"]],
+                                "equipment_slot": row["equipment_slot"]})
+        if row["vnum"] == COIN_VNUM or row["coin_payload"] is not None:
             blob = row["coin_payload"]
             if blob is None:
                 amounts = None
                 missing_coin_payload_rows += 1
             else:
-                amounts = decode_coin_payload(blob, row["item_uid"])
+                amounts = decode_coin_payload(blob, row["item_uid"], row["vnum"])
                 coin_payload_rows += 1
             native["coin_piles"].append({
                 "uid": row["item_uid"],
@@ -1374,15 +1569,17 @@ def capture(connection, lineage: bytes, epoch: bytes) -> dict:
             "('economic_accounting_account_effect','economic_accounting_coin_posting',"
             "'economic_accounting_child','economic_accounting_item_reference',"
             "'economic_accounting_source_claim','economic_account_mapping',"
-            "'economic_pending_claim_source','economic_sql_lifecycle_installation',"
+            "'economic_pending_claim_source','economic_pending_claim_consumption','economic_sql_lifecycle_installation',"
             "'critical_operation_inbox','player_data',"
             "'account_banks','item_current_owner','item_ownership_ledger','auctions',"
             "'auction_money_pickups','shopkeepers','ships','guilds')")
         engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
-        if len(engines) != 18 or any(engine != "InnoDB" for engine in engines.values()):
+        if len(engines) != 19 or any(engine != "InnoDB" for engine in engines.values()):
             raise ExportError("SQL audit source is missing or not InnoDB")
         has_realized_price = realized_price_column_available(cursor)
         evidence = read_evidence(cursor, lineage, epoch, has_realized_price)
+        bind_baseline_claim_witnesses(cursor, lineage, epoch, evidence["source_claims"], origins)
+        evidence["orphan_evidence"], evidence["orphan_evidence_coverage"] = read_orphan_evidence(cursor)
         lineage_uid_references, lineage_uid_reference_roots, lineage_uid_reference_coverage = (
             read_lineage_uid_references(cursor, lineage))
         native, gaps, coverage = read_native(cursor, lineage)
@@ -1472,6 +1669,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", required=True)
     parser.add_argument("--port", type=int, default=3306)
+    parser.add_argument("--socket", help="explicit local SQL Unix socket")
     parser.add_argument("--user", required=True)
     parser.add_argument("--database", required=True)
     parser.add_argument("--password-env", default="DB_PASSWORD")
@@ -1489,6 +1687,7 @@ def main() -> int:
         import pymysql
         try:
             connection = pymysql.connect(host=args.host, port=args.port, user=args.user,
+                                         unix_socket=args.socket,
                                          password=password, database=args.database,
                                          charset="utf8mb4", autocommit=True,
                                          cursorclass=pymysql.cursors.DictCursor,

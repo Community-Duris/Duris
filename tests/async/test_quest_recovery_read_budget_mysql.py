@@ -21,6 +21,15 @@ HARNESS = r'''
 #include <string>
 #include <vector>
 
+std::string item_witness_query;
+extern "C" int __real_mysql_real_query(MYSQL *, const char *, unsigned long);
+extern "C" int __wrap_mysql_real_query(MYSQL *db, const char *text, unsigned long length) {
+    std::string statement(text, length);
+    if (statement.find("FROM item_ownership_ledger l ") != std::string::npos)
+        item_witness_query = statement;
+    return __real_mysql_real_query(db, text, length);
+}
+
 void sql(MYSQL *db, const std::string &statement) {
     if (mysql_query(db, statement.c_str())) {
         std::cerr << "fixture query error=" << mysql_errno(db) << '\n';
@@ -176,11 +185,24 @@ int main() {
     assert(metrics.row_count <= PLAYER_SNAPSHOT_MAX_ROWS && metrics.byte_count <= PLAYER_SNAPSHOT_MAX_BYTES);
     assert(static_cast<uint64_t>(usec) < PLAYER_LOAD_TIMEOUT_USEC);
     const auto native_reads = handler_reads(db)-reads_before;
-    assert(native_reads < 25000); // Refuse a full scan of 100,000 old events.
-    for (const auto &record : pending) assert(record.economic_applied_mask==UINT64_MAX);
     std::cout << "maximum workload: obligations=64 slots=4096 queries=" << metrics.query_count
               << " rows=" << metrics.row_count << " bytes=" << metrics.byte_count
-              << " history=100000 handler_reads=" << native_reads << " usec=" << usec << '\n';
+              << " history=100000 handler_reads=" << native_reads << " usec=" << usec << std::endl;
+    if (native_reads >= 25000) {
+        sql(db, "EXPLAIN " + item_witness_query);
+        MYSQL_RES *plan = mysql_store_result(db);
+        assert(plan);
+        while (MYSQL_ROW row = mysql_fetch_row(plan)) {
+            std::cout << "quest item query plan:";
+            for (unsigned column=0; column<mysql_num_fields(plan); ++column)
+                std::cout << ' ' << mysql_fetch_field_direct(plan, column)->name << '='
+                          << (row[column] ? row[column] : "NULL");
+            std::cout << std::endl;
+        }
+        mysql_free_result(plan);
+    }
+    assert(native_reads < 25000); // Refuse a full scan of 100,000 old events.
+    for (const auto &record : pending) assert(record.economic_applied_mask==UINT64_MAX);
     const auto extra = terms(10000);
     inbox(db,"41000000000000000000000000000000",5,{});
     sql(db,"INSERT INTO quest_reward_obligation VALUES(UNHEX('41000000000000000000000000000000'),7,UNHEX('"+
@@ -236,9 +258,9 @@ def main() -> None:
         subprocess.run([
             "g++", "-std=c++20", "-Wall", "-Wextra", "-Wpedantic", "-Werror", "-Isrc",
             "-I/usr/include/mysql", str(source), "src/persistence/quest_reward_obligation_repository.c",
-            "src/persistence/critical_command.c", "src/item/item_transfer_command.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",
+            "src/persistence/critical_command.c", "src/item/item_transfer_command.c", "src/world/quest_mobile_native_reference.c", "src/economy/economic_source_event.c", "src/item/craft_pouch_mutation.c", "src/combat/chaos_pouch_ledger.c",
             "src/economy/currency_command.c", "src/player/player_snapshot_codec.c",
-            "-lmysqlclient", "-lcrypto", "-o", str(binary),
+            "-Wl,--wrap=mysql_real_query", "-lmysqlclient", "-lcrypto", "-o", str(binary),
         ], cwd=ROOT, check=True)
         subprocess.run([str(binary)], cwd=ROOT, check=True, timeout=60)
 
