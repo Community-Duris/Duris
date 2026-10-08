@@ -1,5 +1,29 @@
 # Persisted provider union: primary source handoff - 2026-10-07
 
+## Reviewed ordinary reset transaction and original carrier - 2026-10-07
+
+Private `tmp/lifecycle-reset-transaction-candidate-primary-20261007` composes
+68 production files, 23 unchanged original fixtures and five schema/manifest
+files. Corrected SQL root36a6ae7, literal ee813163, coordinator27784d6 and full
+original carrier3a36b4 have independent source acceptance. Formatting passed;
+compiler, native, SQL, migration and recovery execution remain unperformed.
+
+Ordinary actorless creation now has same-root custody/literal/source/indexed
+evidence and exact typed48. Review corrected inbox revision1 to the actual room
+revision plus one, malformed command22 legacy fallback, non-NULL ordinary coin
+payload and missing current physical duplicate checks. Both original-ID replay
+paths require the matching full original command and immutable origin. ZRO1
+retains accepted time, source, season, forest and original recipes; additive0065
+and three private manifest successors are required after journal retirement.
+
+[Plan5 reset-origin interface](ZONE_RESET_ORIGIN_PLAN5_INTERFACE_2026-10-07.md)
+records storage, audit, restore and qualification ownership. Runtime fingerprints
+still require actual MySQL/MariaDB measurements. Complete money/artifact owners,
+creation-aware raw census, real producer/publication/ACK, flat parity and original
+major-plan qualification remain required. Current public admission and the active
+O skip remain unchanged. This source composition closes no full R1-R8 gate.
+
+
 The private accepted candidate now combines the eight persisted physical sources
 with modern room, auction and collector literal/custody correspondence. It
 retains complete raw/provider reports and histories, every normalized custody
