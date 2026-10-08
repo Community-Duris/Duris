@@ -1,14 +1,21 @@
 # Persisted provider union: primary source handoff - 2026-10-07
 
-## Complete original refining source joined - 2026-10-08
+## Original Smith save/command and reset cursor source joined - 2026-10-08
 
-[Current source integration](COMPLETE_REFINING_SOURCE_INTEGRATION_2026-10-08.md) records private candidate
-`39a35e59e83b94fbed3e96138dded14dfeb807eba256489976940f88874b46cc`:full original refining
-fee/input/outcome,SQL/flat compound participant,retained publication/replay and
-notification are source-reviewed and joined with fresh PC wallet admission and
-the warm reset/shared source. Craft/Forge is under review; Smith and full reset
-dispatch/replay/ACK/special effects remain. Major-plan execution is deferred;
-full Plans2-4/Plan5/R1-R8/activation qualification remains unproven.
+[Current source integration](SMITH_SAVE_COMMAND_AND_RESET_CURSOR_SOURCE_INTEGRATION_2026-10-08.md)
+records private candidate `da38626ce29f9fd5d0272309fb66bd6b02022ed41e6063b749d478b87b6377ba`.
+Exact Smith command fences now bind the typed compiler. A separate original SQL
+save profile supplies acknowledged filtered EQ/INV, level and operation-bound hold;
+it supplies no held release, submission, fresh SQL or physical authority. Original
+reset dispatcher locals/source/actor lifetimes survive native P's pure target retry,
+with prior decisions retained. Nullable/uncertain cuts and active O remain closed.
+All208 selected paths/169 source files authenticate; inventory is not completion.
+Original pre-S room preparation and Smith SQL participant remain in parallel work.
+Smith full source/native-history/physical/save cross-proof, retained recovery budget,
+combined SQL-flat transaction, original publication and guarded ACK remain open.
+Compiler/native/gameplay/SQL/recovery execution is deferred until major-plan readiness.
+Maintained source is not promoted; fullPlans2-4/combinedPlan5/R1-R8 and release
+remain unproven. Original Plan1 acceptance retains its recorded historical scope.
 
 ## Immutable cold movement and Plan5 source joined - 2026-10-08
 
