@@ -96,3 +96,31 @@ flat parity, genuine initialized-world and full R1-R8 release remain required.
 - Coordinator `27784d6b64d1dbada84ec164f99f4fefbd71c52a416b6ba2e8448cbbe970476c`.
 - Origin SQL `3a36b4d281cccaa9ff598d94585f75cfd6b19e0251a249078baa08420fe2d1fe`.
 - Additive0065 SQL `a84c7adce5f08701216db341b0154ab40ed4eb28df2b8ed35890d0d24751fa4a`.
+
+## Creation census successor and current observation boundary
+
+The private76-file candidate preserves ZRO1/0065 and adds RSC2/version2 raw
+evidence; the original six-table predecessor remains private reference only.
+Its nine tables append `economic_lineage_state(lineage,active_epoch,revision)`,
+`economic_epoch(lineage,epoch)` and `player_death_restitution_runtime(item_uid)`
+after the origin/full-operation/effect/posting/source-claim/child projections.
+All rows and exact NULL/binary values survive. RSC2 binds version2, physical and
+legacy-room digests, nine content digests and additional row/cell/byte counters.
+Original aggregate and single-cell limits remain; there is no new source budget.
+
+Historical root proof requires globally unique birth UID/revision-one ledger
+and literal identities and legacy-operation/event references, across all rows.
+Later revisions are retained history. Current money requires the actual lineage
+pointer/book and unique original revision-one effect; valid other-book histories
+are distinct, while malformed/orphan/wrong-book/current-progressed evidence
+refuses. Restitution UIDs participate in physical duplicate detection.
+Independent audit/restore ownership remains Plan5. Hashes and synthetic packets
+do not prove the original RR session, physical publication or release readiness.
+
+Reviewed pins: raw capture `eb49b8ac`, historical proof `11fc50e3`, creation
+correspondence `ce9c5067`, lifecycle owner `c468b7e7`. The size preflight now uses
+`GREATEST(0,length...)` so the single-column projection is a valid SQL expression.
+Qualification still needs real current/historical book transitions, duplicate
+descendants, foreign event references, missing/malformed origins, restitution
+conflicts and later pickup/drop coexistence in the original both-engine batch.
+No compiler, native, SQL or recovery execution is claimed for this successor.
