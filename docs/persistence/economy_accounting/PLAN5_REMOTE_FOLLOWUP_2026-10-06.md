@@ -1605,3 +1605,23 @@ change. The curator-ready report/evidence/delivery keeps the primary-local
 notebook nonblocking; application/acknowledgement is unclaimed. Source-complete
 private/combined qualification, all owners/player/fault journeys, both-engine
 upgrade/rerun, complete restore/retention and fullR1-R8 remain open.
+## Strict current tombstone envelope — 2026-10-07
+
+Base `d4fd388d1e1a76fd5a4b39e8914a9e8830fea4ba`, same local/remote
+`codex/accounting-plan5`; the containing commit is the result.
+[Exact fix and qualification](PLAN5_TOMBSTONE_ENVELOPE_2026-10-07.md) records
+four native false acceptances and ten uncontrolled top-level type errors before
+the fix, then all 36 malformed ledger cases refused before candidate/service/DB
+creation with unchanged source evidence. The Plan 5 green archive passes all
+41 backup and 18 remediation tests; primary `5dc5b181978d01f5f21cf70463e984dcd4c80144`
+plus exactly the same two Python blobs passes all 41 and 17 respectively.
+Zero skips; native source bodies/modes/links and terminal container state are
+verified. The primary overlay uses canonical 0064 metadata, with no schema
+application, actual database startup or native gameplay qualification.
+Latest refresh `e9e4da5a14e106ddc4e8d1b78749f7d9042c5653` changes only three
+review documents. Owned scope is the restore gate, existing regression module,
+report and this follow-up; no shared API/schema/runner request or activation.
+New host helpers/evidence use D: and native permission scratch uses RAM.
+Curator-ready packet remains a nonblocking handoff to the primary-local notebook.
+Combined native source, original V2 installer, full census/producer journeys,
+both-engine upgrade/retention continuity and full R1–R8 remain open.
