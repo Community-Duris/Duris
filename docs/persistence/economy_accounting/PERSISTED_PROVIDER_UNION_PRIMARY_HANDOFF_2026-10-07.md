@@ -1,5 +1,49 @@
 # Persisted provider union: primary source handoff - 2026-10-07
 
+## Reviewed prospective birth accounting/result and live publication budget - 2026-10-08
+
+Private `tmp/lifecycle-flat-shop-birth-accounting-candidate-primary-20261008`
+integrates the accepted NBC4/NMB4 role-aware accounting/MBR4 result and exact
+live publication-retention budget with the previously reviewed CURRENT/cache/
+held-body/guarded-ACK source. Candidate SHA256 `a41d13a7a78b0eb7e4ff8e34281d8050fbad2c112433ddaa24a7ac404d0527b4`: 140 production files,
+23 unchanged original fixtures, five unchanged schema/manifest inputs and 75
+selected C providers registered once. Two new object lines retain every previous
+Makefile byte; six additions total preserve original flags/rules and no original
+codec, policy, schema, helper, stored history or safety gate changes.
+
+Ordinary prospective births preserve original NMB3 wallet effects, including known
+zero revision1, then rebind full verified NMB4 metadata. Shared keeper stock uses
+actual SHOP shop+1 custody (slot0 included) and original equipment-zero convention;
+the complete original native image keeps genuine equipment. Shared births create
+no wallet, treasury or cash postings. Distinct supplied participant values bind
+actual shop ID, explicit shop/owner presence and BEFORE/AFTER clocks plus all four
+born cash denominations. Pure structural correlation does not invent owner1 for
+empty stock, a CAS increment, mapping creation or current storage authority.
+Distinct canonical264-byte MBR4 binds whole image/NMB4/NBC4/plan and supplied shared
+values. Old MBR1 and its nonzero-wallet requirement remain exact and reject MBR4.
+Genuine birth-to-SHOP CAS policy, born-UID absence, existing custody preservation,
+ordinary mapping creation and single atomic storage participant remain unfinished.
+
+The original live flat publisher can separately reserve its actual retained
+forest/vector/item/string/property/nested capacities once under unchanged32MiB,
+before first nonthrowing moves. It borrows the genuine outer publication owner;
+exact token/op/root/epoch/generation/submitted bytes and original native/command/
+manifest charges must match. All future shared capacity censuses include this
+charge; exact retries cannot resize/reset/reclaim it. No nested ticket/root lookup
+or native/publication/cancellation/ACK authority follows from a byte count. The
+physical owner still must supply the complete real allocation census and preserve
+those exact allocations and once-only handler stages.
+
+Both slices pass independent source review, changed-line formatting, full
+predecessor/new-path and dependency authentication. Compiler/native/SQL/gameplay/
+persistence/recovery remain UNEXECUTED under user major-plan deferral. This is a
+documentation-only milestone; source is private and unqualified. Live physical
+publication/terminal native disposition, cold registration/recovery and full
+driver/admission remain; full birth/source factory/room O/P, opening correspondence,
+shared keeper historical transition, activation, Plan5 and original R1-R8 gates
+remain. Original inactive-accounting and declined spell behavior is preserved;
+no full qualification gate is closed.
+
 ## Reviewed flat CURRENT readers, cache publication and live guarded ACK - 2026-10-08
 
 Private `tmp/lifecycle-flat-shop-publication-candidate-primary-20261008` integrates
