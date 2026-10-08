@@ -311,27 +311,58 @@ public src/tests/migrations unchanged. Private implementation/adoption/qualifica
 unknown;remaining original producer/replay/ACK,special effects,crafting,keeper,
 opening/activation/Plan5/R1-R8 still incomplete.
 
-Current prioritized queue: (1)architecture ONE PRIVATE special-room-placement-
-facts-20261008 packet,SPECIAL_ROOM_PLACEMENT_FACTS.txt plus public pins;then
-(2)primary-owned integrated SHOP owner/fixture/legal late-consumption refusal and
-original fences at entry;(3)keeper first-checkpoint/original boot-warm disposition;
-(4)history capacity fix-specific real DB proof;(5)remaining genuine native
-source/owner/save/ACK/current/cold interfaces/original journeys.
-Architecture traces only public obj_to_room special effect order/custody/lifetime,
-water redirect/z_cord,transient locker decay,corpse/artifact writes,signed chance/
-short-circuit RNG and falling movement/extraction/post-fall tail,with original O
-load context and exact existing helper/fixture proof limits. Benefit:ready native
-semantics/acceptance inputs for newly reported incomplete special placement.
-Available:actual handler.c/utils.h/db.c,called helpers,existing ordinary-drop/item/
-restoration helpers and falling/room tests. Privatea6854976 warm registry/stage/
-producer/replay/save/ACK and integrated execution remain unavailable;no private
-correctness claim. Reuse closed maps;no new format/recipe/policy/primary or Plan5
-implementation. One private D: fact packet only,no maintained code/test/doc/patch,
-private import/build/test/server/DB/native run. Root reviews before publication
-or next assignment. Quest feasibility/keeper facts remain CLOSED;quest has no new
-active assignment on unchanged native inputs. Existing worktrees/sealed proofs
-preserved. Actual native/root GoalsBLOCKED/unfinished;heartbeatACTIVE,no adoption
-wait or overall completion/pause.
+Special-room placement private fact packet now PASSes independent public source
+review. Root authenticates20 source/helper bodies,three fixture bodies,four
+published documents,300 exact anchors and all four indexed artifacts;critical
+handler/macro/falling/corpse/artifact/drop/restoration branches were compared.
+Packet index SHA256 a880d6bc5f74477528d08088f7d814b9747026b5c71c21fad8477d7a681ed73a;
+13,953-byte facts SHA2567360c1906837a6f362dbfea4310b60e654fb37ea26b0fe192fd3273cdaf9175d.
+Private packet/root review.json stay on D:;no private artifact committed.
+
+Implementation inputs from actual public src833d3085:
+- world/handler.c:2780 obj_to_room orders water effects before location,transient
+  scheduling,insertion/coin merge,light,PC corpse write,activity,falling,artifact
+  update. Redirect recurses while LOC_NOWHERE then returns before the outer tails;
+  merging extracts incoming root/descendants and returns before those tails.
+- core/utils.h:743 OBJ_FALLING tests no-ground sectors before signed chance_fall
+  >=number(1,100),then positive z. Ordinary negative/zero chance and positive z
+  still consume this draw. magic/affects.c:3723 falling_obj(...,false) can draw a
+  SECOND initial chance;event calls do not. Nested destination obj_to_room still
+  evaluates its predicate before the static already_falling guard refuses recursion.
+- Water excludes FLOAT/BOAT/SHIP/UNDERWATER_GR;selected non-artifact types redirect
+  to actual real_room(31724);other sinking/artifact roots get original negated
+  distance_from_shore. A pointer exit test is not an open/valid destination proof.
+- Transient marked restitution locker bags skip new decay;other locker objects
+  schedule delay2,else delay0. Existing affects remain;arming is not destruction.
+  Decay can invoke callbacks,spill through placement and extract. Corpse write
+  precedes falling;departure purges persistence,then destination may write again.
+  Artifact final-location update follows falling/nested effects;void helper return
+  proves no committed write. Falling event scheduler result is ignored.
+- Falling can recurse into placement/coin extraction;normal return does not prove
+  pointer survival,UID/current custody or conserved coin values after add_coins
+  refusal. Original outer artifact tail uses its pointer without UID relookup.
+  This is a native lifetime qualification obligation,not an inferred private defect.
+- Ordinary-drop/current eligibility refuses special shapes. SQL retained room
+  restore intentionally head-inserts/recomputes light without replaying gameplay
+  and rejects money/corpse/artifact. Three existing named tests cover engine-free
+  policy,controlled CHARACTER falling and extracted retained restoration;none
+  proves full original O/object-placement/warm replay/save/ACK acceptance.
+
+Current prioritized queue: (1)primary accessible integrated special-placement
+owner/stage/registry and original O/source/replay/save/ACK observations;(2)genuine
+SHOP original refused held-owner fixture/legal late-consumption refusal and fences
+at entry;(3)keeper first-checkpoint/original boot-warm disposition;(4)history capacity
+fix-specific real DB proof;(5)remaining native interfaces/original journeys.
+Architecture bounded special facts and keeper brief are CLOSED;quest cancellation
+feasibility is CLOSED. No new independent assignment selected on unchanged inputs.
+The conditional special-route acceptance requires original branch/RNG chronology,
+authentic graph/UID/survival/current custody and effect/persistence/event outcomes,
+once-only returned/interrupted continuation and genuine guarded ACK. Private
+candidate/new owner interfaces and execution remain unavailable. No maintained
+code/test/doc/patch or build/test/DB/server/native execution occurred in the fact
+review. Preserve worktrees/sealed proofs;reassess changed source/owner/fixture
+inputs without duplicating primary/Plan5 or reopening completed maps. GoalsBLOCKED/
+unfinished;heartbeatACTIVE,no adoption wait or overall completion/pause.
 
 Latest primary960ddd80c1acba5611677270f0156675d6d020ff reports private6641083b:
 full original live-flat refusal cleanup and retained SHOP coordinator cancellation

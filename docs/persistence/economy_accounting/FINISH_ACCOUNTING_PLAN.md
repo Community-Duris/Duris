@@ -146,6 +146,16 @@ or new clock authorized;quest prerequisites unchanged. No next independent task
 is selected until actual owner/source/fixture inputs change. Prior
 0433 Plan5/immutable-forest report remains historical;no private source/adoption
 or integrated qualification observable. GoalBLOCKED/heartbeatACTIVE unchanged.
+Architecture special-room placement fact preparation is now independently
+reviewed/CLOSED:20 source/helpers,three fixtures,four docs,300 anchors/four artifacts
+authenticated. Public source requires two initial falling predicates and nested
+RNG chronology;water/decay/coin extraction,corpse/artifact effects and pointer
+survival remain genuine owner obligations. Existing character-falling/extracted
+restoration tests do not qualify native O/object placement or original replay/ACK.
+Full exact effects/prerequisites are in the continuing charter/review. Private
+implementation unavailable;no defect/qualification or build/test/DB/native result
+inferred. Both chats preserve completed work and await exact changed native inputs;
+GoalsBLOCKED/heartbeatACTIVE,overall unfinished.
 Concurrentba319959e source-joins complete original refining/private39a35e59:
 full compound fee/material/outcome,original single roll and retained notification;
 200 selected paths/161 source files. This supersedes the prior pending-refining
