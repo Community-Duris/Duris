@@ -269,18 +269,47 @@ Original reviewer reference-search correction is retained in the private report;
 no worker evidence or provider changed. Root supplemental-review.json records
 index/report identities; sealed private review packet remains on D:.
 
-Current prioritized queue: (1)primary-owned accessible integrated SHOP owner/fixture
-and legitimate late hold-consumption refusal procedure,including original fences
-present at cancellation entry;(2)shared-keeper first-checkpoint decision and
-authentic retained original boot/warm disposition;(3)shared-owner history capacity
-fix-specific real DB proof;(4)genuine native source/owner/save/ACK/current/cold
-interfaces/original journeys. Quest feasibility is now reviewed/closed at source
-scope;keeper fact preparation stays reviewed/closed. Neither chat has an active
-independent assignment while these exact inputs remain unavailable. On changed
-source/fixture/owner evidence,reassess the next useful bounded preparation or
-qualification task;no maps/helpers are reopened to fill time. Both actual native
-Goals and root Goal remain BLOCKED/unfinished;heartbeat ACTIVE. This is not
-overall completion/pause or an adoption wait.
+Latest primary7110f2ba7e282ff9c6ee2f3299a35d08439b4516 adds the66-line
+[Warm room/craft source report](../WARM_ROOM_CRAFT_SHARED_SOURCE_INTEGRATION_2026-10-08.md),read in full.
+Privatea685497619fca69938eb010fbee4fda2aabc2005ccbdf827feaea5b91e55d0c5 joins
+warm command preparation,budget corrections,original placement recipe and pure
+craft wallet mapping. Reported shared32MiB census now includes warm registry once,
+refreshes before next child allocation and after cleanup/nesting/root seals;this
+is not a strict no-transient-overcap guarantee. Original completed S factory/
+source/literal graph and same-session season-before-room locks/confirmed rollback
+precede immutable command retention;no future revision prediction/O activation.
+Reported original placement choice is frozen at O cut without replay RNG;optional
+ZRI2 keeps absent-recipe ZRI1 bytes,signed chance correction and standard insertion/
+light/activity with started/returned markers. Water/decay/artifact/corpse/selected
+falling remain incomplete. Pure craft mapping observes no balances/I/O/authority;
+its fresh compound refining caller is under independent primary review and not
+joined here.190 selected paths/151 source paths;152 metadata count was corrected
+without source change. Makefile/fixtures/schema unchanged. All execution deferred;
+public src/tests/migrations unchanged. Private implementation/adoption/qualification
+unknown;remaining original producer/replay/ACK,special effects,crafting,keeper,
+opening/activation/Plan5/R1-R8 still incomplete.
+
+Current prioritized queue: (1)architecture ONE PRIVATE special-room-placement-
+facts-20261008 packet,SPECIAL_ROOM_PLACEMENT_FACTS.txt plus public pins;then
+(2)primary-owned integrated SHOP owner/fixture/legal late-consumption refusal and
+original fences at entry;(3)keeper first-checkpoint/original boot-warm disposition;
+(4)history capacity fix-specific real DB proof;(5)remaining genuine native
+source/owner/save/ACK/current/cold interfaces/original journeys.
+Architecture traces only public obj_to_room special effect order/custody/lifetime,
+water redirect/z_cord,transient locker decay,corpse/artifact writes,signed chance/
+short-circuit RNG and falling movement/extraction/post-fall tail,with original O
+load context and exact existing helper/fixture proof limits. Benefit:ready native
+semantics/acceptance inputs for newly reported incomplete special placement.
+Available:actual handler.c/utils.h/db.c,called helpers,existing ordinary-drop/item/
+restoration helpers and falling/room tests. Privatea6854976 warm registry/stage/
+producer/replay/save/ACK and integrated execution remain unavailable;no private
+correctness claim. Reuse closed maps;no new format/recipe/policy/primary or Plan5
+implementation. One private D: fact packet only,no maintained code/test/doc/patch,
+private import/build/test/server/DB/native run. Root reviews before publication
+or next assignment. Quest feasibility/keeper facts remain CLOSED;quest has no new
+active assignment on unchanged native inputs. Existing worktrees/sealed proofs
+preserved. Actual native/root GoalsBLOCKED/unfinished;heartbeatACTIVE,no adoption
+wait or overall completion/pause.
 
 Latest primary960ddd80c1acba5611677270f0156675d6d020ff reports private6641083b:
 full original live-flat refusal cleanup and retained SHOP coordinator cancellation

@@ -145,6 +145,14 @@ or new clock authorized;quest prerequisites unchanged. No next independent task
 is selected until actual owner/source/fixture inputs change. Prior
 0433 Plan5/immutable-forest report remains historical;no private source/adoption
 or integrated qualification observable. GoalBLOCKED/heartbeatACTIVE unchanged.
+Latest7110f2ba7 reports privatea6854976 warm prefix/budget/placement/pure craft
+mapping source join;190 paths/151 source paths,all execution deferred and public
+src/tests/migrations unchanged. Full refining remains under primary independent
+review;water/decay/artifact/corpse/selected falling and original producer/replay/
+ACK/native qualification remain incomplete. Architecture now prepares ONE private
+public special-placement fact/acceptance packet from original obj_to_room/helpers
+and existing fixture limits;no implementation/new format or execution reserved.
+Quest cancellation feasibility stays CLOSED with exact native dependencies below.
 Latest960ddd80c reports private6641083b full live-flat original-refusal cleanup
 and SHOP hold consumption before fence release source-joined;189 paths/81 C
 providers unchanged,all execution deferred. Private source unavailable and public

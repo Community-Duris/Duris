@@ -1727,3 +1727,24 @@ and sealed proofs preserved. Architecture keeper brief remains CLOSED. No active
 independent assignment until precise source/owner/fixture inputs make one useful;
 reassess changes rather than reopen maps or duplicate primary/Plan5 work.
 Actual GoalsBLOCKED/heartbeatACTIVE;overall finish line remains unmet.
+
+
+Warm room/craft primary advance and bounded special-placement facts - 2026-10-08:
+Root reads complete7110f2ba7 report/privatea6854976;190 paths/151 source paths,
+corrected metadata-only152 count. Warm registry/shared32MiB budget exit refresh,
+original S preparation/confirmed same-session rollback,original O choice recipe
+and pure craft wallet mapping are source reports only. Full refining fresh caller
+is separately reviewed by primary and not joined here. All execution UNEXECUTED;
+maintained src833d3085/tests790f367a/migrations7e06717b unchanged. Private source
+not available,so no corrected behavior/adoption/native acceptance inferred.
+Standard placement source scope leaves special water/decay/artifact/corpse/falling
+routes open. Root reads actual public obj_to_room/O cut and checks existing falling
+policy/restored-room component/synthetic journey scope. Architecture is assigned
+one PRIVATE SPECIAL_ROOM_PLACEMENT_FACTS.txt/public pins packet:exact native special
+branch/effect ordering,RNG/custody/lifetime and conditional acceptance observables,
+reusing existing maps/helpers. This prepares concrete implementation inputs;it
+is not another private code review,Plan5 audit or native proof. Private warm owner/
+stage/registry/producer/replay/ACK and execution are unavailable dependencies.
+No maintained code/test/doc/patch,format/policy design,private import/build/test/
+server/DB/native run. Root independent review pending;quest prior feasibility and
+keeper facts closed,preserved. GoalsBLOCKED/heartbeatACTIVE,overall unfinished.
