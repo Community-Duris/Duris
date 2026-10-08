@@ -10262,7 +10262,8 @@ assert [(a['vnum'],a['function']) for a in tharn['special_assignments'] if a['li
 howl=(ROOT/'src/specs/specs.tharnadian_ruin.c').read_text();interp=(ROOT/'src/cmd/interp.h').read_text();spawn=(ROOT/'src/world/db.c').read_text();mobact=(ROOT/'src/mob/mobact.c').read_text()
 assert re.search(r'if \(cmd == CMD_SET_PERIODIC\)\s*return FALSE;',howl) and re.search(r'if \(cmd\)\s*return FALSE;',howl)
 assert '#define CMD_MOB_COMBAT -102' in interp and '#define CMD_PERIODIC 0' in interp
-assert 'func.mob)(ch, 0, CMD_MOB_COMBAT, 0)' in mobact and 'func.mob)(mob, NULL, CMD_SET_PERIODIC,' in spawn
+assert 'func.mob)(ch, 0, CMD_MOB_COMBAT, 0)' in mobact
+assert re.search(r'func\.mob\)\(\s*mob,\s*NULL,\s*CMD_SET_PERIODIC,', spawn)
 assert 'number(0, 99) > 10' in howl and 'SAVING_FEAR' in howl and 'GET_OPPONENT(ch)' in howl
 # Floor proof and guarded directions are separate from a personal kill or clearance history.
 cityrooms=dawndale_bodies('cityruin','wld');cityz=(ROOT/'areas/zon/cityruin.zon').read_text();bz=(ROOT/'areas/zon/braddistock.zon').read_text();oz=(ROOT/'areas/zon/outpost.zon').read_text()
