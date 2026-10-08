@@ -130,6 +130,9 @@ def run(binary: Path, count: int, expect_abort: bool, malformed: bool = False,
                     if (concurrent_child and not replaced_source and
                             "injected pause stage=after_acknowledgment" in
                             journey.runtime_logs(game)):
+                        original_child_id = sql("SELECT id FROM saved_items WHERE "
+                                                "item_key='restore_allocator_1' AND "
+                                                "container_id IS NOT NULL")
                         sql("START TRANSACTION;"
                             "DELETE FROM saved_items WHERE "
                             "item_key='restore_allocator_1' AND "
@@ -142,6 +145,9 @@ def run(binary: Path, count: int, expect_abort: bool, malformed: bool = False,
                             "'a newer recovery note',"
                             "'A newer recovery note lies here.',150);"
                             "COMMIT")
+                        assert sql("SELECT id FROM saved_items WHERE "
+                                   "item_key='restore_allocator_1' AND "
+                                   "container_id IS NOT NULL") != original_child_id
                         replaced_source = True
                     if (concurrent_save and not replaced_source and
                             "injected pause stage=after_publication" in
@@ -400,16 +406,21 @@ def run(binary: Path, count: int, expect_abort: bool, malformed: bool = False,
                     client.pending.clear()
                     client.send("look")
                     room = client.expect("Pos: standing >", timeout=20)
-                    assert room.count("recovery backpack") == 1, room
-                    client.pending.clear()
-                    client.send("look in backpack")
-                    inside = client.expect("Pos: standing >", timeout=20)
-                    assert inside.count("recovery note") == 1, inside
+                    # The unretired receipt proves the original source IDs and
+                    # full payload. A replacement child cannot authorize its
+                    # acknowledged destination, even when its UID is unchanged.
+                    assert "recovery backpack" not in room, room
                     assert sql("SELECT COUNT(*) FROM saved_items "
                                "WHERE item_key='restore_allocator_1'") == "2"
+                    assert sql("SELECT COUNT(*) FROM saved_items "
+                               "WHERE item_key='item.uid.800000000001'") == "2"
                     assert sql("SELECT COUNT(*) FROM saved_item_recovery_handoff "
                                "WHERE retired_at IS NULL") == "1"
-                    print("concurrent child replacement: exact source generation retained",
+                    replay_logs = (output_path.read_text(errors="replace") +
+                                   journey.runtime_logs(game))
+                    assert "acknowledged source payload missing or conflicting" in replay_logs
+                    assert "acknowledged source retirement deferred" in replay_logs
+                    print("concurrent child replacement: conflicting source retained without publication",
                           flush=True)
                     return
                 if reject_child:
