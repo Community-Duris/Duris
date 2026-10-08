@@ -627,8 +627,24 @@ Originless NPC cash still requires witnessed durable lifetimes. These are precis
 publication triggers for reassessment, not a fabricated player authority,
 complete-world proof, new worker assignment or completion/resumption signal.
 
-No independent domain or quest implementation is currently selected. Watch for
-the table's real source/interface/fixture publications, then reserve a connected
+The user now explicitly requests useful further preparation during implementation
+dependency waits. Architecture owns one new bounded dossier:
+CURRENCY_DOMAIN_AUTHORITY_BOUNDARY_2026-10-08.md in this directory. Trace real
+wallet/ATM/bank-payment and coin-boundary operations through maintained SQL/flat,
+coordinator/save/publication/receipt/ACK ownership; pin actual functions/blobs and
+reuse the existing inventory/R2 findings. Deliver a minimal proposed currency
+boundary and behavior-preserving DB-authoritative change sequence, cross-domain
+atomicity limits and existing assertion/missing-case map. This is design/source
+preparation, not production/test changes, another numerical extraction, private
+candidate import, native qualification or a duplicate Plan5/primary task.
+Private Plan2/census/NPC/reset successors are reported contracts only. Complete
+maintained-source analysis despite precise private unknowns; hand off one useful
+published document for independent review. The full continuing Goal remains
+blocked and unfinished. Quest work still awaits its recorded genuine interfaces.
+
+No new independent domain or quest code implementation is currently selected.
+Preparation above proceeds now; watch for the table's real source/interface/
+fixture publications, then reserve a connected
 case or operation for the appropriate existing chat. Preparation can begin once
 sufficient original owner facts are available; native execution is its later
 qualification gate. Do not repeat unchanged suites or manufacture another helper.
