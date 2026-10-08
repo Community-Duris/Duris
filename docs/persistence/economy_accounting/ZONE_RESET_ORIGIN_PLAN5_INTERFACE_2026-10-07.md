@@ -168,20 +168,25 @@ revokes it before release. The source SQL normalization/independent verifier and
 activation consumer are still required; no raw census or terminal DTO is authority.
 Production accounting stays inactive; all cross-stream release gates remain open.
 
-## Reviewed runtime return and real-root retention interfaces - 2026-10-07
+## Reviewed initialized cutover caller and room-nesting interfaces - 2026-10-07
 
-The common private99/23/5 candidate preserves original terminal/cold-world and
-fresh SQL abort-projection interfaces. All53 selected C providers are registered
-once. Genuine runtime coordinator reservation and SQL/local writer ownership now
-have atomic reverse transfers; explicit quiesce stays restrictive throughout the
-initialized cut. Real cleanup retries retain unresolved obligations and skip only
-completed stages, with capability revocation preceding cleanup and no reissue.
-Actual adopted caller/pre-promotion revocation and committed projection/activation
-consumer remain unwired. No historical receipt/finished selection is a permit.
+The shared private102/23/5 candidate preserves the original terminal/cold-world,
+projection and genuine reverse ownership contracts. All 55 selected C providers
+register once; no Makefile, fixture or schema pins change from shared99. The actual
+initialized-world/SQL owners now have a private adopted begin/known-abort return
+caller: preallocate real transaction slot and retain original save epoch before
+revoking the boot capability, preserve transferred START-failure ownership, then
+fresh SQL projection proof/atomic return/fresh returned-guard proof/original writer
+restoration/staged cleanup. Retries retain the same source epoch and closed
+outbox; no historical selection, receipt or successful read grants a permit.
+Default activation/normalizer/independent verifier/committed consumer is unwired.
 
-The real O-root constructor captures authentic source/UID/factory/load metadata.
-A retaining factory variant fixes failed inner-cleanup ownership loss; the original
-constructor wrapper remains unchanged. Root capture is unsealed/non-admissible.
-Full P chronology/room nesting/placement/current CAS and terminal transfer remain.
-Source/format review only; compiler, engines, migrations, gameplay and recovery
-are unrun. Independent Plan5 audit/readers/backup/release ownership stays intact.
+Factory-owned ordinary room nesting/detach is independently source-reviewed.
+Complete actual graph/prototype/UID/global absence precedes original grouping and
+weight mutation. Reducing shells refuse before mutation pending authentic probes.
+SQL-only canonical type22 support changes no flat allowlist or producer gate.
+Actual reset replay/completion/pulse/readiness registrations, shared P chronology,
+complete forest sealing/hot placement/current CAS/terminal publication remain open.
+No new outbox framework or source-policy widening is required. Full native/runtime
+qualification remains unrun; independent Plan5 audit/backup/release ownership stays
+separate. Capture/nesting/decoder components do not establish writer coverage.
