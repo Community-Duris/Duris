@@ -9,16 +9,16 @@ formatting pass; original test controls and recipe remain. Complete mobile/live
 world census and original native/both-engine qualification remain required.
 These private source slices do not close R6, activation or release gates.
 
-## Restore operator provider closure approved - 2026-10-07
+## Restore operator provider repair independently qualified - 2026-10-07
 
-[Independent boundary review](domain-separation/AUDITOR_PROVIDER_BOUNDARY_REVIEW_2026-10-07.md)
-authenticates original custody link success and operator failure, complete source/
-packet/actual ELF/toolchain pins and reached three-provider omission. Architecture
-may add exactly retirement/native-cost/native-give SOURCES nodes to the original
-builder and qualify its committed standalone current-primary compile-only import.
-No custody recipe change/rerun is needed. Implementation/repaired link/final review
-are pending; native runtime and full original major-plan gates remain required.
-No authority/testdriver/manifest change or primary adoption wait is introduced.
+[Final coordinator review](domain-separation/AUDITOR_PROVIDER_BOUNDARY_REVIEW_2026-10-07.md)
+and [canonical handoff](domain-separation/AUDITOR_PROVIDER_RECIPE_HANDOFF_2026-10-07.md)
+close the optional one-file retirement/native-cost/native-give builder repair.
+Code1793deb8 alone on exacta539 primary links through the original maintained
+builder; all source/packet/ELF/compiler inputs and library/symbol pins authenticate.
+Current primary preimage matches and standalone patch check passes. Code adoption
+remains optional/unclaimed. Zero native runtime cases; original failure/custody
+success stay separate. Full original major-plan/runtime gates remain required.
 
 ## Shopkeeper recipe preservation independently checked - 2026-10-07
 

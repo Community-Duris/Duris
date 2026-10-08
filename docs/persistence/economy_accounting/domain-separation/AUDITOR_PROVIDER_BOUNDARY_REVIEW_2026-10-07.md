@@ -1,5 +1,72 @@
 # Restore operator provider closure: coordinator boundary review - 2026-10-07
 
+## Final independent repair/link review - 2026-10-07
+
+PASS at the approved one-file repair and compile-only scope. Code
+1793deb80275f1fba2c6d9a73cebf278f13d54c6 contains exactly the approved three nodes;
+[canonical handoff](AUDITOR_PROVIDER_RECIPE_HANDOFF_2026-10-07.md) at
+c84786260d3eb7e2ea041f461bbb5450c91542ec is copied byte-exact, SHA256
+9abff07c15cbca2c60ff1e49bc444c6aa66e48097f055408257b82f9f4fbcb55.
+This supersedes the pending implementation/link/final-review dispositions in
+the historical boundary approval below and worker handoff. Primary code adoption
+remains optional and unclaimed; the current primary builder still has its exact
+original preimage. The actual committed one-file patch passes standalone
+`git apply --check` on published d3ec3b29260fe923059cb9038d1c42e54a00a1f6.
+No optional adoption wait or extra release gate is introduced.
+
+Coordinator independently authenticates composed tree
+0ead28564fdf61b09d59c5b4dad7b9407cc28ecd against exact a53977fe2: solely the actual
+committed builder changes. All6491 Git/tar entries, blob hashes, canonical modes/
+symlink targets and extracted regular bodies match; body bytes256631884. Archive
+SHA256 is be1f22b7252e814df7c9efcff1d8be762830d7f519f01abad4baee2212394e2c.
+Actual committed patch SHA256 is
+729c5be4c0af7453744ceeaedd7b0095f55cbf1e6a2eecb9e5533291c1842f18; postimage remains
+39fb56b06201ec0dbb0ce3c6bfea0eac02cc506c12dd4615ac4b53066d4a1ddf. All59 original
+source nodes/order and all other AST/flags/options are exact.
+
+The original maintained builder runs once with operator plus62 native units and
+unchanged GC/default optimization/strict warning recipe. Coordinator derives
+its full argv from the committed AST and matches the actual command exactly:
+compiler exit0 in192.460222426 seconds, builder195.245378956 seconds, host250.485
+seconds within the900-second outer bound, stderr empty. Original compiler has
+no inner timeout. All original failure and custody-success pins were reopened
+unchanged; neither build was repeated or relabeled.
+
+Produced ELF6710928 bytes authenticates to
+7cd392038aef04eda56ff99c0d36859385ed2ca2da381bdb7f3a926a98634fa2. Coordinator
+independently nm-checks actual defined/undefined outputs: all six missing symbols
+are now defined and none remains undefined. All63 dependency-only probes match
+the actual original compiler flags/source list. Coordinator independently reopens
+all677 actual compiler input pins (231 tracked,446 system), all63 depfiles,
+all13 toolchain/library pins and seven requested/resolved runtime-library pairs
+through local Ubuntu22.04 WSL. Every tracked input also matches the composed
+Git manifest. These are post-build compiler-reported closure and file/symbol
+checks, not a second native link or case execution.
+
+All6789 final indexed files/540794158 bytes independently authenticate. Index
+SHA256 is ebd28ddc6e4e8fda8e04c52a91f8eeb8098a59418c46e4982c0946b8c1a3a145;
+qualification receipt SHA256 is
+f434d91345b236360a49a672f2fc363e8beb2ec9d4776debf1c6ed230841b699. Both terminal
+full-source reread receipts agree with Git. Metadata exits0 in554.641 seconds,
+empty stderr; all build/metadata jobs are terminal. No raw artifact is committed.
+Private root authentication records remain in the separate D: review directory.
+NTFS build-file modes do not qualify persistent-authority Linux controls; no
+service/volume/storage/toolchain repair or Docker retry occurred.
+
+Native runtime cases remain zero. Original dedicated custody/domain/auction/
+authority/baseline/lifecycle/backup/full-service and major-plan runtime gates
+remain required. Native lifecycle/install/world census, full gameplay/recovery,
+combined qualification and release are unclaimed. Published successor d3ec3b292
+adds only private fresh activation-consumer source preparation documentation:
+owned RR read cut, legacy auction identity witness and fixture successors have
+source/format evidence, with native/both-engine execution and live/reset/world
+census still required. No private native consumer is imported here and no genuine
+new quest fixture interface is exposed. Preserve original owner boundaries,
+inactive accounting and full Plans1-5/applicable R1-R8 finish line. Root/worker
+continuing Goals remain blocked and unfinished; the heartbeat stays active.
+
+## Historical boundary approval
+
 Approve exactly the three real provider nodes proposed by architecture
 `7d03a836613d4fd079c9c3cd5fb9c76aae034087` in
 `scripts/build_restore_qualifier.py`: `lockpick_retirement_continuation`,
