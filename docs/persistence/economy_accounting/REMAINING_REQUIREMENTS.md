@@ -1,61 +1,60 @@
 # Double-entry economy: remaining requirements
 
-## Reviewed PC money, reset chronology and flat collector owners - 2026-10-08
+## Reviewed NPC current money and mobile P selector - 2026-10-08
 
-Private `tmp/lifecycle-native-order-hooks-candidate-primary-20261008` composes
-111 production files, 23 unchanged original fixtures and five unchanged schema/
-manifest files on maintained9fe5e2022. Candidate SHA-256 is
-`7bb4c58150d14dcf57148080127b080219436c4b91575a4addbf12d9c2e97351`.
-All 61 selected C providers register once. The sole Makefile change adds the real
-PC money provider; removing that line reconstructs the prior Makefile exactly.
-Build rules, flags, original fixtures and schema pins stay. Independent source
-reviews and changed-line formatting/token preservation pass. Compiler, native,
-SQL, migration, gameplay, fault and recovery execution remain unrun. C++ stays
-in the private candidate pending major-plan qualification; this is a source checkpoint.
+Private `tmp/lifecycle-npc-money-candidate-primary-20261008` composes the
+independently reviewed mobile P selector, addressed-NPC current-money comparison
+and genuine retained-session consumer on maintainedab56edfc9. Candidate SHA256:
+`2b09c85daa4f824b201a5ebbfe7ff21360613f4838f819f390eaca78a76d04b8`.
+Scope remains 111 production files, 23 unchanged original fixtures and five
+unchanged schema/manifest files; all 61 selected C providers register once.
+The prior sole PC-provider Makefile addition remains unchanged. Source review,
+changed-line formatting, exact pins and predecessor reconstruction pass.
+Compiler/native/SQL/migration/gameplay/fault/recovery checks remain unexecuted.
+Source stays private pending major-plan qualification; published checkpoint
+documents do not constitute an implementation or release qualification claim.
 
-Plan2 source now compares genuine captured PC wallet cash/revisions and bank
-projections against the retained raw SQL cut inside the actual cutover borrow.
-Canonical account keys follow existing ASCII/50-byte authority rules; raw evidence
-and indices survive. Shared banks compare once without summing projections;
-disconnected identities, conflicts and unloaded SQL holdings remain explicit.
-All issue counts gate the callback, regardless of stored diagnostic truncation.
-The same owning raw world/providers plus const primary money report survive through
-the independent callback. This is PC money correspondence, not NPC/item completeness.
-Source review also proves and corrects both lifecycle binary bank clamps: actual
-bank writers store GET_RACEWAR (including Evil2), while storage/normalization and
-gameplay projection use nonnegative signed-TINYINT context. Both readers now use
-INT8_MAX, preserving negative rejection and nonbank context0. No schema change.
+Plan2 primary comparison now reparses every native raw6 row and original canonical
+image rather than trusting cached decoded fields. It joins the full148-byte
+body/cash/current-image reference with authenticated mapping identity, native UID,
+lineage, historical birth epoch and creating operation. Current cash revision and
+all four denominations must agree. Mapping ID and native UID remain distinct even
+when numerically equal. Complete issue counts retain missing/duplicate/mixed or
+unknown values, originless first-opening NPCs, retired history and unloaded
+authenticated lifetimes; diagnostic truncation never hides an acceptance defect.
+Review corrected a too-strict image check to the original scalar20/20/20/3/20
+bounds and existing 4MiB native-image allowance. No source policy is widened.
 
-Plan3 constructor-owned chronology observes the genuine detached prepend-equivalent
-cut before callbacks, completed versus retained-failed factories, actual ordinary
-prepend/extraction and successful disposal. Hot publication reconciles the original
-position while preserving other live order; cold restoration keeps actual prepend.
-The redundant pending-times-live alias scan is removed because complete validated
-loops require incompatible states on the same pointer. Runtime obj_data grows;
-explicit persisted field encoders stay unchanged. Six genuine native prepends now
-have reviewed observation hooks: auction, SQL/flat coin, ordinary drop, published
-mobile and cold shop. Each checks the authentic cut/fresh body/ordinal capacity
-before binding, hydration or consumption; the nonallocating observer runs just
-before original prepend. Cold bodies retain original order, hot bodies cannot
-receive a second ordinal. Actual P selectors and source/custody handoffs remain
-open; source hooks do not qualify writer coverage or complete reset wiring.
+The actual initialized verifier borrow calls the existing native-wallet mapping
+verifier once after complete raw capture. Original birth inbox authentication
+still precedes native mapping/current-row locks. Its already-authenticated current
+lifetime vector moves only after all original mapping validation succeeds and
+stays owned beside raw sources through the synchronous callback. Derived metadata
+uses existing DTO ceilings; cumulative native raw counters are not counted twice.
+The independent view additionally borrows a const lifetime span and primary NPC
+report. Every primary NPC defect gates the callback. Full raw evidence, original
+limits, owner revalidation, savepoint cleanup/failure latch and abort ownership stay.
 
-Plan4 flat singleton collector purchase now connects exact NO_MYSQL schema2
-admission/dispatch, genuine live/cold player-save holds, native online/offline
-publication and guarded ACK. The outer attempt holds the actual selected-root lock
-from inside the callback, after covered-save observation, through post-census/journal
-checkpoint/exact hold consumption. Immutable full receipt proof stays separate
-from current bank/catalog clocks; rejected outcomes invoke no materializer. Failed
-materializer/conflict/ACK stays held. Schema1, other collector exclusions and SQL
-owner/callback bodies stay. Dispatch SQL-selected source is line-ending-normalized
-equal (CRLF became LF), not raw-byte equal. Native journeys remain unqualified.
+Plan3 actual mobile P lookup now selects by authentic constructor chronology;
+pending winners require the exact current birth/stage/UID/prototype/zone owner.
+Foreign or incomplete winners refuse without an older fallback. Authentic absence
+remains distinct. Lookup or nest refusal uses the real blocked-birth/finish/return
+path before command success, retaining once-constructed work and original choices.
+Inactive lookup/nesting and admission/O/spell gates stay. Retained refusal is not
+resumable replay and does not supply foreign custody or a complete room producer.
 
-Earlier same-session cutover/revocation/known-abort cleanup, verifier savepoint
-cleanup/failure latch and genuine P-child capture remain composed. NPC opening and
-current cash, full item forest correspondence, initial inactive installation/epoch
-policy, independent Plan5 callback/activation/committed publication, reset forest/
-CAS/recovery/readiness, flat parity and full R1-R8 major-plan qualification remain
-required. Existing inactive behavior and release/coverage safety gates stay closed.
+Earlier PC/shared-bank comparison and signed-byte bank context repair, genuine
+constructor/six native-prepend hooks, full flat collector save-hold/lock/receipt/
+publication/ACK source, retained verifier cleanup and P-child capture remain.
+SQL collector owner/callback bodies are preserved; dispatcher SQL-selected source
+is line-ending-normalized equal, not raw-byte equal. All remain unqualified.
+
+Originless NPC opening and complete item correspondence, retained warm room roots/
+forest/source/custody/current SQL cut/admission/adoption/comm readiness/recovery,
+independent Plan5 callback, first inactive installation and actual activation/
+committed publication, both-backend major-plan journeys and full R1-R8 remain open.
+Coverage/release gates stay closed; current inactive behavior and declined spell
+path remain unchanged. Warm registry implementation is separate and not composed.
 
 ## Reviewed creation census and current coin heads - 2026-10-07
 
