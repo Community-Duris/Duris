@@ -1192,6 +1192,38 @@ def read_guild_treasuries(cursor) -> tuple[list[dict], dict]:
     return treasuries, coverage
 
 
+def read_auction_custody(cursor) -> dict:
+    """Capture independent persisted roots; never load or clone an item blob."""
+    cursor.execute(
+        "SELECT (SELECT COUNT(*) FROM auctions)+"
+        "(SELECT COUNT(*) FROM auction_item_custody)+"
+        "(SELECT COUNT(*) FROM auction_item_pickups) AS rows_total")
+    bound = cursor.fetchone()
+    if bound is None or bound["rows_total"] > MAX_ROWS:
+        raise ExportError("auction custody source exceeds audit bounds")
+    listings = bounded(cursor,
+        "SELECT id AS auction_id,seller_pid,winning_bidder_pid AS winner_pid,status,"
+        "auction_revision AS revision,custody_state,quantity,obj_vnum AS vnum,"
+        "OCTET_LENGTH(obj_blob_str) AS blob_bytes,SHA2(obj_blob_str,256) AS blob_sha256 "
+        "FROM auctions ORDER BY id")
+    roots = bounded(cursor,
+        "SELECT auction_id,slot,item_uid AS uid,item_revision AS revision,vnum,claim_pid,"
+        "HEX(claim_operation_id) AS claim_operation_id,claimed_at IS NOT NULL AS claimed,"
+        "OCTET_LENGTH(obj_blob) AS blob_bytes,SHA2(obj_blob,256) AS blob_sha256 "
+        "FROM auction_item_custody ORDER BY auction_id,slot")
+    for row in roots:
+        row["claimed"] = bool(row["claimed"])
+        if row["claim_operation_id"] is not None:
+            row["claim_operation_id"] = row["claim_operation_id"].lower()
+    legacy = bounded(cursor,
+        "SELECT id,pid,quantity,retrieved,OCTET_LENGTH(obj_blob_str) AS blob_bytes,"
+        "SHA2(obj_blob_str,256) AS blob_sha256 FROM auction_item_pickups ORDER BY id")
+    return {"auction_listings": list(listings), "auction_roots": list(roots),
+            "auction_legacy_pickups": list(legacy),
+            "auction_custody_coverage": {"listings": len(listings), "roots": len(roots),
+                                         "legacy_pickups": len(legacy)}}
+
+
 def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
     # Both native-item and mapping projections can return payload bytes. Bound
     # them before either buffered SELECT, including repeated mapping joins.
@@ -1213,6 +1245,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
         raise ExportError("mapped coin-pile source exceeds audit bounds")
     native = {"holdings": [], "items": [], "coin_piles": [],
               "coin_pile_mappings": [], "pending_claim_sources": []}
+    native.update(read_auction_custody(cursor))
     native["ship_coffers"], native["ship_coffer_coverage"] = read_ship_coffers(cursor)
     native["guild_treasuries"], native["guild_treasury_coverage"] = read_guild_treasuries(cursor)
     gaps = ["ship_coffer_lifetime_origin_revision_and_writer_qualification",
@@ -1220,6 +1253,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
             "coin_pile_creation_origin_and_lifecycle_source_completeness",
             "escrow_claim_treasury_lifecycle_and_origin_reconciliation",
             "pending_claim_consumer_completeness_and_legacy_coverage",
+            "auction_template_prototype_coin_literals_history_and_legacy_identity",
             "unattributed_ownership_history",
             "unreferenced_uid_events_without_native_or_baseline_anchors",
             "unresolved_post_baseline_account_origins",
@@ -1520,6 +1554,7 @@ def read_native(cursor, lineage: bytes) -> tuple[dict, list[str], dict]:
                                 "owner": [row["owner_type"], row["owner_id"],
                                           row["owner_context_id"]],
                                 "revision": row["item_revision"],
+                                "vnum": row["vnum"],
                                 "state": ITEM_STATES[row["state"]],
                                 "equipment_slot": row["equipment_slot"]})
         if row["vnum"] == COIN_VNUM or row["coin_payload"] is not None:
@@ -1572,9 +1607,10 @@ def capture(connection, lineage: bytes, epoch: bytes) -> dict:
             "'economic_pending_claim_source','economic_pending_claim_consumption','economic_sql_lifecycle_installation',"
             "'critical_operation_inbox','player_data',"
             "'account_banks','item_current_owner','item_ownership_ledger','auctions',"
-            "'auction_money_pickups','shopkeepers','ships','guilds')")
+            "'auction_money_pickups','auction_item_custody','auction_item_pickups',"
+            "'shopkeepers','ships','guilds')")
         engines = {row["table_name"]: row["engine"] for row in cursor.fetchall()}
-        if len(engines) != 19 or any(engine != "InnoDB" for engine in engines.values()):
+        if len(engines) != 21 or any(engine != "InnoDB" for engine in engines.values()):
             raise ExportError("SQL audit source is missing or not InnoDB")
         has_realized_price = realized_price_column_available(cursor)
         evidence = read_evidence(cursor, lineage, epoch, has_realized_price)

@@ -135,7 +135,14 @@ TABLES = (
     "CREATE TABLE account_banks (id BIGINT,bank_copper BIGINT,bank_silver BIGINT,bank_gold BIGINT,"
     "bank_platinum BIGINT,bank_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE auctions (id BIGINT,status VARCHAR(16),cur_price BIGINT,"
-    "auction_revision BIGINT,winning_bidder_pid BIGINT) ENGINE=InnoDB",
+    "auction_revision BIGINT,winning_bidder_pid BIGINT,seller_pid BIGINT DEFAULT 1,"
+    "custody_state INT DEFAULT 0,quantity INT DEFAULT 1,obj_vnum INT DEFAULT 0,"
+    "obj_blob_str LONGBLOB) ENGINE=InnoDB",
+    "CREATE TABLE auction_item_custody (auction_id BIGINT,slot INT,item_uid BIGINT UNSIGNED,"
+    "item_revision BIGINT UNSIGNED,vnum INT,claim_pid BIGINT NULL,claim_operation_id BINARY(16) NULL,"
+    "claimed_at TIMESTAMP NULL,obj_blob LONGBLOB) ENGINE=InnoDB",
+    "CREATE TABLE auction_item_pickups (id BIGINT,pid BIGINT,quantity INT,retrieved INT,"
+    "obj_blob_str LONGBLOB) ENGINE=InnoDB",
     "CREATE TABLE auction_money_pickups (pid BIGINT,money BIGINT,"
     "claim_revision BIGINT UNSIGNED) ENGINE=InnoDB",
     "CREATE TABLE shopkeepers (id BIGINT,cash BIGINT,shop_revision BIGINT UNSIGNED) ENGINE=InnoDB",
@@ -229,7 +236,9 @@ def verify_coin_payload_row_budget(owner, reader, snapshot):
                         json.dumps(before, sort_keys=True) + "\n")
                 (target / "queries.json").write_text(json.dumps(connection.observer.queries) + "\n")
                 if accepted:
-                    assert error is None and captured == snapshot, row
+                    expected = copy.deepcopy(snapshot)
+                    next(item for item in expected["native"]["items"] if item["uid"] == 82)["vnum"] = vnum
+                    assert error is None and captured == expected, row
                     (target / "snapshot.json").write_text(json.dumps(captured, sort_keys=True) + "\n")
                 else:
                     assert captured is None and error == "coin-pile nested row count exceeds limit", row
@@ -290,6 +299,9 @@ def verify_area_coin_views(owner, reader, snapshot):
             expected = capture(reader, LINEAGE, EPOCH)
             for vnum in (402013, 402014, 2**31 - 1):
                 update(vnum, state)
+                # Prototype identity is now retained in current UID metadata;
+                # every other projection, including the money, remains equal.
+                next(row for row in expected["native"]["items"] if row["uid"] == 82)["vnum"] = vnum
                 sample(f"prototype-{vnum}-state-{state}", expected)
         update(402013)
         with owner.cursor() as cursor:
@@ -1014,7 +1026,8 @@ try:
             cursor.execute("INSERT INTO player_data VALUES "
                            "(7,2,0,0,0,5),(15,1,0,0,0,1),(16,1,0,0,0,1)")
             cursor.execute("INSERT INTO account_banks VALUES (9,5,0,0,0,3)")
-            cursor.execute("INSERT INTO auctions VALUES (5,'REMOVED',123,1,7)")
+            cursor.execute("INSERT INTO auctions(id,status,cur_price,auction_revision,winning_bidder_pid,obj_blob_str) "
+                           "VALUES (5,'REMOVED',123,1,7,X'78')")
             cursor.execute("INSERT INTO auction_money_pickups VALUES (7,250,1)")
             cursor.execute("INSERT INTO shopkeepers VALUES (3,500,1)")
             cursor.execute(ITEM_INSERT +
@@ -1162,7 +1175,8 @@ try:
             assert snapshot["native_mapping_coverage"]["pending_claim_rows"] == 1
             assert snapshot["native_mapping_coverage"]["treasury_rows"] == 1
             with setup.cursor() as writer:
-                writer.execute("INSERT INTO auctions VALUES (6,'REMOVED',0,1,0)")
+                writer.execute("INSERT INTO auctions(id,status,cur_price,auction_revision,winning_bidder_pid,obj_blob_str) "
+                               "VALUES (6,'REMOVED',0,1,0,X'78')")
                 writer.execute("INSERT INTO economic_account_mapping VALUES "
                                "(17,4,4,0,6,%s,1,NULL,6,NULL)", (LINEAGE,))
             empty_removed = capture(audit, LINEAGE, EPOCH)
@@ -1172,7 +1186,8 @@ try:
             with setup.cursor() as writer:
                 writer.execute("DELETE FROM economic_account_mapping WHERE mapping_id=17")
                 writer.execute("DELETE FROM auctions WHERE id=6")
-                writer.execute("INSERT INTO auctions VALUES (7,'OPEN',25,1,0)")
+                writer.execute("INSERT INTO auctions(id,status,cur_price,auction_revision,winning_bidder_pid,obj_blob_str) "
+                               "VALUES (7,'OPEN',25,1,0,X'78')")
                 writer.execute("INSERT INTO economic_account_mapping VALUES "
                                "(18,4,4,0,7,%s,1,NULL,7,NULL)", (LINEAGE,))
             unfunded = capture(audit, LINEAGE, EPOCH)
@@ -1277,6 +1292,7 @@ try:
             # All three EAB1 item origins omit equipment positions; the live
             # native columns cannot supply their authenticated opening slots.
             expected_exceptions = {"evidence_loss": 1,
+                                   "auction_legacy_listing_identity_unknown": 1,
                                    "missing_item_equipment_evidence": 3,
                                    "unmapped_native_wallet": 1,
                                    "unauthorized_mapping_creation": 1,
@@ -1999,6 +2015,10 @@ try:
                     writer.execute("UPDATE player_data SET copper=3 WHERE pid=7")
                     writer.execute("UPDATE ships SET money=11 WHERE id=25")
                     writer.execute("UPDATE guilds SET copper=7 WHERE id=31")
+                    writer.execute("UPDATE auctions SET obj_vnum=1 WHERE id=5")
+                    writer.execute("INSERT INTO auction_item_custody(auction_id,slot,item_uid,item_revision,vnum,obj_blob) "
+                                   "VALUES (5,0,84,1,1,X'78')")
+                    writer.execute("INSERT INTO auction_item_pickups VALUES (1,7,1,0,X'78')")
                 return origins
 
             with mock.patch.object(exporter, "read_origins_in_transaction",
@@ -2011,10 +2031,18 @@ try:
             assert capture(audit, LINEAGE, EPOCH)["native"]["ship_coffers"] == [{"ship_id":25,"copper":11}]
             assert fenced["native"]["guild_treasuries"] == [{"guild_id":31,"balance":[1,2,3,4]}]
             assert capture(audit, LINEAGE, EPOCH)["native"]["guild_treasuries"] == [{"guild_id":31,"balance":[7,2,3,4]}]
+            assert fenced["native"]["auction_listings"][0]["vnum"] == 0
+            assert fenced["native"]["auction_roots"] == fenced["native"]["auction_legacy_pickups"] == []
+            later_auctions = capture(audit, LINEAGE, EPOCH)["native"]
+            assert later_auctions["auction_listings"][0]["vnum"] == 1
+            assert len(later_auctions["auction_roots"]) == len(later_auctions["auction_legacy_pickups"]) == 1
             with setup.cursor() as cursor:
                 cursor.execute("UPDATE player_data SET copper=2 WHERE pid=7")
                 cursor.execute("DELETE FROM ships")
                 cursor.execute("DELETE FROM guilds")
+                cursor.execute("UPDATE auctions SET obj_vnum=0 WHERE id=5")
+                cursor.execute("DELETE FROM auction_item_custody")
+                cursor.execute("DELETE FROM auction_item_pickups")
             with tempfile.TemporaryDirectory(prefix="duris-sql-audit-") as directory:
                 output = Path(directory) / "partial.json"
                 command = [sys.executable, str(ROOT / "scripts/economic_sql_audit_snapshot.py"),

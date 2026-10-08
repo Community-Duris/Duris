@@ -264,7 +264,8 @@ class Reconciler:
                 elif field == "source_event" and isinstance(value, str) and re.fullmatch(r"[0-9a-f]{96}", value):
                     safe[field] = value
                 elif field in ("uid", "parent_uid", "child_index", "line_index", "source_slot",
-                               "net_copper", "ship_id", "guild_id", "identity_kind", "identity_id") and type(value) is int:
+                               "net_copper", "ship_id", "guild_id", "auction_id", "slot",
+                               "identity_kind", "identity_id") and type(value) is int:
                     safe[field] = value
                 elif field == "table" and isinstance(value, str) and (value in TABLES or value in ORPHAN_EVIDENCE_SOURCES):
                     safe[field] = value
@@ -593,6 +594,7 @@ class Reconciler:
         item_origins = self.index(tables["item_origins"], ("uid",), "duplicate_item_origin")
         native_holdings = self.index(holdings, ("account_key",), "duplicate_native_holding")
         native_items = self.index(items, ("uid",), "duplicate_native_uid")
+        self.audit_auction_custody(snapshot.get("backend"), native, native_items)
         self.audit_mapping_creations(snapshot.get("backend"), lineage, native, origins,
                                      operations, effects, epoch)
         self.audit_pending_claim_consumers(snapshot.get("backend"), lineage, native,
@@ -831,6 +833,132 @@ class Reconciler:
                 "checked": {name: len(tables[name]) for name in TABLES} |
                            {"native_holdings": len(holdings), "native_items": len(items),
                             "original_plans_verified": self.original_plans_verified}}
+
+    def audit_auction_custody(self, backend: str, native: dict, items: dict) -> None:
+        """Compare retained SQL auction roots with current UID authority.
+
+        Claimed rows are history, never a current ownership grant. Blob hashes
+        compare retained byte identity only; prototype deltas and coin literals
+        require separate authority and are not qualified here.
+        """
+        names = ("auction_listings", "auction_roots", "auction_legacy_pickups")
+        coverage = native.get("auction_custody_coverage")
+        if coverage is None and all(name not in native for name in names):
+            if backend == "sql_partial":
+                self.emit("missing_auction_custody_coverage", scope="snapshot")
+            return
+        listings, roots, legacy = (self.table(native, name) for name in names)
+        expected = dict(zip(("listings", "roots", "legacy_pickups"),
+                            map(len, (listings, roots, legacy))))
+        if (not isinstance(coverage, dict) or coverage != expected or
+                any(type(value) is not int for value in coverage.values()) or
+                sum(coverage.values()) > MAX_ROWS):
+            raise SnapshotError("invalid auction custody coverage")
+
+        def integer(row, field, low, high):
+            value = row.get(field)
+            if type(value) is not int or not low <= value <= high:
+                raise SnapshotError("invalid auction custody " + field)
+
+        def blob(row):
+            integer(row, "blob_bytes", 0, 2**64 - 1)
+            digest = row.get("blob_sha256")
+            if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+                raise SnapshotError("invalid auction custody blob digest")
+
+        for row in listings:
+            for field, low, high in (("auction_id", 1, 2**32-1), ("seller_pid", 1, 2**32-1),
+                                     ("winner_pid", 0, 2**32-1), ("revision", 1, 2**64-1),
+                                     ("custody_state", 0, 1), ("quantity", 1, 9),
+                                     ("vnum", 0, 2**31-1)):
+                integer(row, field, low, high)
+            if row.get("status") not in ("OPEN", "CLOSED", "REMOVED"):
+                raise SnapshotError("invalid auction custody status")
+            blob(row)
+        for row in roots:
+            for field, low, high in (("auction_id", 1, 2**32-1), ("slot", 0, 8),
+                                     ("uid", 1, 2**64-1), ("revision", 1, 2**64-1),
+                                     ("vnum", 0, 2**31-1)):
+                integer(row, field, low, high)
+            if row.get("claim_pid") is not None:
+                integer(row, "claim_pid", 1, 2**32-1)
+            if type(row.get("claimed")) is not bool:
+                raise SnapshotError("invalid auction custody claimed")
+            operation = row.get("claim_operation_id")
+            if operation is not None:
+                require_id(operation, "auction claim operation ID")
+            blob(row)
+        for row in legacy:
+            for field, low, high in (("id", 1, 2**32-1), ("pid", 1, 2**32-1),
+                                     ("quantity", 1, 9), ("retrieved", 0, 1)):
+                integer(row, field, low, high)
+            blob(row)
+        listing_index = self.index(listings, ("auction_id",), "auction_duplicate_listing")
+        root_index = self.index(roots, ("auction_id", "slot"), "auction_duplicate_slot")
+        self.index(legacy, ("id",), "auction_duplicate_legacy_pickup")
+        groups = defaultdict(list)
+        live_uids = set()
+        for row in roots:
+            groups[row["auction_id"]].append(row)
+            uid = row["uid"]
+            listing = listing_index.get((row["auction_id"],))
+            if listing is None:
+                self.emit("auction_root_missing_listing", uid=uid, auction_id=row["auction_id"])
+            elif listing["custody_state"] != 1:
+                self.emit("auction_root_non_authoritative_listing", uid=uid)
+            else:
+                claimant = (listing["winner_pid"] if listing["status"] == "CLOSED" and
+                            listing["winner_pid"] else listing["seller_pid"])
+                if ((listing["status"] == "OPEN" and (row["claim_pid"] is not None or row["claimed"])) or
+                        (listing["status"] != "OPEN" and row["claim_pid"] != claimant)):
+                    self.emit("auction_claim_state_invalid", uid=uid)
+                if (row["vnum"] != listing["vnum"] or row["blob_bytes"] != listing["blob_bytes"] or
+                        row["blob_sha256"] != listing["blob_sha256"]):
+                    self.emit("auction_retained_template_mismatch", uid=uid)
+            if row["claimed"] != (row["claim_operation_id"] is not None):
+                self.emit("auction_claim_receipt_state_invalid", uid=uid)
+            if not 0 < row["blob_bytes"] <= 32768:
+                self.emit("auction_root_blob_size_invalid", uid=uid)
+            item = items.get((uid,))
+            if row["claimed"]:
+                if item is None:
+                    self.emit("auction_claimed_uid_unadmitted", uid=uid)
+                continue
+            if uid in live_uids:
+                self.emit("auction_unclaimed_uid_duplicate", uid=uid)
+            live_uids.add(uid)
+            if item is None:
+                self.emit("auction_uid_unadmitted", uid=uid)
+                continue
+            integer(item, "vnum", 0, 2**31-1)
+            if item.get("state") != "live":
+                self.emit("auction_uid_not_active", uid=uid)
+            if item.get("owner") != [6, row["auction_id"], 0]:
+                self.emit("auction_owner_mismatch", uid=uid)
+            if item.get("root") != uid or item.get("parent") is not None:
+                self.emit("auction_item_topology_mismatch", uid=uid)
+            if item.get("revision") != row["revision"]:
+                self.emit("auction_item_revision_mismatch", uid=uid)
+            if item["vnum"] != row["vnum"]:
+                self.emit("auction_item_vnum_mismatch", uid=uid)
+            if item_equipment_slot(item):
+                self.emit("auction_item_equipment_mismatch", uid=uid)
+        for listing in listings:
+            auction_id = listing["auction_id"]
+            if listing["custody_state"] == 0:
+                self.emit("auction_legacy_listing_identity_unknown", auction_id=auction_id)
+            elif (len(groups[auction_id]) != listing["quantity"] or
+                  any((auction_id, slot) not in root_index for slot in range(listing["quantity"]))):
+                self.emit("auction_root_cardinality_mismatch", auction_id=auction_id)
+            if not 0 < listing["blob_bytes"] <= 32768:
+                self.emit("auction_listing_blob_size_invalid", auction_id=auction_id)
+        for row in legacy:
+            # Retrieved rows also retain opaque, unattributed history.
+            self.emit("auction_legacy_pickup_identity_unknown", scope="snapshot")
+        for item in items.values():
+            if (item.get("state") != "tombstone" and item.get("owner", [None])[0] == 6 and
+                    item["uid"] not in live_uids):
+                self.emit("auction_uid_missing_unclaimed_root", uid=item["uid"])
 
     def audit_original_plans(self, tables: dict, by_op: dict, ownership: dict) -> None:
         """Bind projections to retained EAP1 bytes, independently of mutation code.
