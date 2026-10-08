@@ -559,6 +559,31 @@ entry points are deferred to the primary's scheduled major-plan qualification;
 external peer passes remain reported. These changes expose no new native quest
 or shared custody authority input and warrant no duplicate worker assignment.
 
+Published a53977fe21105b38f7396d2d08fd295f9822a66d integrates the32-file
+independent flatfile operator/test package, ten additive money/auction/custody
+commands and the cashout overflow guard. [Primary evidence](../PLAN5_OPERATOR_PRIMARY_INTEGRATION_2026-10-07.md)
+reports formatting, strict syntax and927-test/108-row inventory; native/runtime
+remains pending. Coordinator verifies native/migration and quest-import/driver
+bodies are unchanged. Shared baseline/record headers change, so the earlier
+506b54c99 lifecycle execution cannot be relabeled as this new component closure.
+All native lifecycle/install/complete-world and final qualification gates remain.
+
+One new finite architecture investigation is selected on exact a53977fe2: prove
+the reachable maintained provider closure of the new dedicated custody fixture
+and reused original operator builder. The fixture includes item_transfer_command
+but lacks several providers restored in the preceding shopkeeper repairs; the
+operator builder also lacks retirement/native-cost/native-give providers. These
+omissions are a question, not a demonstrated link failure: original GC can discard
+unreachable functions. Preserve original recipes/flags/stubs/assertions/budgets;
+identify actual reached symbols and minimal real provider nodes before proposing
+an edit. No maintained file change is approved. No broad suite/full Make, service
+restart, DB work or known-environment failed-link retry is assigned. Native/runtime
+qualification stays separate. Use new D: task evidence and preserve existing jobs,
+worktrees and packets. Architecture must return exact source/preimage/reachability
+and any original diagnostic/private feasibility evidence for boundary review, or
+an exact sufficiency finding without manufactured implementation. Actual continuing
+Goal status remains blocked; finite useful investigation is not fake resumption.
+
 No independent domain or quest implementation is currently selected. Watch for
 the table's real source/interface/fixture publications, then reserve a connected
 case or operation for the appropriate existing chat. Preparation can begin once

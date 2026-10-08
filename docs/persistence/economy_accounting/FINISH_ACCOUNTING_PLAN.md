@@ -1,5 +1,15 @@
 # Finish accounting implementation plan
 
+## Auditor fixture provider feasibility assigned - 2026-10-07
+
+[Current coordination queue](domain-separation/CONTINUING_PROJECT_COORDINATION.md)
+assigns architecture a finite original provider-closure investigation on a53977fe2.
+Reachability under unchanged linker GC must establish any missing provider before
+an edit proposal; no maintained recipe change or native qualification is approved.
+New auditor source integration leaves native/migration/quest authority unchanged.
+Shared reader dependency changes keep the earlier506b lifecycle pass frozen to
+its actual candidate. Native runtime and final major-plan qualification remain.
+
 ## Shopkeeper recipe preservation independently checked - 2026-10-07
 
 [Coordinator source review](domain-separation/SHOPKEEPER_RECIPE_SOURCE_REVIEW_2026-10-07.md)
