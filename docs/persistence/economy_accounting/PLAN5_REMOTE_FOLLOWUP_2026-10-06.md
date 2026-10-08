@@ -1682,3 +1682,27 @@ Report/seal/delivery are curator-ready for the nonblocking primary-local
 notebook. No database is started in this flat-file-only slice. Complete census,
 genuine journeys, original native V2 install, erasure/retention continuity,
 both-engine upgrades and combined full Plans/R1–R8/release remain open.
+
+
+## Native legacy auction receipt publication - 2026-10-07
+
+Same local/remote `codex/accounting-plan5`; base `013e1e3d069ee303347965a0163ce8ed4e95b07d`, solved issue
+`d7c60d3c39da335abf997c49bfff291db0a00177`. The independent reader now matches native version-1 publication
+defaults. [Exact source and evidence](PLAN5_AUCTION_LEGACY_RECEIPT_QUALIFICATION_2026-10-07.md)
+records original native `[true]` versus pure `[false]`, then the whole original
+auction-money entry passing 117 cases/zero skips on primary `bf1aaad37` plus
+the three exact owned blobs. Tested tree `d2b62a01917df43898ffaeda4585245aef41eb05`, native833d3085,
+canonical64 migration7e06717b; source and authority unchanged. Final observer
+time 254.251958s; fresh native/operator/sanitizer executables.
+
+The primary's committed restore builder is used unchanged. Shared accounting
+fixture and native-oracle recipes need the precisely recorded current native
+providers; two original link failures are preserved, with exact real source
+proposals and the existing primary native-forest extraction recipe disclosed.
+No shared file/API/schema/native implementation is independently edited.
+Evidence, source pins, copied-body/link verification, seal and post-push
+delivery are under `D:/Dev/Tests/Duris/accounting-plan5/auction-receipt-20261007/`.
+Curator-ready packet only; primary-local notebook maintenance remains
+nonblocking. No acknowledgement, activation, SQL/gameplay execution or full
+Plan/R1-R8/release closure is claimed. Auction literal/history reconciliation,
+genuine journeys, retention/erasure, upgrades and combined qualification remain.
