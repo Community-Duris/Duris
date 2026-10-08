@@ -2507,3 +2507,44 @@ application/ack unclaimed. Shared flatfile-authority provider/room UID-owner/
 native baseline recipe gates and genuine combined/producers/cold/opening/player/
 route/fault/load/activation/Plan5/R1-R8/release remain open. No production write,
 autocorrection, activation, primary push, deployment or merge.
+
+
+## Item supply action/state reconciliation - 2026-10-08
+
+[Exact independent reader qualification](PLAN5_ITEM_SUPPLY_ACTIONS_2026-10-08.md)
+continues from 0a962f23f7f1664cc2b80c912dd4aa6153492c6b on the same local/remote
+codex/accounting-plan5 and owned worktree. Result is this containing commit;
+post-push delivery/result.json verifies remote equality, all 27 overlays, seven
+prior ancestor tips and the earlier tombstone fix. Work carried from earlier
+branches remains available on this remote history.
+
+The old reader falsely passes nine bad action/state projections and silently
+omits seven from provenance. Missing/malformed selected actions now refuse;
+tombstone/move mismatches yield the existing supply-state finding before origin/
+lineage skips, counted once across overlapping projections. Original labels and
+bytes remain intact; collector quarantine remains move. No shared interface/
+schema/native/producer change. Five final regression methods reproduce 46 failures
+on the old reader. Fixed 16 modules:401 loaded/383 PASS/18 existing opt-in skips.
+Final complete partial-SQL runners pass 10 new saved-projection cases/120 actual
+CLI checks per engine, all 47 tables unchanged; these are not genuine compound
+producer journeys. Original native codec round trips: 22 executions of 11 unchanged EAP inputs across
+SQL/flatfile; existing complete canonical restore passes zero skips on both fresh
+0064 engines:3026 decoder cases, 109 cuts/90 refusals/58 full-entry cuts per engine.
+Six 100,000-event synthetic cuts fit 30 seconds/256 MiB (maximum 1.053800s/198,094,848 bytes).
+
+Tested primary 5f5a8bdfd0306a6c65857cf936fd6b332832c90b plus27 overlays:
+114ad7d7e81d453311c8f78ed5c6ce8d34f0638a. Refresh e6221a016ba8af26451831f1f4ec07ea264cf115
+changes documentation only; native 833d3085815b396861ad18a77635412212381e4b and
+migrations 7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2/head64 remain equal. Source04 unit
+blobs are identical to05; only SQL helper extension differs, separately executed.
+Raw seal 21364c4b44791ca460d423a8e83e4a872d83a3462869056675ce9aef6aa76c96 at
+D:/Dev/Tests/Duris/accounting-plan5/item-actions-20261008. Raw parent argv and
+explicitly reconstructed nested CLI argv are distinguished; all failed/partial
+stages remain sealed. Ten containers stopped, no OOM/live children/copied links.
+
+Prior tombstone fix c373f04fac0ef14f734bc086c1cef01246dc70fe still needs primary
+import with backup integration. Shared flatfile-authority providers/room UID/
+native baseline recipes, genuine combined/producers/cold/opening/player/route/
+fault/load/activation/Plan5/R1-R8/release remain open. Primary-local notebook
+nonblocking; curator-ready input, application/ack unclaimed. No production write,
+autocorrection, activation, primary push, deployment or merge.

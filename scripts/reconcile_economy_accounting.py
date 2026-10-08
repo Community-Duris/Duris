@@ -334,6 +334,7 @@ class Reconciler:
         self.counts: Counter = Counter()
         self.original_plans_verified = 0
         self.invalid_history_positions: set[tuple] = set()
+        self.invalid_supply_states: set[tuple] = set()
         registry = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
         self.reasons = {row["number"]: row for row in registry["reasons"]}
         self.realized_price_reasons = {
@@ -3518,7 +3519,20 @@ class Reconciler:
         if missing != coverage["missing_price_rows"]:
             raise SnapshotError("realized price coverage count mismatch")
 
+    def audit_item_supply_state(self, event: dict, uid: int) -> None:
+        action = event.get("action")
+        if action not in ("create", "move", "destroy"):
+            raise SnapshotError("invalid item history action")
+        if ((action == "create" and event.get("state") != "live") or
+                ((action == "destroy") != (event.get("state") == "tombstone"))):
+            identity = (event.get("operation_id"), event.get("event_index"), uid)
+            if identity not in self.invalid_supply_states:
+                self.invalid_supply_states.add(identity)
+                self.emit("invalid_item_supply_state", uid=uid,
+                          operation_id=event.get("operation_id"))
+
     def audit_item_history_position(self, row: dict) -> None:
+        self.audit_item_supply_state(row, row.get("uid"))
         if valid_item_custody_position(row, equipment_field="to_equipment_slot"):
             return
         identity = (row.get("operation_id"), row.get("event_index"), row.get("uid"))
@@ -3547,10 +3561,7 @@ class Reconciler:
                           operation_id=event.get("operation_id"))
             previous_owner = event.get("owner")
             action = event.get("action")
-            if ((action == "create" and event.get("state") != "live") or
-                    (action == "destroy" and event.get("state") != "tombstone")):
-                self.emit("invalid_item_supply_state", uid=uid,
-                          operation_id=event.get("operation_id"))
+            self.audit_item_supply_state(event, uid)
             if action == "create":
                 if created:
                     self.emit("duplicate_uid", uid=uid, operation_id=event.get("operation_id"))

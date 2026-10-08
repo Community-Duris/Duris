@@ -3053,6 +3053,117 @@ class ReconciliationTests(unittest.TestCase):
         snapshot["native"]["items"][0].update(state="tombstone", owner=[8, 0, 0])
         self.assertIn("duplicate_item_retirement", self.codes(snapshot))
 
+    def test_selected_item_history_refuses_invalid_action_before_origin_lookup(self):
+        cases = [(False, value) for value in (None, True, 1, {}, [], "private-action-alias", "quarantine")]
+        cases.append((True, None))
+        for missing, invalid in cases:
+            for opening in (True, False):
+                snapshot = clean_snapshot()
+                if missing:
+                    snapshot["ownership_events"][0].pop("action")
+                else:
+                    snapshot["ownership_events"][0]["action"] = invalid
+                if not opening:
+                    snapshot["item_origins"] = []
+                original = copy.deepcopy(snapshot)
+                with self.subTest(missing=missing, invalid=invalid, opening=opening):
+                    with self.assertRaisesRegex(SnapshotError, "^invalid item history action$"):
+                        Reconciler().audit(snapshot)
+                    self.assertEqual(snapshot, original)
+
+    def test_tombstone_requires_destroy_action_in_both_history_scopes(self):
+        for lineage in (False, True):
+            snapshot = clean_snapshot()
+            event = snapshot["ownership_events"][0]
+            event.update(action="destroy", state="tombstone", owner=[8, 0, 0])
+            snapshot["native"]["items"][0].update(state="tombstone", owner=[8, 0, 0])
+            bind_original_plans(snapshot)
+            event["action"] = "move"
+            original = copy.deepcopy(snapshot)
+            with self.subTest(lineage=lineage):
+                if lineage:
+                    event.update(operation_outcome="committed", referenced=False)
+                    auditor = Reconciler()
+                    auditor.audit_lineage_uid_history("disposable", {"uid_history_events": [event]},
+                        {(81,): snapshot["item_origins"][0]}, {(81,): snapshot["native"]["items"][0]})
+                    self.assertEqual(dict(auditor.counts), {"invalid_item_supply_state": 1})
+                else:
+                    self.assertEqual(self.codes(snapshot), {"invalid_item_supply_state"})
+                    self.assertEqual(snapshot, original)
+                    result = view(snapshot, Reconciler().audit(snapshot), "provenance", 100, uid=81)
+                    self.assertEqual(result["rows"][0]["action"], "move")
+                    self.assertEqual(result["coverage"]["exception_count"], 1)
+
+    def test_invalid_selected_item_action_refuses_every_cli_view_and_limit(self):
+        snapshot = clean_snapshot()
+        snapshot["ownership_events"][0]["action"] = "private-action-alias"
+        with tempfile.TemporaryDirectory(prefix="item-action-") as folder:
+            path = Path(folder) / "snapshot.json"
+            payload = json.dumps(snapshot, sort_keys=True).encode()
+            path.write_bytes(payload)
+            for name in ("exceptions", "holdings", "provenance", "operation", "supply", "prices", "routes"):
+                for limit in (0, 1, 100):
+                    command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                               str(path), "--view", name, "--limit", str(limit)]
+                    if name == "provenance":
+                        command += ["--uid", "81"]
+                    if name == "operation":
+                        command += ["--operation-id", OP]
+                    result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                    with self.subTest(name=name, limit=limit):
+                        self.assertEqual(result.returncode, 2)
+                        self.assertEqual(result.stdout, "")
+                        self.assertEqual(result.stderr, "reconciliation failed: invalid item history action\n")
+                        self.assertEqual(path.read_bytes(), payload)
+
+    def test_tombstone_action_cli_preserves_finding_and_original_projection(self):
+        snapshot = clean_snapshot()
+        snapshot["ownership_events"][0].update(action="destroy", state="tombstone", owner=[8, 0, 0])
+        snapshot["native"]["items"][0].update(state="tombstone", owner=[8, 0, 0])
+        bind_original_plans(snapshot)
+        snapshot["ownership_events"][0]["action"] = "move"
+        with tempfile.TemporaryDirectory(prefix="item-supply-state-") as folder:
+            path = Path(folder) / "snapshot.json"
+            payload = json.dumps(snapshot, sort_keys=True).encode()
+            path.write_bytes(payload)
+            for limit in (0, 1, 100):
+                command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                           str(path), "--view", "provenance", "--uid", "81", "--limit", str(limit)]
+                result = subprocess.run(command, capture_output=True, text=True, timeout=30)
+                with self.subTest(limit=limit):
+                    self.assertEqual((result.returncode, result.stderr), (1, ""))
+                    value = json.loads(result.stdout)
+                    self.assertEqual(value["coverage"]["exception_count"], 1)
+                    self.assertEqual(value["count"], 1)
+                    self.assertEqual([row["action"] for row in value["rows"]], ["move"][:limit])
+                    self.assertEqual(path.read_bytes(), payload)
+
+    def test_supply_state_checked_before_scope_skips_and_counted_once(self):
+        for opening in (True, False):
+            for lineage_first in (True, False):
+                snapshot = clean_snapshot()
+                event = snapshot["ownership_events"][0]
+                event.update(action="move", state="tombstone", owner=[8, 0, 0],
+                             operation_outcome="committed", referenced=False)
+                snapshot["native"]["items"][0].update(state="tombstone", owner=[8, 0, 0])
+                origins = {(81,): snapshot["item_origins"][0]} if opening else {}
+                native = {(81,): snapshot["native"]["items"][0]}
+                references = {(OP, 0): snapshot["item_references"][0]}
+                ownership = {(event["operation_id"], event["event_index"]): event}
+                original = copy.deepcopy(snapshot)
+                auditor = Reconciler()
+                if not lineage_first:
+                    auditor.audit_items(ownership, references, origins, native)
+                uids = auditor.audit_lineage_uid_history("disposable", {"uid_history_events": [event]},
+                                                        origins, native)
+                auditor.audit_items(ownership, references, origins, native, uids)
+                auditor.audit_unattributed_uid_history("disposable", {
+                    "unattributed_uid_events": [event],
+                    "unattributed_uid_event_coverage": {"uids": 1, "events": 1}})
+                with self.subTest(opening=opening, lineage_first=lineage_first):
+                    self.assertEqual(auditor.counts["invalid_item_supply_state"], 1)
+                    self.assertEqual(snapshot, original)
+
     def test_supply_action_requires_matching_custody_state(self):
         for action, state in (("destroy", "live"), ("create", "tombstone")):
             for lineage in (False, True):

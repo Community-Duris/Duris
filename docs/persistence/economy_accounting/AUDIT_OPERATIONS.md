@@ -411,6 +411,17 @@ requires a committed revision0-to1 creation; rejected and unknown outcomes canno
 supply an origin. These actions do not authenticate an original plan, infer an
 unrecorded custody state or promote a partial SQL export to complete evidence.
 
+Full reconciliation requires every captured item action to be `create`, `move`
+or `destroy` before opening or lineage-history shortcuts. Missing or malformed
+selected actions refuse the complete audit/CLI with `invalid item history action`.
+Existing lineage and unattributed-history envelope refusals remain in force.
+A tombstone endpoint requires `destroy`; an inconsistent label retains
+`invalid_item_supply_state` once per operation/event/UID across overlapping
+projections. The original label remains visible for inspection. Collector
+quarantine continues to use `move` with `quarantined` state.
+[Exact action/state qualification](PLAN5_ITEM_SUPPLY_ACTIONS_2026-10-08.md)
+records the full CLI, native-plan and disposable SQL evidence.
+
 The collector's retained reason21 transition from collector owner10 to system
 owner7 with ID0/context0 represents quarantine. The collector command requires
 state3 for that endpoint, and generic item transfers reject that reason. All

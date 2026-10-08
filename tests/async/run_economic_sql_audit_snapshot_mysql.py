@@ -644,12 +644,66 @@ def verify_compound_item_actions(owner, reader, snapshot):
                 assert path.read_bytes() == encoded
                 (target / ("limit-" + str(limit) + ".json")).write_bytes(result.stdout)
                 commands.append(dict(command=command, exit=result.returncode))
+            projection_probes = []
+            damages = ["invalid-action"] + ([] if phase == "craft-creation" else
+                                             ["selected-move", "all-move"])
+            for damage in damages:
+                damaged = copy.deepcopy(captured)
+                newest = max(row["revision"] for row in damaged["ownership_events"] if row["uid"] == 84)
+                collections = [damaged["ownership_events"]]
+                if damage == "all-move":
+                    collections += [damaged["native"].get("uid_history_events", []),
+                                    damaged["native"].get("unattributed_uid_events", [])]
+                for collection in collections:
+                    for event in collection:
+                        if event["uid"] == 84 and event["revision"] == newest:
+                            event["action"] = "private-action-alias" if damage == "invalid-action" else "move"
+                probe = target / damage
+                probe.mkdir()
+                payload = json.dumps(damaged, sort_keys=True).encode()
+                saved = probe / "snapshot.json"
+                saved.write_bytes(payload)
+                if damage == "invalid-action":
+                    try:
+                        Reconciler().audit(damaged)
+                        raise AssertionError("invalid selected item action passed")
+                    except SnapshotError as error:
+                        assert str(error) == "invalid item history action"
+                    names = ("exceptions", "holdings", "provenance", "operation", "supply", "prices", "routes")
+                else:
+                    expected_projection_counts = dict(expected_counts)
+                    expected_projection_counts["invalid_item_supply_state"] = expected_projection_counts.get("invalid_item_supply_state", 0) + 1
+                    assert Reconciler().audit(damaged)["exception_counts"] == expected_projection_counts
+                    names = ("exceptions", "provenance")
+                for name in names:
+                    for limit in (0, 1, 100):
+                        command = [sys.executable, str(ROOT / "scripts/reconcile_economy_accounting.py"),
+                                   str(saved), "--view", name, "--limit", str(limit)]
+                        if name == "provenance":
+                            command += ["--uid", "84"]
+                        if name == "operation":
+                            command += ["--operation-id", creation_root.hex() if phase == "craft-creation" else retirement_root.hex()]
+                        result = subprocess.run(command, capture_output=True, timeout=30)
+                        if damage == "invalid-action":
+                            assert result.returncode == 2 and not result.stdout
+                            assert result.stderr == b"reconciliation failed: invalid item history action\n"
+                        else:
+                            assert result.returncode == 1 and not result.stderr
+                            assert json.loads(result.stdout) == view(damaged, Reconciler(limit).audit(damaged), name, limit, uid=84)
+                        assert saved.read_bytes() == payload
+                        assert json.dumps(damaged, sort_keys=True).encode() == payload
+                        (probe / (name + "-" + str(limit) + ".json")).write_bytes(result.stdout)
+                assert inventory(owner) == before
+                projection_probes.append(dict(damage=damage, cli_checks=len(names) * 3,
+                    selected_projection_only=damage != "all-move", application_tables_unchanged=len(before),
+                    source_projection_unchanged=True, invalid_supply_state_count=0 if damage == "invalid-action" else 1))
             for name in ("before", "after"):
                 (target / ("authority-" + name + ".json")).write_text(json.dumps(before, sort_keys=True) + "\n")
             (target / "queries.json").write_text(json.dumps(connection.observer.queries) + "\n")
             records.append(dict(phase=phase, reason=reason, actions=expected, exception_counts=expected_counts,
                 commands=commands, query_count=len(connection.observer.queries), application_tables_unchanged=len(before),
                 rollback_calls=1, cursor_close_calls=1, original_partial_findings_preserved=True,
+                projection_probes=projection_probes,
                 additional_modeled_findings={} if phase == "craft-creation" else {"missing_original_plan": 1}))
     finally:
         with owner.cursor() as cursor:
