@@ -2113,3 +2113,35 @@ application/acknowledgement/adoption unclaimed. Earlier room structural fixes st
 qualified at their pins; genuine native room/retained-payload/runtime/combined
 release gates remain open. Current canonical64 retention is independent next work.
 Accounting inactive; wallet exclusions and declined spell path stay. Goal active.
+
+
+## Current64 SQL retention qualified; flat recipe boundary handed off — 2026-10-08
+
+[PLAN5_CURRENT64_SQL_RETENTION_AND_FLAT_RECIPE_HANDOFF_2026-10-08.md](PLAN5_CURRENT64_SQL_RETENTION_AND_FLAT_RECIPE_HANDOFF_2026-10-08.md) records two separate solved owned-runner issues,
+`3cc7bd0f4d1969ba4284ccd8893f663e6fb9a35f` and
+`fed05208a6229ae682baa0865f81fa6d7d591937`, from base
+`e83593543cfb1161c3ab80ebcadb717a5b5155e2`, all on `codex/accounting-plan5`.
+Frozen primary9c49043a/native833d3085/migrations7e06717b/canonical64 plus19 owned
+overlays executes SQL tree `d38f9806a007f708bacc307fb29373d4d527c58e`: all four real MariaDB/MySQL
+account/character retention journeys PASS,22 read-only captures/14 actual boots/
+10 cold restarts/eight post-erasure metadata and claim-allocation refusals; zero
+skips. Native codec outputs agree in both modes, preserving all assertions/flags.
+Economic history is deliberately seeded; active producers/typed active erasure/
+fullR8/release remain unqualified. Flat tree `fb2f2313cc0411b2ba62394aa772ed74582f7f18` passes the
+original deletion inspector with the disclosed three-provider argv proposal,
+then its shared authority fixture fails to link at the real auction native codec
+boundary; zero flat retention/source-claim-loss journeys execute. The complete
+runner preserves all earlier claim and retained-source-loss controls.
+
+The handoff identifies exact original lists, real codec/publication definitions,
+consumer signatures/invariants and required original suites. Primary already
+applied the three providers to build_restore_qualifier; no duplicate request or
+fresh execution of that recipe is claimed. Shared owner/recipe bodies stay
+untouched. Raw evidence `D:/Dev/Tests/Duris/accounting-plan5/current64-retention-20261008`,
+seal `5f37c16728061642507ae6f5cd94bd27e7d3785a88b61ad2a37c735a386529b3` (1828 files/2717143964 bytes); post-push
+delivery binds remote SHA, all19 overlay blobs, all seven earlier tips and every
+raw hash. Refreshcda8aa6f keeps native/migration trees unchanged; its private128-file
+original-attempt/pet correction candidate remains separately unexecuted. Shared
+notebook is primary-local/nonblocking; this additive curator handoff does not
+claim application, adoption or acknowledgement. Original full Plan5/R1–R8,
+combined backup/restore/recovery/writer/player/load and activation gates remain.
