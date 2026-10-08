@@ -452,31 +452,60 @@ Implementation inputs from actual public src833d3085:
   policy,controlled CHARACTER falling and extracted retained restoration;none
   proves full original O/object-placement/warm replay/save/ACK acceptance.
 
-Current prioritized queue: (1)quest ONE PRIVATE smith-save-ack-cross-proof-
-blueprint-20261008 packet,SMITH_SAVE_ACK_CROSS_PROOF_BLUEPRINT.txt plus pins;
-(2)primary accessible integrated special-placement owner/stage/registry and original
-O/source/replay/save/ACK observations;(3)genuine SHOP refused held-owner fixture/
-legal late-consumption refusal/fences at entry;(4)keeper first-checkpoint/original
-boot-warm disposition;(5)history capacity fix-specific DB proof/native journeys.
-Quest prepares one smallest future Smith save ACK/full-physical cross-proof case
-and compact authentic observation/assertion table. Benefit:separate actual filtered
-worker save proof from physical carried/equipment/NORENT forest and fresh SQL wallet/
-row authority. Available:new reported profile plus prior Smith docs,actual public
-pipeline/worker/snapshot filters/component/revision/queue/actor lifetime semantics,
-existing save-focused tests and quest read-only capture/assertions. Distinguish
-maintained source versus reported private profile;no invented callable interface.
-Cover original token/operation/generation/ACK,filtered inventory/level,legitimate
-STATUS dirtiness,coalescing/replacement refusal and separate fresh proof;root UID0/
-NPC inputs/variable PC fee and no SHOP slot reuse stay explicit. Existing helper
-limitations/future owned reader edits require authentic observations. No generic
-owner design,broad inventory,journal-authority substitute or unchanged-global-state
-assertion. Private profile/Smith17 codec/atomic owner/native execution remain
-unavailable dependent inputs. One private D: packet only,no maintained code/test/
-doc/patch/import/build/test/server/DB/native run. Root review precedes publication
-or next task. Primary retains its existing implementation streams and Plan5;
-architecture special facts/keeper brief and quest cancellation feasibility remain
-CLOSED. Preserve worktrees/sealed proofs;actual GoalsBLOCKED/unfinished,heartbeat
-ACTIVE,no adoption wait or overall completion/pause.
+Smith save ACK/full-physical blueprint now PASSes independent bounded source/
+acceptance review;connected native case remains BLOCKED. Root authenticates all
+38 pins:25 maintained source/tests,four private-contract reports,seven owned
+helpers,two scope docs. All25 selected providers match clean prep2c82835e and
+current public source;the nine other flat/world-quest source differences are
+explicitly preserved,not hidden by whole-tree equality. Worker initial equality
+preflight failure/correction stays recorded. Root compares critical capture/blob/
+coalescing/completion/held-observation bodies. Note18,167 bytes SHA256
+3469b9120c348ccdfe683835cc56573e19a8058cb1fdb9ac2abb263ef2a5d52d;
+PINS16,315 bytes SHA256aa52ed3b7aa6e3b5ff59faba5311423d9fe9609859f3b723fdd5979766399169.
+Private packet/root review.json stay on D:;no private artifact committed.
+
+Future ONE smallest owner-dependent readiness case,stopping before Smith economics:
+- Use authentic original indexed PC/NPC/menu/selected stock/variable PC fee and
+  root UID0;bind distinct Smith token/profile/nonzero operation/runtime generation.
+  Real worker completion PID/revision/components alone cannot authenticate that
+  original token/operation link. Required STATUS/EQ/INV,durable revision,error and
+  applied/already-applied outcome must earn ACK for the captured revision.
+- Genuine newer compatible pre-hold coalescing advances captured revision and
+  clears ACK;actual old completion cannot ready it. Older/equal coalescing does not
+  imply revision advance. Original clean poll/hold queues/revision gates remain.
+  Genuine replacement negative branch occurs BEFORE hold;old generation/token
+  cannot become valid through equal PID/items/reused address or a new attempt.
+- After genuine ACK/clean hold,one legal unrelated STATUS mark may advance dirty
+  revision while exact filtered item encoding+level/original ACK still match.
+  Held save requests remain refused;dirty RAM marking is not a fresh enqueue.
+- Separate owner full physical carried/equipment/parent/order/literal/lifetime
+  proof includes authentic excluded NORENT subtree. Ordinary save omits that root
+  and descendants only without active durable custody;durable NORENT stays included.
+  Root UID0 supplies no full-literal override. Filtered equality cannot prove
+  original full physical forest;list capture with omit_norent=false still has
+  ordinary string masks,and literal tree capture alone loses global equipment/
+  order/lifetime binding. Do not infer actual R_num/order from VNUM.
+- Fresh current SQL save/wallet mapping/revision/cash proof belongs to original
+  borrowed atomic owner;valid wallet revision0 is not refusal. Held ACK/read-only
+  SELECT neither proves fresh authority nor authorizes fee/grant/extraction.
+  Preserve NPC stock inputs/native cash,no SHOP slot reuse or added XP/notch.
+  Missing authentic coalescing/replacement/physical/transaction observations block
+  dependent assertions;value mutations are oracle controls,not native events.
+Existing QP capture lacks these token/ACK/full-physical/save/wallet observations;
+QP02 cost predicates include NPC cash/revision assumptions incompatible with
+Smith. Existing native quest pair decoders do not decode Smith17. Any future
+bounded passive Smith reader/oracle needs genuine owner export/schema/pins first;
+no reader edit,private API/format or executable command is reserved now.
+
+Current prioritized queue:primary accessible Smith profile/codec/atomic owner and
+worker-token/full-physical/fresh-SQL observations;special-placement original owner/
+O/replay/save/ACK;SHOP original refused held-owner/legal late-consumption procedure/
+fences at entry;keeper first-checkpoint/boot-warm disposition;history capacity DB
+proof and remaining native journeys. Quest blueprint and cancellation feasibility,
+architecture special facts/keeper brief are CLOSED. No next independent assignment
+on unchanged source/fixture inputs. No maintained code/test/doc/patch/import/build/
+test/server/DB/native execution in this review. Preserve worktrees/sealed proofs;
+GoalsBLOCKED/unfinished,heartbeatACTIVE,no adoption wait or overall completion.
 
 Latest primary960ddd80c1acba5611677270f0156675d6d020ff reports private6641083b:
 full original live-flat refusal cleanup and retained SHOP coordinator cancellation
