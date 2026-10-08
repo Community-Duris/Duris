@@ -2044,3 +2044,39 @@ census/retention/backup/upgrades/major-plan/combined-release/R1-R8 remain open.
 Primary private115 remains unrun and separately owned. Accounting inactive;
 wallet roots/declined spell path preserved. Curator-ready; local notebook
 nonblocking, application/acknowledgement/adoption unclaimed. Full goal active.
+
+
+## Modern room restore structural refusals - 2026-10-08
+
+[Exact source, native/disposable commands, intermediate failures and gates](PLAN5_SQL_ROOM_RESTORE_EVIDENCE_2026-10-08.md).
+Same local/remote `codex/accounting-plan5`, base `4ccc4defafb714188ded308ad792bed05534e69a`,
+code `7a7165a964928fbc857a9a8d08940a7a4ca47e2f`. All earlier branch work/follow-ups and seven preserved
+ancestors continue here. Four owned Python/test files; no shared source/schema/
+registry edits. Primary `df0570c5456d4d747ca1320ce958c1db52bb08fd`, composition `51f243ee0a09bedc0fbb2c8ee44c4dff4fbbec7d`,
+native tree `833d3085815b396861ad18a77635412212381e4b`, canonical64 migration tree `7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2`.
+
+Both-engine unchanged qualifier accepts six actual missing-root/truncated/trailing
+counterexamples. Reused bounded read-only capture/pure decoder/graph checks now
+refuse structural room corruption after original canonical-root authentication.
+Native EAI1/EAP1 positive roots remain modeled, not genuine producer/commit/ACK.
+Additive nonempty CLI `room_item_diagnostics` explicitly retains full runtime and
+retained-root authority as unqualified; empty output stays exact.
+
+Final focused checks03: exit 0, 753.630s, 317 commands;
+36 unchanged-database observations, both actual canonical engines, CLI/DBAPI/full
+native agreement, RR late writer, pre-LOB and denied UPDATE controls. Original
+canonical suite on identical source: exit 0, 645.516s, 71
+commands; both native modes, 32 coin and 3026 decoder cases; each engine has 109 retained
+cuts/90 refusals/58 full entries, 25 pending-claim cuts and 30 audited coin cases.
+All original assertions/inner budgets stay. Prior failed/intermediate attempts,
+stopped data and raw source guards stay preserved. Windows: 11 pure passes and two SQL opt-in skips.
+
+Evidence D:/Dev/Tests/Duris/accounting-plan5/room-restore-20261008; seal SHA256
+d60243eae3efd52fe14be1980c84424a2fa36c3c9b193dcd40ae225f1324542d, 12109 files/5276833176 bytes. Post-push delivery records
+exact remote/result/clean tree, all 18 overlays/seven ancestors and rehashes all raw
+sealed bodies. Curator-ready; primary-local notebook nonblocking; application/
+acknowledgement/adoption unclaimed. Narrow primary requests: integrate four files,
+register opt-in and continue original shared room-seed closure. Native runtime,
+retained original payload, original cold journeys, full census/retention/backup/
+upgrades/combined-release/R1-R8 remain open. The private 119-file candidate remains unrun; inactive
+behavior/wallet exclusions/declined spell path stay. Full goal active.
