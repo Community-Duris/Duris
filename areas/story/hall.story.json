@@ -1,9 +1,9 @@
 {
   "schema_version": 3,
-  "revision": 2,
+  "revision": 3,
   "source_area": "hall",
   "coverage": "complete",
-  "introduction": "Explore ancient graves, upper templar dwellings, an underwater lake, a tower city and a lower settlement of troubled spirits. Six independent delivery or commission outcomes sit beside four preparation/access services. Seltran accepts the lock of hair for adamantium ore; his historical nonreward contract remains excluded. Active, ready accounting is required. Supplies can require several zone resets; preserve exact recipes and the existing offering-limit and payment guards.",
+  "introduction": "Explore ancient graves, upper templar dwellings, an underwater lake, a tower city and a lower settlement of troubled spirits. Five independent delivery or commission outcomes sit beside four preparation/access services; two elder contracts are excluded because one consumes proof without reward and shadows the other. Active, ready accounting is required. Source, payment, access and offering-limit blockers remain explicit. Scarce materials can require collection across multiple zone resets; each distinct final outcome remains independently earnable once its exchange is available.",
   "orientation": [
     "The ordinary active entrance connects the ancient stairway to the Underdark. A separate administrative dispersal link reaches the city fountain. Do not confuse an administrative route with ordinary player access.",
     "The descent crosses graves, trapped catacombs, Fire Templar dwellings, an underground waterfall and lake, the city of Neoghtom and a lower settlement. Current and fall metadata, hidden doors and key custody affect the route; prose does not prove successful travel.",
@@ -12,7 +12,7 @@
     "The ring-to-steel delivery and magical-steel preparation are separate stages. The armor recipe needs two magical bars, two gorgon-scale bags, two rocks, the exact design book, two ebony shards and one genius potion. Its dialogue asks for two potion samples; current terms require one.",
     "The protective-device recipe needs sixteen separate pieces: two chains, two bangles, two rocks, four springs and six gears. The current safe offering limit is fourteen. Matching supplies can be shown as preparation, but cannot make this exchange available or complete it.",
     "Some recipes need several copies of scarce materials. Collecting them across zone resets and choosing which commission to pursue first are intended progression. Source caps, reset mode zero and retiring or holding-room recipients still need actual availability qualification; scarcity alone is not a broken quest or a permanent exclusive choice. One gear ground declaration has chance ten, while normal unforced ground resets accept only chance 100.",
-    "The park child accepts an exact foreign well-crafted dagger for a scorched letter; the lost aberrate accepts that letter and returns a lock of hair. Bring the hair to Seltran in the lower-town hall for his dialogue and adamantium rock reward. Each accepted delivery is a separate achievement. Supplied matching proof fits; no king kill, saved-NPC state or earlier personal receipt is required.",
+    "The park child accepts an exact foreign well-crafted dagger for a scorched letter; the letter recipient returns hair. The elder consumes the hair in a refusal that runs before its ore reward. These deliveries do not establish a king kill, reunion or personal recovery; the blocked elder route awaits builder story and repair review.",
     "A custom soul-collector death procedure creates a guardian carrying a potion. Ordinary potion custody, another player handing it over, personally defeating a source and first accepted acquisition are different facts. Current optional checks establish only unequipped custody.",
     "Getting or taking while the cathedral coin-pile procedure is dispatched can alter doors before any pickup succeeds, including an unrelated failed request. The shadow death procedure opens only one return direction. These world changes are not successful-pickup, access, all-shadow victory or campaign achievements.",
     "Razor-stair, paralysis and sleep traps, equipment effects, local shop stock, ambient warnings and dragon or shadow combat are separately explained leads. They have no invented local quest terminals. Accepted source, effect, travel and campaign events require further integration.",
@@ -55,7 +55,7 @@
       "mob_vnum": 77739,
       "name": "Seltran, the town elder",
       "keyword": "seltran",
-      "description": "Lower-town hall. Bring the exact lock of hair to receive Seltran's completion dialogue and one adamantium rock; the elder then departs. The letter goes to the lost aberrate first. Supplied matching hair is accepted without a rescue or earlier personal delivery history.",
+      "description": "Lower-town hall. Both contracts accept the same hair. The refusal is loaded first, consumes it, leaves the elder present and gives nothing. The ore-producing retirement is shadowed. Neither contract earns authored quest/daily credit pending a deliberate repair.",
       "topics": []
     },
     {
@@ -95,7 +95,7 @@
       "mob_vnum": 77744,
       "name": "Lost aberrate",
       "keyword": "lost",
-      "description": "Void of living shades. A scorched letter yields a lock of hair and retires the recipient. Deliver the hair to Seltran for a separate ore-reward outcome; this exchange does not prove a rescue campaign or confirm a safe return route.",
+      "description": "Void of living shades. A scorched letter yields hair and retires the recipient. This does not bypass the elder refusal, prove a rescue campaign or confirm a safe return route.",
       "topics": []
     },
     {
@@ -499,7 +499,7 @@
             77719
           ],
           "count": 2,
-          "hint": "Two rocks are declared before the city gates; a convulsing mass in the lost tunnels has another two-cap, 50-chance declaration. The elder ore exchange is shadowed by a consuming refusal. Supplied matching rocks fit.",
+          "hint": "Two rocks are declared before the city gates; a convulsing mass in the lost tunnels has another two-cap, 50-chance declaration. The elder ore exchange is shadowed by a consuming refusal. Supplied matching rocks fit. Supplies may be collected across resets; completing one commission does not lock out the other.",
           "optional": true
         },
         {
@@ -579,7 +579,7 @@
       "id": "lost-aberrate-letter-for-hair",
       "title": "A letter in the living shades",
       "category": "story",
-      "summary": "The lost aberrate accepts the scorched letter, returns a lock of hair and leaves. This is a separate delivery outcome. Bring the hair to Seltran in the lower-town hall for his completion dialogue and adamantium ore reward.",
+      "summary": "The lost aberrate accepts the scorched letter, returns a lock of hair and leaves. This is a separate delivery outcome. The hair points toward the lower-town elder, whose current refusal consumes it without giving the advertised ore.",
       "contracts": [
         {
           "giver_vnum": 77744,
@@ -621,57 +621,7 @@
               "completion_key": "give=I:77743;receive=I:77747;disappear=1"
             }
           ],
-          "hint": "Offer the exact letter to the lost aberrate. Acceptance retires this giver and returns hair. The next delivery goes to Seltran, who accepts the hair for an adamantium rock and departs. These are separate accepted outcomes; neither proves an NPC rescue or reunion."
-        }
-      ]
-    },
-    {
-      "id": "seltran-hair-for-ore",
-      "title": "A token for the town elder",
-      "category": "story",
-      "summary": "Bring Seltran a lock of hair from the lost aberrate to receive one adamantium rock and his completion dialogue. The elder then departs. This delivery is its own achievement; the earlier letter exchange is a possible producer route, not a required personal history or a saved-NPC condition.",
-      "contracts": [
-        {
-          "giver_vnum": 77739,
-          "completion_key": "give=I:77747;receive=I:77719;disappear=1"
-        }
-      ],
-      "steps": [
-        {
-          "id": "history-77744",
-          "text": "Optional history: deliver the letter to the lost aberrate",
-          "kind": "completion",
-          "optional": true,
-          "contracts": [
-            {
-              "giver_vnum": 77744,
-              "completion_key": "give=I:77743;receive=I:77747;disappear=1"
-            }
-          ],
-          "hint": "The lost aberrate gives the hair in exchange for the scorched letter. Supplied matching hair fits without this earlier receipt; history does not replace current custody."
-        },
-        {
-          "id": "material-77747",
-          "text": "Carry the lock of hair",
-          "kind": "carried_item",
-          "item_vnums": [
-            77747
-          ],
-          "count": 1,
-          "optional": true,
-          "hint": "Carry the exact lock of hair accepted by Seltran. The scorched letter belongs to the lost aberrate, not this hand-in. Obtaining matching hair from another player is valid."
-        },
-        {
-          "id": "accepted-exchange",
-          "text": "Deliver the hair to Seltran",
-          "kind": "completion",
-          "contracts": [
-            {
-              "giver_vnum": 77739,
-              "completion_key": "give=I:77747;receive=I:77719;disappear=1"
-            }
-          ],
-          "hint": "Give Seltran the lock of hair in the lower-town hall. The accepted exchange consumes the hair, issues one adamantium rock and the completion dialogue, then retires the elder. It does not require a rescue, a king kill, the earlier letter receipt or either crafting commission."
+          "hint": "Offer the exact letter to the lost aberrate. Acceptance retires this giver and returns hair. Do not treat the hair as a confirmed reunion or ore reward: the elder has two identical offerings, and the consuming refusal runs first. Its shadowed positive reward and refusal are both excluded from authored achievement/daily credit."
         }
       ]
     },
@@ -730,7 +680,7 @@
             77719
           ],
           "count": 2,
-          "hint": "Ground rocks before the city gates and a convulsing mass are declared sources. These rocks also compete with the protective-device recipe. Seltran also rewards an exact lock-of-hair delivery with one rock. Supplies can be collected across resets; completing one commission does not lock out the other.",
+          "hint": "Ground rocks before the city gates and a convulsing mass are declared sources. These rocks also compete with the protective-device recipe. The elder route is currently blocked by its refusal. Supplies may be collected across resets; completing one commission does not lock out the other.",
           "optional": true
         },
         {
@@ -789,7 +739,16 @@
           "completion_key": "give=I:77747;receive=;disappear=0"
         }
       ],
-      "reason": "Historical consuming refusal: this nonreward hair contract is retained with its original native identity for frozen receipts, but the repaired ore reward now precedes it in runtime matching. It earns no authored quest/daily achievement and is not a saved-son prerequisite. Historical refusal receipts do not become ore rewards."
+      "reason": "The elder refusal consumes the same lock of hair without any reward and stays present. It is loaded before the positive ore recipe. It is not a quest/daily achievement or a persisted save-the-son prerequisite."
+    },
+    {
+      "contracts": [
+        {
+          "giver_vnum": 77739,
+          "completion_key": "give=I:77747;receive=I:77719;disappear=1"
+        }
+      ],
+      "reason": "The hair-for-ore retirement is shadowed by the identical consuming refusal, which the loader prepends and dispatches first. Preserve its native identity and historical receipt, but exclude the unreachable current outcome until a deliberate, qualified repair selects intended eligibility and binding."
     }
   ]
 }

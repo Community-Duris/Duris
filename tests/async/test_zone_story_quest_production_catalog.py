@@ -1407,10 +1407,10 @@ assert len(re.findall(r"^#\d+~",shop,re.M)) == 12 and "#66032~" not in shop and 
 hall=inventory_module.area_evidence(ROOT,"hall")
 hall_map=next(m for m in catalog["story_mappings"] if m["source_area"]=="hall")
 hall_stories={s["id"]:s for s in hall_map["stories"]}
-assert (hall_map["schema_version"],hall_map["revision"],hall_map["coverage"])==(3,2,"complete")
-assert len(hall_stories)==10 and len(hall_map["contacts"])==27 and len(hall_map["exclusions"])==1
+assert (hall_map["schema_version"],hall_map["revision"],hall_map["coverage"])==(3,3,"complete")
+assert len(hall_stories)==9 and len(hall_map["contacts"])==27 and len(hall_map["exclusions"])==2
 assert sum(s["category"]=="service" for s in hall_stories.values())==4
-assert sum(t.get("optional",False) for s in hall_stories.values() for t in s["steps"])==25
+assert sum(t.get("optional",False) for s in hall_stories.values() for t in s["steps"])==23
 assert len(hall["requests"])==11 and len(hall["dialogue"])==14
 assert len(hall["mobs"])==55 and len(hall["items"])==53 and len(hall["reset_commands"])==395
 assert all(s["steps"][-1]["contracts"]==s["contracts"] for s in hall_stories.values())
@@ -1419,12 +1419,15 @@ bindings=[b for s in hall_stories.values() for b in s["contracts"]]+[b for x in 
 assert len(bindings)==11 and {tuple(sorted(b.items())) for b in bindings}=={
     tuple(sorted(r["block"]["binding"].items())) for r in hall["requests"]}
 assert {b["giver_vnum"] for x in hall_map["exclusions"] for b in x["contracts"]}=={77739}
-assert "Historical consuming refusal" in hall_map["exclusions"][0]["reason"]
-assert hall_stories["seltran-hair-for-ore"]["contracts"]==[{"giver_vnum":77739,"completion_key":"give=I:77747;receive=I:77719;disappear=1"}]
-assert hall_stories["seltran-hair-for-ore"]["steps"][0]["contracts"]==hall_stories["lost-aberrate-letter-for-hair"]["contracts"]
-assert hall_stories["seltran-hair-for-ore"]["steps"][1]["item_vnums"]==[77747]
+# The owner deferred this repair: keep the original native ordering and
+# exclude both elder contracts until the story and acceptance are reviewed.
+elder_source=(ROOT/"areas/qst/hall.qst").read_text(encoding="utf8").split("#77739\n",1)[1].split("\nS\n",1)[0]
+assert elder_source.index("R I 77719") < elder_source.index("Save my son")
+assert "seltran-hair-for-ore" not in hall_stories
+assert len({b["completion_key"] for x in hall_map["exclusions"] for b in x["contracts"]})==2
+assert "consumes" in hall_map["exclusions"][0]["reason"] and "shadowed" in hall_map["exclusions"][1]["reason"]
 units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==777]
-assert len(units)==10 and sum(u["achievement"] for u in units)==6 and sum(u["daily_candidate"] for u in units)==2
+assert len(units)==9 and sum(u["achievement"] for u in units)==5 and sum(u["daily_candidate"] for u in units)==2
 belt=hall_stories["jadem-sixteen-part-device"]
 assert [(t["item_vnums"],t["count"]) for t in belt["steps"][:-1]]==[([77712],2),([77729],2),([77719],2),([77742],4),([77748],6)]
 assert sum(t["count"] for t in belt["steps"][:-1])==16>native_limit
@@ -2316,7 +2319,7 @@ assert sum(d["daily_eligible"] for d in definitions.values())==9
 assert definitions[166]["daily_exclusion"]=="Unsupported durable offering" and definitions[211]["daily_exclusion"]=="Story-only quest"
 units=[u for u in catalog_module.story_units(catalog) if u["zone_number"]==870]
 assert len(units)==11 and sum(u["achievement"] for u in units)==6 and sum(u["daily_candidate"] for u in units)==5
-assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1519
+assert sum(u["achievement"] for u in catalog_module.story_units(catalog))==1518
 sources=collections.defaultdict(list);parent=None;room=None
 for reset in crakkaro["reset_commands"]:
     c,v=reset["command"],reset["arguments"]
@@ -3944,8 +3947,8 @@ for phrase in ('lockpicking','GET','CARVE','rotting','two','nine','supplied','lo
     assert phrase.lower() in guidance.lower(),phrase
 assert catalog_module.report_for(catalog)['mapped_area_count']==232
 assert catalog_module.report_for(catalog)['daily_unit_count']==1406
-assert sum(catalog_module.report_for(catalog)['eligible_by_zone'].values())==1519
-assert catalog_module.report_for(catalog)['story_unit_count']==2185
+assert sum(catalog_module.report_for(catalog)['eligible_by_zone'].values())==1518
+assert catalog_module.report_for(catalog)['story_unit_count']==2184
 
 
 # Cloister: the native acceptance caption must name the actual required tablet.
@@ -4051,7 +4054,7 @@ for phrase in ('key == -2','EX_LOCKED','isname(word, arg1)','back->to_room == ch
 guidance=' '.join(mapping['orientation']+[c['description'] for c in mapping['contacts']]+[t.get('hint','') for s in mapping['stories'] for t in s['steps']])
 for phrase in ('incomplete','world cap of one','RUB','supplied','three','loose','vapor','currently unavailable'):assert phrase.lower() in guidance.lower()
 report=catalog_module.report_for(catalog)
-assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(232,1519,1406,2185)
+assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(232,1518,1406,2184)
 
 
 # Cloister: complete native classification, refusal semantics and optional source routes.
@@ -4128,7 +4131,7 @@ assert '!IS_SET(EXIT(ch, door)->exit_info, EX_BLOCKED)' in search and 'REMOVE_BI
 guidance=' '.join(mapping['orientation']+[c['description'] for c in mapping['contacts']]+[t.get('hint','') for s in mapping['stories'] for t in s['steps']])
 for phrase in ('PUSH','SEARCH','SAY Khildarak','supplied','rejection','world cap of one','trap','ten-minute','active, ready accounting'):assert phrase.lower() in guidance.lower(),phrase
 report=catalog_module.report_for(catalog)
-assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(232,1519,1406,2185)
+assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(232,1518,1406,2184)
 
 
 # Turolopolis: exact ALL colours, retiring source, foreign giver and real portal/access roles.
@@ -4215,7 +4218,7 @@ for phrase in ('RUB','ENTER','SEARCH','five exact colours','white badge','suppli
     assert phrase.lower() in guidance.lower(),phrase
 assert not any(phrase in guidance for phrase in ('tower’s','crumbling stairway','priest’s quarters','Ask about free','Ask about power'))
 report=catalog_module.report_for(catalog)
-assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(232,1519,1406,2185)
+assert (report['mapped_area_count'],sum(report['eligible_by_zone'].values()),report['daily_unit_count'],report['story_unit_count'])==(232,1518,1406,2184)
 
 
 # Ixarkon: exact sources, optional guarded preparation and distinct campaign intent.
@@ -4413,7 +4416,7 @@ for phrase in ('three','consumed','supplied','unresolved','no SEARCH','gardener 
     assert phrase.lower() in guidance.lower(),phrase
 assert catalog_module.report_for(catalog)['mapped_area_count']==232
 assert catalog_module.report_for(catalog)['daily_unit_count']==1406
-assert sum(catalog_module.report_for(catalog)['eligible_by_zone'].values())==1519
+assert sum(catalog_module.report_for(catalog)['eligible_by_zone'].values())==1518
 
 
 # Tundra: ALL materials, partial foreign supply, retiring daily and automatic mirror.

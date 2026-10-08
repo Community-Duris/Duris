@@ -77,13 +77,16 @@ repair, use a clearly named separate fix commit where practical and PR/news
 notes naming zone/interaction, player trigger, before/after, proof and limits.
 A journal correction or planned recipe change is not a shipped native repair.
 
-The Hall's [source dossier](../design/zone-stories/THE_HALL_OF_THE_ANCIENTS.md)
-shows a contract-ordering defect: the loader prepended an identical hair
-refusal before Seltran's ore reward. The owner confirmed the hair hand-in;
-[00bda98d3](https://github.com/Community-Duris/Duris/commit/00bda98d3) reorders the entries so the existing completion dialogue,
-ore reward and departure run. Both canonical identities remain intact; the
-historical nonreward contract stays excluded and does not become a reward.
-An item graph cannot infer a saved-son condition; none is required.
+The Hall's [source dossier](../design/zone-stories/THE_HALL_OF_THE_ANCIENTS.md#deferred-elder-repair-and-family-story-follow-up)
+shows a contract-ordering defect: the loader prepends an identical hair refusal
+before Seltran's ore reward. The owner deferred its repair while the family
+story is reviewed; original native ordering is restored and both elder contracts
+remain excluded. The lost aberrate's father reference and release scene strongly
+suggest Seltran's son, but the child, letter, king's dagger and diary connections
+need builder authorship. Record these as follow-up, without inventing a missing
+rescue stage or advertising a repaired reward. Any later native repair needs its
+own qualification and dependent journal revision; historical refusal terms must
+not become rewards. The last confirmed item choice is the hair hand-in.
 
 Scarce materials may require several zone resets. Scarcity and competing
 consumers do not establish a broken quest or permanent exclusive outcomes.

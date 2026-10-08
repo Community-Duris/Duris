@@ -1,10 +1,10 @@
 # The Hall of the Ancients: comprehensive source story map
 
-**Source-comprehensive, revision two — October 8, 2026. Gameplay qualification
+**Source-comprehensive, revision three — October 8, 2026. Gameplay qualification
 remains open.** The [sidecar](../../../areas/story/hall.story.json) explains
-all eleven native exchanges: six independent outcomes, four support services
-and one historical elder refusal exclusion. It contains 27 contacts, all fourteen
-addressed dialogue families and 25 optional material/history checks. The six
+all eleven native exchanges: five independent outcomes, four support services
+and two elder exclusions. It contains 27 contacts, all fourteen
+addressed dialogue families and 23 optional material/history checks. The five
 outcomes have two potential daily candidates; daily availability still depends
 on actual sources, recipients and accounting qualification.
 
@@ -14,13 +14,14 @@ also exceeds the fourteen-item durable offering limit. Readiness guidance and
 recovered receipts cannot bypass either guard. Current custody does not prove
 personal recovery, learned topics, successful access or a complete campaign.
 
-**Two native repairs have separate fix commits:** Sin's combat gaze uses its
-actual opponent, and Seltran's hair hand-in now reaches the existing completion
-dialogue and adamantium rock reward before the elder departs. The latter only
-reorders Seltran's two Q entries; their inputs, rewards, messages and canonical
-identities remain intact. Other source and cathedral-trigger repairs below
-remain proposals. Scarce materials may require collection across resets; each
-distinct final outcome remains independently earnable.
+**Seltran's repair is deferred for builder story review.** The owner requested
+that the reward-order repair and its dependent achievement be undone after
+reviewing the family narrative. The original native quest bytes are restored;
+both elder contracts remain excluded from authored quest/daily credit. The
+earlier repair commits remain in branch history but are superseded by this
+rollback. Only Sin's separate combat-gaze repair remains shipped for this zone.
+Scarce materials may require collection across resets; each distinct final
+outcome remains independently earnable when its exchange is available.
 
 ## Evidence and review boundary
 
@@ -72,13 +73,13 @@ stage history. Supplied exact materials remain valid without producer receipts.
 | Jadem, 77735 | Two chains 77712, two bangles 77729, two rocks 77719, four springs 77742, six gears 77748 → belt 77749; retires | One commission outcome, existing story-only daily exclusion; sixteen items exceed offering limit fourteen |
 | Park child, 77742 | Foreign well-crafted dagger 18309 → scorched letter 77743; retires | One delivery outcome, existing story-only daily exclusion |
 | Lost aberrate, 77744 | Letter 77743 → hair 77747; retires | Separate delivery outcome, existing story-only daily exclusion |
-| Seltran, 77739: historical refusal | Hair 77747 → no reward; stays | Retained native identity; shadowed by the repaired reward and excluded from authored credit |
-| Seltran: hair delivery | Hair 77747 → rock 77719 plus completion dialogue; retires | Sixth independent outcome, existing story-only daily exclusion; no prior letter receipt or rescue required |
+| Seltran, 77739: consuming refusal | Hair 77747 → no reward; stays | Tried first by the loader; excluded from authored credit |
+| Seltran: shadowed reward | Hair 77747 → rock 77719 plus completion dialogue; retires | Unreachable through ordinary matching; excluded pending builder review |
 | Xamael: armor | Two magical bars 77745, two gorgon bags 77713, two rocks 77719, design book 77720, two ebony shards 77724, **one** genius potion 77750 → platemail of awe 77746; stays | One ten-item commission outcome/potential daily; actual source and issuance qualification remain open |
 
 The ring/bar preparation chain is a possible armor source route, not a required
-history. The child/letter/hair chain explains the elder lead and yields his ore
-when its final hair hand-in is accepted. Belt creation is not a prerequisite for armor. Each
+history. The child/letter/hair chain explains the elder lead, but the consuming refusal
+currently prevents his ore reward. Belt creation is not a prerequisite for armor. Each
 named outcome uses its own accepted terminal receipt, rather than one milestone
 per item, dialogue word or equipment effect.
 
@@ -88,7 +89,7 @@ per item, dialogue word or equipment effect.
 | --- | --- | --- |
 | Chain necklace 77712 | Worn by young daughter 77708 at 77805, reset line 300, cap one | Belt needs two separate copies; jewelry name does not imply any necklace fits |
 | Gorgon-scale bag 77713 | Carried by young warrior 77709 at 77806, line 302, cap one | Armor needs two; dialogue calls these steel scales |
-| Adamantium rock 77719 | Ground at 77845, line 218, cap two; convulsing mass 77746 at 77927, line 536, cap two/chance fifty; Seltran rewards one rock for the hair | Both final recipes consume two; a receipt cannot retain rocks already spent |
+| Adamantium rock 77719 | Ground at 77845, line 218, cap two; convulsing mass 77746 at 77927, line 536, cap two/chance fifty; Seltran has a shadowed hair-for-rock reward, unavailable through ordinary matching | Both final recipes consume two; a receipt cannot retain rocks already spent |
 | Book 77720 | Carried by Ssidrn 77715 at quay 77843, line 365, cap one | Visible seaweed-covered book identifies as Tome of Mechanical Knowledge I; other books do not substitute |
 | Ebony shard 77724 | Carried by Rasdarn 77721 at 77861, line 405, cap one | First key consumes one; armor needs two together. Its aliases include `ivory` despite the ebony name |
 | Dreamer bangle 77729 | Worn by captain 77727 at fountain 77867, line 426, cap one/chance twenty-five | Belt needs two; rare source chance is not a readiness or personal-kill fact |
@@ -121,41 +122,83 @@ catalog and runtime. The belt needs sixteen; the armor needs ten. Safe expansion
 would require bounded capture, continuation/recovery, exact allocation and
 failure qualification across every consumer. Preserve the original balanced
 sixteen-piece recipe while planning that expansion. No limit expansion ships
-with this journal or the Seltran/Sin repairs.
+with this journal or the separate Sin repair.
 
-## Repaired elder delivery and independent outcomes
+## Deferred elder repair and family-story follow-up
 
-The intended chain is dagger → child → scorched letter → lost aberrate → lock
-of hair → Seltran → adamantium rock. The owner explicitly confirmed that
-Seltran keeps the hair hand-in. Each accepted delivery is a distinct outcome;
-supplied matching proof remains valid without earlier personal receipts.
+**Status: follow-up only; native behavior remains unchanged.** On October 8 the
+owner requested rollback of [00bda98d3](https://github.com/Community-Duris/Duris/commit/00bda98d3)
+and its dependent journal achievement while the story is reviewed. The original
+file puts the positive Q before the consuming refusal. The
+[loader prepends each Q](../../../src/world/quest.c), so the refusal matches
+first. Both require exactly hair 77747; no saved-son predicate distinguishes
+them. Ordinary matching consumes the hair without ore or the positive farewell.
+Keep both native identities and both authored exclusions. Do not advertise a
+fixed elder quest, an available ore source or an elder achievement in this PR.
 
-Before [00bda98d3](https://github.com/Community-Duris/Duris/commit/00bda98d3), the reward appeared before the refusal in the
-native file. The [loader prepends each Q](../../../src/world/quest.c), so the
-consuming refusal was tried first. Both entries required exactly hair 77747;
-there was no saved-son predicate distinguishing them. This made the positive
-reward unreachable through ordinary matching.
+The existing item chain is dagger → child → scorched letter → lost aberrate →
+lock of hair → Seltran's blocked reward. The latest confirmed item choice is
+to retain Seltran's hair hand-in; a later builder review must establish the
+story before selecting an acceptance/dialogue repair. Supplied matching proof
+remains valid; do not infer personal acquisition or a new saved-NPC requirement.
 
-The fix places the reward last in the file, first in runtime matching. It uses
-the existing completion dialogue, consumes the exact hair, issues one rock
-77719 and retires the elder with the existing departure message. Both native
-definitions retain their original inputs, outputs and retirement flags, so
-their canonical identities and the native catalog fingerprint remain unchanged.
-The nonreward definition is retained solely for historical frozen terms; it
-stays excluded. Historical refusal receipts are not retroactively rewarded.
-Journal revision two binds the positive definition as its sixth achievement,
-with optional letter history/current hair guidance and no new daily candidate.
+### Existing story evidence and unresolved connections
 
-The [focused regression](../../../tests/async/test_hall_seltran.py) also captures
-the retained refusal's actual empty reward terms, restores its old slot-zero
-index and verifies recovery issues no ore after the reorder. The separate
-journal fixture confirms its historical receipt still earns no achievement.
+- **Likely son:** the lost aberrate, mobile 77744. On receiving letter 77743 he
+  says "My father will be pleased. Thank you," gives hair 77747, stops convulsing,
+  smiles and vanishes. Seltran's positive contract accepts that exact hair.
+  This strongly implies the relationship but never explicitly names his father.
+  His [description](../../../areas/mob/hall.mob#L718) presents a translucent man
+  imprisoned in painful stasis. The [release scene](../../../areas/qst/hall.qst#L234)
+  already exists independently of the deferred elder repair. It suggests release
+  from torment, without establishing a living escort, resurrection or reunion.
+- **Letter:** the [readable plea](../../../areas/obj/hall.obj#L756) says someone
+  is dying in the lost tunnel. It has no signature or explanation of why giving
+  it to the aberrate ends his suffering. Its author, intended recipient and
+  supernatural significance remain unconfirmed.
+- **Child:** the [park](../../../areas/wld/hall.wld#L4669) contains burned child
+  remains nailed to a tree. The [child](../../../areas/qst/hall.qst#L218) asks
+  about "the king's dagger," exchanges dagger 18309 for the letter, then smiles
+  and fades into the forest. Nothing confirms that he is Seltran's son, a younger
+  form of the aberrate, or another relative. Preserve those as questions.
+- **Dagger:** required item 18309 is a well-crafted dagger with claw/eye carvings,
+  carried by dark faced contortionate 18308 in the Temple of the Eleven GODS.
+  Neither prototype explains the king connection. This is an unresolved clue,
+  not evidence authorizing a different balanced item requirement.
+- **Diary:** the [ancient diary](../../../areas/obj/hall.obj#L200) mentions a
+  youngest son late for supper and undead near the plateau/central waterfall.
+  Its author is unnamed; its brother-betrayal account also overlaps
+  [Xamael's dialogue](../../../areas/qst/hall.qst#L141). Investigate whether it
+  belongs to this family rather than asserting a connection to Seltran.
+- **Collector:** Akckx's soul theme fits the setting, but its death procedure
+  creates a guardian/potion source without a son-release condition. No authored
+  collector-defeat, escort, resurrection or reunion stage was found for this
+  chain. A mandatory new stage would need explicit builder authorship.
 
-No NPC rescue state, king kill, reunion, belt crafting or armor crafting is
-required for this hand-in. Scarcity may require choosing which commission to
-pursue first and gathering more materials on later resets. Each distinct final
-outcome, including both belt and armor, remains an earnable achievement. A
-scarce shared ingredient does not establish a permanent character choice flag.
+### Builder decisions and proposed work, not implemented
+
+1. Confirm the son's identity and whether "save" means release from torment or
+   return alive. Identify the child and any relationship to the diary's family.
+2. Explain the letter's author, purpose and effect, and reconcile the king clue
+   with the exact dagger/source. Keep balanced terms until a deliberate change
+   is chosen.
+3. Add introductory elder dialogue about the missing son; clarify the aberrate's
+   recognition/release and why he offers hair; have Seltran recognize the token
+   and acknowledge the player's accomplishment in the completion dialogue.
+4. Decide whether those explanations complete the existing story or whether a
+   genuinely new playable stage is desired. The current evidence does not
+   recover a specific missing stage. Do not add an inferred campaign blocker.
+5. After story review, select and separately commit any native ordering/dialogue
+   repair. Requalify the actual loader, success/failure, exact consumption,
+   reward/departure, frozen refusal terms and restart recovery. Only then bind
+   an independent elder achievement, increment the journal revision and publish
+   clearly identified before/after PR/news wording. Historical refusal receipts
+   must not turn into rewards.
+
+Scarcity may require choosing which commission to pursue first and gathering
+more materials on later resets. Each distinct final outcome, including both
+belt and armor, remains an earnable achievement when its exchange is available.
+A scarce shared ingredient does not establish a permanent character choice flag.
 
 ## Access, death sources and effects
 
@@ -231,17 +274,18 @@ a native quest here, and no proc creates a local quest receipt.
 | Zone/interaction | Player trigger and before/after | Proof and limits | News wording |
 | --- | --- | --- | --- |
 | Hall: Shadow of Sin combat gaze, [separate fix 7297b964e](https://github.com/Community-Duris/Duris/commit/7297b964ed3996c33a90dae4172cd0875addf174) | Before: periodic actor is null, but Freedom of Movement checks that actor; the helper dereferences it. Other callbacks can check/consume a bystander's spell. After: the check uses the actual opponent; the room message substitutes that opponent's name correctly | Actual procedure compiled/executed with null and unrelated actors, spell consumption, unprotected effect, paladin/staff immunity, absent opponent and non-trigger roll; the same regression rejects the original null-target path. Server build/format pass recorded in PR. No live combat journey or cathedral campaign qualification claimed | “The Shadow of Sin now correctly checks its opponent's Freedom of Movement, fixing a combat crash and misleading target text.” |
-| Hall: Seltran hair hand-in, [separate fix 00bda98d3](https://github.com/Community-Duris/Duris/commit/00bda98d3) | Before: identical hair offerings dispatched the consuming refusal first, preventing the completion dialogue and ore reward. After: the existing hair-for-rock completion wins, issues its dialogue and one adamantium rock, then retires Seltran | Actual loader, recipe selection, frozen reward capture, failed commit/no consumption, exact hair consumption, reward callback, departure and acknowledged-reward replay exercised; original ordering rejected. Journal projection and synthetic receipt recovery cover its independent achievement. External grant/persistence boundaries use fixture acknowledgments; no live database or played journey claimed | “Seltran in the Hall of the Ancients now accepts the lock of hair and gives his intended dialogue and adamantium ore reward.” |
 
-Two rows above are shipped native repairs. Journal news can separately say:
-“The Hall of the Ancients now has six independent quest outcomes, including
-Seltran's hair delivery, with guided crafting and tower-key entries.”
+The Sin row above is the shipped native repair. Seltran's earlier repair was
+rolled back and must not appear as a shipped fix in player news. Journal news
+can separately describe five independent quest outcomes with guided crafting
+and tower-key entries, while leaving the elder route explicitly unavailable.
 Do not announce proposals below as completed.
 
 ## Pending repairs and expanded qualification
 
 | Finding | Balanced repair/integration proposal | Required proof |
 | --- | --- | --- |
+| Seltran reward ordering and incomplete family explanation | Deferred by owner: review son/child/letter/dagger/diary connections, author the missing explanation or deliberately choose a new stage, then select the native acceptance repair and dependent achievement | Original native bytes restored now; later actual loader, exact hair consumption, failure/replay/recovery, historical refusal nonreward, release and elder dialogue/reward/departure proof |
 | Belt exceeds durable limit; scarce sources need qualification | Preserve sixteen original ingredients; qualify bounded backend expansion and actual collection across resets before proposing a supply repair | Exact sixteen-root allocation, failure/retry/recovery, ordinary replenishment with retained stock and competing consumers; no arbitrary recipe/cap changes |
 | Gear chance-ten O declaration conflicts with normal O reset | Select intended rarity mechanism or source, avoiding an unannounced balance increase | Fresh ordinary and boot/forced branches, capped persistence and accepted ground acquisition |
 | Armor dialogue requests two potions; recipe uses one and two unmentioned ebony shards | Owner default: correct dialogue to the actual recipe, preserving its quantities, kinds and reward balance. A demonstrated mechanical defect is a separate repair | Exact quantities/identities and output, proof no unrelated potion/book/shard fits, fee/recipe receipt compatibility |
@@ -253,7 +297,8 @@ Do not announce proposals below as completed.
 | Family, shadow and dragon narratives have no campaign terminal | Preserve each accepted final outcome as an earnable achievement, including both crafting commissions. Add no saved-NPC requirement; any later campaign endpoint needs explicit authorship and compatible branch policy | Supplied versus personal paths, independent outcome/episode ownership and a supported durable terminal |
 
 Static extraction reveals contracts, prototypes, aliases, locations, counts,
-caps and dispatch mismatches. It cannot infer a saved son, choose balanced
+caps and dispatch mismatches. It supports a likely son and an existing release
+scene but cannot settle their full meaning, choose balanced
 source quantities, turn a death-spawn into personal acquisition or decide
 whether a cathedral should respond to attempted theft. A per-zone sidecar is
 the builder's explicit integration map. Extend shared event semantics only

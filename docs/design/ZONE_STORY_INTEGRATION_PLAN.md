@@ -40,16 +40,21 @@ The owner's clarification establishes these defaults for deeper integration:
   achievement; Hall's belt and armor remain independently earnable. Preserve
   actual recipes, prices and rewards while qualifying whether materials are
   obtainable. A demonstrated unreachable reward is a separate mechanical fix.
-- Seltran's confirmed hand-in remains the lock of hair: letter to the lost
-  aberrate, then hair to Seltran. His repaired acceptance gives the existing
-  dialogue and ore reward. Do not add a saved-NPC prerequisite; there is no
-  general saving-NPC mechanic here. Supplied exact proof remains valid.
+- Seltran's last confirmed required item remains the lock of hair, produced by
+  the lost aberrate's letter exchange. The owner subsequently deferred the
+  acceptance repair for story review: original native ordering is restored and
+  both elder contracts remain excluded. Review the likely son's release, child,
+  letter, king's dagger and diary connections in the
+  [Hall follow-up](zone-stories/THE_HALL_OF_THE_ANCIENTS.md#deferred-elder-repair-and-family-story-follow-up)
+  before changing acceptance/dialogue or adding a dependent achievement. Do not
+  invent a saved-NPC prerequisite; supplied exact proof remains valid.
 
 These decisions guide later acquisition/wear events and live qualification.
-The bounded Seltran native repair ships separately in [00bda98d3](https://github.com/Community-Duris/Duris/commit/00bda98d3);
-Hall journal revision two adds its distinct achievement. Existing balanced
-ingredient quantities, prices, rewards and source caps are preserved. Native
-repairs require a clearly identified fix commit and prominent PR/news wording.
+Hall journal revision three returns to five outcomes/four services/two elder
+exclusions. Existing balanced ingredient quantities, prices, rewards and source
+caps are preserved. Any future native repair requires a clearly identified fix
+commit and prominent PR/news wording; Seltran is a deferred proposal, not a
+shipped quest fix.
 
 The [execution register](ZONE_STORY_ROADMAP_EXECUTION.md) records comprehensive
 source dossiers, shipped changes, newly found dependencies, and verification.
@@ -465,12 +470,13 @@ zone or quest repair ships in this checkpoint.
 The Hall of the Ancients' [comprehensive dossier](zone-stories/THE_HALL_OF_THE_ANCIENTS.md)
 covers all eleven exchanges/fourteen addressed families, 247 rooms, 55 mobiles,
 53 objects, one shop and 395 resets/153 families, with all twelve literal
-procedures and shared dispatch. Journal revision two has six independent
-outcomes, four support services, one historical elder exclusion, 27 contacts
-and 25 optional checks. Seltran now accepts the hair for his existing dialogue
-and ore reward, then departs; the separate native fix is [00bda98d3](https://github.com/Community-Duris/Duris/commit/00bda98d3).
-Both canonical elder contracts remain intact; historical refusal receipts do
-not become rewards. The ore outcome keeps its existing story-only daily exclusion.
+procedures and shared dispatch. Journal revision three has five independent
+outcomes, four support services, two elder exclusions, 27 contacts and 23
+optional checks. Seltran's original consuming refusal precedes its identical
+hair-for-ore completion at runtime, so neither earns authored credit. The
+owner requested rollback of the reward-order repair and dependent achievement
+pending family-story review. The dossier records the likely son's existing
+release scene and unresolved child/letter/dagger/diary links as follow-up.
 
 Three mixed-fee keys remain guarded, and the sixteen-part device exceeds the
 fourteen-root durable offering limit. Preserve the original sixteen-piece
@@ -1642,11 +1648,13 @@ GMCP support, current versus historical status, and no writes/rewards on read.
   fix commits and prominent PR/news entries.
 - [x] Complete the Hall's eleven-exchange/fourteen-addressed source dossier:
   247 rooms/55 mobiles/53 objects/one shop, 395 resets/153 families and all
-  twelve literal procedures/shared dispatch. Revision two: six outcomes/four
-  services/one historical exclusion, 27 contacts/25 optional checks; separate
-  Seltran hand-in and Sin combat fix commits.
-- [x] Repair Seltran's hair acceptance, dialogue and ore reward; preserve both
-  native identities and add its independent journal achievement with regression proof.
+  twelve literal procedures/shared dispatch. Revision three: five outcomes/four
+  services/two elder exclusions, 27 contacts/23 optional checks; separate Sin
+  combat fix retained, Seltran repair and dependent achievement rolled back.
+- [ ] Review Seltran's family story and missing explanations, then select any
+  hair-acceptance/dialogue/reward repair. Confirm the likely son's release,
+  child/letter/dagger/diary links and intended ending before new quest stages;
+  preserve frozen terms and qualify any later independent elder achievement.
 - [ ] Qualify Hall sixteen-root backend support while preserving its recipe,
   obtainable multi-reset supplies/gear rarity, recipe-aligned armor dialogue
   and accepted cathedral mechanism. Qualify atomic collector/guardian/potion
@@ -1819,7 +1827,7 @@ contract classification; it does not claim complete objective coverage.
 | City of Torrhan | 1 | Complete: eight independent outcomes/fourteen support exchanges/four refusals across 26 native exchanges | [Source-comprehensive dossier](zone-stories/CITY_OF_TORRHAN.md); 23 contacts/eighteen addressed families, 28 optional checks and exact potion/sword/crown/cloak guidance | Eight achievement/potential daily units; live source/retirement, lineage, access/choice and actual royal transformation unqualified | Native supplied-route, exact-kind, service/refusal and recovery fixtures; qualify shared actor/lineage/property events and publish selected throne/stock/prose repairs distinctly |
 | Golden Hall of the Crown | 1 | Complete: nine outcomes/seven support services across all sixteen native exchanges | [Source-comprehensive dossier](zone-stories/GOLDEN_HALL_OF_THE_CROWN.md); 27 contacts/seventeen addressed families, 34 optional checks and exact note/key/totem/sword guidance | Nine achievements/seven potential dailies; both key-return rescues keep their daily exclusions; live sources, fees, access and pet events unqualified | Native supplied-proof, exact-kind, independent-rescue and recovery fixtures; qualify accepted actor/source/lineage/access/summon events and publish selected repairs clearly |
 | Ashrumite Village | 2 | Complete: twelve support services across every native exchange | [Source-comprehensive dossier](zone-stories/ASHRUMITE_VILLAGE.md); sixteen contacts/all thirteen addressed families, 21 optional checks and explicit intended/current crafting matrix | Zero authored achievements/dailies; all payments guarded, three quest prototypes missing; source, paid lore and actual craft lineage unqualified | Native exact same-name/five-copy, service-only recovery and missing-reference fixtures; select native repairs and qualify fees/source/output/access/pet events before a fresh journey |
-| The Hall of the Ancients | 2 | Complete: six independent outcomes/four services/one historical refusal exclusion across eleven exchanges | [Source-comprehensive dossier](zone-stories/THE_HALL_OF_THE_ANCIENTS.md); 27 contacts/fourteen addressed families, 25 optional checks, independent hair-for-ore and crafting outcomes | Six achievements/two potential dailies; three mixed fees and sixteen-root belt guarded; actual multi-reset supply still needs qualification | Separate Seltran acceptance/dialogue/ore and Sin combat fixes; qualify source/access/lineage, collector transaction, safe backend limit expansion and accepted cathedral mechanism without changing balanced recipes |
+| The Hall of the Ancients | 3 | Complete: five independent outcomes/four services/two elder exclusions across eleven exchanges | [Source-comprehensive dossier](zone-stories/THE_HALL_OF_THE_ANCIENTS.md); 27 contacts/fourteen addressed families, 23 optional checks; family-story questions recorded | Five achievements/two potential dailies; three mixed fees and sixteen-root belt guarded; actual multi-reset supply still needs qualification | Seltran repair and dependent achievement rolled back pending son/child/letter/dagger/diary review; separate Sin combat fix retained. Qualify source/access/lineage, collector transaction and safe backend support without changing balanced recipes |
 | Sarmiz'Duul | 1 | Complete: eight independent native deliveries; custom moonstone guidance without invented terminal | [Source-comprehensive dossier](zone-stories/SARMIZ_DUUL.md); 24 contacts/all thirteen raw addressed families and nineteen optional checks | Eight achievements/potential dailies; source and retiring episodes open; pirate core unavailable with accounting active | Exact three/four-item and supplied-proof routes, independent receipt recovery; custom targeting/seed/assembly/ring/crew, missing stock and potion/campaign repairs pending with news handoff |
 | Duke Delwyn | 1 | Complete: six independent deliveries/five paid services | [Source-comprehensive dossier](zone-stories/DUKE_DELWYN.md); nineteen contacts/all nine addressed families and seventeen optional checks | Six achievements/potential dailies; four paid textile stages and coin service guarded; live access/source/episodes open | Exact bell/cog, banner, knight and two-item warning; trap/falling/container lineage, atomic fees, occasion/service/peaceful handover decisions pending; no native repair ships |
 | Home of the Divine | 1 | Complete: twenty independent outcomes/twelve crafting or access services | [Source-comprehensive dossier](zone-stories/HOME_OF_THE_DIVINE.md); 27 contacts/all nineteen useful addressed families and 48 optional checks | Twenty potential candidates do not certify missing bounty reward, fresh scale or source supply; six mixed fees guarded | Exact four tokens/seven hearts/nine treasures, competing token and Pure-Dark receipts; missing reward/preflight, duplicate stock, touch/enter/prison/trap/falls, rare wandering and retiring episodes pending; no native repair ships |
