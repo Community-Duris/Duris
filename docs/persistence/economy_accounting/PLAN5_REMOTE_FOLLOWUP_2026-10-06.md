@@ -2173,3 +2173,49 @@ Existing flat auction fixture and room UID/provider handoffs stay open. Private
 128-file candidate stays separately unexecuted; full Plan5/R1–R8/release/activation
 remain unqualified. Notebook remains primary-local/nonblocking; curator adoption
 and acknowledgement are unclaimed.
+
+
+## Retained EAB1 native fixture 56-to-64 upgrade qualified — 2026-10-08
+
+[PLAN5_RETAINED_EAB1_UPGRADE56_TO64_2026-10-08.md](PLAN5_RETAINED_EAB1_UPGRADE56_TO64_2026-10-08.md) records fresh imports of authenticated previously retained
+schema 56/EAB1 native fixture dumps into real MariaDB 10.11.14 and MySQL 8.0.46.
+Sole worktree/remote branch remains `codex/accounting-plan5`, base `15f43cc2488a1668f736720ea850912fba24cc80`;
+the containing report commit is the result. All seven earlier tips/work/follow-ups
+remain ancestors here. Frozen primary `aa1613f5b3378cd253a046813e3c0de525206de7`, composed tree
+`01ecb10455e8ccd8b4c7bee7e3bc57b2403d3645` with 19 owned overlays, native 833d3085 / migrations 7e06717b / canonical 64.
+Only this additive handoff and report change; shared native/test/schema/producer/
+coordinator/registry/activation owners remain untouched.
+
+Final `legacy03` PASS/exit 0/68.269714s; both engines each append eight
+real migrations, preserve all 56 original receipt fields and original columns of
+18 economic/native tables, and rerun with no changes. Four current-native known-
+retained roots and four native failure/output controls pass under SELECT-only
+READ ONLY transactions with confirmed rollback; archived original replay is
+separate and exact. Six independent reader/integrity calls plus two denied 1142
+UPDATEs preserve authority. EAB1/NULL timestamps/origin markers remain original;
+unknown full headers remain unobserved. Actual Reconciler still reports
+one evidence_loss/two missing_native_holding/two missing_native_item per engine.
+These original native fixture dumps have modeled holding/source inputs, not real
+player/native coverage or historical production captures; zero full service boots,
+zero skips, inactive accounting. Full Plan 5/R1–R8/release remains unqualified.
+
+Preserved `legacy01` link FAIL/55.443927s/zero daemons proves three pending-source
+symbols require the actual economic_sql_pending_claim_source.c provider. Fresh
+`legacy02` passes after that external addition; `legacy03` adds explicit original 56
+receipt preservation. Shared original baseline 16-source recipe also lacks the
+three previously established decoder providers, and its original runner still
+pins 62. Narrow primary request: complete actual four-provider boundary/head 64
+and run original full baseline/equipment/claim/cold-clone controls on both engines;
+no schema/interface change, stubs or weakened flags. Earlier flat auction and
+room UID/provider requests stay open; private 128-file combined candidate stays
+separately unexecuted.
+
+Raw `D:/Dev/Tests/Duris/accounting-plan5/legacy56-current64-20261008`, seal
+`c09a03523393791e49176a108d63f4eb2c746c5cc8bd7edc4e86be1e43ca4c8c` (163 files/666757239 bytes); exact source/native argv,
+historical bindings, 56/64 receipts, before/after authority, JSON/native/daemon
+outputs and stopped-container metadata preserved. Post-push receipt binds result/
+remote/all 19 overlays/all seven tips and rehashes every raw sealed body. Curator-
+ready; primary-local notebook nonblocking, application/adoption/acknowledgement
+unclaimed. Combined native/gameplay/source/coverage/backup/restore/recovery/load
+and full original acceptance remain open; wallet exclusions/declined inactive
+spell path remain. Goal active.
