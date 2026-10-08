@@ -1,5 +1,56 @@
 # Required room-floor reset producer: implementation handoff - 2026-10-07
 
+## Integrated ordinary birth owners and restored flat outer - 2026-10-08
+
+Private `tmp/lifecycle-ordinary-origin-restored-outer-candidate-primary-20261008`
+SHA256 `48570aecc6c006fe4bc030930e90b01e6a1c38a9fc358bd7f6fc7e0f5078727e` now integrates nine independently source-accepted slices
+and 13 unique source overrides. There are 147 production files, 23 unchanged
+original fixtures, five unchanged schema/manifest inputs and 79 selected C
+providers registered once. Makefile remains unchanged with its six original
+additions. All 809 dependency records and 22 authenticated predecessor-to-successor
+bindings passed the actual composition d77e0c. Three unrelated local changes and
+both documentation-only remote advances are preserved.
+
+Ordinary birth now retains full original NMB4/NBC4/264-byte MBR4 across recovery,
+current wallet lifetime reads, immutable origin storage and the genuine producer.
+Fresh non-alchemists record the actual original decision return before capturing
+the not-attempted capsule; historical constructors are not converted. Genuine
+configured-role recensus precedes fresh submit, cold reconstruction and all three
+SQL publication cuts. Both original metadata installers validate the full typed
+receipt against the real wallet mapping. Historical policies remain explicit;
+shared/ambiguous keeper roles still refuse. No UID is substituted for a wallet.
+
+The private authority method preserves its existing friend set and installed
+metadata. Ordinary coordinator dispatch selects the real reviewed recovery family
+while preserving original callback readiness and execution/extension prerequisites.
+Generic command-only native submission refuses. Physical ACK authenticates the
+exact current receipt; continuation replay retains original fences until confirmed
+origin transfer AND journal retirement. No simple retirement bypass exists.
+
+The restored flat outer authenticates its original passive slot, command, root,
+PID, epoch and reservation. The actual coordinator delivery function is
+`critical_command_coordinator_pulse`; its live publication state, exact receipt,
+frozen command and retained fence heads are checked before effects and before ACK.
+Original covered-save observation precedes the native root lock. One immutable
+complete cold-stage allocation charge joins the original 32 MiB census; exact
+local hold consumption follows durable ACK even under unrelated-PID poison.
+Never-admitted cleanup remains closed until its genuine native owner is complete.
+
+Independent reviews accepted recovery704, lifetimes7d4/origin ef9, authority510,
+passive2ec, current receipt3174, outer8b116, producerde976 and coordinatorb0b.
+The next published-world successor is frozen separately for source review; its
+real SQL participant still needs ordinary original-command/recovery/retained-proof
+and origin-lock selection. Full cold PC/keeper/pet presence-or-absence source proof,
+native effects, original boot wiring, admission/driver, shared keeper atomic CAS,
+opening correspondence, activation and combined Plan5 qualification remain open.
+Unidentified legacy-pet absence is not fabricated from VNUM or a null player.
+
+No compiler/native/SQL/gameplay/persistence/recovery execution was performed for
+this milestone under the user's major-plan deferral. It publishes documentation
+only; implementation remains private and unqualified. Plan1's original independent
+acceptance is not expanded into Plans2-5, R1-R8 or release completion. Accounting,
+inactive spell behavior and all activation/safety gates remain unchanged.
+
 ## Reviewed ordinary birth storage and flat cold helpers - 2026-10-08
 
 Private `tmp/lifecycle-ordinary-birth-cold-helpers-candidate-primary-20261008`
