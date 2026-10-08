@@ -1111,3 +1111,39 @@ or release. `complete`, `consistent_entire_sweep`, `baseline_books_closed`,
 `orphan_namespace_closed`, `native_holdings_compared` and `release_qualified`
 remain false. See [primary qualification](
 PLAN5_HISTORY_NAMESPACE_PRIMARY_INTEGRATION_2026-10-07.md).
+
+
+## Independent current native and auction readers - 2026-10-07
+
+The complete source closure is integrated; native qualification on the final
+candidate remains pending. See [primary evidence](PLAN5_OPERATOR_PRIMARY_INTEGRATION_2026-10-07.md).
+Use the qualified restore tool against an owned private restored copy. These
+commands borrow the existing authority read lock, refuse pending transactions
+and malformed input, and perform no recovery or storage mutation.
+
+| Option (followed by the restored root) | Scope |
+| --- | --- |
+| `--economic-money-history-audit` | Retained monetary history continuity. |
+| `--economic-wallet-bank-audit` | Current native wallet/bank values and mapped history. |
+| `--economic-auction-money-audit` | Current native escrow/pending-claim values. |
+| `--economic-auction-source-balance-audit` | Native source balances and retained claims. |
+| `--economic-auction-source-credit-audit` | Original creator credit attribution. |
+| `--economic-auction-source-attribution-audit` | Source consumption, ordering and digest attribution. |
+| `--economic-custody-catalog-audit` | Independent current custody catalogue decoding. |
+| `--economic-world-custody-audit` | Current world literals against custody. |
+| `--economic-locker-custody-audit` | Current locker literals against custody. |
+| `--economic-shopkeeper-custody-audit` | Current shopkeeper literals against custody. |
+
+World, locker and shopkeeper commands accept `--limit 0`, `--limit 1` or
+`--limit 100` for detail output. The complete scan and finding counts remain
+independent of that detail limit. Existing aggregate byte/time limits remain;
+budget refusal is not successful qualification. Absent catalogues, unknown
+legacy facts and unverified origin/other owner families stay explicit. These
+bounded audits do not establish complete release, full service restoration,
+replay entitlement or activation.
+
+Keep the complete original dedicated differential suite in the major-plan batch:
+`python3 -u -B tests/async/test_flatfile_custody_audit.py --native-source .`.
+The unchanged full authority entry point now includes its seven money/auction
+helper suites and the cashout boundary controls. Existing baseline, lifecycle,
+namespace, journal, backup and restore commands above remain required.

@@ -25,6 +25,16 @@
 #include "world/quest_mobile_native.h"
 #include "qualify_flatfile_economic_records.h"
 #include "qualify_flatfile_economic_namespace.h"
+#include "qualify_flatfile_economic_money_history.h"
+#include "qualify_flatfile_wallet_bank.h"
+#include "qualify_flatfile_auction_money.h"
+#include "qualify_flatfile_auction_source_balance.h"
+#include "qualify_flatfile_auction_source_credit.h"
+#include "qualify_flatfile_auction_source_consumption.h"
+#include "qualify_flatfile_native_custody.h"
+#include "qualify_flatfile_native_world.h"
+#include "qualify_flatfile_native_locker.h"
+#include "qualify_flatfile_native_shopkeeper.h"
 
 // Native parsers may log diagnostics containing identities; this process reports
 // only aggregate success or a fixed failure code.
@@ -64,6 +74,42 @@ static void require(bool valid)
 template <typename Result> static bool readable(Result result)
 {
 	return result == Result::ok || result == Result::not_found;
+}
+
+static void current_money_findings(const restore_current_money::result &result)
+{
+	bool comma = false;
+	for (const auto &finding : result.findings)
+	{
+		if (comma)
+			std::cout << ',';
+		comma = true;
+		std::cout << "{\"epoch\":\"" << restore_economic_baseline::hex(finding.epoch)
+			  << "\",\"operation\":\""
+			  << restore_economic_baseline::hex(finding.operation)
+			  << "\",\"account\":\"" << restore_economic_baseline::hex(finding.account)
+			  << "\",\"code\":\"" << finding.code
+			  << "\",\"native_kind\":" << finding.native_kind
+			  << ",\"native_id\":" << finding.native_id;
+		if (finding.observed)
+		{
+			const auto &value = *finding.observed;
+			std::cout << ",\"observed\":{\"native_revision\":" << value.native_revision
+				  << ",\"expected_revision\":" << value.expected_revision
+				  << ",\"native\":[";
+			for (size_t i = 0; i < 4; ++i)
+			{
+				std::cout << (i ? "," : "");
+				restore_current_money::native_decimal(std::cout, value.native[i]);
+			}
+			std::cout << "],\"expected\":[";
+			for (size_t i = 0; i < 4; ++i)
+				std::cout << (i ? "," : "") << value.expected[i];
+			std::cout << "]}";
+		}
+		std::cout << '}';
+	}
+	std::cout << "]}\n";
 }
 
 static std::string account_name(const std::string &stem)
@@ -510,6 +556,439 @@ int main(int argc, char **argv)
 					  << '"';
 			std::cout << "]}\n";
 			return 0;
+		}
+		if ((argc == 3 || argc == 5) &&
+		    std::string(argv[1]) == "--economic-shopkeeper-custody-audit")
+		{
+			size_t limit = 100;
+			if (argc == 5)
+			{
+				restore_economic_authority::need(std::string(argv[3]) == "--limit");
+				limit = restore_wallet_bank::decimal(argv[4], 100);
+			}
+			restore_economic_authority::audit_budget budget;
+			const auto result =
+				restore_native_shopkeeper::audit(argv[2], budget, limit);
+			std::cout
+				<< "{\"format\":\"flatfile_shopkeeper_custody_audit_v1\","
+				   "\"scope\":\"durable_shopkeeper_literals_and_custody\",\"shop_present\":"
+				<< (result.shop_present ? "true" : "false")
+				<< ",\"custody_present\":"
+				<< (result.custody_present ? "true" : "false")
+				<< ",\"shop_version\":" << result.shop_version
+				<< ",\"shop_revision\":" << result.shop_revision
+				<< ",\"keepers\":" << result.keepers
+				<< ",\"affects\":" << result.affects
+				<< ",\"cash_known\":" << result.cash_known
+				<< ",\"cash_legacy\":" << result.cash_legacy
+				<< ",\"retained_cash_copper\":\"" << result.retained_cash << "\""
+				<< ",\"shop_items\":" << result.shop_items
+				<< ",\"shop_coin_literals\":" << result.shop_coins
+				<< ",\"compared_items\":" << result.compared_items
+				<< ",\"custody_shop_items\":" << result.custody_shop_items
+				<< ",\"other_custody_items\":" << result.other_custody_items
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"shop_owner_literals_verified\":"
+				<< (result.verified() ? "true" : "false")
+				<< ",\"other_owner_literals_compared\":false,\"native_holdings_compared\":false,"
+				   "\"item_history_verified\":false,\"full_R7_qualified\":false,\"release_qualified\":false,"
+				   "\"finding_counts\":{";
+			bool first = true;
+			for (const auto &[code, count] : result.finding_counts)
+			{
+				if (!first)
+					std::cout << ',';
+				first = false;
+				std::cout << '"' << code << "\":" << count;
+			}
+			std::cout << "},\"findings\":[";
+			first = true;
+			for (const auto &row : result.findings)
+			{
+				if (!first)
+					std::cout << ',';
+				first = false;
+				std::cout << "{\"code\":\"" << row.code << "\",\"uid\":\""
+					  << row.uid << "\"}";
+			}
+			std::cout << "]}\n";
+			return result.valid() ? 0 : 1;
+		}
+		if ((argc == 3 || argc == 5) &&
+		    std::string(argv[1]) == "--economic-locker-custody-audit")
+		{
+			size_t limit = 100;
+			if (argc == 5)
+			{
+				restore_economic_authority::need(std::string(argv[3]) == "--limit");
+				limit = restore_wallet_bank::decimal(argv[4], 100);
+			}
+			restore_economic_authority::audit_budget budget;
+			const auto result = restore_native_locker::audit(argv[2], budget, limit);
+			std::cout
+				<< "{\"format\":\"flatfile_locker_custody_audit_v1\","
+				   "\"scope\":\"durable_locker_literals_and_custody\",\"locker_present\":"
+				<< (result.locker_present ? "true" : "false")
+				<< ",\"custody_present\":"
+				<< (result.custody_present ? "true" : "false")
+				<< ",\"locker_version\":" << result.locker_version
+				<< ",\"locker_revision\":" << result.locker_revision
+				<< ",\"lockers\":" << result.lockers
+				<< ",\"chests\":" << result.chests
+				<< ",\"access_grants\":" << result.access
+				<< ",\"locker_items\":" << result.locker_items
+				<< ",\"locker_coin_literals\":" << result.locker_coins
+				<< ",\"compared_items\":" << result.compared_items
+				<< ",\"custody_locker_items\":" << result.custody_locker_items
+				<< ",\"other_custody_items\":" << result.other_custody_items
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"locker_owner_literals_verified\":"
+				<< (result.verified() ? "true" : "false")
+				<< ",\"other_owner_literals_compared\":false,\"native_holdings_compared\":false,"
+				   "\"item_history_verified\":false,\"full_R7_qualified\":false,\"release_qualified\":false,"
+				   "\"finding_counts\":{";
+			bool first = true;
+			for (const auto &[code, count] : result.finding_counts)
+			{
+				if (!first)
+					std::cout << ',';
+				first = false;
+				std::cout << '"' << code << "\":" << count;
+			}
+			std::cout << "},\"findings\":[";
+			first = true;
+			for (const auto &row : result.findings)
+			{
+				if (!first)
+					std::cout << ',';
+				first = false;
+				std::cout << "{\"code\":\"" << row.code << "\",\"uid\":\""
+					  << row.uid << "\"}";
+			}
+			std::cout << "]}\n";
+			return result.valid() ? 0 : 1;
+		}
+		if ((argc == 3 || argc == 5) &&
+		    std::string(argv[1]) == "--economic-world-custody-audit")
+		{
+			size_t limit = 100;
+			if (argc == 5)
+			{
+				restore_economic_authority::need(std::string(argv[3]) == "--limit");
+				limit = restore_wallet_bank::decimal(argv[4], 100);
+			}
+			restore_economic_authority::audit_budget budget;
+			const auto result = restore_native_world::audit(argv[2], budget, limit);
+			std::cout
+				<< "{\"format\":\"flatfile_world_custody_audit_v1\","
+				   "\"scope\":\"durable_world_literals_and_custody\",\"world_present\":"
+				<< (result.world_present ? "true" : "false")
+				<< ",\"custody_present\":"
+				<< (result.custody_present ? "true" : "false")
+				<< ",\"world_version\":" << result.world_version
+				<< ",\"world_revision\":" << result.world_revision
+				<< ",\"corpses\":" << result.corpses
+				<< ",\"saved_records\":" << result.saved
+				<< ",\"room_records\":" << result.rooms
+				<< ",\"world_items\":" << result.world_items
+				<< ",\"world_coin_literals\":" << result.world_coins
+				<< ",\"compared_items\":" << result.compared_items
+				<< ",\"custody_world_items\":" << result.custody_world_items
+				<< ",\"other_custody_items\":" << result.other_custody_items
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"world_owner_literals_verified\":"
+				<< (result.verified() ? "true" : "false")
+				<< ",\"other_owner_literals_compared\":false,\"native_holdings_compared\":false,"
+				   "\"item_history_verified\":false,\"full_R7_qualified\":false,\"release_qualified\":false,"
+				   "\"finding_counts\":{";
+			bool first = true;
+			for (const auto &[code, count] : result.finding_counts)
+			{
+				if (!first)
+					std::cout << ',';
+				first = false;
+				std::cout << '"' << code << "\":" << count;
+			}
+			std::cout << "},\"findings\":[";
+			first = true;
+			for (const auto &row : result.findings)
+			{
+				if (!first)
+					std::cout << ',';
+				first = false;
+				std::cout << "{\"code\":\"" << row.code << "\",\"uid\":\""
+					  << row.uid << "\"}";
+			}
+			std::cout << "]}\n";
+			return result.valid() ? 0 : 1;
+		}
+		if (argc == 3 && std::string(argv[1]) == "--economic-custody-catalog-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			const auto result = restore_native_custody::audit_catalog(argv[2], budget);
+			std::cout
+				<< "{\"format\":\"flatfile_custody_catalog_audit_v1\","
+				   "\"scope\":\"durable_custody_catalog_decoding\",\"catalog_present\":"
+				<< (result.present ? "true" : "false")
+				<< ",\"catalog_version\":" << result.version
+				<< ",\"catalog_revision\":" << result.revision
+				<< ",\"owners\":" << result.owners << ",\"items\":" << result.items
+				<< ",\"operations\":" << result.operations
+				<< ",\"active_items\":" << result.active
+				<< ",\"destroyed_items\":" << result.destroyed
+				<< ",\"quarantined_items\":" << result.quarantined
+				<< ",\"inline_coin_payloads\":" << result.inline_coin_payloads
+				<< ",\"coin_operations\":" << result.coin_operations
+				<< ",\"quest_operations\":" << result.quest_operations
+				<< ",\"custody_catalog_decoded\":"
+				<< (result.present ? "true" : "false")
+				<< ",\"native_holdings_compared\":false,\"owner_literals_compared\":false,"
+				   "\"item_history_verified\":false,\"full_R7_qualified\":false,"
+				   "\"release_qualified\":false}\n";
+			return 0;
+		}
+		if (argc == 3 && std::string(argv[1]) == "--economic-wallet-bank-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			auto result = restore_wallet_bank::audit(argv[2], budget);
+			std::cout
+				<< "{\"format\":\"flatfile_wallet_bank_audit_v1\","
+				   "\"scope\":\"current_wallet_bank_values_and_revisions\",\"initialized\":"
+				<< (result.initialized ? "true" : "false") << ",\"epoch\":\""
+				<< restore_economic_baseline::hex(result.epoch)
+				<< "\",\"active_wallet_bank_accounts\":" << result.active_accounts
+				<< ",\"retired_current_epoch_accounts\":"
+				<< result.retired_epoch_accounts
+				<< ",\"prior_epoch_wallet_bank_accounts\":"
+				<< result.prior_epoch_accounts
+				<< ",\"native_wallet_domains\":" << result.native_wallets
+				<< ",\"native_bank_domains\":" << result.native_banks
+				<< ",\"compared_accounts\":" << result.compared_accounts
+				<< ",\"unanchored_current_accounts\":"
+				<< result.unanchored_current_accounts
+				<< ",\"accepted_roots\":" << result.history.accepted_roots
+				<< ",\"ordinary_account_edges\":" << result.history.edges
+				<< ",\"history_invalid_accounts\":"
+				<< result.history.invalid_accounts
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"wallet_bank_holdings_compared\":"
+				<< (result.compared_accounts ? "true" : "false")
+				<< ",\"current_wallet_bank_values_verified\":"
+				<< (result.verified() ? "true" : "false")
+				<< ",\"account_origins_verified\":false,\"cross_epoch_continuity_verified\":false,"
+				   "\"other_money_domains_verified\":false,\"native_holdings_compared\":false,"
+				   "\"full_R7_qualified\":false,\"release_qualified\":false,\"findings\":[";
+			current_money_findings(result);
+			return result.valid() ? 0 : 1;
+		}
+
+		if (argc == 3 && std::string(argv[1]) == "--economic-auction-money-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			auto result = restore_auction_money::audit(argv[2], budget);
+			std::cout
+				<< "{\"format\":\"flatfile_auction_money_audit_v1\","
+				   "\"scope\":\"current_auction_escrow_claim_values_and_revisions\",\"initialized\":"
+				<< (result.initialized ? "true" : "false") << ",\"epoch\":\""
+				<< restore_economic_baseline::hex(result.epoch)
+				<< "\",\"active_auction_money_accounts\":" << result.active_accounts
+				<< ",\"retired_current_epoch_accounts\":"
+				<< result.retired_epoch_accounts
+				<< ",\"prior_epoch_auction_money_accounts\":"
+				<< result.prior_epoch_accounts << ",\"catalog_present\":"
+				<< (result.catalog_present ? "true" : "false")
+				<< ",\"claim_sources_present\":"
+				<< (result.sources_present ? "true" : "false")
+				<< ",\"catalog_revision\":" << result.catalog_revision
+				<< ",\"claim_source_revision\":" << result.source_revision
+				<< ",\"catalog_listings\":" << result.listings
+				<< ",\"catalog_operations\":" << result.operations
+				<< ",\"claim_source_rows\":" << result.source_rows
+				<< ",\"native_open_escrows\":" << result.native_escrows
+				<< ",\"native_pending_claims\":" << result.native_claims
+				<< ",\"compared_accounts\":" << result.compared_accounts
+				<< ",\"unanchored_current_accounts\":"
+				<< result.unanchored_current_accounts
+				<< ",\"accepted_roots\":" << result.history.accepted_roots
+				<< ",\"ordinary_account_edges\":" << result.history.edges
+				<< ",\"history_invalid_accounts\":"
+				<< result.history.invalid_accounts
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"auction_money_holdings_compared\":"
+				<< (result.compared_accounts ? "true" : "false")
+				<< ",\"current_auction_money_values_verified\":"
+				<< (result.verified() ? "true" : "false")
+				<< ",\"account_origins_verified\":false,\"claim_source_attribution_verified\":false,"
+				   "\"cross_epoch_continuity_verified\":false,\"other_money_domains_verified\":false,"
+				   "\"native_holdings_compared\":false,\"full_R7_qualified\":false,"
+				   "\"release_qualified\":false,\"findings\":[";
+			current_money_findings(result);
+			return result.valid() ? 0 : 1;
+		}
+		if (argc == 3 && std::string(argv[1]) == "--economic-auction-source-balance-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			const auto result = restore_auction_source_balance::audit(argv[2], budget);
+			std::cout
+				<< "{\"format\":\"flatfile_auction_source_balance_audit_v1\","
+				   "\"scope\":\"remaining_claim_sources_native_claims_and_retained_lifetimes\","
+				   "\"initialized\":"
+				<< (result.initialized ? "true" : "false") << ",\"epoch\":\""
+				<< restore_economic_baseline::hex(result.epoch)
+				<< "\",\"catalog_present\":"
+				<< (result.catalog_present ? "true" : "false")
+				<< ",\"claim_sources_present\":"
+				<< (result.sources_present ? "true" : "false")
+				<< ",\"catalog_revision\":" << result.catalog_revision
+				<< ",\"claim_source_revision\":" << result.source_revision
+				<< ",\"claim_source_rows\":" << result.source_rows
+				<< ",\"consumed_source_rows\":" << result.consumed_rows
+				<< ",\"unconsumed_source_rows\":" << result.unconsumed_rows
+				<< ",\"native_pending_claims\":" << result.native_claims
+				<< ",\"compared_claims\":" << result.compared_claims
+				<< ",\"current_auction_money_values_verified\":"
+				<< (result.current_values_verified ? "true" : "false")
+				<< ",\"remaining_claim_source_balances_verified\":"
+				<< (result.balance_verified() ? "true" : "false")
+				<< ",\"source_finding_count\":" << result.source_findings
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"account_origins_verified\":false,\"claim_source_attribution_verified\":false,"
+				   "\"claim_source_consumption_order_verified\":false,\"cross_epoch_continuity_verified\":false,"
+				   "\"other_money_domains_verified\":false,\"native_holdings_compared\":false,"
+				   "\"full_R7_qualified\":false,\"release_qualified\":false,\"findings\":[";
+			current_money_findings(result);
+			return result.valid() ? 0 : 1;
+		}
+		if (argc == 3 && std::string(argv[1]) == "--economic-auction-source-credit-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			const auto result = restore_auction_source_credit::audit(argv[2], budget);
+			std::cout
+				<< "{\"format\":\"flatfile_auction_source_credit_audit_v1\","
+				   "\"scope\":\"native_claim_source_credits_and_authenticated_creator_receipts\","
+				   "\"initialized\":"
+				<< (result.initialized ? "true" : "false") << ",\"epoch\":\""
+				<< restore_economic_baseline::hex(result.epoch)
+				<< "\",\"creator_roots\":" << result.creator_roots
+				<< ",\"expected_credits\":" << result.expected_credits
+				<< ",\"compared_credits\":" << result.compared_credits
+				<< ",\"claim_source_rows\":" << result.source_rows
+				<< ",\"consumed_source_rows\":" << result.consumed_rows
+				<< ",\"unconsumed_source_rows\":" << result.unconsumed_rows
+				<< ",\"claim_source_credit_roots_verified\":"
+				<< (result.credits_verified() ? "true" : "false")
+				<< ",\"current_auction_money_values_verified\":"
+				<< (result.current_values_verified ? "true" : "false")
+				<< ",\"remaining_claim_source_balances_verified\":"
+				<< (result.balance_verified() ? "true" : "false")
+				<< ",\"credit_finding_count\":" << result.credit_findings
+				<< ",\"source_finding_count\":" << result.source_findings
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"account_origins_verified\":false,\"claim_source_attribution_verified\":false,"
+				   "\"claim_source_digest_verified\":false,\"claim_source_consumption_order_verified\":false,"
+				   "\"cross_epoch_continuity_verified\":false,\"native_holdings_compared\":false,"
+				   "\"full_R7_qualified\":false,\"release_qualified\":false,\"findings\":[";
+			current_money_findings(result);
+			return result.valid() ? 0 : 1;
+		}
+		if (argc == 3 &&
+		    std::string(argv[1]) == "--economic-auction-source-attribution-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			const auto result =
+				restore_auction_source_consumption::audit(argv[2], budget);
+			std::cout
+				<< "{\"format\":\"flatfile_auction_source_attribution_audit_v1\","
+				   "\"scope\":\"native_claim_source_credits_consumers_and_frozen_sets\","
+				   "\"initialized\":"
+				<< (result.initialized ? "true" : "false") << ",\"epoch\":\""
+				<< restore_economic_baseline::hex(result.epoch)
+				<< "\",\"creator_roots\":" << result.creator_roots
+				<< ",\"expected_credits\":" << result.expected_credits
+				<< ",\"compared_credits\":" << result.compared_credits
+				<< ",\"consumer_roots\":" << result.consumer_roots
+				<< ",\"compared_consumers\":" << result.compared_consumers
+				<< ",\"selected_source_rows\":" << result.selected_source_rows
+				<< ",\"cashout_roots\":" << result.cashout_roots
+				<< ",\"verified_digests\":" << result.verified_digests
+				<< ",\"claim_source_rows\":" << result.source_rows
+				<< ",\"claim_source_credit_roots_verified\":"
+				<< (result.credits_verified() ? "true" : "false")
+				<< ",\"remaining_claim_source_balances_verified\":"
+				<< (result.balance_verified() ? "true" : "false")
+				<< ",\"claim_source_consumption_order_verified\":"
+				<< (result.consumption_verified() ? "true" : "false")
+				<< ",\"claim_source_digest_verified\":"
+				<< (result.digests_verified() ? "true" : "false")
+				<< ",\"claim_source_attribution_verified\":"
+				<< (result.attribution_verified() ? "true" : "false")
+				<< ",\"consumption_finding_count\":" << result.consumption_findings
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"account_origins_verified\":false,\"cross_epoch_continuity_verified\":false,"
+				   "\"native_holdings_compared\":false,\"full_R7_qualified\":false,"
+				   "\"release_qualified\":false,\"findings\":[";
+			current_money_findings(result);
+			return result.valid() ? 0 : 1;
+		}
+		if (argc == 3 && std::string(argv[1]) == "--economic-money-history-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			auto result = restore_economic_money_history::audit(argv[2], budget);
+			std::cout
+				<< "{\"accepted_roots\":" << result.accepted_roots
+				<< ",\"ordinary_account_edges\":" << result.edges
+				<< ",\"epoch_accounts\":" << result.accounts
+				<< ",\"baseline_anchored_accounts\":"
+				<< result.baseline_anchored_accounts
+				<< ",\"unanchored_accounts\":" << result.unanchored_accounts
+				<< ",\"invalid_accounts\":" << result.invalid_accounts
+				<< ",\"same_epoch_transition_continuity_verified\":"
+				<< (result.valid() ? "true" : "false") << ",\"findings_truncated\":"
+				<< (result.invalid_accounts > result.findings.size() ? "true" :
+										       "false")
+				<< ",\"account_origins_verified\":false,\"cross_epoch_continuity_verified\":false"
+				   ",\"native_holdings_compared\":false,\"full_R7_qualified\":false"
+				   ",\"release_qualified\":false,\"findings\":[";
+			bool comma = false;
+			for (const auto &finding : result.findings)
+			{
+				if (comma)
+					std::cout << ',';
+				comma = true;
+				std::cout << "{\"epoch\":\""
+					  << restore_economic_baseline::hex(finding.epoch)
+					  << "\",\"operation\":\""
+					  << restore_economic_baseline::hex(finding.operation)
+					  << "\",\"account\":\""
+					  << restore_economic_baseline::hex(finding.account)
+					  << "\",\"code\":\"" << finding.code << "\"}";
+			}
+			std::cout << "]}\n";
+			return result.valid() ? 0 : 1;
 		}
 		if (argc == 3 && std::string(argv[1]) == "--economic-evidence-audit")
 		{

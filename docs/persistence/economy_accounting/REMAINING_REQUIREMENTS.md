@@ -1,5 +1,15 @@
 # Double-entry economy: remaining requirements
 
+## Complete independent operator source integrated - 2026-10-07
+
+[Primary integration evidence](PLAN5_OPERATOR_PRIMARY_INTEGRATION_2026-10-07.md)
+records the complete32-file reader/test closure and reviewed cashout overflow
+fix. Formatting, strict operator/fixture syntax, inventory927/workload108 and
+normal validation pass. All previous commands, suites and policies remain.
+Native/runtime and original major-plan release qualification remain pending;
+source integration does not close those gates.
+
+
 ## Shopkeeper native fixture recipes repaired - 2026-10-07
 
 [Source repair evidence](SHOPKEEPER_NATIVE_RECIPE_REPAIR_2026-10-07.md) records
