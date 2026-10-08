@@ -1,5 +1,42 @@
 # Experimental accounting review checkpoint
 
+## Reviewed ordinary birth storage and flat cold helpers - 2026-10-08
+
+Private `tmp/lifecycle-ordinary-birth-cold-helpers-candidate-primary-20261008`
+SHA256 `d9eaa45b9511152cae7cda2a91a003fc2ecd045be52c703b2901300749d69332` integrates three independently
+source-accepted slices: ordinary NMB4/MBR4 SQL storage, its original repository
+dispatch, and genuine flat boot-template/procedure-binding/reload helpers.
+There are 143 production files, 23 unchanged original fixtures, five unchanged
+schema/manifest inputs and 77 selected C providers registered once. Makefile
+remains byte-exact to the previous candidate with its six original additions.
+Three unrelated worktree changes and the docs-only remote advance are preserved.
+
+Ordinary storage reuses the actual inbox/session, inserted wallet mapping,
+absence/source/custody/accounting evidence and one original root transaction.
+Known-zero wallets remain revision1. Both original-ID receipt paths authenticate
+the full original NMB4 and actual264-byte MBR4; inbox/outbox/completion use exact
+typed bytes and outbox version4. Historical NMB1-3/MBR1 paths remain preserved.
+Historical receipt proof is separate from current native publication proof.
+Shared keeper roles still refuse; no wallet or owner clock is fabricated.
+Independent backend f17755/e7563b and repository e74aa9/826bab reviews pass.
+
+The four-file flat helper slice authenticates the original sealed boot catalog,
+retains a backend-bound procedure stage and preserves original reload/proclib
+effect/uncertainty states. SQL stages refuse foreign prepared-flat holders.
+Independent f7ae9d/a1fe02 review passes. Actual boot wiring, restored-flat slot,
+allocation budget, complete present-or-absent PC/keeper/pet census, cold effects,
+terminal cleanup and guarded ACK remain root-owned and incomplete.
+
+Two independent owners continue prospective ordinary recovery/terminal codecs
+and historical origin/current lifetime readers. They must read the genuine full
+original published attachment; plan/current reconstruction cannot replace it.
+Source factory/admission, ordinary physical publication, shared atomic keeper
+CAS/storage, opening correspondence, activation, Plan5 and all original R1-R8
+qualification remain open. No inactive-accounting/declined-spell/safety gate is
+changed. Compiler/native/SQL/gameplay/persistence/recovery are UNEXECUTED under
+the user's major-plan deferral. This checkpoint publishes documentation only;
+the integrated implementation is private and not qualified for merge.
+
 ## Reviewed live flat shop physical publication - 2026-10-08
 
 Private `tmp/lifecycle-flat-shop-live-reviewed-candidate-primary-20261008`
