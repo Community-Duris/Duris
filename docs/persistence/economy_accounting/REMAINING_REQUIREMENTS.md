@@ -1,5 +1,50 @@
 # Double-entry economy: remaining requirements
 
+## Reviewed live flat shop physical publication - 2026-10-08
+
+Private `tmp/lifecycle-flat-shop-live-reviewed-candidate-primary-20261008`
+SHA256 `87c253f48e89a1b3656c787c7a630331da35a3c43fdd549bc099b6e1a0d7265b` integrates the corrected live
+native publisher and original borrowed-lock PC/keeper/pet/NORENT observer.
+The complete candidate retains 140 production files, 23 unchanged original
+fixtures, five unchanged schema/manifest inputs and 75 selected C providers.
+Makefile is unchanged from the previous candidate; its original six additions,
+flags and rules remain. All three unrelated local changes are preserved.
+
+The actual outer held-save owner and READY native source bind the original v8
+command. Genuine receipt/CURRENT, full physical literal/UID/target/keeper/pet
+census and current custody precede placement. Actual retained vector/string/
+property capacities are charged once under the original shared32MiB before moves;
+exact retries retain the same allocations and original returned-handler stages.
+Fresh CURRENT/money/census checks precede the existing guarded ACK. Original
+account-bank publication fences prevent supported later operations advancing
+that bank before ACK; no historical money or SQL item IDs are fabricated.
+
+Review found that changing target fields in a copied v8 payload contradicted its
+manifest and refused a returned carrying-to-nesting stage. Corrective8de9aeab
+derives that temporary carried forest from authenticated original AFTER literals
+and retained BEFORE PC values. The frozen command/manifest stays unchanged.
+Independent73c06f/cd19e7/e91b13 source reviews, formatting, full predecessor
+reconstruction and 50 live dependencies pass. Compiler/native/gameplay/SQL/
+persistence/recovery remain UNEXECUTED under user major-plan deferral. This is
+a documentation-only checkpoint; the reviewed implementation remains private.
+
+Next cold work requires a distinct passive restored-flat slot, authentic outer
+publication owner/capacity/consume path, full absent-owner/pet source census and
+genuine flat boot-template/procedure-binding/reload counterparts. Attempted
+native holds remain on never-admitted outcomes until actual terminal cleanup is
+proved. Complete cold/driver/admission, birth CAS/atomic storage/source factory,
+opening correspondence, keeper historical transition, activation, Plan5 and
+original R1-R8 qualification remain open. No inactive/declined-spell/safety gate
+changes or full release acceptance follow from this source review.
+
+The Plan3 source trace distinguishes absent, present-zero and advanced owner
+clocks; empty stock supplies no fabricated clock. Cold boot resets before SHOP
+restoration replaces the keeper with saved cash/stock, while warm reset does not
+overlay the durable catalog. No generic live inventory union is introduced.
+Ordinary NMB4 backend work proceeds separately; shared atomic participation is
+unfinished. Immutable0059 retains five physical native-table columns and six
+selected reader fields, as corrected in published78d71393e; no schema changes.
+
 ## Reviewed prospective birth accounting/result and live publication budget - 2026-10-08
 
 Private `tmp/lifecycle-flat-shop-birth-accounting-candidate-primary-20261008`
