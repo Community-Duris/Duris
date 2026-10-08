@@ -168,25 +168,28 @@ revokes it before release. The source SQL normalization/independent verifier and
 activation consumer are still required; no raw census or terminal DTO is authority.
 Production accounting stays inactive; all cross-stream release gates remain open.
 
-## Reviewed initialized cutover caller and room-nesting interfaces - 2026-10-07
+## Reviewed synchronous full-source verification interface - 2026-10-08
 
-The shared private102/23/5 candidate preserves the original terminal/cold-world,
-projection and genuine reverse ownership contracts. All 55 selected C providers
-register once; no Makefile, fixture or schema pins change from shared99. The actual
-initialized-world/SQL owners now have a private adopted begin/known-abort return
-caller: preallocate real transaction slot and retain original save epoch before
-revoking the boot capability, preserve transferred START-failure ownership, then
-fresh SQL projection proof/atomic return/fresh returned-guard proof/original writer
-restoration/staged cleanup. Retries retain the same source epoch and closed
-outbox; no historical selection, receipt or successful read grants a permit.
-Default activation/normalizer/independent verifier/committed consumer is unwired.
+Shared private103/23/5 contains `economic_sql_initialized_activation_view.h`.
+Its synchronous callback receives the exact retained initialized world, complete
+owning physical/source2, five raw room tables, creation packet and persisted
+correspondence including all-row raw native catalog/history. References expire
+on return. Independently inspect raw providers and full live/persisted money/forest
+correspondence; primary reports/digests/route counts grant no authority. The original
+source2 framing remains intact. Original aggregate limits include the world first;
+SQL receives only the checked residual, with unchanged single-cell allowance.
 
-Factory-owned ordinary room nesting/detach is independently source-reviewed.
-Complete actual graph/prototype/UID/global absence precedes original grouping and
-weight mutation. Reducing shells refuse before mutation pending authentic probes.
-SQL-only canonical type22 support changes no flat allowlist or producer gate.
-Actual reset replay/completion/pulse/readiness registrations, shared P chronology,
-complete forest sealing/hot placement/current CAS/terminal publication remain open.
-No new outbox framework or source-policy widening is required. Full native/runtime
-qualification remains unrun; independent Plan5 audit/backup/release ownership stays
-separate. Capture/nesting/decoder components do not establish writer coverage.
+The actual selected-runtime owner authenticates its original session/transaction
+slot/save epoch/closed outbox and request/current activation evidence around the
+borrow. Callback refusal now still rolls back/releases the verifier savepoint and
+validates the owner. Any verification error prevents another borrow/verification;
+genuine retained abort remains available. No cached result, independent callback
+implementation/registration, activation, initial install or committed publication
+is supplied by this component. Native/SQL fault qualification remains unrun.
+
+Genuine unselected P-child capture retains actual P command/UID/constructor/literal
+and original cleanup ownership, without choosing or claiming a parent. Shared
+target chronology/foreign transfer/complete forest publication and actual reset
+restore/completion/pulse/readiness remain open. The existing reset origin/storage
+contracts and separate Plan5 audit/backup/restore/release ownership are unchanged.
+All 55 C providers register once; Makefile, fixtures/schema and policy stay intact.
