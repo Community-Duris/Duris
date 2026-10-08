@@ -2841,3 +2841,31 @@ failed observation-helper attempts and open gates. Private combined, gameplay/
 producer/opening/fault/recovery/activation/Plan5/R1–R8/release remain unqualified.
 Curator-ready; notebook nonblocking; application/import/ack unclaimed. No
 production/activation/autocorrection/deploy/merge/primary push/cross-chat message.
+
+
+## 2026-10-08: bounded regular saved-snapshot input
+
+Same sole local/remote codex/accounting-plan5; owned base 0a16ba2187ecfc77b6306c0e3f9a3be5d85eeb4e.
+Result is this containing commit; exact post-push remote/clean/ancestry/rehash
+receipt: D:/Dev/Tests/Duris/accounting-plan5/snapshot-input-20261008/delivery/result.json. Unchanged FIFO inputs block, while
+valid JSON grown past 32 MiB after stat falsely reports healthy. Existing main
+now opens/checks/reads one regular descriptor with a bounded cap-plus-one read,
+strict UTF-8 and finally-close; original duplicate guard and views remain.
+No schema/interface/mutator/shared change. Two focused RED methods establish
+three growth failures/six FIFO timeouts; an intermediate directory-order gap adds
+three RED failures and is fixed before final qualification. Final 425 loaded
+reader checks plus three budget tests yield 408 unique PASS/17 unexecuted opt-ins.
+150 external CLI calls include 84 nonregular refusals, 63 regular controls and
+three actual 32-MiB growth refusals; 21 additional in-process controls keep fd
+counts stable. Original fresh SQL/flat native fixtures yield five identical claim
+pairs accepted independently. Both original disposable SQL export runners PASS;
+258 added CLI calls include six growth refusals, 210 prior duplicate refusals and
+42 original controls; all 47 application tables and original 13 findings retain
+on each engine. Existing memory/time budgets pass. Tested composition c247140b0b7477d58737504e8ed8e243c14f1bca,
+primary ab67bad7e079245128c4de04a82beed0df2a2e9e, native/schema unchanged at latest a7dbc54cadf576330529a0e126d61052161ea255.
+Seal bcef0ec8b940949be7c69b8794c0d79170b62e31ff0c34c1d92fd472f9230c4b; complete commands/source/body/backend/evidence/open gates in
+PLAN5_SNAPSHOT_INPUT_QUALIFICATION_2026-10-08.md. All previous follow-up content is
+preserved. Curator-ready notebook input; notebook nonblocking; application/import/
+ack unclaimed. Full combined/gameplay/producer/opening/retention/activation/Plan5/
+R1–R8/release stays unqualified. No production/autocorrection/deploy/merge/primary
+push/cross-chat message.
