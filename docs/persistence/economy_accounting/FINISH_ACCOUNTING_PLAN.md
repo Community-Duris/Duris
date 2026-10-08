@@ -11,6 +11,23 @@ physical/save/native-history cross-proof, original effects and guarded ACK. The
 larger private candidate remains unpromoted. Major-plan executable qualification
 is deferred; full Smith/Plans 2-4/combined Plan 5/R1-R8 completion is not claimed.
 
+## Coordinator preparation after maintained Smith source publication - 2026-10-08
+
+Published4e26a569489f86ffefe2444570c658c7284f3727 removes the narrow profile-source
+availability blocker. Root authenticates the two published body hashes and reads
+queue/body-retention,private Smith and connected worker/ACK source cuts;it does
+not claim execution or final implementation qualification. Actual source now
+permits two bounded PRIVATE preparations:architecture original-body versus
+worker/repository applied-mask correspondence,and quest queue/capacity/refusal/
+held-output acceptance delta. Exact outputs,ownership and pending independent
+review are recorded in domain-separation/CONTINUING_PROJECT_COORDINATION.md.
+Closed blueprints stay sealed. Genuine Smith compound owner,persistence participant,
+full-physical/fresh SQL/export/publication and recovery remain primary dependencies.
+Original queued mask is not proof all components were applied by that ACK.
+Respect primary's explicit compilation/executable-test deferral until major-plan
+readiness. No native Goal resumption or Plans1-5/R1-R8 completion is claimed;
+heartbeat stays ACTIVE through the broader finish line.
+
 ## Original Smith save/command and reset cursor source joined - 2026-10-08
 
 [Current source integration](SMITH_SAVE_COMMAND_AND_RESET_CURSOR_SOURCE_INTEGRATION_2026-10-08.md)

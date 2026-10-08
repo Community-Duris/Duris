@@ -2023,3 +2023,53 @@ architecture special facts/keeper brief are CLOSED. No next independent assignme
 on unchanged source/fixture inputs. No maintained code/test/doc/patch/import/build/
 test/server/DB/native execution in this review. Preserve worktrees/sealed proofs;
 GoalsBLOCKED/unfinished,heartbeatACTIVE,no adoption wait or overall completion.
+
+## Published Smith profile and two bounded preparation deltas - 2026-10-08
+
+Primary4e26a569489f86ffefe2444570c658c7284f3727 now publishes the actual
+[Smith checkpoint/body-retention providers](../SMITH_MAINTAINED_SAVE_PROFILE_2026-10-08.md).
+This supersedes profile-source unavailability at the historical blueprint pin;
+it does not supply the original Smith compound owner or native execution.
+Source tree2c957e9bc7aea28093b04c3349faf710f4bcbcc6 changes only the pipeline
+header/body;tests/async790f367adf805a69d53aac6460938f5c921f9136 and migrations
+7e06717b85ea7a5e27a1096fdb9cd9f124bd60c2 stay unchanged. Root authenticates
+both published body hashes against the report and reads the actual enqueue,
+coalescing,Smith begin/poll/hold/cancel/held-observation and connected worker/ACK
+cuts. This is source reassessment,not independent final code qualification.
+
+The new private SQL profile binds original indexed runtime/token/operation,
+filtered EQ/INV+level and matching durable ACK revision. It retains the exact
+original enqueue body after receipt merges and queue ownership;its allocated
+body capacity is charged with slot payload under the existing32MiB limit.
+Held observation validates canonical decoding and matching identity/revision/
+filtered body before moving outputs. The retained original mask does not prove
+that every original component was applied by this particular worker ACK:
+receipt-free initial dispatch and pending promotion retain existing narrowing.
+Only the real friend owner may call these private methods;its implementation is
+still absent from published source. No full physical/fresh SQL/native history/
+publication/release/guarded-ACK capability or open gameplay gate is inferred.
+
+One new bounded PRIVATE delivery per existing chat is dispatched:
+
+- Architecture owns SMITH_SAVE_BODY_COMPONENT_CORRESPONDENCE_2026-10-08.txt:
+  source-grounded retained enqueue/journal versus applied/claimed/completion/
+  durable masks and revision/SQL correspondence. Derive the smallest required
+  future participant observations,including surplus original components and
+  receipt-bearing versus receipt-free paths. Reuse closed findings;do not repeat
+  primary's application review or the full physical blueprint.
+- Quest owns SMITH_CHECKPOINT_RETENTION_ACCEPTANCE_DELTA_2026-10-08.txt:
+  future smallest genuine fixture extension/negative branches for body replacement,
+  newer/equal/older coalescing,queue ownership/capacity refusal,unresolved enqueue,
+  cancellation and unchanged held-observation outputs on refusal. Pin actual
+  statements and existing fixture reachability;leave applied-mask analysis to
+  architecture. Preserve the closed blueprint byte-for-byte.
+
+Both return compact exact pins/private D: handoffs for root independent review.
+The original Smith compound/persistence/export interfaces remain unavailable;
+no fake owner/friend hack,new ABI/format or surrogate native proof is authorized.
+No maintained worker code/test/doc changes,builds or executable tests are assigned.
+Primary explicitly defers compilation/qualification until actual major-plan
+readiness;these assignments prepare later implementation and checks only.
+Root evidence D: coordinator-smith-maintained-profile-reassessment-20261008/
+reassessment.json. Both deliveries/reviews are PENDING. Actual native Goals remain
+BLOCKED/unfinished;heartbeatACTIVE and all original finish-line controls remain.
