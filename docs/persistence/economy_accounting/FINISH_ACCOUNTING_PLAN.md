@@ -5,9 +5,15 @@
 [Independent reader review](quest-prep/WATCHED_UID_CAPTURE_REVIEW_2026-10-08.md)
 records exact optional code/handoff and coordinator-executed focused results.
 [NPC-cost assertion review](quest-prep/NATIVE_NPC_COST_ASSERTION_REVIEW_2026-10-08.md)
-passes the additive captured-agreement oracle and focused controls; quest prep
-next implements separate QP03 temporal retirement/replacement assertions.
-Mapping/projector/physical and chronological native proof remain external.
+passes the additive captured-agreement oracle and focused controls.
+[Temporal QP03 review](quest-prep/QP03_TEMPORAL_RETIREMENT_ASSERTION_REVIEW_2026-10-08.md)
+passes code826c30f20/handofff023c9fda with 13 new modeled methods and 17 unchanged
+controls independently executed. Quest prep next reserves the smallest safe
+original parent/child held/publication/ACK/pair-retirement evidence boundary
+in QP03_HELD_PAIR_PROOF_RESERVATION_2026-10-08.md; no maintained implementation
+is assigned before review. Mapping/projector/physical and chronological native
+proof remain external. Primarya9807ef27 reports further private reset/SHOP
+progress; public source/migrations and unexecuted native qualification remain.
 [Currency acceptance design review](domain-separation/PREPARATION_BUNDLES_REVIEW_2026-10-08.md)
 passes blueprinta24454539 and item-custody mapf4d38f4eb. Architecture next traces
 the ordinary pickup publication retention gap and proposes an exact reservation,

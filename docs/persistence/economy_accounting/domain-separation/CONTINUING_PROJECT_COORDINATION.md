@@ -78,12 +78,18 @@ not SQL/native acceptance or primary adoption. Exact dependencies remain explici
 [Independent NPC-cost assertion review](../quest-prep/NATIVE_NPC_COST_ASSERTION_REVIEW_2026-10-08.md)
 passes code0965b74a8/handoff6366b7ee5: coordinator executes nine new modeled oracle
 methods and 17 unchanged controls. Captured agreement does not authenticate mapping,
-frozen projection or native publication. Quest prep next owns a separate temporal
-QP03 assertion module, focused test and handoff, with exact paths/limits in that
-review. Original A terminal evidence precedes observed later B birth and stable
-stale retry; selected-row absence is never global absence/retirement proof.
-Existing oracles remain intact. Native mapping/publication, genuine D/chronology,
-full census and authentic paid setup remain unavailable. Currency blueprint
+frozen projection or native publication.
+[Independent temporal QP03 review](../quest-prep/QP03_TEMPORAL_RETIREMENT_ASSERTION_REVIEW_2026-10-08.md)
+passes code826c30f20/handofff023c9fda with coordinator-executed 13 new modeled
+methods and 17 unchanged controls. Original A terminal evidence precedes observed
+later B birth and stable stale retry; selected-row absence is never global
+absence/retirement proof. Quest prep next owns only
+QP03_HELD_PAIR_PROOF_RESERVATION_2026-10-08.md and private feasibility: exact
+original parent/child inputs, safe maintained read-only decoding/export boundary,
+held/publication/ACK/pair-retirement cuts and minimal owned assertion reservation.
+No maintained implementation is assigned before review. Existing oracles remain
+intact. Native mapping/publication, genuine D/chronology, full census, original
+owner exports and authentic paid setup remain unavailable. Currency blueprint
 a24454539 now passes preparation review in PREPARATION_BUNDLES_REVIEW_2026-10-08.md.
 Item-custody mapf4d38f4eb now passes source/design review in the same preparation
 review. Architecture next owns ORDINARY_PICKUP_PUBLICATION_RESERVATION_2026-10-08.md
@@ -91,8 +97,10 @@ and private feasibility only: trace actual ordinary get retention/callback/ACK/
 save behavior, check whether an existing owner closes the source-visible gap,
 and propose the smallest exact boundary with original proof and collision limits.
 No maintained source/test change, owner rewrite or native runner is reserved.
-Primarye8b8d842f publishes documentation of private typed flat SHOP progress and
-blockers; public native source/migrations remain unchanged. No shared owner,
+Primarya9807ef27 publishes private reset dispatcher/flat SHOP projection progress
+and blockers; public native source/migrations remain unchanged. Its reported
+formatting/source review is not executed compiler/native/gameplay/recovery proof.
+No shared owner,
 Plan5 audit or primary rewrite is assigned. Actual native Goals remain BLOCKED;
 heartbeat ACTIVE and broader primary finish line unchanged.
 
