@@ -663,3 +663,67 @@ cold still depend on exact original compatible native/shutdown driver, current
 proof and save owners; private439/be8942cd bodies remain unavailable. Quest's
 optional observed mapping capture remains independently active. Both continuing
 native Goals remain BLOCKED; heartbeat ACTIVE and broader completion unchanged.
+
+## Observed mapping capture reviewed; optional live-wallet join next
+
+PASS reader/query unit review at code
+`2e85d59b1457e3587a713af98af78bc6907ac4ce` and handoff
+`9905d55da42a12b916e0f2362de441b569365d66`.
+[Exact observed-mapping handoff](https://github.com/Community-Duris/Duris/blob/9905d55da42a12b916e0f2362de441b569365d66/docs/persistence/economy_accounting/quest-prep/OBSERVED_MAPPING_CAPTURE_HANDOFF_2026-10-08.md)
+and [reader](https://github.com/Community-Duris/Duris/blob/2e85d59b1457e3587a713af98af78bc6907ac4ce/tests/async/quest_accounting_prep/capture_quest_cut.py)
+plus its existing unit-test file are the three-file optional bundle. Import only
+compatible owned changes; primary adoption remains unknown.
+
+Coordinator reviewed the reader/test diff and complete handoff, authenticated
+both exact committed bodies, three public schema/observer source pins and all14
+indexed artifacts. Independently executed32 updated reader tests and the exact
+unchanged19-test original body on Windows Python3.12: PASS. Independently compared
+six old/new default cases for complete output and actual query/binding sequences:
+QP02, QP03, native mobile filter, explicit item history, explicit operation and
+inactive legacy all equal. Original input bodies and code-only/document-only
+commit scope match the handoff. Private coordinator records:
+`D:\Dev\Temp\coordinator-mapping-capture-review-20261008`.
+
+Nonempty explicit mapping IDs collect all11 literal mapping fields, requested
+lineage head and available creating/retiring operation history in the same RR
+read-only cut. Missing/NULL/different-epoch heads and foreign/retired mapping
+facts stay literal; there is no native-UID inference or mapping authentication.
+SQL BIGINT mapping maximum is accepted independently of native UID sentinels.
+Defaults remain unchanged; nonempty legacy input refuses. Existing engine,
+row/aggregate byte/BLOB preflight, binding, rollback, disposable/binary/source,
+connector timeout and exclusive-output guards remain. Additional inbox payloads
+receive cumulative BLOB preflight before buffered fetch. All test SQL goes through
+the modeled cursor seam; no SQL/server/build/native journey or owner ran.
+
+Next one bounded quest delivery owns only
+`tests/async/quest_accounting_prep/native_wallet_mapping_checks.py`,
+`tests/async/quest_accounting_prep/test_native_wallet_mapping_checks.py` and
+`quest-prep/NATIVE_WALLET_MAPPING_ASSERTION_HANDOFF_2026-10-08.md`.
+Make optional captured live-wallet mapping/head facts usable by paid QP02 and
+pre-D original-A/live replacement-B acceptance without manual joins. Keep accepted
+capture/cost/temporal/pair/default oracles unchanged; no automatic new gate.
+Use explicit cut/native instance/observed encoded wallet key, maintained account
+key and native-image grammar, source-defined mapping and current-head predicates.
+Published schema and observe_mapping/native birth contracts are available; actual
+same-cut owner borrow remains unavailable. Public native wallet locator is7,
+context12; a generic cursor fixture's locator12 is not native acceptance.
+
+Compare supplied key/selected mapping/live native birth/current image and current
+lineage/epoch/head agreement, preserving legitimate historical birth epochs and
+zero live mapping revision. Independently vary selection/missing/duplicate and
+ID/equality, lifetime/creator/active/lineage/kind/context/backend/locator/revision,
+head absence/NULL/epoch, native grammar/types/bounds and unchanged inputs. Reuse
+modeled paid/temporal builders for additive pre-D A/live B examples. A coherent
+forgery must remain explicitly unauthenticated with exact external-proof requirements.
+Do not invent retired-state/D semantics, decode a copied origin format, resolve
+locks/session authority or claim a complete lifetime/world census. If an existing
+helper already supplies this useful join, report overlap rather than duplicate it.
+
+Qualify narrow modeled agreement with60-second bounds, exact source/test/evidence
+pins and D: scratch. No production/shared driver/schema/registry/Plan5 edit,
+DB/server/C++ build/native journey or unchanged broad rerun. Authentic setup,
+funding/held inventory, current owner/cash borrow, physical publication/ACK/D/
+paired retirement/cold and private primary source remain dependencies. Collector
+capture component is still independently probing genuine provider closure; preserve
+its live work. Actual native Goals remain BLOCKED, heartbeat ACTIVE and broader
+primary Plans1-5/R1-R8 qualification/owner completion remain unresolved.

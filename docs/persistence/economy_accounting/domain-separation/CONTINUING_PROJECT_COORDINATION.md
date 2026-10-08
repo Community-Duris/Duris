@@ -101,13 +101,17 @@ Fee componentb478374e0/handoff20970bf1e now PASS actual-provider/model review:
 63 original compiler/link commands authenticated; unchanged original context and
 103 fee controls independently PASS without sanitizer diagnostics. Exact modeled
 terms, retained fixture corrections and native/SQL/owner/journal limits remain in
-that review. Quest next owns only optional observed mapping/lineage-head capture
-in capture_quest_cut.py, test_capture_quest_cut.py and
-OBSERVED_MAPPING_CAPTURE_HANDOFF_2026-10-08.md. Public schema/reader inputs are
-available; preserve defaults, legacy/bounds/read-only/rollback guards and literal
-missing/foreign/retired observations. No inferred mapping, private role grammar,
-authority/oracle/schema/shared owner or native qualification is added. The review
-records precise benefit, controls, collisions and unavailable genuine interfaces. Existing oracles
+that review. Optional mapping capture2e85d59b1/handoff9905d55da now PASS reader-unit
+review:two committed bodies/three source pins/14 artifacts authenticated;32 updated
+and unchanged19 original tests independently PASS, six default/legacy output/query/
+binding comparisons exact. No SQL/native/owner qualification. Quest next owns only
+native_wallet_mapping_checks.py, test_native_wallet_mapping_checks.py and
+NATIVE_WALLET_MAPPING_ASSERTION_HANDOFF_2026-10-08.md: optional captured live-wallet
+key/mapping/native/head agreement using maintained grammar/source predicates.
+No default gate or accepted oracle change, owner authentication, inferred mapping,
+private role grammar or invented retired/D contract. Existing source/cut builders
+are available; genuine native owner/setup/current proof remain unavailable. The
+review records precise benefit, controls, collision and qualification limits. Existing oracles
 remain intact. Native mapping/
 publication, genuine D/chronology, full census, original owner exports and
 authentic paid setup remain unavailable. Currency blueprint

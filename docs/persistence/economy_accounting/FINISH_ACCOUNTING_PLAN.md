@@ -19,10 +19,14 @@ Fee componentb478374e0/handoff20970bf1e now PASS actual-provider/model review:
 2,818 public blobs/two committed tests/155 artifacts/23 inputs/63 compiler commands
 authenticated; unchanged original context and103 fee controls independently PASS
 under original ASan/UBSan bounds. Native/SQL/owner/journal qualification is false.
-Quest next owns optional explicit mapping-row/lineage-head capture and reader tests
-plus OBSERVED_MAPPING_CAPTURE_HANDOFF_2026-10-08.md. Public schema is available;
-preserve default/legacy/read-only/budget/rollback guards and literal observations.
-No inferred mapping, private role grammar, shared authority or oracle change.
+Optional mapping capture2e85d59b1/handoff9905d55da now PASS reader-unit review:
+32 updated + unchanged19 tests independently PASS; six exact default/legacy output/
+query/binding comparisons, two bodies/three source pins/14 artifacts authenticated.
+Quest next owns optional native_wallet_mapping_checks.py/test and
+NATIVE_WALLET_MAPPING_ASSERTION_HANDOFF_2026-10-08.md: explicit captured live-wallet
+key/mapping/native/head consistency, maintained grammar and source predicates.
+Defaults/oracles/shared authority stay intact; no mapping authentication, inferred
+identity/private role grammar or invented retired/D contract is added.
 Gorblag is a source candidate; funded/item-parent native reachability is unproven.
 Genuine owner export, physical D/chronology and native qualification remain
 external dependencies.
