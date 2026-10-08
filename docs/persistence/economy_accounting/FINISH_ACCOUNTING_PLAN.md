@@ -1,19 +1,21 @@
 # Finish accounting implementation plan
 
-## Original Smith grant/accounting and reset recovery source joined - 2026-10-08
+## Original Smith save/command and reset cursor source joined - 2026-10-08
 
-[Current source integration](SMITH_GRANT_ACCOUNTING_AND_RESET_RECOVERY_SOURCE_INTEGRATION_2026-10-08.md)
-records private candidate `3fc1241b986986c7a50f57397665e5cb35f6a17d2883b3388f2c52d77f71dd53`:
-corrected Smith codec, once-only factory output, actual indexed PC grant facts,
-full-image transform and typed fee/custody compiler are source-reviewed and joined.
-Original runtime R_num grouping and generated-key rules are preserved. Reset cold
-pending/known/present cuts and authentic post-S pure preparation include reviewed
-retry corrections. Actual207 selected paths/168 source files authenticate; Smith
-producer is registered once. Full Smith command/fence/source/save/combined SQL-flat/
-physical publication/recovery ACK, original pre-S reset cursor/front door and
-special/flat routes remain. All execution is deferred to actual major-plan readiness.
-Maintained implementation is not promoted; fullPlans2-4/combinedPlan5/R1-R8 and
-activation/release are unproven. Original Plan1 acceptance retains its historical scope.
+[Current source integration](SMITH_SAVE_COMMAND_AND_RESET_CURSOR_SOURCE_INTEGRATION_2026-10-08.md)
+records private candidate `da38626ce29f9fd5d0272309fb66bd6b02022ed41e6063b749d478b87b6377ba`.
+Exact Smith command fences now bind the typed compiler. A separate original SQL
+save profile supplies acknowledged filtered EQ/INV, level and operation-bound hold;
+it supplies no held release, submission, fresh SQL or physical authority. Original
+reset dispatcher locals/source/actor lifetimes survive native P's pure target retry,
+with prior decisions retained. Nullable/uncertain cuts and active O remain closed.
+All208 selected paths/169 source files authenticate; inventory is not completion.
+Original pre-S room preparation and Smith SQL participant remain in parallel work.
+Smith full source/native-history/physical/save cross-proof, retained recovery budget,
+combined SQL-flat transaction, original publication and guarded ACK remain open.
+Compiler/native/gameplay/SQL/recovery execution is deferred until major-plan readiness.
+Maintained source is not promoted; fullPlans2-4/combinedPlan5/R1-R8 and release
+remain unproven. Original Plan1 acceptance retains its recorded historical scope.
 
 ## Watched-item capture sidework reviewed - 2026-10-08
 
