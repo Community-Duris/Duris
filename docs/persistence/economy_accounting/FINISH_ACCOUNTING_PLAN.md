@@ -55,11 +55,18 @@ fresh O1 CONTROL/Og ASanUBSan all12 observations/profile PASS. Full SQL/reposito
 logging TUs execute,only trace binding changes. Revision7 identity ASCII65,239
 bytes fits;65,240 refuses before trace. SQL escape/trace/DB are explicit doubles;
 no actual MySQL escaping/execution/transaction/native durability qualification.
-Quest next owns story_history_sql_runtime_rollback.cpp/test and
-QUEST_STORY_HISTORY_SQL_RUNTIME_ROLLBACK_HANDOFF_2026-10-08.md: actual valid
-service serialization plus real runtime completion/SQL formatter refusal and
-exact prior-memory restoration/repeated-key control. One component family; no
-arbitrary padding,giant native names,fake tracker,capacity fix or native proof.
+Valid-history SQL runtime code2b17bc59b21a4201760e2f3717afb2ee5f635053 and
+handoff2c82835ec494e1ffe20d816139b75875d9345a11 now PASS root independent review:
+1,334 public src bodies,1,694 artifacts/584 dependencies per original/fresh run;
+fresh strict O1 CONTROL/Og ASanUBSan PASS. Real service generates40 completions
+(raw63,707/query64,204);next41(raw65,303/query65,805) crosses actual65,536 buffer.
+Actual runtime repeats same frozen event twice,returns repository write error,
+restores byte-identical prior whole memory/no ghost facts,credits,names,telemetry.
+Fitting persists before/after reach exactly two controlled traces. Actual mode/
+epoch/flat providers retained; only two declared SQL symbol bindings change.
+SQL load/escape/trace/image are controlled; no DB/native transaction/reward/ACK/
+durability qualification. Original capacity defect remains. Supplemental private
+architecture artifact review is active; quest delivery closed at component scope.
 Gorblag is a source candidate; funded/item-parent native reachability is unproven.
 Genuine owner export, physical D/chronology and native qualification remain
 external dependencies.
@@ -102,9 +109,15 @@ Compound custody,wallet,keeper stock/cash and physical-before-completion/recover
 remain one original operation. No new SHOP runner is reserved. Architecture's
 supplemental PRIVATE capacity review now PASS:46 pinned artifacts/12 review
 artifacts authenticated,independent final-call/harness/logger and12-case checks.
-Architecture next owns one PRIVATE minimal shared-owner remediation reservation:
-source-supported dynamic explicit-length existing trace path versus an existing
-appropriate prepared API only. No implementation,new committed doc/test or wait.
+Owner remediation reservation now PASS source review:17 pins/80 anchors. Proposed
+one-file sql_zone_story_quest_state_save change constructs owned complete UPSERT
+and calls existing sql_trace_exec_at with exact length,same session/site/label/
+drain/fences/observability,RAII/ENOMEM/errors and singleton/version/revision/time.
+No appropriate shared prepared writer API is available. This is an optional owner
+recommendation; no production implementation,adoption wait or new policy authorized.
+Column/packet/native escaping/C-string limits require distinct owner qualification;
+retain original preguard and historical capacity proof. Architecture now reviews
+only the newly delivered runtime component artifacts; no duplicate build/run.
 Pickup still needs genuine save/current-proof/restart owners. Latest primary
 0433eae8d reports private7108537e:150 production/81C,12 new native source slices/
 1643 dependency records plus11 audit/restore paths/44 Python dependencies.

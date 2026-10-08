@@ -151,38 +151,28 @@ changes. Actual final call reaches strong controlled trace. Full-query ASCII
 revision7 state65,239 fits;65,240 refuses with zero trace. Escape growth/revision/
 NUL/preguard/trace refusal controls remain bounded and disclosed. No actual DB/
 MySQL escaping/SQL transaction/durability/native qualification. Private design
-review PASS15 bodies/70 anchors/ten widths; supplemental artifact review pending.
-Quest next owns only story_history_sql_runtime_rollback.cpp,
-test_story_history_sql_runtime_rollback.py and
-QUEST_STORY_HISTORY_SQL_RUNTIME_ROLLBACK_HANDOFF_2026-10-08.md. Benefit: connect
-real valid whole-history serialization to runtime rollback on genuine formatter
-refusal for future domain separation. Actual runtime/production/feature/tracking/
-catalog,service/record_authoritative_completion,closed406 runtime fixture and
-1e8 full SQL/repository/logit binding mechanism are available. Genuine mode/flat
-providers retained as needed; no fake non-SQL provider. Controlled SQL-only load/
-query/row/epoch/escape/trace boundaries must be explicit,prefer actual repository
-load. Each altered symbol needs exact object/final-call proof. Missing genuine
-non-SQL closure stops dependent execution,not a fabricated pass.
-Generate real service history with deterministic explicit events/unique keys/
-ordered recipients and real catalog,not invalid-state padding or giant native
-names. PIDs are modeled component inputs,not authentic world identities. Record
-actual document/row/raw-byte/LF/hex alphabet/escaped/full-query observations with
-an explicit generated-alphabet SQL escape model,no MySQL charset claim. One
-nearby valid-state completion crosses query bound; actual runtime must return
-repository write error/zero trace and restore byte-identical prior complete
-memory with no failed fact/credit/metadata/telemetry. Repeat same frozen key/
-context without ghost growth; retain a healthy fitting control. No adjacent-byte
-threshold requirement,new capacity/policy/format correction or daily enablement.
-Exact standalone optional import,strict O1 CONTROL/Og ASanUBSan,bounded logged
-commands/failures/timeouts,full source/provider/dependency/tool/library/object/
-ELF pins and separate D: proof/builds. No production/existing tests/helper/capture/
-decoder/schema/registry/shared-driver/Plan5/FINISH/canonical handoff edit or
-server/migration/SQL service/journal/native/broad batch. Original native world/
-transaction/recovery/private inputs remain external. If valid crossing is not
-meaningfully reachable,return precise feasibility/dependency. One active delivery,
-no adoption wait; actual native Goal BLOCKED and heartbeat ACTIVE.
-Both side turns were actually interrupted/notLoaded at15:30; continuation messages
-preserve the same tasks/context/jobs and existing proof,not timeout-based restarts.
+review PASS15 bodies/70 anchors/ten widths; supplemental artifact review PASS below.
+Valid-history SQL runtime code2b17bc59b21a4201760e2f3717afb2ee5f635053 and
+handoff2c82835ec494e1ffe20d816139b75875d9345a11 now PASS root independent source/
+object/valid-state review and fresh strict O1 CONTROL/Og ASanUBSan execution.
+Both original/fresh1,694 artifacts/584 dependencies and1,334 public source bodies
+authenticated. Actual runtime/production/service/catalog/tracking/repository/full
+SQL formatter/logit/mode/epoch and retained flat providers execute or link as
+stated. Only trace and load-query bindings are weakened in a copied SQL object;
+all code/relocations/data/debug remain exact. Explicit SQL-only token,row/length/
+free/escape/trace/image doubles supply no database or native authority.
+Real valid40-event history raw63,707/query64,204 fits;41-event raw65,303/query65,805
+refuses before trace. Two identical original-key attempts report repository write
+error,restore byte-identical entire prior memory and leave no new T/N/C/E fact.
+Actual load1/row1/length1/free1,escapes4,traces2;genuine logger emits two overflow
+messages. Fitting persist before/after remains exact. PIDs/names are component
+identities,LF escaping is an ASCII model,not native MySQL qualification.
+Quest bounded delivery is complete/importable; no production correction made.
+Supplemental architecture artifact review is active,without another build/run.
+Root proof D: coordinator-sql-runtime-rollback-review-20261008/review.json;
+worker/import evidence remains sealed,including premature-verifier sequencing
+failure. Original native world/transaction/recovery/owner/save/ACK/private inputs
+remain external. No new source interface or native Goal resumption is claimed.
 Recipe map83038acc0 remains closed. Existing oracles
 remain intact. Native mapping/
 publication, genuine D/chronology, full census, original owner exports and
@@ -252,25 +242,36 @@ Architecture supplemental PRIVATE implementation/artifact review now PASS:
 46 exact pins/12 indexed review files authenticated; independently decoded final
 qry call/harness owner/genuine logger and24 recorded observations match. No new
 build/execution. Original artifact/SQL-double limits remain; no required defect.
-Architecture next owns ONE short PRIVATE shared-owner capacity remediation
-reservation/recommendation. Benefit: a minimal owner implementation choice for
-qualified whole-history formatting limit without another source investigation.
-Use actual repository/sql.c/sql.h/sql_player.c and accepted capacity proof.
-Compare at most two source-supported options: dynamically built complete escaped
-UPSERT through existing explicit-length sql_trace_exec_at versus an appropriate
-EXISTING prepared API only if actually available. Preserve singleton/version/
-revision/timestamp/whole-state semantics,RAII/ENOMEM/errors,source-site/label/
-drain/session/exclusion/observability. Distinguish formatter cap,MEDIUMTEXT byte
-cap,packet/connection/escaping limits and actual C-string behavior; no guessed
-DB maxima or silent policy change. State exact affected paths/functions,
-recommended narrow choice,unavailable dependencies and focused qualification.
-Historical capacity fixture remains baseline; any future fix-specific expectation
-must be separate and cannot rewrite earlier PASS/weaken refusal controls.
-One D: private artifact/concise disposition; NO production edit,prototype/patch,
-new committed doc/test/helper/schema/authority/format or server/DB/native/broad
-build. This is a proposed owner change,not implementation authorization/adoption
-requirement; private overlap/adoption unknown. Return precise dependency if no
-minimal path. Reuse reviews,one active delivery,isolated WT/GoalBLOCKED preserved.
+Owner capacity remediation reservation now PASS independent source review:
+17 pinned inputs/80 exact anchors and private evidence index authenticated.
+Recommended owner change is only src/sql/zone_story_quest_state_repository.c,
+sql_zone_story_quest_state_save:build owned complete escaped UPSERT and pass
+query.data()/query.size() to existing sql_trace_exec_at,logical write site,
+label qry/direct,drain true/false. Preserve same DB session/exclusion/observation/
+telemetry,error/RAII/ENOMEM and singleton/version/revision/timestamp/full-state
+semantics. Keep generic qry_at and original raw preguard unchanged. No suitable
+shared callable observed prepared writer API exists; no new framework proposed.
+Separate actual column/packet/connection/native escaping and C-string limits from
+formatter capacity; no DB maximum/charset/mode acceptance claim. Private overlap
+unknown; implementation/DB qualification remains primary-owned,without adoption
+wait or change authorization. Historical capacity/rollback fixtures remain exact
+baseline;future fix-specific above-bound expectations must be separately qualified.
+
+Architecture now owns ONE supplemental PRIVATE runtime code/artifact review:
+exact2b17bc59b/2c82835ec/source/provider pins,independent object/binding/final-call
+proof and full valid history/restore/trace observations. Inputs are the published
+code/handoff and sealed1cydqwqw/publication folders;root fresh replay supplies
+execution,so no duplicate build/run. Output is one private D: review packet with
+findings/proof index. No production/test/doc/schema/private primary changes.
+Benefit: independent verification of the connected valid-history rollback bundle.
+Quest has no new assigned implementation while this review finishes. Prioritize
+(1)resolve actual supplemental findings,(2)shared-owner capacity decision and
+fix-specific integrated real DB proof when published,(3)genuine native source/
+owner/save/ACK/current/cold interfaces and original journeys. The latter two
+retain their owners and unavailable inputs;do not fabricate interfaces or repeat
+completed maps/inventories to fill time. Reassess at review handoff or new primary
+source,retain event monitoring and isolated worktrees. Both actual native Goals
+and root Goal remain BLOCKED/unfinished;heartbeat ACTIVE.
 Genuine save/current-proof/restart owners still block pickup production wiring.
 Latest primary0433eae8d reports private candidate7108537e:150 production/81C,
 12 additional native source slices/1643 dependency records plus11 audit/restore

@@ -1581,3 +1581,43 @@ passes do not qualify the smaller composition; peer raw archives unavailable.
 Public src/migrations/tests still unchanged; compiler/native/SQL/gameplay/
 persistence/recovery UNEXECUTED under major-plan deferral. No new callable native
 interface or overall completion evidence. GoalBLOCKED/heartbeatACTIVE unchanged.
+
+
+Valid whole-history SQL runtime rollback and owner recommendation - 2026-10-08:
+Root PASS code2b17bc59b21a4201760e2f3717afb2ee5f635053 and companion handoff
+2c82835ec494e1ffe20d816139b75875d9345a11. Exactly two new owned test files plus
+dated handoff;standalone patch/import/committed/executed bytes authenticate.
+1,334 archived source bodies,original/fresh1,694 artifacts/584 dependencies,
+actual tools/libraries and copied SQL sections/bindings authenticated. Fresh
+strict O1 CONTROL/Og ASanUBSan both PASS,all output bytes match original proofs.
+Only two declared SQL bindings change;genuine qry/logit/mode/epoch/flat providers
+remain. Independently decoded actual T/N/C/E events and exact restored images:
+40 completions raw63,707/query64,204 fit;41 raw65,303/query65,805 refuses before
+trace. Two same-key attempts restore identical whole memory,with no failed facts/
+credits/names/telemetry. Fitting persists yield trace1/2;load/row/length/free1,
+escapes4. Genuine logit records two overflows per profile. Root review proof in
+D:/Dev/Temp/coordinator-sql-runtime-rollback-review-20261008/review.json;fresh
+6svdn74y build under separate D:/Dev/Builds/Duris path. SQL boundaries and modeled
+ASCII escaping/PIDs/controlled image remain explicit,no live DB/transaction/
+native reward/ACK/cold/durability qualification. Defect is demonstrated,not fixed.
+Supplemental architecture private artifact review active,no duplicate build/run.
+
+Shared-owner remediation reservation independently PASS17 inputs/80 anchors;
+private index SHA25609705c8fd37310731595a37f5d59f64894d0a5966965d28c78fe11b8b74f8e06.
+Minimal recommendation:only story SQL repository save builds dynamic complete
+escaped UPSERT,then existing explicit-length sql_trace_exec_at with same original
+session/site/label/drain/fences/observation/telemetry/RAII/ENOMEM/results. Preserve
+singleton/version/revision/timestamp and original raw preguard;generic qry stays.
+No suitable shared callable prepared writer is exposed. Column/packet/charset/
+native escaping/C-string constraints remain separate owner decisions. Actual
+SQL/transaction/readback/refusal qualification and private overlap are unavailable;
+no production implementation/adoption wait or silent policy change authorized.
+Keep original capacity/runtime fixtures historical;future fix expectations must
+explicitly reflect above-former-bound trace success without rewriting old PASS.
+
+Queue after this delivery:finish supplemental review;act on genuine required
+findings only. Capacity correction/real DB qualification stays primary-owned;
+native current/save/ACK/cold and original fixtures remain prerequisites for
+blocked native work. No new generic helper/map/inventory selected merely to fill
+idle time. Public primary stilld9d98b6c/source833d30858;reported private0433 source
+composition remains unexecuted/unavailable here. GoalBLOCKED/heartbeatACTIVE.
