@@ -61,21 +61,25 @@ struct item_literal
 	std::array<int32_t, 8> values;
 	std::span<const uint8_t> encoded;
 };
-// Native snapshot-list framing; every literal borrows the immutable input.
-inline std::vector<item_literal> decode_items(std::span<const uint8_t> encoded)
+// Player snapshots share these limits across all vectors and all item forests.
+struct snapshot_budget
 {
-	need(!encoded.empty() && encoded.size() <= 4 * 1024 * 1024);
-	reader in{ encoded };
-	const auto count = in.number(4);
-	need(count <= 4096);
-	size_t remaining = 8192 - count;
-	const auto rows = [&]()
+	size_t rows = 8192, objects = 4096;
+	size_t count(reader &in, bool items = false)
 	{
 		const auto count = in.number(4);
-		need(count <= remaining);
-		remaining -= count;
+		need(count <= rows && (!items || count <= objects));
+		rows -= count;
+		if (items)
+			objects -= count;
 		return count;
-	};
+	}
+};
+// Native snapshot-list framing; every literal borrows the immutable input.
+inline std::vector<item_literal> decode_items(reader &in, snapshot_budget &budget)
+{
+	const auto count = budget.count(in, true);
+	const auto rows = [&]() { return budget.count(in); };
 	std::vector<item_literal> result;
 	std::vector<size_t> depths;
 	for (size_t i = 0; i < count; ++i)
@@ -107,9 +111,17 @@ inline std::vector<item_literal> decode_items(std::span<const uint8_t> encoded)
 		const auto depth = row.parent < 0 ? 1 : depths[row.parent] + 1;
 		need(depth <= 32);
 		depths.push_back(depth);
-		row.encoded = encoded.subspan(begin, in.offset - begin);
+		row.encoded = in.value.subspan(begin, in.offset - begin);
 		result.push_back(row);
 	}
+	return result;
+}
+inline std::vector<item_literal> decode_items(std::span<const uint8_t> encoded)
+{
+	need(!encoded.empty() && encoded.size() <= 4 * 1024 * 1024);
+	reader in{ encoded };
+	snapshot_budget budget;
+	auto result = decode_items(in, budget);
 	in.done();
 	return result;
 }

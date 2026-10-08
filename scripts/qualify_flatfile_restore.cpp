@@ -35,6 +35,7 @@
 #include "qualify_flatfile_native_world.h"
 #include "qualify_flatfile_native_locker.h"
 #include "qualify_flatfile_native_shopkeeper.h"
+#include "qualify_flatfile_native_player.h"
 
 // Native parsers may log diagnostics containing identities; this process reports
 // only aggregate success or a fixed failure code.
@@ -710,6 +711,67 @@ int main(int argc, char **argv)
 				<< ",\"other_owner_literals_compared\":false,\"native_holdings_compared\":false,"
 				   "\"item_history_verified\":false,\"full_R7_qualified\":false,\"release_qualified\":false,"
 				   "\"finding_counts\":{";
+			bool first = true;
+			for (const auto &[code, count] : result.finding_counts)
+			{
+				if (!first)
+					std::cout << ',';
+				first = false;
+				std::cout << '"' << code << "\":" << count;
+			}
+			std::cout << "},\"findings\":[";
+			first = true;
+			for (const auto &row : result.findings)
+			{
+				if (!first)
+					std::cout << ',';
+				first = false;
+				std::cout << "{\"code\":\"" << row.code << "\",\"uid\":\""
+					  << row.uid << "\"}";
+			}
+			std::cout << "]}\n";
+			return result.valid() ? 0 : 1;
+		}
+		if ((argc == 3 || argc == 5) &&
+		    std::string(argv[1]) == "--economic-player-custody-audit")
+		{
+			size_t limit = 100;
+			if (argc == 5)
+			{
+				restore_economic_authority::need(std::string(argv[3]) == "--limit");
+				limit = restore_wallet_bank::decimal(argv[4], 100);
+			}
+			restore_economic_authority::audit_budget budget;
+			const auto result = restore_native_player::audit(argv[2], budget, limit);
+			std::cout
+				<< "{\"format\":\"flatfile_player_custody_audit_v1\","
+				   "\"scope\":\"durable_current_player_pet_literals_and_custody\",\"players_present\":"
+				<< (result.players_present ? "true" : "false")
+				<< ",\"custody_present\":"
+				<< (result.custody_present ? "true" : "false")
+				<< ",\"players\":" << result.players << ",\"pets\":" << result.pets
+				<< ",\"legacy_pets\":" << result.legacy_pets
+				<< ",\"death_frames\":" << result.death_frames
+				<< ",\"player_items\":" << result.player_items
+				<< ",\"pet_items\":" << result.pet_items
+				<< ",\"coin_literals\":" << result.coin_literals
+				<< ",\"wallet_roots_excluded\":" << result.wallet_roots_excluded
+				<< ",\"compared_items\":" << result.compared_items
+				<< ",\"custody_player_items\":" << result.custody_player_items
+				<< ",\"other_custody_items\":" << result.other_custody_items
+				<< ",\"custody_equipment_fields_absent\":"
+				<< result.custody_equipment_fields_absent
+				<< ",\"coin_payloads_compared\":" << result.coin_payloads_compared
+				<< ",\"coin_payloads_absent\":" << result.coin_payloads_absent
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"player_pet_owner_literals_verified\":"
+				<< (result.verified() ? "true" : "false")
+				<< ",\"other_owner_literals_compared\":false,\"native_holdings_compared\":false,"
+				   "\"death_history_compared\":false,\"item_history_verified\":false,"
+				   "\"full_R7_qualified\":false,\"release_qualified\":false,\"finding_counts\":{";
 			bool first = true;
 			for (const auto &[code, count] : result.finding_counts)
 			{

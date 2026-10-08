@@ -2,6 +2,8 @@
 #include "../../scripts/qualify_flatfile_native_world.h"
 #include "../../scripts/qualify_flatfile_native_locker.h"
 #include "../../scripts/qualify_flatfile_native_shopkeeper.h"
+#include "../../scripts/qualify_flatfile_native_player.h"
+#include "flatfile/flatfile_player_snapshot_file.h"
 #include "flatfile/flatfile_locker_repository.h"
 #include "flatfile/flatfile_shopkeeper_repository.h"
 #include "flatfile/flatfile_item_repository.h"
@@ -301,15 +303,113 @@ static int shopkeeper(const std::string &root, const std::vector<uint8_t> &encod
 	return 0;
 }
 
+static int player(const std::string &root, const std::vector<uint8_t> &encoded, bool expected,
+		  int32_t pid)
+{
+	std::filesystem::create_directories(root + "/domains");
+	std::filesystem::create_directories(root + "/players");
+	assert(chmod(root.c_str(), 0700) == 0 && chmod((root + "/domains").c_str(), 0700) == 0 &&
+	       chmod((root + "/players").c_str(), 0700) == 0);
+	std::string error;
+	{
+		flatfile_authority_lock lock;
+		assert(lock.acquire(root, &error));
+	}
+	assert(flatfile_atomic_write(root + "/players", std::to_string(pid) + ".snapshot", encoded,
+				     &error));
+	player_snapshot native{};
+	const auto loaded = flatfile_player_snapshot_read(root, pid, &native, &error);
+	assert((loaded == flatfile_player_load_result::ok) == expected);
+	bool accepted = false;
+	size_t item_count = 0;
+	try
+	{
+		const auto independent = restore_native_player::decode_player(encoded, pid);
+		accepted = true;
+		assert(expected && independent.pid == static_cast<uint32_t>(native.pid) &&
+		       independent.revision == native.revision &&
+		       independent.death == native.death.has_value() &&
+		       independent.pets.size() == native.pets.size());
+		const auto compare = [&](const auto &literals, const auto &items)
+		{
+			assert(literals.size() == items.size());
+			for (size_t i = 0; i < items.size(); ++i)
+			{
+				++item_count;
+				const auto &literal = literals[i];
+				assert(literal.parent == items[i].parent_index &&
+				       literal.equipment == items[i].equipment_slot &&
+				       literal.uid == items[i].object_uid &&
+				       literal.vnum == items[i].vnum &&
+				       literal.type == static_cast<uint8_t>(items[i].type) &&
+				       literal.values == items[i].values);
+				auto item = items[i];
+				item.parent_index = -1;
+				std::vector<uint8_t> canonical;
+				assert(player_item_snapshot_list_encode({ item }, &canonical) ==
+				       player_snapshot_codec_result::ok);
+				assert(restore_economic_authority::same(
+					std::span(canonical).subspan(8),
+					literal.encoded.subspan(4)));
+			}
+		};
+		compare(independent.items, native.items);
+		for (size_t i = 0; i < native.pets.size(); ++i)
+		{
+			assert(independent.pets[i].uid == native.pets[i].pet_uid &&
+			       independent.pets[i].hold_reason ==
+				       static_cast<uint32_t>(native.pets[i].hold_reason));
+			compare(independent.pets[i].items, native.pets[i].items);
+		}
+		std::vector<uint8_t> generated;
+		assert(flatfile_player_snapshot_encode_file(native, &generated));
+		const auto roundtrip = restore_native_player::decode_player(generated, pid);
+		assert(roundtrip.pid == independent.pid &&
+		       roundtrip.revision == independent.revision &&
+		       roundtrip.items.size() == independent.items.size() &&
+		       roundtrip.pets.size() == independent.pets.size());
+		std::ofstream output(root + "/native-generated-player.bin", std::ios::binary);
+		output.write(reinterpret_cast<const char *>(generated.data()), generated.size());
+		assert(output);
+	}
+	catch (const std::runtime_error &)
+	{
+		assert(!expected);
+	}
+	assert(accepted == expected);
+	if (expected)
+	{
+		restore_economic_authority::audit_budget budget;
+		(void)restore_native_player::audit(root, budget);
+		budget.remaining_bytes = 0;
+		bool refused = false;
+		try
+		{
+			(void)restore_native_player::audit(root, budget);
+		}
+		catch (const restore_economic_authority::audit_budget_refused &)
+		{
+			refused = true;
+		}
+		assert(refused);
+	}
+	std::cout << "{\"native_accepted\":" << (expected ? "true" : "false")
+		  << ",\"independent_accepted\":" << (accepted ? "true" : "false")
+		  << ",\"items\":" << item_count << ",\"item_fields_match\":true}\n";
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
-	assert(argc == 4 || argc == 5);
+	assert(argc == 4 || argc == 5 || argc == 6);
 	const std::string root = argv[1];
 	std::ifstream stream(argv[2], std::ios::binary);
 	const std::vector<uint8_t> encoded((std::istreambuf_iterator<char>(stream)), {});
 	const bool expected = std::string(argv[3]) == "1";
-	if (argc == 5)
+	if (argc >= 5)
 	{
+		if (std::string(argv[4]) == "player")
+			return player(root, encoded, expected, argc == 6 ? std::stoi(argv[5]) : 7);
 		if (std::string(argv[4]) == "shopkeeper")
 			return shopkeeper(root, encoded, expected);
 		if (std::string(argv[4]) == "locker")

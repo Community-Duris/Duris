@@ -21,7 +21,8 @@ import build_restore_qualifier as qualifier
 
 UNITS = ("flatfile_item_repository", "flatfile_authority_transaction", "flatfile_store",
          "player_snapshot_codec", "item_transfer_command", "critical_command", "economic_source_event",
-         "flatfile_world_item_repository", "flatfile_locker_repository", "flatfile_shopkeeper_repository")
+         "flatfile_world_item_repository", "flatfile_locker_repository", "flatfile_shopkeeper_repository",
+         "flatfile_player_snapshot_file")
 
 
 def build_fixture(destination, native_source=ROOT):
@@ -1099,37 +1100,39 @@ def check_shop_findings(fixture, binary, build):
     return rows
 
 
-def check_boundaries(fixture, binary, build, world=False, locker=False, shop=False):
+def check_boundaries(fixture, binary, build, world=False, locker=False, shop=False, player=False):
     import fcntl
 
-    prefix = "shop-boundary-" if shop else "locker-boundary-" if locker else "world-boundary-" if world else "boundary-"
+    prefix = "player-boundary-" if player else "shop-boundary-" if shop else "locker-boundary-" if locker else "world-boundary-" if world else "boundary-"
     golden = build / (prefix + "golden")
     incoming = build / (prefix + "input.bin")
-    incoming.write_bytes(frame(shop_custody(shop_model())) if shop else frame(locker_custody(locker_model())) if locker else frame(world_custody(world_model())) if world else frame(model()))
+    incoming.write_bytes(frame(player_custody(player_model())) if player else frame(shop_custody(shop_model())) if shop else frame(locker_custody(locker_model())) if locker else frame(world_custody(world_model())) if world else frame(model()))
     native = subprocess.run([str(fixture), str(golden), str(incoming), "1"],
                             capture_output=True, text=True, timeout=30)
     assert native.returncode == 0 and not native.stderr, native
-    if world or locker or shop:
-        incoming.write_bytes(shop_frame(shop_model()) if shop else locker_frame(locker_model()) if locker else world_frame(world_model()))
-        native = subprocess.run([str(fixture), str(golden), str(incoming), "1", "shopkeeper" if shop else "locker" if locker else "world"],
+    if world or locker or shop or player:
+        incoming.write_bytes(player_frame(player_model()) if player else shop_frame(shop_model()) if shop else locker_frame(locker_model()) if locker else world_frame(world_model()))
+        native = subprocess.run([str(fixture), str(golden), str(incoming), "1", "player" if player else "shopkeeper" if shop else "locker" if locker else "world"],
                                 capture_output=True, text=True, timeout=30)
         assert native.returncode == 0 and not native.stderr, native
     rows = []
     labels = ("healthy", "empty", "uninitialized", "missing-lock", "held-lock",
                   "critical-journal", "currency-journal", "player-journal", "public-file",
                   "public-root", "symlink", "dangling-symlink", "hardlink")
-    for label in labels + (("zero-file",) if world or locker or shop else ()):
+    for label in labels + (("zero-file",) if world or locker or shop or player else ()) + (("public-players", "symlink-players", "noncanonical-pid", "pid-file-mismatch") if player else ()):
         root = build / (prefix + label)
         shutil.copytree(golden, root, copy_function=shutil.copy2)
         domains = root / "domains"
-        catalog = domains / ("shopkeeper_catalog" if shop else "locker_catalog" if locker else "world_item_catalog" if world else "item_ownership")
+        catalog = root / "players/7.snapshot" if player else domains / ("shopkeeper_catalog" if shop else "locker_catalog" if locker else "world_item_catalog" if world else "item_ownership")
         held = None
         if label in ("empty", "uninitialized"):
             catalog.unlink()
-            if world or locker or shop:
+            if world or locker or shop or player:
                 (domains / "item_ownership").unlink()
             if label == "uninitialized":
                 shutil.rmtree(domains)
+                if player:
+                    shutil.rmtree(root / "players")
         elif label == "missing-lock":
             (domains / ".critical-authority.lock").unlink()
         elif label == "held-lock":
@@ -1151,8 +1154,15 @@ def check_boundaries(fixture, binary, build, world=False, locker=False, shop=Fal
             os.link(catalog, root / "duplicate")
         elif label == "zero-file":
             catalog.write_bytes(b"")
+        elif label == "public-players":
+            (root / "players").chmod(0o755)
+        elif label == "symlink-players":
+            (root / "players").rename(root / "original-players")
+            (root / "players").symlink_to(root / "original-players", target_is_directory=True)
+        elif label in ("noncanonical-pid", "pid-file-mismatch"):
+            catalog.rename(root / "players" / ("07.snapshot" if label == "noncanonical-pid" else "8.snapshot"))
         before = inventory(root)
-        option = "--economic-shopkeeper-custody-audit" if shop else "--economic-locker-custody-audit" if locker else "--economic-world-custody-audit" if world else "--economic-custody-catalog-audit"
+        option = "--economic-player-custody-audit" if player else "--economic-shopkeeper-custody-audit" if shop else "--economic-locker-custody-audit" if locker else "--economic-world-custody-audit" if world else "--economic-custody-catalog-audit"
         result = subprocess.run([str(binary), option, str(root)],
                                 capture_output=True, text=True, timeout=30)
         assert inventory(root) == before
@@ -1162,7 +1172,9 @@ def check_boundaries(fixture, binary, build, world=False, locker=False, shop=Fal
         if expected:
             assert result.returncode == 0 and not result.stderr, (label, result)
             value = json.loads(result.stdout)
-            if shop:
+            if player:
+                assert value["player_pet_owner_literals_verified"] == (label == "healthy")
+            elif shop:
                 assert value["shop_present"] == value["shop_owner_literals_verified"] == (label == "healthy")
             elif locker:
                 assert value["locker_present"] == value["locker_owner_literals_verified"] == (label == "healthy")
@@ -1173,7 +1185,298 @@ def check_boundaries(fixture, binary, build, world=False, locker=False, shop=Fal
         else:
             assert result.returncode == 1 and not result.stdout and result.stderr == "native_restore_qualification_failed\n", (label, result)
         rows.append(dict(case=label, exit=result.returncode, authority_unchanged=True))
-    (build / ("shop-boundaries.json" if shop else "locker-boundaries.json" if locker else "world-boundaries.json" if world else "boundaries.json")).write_text(json.dumps(rows, indent=2) + "\n")
+    (build / ("player-boundaries.json" if player else "shop-boundaries.json" if shop else "locker-boundaries.json" if locker else "world-boundaries.json" if world else "boundaries.json")).write_text(json.dumps(rows, indent=2) + "\n")
+    return rows
+
+
+def player_item(uid, *, equipment=0, **kwargs):
+    raw = bytearray(world_item(uid, **kwargs))
+    struct.pack_into("<h", raw, 4, equipment)
+    return bytes(raw)
+
+
+def player_model(version=7):
+    wire = version - 13 if 20 <= version <= 32 else version
+    schema = (7 if wire % 2 else 8) if wire <= 8 else wire
+    death = schema in (8, 10, 13, 14, 15, 16, 18, 19)
+    value = dict(version=version, pid=7, revision=1, components=16383, intent=4 if death else 0,
+        bound=1, integers=[(32, -1, 5, 1), (62, -2**63, 2**64-1, 0)],
+        strings=[(0, b"private-synthetic-literal")], conditions=[-1]*5, quest_values=[-2]*14,
+        indexed=[[(1, -2**63, 2**64-1)]]*5, commands=[-1], skills=[(1, 255, 255)],
+        affects=[dict(ward_type=1)],
+        items=[] if death else [player_item(100, kind=1), player_item(101, parent=0),
+            player_item(102, kind=1, equipment=1), player_item(103)],
+        pets=[] if death else [dict(uid=51, hold=0, restore=b"private-synthetic-literal",
+            items=[player_item(200, kind=1), player_item(201, parent=0)])],
+        shapes=[(1, -1, -2**63, 2**63-1)], trophies=[(1, -1)], external=1,
+        output=b"private-synthetic-literal", quest=[(bytes.fromhex("a1"*16), 0, 1)],
+        spell=[(bytes.fromhex("b2"*16), 1)], craft=[(bytes.fromhex("c3"*16), 1, 1)])
+    if death:
+        corpse = bytearray(player_item(900, kind=24, vnum=2))
+        for index, number in enumerate((0, 1, 0, 7, 0, 0, 1, 0)):
+            struct.pack_into("<i", corpse, 44+4*index, number)
+        value["death"] = dict(id=bytes.fromhex("d4"*16), room=3001, revision=1,
+            money=[1, 2, 3, 4], pile=901, items=[bytes(corpse), player_item(901, parent=0, vnum=3)],
+            custody=[(901, 900, 900, 1, 3, 1, 1, 7, 0, 1)], pending=[bytes.fromhex("e5"*16)])
+        columns = (("id", "pid", "obj_uid", "vnum", "container_id"),
+            ("id", "item_id", "location", "modifier"),
+            ("id", "item_id", "keyword", "description"),
+            ("item_uid", "root_item_uid", "parent_item_uid", "item_revision", "vnum", "state", "owner_type", "owner_id", "owner_context_id"),
+            ("owner_type", "owner_id", "owner_context_id", "revision"))
+        value["evidence"] = [dict(columns=[c.encode() for c in names],
+            rows=[[None, *([b"private-synthetic-literal"]*(len(names)-1))]]) for names in columns]
+    return value
+
+
+def player_frame(value):
+    wire = value["version"] - 13 if 20 <= value["version"] <= 32 else value["version"]
+    schema = (7 if wire % 2 else 8) if wire <= 8 else wire
+    text = lambda data: struct.pack("<I", len(data)) + data
+    vector = lambda rows, encode: struct.pack("<I", len(rows)) + b"".join(encode(row) for row in rows)
+    items = lambda rows: vector(rows, lambda row: row)
+    result = struct.pack("<IiQQiiQ", value["version"], value["pid"], value["revision"],
+        value["components"], value["intent"], -1, value["bound"])
+    result += vector(value["integers"], lambda row: struct.pack("<HqQB", *row))
+    result += vector(value["strings"], lambda row: struct.pack("<B", row[0])+text(row[1]))
+    result += struct.pack("<19i", *value["conditions"], *value["quest_values"])
+    result += b"".join(vector(rows, lambda row: struct.pack("<iqQ", *row)) for rows in value["indexed"])
+    result += vector(value["commands"], lambda row: struct.pack("<i", row))
+    result += vector(value["skills"], lambda row: struct.pack("<iBB", *row))
+    def affect(row):
+        data = struct.pack("<hiIiBH5Q", -1, -1, 2**32-1, -1, 255, 65535, *([2**64-1]*5))
+        if 20 <= value["version"] <= 32:
+            data += struct.pack("<QiqqiBBB", 2**64-1, -1, -2**63, 2**63-1, -1, row["ward_type"], 255, 255)
+        return data+text(b"private-synthetic-literal")+text(b"")
+    result += vector(value["affects"], affect)+items(value["items"])
+    def pet(row):
+        data = struct.pack("<Q", row["uid"]) if wire >= 7 else b""
+        data += struct.pack("<10i", *([-1]*10))+items(row["items"])
+        if wire >= 3:
+            data += text(row["restore"])+struct.pack("<I", row["hold"])
+        return data
+    result += vector(value["pets"], pet)
+    result += vector(value["shapes"], lambda row: struct.pack("<iiqq", *row))
+    result += vector(value["trophies"], lambda row: struct.pack("<ii", *row))
+    result += struct.pack("<B", value["external"])
+    if wire >= 5:
+        result += text(value["output"])
+    if wire >= 17 or wire in (11, 12, 15, 16):
+        result += vector(value["quest"], lambda row: struct.pack("<16sII", *row))
+    if wire >= 17 or 12 <= wire <= 16:
+        result += vector(value["spell"], lambda row: struct.pack("<16sI", *row))
+    if wire >= 17:
+        result += vector(value["craft"], lambda row: struct.pack("<16sII", *row))
+    if schema in (8, 10, 13, 14, 15, 16, 18, 19):
+        row = value["death"]
+        result += struct.pack("<16siQ4iQ", row["id"], row["room"], row["revision"], *row["money"], row["pile"])
+        result += items(row["items"])
+        result += vector(row["custody"], lambda row: struct.pack("<4QiBB3Q", *row))
+        result += vector(row["pending"], lambda row: row)
+    if schema in (10, 14, 16, 19):
+        for table in value["evidence"]:
+            result += vector(table["columns"], text)
+            result += vector(table["rows"], lambda row: b"".join(b"\0" if cell is None else b"\1"+text(cell) for cell in row))
+    return b"DURPLYR\0"+struct.pack("<IIiQQ", 1, len(result), value["pid"], value["revision"], value["components"])+hashlib.sha256(result).digest()+result
+
+
+def player_custody(value):
+    wire = value["version"]-13 if 20 <= value["version"] <= 32 else value["version"]
+    owners, items = set(), []
+    forests = [(value["items"], (1, value["pid"], 0))]
+    forests += [(pet["items"], (11, pet["uid"], value["pid"]) if wire >= 7 and pet["uid"] else (1, value["pid"], 0)) for pet in value["pets"]]
+    for rows, owner in forests:
+        owners.add((*owner, 0))
+        for i, raw in enumerate(rows):
+            uid, = struct.unpack_from("<Q", raw, 6)
+            parent, = struct.unpack_from("<i", raw)
+            if raw[26] == 20 and parent == -1:
+                continue
+            root = i
+            while struct.unpack_from("<i", rows[root])[0] >= 0:
+                root = struct.unpack_from("<i", rows[root])[0]
+            items.append(dict(uid=uid, root=struct.unpack_from("<Q", rows[root], 6)[0],
+                parent=0 if parent < 0 else struct.unpack_from("<Q", rows[parent], 6)[0], owner=owner,
+                revision=1, vnum=struct.unpack_from("<i", raw, 22)[0], state=1,
+                equipment=max(0, struct.unpack_from("<h", raw, 4)[0]),
+                payload=struct.pack("<Ii", 1, -1)+raw[4:] if raw[26] == 20 else b""))
+    return dict(version=8, revision=1, owners=sorted(owners), items=sorted(items, key=lambda row: row["uid"]), operations=[])
+
+
+def player_cases():
+    cases = [("version-"+str(version), player_frame(player_model(version)), True, player_model(version))
+             for version in (*range(1, 9), *range(10, 22), *range(23, 33))]
+    def add(label, version, change, expected=False):
+        value = player_model(version); change(value)
+        cases.append((label, player_frame(value), expected, value))
+    for key, bad in (("revision", 0), ("components", 0), ("components", 16384), ("pid", 0), ("pid", 8), ("bound", 0), ("bound", 4194305), ("external", 2)):
+        add(key+"-"+str(bad), 7, lambda v, key=key, bad=bad: v.update({key:bad}))
+    for key, rows in (("integers", [(63, 0, 0, 0)]), ("integers", [(0, 0, 0, 2)]),
+            ("strings", [(7, b"")]), ("strings", [(0, b"x"*4097)]),
+            ("output", b"x"*513), ("commands", [0]*8192)):
+        add("bad-"+key+"-"+str(len(cases)), 7, lambda v, key=key, rows=rows: v.update({key:rows}))
+    add("pet-string-limit", 7, lambda v: v["pets"][0].update(restore=b"x"*32769))
+    add("pet-hold-full-width", 7, lambda v: v["pets"][0].update(hold=2**32-1), True)
+    add("global-object-limit", 7, lambda v: v.update(items=[player_item(i+1000, kind=1) for i in range(4096)]))
+    add("global-object-exact-limit", 7, lambda v: v.update(items=[player_item(i+1000, kind=1) for i in range(4094)]), True)
+    add("global-row-limit", 7, lambda v: v.update(commands=[0]*(8192-5)))
+    add("global-row-exact-limit", 7, lambda v: v.update(commands=[0]*(8192-19)), True)
+    for key, version, rows in (("quest", 11, []), ("quest", 11, [(bytes(16), 0, 1)]),
+            ("quest", 11, [(b"a"*16, 64, 1)]), ("quest", 11, [(b"a"*16, 0, 0)]),
+            ("quest", 11, [(b"a"*16, 0, 1)]*2), ("spell", 12, []),
+            ("spell", 12, [(bytes(16), 1)]), ("spell", 12, [(b"b"*16, 7)]),
+            ("spell", 12, [(b"b"*16, 1)]*2), ("craft", 17, []),
+            ("craft", 17, [(bytes(16), 1, 1)]), ("craft", 17, [(b"c"*16, 7, 1)]),
+            ("craft", 17, [(b"c"*16, 3, 1)]), ("craft", 17, [(b"c"*16, 1, 2**31)]),
+            ("craft", 17, [(b"c"*16, 1, 1)]*2)):
+        add("receipt-"+key+"-"+str(len(cases)), version, lambda v, key=key, rows=rows: v.update({key:rows}))
+    add("optional-quest-spell", 17, lambda v: v.update(quest=[], spell=[]), True)
+    for key, bad in (("id", bytes(16)), ("room", 0), ("revision", 0), ("money", [-1, 0, 0, 0]),
+            ("pile", 0), ("pending", [bytes.fromhex("d4"*16)]), ("pending", [bytes(16)]),
+            ("custody", []), ("pending", [b"e"*16]*2)):
+        add("death-"+key+"-"+str(len(cases)), 10, lambda v, key=key, bad=bad: v["death"].update({key:bad}))
+    add("death-intent", 10, lambda v: v.update(intent=0))
+    add("death-active-inventory", 10, lambda v: v.update(items=[player_item(100, kind=1)]))
+    add("death-unheld-pet", 10, lambda v: v.update(pets=[dict(uid=51, hold=0, restore=b"", items=[])]))
+    for column in (b"", b"bad-name", b"x"*65, b"id"):
+        add("evidence-column-"+str(len(cases)), 10, lambda v, column=column: v["evidence"][0]["columns"].__setitem__(1, column))
+    add("evidence-zero-rows", 10, lambda v: [t.update(rows=[]) for t in v["evidence"]])
+    add("evidence-global-row-limit", 10, lambda v: v["evidence"][0].update(rows=[[None]*5]*8192))
+    golden = player_frame(player_model())
+    for label, encoded in (("bad-magic", b"X"+golden[1:]), ("bad-checksum", golden[:36]+bytes(32)+golden[68:]),
+            ("truncated-header", golden[:48]), ("trailing-file", golden+b"x"),
+            ("empty-payload", golden[:68]), ("truncated-body", golden[:-1])):
+        cases.append((label, encoded, False, None))
+    for version in (0, 9, 22, 33, 2**32-1):
+        body = bytearray(golden[68:]);struct.pack_into("<I", body, 0, version)
+        cases.append(("unsupported-"+str(version), golden[:36]+hashlib.sha256(body).digest()+body, False, None))
+    return cases
+
+
+def check_player_catalogs(fixture, binary, build):
+    rows = []
+    for label, encoded, expected, value in player_cases():
+        directory=build/("player-format-"+label);directory.mkdir(mode=0o700);root=directory/"state"
+        incoming=directory/"player.bin";incoming.write_bytes(encoded)
+        result=subprocess.run([str(fixture),str(root),str(incoming),"1" if expected else "0","player"],capture_output=True,text=True,timeout=30)
+        assert result.returncode==0 and not result.stderr,(label,result)
+        native=json.loads(result.stdout);assert native["native_accepted"]==native["independent_accepted"]==expected
+        if expected:
+            incoming=directory/"custody.bin";incoming.write_bytes(frame(player_custody(value)))
+            result=subprocess.run([str(fixture),str(root),str(incoming),"1"],capture_output=True,text=True,timeout=30)
+            assert result.returncode==0 and not result.stderr,(label,result)
+        before=inventory(root)
+        command=[str(binary),"--economic-player-custody-audit",str(root)]
+        result=subprocess.run(command,capture_output=True,text=True,timeout=30)
+        assert inventory(root)==before
+        if expected:
+            report=json.loads(result.stdout)
+            assert result.returncode==0 and not result.stderr and report["player_pet_owner_literals_verified"],(label,result)
+            assert report["player_items"]+report["pet_items"]==native["items"]
+            assert report["compared_items"]==len(player_custody(value)["items"])
+            assert not report["native_holdings_compared"] and not report["release_qualified"]
+        else:
+            assert result.returncode==1 and not result.stdout and result.stderr=="native_restore_qualification_failed\n",(label,result)
+        assert "private-synthetic-literal" not in result.stdout
+        generated=root/"native-generated-player.bin"
+        row=dict(case=label,accepted=expected,native=native,input_sha256=hashlib.sha256(encoded).hexdigest(),
+            native_generated_sha256=hashlib.sha256(generated.read_bytes()).hexdigest() if expected else None,
+            command=command,exit=result.returncode,stdout=result.stdout,stderr=result.stderr,authority_unchanged=True)
+        rows.append(row);print("PLAYER_CATALOG "+json.dumps(row,sort_keys=True),flush=True)
+        (directory/"evidence.json").write_text(json.dumps(row,indent=2)+"\n")
+        (directory/"authority-before-after.json").write_text(json.dumps(before,sort_keys=True)+"\n")
+    (build/"player-observations.json").write_text(json.dumps(rows,indent=2)+"\n")
+    return rows
+
+
+def check_player_findings(fixture, binary, build):
+    base=player_model();owned=player_custody(base);cases=[("healthy",base,owned,{})]
+    def add(label,value,custody,counts):cases.append((label,value,custody,counts))
+    for state in (2,3):
+        custody=copy.deepcopy(owned);custody["items"][1]["state"]=state
+        add("state-"+str(state),base,custody,{"player_uid_not_active":1})
+    for label, owner in (("owner",(1,8,0)),("pet-context",(11,51,8))):
+        custody=copy.deepcopy(owned);custody["items"][-1]["owner"]=owner
+        custody["owners"]=sorted({*custody["owners"],(*owner,0)})
+        add(label,base,custody,{"player_owner_mismatch":1})
+    for field,replacement in (("root",999),("parent",0)):
+        custody=copy.deepcopy(owned);custody["items"][1][field]=replacement
+        add(field,base,custody,{"player_item_topology_mismatch":1})
+    custody=copy.deepcopy(owned);custody["items"][0]["vnum"]+=1
+    add("vnum",base,custody,{"player_item_vnum_mismatch":1})
+    custody=copy.deepcopy(owned);custody["items"][2]["equipment"]=2
+    add("equipment",base,custody,{"player_item_equipment_mismatch":1})
+    for label, fmt, offset, replacement in (("generated","q",14,-55),("mask","B",27,255),
+            ("coin-value","i",44,9),("other-value","i",72,-9),("timer","q",100,-2**63),
+            ("flag","I",140,2**32-1),("weight","i",144,-15),("material","b",148,-128),
+            ("cost","i",149,33),("condition","h",153,-20),("craftsmanship","h",155,25),
+            ("bitvector","Q",189,2**64-1),("affect","h",211,-32768),("type","B",26,1)):
+        value=copy.deepcopy(base);raw=bytearray(value["pets"][0]["items"][1]);struct.pack_into("<"+fmt,raw,offset,replacement)
+        value["pets"][0]["items"][1]=bytes(raw);add(label,value,owned,{"player_coin_literal_mismatch":1})
+    for index in range(4):
+        value=copy.deepcopy(base);strings=[b""]*4;strings[index]=b"private-synthetic-literal"
+        value["items"][1]=player_item(101,parent=0,strings=strings)
+        add("string-"+str(index),value,owned,{"player_coin_literal_mismatch":1})
+    for label,kwargs in (("dynamic",dict(dynamic_count=1)),("description",dict(spell_counts=(1,)))):
+        value=copy.deepcopy(base);value["items"][1]=player_item(101,parent=0,**kwargs)
+        add(label,value,owned,{"player_coin_literal_mismatch":1})
+    value=copy.deepcopy(base);value["pets"][0]["items"].pop()
+    add("missing-literal",value,owned,{"player_uid_missing_literal":1})
+    value=copy.deepcopy(base);value["items"].extend(player_item(1000+i,kind=1) for i in range(101))
+    add("bounded-details",value,owned,{"player_uid_unadmitted":101})
+    value=copy.deepcopy(base);raw=bytearray(value["items"][1]);struct.pack_into("<i",raw,44,-1);value["items"][1]=bytes(raw)
+    add("negative-nested-coin",value,player_custody(value),{"player_negative_coin_value":1})
+    value=copy.deepcopy(base);value["items"][3]=player_item(0,vnum=-1)
+    add("wallet-root-excluded",value,owned,{})
+    value=copy.deepcopy(base);value["items"].append(player_item(0,kind=1))
+    add("zero-item-uid",value,owned,{"player_item_identity_invalid":1})
+    value=copy.deepcopy(base);value["items"].append(player_item(100,kind=1))
+    add("duplicate-item-uid",value,owned,{"player_uid_duplicate_literal":1})
+    value=copy.deepcopy(base);value["pets"].append(dict(uid=51,hold=0,restore=b"",items=[]))
+    add("duplicate-pet-uid",value,owned,{"player_pet_uid_duplicate":1})
+    value=copy.deepcopy(base);value["pets"][0]["uid"]=0
+    add("legacy-pet-under-player",value,player_custody(value),{})
+    custody=copy.deepcopy(owned)
+    for row in custody["items"]:row["payload"]=b""
+    add("legacy-inline-absent",base,custody,{})
+    custody=copy.deepcopy(owned);custody["owners"].insert(0,(1,8,0,0));custody["owners"].sort()
+    custody["items"].append(dict(uid=300,root=300,parent=0,owner=(1,8,0),revision=1,vnum=57,state=1,payload=b"",equipment=0))
+    add("orphan-other-player",base,custody,{"player_uid_missing_literal":1})
+    for version in range(1,5):
+        custody=copy.deepcopy(owned);custody["version"]=version
+        add("legacy-custody-"+str(version),base,custody,{})
+    add("players-absent",None,owned,{"custody_player_directory_missing":1,"player_uid_missing_literal":5})
+    add("custody-absent",base,None,{"player_custody_catalog_missing":1,"player_uid_unadmitted":5})
+    rows=[]
+    for label,value,custody,counts in cases:
+        directory=build/("player-finding-"+label);directory.mkdir(mode=0o700);root=directory/"state"
+        for data,family,encoder in ((custody,None,frame),(value,"player",player_frame)):
+            if data is None:continue
+            path=directory/("player.bin" if family else "custody.bin");path.write_bytes(encoder(data))
+            command=[str(fixture),str(root),str(path),"1"]+([family] if family else [])
+            result=subprocess.run(command,capture_output=True,text=True,timeout=30)
+            assert result.returncode==0 and not result.stderr,(label,result)
+        before=inventory(root);reports=[]
+        for limit in (0,1,100):
+            command=[str(binary),"--economic-player-custody-audit",str(root),"--limit",str(limit)]
+            result=subprocess.run(command,capture_output=True,text=True,timeout=30)
+            assert result.returncode==bool(counts) and not result.stderr and inventory(root)==before,(label,limit,result)
+            report=json.loads(result.stdout)
+            assert report["finding_counts"]==counts and report["finding_count"]==sum(counts.values()),(label,report)
+            assert len(report["findings"])==min(limit,report["finding_count"])
+            assert report["findings_truncated"]==(report["finding_count"]>limit) and report["player_pet_owner_literals_verified"]==(not counts)
+            if label.startswith("legacy-custody-"):
+                assert report["custody_equipment_fields_absent"]==5
+                assert report["coin_payloads_absent"]==(2 if custody["version"]<3 else 0)
+            if label=="legacy-inline-absent":
+                assert report["coin_payloads_absent"]==2 and report["coin_payloads_compared"]==0
+            assert not any(report[name] for name in ("other_owner_literals_compared","native_holdings_compared","death_history_compared","item_history_verified","full_R7_qualified","release_qualified"))
+            assert "private-synthetic-literal" not in result.stdout
+            reports.append(dict(command=command,exit=result.returncode,report=report))
+        row=dict(case=label,counts=counts,reports=reports,authority_unchanged=True);rows.append(row)
+        (directory/"evidence.json").write_text(json.dumps(row,indent=2)+"\n")
+        (directory/"authority-before-after.json").write_text(json.dumps(before,sort_keys=True)+"\n")
+        print("PLAYER_FINDING "+json.dumps(dict(case=label,counts=counts,cuts=3,authority_unchanged=True)),flush=True)
+    (build/"player-findings.json").write_text(json.dumps(rows,indent=2)+"\n")
     return rows
 
 
@@ -1198,6 +1501,10 @@ if __name__ == "__main__":
         shop_observations = check_shop_catalogs(fixture, binary, build)
         shop_findings = check_shop_findings(fixture, binary, build)
         shop_boundaries = check_boundaries(fixture, binary, build, shop=True)
+        player_observations = check_player_catalogs(fixture, binary, build)
+        player_findings = check_player_findings(fixture, binary, build)
+        player_boundaries = check_boundaries(fixture, binary, build, player=True)
+        print("player/pet custody: " + str(len(player_observations)) + " format cases, " + str(len(player_findings)) + " findings, " + str(len(player_boundaries)) + " boundaries passed")
         print("shopkeeper custody: " + str(len(shop_observations)) + " format cases, " + str(len(shop_findings)) + " findings, " + str(len(shop_boundaries)) + " boundaries passed")
         print("locker custody: " + str(len(locker_observations)) + " format cases, " + str(len(locker_findings)) + " findings, " + str(len(locker_boundaries)) + " boundaries passed")
         print("independent custody catalog: " + str(len(observations)) + " native/operator cases passed")
