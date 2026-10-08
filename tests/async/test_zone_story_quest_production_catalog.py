@@ -8910,7 +8910,11 @@ assert [r['arguments'][1:5] for r in foreign['reset_commands'] if r['command']==
 assert objvalues(dawndale_bodies('astral_tiamat','obj')[19907])[11:14]==[19600,7,-1]
 assert not any(re.match(r'[OPGE]\s+-?\d+\s+(?:19608|19609|19610|19616|19617|19618|19619|19621|19622|19623|19626|19627|19629|19631|19632|19633|19635|19636|19641)\s',line) for area in catalog_module.zone_registry(ROOT) if area['source_area']!='tiamat' for line in (ROOT/'areas/zon'/(area['source_area']+'.zon')).read_text().splitlines())
 guard=db[db.index('static bool reset_command_issues_item('):db.index('/* execute the reset command table')]
-assert all("case '"+c+"':" in guard for c in 'AOPGE') and re.search(r'economic_gameplay_authority::active\(\)\s*&&\s*reset_command_issues_item\(ZCMD.command\)\)\s*\{\s*last_cmd = 0;\s*continue;',db)
+assert all("case '"+c+"':" in guard for c in 'BCAOPGE')
+# Accounting may publish native-owned NPC inventory/equipment through its
+# retained reset owner; ordinary room/object resets still fail closed.
+assert 'const bool native_sql_reset = economic_gameplay_authority::active_regular_sql();' in db
+assert re.search(r"economic_gameplay_authority::active\(\)\s*&&\s*reset_command_issues_item\(ZCMD.command\)\s*&&\s*!\(native_sql_reset\s*&&\s*\(ZCMD.command == 'G' \|\| ZCMD.command == 'E' \|\| ZCMD.command == 'P'\)\s*&&\s*quest_mobile_native_birth_owner::owns\(mob\)\)\)\s*\{\s*last_cmd = 0;\s*continue;", db)
 units=[u for u in catalog_module.story_units(catalog) if u['zone_number']==196];assert len(units)==8 and all(u['achievement'] and u['daily_candidate'] for u in units)
 guidance=' '.join(mapping['orientation']+[c['description'] for c in mapping['contacts']]+[s['summary'] for s in mapping['stories']]).lower()
 for phrase in ('echoed to the room','same visible name','two tribute','timed-heart','potential dailies','active, ready accounting'):assert phrase in guidance,phrase

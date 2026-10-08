@@ -2,9 +2,9 @@
 
 Date: October 7, 2026. Branch: `codex/discovered-zone-dailies`.
 Accounting source: `experimental-accounting` at
-`cf0f81f5c174b1c4655092df8795ad7a58973d33`.
+`6d2bd242df08fbd74c97f9ae5a2dd1617ad8c1c9`.
 The source build anchor is `99b2a13a4141e8d36ac0f695e9e31d556139b5d6`;
-the subsequent upstream commit changes only accounting documentation.
+the subsequent upstream commits change only accounting documentation.
 Previous research head: `8e4b6d9222259f187c62b64cf794df80ceed910d`.
 
 This integration updates the research branch against the newer accounting
@@ -48,6 +48,12 @@ Fee-only records do not acquire a frozen daily-recipient extension in this
 integration. The existing catalog still limits potential dailies to supported
 item offerings; qualify expanded accounting quest types explicitly before
 extending that policy or their durable format.
+
+The catalog regression now recognizes accounting's existing native-owned NPC
+reset exception: G/E/P item commands require regular SQL accounting and the
+retained native birth owner. Ordinary room/object reset commands remain blocked.
+This updates a historical test expectation; no reset or zone behavior is added
+by the research integration.
 
 Discovery and encountered-NPC hooks are retained alongside accounting's newer
 native mobile restore and arrival behavior. Player-facing zone tracking still
