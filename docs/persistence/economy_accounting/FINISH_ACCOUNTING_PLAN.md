@@ -1,5 +1,36 @@
 # Finish accounting implementation plan
 
+## Reviewed creation census and current coin heads - 2026-10-07
+
+Private `tmp/lifecycle-reset-creation-candidate-primary-20261007` composes
+76 production files, 23 unchanged original fixtures and five schema/manifest
+files on maintained6d2bd242d. Independent source review and changed-line
+formatting passed; no compiler, native, SQL, migration or gameplay runs occurred.
+
+RSC2/version2 retains nine all-row projections: reset origins, full operations,
+effects, postings, source claims, children, actual lineage pointers, epoch
+existence and restitution UIDs. They share the original RR cut and aggregate
+limits with the physical, five-table room and native-mobile captures. A pure
+adapter subtracts only added evidence before the native scan and verifies the
+combined totals against the original limits afterward.
+
+Historical proof authenticates complete original receipts and globally unique
+birth UID/revision and event references. Current creation graphs independently
+check the actual book/head, exact literals, all descendants and competing
+physical projections; later writer5 revisions remain history under this provider.
+The lifecycle owner preserves original findings, accepts only exact creation
+matches and rejects uncapped aggregate defects. Review fixed cross-operation
+birth ambiguity and the one-column SQL size preflight.
+
+The original recipe successor is separate and unexecuted. Actual O producer,
+constructor/source/UID ownership and publication/ACK, whole-forest money/artifact
+publication, progressed/opening recovery, runtime0065 registration/fingerprints,
+flatfile parity, initialized-world census and full R1-R8 qualification remain
+required. Current inactive behavior, public admission and active O skip remain.
+Coverage is still incomplete and release is blocked; this closes no release gate.
+
+
+
 ## Reviewed ordinary reset transaction and original carrier - 2026-10-07
 
 Private `tmp/lifecycle-reset-transaction-candidate-primary-20261007` composes
