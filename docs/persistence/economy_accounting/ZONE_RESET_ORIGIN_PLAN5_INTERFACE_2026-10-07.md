@@ -168,18 +168,20 @@ revokes it before release. The source SQL normalization/independent verifier and
 activation consumer are still required; no raw census or terminal DTO is authority.
 Production accounting stays inactive; all cross-stream release gates remain open.
 
-## Reviewed retained-runtime return proof interface - 2026-10-07
+## Reviewed runtime return and real-root retention interfaces - 2026-10-07
 
-The common private97/23/5 candidate preserves the original terminal/cold-world
-interfaces above and registers all52 selected production providers once. A real
-pure auction forest provider replaces the mixed-TU dependency without changing
-flags, fixture cases or function semantics; native linkage is still unproven.
-Adopted runtime rollback retains original SQL/local/coordinator exclusion. An
-uncertain attempted COMMIT cannot become a known abort through later ROLLBACK.
-The private lifecycle owner now freshly authenticates SQL selection and complete
-current wallet/bank mappings on the original retained session, proves read cleanup,
-and compares the unchanged installed regular projection. No carried receipt,
-finished boot selection or DTO grants return authority. Actual return/resumption,
-committed projection installation and full activation consumer remain unwired.
-Source/format review only; no compiler, engine, migration, recovery or gameplay
-execution. Independent Plan5 readers/audit/backup/release ownership is unchanged.
+The common private99/23/5 candidate preserves original terminal/cold-world and
+fresh SQL abort-projection interfaces. All53 selected C providers are registered
+once. Genuine runtime coordinator reservation and SQL/local writer ownership now
+have atomic reverse transfers; explicit quiesce stays restrictive throughout the
+initialized cut. Real cleanup retries retain unresolved obligations and skip only
+completed stages, with capability revocation preceding cleanup and no reissue.
+Actual adopted caller/pre-promotion revocation and committed projection/activation
+consumer remain unwired. No historical receipt/finished selection is a permit.
+
+The real O-root constructor captures authentic source/UID/factory/load metadata.
+A retaining factory variant fixes failed inner-cleanup ownership loss; the original
+constructor wrapper remains unchanged. Root capture is unsealed/non-admissible.
+Full P chronology/room nesting/placement/current CAS and terminal transfer remain.
+Source/format review only; compiler, engines, migrations, gameplay and recovery
+are unrun. Independent Plan5 audit/readers/backup/release ownership stays intact.
