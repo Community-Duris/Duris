@@ -20,8 +20,23 @@ struct money
 struct catalog
 {
 	uint64_t revision = 0;
+	uint32_t version = 0;
 	size_t listings = 0, operations = 0;
 	std::vector<money> holdings;
+};
+struct item_root
+{
+	uint64_t uid, revision;
+	int32_t vnum;
+	uint32_t claim_pid;
+	bool claimed;
+};
+struct listing
+{
+	uint32_t id, seller, winner, status;
+	uint64_t revision;
+	std::span<const uint8_t> object_blob;
+	std::vector<item_root> items;
 };
 struct sources
 {
@@ -68,12 +83,14 @@ inline void receipt(std::span<const uint8_t> body)
 	// The original result codec permits arbitrary trailing padding.
 }
 inline catalog decode_catalog(std::span<const uint8_t> encoded,
-			      const std::function<void(const operation_receipt &)> &observe = {})
+			      const std::function<void(const operation_receipt &)> &observe = {},
+			      const std::function<void(const listing &)> &observe_listing = {})
 {
 	const auto file = unwrap(encoded, "DURAUCT", catalog_limit, 2);
 	reader in{ file.body };
 	catalog result;
 	result.revision = file.revision;
+	result.version = file.version;
 	result.listings = in.number(4);
 	need(result.listings <= 262144);
 	uint64_t previous = 0;
@@ -93,18 +110,31 @@ inline catalog decode_catalog(std::span<const uint8_t> encoded,
 		const auto blob = in.number(4);
 		// Native raw decoding rejects the null buffer of an empty object blob.
 		need(blob && blob <= 32768);
-		(void)in.take(blob);
+		const auto object_blob = in.take(blob);
 		const auto items = in.number(2);
 		need(items && items <= 9);
 		std::set<uint64_t> uids;
+		listing record{ static_cast<uint32_t>(id),
+				static_cast<uint32_t>(seller),
+				static_cast<uint32_t>(winner),
+				static_cast<uint32_t>(status),
+				revision,
+				object_blob,
+				{} };
 		for (size_t item = 0; item < items; ++item)
 		{
 			const auto uid = in.number(8), item_revision = in.number(8),
 				   vnum = in.number(4);
-			(void)in.number(4);
-			need(uid && item_revision && vnum <= INT32_MAX && in.number(1) <= 1 &&
+			const auto claim_pid = in.number(4), claimed = in.number(1);
+			need(uid && item_revision && vnum <= INT32_MAX && claimed <= 1 &&
 			     uids.insert(uid).second);
+			if (observe_listing)
+				record.items.push_back(
+					{ uid, item_revision, static_cast<int32_t>(vnum),
+					  static_cast<uint32_t>(claim_pid), claimed != 0 });
 		}
+		if (observe_listing)
+			observe_listing(record); // Borrowed blob is valid only during this call.
 		if (status == 1)
 			result.holdings.push_back(
 				{ 4, static_cast<uint32_t>(id), winner ? price : 0, revision });

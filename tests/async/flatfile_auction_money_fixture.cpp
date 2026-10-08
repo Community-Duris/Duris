@@ -293,6 +293,30 @@ static void plan5_output(const auction_catalog &catalog,
 		std::cout << (comma ? "," : "") << (operation.event_published ? "true" : "false");
 		comma = true;
 	}
+	std::cout << "],\"item_roots\":[";
+	comma = false;
+	for (const auto &listing : catalog.listings)
+		for (const auto &item : listing.items)
+		{
+			std::cout << (comma ? "," : "") << '[' << listing.id << ','
+				  << listing.seller_pid << ',' << listing.winner_pid << ','
+				  << listing.status << ',' << listing.revision << ',' << item.uid
+				  << ',' << item.revision << ',' << item.vnum << ','
+				  << item.claim_pid << ',' << item.claimed << ']';
+			comma = true;
+		}
+	std::cout << "],\"object_blob_sha256\":[";
+	comma = false;
+	for (const auto &listing : catalog.listings)
+	{
+		std::array<uint8_t, 32> digest{};
+		SHA256(listing.object_blob.data(), listing.object_blob.size(), digest.data());
+		std::cout << (comma ? ",\"" : "\"");
+		for (auto byte : digest)
+			std::cout << "0123456789abcdef"[byte >> 4] << "0123456789abcdef"[byte & 15];
+		std::cout << '"';
+		comma = true;
+	}
 	std::cout << "]}\n";
 }
 int main(int argc, char **argv)

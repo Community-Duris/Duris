@@ -21,6 +21,7 @@ def build_independent(out):
     source = out / "independent.cpp"
     source.write_text(r'''#include "qualify_flatfile_auction_money.h"
 #include <iostream>
+#include <sstream>
 int main(int argc, char **argv) {
     try {
         using namespace restore_economic_authority;
@@ -30,9 +31,25 @@ int main(int argc, char **argv) {
         audit_budget budget;
         if (mode == "decode") {
             std::vector<bool> published;
+            std::ostringstream roots, blobs;
+            bool root_comma = false, blob_comma = false;
             auto catalog = restore_native_auction::decode_catalog(
                 file_bytes(root / "domains", "auction_catalog", restore_native_auction::catalog_limit),
-                [&](const auto &receipt) { published.push_back(receipt.event_published); });
+                [&](const auto &receipt) { published.push_back(receipt.event_published); },
+                [&](const auto &listing) {
+                    for (const auto &item : listing.items) {
+                        roots << (root_comma ? "," : "") << '[' << listing.id << ',' << listing.seller
+                            << ',' << listing.winner << ',' << listing.status << ',' << listing.revision
+                            << ',' << item.uid << ',' << item.revision << ',' << item.vnum
+                            << ',' << item.claim_pid << ',' << item.claimed << ']';
+                        root_comma = true;
+                    }
+                    blobs << (blob_comma ? ",\"" : "\"");
+                    for (auto byte : hash(listing.object_blob)) {
+                        blobs << "0123456789abcdef"[byte >> 4] << "0123456789abcdef"[byte & 15];
+                    }
+                    blobs << '"'; blob_comma = true;
+                });
             auto sources = restore_native_auction::decode_sources(
                 file_bytes(root / "domains", "auction_claim_sources", restore_native_auction::source_limit));
             std::cout << "{\"catalog_revision\":" << catalog.revision
@@ -51,7 +68,8 @@ int main(int argc, char **argv) {
                 std::cout << (comma ? "," : "") << (flag ? "true" : "false");
                 comma = true;
             }
-            std::cout << "]}\n";
+            std::cout << "],\"item_roots\":[" << roots.str()
+                << "],\"object_blob_sha256\":[" << blobs.str() << "]}\n";
             return 0;
         }
         if (mode == "bytes") budget.remaining_bytes = 0;

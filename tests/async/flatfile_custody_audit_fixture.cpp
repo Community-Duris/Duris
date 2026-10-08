@@ -3,6 +3,7 @@
 #include "../../scripts/qualify_flatfile_native_locker.h"
 #include "../../scripts/qualify_flatfile_native_shopkeeper.h"
 #include "../../scripts/qualify_flatfile_native_player.h"
+#include "../../scripts/qualify_flatfile_native_auction_custody.h"
 #include "flatfile/flatfile_player_snapshot_file.h"
 #include "flatfile/flatfile_locker_repository.h"
 #include "flatfile/flatfile_shopkeeper_repository.h"
@@ -408,6 +409,40 @@ int main(int argc, char **argv)
 	const bool expected = std::string(argv[3]) == "1";
 	if (argc >= 5)
 	{
+		if (std::string(argv[4]) == "auction-audit")
+		{
+			restore_economic_authority::audit_budget budget;
+			if (argc == 6)
+			{
+				const std::string mode = argv[5];
+				if (mode == "bytes")
+					budget.remaining_bytes = 0;
+				else if (mode == "files")
+					budget.remaining_files = 0;
+				else if (mode == "entries")
+					budget.remaining_entries = 0;
+				else if (mode == "deadline")
+					budget.deadline = std::chrono::steady_clock::now();
+				else
+					assert(false);
+			}
+			try
+			{
+				const auto result =
+					restore_native_auction_custody::audit(root, budget);
+				assert(result.valid() == expected);
+				std::cout << "{\"finding_count\":" << result.finding_count
+					  << ",\"compared_roots\":" << result.compared_roots
+					  << ",\"verified\":"
+					  << (result.verified() ? "true" : "false") << "}\n";
+				return 0;
+			}
+			catch (const restore_economic_authority::audit_budget_refused &)
+			{
+				std::cerr << "native_restore_qualification_failed\n";
+				return 1;
+			}
+		}
 		if (std::string(argv[4]) == "player")
 			return player(root, encoded, expected, argc == 6 ? std::stoi(argv[5]) : 7);
 		if (std::string(argv[4]) == "shopkeeper")

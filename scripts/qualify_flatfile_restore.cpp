@@ -32,6 +32,7 @@
 #include "qualify_flatfile_auction_source_credit.h"
 #include "qualify_flatfile_auction_source_consumption.h"
 #include "qualify_flatfile_native_custody.h"
+#include "qualify_flatfile_native_auction_custody.h"
 #include "qualify_flatfile_native_world.h"
 #include "qualify_flatfile_native_locker.h"
 #include "qualify_flatfile_native_shopkeeper.h"
@@ -728,6 +729,65 @@ int main(int argc, char **argv)
 				first = false;
 				std::cout << "{\"code\":\"" << row.code << "\",\"uid\":\""
 					  << row.uid << "\"}";
+			}
+			std::cout << "]}\n";
+			return result.valid() ? 0 : 1;
+		}
+		if ((argc == 3 || argc == 5) &&
+		    std::string(argv[1]) == "--economic-auction-custody-audit")
+		{
+			size_t limit = 100;
+			if (argc == 5)
+			{
+				restore_economic_authority::need(std::string(argv[3]) == "--limit");
+				limit = restore_wallet_bank::decimal(argv[4], 100);
+			}
+			restore_economic_authority::audit_budget budget;
+			const auto result =
+				restore_native_auction_custody::audit(argv[2], budget, limit);
+			std::cout
+				<< "{\"format\":\"flatfile_auction_custody_audit_v1\","
+				   "\"scope\":\"durable_auction_root_claims_and_custody\",\"auction_present\":"
+				<< (result.auction_present ? "true" : "false")
+				<< ",\"custody_present\":"
+				<< (result.custody_present ? "true" : "false")
+				<< ",\"auction_version\":" << result.auction_version
+				<< ",\"auction_revision\":" << result.auction_revision
+				<< ",\"listings\":" << result.listings
+				<< ",\"retained_roots\":" << result.retained_roots
+				<< ",\"unclaimed_roots\":" << result.unclaimed_roots
+				<< ",\"claimed_roots\":" << result.claimed_roots
+				<< ",\"compared_roots\":" << result.compared_roots
+				<< ",\"admitted_claimed_roots\":" << result.admitted_claimed_roots
+				<< ",\"custody_auction_items\":" << result.custody_auction_items
+				<< ",\"other_custody_items\":" << result.other_custody_items
+				<< ",\"equipment_fields_absent\":" << result.equipment_fields_absent
+				<< ",\"coin_payloads_uncompared\":"
+				<< result.coin_payloads_uncompared
+				<< ",\"serialized_templates_uncompared\":"
+				<< result.serialized_templates_uncompared
+				<< ",\"finding_count\":" << result.finding_count
+				<< ",\"findings_truncated\":"
+				<< (result.finding_count > result.findings.size() ? "true" :
+										    "false")
+				<< ",\"auction_root_metadata_verified\":"
+				<< (result.verified() ? "true" : "false")
+				<< ",\"serialized_templates_compared\":false,\"coin_literals_compared\":false,"
+				   "\"native_holdings_compared\":false,\"item_history_verified\":false,"
+				   "\"full_R7_qualified\":false,\"release_qualified\":false,\"finding_counts\":{";
+			bool first = true;
+			for (const auto &[code, count] : result.finding_counts)
+			{
+				std::cout << (first ? "" : ",") << '"' << code << "\":" << count;
+				first = false;
+			}
+			std::cout << "},\"findings\":[";
+			first = true;
+			for (const auto &row : result.findings)
+			{
+				std::cout << (first ? "" : ",") << "{\"code\":\"" << row.code
+					  << "\",\"uid\":\"" << row.uid << "\"}";
+				first = false;
 			}
 			std::cout << "]}\n";
 			return result.valid() ? 0 : 1;

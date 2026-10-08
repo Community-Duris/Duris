@@ -18,6 +18,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 import build_restore_qualifier as qualifier
+import flatfile_auction_money_cases as auctions
 
 UNITS = ("flatfile_item_repository", "flatfile_authority_transaction", "flatfile_store",
          "player_snapshot_codec", "item_transfer_command", "critical_command", "economic_source_event",
@@ -1100,16 +1101,22 @@ def check_shop_findings(fixture, binary, build):
     return rows
 
 
-def check_boundaries(fixture, binary, build, world=False, locker=False, shop=False, player=False):
+def check_boundaries(fixture, binary, build, world=False, locker=False, shop=False, player=False, auction=False, auction_native=None):
     import fcntl
 
-    prefix = "player-boundary-" if player else "shop-boundary-" if shop else "locker-boundary-" if locker else "world-boundary-" if world else "boundary-"
+    prefix = "auction-boundary-" if auction else "player-boundary-" if player else "shop-boundary-" if shop else "locker-boundary-" if locker else "world-boundary-" if world else "boundary-"
     golden = build / (prefix + "golden")
     incoming = build / (prefix + "input.bin")
-    incoming.write_bytes(frame(player_custody(player_model())) if player else frame(shop_custody(shop_model())) if shop else frame(locker_custody(locker_model())) if locker else frame(world_custody(world_model())) if world else frame(model()))
+    if auction:
+        golden.mkdir(mode=0o700)
+        seeded = subprocess.run([str(auction_native), "seed", str(golden)], capture_output=True, text=True, timeout=30)
+        assert seeded.returncode == 0 and not seeded.stderr, seeded
+    incoming.write_bytes(frame(auction_custody(auction_model())) if auction else frame(player_custody(player_model())) if player else frame(shop_custody(shop_model())) if shop else frame(locker_custody(locker_model())) if locker else frame(world_custody(world_model())) if world else frame(model()))
     native = subprocess.run([str(fixture), str(golden), str(incoming), "1"],
                             capture_output=True, text=True, timeout=30)
     assert native.returncode == 0 and not native.stderr, native
+    if auction:
+        (golden / "domains/auction_catalog").write_bytes(auction_frame(auction_model()))
     if world or locker or shop or player:
         incoming.write_bytes(player_frame(player_model()) if player else shop_frame(shop_model()) if shop else locker_frame(locker_model()) if locker else world_frame(world_model()))
         native = subprocess.run([str(fixture), str(golden), str(incoming), "1", "player" if player else "shopkeeper" if shop else "locker" if locker else "world"],
@@ -1119,15 +1126,15 @@ def check_boundaries(fixture, binary, build, world=False, locker=False, shop=Fal
     labels = ("healthy", "empty", "uninitialized", "missing-lock", "held-lock",
                   "critical-journal", "currency-journal", "player-journal", "public-file",
                   "public-root", "symlink", "dangling-symlink", "hardlink")
-    for label in labels + (("zero-file",) if world or locker or shop or player else ()) + (("public-players", "symlink-players", "noncanonical-pid", "pid-file-mismatch") if player else ()):
+    for label in labels + (("zero-file",) if world or locker or shop or player or auction else ()) + (("public-players", "symlink-players", "noncanonical-pid", "pid-file-mismatch") if player else ()):
         root = build / (prefix + label)
         shutil.copytree(golden, root, copy_function=shutil.copy2)
         domains = root / "domains"
-        catalog = root / "players/7.snapshot" if player else domains / ("shopkeeper_catalog" if shop else "locker_catalog" if locker else "world_item_catalog" if world else "item_ownership")
+        catalog = root / "players/7.snapshot" if player else domains / ("auction_catalog" if auction else "shopkeeper_catalog" if shop else "locker_catalog" if locker else "world_item_catalog" if world else "item_ownership")
         held = None
         if label in ("empty", "uninitialized"):
             catalog.unlink()
-            if world or locker or shop or player:
+            if world or locker or shop or player or auction:
                 (domains / "item_ownership").unlink()
             if label == "uninitialized":
                 shutil.rmtree(domains)
@@ -1162,7 +1169,7 @@ def check_boundaries(fixture, binary, build, world=False, locker=False, shop=Fal
         elif label in ("noncanonical-pid", "pid-file-mismatch"):
             catalog.rename(root / "players" / ("07.snapshot" if label == "noncanonical-pid" else "8.snapshot"))
         before = inventory(root)
-        option = "--economic-player-custody-audit" if player else "--economic-shopkeeper-custody-audit" if shop else "--economic-locker-custody-audit" if locker else "--economic-world-custody-audit" if world else "--economic-custody-catalog-audit"
+        option = "--economic-auction-custody-audit" if auction else "--economic-player-custody-audit" if player else "--economic-shopkeeper-custody-audit" if shop else "--economic-locker-custody-audit" if locker else "--economic-world-custody-audit" if world else "--economic-custody-catalog-audit"
         result = subprocess.run([str(binary), option, str(root)],
                                 capture_output=True, text=True, timeout=30)
         assert inventory(root) == before
@@ -1172,7 +1179,9 @@ def check_boundaries(fixture, binary, build, world=False, locker=False, shop=Fal
         if expected:
             assert result.returncode == 0 and not result.stderr, (label, result)
             value = json.loads(result.stdout)
-            if player:
+            if auction:
+                assert value["auction_root_metadata_verified"] == (label == "healthy")
+            elif player:
                 assert value["player_pet_owner_literals_verified"] == (label == "healthy")
             elif shop:
                 assert value["shop_present"] == value["shop_owner_literals_verified"] == (label == "healthy")
@@ -1185,7 +1194,7 @@ def check_boundaries(fixture, binary, build, world=False, locker=False, shop=Fal
         else:
             assert result.returncode == 1 and not result.stdout and result.stderr == "native_restore_qualification_failed\n", (label, result)
         rows.append(dict(case=label, exit=result.returncode, authority_unchanged=True))
-    (build / ("player-boundaries.json" if player else "shop-boundaries.json" if shop else "locker-boundaries.json" if locker else "world-boundaries.json" if world else "boundaries.json")).write_text(json.dumps(rows, indent=2) + "\n")
+    (build / ("auction-boundaries.json" if auction else "player-boundaries.json" if player else "shop-boundaries.json" if shop else "locker-boundaries.json" if locker else "world-boundaries.json" if world else "boundaries.json")).write_text(json.dumps(rows, indent=2) + "\n")
     return rows
 
 
@@ -1480,6 +1489,173 @@ def check_player_findings(fixture, binary, build):
     return rows
 
 
+def auction_model(version=2):
+    def listing(id, seller, winner, status, roots):
+        return dict(id=id, seller=seller, winner=winner, status=status, revision=1,
+                    blob=b"opaque-native-template", items=roots)
+    return dict(version=version, revision=1, listings=[
+        listing(1, 11, 11, 2, [(100, 1, 10, 11, 1)]),
+        listing(7, 11, 0, 1, [(100, 2, 10, 0, 0), (103, 4, 11, 0, 0)]),
+        listing(8, 12, 13, 2, [(101, 2, 12, 13, 0)]),
+        listing(9, 14, 15, 3, [(102, 2, 13, 14, 1)])])
+
+
+def auction_frame(value):
+    def text(data):return struct.pack("<I", len(data))+data
+    body=struct.pack("<I",len(value["listings"]))
+    for row in value["listings"]:
+        body+=struct.pack("<4I2q2Q",row["id"],row["seller"],row["winner"],row["status"],0,0,row["revision"],0)
+        body+=text(b"native-fixture")+b"".join(text(b"private-synthetic-literal") for _ in range(5))
+        body+=struct.pack("<I",len(row["blob"]))+row["blob"]+struct.pack("<H",len(row["items"]))
+        body+=b"".join(struct.pack("<QQIIB",*item) for item in row["items"])
+    body+=struct.pack("<II",0,0)
+    return b"DURAUCT\0"+struct.pack("<IIQ",value["version"],len(body),value["revision"])+hashlib.sha256(body).digest()+body
+
+
+def auction_custody(value):
+    result=model();result["items"]=[];result["operations"]=[]
+    seen=set()
+    for listing in value["listings"]:
+        for uid,revision,vnum,claim_pid,claimed in listing["items"]:
+            if claimed or uid in seen:continue
+            seen.add(uid)
+            result["items"].append(dict(uid=uid,root=uid,parent=0,owner=(6,listing["id"],0),
+                revision=revision,vnum=vnum,state=1,payload=b"",equipment=0))
+    # Claimed history may refer to a retired item or an item since moved elsewhere.
+    if 102 not in seen:
+        result["items"].append(dict(uid=102,root=102,parent=0,owner=(1,14,0),revision=5,vnum=13,state=1,payload=b"",equipment=0))
+    result["items"].sort(key=lambda row:row["uid"])
+    result["owners"]=sorted({(*row["owner"],0) for row in result["items"]})
+    return result
+
+
+def check_auction(fixture,binary,native,pure,build):
+    cases=[];base=auction_model();owned=auction_custody(base)
+    def add(label,value=base,custody=owned,counts=None,verified=True,refusal=False):
+        cases.append((label,copy.deepcopy(value),copy.deepcopy(custody),counts or {},verified,refusal))
+    add("healthy-current-and-relisted-history")
+    value=auction_model();value["listings"][2]["winner"]=0
+    value["listings"][2]["items"]=[(101,2,12,12,0)]
+    add("unbid-closed-claim-belongs-to-seller",value)
+    value=auction_model();value["listings"][3]["items"]=[(102,2,13,14,0)]
+    add("removed-unclaimed-root-belongs-to-auction",value,auction_custody(value))
+    value=auction_model();value["revision"]=2**64-1
+    value["listings"]=[dict(id=2**32-1,seller=2**32-1,winner=0,status=1,revision=2**64-1,
+        blob=b"opaque-native-template",items=[(2**64-9+i,2**64-1,2**31-1,0,0) for i in range(9)])]
+    add("full-width-identities-and-nine-roots",value,auction_custody(value))
+    value=auction_model();value["listings"]=[]
+    for i in range(12):
+        value["listings"].append(dict(id=i+1,seller=11,winner=0,status=1,revision=1,
+            blob=b"opaque-native-template",items=[(1000+i*9+j,1,10,0,0) for j in range(9)]))
+    custody=auction_custody(value);custody["items"]=[]
+    add("bounded-details-exact-total",value,custody,counts={"auction_uid_unadmitted":108},verified=False)
+    value=auction_model(1);add("legacy-auction-format",value)
+    for version in range(1,5):
+        custody=copy.deepcopy(owned);custody["version"]=version
+        add("legacy-equipment-absent-"+str(version),custody=custody,verified=False)
+    custody=copy.deepcopy(owned);custody["items"][-1]["payload"]=item_payload(103,11)
+    add("retained-coin-payload-is-explicitly-uncompared",custody=custody)
+    custody=copy.deepcopy(owned);custody["items"][2].update(owner=(8,0,0),state=2)
+    add("claimed-tombstone-is-history",custody=custody)
+    for label,field,value in (("wrong-owner","owner",(6,8,0)),("wrong-context","owner",(6,7,99)),
+        ("wrong-revision","revision",3),("wrong-vnum","vnum",99),
+        ("wrong-root","root",103),("wrong-parent","parent",103),
+        ("tombstoned-unclaimed","state",2),("quarantined-unclaimed","state",3)):
+        custody=copy.deepcopy(owned);custody["items"][0][field]=value
+        code={"owner":"auction_owner_mismatch","revision":"auction_item_revision_mismatch",
+              "vnum":"auction_item_vnum_mismatch","root":"auction_item_topology_mismatch",
+              "parent":"auction_item_topology_mismatch","state":"auction_uid_not_active"}[field]
+        add(label,custody=custody,counts={code:1},verified=False)
+    custody=copy.deepcopy(owned);custody["items"][0].update(owner=(1,11,0),equipment=1)
+    add("player-equipment-cannot-grant-auction-root",custody=custody,
+        counts={"auction_owner_mismatch":1,"auction_item_equipment_mismatch":1},verified=False)
+    custody=copy.deepcopy(owned);custody["items"].pop(0)
+    add("missing-unclaimed-uid",custody=custody,counts={"auction_uid_unadmitted":1,"auction_claimed_uid_unadmitted":1},verified=False)
+    custody=copy.deepcopy(owned);custody["items"].pop(2)
+    add("missing-claimed-uid",custody=custody,counts={"auction_claimed_uid_unadmitted":1},verified=False)
+    value=copy.deepcopy(base);value["listings"][1]["items"].pop()
+    add("extra-custody-root",value,counts={"auction_uid_missing_unclaimed_root":1},verified=False)
+    value=copy.deepcopy(base);value["listings"][2]["items"]=[(100,2,10,13,0)]
+    add("duplicate-unclaimed-across-listings",value,counts={"auction_unclaimed_uid_duplicate":1,
+        "auction_owner_mismatch":1,"auction_uid_missing_unclaimed_root":1},verified=False)
+    for label,index,claim,claimed in (("open-claim-right",1,11,0),("open-claimed",1,0,1),
+        ("closed-wrong-claimant",2,12,0),("closed-no-claimant",2,0,0),("removed-winner-claimant",3,15,1)):
+        value=copy.deepcopy(base);item=list(value["listings"][index]["items"][0]);item[3:]=[claim,claimed]
+        value["listings"][index]["items"][0]=tuple(item)
+        counts={"auction_claim_state_invalid":1}
+        if label=="open-claimed":counts["auction_uid_missing_unclaimed_root"]=1
+        add(label,value,counts=counts,verified=False)
+    value=copy.deepcopy(base);value["listings"]=[]
+    add("empty-auction-with-current-custody",value,counts={"auction_uid_missing_unclaimed_root":3},verified=False)
+    add("auction-absent",None,counts={"custody_auction_catalog_missing":1,"auction_uid_missing_unclaimed_root":3},verified=False)
+    add("custody-absent",custody=None,counts={"auction_custody_catalog_missing":1,"auction_uid_unadmitted":3,"auction_claimed_uid_unadmitted":2},verified=False)
+    for label,mutate in (("bad-checksum",lambda data:data[:24]+bytes(32)+data[56:]),
+        ("future-version",lambda data:data[:8]+struct.pack("<I",3)+data[12:]),
+        ("truncated",lambda data:data[:-1])):
+        add(label,mutate(auction_frame(base)),verified=False,refusal=True)
+    rows=[]
+    for label,value,custody,counts,verified,refusal in cases:
+        directory=build/("auction-finding-"+label);directory.mkdir(mode=0o700);root=directory/"state";root.mkdir(mode=0o700)
+        seed=subprocess.run([str(native),"seed",str(root)],capture_output=True,text=True,timeout=30)
+        assert seed.returncode==0 and not seed.stderr,(label,seed)
+        catalog=root/"domains/auction_catalog"
+        if value is None:catalog.unlink()
+        else:catalog.write_bytes(value if isinstance(value,bytes) else auction_frame(value))
+        incoming=directory/"custody.bin";incoming.write_bytes(frame(custody) if custody is not None else b"")
+        if custody is not None:
+            custody["owners"]=sorted({(*row["owner"],0) for row in custody["items"]})
+            incoming.write_bytes(frame(custody))
+            setup=subprocess.run([str(fixture),str(root),str(incoming),"1"],capture_output=True,text=True,timeout=30)
+            assert setup.returncode==0 and not setup.stderr,(label,setup)
+        before=inventory(root);decoded=None
+        if value is not None:
+            left=subprocess.run([str(native),"probe",str(root)],capture_output=True,text=True,timeout=30)
+            right=subprocess.run([str(pure),"decode",str(root)],capture_output=True,text=True,timeout=30)
+            assert inventory(root)==before and left.returncode==right.returncode==int(refusal),(label,left,right)
+            if not refusal:
+                decoded=json.loads(left.stdout);assert decoded==json.loads(right.stdout),(label,left,right)
+                expected_roots=[[row["id"],row["seller"],row["winner"],row["status"],row["revision"],*item]
+                    for row in value["listings"] for item in row["items"]]
+                assert decoded["item_roots"]==expected_roots
+                assert decoded["object_blob_sha256"]==[hashlib.sha256(row["blob"]).hexdigest() for row in value["listings"]]
+        reports=[]
+        for limit in (0,1,100):
+            command=[str(binary),"--economic-auction-custody-audit",str(root),"--limit",str(limit)]
+            result=subprocess.run(command,capture_output=True,text=True,timeout=30)
+            assert inventory(root)==before and result.returncode==int(refusal or bool(counts)),(label,limit,result)
+            if refusal:
+                assert not result.stdout and result.stderr=="native_restore_qualification_failed\n"
+                reports.append(dict(command=command,exit=result.returncode));continue
+            assert not result.stderr,(label,result)
+            report=json.loads(result.stdout)
+            assert report["finding_counts"]==counts and report["finding_count"]==sum(counts.values()),(label,report)
+            assert report["auction_root_metadata_verified"]==verified and len(report["findings"])==min(limit,sum(counts.values()))
+            assert report["findings_truncated"]==(sum(counts.values())>limit)
+            assert not any(report[key] for key in ("serialized_templates_compared","coin_literals_compared","native_holdings_compared","item_history_verified","full_R7_qualified","release_qualified"))
+            assert "private-synthetic-literal" not in result.stdout
+            reports.append(dict(command=command,exit=result.returncode,report=report))
+        if not refusal:
+            checked=subprocess.run([str(fixture),str(root),str(incoming),"0" if counts else "1","auction-audit"],capture_output=True,text=True,timeout=30)
+            assert checked.returncode==0 and not checked.stderr and inventory(root)==before,(label,checked)
+            sanitized=json.loads(checked.stdout)
+            assert sanitized==dict(finding_count=sum(counts.values()),compared_roots=report["compared_roots"],verified=verified)
+        row=dict(case=label,counts=counts,native_fields=decoded,reports=reports,authority_unchanged=True);rows.append(row)
+        (directory/"evidence.json").write_text(json.dumps(row,indent=2)+"\n")
+        (directory/"authority-before-after.json").write_text(json.dumps(before,sort_keys=True)+"\n")
+        if label=="healthy-current-and-relisted-history":
+            for mode in ("bytes","files","entries","deadline"):
+                checked=subprocess.run([str(fixture),str(root),str(incoming),"1","auction-audit",mode],capture_output=True,text=True,timeout=30)
+                assert inventory(root)==before
+                if mode=="entries":
+                    # This fixed-file audit performs no directory enumeration.
+                    assert checked.returncode==0 and not checked.stderr and json.loads(checked.stdout)["verified"],checked
+                else:
+                    assert checked.returncode==1 and not checked.stdout and checked.stderr=="native_restore_qualification_failed\n",(mode,checked)
+        print("AUCTION_CUSTODY "+json.dumps(dict(case=label,counts=counts,cuts=3,authority_unchanged=True)),flush=True)
+    (build/"auction-findings.json").write_text(json.dumps(rows,indent=2)+"\n")
+    return rows
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--native-source", type=Path, required=True,
@@ -1504,6 +1680,11 @@ if __name__ == "__main__":
         player_observations = check_player_catalogs(fixture, binary, build)
         player_findings = check_player_findings(fixture, binary, build)
         player_boundaries = check_boundaries(fixture, binary, build, player=True)
+        auction_native = auctions.build_native_oracle(arguments.native_source.absolute(), build)
+        auction_pure = auctions.build_independent(build)
+        auction_findings = check_auction(fixture, binary, auction_native, auction_pure, build)
+        auction_boundaries = check_boundaries(fixture, binary, build, auction=True, auction_native=auction_native)
+        print("auction custody: " + str(len(auction_findings)) + " findings and " + str(len(auction_boundaries)) + " boundaries passed")
         print("player/pet custody: " + str(len(player_observations)) + " format cases, " + str(len(player_findings)) + " findings, " + str(len(player_boundaries)) + " boundaries passed")
         print("shopkeeper custody: " + str(len(shop_observations)) + " format cases, " + str(len(shop_findings)) + " findings, " + str(len(shop_boundaries)) + " boundaries passed")
         print("locker custody: " + str(len(locker_observations)) + " format cases, " + str(len(locker_findings)) + " findings, " + str(len(locker_boundaries)) + " boundaries passed")
