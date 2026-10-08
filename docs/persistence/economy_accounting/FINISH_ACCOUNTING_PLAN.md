@@ -1,5 +1,14 @@
 # Finish accounting implementation plan
 
+## Shopkeeper recipe preservation independently checked - 2026-10-07
+
+[Coordinator source review](domain-separation/SHOPKEEPER_RECIPE_SOURCE_REVIEW_2026-10-07.md)
+authenticates both complete original ASTs after removing only the added provider
+nodes and pins all16/12 maintained sources. Native/harness/migration bytes are
+unchanged. No native execution is claimed; both complete original entry points
+remain scheduled primary qualification, with the ownership load stub explicit.
+No new sidework authority interface or accounting completion follows.
+
 ## Shopkeeper native fixture recipes repaired - 2026-10-07
 
 [Source repair evidence](SHOPKEEPER_NATIVE_RECIPE_REPAIR_2026-10-07.md) records

@@ -549,6 +549,16 @@ install/current holdings/activation still use source2-only capture. Genuine
 live/reset/mobile/world census and quest settlement interfaces remain owner
 prerequisites. No published private executable inputs justify a duplicate task.
 
+Published5dc5b181978d01f5f21cf70463e984dcd4c80144 repairs two shopkeeper
+compiler recipes only. [Independent source review](SHOPKEEPER_RECIPE_SOURCE_REVIEW_2026-10-07.md)
+restores both complete original ASTs by removing exactly the three/four added
+provider nodes, authenticates all16/12 actual maintained providers and confirms
+unchanged native/migration/harness/path-resolver bodies. No compiler or native
+case ran here; the original ownership load stub remains explicit. Both complete
+entry points are deferred to the primary's scheduled major-plan qualification;
+external peer passes remain reported. These changes expose no new native quest
+or shared custody authority input and warrant no duplicate worker assignment.
+
 No independent domain or quest implementation is currently selected. Watch for
 the table's real source/interface/fixture publications, then reserve a connected
 case or operation for the appropriate existing chat. Preparation can begin once
